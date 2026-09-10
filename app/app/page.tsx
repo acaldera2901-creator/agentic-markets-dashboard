@@ -2366,8 +2366,14 @@ function SportsbookBoard({
     return !!e && (((e.oddsHome ?? 0) > 1) || ((e.oddsAway ?? 0) > 1));
   };
 
-  const footballRows = sortFootball(predictions
-    .filter((p) => sportFilter !== "tennis")
+  // #BOARD-CONTROLS-0910 — il filtro sport e' un predicato COSTANTE (non guarda
+  // la riga), quindi spostarlo fuori dalla catena non cambia nulla del risultato
+  // e rende disponibile il conteggio "quante ne avresti CLICCANDO". Serviva:
+  // i pulsanti mostravano il conteggio SOTTO il filtro corrente, cioe' con
+  // Tennis attivo il pulsante Football diceva «0» e il pulsante «All» — dove il
+  // conteggio l'ho aggiunto io oggi — diceva 16 invece di 71. Un numero su un
+  // filtro deve dire cosa succede se lo premi, non cosa sta succedendo ora.
+  const footballTutte = sortFootball(predictions
     .filter(() => surfaceFilter === "all")
     .filter((p) => isBoardVisibleMarket(p.kickoff))
     .filter((p) => !fpLoaded || hasFpOdds(teamPairKey("soccer", p.home_team, p.away_team, p.kickoff)))
@@ -2376,8 +2382,7 @@ function SportsbookBoard({
     .filter((p) => !query || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(query)))
     .slice(0, signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY);
 
-  const tennisRows = sortTennis(tennisMatches
-    .filter((m) => sportFilter !== "football")
+  const tennisTutte = sortTennis(tennisMatches
     .filter((m) => tennisIsPlaceholder || isTennisMarketVisible(m.scheduled))
     .filter((m) => tennisIsPlaceholder || !fpLoaded || hasFpOdds(teamPairKey("tennis", m.player1, m.player2, m.scheduled)))
     .filter((m) => tennisIsPlaceholder || signalFilter === "all" || isTennisBestBet(m))
@@ -2386,7 +2391,11 @@ function SportsbookBoard({
     .filter((m) => !query || `${m.player1} ${m.player2} ${m.tournament} ${m.surface}`.toLowerCase().includes(query)))
     .slice(0, signalFilter === "value" ? BEST_BETS_CAP : Number.POSITIVE_INFINITY);
 
+  const footballRows = sportFilter === "tennis" ? [] : footballTutte;
+  const tennisRows = sportFilter === "football" ? [] : tennisTutte;
   const filteredTotal = footballRows.length + tennisRows.length;
+  // Il conteggio sui tre segmenti: quante righe otterresti premendo QUEL segmento.
+  const contaTutti = footballTutte.length + tennisTutte.length;
   const showFootballSection = sportFilter !== "tennis" && surfaceFilter === "all" && !competitionFilter.startsWith("tennis:");
   const showTennisSection = sportFilter !== "football" && !competitionFilter.startsWith("football:");
 
@@ -2436,13 +2445,13 @@ function SportsbookBoard({
       <div className="sports-filter-bar am-filters">
         <div className="am-seg" aria-label="Sport filter">
           <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>
-            {labels.allSports} <span className="ct">{filteredTotal}</span>
+            {labels.allSports} <span className="ct">{contaTutti}</span>
           </button>
           <button className={sportFilter === "football" ? "on" : ""} onClick={() => setSportFilter("football")}>
-            <SportIcon sport="football" size={14} className="ic" variant="sm" />{labels.football} <span className="ct">{footballRows.length}</span>
+            <SportIcon sport="football" size={14} className="ic" variant="sm" />{labels.football} <span className="ct">{footballTutte.length}</span>
           </button>
           <button className={sportFilter === "tennis" ? "on" : ""} onClick={() => setSportFilter("tennis")}>
-            <SportIcon sport="tennis" size={14} className="ic" variant="sm" />{labels.tennis} <span className="ct">{tennisRows.length}</span>
+            <SportIcon sport="tennis" size={14} className="ic" variant="sm" />{labels.tennis} <span className="ct">{tennisTutte.length}</span>
           </button>
         </div>
 
