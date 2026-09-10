@@ -6353,7 +6353,16 @@ button:disabled {
    telefono affiancarle ridurrebbe entrambe a illeggibili. */
 .edge-split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* Non piu' due metà esatte. Andrea, 10/09: «sono ancora troppo grossi,
+     facciamoli poco più grandi della scheda prediction». Misurata una scheda:
+     226px. Il creativo della Weekly Pick e' 16:9 con testo e il disclaimer 18+
+     dall'alto in basso, quindi NON si puo' accorciare ritagliandolo: l'unico
+     modo di abbassarlo senza perdere contenuto e' STRINGERLO. A 480px di
+     larghezza fa 270px di altezza, e la riga si chiude a 285 — poco piu' di una
+     scheda, come chiesto.
+     `clamp` e non un valore fisso: sotto i ~1500px di viewport il 32% scende
+     sotto i 480 e il banner si accorcia con la pagina invece di sbordare. */
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 32%, 480px);
   gap: 14px;
   margin: 14px;
   /* `start` e non `stretch`: con lo stretch la colonna più corta veniva tirata
@@ -6367,6 +6376,10 @@ button:disabled {
 .edge-split > * { min-width: 0; margin: 0; }
 @media (max-width: 900px) {
   .edge-split { grid-template-columns: minmax(0, 1fr); }
+  /* Impilate le due colonne del banner, l'Edge non ha piu' larghezza per le
+     sue: torna a colonna singola e la cucitura verticale si nasconde. */
+  .edge-split .featured { grid-template-columns: minmax(0, 1fr); }
+  .edge-split .featured .seam { display: none; }
 }
 
 /* Se una delle due metà non viene resa, l'altra prende la riga INTERA invece di
@@ -6379,10 +6392,12 @@ button:disabled {
    della Weekly Pick a piena larghezza è anche il risultato migliore. */
 .edge-split > :only-child { grid-column: 1 / -1; }
 
-/* A metà larghezza le due colonne interne dell'Edge (dati | prosa) non stanno
-   più: diventa una colonna sola e la cucitura verticale si nasconde. */
-.edge-split .featured { grid-template-columns: minmax(0, 1fr); }
-.edge-split .featured .seam { display: none; }
+/* L'Edge ora prende la colonna larga (~1100px a schermo intero), quindi TIENE
+   le sue due colonne interne (dati | prosa). Non e' un dettaglio: impilate lo
+   facevano diventare alto 455px, affiancate sta in 285. Il layout che il banner
+   aveva in origine e' anche il piu' basso — bastava dargli larghezza.
+   Sotto i 900px, dove le due colonne del banner si impilano, l'Edge torna a
+   colonna singola (vedi la media query piu' sotto). */
 
 /* A metà larghezza il contenuto dell'Edge si impila e il banner arrivava a
    527px — troppo, ed era lui a dettare l'altezza della riga. Misurato dove
@@ -6394,10 +6409,10 @@ button:disabled {
    Risultato: 455px, cioè quanto il creativo accanto (450). Le due colonne si
    pareggiano da sé, senza che nessuna venga tirata, tagliata o incorniciata di
    nero. */
-.edge-split .featured .big { padding: 12px 18px 8px; gap: 2px; }
-.edge-split .featured .why { padding: 8px 18px 12px; }
+.edge-split .featured .big { padding: 14px 18px; gap: 2px; }
+.edge-split .featured .why { padding: 14px 18px; }
 .edge-split .featured .hero-prob { margin: 4px 0; }
-.edge-split .featured .hero-prob .num { font-size: 46px; line-height: 1; }
+.edge-split .featured .hero-prob .num { font-size: 44px; line-height: 1; }
 .edge-split .featured .why .line {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -6422,8 +6437,14 @@ button:disabled {
    Specchiata: nel creativo i palloni stanno a DESTRA, ma il velo è opaco a
    destra per costruzione (è lì che comincia il pannello dei dati). Girandola,
    il soggetto finisce dove la scena si vede davvero. Nessun testo
-   nell'immagine, quindi lo specchio non capovolge niente di leggibile. */
-.edge-split .featured { --edge-scene: url(/banners/edge-bg.webp); }
+   nell'immagine, quindi lo specchio non capovolge niente di leggibile.
+
+   ⚠️ L'override della scena NON sta qui ma accanto alle righe che la
+   definiscono (cerca `--edge-scene` più sotto): `.featured.is-tennis` ha la
+   stessa specificità di `.edge-split .featured` ed è più in basso nel file,
+   quindi vinceva lei. Messa qui, questa regola sembrava applicata e non lo
+   era — verificato leggendo il valore EFFETTIVO in produzione, non la presenza
+   della regola. */
 .edge-split .featured::before { transform: scaleX(-1); }
 
 /* ── La vetrina della Weekly Pick. È un'immagine sola con la CTA già disegnata
@@ -10176,6 +10197,16 @@ button:disabled {
 
 .featured.is-football { --edge-scene: url(/banners/gen/scene-stadium.jpg); }
 .featured.is-tennis   { --edge-scene: url(/banners/gen/scene-court.jpg); }
+
+/* #EDGE-WP-SPLIT-0910 — nello split a metà schermo la scena non è quella
+   per-sport ma il creativo scelto da Andrea: un'immagine sola, la stessa per
+   calcio e tennis, perché lì il banner divide la riga con la vetrina della
+   Weekly Pick e due fotografie diverse a fianco litigavano.
+   Le classi di sport sono ripetute di proposito: servono a superare in
+   specificità le due righe qui sopra. Scritta senza, la regola perdeva la
+   cascata in silenzio — sembrava applicata e non lo era. */
+.edge-split .featured.is-football,
+.edge-split .featured.is-tennis { --edge-scene: url(/banners/edge-bg.webp); }
 
 /* L'OCCHIELLO. Il pallino tondo diventa la tacca obliqua delle schede, e il
    testo prende il passo tecnico del monospazio spaziato. */
