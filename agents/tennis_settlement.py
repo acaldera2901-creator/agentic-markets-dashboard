@@ -28,7 +28,7 @@ from datetime import datetime, timedelta, timezone
 from agents.base import BaseAgent
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
 from core.espn_tennis_client import get_completed_results_for_days
-from core.supabase_client import settle_unified_tennis
+from core.supabase_client import settle_unified_tennis, unified_tennis_ancora_aperte
 from core.tennis_names import canonical_player_key
 from core.tennis_set_validation import settlement_allowed
 from models.elo_surface import EloSurfaceModel
@@ -64,6 +64,11 @@ class TennisSettlementAgent(BaseAgent):
             self._stale_expired = True
 
         await self._settle_recent()
+        # #SETTLE-0909 — DOPO il settlement, sempre: la riconciliazione del
+        # ponte. Gira a ogni ciclo, non una volta per processo, perche' e' il
+        # rimedio a un ponte FALLITO — e un rimedio che parte una volta sola
+        # eredita lo stesso difetto che deve curare.
+        await self._riconcilia_ponte()
 
     async def _bulk_expire_stale(self):
         """Mark all predictions older than EXPIRE_AFTER_DAYS as 'expired' in one query."""
@@ -105,6 +110,69 @@ class TennisSettlementAgent(BaseAgent):
         if unresolved:
             self.logger.info(
                 f"[SETTLEMENT] flagged {unresolved} unified tennis rows unresolved (expired)"
+            )
+
+    async def _riconcilia_ponte(self):
+        """
+        Le righe PUBBLICHE ancora aperte, richiuse dal loro esito a monte.
+        (#SETTLE-0909)
+
+        IL DIFETTO CHE CHIUDE. Misurate il 10/09: 27 pick pubblicate e mostrate
+        con `result` NULL, partite fra l'11/06 e il 24/08. Non vinte, non perse,
+        non void, non `unresolved`: invisibili in entrambe le direzioni — fuori
+        dal track record e non contate nemmeno come buchi.
+
+        Come ci sono arrivate: `_bulk_expire_stale` le aveva marcate `expired` a
+        monte, e la chiamata al ponte non era passata. Quel metodo gira UNA
+        VOLTA per processo e i suoi fallimenti li conta e li dimentica; da lì in
+        poi nessuno le riguarda, perche' lui seleziona `outcome IS NULL` e il
+        backstop TS pretende `winner NOT NULL`. Un buco permanente per
+        costruzione, invisibile a qualunque test: ogni pezzo era corretto da
+        solo.
+
+        La domanda giusta non e' «quali predizioni ho chiuso» ma «quali righe
+        PUBBLICHE sono ancora aperte»: la si chiede alla tabella pubblica.
+        Idempotente — il ponte scrive solo dove `result` e' ancora NULL, quindi
+        ripassare non fa danni.
+        """
+        try:
+            aperte = await unified_tennis_ancora_aperte()
+        except Exception as e:
+            self.logger.warning(f"[SETTLEMENT] riconciliazione non avviata: {e}")
+            return
+        if not aperte:
+            return
+
+        async with AsyncSessionLocal() as session:
+            righe = (await session.execute(
+                select(TennisPrediction).where(TennisPrediction.match_id.in_(aperte))
+            )).scalars().all()
+        per_match = {r.match_id: r for r in righe}
+
+        chiuse = dichiarate = 0
+        for match_id in aperte:
+            pred = per_match.get(match_id)
+            if pred is None or pred.outcome is None:
+                # A monte non e' ancora chiusa: la chiudera' il ciclo normale.
+                continue
+            if pred.winner:
+                if await settle_unified_tennis(
+                    match_id, pred.winner,
+                    verification_source="espn-archive",
+                    verification_note="riconciliazione-ponte",
+                ):
+                    chiuse += 1
+            else:
+                # `expired` senza vincitore: la fonte non ha mai dato un esito.
+                # Si dichiara come buco, che e' meglio di restare invisibile.
+                if await settle_unified_tennis(match_id, None, unresolved=True):
+                    dichiarate += 1
+
+        if chiuse or dichiarate:
+            self.logger.info(
+                "[SETTLEMENT] ponte riconciliato: %d righe pubbliche chiuse col "
+                "loro esito, %d dichiarate senza esito (su %d aperte)",
+                chiuse, dichiarate, len(aperte),
             )
 
     async def _select_pending(self) -> list:

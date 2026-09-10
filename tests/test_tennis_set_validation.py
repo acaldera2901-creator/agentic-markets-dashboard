@@ -161,11 +161,41 @@ class TestLaRegolaDedicataDeiRitiri:
         assert ok is True
         assert motivo == "esito-irregolare:status_retired"
 
-    def test_un_walkover_senza_punteggio_si_settla(self):
+    def test_un_walkover_NON_si_settla_perche_non_si_e_giocato(self):
+        """
+        Un walkover e' un passaggio del turno, non un risultato: uno dei due si
+        e' ritirato prima dell'inizio. Contarlo come pick vinta e' un claim che
+        non ci siamo guadagnati; come persa e' punirsi per una partita mai
+        avvenuta. Nessuna delle due e' vera, quindi non si settla.
+        """
         ok, motivo = _ok(None, tournament="US Open", gender="M",
                          status_name="STATUS_WALKOVER")
+        assert ok is False
+        assert motivo == "nessuna-partita:status_walkover"
+
+    def test_un_walkover_non_si_settla_nemmeno_con_un_punteggio(self):
+        ok, motivo = _ok("6-0 6-0", tournament="Cincinnati", gender="M",
+                         status_name="STATUS_WALKOVER")
+        assert ok is False and motivo.startswith("nessuna-partita")
+
+    def test_annullata_e_rinviata_non_si_settlano(self):
+        for stato in ("STATUS_CANCELED", "STATUS_POSTPONED", "STATUS_FORFEIT"):
+            ok, motivo = _ok("6-4 6-3", tournament="Cincinnati", gender="M",
+                             status_name=stato)
+            assert ok is False, stato
+            assert motivo == f"nessuna-partita:{stato.lower()}"
+
+    def test_il_RITIRO_invece_si_settla(self):
+        """
+        La differenza che conta: un ritiro la partita l'ha giocata e ha prodotto
+        un vincitore. Il pronostico era su chi vince il match, e un vincitore
+        c'e' stato. 28 ritiri misurati in 2 giorni di archivio: se non si
+        settlassero, finirebbero tutti in `unresolved` senza motivo.
+        """
+        ok, motivo = _ok("6-1 2-0", tournament="US Open", gender="M",
+                         status_name="STATUS_RETIRED")
         assert ok is True
-        assert motivo == "esito-irregolare:status_walkover"
+        assert motivo == "esito-irregolare:status_retired"
 
 
 class TestIlPrimoCancello:

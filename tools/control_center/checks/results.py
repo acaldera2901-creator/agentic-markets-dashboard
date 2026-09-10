@@ -222,6 +222,65 @@ def check_history_coerente() -> Verdict:
     )
 
 
+# ── il buco che non si vedeva da nessuna parte ──────────────────────────────
+# #SETTLE-0909. Misurate il 10/09: 27 pick PUBBLICATE E MOSTRATE, partite fra
+# l'11/06 e il 24/08, con `result` NULL. Non vinte, non perse, non void, non
+# `unresolved`: invisibili in entrambe le direzioni — fuori dal track record e
+# non contate nemmeno come buchi.
+#
+# Come ci sono arrivate: a monte `tennis_predictions.outcome = 'expired'` con
+# `winner` NULL. Lo spazzino a monte le ha marcate scadute, il ponte verso la
+# riga pubblica non e' passato, e da lì NESSUNO le riguarda piu' — quello a
+# monte seleziona `outcome IS NULL`, il backstop TS pretende `winner NOT NULL`.
+# Un buco permanente per costruzione, e nessun test poteva vederlo perche' ogni
+# pezzo era corretto da solo.
+#
+# Questo check chiede la domanda che nessuno chiedeva: «c'e' una pick che
+# abbiamo MOSTRATO, la cui partita e' finita, e di cui non sappiamo dire com'e'
+# andata?». Se la risposta e' si', e' rosso.
+_ORFANE_SQL = """
+select count(*),
+       min(starts_at)::date::text,
+       count(*) filter (where sport = 'tennis'),
+       count(*) filter (where sport = 'football')
+from unified_predictions
+where result is null
+  and published_at is not null
+  and pick is not null
+  and is_demo = false
+  and starts_at < now() - interval '48 hours'
+"""
+
+
+def check_history_orfane() -> Verdict:
+    """Pick mostrate, partita finita, nessun esito: buchi muti nello storico."""
+    try:
+        righe = fetch_all(_ORFANE_SQL)
+    except DbUnavailable as exc:
+        return unknown(f"database non raggiungibile: {exc}", "db:unified_predictions")
+
+    n = int(righe[0][0] or 0)
+    if n == 0:
+        return green(
+            "nessuna pick mostrata senza esito: lo storico non ha buchi muti",
+            "db:unified_predictions", value=0,
+        )
+
+    piu_vecchia = righe[0][1] or "?"
+    prova = {
+        "orfane": n, "piu_vecchia": piu_vecchia,
+        "tennis": int(righe[0][2] or 0), "football": int(righe[0][3] or 0),
+    }
+    # La soglia e' ZERO, di proposito: una pick mostrata di cui non sappiamo
+    # l'esito e' un difetto anche se e' una sola. Il recupero e' possibile —
+    # l'archivio ESPN arriva a gennaio — quindi non c'e' motivo di tollerarle.
+    return red(
+        f"{n} pick mostrate senza esito (la piu' vecchia del {piu_vecchia}): "
+        "fuori dal track record e non contate nemmeno come buchi",
+        "db:unified_predictions", value=n, evidence=prova,
+    )
+
+
 def checks() -> list[Check]:
     return [
         Check("roi_totale", "risultati", "ROI totale", check_roi_totale, timeout_seconds=30),
@@ -231,4 +290,6 @@ def checks() -> list[Check]:
         Check("bankroll", "risultati", "Bankroll", check_bankroll, timeout_seconds=20),
         Check("history_coerente", "risultati", "History coerente col DB",
               check_history_coerente, timeout_seconds=40),
+        Check("history_orfane", "risultati", "Pick mostrate senza esito",
+              check_history_orfane, timeout_seconds=30),
     ]

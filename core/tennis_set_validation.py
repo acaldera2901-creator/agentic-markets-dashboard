@@ -25,13 +25,24 @@ _SLAM = re.compile(
 )
 _SET = re.compile(r"(\d{1,2})\s*-\s*(\d{1,2})(?:\s*\(\d+\))?")
 
-# Stati che la fonte marca `completed = true` ma che NON chiudono un punteggio
-# regolare: un ritiro puo' fermarsi a `6-1 2-0`, un walkover non ha punteggio.
+# RITIRO: la partita si e' giocata e ha prodotto un vincitore, solo che si e'
+# fermata prima della fine. Il pronostico era su chi vince il match, e il match
+# un vincitore l'ha avuto: si settla, ma senza passare dalle regole sui set (un
+# ritiro puo' fermarsi legittimamente a `6-1 2-0`).
 # Misurati sull'archivio ESPN del 06-07/09: 1.986 STATUS_FINAL, 28
 # STATUS_RETIRED, 4 STATUS_WALKOVER — tutti con `completed = true`.
-# Il vincitore resta un fatto esplicito della fonte (flag `winner`), quindi si
-# settla — ma senza passare dalle regole sui set, che qui non si applicano.
-INCOMPLETE_STATUSES = {"STATUS_RETIRED", "STATUS_WALKOVER", "STATUS_FORFEIT"}
+INCOMPLETE_STATUSES = {"STATUS_RETIRED"}
+
+# WALKOVER / FORFEIT: la partita NON si e' giocata. Uno dei due si e' ritirato
+# prima dell'inizio e la fonte assegna il passaggio del turno, non un risultato.
+# Contarlo come pick vinta e' un claim che non ci siamo guadagnati; contarlo
+# come persa e' punirsi per una partita mai avvenuta. Nessuna delle due e' vera,
+# quindi non si settla: la riga resta pendente e finisce in `unresolved`, che in
+# questo prodotto significa già «la fonte non ha dato un esito utilizzabile» ed
+# e' escluso da /history in blocco (lista, win-rate e conteggio void).
+# UNO stato per un fatto, sia dal vivo sia in recupero storico: due nomi per la
+# stessa cosa sono il difetto che #SETTLE-0909 esiste per chiudere.
+NO_MATCH_STATUSES = {"STATUS_WALKOVER", "STATUS_FORFEIT", "STATUS_CANCELED", "STATUS_POSTPONED"}
 
 
 def best_of(tournament: str | None, gender: str | None) -> int | None:
@@ -121,10 +132,16 @@ def settlement_allowed(
     if not source_completed:
         return False, "fonte-non-conclusa"
 
-    if (status_name or "").upper() in INCOMPLETE_STATUSES:
-        # Ritiro/walkover: il punteggio non deve essere regolare, ma va
-        # dichiarato a chi legge — se ne occupa chi pubblica (marker nel testo).
-        return True, f"esito-irregolare:{(status_name or '').lower()}"
+    stato = (status_name or "").upper()
+
+    if stato in NO_MATCH_STATUSES:
+        # Partita non giocata: non esiste un esito corretto da pubblicare.
+        return False, f"nessuna-partita:{stato.lower()}"
+
+    if stato in INCOMPLETE_STATUSES:
+        # Ritiro: il punteggio non deve essere regolare, ma va dichiarato a chi
+        # legge — se ne occupa chi pubblica (marker nel testo).
+        return True, f"esito-irregolare:{stato.lower()}"
 
     if not score_text:
         # La fonte dice concluso ma non porta le linescores. Il vincitore e' un
