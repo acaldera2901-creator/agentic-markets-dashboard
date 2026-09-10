@@ -48,22 +48,61 @@ function normalize(m: Record<string, unknown>): FDMatch {
   };
 }
 
+// #FIXTURES-SILENT-SKIP-0910 — un fallimento qui era INDISTINGUIBILE da «questa
+// lega non ha partite in programma»: `return []` in entrambi i casi, senza una
+// riga di log. Conseguenza misurata il 10/09: 106 righe su 315 non ricalcolate
+// dal giro delle 16:00, e le 12 righe senza quote entro 48h erano TUTTE su
+// BL1/PD/FL1/SA — cioe' tutte e sole le leghe che passano da qui (le altre 21
+// competizioni del board arrivano dal percorso summer-leagues, che non ha
+// questo limite). Bayern, Dortmund, Mainz, Augsburg, Hoffenheim, Union Berlin,
+// Osasuna, Racing, Strasburgo, Rennes, Genoa, Venezia: i big match, fermi a
+// ore prima, e nessun allarme.
+//
+// Causa provata con una misura diretta: 10 richieste in parallelo a
+// football-data.org danno 9 ok e UNA 429, e l'header
+// `x-requests-available-minute` scende a 0. Il route ne lancia 7 in parallelo
+// piu' lo storico per lega, quindi il tetto per minuto si tocca e le leghe
+// perdenti restano ferme.
+//
+// Due rimedi, entrambi qui:
+//   1. il 429 e' TRANSITORIO (si azzera al minuto) -> un ritentativo lo recupera;
+//   2. un fallimento si DICE. Un array vuoto per errore e un array vuoto per
+//      calendario vuoto non possono piu' somigliarsi.
+const RITENTATIVO_DEFAULT_MS = 7000;
+
 async function fetchMatches(
   code: string,
   params: Record<string, string>
 ): Promise<FDMatch[]> {
   if (!process.env.FOOTBALL_DATA_ORG_API_KEY) return [];
   const qs = new URLSearchParams(params).toString();
+  const url = `${BASE}/competitions/${code}/matches?${qs}`;
+  const opzioni = { headers: headers(), cache: "no-store" as const };
+  // Letto a ogni chiamata (non a load) così i test possono azzerarlo.
+  const attesaMs = Number(process.env.FD_RETRY_MS ?? RITENTATIVO_DEFAULT_MS);
   try {
-    const r = await fetch(`${BASE}/competitions/${code}/matches?${qs}`, {
-      headers: headers(),
-      // Next.js: no cache, always fresh
-      cache: "no-store",
-    });
-    if (!r.ok) return [];
+    let r = await fetch(url, opzioni);
+    if (r.status === 429) {
+      console.warn(
+        `[football-data ${code}] HTTP 429 (tetto per minuto) — ritento fra ${attesaMs}ms`,
+      );
+      if (attesaMs > 0) await new Promise((ok) => setTimeout(ok, attesaMs));
+      r = await fetch(url, opzioni);
+    }
+    if (!r.ok) {
+      console.warn(
+        `[football-data ${code}] HTTP ${r.status} — lega SALTATA: le sue righe restano quelle del giro precedente`,
+      );
+      return [];
+    }
     const data = await r.json();
-    return ((data.matches ?? []) as Record<string, unknown>[]).map(normalize);
-  } catch {
+    const partite = ((data.matches ?? []) as Record<string, unknown>[]).map(normalize);
+    // Zero partite con HTTP 200 e' un dato legittimo (sosta, calendario vuoto):
+    // si distingue nel log da uno zero per errore.
+    if (partite.length === 0) console.log(`[football-data ${code}] 0 partite in finestra (HTTP 200)`);
+    return partite;
+  } catch (e) {
+    console.warn(`[football-data ${code}] errore di rete: ${String(e)} — lega SALTATA`);
     return [];
   }
 }
