@@ -39,6 +39,7 @@ import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 import { getSessionId, trackEvent } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
+import { abbinaQuotaPartner, indicizzaPerGiorno } from "@/lib/fp-odds-join";
 import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
@@ -2359,6 +2360,17 @@ function SportsbookBoard({
   });
 
   // #ONLY-WITH-ODDS-1: mostra sul board SOLO i match per cui abbiamo la quota FortunePlay.
+  // #BOARD-ODDS-JOIN-0910 — passo 2: le righe recuperate dal passo 1 (sotto)
+  // si vedevano SENZA prezzo, perche' la quota si cercava con la sola chiave
+  // esatta e i nomi divergono dal feed partner. `abbinaQuotaPartner` prova la
+  // chiave (che costruisce `teamPairKey`, ordinata) e poi ripiega su un match a
+  // token fra le partite dello STESSO GIORNO, con candidata unica obbligatoria.
+  // L'indice per giorno e' memoizzato: senza, il fallback rifarebbe ~110
+  // confronti per riga a ogni render.
+  const indiceQuotePartner = useMemo(() => indicizzaPerGiorno(fpOdds), [fpOdds]);
+  const quotaPartner = (home: string, away: string, iso: string | null) =>
+    abbinaQuotaPartner(home, away, iso, fpOdds, indiceQuotePartner).quota ?? undefined;
+
   // #BOARD-ODDS-GATE-0910 — APPROVE di Andrea, 10/09. Qui c'era un filtro che
   // NASCONDEVA la predizione quando nessun book partner prezzava quella partita:
   //
@@ -2591,7 +2603,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const out: React.ReactNode[] = [
-                        <PredictionCard key={p.match_id} p={p} idx={i} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
                       ];
                       if (i === fpGridAt) {
                         out.push(<FreePaywall key="fp-grid" count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} inGrid />);
@@ -8943,6 +8955,22 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [hasSession, setHasSession] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
+  // #TDZ-CHECKOUT-0910 — questa funzione stava 340 righe piu' in basso, ma un
+  // `useEffect` piu' SOPRA (il ritorno da /api/auth/activate con `?activated=1`)
+  // la chiama: `const` in temporal dead zone, che eslint segnalava come errore
+  // da mesi — l'unico errore del file. A runtime non esplodeva perche' un
+  // effetto con deps `[]` gira DOPO che il corpo del componente e' stato
+  // eseguito, quindi il binding era gia' inizializzato: un difetto latente, non
+  // attivo. Sarebbe diventato attivo il giorno in cui quel blocco fosse
+  // finito in fase di render.
+  // Spostarla qui e' sicuro e non cambia nulla: dipende solo dai due setter
+  // dichiarati sopra e da `trackEvent`, che e' un import di modulo. NON e' stato
+  // silenziato il linter: il TDZ e' stato tolto.
+  const openCheckout = (plan: PublicPlanKey) => {
+    setCheckoutPlan(plan);
+    setCheckoutOpen(true);
+    trackEvent("checkout_opened", { plan });
+  };
   // #FUNNEL-INTENT-0908: l'intento d'acquisto scelto PRIMA di autenticarsi.
   // Senza questo, ogni percorso d'acquisto di un anonimo apriva il login e poi
   // finiva su `setTab("bets")`: il piano scelto era dimenticato e la vendita persa
@@ -9286,12 +9314,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // `checkout_opened` non può divergere dal fatto. Fra "vedo il prezzo"
   // (plan_view) e "pago" (conversion) non esisteva alcuna misura: un funnel senza
   // il gradino di mezzo non dice mai dove si rompe.
-  const openCheckout = (plan: PublicPlanKey) => {
-    setCheckoutPlan(plan);
-    setCheckoutOpen(true);
-    trackEvent("checkout_opened", { plan });
-  };
-
   const handleAuthed = (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => {
     // The modal already authenticated (register/login with password) and the
     // server set the signed session cookie. We only adopt the DB plan and persist
