@@ -62,7 +62,7 @@ def _monta(monkeypatch, agente, *, righe, abbandonata, punteggio=None):
     async def fake_fetch_unsettled(cutoff_minutes=115, limit=50):
         return righe
 
-    async def fake_settle_unified(row_id, outcome, final_score=None):
+    async def fake_settle_unified(row_id, outcome, final_score=None, **_timbro):
         chiusure_servite.append((row_id, outcome, final_score))
         return True
 

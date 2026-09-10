@@ -340,6 +340,18 @@ export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
         team_news_summary = EXCLUDED.team_news_summary,
         neutral_venue     = EXCLUDED.neutral_venue,
         world_cup_stage   = EXCLUDED.world_cup_stage,
+        -- #SETTLE-0909 B4 — starts_at ed expires_at mancavano da questa lista,
+        -- quindi restavano al valore del PRIMO sync: un orario di calcio si
+        -- sposta (anticipi, rinvii, correzioni del provider) e la riga teneva
+        -- il fossile. E' la causa dei settlement datati PRIMA del fischio
+        -- d'inizio (misurato: -0,47h di media) e rende nulla ogni metrica
+        -- temporale sul football. Il tennis lo fa correttamente da sempre
+        -- (lib/tennis-adapter.ts:212-213).
+        -- Il WHERE settled_at IS NULL qui sotto e' cio' che rende questa riga
+        -- sicura: NON riscrive il passato — una riga gia' chiusa resta com'era,
+        -- e si corregge solo cio' che e' ancora aperto.
+        starts_at         = EXCLUDED.starts_at,
+        expires_at        = EXCLUDED.expires_at,
         updated_at        = NOW()
       WHERE unified_predictions.settled_at IS NULL`,
       [

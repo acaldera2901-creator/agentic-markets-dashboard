@@ -282,6 +282,13 @@ class ResultSettlementAgent(BaseAgent):
                     outcome,
                     # #021: real final score into the served history row.
                     final_score=final_score,
+                    # #SETTLE-0909 — il football si chiude solo su un risultato
+                    # FINISHED del provider, che e' il cancello di completamento
+                    # che il tennis non aveva. Audit del 10/09: 261 righe
+                    # ri-gradate dal punteggio, 261 concordi, 0 errori. Quindi
+                    # il timbro qui e' dovuto, non generoso.
+                    verification_source="football-data",
+                    verification_note="settlement-live",
                 ):
                     settled += 1
                     self.logger.info(

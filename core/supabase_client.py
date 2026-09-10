@@ -700,6 +700,8 @@ async def settle_unified_prediction(
     result: str,
     *,
     final_score: str | None = None,
+    verification_source: str | None = None,
+    verification_note: str | None = None,
 ) -> bool:
     """
     Mark one served prediction as settled history. `result` is won|lost|void.
@@ -709,6 +711,17 @@ async def settle_unified_prediction(
     source didn't provide one (fail-closed: no score is shown instead).
     Fail-loud to the caller (bool) so the settlement agent can count and retry
     on the next cycle — but never raises.
+
+    #SETTLE-0909 — ``verification_source`` timbra la riga come `verified`.
+    E' OBBLIGATORIO passarlo per ogni esito reale (won/lost), perche'
+    /api/v2/history pubblica SOLO le righe verificate: una riga chiusa senza
+    timbro non comparirebbe mai nel track record, e la pagina si congelerebbe
+    al giorno del backfill. Chi chiama ha il diritto di timbrare perche' a
+    monte c'e' il cancello — flag `completed` della fonte piu' coerenza del
+    punteggio: e' quel cancello la verifica, non un secondo controllo.
+    Gli esiti che NON sono un fatto verificato (`void` per pick mai mostrata,
+    `unresolved` per fonte mai arrivata) restano senza timbro: sono esclusi da
+    /history a monte, e marcarli `verified` sarebbe una bugia comoda.
     """
     base = _rest_base()
     if not base:
@@ -720,6 +733,12 @@ async def settle_unified_prediction(
         "settled_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+    if verification_source and result in ("won", "lost"):
+        payload["verification_state"] = "verified"
+        payload["verification_source"] = verification_source
+        payload["verification_at"] = datetime.now(timezone.utc).isoformat()
+        if verification_note:
+            payload["verification_note"] = verification_note
     if final_score:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -922,7 +941,13 @@ async def settle_unified_tennis(
                 else "lost"
             )
         return await settle_unified_prediction(
-            str(row["id"]), result, final_score=final_score
+            str(row["id"]), result, final_score=final_score,
+            # #SETTLE-0909 — il vincitore arriva da tennis_predictions, che si
+            # popola solo passando dal cancello dell'archivio ESPN (flag
+            # `completed` della fonte + coerenza dei set). Quindi un won/lost
+            # qui E' verificato, e va timbrato o /history non lo mostrera' mai.
+            verification_source="espn-archive",
+            verification_note="settlement-live",
         )
     except Exception as exc:
         logger.warning("unified tennis settle error for %s: %s", match_id, exc)

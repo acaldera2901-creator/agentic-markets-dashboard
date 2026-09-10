@@ -86,7 +86,13 @@ class TestEstrazione:
 
 class TestGiorniDaChiedere:
     """Si chiedono solo i giorni che servono: una finestra fissa spenderebbe
-    richieste per giorni in cui non c'e' niente da chiudere."""
+    richieste per giorni in cui non c'e' niente da chiudere.
+
+    #SETTLE-0909 — si chiede anche il GIORNO DOPO ciascuna pick. Da quando il
+    settlement legge SOLO l'archivio (il tabellone header gradava partite in
+    corso), un esito notturno archiviato sotto la data del giorno di torneo
+    successivo non verrebbe mai raccolto e la riga scadrebbe in `unresolved`.
+    """
 
     class P:
         def __init__(self, quando): self.scheduled = quando
@@ -95,15 +101,22 @@ class TestGiorniDaChiedere:
         p = [self.P(datetime(2026, 8, 29, 10, tzinfo=timezone.utc)),
              self.P(datetime(2026, 8, 29, 20, tzinfo=timezone.utc)),
              self.P(datetime(2026, 8, 30, 1, tzinfo=timezone.utc))]
+        assert TennisSettlementAgent._giorni_di(p) == {
+            date(2026, 8, 29), date(2026, 8, 30), date(2026, 8, 31)
+        }
+
+    def test_si_chiede_anche_il_giorno_dopo(self):
+        """Una partita delle 22:00 UTC finisce oltre la mezzanotte."""
+        p = [self.P(datetime(2026, 8, 29, 22, tzinfo=timezone.utc))]
         assert TennisSettlementAgent._giorni_di(p) == {date(2026, 8, 29), date(2026, 8, 30)}
 
     def test_una_riga_senza_data_non_rompe_le_altre(self):
         p = [self.P(None), self.P(datetime(2026, 8, 29, tzinfo=timezone.utc))]
-        assert TennisSettlementAgent._giorni_di(p) == {date(2026, 8, 29)}
+        assert TennisSettlementAgent._giorni_di(p) == {date(2026, 8, 29), date(2026, 8, 30)}
 
     def test_accetta_le_date_in_stringa(self):
         p = [self.P("2026-08-29T16:00:00Z")]
-        assert TennisSettlementAgent._giorni_di(p) == {date(2026, 8, 29)}
+        assert TennisSettlementAgent._giorni_di(p) == {date(2026, 8, 29), date(2026, 8, 30)}
 
     def test_nessuna_riga_nessun_giorno(self):
         assert TennisSettlementAgent._giorni_di([]) == set()

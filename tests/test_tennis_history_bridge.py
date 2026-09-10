@@ -6,6 +6,7 @@ Tests for the tennis → public history bridge:
 3. core/supabase_client.settle_unified_tennis — won/lost/void mapping
 """
 import logging
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -60,29 +61,46 @@ def _agent():
     return a
 
 
-@pytest.mark.asyncio
-async def test_resolve_via_espn_matches_pair_either_order():
-    agent = _agent()
-    results = [{
+_QUANDO = datetime(2026, 6, 5, 12, 0, tzinfo=timezone.utc)
+
+
+def _risultato_archivio(**over):
+    """Una riga come la produce l'archivio ESPN (#SETTLE-0909 A2)."""
+    r = {
         "winner_key": canonical_player_key("Anna Kalinskaya"),
         "loser_key": canonical_player_key("Petra Kvitova"),
         "winner_name": "Anna Kalinskaya", "loser_name": "Petra Kvitova",
-        "tournament": "Birmingham",
-    }]
+        "tournament": "Birmingham Open",
+        "score_text": "6-4 6-3",
+        "event_date": _QUANDO,
+        "gender": "W",
+        "status_name": "STATUS_FINAL",
+        "source_completed": True,
+    }
+    r.update(over)
+    return r
+
+
+@pytest.mark.asyncio
+async def test_resolve_via_espn_matches_pair_either_order():
+    agent = _agent()
     # prediction has the players in the OPPOSITE order vs the result
-    pred = SimpleNamespace(player1="Petra Kvitova", player2="Anna Kalinskaya")
-    with patch("agents.tennis_settlement.get_completed_results",
-               new=AsyncMock(return_value=results)):
+    pred = SimpleNamespace(player1="Petra Kvitova", player2="Anna Kalinskaya",
+                           scheduled_at=_QUANDO, tournament="Birmingham Open")
+    with patch("agents.tennis_settlement.get_completed_results_for_days",
+               new=AsyncMock(return_value=[_risultato_archivio()])):
         resolved = await agent._resolve_via_espn([pred])
     assert len(resolved) == 1
     assert resolved[0][1] == "P2"  # winner is player2 of the prediction
+    assert resolved[0][2] == "6-4 6-3"
 
 
 @pytest.mark.asyncio
 async def test_resolve_via_espn_no_match_returns_empty():
     agent = _agent()
-    pred = SimpleNamespace(player1="Carlos Alcaraz", player2="Jannik Sinner")
-    with patch("agents.tennis_settlement.get_completed_results",
+    pred = SimpleNamespace(player1="Carlos Alcaraz", player2="Jannik Sinner",
+                           scheduled_at=_QUANDO, tournament="Birmingham Open")
+    with patch("agents.tennis_settlement.get_completed_results_for_days",
                new=AsyncMock(return_value=[])):
         assert await agent._resolve_via_espn([pred]) == []
 
@@ -118,7 +136,15 @@ async def test_settle_unified_tennis_result_mapping(pick, winner, void, unresolv
             "tennis:espn:e1:k", winner, void=void, unresolved=unresolved
         )
     assert ok is True
-    settle.assert_awaited_once_with("row-1", expected, final_score=None)
+    # #SETTLE-0909 — il timbro di verifica non e' un extra: /api/v2/history
+    # pubblica solo le righe `verified`, quindi una chiusura senza timbro non
+    # entrerebbe MAI nel track record e la pagina si fermerebbe al backfill.
+    # Va passato per gli esiti reali; per void/unresolved non e' un fatto
+    # verificato e settle_unified_prediction lo ignora comunque.
+    settle.assert_awaited_once_with(
+        "row-1", expected, final_score=None,
+        verification_source="espn-archive", verification_note="settlement-live",
+    )
 
 
 @pytest.mark.asyncio
