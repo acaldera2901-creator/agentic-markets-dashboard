@@ -5,7 +5,63 @@ Ogni test qui e' un caso MISURATO il 09/09 sulle 1.401 righe tennis pubblicate,
 non un caso inventato: 289 di quelle righe portavano un punteggio da set
 singolo, cioe' un esito scritto mentre la partita era in corso.
 """
-from core.tennis_set_validation import best_of, sets_won, settlement_allowed
+from core.tennis_set_validation import (
+    best_of, set_completo, sets_incompleti, sets_won, settlement_allowed,
+)
+
+
+class TestSetNonFiniti:
+    """
+    Il buco della PRIMA versione di questo validatore, trovato il 10/09
+    guardando i dati invece dei test: contava come set vinto qualunque coppia
+    col primo numero piu' grande, quindi `4-3` era «un set». Misurate 117 righe
+    pubblicate con almeno un set aperto, 13 delle quali col punteggio `0-0`.
+    """
+
+    def test_il_caso_che_e_sfuggito_us_open_6_4_3_6_4_3(self):
+        """Era segnata `won`: e' una partita al terzo set IN CORSO."""
+        ok, motivo = _ok("6-4 3-6 4-3", tournament="US Open", gender="M")
+        assert ok is False
+        assert motivo == "set-non-finito-4-3"
+
+    def test_punteggio_0_0_mai(self):
+        """13 righe pubblicate con `0-0`: gradate prima di un game giocato."""
+        ok, motivo = _ok("0-0", tournament="Kitzbuhel", gender="W")
+        assert ok is False and motivo == "set-non-finito-0-0"
+
+    def test_i_punteggi_parziali_reali_misurati_sono_tutti_rifiutati(self):
+        for punteggio in ("1-6 3-2", "5-3", "4-6 0-0", "5-4", "1-6 5-2",
+                          "6-2 4-2", "6-3 5-3", "6-2 3-2", "2-1", "4-1"):
+            ok, motivo = _ok(punteggio, tournament="Cincinnati Open", gender="M")
+            assert ok is False, f"{punteggio} e' passato: {motivo}"
+
+    def test_i_set_legittimi_restano_legittimi(self):
+        for a, b in ((6, 0), (6, 1), (6, 2), (6, 3), (6, 4), (7, 5), (7, 6)):
+            assert set_completo(a, b) is True, f"{a}-{b}"
+        # Set ad avvantaggio: non compaiono nei dati, ma non vanno respinti.
+        assert set_completo(8, 6) is True
+        assert set_completo(10, 8) is True
+
+    def test_i_set_aperti_sono_riconosciuti(self):
+        for a, b in ((4, 3), (5, 4), (5, 3), (2, 1), (0, 0), (6, 5), (6, 6), (1, 0)):
+            assert set_completo(a, b) is False, f"{a}-{b}"
+
+    def test_sets_won_non_conta_i_set_aperti(self):
+        assert sets_won("6-4 3-6 4-3") == (1, 1)
+        assert sets_won("6-2 4-2") == (1, 0)
+
+    def test_sets_incompleti_elenca_quali(self):
+        assert sets_incompleti("6-4 3-6 4-3") == ["4-3"]
+        assert sets_incompleti("6-4 6-3") == []
+
+    def test_un_ritiro_non_passa_da_questa_regola(self):
+        """
+        Un ritiro si ferma legittimamente a meta' set: la regola dei set
+        non deve applicarsi, o 28 ritiri su 2 giorni finirebbero in unresolved.
+        """
+        ok, motivo = _ok("6-1 2-0", tournament="US Open", gender="M",
+                         status_name="STATUS_RETIRED")
+        assert ok is True
 
 
 def _ok(score, **kw):
@@ -32,11 +88,17 @@ class TestIDueCasiRealiDellaProposal:
 
 class TestLeSeiClassi:
     def test_un_solo_set_del_vincitore_non_chiude_nessun_formato(self):
-        """La firma esatta delle 289 righe difettose: `6-1`, `4-2`, `7-5`."""
-        for punteggio in ("6-1", "4-2", "7-5", "6-0"):
+        """
+        La firma delle righe difettose: un set solo. `6-1`, `7-5`, `6-0` sono
+        set FINITI ma insufficienti; `4-2` non e' nemmeno un set finito e viene
+        preso prima, dalla regola piu' forte. In entrambi i casi: non si settla.
+        """
+        for punteggio in ("6-1", "7-5", "6-0"):
             ok, motivo = _ok(punteggio, tournament="Winston-Salem", gender="M")
             assert ok is False, punteggio
-            assert motivo == "set-vincitore-1"
+            assert motivo == "set-vincitore-1", punteggio
+        ok, motivo = _ok("4-2", tournament="Winston-Salem", gender="M")
+        assert ok is False and motivo == "set-non-finito-4-2"
 
     def test_zero_set_del_vincitore_e_rifiutato(self):
         ok, motivo = _ok("4-6", tournament="Cincinnati", gender="M")

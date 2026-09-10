@@ -46,22 +46,60 @@ def best_of(tournament: str | None, gender: str | None) -> int | None:
     return None if slam else 3
 
 
+def set_completo(a: int, b: int) -> bool:
+    """
+    Un set FINITO: a 6 con almeno 2 games di margine, oppure 7-5, oppure 7-6
+    (tiebreak), oppure ad avvantaggio (8-6, 10-8...). Tutto il resto — `4-3`,
+    `5-3`, `2-1`, `0-0` — e' una partita IN CORSO fotografata a meta'.
+
+    Perche' questa funzione esiste: la prima versione del validatore contava
+    come set vinto qualunque coppia col primo numero piu' grande, quindi
+    `6-4 3-6 4-3` passava come «2 set a 1, bo3 concluso» ed era invece una
+    partita al terzo set in corso. Misurate il 10/09 sulle righe pubblicate:
+    117 righe con almeno un set incompleto, di cui 13 col punteggio `0-0` —
+    gradate prima che si giocasse un game.
+
+    I set ad avvantaggio non compaiono nei dati (il massimo osservato e' 7), ma
+    il ramo resta: costa nulla e un torneo che non usa il tiebreak decisivo non
+    deve diventare un falso difetto.
+    """
+    alto, basso = max(a, b), min(a, b)
+    if alto < 6:
+        return False
+    if alto == 6:
+        return basso <= 4
+    if alto == 7:
+        return basso in (5, 6)
+    return alto - basso >= 2
+
+
 def sets_won(score_text: str | None) -> tuple[int, int]:
     """
-    Set vinti (vincitore, perdente) da un punteggio in ottica vincitore.
+    Set COMPLETI vinti (vincitore, perdente), in ottica vincitore.
 
     `_score_from_competition()` produce sempre il punteggio dal lato del
     vincitore, quindi `6-3 4-6 7-5` significa: primo set vinto, secondo perso.
-    Un set con games pari (`6-6`) non e' assegnato a nessuno.
+    I set non completi non si contano per nessuno dei due: chi decide cosa
+    farne e' `settlement_allowed()`, che li rifiuta.
     """
     v = p = 0
     for a, b in _SET.findall(score_text or ""):
         ia, ib = int(a), int(b)
+        if not set_completo(ia, ib):
+            continue
         if ia > ib:
             v += 1
         elif ib > ia:
             p += 1
     return v, p
+
+
+def sets_incompleti(score_text: str | None) -> list[str]:
+    """I set non finiti presenti nel punteggio, come li ha scritti la fonte."""
+    return [
+        f"{a}-{b}" for a, b in _SET.findall(score_text or "")
+        if not set_completo(int(a), int(b))
+    ]
 
 
 def settlement_allowed(
@@ -93,6 +131,15 @@ def settlement_allowed(
         # flag esplicito, quindi l'esito e' noto; non c'e' nessun punteggio che
         # possa contraddirlo. Si settla senza punteggio pubblicato.
         return True, "concluso-senza-punteggio"
+
+    # Un punteggio dichiarato FINALE che contiene un set non finito non e' un
+    # finale: e' la fotografia di una partita in corso. Questa regola da sola
+    # boccia le 117 righe misurate il 10/09, `0-0` compreso — ed e' piu' forte
+    # del semplice «non contare quel set», perche' la PRESENZA di un set aperto
+    # e' essa stessa la prova che il punteggio e' parziale.
+    aperti = sets_incompleti(score_text)
+    if aperti:
+        return False, f"set-non-finito-{aperti[-1]}"
 
     v, p = sets_won(score_text)
 

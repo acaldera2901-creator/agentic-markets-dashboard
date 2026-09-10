@@ -100,7 +100,7 @@ def _monta(monkeypatch, agente, righe=None):
     async def fake_fetch(cutoff_minutes=115, limit=50):
         return righe
 
-    async def fake_settle(row_id, outcome, final_score=None):
+    async def fake_settle(row_id, outcome, final_score=None, **_timbro):
         originale = next(
             (r["pick"] for r in righe if str(r["id"]) == str(row_id)), None
         )
@@ -200,7 +200,7 @@ def _ponte(monkeypatch, pick_di_riga):
     monkeypatch.setattr(sc.httpx, "AsyncClient", lambda *a, **k: ctx)
     visto = {}
 
-    async def fake_settle(row_id, result, final_score=None):
+    async def fake_settle(row_id, result, final_score=None, **_timbro):
         visto.update(row_id=row_id, result=result)
         return True
 

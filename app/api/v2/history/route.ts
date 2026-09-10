@@ -5,6 +5,7 @@ import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { bySegment } from "@/lib/track-record-history";
 import { dedupeByFixture } from "@/lib/dedupe-fixtures"; // #DUP-FIXTURES-0821
+import { wilson95, formatWilson } from "@/lib/wilson"; // #SETTLE-0909
 
 // #TRACKREC-REAL-0626 + #WC-FLOOR-0707: a row counts in the track record iff the
 // board ACTUALLY showed it as a directional pick. We read the board's own
@@ -39,7 +40,7 @@ type HistoryRow = Pick<
   | "result" | "signal_type" | "is_paper" | "is_verified" | "is_demo"
   | "starts_at" | "settled_at" | "notes" | "world_cup_stage" | "group_name"
   | "confidence_score"
->;
+> & { verification_state?: string | null };
 
 export async function GET(req: Request) {
   const { state } = await resolveAccessState(req); // never denies (read)
@@ -74,10 +75,17 @@ export async function GET(req: Request) {
   // mostrate sul board, congelando lo storico. Le shadow/below-floor mai mostrate
   // restano fuori perché wasShownAsPick le respinge (pick null o below_floor).
   // La metrica è ACCURATEZZA delle pick mostrate (hit-rate), non "edge vs mercato".
+  // #SETTLE-0909 D2 — `published_at IS NOT NULL` mancava, mentre il board che
+  // serve i clienti lo applica (app/api/v2/predictions/route.ts:24-35): una
+  // riga MAI PUBBLICATA poteva entrare nel track record. Il gate su
+  // `verification_state` NON sta qui ma sotto, in JS: serve contare anche le
+  // righe non verificate per poter dichiarare la COPERTURA — un numero senza
+  // il suo denominatore è la meta' di un'informazione.
   const conditions: string[] = [
     "is_historical = TRUE",
     "is_demo = FALSE",
     "result IS DISTINCT FROM 'unresolved'",
+    "published_at IS NOT NULL",
   ];
   const values: unknown[] = [];
 
@@ -106,7 +114,7 @@ export async function GET(req: Request) {
             player_one, player_two, market, pick, status,
             result, signal_type, is_paper, is_verified, is_demo,
             starts_at, settled_at, notes, world_cup_stage, group_name,
-            confidence_score
+            confidence_score, verification_state
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      ORDER BY COALESCE(settled_at, starts_at) DESC
@@ -130,11 +138,28 @@ export async function GET(req: Request) {
   // Si deduplica in LETTURA, con la stessa identita' e la stessa regola del
   // board (lib/dedupe-fixtures.ts): nessun dato toccato, e due MERCATI diversi
   // sulla stessa partita restano due righe (il mercato entra nella chiave).
-  const rows = dedupeByFixture(fetched.filter(wasShownAsPick), {
+  const surfaced = dedupeByFixture(fetched.filter(wasShownAsPick), {
     when: (r) => r.starts_at,
     freshness: (r) => r.settled_at ?? r.starts_at,
     extra: (r) => `${r.sport ?? ""}|${r.market ?? ""}`,
   });
+
+  // #SETTLE-0909 D2 — IL CANCELLO. Si pubblica solo cio' che una fonte con un
+  // flag di completamento esplicito ha confermato. Il resto resta contato nel
+  // denominatore (`coverage`) ma fuori dalla percentuale.
+  //
+  // Perche' serve: fino al 10/09 questa pagina mostrava 1.402 righe tennis di
+  // cui 314 con un'etichetta dimostrabilmente falsa — punteggi da set singolo,
+  // `0-0` compreso, cioe' partite gradate mentre erano in corso. La
+  // ri-aggiudicazione contro l'archivio ESPN ha corretto 72 esiti e 559
+  // punteggi, e ha lasciato 51 righe che nessuna fonte conferma: quelle non si
+  // pubblicano, e la pagina lo dichiara invece di tacerlo.
+  //
+  // ⚠️ Chi scrive `result` DEVE timbrare anche `verification_state`
+  // (core/supabase_client.py::settle_unified_prediction,
+  // app/api/cron/settle/route.ts): senza il timbro una riga chiusa non entra
+  // qui, e la pagina si fermerebbe al giorno del backfill.
+  const rows = surfaced.filter((r) => r.verification_state === "verified");
 
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
@@ -173,6 +198,18 @@ export async function GET(req: Request) {
   }));
   if (aggregate.includes("segments")) extra.segments = bySegment(aggRows);
 
+  // #SETTLE-0909 D2 — la percentuale non si pubblica nuda.
+  // `n` dice su quante partite e' calcolata, `interval_95` quanto e' solida
+  // (3 su 4 e 750 su 1000 sono entrambi "75%": solo uno dei due vuol dire
+  // qualcosa), e `coverage` quanta parte delle pick mostrate abbiamo potuto
+  // verificare — un numero senza il suo denominatore e' meta' informazione.
+  // Sotto MIN_SAMPLE la percentuale non si restituisce affatto: la UI mostra
+  // le singole partite senza aggregato, invece di un titolo che sembra un dato.
+  const MIN_SAMPLE = 30;
+  const decisi = won + lost;
+  const w = decisi > 0 ? wilson95(won, decisi) : null;
+  const sufficiente = decisi >= MIN_SAMPLE;
+
   return NextResponse.json({
     history,
     stats: {
@@ -183,10 +220,25 @@ export async function GET(req: Request) {
       pending: rows.filter((r) => r.result === "pending" || r.result == null).length,
       paper,
       verified,
-      win_rate:
-        won + lost > 0
-          ? `${((won / (won + lost)) * 100).toFixed(1)}%`
-          : null,
+      // n = le partite su cui la percentuale e' calcolata (won+lost), non il
+      // totale delle righe: void e pending non hanno un esito da misurare.
+      n: decisi,
+      sample_sufficient: sufficiente,
+      coverage: surfaced.length > 0
+        ? Number((rows.length / surfaced.length).toFixed(3))
+        : null,
+      surfaced_total: surfaced.length,
+      unverified_excluded: surfaced.length - rows.length,
+      interval_95: sufficiente && w
+        ? { low: Number(w.low.toFixed(4)), high: Number(w.high.toFixed(4)) }
+        : null,
+      win_rate: sufficiente && decisi > 0
+        ? `${((won / decisi) * 100).toFixed(1)}%`
+        : null,
+      win_rate_display: sufficiente ? formatWilson(w) : null,
+      insufficient_sample_reason: sufficiente
+        ? null
+        : `campione insufficiente: ${decisi} esiti verificati su un minimo di ${MIN_SAMPLE}`,
     },
     ...extra,
   });

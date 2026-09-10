@@ -273,6 +273,21 @@ export async function GET(req: NextRequest) {
             settled_at: nowIso(),
             updated_at: nowIso(),
             notes: mergeFinalScore(row.notes, `${m.homeGoals}-${m.awayGoals}`),
+            // #SETTLE-0909 — /api/v2/history pubblica SOLO le righe verificate.
+            // Una riga chiusa senza timbro non entrerebbe mai nel track record
+            // e la pagina si fermerebbe al giorno del backfill. Il timbro e'
+            // dovuto: questo ramo si raggiunge solo con un match FINISHED del
+            // provider, che e' il cancello di completamento del football.
+            // `outcome` qui e' sempre won/lost/void; il void di una pick mai
+            // mostrata resta comunque fuori da /history per altra via.
+            ...(outcome === "won" || outcome === "lost"
+              ? {
+                  verification_state: "verified",
+                  verification_source: "football-data",
+                  verification_at: nowIso(),
+                  verification_note: "settlement-live",
+                }
+              : {}),
           })
           .eq("id", row.id)
           .is("result", null); // idempotency vs the Python agent
@@ -381,6 +396,18 @@ export async function GET(req: NextRequest) {
               is_historical: true,
               settled_at: nowIso(),
               updated_at: nowIso(),
+              // #SETTLE-0909 — vedi la nota nel ramo football. Qui il vincitore
+              // viene da `tennis_predictions.winner`, che esiste solo se il
+              // cancello dell'archivio ESPN e' passato (flag `completed` della
+              // fonte + coerenza del punteggio a set): il won/lost E' verificato.
+              ...(outcome === "won" || outcome === "lost"
+                ? {
+                    verification_state: "verified",
+                    verification_source: "espn-archive",
+                    verification_at: nowIso(),
+                    verification_note: "settlement-live",
+                  }
+                : {}),
             })
             .eq("id", row.id)
             .is("result", null);

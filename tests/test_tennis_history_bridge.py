@@ -136,7 +136,15 @@ async def test_settle_unified_tennis_result_mapping(pick, winner, void, unresolv
             "tennis:espn:e1:k", winner, void=void, unresolved=unresolved
         )
     assert ok is True
-    settle.assert_awaited_once_with("row-1", expected, final_score=None)
+    # #SETTLE-0909 — il timbro di verifica non e' un extra: /api/v2/history
+    # pubblica solo le righe `verified`, quindi una chiusura senza timbro non
+    # entrerebbe MAI nel track record e la pagina si fermerebbe al backfill.
+    # Va passato per gli esiti reali; per void/unresolved non e' un fatto
+    # verificato e settle_unified_prediction lo ignora comunque.
+    settle.assert_awaited_once_with(
+        "row-1", expected, final_score=None,
+        verification_source="espn-archive", verification_note="settlement-live",
+    )
 
 
 @pytest.mark.asyncio
