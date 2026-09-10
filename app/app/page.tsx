@@ -39,6 +39,7 @@ import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 import { getSessionId, trackEvent } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
+import { abbinaQuotaPartner, indicizzaPerGiorno } from "@/lib/fp-odds-join";
 import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
@@ -2359,6 +2360,17 @@ function SportsbookBoard({
   });
 
   // #ONLY-WITH-ODDS-1: mostra sul board SOLO i match per cui abbiamo la quota FortunePlay.
+  // #BOARD-ODDS-JOIN-0910 — passo 2: le righe recuperate dal passo 1 (sotto)
+  // si vedevano SENZA prezzo, perche' la quota si cercava con la sola chiave
+  // esatta e i nomi divergono dal feed partner. `abbinaQuotaPartner` prova la
+  // chiave (che costruisce `teamPairKey`, ordinata) e poi ripiega su un match a
+  // token fra le partite dello STESSO GIORNO, con candidata unica obbligatoria.
+  // L'indice per giorno e' memoizzato: senza, il fallback rifarebbe ~110
+  // confronti per riga a ogni render.
+  const indiceQuotePartner = useMemo(() => indicizzaPerGiorno(fpOdds), [fpOdds]);
+  const quotaPartner = (home: string, away: string, iso: string | null) =>
+    abbinaQuotaPartner(home, away, iso, fpOdds, indiceQuotePartner).quota ?? undefined;
+
   // #BOARD-ODDS-GATE-0910 — APPROVE di Andrea, 10/09. Qui c'era un filtro che
   // NASCONDEVA la predizione quando nessun book partner prezzava quella partita:
   //
@@ -2591,7 +2603,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const out: React.ReactNode[] = [
-                        <PredictionCard key={p.match_id} p={p} idx={i} fp={fpOdds[teamPairKey("soccer", p.home_team, p.away_team, p.kickoff) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
                       ];
                       if (i === fpGridAt) {
                         out.push(<FreePaywall key="fp-grid" count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} inGrid />);
