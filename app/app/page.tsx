@@ -2220,6 +2220,7 @@ function SportsbookBoard({
   tennisIsPlaceholder,
   onBannerCta,
   hitRate,
+  liveStrip,
 }: {
   predictions: Prediction[];
   fpOdds: Record<string, FpOddsEntry>;
@@ -2232,6 +2233,7 @@ function SportsbookBoard({
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
   hitRate?: string | null;
+  liveStrip?: React.ReactNode;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
   // ?sport= deep-link dalla landing: applicato dopo il mount per non rompere
@@ -2516,6 +2518,16 @@ function SportsbookBoard({
         />
         <WeeklyPickPromo />
       </div>
+
+      {/* #LIVE-STRIP-GIU-0910 — la riga dei match in corso sta QUI, non in cima:
+          l'ordine ora e' filtri (controlli) -> Edge + Weekly Pick (editoriale) ->
+          match in corso (tempo reale) -> le pick.
+          NOTA: essendo dentro il board sta anche dentro `LockedGate`, quindi per
+          un visitatore anonimo finisce dietro il muro di accesso (prima era
+          fuori e la vedeva). Segnalato ad Andrea: se va tenuta pubblica, la
+          strada e' renderla in `UnifiedBetsTab` FUORI dal gate, che pero'
+          significa in fondo alla pagina. */}
+      {liveStrip}
 
       {filteredTotal === 0 ? (
         <div className="book-empty">{labels.noResults}</div>
@@ -8661,6 +8673,7 @@ function UnifiedBetsTab({
   tennisIsPlaceholder,
   onBannerCta,
   hitRate,
+  liveStrip,
 }: {
   predictions: Prediction[];
   fpOdds: Record<string, FpOddsEntry>;
@@ -8677,6 +8690,8 @@ function UnifiedBetsTab({
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
   hitRate?: string | null;
+  /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
+  liveStrip?: React.ReactNode;
 }) {
   const lang = useLang();
 
@@ -8709,6 +8724,7 @@ function UnifiedBetsTab({
         onUnlock={() => onGate?.()}
       >
         <SportsbookBoard
+          liveStrip={liveStrip}
           predictions={predictions}
           fpOdds={fpOdds}
           tennisMatches={tennisMatches}
@@ -9964,11 +9980,23 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               <span><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-ball" /></svg> {tNav.season_pause}</span>
             </div>
           )}
-          {tab === "bets" && (
-            <LiveNowStrip liveScores={liveScores} liveTennis={liveTennis} boardTennisKeys={new Set(tennisMatches.map((m) => tennisPairKey(m.player1, m.player2)))} boardFootball={predictions} lang={uiLanguage} />
-          )}
+          {/* #LIVE-STRIP-GIU-0910 — Andrea, 10/09: «la riga con i match in corso
+              sono ancora in alto, spostali sotto». Non si rende piu' qui sopra:
+              viene passata al board come nodo e resa DOPO la fascia Edge +
+              Weekly Pick, subito prima delle sezioni. Passa da qui perche' i
+              dati live (`liveScores`, `liveTennis`) vivono in questo
+              componente, non nel board. */}
           {tab === "bets" && (
             <UnifiedBetsTab
+              liveStrip={
+                <LiveNowStrip
+                  liveScores={liveScores}
+                  liveTennis={liveTennis}
+                  boardTennisKeys={new Set(tennisMatches.map((m) => tennisPairKey(m.player1, m.player2)))}
+                  boardFootball={predictions}
+                  lang={uiLanguage}
+                />
+              }
               predictions={predictions}
               fpOdds={fpOdds}
               tennisMatches={tennisMatches}
