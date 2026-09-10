@@ -2392,11 +2392,13 @@ function SportsbookBoard({
 
   return (
     <div className={"sportsbook-board" + (boardLimitata ? " mob-limita" : "")}>
-      <div className="board-subhead">
-        <span>{labels.showing} {filteredTotal}</span>
-        <span>Football {footballRows.length}</span>
-        <span>Tennis {tennisRows.length}</span>
-      </div>
+      {/* #BOARD-DENSITY-0910 — qui c'erano tre chip: «Showing 72 · Football 56 ·
+          Tennis 16». Due dei tre numeri ricomparivano IDENTICI 40px sotto, sui
+          pulsanti dei filtri («Football 56», «Tennis 16»): 27px di altezza per
+          ripetere quello che si legge subito dopo. Il terzo, il totale
+          filtrato, era l'unico dato nuovo e non si perde: e' passato sul
+          pulsante «All», che era l'unico dei tre segmenti senza il suo conteggio.
+          Ora ogni numero compare una volta sola. */}
 
       {filteredTotal > 10 && (
         <button
@@ -2433,7 +2435,9 @@ function SportsbookBoard({
 
       <div className="sports-filter-bar am-filters">
         <div className="am-seg" aria-label="Sport filter">
-          <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>{labels.allSports}</button>
+          <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>
+            {labels.allSports} <span className="ct">{filteredTotal}</span>
+          </button>
           <button className={sportFilter === "football" ? "on" : ""} onClick={() => setSportFilter("football")}>
             <SportIcon sport="football" size={14} className="ic" variant="sm" />{labels.football} <span className="ct">{footballRows.length}</span>
           </button>

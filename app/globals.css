@@ -6257,7 +6257,8 @@ button:disabled {
 }
 
 /* ---- DESKHEAD + STATBAR + KPI (mockup .deskhead/.statbar/.kpi) ---- */
-.book-main-head.am-deskhead { align-items: flex-end; margin-bottom: 18px; }
+/* #BOARD-DENSITY-0910 — 18px -> 10px: sotto la testata c'e' subito il ticker. */
+.book-main-head.am-deskhead { align-items: flex-end; margin-bottom: 10px; }
 .am-deskhead .am-deskhead-titles { min-width: 0; }
 .am-deskhead .am-sub {
   margin-top: 7px; max-width: 54ch; font-size: 13.5px; line-height: 1.5; color: var(--am-muted); text-wrap: balance;
@@ -6574,6 +6575,58 @@ button:disabled {
    100% basis makes the layout identical across locales (the .grow spacer just
    fills the trailing filters line). */
 .am-filters .am-search { flex: 1 1 100%; max-width: none; }
+
+/* #BOARD-DENSITY-0910 — la cornice sopra le pick era alta 646px su uno schermo
+   da 958: la prima scheda entrava a fatica. Andrea: «rispetto al resto della
+   piattaforma e' troppo invadente il tutto ... vorrei che si alzasse il tutto».
+   Misurato in produzione, la barra filtri da sola pesava 143px, cosi' composti:
+   12 padding + 1 bordo + 51 (riga controlli) + 9 gap + 58 (ricerca su una riga
+   TUTTA SUA) + 12 + 1. Qui si recuperano 92 di quei 143.
+
+   Tre cose, in ordine di peso:
+
+   1. NON e' piu' un pannello dentro il pannello. Aveva bordo, angoli e uno
+      sfondo azzurrino (`rgba(59,130,246,0.035)`) dentro il pannello del desk:
+      una scatola nella scatola, che e' precisamente cio' che rendeva il blocco
+      «invadente». I controlli hanno gia' un bordo ciascuno.
+   2. La ricerca torna IN LINEA sopra i 1580px di finestra. La riga dei controlli
+      ne usava 976 su 1614 disponibili — 638px liberi e la ricerca a capo.
+      Il fix #PRED-FILTER-WRAP-0626 sopra resta valido e resta in vigore sotto
+      la soglia: il suo scopo era che la barra non cambiasse altezza col cambio
+      lingua, e la soglia e' scelta MISURANDO il russo (la lingua piu' lunga),
+      che a una barra da 1300px sta ancora su una riga. Sopra 1580 una riga per
+      tutte le lingue, sotto due righe per tutte: nessuna banda in cui la barra
+      «si muove» cambiando lingua.
+   3. `flex-direction: row` sulla ricerca ripara un difetto vero, non solo
+      densita': `.sports-filter-bar label { flex-direction: column }` (riga 652,
+      legacy) vince su `.am-search { display: flex }` per specificita', e
+      impilava la LENTE SOPRA il testo — la casella era alta 58px invece di 35.
+      Si vede nello screenshot di Andrea. Sovrascrivere `display` non bastava:
+      andava sovrascritta anche la direzione. */
+.sports-filter-bar.am-filters {
+  padding: 0; border: 0; background: transparent;
+  /* `end` e non `center`: i controlli hanno altezze diverse (segmenti 35,
+     select 33 dentro una label da 51 con l'etichetta sopra) e allinearli in
+     mezzo li fa sembrare fuori registro. Allineati in basso, tutti i bordi
+     inferiori cadono sulla stessa linea. */
+  align-items: end;
+}
+/* Lo spaziatore serviva a spingere la ricerca su una riga sua. Ora la ricerca
+   e' nella riga, e uno spaziatore `flex: 1` le mangerebbe la crescita. */
+.sports-filter-bar.am-filters .grow { display: none; }
+.sports-filter-bar.am-filters .am-search {
+  display: flex; flex-direction: row; align-items: center; gap: 9px;
+  padding: 0 12px; min-width: 0;
+  /* 220 di base e non meno: a 170 la riga singola reggerebbe fino a una
+     finestra da 1480, ma la casella scenderebbe a 176px e il placeholder
+     («Search team, player, tournament...») si taglierebbe. Meglio due righe su
+     un portatile che una ricerca illeggibile. */
+  flex: 1 1 220px; max-width: 380px;
+}
+.sports-filter-bar.am-filters .am-search input { min-height: 33px; }
+@media (max-width: 1579px) {
+  .sports-filter-bar.am-filters .am-search { flex: 1 1 100%; max-width: none; }
+}
 /* sober inline selects kept alongside the mockup segments (no lost functionality) */
 .am-filters .am-mini-field { display: inline-flex; flex-direction: column; gap: 4px; }
 .am-filters .am-mini-field > span {
