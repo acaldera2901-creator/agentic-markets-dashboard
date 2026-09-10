@@ -108,7 +108,22 @@ export function tennisFloorFor(tournament: string | null | undefined): number {
 // #MINORS-TIGHTEN (Michele 07/07, LIVE data: CSL 14.3%, LOI 14.3%, VEI 40%,
 // ALL 50% — summer leagues running far below the lab backtests): floors RAISED
 // to shut the coin-flip tap on minor leagues. Serving-only: already-published
-// history stays (no survivorship). Mirror of settings.py — keep in sync.
+// history stays (no survivorship).
+//
+// #FLOOR-65-0910 — ATTENZIONE, «Mirror of settings.py» NON e' piu' vero e non lo
+// era già prima di questa modifica. Misurato il 10/09:
+// `config/settings.py: SURFACE_FLOOR_CLUB_OVERRIDES` contiene SEI voci
+// (allsvenskan, league of ireland, chinese super league, veikkausliiga,
+// eliteserien, serie b); questa lista ne contiene una VENTINA. I campionati di
+// #EURO-MINORS e #COVERAGE-0812-L1 esistono solo qui, quindi sul lato Python
+// cadono sul floor di default 56.
+// La decisione che il BOARD legge e' questa (il flag `below_floor` lo scrive
+// `app/api/predictions/route.ts` chiamando `surfaceFloorFor`), percio' il
+// prodotto e' coerente con questa lista. Ma il gate Python alimenta il guard
+// `surfaced` dello storico: allineare le due liste sposterebbe quali righe
+// storiche contano come pubblicate, cioe' l'HIT RATE PUBBLICATO. Non e' un
+// riordino cosmetico e non si fa senza misurarlo prima.
+// Chi allinea: misuri l'effetto sul hit rate di /history PRIMA di toccare.
 export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   ["allsvenskan", 65],           // live 50% @60
   ["league of ireland", 70],     // live 14.3% @60 -> nearly closed
@@ -136,7 +151,28 @@ export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   // ma ad agosto — le prime giornate, quelle che vanno live subito — 60 scende
   // a 62.5% mentre 65 tiene 70.0%. Si parte stretti e si rivede su dati live.
   ["belgian pro league", 65],    // anno 80.7% @65; agosto 70.0% @65
-  // #COVERAGE-0812-L1 — i 16 campionati nuovi entrano tutti a 70, il valore che
+  // #FLOOR-65-0910 — APPROVE di Andrea, 10/09: i campionati che stavano a 70
+  // SENZA lab scendono a 65. Non tutti quelli a 70: cinque ci stanno per MISURA,
+  // non per prudenza, e quelli NON si toccano —
+  //   league of ireland     live 14,3% @60
+  //   chinese super league  live 14,3% @56
+  //   danish superliga      64,8% @56 e PEGGIORA alzando il floor
+  //   ekstraklasa           61,3% @56, sottile sopra
+  //   2. bundesliga         sondata dal lab e SCARTATA (64,3%, instabile)
+  // Abbassare quelle significherebbe pubblicare pick dove il dato live dice 14%.
+  // `surfacing-gate.test.ts` lo impedisce con un test: la proibizione era scritta
+  // solo in un commento, e un commento non ferma nessuno.
+  //
+  // Perche' 65 e non meno: misura storica su `prediction_log` (1.254 partite
+  // chiuse, 10/09) — banda 65-69 = 81,8% di hit rate, banda 56-64 = 60-63%.
+  // 65 sta sopra la barra ~70% della casa, 56 no. La giustificazione e'
+  // AGGREGATA, non per-lega: il campione per singola lega non basta.
+  // Effetto misurato sul board del 10/09: 5 righe guadagnano una direzione
+  // (Feyenoord, AZ Alkmaar, Panathinaikos, Boca Juniors, Flamengo — confidenze
+  // 65-66). Le cinque leghe lasciate a 70 ne avrebbero guadagnate ZERO, quindi
+  // la scelta prudente non e' costata copertura.
+  //
+  // I 16 campionati di #COVERAGE-0812-L1 erano entrati tutti a 70, il valore che
   // in questa lista significa "quasi chiusa": nessun lab walk-forward e' ancora
   // stato fatto su di loro, quindi la barra sta al massimo del cluster
   // precauzionale (come Danish Superliga ed Ekstraklasa) e solo i favoriti piu'
@@ -149,26 +185,26 @@ export const CLUB_FLOOR_OVERRIDES: ReadonlyArray<readonly [string, number]> = [
   //
   // Da rivedere lega per lega su dati live settled (#MINORS-TIGHTEN), abbassando
   // il floor solo dove i numeri lo guadagnano.
-  ["championship", 70],
-  ["league one", 70],
-  ["league two", 70],
-  ["scottish premiership", 70],
+  ["championship", 65],
+  ["league one", 65],
+  ["league two", 65],
+  ["scottish premiership", 65],
   // "2. bundesliga" e NON "bundesliga": la sottostringa nuda catturerebbe anche
   // la Bundesliga di BL1, che sta sul floor di default e non va toccata.
   // Questa lega e' stata sondata dal lab e SCARTATA (64,3%, instabile per
   // stagione, 5 squadre su 18 senza storico alla ripartenza): entra solo come
   // copertura, e non deve mai diventare una fonte di pick abbassando il floor.
   ["2. bundesliga", 70],
-  ["ligue 2", 70],
-  ["segunda division", 70],
-  ["eredivisie", 70],
-  ["primeira liga", 70],
-  ["turkish super lig", 70],
-  ["super league greece", 70],
-  ["liga profesional", 70],
-  ["brasileirao", 70],
-  ["liga mx", 70],
-  ["mls", 70],
+  ["ligue 2", 65],
+  ["segunda division", 65],
+  ["eredivisie", 65],
+  ["primeira liga", 65],
+  ["turkish super lig", 65],
+  ["super league greece", 65],
+  ["liga profesional", 65],
+  ["brasileirao", 65],
+  ["liga mx", 65],
+  ["mls", 65],
 ];
 
 export type SurfaceDecision = {
