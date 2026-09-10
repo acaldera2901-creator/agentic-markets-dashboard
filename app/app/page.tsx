@@ -8955,6 +8955,22 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [hasSession, setHasSession] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PublicPlanKey | null>(null);
+  // #TDZ-CHECKOUT-0910 — questa funzione stava 340 righe piu' in basso, ma un
+  // `useEffect` piu' SOPRA (il ritorno da /api/auth/activate con `?activated=1`)
+  // la chiama: `const` in temporal dead zone, che eslint segnalava come errore
+  // da mesi — l'unico errore del file. A runtime non esplodeva perche' un
+  // effetto con deps `[]` gira DOPO che il corpo del componente e' stato
+  // eseguito, quindi il binding era gia' inizializzato: un difetto latente, non
+  // attivo. Sarebbe diventato attivo il giorno in cui quel blocco fosse
+  // finito in fase di render.
+  // Spostarla qui e' sicuro e non cambia nulla: dipende solo dai due setter
+  // dichiarati sopra e da `trackEvent`, che e' un import di modulo. NON e' stato
+  // silenziato il linter: il TDZ e' stato tolto.
+  const openCheckout = (plan: PublicPlanKey) => {
+    setCheckoutPlan(plan);
+    setCheckoutOpen(true);
+    trackEvent("checkout_opened", { plan });
+  };
   // #FUNNEL-INTENT-0908: l'intento d'acquisto scelto PRIMA di autenticarsi.
   // Senza questo, ogni percorso d'acquisto di un anonimo apriva il login e poi
   // finiva su `setTab("bets")`: il piano scelto era dimenticato e la vendita persa
@@ -9298,12 +9314,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // `checkout_opened` non può divergere dal fatto. Fra "vedo il prezzo"
   // (plan_view) e "pago" (conversion) non esisteva alcuna misura: un funnel senza
   // il gradino di mezzo non dice mai dove si rompe.
-  const openCheckout = (plan: PublicPlanKey) => {
-    setCheckoutPlan(plan);
-    setCheckoutOpen(true);
-    trackEvent("checkout_opened", { plan });
-  };
-
   const handleAuthed = (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => {
     // The modal already authenticated (register/login with password) and the
     // server set the signed session cookie. We only adopt the DB plan and persist
