@@ -6356,7 +6356,13 @@ button:disabled {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px;
   margin: 14px;
-  align-items: stretch;
+  /* `start` e non `stretch`: con lo stretch la colonna più corta veniva tirata
+     all'altezza dell'altra, e su un creativo con rapporto fisso quello diventa
+     un TAGLIO. Misurato in produzione il 10/09: riga alta 527px contro i 450
+     che l'immagine vuole a 799px di larghezza, quindi `cover` la ingrandiva a
+     936 e mangiava 137px di larghezza — via la scritta «WEEKLY PICK» a
+     sinistra e mezza schedina a destra. */
+  align-items: start;
 }
 .edge-split > * { min-width: 0; margin: 0; }
 @media (max-width: 900px) {
@@ -6377,8 +6383,28 @@ button:disabled {
    più: diventa una colonna sola e la cucitura verticale si nasconde. */
 .edge-split .featured { grid-template-columns: minmax(0, 1fr); }
 .edge-split .featured .seam { display: none; }
-.edge-split .featured .big { padding: 20px 22px 14px; }
-.edge-split .featured .why { padding-top: 0; }
+
+/* A metà larghezza il contenuto dell'Edge si impila e il banner arrivava a
+   527px — troppo, ed era lui a dettare l'altezza della riga. Misurato dove
+   stanno i pixel PRIMA di tagliare a caso: 263 in `.big`, 205 in `.why`, e
+   circa 187 di solo padding. Quindi si stringe la spaziatura, si riduce il
+   numero grande e si accorcia la prosa a 2 righe — e NON si toglie
+   informazione: la riga che spiega il chip resta, perché è quella che rende
+   «+40 pt» un dato invece di un numero misterioso.
+   Risultato: 455px, cioè quanto il creativo accanto (450). Le due colonne si
+   pareggiano da sé, senza che nessuna venga tirata, tagliata o incorniciata di
+   nero. */
+.edge-split .featured .big { padding: 12px 18px 8px; gap: 2px; }
+.edge-split .featured .why { padding: 8px 18px 12px; }
+.edge-split .featured .hero-prob { margin: 4px 0; }
+.edge-split .featured .hero-prob .num { font-size: 46px; line-height: 1; }
+.edge-split .featured .why .line {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
 
 /* Lo sfondo fotografico dell'Edge. Va SOTTO il glow coral e sotto il testo:
    `z-index` negativo su un pseudo-elemento, non un background sulla sezione,
@@ -6417,9 +6443,14 @@ button:disabled {
 .wp-promo img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+  /* `auto` e non `100%` + cover: così l'immagine sta SEMPRE al suo rapporto e
+     non viene mai tagliata, a nessuna larghezza. Il taglio del 10/09 nasceva
+     esattamente qui — `height: 100%` di un box tirato dallo stretch, più
+     `cover` che riempie ritagliando. E un creativo col disclaimer «18+ · Play
+     responsibly» in fondo non si può ritagliare: la prima correzione che avevo
+     provato (max-height + overflow) tagliava proprio quello. Quello che si
+     perde in un ritaglio è il claim legale, non un pixel decorativo. */
+  height: auto;
 }
 .wp-promo:hover { transform: translateY(-1px); }
 .wp-promo:hover img { opacity: 0.95; }
