@@ -6406,21 +6406,25 @@ button:disabled {
   margin: 0;
 }
 
-/* Lo sfondo fotografico dell'Edge. Va SOTTO il glow coral e sotto il testo:
-   `z-index` negativo su un pseudo-elemento, non un background sulla sezione,
-   così il radial wash esistente continua a funzionare sopra di esso.
-   Scurito con un gradiente: sull'immagine nuda il testo bianco su bianco della
-   palla non si legge, e un banner illeggibile non è un banner. */
-.edge-split .featured::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background:
-    linear-gradient(90deg, rgba(9, 12, 14, 0.97) 0%, rgba(9, 12, 14, 0.86) 46%, rgba(9, 12, 14, 0.62) 100%),
-    url(/banners/edge-bg.webp) center right / cover no-repeat;
-  pointer-events: none;
-}
+/* Lo sfondo dell'Edge passa dal meccanismo CHE C'E' GIA': la scena è una
+   variabile (`--edge-scene`, vedi più sotto), con un `::before` che la dipinge
+   e un `::after` che le mette sopra il velo che tiene leggibile il testo.
+   Qui si cambia solo QUALE immagine, non l'impianto.
+
+   ⚠️ La prima versione di questa regola scriveva il proprio sfondo dentro
+   `.edge-split .featured::after` — e quello `::after` È IL VELO. Sovrascriverlo
+   con un gradiente più debole (0.62 a destra invece di 1) ha reso il testo
+   illeggibile sopra la fotografia, cioè ha rotto esattamente la cosa che il
+   velo esiste per proteggere. Visto solo guardando la pagina: le misure sul DOM
+   dicevano che la regola «si applicava», ed era vero — si applicava al posto
+   sbagliato.
+
+   Specchiata: nel creativo i palloni stanno a DESTRA, ma il velo è opaco a
+   destra per costruzione (è lì che comincia il pannello dei dati). Girandola,
+   il soggetto finisce dove la scena si vede davvero. Nessun testo
+   nell'immagine, quindi lo specchio non capovolge niente di leggibile. */
+.edge-split .featured { --edge-scene: url(/banners/edge-bg.webp); }
+.edge-split .featured::before { transform: scaleX(-1); }
 
 /* ── La vetrina della Weekly Pick. È un'immagine sola con la CTA già disegnata
    dentro, quindi TUTTO il riquadro è il link: un overlay allineato al pulsante
