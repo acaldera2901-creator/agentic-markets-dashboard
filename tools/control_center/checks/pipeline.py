@@ -111,11 +111,34 @@ def check_void_rate() -> Verdict:
     Non e' un dettaglio statistico: un void rate alto significa che il track
     record non si produce affatto, perche' i pick non vengono ne' vinti ne'
     persi. Misurato il 2026-08-20: 94% a 30 giorni.
+
+    #SETTLE-0909 — IL DENOMINATORE ESCLUDE LE RIGHE SENZA PICK. `void` in
+    questo prodotto ha due significati diversi che finivano nello stesso
+    conteggio:
+      1. «abbiamo mostrato una pick e non si e' potuta risolvere» — il difetto
+         che questo check esiste per misurare;
+      2. «non c'era nessuna pick da risolvere» (`pick_ledger.pick` NULL: riga
+         sotto il floor, nessuna direzione dichiarata) — che e' `void` per
+         DEFINIZIONE, non per guasto.
+    Contando anche il secondo, il check misurava in gran parte quanto e' severo
+    il nostro floor di confidenza, non se il track record si produce. Misurato
+    il 10/09: sul totale dava 86% (958 su 1113), un rosso che nessun intervento
+    sul settlement poteva far scendere — cioe' un allarme che non si puo'
+    spegnere, che e' lo stesso che non averlo.
     """
     try:
         righe = fetch_all(
-            "select count(*), count(*) filter (where lower(result) = 'void') "
-            "from pick_settlement_current where settled_at > now() - interval '30 days'"
+            """
+            select count(*), count(*) filter (where lower(s.result) = 'void')
+            from pick_settlement_current s
+            join pick_ledger l
+              on l.source_table = s.source_table
+             and l.source_id = s.source_id
+             and l.model_version = s.model_version
+            where s.settled_at > now() - interval '30 days'
+              and l.pick is not null
+              and l.is_backfill = false
+            """
         )
     except DbUnavailable as exc:
         return unknown(f"database non raggiungibile: {exc}", "db:pick_settlement")
