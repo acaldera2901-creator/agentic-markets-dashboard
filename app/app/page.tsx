@@ -2489,12 +2489,20 @@ function SportsbookBoard({
         </label>
       </div>
 
-      <FeaturedEdge
-        predictions={predictions}
-        tennisMatches={tennisMatches}
-        isPremiumClient={isPremium}
-        onGate={onGate}
-      />
+      {/* #EDGE-WP-SPLIT-0910 — l'Edge del giorno lascia metà schermo alla
+          vetrina della Weekly Pick. Il prodotto è venduto a €12.99 e sul board
+          non aveva NESSUNA presenza: in dieci settimane ha fatto zero acquisti,
+          e nessuno arrivava alla sua pagina dal desk. Sotto i 900px le due
+          colonne si impilano (vedi .edge-split). */}
+      <div className="edge-split">
+        <FeaturedEdge
+          predictions={predictions}
+          tennisMatches={tennisMatches}
+          isPremiumClient={isPremium}
+          onGate={onGate}
+        />
+        <WeeklyPickPromo />
+      </div>
 
       {filteredTotal === 0 ? (
         <div className="book-empty">{labels.noResults}</div>
@@ -8580,6 +8588,42 @@ function FeaturedEdge({
       </div>
     </section>
     </div>
+  );
+}
+
+// #EDGE-WP-SPLIT-0910 — la vetrina della Weekly Pick sul board.
+//
+// Perche' esiste: la Weekly Pick e' venduta a €12.99 e sul desk non aveva
+// NESSUNA presenza. In dieci settimane ha fatto zero acquisti, e nessuno
+// arrivava alla sua pagina dal board — il prodotto esisteva solo per chi
+// digitava l'URL.
+//
+// Il creativo porta la CTA gia' disegnata dentro l'immagine, quindi TUTTO il
+// riquadro e' il link, non un overlay allineato al pulsante dipinto: un
+// overlay si disallinea al primo resize, e chi clicca "accanto" al pulsante
+// deve comunque arrivare alla pagina. Il testo per chi non vede l'immagine sta
+// nell'`alt` e nell'`aria-label`, non dentro i pixel.
+function WeeklyPickPromo() {
+  const lang = useLang();
+  const etichetta = pick5(lang, {
+    it: "Weekly Pick — la multipla della casa. Vedi la schedina di questa settimana.",
+    en: "Weekly Pick — the house accumulator. See this week's slip.",
+    es: "Weekly Pick — la combinada de la casa. Mira la combinada de esta semana.",
+    fr: "Weekly Pick — le combiné de la maison. Voir le combiné de cette semaine.",
+    ru: "Weekly Pick — экспресс от команды. Смотреть экспресс этой недели.",
+  });
+  return (
+    // `Link` e non `<a>`: /weekly-pick e' una rotta interna, e un <a> nudo
+    // forzerebbe un ricaricamento completo del desk invece della navigazione
+    // client. Non passa da `onBannerCta` perche' quello mappa un path su una TAB
+    // del desk, e la Weekly Pick e' una pagina a se'.
+    <Link className="wp-promo" href="/weekly-pick" aria-label={etichetta}>
+      {/* Immagine statica in /public: <img> e non next/image di proposito —
+          e' un creativo a dimensione fissa, gia' compresso a 246KB in WebP
+          (dai 2,2MB del PNG originale), e non ha bisogno del loader. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/banners/weekly-pick-promo.webp" alt={etichetta} width={1600} height={900} loading="lazy" decoding="async" />
+    </Link>
   );
 }
 
