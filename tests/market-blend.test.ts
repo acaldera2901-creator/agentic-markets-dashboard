@@ -9,9 +9,22 @@ const approx = (a: number, b: number, eps = 1e-9) =>
   assert.ok(Math.abs(a - b) <= eps, `expected ${a} ≈ ${b}`);
 
 // ── MARKET_BLEND_ALPHA ─────────────────────────────────────────────────────
-// Backtest-justified default (docs/internal/reliability-upgrade-2026-06-06.md):
-// α≈0.3 keeps almost all of the calibration gain while preserving model identity.
-assert.equal(MARKET_BLEND_ALPHA, 0.3);
+// Il pin resta: serve a impedire che il valore derivi in silenzio. Cambia solo
+// il numero, e la ragione e' MISURATA.
+//
+// Era 0.3, «backtest-justified default»
+// (docs/internal/reliability-upgrade-2026-06-06.md): α≈0.3 tiene quasi tutto il
+// guadagno di calibrazione preservando l'identita' del modello.
+//
+// #ALPHA-02-0910 — walk-forward su `prediction_log` (1.067 partite reali, non
+// snapshot: mediana 61 snapshot per partita), expanding, passo 7g, burn-in 28g.
+// α=0.2 e' significativo (t=-2,66), segni 569/429 con p<0,0001 e dose-risposta
+// monotona. Effetto di prodotto: pick pubblicate 71 -> 79 (+11%), hit
+// 84,5% -> 86,1%. NON si scende a 0 (che e' l'ottimo statistico): azzera l'edge
+// servito per costruzione, e l'asserzione poche righe sotto — «b.pHome >
+// line.home» — pretende α>0. Quel test, scritto mesi prima, e' esso stesso la
+// prova che α=0 rompe un invariante dichiarato.
+assert.equal(MARKET_BLEND_ALPHA, 0.2);
 
 // ── devig1x2 ───────────────────────────────────────────────────────────────
 // Fair (no-vig) book: 1/2/4 → inverse 0.5/0.25/0.25, sum = 1 → unchanged.
