@@ -21,6 +21,12 @@ vi.mock("@/lib/weekly-pick-server", () => ({
   hasWeeklyPickStrict,
   weeklyPickWeekStateStrict,
   weeklyPickClosed: (s: { exists: boolean; legs: number; remaining: number }) => s.exists && s.legs > 0 && s.remaining === 0,
+  // #WEEKLY-PICK-FOOTBALL-0910 — specchio della funzione reale. Se manca dal
+  // mock, la route va in TypeError e il suo try/catch lo trasforma in un 500:
+  // il test verde diventa un 500 silenzioso, cioe' esattamente il modo in cui
+  // questo prodotto si e' rotto in passato.
+  weeklyPickIncomplete: (s: { exists: boolean; legs: number }, maxLegs: number) =>
+    s.exists && s.legs < maxLegs,
 }));
 
 const load = () => import("./route");
@@ -76,5 +82,24 @@ describe("POST /api/weekly-pick/checkout — guardia settimana", () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "already purchased" });
     expect(weeklyPickWeekStateStrict).not.toHaveBeenCalled();
+  });
+
+  // #WEEKLY-PICK-FOOTBALL-0910 — non si vende una schedina che puo' ancora cambiare.
+  it("schedina INCOMPLETA → 409, NESSUN ordine", async () => {
+    // Il danno che questa guardia impedisce, misurato sui dati: il generatore
+    // gira ogni 2 ore e appende gambe, riscrivendo la probabilita' combinata.
+    // Chi comprava il lunedi' a 2 gambe (62%) si ritrovava la STESSA schedina a
+    // 3 gambe e probabilita' piu' bassa, senza aver fatto niente.
+    weeklyPickWeekStateStrict.mockResolvedValue({ exists: true, legs: 2, remaining: 2 });
+    const res = await (await load()).POST(req());
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: "week incomplete", legs: 2, needed: 3 });
+    expect(dbExecute).not.toHaveBeenCalled();
+  });
+
+  it("schedina completa a 3 gambe → si vende", async () => {
+    weeklyPickWeekStateStrict.mockResolvedValue({ exists: true, legs: 3, remaining: 3 });
+    const res = await (await load()).POST(req());
+    expect(res.status).toBe(200);
   });
 });
