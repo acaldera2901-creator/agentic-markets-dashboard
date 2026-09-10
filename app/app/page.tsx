@@ -2359,14 +2359,33 @@ function SportsbookBoard({
   });
 
   // #ONLY-WITH-ODDS-1: mostra sul board SOLO i match per cui abbiamo la quota FortunePlay.
-  // "Ha quota" = entry FP presente con un prezzo 1X2/moneyline reale. Applicato solo quando
-  // le quote sono già caricate (fail-open: se l'endpoint quote è giù/non ancora risolto,
-  // mostra tutto invece di un board vuoto).
-  const fpLoaded = Object.keys(fpOdds).length > 0;
-  const hasFpOdds = (key: string | null) => {
-    const e = key ? fpOdds[key] : undefined;
-    return !!e && (((e.oddsHome ?? 0) > 1) || ((e.oddsAway ?? 0) > 1));
-  };
+  // #BOARD-ODDS-GATE-0910 — APPROVE di Andrea, 10/09. Qui c'era un filtro che
+  // NASCONDEVA la predizione quando nessun book partner prezzava quella partita:
+  //
+  //   .filter((p) => !fpLoaded || hasFpOdds(teamPairKey("soccer", ...)))
+  //
+  // Misurato in produzione il 10/09 coi contatori dell'app stessa: l'API serviva
+  // 120 predizioni di calcio e il board ne rendeva **55**. Sessantacinque righe,
+  // il 54%, sparivano in silenzio — quasi tutta la Serie A, perche'
+  // `teamPairKey` usa `normName`, che rimuove `FC|CF|SC|AC|AS|SV|SS|US|SSC|Calcio`
+  // ma NON `ACF`, `CFC`, `BC`, `1907`, `1913`, e non riconcilia «Internazionale
+  // Milano» con «Inter». Venezia, Genoa, Atalanta, Napoli, Sassuolo, Torino,
+  // Como, Inter: tutte calcolate, tutte buttate prima di arrivare all'utente.
+  //
+  // Due ragioni per toglierlo, non una:
+  //  1. La predizione e' NOSTRA. La sua visibilita' non puo' dipendere dal fatto
+  //     che un bookmaker terzo abbia aperto un mercato: la probabilita' del
+  //     modello vale anche senza un prezzo accanto.
+  //  2. Il filtro contraddiceva la propria intenzione dichiarata. Il commento
+  //     diceva «fail-open: se l'endpoint quote e' giu', mostra tutto invece di un
+  //     board vuoto» — ma PER RIGA falliva CHIUSO: col feed funzionante
+  //     nascondeva, col feed rotto mostrava. Il caso raro era gestito, quello
+  //     normale no.
+  //
+  // Una riga senza quota partner ora si vede e mostra semplicemente la nostra
+  // probabilita' senza prezzo ne' pulsante di scommessa. Il recupero dei prezzi
+  // per quelle righe e' il passo 2 (#BOARD-ODDS-JOIN): abbinamento a token con
+  // guard di unicita', come per The Odds API.
 
   // #BOARD-CONTROLS-0910 — il filtro sport e' un predicato COSTANTE (non guarda
   // la riga), quindi spostarlo fuori dalla catena non cambia nulla del risultato
@@ -2378,7 +2397,6 @@ function SportsbookBoard({
   const footballTutte = sortFootball(predictions
     .filter(() => surfaceFilter === "all")
     .filter((p) => isBoardVisibleMarket(p.kickoff))
-    .filter((p) => !fpLoaded || hasFpOdds(teamPairKey("soccer", p.home_team, p.away_team, p.kickoff)))
     .filter((p) => signalFilter === "all" || isFootballBestBet(p))
     .filter((p) => competitionFilter === "all" || competitionFilter === `football:${p.league}`)
     .filter((p) => !query || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(query)))
@@ -2386,7 +2404,6 @@ function SportsbookBoard({
 
   const tennisTutte = sortTennis(tennisMatches
     .filter((m) => tennisIsPlaceholder || isTennisMarketVisible(m.scheduled))
-    .filter((m) => tennisIsPlaceholder || !fpLoaded || hasFpOdds(teamPairKey("tennis", m.player1, m.player2, m.scheduled)))
     .filter((m) => tennisIsPlaceholder || signalFilter === "all" || isTennisBestBet(m))
     .filter((m) => competitionFilter === "all" || competitionFilter === `tennis:${m.tournament}`)
     .filter((m) => surfaceFilter === "all" || m.surface === surfaceFilter)
