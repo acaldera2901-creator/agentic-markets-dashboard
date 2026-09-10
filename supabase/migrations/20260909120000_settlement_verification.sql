@@ -1,9 +1,28 @@
 -- #SETTLE-0909 — D1 + F1 (fase 1) + F2. Tutta ADDITIVA, tutta idempotente.
 -- APPROVE Andrea 09/09/2026 (PROPOSAL-SETTLE-0909, parte 2).
 --
--- ⛔ STATO: NON ANCORA APPLICATA A PROD. Chi la applica aggiorna questo header
--- con la data e cosa ha verificato — l'header stale del 014 ha già generato un
--- falso allarme in un audit; non ripetiamolo.
+-- ✅ APPLICATA A PROD il 2026-09-10 08:39 UTC (progetto izscgffubtakzvwxchqt),
+-- 13 statement su 13 OK, via exec_sql — lo stesso percorso di
+-- scripts/apply_profiles_migration.mjs. VERIFICATO dopo l'applicazione:
+--   · 6 colonne nuove coi tipi e i default attesi; `verification_state` =
+--     'unverified' su tutte le 4.199 righe e `settlement_revision` = 1 su tutte
+--     le 1.521, nessun NULL residuo;
+--   · il CHECK constraint esiste con i 4 stati e 0 righe fuori dominio;
+--   · `settlement_audit` presente: 11 colonne, 3 indici, RLS ON, 0 policy;
+--   · **il vecchio indice `pick_settlement_pick_key` a 3 colonne è ancora al suo
+--     posto** — è la cosa che tiene in piedi i due scrittori (vedi la nota su F1);
+--   · i conflict target verificati con EXPLAIN, cioè pianificati senza eseguire
+--     e a scrittura zero: quello di produzione (3 colonne) risolve, quello della
+--     fase 2 (4 colonne) risolve, e un target inventato fallisce con 42P10 —
+--     quindi la prova ha denti, non è un finto verde;
+--   · le 4 pagine pubbliche e /api/v2/history rispondono 200 dopo l'ALTER.
+-- NON verificato al momento dell'applicazione: una scrittura REALE del libro
+-- mastro post-migration (l'ultima era alle 05:30 UTC, il settlement scrive a
+-- raffiche quando finiscono le partite). Il controllo che la chiude è che
+-- `max(settled_at)` di pick_settlement superi le 08:39.
+--
+-- Chi modifica questa migration aggiorna questo header: l'header stale del 014
+-- ha già generato un falso allarme in un audit, non ripetiamolo.
 --
 -- IL FATTO CHE LA MOTIVA. Il 09/09, sulle 1.402 righe tennis pubblicate e
 -- mostrate come pick, il nuovo cancello di coerenza (core/tennis_set_validation)
@@ -129,3 +148,24 @@ CREATE INDEX IF NOT EXISTS settlement_audit_rejected_idx
 -- Stesso regime delle altre tabelle di prova: RLS attiva, nessuna policy =
 -- solo il service role. Un audit leggibile dal client non è un audit.
 ALTER TABLE public.settlement_audit ENABLE ROW LEVEL SECURITY;
+
+-- ─── ROLLBACK (manuale, se mai servisse) ────────────────────────────────────
+-- Tutto ciò che questa migration fa è additivo, quindi si annulla per intero.
+-- L'ordine è l'inverso: prima l'indice nuovo, poi le colonne, poi la tabella.
+-- Nessun dato preesistente viene toccato, quindi il rollback non ne perde.
+--
+-- DROP INDEX IF EXISTS public.pick_settlement_pick_rev_key;
+-- ALTER TABLE public.pick_settlement DROP COLUMN IF EXISTS settlement_revision;
+-- ALTER TABLE public.pick_settlement DROP COLUMN IF EXISTS correction_reason;
+-- DROP INDEX IF EXISTS public.unified_predictions_verification_idx;
+-- ALTER TABLE public.unified_predictions
+--   DROP CONSTRAINT IF EXISTS unified_predictions_verification_state_chk;
+-- ALTER TABLE public.unified_predictions DROP COLUMN IF EXISTS verification_state;
+-- ALTER TABLE public.unified_predictions DROP COLUMN IF EXISTS verification_source;
+-- ALTER TABLE public.unified_predictions DROP COLUMN IF EXISTS verification_at;
+-- ALTER TABLE public.unified_predictions DROP COLUMN IF EXISTS verification_note;
+-- DROP TABLE IF EXISTS public.settlement_audit;
+--
+-- ⚠️ Il rollback di `verification_state` è sicuro SOLO prima del passo D2: da
+-- quando /api/v2/history filtra su quella colonna, toglierla rompe la pagina.
+-- Dopo D2 il rollback è: revert del PR di D2, POI questo.
