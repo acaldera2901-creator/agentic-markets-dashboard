@@ -6363,6 +6363,16 @@ button:disabled {
   .edge-split { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Se una delle due metà non viene resa, l'altra prende la riga INTERA invece di
+   restare mezza con un buco accanto.
+   Non è un caso teorico: `FeaturedEdge` ritorna `null` quando nessuna partita
+   ha una `best_selection` visibile, e da ANONIMO la proiezione per piano
+   rimuove proprio quel campo — quindi per un visitatore non loggato l'Edge non
+   c'è affatto. Misurato sulla preview: `.featured` non esisteva nel DOM e il
+   promo restava a 799px su una riga da 1598. Per il primo visitatore la vetrina
+   della Weekly Pick a piena larghezza è anche il risultato migliore. */
+.edge-split > :only-child { grid-column: 1 / -1; }
+
 /* A metà larghezza le due colonne interne dell'Edge (dati | prosa) non stanno
    più: diventa una colonna sola e la cucitura verticale si nasconde. */
 .edge-split .featured { grid-template-columns: minmax(0, 1fr); }
