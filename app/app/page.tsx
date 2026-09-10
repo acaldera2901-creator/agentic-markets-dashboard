@@ -16,6 +16,7 @@ import {
   planPriceCopy as publicPlanPriceCopy,
 } from "@/lib/commercial-plan";
 import { buildBestBetRows, modelEdge, type BestBetCandidate } from "@/lib/best-bets";
+import { confidenceFromMargin, stakeFromMargin, margineDaProbabilita } from "@/lib/confidence";
 import { compareUnlockedFirst } from "@/lib/board-order"; // #UNLOCKED-FIRST-0831
 import { liveFootballOnBoard } from "@/lib/live-ticker";
 import { headlineRead } from "@/lib/headline-market"; // #HEADLINE-MARKET-0830
@@ -1976,16 +1977,8 @@ function timeAgo(utc: string) {
   return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
 }
 
-function confidenceFromEdge(edge: number | null, probability: number) {
-  const edgeScore = Math.min(45, Math.max(0, (edge ?? 0) * 700));
-  const probScore = Math.min(35, Math.max(0, (probability - 0.35) * 100));
-  return Math.round(Math.min(95, 20 + edgeScore + probScore));
-}
-
-function stakeFromEdge(edge: number | null, confidence: number) {
-  if (!edge || edge <= 0) return 0;
-  return Math.min(25, Math.max(2, Math.round(edge * confidence * 3) / 2));
-}
+// #CONF-MARGINE-0910 — confidenza e stake vivono in `lib/confidence.ts`,
+// con i loro test (`lib/confidence.test.ts`). Qui si usano soltanto.
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -5228,7 +5221,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
     const selOdds = p.best_selection === "HOME" ? p.odds_home : p.best_selection === "DRAW" ? p.odds_draw : p.odds_away;
     const selP = p.best_selection === "HOME" ? p.p_home : p.best_selection === "DRAW" ? p.p_draw : p.p_away;
     if (!selOdds || selP == null) return;
-    const confidence = confidenceFromEdge(p.edge, selP);
+    // #CONF-MARGINE-0910: il margine sul secondo esito, non l'edge di mercato.
+    const marginePt = margineDaProbabilita(p.p_home, p.p_draw, p.p_away);
+    const confidence = confidenceFromMargin(marginePt, selP);
     onSelect({
       id: p.match_id,
       sport: "Football",
@@ -5241,7 +5236,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       modelProbability: selP,
       edge: p.edge,
       confidence,
-      recommendedStake: stakeFromEdge(p.edge, confidence),
+      recommendedStake: stakeFromMargin(marginePt, confidence),
     });
   };
 
@@ -5316,7 +5311,8 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
   const marketImplied = pickOdds && pickOdds > 0 ? 1 / pickOdds : null;
   const edgeVal = !belowFloor && p.edge != null && p.edge > 0 ? p.edge * 100 : null;
   // Confidence 0-100 → 4-dot meter + word label.
-  const confScore = p.confidence_score ?? (pickProb != null ? confidenceFromEdge(p.edge, pickProb) : null);
+  const margineScheda = margineDaProbabilita(p.p_home, p.p_draw, p.p_away);
+  const confScore = p.confidence_score ?? (pickProb != null ? confidenceFromMargin(margineScheda, pickProb) : null);
   const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
   const confLabel = confScore == null ? null
     : confScore >= 70 ? pick5(lang, { it: "alta", en: "high", es: "alta", fr: "élevée", ru: "высокая" })
@@ -5985,7 +5981,8 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
     // despite the type; mirror the football guard or SlipSelection.odds lies.
     if (odds == null || !Number.isFinite(probability)) return;
     const edgeForSel = m.best_selection === player ? m.edge : null;
-    const confidence = confidenceFromEdge(edgeForSel, probability);
+    const margineTennis = margineDaProbabilita(m.p1, m.p2);
+    const confidence = confidenceFromMargin(margineTennis, probability);
     onSelect({
       id: m.id,
       sport: "Tennis",
@@ -5998,7 +5995,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       modelProbability: probability,
       edge: edgeForSel,
       confidence,
-      recommendedStake: stakeFromEdge(edgeForSel, confidence),
+      recommendedStake: stakeFromMargin(margineTennis, confidence),
     });
   };
 
@@ -6029,7 +6026,8 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   const marketImplied = pickOdds && pickOdds > 0 ? 1 / pickOdds : null;
   // Edge only when the shown player IS the value pick.
   const edgeVal = (isValue && pickPlayer === valuePlayer && m.edge != null && m.edge > 0) ? m.edge * 100 : null;
-  const confScore = m.confidence_score ?? (pickProb != null ? confidenceFromEdge(m.edge, pickProb) : null);
+  const margineT = margineDaProbabilita(m.p1, m.p2);
+  const confScore = m.confidence_score ?? (pickProb != null ? confidenceFromMargin(margineT, pickProb) : null);
   const confDots = confScore != null ? Math.max(1, Math.min(4, Math.round(confScore / 25))) : 0;
   const confLabel = confScore == null ? null
     : confScore >= 70 ? pick5(lang, { it: "alta", en: "high", es: "alta", fr: "élevée", ru: "высокая" })
