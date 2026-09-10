@@ -19,7 +19,7 @@
 // monitors live calibration so each model can earn its own correction from
 // settled data (revisit after the WC group stage).
 //
-// ─── #CALIB-2 (2026-09-10): tau 1.20 -> 1.00, on our OWN settled data ───────
+// ─── #CALIB-4 (2026-09-10): tau 1.20 -> 1.00, on our OWN settled data ───────
 //
 // The revisit above is this one, and the monitor gave the answer the original
 // author asked it for. tau = 1.20 was fitted on understat 2021-2024 — an
@@ -55,6 +55,20 @@
 // Product effect, measured on the same 1.254 matches: the headline percentage
 // rises on 1.254 of 1.254 cards and falls on none (+3.09pt mean, +5.29pt on
 // cards already above 55%), and cards above 55% go 350 -> 465.
+//
+// The promotion gate (ops/PROMOTION-GATE.md) is GREEN, and its numbers are the
+// most instructive part of this change, so they are recorded rather than just
+// passed: football Brier 0.5942 -> 0.5942 (delta 0.0000) and football ECE
+// 0.0146 -> 0.0175 (delta +0.0029, tolerance +0.005). The ECE gets WORSE. That
+// is not a detail to bury — on understat 2024 tau = 1.20 genuinely helps, and
+// 0.0175 is exactly the pre-tau figure the #CALIB-1 comment above reports. The
+// two measurements do not contradict each other: they say understat 2024 and
+// the population we actually serve are different populations. Understat is the
+// big five European leagues; we serve MLS, Eliteserien, Allsvenskan, Portugal,
+// Mexico, Greece, Brazil, Argentina. A calibration belongs to the population it
+// is served on, so the correction fitted on the other one goes — but the gate
+// keeps watching it, and if this reasoning is wrong the ECE there is where it
+// will show first.
 //
 // Rollback is one character: back to 1.2. Nothing else changes — there is a
 // single production call site (app/api/predictions/route.ts), no Python

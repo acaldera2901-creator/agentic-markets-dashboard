@@ -1,4 +1,4 @@
-// #CALIB-2 — la guardia sul numero che decide le percentuali mostrate.
+// #CALIB-4 — la guardia sul numero che decide le percentuali mostrate.
 //
 // Perche' questo file esiste: `CALIBRATION_TAU` non era pinnato da nessun test,
 // quindi il suo valore poteva cambiare in silenzio — e non e' un dettaglio
