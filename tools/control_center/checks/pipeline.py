@@ -125,18 +125,49 @@ def check_void_rate() -> Verdict:
     il 10/09: sul totale dava 86% (958 su 1113), un rosso che nessun intervento
     sul settlement poteva far scendere — cioe' un allarme che non si puo'
     spegnere, che e' lo stesso che non averlo.
+
+    #VOID-DENOM-0910 — e il primo tentativo di denominatore era ANCORA sbagliato.
+    Escludeva `pick_ledger.pick IS NULL`, ma il mastro registra la pick anche per
+    le righe che il floor sopprime: quelle arrivano al settlement con
+    `unified_predictions.pick = NULL` (azzerata da unified-adapter.ts:232) e si
+    chiudono `void` per definizione. Misurato il 10/09 a 30 giorni:
+
+        denominatore «mastro»    84 chiusure, 32 void  -> 38%   (falso)
+        denominatore «servita»   77 chiusure,  4 void  ->  5%   (vero, VERDE)
+
+    Le 28 righe di differenza erano sotto floor, mai mostrate come direzione, e
+    si chiudono `void` per definizione. La query NON filtra piu' su
+    `pick_ledger.pick`: per «quante delle pick PUBBLICATE non si sono risolte»
+    il criterio e' la riga servita, e un buco del mirror del mastro non deve
+    far sparire una pick dal denominatore (22 righe sono in questo caso).
+    Sulle chiusure con esito: 29 vinte, 13 perse — hit rate 69%.
+    Eseguita contro produzione prima di spedirla: 4 su 77.
     """
     try:
         righe = fetch_all(
             """
-            select count(*), count(*) filter (where lower(s.result) = 'void')
+            -- #VOID-DENOM-0910: le colonne sono NOMINATE. Il codice qui sotto
+            -- legge per posizione, ma due colonne entrambe chiamate `count`
+            -- si sovrascrivono a vicenda appena qualcuno ispeziona la query
+            -- in JSON (e' successo verificandola).
+            select count(*) as totale,
+                   count(*) filter (where lower(s.result) = 'void') as void
             from pick_settlement_current s
             join pick_ledger l
               on l.source_table = s.source_table
              and l.source_id = s.source_id
              and l.model_version = s.model_version
+            join unified_predictions up
+              on up.source_table = l.source_table
+             and up.source_id = l.source_id
             where s.settled_at > now() - interval '30 days'
-              and l.pick is not null
+              -- #VOID-DENOM-0910: il filtro era `l.pick is not null`, cioe' la
+              -- pick nel MASTRO. Sbagliato: il mastro registra la pick anche per
+              -- righe che il floor poi sopprime, e quelle si chiudono `void` per
+              -- DEFINIZIONE. La pick PUBBLICATA e' quella della riga servita
+              -- (`unified_predictions.pick`), che `lib/unified-adapter.ts:232`
+              -- azzera sotto floor.
+              and up.pick is not null
               and l.is_backfill = false
             """
         )
