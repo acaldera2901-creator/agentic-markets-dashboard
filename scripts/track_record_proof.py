@@ -90,46 +90,64 @@ def load_ledger(path: Path) -> dict[tuple[str, str, str], LedgerPick]:
 
 
 def load_settlements(path: Path) -> dict[tuple[str, str, str], Settlement]:
-    """Un solo settlement per pick: vince il PRIMO (#SETTLEMENT-DEDUP-0801).
+    """Un solo settlement per pick: vince la REVISIONE PIU' ALTA (#SETTLE-0909).
 
-    Prima qui vinceva l'ULTIMO per settled_at, perché il design prevedeva le
-    correzioni come nuova riga. Dal 2026-08-01 c'e' una UNIQUE su
-    (source_table, source_id, model_version) e i due scrittori inseriscono con
-    ON CONFLICT DO NOTHING: una seconda riga non puo' piu' nascere, e se un
-    export vecchio ne contiene una vince quella arrivata per prima — la stessa
-    regola che il database applica adesso.
+    Questa regola e' cambiata due volte, e le due volte contano:
 
-    Il cambio non e' cosmetico: con "l'ultimo vince", le 11 righe `void` scritte
-    per errore DOPO un `won`/`lost` reale (bug dei due scrittori, trovato il
-    01/08) avrebbero fatto leggere quei pick come void, cioe' esclusi dal
-    conteggio. Allineare il lettore al vincolo toglie quella possibilita'.
+    1. All'origine vinceva l'ULTIMO per `settled_at`, perche' il design
+       prevedeva le correzioni come nuova riga.
+    2. Dal 01/08 (#SETTLEMENT-DEDUP-0801) vinceva il PRIMO: era arrivata una
+       UNIQUE su (source_table, source_id, model_version) e i due scrittori
+       inserivano con ON CONFLICT DO NOTHING, quindi una seconda riga non
+       poteva piu' nascere. Il cambio non era cosmetico: con «l'ultimo vince»,
+       le 11 righe `void` scritte per errore DOPO un `won`/`lost` reale
+       avrebbero fatto leggere quei pick come void.
+    3. Dal 10/09 (#SETTLE-0909 fase 2) vince la revisione piu' alta. La UNIQUE
+       ora include `settlement_revision`, quindi una CORREZIONE TRACCIATA puo'
+       nascere — ed era proprio l'impossibilita' di correggere che teneva
+       pubblicati 72 esiti sbagliati. L'append-only resta: la revisione vecchia
+       non si cancella, si supera.
 
-    Il conteggio dei duplicati incontrati viene restituito al chiamante tramite
-    `load_settlements.duplicates`: su un libro mastro un doppione va detto, non
-    scartato in silenzio.
+    Un export vecchio, senza la colonna, vale tutto revisione 1 — e in quel caso
+    «la piu' alta» ricade su «la prima», cioe' il comportamento precedente:
+    nessuna rottura retroattiva.
+
+    Il conteggio delle righe superate torna al chiamante in
+    `load_settlements.duplicates`: su un libro mastro una correzione va detta,
+    non nascosta.
     """
-    first: dict[tuple[str, str, str], Settlement] = {}
-    duplicates = 0
+    scelti: dict[tuple[str, str, str], Settlement] = {}
+    revisioni: dict[tuple[str, str, str], int] = {}
+    superate = 0
     with path.open(newline="") as f:
         for r in csv.DictReader(f):
             key = (r["source_table"], r["source_id"], r["model_version"])
-            if key in first:
-                duplicates += 1
-                continue
-            first[key] = Settlement(
+            # Export vecchi non hanno la colonna: valgono tutti revisione 1, e
+            # in quel caso "la piu' alta" ricade su "la prima", cioe' esattamente
+            # il comportamento precedente. Nessuna rottura retroattiva.
+            try:
+                rev = int(r.get("settlement_revision") or 1)
+            except ValueError:
+                rev = 1
+            if key in scelti:
+                superate += 1
+                if rev <= revisioni[key]:
+                    continue
+            scelti[key] = Settlement(
                 result=r["result"],
                 outcome=(r.get("outcome") or None),
                 closing_odds=_f(r.get("closing_odds")),
                 settled_at=r.get("settled_at", ""),
             )
-    load_settlements.duplicates = duplicates  # type: ignore[attr-defined]
-    if duplicates:
+            revisioni[key] = rev
+    load_settlements.duplicates = superate  # type: ignore[attr-defined]
+    if superate:
         print(
-            f"ATTENZIONE: {duplicates} righe di settlement duplicate nell'export "
-            f"(ignorate, vince la prima). Con la UNIQUE attiva non dovrebbero esistere: "
-            f"se l'export e' recente, va indagato."
+            f"NOTA: {superate} righe di settlement superate da una revisione piu' "
+            f"alta (ignorate, vince la revisione corrente). Su un libro mastro una "
+            f"correzione va detta, non nascosta."
         )
-    return first
+    return scelti
 
 
 # ─── metrics ────────────────────────────────────────────────────────────────

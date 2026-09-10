@@ -162,10 +162,14 @@ class TestIlCancelloDiCompletamentoNelResolver:
         assert resolved[0][2] == "6-1 2-0 ret."
 
     @pytest.mark.asyncio
-    async def test_un_walkover_senza_punteggio_si_settla_col_marker(self):
+    async def test_un_walkover_NON_produce_un_esito(self):
+        """
+        Una partita non giocata non ha un esito corretto da pubblicare: il
+        vincitore del tabellone non e' il vincitore di un match. La riga resta
+        pendente e finisce in `unresolved`, che /history esclude in blocco.
+        """
         resolved = await _resolve(
             _agent(), [_pred()],
             [_res(score=None, status_name="STATUS_WALKOVER")],
         )
-        assert len(resolved) == 1
-        assert resolved[0][2] == "w/o"
+        assert resolved == []

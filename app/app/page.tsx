@@ -301,7 +301,7 @@ const BASE_TRANSLATIONS = {
     nav_markets: "Mercati", nav_predictions: "Previsioni", nav_leaderboard: "Classifica", nav_account: "Account",
     auth_signin: "Accedi", auth_register: "Registrati",
     theme_aria: "Tema", featured_label: "In evidenza",
-    kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit · 100g",
+    kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit", kpi_settled_lbl: "Pick chiuse", kpi_coverage: "Verificate",
     season_pause: "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026).",
     footer_pastperf: "Le performance passate non garantiscono risultati futuri.",
     footer_partnerlinks: "I link partner sono affiliati commerciali.",
@@ -560,7 +560,7 @@ const BASE_TRANSLATIONS = {
     nav_markets: "Markets", nav_predictions: "Predictions", nav_leaderboard: "Leaderboard", nav_account: "Account",
     auth_signin: "Sign In", auth_register: "Register",
     theme_aria: "Theme", featured_label: "Featured",
-    kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit · 100g",
+    kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit", kpi_settled_lbl: "Settled picks", kpi_coverage: "Verified",
     season_pause: "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026).",
     footer_pastperf: "Past performance does not guarantee future results.",
     footer_partnerlinks: "Partner links are commercial affiliates.",
@@ -822,7 +822,7 @@ const EXTRA_TRANSLATIONS = {
     nav_markets: "Mercados", nav_predictions: "Predicciones", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
     auth_signin: "Entrar", auth_register: "Registrarse",
     theme_aria: "Tema", featured_label: "Destacados",
-    kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto · 100d",
+    kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto", kpi_settled_lbl: "Pronósticos cerrados", kpi_coverage: "Verificados",
     season_pause: "Temporada en pausa — no hay partidos programados en las próximas 48h. Las predicciones vuelven automáticamente cuando las ligas se reanuden (julio 2026).",
     footer_pastperf: "El rendimiento pasado no garantiza resultados futuros.",
     footer_partnerlinks: "Los enlaces de partners son afiliados comerciales.",
@@ -1081,7 +1081,7 @@ const EXTRA_TRANSLATIONS = {
     nav_markets: "Marchés", nav_predictions: "Prédictions", nav_leaderboard: "Classement", nav_account: "Compte",
     auth_signin: "Connexion", auth_register: "S'inscrire",
     theme_aria: "Thème", featured_label: "À la une",
-    kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite · 100j",
+    kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite", kpi_settled_lbl: "Pronostics clôturés", kpi_coverage: "Vérifiés",
     season_pause: "Saison en pause — aucun match programmé dans les 48 prochaines heures. Les prédictions reviennent automatiquement à la reprise des ligues (juillet 2026).",
     footer_pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
     footer_partnerlinks: "Les liens partners sont des affiliés commerciaux.",
@@ -1340,7 +1340,7 @@ const EXTRA_TRANSLATIONS = {
     nav_markets: "Рынки", nav_predictions: "Прогнозы", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
     auth_signin: "Войти", auth_register: "Регистрация",
     theme_aria: "Тема", featured_label: "Избранное",
-    kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность · 100д",
+    kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность", kpi_settled_lbl: "Закрытые прогнозы", kpi_coverage: "Проверено",
     season_pause: "Сезон на паузе — в ближайшие 48 часов матчей не запланировано. Прогнозы вернутся автоматически с возобновлением лиг (июль 2026).",
     footer_pastperf: "Прошлые результаты не гарантируют будущих.",
     footer_partnerlinks: "Партнёрские ссылки являются коммерческими аффилиатами.",
@@ -1670,6 +1670,19 @@ interface V2HistoryStats {
   paper: number;
   verified: number;
   win_rate: string | null;
+  // #SETTLE-0909 — i campi che rendono la percentuale dichiarabile invece che
+  // nuda. `n` è il campione su cui è calcolata (won+lost, non il totale
+  // righe), `coverage` quanta parte delle pick mostrate abbiamo potuto
+  // verificare, `interval_95` quanto è solida. Opzionali perché una risposta
+  // servita da un deploy precedente non li ha: chi legge deve reggerlo.
+  n?: number;
+  sample_sufficient?: boolean;
+  coverage?: number | null;
+  surfaced_total?: number;
+  unverified_excluded?: number;
+  interval_95?: { low: number; high: number } | null;
+  win_rate_display?: string | null;
+  insufficient_sample_reason?: string | null;
 }
 
 // #021: live tennis match from /api/tennis-live (real ESPN scores, curated
@@ -9456,8 +9469,15 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     const tennisInt = setInterval(fetchTennis, 120_000);
     const liveInt = setInterval(fetchLive, 60_000);
     const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
-    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(fpInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); };
-  }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchLive, fetchTennisLive]);
+    // #SETTLE-0909 — lo storico MANCAVA da questa lista. `fetchHistoryV2` girava
+    // solo al mount e sul refresh manuale, mentre la pagina mostrava un pallino
+    // verde e la scritta «si aggiorna a ogni match che finisce»: una promessa
+    // senza niente dietro. Il cron di settlement gira ogni 30 minuti, quindi
+    // 120s è già più fitto di quanto i dati possano cambiare — e costa una
+    // richiesta a un endpoint che serve solo aggregati.
+    const historyInt = setInterval(fetchHistoryV2, 120_000);
+    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(fpInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); clearInterval(historyInt); };
+  }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchLive, fetchTennisLive, fetchHistoryV2]);
 
   // #PLAN-REFRESH-0831 — le prediction si rileggono ogni 60 minuti (l'intervallo
   // qui sopra). Il piano è il dato che decide cosa è sbloccato: finché non si
@@ -9780,13 +9800,25 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     : <>Choose the plan that fits you. Unlock predictions, edge and Deep Analysis.</>
                 /* #QW3: sottotitolo specifico per pagina — non più la stessa riga
                    "opinioni da bar" ovunque. Ogni destinazione spiega sé stessa. */
-                ) : tab === "history" ? pick5(uiLanguage, {
-                    it: "Ogni pick chiuso, vinto o perso. Il track record del modello, senza filtri.",
-                    en: "Every settled pick, won or lost. The model's track record, unfiltered.",
-                    es: "Cada pronóstico cerrado, ganado o perdido. El historial del modelo, sin filtros.",
-                    fr: "Chaque pronostic clôturé, gagné ou perdu. Le bilan du modèle, sans filtre.",
-                    ru: "Каждый закрытый прогноз — выигранный или проигранный. История модели без фильтров.",
-                }) : tab === "leaderboard" ? pick5(uiLanguage, {
+                /* #SETTLE-0909 — «senza filtri» / «unfiltered» era una promessa
+                   che dal 10/09 non manteniamo più, ed è la classe di frase che
+                   un revisore guarda per prima su un track record: da oggi
+                   pubblichiamo solo le pick che una fonte con flag di
+                   completamento esplicito conferma, e 51 righe restano fuori.
+                   Quindi la riga dice cosa facciamo davvero, e la copertura
+                   viene dal DATO invece di essere scritta a mano — così non può
+                   diventare falsa quando il numero si muove. */
+                ) : tab === "history" ? (() => {
+                    const cov = typeof historyV2Stats?.coverage === "number"
+                      ? `${(historyV2Stats.coverage * 100).toFixed(1)}%` : null;
+                    return pick5(uiLanguage, {
+                      it: `Ogni pick chiuso e verificato, vinto o perso${cov ? ` — il ${cov} di quelle che abbiamo mostrato` : ""}. Ciò che non possiamo confermare, lo diciamo.`,
+                      en: `Every verified settled pick, won or lost${cov ? ` — ${cov} of the picks we showed` : ""}. What we can't confirm, we say.`,
+                      es: `Cada pronóstico cerrado y verificado, ganado o perdido${cov ? ` — el ${cov} de los que mostramos` : ""}. Lo que no podemos confirmar, lo decimos.`,
+                      fr: `Chaque pronostic clôturé et vérifié, gagné ou perdu${cov ? ` — ${cov} de ceux que nous avons affichés` : ""}. Ce que nous ne pouvons pas confirmer, nous le disons.`,
+                      ru: `Каждый закрытый и проверенный прогноз — выигранный или проигранный${cov ? ` (${cov} из показанных)` : ""}. О том, что подтвердить нельзя, мы говорим прямо.`,
+                    });
+                  })() : tab === "leaderboard" ? pick5(uiLanguage, {
                     it: "Come si posizionano i clienti per hit rate. 10 punti per ogni pick vinto.",
                     en: "How clients rank by hit rate. 10 points for every winning pick.",
                     es: "Cómo se clasifican los clientes por hit rate. 10 puntos por cada pronóstico ganado.",
@@ -9817,7 +9849,48 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             {/* #QW3: le stat-tile board (eventi/con-edge/hit) informano solo dove
                 c'è un board o un track record — Previsioni e Storico. Su Classifica
                 e Match Builder erano rumore (un "66.1% HIT" su una classifica). */}
-            {(tab === "bets" || tab === "history") && (
+            {/* #SETTLE-0909 — SU /history I RIQUADRI MISURANO LO STORICO.
+                Prima erano tre KPI del BOARD LIVE (`/api/predictions` +
+                `/api/tennis`) sotto il titolo "History": «139 EVENTS» erano le
+                partite di oggi, non le pick chiuse, e a chi guardava sembravano
+                la dimensione del track record. Un numero giusto sotto
+                un'etichetta sbagliata è peggio di un numero mancante.
+                Su "bets" (il board) restano quelli del board, che è il loro posto. */}
+            {tab === "history" && (
+            <div className="am-statbar">
+              <div className="am-kpi chamfer-sm">
+                <span className="v">{historyV2Stats?.total ?? "—"}</span>
+                <span className="l">{tNav.kpi_settled_lbl}</span>
+              </div>
+              {/* La copertura: quante delle pick mostrate abbiamo potuto verificare.
+                  Sta accanto alla percentuale perché è il suo denominatore. */}
+              {typeof historyV2Stats?.coverage === "number" && (
+                <div className="am-kpi chamfer-sm">
+                  <span className="v sig">{(historyV2Stats.coverage * 100).toFixed(1)}%</span>
+                  <span className="l">{tNav.kpi_coverage}</span>
+                </div>
+              )}
+              {/* #HITRATE-GUARD-1: the rate is a claim — hidden below the sample
+                  threshold. #SETTLE-0909: e l'etichetta si GENERA dal dato
+                  (`n` picks), non è più la stringa fissa "Hit · 100g" — che
+                  diceva «ultime 100 partite» mentre la percentuale era all-time
+                  su 1.606. Un'etichetta che È il dato non può invecchiare. */}
+              {v2RateMeaningful && historyV2Stats?.win_rate && (
+                <div className="am-kpi chamfer-sm" title={
+                  historyV2Stats.interval_95
+                    ? `95%: ${(historyV2Stats.interval_95.low * 100).toFixed(1)}–${(historyV2Stats.interval_95.high * 100).toFixed(1)}%`
+                    : undefined
+                }>
+                  <span className="v">{historyV2Stats.win_rate}</span>
+                  <span className="l">
+                    {tNav.kpi_hit}
+                    {typeof historyV2Stats.n === "number" ? ` · ${historyV2Stats.n}` : ""}
+                  </span>
+                </div>
+              )}
+            </div>
+            )}
+            {tab === "bets" && (
             <div className="am-statbar">
               <div className="am-kpi chamfer-sm">
                 <span className="v">{predictions.length + tennisMatches.length}</span>
@@ -9827,13 +9900,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 <span className="v sig">{withEdgeCount}</span>
                 <span className="l">{tNav.kpi_withedge}</span>
               </div>
-              {/* #HITRATE-GUARD-1: the rate is a claim — hidden below the sample threshold. */}
-              {v2RateMeaningful && historyV2Stats?.win_rate && (
-                <div className="am-kpi chamfer-sm">
-                  <span className="v">{historyV2Stats.win_rate}</span>
-                  <span className="l">{tNav.kpi_hit}</span>
-                </div>
-              )}
             </div>
             )}
           </div>

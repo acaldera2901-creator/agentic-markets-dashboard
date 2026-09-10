@@ -122,11 +122,16 @@ describe("la riga di chiusura non inventa mai niente", () => {
   });
 
   it("il bersaglio di conflitto elenca esattamente le colonne dell'indice UNIQUE", () => {
-    // pick_settlement_pick_key (source_table, source_id, model_version).
+    // #SETTLE-0909 fase 2: l'indice e' `pick_settlement_pick_rev_key`
+    // (source_table, source_id, model_version, settlement_revision).
+    // Se questa lista non coincide con un indice UNIQUE reale, Postgres
+    // risponde 42P10 e il writer — fail-soft — smette di scrivere il libro
+    // mastro IN SILENZIO. Per questo la lista sta in un test.
     expect(LEDGER_MIRROR_CONFLICT.split(",")).toEqual([
       "source_table",
       "source_id",
       "model_version",
+      "settlement_revision",
     ]);
   });
 });

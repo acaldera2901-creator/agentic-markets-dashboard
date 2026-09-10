@@ -140,16 +140,19 @@ def test_xg_and_dc_predictions_for_same_match_coexist(ledger_csv):
 
 
 def test_first_settlement_wins(tmp_path):
-    """#SETTLEMENT-DEDUP-0801 — la regola e' cambiata: vince la PRIMA riga.
+    """Export SENZA `settlement_revision`: vince la PRIMA riga.
 
-    Prima vinceva l'ultima per settled_at, perche' il design prevedeva le
-    correzioni come nuova riga. Dal 01/08 c'e' una UNIQUE su
-    (source_table, source_id, model_version) e i due scrittori inseriscono con
-    ON CONFLICT DO NOTHING: una seconda riga non nasce piu', e il lettore deve
-    dire la stessa cosa del database.
+    #SETTLEMENT-DEDUP-0801 aveva portato la regola da «l'ultimo per settled_at»
+    a «il primo», perche' con la UNIQUE a 3 colonne e l'ON CONFLICT DO NOTHING
+    una seconda riga non poteva piu' nascere.
 
-    Il caso qui sotto e' quello reale che ha motivato il cambio: un `void`
-    scritto DOPO un `lost` reale dal secondo scrittore. Con "l'ultimo vince"
+    Dal 10/09 (#SETTLE-0909 fase 2) vince la revisione piu' alta — ma un export
+    vecchio non ha quella colonna, quindi tutte le righe valgono revisione 1 e
+    «la piu' alta» ricade su «la prima». Questo test difende esattamente quella
+    retro-compatibilita': un export di ieri deve dare il numero di ieri.
+
+    Il caso qui sotto e' quello reale che motivo' il cambio del 01/08: un `void`
+    scritto DOPO un `lost` reale dal secondo scrittore. Con «l'ultimo vince»
     quel pick veniva letto come void, cioe' spariva dal conteggio.
     """
     rows = [
@@ -167,6 +170,51 @@ def test_first_settlement_wins(tmp_path):
     # il doppione va CONTATO, non ignorato in silenzio: su un libro mastro
     # l'esistenza di una riga in piu' e' essa stessa un'informazione.
     assert getattr(load_settlements, "duplicates", 0) == 1
+
+
+def test_vince_la_revisione_piu_alta(tmp_path):
+    """
+    #SETTLE-0909 fase 2 — una CORREZIONE tracciata deve vincere sull'originale.
+
+    Il difetto che questo chiude: fino al 09/09 correggere un settlement era
+    IMPOSSIBILE (la UNIQUE a 3 colonne rifiutava la seconda riga), e cosi' 72
+    esiti sbagliati sono restati pubblicati. Ora la correzione e' una riga nuova
+    con revision+1, e chi legge deve prendere quella — altrimenti la correzione
+    esiste nel database e non nel numero pubblicato, che e' il peggiore dei due
+    mondi.
+
+    L'ordine delle righe nell'export non deve contare: qui la revisione alta
+    arriva PRIMA di quella bassa, di proposito.
+    """
+    rows = [
+        dict(source_table="t", source_id="x", model_version="v",
+             result="won", outcome="HOME", closing_odds="2.0",
+             settled_at="2026-09-10T09:00:00Z", settlement_revision="2"),
+        dict(source_table="t", source_id="x", model_version="v",
+             result="void", outcome=None, closing_odds="2.0",
+             settled_at="2026-06-11T09:00:00Z", settlement_revision="1"),
+    ]
+    p = tmp_path / "s.csv"
+    _write_csv(p, rows)
+    s = load_settlements(p)
+    assert s[("t", "x", "v")].result == "won", "la revisione 2 deve vincere"
+    assert getattr(load_settlements, "duplicates", 0) == 1
+
+
+def test_la_revisione_bassa_non_sovrascrive_quella_alta(tmp_path):
+    """Lo stesso caso con l'ordine inverso: il risultato non cambia."""
+    rows = [
+        dict(source_table="t", source_id="x", model_version="v",
+             result="void", outcome=None, closing_odds="2.0",
+             settled_at="2026-06-11T09:00:00Z", settlement_revision="1"),
+        dict(source_table="t", source_id="x", model_version="v",
+             result="lost", outcome="AWAY", closing_odds="2.0",
+             settled_at="2026-09-10T09:00:00Z", settlement_revision="3"),
+    ]
+    p = tmp_path / "s.csv"
+    _write_csv(p, rows)
+    s = load_settlements(p)
+    assert s[("t", "x", "v")].result == "lost"
 
 
 def test_no_duplicates_no_warning(tmp_path):

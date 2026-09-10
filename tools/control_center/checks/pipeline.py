@@ -115,7 +115,7 @@ def check_void_rate() -> Verdict:
     try:
         righe = fetch_all(
             "select count(*), count(*) filter (where lower(result) = 'void') "
-            "from pick_settlement where settled_at > now() - interval '30 days'"
+            "from pick_settlement_current where settled_at > now() - interval '30 days'"
         )
     except DbUnavailable as exc:
         return unknown(f"database non raggiungibile: {exc}", "db:pick_settlement")

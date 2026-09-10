@@ -10,7 +10,7 @@ falso dall'aria credibile:
   2. sotto un campione minimo il ROI e' rumore — su 3 pick chiusi dava -100%.
 """
 
-from ..contract import Check, Verdict, info, unknown
+from ..contract import Check, Verdict, amber, green, info, red, unknown
 from ..db import DbUnavailable, fetch_all
 
 CAMPIONE_MINIMO = 30
@@ -21,7 +21,7 @@ select count(*),
        sum(case when lower(s.result) = 'won'
                 then coalesce(s.closing_odds, l.odds) - 1 else -1 end)
 from pick_ledger l
-join pick_settlement s
+join pick_settlement_current s   -- #SETTLE-0909: la vista espone SOLO la revisione corrente
   on s.source_table = l.source_table and s.source_id = l.source_id
 where l.is_backfill = false
   and coalesce(s.closing_odds_is_fuzzy, false) = false
@@ -107,6 +107,180 @@ def check_bankroll() -> Verdict:
                 value=round(float(righe[0][1]), 2))
 
 
+# ── il check che rende «una volta per tutte» una cosa misurata ──────────────
+# #SETTLE-0909. Il difetto strutturale, ripetuto due volte in due giorni: lo
+# STESSO numero viene calcolato in piu' posti, e i posti non sono d'accordo.
+#   · il 09/09 c'erano due fonti di verita' su «la partita e' finita» (il flag
+#     della fonte e il verbo di una stringa di note) e vinceva la sbagliata;
+#   · il 10/09 su /history c'erano tre riquadri che misuravano tre cose diverse
+#     sotto un unico titolo, e «139 EVENTS» erano le partite del board live.
+# Nessun test poteva accorgersene, perche' ogni pezzo era corretto DA SOLO.
+# Questo check confronta cio' che il PRODOTTO PUBBLICA con cio' che il DB
+# RICALCOLA, e diventa rosso quando divergono. E' l'unica forma di garanzia che
+# sopravvive a un refactor della UI.
+# Questa SQL deve rispecchiare RIGA PER RIGA i filtri di
+# app/api/v2/history/route.ts, eccezione del World Cup compresa
+# (`wasShownAsPick`: le righe sotto il floor sono escluse TRANNE il World Cup,
+# dove il floor era stato abbassato di proposito). Se le due regole divergono,
+# il check confronta due cose diverse e la tolleranza nasconde il difetto
+# invece di rivelarlo — cioe' diventa il problema che dovrebbe misurare.
+_PUBBLICO_SQL = """
+select count(*) filter (where result in ('won','lost')),
+       count(*) filter (where result = 'won')
+from unified_predictions
+where is_historical = true
+  and is_demo = false
+  and published_at is not null
+  and pick is not null
+  and verification_state = 'verified'
+  and (coalesce((nullif(notes,'')::jsonb -> 'surface' ->> 'below_floor'), 'false') <> 'true'
+       or competition = 'World Cup')
+"""
+
+# L'unica differenza che resta e' la deduplica delle partite gemelle, che la
+# route fa in lettura (lib/dedupe-fixtures) e la SQL non puo' replicare in modo
+# leggibile. Misurata il 10/09: 4 righe su 1.610, cioe' 0,2 punti. Le soglie
+# stanno appena sopra quel rumore — non larghe abbastanza da coprire un difetto.
+_SCARTO_MAX_PUNTI = 0.6
+_SCARTO_MAX_RIGHE = 25
+
+
+def check_history_coerente() -> Verdict:
+    """Il numero pubblicato su /history combacia con quello ricalcolato dal DB?"""
+    import json
+    import urllib.request
+
+    try:
+        righe = fetch_all(_PUBBLICO_SQL)
+    except DbUnavailable as exc:
+        return unknown(f"database non raggiungibile: {exc}", "db:unified_predictions")
+
+    n_db = int(righe[0][0] or 0)
+    vinti_db = int(righe[0][1] or 0)
+    if n_db == 0:
+        return unknown("nessuna pick verificata nel DB: niente da confrontare",
+                       "db:unified_predictions")
+
+    try:
+        with urllib.request.urlopen(
+            "https://betredge.com/api/v2/history?limit=1", timeout=20
+        ) as risposta:
+            stats = json.loads(risposta.read().decode())["stats"]
+    except Exception as exc:
+        return unknown(f"/api/v2/history non raggiungibile: {exc}", "web:/api/v2/history")
+
+    n_api = int(stats.get("n") or 0)
+    if n_api == 0:
+        return red(
+            "l'API pubblica 0 pick verificate mentre il DB ne ha "
+            f"{n_db}: il cancello di verifica sta escludendo tutto",
+            "web:/api/v2/history",
+            value="n=0",
+            evidence={"n_api": 0, "n_db": n_db},
+        )
+
+    hit_db = vinti_db / n_db * 100
+    hit_api = float((stats.get("win_rate") or "0%").rstrip("%") or 0)
+    scarto_punti = abs(hit_api - hit_db)
+    scarto_righe = abs(n_api - n_db)
+
+    prova = {
+        "hit_pubblicato": round(hit_api, 1),
+        "hit_ricalcolato": round(hit_db, 1),
+        "n_pubblicato": n_api,
+        "n_ricalcolato": n_db,
+        "copertura_pubblicata": stats.get("coverage"),
+        "escluse_pubblicate": stats.get("unverified_excluded"),
+    }
+
+    if scarto_punti > _SCARTO_MAX_PUNTI or scarto_righe > _SCARTO_MAX_RIGHE:
+        return red(
+            f"/history pubblica {hit_api:.1f}% su {n_api} pick, il DB ne ricalcola "
+            f"{hit_db:.1f}% su {n_db}: due numeri per lo stesso fatto",
+            "web:/api/v2/history",
+            value=f"scarto {scarto_punti:.1f}pt / {scarto_righe} righe",
+            evidence=prova,
+        )
+
+    # Il campo `coverage` deve esistere: se manca, il deploy in produzione e'
+    # precedente al cancello di verifica e la pagina sta promettendo «senza
+    # filtri» su dati filtrati — o il contrario.
+    if stats.get("coverage") is None:
+        return amber(
+            "/history risponde senza `coverage`: il deploy pubblico e' anteriore "
+            "al cancello di verifica",
+            "web:/api/v2/history",
+            evidence=prova,
+        )
+
+    return green(
+        f"/history coerente col DB: {hit_api:.1f}% su {n_api} pick, "
+        f"copertura {float(stats['coverage']) * 100:.1f}%",
+        "web:/api/v2/history",
+        value=f"{hit_api:.1f}%",
+        evidence=prova,
+    )
+
+
+# ── il buco che non si vedeva da nessuna parte ──────────────────────────────
+# #SETTLE-0909. Misurate il 10/09: 27 pick PUBBLICATE E MOSTRATE, partite fra
+# l'11/06 e il 24/08, con `result` NULL. Non vinte, non perse, non void, non
+# `unresolved`: invisibili in entrambe le direzioni — fuori dal track record e
+# non contate nemmeno come buchi.
+#
+# Come ci sono arrivate: a monte `tennis_predictions.outcome = 'expired'` con
+# `winner` NULL. Lo spazzino a monte le ha marcate scadute, il ponte verso la
+# riga pubblica non e' passato, e da lì NESSUNO le riguarda piu' — quello a
+# monte seleziona `outcome IS NULL`, il backstop TS pretende `winner NOT NULL`.
+# Un buco permanente per costruzione, e nessun test poteva vederlo perche' ogni
+# pezzo era corretto da solo.
+#
+# Questo check chiede la domanda che nessuno chiedeva: «c'e' una pick che
+# abbiamo MOSTRATO, la cui partita e' finita, e di cui non sappiamo dire com'e'
+# andata?». Se la risposta e' si', e' rosso.
+_ORFANE_SQL = """
+select count(*),
+       min(starts_at)::date::text,
+       count(*) filter (where sport = 'tennis'),
+       count(*) filter (where sport = 'football')
+from unified_predictions
+where result is null
+  and published_at is not null
+  and pick is not null
+  and is_demo = false
+  and starts_at < now() - interval '48 hours'
+"""
+
+
+def check_history_orfane() -> Verdict:
+    """Pick mostrate, partita finita, nessun esito: buchi muti nello storico."""
+    try:
+        righe = fetch_all(_ORFANE_SQL)
+    except DbUnavailable as exc:
+        return unknown(f"database non raggiungibile: {exc}", "db:unified_predictions")
+
+    n = int(righe[0][0] or 0)
+    if n == 0:
+        return green(
+            "nessuna pick mostrata senza esito: lo storico non ha buchi muti",
+            "db:unified_predictions", value=0,
+        )
+
+    piu_vecchia = righe[0][1] or "?"
+    prova = {
+        "orfane": n, "piu_vecchia": piu_vecchia,
+        "tennis": int(righe[0][2] or 0), "football": int(righe[0][3] or 0),
+    }
+    # La soglia e' ZERO, di proposito: una pick mostrata di cui non sappiamo
+    # l'esito e' un difetto anche se e' una sola. Il recupero e' possibile —
+    # l'archivio ESPN arriva a gennaio — quindi non c'e' motivo di tollerarle.
+    return red(
+        f"{n} pick mostrate senza esito (la piu' vecchia del {piu_vecchia}): "
+        "fuori dal track record e non contate nemmeno come buchi",
+        "db:unified_predictions", value=n, evidence=prova,
+    )
+
+
 def checks() -> list[Check]:
     return [
         Check("roi_totale", "risultati", "ROI totale", check_roi_totale, timeout_seconds=30),
@@ -114,4 +288,8 @@ def checks() -> list[Check]:
         Check("roi_7g", "risultati", "ROI 7 giorni", check_roi_7g, timeout_seconds=30),
         Check("picks_oggi", "risultati", "Pick di oggi", check_picks_oggi, timeout_seconds=25),
         Check("bankroll", "risultati", "Bankroll", check_bankroll, timeout_seconds=20),
+        Check("history_coerente", "risultati", "History coerente col DB",
+              check_history_coerente, timeout_seconds=40),
+        Check("history_orfane", "risultati", "Pick mostrate senza esito",
+              check_history_orfane, timeout_seconds=30),
     ]

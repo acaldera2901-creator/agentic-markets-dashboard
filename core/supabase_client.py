@@ -838,8 +838,17 @@ async def record_pick_settlement(
                 "Prefer": "resolution=ignore-duplicates,return=minimal",
             }
             resp = await client.post(
+                # #SETTLE-0909 fase 2 — il target include `settlement_revision`:
+                # l'indice a 3 colonne impediva alla revisione 2 di nascere,
+                # cioe' rendeva impossibile correggere un settlement sbagliato.
+                # Questo writer scrive sempre la revisione 1, quindi il
+                # DO NOTHING protegge dalla gara fra i due scrittori come prima.
+                # Se il target non coincide con un indice UNIQUE reale, Postgres
+                # risponde 42P10 e qui si fallisce SOFT: il mastro smetterebbe
+                # di essere scritto in silenzio. Percio' l'indice a 4 colonne va
+                # creato PRIMA di questo deploy (fatto: fase 1, 09/09).
                 f"{base}/pick_settlement"
-                "?on_conflict=source_table,source_id,model_version",
+                "?on_conflict=source_table,source_id,model_version,settlement_revision",
                 json=payload,
                 headers=headers,
             )
@@ -859,6 +868,52 @@ async def record_pick_settlement(
         return False
 
 
+async def unified_tennis_ancora_aperte(giorni: int = 30) -> list[str]:
+    """#SETTLE-0909 — i `source_id` delle righe tennis PUBBLICATE e ancora senza
+    esito, con la partita gia' passata.
+
+    Serve alla riconciliazione del ponte. Il difetto che chiude, misurato il
+    10/09: 27 pick mostrate con `result` NULL, partite fra l'11/06 e il 24/08.
+    A monte erano `outcome = 'expired'` col `winner` NULL — cioe' lo spazzino le
+    aveva marcate scadute e il ponte verso la riga pubblica non era passato. Da
+    lì nessuno le riguardava piu': lo spazzino a monte seleziona
+    `outcome IS NULL`, e il backstop TS pretende `winner NOT NULL`. Un buco
+    permanente per costruzione.
+    La domanda giusta non e' «quali predizioni ho chiuso», e' «quali righe
+    PUBBLICHE sono ancora aperte»: la si chiede alla tabella pubblica, che e'
+    l'unica che sa la verita' su cosa vede un cliente. Fail-soft: in caso di
+    errore ritorna vuoto e il ciclo prosegue.
+    """
+    base = _rest_base()
+    if not base:
+        return []
+    da = (datetime.now(timezone.utc) - timedelta(days=giorni)).isoformat()
+    adesso = datetime.now(timezone.utc).isoformat()
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                f"{base}/unified_predictions",
+                params={
+                    "select": "source_id",
+                    "sport": "eq.tennis",
+                    "source_table": "eq.tennis_predictions",
+                    "result": "is.null",
+                    "pick": "not.is.null",
+                    "starts_at": f"lt.{adesso}",
+                    "and": f"(starts_at.gte.{da})",
+                    "limit": "500",
+                },
+                headers=_service_headers(),
+            )
+            if resp.status_code != 200:
+                logger.warning("lettura righe tennis aperte: %s", resp.status_code)
+                return []
+            return [str(r["source_id"]) for r in resp.json() if r.get("source_id")]
+    except Exception as exc:
+        logger.warning("lettura righe tennis aperte fallita: %s", exc)
+        return []
+
+
 async def settle_unified_tennis(
     match_id: str,
     winner_name: str | None,
@@ -866,6 +921,8 @@ async def settle_unified_tennis(
     void: bool = False,
     unresolved: bool = False,
     final_score: str | None = None,
+    verification_source: str = "espn-archive",
+    verification_note: str = "settlement-live",
 ) -> bool:
     """
     Bridge a tennis settlement to the served unified_predictions row.
@@ -946,8 +1003,8 @@ async def settle_unified_tennis(
             # popola solo passando dal cancello dell'archivio ESPN (flag
             # `completed` della fonte + coerenza dei set). Quindi un won/lost
             # qui E' verificato, e va timbrato o /history non lo mostrera' mai.
-            verification_source="espn-archive",
-            verification_note="settlement-live",
+            verification_source=verification_source,
+            verification_note=verification_note,
         )
     except Exception as exc:
         logger.warning("unified tennis settle error for %s: %s", match_id, exc)
