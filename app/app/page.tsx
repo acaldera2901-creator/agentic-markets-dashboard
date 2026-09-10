@@ -9575,21 +9575,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const isClientUnlocked = profileHasAccess(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
   const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
-  // "With edge" KPI — prediction-native: count cards with a model edge ≥ 10 pt
-  // (margin of the pick over the 2nd outcome), not just market value bets. A
-  // market value bet always has a clear pick, so this is a strict superset and
-  // surfaces the model's conviction instead of sitting at 0 without odds.
-  const MODEL_EDGE_KPI_FLOOR = 10.0;
-  const fbWithEdge = predictions.filter((p) => {
-    if (p.enrichment?.surface?.below_floor === true) return false;
-    const ps = [p.p_home, p.p_draw, p.p_away].filter((v) => Number.isFinite(v)).sort((a, b) => b - a);
-    return ps.length >= 2 && modelEdge(ps[0], ps[1]) >= MODEL_EDGE_KPI_FLOOR;
-  }).length;
-  const tnWithEdge = tennisMatches.filter((m) =>
-    Number.isFinite(m.p1) && Number.isFinite(m.p2) &&
-    modelEdge(Math.max(m.p1, m.p2), Math.min(m.p1, m.p2)) >= MODEL_EDGE_KPI_FLOOR,
-  ).length;
-  const withEdgeCount = fbWithEdge + tnWithEdge;
   // #HITRATE-GUARD-1: niente percentuale promozionale sotto la soglia di campione.
   const v2RateMeaningful = historyV2Stats != null
     && isRateMeaningful(historyV2Stats.won + historyV2Stats.lost);
@@ -9855,6 +9840,15 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             <div className="am-deskhead-titles">
               {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading */}
               <h1>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+              {/* #BOARD-HEAD-0910 — Andrea, 10/09: «togli questa parte».
+                  Sulla BOARD il sottotitolo non si rende piu': era due righe di
+                  prosa sopra il contenuto che l'utente e' venuto a vedere.
+                  Resta su tutte le altre tab, dove NON e' decorazione: su
+                  History porta la frase sulla copertura verificata (#SETTLE-0909),
+                  che e' una dichiarazione di compliance e non si tocca.
+                  L'`h1` resta: e' l'unico heading della pagina prodotto
+                  (#SEO-PACK-0810) e togliersi un h1 e' una regressione SEO. */}
+              {tab !== "bets" && (
               <p className="am-sub">
                 {tab === "plans" ? (
                   uiLanguage === "it"
@@ -9904,6 +9898,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   <>Probabilities <b>calibrated by a model</b> on football and tennis. The model holds <b>one</b> opinion, not bar-stool takes.</>
                 )}
               </p>
+              )}
             </div>
             {tab === "bets" && (
               <button className="mb-entry" onClick={() => setTab("match-builder")}>Match Builder →</button>
@@ -9952,18 +9947,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               )}
             </div>
             )}
-            {tab === "bets" && (
-            <div className="am-statbar">
-              <div className="am-kpi chamfer-sm">
-                <span className="v">{predictions.length + tennisMatches.length}</span>
-                <span className="l">{tNav.kpi_events_lbl}</span>
-              </div>
-              <div className="am-kpi chamfer-sm">
-                <span className="v sig">{withEdgeCount}</span>
-                <span className="l">{tNav.kpi_withedge}</span>
-              </div>
-            </div>
-            )}
+            {/* #BOARD-HEAD-0910 — i due KPI del board sono stati rimossi.
+                `EVENTI` era diventato il duplicato ESATTO di «Tutti N» sul filtro
+                sport (#BOARD-CONTROLS-0910), quindi lo stesso numero due volte a
+                40px di distanza. `CON EDGE` e' stato rimosso su decisione di
+                Andrea: NON si e' spostato sul filtro «Solo best bets» perche' non
+                e' lo stesso conteggio — usava `MODEL_EDGE_KPI_FLOOR` sull'edge
+                del modello, mentre quel filtro usa il gate best-bet (value bet
+                OPPURE segnale >=58%). Metterlo li' sarebbe stato un numero giusto
+                sotto un'etichetta sbagliata, l'errore annotato piu' sopra per i
+                KPI di History. */}
           </div>
 
           {predFallback && tab === "bets" && (
