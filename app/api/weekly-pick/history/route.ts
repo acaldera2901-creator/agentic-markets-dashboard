@@ -10,6 +10,7 @@ import {
   currentWeekStart,
   weeklyPickEnabled,
   resolveWeeklyPickOutcomes,
+  WEEKLY_PICK_TRACK_RECORD_FROM,
   type PredOutcomeRow,
   type WeeklyPickLeg,
 } from "@/lib/weekly-pick";
@@ -23,15 +24,28 @@ export async function GET() {
   if (!weeklyPickEnabled()) return NextResponse.json({ enabled: false });
 
   const week = currentWeekStart(new Date());
+  // #WEEKLY-PICK-FOOTBALL-0910 — lo storico parte dal cambio di regola. Le
+  // settimane prodotte dalla regola vecchia (5 gambe, calcio escluso per un
+  // campo JSON vuoto) restano nel database ma non si pubblicano: appartengono a
+  // un altro prodotto. Il taglio è per DATA, non per esito.
   const rows = await dbQuery<Row>(
     `SELECT week_start::text AS week_start, selections, combined_prob
        FROM weekly_pick
       WHERE week_start < $1
+        AND week_start >= $2
       ORDER BY week_start DESC
       LIMIT 8`,
-    [week]
+    [week, WEEKLY_PICK_TRACK_RECORD_FROM]
   );
-  if (!rows.length) return NextResponse.json({ enabled: true, weeks: [] });
+  if (!rows.length) {
+    // `since` dice alla UI da quando conta il track record, così la pagina può
+    // spiegare l'assenza invece di sembrare rotta o vuota per caso.
+    return NextResponse.json({
+      enabled: true,
+      weeks: [],
+      since: WEEKLY_PICK_TRACK_RECORD_FROM,
+    });
+  }
 
   const parsed = rows.map((r) => ({
     week_start: r.week_start,
@@ -75,5 +89,5 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ enabled: true, weeks });
+  return NextResponse.json({ enabled: true, weeks, since: WEEKLY_PICK_TRACK_RECORD_FROM });
 }
