@@ -21,7 +21,7 @@ select count(*),
        sum(case when lower(s.result) = 'won'
                 then coalesce(s.closing_odds, l.odds) - 1 else -1 end)
 from pick_ledger l
-join pick_settlement s
+join pick_settlement_current s   -- #SETTLE-0909: la vista espone SOLO la revisione corrente
   on s.source_table = l.source_table and s.source_id = l.source_id
 where l.is_backfill = false
   and coalesce(s.closing_odds_is_fuzzy, false) = false

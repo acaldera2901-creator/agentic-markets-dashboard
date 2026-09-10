@@ -838,8 +838,17 @@ async def record_pick_settlement(
                 "Prefer": "resolution=ignore-duplicates,return=minimal",
             }
             resp = await client.post(
+                # #SETTLE-0909 fase 2 — il target include `settlement_revision`:
+                # l'indice a 3 colonne impediva alla revisione 2 di nascere,
+                # cioe' rendeva impossibile correggere un settlement sbagliato.
+                # Questo writer scrive sempre la revisione 1, quindi il
+                # DO NOTHING protegge dalla gara fra i due scrittori come prima.
+                # Se il target non coincide con un indice UNIQUE reale, Postgres
+                # risponde 42P10 e qui si fallisce SOFT: il mastro smetterebbe
+                # di essere scritto in silenzio. Percio' l'indice a 4 colonne va
+                # creato PRIMA di questo deploy (fatto: fase 1, 09/09).
                 f"{base}/pick_settlement"
-                "?on_conflict=source_table,source_id,model_version",
+                "?on_conflict=source_table,source_id,model_version,settlement_revision",
                 json=payload,
                 headers=headers,
             )

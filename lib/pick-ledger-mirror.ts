@@ -38,11 +38,23 @@ export const FOOTBALL_LEDGER_SOURCE_TABLE = "match_predictions";
 export const FOOTBALL_LEDGER_MODEL_VERSION = "football-v4-xg-model";
 
 /**
- * Bersaglio di conflitto dell'upsert. Deve coincidere con l'indice UNIQUE
- * `pick_settlement_pick_key (source_table, source_id, model_version)`, che e'
- * anche la colonna-chiave della FK verso `pick_ledger`.
+ * Bersaglio di conflitto dell'upsert. Deve coincidere con un indice UNIQUE
+ * REALE su pick_settlement, o Postgres risponde 42P10 («no unique or exclusion
+ * constraint matching the ON CONFLICT specification») — e questo writer e'
+ * fail-soft, quindi il libro mastro smetterebbe di essere scritto in silenzio.
+ *
+ * #SETTLE-0909 fase 2 — include `settlement_revision`: l'indice a 3 colonne
+ * (`pick_settlement_pick_key`) impediva alla revisione 2 di nascere, cioe'
+ * rendeva IMPOSSIBILE correggere un settlement sbagliato. Ora la chiave e'
+ * `pick_settlement_pick_rev_key`, che comprende la revisione: l'unicita' per
+ * pick E revisione resta, e l'immutabilita' si sposta dal campo alla riga.
+ *
+ * Questo writer scrive sempre la revisione 1 (una prima chiusura), quindi il
+ * DO NOTHING continua a proteggere dalla gara fra i due scrittori esattamente
+ * come prima. Le revisioni successive le scrive solo una correzione deliberata.
  */
-export const LEDGER_MIRROR_CONFLICT = "source_table,source_id,model_version";
+export const LEDGER_MIRROR_CONFLICT =
+  "source_table,source_id,model_version,settlement_revision";
 
 /**
  * Esiti con cui una riga puo' lasciare la board. `unresolved` NON e' `void`:
