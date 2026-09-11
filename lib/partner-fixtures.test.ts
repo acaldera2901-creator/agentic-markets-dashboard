@@ -72,6 +72,40 @@ describe("fixtureDaPartner: cosa entra e cosa viene scartato", () => {
     expect(a.matchId).toContain("partner");
   });
 
+  // ── #PARTNER-DEDUP-0911 ───────────────────────────────────────────────────
+  // Il test che mancava, e la sua assenza e' costata 72 righe su 74.
+  //
+  // `app/api/tennis/route.ts` deduplica con
+  //     DISTINCT ON (COALESCE(NULLIF(split_part(match_id, ':', 3), ''), match_id))
+  // cioe' sul TERZO segmento dell'id. Il primo formato che avevo scelto —
+  // `tennis:partner:2026-09-12:tizio|caio` — metteva li' la DATA, quindi tutte
+  // le partite di uno stesso giorno diventavano una riga sola. In produzione:
+  // 74 scritte, 2 servite. Nessun test poteva vederlo, perche' la dedup vive in
+  // un'altra query: quindi la si riproduce qui.
+  const terzoSegmento = (id: string) => id.split(":")[2] || id;
+
+  it("il TERZO segmento dell'id e' univoco per partita (lo esige la dedup SQL)", () => {
+    const a = fixtureDaPartner(m(), ORA)!;
+    const b = fixtureDaPartner(
+      m({ teamPairKey: "2026-09-12:djokovic|federer", homeName: "Novak Djokovic", awayName: "Roger Federer" }),
+      ORA,
+    )!;
+    // stessa data, partite diverse: devono restare distinte
+    expect(terzoSegmento(a.matchId)).not.toBe(terzoSegmento(b.matchId));
+  });
+
+  it("il terzo segmento non e' una data: sarebbe uguale per tutta la giornata", () => {
+    const f = fixtureDaPartner(m(), ORA)!;
+    expect(terzoSegmento(f.matchId)).not.toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // e contiene ancora i nomi, cioe' l'informazione che rende univoca la riga
+    expect(terzoSegmento(f.matchId)).toContain("sinner");
+  });
+
+  it("l'id non contiene due punti oltre ai due del prefisso", () => {
+    const f = fixtureDaPartner(m(), ORA)!;
+    expect(f.matchId.split(":").length).toBe(3);
+  });
+
   it("scarta il calcio: questo ingest e' solo tennis", () => {
     expect(fixtureDaPartner(m({ sport: "soccer" }), ORA)).toBeNull();
   });
