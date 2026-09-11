@@ -263,6 +263,29 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
       FROM tennis_predictions tp
       WHERE tp.scheduled_at > NOW() - INTERVAL '5 hours'
         AND tp.winner IS NULL
+        -- #PARTNER-NO-LIVE-0911 — le righe del feed partner escono dal board
+        -- appena la partita comincia, invece di restare nella finestra dei
+        -- match in corso.
+        --
+        -- Quella finestra di 5 ore esiste per tenere visibile un Bo5 mentre si
+        -- gioca: e' corretta perche' al termine il settlement valorizza
+        -- il vincitore e la riga esce da sola. Le righe partner pero' non
+        -- passano da nessun settlement: il ciclo del tennis risolve partendo
+        -- dai match_id di ESPN/Matchbook, e un id con prefisso tennis:partner
+        -- non e' in quel giro. Quindi il vincitore resta NULL per sempre e la
+        -- partita continua a comparire come da giocare anche a match finito.
+        --
+        -- (Quarta volta oggi che un backtick in un commento SQL chiude il
+        -- template literal. In questi commenti non se ne scrivono, mai.)
+        --
+        -- Misurato l'11/09, poche ore dopo aver acceso l'ingest: 42 righe
+        -- partner gia' iniziate ancora servite, la piu' vecchia da 208 minuti,
+        -- e 77 righe partner su 77 senza vincitore.
+        --
+        -- Il rimedio giusto e' dare un settlement anche a queste righe; finche'
+        -- non c'e', NON si mostrano come live. Una predizione su una partita
+        -- gia' giocata non e' una predizione.
+        AND (tp.match_id NOT LIKE 'tennis:partner:%' OR tp.scheduled_at > NOW())
         ${BASE_FILTERS}
       ORDER BY ${DEDUP}, tp.computed_at DESC
     ) d
