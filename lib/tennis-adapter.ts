@@ -7,6 +7,7 @@ import {
 } from "@/lib/publication-gate";
 import { buildTennisExplanation } from "@/lib/tennis-explanation";
 import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
+import { probabilitaMostrata } from "@/lib/tennis-calibration";
 
 // Mirror of lib/unified-adapter.ts (football) for tennis: maps the Python-fed
 // tennis_predictions table into the served unified_predictions table (sport=tennis).
@@ -53,8 +54,24 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   // una volta valorizzato il campo (#TENNIS-BS-1).
   const pickP1 = row.best_selection ? row.best_selection === "P1" : p1 >= p2;
   const pick = pickP1 ? row.player1 : row.player2;
-  const prob = pickP1 ? p1 : p2;
   const odds = pickP1 ? row.odds_p1 : row.odds_p2;
+
+  // #CURSE-ANCHORED-0911 — due probabilita', e servono davvero entrambe.
+  //
+  // `probGrezza` e' cio' che arriva dalla sorgente. `prob` e' cio' che l'utente
+  // legge, e per le righe MARKET-ANCHORED (`edge = null`, dove pubblichiamo il
+  // mercato devigato e non il nostro Elo) passa dalla temperatura 1.68 che cura
+  // un bias di SELEZIONE: misurato -5,9pt con z=-3,94, risanato a +1,5pt con
+  // z=+0,70 sul holdout. Le righe col nostro edge non si toccano: sono gia'
+  // calibrate, e una correzione uniforme le romperebbe (+3,5 -> +6,5pt,
+  // z=+2,33 — misurato). Il perche' sta in lib/tennis-calibration.ts.
+  //
+  // Il GREZZO resta perche' il floor di surfacing (62/64/66) e' tarato su
+  // 19.790 partite in quella scala: passargli il numero corretto cambierebbe
+  // calibrazione E selezione insieme, e nessuna delle due resterebbe
+  // misurabile. Il gate decide come prima, la scheda dice il vero.
+  const probGrezza = pickP1 ? p1 : p2;
+  const prob = probabilitaMostrata(probGrezza, row.edge != null);
 
   const hasRealMarket = odds != null && row.edge != null;
   // #TENNIS-MARKET-ANCHOR-0821: a market-anchored tennis pick serves the devigged
@@ -78,8 +95,12 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   // tennis row with no market price on the picked side carries no directional
   // pick either (lab 05/08: 58.9% actual against 72.1% claimed, n=270). Same
   // probability-neutral contract as the floor.
+  // #CURSE-ANCHORED-0911: al gate va la confidenza GREZZA — il floor e' tarato
+  // su quella scala, quindi seleziona le stesse identiche partite di prima.
+  // L'unica cosa che cambia e' il numero che l'utente legge.
+  const confidenzaPerIlGate = probGrezza > 0 ? Math.round(probGrezza * 100) : 0;
   const { belowFloor, noMarket } = tennisSurfaceDecision(
-    confidence ?? 0,
+    confidenzaPerIlGate,
     row.tournament,
     odds
   );

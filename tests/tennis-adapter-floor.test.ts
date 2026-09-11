@@ -60,7 +60,14 @@ assert.ok(
 {
   const below = tennisPredictionToUnifiedInsert(row(0.61, 0.39, "P1", "Wimbledon"));
   assert.equal(below.pick, null, "hi-tier below-floor pick must be null");
-  assert.equal(below.confidence_score, 61, "confidence is probability-neutral (unchanged)");
+  // #CURSE-ANCHORED-0911 — il contratto «probability-neutral» vale ancora per
+  // la SELEZIONE, non piu' per il numero mostrato. Queste righe hanno
+  // `edge: null`, cioe' sono market-anchored, e la loro probabilita' passa ora
+  // da una temperatura 1.68 che cura un bias di selezione misurato (-5,9pt,
+  // z=-3,94 su n=911). Cio' che DEVE restare intatto e' l'asserzione qui sopra
+  // sul pick: il floor legge la scala grezza e seleziona come prima.
+  assert.ok(below.confidence_score !== null && below.confidence_score < 61,
+    "la confidence mostrata e' corretta verso il basso (era 61 grezzo)");
 
   const at = tennisPredictionToUnifiedInsert(row(0.62, 0.38, "P1", "Wimbledon"));
   assert.equal(at.pick, "Alice", "hi-tier at-floor pick must be the picked player");
@@ -70,7 +77,8 @@ assert.ok(
 {
   const below = tennisPredictionToUnifiedInsert(row(0.63, 0.37, "P1")); // Test Open → lo
   assert.equal(below.pick, null, "lower-tier conf 63 must not surface a pick");
-  assert.equal(below.confidence_score, 63, "confidence unchanged (probability-neutral)");
+  assert.ok(below.confidence_score !== null && below.confidence_score < 63,
+    "la confidence mostrata e' corretta verso il basso (era 63 grezzo)");
 
   const at = tennisPredictionToUnifiedInsert(row(0.64, 0.36, "P1"));
   assert.equal(at.pick, "Alice", "lower-tier at-floor (64) pick must be published");
