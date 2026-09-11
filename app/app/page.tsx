@@ -3868,12 +3868,25 @@ function CheckoutModal({
               </button>
             </div>
             <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 8px" }}>
-              {/* Il rail carta crea un ABBONAMENTO Shopify che si rinnova da sé:
-                  dire "pagamento singolo / rinnovo manuale" sarebbe un addebito
-                  ricorrente non dichiarato al momento dell'acquisto. */}
+              {/* #SHOPIFY-NO-BILLER-0911 — qui c'era scritto "si rinnova
+                  automaticamente", e non era vero.
+                  Il checkout carta applica davvero il selling plan (via
+                  /cart/add, vedi lib/shopify.ts) e Shopify crea il subscription
+                  contract. Ma il contratto NON si addebita da solo: il ciclo
+                  successivo parte solo se un'app chiama
+                  `subscriptionBillingAttemptCreate`, e quella chiamata nel repo
+                  non esiste (zero occorrenze — asserito in
+                  lib/checkout-renewal-claims.test.ts). L'ordine #1002 del 25/07
+                  non e' mai stato riaddebitato il 24/08.
+                  Quindi la frase dice il periodo COPERTO e che a rinnovare e'
+                  il cliente: e' l'unica vera oggi, ed e' quella che gli fa
+                  tornare il giorno della scadenza invece di decadere in
+                  silenzio. Si rimette la copy di rinnovo solo quando un biller
+                  reale possiede i selling plan E un secondo ciclo e' stato
+                  visto addebitare davvero. */}
               {period === "monthly"
-                ? pick5(lang, { it: "Abbonamento: si rinnova automaticamente ogni mese. Puoi disdire quando vuoi dal tuo account.", en: "Subscription: renews automatically every month. You can cancel anytime from your account.", es: "Suscripción: se renueva automáticamente cada mes. Puedes cancelar cuando quieras desde tu cuenta.", fr: "Abonnement : renouvellement automatique chaque mois. Vous pouvez annuler à tout moment depuis votre compte.", ru: "Подписка: продлевается автоматически каждый месяц. Отменить можно в любой момент в аккаунте." })
-                : pick5(lang, { it: "Abbonamento annuale: paghi 11 mensilità, 1 mese è gratis. Si rinnova automaticamente ogni 12 mesi, disdici quando vuoi dal tuo account.", en: "Annual subscription: you pay 11 monthly instalments, 1 month is free. Renews automatically every 12 months; cancel anytime from your account.", es: "Suscripción anual: pagas 11 mensualidades, 1 mes es gratis. Se renueva automáticamente cada 12 meses; cancela cuando quieras desde tu cuenta.", fr: "Abonnement annuel : vous payez 11 mensualités, 1 mois est offert. Renouvellement automatique tous les 12 mois ; annulez à tout moment depuis votre compte.", ru: "Годовая подписка: вы платите за 11 месяцев, 1 месяц бесплатно. Продлевается автоматически каждые 12 месяцев; отменить можно в аккаунте." })}
+                ? pick5(lang, { it: "Accesso per 30 giorni. Nessun addebito automatico: alla scadenza rinnovi tu, quando vuoi.", en: "30 days of access. No automatic charge: at expiry you renew it yourself, whenever you want.", es: "Acceso de 30 días. Sin cargo automático: al vencer lo renuevas tú, cuando quieras.", fr: "30 jours d'accès. Aucun prélèvement automatique : à l'échéance, vous renouvelez vous-même, quand vous voulez.", ru: "Доступ на 30 дней. Без автоматического списания: по истечении срока вы продлеваете сами, когда захотите." })
+                : pick5(lang, { it: "Annuale: paghi 11 mensilità, 1 mese è gratis. Accesso per 12 mesi, nessun addebito automatico: alla scadenza rinnovi tu, quando vuoi.", en: "Annual: you pay 11 monthly instalments, 1 month is free. 12 months of access, no automatic charge: at expiry you renew it yourself, whenever you want.", es: "Anual: pagas 11 mensualidades, 1 mes es gratis. Acceso de 12 meses, sin cargo automático: al vencer lo renuevas tú, cuando quieras.", fr: "Annuel : vous payez 11 mensualités, 1 mois est offert. 12 mois d'accès, aucun prélèvement automatique : à l'échéance, vous renouvelez vous-même, quand vous voulez.", ru: "Годовой: вы платите за 11 месяцев, 1 месяц бесплатно. Доступ на 12 месяцев, без автоматического списания: по истечении срока вы продлеваете сами, когда захотите." })}
             </p>
             <button type="button" onClick={payWithCard} disabled={!withdrawalConsent || redirecting}
               style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
@@ -4206,8 +4219,14 @@ function PlansTab({
           <div className="price-line">
             <strong>{planPriceCopy("base", lang)}</strong>
             {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
-                Shopify). Il crypto resta disponibile come alternativa. */}
-            <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
+                Shopify). Il crypto resta disponibile come alternativa.
+                #SHOPIFY-NO-BILLER-0911 — il badge diceva "rinnovo automatico"
+                per ENTRAMBI i rail, e non era vero per nessuno dei due: il
+                crypto e' one-off per costruzione (PayGate non ri-addebita un
+                metodo salvato), e la carta crea un contratto che nessuno
+                fattura. Il badge copre i due metodi insieme, quindi deve dire la
+                cosa che oggi vale per tutti e due. */}
+            <span>{pick5(lang, { it: "Carta o crypto · senza rinnovo automatico", en: "Card or crypto · no auto-renewal", es: "Tarjeta o crypto · sin renovación automática", fr: "Carte ou crypto · sans renouvellement automatique", ru: "Карта или крипто · без автопродления" })}</span>
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "7 per sport / giorno", en: "7 per sport / day", es: "7 por deporte / día", fr: "7 par sport / jour", ru: "7 на вид спорта / день" })}</strong>
@@ -4244,8 +4263,14 @@ function PlansTab({
           <div className="price-line">
             <strong>{planPriceCopy("premium", lang)}</strong>
             {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
-                Shopify). Il crypto resta disponibile come alternativa. */}
-            <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
+                Shopify). Il crypto resta disponibile come alternativa.
+                #SHOPIFY-NO-BILLER-0911 — il badge diceva "rinnovo automatico"
+                per ENTRAMBI i rail, e non era vero per nessuno dei due: il
+                crypto e' one-off per costruzione (PayGate non ri-addebita un
+                metodo salvato), e la carta crea un contratto che nessuno
+                fattura. Il badge copre i due metodi insieme, quindi deve dire la
+                cosa che oggi vale per tutti e due. */}
+            <span>{pick5(lang, { it: "Carta o crypto · senza rinnovo automatico", en: "Card or crypto · no auto-renewal", es: "Tarjeta o crypto · sin renovación automática", fr: "Carte ou crypto · sans renouvellement automatique", ru: "Карта или крипто · без автопродления" })}</span>
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "Illimitato", en: "Unlimited", es: "Ilimitado", fr: "Illimité", ru: "Безлимитно" })}</strong>
@@ -4836,7 +4861,14 @@ function ProfilePanel({
             <h3>{daysLeft > 0
               ? `${daysLeft} ${daysLeft === 1 ? pick5(lang, { it: "giorno rimanente", en: "day left", es: "día restante", fr: "jour restant", ru: "день осталось" }) : pick5(lang, { it: "giorni rimanenti", en: "days left", es: "días restantes", fr: "jours restants", ru: "дн. осталось" })}`
               : pick5(lang, { it: "Scaduto", en: "Expired", es: "Caducado", fr: "Expiré", ru: "Истёк" })}</h3>
-            <span>{pick5(lang, { it: "BetRedge Pro · rinnovo mensile", en: "BetRedge Pro · monthly renewal", es: "BetRedge Pro · renovación mensual", fr: "BetRedge Pro · renouvellement mensuel", ru: "BetRedge Pro · ежемесячное продление" })}</span>
+            {/* #SHOPIFY-NO-BILLER-0911 — diceva "rinnovo mensile" accanto a un
+                bottone "Rinnova" che e' manuale: la riga lasciava credere che
+                il rinnovo arrivasse da solo proprio nel punto in cui il cliente
+                vede il conto alla rovescia. E' il posto dove la promessa falsa
+                costava di piu' (si guarda "3 giorni rimanenti" e non si agisce),
+                quindi dice esplicitamente che tocca a lui — il bottone qui
+                accanto e' il come. */}
+            <span>{pick5(lang, { it: "BetRedge Pro · nessun rinnovo automatico", en: "BetRedge Pro · no auto-renewal", es: "BetRedge Pro · sin renovación automática", fr: "BetRedge Pro · sans renouvellement automatique", ru: "BetRedge Pro · без автопродления" })}</span>
           </div>
           {daysLeft <= 7 && <button onClick={onUpgrade}>{pick5(lang, { it: "Rinnova", en: "Renew", es: "Renovar", fr: "Renouveler", ru: "Продлить" })}</button>}
         </div>
@@ -7507,7 +7539,7 @@ function FAQTab() {
       ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
       ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
       ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
-      ["Come pago?", "Con carta (Visa, Mastercard, Amex), Shop Pay o Google Pay: l'abbonamento si rinnova automaticamente e lo disdici quando vuoi dal tuo account. In alternativa puoi pagare in crypto (USDT TRC20)."],
+      ["Come pago?", "Con carta (Visa, Mastercard, Amex), Shop Pay o Google Pay, oppure in crypto (USDT TRC20). Nessuno dei due si rinnova automaticamente: l'accesso copre il periodo che hai pagato e alla scadenza lo rinnovi tu, quando vuoi."],
       ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
     ],
     en: [
@@ -7515,7 +7547,7 @@ function FAQTab() {
       ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
       ["What does BetRedge Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
       ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
-      ["How do I pay?", "By card (Visa, Mastercard, Amex), Shop Pay or Google Pay: the subscription renews automatically and you can cancel anytime from your account. You can also pay in crypto (USDT TRC20)."],
+      ["How do I pay?", "By card (Visa, Mastercard, Amex), Shop Pay or Google Pay, or in crypto (USDT TRC20). Neither is auto-renewing: access covers the period you paid for, and at expiry you renew it yourself, whenever you want."],
       ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
     ],
     es: [
@@ -7523,7 +7555,7 @@ function FAQTab() {
       ["¿Qué desbloquea el plan Free?", "Perfil, idioma y vista previa de cuenta, sin predicciones operativas."],
       ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
       ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
-      ["¿Cómo pago?", "Con tarjeta (Visa, Mastercard, Amex), Shop Pay o Google Pay: la suscripción se renueva automáticamente y puedes cancelar cuando quieras desde tu cuenta. También puedes pagar en crypto (USDT TRC20)."],
+      ["¿Cómo pago?", "Con tarjeta (Visa, Mastercard, Amex), Shop Pay o Google Pay, o en crypto (USDT TRC20). Ninguno de los dos se renueva automáticamente: el acceso cubre el periodo que has pagado y al vencer lo renuevas tú, cuando quieras."],
       ["¿Cómo se activa el plan?", "Tras el TX hash, el plan se revisa internamente o se activa según la política operativa configurada."],
     ],
     fr: [
@@ -7531,7 +7563,7 @@ function FAQTab() {
       ["Que débloque le plan Free ?", "Profil, langue et aperçu du compte, sans prédictions opérationnelles."],
       ["Que débloque BetRedge Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
       ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
-      ["Comment payer ?", "Par carte (Visa, Mastercard, Amex), Shop Pay ou Google Pay : l'abonnement se renouvelle automatiquement et vous pouvez annuler à tout moment depuis votre compte. Vous pouvez aussi payer en crypto (USDT TRC20)."],
+      ["Comment payer ?", "Par carte (Visa, Mastercard, Amex), Shop Pay ou Google Pay, ou en crypto (USDT TRC20). Aucun des deux ne se renouvelle automatiquement : l'accès couvre la période payée et, à l'échéance, vous le renouvelez vous-même, quand vous voulez."],
       ["Comment le plan est-il activé ?", "Après le TX hash, le plan est vérifié en interne ou activé selon la politique opérationnelle configurée."],
     ],
     ru: [
@@ -7539,7 +7571,7 @@ function FAQTab() {
       ["Что открывает план Free?", "Профиль, язык и предпросмотр аккаунта, без рабочих прогнозов."],
       ["Что открывает BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
       ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
-      ["Как оплатить?", "Картой (Visa, Mastercard, Amex), Shop Pay или Google Pay: подписка продлевается автоматически, отменить можно в любой момент в аккаунте. Также можно оплатить в крипто (USDT TRC20)."],
+      ["Как оплатить?", "Картой (Visa, Mastercard, Amex), Shop Pay или Google Pay, либо в крипто (USDT TRC20). Ни один из способов не продлевается автоматически: доступ покрывает оплаченный период, а по истечении срока вы продлеваете его сами, когда захотите."],
       ["Как активируется план?", "После TX hash план проверяется вручную или активируется согласно настроенной операционной политике."],
     ],
   });
