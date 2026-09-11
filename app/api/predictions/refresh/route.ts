@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncTennisPredictionsToUnified } from "@/lib/tennis-adapter";
 import { ingestPartnerTennis } from "@/lib/partner-fixtures";
+import { registraPrezziPartner } from "@/lib/partner-prezzi";
 import { emptySyncReport, type SyncReport } from "@/lib/publication-gate";
 import { verifyBearer } from "@/lib/admin-auth";
 
@@ -40,6 +41,8 @@ export async function GET(req: NextRequest) {
   let tennisError: unknown = null;
   let partner: unknown = null;
   let partnerError: unknown = null;
+  let prezzi: unknown = null;
+  let prezziError: unknown = null;
 
   // #PARTNER-INGEST-0911 — le partite dei partner PRIMA del sync, cosi' quelle
   // nuove entrano nello stesso giro invece di aspettare il successivo.
@@ -59,6 +62,23 @@ export async function GET(req: NextRequest) {
     partnerError = String(e);
   }
 
+  // #PREZZI-STORIA-0911 — un'istantanea dei prezzi partner a ogni giro.
+  //
+  // E' l'impianto che rende misurabile l'edge, e oggi non c'era: sei test sui
+  // segnali, uno solo concludibile, perche' `odds_snapshots` ha 16 milioni di
+  // righe e quasi nessuna sulle partite che pubblichiamo (il CLV agganciava 17
+  // pick su 74). Il feed lo leggiamo GIA' qui sopra per l'ingest: registrarne
+  // il prezzo costa una scrittura, non una richiesta in piu'.
+  //
+  // In un try suo, come gli altri: una misura che non riesce non deve impedire
+  // al board di aggiornarsi. Un impianto di misura che rompe cio' che misura
+  // e' peggio di nessun impianto.
+  try {
+    prezzi = await registraPrezziPartner();
+  } catch (e) {
+    prezziError = String(e);
+  }
+
   try {
     tennisReport = await syncTennisPredictionsToUnified();
   } catch (e) {
@@ -70,5 +90,6 @@ export async function GET(req: NextRequest) {
     football: footballError ? { error: footballError } : football,
     tennis: { ...tennisReport, ...(tennisError ? { error: tennisError } : {}) },
     partner: partnerError ? { error: partnerError } : partner,
+    prezzi: prezziError ? { error: prezziError } : prezzi,
   });
 }
