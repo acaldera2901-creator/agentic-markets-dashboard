@@ -169,11 +169,21 @@ export async function fetchAllTodayMatches(): Promise<FDMatch[]> {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
+  // #FD-DATETO-0911 — su /v4/matches (cross-competizione) `dateTo` e' ESCLUSO:
+  // interrogato l'11/09 alle 20:53 UTC con dateFrom=10 e dateTo=11, il
+  // resultSet dichiarava first=last=2026-09-10. Con dateTo=oggi questa funzione
+  // rendeva solo le partite di IERI: nessun IN_PLAY, nessun FINISHED per le
+  // leghe football-data — Venezia-Fiorentina 2-4, Union-Schalke 1-3 e
+  // Sevilla-Valencia erano SCHEDULED senza punteggio a due ore dal fischio,
+  // mentre l'endpoint /competitions/{code}/matches (fetchFixtures, fetchHistory)
+  // include l'estremo. Da qui `dateTo` e' domani: la finestra resta ieri->oggi.
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
   const competitions = Object.keys(LEAGUES).join(",");
   const qs = new URLSearchParams({
     competitions,
     dateFrom: yesterday.toISOString().slice(0, 10),
-    dateTo: today.toISOString().slice(0, 10),
+    dateTo: tomorrow.toISOString().slice(0, 10),
   }).toString();
   try {
     const r = await fetch(`${BASE}/matches?${qs}`, { headers: headers(), cache: "no-store" });
