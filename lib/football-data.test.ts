@@ -94,3 +94,38 @@ describe("senza chiave non si chiama nessuno", () => {
     expect(fetchFinto).not.toHaveBeenCalled();
   });
 });
+
+// #NIGHT-GAP-0911 — la finestra parte da IERI, non da oggi.
+describe("la finestra non perde le partite notturne UTC", () => {
+  const urlDellaChiamata = async (code: string) => {
+    let url = "";
+    vi.stubGlobal("fetch", vi.fn(async (u: string | URL | Request) => {
+      url = String(u);
+      return risposta(200, UNA_PARTITA);
+    }));
+    await fetchFixtures(code);
+    return new URL(url).searchParams;
+  };
+
+  it("chiede da IERI: una partita delle 02:30 UTC non esce a mezzanotte", async () => {
+    // Il bug: `dateFrom` e' una data UTC, ma le 02:30 UTC sono la sera prima in
+    // America. Allo scoccare della mezzanotte la partita usciva dalla finestra
+    // e smetteva di essere ricalcolata con ore ancora da giocare. Misurato su
+    // 20 giorni: il 90% dei kickoff 00:00-04:59 UTC aveva l'ultimo calcolo
+    // prima di quella mezzanotte, contro il 18% delle diurne.
+    const p = await urlDellaChiamata("SA");
+    const ieri = new Date();
+    ieri.setDate(ieri.getDate() - 1);
+    expect(p.get("dateFrom")).toBe(ieri.toISOString().slice(0, 10));
+  });
+
+  it("l'orizzonte in avanti resta la finestra di pubblicazione", async () => {
+    // Allargare all'indietro non deve allargare in avanti: #019 dice che non si
+    // pubblica oltre l'orizzonte di servizio.
+    const p = await urlDellaChiamata("PL");
+    const giorni =
+      (Date.parse(p.get("dateTo")!) - Date.parse(p.get("dateFrom")!)) / 86_400_000;
+    expect(giorni).toBeGreaterThanOrEqual(11);
+    expect(giorni).toBeLessThanOrEqual(12);
+  });
+});
