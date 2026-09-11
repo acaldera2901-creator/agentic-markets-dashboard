@@ -19,6 +19,7 @@ import {
   modelPoolIsCoherent,
 } from "@/lib/poisson-model";
 import { applyTemperature } from "@/lib/calibration";
+import { pronosticoDaCongelare } from "@/lib/kickoff-freeze";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
@@ -433,6 +434,13 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
     console.log(`[${code}] model on ${model.matchCount} matches → ${fixtures.length} fixtures${xgBaseline ? " (xG blend on)" : ""}`);
 
     for (const fix of fixtures) {
+      // #FREEZE-KICKOFF-0911: a palla che rotola il pronostico resta fermo.
+      // Il perche' e cosa NON viene toccato (punteggi live, settlement, storia)
+      // stanno in lib/kickoff-freeze.ts, insieme alle misure che l'hanno
+      // motivato. Il tennis e' congelato dalla stessa regola, in SQL, dentro
+      // lib/tennis-adapter.ts.
+      if (pronosticoDaCongelare(fix.utcDate)) continue;
+
       // Summer leagues: fixture names come from ESPN/Odds API and can drift
       // from the snapshot names ("HJK Helsinki" vs "HJK") → resolve against
       // the model roster; unmatched team = skip, never guess (fail-closed).
