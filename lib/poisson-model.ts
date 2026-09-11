@@ -105,7 +105,23 @@ export const XG_BLEND_WEIGHT = 0.5;
 // a pure mirror of the bookmaker. α=0.3 keeps almost the entire calibration gain
 // while preserving the model's identity. Setting α=1 restores today's behaviour
 // exactly (the rollback switch).
-export const MARKET_BLEND_ALPHA = 0.3;
+// #ALPHA-02-0910 — 0.3 -> 0.2, su APPROVE di Andrea del 10/09, misurato.
+// Walk-forward su `prediction_log` (1.067 partite, 11/06-10/09, expanding, passo
+// 7g, burn-in 28g): alpha 0.2 e' significativo (t=-2,66) con segni 569/429
+// (p<0,0001) e dose-risposta monotona. Effetto di PRODOTTO: pick pubblicate
+// 71 -> 79 (+11%) e hit 84,5% -> 86,1%. Alpha non cambia mai il LATO scelto
+// (0 inversioni su tutti i valori testati): muove il volume, perche' il modello
+// e' meno sicuro del mercato (max-p medio 0,4732 contro 0,5060) e diluisce la
+// confidenza sotto il floor.
+//
+// Perche' NON 0, che e' l'ottimo statistico (e questo file lo diceva gia'):
+// azzera l'edge servito PER COSTRUZIONE, e su quell'edge poggiano tre cose
+// visibili — il filtro «solo best bets» (via value), lo scanner della LANDING
+// («model 82 · mkt 74 · +8.0», che diventerebbe +0.0 e scarterebbe le righe con
+// `edge <= 0`) e, prima di #CONF-MARGINE-0910, confidenza e stake. Le prime due
+// restano: alpha 0 richiede di riscrivere la narrativa della home, che e' una
+// decisione di posizionamento e non un parametro.
+export const MARKET_BLEND_ALPHA = 0.2;
 
 export interface TripleProb {
   pHome: number;

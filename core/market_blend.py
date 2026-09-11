@@ -12,7 +12,15 @@ lib/poisson-model.ts MARKET_BLEND_ALPHA.
 """
 from __future__ import annotations
 
-MARKET_BLEND_ALPHA = 0.3
+# #ALPHA-02-0910 — 0.3 -> 0.2, allineato a lib/poisson-model.ts come questo
+# file richiede due righe sopra. La misura che motiva il valore e' stata fatta
+# sul motore TS (`football-v4-xg-model`, 1.067 partite walk-forward): alpha 0.2
+# significativo, t=-2,66, e +11% di pick pubblicate con hit 84,5% -> 86,1%.
+# Sul motore Python la stessa DIREZIONE e' misurata (`football-worldcup-v2-elo`
+# perde 0,034 di Brier contro il mercato, piu' del motore TS), ma l'effetto di
+# prodotto specifico NON e' stato misurato su di lui: qui si segue l'invariante
+# di parita' dichiarata, non un secondo esperimento.
+MARKET_BLEND_ALPHA = 0.2
 
 
 def devig_1x2(
