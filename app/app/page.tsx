@@ -3472,6 +3472,16 @@ function CheckoutModal({
   const ANNUAL_PRICE: Record<string, number> = { base: 164.99, premium: 329.99 };
   const price = planAmountUsdt(plan);
   const displayPrice = period === "annual" ? (ANNUAL_PRICE[plan] ?? price) : price;
+  // #CRYPTO-PRICE-0910 — giorni concessi dal rail crypto, che segue il PERIODO
+  // scelto: con l'annuale il server concede 365 giorni (plan-grant.ts, `days =
+  // period === "annual" ? 365 : 30`), non 30. Dire "30" con l'annuale selezionato
+  // e' una copy falsa nel punto esatto in cui l'utente decide.
+  // SCORCIATOIA DICHIARATA: il numero e' ricalcolato qui invece di venire da
+  // periodDays() perche' lib/paygate.ts importa node:crypto e questo file e' un
+  // client component. E' la stessa duplicazione di ANNUAL_PRICE qui sopra, e si
+  // chiude allo stesso modo: `days` dal preventivo POST /api/paygate/quote
+  // (PROPOSAL #CRYPTO-PRICE-0910 §2.5), che rimuove entrambe le copie.
+  const cryptoDays = period === "annual" ? 365 : 30;
   const t = useT();
   const lang = useLang();
 
@@ -3734,7 +3744,7 @@ function CheckoutModal({
           {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (
           <span>
             {(() => {
-              const amount = <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{price.toFixed(2)} USDT</strong>;
+              const amount = <strong style={{ color: "var(--am-coral)", fontFamily: "var(--font-mono), ui-monospace, monospace" }}>{displayPrice.toFixed(2)} USDT</strong>;
               const parts = pick5(lang, {
                 it: ["Invia esattamente ", " all'indirizzo qui sotto. Il piano passerà in verifica."],
                 en: ["Send exactly ", " to the address below. The plan will move to review."],
@@ -3799,7 +3809,7 @@ function CheckoutModal({
             <code>{USDT_TRC20_ADDRESS}</code>
             <button type="button" onClick={handleCopy}>{copied ? t.checkout_copied : t.checkout_copy}</button>
           </div>
-          <em>{t.checkout_amount}: {price.toFixed(2)} USDT</em>
+          <em>{t.checkout_amount}: {displayPrice.toFixed(2)} USDT</em>
         </div>
 
         <div className="checkout-steps">
@@ -3848,7 +3858,7 @@ function CheckoutModal({
           }}
           style={{ marginTop: 4 }}
         >
-          {submitting ? pick5(lang, { it: "Invio in corso…", en: "Submitting…", es: "Enviando…", fr: "Envoi en cours…", ru: "Отправка…" }) : <>{t.checkout_confirm} · {price.toFixed(2)} USDT</>}
+          {submitting ? pick5(lang, { it: "Invio in corso…", en: "Submitting…", es: "Enviando…", fr: "Envoi en cours…", ru: "Отправка…" }) : <>{t.checkout_confirm} · {displayPrice.toFixed(2)} USDT</>}
         </button>
         </>)}
         {error && (
@@ -3887,24 +3897,31 @@ function CheckoutModal({
             {/* #SHOPIFY-CRYPTO-2 — rail crypto. Il crypto NON può essere
                 ricorrente su Shopify (solo i gateway che ri-addebitano un metodo
                 salvato pagano un abbonamento), quindi qui si compra una SKU
-                one-off da 30 giorni e la copy lo dice prima del click. */}
+                one-off e la copy lo dice prima del click.
+                #CRYPTO-PRICE-0910 — la SKU segue il PERIODO scelto: 30 giorni col
+                mensile, 365 con l'annuale (plan-grant.ts concede `period ===
+                "annual" ? 365 : 30`). Questo commento diceva "one-off da 30
+                giorni" come se fosse l'unico caso: descriveva solo il mensile, e
+                un commento falso e' come una copy falsa, solo piu' difficile da
+                vedere. Prezzo e durata mostrati seguono `displayPrice` e
+                `cryptoDays`, non piu' il mensile fisso. */}
             {process.env.NEXT_PUBLIC_SHOPIFY_CRYPTO_ENABLED === "true" && (
               <>
                 {!cryptoOpen ? (
                   <button type="button" onClick={() => setCryptoOpen(true)} disabled={!withdrawalConsent || redirecting}
                     style={{ width: "100%", marginTop: 8, padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-line)", color: "var(--am-text)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
-                    {pick5(lang, { it: "Paga in crypto", en: "Pay with crypto", es: "Pagar con crypto", fr: "Payer en crypto", ru: "Оплатить криптовалютой" })} · {price.toFixed(2)} USD
+                    {pick5(lang, { it: "Paga in crypto", en: "Pay with crypto", es: "Pagar con crypto", fr: "Payer en crypto", ru: "Оплатить криптовалютой" })} · {displayPrice.toFixed(2)} USD
                   </button>
                 ) : (
                   <CryptoDirectPanel lang={lang} target={{ kind: "plan", plan, period }} onPaid={() => window.location.assign("/predictions?crypto=paid")} />
                 )}
                 <p style={{ fontSize: 11, opacity: 0.7, margin: "6px 0 0" }}>
                   {pick5(lang, {
-                    it: "Crypto: pagamento singolo da 30 giorni, non si rinnova. Alla scadenza ricompri quando vuoi.",
-                    en: "Crypto: one-time payment for 30 days, no auto-renewal. Buy again whenever you want.",
-                    es: "Crypto: pago único de 30 días, sin renovación automática. Vuelve a comprar cuando quieras.",
-                    fr: "Crypto : paiement unique de 30 jours, sans renouvellement automatique. Rachetez quand vous voulez.",
-                    ru: "Крипто: разовый платёж на 30 дней, без автопродления. Купить снова можно в любой момент.",
+                    it: `Crypto: pagamento singolo da ${cryptoDays} giorni, non si rinnova. Alla scadenza ricompri quando vuoi.`,
+                    en: `Crypto: one-time payment for ${cryptoDays} days, no auto-renewal. Buy again whenever you want.`,
+                    es: `Crypto: pago único de ${cryptoDays} días, sin renovación automática. Vuelve a comprar cuando quieras.`,
+                    fr: `Crypto : paiement unique de ${cryptoDays} jours, sans renouvellement automatique. Rachetez quand vous voulez.`,
+                    ru: `Крипто: разовый платёж на ${cryptoDays} дней, без автопродления. Купить снова можно в любой момент.`,
                   })}
                 </p>
               </>
@@ -3947,7 +3964,7 @@ function CheckoutModal({
         )}
 
         <p>
-          {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (<>{t.checkout_note_prefix} {price.toFixed(2)} {t.checkout_note_suffix}{" "}</>)}
+          {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (<>{t.checkout_note_prefix} {displayPrice.toFixed(2)} {t.checkout_note_suffix}{" "}</>)}
           <button
             type="button"
             onClick={onClose}
