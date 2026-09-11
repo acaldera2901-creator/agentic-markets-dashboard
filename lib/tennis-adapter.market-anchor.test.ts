@@ -59,10 +59,27 @@ describe("tennis market-anchor served row", () => {
     const d = tennisPredictionToUnifiedInsert(row);
 
     const pickedProb = row.best_selection === "P1" ? row.p1 : row.p2;
-    expect(d.confidence_score).toBe(Math.round((pickedProb as number) * 100));
-    expect(d.confidence_score).toBe(75);
 
-    // 75 >= floor 62 -> the market favourite surfaces as the directional pick.
+    // #CURSE-ANCHORED-0911 — QUESTO CONTRATTO E' CAMBIATO DI PROPOSITO.
+    // Fino all'11/09 la confidence servita era esattamente round(mercato x 100),
+    // e questo test lo pinnava. Poi e' stato misurato che le righe ancorate
+    // dichiaravano 68,1% e ne realizzavano 62,2% (n=911, z=-3,94): non un
+    // difetto del de-vig — l'errore si INVERTE sopra l'85% — ma un bias di
+    // selezione del floor (winner's curse). Ora la probabilita' mostrata passa
+    // da una temperatura 1.68, stimata su holdout temporale, che risana la
+    // calibrazione (-5,9pt z=-2,94 -> +1,5pt z=+0,70).
+    // La riga NON e' piu' il mercato copiato: e' il mercato corretto per come
+    // noi lo selezioniamo.
+    const grezza = Math.round((pickedProb as number) * 100);
+    expect(grezza).toBe(75);
+    expect(d.confidence_score).toBeLessThan(grezza);
+    expect(d.confidence_score).toBe(66);
+
+    // ...ma il floor continua a decidere sulla scala GREZZA, quindi seleziona
+    // esattamente come prima: 75 >= 62 -> il favorito del mercato resta il pick.
+    // Se un giorno il gate ricevesse il numero corretto, 66 sarebbe comunque
+    // sopra 62 e questo test non se ne accorgerebbe — per questo il caso
+    // decisivo e' quello sotto il floor, nel test successivo.
     expect(d.pick).toBe("Player A");
 
     // Market-anchored honesty: null edge => paper, no fabricated edge/value.
@@ -93,9 +110,18 @@ describe("tennis market-anchor served row", () => {
 
     const d = tennisPredictionToUnifiedInsert(row);
 
-    // confidence is still the market prob (probability-neutral gate)...
-    expect(d.confidence_score).toBe(Math.round((row.p1 as number) * 100));
-    // ...but 52 < 62 so no pick is surfaced.
+    // #CURSE-ANCHORED-0911 — il test decisivo sulla SEPARAZIONE fra il numero
+    // mostrato e il numero che seleziona.
+    //
+    // La confidence mostrata e' corretta (52 grezzo -> piu' vicino al 50%)...
+    const grezza = Math.round((row.p1 as number) * 100);
+    expect(grezza).toBe(52);
+    expect(d.confidence_score).toBeLessThan(grezza);
+    // ...e il pick resta nullo perche' il FLOOR guarda il grezzo: 52 < 62.
+    // Qui sta il valore del caso: correggendo verso il 50% la riga si allontana
+    // ancora di piu' dal floor, quindi il `null` non prova nulla da solo — ma
+    // insieme al test sopra (75 grezzo -> 66 mostrato, pick PRESENTE) dimostra
+    // che la selezione non e' cambiata mentre il numero si'.
     expect(d.pick).toBeNull();
   });
 });
