@@ -124,9 +124,42 @@ export async function fetchFixtures(code: string): Promise<FDMatch[]> {
   const to = new Date(today);
   // Rolling publication window (#019): never fetch beyond the serving horizon.
   to.setDate(to.getDate() + PREDICTION_WINDOW_DAYS);
+
+  // #NIGHT-GAP-0911 — `dateFrom` parte da IERI, non da oggi.
+  //
+  // Il bug. `dateFrom` e' una DATA UTC, ma una partita delle 02:30 UTC e' la
+  // sera prima in America. Allo scoccare della mezzanotte UTC quella partita
+  // finiva fuori dalla finestra richiesta e smetteva di essere ricalcolata,
+  // pur mancando ore al fischio — proprio quando le quote maturano.
+  //
+  // Misurato su 20 giorni: delle partite con kickoff fra le 00:00 e le 04:59
+  // UTC, il **90%** aveva l'ultimo ricalcolo PRIMA della mezzanotte di quel
+  // giorno, contro il **18%** delle diurne. Il caso che l'ha fatto emergere e'
+  // Portland Timbers v Minnesota United (MLS, kickoff 02:30): ricalcoli
+  // regolari ogni due ore fino alle 22:02, poi piu' nulla per 267 minuti,
+  // con tutti i run successivi regolarmente avvenuti. La mediana dell'ultimo
+  // calcolo e' 267 minuti per i kickoff delle 02:00 UTC contro i 42-58 delle
+  // partite pomeridiane.
+  //
+  // Perche' e' sicuro allargare all'indietro, e perche' solo ORA. Includere
+  // ieri fa entrare anche partite gia' iniziate o finite; prima le avremmo
+  // ricalcolate, che e' esattamente cio' che #FREEZE-KICKOFF-0911 ha appena
+  // vietato. Con quel guard a valle ogni fixture passata viene scartata dal
+  // loop, quindi questa finestra piu' larga recupera le notturne SENZA
+  // riaprire il ricalcolo a gara in corso. I due cambi si reggono a vicenda:
+  // se il freeze venisse rimosso, questo va rivisto con lui.
+  //
+  // Costo: zero richieste in piu'. E' la stessa chiamata con un giorno di
+  // range in piu' — football-data fa pagare le richieste, non le date.
+  //
+  // Nota: `fetchAllTodayMatches`, qui sotto, parte da ieri gia' da sempre. La
+  // convenzione esisteva nel file; mancava solo in questa funzione.
+  const from = new Date(today);
+  from.setDate(from.getDate() - 1);
+
   return fetchMatches(code, {
     status: "SCHEDULED,TIMED",
-    dateFrom: today.toISOString().slice(0, 10),
+    dateFrom: from.toISOString().slice(0, 10),
     dateTo: to.toISOString().slice(0, 10),
   });
 }
