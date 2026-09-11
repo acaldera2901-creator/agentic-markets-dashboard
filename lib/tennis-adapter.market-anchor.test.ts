@@ -95,7 +95,7 @@ describe("tennis market-anchor served row", () => {
     expect(d.bookmaker).toBe("market composite");
   });
 
-  it("below the floor the anchored row surfaces no directional pick", () => {
+  it("below the floor the anchored row keeps its pick (#PICK-SEMPRE-0911) and its corrected number", () => {
     const oddsP1 = 1.95;
     const oddsP2 = 2.1;
     const mkt = devig2way(oddsP1, oddsP2); // p1 ~0.52 -> below the 62 floor
@@ -117,11 +117,10 @@ describe("tennis market-anchor served row", () => {
     const grezza = Math.round((row.p1 as number) * 100);
     expect(grezza).toBe(52);
     expect(d.confidence_score).toBeLessThan(grezza);
-    // ...e il pick resta nullo perche' il FLOOR guarda il grezzo: 52 < 62.
-    // Qui sta il valore del caso: correggendo verso il 50% la riga si allontana
-    // ancora di piu' dal floor, quindi il `null` non prova nulla da solo — ma
-    // insieme al test sopra (75 grezzo -> 66 mostrato, pick PRESENTE) dimostra
-    // che la selezione non e' cambiata mentre il numero si'.
-    expect(d.pick).toBeNull();
+    // ...e la pick c'e' comunque: da #PICK-SEMPRE-0911 (APPROVE Andrea 11/09) il
+    // floor non toglie piu' la pick, che e' il giocatore piu' probabile — qui
+    // P1, 52 grezzo. Il numero mostrato e la selezione restano separati: il
+    // primo passa dalla temperatura, la seconda no.
+    expect(d.pick).toBe(row.player1);
   });
 });

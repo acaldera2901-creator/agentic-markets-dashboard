@@ -27,7 +27,7 @@ import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
-import { surfaceFloorFor } from "@/lib/surfacing-gate";
+import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
@@ -2131,6 +2131,8 @@ function isFootballBestBet(p: Prediction) {
 // cosi' una risposta in cache non svuota il board. `no_market` e' il verdetto
 // del SERVER (niente prezzo di mercato -> stesso esito).
 function isTennisSurfaced(m: TennisMatch): boolean {
+  // #PICK-SEMPRE-0911: la decisione e' del gate, non ricalcolata qui sui floor.
+  if (PICK_SEMPRE_FAVORITO) return true;
   return (m.confidence_score == null
     || m.confidence_score >= surfaceFloorFor("tennis", m.tournament))
     && m.no_market !== true;

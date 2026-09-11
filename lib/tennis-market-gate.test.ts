@@ -52,47 +52,40 @@ describe("hasTennisMarket", () => {
   });
 });
 
-describe("tennisSurfaceDecision", () => {
+// #PICK-SEMPRE-0911 (APPROVE Andrea 11/09: «sblocchiamo tutte le pick sia calcio
+// sia tennis»). La regola del mercato e i floor restano nel codice come misura
+// — l'evidenza qui sopra non e' cambiata — ma non tolgono piu' la pick: ogni
+// riga porta il giocatore piu' probabile. Questi test pinnano il NUOVO contratto.
+describe("tennisSurfaceDecision con #PICK-SEMPRE-0911", () => {
   it("surfaces a pick above the floor WITH a price", () => {
     const d = tennisSurfaceDecision(70, "Hamburg Open", 1.6);
     expect(d).toEqual({ isPick: true, belowFloor: false, noMarket: false });
   });
 
-  it("drops the pick above the floor WITHOUT a price — the whole point", () => {
+  it("keeps the pick WITHOUT a price (the market rule no longer removes it)", () => {
     const d = tennisSurfaceDecision(70, "Hamburg Open", null);
-    expect(d.isPick).toBe(false);
-    expect(d.noMarket).toBe(true);
-    // and it must NOT be reported as "no clear favourite": the model has one.
+    expect(d.isPick).toBe(true);
+    expect(d.noMarket).toBe(false);
     expect(d.belowFloor).toBe(false);
   });
 
-  it("keeps the two reasons distinct when both apply", () => {
-    const d = tennisSurfaceDecision(50, "Hamburg Open", null);
-    expect(d).toEqual({ isPick: false, belowFloor: true, noMarket: true });
+  it("keeps the pick below the floor, with or without a price", () => {
+    expect(tennisSurfaceDecision(50, "Hamburg Open", null)).toEqual({ isPick: true, belowFloor: false, noMarket: false });
+    expect(tennisSurfaceDecision(63, "Hamburg Open", 1.5).isPick).toBe(true);
+    expect(tennisSurfaceDecision(61, "Wimbledon", 1.5).isPick).toBe(true);
+    expect(tennisSurfaceDecision(65, "Libéma Open", 1.5).isPick).toBe(true);
   });
 
-  it("still enforces the segment-aware floor when a price exists", () => {
-    // lo tier = 64: 63 stays below even with a perfectly good price.
-    expect(tennisSurfaceDecision(63, "Hamburg Open", 1.5).isPick).toBe(false);
-    expect(tennisSurfaceDecision(64, "Hamburg Open", 1.5).isPick).toBe(true);
-    // hi tier = 62
-    expect(tennisSurfaceDecision(62, "Wimbledon", 1.5).isPick).toBe(true);
-    expect(tennisSurfaceDecision(61, "Wimbledon", 1.5).isPick).toBe(false);
-    // lo-grass = 66
-    expect(tennisSurfaceDecision(65, "Libéma Open", 1.5).isPick).toBe(false);
-    expect(tennisSurfaceDecision(66, "Libéma Open", 1.5).isPick).toBe(true);
-  });
-
-  it("is one-way: the market can only REMOVE a pick, never add one", () => {
+  it("agrees with the football decision at every confidence: always a pick", () => {
     for (let c = 0; c <= 100; c++) {
       const floorOnly = !surfaceDecision(c, surfaceFloorFor("tennis", "Hamburg Open")).belowFloor;
-      const withGate = tennisSurfaceDecision(c, "Hamburg Open", 1.9).isPick;
-      expect(withGate).toBe(floorOnly);
-      expect(tennisSurfaceDecision(c, "Hamburg Open", null).isPick).toBe(false);
+      expect(floorOnly).toBe(true);
+      expect(tennisSurfaceDecision(c, "Hamburg Open", 1.9).isPick).toBe(true);
+      expect(tennisSurfaceDecision(c, "Hamburg Open", null).isPick).toBe(true);
     }
   });
 
-  it("is armed", () => {
+  it("the market rule constant stays as a record of the measure", () => {
     expect(TENNIS_REQUIRE_MARKET).toBe(true);
   });
 });
@@ -145,29 +138,30 @@ describe("tennisPredictionToUnifiedInsert", () => {
     expect(d.confidence_score).toBe(70);
   });
 
-  it("drops pick AND directional prose when the picked side has no price", () => {
+  it("keeps pick AND prose when the picked side has no price (#PICK-SEMPRE-0911)", () => {
     const d = tennisPredictionToUnifiedInsert({ ...baseRow, odds_p1: null });
-    expect(d.pick).toBeNull();
-    expect(d.explanation).toBeNull();
-    // PROBABILITY-NEUTRAL: the row keeps its numbers and stays on the board.
+    expect(d.pick).toBe("Player A");
+    expect(d.explanation).toBeTruthy();
+    // the fact «no market» stays written on the row
+    expect(d.bookmaker).toBe("no market");
+    expect(d.odds).toBeNull();
     expect(d.confidence_score).toBe(70);
     expect(d.fair_odds).toBe(1.43);
     expect(d.home_team).toBe("Player A");
     expect(d.event_name).toBe("Player A vs Player B");
   });
 
-  it("looks at the PICKED side's price, not just any price", () => {
-    // P2 is the pick, only P1 has a price → no market on the side we would show.
+  it("publishes the picked side even when only the other side has a price", () => {
     const d = tennisPredictionToUnifiedInsert({
       ...baseRow,
       best_selection: "P2",
       odds_p2: null,
     });
-    expect(d.pick).toBeNull();
+    expect(d.pick).toBe("Player B");
   });
 
-  it("keeps dropping sub-floor picks exactly as before (no regression)", () => {
+  it("publishes sub-floor picks too: the pick is the most probable player", () => {
     const d = tennisPredictionToUnifiedInsert({ ...baseRow, p1: 0.6, p2: 0.4 });
-    expect(d.pick).toBeNull(); // 60 < 64
+    expect(d.pick).toBe("Player A"); // 60 < 64, e la pick c'e' comunque
   });
 });

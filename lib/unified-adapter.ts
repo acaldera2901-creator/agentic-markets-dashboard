@@ -188,7 +188,27 @@ function generateFootballExplanation(row: MatchPredictionRow): string {
 
 // ─── Adapter ──────────────────────────────────────────────────────────────────
 
-function matchPredictionToUnifiedInsert(row: MatchPredictionRow) {
+// #PICK-SEMPRE-0911 — l'esito con la probabilita' piu' alta, nel codice che
+// il settlement grada (HOME/DRAW/AWAY). A parita' vince l'ordine casa, pari, fuori.
+export function favoritoPerProbabilita(pHome: number, pDraw: number, pAway: number): "HOME" | "DRAW" | "AWAY" {
+  if (pHome >= pDraw && pHome >= pAway) return "HOME";
+  if (pDraw >= pAway) return "DRAW";
+  return "AWAY";
+}
+
+function matchPredictionToUnifiedInsert(rowGrezza: MatchPredictionRow) {
+  // #PICK-SEMPRE-0911: best_selection e' null quando mancano le quote o il pool
+  // del modello e' giudicato inaffidabile (insufficient_data, cross_competition).
+  // La pick pero' esiste sempre: e' l'esito piu' probabile. Misurato l'11/09:
+  // 5 delle 23 righe del giorno (Venezia-Fiorentina, Union-Schalke, Rennes-OM,
+  // Dijon-Laval, AZ-Willem II) avevano best_selection null con probabilita'
+  // servite, e chiudevano void. Quota, fair odds, confidenza e spiegazione si
+  // leggono tutte sull'esito scelto, quindi la pick si fissa PRIMA di tutto.
+  const row: MatchPredictionRow = {
+    ...rowGrezza,
+    best_selection: rowGrezza.best_selection
+      ?? favoritoPerProbabilita(rowGrezza.p_home, rowGrezza.p_draw, rowGrezza.p_away),
+  };
   const competition = detectCompetition(row.league, row.league_name);
   const odds = pickOdds(row);
   const prob = pickProb(row);

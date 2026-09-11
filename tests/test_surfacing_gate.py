@@ -17,7 +17,30 @@ Boundaries (floors are inclusive — >= floor is a pick):
 import pytest
 
 from config.settings import settings
-from core.surfacing_gate import surface_decision, tennis_floor_for
+from core.surfacing_gate import surface_decision, tennis_floor_for, tennis_surface_decision
+
+
+# #PICK-SEMPRE-0911 (APPROVE Andrea 11/09): in produzione il flag e' acceso e la
+# pick c'e' sempre. I test sui floor qui sotto misurano ancora i floor — la loro
+# semantica va conservata per il giorno in cui il flag si spegne — quindi girano
+# con il flag spento; il test dedicato verifica il comportamento acceso.
+@pytest.fixture(autouse=True)
+def _floor_attivi(monkeypatch):
+    monkeypatch.setattr(settings, "PICK_SEMPRE_FAVORITO", False)
+
+
+def test_pick_sempre_e_acceso_in_produzione(monkeypatch):
+    monkeypatch.setattr(settings, "PICK_SEMPRE_FAVORITO", True)
+    assert surface_decision(sport="football", friendly=False, confidence=10) == (True, False)
+    assert surface_decision(sport="football", friendly=True, confidence=10) == (True, False)
+    assert surface_decision(sport="tennis", friendly=False, confidence=10, tournament="Mystery Cup") == (True, False)
+    assert tennis_surface_decision(confidence=10, tournament=None, picked_odds=None) == (True, False, False)
+
+
+def test_il_default_di_settings_e_acceso():
+    # la fixture lo spegne per i test dei floor; il valore di partenza e' True
+    from config import settings as modulo
+    assert modulo.Settings.model_fields["PICK_SEMPRE_FAVORITO"].default is True
 
 
 def test_wc_boundary_55_below_56_pick():

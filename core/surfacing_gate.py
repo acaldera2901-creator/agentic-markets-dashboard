@@ -94,6 +94,9 @@ def tennis_surface_decision(
     Football is deliberately NOT subject to this rule (95% without a price on the
     same window, n=20). Mirror of tennisSurfaceDecision in lib/surfacing-gate.ts.
     """
+    # #PICK-SEMPRE-0911: nessuna delle due ragioni toglie piu' la pick.
+    if settings.PICK_SEMPRE_FAVORITO:
+        return True, False, False
     below_floor = confidence < tennis_floor_for(tournament)
     no_market = not tennis_has_market(picked_odds)
     return (not below_floor and not no_market), below_floor, no_market
@@ -144,6 +147,10 @@ def surface_decision(
     ``tournament`` matters only for tennis (segment-aware floor); omitted, the
     row resolves to the lower tier = the stricter floor (fail-closed).
     """
+    # #PICK-SEMPRE-0911 (APPROVE Andrea 11/09): la pick c'e' sempre, e' l'esito
+    # piu' probabile. I floor sotto restano come misura, non decidono piu'.
+    if settings.PICK_SEMPRE_FAVORITO:
+        return True, False
     s = sport.lower()
     if s == "tennis":
         # 10y lab 2026-06-08: tennis confidence IS monotone (the prior "no floor"
