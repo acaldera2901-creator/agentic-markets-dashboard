@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncTennisPredictionsToUnified } from "@/lib/tennis-adapter";
+import { ingestPartnerTennis } from "@/lib/partner-fixtures";
 import { emptySyncReport, type SyncReport } from "@/lib/publication-gate";
 import { verifyBearer } from "@/lib/admin-auth";
 
@@ -37,6 +38,27 @@ export async function GET(req: NextRequest) {
   // keeps the board populated. A tennis failure must not fail the whole cron.
   let tennisReport: SyncReport = emptySyncReport();
   let tennisError: unknown = null;
+  let partner: unknown = null;
+  let partnerError: unknown = null;
+
+  // #PARTNER-INGEST-0911 — le partite dei partner PRIMA del sync, cosi' quelle
+  // nuove entrano nello stesso giro invece di aspettare il successivo.
+  //
+  // Perche' qui e perche' in questo ordine: `ingestPartnerTennis` deposita in
+  // `tennis_predictions` le partite che i book hanno e noi no (misurato l'11/09:
+  // 81 future contro le 11 pubblicate), e `syncTennisPredictionsToUnified`
+  // legge proprio da li'. Invertendo l'ordine il board le vedrebbe due ore
+  // dopo, senza nessun guadagno.
+  //
+  // In un try suo: un partner che non risponde non deve impedire il sync delle
+  // partite che abbiamo gia'. E' la stessa regola per cui il tennis ha un try
+  // separato dal calcio — un guasto resta dove nasce.
+  try {
+    partner = await ingestPartnerTennis();
+  } catch (e) {
+    partnerError = String(e);
+  }
+
   try {
     tennisReport = await syncTennisPredictionsToUnified();
   } catch (e) {
@@ -47,5 +69,6 @@ export async function GET(req: NextRequest) {
     ok: !footballError || tennisReport.synced > 0,
     football: footballError ? { error: footballError } : football,
     tennis: { ...tennisReport, ...(tennisError ? { error: tennisError } : {}) },
+    partner: partnerError ? { error: partnerError } : partner,
   });
 }
