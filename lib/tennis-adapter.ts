@@ -193,22 +193,55 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
         $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34
       )
       ON CONFLICT (source_table, source_id) WHERE source_table IS NOT NULL DO UPDATE SET
-        pick              = EXCLUDED.pick,
         -- #TENNIS-BOOKMAKER-STALE-0805: bookmaker was missing from this list,
         -- so a row first written without a price kept "no market" FOREVER even
         -- after odds/edge/signal_type were refreshed. Measured on the live board
         -- 04/08: 23 rows labelled "no market" while carrying a real price — the
         -- exact field a human would eyeball to check this gate.
-        bookmaker         = EXCLUDED.bookmaker,
-        odds              = EXCLUDED.odds,
-        fair_odds         = EXCLUDED.fair_odds,
-        edge_percent      = EXCLUDED.edge_percent,
-        confidence_score  = EXCLUDED.confidence_score,
-        risk_level        = EXCLUDED.risk_level,
-        status            = EXCLUDED.status,
-        signal_type       = EXCLUDED.signal_type,
+        -- #FREEZE-KICKOFF-0911 (APPROVE Andrea): iniziato il match, il
+        -- PRONOSTICO non si muove piu'. Il tennis e' l'81% del fenomeno
+        -- misurato — US Open da solo 251 partite e 1.212 snapshot riscritti
+        -- dopo l'inizio, il piu' tardivo a 723 minuti — perche' un match dura
+        -- 2-5 ore e il sync continuava a girare per tutta la sua durata.
+        --
+        -- Il taglio e' SELETTIVO, e le righe sotto dicono quali campi restano
+        -- vivi. Si congela cio' che e' un giudizio (pick, quota, edge,
+        -- confidenza, rischio, spiegazione); continua a scorrere cio' che e'
+        -- un fatto: lo status deve poter diventare pending_settlement,
+        -- altrimenti il board non sa che la partita e' in corso, e
+        -- expires_at/updated_at reggono la scadenza della riga. I punteggi non
+        -- passano di qui: viaggiano su un UPDATE separato in app/api/live.
+        --
+        -- starts_at resta aggiornabile di proposito: e' l'orario ufficiale, e
+        -- se il torneo lo corregge la riga deve seguirlo. Ma l'orario VECCHIO
+        -- e' anche cio' su cui si basa il congelamento, quindi il confronto usa
+        -- unified_predictions.starts_at (il valore gia' in tabella) e non
+        -- EXCLUDED: un orario spostato in avanti non deve risuscitare il
+        -- pronostico di una partita che e' davvero partita.
+        --
+        -- NB: niente backtick nei commenti. Questa query e' un template literal
+        -- e un backtick la chiude: scriverne uno qui ha prodotto cinque errori
+        -- TS1005 al primo tsc.
+        pick              = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.pick ELSE EXCLUDED.pick END,
+        bookmaker         = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.bookmaker ELSE EXCLUDED.bookmaker END,
+        odds              = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.odds ELSE EXCLUDED.odds END,
+        fair_odds         = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.fair_odds ELSE EXCLUDED.fair_odds END,
+        edge_percent      = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.edge_percent ELSE EXCLUDED.edge_percent END,
+        confidence_score  = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.confidence_score ELSE EXCLUDED.confidence_score END,
+        risk_level        = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.risk_level ELSE EXCLUDED.risk_level END,
+        signal_type       = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.signal_type ELSE EXCLUDED.signal_type END,
+        explanation       = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.explanation ELSE EXCLUDED.explanation END,
         is_paper          = EXCLUDED.is_paper,
-        explanation       = EXCLUDED.explanation,
+        status            = EXCLUDED.status,
         starts_at         = EXCLUDED.starts_at,
         expires_at        = EXCLUDED.expires_at,
         updated_at        = NOW()
