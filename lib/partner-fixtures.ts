@@ -192,9 +192,30 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
     if (Array.isArray(r) && r.length > 0) esito.scritti += 1;
   }
 
+  // #PARTNER-CONTEGGIO-0911 — `scritti` NON e' affidabile, e va detto qui
+  // invece di lasciarlo credere a chi legge il log.
+  //
+  // `dbQuery` passa per la RPC `exec_sql`, che restituisce `[]` anche quando
+  // l'INSERT e' andato a buon fine: il `RETURNING match_id` non viene
+  // propagato. Verificato inserendo una riga a mano — la riga compare nella
+  // tabella e la risposta e' comunque vuota. Quindi il contatore resta a zero
+  // pur avendo scritto: un falso negativo che mi ha fatto cercare per mezz'ora
+  // un guasto che non c'era.
+  //
+  // Il numero vero si legge dalla tabella, non dalla risposta: la conta qui
+  // sotto e' la sola che dice la verita'. `scritti` resta esposto perche' il
+  // tipo e' pubblico, ma il log mostra il conteggio REALE.
+  const dopo = await dbQuery<{ n: number }>(
+    `SELECT count(*)::int AS n FROM tennis_predictions
+      WHERE match_id LIKE 'tennis:partner:%' AND scheduled_at > NOW()`,
+  ).catch(() => [] as { n: number }[]);
+  const inTabella = Array.isArray(dopo) && dopo[0] ? Number(dopo[0].n) : null;
+
   console.log(
     `[partner-ingest] tennis: visti ${esito.vistiDalPartner}, candidati ${esito.candidati}, ` +
-      `nuovi ${esito.scritti}, scartati ${esito.scartati}`,
+      `scartati ${esito.scartati}, righe partner future in tabella: ` +
+      `${inTabella ?? "non leggibile"} ` +
+      `(il contatore RETURNING non e' attendibile con exec_sql)`,
   );
   return esito;
 }
