@@ -183,6 +183,11 @@ class Settings(BaseSettings):
     # gate flips a publish flag only — p_home/p_draw/p_away and confidence_score
     # are never altered. Floors are on the picked-outcome probability (max-prob,
     # whole percent). Mirrored in lib/surfacing-gate.ts — keep in sync.
+    # #PICK-SEMPRE-0911 (APPROVE Andrea 11/09): ogni riga porta la pick = esito
+    # piu' probabile. I floor restano come misura; con questo flag acceso
+    # surface_decision / tennis_surface_decision rispondono sempre "e' pick".
+    # Specchio di lib/surfacing-gate.ts PICK_SEMPRE_FAVORITO.
+    PICK_SEMPRE_FAVORITO: bool = True
     SURFACE_FLOOR_FOOTBALL: int = 56   # competitive club (max-prob >= 56)
     SURFACE_FLOOR_FRIENDLY: int = 66   # international friendlies (heavy rotation;
     # #MINORS-TIGHTEN 07/07: 61->66 su evidenza LIVE 54.5% su 33 regolate —

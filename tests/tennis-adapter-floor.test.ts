@@ -56,10 +56,15 @@ assert.ok(
   "fixtures must satisfy the market gate, otherwise the floor assertions are vacuous"
 );
 
-// ── HI tier (Slam): floor 62, inclusive ───────────────────────────────────────
+// ── #PICK-SEMPRE-0911 (APPROVE Andrea 11/09) ──────────────────────────────────
+// La pick c'e' SEMPRE, ed e' il giocatore piu' probabile. I casi «sotto floor»
+// qui sotto restano come misura del floor (62/64/66), ma la pick non sparisce
+// piu': si asserisce che il giocatore scelto sia pubblicato in ogni caso.
+
+// ── HI tier (Slam): floor 62 ──────────────────────────────────────────────────
 {
   const below = tennisPredictionToUnifiedInsert(row(0.61, 0.39, "P1", "Wimbledon"));
-  assert.equal(below.pick, null, "hi-tier below-floor pick must be null");
+  assert.equal(below.pick, "Alice", "hi-tier sotto floor: la pick si pubblica comunque");
   // #CURSE-ANCHORED-0911 — il contratto «probability-neutral» vale ancora per
   // la SELEZIONE, non piu' per il numero mostrato. Queste righe hanno
   // `edge: null`, cioe' sono market-anchored, e la loro probabilita' passa ora
@@ -76,7 +81,7 @@ assert.ok(
 // ── LOWER tier (unknown name fails closed here): floor 64 ─────────────────────
 {
   const below = tennisPredictionToUnifiedInsert(row(0.63, 0.37, "P1")); // Test Open → lo
-  assert.equal(below.pick, null, "lower-tier conf 63 must not surface a pick");
+  assert.equal(below.pick, "Alice", "lower-tier conf 63: la pick si pubblica comunque");
   assert.ok(below.confidence_score !== null && below.confidence_score < 63,
     "la confidence mostrata e' corretta verso il basso (era 63 grezzo)");
 
@@ -87,7 +92,11 @@ assert.ok(
 // ── LOWER tier on GRASS (the June swing): floor 66 ────────────────────────────
 {
   const below = tennisPredictionToUnifiedInsert(row(0.35, 0.65, "P2", "Libéma Open"));
-  assert.equal(below.pick, null, "lo-grass conf 65 must not surface a pick");
+  assert.equal(below.pick, "Bob", "lo-grass conf 65: la pick si pubblica comunque");
+  // e senza prezzo sul lato scelto: #TENNIS-MARKET-GATE-0805 non toglie piu' la pick
+  const senzaQuota = tennisPredictionToUnifiedInsert({ ...row(0.35, 0.65, "P2", "Libéma Open"), odds_p2: null });
+  assert.equal(senzaQuota.pick, "Bob", "senza quota: la pick resta");
+  assert.equal(senzaQuota.bookmaker, "no market", "ma il fatto «nessun mercato» resta scritto");
 
   const at = tennisPredictionToUnifiedInsert(row(0.34, 0.66, "P2", "Libéma Open"));
   assert.equal(at.pick, "Bob", "lo-grass at-floor (66) pick must be published");

@@ -14,6 +14,7 @@ import {
   surfaceFloorFor,
   tennisFloorFor,
   isSurfacedRow,
+  PICK_SEMPRE_FAVORITO,
 } from "../lib/surfacing-gate";
 
 // ── Single source of truth ──────────────────────────────────────────────────
@@ -26,20 +27,22 @@ assert.equal(SURFACE_FLOOR_TENNIS_LO, 64);
 assert.equal(SURFACE_FLOOR_TENNIS_LO_GRASS, 66);
 assert.equal(SURFACE_FLOOR_WC, 26);
 
-// ── Boundary: club football floor (inclusive) ────────────────────────────────
+// ── #PICK-SEMPRE-0911 (APPROVE Andrea 11/09): la pick c'e' SEMPRE ─────────────
+// I floor qui sopra restano pinnati come misura, ma la decisione non li legge
+// piu': sotto il floor, al floor e sopra il floor la risposta e' la stessa.
+assert.equal(PICK_SEMPRE_FAVORITO, true, "l'interruttore deve essere acceso");
 {
   const below = surfaceDecision(55);
-  assert.equal(below.isPick, false);
-  assert.equal(below.belowFloor, true);
+  assert.equal(below.isPick, true, "55 < 56: la pick si mostra comunque");
+  assert.equal(below.belowFloor, false);
 
   const at = surfaceDecision(56);
   assert.equal(at.isPick, true);
   assert.equal(at.belowFloor, false);
-}
 
-// ── Well below / well above ───────────────────────────────────────────────────
-{
-  assert.equal(surfaceDecision(40).belowFloor, true);
+  // anche molto sotto, e con un floor esplicito severo
+  assert.equal(surfaceDecision(40).isPick, true);
+  assert.equal(surfaceDecision(10, 99).isPick, true);
   assert.equal(surfaceDecision(80).belowFloor, false);
 }
 

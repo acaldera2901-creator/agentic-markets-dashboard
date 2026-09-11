@@ -11,6 +11,21 @@
 // PROBABILITY-NEUTRAL: this decides only whether a row is surfaced as a
 // directional pick. It never touches p_home/p_draw/p_away or confidence_score.
 
+// #PICK-SEMPRE-0911 (APPROVE Andrea 11/09: «sblocchiamo tutte le pick sia calcio
+// sia tennis»). Ogni partita porta una pick, e la pick e' l'esito con la
+// probabilita' piu' alta. I floor qui sotto restano come MISURA leggibile e
+// come base dei test che ne pinnano il valore, ma non decidono piu' se la pick
+// si mostra: con questo interruttore acceso surfaceDecision e
+// tennisSurfaceDecision rispondono sempre «e' pick».
+//
+// Il costo, misurato PRIMA di accendere (prediction_log, 1.271 partite di
+// calcio chiuse in 90 giorni): il favorito servito vince il 71,7% sopra il
+// floor 56 (n=336) e il 52,0% su tutte (n=1.271); sotto il 40% di probabilita'
+// vince il 38,8%. Nel tennis le righe senza quota stanno al 53-60% contro il
+// 65-81% di quelle con quota. E' una scelta di prodotto («ogni partita ha una
+// risposta»), presa conoscendo questi numeri. Spegnere = rimettere `false`.
+export const PICK_SEMPRE_FAVORITO = true;
+
 export const SURFACE_FLOOR_FOOTBALL = 56;
 // International friendlies floor (heavy rotation → noisier). #MINORS-TIGHTEN
 // 07/07: 61→66 on live evidence (54.5% on 33 settled). Mirror of
@@ -321,6 +336,9 @@ export function tennisSurfaceDecision(
   tournament: string | null | undefined,
   pickedOdds: number | null | undefined
 ): TennisSurfaceDecision {
+  // #PICK-SEMPRE-0911: nessuna delle due ragioni toglie piu' la pick. Il
+  // bookmaker «no market» resta scritto sulla riga (e' un fatto), la pick no.
+  if (PICK_SEMPRE_FAVORITO) return { isPick: true, belowFloor: false, noMarket: false };
   const { belowFloor } = surfaceDecision(confidence, tennisFloorFor(tournament));
   const noMarket = TENNIS_REQUIRE_MARKET && !hasTennisMarket(pickedOdds);
   return { isPick: !belowFloor && !noMarket, belowFloor, noMarket };
@@ -332,6 +350,7 @@ export function surfaceDecision(
   confidence: number,
   floor: number = SURFACE_FLOOR_FOOTBALL
 ): SurfaceDecision {
+  if (PICK_SEMPRE_FAVORITO) return { isPick: true, belowFloor: false };
   const isPick = confidence >= floor;
   return { isPick, belowFloor: !isPick };
 }
