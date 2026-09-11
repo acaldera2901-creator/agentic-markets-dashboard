@@ -226,12 +226,26 @@ class TennisSettlementAgent(BaseAgent):
         # per row — inflating ratings (Zverev to 813 matches). The unique index
         # prevents new duplicates, and this dedup keeps the rating idempotent even
         # if duplicates ever slip through again.
+        await self._chiudi(resolved)
+
+    async def _chiudi(self, resolved: list[tuple]) -> int:
+        """Chiude le righe risolte: Elo, riga a monte, scommesse, track record.
+
+        #SETTLE-TIMBRO-0911 — estratto da `_settle_recent` per poter essere
+        provato. Il difetto che viveva qui (il settlement pubblico chiamato
+        senza `verification_source`, quindi righe chiuse e invisibili nel track
+        record) non era coperto da nessun test perche' il ciclo era sepolto in
+        un metodo che interroga il database: si poteva verificare solo l'esito
+        finale, che era gia' giusto. Ora si puo' guardare COSA VIENE PASSATO.
+        """
         elo_applied: set = set()
         updated = 0
         for entry in resolved:
             # Resolver tuples: (pred, position) or (pred, position, score_text).
             pred, winner_position = entry[0], entry[1]
             score_text = entry[2] if len(entry) > 2 else None
+            # #SETTLE-TIMBRO-0911: chi ha risolto la riga (matchbook | espn).
+            fonte = entry[3] if len(entry) > 3 else None
             outcome = "P1_WIN" if winner_position == "P1" else "P2_WIN"
             winner_name = pred.player1 if winner_position == "P1" else pred.player2
             loser_name = pred.player2 if winner_position == "P1" else pred.player1
@@ -257,10 +271,32 @@ class TennisSettlementAgent(BaseAgent):
             # Il favorito secondo il modello, dalla fonte popolata al 100%.
             # Serve al ponte quando `unified_predictions.pick` e' vuoto (47%
             # delle righe tennis): senza, un esito vero diventa un `void`.
+            # #SETTLE-TIMBRO-0911 — QUI MANCAVA IL TIMBRO, ed e' il ciclo
+            # normale: quello che chiude la stragrande maggioranza delle righe.
+            #
+            # `settle_unified_tennis` marca `verification_state='verified'` SOLO
+            # se riceve `verification_source` — il suo docstring lo dichiara
+            # obbligatorio per ogni esito reale — e /api/v2/history pubblica
+            # SOLO le righe verificate. Senza timbro la riga veniva chiusa
+            # correttamente nel database e poi spariva dal track record.
+            #
+            # Misurato l'11/09: negli ultimi 7 giorni **334 righe concluse senza
+            # timbro** (232 football, 102 tennis) contro 53 verificate, e delle
+            # 8 partite chiuse in giornata NESSUNA compariva nella cronologia.
+            # La riconciliazione-ponte (poco sopra) timbrava; il ciclo normale
+            # no — cioe' si vedeva la toppa e non il vestito.
+            #
+            # La fonte e' quella VERA, non un'etichetta di comodo: Matchbook o
+            # ESPN, secondo chi ha risolto davvero la riga. Se per qualsiasi
+            # motivo non la conoscessimo, si resta senza timbro: una riga non
+            # verificata fuori dal track record e' un buco, una riga marcata
+            # `verified` senza sapere da dove viene e' una bugia.
             await settle_unified_tennis(
                 pred.match_id,
                 winner_name,
                 final_score=score_text,
+                verification_source=fonte,
+                verification_note="settlement-tennis" if fonte else None,
             )
             updated += 1
 
@@ -271,6 +307,7 @@ class TennisSettlementAgent(BaseAgent):
                 f"[SETTLEMENT] settled {updated} recent row(s) "
                 f"({len(elo_applied)} distinct match(es)), Elo updated"
             )
+        return updated
 
     @staticmethod
     def _unresolved(pending: list, resolved: list[tuple]) -> list:
@@ -298,10 +335,24 @@ class TennisSettlementAgent(BaseAgent):
         Ora Matchbook risolve quello che sa (e' un'exchange: preciso ma con
         copertura stretta), ed ESPN viene chiamato sul RESTO.
         """
-        resolved = list(await self._resolve_via_matchbook(pending))
+        # #SETTLE-TIMBRO-0911 — ogni riga risolta porta con se' CHI l'ha
+        # risolta, perche' a valle serve per timbrare `verification_source`.
+        #
+        # Perche' non bastava la tupla com'era: i due resolver restituiscono
+        # forme diverse — ESPN tre elementi (col punteggio), Matchbook due —
+        # quindi un `(*t, fonte)` avrebbe fatto finire la fonte in `entry[2]`,
+        # cioe' dove il chiamante legge il PUNTEGGIO. Si normalizza invece a
+        # quattro posizioni fisse: (pred, posizione, punteggio, fonte).
+        #
+        # `_unresolved` legge `for p, *_ in resolved`, quindi non risente della
+        # lunghezza; il chiamante ora puo' leggere entry[3] senza indovinare.
+        def _con_fonte(t: tuple, fonte: str) -> tuple:
+            return (t[0], t[1], t[2] if len(t) > 2 else None, fonte)
+
+        resolved = [_con_fonte(t, "matchbook") for t in await self._resolve_via_matchbook(pending)]
         remaining = self._unresolved(pending, resolved)
         if remaining:
-            resolved += list(await self._resolve_via_espn(remaining))
+            resolved += [_con_fonte(t, "espn") for t in await self._resolve_via_espn(remaining)]
         return resolved
 
     @staticmethod
