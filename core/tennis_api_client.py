@@ -4,7 +4,7 @@ Uses RAPIDAPI_KEY from settings. Free tier: 100 requests/day.
 """
 from __future__ import annotations
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -40,26 +40,78 @@ class TennisAPIClient:
         self._supa_key = supabase_key or settings.SUPABASE_SERVICE_ROLE_KEY
 
     async def get_upcoming_fixtures(self, days_ahead: int = 7) -> list[dict]:
-        """Fetch ATP/WTA fixtures for today. Returns list of canonical fixture dicts."""
+        """Fetch ATP/WTA fixtures da oggi a oggi+days_ahead-1.
+
+        #TENNIS-WINDOW-0911 — `days_ahead` ESISTEVA GIA' ma non veniva usato:
+        il corpo chiedeva solo `date=today`, quindi la finestra del tennis era
+        di UN giorno mentre il calcio ne ha dieci. Il chiamante lo passava
+        esplicitamente (`agents/tennis_data_collector.py` chiede days_ahead=7),
+        e il docstring diceva "for today": l'intenzione era scritta due volte e
+        disattesa nel corpo.
+
+        Effetto misurato l'11/09: `tennis_fixtures` aveva **9 partite future, di
+        cui 1 sola oltre domani**, e il board mostrava 7 righe di tennis contro
+        198 di calcio. Nessuna traccia della Coppa Davis (12-14/09) ne' dei 250
+        di Chengdu e Hangzhou (dal 15), che esistevano eccome. Il modello era
+        innocente: converte 9 fixtures su 9 — il collo di bottiglia era qui.
+
+        LA QUOTA E' IL VINCOLO, non un dettaglio. Il piano gratuito da' **100
+        richieste al giorno** e il collector gira ogni 30 minuti, cioe' 48 volte
+        al giorno: chiedere 7 giorni a ogni giro farebbe 336 richieste, oltre
+        tre volte il tetto, e il feed morirebbe a meta' giornata — un guasto
+        peggiore di quello che si voleva curare. Per questo il numero di giorni
+        e' un ARGOMENTO e non una costante: chi chiama decide quanto spendere,
+        e `tennis_data_collector` chiede la finestra larga solo di rado (vedi
+        li'). Qui si spende esattamente `days_ahead` richieste, mai una di piu'.
+
+        Il giorno corrente si chiede SEMPRE per primo: se la quota finisce o la
+        rete cade a meta' iterazione, le partite di oggi sono gia' al sicuro e
+        si perdono solo quelle lontane, che avranno altri giri per arrivare.
+        """
         if not self._key:
             logger.warning("RAPIDAPI_KEY not configured — tennis fixtures unavailable")
             return []
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        giorni = max(1, int(days_ahead or 1))
+        oggi = datetime.now(timezone.utc)
         fixtures: list[dict] = []
+        visti: set[str] = set()
         try:
             async with httpx.AsyncClient(timeout=15.0) as c:
-                resp = await c.get(
-                    f"{_BASE}/games",
-                    params={"date": today},
-                    headers=self._headers(),
-                )
-                if resp.status_code != 200:
-                    logger.warning("tennis API %s: %s", resp.status_code, resp.text[:200])
-                    return []
-                data = resp.json()
-                for item in data.get("response", []):
-                    parsed = self._parse_fixture(item)
-                    if parsed:
+                for scarto in range(giorni):
+                    giorno = (oggi + timedelta(days=scarto)).strftime("%Y-%m-%d")
+                    try:
+                        resp = await c.get(
+                            f"{_BASE}/games",
+                            params={"date": giorno},
+                            headers=self._headers(),
+                        )
+                    except Exception as exc:
+                        # Un giorno che cade non deve buttare via quelli gia'
+                        # raccolti: si registra e si va avanti.
+                        logger.debug("tennis API %s: errore di rete (%s)", giorno, exc)
+                        continue
+                    if resp.status_code == 429:
+                        logger.warning(
+                            "tennis API: quota esaurita al giorno %s — mi fermo con %d fixtures",
+                            giorno, len(fixtures),
+                        )
+                        break
+                    if resp.status_code != 200:
+                        logger.warning("tennis API %s (%s): %s", resp.status_code, giorno, resp.text[:200])
+                        continue
+                    data = resp.json()
+                    for item in data.get("response", []):
+                        parsed = self._parse_fixture(item)
+                        if not parsed:
+                            continue
+                        # Le finestre di giorni contigui possono restituire la
+                        # stessa partita (fusi orari, match che scavallano la
+                        # mezzanotte UTC): si tiene la prima occorrenza.
+                        chiave = str(parsed.get("match_id") or "")
+                        if chiave and chiave in visti:
+                            continue
+                        if chiave:
+                            visti.add(chiave)
                         fixtures.append(parsed)
         except Exception as exc:
             logger.debug("tennis API error (non-fatal): %s", exc)

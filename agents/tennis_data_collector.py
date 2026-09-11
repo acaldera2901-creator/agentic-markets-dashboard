@@ -1,5 +1,6 @@
 # agents/tennis_data_collector.py
 import asyncio
+import time
 from datetime import datetime, timezone, timedelta
 
 from agents.base import BaseAgent
@@ -87,6 +88,11 @@ class TennisDataCollectorAgent(BaseAgent):
         super().__init__("TennisDataCollectorAgent")
         self._client = TennisAPIClient()
         self._oddspapi_tried: dict[str, int] = {}
+        # #TENNIS-WINDOW-0911: quando si e' pagata l'ultima finestra larga.
+        # Parte a -inf cosi' il PRIMO giro dopo un riavvio la chiede subito:
+        # e' il momento in cui il calendario serve di piu' ed e' anche l'unico
+        # in cui siamo sicuri di non aver gia' speso quota in questo processo.
+        self._ultima_finestra_larga: float = float("-inf")
 
     async def _main_loop(self) -> None:
         while self._running:
@@ -145,8 +151,29 @@ class TennisDataCollectorAgent(BaseAgent):
 
     async def _collect_cycle(self):
         try:
-            # Prova prima RapidAPI (se key configurata e subscritta)
-            fixtures = await self._client.get_upcoming_fixtures(days_ahead=7)
+            # Prova prima RapidAPI (se key configurata e subscritta).
+            #
+            # #TENNIS-WINDOW-0911 — la finestra larga costa, quindi si paga di
+            # rado. Il piano gratuito da' 100 richieste al giorno e questo ciclo
+            # gira ogni 30 minuti (48 volte): chiedere 7 giorni ogni volta
+            # sarebbero 336 richieste, il triplo del tetto, e il feed morirebbe
+            # a meta' giornata. Quindi:
+            #   * ogni giro chiede il giorno corrente (1 richiesta, 48/giorno);
+            #   * la finestra di 7 giorni si chiede solo se sono passate almeno
+            #     4 ore dall'ultima volta (6 volte al giorno, 6 richieste extra
+            #     ciascuna = 36). Totale ~84 su 100, con margine per h2h.
+            # Il numero di giorni resta un argomento del client proprio perche'
+            # questa e' una decisione di SPESA, e va presa qui dove si conosce
+            # la cadenza, non nascosta in una costante dentro il client.
+            adesso = time.monotonic()
+            larga = (adesso - self._ultima_finestra_larga) >= 4 * 3600
+            giorni = 7 if larga else 1
+            fixtures = await self._client.get_upcoming_fixtures(days_ahead=giorni)
+            if larga and fixtures:
+                self._ultima_finestra_larga = adesso
+                self.logger.info(
+                    "tennis: finestra larga (%d giorni) -> %d fixtures", giorni, len(fixtures)
+                )
             source = "rapidapi_tennis"
 
             # Fallback ESPN — gratuito, nessuna key, funziona durante i tornei
