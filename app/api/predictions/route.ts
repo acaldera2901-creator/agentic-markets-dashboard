@@ -870,6 +870,22 @@ export async function GET(req: Request) {
       `SELECT * FROM match_predictions
        WHERE kickoff > NOW() - interval '150 minutes'
          AND kickoff < NOW() + ($1 || ' days')::interval
+         -- #BOARD-EXIT-0911: una partita FINITA lascia il board subito, non a
+         -- kickoff+150'. Misurato l'11/09 alle 20:53 UTC: 13 partite gia'
+         -- giocate ancora servite come da giocare (Venezia-Fiorentina 2-4
+         -- chiusa in DB alle 20:52 e in board fino alle 21:15). Due segnali di
+         -- fine, perche' arrivano da strade diverse: lo stato FINISHED del
+         -- provider (cron settle / api live) e la riga unified gia' chiusa dal
+         -- settlement Python per nome squadre, che lascia match_status a
+         -- SCHEDULED. La finestra dei 150' resta per la partita IN CORSO.
+         AND match_status IS DISTINCT FROM 'FINISHED'
+         AND NOT EXISTS (
+           SELECT 1 FROM unified_predictions u
+            WHERE u.sport = 'football'
+              AND u.external_event_id = match_predictions.match_id
+              AND u.result IS NOT NULL
+              AND match_predictions.kickoff <= NOW()
+         )
        ORDER BY league = 'SA' DESC, kickoff ASC
        LIMIT $2`,
       [PREDICTION_WINDOW_DAYS, FETCH_ROWS]
@@ -878,7 +894,15 @@ export async function GET(req: Request) {
       `SELECT MAX(computed_at) as ts, COUNT(*) as cnt
        FROM match_predictions
        WHERE kickoff > NOW() - interval '150 minutes'
-         AND kickoff < NOW() + ($1 || ' days')::interval`,
+         AND kickoff < NOW() + ($1 || ' days')::interval
+         AND match_status IS DISTINCT FROM 'FINISHED'
+         AND NOT EXISTS (
+           SELECT 1 FROM unified_predictions u
+            WHERE u.sport = 'football'
+              AND u.external_event_id = match_predictions.match_id
+              AND u.result IS NOT NULL
+              AND match_predictions.kickoff <= NOW()
+         )`,
       [PREDICTION_WINDOW_DAYS]
     ),
   ]);

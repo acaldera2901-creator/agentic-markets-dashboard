@@ -3,7 +3,7 @@
 // prima senza un allarme: un fallimento della fetch tornava `[]` esattamente
 // come «nessuna partita in programma».
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchFixtures } from "./football-data";
+import { fetchFixtures, fetchAllTodayMatches } from "./football-data";
 
 const UNA_PARTITA = {
   matches: [
@@ -127,5 +127,40 @@ describe("la finestra non perde le partite notturne UTC", () => {
       (Date.parse(p.get("dateTo")!) - Date.parse(p.get("dateFrom")!)) / 86_400_000;
     expect(giorni).toBeGreaterThanOrEqual(11);
     expect(giorni).toBeLessThanOrEqual(12);
+  });
+});
+
+describe("fetchAllTodayMatches: la finestra live include OGGI (#FD-DATETO-0911)", () => {
+  // Su /v4/matches `dateTo` e' escluso dall'API. Con dateTo=oggi la funzione
+  // rendeva solo le partite di ieri: misurato l'11/09 alle 20:53 UTC, 6 partite,
+  // tutte del 10/09 — e in board 13 partite gia' giocate senza punteggio.
+  const parametri = async () => {
+    let url = "";
+    vi.stubGlobal("fetch", vi.fn(async (u: string | URL | Request) => {
+      url = String(u);
+      return risposta(200, UNA_PARTITA);
+    }));
+    await fetchAllTodayMatches();
+    return new URL(url);
+  };
+
+  it("dateTo e' DOMANI, cosi' l'estremo escluso non taglia le partite di oggi", async () => {
+    const p = (await parametri()).searchParams;
+    const domani = new Date();
+    domani.setDate(domani.getDate() + 1);
+    expect(p.get("dateTo")).toBe(domani.toISOString().slice(0, 10));
+  });
+
+  it("dateFrom resta IERI: le partite notturne americane non escono a mezzanotte", async () => {
+    const p = (await parametri()).searchParams;
+    const ieri = new Date();
+    ieri.setDate(ieri.getDate() - 1);
+    expect(p.get("dateFrom")).toBe(ieri.toISOString().slice(0, 10));
+  });
+
+  it("interroga l'endpoint cross-competizione con la lista delle leghe", async () => {
+    const u = await parametri();
+    expect(u.pathname).toBe("/v4/matches");
+    expect(u.searchParams.get("competitions")).toContain("SA");
   });
 });
