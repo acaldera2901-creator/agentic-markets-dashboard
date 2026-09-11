@@ -164,11 +164,46 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
     // da `pg_indexes` e non dedotto: con `ON CONFLICT (match_id)` da solo
     // Postgres non trova un vincolo corrispondente e la query fallisce a ogni
     // riga, in produzione.
+    // #PARTNER-DOPPIONI-0911 — l'`ON CONFLICT` da solo NON basta, e il primo
+    // giro l'ha dimostrato: confronta il `match_id`, ma la stessa partita
+    // arriva da ESPN come `tennis:rapidapi:123` e da qui come
+    // `tennis:partner:...`. Nessun conflitto, due righe. Misurato sul board
+    // subito dopo: **136 righe su 138 duplicate**, in 65 gruppi — Zverev
+    // v Khachanov compariva TRE volte, Tiafoe v Shelton due piu' una a
+    // giocatori invertiti.
+    //
+    // Quindi si guarda l'IDENTITA' della partita, non la chiave tecnica: stessi
+    // due giocatori a un orario compatibile. In ENTRAMBI gli ordini, perche'
+    // chi e' "player1" dipende dalla fonte e non dalla partita.
+    //
+    // La finestra di 90 minuti non e' arbitraria: le fonti dichiarano orari che
+    // differiscono di pochi minuti per la stessa partita (misurato oggi su MEX:
+    // 03:00 contro 03:10), e un confronto all'istante esatto non li
+    // riconoscerebbe. Piu' larga di cosi' rischierebbe di fondere due turni
+    // diversi dello stesso giocatore, che nei tornei minori esistono.
     const r = await dbQuery(
       `INSERT INTO tennis_predictions
          (match_id, tournament, surface, player1, player2, scheduled_at,
           p1, p2, odds_p1, odds_p2, edge, best_selection, model_version, computed_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,NOW())
+       SELECT ($1)::text,($2)::text,($3)::text,($4)::text,($5)::text,($6)::timestamptz,
+              ($7)::double precision,($8)::double precision,($9)::double precision,
+              ($10)::double precision,NULL,($11)::text,($12)::text,NOW()
+       -- I cast sono espliciti perche' lo stesso parametro serve due usi con
+       -- tipi diversi: la colonna varchar dell'INSERT e il confronto text qui
+       -- sotto. Senza, Postgres rifiuta con «inconsistent types deduced for
+       -- parameter $4» — intercettato da PREPARE prima della produzione.
+       -- (Terza volta oggi che un backtick in un commento SQL chiude il
+       -- template literal. Qui dentro non se ne scrivono, punto.)
+       WHERE NOT EXISTS (
+         SELECT 1 FROM tennis_predictions t
+         WHERE t.scheduled_at BETWEEN ($6)::timestamptz - interval '90 minutes'
+                                  AND ($6)::timestamptz + interval '90 minutes'
+           AND (
+             (lower(btrim(t.player1)) = lower(btrim(($4)::text)) AND lower(btrim(t.player2)) = lower(btrim(($5)::text)))
+             OR
+             (lower(btrim(t.player1)) = lower(btrim(($5)::text)) AND lower(btrim(t.player2)) = lower(btrim(($4)::text)))
+           )
+       )
        ON CONFLICT (match_id, player1, player2) DO NOTHING
        RETURNING match_id`,
       [
