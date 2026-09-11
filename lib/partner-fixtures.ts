@@ -97,7 +97,18 @@ export function fixtureDaPartner(m: FpMatch, adesso = Date.now()): FixturePartne
     // non solo nei log. `teamPairKey` porta gia' data e nomi normalizzati, quindi
     // due book che mandano la stessa partita producono lo STESSO id e l'upsert
     // li fonde invece di duplicarli.
-    matchId: `tennis:partner:${m.teamPairKey}`,
+    //
+    // #PARTNER-DEDUP-0911 — i due punti dentro la chiave vanno sostituiti, e
+    // non e' cosmesi. `app/api/tennis/route.ts` deduplica le righe con
+    //   DISTINCT ON (split_part(match_id, ':', 3))
+    // cioe' prende il TERZO segmento dell'id. Per `tennis:rapidapi:12345`
+    // quello e' l'identificativo; per `tennis:partner:2026-09-12:tizio|caio`
+    // sarebbe **la data**, e tutte le partite partner dello stesso giorno si
+    // collasserebbero in una sola riga. Misurato in produzione: 74 righe
+    // scritte, **2** servite dal board.
+    // Con `_` al posto di `:` il terzo segmento torna a essere l'intera chiave
+    // — data e nomi insieme — quindi univoco per partita.
+    matchId: `tennis:partner:${m.teamPairKey.replace(/:/g, "_")}`,
     player1: m.homeName,
     player2: m.awayName,
     scheduledAt: new Date(quando).toISOString(),
