@@ -117,7 +117,27 @@ export async function GET(req: Request) {
             confidence_score, verification_state
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
-     ORDER BY COALESCE(settled_at, starts_at) DESC
+     -- #HISTORY-ORDINE-0911 — si ordina per QUANDO SI E' GIOCATA la partita,
+     -- non per quando NOI ne abbiamo registrato l'esito.
+     --
+     -- Prima era COALESCE(settled_at, starts_at): la data di settlement. Basta
+     -- un settlement in ritardo — o un recupero in blocco, come quello del
+     -- 10/09 — perche' una partita di giugno finisca in cima come se fosse di
+     -- ieri. Misurato: 544 righe settlate oltre 2 giorni dopo, 121 oltre 7, con
+     -- uno scarto massimo di 91 giorni; nelle prime 300 posizioni comparivano
+     -- 14 partite di giugno-agosto, fra cui Medvedev dell'11/06 in
+     -- ventiseiesima posizione.
+     --
+     -- Per chi legge, questa e' la cronologia delle nostre previsioni: l'ordine
+     -- che si aspetta e' quello degli eventi. La data di settlement e' un fatto
+     -- amministrativo nostro e resta come spareggio, per dare un ordine stabile
+     -- alle partite iniziate nello stesso istante (un turno di tennis ne ha
+     -- molte) — senza quello la paginazione potrebbe ripetere o saltare righe.
+     --
+     -- (Niente backtick nei commenti: questa query e' un template literal e un
+     -- backtick la chiude. E' il secondo file in cui ci inciampo oggi, dopo
+     -- lib/tennis-adapter.ts — dove avevo gia' scritto questa stessa nota.)
+     ORDER BY starts_at DESC NULLS LAST, settled_at DESC NULLS LAST, id DESC
      LIMIT ${STATS_CAP}`,
     values
   );
