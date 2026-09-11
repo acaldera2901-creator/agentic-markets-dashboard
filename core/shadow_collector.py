@@ -252,6 +252,39 @@ async def _latest_book_quotes(
                     if book in slot:  # already have a more recent capture (desc order)
                         continue
                     if r.get("odds_draw") is None:  # tennis 2-way row
+                        # ⚠️ #SHADOW-ALLINEAMENTO-0911 — QUESTA RIGA E' ROTTA, e
+                        # rende inutilizzabili le 74.108 righe tennis di
+                        # `sportsbook_shadow_eval`.
+                        #
+                        # Assume che `odds_home` dello snapshot si riferisca a
+                        # `player1` della predizione. Non e' vero: `odds_snapshots`
+                        # conserva SOLO `team_pair_key`, che e' ordinata
+                        # alfabeticamente (`sorted([...])` in `tennis_pair_key_for`)
+                        # e NON i nomi. Quale dei due giocatori sia "home" non e'
+                        # scritto da nessuna parte, quindi qui si indovina — e si
+                        # indovina giusto circa meta' delle volte. Nel calcio il
+                        # problema non esiste, perche' casa e ospite li definisce
+                        # la partita; nel tennis non esistono.
+                        #
+                        # MISURATO l'11/09 sui dati veri:
+                        #   * correlazione fra `base_p_home` (nostro modello, che e'
+                        #     calibrato) e `book_p_home` sulla STESSA riga: +0.018,
+                        #     cioe' zero. Concordano sul favorito nel 53% dei casi;
+                        #   * calibrazione del book per fascia: dichiara 24% -> la
+                        #     casa vince 52%; dichiara 77% -> vince 52%. Piatto
+                        #     ovunque, cioe' rumore. Il nostro modello sulla stessa
+                        #     estrazione: 25% -> 26%, 76% -> 70%. Allineato.
+                        #
+                        # Quanto e' pericoloso: la prima analisi su questi dati
+                        # dava «il modello batte la chiusura, t=+7,64» e «si guadagna
+                        # scommettendo CONTRO il movimento della linea». Numeri
+                        # entusiasmanti e interamente falsi.
+                        #
+                        # IL FIX non sta qui, sta a monte: le quote di uno sport
+                        # senza casa e ospite vanno salvate CON I NOMI, altrimenti
+                        # l'attribuzione e' perduta per sempre. `partner_price_history`
+                        # (#PREZZI-STORIA-0911) lo fa gia' — e' quella la fonte da
+                        # usare quando questo percorso verra' rifatto.
                         slot[book] = {"odds_p1": r.get("odds_home"), "odds_p2": r.get("odds_away")}
                     else:
                         slot[book] = {
