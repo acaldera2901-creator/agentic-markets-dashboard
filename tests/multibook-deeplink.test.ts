@@ -11,6 +11,11 @@ const base: FpMatch = {
   teamPairKey: "2026-07-01:internazionale|milan",
   homeKey: "milan",
   awayKey: "internazionale",
+  // #PARTNER-FIXTURES-0911: nomi veri e orario, che il parser conserva invece
+  // di gettarli dopo aver costruito la chiave.
+  homeName: "AC Milan",
+  awayName: "FC Internazionale",
+  startTime: "2026-07-01T18:45:00Z",
   sport: "soccer",
   slug: "milan-inter",
   id: 42,

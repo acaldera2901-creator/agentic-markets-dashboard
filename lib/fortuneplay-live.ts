@@ -27,6 +27,26 @@ export type FpMatch = {
   totalLine: number | null;
   totalOver: number | null;
   totalUnder: number | null;
+  // ── #PARTNER-FIXTURES-0911 ────────────────────────────────────────────────
+  // Il feed PORTA i nomi veri e l'orario di ogni partita, e fino a oggi questo
+  // parser li leggeva solo per costruire `teamPairKey` e poi li buttava: ne
+  // restava un hash, utile ad AGGANCIARE le quote a una partita che gia'
+  // conoscevamo, inutile a SCOPRIRNE una nuova.
+  //
+  // Misurato l'11/09 sul feed vivo (FortunePlay e YBets danno gli stessi dati,
+  // stessa piattaforma BetConstruct): **108 partite di tennis, 81 future, 106
+  // con quote** — contro le 11 che il board mostrava — e **294 partite di
+  // calcio future nelle sole prime 6 pagine su 30**. Il materiale per una
+  // copertura molto piu' larga arriva gia' a ogni giro: mancava solo di non
+  // gettarlo.
+  //
+  // Tenerli non cambia nulla per chi usa il feed oggi (sono campi in piu' su un
+  // oggetto gia' costruito, nessuna richiesta aggiuntiva): serve a chi vorra'
+  // usarli per la scoperta delle partite.
+  homeName: string;
+  awayName: string;
+  /** ISO come lo manda il book, oppure null se assente. */
+  startTime: string | null;
 };
 
 // #NEWSPORTS: baseball/mma inclusi dopo la verifica live di Andrea (2026-07-05,
@@ -107,6 +127,14 @@ export function parseFortuneplayMatches(payload: unknown): FpMatch[] {
       urnId: String(m?.urn_id ?? ""),
       oddsHome: oh, oddsDraw: od, oddsAway: oa,
       totalLine: line, totalOver: over, totalUnder: under,
+      // #PARTNER-FIXTURES-0911: i nomi COME LI MANDA IL BOOK, non normalizzati.
+      // `homeKey`/`awayKey` restano la forma per l'abbinamento; questi servono
+      // a mostrare e a creare una partita, e per quello la normalizzazione e'
+      // una perdita — «Inter» e «FC Internazionale» hanno la stessa chiave ma
+      // solo uno dei due si puo' scrivere su una scheda.
+      homeName: home,
+      awayName: away,
+      startTime: m?.start_time ?? null,
     });
   }
   return out;

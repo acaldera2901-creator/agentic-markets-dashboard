@@ -7,6 +7,14 @@ const fm: FpMatch = {
   teamPairKey: "2026-07-01:internazionale|milan",
   homeKey: "milan",
   awayKey: "internazionale",
+  // #PARTNER-FIXTURES-0911: i nomi VERI accanto alle chiavi normalizzate —
+  // "AC Milan" e "milan" sono la stessa squadra, ma solo il primo si scrive su
+  // una scheda. Sono obbligatori di proposito: il parser li ha sempre, e
+  // renderli opzionali avrebbe scaricato su ogni chiamante un dubbio che nei
+  // dati non esiste.
+  homeName: "AC Milan",
+  awayName: "FC Internazionale",
+  startTime: "2026-07-01T18:45:00Z",
   sport: "soccer",
   slug: "milan-inter",
   id: 42,
