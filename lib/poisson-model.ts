@@ -105,7 +105,36 @@ export const XG_BLEND_WEIGHT = 0.5;
 // a pure mirror of the bookmaker. α=0.3 keeps almost the entire calibration gain
 // while preserving the model's identity. Setting α=1 restores today's behaviour
 // exactly (the rollback switch).
-export const MARKET_BLEND_ALPHA = 0.3;
+// #BLEND-ALPHA-0914 (lab agentic_lab, 14/09/2026): 0.3 -> 0.1, e ZERO nelle leghe
+// dove il modello fa danno misurabile. Misurato su prediction_log (1.358 partite di
+// club con quote, 11/06 -> 13/09, ultimo snapshot pre-kickoff, tre serie affiancate):
+// Brier servita 0,5912 vs mercato 0,5879 (+0,0033, IC95 [+0,0004; +0,0061]);
+// modello puro +0,0268. Griglia del peso scelta su giu-ago e letta su settembre:
+// alpha 0 e' il minimo e ogni alpha > 0 peggiora in modo monotono (0,1 -> +0,0008,
+// 0,3 -> +0,0039, 1,0 -> +0,032). Non e' un'ottimizzazione dell'edge: a 0,1 il
+// numero servito e' quasi il prezzo, e la differenziazione del prodotto sta nella
+// selettivita' e nella spiegazione, non nella previsione. Detto cosi' ad Andrea nel
+// Council (#PREDICTION-VS-MERCATO-0914) prima dell'APPROVE.
+//
+// Regola di stop pre-registrata: Brier servito vs prezzo sulle 4 settimane
+// successive al merge; se il servito e' PEGGIORE del prezzo si torna a 0,3.
+// Rollback: un carattere qui e uno in core/market_blend.py (parita' Python).
+export const MARKET_BLEND_ALPHA = 0.1;
+
+// Leghe dove il modello puro peggiora il prezzo di piu' di 0,04 di Brier sulla
+// stessa misura (Brier modello - mercato: DNK +0,099, BEL +0,084, NED +0,062,
+// LOI +0,050, EFLC +0,048, WC +0,041; n fra 30 e 95). Qui si serve il prezzo
+// devigato e basta. WC vive nel path Python (core/market_blend.py), il set e'
+// specchiato li'. Le leghe neutre (MLS, BRA, BL2, EL1) restano ad alpha pieno.
+export const MODEL_OFF_LEAGUES: ReadonlySet<string> = new Set([
+  "DNK", "BEL", "NED", "LOI", "EFLC", "WC",
+]);
+
+/** Peso del modello nel blend per una lega: 0 dove il modello fa danno, altrimenti MARKET_BLEND_ALPHA. */
+export function blendAlphaFor(leagueCode: string | null | undefined): number {
+  if (leagueCode && MODEL_OFF_LEAGUES.has(leagueCode)) return 0;
+  return MARKET_BLEND_ALPHA;
+}
 
 export interface TripleProb {
   pHome: number;

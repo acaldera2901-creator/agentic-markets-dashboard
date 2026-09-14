@@ -12,7 +12,19 @@ lib/poisson-model.ts MARKET_BLEND_ALPHA.
 """
 from __future__ import annotations
 
-MARKET_BLEND_ALPHA = 0.3
+# #BLEND-ALPHA-0914 (14/09/2026): 0.3 -> 0.1, e zero nelle leghe dove il modello
+# peggiora il prezzo (misura in lib/poisson-model.ts, stesso commento). Parita' TS.
+MARKET_BLEND_ALPHA = 0.1
+
+# Specchio di lib/poisson-model.ts MODEL_OFF_LEAGUES. WC e' servito da QUESTO path.
+MODEL_OFF_LEAGUES: frozenset[str] = frozenset({"DNK", "BEL", "NED", "LOI", "EFLC", "WC"})
+
+
+def blend_alpha_for(league_code: str | None) -> float:
+    """Peso del modello per lega: 0 dove il modello fa danno, altrimenti MARKET_BLEND_ALPHA."""
+    if league_code and league_code in MODEL_OFF_LEAGUES:
+        return 0.0
+    return MARKET_BLEND_ALPHA
 
 
 def devig_1x2(
