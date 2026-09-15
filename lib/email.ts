@@ -58,6 +58,22 @@ function siteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://betredge.com").replace(/\/$/, "");
 }
 
+// #ATTRIB-EVERYWHERE-0915 — la destinazione di una CTA email, marcata con la
+// mail che l'ha generata. Le email del ciclo di vita (attivazione, benvenuto,
+// ricevuta, disdetta, win-back) mandavano a `/app`, `/plans` e `/weekly-pick`
+// senza alcun marcatore: un utente che tornava e si riattivava era indistinguibile
+// da uno arrivato digitando l'indirizzo, e l'email win-back — che esiste SOLO per
+// riportare indietro chi è scaduto — non poteva dimostrare di funzionare.
+//
+// Si usa `src=`, la stessa chiave dei marcatori interni letta da sourceFromSearch
+// (lib/attribution.ts), non un `utm_*`: gli utm sono per i canali di terzi.
+// I link con token (attivazione, reset password) restano intatti: sono one-shot
+// e non sono un canale.
+function mailUrl(path: string, tag: string): string {
+  const sep = path.includes("?") ? "&" : "?";
+  return `${siteUrl()}${path}${sep}src=${tag}`;
+}
+
 export async function sendEmail(opts: {
   to: string;
   subject: string;
@@ -404,8 +420,8 @@ export function planActivatedEmail(expiresAtISO: string | null, lang = "it"): { 
   const body = t.body(until);
   return {
     subject: t.subject,
-    html: brandedShell(`${brandText(body)}${brandCta(t.cta, `${siteUrl()}/app`)}`, { lang: l }),
-    text: `${body}\n\n${t.cta}: ${siteUrl()}/app`,
+    html: brandedShell(`${brandText(body)}${brandCta(t.cta, mailUrl("/app", "mail-activated"))}`, { lang: l }),
+    text: `${body}\n\n${t.cta}: ${mailUrl("/app", "mail-activated")}`,
   };
 }
 
@@ -472,7 +488,7 @@ const WELCOME: Record<WelcomeLang, { subject: string; body1: string; body2: stri
 export function welcomeEmail(lang = "it"): { subject: string; html: string; text: string } {
   const l: WelcomeLang = lang in WELCOME ? (lang as WelcomeLang) : "it";
   const t = WELCOME[l];
-  const url = `${siteUrl()}/app`;
+  const url = mailUrl("/app", "mail-welcome");
   return {
     subject: t.subject,
     html: brandedShell(
@@ -619,7 +635,7 @@ export function weeklyPickReceiptEmail(
         }).format(amountMinor / 100)
       : null;
   const week = new Date(weekStartISO).toLocaleDateString(MAIL_LOCALE[l]);
-  const url = `${siteUrl()}/weekly-pick`;
+  const url = mailUrl("/weekly-pick", "mail-wp-receipt");
   const lines = [t.recorded(week), amount ? t.amount(amount) : null, t.oneOff];
   const text = lines.filter(Boolean).join(" ");
   return {
@@ -663,8 +679,8 @@ export function cancellationEmail(lang = "it"): { subject: string; html: string;
   const t = CANCELLATION[l];
   return {
     subject: t.subject,
-    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/plans`)}`, { lang: l }),
-    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/plans`,
+    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, mailUrl("/plans", "mail-cancel"))}`, { lang: l }),
+    text: `${t.body}\n\n${t.cta}: ${mailUrl("/plans", "mail-cancel")}`,
   };
 }
 
@@ -702,7 +718,7 @@ export function winBackEmail(lang = "it"): { subject: string; html: string; text
   const t = WINBACK[l];
   return {
     subject: t.subject,
-    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, `${siteUrl()}/plans`)}`, { lang: l }),
-    text: `${t.body}\n\n${t.cta}: ${siteUrl()}/plans`,
+    html: brandedShell(`${brandText(t.body)}${brandCta(t.cta, mailUrl("/plans", "mail-winback"))}`, { lang: l }),
+    text: `${t.body}\n\n${t.cta}: ${mailUrl("/plans", "mail-winback")}`,
   };
 }
