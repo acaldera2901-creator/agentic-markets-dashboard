@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LEGAL_ENTITY } from "@/lib/legal-entity";
+import { LEGAL_ENTITY, PRIVACY_CONTROLLER } from "@/lib/legal-entity";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | BetRedge",
@@ -25,14 +25,15 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">1. Controller</h2>
           <p className="text-xs leading-relaxed">
-            {/* #SITE-ENTITY-0824 — l'identità arriva da lib/legal-entity.ts, la stessa
-                fonte del footer e delle email.
-                ⚠️ AVVOCATO: GDPR art. 13(1)(a) richiede l'identità del TITOLARE del
-                trattamento. Qui ora c'è marchio + indirizzo di corrispondenza, senza
-                forma societaria né numero di registro: non si asserisce nulla di falso,
-                ma nessuna persona giuridica è nominata come titolare. Da riconciliare
-                quando l'entità è decisa. */}
-            BetRedge (&quot;we&quot;, &quot;us&quot;) is a sports prediction platform. For GDPR purposes, the data controller is {LEGAL_ENTITY.senderName}, {LEGAL_ENTITY.correspondence}. Contact: <a href={`mailto:${LEGAL_ENTITY.contactEmail}`} className="underline hover:text-[var(--am-coral)]">{LEGAL_ENTITY.contactEmail}</a>.
+            {/* #PRIVACY-CONTROLLER-0915 — qui, e SOLO qui, il titolare del trattamento
+                è nominato per intero: l'art. 13(1)(a) GDPR pretende l'identità di una
+                persona giuridica, e "marchio + casella di corrispondenza" non lo è.
+                Decisione esplicita di Andrea del 2026-09-15; dati ri-verificati su
+                Zefix lo stesso giorno (stato EXISTIEREND).
+                ⚠️ NON estendere a footer del sito, footer email, /terms o /widget:
+                lì #SITE-ENTITY-0824 e #EMAIL-SENDER-IDENTITY-0824 restano in vigore e
+                quelle superfici continuano a leggere LEGAL_ENTITY/impressumLine(). */}
+            BetRedge (&quot;we&quot;, &quot;us&quot;) is a sports prediction platform. For GDPR purposes, the data controller is <strong className="text-[var(--am-text)]">{PRIVACY_CONTROLLER.name}</strong>, {PRIVACY_CONTROLLER.address} — <span className="whitespace-nowrap">UID {PRIVACY_CONTROLLER.uid}</span>. Correspondence address: {LEGAL_ENTITY.senderName}, {LEGAL_ENTITY.correspondence}. Contact: <a href={`mailto:${LEGAL_ENTITY.contactEmail}`} className="underline hover:text-[var(--am-coral)]">{LEGAL_ENTITY.contactEmail}</a>.
           </p>
         </section>
 
