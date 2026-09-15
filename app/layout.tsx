@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hanken_Grotesk, JetBrains_Mono, Saira_Condensed } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
+import VercelAnalytics from "@/components/VercelAnalytics";
 import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
@@ -114,6 +115,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="am-grain" aria-hidden="true" />
         {/* #FUNNEL-MEAS-0813: page_view su OGNI rotta (prima solo dentro /app). */}
         <PageViewTracker />
+        {/* #SEO-ANALYTICS-0915: Vercel Web Analytics, montato SOLO dopo l'Accept
+            del banner (la regola vive dentro il componente, come per LiveChat).
+            Affianca il beacon di prima parte, non lo sostituisce. */}
+        <VercelAnalytics />
         {/* #FUNNEL-MEAS-0813: il consenso si chiede su OGNI rotta (prima solo dentro
             /app): senza banner sulla landing nessuno accettava, e tutto ciò che è
             gated sul consenso — attribuzione compresa — non si attivava mai lì. */}

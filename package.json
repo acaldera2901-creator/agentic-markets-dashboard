@@ -10,10 +10,12 @@
     "gate": "./venv/bin/python scripts/promotion_gate.py",
     "gate:update": "./venv/bin/python scripts/promotion_gate.py --update-baselines",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seo:lastmod": "tsx scripts/seo/lastmod.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
+    "@vercel/analytics": "^2.0.1",
     "lucide-react": "^1.14.0",
     "next": "^16.2.7",
     "postgres": "^3.4.9",

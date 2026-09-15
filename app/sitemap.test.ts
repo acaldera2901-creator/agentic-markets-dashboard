@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeAll } from "vitest";
 import type { MetadataRoute } from "next";
 import sitemap from "./sitemap";
 import { TOOL_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
+import { GENERATED_AT } from "@/lib/seo/last-modified.generated";
 
 // #BLOG-SSR-0814: la sitemap legge i post published dal DB — nei test il DB
 // non c'è, si mocka la sola query (2 post finti, uno senza date).
@@ -69,19 +70,13 @@ describe("sitemap", () => {
     const wc = entries.find((e) => e.url === `${BASE}/world-cup`);
     expect(wc).toBeTruthy();
     expect(wc!.changeFrequency).toBe("monthly");
-    expect(wc!.priority).toBeLessThanOrEqual(0.3);
   });
 
-  it("dà agli hub una priorità maggiore delle singole pagine-tool", () => {
-    const hub = entries.find((e) => e.url === `${BASE}/tools`)!;
-    const tool = entries.find((e) => e.url === `${BASE}/tools/kelly-criterion`)!;
-    expect(hub.priority!).toBeGreaterThan(tool.priority!);
-  });
-
-  it("dà alle pagine inglesi priorità maggiore che alle tradotte (canonical)", () => {
-    const en = entries.find((e) => e.url === `${BASE}/tools/kelly-criterion`)!;
-    const it = entries.find((e) => e.url === `${BASE}/it/tools/kelly-criterion`)!;
-    expect(en.priority!).toBeGreaterThan(it.priority!);
+  // #SEO-LASTMOD-0915: Google ignora <priority> da anni. Il test è qui perché
+  // il campo non rientri di soppiatto con la prossima rotta copiaincollata.
+  it("non dichiara priority su nessuna URL", () => {
+    const withPriority = entries.filter((e) => e.priority !== undefined);
+    expect(withPriority.map((e) => e.url)).toEqual([]);
   });
 
   // #BLOG-SSR-0814
@@ -102,11 +97,48 @@ describe("sitemap", () => {
     expect(post!.lastModified).toBeUndefined();
   });
 
-  it("l'indice /blog pesa più dei singoli articoli", () => {
-    const index = entries.find((e) => e.url === `${BASE}/blog`)!;
-    const post = entries.find(
-      (e) => e.url === `${BASE}/blog/implied-probability-from-betting-odds`
-    )!;
-    expect(index.priority!).toBeGreaterThan(post.priority!);
+  // #SEO-LASTMOD-0915 — l'audit di visibilità aveva trovato lastmod su 5 URL su
+  // 150: i soli articoli. I test qui sotto presidiano la copertura piena.
+  describe("lastModified", () => {
+    it("c'è su ogni URL tranne i post senza data (mai una data inventata)", () => {
+      const senzaData = entries
+        .filter((e) => e.lastModified === undefined)
+        .map((e) => e.url);
+      expect(senzaData).toEqual([`${BASE}/blog/post-senza-date`]);
+    });
+
+    it("nessuna data è nel futuro", () => {
+      const ora = Date.now();
+      const future = entries
+        .filter((e) => e.lastModified && new Date(e.lastModified).getTime() > ora)
+        .map((e) => e.url);
+      expect(future).toEqual([]);
+    });
+
+    it("ogni data è un ISO valido", () => {
+      const invalide = entries
+        .filter((e) => e.lastModified && Number.isNaN(new Date(e.lastModified).getTime()))
+        .map((e) => e.url);
+      expect(invalide).toEqual([]);
+    });
+
+    // Il fallback GENERATED_AT esiste per non lasciare mai un undefined, ma se
+    // ci finisce una rotta vuol dire che last-modified.generated.ts è indietro
+    // rispetto a sitemap.ts: va rigenerato con `npm run seo:lastmod`.
+    it("nessuna rotta statica cade sul fallback: la mappa generata le copre tutte", () => {
+      const scoperte = entries
+        .filter((e) => !e.url.startsWith(`${BASE}/blog/`))
+        .filter((e) => e.lastModified === GENERATED_AT)
+        .map((e) => e.url);
+      expect(scoperte).toEqual([]);
+    });
+
+    it("l'indice /blog non è più vecchio dell'articolo più recente", () => {
+      const index = entries.find((e) => e.url === `${BASE}/blog`)!;
+      // Il mock pubblica al 2026-08-14: l'indice deve almeno arrivarci.
+      expect(new Date(index.lastModified!).getTime()).toBeGreaterThanOrEqual(
+        new Date("2026-08-14T10:00:00.000Z").getTime()
+      );
+    });
   });
 });
