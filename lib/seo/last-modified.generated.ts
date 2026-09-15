@@ -4,7 +4,7 @@
 // quella pagina (vedi ROUTE_SOURCES nello script).
 
 /** Quando questo file è stato generato: fallback per una rotta non mappata. */
-export const GENERATED_AT = "2026-09-15T11:37:05.165Z";
+export const GENERATED_AT = "2026-09-15T13:05:58.134Z";
 
 export const LAST_MODIFIED: Record<string, string> = {
   "/": "2026-09-08T17:12:34+02:00",
@@ -126,18 +126,18 @@ export const LAST_MODIFIED: Record<string, string> = {
   "/sv/tools/stake-calculator": "2026-08-22T14:37:09+02:00",
   "/sv/tools/yield-calculator": "2026-08-22T14:37:09+02:00",
   "/terms": "2026-08-24T16:29:45+02:00",
-  "/tools": "2026-08-22T14:37:09+02:00",
-  "/tools/arbitrage-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/bankroll-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/ev-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/kelly-criterion": "2026-08-22T14:37:09+02:00",
-  "/tools/margin-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/odds-converter": "2026-08-22T14:37:09+02:00",
-  "/tools/parlay-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/probability-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/roi-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/stake-calculator": "2026-08-22T14:37:09+02:00",
-  "/tools/yield-calculator": "2026-08-22T14:37:09+02:00",
+  "/tools": "2026-09-15T15:00:36+02:00",
+  "/tools/arbitrage-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/bankroll-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/ev-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/kelly-criterion": "2026-09-15T15:00:36+02:00",
+  "/tools/margin-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/odds-converter": "2026-09-15T15:00:36+02:00",
+  "/tools/parlay-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/probability-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/roi-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/stake-calculator": "2026-09-15T15:00:36+02:00",
+  "/tools/yield-calculator": "2026-09-15T15:00:36+02:00",
   "/tr/tools": "2026-08-22T14:37:09+02:00",
   "/tr/tools/arbitrage-calculator": "2026-08-22T14:37:09+02:00",
   "/tr/tools/bankroll-calculator": "2026-08-22T14:37:09+02:00",
