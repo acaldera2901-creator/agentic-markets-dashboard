@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { hasRichData, copyFor, ctaLabelFor, creativeFor, type BannerData, type BannerEdge, type HouseCampaign, type Lang } from "@/lib/house-banners";
+import { trackEvent } from "@/lib/track-event";
 
 // Micro-stringhe del componente (non-copy) per le 5 lingue del desk.
 const HB_UI: Record<Lang, {
@@ -45,27 +46,17 @@ function persistDismissed(ids: Set<string>) {
   }
 }
 
-// Mini-tracker fire-and-forget, coerente col trackEvent del desk (stessa am_sid).
+// #ATTRIB-EVERYWHERE-0915 — passa da lib/track-event come ogni altro evento.
+//
+// Qui viveva una SECONDA implementazione del beacon, scritta "coerente col
+// trackEvent del desk" ma senza la sua regola di consenso: creava `am_sid` e lo
+// mandava SEMPRE, anche a chi aveva rifiutato il banner cookie. In produzione si
+// misuravano due eventi a 26 ms di distanza sullo stesso caricamento, uno con
+// session_id e uno senza. Non era solo una misura sbagliata: era il consenso
+// aggirato. Esattamente il motivo per cui l'intestazione di lib/track-event dice
+// che la regola privacy deve vivere in UN posto solo.
 function track(event_type: string, campaign: HouseCampaign) {
-  if (typeof window === "undefined") return;
-  let sid = "";
-  try {
-    sid = sessionStorage.getItem("am_sid") ?? "";
-    if (!sid) {
-      sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-      sessionStorage.setItem("am_sid", sid);
-    }
-  } catch {
-    /* ignore */
-  }
-  const language = (() => {
-    try { return localStorage.getItem("agentic-lang") ?? undefined; } catch { return undefined; }
-  })();
-  fetch("/api/track", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event_type, session_id: sid, language, meta: { campaign_id: campaign.id, slot: campaign.slot } }),
-  }).catch(() => { /* never block UI */ });
+  trackEvent(event_type, { meta: { campaign_id: campaign.id, slot: campaign.slot } });
 }
 
 const fmtEdge = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;

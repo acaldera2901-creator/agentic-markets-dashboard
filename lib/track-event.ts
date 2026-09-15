@@ -47,6 +47,14 @@ export function trackEvent(
   fetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    // #ATTRIB-EVERYWHERE-0915: `keepalive` perché metà di questi eventi sono
+    // esattamente quelli sparati un istante PRIMA di lasciare la pagina
+    // (conversion, plan_cta_click, checkout_opened, partner_click,
+    // sportsbook_click): senza, il browser è libero di annullare la richiesta
+    // al unload e l'evento che misura la conversione è proprio quello che si
+    // perde. Il payload è di poche centinaia di byte, molto sotto il limite di
+    // 64 KiB che la specifica impone alle richieste keepalive.
+    keepalive: true,
     // `?? undefined`: con lo storage vietato getSessionId ritorna null, e la
     // chiave va OMESSA dal payload invece di arrivare a null — la forma del
     // beacon resta identica a prima del fix.

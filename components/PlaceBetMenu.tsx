@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { BetSelection, BetLinkOption } from "@/lib/sportsbooks/types";
+import { trackEvent } from "@/lib/track-event";
 
 // CTA "Piazza scommessa" + dropdown dei book affiliati.
 // Mostrato dal parent SOLO quando betLinksEnabled è true (geo-gate server-side).
@@ -65,16 +66,13 @@ export function PlaceBetMenu({
   }
 
   // analytics beacon fire-and-forget: non blocca mai la navigazione.
+  // #ATTRIB-EVERYWHERE-0915: passa da lib/track-event invece di rifare la POST
+  // a mano. Questa copia non mandava né lingua né session_id, quindi il click su
+  // "piazza scommessa" — l'ultimo gradino del funnel — era l'unico evento che
+  // non si poteva legare alla sessione che l'aveva generato nemmeno col consenso
+  // dato. `keepalive` ora vive dentro trackEvent, quindi non si perde nulla.
   function track(book: string) {
-    fetch("/api/track", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        event_type: "sportsbook_click",
-        meta: { book, sport: selection.sport },
-      }),
-      keepalive: true,
-    }).catch(() => {});
+    trackEvent("sportsbook_click", { meta: { book, sport: selection.sport } });
   }
 
   return (
