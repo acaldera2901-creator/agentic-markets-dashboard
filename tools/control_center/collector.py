@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import cervello
+from . import cervello, sincronizza
 from .actions import RESTARTABLE
 from .alerting import decide_alerts
 from .checks import all_checks
@@ -78,6 +78,24 @@ def main(argv: list[str] | None = None) -> int:
     # non deve comparire nel `--dry-run`, che per contratto non scrive nulla.
     # Se il parser muore, il collector non muore con lui: i check sono gia'
     # salvati, e un grafo vecchio vale piu' di uno stato mancante.
+    # PRIMA di ridisegnare il grafo, le memorie vive entrano nel cervello.
+    # L'ordine non e' cosmetico: fino al 07/09 il grafo si rigenerava ogni 5
+    # minuti da una cartella che **nessuno scriveva** — popolata a mano il
+    # 04/09 e poi ferma. La torre mostrava una memoria di tre giorni prima e
+    # non c'era modo di accorgersene. Sincronizzare dopo il disegno
+    # ripeterebbe lo stesso difetto con un giro di ritardo.
+    try:
+        esito = sincronizza.aggiorna()
+        print(json.dumps({"nuovi": len(esito["nuovi"]),
+                          "aggiornati": len(esito["aggiornati"]),
+                          "invariati": esito["invariati"],
+                          "parcheggiati": len(esito["parcheggiati"]),
+                          "git": sincronizza.salva(esito) or "-",
+                          "cruscotto": sincronizza.cruscotto()},
+                         ensure_ascii=False))
+    except Exception as errore:  # noqa: BLE001
+        print(f"sincronizza: non riversato ({errore})", file=sys.stderr)
+
     try:
         grafo = cervello.aggiorna()
         print(json.dumps(grafo["conteggi"], ensure_ascii=False))

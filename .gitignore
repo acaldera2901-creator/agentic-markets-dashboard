@@ -85,3 +85,9 @@ public/icons/_candidates/
 # log del job Refresh history snapshot: va nel body della PR, non nel tree
 # (il run del 10/08 lo ha committato per sbaglio insieme allo snapshot)
 refresh.log
+
+# scratchpad degli agenti: file di lavoro, mai sorgente. Il rituale warmup email
+# ci fa transitare i CSV di import dei lotti (indirizzi di lead = PII) perche'
+# l'upload di Resend rifiuta i file presi fuori dal repo. Il 09/09 vi sono stati
+# trovati i CSV di g10-g13 non ignorati: un solo `git add -A` li avrebbe committati.
+scratchpad/
