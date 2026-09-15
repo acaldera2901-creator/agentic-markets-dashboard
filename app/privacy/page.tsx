@@ -19,7 +19,7 @@ export default function PrivacyPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Privacy Policy</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: August 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: September 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -40,7 +40,11 @@ export default function PrivacyPage() {
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">2. Data We Collect</h2>
           <ul className="text-xs space-y-2 list-disc list-inside">
             <li><strong className="text-[var(--am-text)]">Profile data:</strong> When you create an account — including free ones — we store your email address, selected plan, name, language, timezone and marketing-consent flag (with timestamps) server-side in our database (Supabase). Interface preferences such as language and theme are also cached locally in your browser (localStorage).</li>
-            <li><strong className="text-[var(--am-text)]">Usage events:</strong> Anonymous usage events (page and tab views, plan upgrades) collected via Supabase to improve the service. No personally identifiable information is included.</li>
+            {/* #PRIVACY-ANALYTICS-0915 — era "anonymous usage events". Non lo sono:
+                gli eventi portano un id di sessione casuale che li raggruppa, quindi
+                sono PSEUDONIMI (Cons. 26 GDPR). La parola "anonymous" toglieva al
+                trattamento la base giuridica che gli serve davvero (consenso). */}
+            <li><strong className="text-[var(--am-text)]">Usage events:</strong> Product usage events (page and tab views, tab clicks, plan views, banner views, partner link clicks, sign-up and checkout steps) recorded in our own first-party database. They contain no name, email or account reference, but they can be grouped by a randomly generated session identifier, so they are pseudonymous rather than anonymous. That identifier is created and sent <strong className="text-[var(--am-text)]">only after you accept cookies</strong> via the banner; if you decline, or have not answered yet, events are still counted but carry no identifier and cannot be linked to one another.</li>
             <li><strong className="text-[var(--am-text)]">Acquisition source:</strong> When you create an account, we store how you first reached the site (campaign parameters in the link you followed, the referring website, and the first page you landed on). This is first-party data kept in your browser&apos;s localStorage until sign-up and then saved with your profile; it is never shared with advertising networks.</li>
             <li><strong className="text-[var(--am-text)]">Deposit requests:</strong> For paying clients, name, email, and payment method are stored securely in Supabase with row-level security.</li>
             <li><strong className="text-[var(--am-text)]">Technical data:</strong> Standard server logs (IP address, browser type, request timestamps) retained for up to 30 days for security purposes.</li>
@@ -51,15 +55,35 @@ export default function PrivacyPage() {
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">3. Legal Basis</h2>
           <ul className="text-xs space-y-2 list-disc list-inside">
             <li><strong className="text-[var(--am-text)]">Contract performance:</strong> Processing necessary to provide the prediction service you requested.</li>
-            <li><strong className="text-[var(--am-text)]">Legitimate interest:</strong> Anonymous analytics to maintain and improve platform quality.</li>
-            <li><strong className="text-[var(--am-text)]">Consent:</strong> Cookie preferences and marketing communications (where applicable).</li>
+            {/* #PRIVACY-ANALYTICS-0915 — le analytics NON stanno sul legittimo
+                interesse: l'accesso allo storage del terminale per finalità non
+                strettamente necessarie richiede consenso (art. 5(3) Dir. ePrivacy,
+                art. 122 Codice Privacy), e il trattamento a valle segue quella base
+                (art. 6(1)(a) GDPR). Il legittimo interesse resta dov'è vero:
+                sicurezza dei log e soft opt-in della sez. 10. */}
+            <li><strong className="text-[var(--am-text)]">Consent:</strong> Product analytics and any other non-essential storage on your device, including the session identifier described in Section 4 (Art. 6(1)(a) GDPR, together with Art. 5(3) of the ePrivacy Directive — Art. 122 of the Italian Privacy Code). Marketing communications where applicable. You may withdraw consent at any time through the cookie banner; withdrawal does not affect processing already carried out while consent was in place.</li>
+            <li><strong className="text-[var(--am-text)]">Legitimate interest:</strong> Security and abuse prevention (server logs, rate limiting) and the &quot;soft opt-in&quot; emails to existing clients described in Section 10.</li>
           </ul>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">4. Cookies</h2>
+          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">4. Cookies and Local Storage</h2>
+          {/* #PRIVACY-ANALYTICS-0915 — la vecchia frase ("essential technical storage
+              … and anonymous usage analytics") metteva le analytics fra le cose
+              esenti da consenso. Qui ogni chiave è elencata con la sua qualificazione
+              esatta, così la pagina si può verificare leggendo il codice. */}
           <p className="text-xs leading-relaxed">
-            We use essential technical storage (localStorage for your plan profile) and anonymous usage analytics. Non-essential tools are loaded only after you accept cookies via the banner; if you decline, they are not loaded. These are: our live-chat provider (Tawk.to), which sets its own cookies, and — where active — Google advertising and analytics tools (Google Tag Manager, Google Analytics 4, Google Ads) and the Meta Pixel, which set their own cookies and identifiers. Consent signals are passed to Google via Consent Mode; without your acceptance these tools remain fully disabled. Partner links to bookmakers and casinos may set their own cookies — please review their privacy policies before clicking.
+            BetRedge does not set first-party cookies for analytics: what we keep on your device is browser storage, listed key by key below. Each entry says whether it is exempt from consent (strictly necessary or a preference you set yourself) or requires your consent.
+          </p>
+          <ul className="text-xs space-y-2 list-disc list-inside">
+            <li><strong className="text-[var(--am-text)]">gdpr_consent</strong> (localStorage) — records your answer to the cookie banner. Strictly necessary: it is what makes your choice work, so it is stored whatever you answer. <em>No consent required.</em></li>
+            <li><strong className="text-[var(--am-text)]">agentic-lang</strong> (localStorage) — the interface language. Set when you pick a language, and pre-filled on your first visit with the language your browser announces. It is a display preference, used only to show you the site in the right language. <em>No consent required.</em></li>
+            <li><strong className="text-[var(--am-text)]">br_house_dismissed</strong> (localStorage) — remembers that you closed one of our own in-app promotional banners, so it is not shown to you again. <em>No consent required.</em></li>
+            <li><strong className="text-[var(--am-text)]">am_attrib</strong> (localStorage) — the acquisition source described in Section 2 (campaign parameters, referring website, landing page). Not necessary to run the service. <em>Written only after you accept cookies.</em></li>
+            <li><strong className="text-[var(--am-text)]">am_sid</strong> (sessionStorage) — a randomly generated identifier that groups the usage events of a single browsing session, so that ten page views by one visitor are not counted as ten visitors. It contains no personal detail, but it makes those events pseudonymous rather than anonymous. <em>Created and sent only after you accept cookies</em>, and discarded when you close the tab.</li>
+          </ul>
+          <p className="text-xs leading-relaxed">
+            Non-essential third-party tools are loaded only after you accept cookies via the banner; if you decline, they are not loaded. These are: our live-chat provider (Tawk.to), which sets its own cookies, and — where active — Google advertising and analytics tools (Google Tag Manager, Google Analytics 4, Google Ads) and the Meta Pixel, which set their own cookies and identifiers. Consent signals are passed to Google via Consent Mode; without your acceptance these tools remain fully disabled. Partner links to bookmakers and casinos may set their own cookies — please review their privacy policies before clicking.
           </p>
         </section>
 
