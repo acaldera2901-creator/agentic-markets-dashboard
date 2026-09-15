@@ -107,6 +107,15 @@ export const PARTNERS: Partner[] = [
   { id: "rollxo", name: "RollXO", category: "casino", logo: "/logos/rollxo.svg", geoUrls: geoUrlsOf("RollXO"), logoShape: "emblem" },
   { id: "hollywin", name: "Hollywin", category: "casino", logo: "/logos/hollywin.svg", geoUrls: geoUrlsOf("Hollywin"), logoShape: "emblem" },
   { id: "n1bet", name: "N1 Bet", category: "casino", logo: "/logos/n1bet.svg", geoUrls: geoUrlsOf("N1 Bet"), logoShape: "emblem" },
+  // #PARTNER-STONEVEGAS-0915 — rete Playfina, stesso perimetro NO+DACH dei tre N1
+  // (istruzione di Andrea, 15/09): nessun `url`, `geoUrls` letto da GEO_LANDING_PARTNERS.
+  // Logo = lockup ufficiale del brand (352×186 PNG a sfondo trasparente, preso dalla
+  // pagina del partner e autocroppato sull'inchiostro → 333×160). 2.08:1, cioè la
+  // forma di Wildz: al cap standard renderebbe 2.406px², sotto tutta la vetrina →
+  // emblema, che lo porta a 6.069px² (Wildz emblema: 5.961px²). Categoria "casino"
+  // come gli altri solo-landing di questa famiglia: il link atterra sulla pagina di
+  // registrazione, non sul prematch.
+  { id: "stonevegas", name: "Stonevegas", category: "casino", logo: "/logos/stonevegas.png", geoUrls: geoUrlsOf("Stonevegas"), logoShape: "emblem" },
 ];
 
 // #PARTNERS-VELOBET-CASEA — UNICO modo di renderizzare la vetrina (pagina + footer):
@@ -309,6 +318,18 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook y casino: prematch, en vivo y esports.",
     fr: "Sportsbook et casino : prématch, live et esport.",
     ru: "Букмекер и казино: прематч, live и киберспорт.",
+  },
+  // #PARTNER-STONEVEGAS-0915: copy FTC-safe. Il bonus d'ingresso (100% fino a €500
+  // + 200 FS + 1 Bonus Crab) lo dichiara l'operatore sulla sua pagina, non noi — e
+  // non abbiamo nessuna superficie che mostri il bonus di un solo-landing. Qui si
+  // parla SOLO di casinò: la landing è 403 dalla nostra geo, quindi uno sportsbook
+  // non l'abbiamo visto e non lo promettiamo.
+  stonevegas: {
+    it: "Casino online: slot e tavoli live.",
+    en: "Online casino: slots and live tables.",
+    es: "Casino online: slots y mesas en vivo.",
+    fr: "Casino en ligne : machines et tables live.",
+    ru: "Онлайн-казино: слоты и live-столы.",
   },
   slotsbonus: {
     it: "Portale di bonus e offerte casino.",

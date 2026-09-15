@@ -44,11 +44,11 @@ describe("PartnersShowcase", () => {
     const caseaLink = Array.from(conNo.querySelectorAll("a.partner-card")).find(
       (a) => a.textContent?.includes("Casea")) as HTMLAnchorElement | undefined;
     expect(caseaLink?.href).toBe("https://csa.lynmonkel.com/?mid=383451_2222324");
-    // #PARTNERS-N1-0915: in NO entrano anche i tre partner N1 (stessa sezione
-    // Casino) → il delta non è più fisso a 1. Restano tutti e soli i geo-ristretti
-    // che in NO hanno un link, e restano nella sezione Casino, non altrove.
+    // #PARTNERS-N1-0915 / #PARTNER-STONEVEGAS-0915: in NO entrano anche i partner
+    // NO+DACH (stessa sezione Casino) → il delta non è più fisso a 1. Restano tutti
+    // e soli i geo-ristretti che in NO hanno un link, e restano in Casino, non altrove.
     expect(conNo.querySelectorAll(".partners-grid")[1].querySelectorAll(".partner-card").length)
-      .toBe(casinoSenza + ["Casea", "RollXO", "Hollywin", "N1 Bet"].length);
+      .toBe(casinoSenza + ["Casea", "RollXO", "Hollywin", "N1 Bet", "Stonevegas"].length);
   });
 
   it("non mostra Casea in una geo senza link dedicato", () => {

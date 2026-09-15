@@ -86,7 +86,8 @@ export const CASEA_GEO_URLS: Record<string, string> = {
 // tracking link valido su PIÙ mercati (NO + DACH) → `{url, geos}`, non una mappa
 // con lo stesso URL ripetuto quattro volte.
 // Le geo sono il perimetro COMMERCIALE del deal (Andrea, 15/09), non un limite
-// tecnico: verificato con curl da IP spagnolo che i tre link risolvono comunque.
+// tecnico: verificato con curl da IP spagnolo che i tre link N1 risolvono comunque
+// (Stonevegas no — vedi la sua nota sotto: il perimetro ce l'ha anche all'edge).
 // Gestione identica a Casea, fail-closed: geo fuori lista o ignota → niente voce.
 // Verificati con curl (15/09), tutti e tre 302 → welcome-page del brand col tag
 // `stag=<id-campagna>_<click-id>`; il click-id cambia a ogni click (è della rete,
@@ -97,6 +98,20 @@ export const GEO_LANDING_PARTNERS: readonly { name: string; url: string; geos: r
   { name: "RollXO", url: "https://rollxo.media/n1xqevdiuw", geos: ["NO", "DE", "AT", "CH"] },
   { name: "Hollywin", url: "https://hollywin.media/n1fy3vie5j", geos: ["NO", "DE", "AT", "CH"] },
   { name: "N1 Bet", url: "https://n1betpartners.com/n16rrb51wa", geos: ["NO", "DE", "AT", "CH"] },
+  // #PARTNER-STONEVEGAS-0915 — rete Playfina (tracker pleotra, schema `?mid=` come
+  // BetScore/Casea su lynmonkel), NON N1: sta qui perché ha la stessa FORMA di deal,
+  // un link unico su più mercati. Geo NO+DACH per istruzione esplicita di Andrea
+  // (15/09), allineata agli altri tre.
+  // Verificato con curl (15/09) da IP spagnolo: il tracker risolve (302 ×2) e il
+  // `mid=389978_2246288` sopravvive fino all'URL finale della registration page
+  // (stonevegas-1010.com/registration?mid=…&fluid=<click-id della rete>) → l'attribuzione
+  // regge. La pagina però risponde 403 "Access restricted — not available for your
+  // country for legal reasons": è il gate geo del PARTNER, non della rete (nello stesso
+  // minuto BetScore e i tre N1 rispondono 200 dallo stesso IP). Un 403 dalla Spagna è
+  // COERENTE con un perimetro NO+DACH, ma NON è una conferma: da qui non si può
+  // emettere una richiesta da IP NO/DE/AT/CH. Se Playfina dichiara un perimetro
+  // diverso, si corregge questa riga.
+  { name: "Stonevegas", url: "https://stnvgs.pleotra.com/?mid=389978_2246288", geos: ["NO", "DE", "AT", "CH"] },
 ] as const;
 
 // Le geo di un partner N1 come mappa cc→url, per chi (lib/partners) consuma
