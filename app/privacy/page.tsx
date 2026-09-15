@@ -96,8 +96,16 @@ export default function PrivacyPage() {
 
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">6. Retention</h2>
+          {/* #RETENTION-ANALYTICS-0915 — questa riga si pubblica SOLO ora che il
+              job esiste (/api/cron/analytics-retention, ogni notte). Un termine
+              dichiarato e non applicato ricrea lo stesso difetto di
+              #PRIVACY-ANALYTICS-0915: una policy che dice il falso. Il termine
+              vive in lib/analytics-events.ts: se cambia li', cambia qui. */}
           <p className="text-xs leading-relaxed">
             Profile data stored in your browser can be deleted at any time by clearing localStorage. Server-side data for paying clients is retained for 2 years after account closure for legal and tax purposes, then deleted.
+          </p>
+          <p className="text-xs leading-relaxed">
+            <strong className="text-[var(--am-text)]">Usage events:</strong> the session identifier described in Section 4 (<strong className="text-[var(--am-text)]">am_sid</strong>) is kept for a maximum of 14 months — long enough for one sports season plus a year-on-year comparison. A scheduled job runs every night and clears that identifier from every stored event older than 14 months. The event itself remains as an anonymous count, with no way left to link it to a session or to any other event.
           </p>
         </section>
 

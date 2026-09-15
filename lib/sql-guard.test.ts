@@ -8,9 +8,13 @@
 // OWNER privileges (full DB read/write, RLS bypassed). This test fails the build
 // if any such interpolation appears outside the reviewed allowlist below.
 //
-// Scope: dbQuery(`…`) and dbExecute(`…`) exactly (per audit spec). dbQueryStrict
-// shares the same risk but is out of scope for this guard; it currently has no
-// template-interpolated call site (verified 2026-07-13).
+// Scope: dbQuery(`…`), dbExecute(`…`) and dbQueryStrict(`…`).
+// #RETENTION-ANALYTICS-0915 — dbQueryStrict era dichiarata fuori scope «shares
+// the same risk but … currently has no template-interpolated call site
+// (verified 2026-07-13)». Non era più vero: lib/weekly-pick-server.ts ne aveva
+// già uno, e il cron di retention ne aggiunge due. Una nota che tiene fuori
+// dallo scope una funzione con lo stesso rischio invecchia in silenzio, quindi
+// la funzione entra nel guard invece di restare nel commento.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
@@ -21,13 +25,13 @@ import { describe, it, expect } from "vitest";
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIRS = ["app", "lib", "components"];
 
-// Matches `dbQuery(` or `dbExecute(` — with an optional generic type arg
+// Matches `dbQuery(`, `dbQueryStrict(` or `dbExecute(` — with an optional generic type arg
 // (dbQuery<Row>(…)) and optional whitespace — followed by a template literal
 // whose FIRST ${…} occurs before the closing backtick. Captures that expression.
 // No `.` is used (only negated char classes, which already span newlines), so the
 // multiline SQL case is handled without the `s`/dotAll flag. `g`: all call sites.
 const DB_INTERP_RE =
-  /db(?:Query|Execute)\s*(?:<[^>]*>)?\s*\(\s*`[^`]*?\$\{([^}]*)\}/g;
+  /db(?:QueryStrict|Query|Execute)\s*(?:<[^>]*>)?\s*\(\s*`[^`]*?\$\{([^}]*)\}/g;
 
 // ── Allowlist: reviewed, safe interpolations ────────────────────────────────
 // Keyed "<relative-path>::<trimmed interpolated expression>". Every entry below
@@ -50,6 +54,17 @@ const ALLOWLIST = new Set<string>([
   // quote-stripped (defensive) and comes from Stripe, not the user. Upgrade path:
   // pass the expiry as a bound $N param instead of interpolating (lib/plan-grant.ts).
   "lib/plan-grant.ts::expirySqlExpr(expiresAtIso)",
+  // #RETENTION-ANALYTICS-0915 — predicati costruiti in lib/analytics-events.ts
+  // da liste di event_type COSTANTI nel codice: il frammento interpolato è
+  // fatto solo di `$N` e di SQL statico, i valori viaggiano nell'array params
+  // e passano da interpolate(). lib/analytics-events.test.ts verifica che ogni
+  // $N abbia il suo parametro e che il rendering non lasci placeholder liberi.
+  "app/api/cron/analytics-retention/route.ts::f.where",
+  "app/api/cron/analytics-retention/route.ts::unknown.where",
+  "app/api/cron/analytics-retention/route.ts::expired.where",
+  // Placeholder list `$1, $2, …` per un IN (…) variadico — valori nei params.
+  // Preesistente, emersa quando dbQueryStrict è entrata nello scope del guard.
+  "lib/weekly-pick-server.ts::placeholders",
 ]);
 
 function walk(dir: string, acc: string[]): void {
