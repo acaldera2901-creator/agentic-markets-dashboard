@@ -98,8 +98,31 @@ export function acquisitionJson(input: unknown): string | null {
   return clean ? JSON.stringify(clean) : null;
 }
 
+// #ATTRIB-EVERYWHERE-0915 — le chiavi di provenienza che un link puo' portare
+// nella query string. `src`/`ref` sono i marcatori interni (canali Telegram,
+// codici creator); gli `utm_*` sono lo standard che usano gia' i link Reddit,
+// la newsletter e il widget embed; `crm` e' il tag che lib/crm-content.ts
+// attacca a OGNI cta delle email del ciclo di vita.
+//
+// Prima di questo commit se ne leggevano DUE su sette: un click dal profilo
+// Reddit (`?utm_source=reddit&utm_medium=profile&utm_campaign=algobetting`)
+// finiva in un `page_view` con il solo `meta.path`, indistinguibile da uno
+// arrivato per digitazione diretta. 15 iscrizioni su 21 senza sorgente.
+const SEARCH_SOURCE_KEYS = [
+  "src",
+  "ref",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "crm",
+] as const;
+
+export type SearchSource = Partial<Record<(typeof SEARCH_SOURCE_KEYS)[number], string>>;
+
 /**
- * La provenienza dichiarata nell'URL (`?src=tg-free`, `?ref=TG3`).
+ * La provenienza dichiarata nell'URL (`?src=tg-free`, `?utm_source=reddit`,
+ * `?crm=wb_day7_renew`, `?ref=TG3`).
  *
  * I link dei canali Telegram portano `src=` da agosto, ma NESSUNO lo registrava
  * all'arrivo: `page_view` salvava solo `meta.path`. Misurato il 30/08: zero
@@ -111,22 +134,63 @@ export function acquisitionJson(input: unknown): string | null {
  * statiche per SEO. Qui siamo dentro un effetto, quindi client-only e senza
  * conseguenze sul rendering.
  *
+ * Nessun consenso richiesto: e' il dato che l'utente porta lui stesso nell'URL,
+ * non un identificatore scritto sul suo terminale. Il gate del consenso resta
+ * dov'era — su `initAttribution` (localStorage) e sul `session_id` del beacon.
+ *
  * Valori ripuliti e tagliati: e' testo che arriva dall'URL, quindi non entra
  * grezzo nel database.
  */
-export function sourceFromSearch(search: string): { src?: string; ref?: string } {
-  const out: { src?: string; ref?: string } = {};
+export function sourceFromSearch(search: string): SearchSource {
+  const out: SearchSource = {};
   let params: URLSearchParams;
   try {
     params = new URLSearchParams(search || "");
   } catch {
     return out;
   }
-  for (const chiave of ["src", "ref"] as const) {
+  for (const chiave of SEARCH_SOURCE_KEYS) {
     const grezzo = params.get(chiave);
     if (!grezzo) continue;
     const pulito = grezzo.trim().slice(0, 40).replace(/[^A-Za-z0-9_.-]/g, "");
     if (pulito) out[chiave] = pulito;
   }
   return out;
+}
+
+/**
+ * #ATTRIB-EVERYWHERE-0915 — il solo HOST del referrer, e solo se e' ESTERNO.
+ *
+ * Un link condiviso senza UTM (un thread Reddit, un post su X, un blog che ci
+ * cita) non porta nulla nella query string: l'unica traccia della sua origine e'
+ * l'header `Referer` che il browser manda da se'. Registrarne l'HOST dice
+ * "reddit.com" senza dire QUALE pagina — minimizzazione: il percorso completo
+ * direbbe cosa stava leggendo l'utente, e non ci serve per sapere che canale ha
+ * funzionato.
+ *
+ * Nessun consenso: e' un dato che il browser trasmette a ogni richiesta, non un
+ * identificatore che scriviamo sul terminale e non ricostruisce una persona.
+ * Nessun fingerprinting, nessun IP.
+ *
+ * Il referrer INTERNO non e' una sorgente (stessa regola di `initAttribution`):
+ * chi va dalla home a /tools non "arriva da betredge.com".
+ */
+export function externalReferrerHost(referrer?: string, selfHost?: string): string | null {
+  const raw = referrer ?? (typeof document !== "undefined" ? document.referrer : "");
+  if (!raw) return null;
+  let host: string;
+  try {
+    host = new URL(raw).hostname.toLowerCase();
+  } catch {
+    return null; // referrer malformato: meglio niente che spazzatura a DB
+  }
+  if (!host) return null;
+  const self = (selfHost ?? (typeof window !== "undefined" ? window.location.hostname : "")).toLowerCase();
+  // `www.` non distingue due siti. E un sottodominio nostro (news.betredge.com,
+  // checkout.betredge.com) resta nostro: non e' un canale di acquisizione.
+  const apex = (h: string) => (h.startsWith("www.") ? h.slice(4) : h);
+  const a = apex(host);
+  const b = apex(self);
+  if (b && (a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`))) return null;
+  return host.slice(0, 80);
 }
