@@ -80,6 +80,32 @@ export const CASEA_GEO_URLS: Record<string, string> = {
   FI: "https://csa.lynmonkel.com/?mid=383451_2222329",
 };
 
+// #PARTNERS-N1-0915 — rete N1 Partners (RollXO, Hollywin, N1 Bet). Terza forma di
+// geo, distinta dalle due già in casa: Casea ha un mid DIVERSO per paese (mappa
+// cc→url), gli altri hanno un link unico valido ovunque. Qui il deal è un solo
+// tracking link valido su PIÙ mercati (NO + DACH) → `{url, geos}`, non una mappa
+// con lo stesso URL ripetuto quattro volte.
+// Le geo sono il perimetro COMMERCIALE del deal (Andrea, 15/09), non un limite
+// tecnico: verificato con curl da IP spagnolo che i tre link risolvono comunque.
+// Gestione identica a Casea, fail-closed: geo fuori lista o ignota → niente voce.
+// Verificati con curl (15/09), tutti e tre 302 → welcome-page del brand col tag
+// `stag=<id-campagna>_<click-id>`; il click-id cambia a ogni click (è della rete,
+// non fa parte del link), l'id-campagna no: 188919 per RollXO e N1 Bet, 190219
+// per Hollywin. `tr_src=seo` è aggiunto dal tracker. Nessun deep-link per evento:
+// come gli altri solo-landing si atterra sulla welcome-page, non sul prematch.
+export const GEO_LANDING_PARTNERS: readonly { name: string; url: string; geos: readonly string[] }[] = [
+  { name: "RollXO", url: "https://rollxo.media/n1xqevdiuw", geos: ["NO", "DE", "AT", "CH"] },
+  { name: "Hollywin", url: "https://hollywin.media/n1fy3vie5j", geos: ["NO", "DE", "AT", "CH"] },
+  { name: "N1 Bet", url: "https://n1betpartners.com/n16rrb51wa", geos: ["NO", "DE", "AT", "CH"] },
+] as const;
+
+// Le geo di un partner N1 come mappa cc→url, per chi (lib/partners) consuma
+// `geoUrls`. Qui si rilegge, non si duplica: la fonte resta GEO_LANDING_PARTNERS.
+export function geoUrlsOf(name: string): Record<string, string> {
+  const p = GEO_LANDING_PARTNERS.find((x) => x.name === name);
+  return p ? Object.fromEntries(p.geos.map((g) => [g, p.url])) : {};
+}
+
 // Partner solo-landing da mostrare in una geo: le voci fisse (link unico) più
 // quelle geo-ristrette, col link del paese. `country` viene SEMPRE da
 // /api/geo-books (header server-side, non falsificabile dal client).
@@ -87,5 +113,8 @@ export const CASEA_GEO_URLS: Record<string, string> = {
 export function landingPartnersFor(country: string | null | undefined): LandingPartner[] {
   const cc = (country ?? "").trim().toUpperCase();
   const casea = cc ? CASEA_GEO_URLS[cc] : undefined;
-  return [...LANDING_PARTNERS, ...(casea ? [{ name: "Casea", url: casea }] : [])];
+  const n1 = cc
+    ? GEO_LANDING_PARTNERS.filter((p) => p.geos.includes(cc)).map(({ name, url }) => ({ name, url }))
+    : [];
+  return [...LANDING_PARTNERS, ...n1, ...(casea ? [{ name: "Casea", url: casea }] : [])];
 }

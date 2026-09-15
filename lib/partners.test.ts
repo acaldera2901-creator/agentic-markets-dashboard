@@ -7,7 +7,7 @@ const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 describe("partners catalog", () => {
   it("has exactly the approved partners, no Stake/Roobet", () => {
     const ids = PARTNERS.map((p) => p.id).sort();
-    expect(ids).toEqual(["beazt", "betscore", "casea", "felicebet", "fortuneplay", "ggbet", "slotsbonus", "velobet", "wildz", "ybets"]);
+    expect(ids).toEqual(["beazt", "betscore", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "n1bet", "rollxo", "slotsbonus", "velobet", "wildz", "ybets"]);
   });
 
   // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno

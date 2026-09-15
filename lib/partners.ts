@@ -3,7 +3,7 @@
 // sono importati dalle costanti già esistenti (niente duplicazione); slotsbonus
 // è l'unica URL centralizzata qui (spostata dal footer). Tutti i partner sono
 // gambling → il consumo è SEMPRE geo-gated fail-closed (vedi /api/geo-books).
-import { CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS } from "@/lib/affiliate";
+import { CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS, geoUrlsOf } from "@/lib/affiliate";
 import { BOOKS } from "@/lib/betconstruct-books";
 
 export type PartnerCategory = "sportsbook" | "casino";
@@ -94,6 +94,19 @@ export const PARTNERS: Partner[] = [
   // logoShape emblema come FortunePlay/FeliceBet (110×54 = 5.961px², misurato).
   { id: "beazt", name: "Beazt", category: "casino", logo: "/logos/beazt.svg", url: BEAZT_URL },
   { id: "wildz", name: "Wildz", category: "casino", logo: "/logos/wildz.svg", url: WILDZ_URL, logoShape: "emblem" },
+  // #PARTNERS-N1-0915 — rete N1 Partners. Nessun `url`: come Casea vivono solo dove
+  // il deal li copre (NO + DACH), e `geoUrls` viene da GEO_LANDING_PARTNERS — la
+  // fonte unica è lì, qui si rilegge. Categoria "casino" come VeloBet/Beazt/Wildz:
+  // hanno anche lo sportsbook (verificato: le tre landing espongono Sports e i
+  // conteggi prematch), ma l'offerta d'ingresso è casinò e il link atterra sulla
+  // welcome-page, non sul prematch. Loghi = marchi vettoriali dei brand dal loro
+  // stesso CDN (netcontent.cc/<brand>/preloader.svg), viewBox stretto sull'inchiostro
+  // e altezza intrinseca 88px: il cap CSS è un max-height e non ingrandisce un file
+  // più piccolo. Tutti e tre sono marchi quadrati/compatti (0.8:1–1.9:1) → emblema.
+  // Se la rete ci manda i lockup ufficiali, si sostituiscono qui.
+  { id: "rollxo", name: "RollXO", category: "casino", logo: "/logos/rollxo.svg", geoUrls: geoUrlsOf("RollXO"), logoShape: "emblem" },
+  { id: "hollywin", name: "Hollywin", category: "casino", logo: "/logos/hollywin.svg", geoUrls: geoUrlsOf("Hollywin"), logoShape: "emblem" },
+  { id: "n1bet", name: "N1 Bet", category: "casino", logo: "/logos/n1bet.svg", geoUrls: geoUrlsOf("N1 Bet"), logoShape: "emblem" },
 ];
 
 // #PARTNERS-VELOBET-CASEA — UNICO modo di renderizzare la vetrina (pagina + footer):
@@ -273,6 +286,29 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Casino online: slots y mesas en vivo, con pagos rápidos.",
     fr: "Casino en ligne : machines et tables live, retraits rapides.",
     ru: "Онлайн-казино: слоты и live-столы, быстрые выплаты.",
+  },
+  // #PARTNERS-N1-0915: copy FTC-safe — nessun claim su bonus o quote. I bonus
+  // d'ingresso li dichiara l'operatore sulla sua welcome-page, non noi.
+  rollxo: {
+    it: "Casino e sportsbook: slot, tavoli live, sport ed esports.",
+    en: "Casino and sportsbook: slots, live tables, sports and esports.",
+    es: "Casino y sportsbook: slots, mesas en vivo, deportes y esports.",
+    fr: "Casino et sportsbook : machines, tables live, sport et esport.",
+    ru: "Казино и букмекер: слоты, live-столы, спорт и киберспорт.",
+  },
+  hollywin: {
+    it: "Casino e sportsbook in un unico conto.",
+    en: "Casino and sportsbook in a single account.",
+    es: "Casino y sportsbook en una sola cuenta.",
+    fr: "Casino et sportsbook sur un seul compte.",
+    ru: "Казино и букмекер в одном аккаунте.",
+  },
+  n1bet: {
+    it: "Sportsbook e casino: prematch, live ed esports.",
+    en: "Sportsbook and casino: prematch, live and esports.",
+    es: "Sportsbook y casino: prematch, en vivo y esports.",
+    fr: "Sportsbook et casino : prématch, live et esport.",
+    ru: "Букмекер и казино: прематч, live и киберспорт.",
   },
   slotsbonus: {
     it: "Portale di bonus e offerte casino.",
