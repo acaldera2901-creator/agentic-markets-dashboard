@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { BROWSER_ANALYTICS_EVENT_SET } from "@/lib/analytics-events";
 
 export const dynamic = "force-dynamic";
 
@@ -13,31 +14,12 @@ export const dynamic = "force-dynamic";
 // - string fields + meta are length-capped.
 // - a best-effort per-IP rate limit bounds write volume (per serverless
 //   instance; not a hard guarantee across instances, but raises the bar).
-const ALLOWED_EVENTS = new Set([
-  "page_view", "tab_click", "plan_view", "language_change", "theme_change",
-  "conversion", "partner_click", "mb_link_copied",
-  "operator_sidebar_click", "sportsbook_sidebar_click", "sportsbook_click",
-  // #INVITE-ROBUSTNESS-0813 — il boundary globale (app/global-error.tsx) riporta
-  // qui digest + path + user agent. Senza questa riga il report verrebbe scartato
-  // in silenzio e la schermata d'errore resterebbe invisibile, com'e' successo il
-  // 2026-08-13. `value` resta 0 come per ogni evento client: non e' una metrica.
-  "client_error",
-  "house_banner_view", "house_banner_click", "house_banner_dismiss",
-  // #FUNNEL-MEAS-0813 — funnel di acquisizione. Gli ultimi tre erano GIÀ emessi
-  // dal codice (referral V2, consenso prelievo) e scartati in silenzio qui.
-  "signup_started", "signup_completed",
-  "referral_code_claimed", "referral_link_copied", "withdrawal_consent",
-  // #FUNNEL-INTENT-0908 — il gradino che mancava fra "vedo il prezzo"
-  // (plan_view) e "pago" (conversion). Senza questi due, un funnel rotto
-  // in mezzo è indistinguibile da un funnel senza domanda: misurato l'08/09,
-  // 11 registrazioni reali e ZERO aperture del checkout, e nulla nel DB
-  // diceva quanti ci avessero almeno provato.
-  "plan_cta_click", "checkout_opened",
-  // #WIDGET-EMBED-0824 — widget incorporato su siti terzi. `meta.host` dice
-  // QUALE sito converte (dichiarato dal client, come ogni altro evento qui:
-  // buono per misurare, mai per decidere accessi).
-  "widget_view", "widget_click",
-]);
+//
+// #RETENTION-ANALYTICS-0915 — l'allowlist e' emigrata in lib/analytics-events.ts
+// perche' la legge anche il cron di retention: e' lo stesso elenco che dice
+// "questo evento puo' entrare" e "su questo evento l'identificatore scade a 14
+// mesi". Tenerne due copie significa un evento che entra e non scade mai.
+const ALLOWED_EVENTS = BROWSER_ANALYTICS_EVENT_SET;
 
 const cap = (v: unknown, n: number): string | null =>
   typeof v === "string" && v.length ? v.slice(0, n) : null;

@@ -1,9 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import GlobalError from "./global-error";
+import { BROWSER_ANALYTICS_EVENT_SET } from "@/lib/analytics-events";
 
 // #INVITE-ROBUSTNESS-0813 — perché questi test esistono: il 2026-08-13 un utente
 // ha visto questa schermata e non è rimasta NESSUNA traccia — né digest, né log,
@@ -75,13 +73,12 @@ describe("global-error", () => {
   // `withdrawal_consent` erano GIÀ emessi dal client e scartati in silenzio
   // dall'allowlist di /api/track. Un report che non arriva è peggio di nessun
   // report: sembra che non sia successo niente.
+  // #RETENTION-ANALYTICS-0915 — l'allowlist vive in lib/analytics-events.ts e
+  // si importa: prima si ritagliava a mano dal sorgente della route con due
+  // indexOf, e uno spostamento di quel blocco avrebbe reso il test verde a
+  // vuoto.
   it("l'evento è nell'allowlist di /api/track, altrimenti il report sparisce", () => {
-    const src = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), "api", "track", "route.ts"),
-      "utf8"
-    );
-    const allowlist = src.slice(src.indexOf("ALLOWED_EVENTS"), src.indexOf("]);", src.indexOf("ALLOWED_EVENTS")));
-    expect(allowlist).toMatch(/"client_error"/);
+    expect(BROWSER_ANALYTICS_EVENT_SET.has("client_error")).toBe(true);
   });
 
   it("non riporta due volte lo stesso errore", () => {

@@ -5,6 +5,11 @@ import { join } from "node:path";
 // L'allowlist è la ragione per cui un evento nuovo può sparire in silenzio
 // (già successo con i tre eventi del funnel referral): questo test la lega
 // agli eventi che il widget emette davvero.
+// #RETENTION-ANALYTICS-0915 — l'allowlist ora si importa invece di leggerla
+// come testo: il controllo passa da "la stringa compare nel file" a "il Set
+// contiene l'evento", che è la domanda vera.
+import { BROWSER_ANALYTICS_EVENT_SET } from "@/lib/analytics-events";
+
 const ROUTE = readFileSync(join(process.cwd(), "app/api/track/route.ts"), "utf8");
 const SCRIPT = readFileSync(join(process.cwd(), "app/embed/embed-html.ts"), "utf8");
 
@@ -12,7 +17,7 @@ describe("eventi del widget (#WIDGET-EMBED-0824)", () => {
   it("ogni evento emesso dal widget è nell'allowlist di /api/track", () => {
     const emitted = [...SCRIPT.matchAll(/beacon\("([a-z_]+)"\)/g)].map((m) => m[1]);
     expect(emitted.sort()).toEqual(["widget_click", "widget_view"]);
-    for (const e of emitted) expect(ROUTE).toContain(`"${e}"`);
+    for (const e of emitted) expect(BROWSER_ANALYTICS_EVENT_SET.has(e)).toBe(true);
   });
 });
 
