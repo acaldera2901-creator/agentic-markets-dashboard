@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CASEA_GEO_URLS, LANDING_PARTNERS, landingPartnersFor } from "@/lib/affiliate";
+import { CASEA_GEO_URLS, GEO_LANDING_PARTNERS, LANDING_PARTNERS, geoUrlsOf, landingPartnersFor } from "@/lib/affiliate";
 
 // #PARTNERS-VELOBET-CASEA — questi sono i partner "solo landing" che finiscono nel
 // menu "Piazza la scommessa" della scheda partita (football/tennis/World Cup).
@@ -51,9 +51,42 @@ describe("landingPartnersFor(country)", () => {
     }
   });
 
-  it("non duplica né perde voci: geo coperta = fisse + 1, geo scoperta = fisse", () => {
-    expect(landingPartnersFor("NO")).toHaveLength(LANDING_PARTNERS.length + 1);
-    expect(landingPartnersFor("AT")).toHaveLength(LANDING_PARTNERS.length);
+  // #PARTNERS-N1-0915 — i tre partner N1 hanno UN link valido su PIÙ geo (NO+DACH),
+  // non un link per paese come Casea. L'invariante è la stessa: fuori dal perimetro
+  // del deal non devono comparire, perché lì non abbiamo un link da aprire.
+  it("i partner N1 compaiono in ogni geo del deal, con l'unico link della rete", () => {
+    for (const p of GEO_LANDING_PARTNERS) {
+      for (const cc of p.geos) {
+        const found = landingPartnersFor(cc).find((x) => x.name === p.name);
+        expect(found, `${p.name} manca in ${cc}`).toBeDefined();
+        expect(found?.url).toBe(p.url);
+      }
+    }
+  });
+
+  it("i partner N1 NON compaiono fuori dal deal, né a geo ignota (fail-closed)", () => {
+    for (const cc of ["IT", "FI", "CA", "GB", "", null, undefined]) {
+      for (const p of GEO_LANDING_PARTNERS) {
+        expect(namesIn(cc), `${p.name} non deve comparire in ${String(cc)}`).not.toContain(p.name);
+      }
+    }
+  });
+
+  // `geoUrls` in lib/partners è derivato da qui: se divergesse, la vetrina mostrerebbe
+  // il partner in una geo dove il menu scommessa non ce l'ha (o viceversa).
+  it("geoUrlsOf copre esattamente le geo del deal, con lo stesso url", () => {
+    for (const p of GEO_LANDING_PARTNERS) {
+      expect(Object.keys(geoUrlsOf(p.name)).sort()).toEqual([...p.geos].sort());
+      expect(new Set(Object.values(geoUrlsOf(p.name)))).toEqual(new Set([p.url]));
+    }
+    expect(geoUrlsOf("Nessuno")).toEqual({});
+  });
+
+  it("non duplica né perde voci: NO = fisse + Casea + N1, geo scoperta = fisse", () => {
+    const n1In = (cc: string) => GEO_LANDING_PARTNERS.filter((p) => (p.geos as readonly string[]).includes(cc)).length;
+    expect(landingPartnersFor("NO")).toHaveLength(LANDING_PARTNERS.length + 1 + n1In("NO"));
+    expect(landingPartnersFor("AT")).toHaveLength(LANDING_PARTNERS.length + n1In("AT"));
+    expect(landingPartnersFor("IT")).toHaveLength(LANDING_PARTNERS.length);
     expect(new Set(namesIn("NO")).size).toBe(namesIn("NO").length);
   });
 
