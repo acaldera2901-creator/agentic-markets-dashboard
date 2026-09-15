@@ -10,10 +10,10 @@ import type { ToolsCopy } from "./types";
 
 const en: ToolsCopy = {
   hub: {
-    metaTitle: "Free Betting Tools — Odds, EV, Kelly & Margin Calculators | BetRedge",
+    metaTitle: "Odds, Probability & Position-Sizing Calculators — Free | BetRedge",
     metaDescription:
-      "11 free betting calculators: convert odds in any format, remove the bookmaker margin, work out expected value, size a stake with Kelly, check an arbitrage, price a parlay and measure ROI. No signup.",
-    h1: "Free betting tools",
+      "Eleven free calculators for odds, probability and position sizing: convert any odds format, remove the bookmaker margin, get expected value, size a stake with Kelly, check an arbitrage. No signup.",
+    h1: "Odds, probability and position sizing",
     lede:
       "The eleven calculations every serious bettor runs before placing a bet — converted, de-margined, sized and measured. Free, no account needed.",
     cardCta: "Open the tool",
@@ -45,7 +45,7 @@ const en: ToolsCopy = {
       metaTitle: "Odds Converter — Decimal, Fractional, American & Implied Probability | BetRedge",
       metaDescription:
         "Free odds converter: type a price in any format — decimal, fractional, American, Hong Kong, Malay or Indonesian — and read it in all the others, with the implied probability.",
-      h1: "Odds converter",
+      h1: "Odds and implied probability converter",
       lede:
         "Type a price in one format and read it in every other, with the probability the bookmaker is implying.",
       labels: {
@@ -161,10 +161,10 @@ const en: ToolsCopy = {
     },
 
     "ev-calculator": {
-      metaTitle: "EV Calculator — Expected Value of a Bet, With or Without a Fair Line | BetRedge",
+      metaTitle: "Expected Value (EV) Calculator — What a Bet Is Worth on Average | BetRedge",
       metaDescription:
         "Free expected value calculator: enter your price, your probability and your stake to get EV in currency and percentage — or derive the fair probability from a sharp book's line.",
-      h1: "EV calculator",
+      h1: "Expected value (EV) calculator",
       lede:
         "Work out what a bet is worth on average: from your own probability, or from a sharp book's line with the margin stripped out.",
       labels: {
@@ -227,9 +227,9 @@ const en: ToolsCopy = {
     },
 
     "kelly-criterion": {
-      metaTitle: "Kelly Criterion Calculator — Optimal Bet Size From Edge and Bankroll | BetRedge",
+      metaTitle: "Kelly Criterion Calculator — Optimal Position Size | BetRedge",
       metaDescription:
-        "Free Kelly criterion calculator: enter the price, your probability and your bankroll to get the stake that maximises long-run growth — full, half or quarter Kelly.",
+        "Free Kelly criterion calculator: enter a price, your probability and your bankroll to get the position size that maximises long-run growth — full, half or quarter Kelly.",
       h1: "Kelly criterion calculator",
       lede:
         "The stake size that grows a bankroll fastest in the long run — and why most bettors should deliberately bet less than it says.",
@@ -293,9 +293,9 @@ const en: ToolsCopy = {
     },
 
     "probability-calculator": {
-      metaTitle: "Betting Probability Calculator — Odds, Break-Even & Parlay Probability | BetRedge",
+      metaTitle: "Probability Calculator — Odds, Break-Even & Combined Probability | BetRedge",
       metaDescription:
-        "Free probability calculator for betting: convert probability to odds and back, find the break-even probability a price demands, and combine legs into a parlay probability.",
+        "Free probability calculator: convert probability to odds and back, find the break-even probability a price demands, and combine legs into a joint parlay probability.",
       h1: "Probability calculator",
       lede:
         "Turn probabilities into prices and back, see what a price demands of you, and find out what a multiple is really worth.",
@@ -357,7 +357,7 @@ const en: ToolsCopy = {
     },
 
     "arbitrage-calculator": {
-      metaTitle: "Arbitrage Calculator — Split a Stake Across Bookmakers | BetRedge",
+      metaTitle: "Arbitrage Calculator — Implied Probability Sum and Stake Split | BetRedge",
       metaDescription:
         "Free arbitrage calculator: enter the best price on each outcome from different bookmakers to see the implied sum, how to split the total stake, and the profit — or that there is none.",
       h1: "Arbitrage calculator",
@@ -420,9 +420,9 @@ const en: ToolsCopy = {
     },
 
     "parlay-calculator": {
-      metaTitle: "Parlay Calculator — Combined Odds, Real Probability, Compound Margin | BetRedge",
+      metaTitle: "Parlay Calculator — Combined Odds and Joint Probability | BetRedge",
       metaDescription:
-        "Free parlay calculator: enter each leg to get the combined price, the probability the accumulator actually needs, and how the bookmaker margin compounds leg by leg.",
+        "Free parlay calculator: enter each leg to get the combined price, the joint probability the accumulator actually needs, and how the bookmaker margin compounds leg by leg.",
       h1: "Parlay calculator",
       lede:
         "Every leg you add multiplies the price — and multiplies the bookmaker's cut along with it. Here are both numbers before the bet is placed.",
@@ -595,7 +595,7 @@ const en: ToolsCopy = {
       ],
     },
     "stake-calculator": {
-      metaTitle: "Stake Calculator — The Stake Needed for a Target Profit | BetRedge",
+      metaTitle: "Stake Calculator — Position Size for a Target Profit | BetRedge",
       metaDescription:
         "Free stake calculator: enter the price and the profit you want to see the stake it takes, the total return, and how much of your bankroll that single bet commits.",
       h1: "Stake calculator",

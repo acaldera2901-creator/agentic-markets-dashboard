@@ -1,6 +1,7 @@
 // components/tools/ToolsHub.tsx (#TOOLS-HUB-0805)
 // L'hub: cosa sono questi tool, le cinque card, un CTA. Nessun calcolatore qui —
-// la pagina che deve classificarsi su "free betting tools" ha il compito di
+// la pagina che deve classificarsi sui termini di calcolo generici (odds,
+// probabilità, position sizing — #TOOLS-SEO-REPOS-0915) ha il compito di
 // mandare l'utente sul tool giusto, non di fare i conti al posto di quello.
 
 import Link from "next/link";
