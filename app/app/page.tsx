@@ -4218,8 +4218,12 @@ function PlansTab({
           <ul className="plan-feature-list">
             <PlanFeature>{pick5(lang, { it: "Top 7 calcio + 7 tennis, ogni giorno (14 al giorno)", en: "Top 7 football + 7 tennis, every day (14 a day)", es: "Top 7 fútbol + 7 tenis, cada día (14 al día)", fr: "Top 7 football + 7 tennis, chaque jour (14 par jour)", ru: "Топ-7 футбол + 7 теннис, каждый день (14 в день)" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Edge %, stake suggerito, closing line value", en: "Edge %, suggested stake, closing line value", es: "Edge %, stake sugerido, closing line value", fr: "Edge %, mise suggérée, closing line value", ru: "Edge %, рекомендуемая ставка, closing line value" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Storico completo settlato", en: "Full settled history", es: "Historial completo liquidado", fr: "Historique complet réglé", ru: "Полная история расчётов" })}</PlanFeature>
+            {/* #CONVERSION-COPY-0916 (audit §3): «stake suggerito» suona da tipster
+                (un'istruzione); «contesto di stake» è quello che il prodotto dà. */}
+            {/* #CLV-CLAIM-0831: «closing line value» tolto — stesso claim del chip
+                rimosso dalla landing il 31/08, misurato senza dato dietro. */}
+            <PlanFeature>{pick5(lang, { it: "Edge % e contesto di stake", en: "Edge % and stake context", es: "Edge % y contexto de stake", fr: "Edge % et contexte de mise", ru: "Edge % и контекст ставки" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Registro pubblico completo", en: "Full public record", es: "Registro público completo", fr: "Registre public complet", ru: "Полный публичный реестр" })}</PlanFeature>
             <PlanFeature locked>{pick5(lang, { it: "Prediction illimitate e Deep Analysis (→ Pro)", en: "Unlimited predictions and Deep Analysis (→ Pro)", es: "Predicciones ilimitadas y Deep Analysis (→ Pro)", fr: "Prédictions illimitées et Deep Analysis (→ Pro)", ru: "Безлимитные прогнозы и Deep Analysis (→ Pro)" })}</PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="base" onSubmit={onPaymentSubmit} />
@@ -4236,11 +4240,11 @@ function PlansTab({
           </div>
           <p className="plan-description">
             {pick5(lang, {
-              it: "Accesso completo: tutte le prediction, illimitate, su ogni sport, con la massima profondità.",
-              en: "Full access: all predictions, unlimited, across every sport, at maximum depth.",
-              es: "Acceso completo: todas las predicciones, ilimitadas, en cada deporte, con la máxima profundidad.",
-              fr: "Accès complet : toutes les prédictions, illimitées, sur chaque sport, avec la profondeur maximale.",
-              ru: "Полный доступ: все прогнозы, без лимита, по каждому виду спорта, с максимальной глубиной.",
+              it: "Il board di ricerca completo: tutte le prediction, illimitate, su ogni sport, con la massima profondità.",
+              en: "The full research board: all predictions, unlimited, across every sport, at maximum depth.",
+              es: "El board de investigación completo: todas las predicciones, ilimitadas, en cada deporte, con la máxima profundidad.",
+              fr: "Le board de recherche complet : toutes les prédictions, illimitées, sur chaque sport, avec la profondeur maximale.",
+              ru: "Полный исследовательский борд: все прогнозы, без лимита, по каждому виду спорта, с максимальной глубиной.",
             })}
           </p>
           <div className="price-line">
@@ -4259,7 +4263,7 @@ function PlansTab({
             <PlanFeature>{pick5(lang, { it: "Tennis Live V4 e Football Live V4 research", en: "Tennis Live V4 and Football Live V4 research", es: "Tennis Live V4 y Football Live V4 research", fr: "Tennis Live V4 et Football Live V4 research", ru: "Tennis Live V4 и Football Live V4 research" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Match Builder e Best Bets +EV", en: "Match Builder and Best Bets +EV", es: "Match Builder y Best Bets +EV", fr: "Match Builder et Best Bets +EV", ru: "Match Builder и Best Bets +EV" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Edge e stake su tutto", en: "Edge and stake on everything", es: "Edge y stake en todo", fr: "Edge et mise sur tout", ru: "Edge и ставка по всему" })}</PlanFeature>
-            <PlanFeature><Link href="/weekly-pick" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Pick inclusa (la multipla della casa)", en: "Weekly Pick included (the house accumulator)", es: "Weekly Pick incluida (la combinada de la casa)", fr: "Weekly Pick inclus (le combiné de la maison)", ru: "Weekly Pick включён (экспресс от команды)" })}</Link></PlanFeature>
+            <PlanFeature><Link href="/weekly-pick" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Pick inclusa (il modello combinato della settimana)", en: "Weekly Pick included (the weekly combination model)", es: "Weekly Pick incluida (el modelo combinado de la semana)", fr: "Weekly Pick inclus (le modèle combiné de la semaine)", ru: "Weekly Pick включён (недельная комбинированная модель)" })}</Link></PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
         </article>

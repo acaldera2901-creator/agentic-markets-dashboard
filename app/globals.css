@@ -9623,6 +9623,38 @@ button:disabled {
   .hv3 .v-scan::before{animation:none;opacity:.4}
   .hv3 .v-pulse{animation:none}
 }
+
+/* ── #CONVERSION-COPY-0916 — audit conversion (Tommy, 16/09): stessa voce v3,
+   nessun componente nuovo. Sono righe di registro (mono, filetti, punto
+   mediano) perché il sito promette un registro: la forma ripete la promessa. ── */
+/* riga di rassicurazione sotto la prima azione dell'hero */
+.hv3 .v-hero-note{margin:14px 0 0;font-family:var(--v-mono);font-size:11px;letter-spacing:.06em;color:var(--v-muted2);line-height:1.6}
+/* striscia «ogni lettura mostra»: chiude l'hero, indice della scheda che segue */
+.hv3 .v-strip{list-style:none;margin:clamp(32px,4vw,52px) 0 0;padding:14px 0;border-top:1px solid var(--v-line);border-bottom:1px solid var(--v-line);
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 0;font-family:var(--v-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--v-muted)}
+.hv3 .v-strip .k{color:var(--v-coral);font-weight:700;margin-right:18px}
+.hv3 .v-strip li:not(.k)+li::before{content:"·";margin:0 12px;color:var(--v-line2)}
+@media(max-width:640px){ /* a 390 la riga andava a capo con un punto in testa: da riga a indice su due colonne */
+  .hv3 .v-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+  .hv3 .v-strip .k{grid-column:1/-1;margin:0 0 2px}
+  .hv3 .v-strip li:not(.k)+li::before{content:none;margin:0}
+}
+/* i 5 tempi della lettura: stessa banda del flow a 4, un tempo in più */
+.hv3 .v-flow--5{grid-template-columns:repeat(5,1fr)}
+.hv3 .v-flow--5 .fs h3{font-size:clamp(22px,2.6vw,32px)}
+.hv3 .v-flow--5 .fs::after{font-size:16px;top:6px} /* cinque colonne = gap più stretto: freccia più piccola, non tocca il titolo accanto */
+@media(max-width:1024px){.hv3 .v-flow--5{grid-template-columns:repeat(3,1fr)}.hv3 .v-flow--5 .fs:nth-child(3)::after{display:none}}
+@media(max-width:820px){.hv3 .v-flow--5{grid-template-columns:1fr 1fr}.hv3 .v-flow--5 .fs:nth-child(3)::after{display:revert}.hv3 .v-flow--5 .fs:nth-child(2n)::after{display:none}}
+@media(max-width:480px){.hv3 .v-flow--5{grid-template-columns:1fr}.hv3 .v-flow--5 .fs::after{display:none}}
+/* uscita esplicita dal registro */
+.hv3 .v-proof-cta{margin-top:clamp(22px,3vw,32px)}
+/* piani: per chi è (tag) + nota comune sotto i tre */
+.hv3 .v-tier .tag{margin:-4px 0 0;color:var(--v-muted2);font-size:13px;line-height:1.45}
+.hv3 .v-tiers-note{margin:16px 0 0;font-family:var(--v-mono);font-size:10.5px;letter-spacing:.06em;color:var(--v-muted2);line-height:1.7}
+/* riga di fiducia sotto la CTA finale */
+.hv3 .v-final p.v-final-note{margin:22px auto 0;font-family:var(--v-mono);font-size:11px;letter-spacing:.06em;color:var(--v-muted2)} /* specificità ≥ di `.hv3 .v-final p`, altrimenti resta un lede a 16px */
+/* B2B (editori): un'altra porta, staccata dal percorso consumer */
+.hv3 .v-b2b{border-top:1px solid var(--v-line2);background:var(--v-panel)} /* --v-bg2 era indistinguibile dal fondo (misurato: 3 punti di luminanza) */
 /* ── end #HOME-V3 ── */
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -64,9 +64,10 @@ const COPY = {
     privacy: "Privacy",
     // ── Edge Scanner (value-prop) ──
     waEyebrow: "MOTORE DI PROBABILITÀ · NON UN BOOKMAKER",
-    waHead1: "Non battiamo il banco.",
-    waHead2: "Lo rendiamo leggibile.",
-    waBody: "Ogni partita passa nel modello: probabilità calibrate, confrontate con la quota. Dove c'è scarto lo evidenziamo e lo spieghiamo — prima del fischio — e lo registriamo. Niente soffiate, niente scatola nera: numeri onesti e il loro perché.",
+    // #CONVERSION-COPY-0916: hero da "manifesto" a "risposta di prodotto" (audit Tommy §2).
+    waHead1: "Leggi la quota",
+    waHead2: "prima di seguire il pronostico.",
+    waBody: "BetRedge confronta la probabilità implicita del mercato con un modello calibrato, mostra lo scarto e spiega il ragionamento prima del fischio d'inizio.",
     waKpi1Val: "Hit-rate", waKpi1Lab: "su pick concluse", waKpi2Lab: "prima del fischio",
     waCta: "Inizia gratis",
     waCtaSub: "Senza carta",
@@ -79,12 +80,14 @@ const COPY = {
     waFootExample: "Output illustrativo del modello · dati reali nel desk",
     waFootEvents: (n: number, e: number) => `${n} eventi · ${e} con edge`,
     // ── How it works ──
-    hwEyebrow: "COME FUNZIONA",
-    hwHead: "Dal segnale alla tua decisione.",
-    hwS1: "Segnale", hwS1Desc: "Gli agenti scansionano le partite e isolano dove il modello diverge dalla quota.",
-    hwS2: "Spiegazione", hwS2Desc: "Vedi probabilità, quota ed edge — e il perché in chiaro. Nessuna scatola nera.",
-    hwS3: "Decisione", hwS3Desc: "Decidi tu. BetRedge non piazza nulla al posto tuo: nessuna esecuzione automatica.",
-    hwS4: "Verifica", hwS4Desc: "Ogni pick è registrata prima dell'evento → diventa track record verificabile.",
+    // #CONVERSION-COPY-0916: i 5 tempi con cui si legge una scheda (audit §5).
+    hwEyebrow: "COME SI LEGGE UNA SCHEDA",
+    hwHead: "Mercato. Modello. Edge. Perché. Registro.",
+    hwS1: "Mercato", hwS1Desc: "Cosa implica la quota, una volta convertita in probabilità.",
+    hwS2: "Modello", hwS2Desc: "La stima calibrata di BetRedge sul contesto disponibile della partita.",
+    hwS3: "Edge", hwS3Desc: "La differenza tra le due probabilità. Uno scarto, non una garanzia.",
+    hwS4: "Perché", hwS4Desc: "I fattori che hanno pesato davvero sulla lettura.",
+    hwS5: "Registro", hwS5Desc: "Registrata prima del fischio. Resta visibile dopo la chiusura.",
   },
   en: {
     signin: "Sign In",
@@ -114,9 +117,9 @@ const COPY = {
     privacy: "Privacy",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "PROBABILITY ENGINE · NOT A BOOKMAKER",
-    waHead1: "We don't beat the book.",
-    waHead2: "We make it readable.",
-    waBody: "Every match runs through the model: calibrated probabilities, lined up against the odds. Where there's a gap we flag it and explain it — before kick-off — and we log it. No tips, no black box: honest numbers and the reasoning behind them.",
+    waHead1: "Read the odds",
+    waHead2: "before you follow the pick.",
+    waBody: "BetRedge compares the market’s implied probability with a calibrated model, shows the gap, and explains the reasoning before kick-off.",
     waKpi1Val: "Hit rate", waKpi1Lab: "on settled picks", waKpi2Lab: "logged pre-match",
     waCta: "Start free",
     waCtaSub: "No card",
@@ -128,12 +131,13 @@ const COPY = {
     waFootExample: "Illustrative model output · live data in the desk",
     waFootEvents: (n: number, e: number) => `${n} events · ${e} with edge`,
     // ── How it works ──
-    hwEyebrow: "HOW IT WORKS",
-    hwHead: "From signal to your call.",
-    hwS1: "Signal", hwS1Desc: "Agents scan the fixtures and isolate where the model diverges from the price.",
-    hwS2: "Explain", hwS2Desc: "See probability, odds and edge — and the why, in plain terms. No black box.",
-    hwS3: "Decide", hwS3Desc: "You decide. BetRedge places nothing for you: no automatic execution.",
-    hwS4: "Track", hwS4Desc: "Every pick is logged before the event → it becomes a verifiable track record.",
+    hwEyebrow: "HOW TO READ THE CARD",
+    hwHead: "Market. Model. Edge. Why. Record.",
+    hwS1: "Market", hwS1Desc: "What the odds imply once converted into probability.",
+    hwS2: "Model", hwS2Desc: "BetRedge’s calibrated estimate from the available match context.",
+    hwS3: "Edge", hwS3Desc: "The difference between those two probabilities. A gap, not a guarantee.",
+    hwS4: "Why", hwS4Desc: "The factors that materially shaped the reading.",
+    hwS5: "Record", hwS5Desc: "Logged before kick-off. Still visible after settlement.",
   },
   es: {
     signin: "Entrar",
@@ -163,9 +167,9 @@ const COPY = {
     privacy: "Privacidad",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTOR DE PROBABILIDAD · NO UN BOOKMAKER",
-    waHead1: "No batimos a la casa.",
-    waHead2: "La hacemos legible.",
-    waBody: "Cada partido pasa por el modelo: probabilidades calibradas, frente a la cuota. Donde hay diferencia la señalamos y la explicamos — antes del pitido — y la registramos. Sin soplos, sin caja negra: números honestos y su porqué.",
+    waHead1: "Lee la cuota",
+    waHead2: "antes de seguir el pronóstico.",
+    waBody: "BetRedge compara la probabilidad implícita del mercado con un modelo calibrado, muestra la diferencia y explica el razonamiento antes del pitido inicial.",
     waKpi1Val: "Acierto", waKpi1Lab: "en apuestas cerradas", waKpi2Lab: "antes del partido",
     waCta: "Empieza gratis",
     waCtaSub: "Sin tarjeta",
@@ -177,12 +181,13 @@ const COPY = {
     waFootExample: "Salida ilustrativa del modelo · datos reales en el desk",
     waFootEvents: (n: number, e: number) => `${n} eventos · ${e} con edge`,
     // ── How it works ──
-    hwEyebrow: "CÓMO FUNCIONA",
-    hwHead: "De la señal a tu decisión.",
-    hwS1: "Señal", hwS1Desc: "Los agentes escanean los partidos y aíslan dónde el modelo difiere de la cuota.",
-    hwS2: "Explicación", hwS2Desc: "Ves probabilidad, cuota y edge — y el porqué, en claro. Sin caja negra.",
-    hwS3: "Decisión", hwS3Desc: "Tú decides. BetRedge no apuesta por ti: sin ejecución automática.",
-    hwS4: "Registro", hwS4Desc: "Cada pick se registra antes del evento → se vuelve un track record verificable.",
+    hwEyebrow: "CÓMO LEER LA FICHA",
+    hwHead: "Mercado. Modelo. Edge. Porqué. Registro.",
+    hwS1: "Mercado", hwS1Desc: "Lo que implica la cuota una vez convertida en probabilidad.",
+    hwS2: "Modelo", hwS2Desc: "La estimación calibrada de BetRedge con el contexto disponible del partido.",
+    hwS3: "Edge", hwS3Desc: "La diferencia entre esas dos probabilidades. Una brecha, no una garantía.",
+    hwS4: "Porqué", hwS4Desc: "Los factores que realmente pesaron en la lectura.",
+    hwS5: "Registro", hwS5Desc: "Registrada antes del pitido. Sigue visible tras el cierre.",
   },
   fr: {
     signin: "Se connecter",
@@ -212,9 +217,9 @@ const COPY = {
     privacy: "Confidentialité",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "MOTEUR DE PROBABILITÉ · PAS UN BOOKMAKER",
-    waHead1: "On ne bat pas le bookmaker.",
-    waHead2: "On le rend lisible.",
-    waBody: "Chaque match passe dans le modèle : des probabilités calibrées, confrontées à la cote. Là où il y a un écart, on le signale et on l'explique — avant le coup d'envoi — et on l'enregistre. Pas de tuyaux, pas de boîte noire : des chiffres honnêtes et leur pourquoi.",
+    waHead1: "Lis la cote",
+    waHead2: "avant de suivre le prono.",
+    waBody: "BetRedge compare la probabilité implicite du marché à un modèle calibré, montre l’écart et explique le raisonnement avant le coup d’envoi.",
     waKpi1Val: "Réussite", waKpi1Lab: "sur paris clôturés", waKpi2Lab: "avant le match",
     waCta: "Commencer gratuitement",
     waCtaSub: "Sans carte",
@@ -226,12 +231,13 @@ const COPY = {
     waFootExample: "Sortie illustrative du modèle · données réelles dans le desk",
     waFootEvents: (n: number, e: number) => `${n} événements · ${e} avec edge`,
     // ── How it works ──
-    hwEyebrow: "COMMENT ÇA MARCHE",
-    hwHead: "Du signal à ta décision.",
-    hwS1: "Signal", hwS1Desc: "Les agents scannent les matchs et isolent où le modèle s'écarte de la cote.",
-    hwS2: "Explication", hwS2Desc: "Tu vois probabilité, cote et edge — et le pourquoi, en clair. Pas de boîte noire.",
-    hwS3: "Décision", hwS3Desc: "Tu décides. BetRedge ne parie rien à ta place : aucune exécution automatique.",
-    hwS4: "Suivi", hwS4Desc: "Chaque pronostic est enregistré avant l'événement → il devient un track record vérifiable.",
+    hwEyebrow: "COMMENT LIRE LA FICHE",
+    hwHead: "Marché. Modèle. Edge. Pourquoi. Registre.",
+    hwS1: "Marché", hwS1Desc: "Ce que la cote implique une fois convertie en probabilité.",
+    hwS2: "Modèle", hwS2Desc: "L’estimation calibrée de BetRedge à partir du contexte disponible du match.",
+    hwS3: "Edge", hwS3Desc: "La différence entre ces deux probabilités. Un écart, pas une garantie.",
+    hwS4: "Pourquoi", hwS4Desc: "Les facteurs qui ont réellement pesé sur la lecture.",
+    hwS5: "Registre", hwS5Desc: "Enregistrée avant le coup d’envoi. Toujours visible après le règlement.",
   },
   ru: {
     signin: "Войти",
@@ -261,9 +267,9 @@ const COPY = {
     privacy: "Конфиденциальность",
     // ── What is BetRedge (value-prop) ──
     waEyebrow: "ДВИЖОК ВЕРОЯТНОСТЕЙ · НЕ БУКМЕКЕР",
-    waHead1: "Мы не обыгрываем букмекера.",
-    waHead2: "Мы делаем его понятным.",
-    waBody: "Каждый матч проходит через модель: калиброванные вероятности, сопоставленные с коэффициентом. Где есть расхождение — мы отмечаем его и объясняем — до свистка — и фиксируем. Никаких подсказок, никакого чёрного ящика: честные цифры и их причина.",
+    waHead1: "Сначала коэффициент,",
+    waHead2: "потом прогноз.",
+    waBody: "BetRedge сравнивает подразумеваемую рынком вероятность с калиброванной моделью, показывает разрыв и объясняет логику до стартового свистка.",
     waKpi1Val: "Точность", waKpi1Lab: "по закрытым прогнозам", waKpi2Lab: "до матча",
     waCta: "Начать бесплатно",
     waCtaSub: "Без карты",
@@ -275,12 +281,13 @@ const COPY = {
     waFootExample: "Иллюстративный вывод модели · реальные данные в деске",
     waFootEvents: (n: number, e: number) => `${n} событий · ${e} с edge`,
     // ── How it works ──
-    hwEyebrow: "КАК ЭТО РАБОТАЕТ",
-    hwHead: "От сигнала к твоему решению.",
-    hwS1: "Сигнал", hwS1Desc: "Агенты сканируют матчи и выделяют, где модель расходится с коэффициентом.",
-    hwS2: "Объяснение", hwS2Desc: "Видишь вероятность, коэффициент и edge — и причину, понятно. Без чёрного ящика.",
-    hwS3: "Решение", hwS3Desc: "Решаешь ты. BetRedge ничего не ставит за тебя: без автоисполнения.",
-    hwS4: "Учёт", hwS4Desc: "Каждый прогноз фиксируется до события → становится проверяемым track record.",
+    hwEyebrow: "КАК ЧИТАТЬ КАРТОЧКУ",
+    hwHead: "Рынок. Модель. Edge. Почему. Запись.",
+    hwS1: "Рынок", hwS1Desc: "Что подразумевает коэффициент, переведённый в вероятность.",
+    hwS2: "Модель", hwS2Desc: "Калиброванная оценка BetRedge по доступному контексту матча.",
+    hwS3: "Edge", hwS3Desc: "Разница между этими двумя вероятностями. Разрыв, а не гарантия.",
+    hwS4: "Почему", hwS4Desc: "Факторы, которые реально повлияли на оценку.",
+    hwS5: "Запись", hwS5Desc: "Зафиксирована до свистка. Остаётся видимой после расчёта.",
   },
 } as const;
 
@@ -361,6 +368,15 @@ const SCAN_EXAMPLE_ROWS: ScanRow[] = [
 type V3Copy = {
   inviteHead: string; inviteBody: string;
   ctaTerminal: string; ctaTrack: string; ctaBrowse: string;
+  // #CONVERSION-COPY-0916 (audit Tommy §2/§4/§6/§7): prima azione + riga di
+  // rassicurazione sotto l'hero, striscia «ogni lettura mostra», CTA del
+  // registro, sottotitoli/CTA/nota dei piani, riga di fiducia finale.
+  ctaFirst: string; heroNote: string;
+  stripKick: string; stripItems: string[];
+  prCta: string;
+  pcFreeTag: string; pcBaseTag: string; pcProTag: string;
+  pcCtaFree: string; pcCtaBase: string; pcCtaPro: string; pcNote: string;
+  fnNote: string;
   // #CLV-CLAIM-0831: `chipClv` RIMOSSO. Era il chip di fiducia «CLV verified»
   // sulla landing pubblica, accanto a due claim veri (sigillata prima del
   // fischio, calibrata). Quel terzo non era vero: misurato il 31/08 su
@@ -394,45 +410,59 @@ type V3Copy = {
 const V3_EN: V3Copy = {
   inviteHead: "Your invite is live", inviteBody: "days of PRO, free — unlocked when you confirm your email.",
   ctaTerminal: "Open the terminal", ctaTrack: "See the track record", ctaBrowse: "Browse the track record",
+  ctaFirst: "Read your first match free", heroNote: "No card required · No automatic bets · You make the call",
+  stripKick: "Every reading shows",
+  stripItems: ["Model probability", "Market-implied probability", "Edge", "Reasoning", "Pre-kick-off timestamp", "Settled public result"],
   chipLogged: "Logged before kick-off", chipCal: "Calibrated, not hyped",
-  anEyebrow: "Anatomy of a reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped. This is the exact card from the board.",
-  anCapLive: "Live pick — the exact card component from the board.",
+  anEyebrow: "Your first reading", anHead: "Exactly what you read.", anSub: "One card, every layer — nothing hidden, nothing hyped. This is the exact card from the board.",
+  anCapLive: "Live reading — the exact card component from the board.",
   anCapRepr: "Representative reading — the exact card component from the board.",
   anNotes: [
-    { lab: "Pick", strong: "The call, stated plainly.", body: "A single side — or “no clear favourite” when the model is below its floor. We never force one." },
+    { lab: "Model lean", strong: "The side the model leans to, stated plainly.", body: "One side — or “no clear favourite” when the model is below its floor. We never force one." },
     { lab: "Probability", strong: "Calibrated, not inflated.", body: "71% means the model expects it to land close to 71 times in 100 over the long run." },
     { lab: "Market", strong: "The price, made comparable.", body: "We convert the book’s odds to an implied probability, so model and market sit side by side." },
     { lab: "Edge", strong: "The gap, quantified.", body: "Where the model sees more value than the price implies — never a promise of profit." },
     { lab: "Deep Analysis", strong: "The “why”, in the open.", body: "Form, xG, injuries, Elo, serve/return, H2H, surface — reasoning, not a black box." },
   ],
   prEyebrow: "The proof", prHead: "The receipts come first.", prBadge: "LOGGED PRE-KICK-OFF",
-  prMeta: (n) => `${n} settled picks, each time-stamped before the whistle. This is the settled hit-rate — past performance, not a forecast. Nothing edited after the fact.`,
-  prMetaQual: "Every pick is time-stamped before the whistle and settled on the public record — past performance, not a forecast. Nothing edited after the fact.",
-  prWall: "SETTLED PICKS", prColMatch: "MATCH", prColRes: "RESULT",
-  prQuote: "Below our confidence floor we publish “no clear favourite” rather than manufacture a pick.",
+  prMeta: (n) => `${n} settled readings, each time-stamped before the whistle. This is the settled hit-rate — past performance, not a forecast. Nothing edited after the fact.`,
+  prMetaQual: "Every reading is time-stamped before the whistle and settled on the public record — past performance, not a forecast. Nothing edited after the fact.",
+  prWall: "PUBLIC RECORD", prColMatch: "MATCH", prColRes: "RESULT",
+  prCta: "View the full record",
+  prQuote: "Below our confidence floor we publish “no clear favourite” rather than manufacture a pick — and it stays on the record too.",
   prQuoteSub: " Calibrated, never hyped — the difference between a probability engine and a tipster.",
-  suEyebrow: "The suite", suHead: "Four ways to read the board.", suSub: "One engine, surfaced the way you actually work — from a single value bet to the whole week.",
+  // #CONVERSION-COPY-0916 (audit §3): via le etichette da tipster (Best Bets,
+  // house multi, in-play) — il prodotto è lo stesso, il nome dice cosa mostra.
+  suEyebrow: "The board", suHead: "Four ways to read the market.", suSub: "One engine, four surfaces — from a single fixture to the whole week. Readings, not tips.",
   suItems: [
-    { pk: "Best Bets · +EV", pn: "The value feed", p: "Every fixture where the model sees value versus the price, ranked by edge and confidence. Filter by sport and market.", ps: "refreshed live · ", psB: "+EV only" },
-    { pk: "Weekly Pick", pn: "The house multi", p: "One curated accumulator a week, built by the model and frozen the moment it’s published — you see the same slip we do.", ps: "frozen at publish · ", psB: "fully logged" },
-    { pk: "Match Builder", pn: "Build your own read", p: "Combine markets across a fixture and watch the blended probability and edge recompute as you add legs.", ps: "live probability · ", psB: "per leg" },
-    { pk: "Live · In-play", pn: "The board, moving", p: "Probabilities that update through the match as the state changes — the same reading, in real time.", ps: "in-play · ", psB: "updating" },
+    { pk: "Model Edges", pn: "Today’s market gaps", p: "Fixtures where BetRedge’s calibrated probability differs materially from the market-implied probability, ranked by edge. Filter by sport and market.", ps: "refreshed live · ", psB: "edge-ranked" },
+    { pk: "Weekly Model Case", pn: "The weekly combination model", p: "One combination of markets a week, built by the model and frozen the moment it’s published — every leg time-stamped before kick-off.", ps: "frozen at publish · ", psB: "fully logged" },
+    { pk: "Build a Probability View", pn: "Combine markets on one fixture", p: "Stack markets across a fixture and watch the blended probability and implied edge recompute as you add legs.", ps: "live probability · ", psB: "per leg" },
+    { pk: "Live Probability Board", pn: "The board, as the match moves", p: "Probabilities that update as the match state changes — the same reading, in real time. No automatic execution.", ps: "live · ", psB: "updating" },
   ],
-  pcEyebrow: "Access", pcHead: "Start free. Read deeper when you’re ready.",
-  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "FULL ACCESS", pcMo: " / mo",
+  pcEyebrow: "Access", pcHead: "Start free. Read deeper when you need it.",
+  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "FULL RESEARCH BOARD", pcMo: " / mo",
+  pcFreeTag: "For learning how the board works.", pcBaseTag: "For the full pre-match picture.", pcProTag: "For full access to the probability board.",
+  pcCtaFree: "Read a match free", pcCtaBase: "Start Base", pcCtaPro: "Unlock Pro",
+  pcNote: "Monthly billing · No bookmaker account required · No bets placed for you · No guaranteed returns · 18+",
   // #FREE-BASE-DAILY-QUOTA-0831 — i tre elenchi dicono ora quello che il gate
   // consegna davvero. Base NON aveva "Deep Analysis su ogni scheda" (è Pro-only,
   // la proiezione gliela toglie) né "tutto il feed" (è a quota): due claim che il
   // prodotto non manteneva.
-  pcFreeList: ["3 picks per sport, every day", "Public track record", "Preview of the edge scanner"],
-  pcBaseList: ["7 picks per sport, every day", "Edge %, suggested stake, closing line value", "Weekly Pick", "Full settled history"],
-  pcProList: ["Everything in Base, with no daily cap", "Deep Analysis on every card", "Live · in-play readings", "Match Builder"],
+  pcFreeList: ["3 model readings per sport, every day", "Public pre-kick-off record", "Probability, market price and a preview of the edge", "No card required"],
+  // #CLV-CLAIM-0831: «closing line value» tolto anche dalla lista Base — è lo
+  // stesso claim del chip rimosso il 31/08, misurato senza dato dietro.
+  pcBaseList: ["7 model readings per sport, every day", "Full edge % and stake context", "Weekly Model Case", "Full public record"],
+  pcProList: ["Everything in Base, with no daily cap", "Deep analysis on every match card", "Live Probability Board", "Build a Probability View"],
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
+  fnNote: "No tips. No black box. No guaranteed returns. You make the call.",
   // #WIDGET-LANDING-0824 — richiamo ai proprietari di siti: il widget è un canale
   // di acquisizione, e questa riga è il solo posto in home in cui esiste.
-  wgKick: "For site owners", wgHead: "Run a site? Put our picks on it.",
-  wgBody: "One line of code shows today's predictions on your pages, updates itself, and credits every signup it sends us.",
-  wgCta: "See the widget",
+  // #CONVERSION-COPY-0916 (audit §7): vende un livello di probabilità
+  // trasparente, non «i nostri pronostici» — il B2B non parla da tipster.
+  wgKick: "For publishers", wgHead: "Give your audience a transparent probability layer.",
+  wgBody: "Add live BetRedge match readings to your site with one lightweight embed. The board updates itself, links back to the underlying analysis and attributes referred readers to your account.",
+  wgCta: "Explore the publisher widget",
   gdEyebrow: "Guides",
   gdHead: "Five terms, in the order they build.",
   gdSub: "Each one is the piece the next one needs. Plain English, no tips — and where a calculator does the sum, it is linked next to it.",
@@ -442,39 +472,47 @@ const V3_EN: V3Copy = {
 const V3_IT: V3Copy = {
   inviteHead: "Il tuo invito è attivo", inviteBody: "giorni di PRO, gratis — si attivano quando confermi la mail.",
   ctaTerminal: "Apri il terminale", ctaTrack: "Vedi il track record", ctaBrowse: "Sfoglia il track record",
+  ctaFirst: "Leggi la tua prima partita gratis", heroNote: "Senza carta · Nessuna scommessa automatica · Decidi tu",
+  stripKick: "Ogni lettura mostra",
+  stripItems: ["Probabilità del modello", "Probabilità implicita del mercato", "Edge", "Ragionamento", "Timestamp prima del fischio", "Esito pubblico concluso"],
   chipLogged: "Registrata prima del fischio", chipCal: "Calibrata, mai gonfiata",
-  anEyebrow: "Anatomia di una lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype. È la scheda identica a quella sulla board.",
-  anCapLive: "Pick live — il componente scheda identico a quello della board.",
+  anEyebrow: "La tua prima lettura", anHead: "Esattamente cosa leggi.", anSub: "Una scheda, ogni livello — niente nascosto, niente hype. È la scheda identica a quella sulla board.",
+  anCapLive: "Lettura live — il componente scheda identico a quello della board.",
   anCapRepr: "Lettura rappresentativa — il componente scheda identico a quello della board.",
   anNotes: [
-    { lab: "Pick", strong: "La scelta, detta chiara.", body: "Un solo lato — o “nessun favorito chiaro” quando il modello è sotto la soglia. Non la forziamo mai." },
+    { lab: "Lean del modello", strong: "Il lato verso cui pende il modello, detto chiaro.", body: "Un solo lato — o “nessun favorito chiaro” quando il modello è sotto la soglia. Non lo forziamo mai." },
     { lab: "Probabilità", strong: "Calibrata, non gonfiata.", body: "71% significa che il modello se l’aspetta vicino a 71 volte su 100 nel lungo periodo." },
     { lab: "Mercato", strong: "La quota, resa comparabile.", body: "Convertiamo la quota del book in probabilità implicita, così modello e mercato stanno affiancati." },
     { lab: "Edge", strong: "Lo scarto, quantificato.", body: "Dove il modello vede più valore di quanto implichi la quota — mai una promessa di profitto." },
     { lab: "Deep Analysis", strong: "Il “perché”, in chiaro.", body: "Forma, xG, infortuni, Elo, servizio/risposta, H2H, superficie — ragionamento, non scatola nera." },
   ],
   prEyebrow: "La prova", prHead: "Prima vengono le ricevute.", prBadge: "REGISTRATA PRIMA DEL FISCHIO",
-  prMeta: (n) => `${n} pick concluse, ciascuna con timestamp prima del fischio. Questo è l’hit-rate concluso — risultati passati, non una previsione. Nulla modificato a posteriori.`,
-  prMetaQual: "Ogni pick ha un timestamp prima del fischio ed è conclusa sul registro pubblico — risultati passati, non una previsione. Nulla modificato a posteriori.",
-  prWall: "PICK CONCLUSE", prColMatch: "MATCH", prColRes: "ESITO",
-  prQuote: "Sotto la soglia di confidenza pubblichiamo “nessun favorito chiaro” invece di fabbricare una pick.",
+  prMeta: (n) => `${n} letture concluse, ciascuna con timestamp prima del fischio. Questo è l’hit-rate concluso — risultati passati, non una previsione. Nulla modificato a posteriori.`,
+  prMetaQual: "Ogni lettura ha un timestamp prima del fischio ed è conclusa sul registro pubblico — risultati passati, non una previsione. Nulla modificato a posteriori.",
+  prWall: "REGISTRO PUBBLICO", prColMatch: "MATCH", prColRes: "ESITO",
+  prCta: "Vedi il registro completo",
+  prQuote: "Sotto la soglia di confidenza pubblichiamo “nessun favorito chiaro” invece di fabbricare una pick — e resta nel registro anche quello.",
   prQuoteSub: " Calibrata, mai gonfiata — la differenza tra un motore di probabilità e un tipster.",
-  suEyebrow: "La suite", suHead: "Quattro modi di leggere il board.", suSub: "Un motore, presentato come lavori davvero — dalla singola value bet all’intera settimana.",
+  suEyebrow: "Il board", suHead: "Quattro modi di leggere il mercato.", suSub: "Un motore, quattro superfici — dalla singola partita all’intera settimana. Letture, non dritte.",
   suItems: [
-    { pk: "Best Bets · +EV", pn: "Il feed del valore", p: "Ogni partita dove il modello vede valore rispetto alla quota, ordinata per edge e confidenza. Filtra per sport e mercato.", ps: "aggiornato live · ", psB: "solo +EV" },
-    { pk: "Weekly Pick", pn: "La multipla della casa", p: "Una multipla curata a settimana, costruita dal modello e congelata al momento della pubblicazione — vedi la stessa schedina che vediamo noi.", ps: "congelata alla pubblicazione · ", psB: "tutto registrato" },
-    { pk: "Match Builder", pn: "Costruisci la tua lettura", p: "Combina mercati su una partita e guarda probabilità ed edge combinati ricalcolarsi mentre aggiungi selezioni.", ps: "probabilità live · ", psB: "per selezione" },
-    { pk: "Live · In-play", pn: "Il board, in movimento", p: "Probabilità che si aggiornano durante la partita al cambiare dello stato — la stessa lettura, in tempo reale.", ps: "in-play · ", psB: "in aggiornamento" },
+    { pk: "Model Edges", pn: "Gli scarti di mercato di oggi", p: "Le partite dove la probabilità calibrata di BetRedge si discosta in modo rilevante da quella implicita del mercato, ordinate per edge. Filtra per sport e mercato.", ps: "aggiornato live · ", psB: "ordinato per edge" },
+    { pk: "Weekly Model Case", pn: "Il modello combinato della settimana", p: "Una combinazione di mercati a settimana, costruita dal modello e congelata al momento della pubblicazione — ogni selezione con timestamp prima del fischio.", ps: "congelata alla pubblicazione · ", psB: "tutto registrato" },
+    { pk: "Costruisci una vista di probabilità", pn: "Combina i mercati di una partita", p: "Sovrapponi mercati su una partita e guarda probabilità ed edge combinati ricalcolarsi mentre aggiungi selezioni.", ps: "probabilità live · ", psB: "per selezione" },
+    { pk: "Board di probabilità live", pn: "Il board, mentre la partita si muove", p: "Probabilità che si aggiornano al cambiare dello stato della partita — la stessa lettura, in tempo reale. Nessuna esecuzione automatica.", ps: "live · ", psB: "in aggiornamento" },
   ],
-  pcEyebrow: "Accesso", pcHead: "Inizia gratis. Leggi più a fondo quando vuoi.",
-  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "ACCESSO COMPLETO", pcMo: " / mese",
-  pcFreeList: ["3 pick per sport, ogni giorno", "Track record pubblico", "Anteprima dell’edge scanner"],
-  pcBaseList: ["7 pick per sport, ogni giorno", "Edge %, stake suggerito, closing line value", "Weekly Pick", "Storico concluso completo"],
-  pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep Analysis su ogni scheda", "Letture live · in-play", "Match Builder"],
+  pcEyebrow: "Accesso", pcHead: "Inizia gratis. Leggi più a fondo quando ti serve.",
+  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "BOARD DI RICERCA COMPLETO", pcMo: " / mese",
+  pcFreeTag: "Per imparare come funziona il board.", pcBaseTag: "Per il quadro pre-partita completo.", pcProTag: "Per l’accesso completo al board di probabilità.",
+  pcCtaFree: "Leggi una partita gratis", pcCtaBase: "Inizia con Base", pcCtaPro: "Sblocca Pro",
+  pcNote: "Fatturazione mensile · Nessun conto bookmaker richiesto · Nessuna scommessa piazzata per te · Nessun rendimento garantito · 18+",
+  pcFreeList: ["3 letture del modello per sport, ogni giorno", "Registro pubblico prima del fischio", "Probabilità, quota di mercato e un’anteprima dell’edge", "Senza carta"],
+  pcBaseList: ["7 letture del modello per sport, ogni giorno", "Edge % completo e contesto di stake", "Weekly Model Case", "Registro pubblico completo"],
+  pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep analysis su ogni scheda", "Board di probabilità live", "Costruisci una vista di probabilità"],
   fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una probabilità calibrata, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
-  wgKick: "Per chi ha un sito", wgHead: "Hai un sito? Mettici i nostri pronostici.",
-  wgBody: "Una riga di codice mostra le predizioni del giorno sulle tue pagine, si aggiorna da sola e attribuisce a te le iscrizioni che porta.",
-  wgCta: "Vedi il widget",
+  fnNote: "Niente dritte. Niente scatola nera. Nessun rendimento garantito. Decidi tu.",
+  wgKick: "Per gli editori", wgHead: "Dai al tuo pubblico un livello di probabilità trasparente.",
+  wgBody: "Aggiungi le letture live di BetRedge al tuo sito con un embed leggero. Il board si aggiorna da solo, rimanda all’analisi sottostante e attribuisce a te i lettori che porta.",
+  wgCta: "Scopri il widget per editori",
   gdEyebrow: "Guide",
   gdHead: "Cinque termini, nell\u2019ordine in cui si reggono.",
   gdSub: "Ognuno \u00e8 il pezzo che serve al successivo. Sono in inglese, senza dritte \u2014 e dove il conto lo fa un calcolatore, il calcolatore \u00e8 linkato accanto.",
@@ -836,9 +874,14 @@ export default function LandingPage() {
           <h1>{t.waHead1}<br /><span className="g">{t.waHead2}</span></h1>
           <p className="lede">{t.waBody}</p>
           <div className="v-actions">
-            <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</Link>
+            <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaFirst}</Link>
             <Link href="/history" className="v-btn v-btn--secondary">{v.ctaTrack}</Link>
           </div>
+          {/* #CONVERSION-COPY-0916: la riga di rassicurazione sotto la prima azione
+              (senza carta · nessuna scommessa automatica · decidi tu). È testo, non
+              un terzo chip: i due chip sotto sono claim misurati sul prodotto e la
+              guardia lib/landing-claims.test.ts li conta. */}
+          <p className="v-hero-note">{v.heroNote}</p>
           <div className="v-trust">
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipLogged}</span>
             <span className="trust-chip"><span className="trust-chip-dot">●</span> {v.chipCal}</span>
@@ -880,24 +923,26 @@ export default function LandingPage() {
             <b>{scanLive && scanCounts ? t.waFootEvents(scanCounts.events, scanCounts.withEdge) + " · " : ""}Edge = model probability − market-implied probability. Below our confidence floor we show</b> <span style={{ color: "var(--v-muted)" }}>&ldquo;no clear favourite&rdquo;</span> <b>instead of forcing a pick.</b>
           </div>
         </figure>
+      </div>
+      {/* ── #CONVERSION-COPY-0916 — striscia «ogni lettura mostra» (audit §4).
+           Chiude l'hero con l'elenco dei sei pezzi che una lettura porta sempre:
+           è l'indice della scheda che segue, non un'altra fila di chip. Mono,
+           fra due filetti, i termini separati da un punto — una riga di
+           registro, che è quello che promette. ── */}
+      <div className="v-wrap">
+        <ol className="v-strip" aria-label={v.stripKick}>
+          <li className="k">{v.stripKick}</li>
+          {v.stripItems.map((s) => <li key={s}>{s}</li>)}
+        </ol>
       </div></section>
 
-      {/* ── How it works: banda editoriale a 4 tempi (NON scalette numerate) ── */}
-      <section className="v-sec"><div className="v-wrap">
-        <div className="v-sec-head"><div className="v-kick q">{t.hwEyebrow}</div><h2>{t.hwHead}</h2></div>
-        <div className="v-flow">
-          <div className="fs"><h3>{t.hwS1}</h3><p>{t.hwS1Desc}</p></div>
-          <div className="fs"><h3>{t.hwS2}</h3><p>{t.hwS2Desc}</p></div>
-          <div className="fs"><h3>{t.hwS3}</h3><p>{t.hwS3Desc}</p></div>
-          <div className="fs"><h3>{t.hwS4}</h3><p>{t.hwS4Desc}</p></div>
-        </div>
-      </div></section>
-
-      {/* ── Anatomy of a reading: la scheda è il COMPONENTE BOARD REALE
-           (TennisMatchCard), reso 1:1 col prodotto (unlocked/full: pick, prob, edge,
-           confidenza, "Perché"/Deep Analysis). Alimentato da un match reale di
-           /api/tennis quando disponibile, altrimenti una pick rappresentativa onesta.
-           Le note attorno spiegano le parti della scheda. ── */}
+      {/* ── La prima lettura (#CONVERSION-COPY-0916: spostata QUI, subito sotto
+           l'hero, da dopo «come funziona» — la prova prima della filosofia, audit
+           §4/§9). La scheda è il COMPONENTE BOARD REALE (TennisMatchCard), reso
+           1:1 col prodotto (unlocked/full: pick, prob, edge, confidenza,
+           "Perché"/Deep Analysis). Alimentato da un match reale di /api/tennis
+           quando disponibile, altrimenti una pick rappresentativa onesta — la
+           didascalia dice quale delle due. Le note attorno spiegano le parti. ── */}
       <section className="v-sec"><div className="v-wrap">
         <div className="v-sec-head"><div className="v-kick q">{v.anEyebrow}</div><h2>{v.anHead}</h2><p>{v.anSub}</p></div>
         <div className="v-anat">
@@ -912,6 +957,21 @@ export default function LandingPage() {
               <div className="row" key={n.lab}><span className="lab">{n.lab}</span><span className="d"><b>{n.strong}</b> {n.body}</span></div>
             ))}
           </div>
+        </div>
+      </div></section>
+
+      {/* ── Come si legge la scheda: banda editoriale a 5 tempi (NON scalette
+           numerate). #CONVERSION-COPY-0916: da Segnale→Spiegazione→Decisione→
+           Verifica a Mercato→Modello→Edge→Perché→Registro (audit §5) — l'ordine
+           in cui i numeri della scheda qui sopra si costruiscono l'uno sull'altro. ── */}
+      <section className="v-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{t.hwEyebrow}</div><h2>{t.hwHead}</h2></div>
+        <div className="v-flow v-flow--5">
+          <div className="fs"><h3>{t.hwS1}</h3><p>{t.hwS1Desc}</p></div>
+          <div className="fs"><h3>{t.hwS2}</h3><p>{t.hwS2Desc}</p></div>
+          <div className="fs"><h3>{t.hwS3}</h3><p>{t.hwS3Desc}</p></div>
+          <div className="fs"><h3>{t.hwS4}</h3><p>{t.hwS4Desc}</p></div>
+          <div className="fs"><h3>{t.hwS5}</h3><p>{t.hwS5Desc}</p></div>
         </div>
       </div></section>
 
@@ -941,6 +1001,8 @@ export default function LandingPage() {
           <div className="v-proof-top"><div className="v-proof-meta"><div className="badge"><span className="v-pulse" />{v.prBadge}</div><p>{v.prMetaQual}</p></div></div>
         )}
         <blockquote className="v-quote">{v.prQuote}<span>{v.prQuoteSub}</span></blockquote>
+        {/* #CONVERSION-COPY-0916 (audit §4): il registro ha un'uscita esplicita. */}
+        <div className="v-proof-cta"><Link href="/history" className="v-btn v-btn--utility">{v.prCta}</Link></div>
       </div></section>
 
       {/* ── Suite: 4 superfici di prodotto (feature reali, deep-link nel desk) ── */}
@@ -961,23 +1023,32 @@ export default function LandingPage() {
            ⚠️ Il mockup mostrava 19.90/49.90 — qui i valori LIVE 14.99/29.99 (flag PR). ── */}
       <section className="v-sec"><div className="v-wrap">
         <div className="v-sec-head"><div className="v-kick q">{v.pcEyebrow}</div><h2>{v.pcHead}</h2></div>
+        {/* #CONVERSION-COPY-0916 (audit §6): ogni piano dice per chi è (.tag) e
+            il tasto dice cosa succede (leggi/inizia/sblocca), non il nome del
+            piano ripetuto. La nota sotto i tre risponde alle domande che
+            altrimenti finiscono in FAQ: cadenza, niente bookmaker, niente
+            scommesse per te, niente rendimento garantito, 18+. */}
         <div className="v-tiers">
           <div className="v-tier">
             <div className="name">{v.pcFree}</div><div className="price">$0</div>
+            <p className="tag">{v.pcFreeTag}</p>
             <ul>{v.pcFreeList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <button type="button" className="v-btn v-btn--utility" style={{ alignSelf: "flex-start" }} onClick={() => setAuthModal("create")}>{t.register}</button>
+            <button type="button" className="v-btn v-btn--utility" style={{ alignSelf: "flex-start" }} onClick={() => setAuthModal("create")}>{v.pcCtaFree}</button>
           </div>
           <div className="v-tier">
             <div className="name">{v.pcBase}</div><div className="price">${PUBLIC_PAID_PLANS.base.amountUsdt}<small>{v.pcMo}</small></div>
+            <p className="tag">{v.pcBaseTag}</p>
             <ul>{v.pcBaseList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <Link href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcBase}</Link>
+            <Link href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcCtaBase}</Link>
           </div>
           <div className="v-tier pro">
             <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${PUBLIC_PAID_PLANS.premium.amountUsdt}<small>{v.pcMo}</small></div>
+            <p className="tag">{v.pcProTag}</p>
             <ul>{v.pcProList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <Link href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcPro}</Link>
+            <Link href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcCtaPro}</Link>
           </div>
         </div>
+        <p className="v-tiers-note">{v.pcNote}</p>
       </div></section>
 
       {/* ── Final CTA ── */}
@@ -988,6 +1059,8 @@ export default function LandingPage() {
           <Link href="/predictions" className="v-btn v-btn--primary">{v.ctaTerminal}</Link>
           <Link href="/history" className="v-btn v-btn--secondary">{v.ctaBrowse}</Link>
         </div>
+        {/* #CONVERSION-COPY-0916 (audit §13): la riga di fiducia chiude il funnel consumer. */}
+        <p className="v-final-note">{v.fnNote}</p>
       </div></section>
 
       {/* ── #SEO-ORPHANS-0908 — indice delle guide ─────────────────────────────
@@ -1034,8 +1107,11 @@ export default function LandingPage() {
 
       {/* ── #WIDGET-LANDING-0824: riga per i proprietari di siti. Sta DOPO la CTA
            finale di proposito — non compete con l'iscrizione, raccoglie chi è
-           arrivato in fondo e ha un pubblico suo. ── */}
-      <section className="v-sec"><div className="v-wrap">
+           arrivato in fondo e ha un pubblico suo.
+           #CONVERSION-COPY-0916 (audit §7): .v-b2b la stacca visivamente dal
+           percorso consumer — filetto pieno e fondo di secondo livello, così si
+           legge come un'altra porta, non come un'altra sezione della stessa. ── */}
+      <section className="v-sec v-b2b"><div className="v-wrap">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center", justifyContent: "space-between",
                       // la riga si ferma prima del bordo della sezione: a 1280px, larga
                       // quanto il wrap, tra il testo e il widget restavano 238px di vuoto
