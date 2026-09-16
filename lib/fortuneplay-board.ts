@@ -26,12 +26,17 @@ export type FpOddsEntry = {
   totalLine: number | null;
   totalOver: number | null;
   totalUnder: number | null;
-  matchUrl: string;          // book primario (scheda/id); per la pick usare bestBook
+  matchUrl: string;          // book di riferimento (scheda/id); per la pick usare bestBook
   prefilled: boolean;
   // #MULTIBOOK-1 (opzionali → backward-compatible): dettaglio per-book + quale
   // book dà la quota migliore per ciascun esito.
   books?: BookOdds[];
   bestBook?: { home: string | null; draw: string | null; away: string | null };
+  // #YBETS-COVERAGE-0916: book che possiede `id`. Gli id BetConstruct sono
+  // PER-OPERATORE, non condivisi (misurato il 16/09 su due feed: 0 id in comune
+  // su 50+50, mentre 14 slug coincidevano con id diversi) → chiedere i mercati
+  // di dettaglio al book sbagliato non dà "vuoto", dà UN'ALTRA PARTITA.
+  detailBook?: string;
 };
 
 export function boardToResponse(
@@ -65,19 +70,37 @@ export function boardToResponse(
 }
 
 // #MULTIBOOK-1 — Unisce N book BetConstruct in best-odds per team_pair_key.
-// Book primario (FortunePlay) = riferimento per id/homeKey/awayKey/totals/matchUrl
-// (la scheda "More markets" resta per-book via id primario). oddsHome/Draw/Away =
-// MIGLIORE tra i book (allineate al lato del primario per nome normalizzato). `books[]`
-// porta il dettaglio per-book (+ deep-link col rispettivo stag) per la comparazione FE.
+// Book di RIFERIMENTO = il primo book (primario per primo) che ha quella partita:
+// da lui vengono id/homeKey/awayKey/totals/matchUrl, e `detailBook` dice quale è
+// così la scheda "More markets" interroga il feed giusto. oddsHome/Draw/Away =
+// MIGLIORE tra i book (allineate al lato del riferimento per nome normalizzato).
+// `books[]` porta il dettaglio per-book (+ deep-link col rispettivo stag) per la
+// comparazione FE.
+//
+// #YBETS-COVERAGE-0916: prima si iterava SOLO la mappa del book primario, quindi
+// una partita che solo il secondario prezzava non generava alcuna entry e la card
+// restava "solo modello" pur avendo il dato in casa. Misurato il 16/09 sui feed
+// vivi: 827 partite in comune, 14 solo FortunePlay, **22 solo YBets** (21 calcio,
+// fra cui Brighton–Manchester United).
 export function mergeBooksToResponse(
   boards: BookBoard[],
   cfg: { locale: string; landingUrl: string }
 ): Record<string, FpOddsEntry> {
-  const primary = boards.find((b) => b.book.key === PRIMARY_BOOK.key) ?? boards[0];
-  if (!primary) return {};
+  if (!boards.length) return {};
+  // Ordine di preferenza del riferimento: primario, poi gli altri nell'ordine in
+  // cui arrivano (= ordine del registro BOOKS).
+  const ordered = [
+    ...boards.filter((b) => b.book.key === PRIMARY_BOOK.key),
+    ...boards.filter((b) => b.book.key !== PRIMARY_BOOK.key),
+  ];
   const out: Record<string, FpOddsEntry> = {};
 
-  for (const [key, pm] of primary.map) {
+  const keys = new Set<string>();
+  for (const b of ordered) for (const k of b.map.keys()) keys.add(k);
+
+  for (const key of keys) {
+    const ref = ordered.find((b) => b.map.has(key))!;
+    const pm = ref.map.get(key)!;
     // odds di un book allineate al lato HOME/AWAY del primario (teams uguali per key,
     // ma un book può avere home/away invertiti → allinea per homeKey/awayKey).
     const aligned = (bm: FpMatch): { home: number | null; draw: number | null; away: number | null } | null => {
@@ -110,7 +133,7 @@ export function mergeBooksToResponse(
       return { val, bk };
     };
     const bh = best("oddsHome"), bd = best("oddsDraw"), ba = best("oddsAway");
-    const primaryBook = books.find((b) => b.key === (primary.book.key)) ?? books[0];
+    const refBook = books.find((b) => b.key === ref.book.key) ?? books[0];
 
     out[key] = {
       id: pm.id,
@@ -122,10 +145,15 @@ export function mergeBooksToResponse(
       totalLine: pm.totalLine,
       totalOver: pm.totalOver,
       totalUnder: pm.totalUnder,
-      matchUrl: primaryBook?.matchUrl ?? cfg.landingUrl,
-      prefilled: Boolean(primaryBook && primaryBook.matchUrl !== cfg.landingUrl),
+      matchUrl: refBook?.matchUrl ?? cfg.landingUrl,
+      // `prefilled` = «il link apre la PAGINA di questa partita». Si confronta
+      // con la landing del book di riferimento, non con quella del primario:
+      // per una partita solo-YBets il link è la landing YBets, che è diversa da
+      // `cfg.landingUrl` e col vecchio confronto sarebbe passata per deep-link.
+      prefilled: Boolean(refBook && refBook.matchUrl !== ref.book.landing && refBook.matchUrl !== cfg.landingUrl),
       books,
       bestBook: { home: bh.bk, draw: bd.bk, away: ba.bk },
+      detailBook: ref.book.key,
     };
   }
   return out;

@@ -2,6 +2,7 @@
 // Fetch dell'endpoint dettaglio /matches/{id}/markets SOLO all'apertura della
 // scheda (non per-card), con TTL-cache per match → rispetta l'anti-hammering.
 // Parse generico: {name, line, outcomes[{label, odds÷1000}]}. Odds intero÷1000.
+import { PRIMARY_BOOK, type BookConfig } from "./betconstruct-books";
 
 export type FpFullMarket = {
   name: string;
@@ -79,41 +80,52 @@ export function curateMarkets(markets: FpFullMarket[]): FpFullMarket[] {
   return out;
 }
 
-// ---- fetch + TTL cache per match ----
-const BASE = "https://www.fortuneplay.com/_sb_api/api/v2/matches";
-const HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-  Accept: "application/json",
-  Origin: "https://www.fortuneplay.com",
-  Referer: "https://www.fortuneplay.com/it/sports",
-};
+// ---- fetch + TTL cache per (book, match) ----
+// #YBETS-COVERAGE-0916: il dettaglio è per-BOOK. Gli id BetConstruct sono
+// per-operatore (misurato il 16/09: zero id in comune fra i due feed, mentre 14
+// slug coincidevano con id diversi) → chiedere i mercati di un id YBets a
+// FortunePlay non torna vuoto, torna un'ALTRA partita. Il book viaggia col dato
+// (`FpOddsEntry.detailBook`) e arriva fin qui.
+function headers(book: BookConfig) {
+  return {
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    Accept: "application/json",
+    Origin: book.base,
+    Referer: `${book.base}/it/sports`,
+  };
+}
 const MAX_PAGES = 6;
 const TTL_MS = 60_000;
 
-type Fetcher = (id: number, page: number) => Promise<unknown>;
-async function defaultFetcher(id: number, page: number): Promise<unknown> {
-  const resp = await fetch(`${BASE}/${id}/markets?limit=50&page=${page}`, { headers: HEADERS });
-  if (!resp.ok) throw new Error(`fortuneplay match HTTP ${resp.status}`);
+type Fetcher = (book: BookConfig, id: number, page: number) => Promise<unknown>;
+async function defaultFetcher(book: BookConfig, id: number, page: number): Promise<unknown> {
+  const resp = await fetch(`${book.base}${book.apiPrefix}/matches/${id}/markets?limit=50&page=${page}`, { headers: headers(book) });
+  if (!resp.ok) throw new Error(`${book.key} match HTTP ${resp.status}`);
   return resp.json();
 }
 let _fetcher: Fetcher = defaultFetcher;
 export function __setFpMatchFetcherForTest(f: Fetcher) { _fetcher = f; }
 
-const _cache = new Map<number, { at: number; markets: FpFullMarket[] }>();
+const _cache = new Map<string, { at: number; markets: FpFullMarket[] }>();
 
-export async function fetchFortuneplayMatchMarkets(id: number, now = Date.now()): Promise<FpFullMarket[]> {
-  const hit = _cache.get(id);
+export async function fetchFortuneplayMatchMarkets(
+  id: number,
+  book: BookConfig = PRIMARY_BOOK,
+  now = Date.now(),
+): Promise<FpFullMarket[]> {
+  const ck = `${book.key}:${id}`; // la cache è per-book: lo stesso id vale due partite diverse
+  const hit = _cache.get(ck);
   if (hit && now - hit.at < TTL_MS) return hit.markets;
   const markets: FpFullMarket[] = [];
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
-      const payload = (await _fetcher(id, page)) as RawMarketPage;
+      const payload = (await _fetcher(book, id, page)) as RawMarketPage;
       markets.push(...parseFortuneplayMarkets(payload));
       const last = payload?.pagination?.last_page ?? page;
       if (page >= last) break;
     }
-    _cache.set(id, { at: now, markets });
+    _cache.set(ck, { at: now, markets });
   } catch {
     if (hit) return hit.markets;
   }
