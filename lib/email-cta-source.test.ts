@@ -10,14 +10,14 @@ import {
 import { sourceFromSearch } from "./attribution";
 
 // #ATTRIB-EVERYWHERE-0915 — le CTA delle email del ciclo di vita mandavano a
-// `/app`, `/plans` e `/weekly-pick` senza alcun marcatore. Chi tornava e si
+// `/app`, `/plans` e `/weekly-model-case` senza alcun marcatore. Chi tornava e si
 // riattivava era indistinguibile da chi aveva digitato l'indirizzo, e l'email
 // win-back — che esiste SOLO per riportare indietro chi e' scaduto — non poteva
 // dimostrare di funzionare.
 
 const searchOf = (url: string) => new URL(url).search;
 const firstLink = (html: string): string => {
-  const m = html.match(/href="(https?:\/\/[^"]*\/(?:app|plans|weekly-pick)[^"]*)"/);
+  const m = html.match(/href="(https?:\/\/[^"]*\/(?:app|plans|weekly-model-case)[^"]*)"/);
   if (!m) throw new Error("nessuna CTA verso il sito trovata");
   return m[1];
 };
@@ -25,7 +25,7 @@ const firstLink = (html: string): string => {
 const CASES: { nome: string; build: () => { html: string; text: string }; tag: string; path: string }[] = [
   { nome: "attivazione piano", build: () => planActivatedEmail(null, "it"), tag: "mail-activated", path: "/app" },
   { nome: "benvenuto", build: () => welcomeEmail("it"), tag: "mail-welcome", path: "/app" },
-  { nome: "ricevuta weekly pick", build: () => weeklyPickReceiptEmail(500, "eur", "2026-09-15", "it"), tag: "mail-wp-receipt", path: "/weekly-pick" },
+  { nome: "ricevuta weekly pick", build: () => weeklyPickReceiptEmail(500, "eur", "2026-09-15", "it"), tag: "mail-wp-receipt", path: "/weekly-model-case" },
   { nome: "disdetta", build: () => cancellationEmail("it"), tag: "mail-cancel", path: "/plans" },
   { nome: "win-back", build: () => winBackEmail("it"), tag: "mail-winback", path: "/plans" },
 ];

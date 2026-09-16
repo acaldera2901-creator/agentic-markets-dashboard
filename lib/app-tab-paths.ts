@@ -9,7 +9,7 @@ export const TAB_PATHS = {
   history: "/history",
   plans: "/plans",
   leaderboard: "/leaderboard",
-  "match-builder": "/match-builder",
+  "match-builder": "/probability-view",
   invita: "/invite",
 } as const;
 

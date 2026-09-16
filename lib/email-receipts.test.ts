@@ -76,7 +76,7 @@ describe("weeklyPickReceiptEmail", () => {
 
   it("porta il link alla Weekly Pick, non al desk", () => {
     const m = weeklyPickReceiptEmail(1299, "USD", "2026-07-27", "en");
-    expect(m.text).toContain("/weekly-pick");
+    expect(m.text).toContain("/weekly-model-case");
   });
 });
 

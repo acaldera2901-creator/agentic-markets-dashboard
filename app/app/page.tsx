@@ -64,7 +64,7 @@ const BASE_TRANSLATIONS = {
   it: {
     // Nav
     nav_dashboard: "Dashboard", nav_portfolio: "Portfolio", nav_plans: "Piani",
-    nav_bestbets: "Best Bets", nav_sports: "Sports", nav_tennis: "Tennis", nav_bets: "Scommesse",
+    nav_bestbets: "Model Edges", nav_sports: "Sports", nav_tennis: "Tennis", nav_bets: "Scommesse",
     nav_history: "Storico", nav_partner: "Partner", nav_settings: "Impostazioni", nav_status: "Status",
     // Header
     header_events: "eventi", header_ev: "+EV", header_login: "Login / Crea profilo",
@@ -77,7 +77,7 @@ const BASE_TRANSLATIONS = {
     preaccess_s2_title: "Scegli piano", preaccess_s2_desc: "Free per preview, BetRedge Pro per segnali e ricerca.",
     preaccess_s3_title: "Invia USDT", preaccess_s3_desc: "Il wallet compare solo dentro il checkout cliente.",
     preaccess_s4_title: "Sblocca desk", preaccess_s4_desc: "Dati reali visibili solo dopo piano attivo o approval interno.",
-    preaccess_base_desc: "BetRedge Pro: tennis live, football research e Best Bets",
+    preaccess_base_desc: "BetRedge Pro: tennis live, football research e Model Edges",
     preaccess_premium_desc: "Accessi avanzati riservati al team interno",
     // Auth modal
     auth_eyebrow: "Client access",
@@ -100,11 +100,11 @@ const BASE_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "Un piano pagante, promessa chiara",
-    plans_subtitle: "Free resta preview. BetRedge Pro sblocca tennis live, football research, Best Bets, spiegazioni e track record. Nessuna promessa aggressiva di battere il mercato.",
+    plans_subtitle: "Free resta preview. BetRedge Pro sblocca tennis live, football research, Model Edges, spiegazioni e track record. Nessuna promessa aggressiva di battere il mercato.",
     plans_cta: "View live edges",
     plans_base_desc: "Per chi vuole un desk AI operativo ma controllato: segnali, probabilità, spiegazioni, qualità dati e storico live/paper.",
     plans_base_core: "Segnali e ricerca, non autopilot", plans_base_sub: "Decisione finale al cliente",
-    plans_base_f1: "Best Bets +EV quando odds ed edge sono disponibili",
+    plans_base_f1: "Model Edges +EV quando odds ed edge sono disponibili",
     plans_base_f2: "Top Model Signals quando il mercato live è vuoto",
     plans_base_f3: "Probabilità modello, quota disponibile e spiegazione",
     plans_base_f4: "Tennis Live V4 e Football Live V4 research",
@@ -133,7 +133,7 @@ const BASE_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Passa a Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Sblocca tennis live, football research, Best Bets, spiegazioni modello e track record.",
+    profile_upgrade_desc: "Sblocca tennis live, football research, Model Edges, spiegazioni modello e track record.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
     // Settings
@@ -185,7 +185,7 @@ const BASE_TRANSLATIONS = {
     locked_plan_btn: "Vai agli abbonamenti",
     // Page headers
     page_overview: "Dashboard cliente", page_portfolio: "Client portfolio",
-    page_plans: "Client plans", page_bestbets: "Best Bets",
+    page_plans: "Client plans", page_bestbets: "Model Edges",
     page_sports: "Sports predictions", page_tennis: "Tennis · Calibrated model", page_bets: "Execution log",
     page_history: "Storico settled",
     page_partners: "Casino & Partner Network", page_settings: "Account settings",
@@ -309,13 +309,13 @@ const BASE_TRANSLATIONS = {
     footer_terms: "Termini di Servizio",
     footer_privacy: "Privacy Policy",
     // Bets filter bar (i18n migration)
-    bf_allsports: "Tutti", bf_allsignals: "Tutte le prediction", bf_valueonly: "Solo best bets",
+    bf_allsports: "Tutti", bf_allsignals: "Tutte le prediction", bf_valueonly: "Solo model edges",
     bf_competition: "Competizione", bf_allcompetitions: "Tutte le competizioni",
     bf_surface: "Superficie", bf_allsurfaces: "Tutte", bf_sort: "Ordina", bf_edge: "Miglior edge",
     bf_time: "Orario", bf_odds: "Quota più alta", bf_probability: "Probabilità modello",
     bf_search: "Cerca team, player, torneo...", bf_showing: "Mostro",
     bf_noresults: "Nessun mercato rispetta questi filtri. Allarga la ricerca o torna a Tutti.",
-    // Best Bets board filter bar (i18n migration)
+    // Model Edges board filter bar (i18n migration)
     bb_probability: "Probabilità più alta", bb_time: "Prima kickoff",
     bb_search: "Cerca match, team, player...", bb_valuemode: "+EV live",
     bb_modelmode: "Top Model Signals", bb_noedge: "segnali modello",
@@ -323,7 +323,7 @@ const BASE_TRANSLATIONS = {
   en: {
     // Nav
     nav_dashboard: "Dashboard", nav_portfolio: "Portfolio", nav_plans: "Plans",
-    nav_bestbets: "Best Bets", nav_sports: "Sports", nav_tennis: "Tennis", nav_bets: "Bets",
+    nav_bestbets: "Model Edges", nav_sports: "Sports", nav_tennis: "Tennis", nav_bets: "Bets",
     nav_history: "History", nav_partner: "Partner", nav_settings: "Settings", nav_status: "Status",
     // Header
     header_events: "events", header_ev: "+EV", header_login: "Login / Create profile",
@@ -336,7 +336,7 @@ const BASE_TRANSLATIONS = {
     preaccess_s2_title: "Choose plan", preaccess_s2_desc: "Free for preview, BetRedge Pro for signals and research.",
     preaccess_s3_title: "Send USDT", preaccess_s3_desc: "Wallet address appears only inside the client checkout.",
     preaccess_s4_title: "Unlock desk", preaccess_s4_desc: "Live data visible only after plan is active or internal approval.",
-    preaccess_base_desc: "BetRedge Pro: tennis live, football research and Best Bets",
+    preaccess_base_desc: "BetRedge Pro: tennis live, football research and Model Edges",
     preaccess_premium_desc: "Advanced access reserved for the internal team",
     // Auth modal
     auth_eyebrow: "Client access",
@@ -359,11 +359,11 @@ const BASE_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "One paid plan, clear promise",
-    plans_subtitle: "Free stays as preview. BetRedge Pro unlocks tennis live, football research, Best Bets, explanations and track record. No aggressive market-beating promise.",
+    plans_subtitle: "Free stays as preview. BetRedge Pro unlocks tennis live, football research, Model Edges, explanations and track record. No aggressive market-beating promise.",
     plans_cta: "View live edges",
     plans_base_desc: "For clients who want an AI betting desk with controlled signals, probabilities, explanations, data quality and live/paper tracking.",
     plans_base_core: "Signals and research, not autopilot", plans_base_sub: "Final decision stays with the client",
-    plans_base_f1: "Best Bets +EV when odds and edge are available",
+    plans_base_f1: "Model Edges +EV when odds and edge are available",
     plans_base_f2: "Top Model Signals when live markets are quiet",
     plans_base_f3: "Model probability, available odds and explanation",
     plans_base_f4: "Tennis Live V4 and Football Live V4 research",
@@ -392,7 +392,7 @@ const BASE_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Upgrade to Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Unlock tennis live, football research, Best Bets, model explanations and track record.",
+    profile_upgrade_desc: "Unlock tennis live, football research, Model Edges, model explanations and track record.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
     // Settings
@@ -444,7 +444,7 @@ const BASE_TRANSLATIONS = {
     locked_plan_btn: "Go to subscriptions",
     // Page headers
     page_overview: "Client dashboard", page_portfolio: "Client portfolio",
-    page_plans: "Client plans", page_bestbets: "Best Bets",
+    page_plans: "Client plans", page_bestbets: "Model Edges",
     page_sports: "Sports predictions", page_tennis: "Tennis · Calibrated model", page_bets: "Execution log",
     page_history: "Settled history",
     page_partners: "Casino & Partner Network", page_settings: "Account settings",
@@ -568,13 +568,13 @@ const BASE_TRANSLATIONS = {
     footer_terms: "Terms of Service",
     footer_privacy: "Privacy Policy",
     // Bets filter bar (i18n migration)
-    bf_allsports: "All", bf_allsignals: "All predictions", bf_valueonly: "Best bets only",
+    bf_allsports: "All", bf_allsignals: "All predictions", bf_valueonly: "Model edges only",
     bf_competition: "Competition", bf_allcompetitions: "All competitions",
     bf_surface: "Surface", bf_allsurfaces: "All", bf_sort: "Sort", bf_edge: "Best edge",
     bf_time: "Time", bf_odds: "Highest odds", bf_probability: "Model probability",
     bf_search: "Search team, player, tournament...", bf_showing: "Showing",
     bf_noresults: "No markets match these filters. Widen the search or return to All.",
-    // Best Bets board filter bar (i18n migration)
+    // Model Edges board filter bar (i18n migration)
     bb_probability: "Highest probability", bb_time: "Closest kickoff",
     bb_search: "Search match, team, player...", bb_valuemode: "Live +EV",
     bb_modelmode: "Top Model Signals", bb_noedge: "model signals",
@@ -599,7 +599,7 @@ const EXTRA_TRANSLATIONS = {
     preaccess_s2_title: "Elegir plan", preaccess_s2_desc: "Free para la vista previa, BetRedge Pro para señales e investigación.",
     preaccess_s3_title: "Enviar USDT", preaccess_s3_desc: "La dirección del wallet aparece solo dentro del checkout del cliente.",
     preaccess_s4_title: "Desbloquear desk", preaccess_s4_desc: "Datos en vivo visibles solo tras activar el plan o con aprobación interna.",
-    preaccess_base_desc: "BetRedge Pro: tenis en vivo, investigación de fútbol y Best Bets",
+    preaccess_base_desc: "BetRedge Pro: tenis en vivo, investigación de fútbol y Model Edges",
     preaccess_premium_desc: "Accesos avanzados reservados al equipo interno",
     // Auth modal
     auth_eyebrow: "Acceso de cliente",
@@ -622,11 +622,11 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Planes cliente",
     plans_title: "Un plan de pago, promesa clara",
-    plans_subtitle: "Free se mantiene como vista previa. BetRedge Pro desbloquea tenis en vivo, investigación de fútbol, Best Bets, explicaciones y track record. Sin promesas agresivas de batir el mercado.",
+    plans_subtitle: "Free se mantiene como vista previa. BetRedge Pro desbloquea tenis en vivo, investigación de fútbol, Model Edges, explicaciones y track record. Sin promesas agresivas de batir el mercado.",
     plans_cta: "Ver edges en vivo",
     plans_base_desc: "Para clientes que quieren un desk de apuestas con IA con señales controladas, probabilidades, explicaciones, calidad de datos y seguimiento live/paper.",
     plans_base_core: "Señales e investigación, no piloto automático", plans_base_sub: "La decisión final es del cliente",
-    plans_base_f1: "Best Bets +EV cuando hay cuotas y edge disponibles",
+    plans_base_f1: "Model Edges +EV cuando hay cuotas y edge disponibles",
     plans_base_f2: "Top Model Signals cuando los mercados en vivo están tranquilos",
     plans_base_f3: "Probabilidad del modelo, cuota disponible y explicación",
     plans_base_f4: "Investigación Tennis Live V4 y Football Live V4",
@@ -655,7 +655,7 @@ const EXTRA_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Pasar a Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Desbloquea tenis en vivo, investigación de fútbol, Best Bets, explicaciones del modelo y track record.",
+    profile_upgrade_desc: "Desbloquea tenis en vivo, investigación de fútbol, Model Edges, explicaciones del modelo y track record.",
     profile_upgrade_btn: "Pasar a Pro",
     profile_logout: "Cerrar sesión",
     // Settings
@@ -830,13 +830,13 @@ const EXTRA_TRANSLATIONS = {
     footer_terms: "Términos del Servicio",
     footer_privacy: "Política de Privacidad",
     // Bets filter bar (i18n migration)
-    bf_allsports: "Todos", bf_allsignals: "Todas las predicciones", bf_valueonly: "Solo best bets",
+    bf_allsports: "Todos", bf_allsignals: "Todas las predicciones", bf_valueonly: "Solo model edges",
     bf_competition: "Competición", bf_allcompetitions: "Todas las competiciones",
     bf_surface: "Superficie", bf_allsurfaces: "Todas", bf_sort: "Ordenar", bf_edge: "Mejor edge",
     bf_time: "Hora", bf_odds: "Cuota más alta", bf_probability: "Probabilidad del modelo",
     bf_search: "Buscar equipo, jugador, torneo...", bf_showing: "Mostrando",
     bf_noresults: "Ningún mercado coincide con estos filtros. Amplía la búsqueda o vuelve a Todos.",
-    // Best Bets board filter bar (i18n migration)
+    // Model Edges board filter bar (i18n migration)
     bb_probability: "Mayor probabilidad", bb_time: "Próximo a empezar",
     bb_search: "Buscar partido, equipo, jugador...", bb_valuemode: "+EV en directo",
     bb_modelmode: "Top Model Signals", bb_noedge: "señales del modelo",
@@ -858,7 +858,7 @@ const EXTRA_TRANSLATIONS = {
     preaccess_s2_title: "Choisir un plan", preaccess_s2_desc: "Free pour l'aperçu, BetRedge Pro pour les signaux et la recherche.",
     preaccess_s3_title: "Envoyer des USDT", preaccess_s3_desc: "L'adresse du wallet n'apparaît que dans le checkout client.",
     preaccess_s4_title: "Débloquer le desk", preaccess_s4_desc: "Données en direct visibles seulement après activation du plan ou validation interne.",
-    preaccess_base_desc: "BetRedge Pro : tennis en direct, recherche football et Best Bets",
+    preaccess_base_desc: "BetRedge Pro : tennis en direct, recherche football et Model Edges",
     preaccess_premium_desc: "Accès avancés réservés à l'équipe interne",
     // Auth modal
     auth_eyebrow: "Accès client",
@@ -881,11 +881,11 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Plans client",
     plans_title: "Un seul plan payant, promesse claire",
-    plans_subtitle: "Free reste un aperçu. BetRedge Pro débloque le tennis en direct, la recherche football, les Best Bets, les explications et le track record. Aucune promesse agressive de battre le marché.",
+    plans_subtitle: "Free reste un aperçu. BetRedge Pro débloque le tennis en direct, la recherche football, les Model Edges, les explications et le track record. Aucune promesse agressive de battre le marché.",
     plans_cta: "Voir les edges en direct",
     plans_base_desc: "Pour les clients qui veulent un desk de paris IA avec signaux contrôlés, probabilités, explications, qualité des données et suivi live/paper.",
     plans_base_core: "Signaux et recherche, pas un pilote automatique", plans_base_sub: "La décision finale reste au client",
-    plans_base_f1: "Best Bets +EV quand cotes et edge sont disponibles",
+    plans_base_f1: "Model Edges +EV quand cotes et edge sont disponibles",
     plans_base_f2: "Top Model Signals quand les marchés en direct sont calmes",
     plans_base_f3: "Probabilité du modèle, cote disponible et explication",
     plans_base_f4: "Recherche Tennis Live V4 et Football Live V4",
@@ -914,7 +914,7 @@ const EXTRA_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Passer à Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Débloque le tennis en direct, la recherche football, les Best Bets, les explications du modèle et le track record.",
+    profile_upgrade_desc: "Débloque le tennis en direct, la recherche football, les Model Edges, les explications du modèle et le track record.",
     profile_upgrade_btn: "Passer à Pro",
     profile_logout: "Déconnexion",
     // Settings
@@ -1089,13 +1089,13 @@ const EXTRA_TRANSLATIONS = {
     footer_terms: "Conditions de Service",
     footer_privacy: "Politique de Confidentialité",
     // Bets filter bar (i18n migration)
-    bf_allsports: "Tous", bf_allsignals: "Toutes les prédictions", bf_valueonly: "Best bets uniquement",
+    bf_allsports: "Tous", bf_allsignals: "Toutes les prédictions", bf_valueonly: "Model edges uniquement",
     bf_competition: "Compétition", bf_allcompetitions: "Toutes les compétitions",
     bf_surface: "Surface", bf_allsurfaces: "Toutes", bf_sort: "Trier", bf_edge: "Meilleur edge",
     bf_time: "Heure", bf_odds: "Cote la plus élevée", bf_probability: "Probabilité du modèle",
     bf_search: "Rechercher équipe, joueur, tournoi...", bf_showing: "Affichage",
     bf_noresults: "Aucun marché ne correspond à ces filtres. Élargis la recherche ou reviens à Tous.",
-    // Best Bets board filter bar (i18n migration)
+    // Model Edges board filter bar (i18n migration)
     bb_probability: "Probabilité la plus élevée", bb_time: "Coup d'envoi le plus proche",
     bb_search: "Rechercher match, équipe, joueur...", bb_valuemode: "+EV en direct",
     bb_modelmode: "Top Model Signals", bb_noedge: "signaux du modèle",
@@ -1117,7 +1117,7 @@ const EXTRA_TRANSLATIONS = {
     preaccess_s2_title: "Выбрать план", preaccess_s2_desc: "Free для превью, BetRedge Pro для сигналов и исследований.",
     preaccess_s3_title: "Отправить USDT", preaccess_s3_desc: "Адрес кошелька появляется только внутри клиентского checkout.",
     preaccess_s4_title: "Разблокировать desk", preaccess_s4_desc: "Live-данные видны только после активации плана или внутреннего одобрения.",
-    preaccess_base_desc: "BetRedge Pro: теннис live, исследование футбола и Best Bets",
+    preaccess_base_desc: "BetRedge Pro: теннис live, исследование футбола и Model Edges",
     preaccess_premium_desc: "Расширенный доступ зарезервирован для внутренней команды",
     // Auth modal
     auth_eyebrow: "Доступ клиента",
@@ -1140,11 +1140,11 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Планы клиента",
     plans_title: "Один платный план, понятное обещание",
-    plans_subtitle: "Free остаётся превью. BetRedge Pro открывает теннис live, исследование футбола, Best Bets, объяснения и track record. Без агрессивных обещаний обыграть рынок.",
+    plans_subtitle: "Free остаётся превью. BetRedge Pro открывает теннис live, исследование футбола, Model Edges, объяснения и track record. Без агрессивных обещаний обыграть рынок.",
     plans_cta: "Смотреть live edges",
     plans_base_desc: "Для клиентов, которым нужен AI-desk для ставок с контролируемыми сигналами, вероятностями, объяснениями, качеством данных и трекингом live/paper.",
     plans_base_core: "Сигналы и исследования, не автопилот", plans_base_sub: "Финальное решение за клиентом",
-    plans_base_f1: "Best Bets +EV, когда есть котировки и edge",
+    plans_base_f1: "Model Edges +EV, когда есть котировки и edge",
     plans_base_f2: "Top Model Signals, когда live-рынки пустые",
     plans_base_f3: "Вероятность модели, доступная котировка и объяснение",
     plans_base_f4: "Исследование Tennis Live V4 и Football Live V4",
@@ -1173,7 +1173,7 @@ const EXTRA_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Перейти на Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Открой теннис live, исследование футбола, Best Bets, объяснения модели и track record.",
+    profile_upgrade_desc: "Открой теннис live, исследование футбола, Model Edges, объяснения модели и track record.",
     profile_upgrade_btn: "Перейти на Pro",
     profile_logout: "Выйти",
     // Settings
@@ -1348,13 +1348,13 @@ const EXTRA_TRANSLATIONS = {
     footer_terms: "Условия использования",
     footer_privacy: "Политика конфиденциальности",
     // Bets filter bar (i18n migration)
-    bf_allsports: "Все", bf_allsignals: "Все прогнозы", bf_valueonly: "Только best bets",
+    bf_allsports: "Все", bf_allsignals: "Все прогнозы", bf_valueonly: "Только model edges",
     bf_competition: "Турнир", bf_allcompetitions: "Все турниры",
     bf_surface: "Покрытие", bf_allsurfaces: "Все", bf_sort: "Сортировка", bf_edge: "Лучший эдж",
     bf_time: "Время", bf_odds: "Высший кэф", bf_probability: "Вероятность модели",
     bf_search: "Поиск: команда, игрок, турнир...", bf_showing: "Показано",
     bf_noresults: "Нет рынков по этим фильтрам. Расширь поиск или вернись ко «Все».",
-    // Best Bets board filter bar (i18n migration)
+    // Model Edges board filter bar (i18n migration)
     bb_probability: "Высшая вероятность", bb_time: "Ближайший матч",
     bb_search: "Поиск: матч, команда, игрок...", bb_valuemode: "+EV лайв",
     bb_modelmode: "Top Model Signals", bb_noedge: "сигналы модели",
@@ -2043,7 +2043,7 @@ const FOOTBALL_BEST_EDGE_THRESHOLD = 0.02;
 const TENNIS_BEST_EDGE_THRESHOLD = 0.03;
 const MIN_BEST_BET_ODDS = 1.4;
 // #BESTBET-MODEL-SIGNAL-0715: un best bet è un value bet (mercato+edge) OPPURE un
-// model signal (pick del modello ad alta confidenza, ≥58%) — così "Solo best bets"
+// model signal (pick del modello ad alta confidenza, ≥58%) — così "Solo model edges"
 // resta pieno anche senza quote di mercato (es. blackout quote tennis). Mirror di
 // lib/best-bets.ts MIN_MODEL_SIGNAL_PROBABILITY. Il guard `surfaced` (floor
 // segment-aware) resta sopra: sotto-floor non risale mai come best bet.
@@ -2536,7 +2536,7 @@ function SportsbookBoard({
       </div>
 
       {/* #EDGE-WP-SPLIT-0910 — l'Edge del giorno lascia metà schermo alla
-          vetrina della Weekly Pick. Il prodotto è venduto a €12.99 e sul board
+          vetrina della Weekly Model Case. Il prodotto è venduto a €12.99 e sul board
           non aveva NESSUNA presenza: in dieci settimane ha fatto zero acquisti,
           e nessuno arrivava alla sua pagina dal desk. Sotto i 900px le due
           colonne si impilano (vedi .edge-split). */}
@@ -2551,7 +2551,7 @@ function SportsbookBoard({
       </div>
 
       {/* #LIVE-STRIP-GIU-0910 — la riga dei match in corso sta QUI, non in cima:
-          l'ordine ora e' filtri (controlli) -> Edge + Weekly Pick (editoriale) ->
+          l'ordine ora e' filtri (controlli) -> Edge + Weekly Model Case (editoriale) ->
           match in corso (tempo reale) -> le pick.
           NOTA: essendo dentro il board sta anche dentro `LockedGate`, quindi per
           un visitatore anonimo finisce dietro il muro di accesso (prima era
@@ -2796,7 +2796,7 @@ function BestBetsBoard({
       </div>
 
       <div className="sports-filter-bar best-bets-filter-bar am-filters">
-        <div className="am-seg" aria-label="Best bets sport filter">
+        <div className="am-seg" aria-label="Model edges sport filter">
           <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>{labels.all}</button>
           <button className={sportFilter === "football" ? "on" : ""} onClick={() => setSportFilter("football")}>
             <SportIcon sport="football" size={14} className="ic" variant="sm" />{labels.football} <span className="ct">{visibleFootballValue.length}</span>
@@ -2970,31 +2970,31 @@ function PreAccessLanding({
     it: [
       ["Cosa vede un utente pubblico?", "Solo homepage, struttura del prodotto e storico passato/educational. I segnali live restano bloccati."],
       ["Cosa sblocca il piano Free?", "Profilo, lingua, preview account e accesso alla struttura, senza prediction operative."],
-      ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+      ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Model Edges, Top Model Signals, spiegazioni modello e track record."],
       ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
     ],
     en: [
       ["What can public users see?", "Only homepage, product structure and past/educational history. Live signals stay locked."],
       ["What does Free unlock?", "Profile, language, account preview and product structure, without operational predictions."],
-      ["What does BetRedge Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+      ["What does BetRedge Pro unlock?", "Tennis live, football research, Model Edges, Top Model Signals, model explanations and track record."],
       ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
     ],
     es: [
       ["¿Qué ve un usuario público?", "Solo la homepage, la estructura del producto y el historial pasado/educativo. Las señales live siguen bloqueadas."],
       ["¿Qué desbloquea el plan Free?", "Perfil, idioma, vista previa de cuenta y acceso a la estructura, sin predicciones operativas."],
-      ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
+      ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Model Edges, Top Model Signals, explicaciones del modelo y track record."],
       ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
     ],
     fr: [
       ["Que voit un utilisateur public ?", "Seulement la homepage, la structure du produit et l'historique passé/éducatif. Les signaux live restent verrouillés."],
       ["Que débloque le plan Free ?", "Profil, langue, aperçu du compte et accès à la structure, sans prédictions opérationnelles."],
-      ["Que débloque BetRedge Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
+      ["Que débloque BetRedge Pro ?", "Tennis live, football research, Model Edges, Top Model Signals, explications du modèle et track record."],
       ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
     ],
     ru: [
       ["Что видит публичный пользователь?", "Только главную страницу, структуру продукта и прошлую/обучающую историю. Live-сигналы остаются заблокированы."],
       ["Что открывает план Free?", "Профиль, язык, предпросмотр аккаунта и доступ к структуре, без рабочих прогнозов."],
-      ["Что открывает BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
+      ["Что открывает BetRedge Pro?", "Tennis live, football research, Model Edges, Top Model Signals, пояснения модели и track record."],
       ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
     ],
   });
@@ -3054,7 +3054,7 @@ function DeskPreview() {
       <div className="desk-preview-board">
         <div><span>Football</span><em>Live V4 research</em><strong>Pro</strong></div>
         <div><span>Tennis</span><em>Calibrated model</em><strong>Pro</strong></div>
-        <div><span>Best Bets</span><em>+EV or model signals</em><strong>Pro</strong></div>
+        <div><span>Model Edges</span><em>+EV or model signals</em><strong>Pro</strong></div>
       </div>
       <p>{pick5(lang, { it: "Preview pubblica: dati sensibili oscurati fino al piano.", en: "Public preview: sensitive data hidden until plan activation.", es: "Vista previa pública: datos sensibles ocultos hasta activar el plan.", fr: "Aperçu public : données sensibles masquées jusqu'à l'activation du plan.", ru: "Публичный предпросмотр: чувствительные данные скрыты до активации плана." })}</p>
     </div>
@@ -3069,23 +3069,23 @@ function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: ()
   const levels = pick5(lang, {
     it: [
       { name: "Free", price: "$0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
     ],
     en: [
       { name: "Free", price: "$0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explanations and track record.", cta: "View plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, explanations and track record.", cta: "View plan", action: onPlans },
     ],
     es: [
       { name: "Free", price: "$0", desc: "Perfil, idioma, vista previa e historial público. Sin señales operativas.", cta: "Crear perfil", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tenis live, football research, Best Bets, explicaciones y track record.", cta: "Ver plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tenis live, football research, Model Edges, explicaciones y track record.", cta: "Ver plan", action: onPlans },
     ],
     fr: [
       { name: "Free", price: "$0", desc: "Profil, langue, aperçu et historique public. Aucun signal opérationnel.", cta: "Créer un profil", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, explications et track record.", cta: "Voir le plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, explications et track record.", cta: "Voir le plan", action: onPlans },
     ],
     ru: [
       { name: "Free", price: "$0", desc: "Профиль, язык, предпросмотр и публичная история. Без рабочих сигналов.", cta: "Создать профиль", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Best Bets, пояснения и track record.", cta: "Смотреть план", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, пояснения и track record.", cta: "Смотреть план", action: onPlans },
     ],
   });
   return (
@@ -3160,7 +3160,7 @@ function SupportHub() {
       topics: [
         ["access", "Accesso / login"],
         ["payment", "Pagamento / TX hash"],
-        ["signals", "Prediction e best bets"],
+        ["signals", "Prediction e model edges"],
         ["execution", "Exchange / execution"],
         ["account", "Profilo e impostazioni"],
       ],
@@ -3184,7 +3184,7 @@ function SupportHub() {
       topics: [
         ["access", "Access / login"],
         ["payment", "Payment / TX hash"],
-        ["signals", "Predictions and best bets"],
+        ["signals", "Predictions and model edges"],
         ["execution", "Exchange / execution"],
         ["account", "Profile and settings"],
       ],
@@ -3208,7 +3208,7 @@ function SupportHub() {
       topics: [
         ["access", "Acceso / login"],
         ["payment", "Pago / TX hash"],
-        ["signals", "Predicciones y best bets"],
+        ["signals", "Predicciones y model edges"],
         ["execution", "Exchange / execution"],
         ["account", "Perfil y ajustes"],
       ],
@@ -3232,7 +3232,7 @@ function SupportHub() {
       topics: [
         ["access", "Accès / login"],
         ["payment", "Paiement / TX hash"],
-        ["signals", "Prédictions et best bets"],
+        ["signals", "Prédictions et model edges"],
         ["execution", "Exchange / execution"],
         ["account", "Profil et paramètres"],
       ],
@@ -3256,7 +3256,7 @@ function SupportHub() {
       topics: [
         ["access", "Доступ / вход"],
         ["payment", "Оплата / TX hash"],
-        ["signals", "Прогнозы и best bets"],
+        ["signals", "Прогнозы и model edges"],
         ["execution", "Exchange / execution"],
         ["account", "Профиль и настройки"],
       ],
@@ -4261,9 +4261,9 @@ function PlansTab({
             <PlanFeature>{pick5(lang, { it: "TUTTE le prediction, illimitate", en: "ALL predictions, unlimited", es: "TODAS las predicciones, ilimitadas", fr: "TOUTES les prédictions, illimitées", ru: "ВСЕ прогнозы, без лимита" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Deep Analysis: forma, infortuni, venue", en: "Deep Analysis: form, injuries, venue", es: "Deep Analysis: forma, lesiones, estadio", fr: "Deep Analysis : forme, blessures, stade", ru: "Deep Analysis: форма, травмы, арена" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Tennis Live V4 e Football Live V4 research", en: "Tennis Live V4 and Football Live V4 research", es: "Tennis Live V4 y Football Live V4 research", fr: "Tennis Live V4 et Football Live V4 research", ru: "Tennis Live V4 и Football Live V4 research" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Match Builder e Best Bets +EV", en: "Match Builder and Best Bets +EV", es: "Match Builder y Best Bets +EV", fr: "Match Builder et Best Bets +EV", ru: "Match Builder и Best Bets +EV" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Build a Probability View e Model Edges +EV", en: "Build a Probability View and Model Edges +EV", es: "Build a Probability View y Model Edges +EV", fr: "Build a Probability View et Model Edges +EV", ru: "Build a Probability View и Model Edges +EV" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Edge e stake su tutto", en: "Edge and stake on everything", es: "Edge y stake en todo", fr: "Edge et mise sur tout", ru: "Edge и ставка по всему" })}</PlanFeature>
-            <PlanFeature><Link href="/weekly-pick" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Pick inclusa (il modello combinato della settimana)", en: "Weekly Pick included (the weekly combination model)", es: "Weekly Pick incluida (el modelo combinado de la semana)", fr: "Weekly Pick inclus (le modèle combiné de la semaine)", ru: "Weekly Pick включён (недельная комбинированная модель)" })}</Link></PlanFeature>
+            <PlanFeature><Link href="/weekly-model-case" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Model Case inclusa (il modello combinato della settimana)", en: "Weekly Model Case included (the weekly combination model)", es: "Weekly Model Case incluida (el modelo combinado de la semana)", fr: "Weekly Model Case inclus (le modèle combiné de la semaine)", ru: "Weekly Model Case включён (недельная комбинированная модель)" })}</Link></PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
         </article>
@@ -6512,10 +6512,10 @@ function AgentStatusTab({ agents }: { agents: AgentStatus[] }) {
 const FAILED_STATUSES = ["execution_rejected", "expired_unconfirmed", "cancelled"];
 
 
-// ─── Match Builder Tab (#MB-1, influencer tool) ──────────────────────────────
+// ─── Build a Probability View Tab (#MB-1, influencer tool) ──────────────────────────────
 //
 // L'influencer (loggato) seleziona 2–5 predizioni, vede il moltiplicatore
-// combinato e genera un link /match-builder?mb=id1,id2&ref=CODICE. Il visitatore che apre
+// combinato e genera un link /probability-view?mb=id1,id2&ref=CODICE. Il visitatore che apre
 // il link trova la schedina precaricata: i pick/quote restano gated per gli
 // anonimi (projection server-side), quindi il link è esso stesso il funnel.
 // Onestà quote: le selezioni senza mercato reale usano le FAIR ODDS del
@@ -6589,7 +6589,7 @@ function MatchBuilderTab({
 
   const copy = pick5(lang, {
     it: {
-      eyebrow: "Strumento influencer", title: "Match Builder",
+      eyebrow: "Strumento influencer", title: "Build a Probability View",
       subtitle: "Costruisci una schedina con le predizioni AI e condividi il link con i tuoi follower.",
       selectTitle: "Seleziona le predizioni (2–5)", selectedLabel: "Selezionate",
       combinedProb: "Probabilità combinata (modello)",
@@ -6601,7 +6601,7 @@ function MatchBuilderTab({
       empty: "Seleziona almeno 2 predizioni per generare il link.",
     },
     en: {
-      eyebrow: "Influencer tool", title: "Match Builder",
+      eyebrow: "Influencer tool", title: "Build a Probability View",
       subtitle: "Build an accumulator from AI predictions and share the link with your followers.",
       selectTitle: "Select predictions (2–5)", selectedLabel: "Selected",
       combinedProb: "Combined probability (model)",
@@ -6613,7 +6613,7 @@ function MatchBuilderTab({
       empty: "Select at least 2 predictions to generate a link.",
     },
     es: {
-      eyebrow: "Herramienta influencer", title: "Match Builder",
+      eyebrow: "Herramienta influencer", title: "Build a Probability View",
       subtitle: "Crea una combinada con las predicciones de IA y comparte el link con tus seguidores.",
       selectTitle: "Selecciona las predicciones (2–5)", selectedLabel: "Seleccionadas",
       combinedProb: "Probabilidad combinada (modelo)",
@@ -6625,7 +6625,7 @@ function MatchBuilderTab({
       empty: "Selecciona al menos 2 predicciones para generar el link.",
     },
     fr: {
-      eyebrow: "Outil influenceur", title: "Match Builder",
+      eyebrow: "Outil influenceur", title: "Build a Probability View",
       subtitle: "Construisez un combiné avec les prédictions IA et partagez le lien avec vos abonnés.",
       selectTitle: "Sélectionnez les prédictions (2–5)", selectedLabel: "Sélectionnées",
       combinedProb: "Probabilité combinée (modèle)",
@@ -6637,7 +6637,7 @@ function MatchBuilderTab({
       empty: "Sélectionnez au moins 2 prédictions pour générer un lien.",
     },
     ru: {
-      eyebrow: "Инструмент инфлюенсера", title: "Match Builder",
+      eyebrow: "Инструмент инфлюенсера", title: "Build a Probability View",
       subtitle: "Соберите экспресс из прогнозов ИИ и поделитесь ссылкой с подписчиками.",
       selectTitle: "Выберите прогнозы (2–5)", selectedLabel: "Выбрано",
       combinedProb: "Совокупная вероятность (модель)",
@@ -6766,7 +6766,7 @@ function MatchBuilderTab({
     const params = new URLSearchParams({ mb: selected.join(",") });
     const code = influencerCode.trim().toUpperCase();
     if (/^[A-Z0-9_-]{2,20}$/.test(code)) params.set("ref", code);
-    return `${base}/match-builder?${params.toString()}`;
+    return `${base}/probability-view?${params.toString()}`;
   })();
 
   const [publishState, setPublishState] = useState<"idle" | "published">("idle");
@@ -6811,7 +6811,7 @@ function MatchBuilderTab({
 
   return (
     <div className="space-y-6 p-4">
-      {/* Header — the page deskhead already renders the big "Match Builder"
+      {/* Header — the page deskhead already renders the big "Build a Probability View"
           title, so the component keeps only the creator-tool framing (eyebrow +
           subtitle) to avoid the duplicated heading. */}
       <div className="space-y-1">
@@ -7511,7 +7511,7 @@ function FAQTab() {
     it: [
       ["Cosa vede un utente pubblico?", "Solo struttura del prodotto e storico passato. I segnali live restano bloccati."],
       ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
-      ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, spiegazioni modello e track record."],
+      ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Model Edges, Top Model Signals, spiegazioni modello e track record."],
       ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
       ["Come pago?", "Con carta (Visa, Mastercard, Amex), Shop Pay o Google Pay: l'abbonamento si rinnova automaticamente e lo disdici quando vuoi dal tuo account. In alternativa puoi pagare in crypto (USDT TRC20)."],
       ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
@@ -7519,7 +7519,7 @@ function FAQTab() {
     en: [
       ["What can public users see?", "Only product structure and past history. Live signals stay locked."],
       ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
-      ["What does BetRedge Pro unlock?", "Tennis live, football research, Best Bets, Top Model Signals, model explanations and track record."],
+      ["What does BetRedge Pro unlock?", "Tennis live, football research, Model Edges, Top Model Signals, model explanations and track record."],
       ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
       ["How do I pay?", "By card (Visa, Mastercard, Amex), Shop Pay or Google Pay: the subscription renews automatically and you can cancel anytime from your account. You can also pay in crypto (USDT TRC20)."],
       ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
@@ -7527,7 +7527,7 @@ function FAQTab() {
     es: [
       ["¿Qué ve un usuario público?", "Solo la estructura del producto y el historial pasado. Las señales live siguen bloqueadas."],
       ["¿Qué desbloquea el plan Free?", "Perfil, idioma y vista previa de cuenta, sin predicciones operativas."],
-      ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Best Bets, Top Model Signals, explicaciones del modelo y track record."],
+      ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Model Edges, Top Model Signals, explicaciones del modelo y track record."],
       ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
       ["¿Cómo pago?", "Con tarjeta (Visa, Mastercard, Amex), Shop Pay o Google Pay: la suscripción se renueva automáticamente y puedes cancelar cuando quieras desde tu cuenta. También puedes pagar en crypto (USDT TRC20)."],
       ["¿Cómo se activa el plan?", "Tras el TX hash, el plan se revisa internamente o se activa según la política operativa configurada."],
@@ -7535,7 +7535,7 @@ function FAQTab() {
     fr: [
       ["Que voit un utilisateur public ?", "Seulement la structure du produit et l'historique passé. Les signaux live restent verrouillés."],
       ["Que débloque le plan Free ?", "Profil, langue et aperçu du compte, sans prédictions opérationnelles."],
-      ["Que débloque BetRedge Pro ?", "Tennis live, football research, Best Bets, Top Model Signals, explications du modèle et track record."],
+      ["Que débloque BetRedge Pro ?", "Tennis live, football research, Model Edges, Top Model Signals, explications du modèle et track record."],
       ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
       ["Comment payer ?", "Par carte (Visa, Mastercard, Amex), Shop Pay ou Google Pay : l'abonnement se renouvelle automatiquement et vous pouvez annuler à tout moment depuis votre compte. Vous pouvez aussi payer en crypto (USDT TRC20)."],
       ["Comment le plan est-il activé ?", "Après le TX hash, le plan est vérifié en interne ou activé selon la politique opérationnelle configurée."],
@@ -7543,7 +7543,7 @@ function FAQTab() {
     ru: [
       ["Что видит публичный пользователь?", "Только структуру продукта и прошлую историю. Live-сигналы остаются заблокированы."],
       ["Что открывает план Free?", "Профиль, язык и предпросмотр аккаунта, без рабочих прогнозов."],
-      ["Что открывает BetRedge Pro?", "Tennis live, football research, Best Bets, Top Model Signals, пояснения модели и track record."],
+      ["Что открывает BetRedge Pro?", "Tennis live, football research, Model Edges, Top Model Signals, пояснения модели и track record."],
       ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
       ["Как оплатить?", "Картой (Visa, Mastercard, Amex), Shop Pay или Google Pay: подписка продлевается автоматически, отменить можно в любой момент в аккаунте. Также можно оплатить в крипто (USDT TRC20)."],
       ["Как активируется план?", "После TX hash план проверяется вручную или активируется согласно настроенной операционной политике."],
@@ -8651,9 +8651,9 @@ function FeaturedEdge({
   );
 }
 
-// #EDGE-WP-SPLIT-0910 — la vetrina della Weekly Pick sul board.
+// #EDGE-WP-SPLIT-0910 — la vetrina della Weekly Model Case sul board.
 //
-// Perche' esiste: la Weekly Pick e' venduta a €12.99 e sul desk non aveva
+// Perche' esiste: la Weekly Model Case e' venduta a €12.99 e sul desk non aveva
 // NESSUNA presenza. In dieci settimane ha fatto zero acquisti, e nessuno
 // arrivava alla sua pagina dal board — il prodotto esisteva solo per chi
 // digitava l'URL.
@@ -8666,18 +8666,18 @@ function FeaturedEdge({
 function WeeklyPickPromo() {
   const lang = useLang();
   const etichetta = pick5(lang, {
-    it: "Weekly Pick — la multipla della casa. Vedi la schedina di questa settimana.",
-    en: "Weekly Pick — the house accumulator. See this week's slip.",
-    es: "Weekly Pick — la combinada de la casa. Mira la combinada de esta semana.",
-    fr: "Weekly Pick — le combiné de la maison. Voir le combiné de cette semaine.",
-    ru: "Weekly Pick — экспресс от команды. Смотреть экспресс этой недели.",
+    it: "Weekly Model Case — la multipla della casa. Vedi la schedina di questa settimana.",
+    en: "Weekly Model Case — the house accumulator. See this week's slip.",
+    es: "Weekly Model Case — la combinada de la casa. Mira la combinada de esta semana.",
+    fr: "Weekly Model Case — le combiné de la maison. Voir le combiné de cette semaine.",
+    ru: "Weekly Model Case — экспресс от команды. Смотреть экспресс этой недели.",
   });
   return (
     // `Link` e non `<a>`: /weekly-pick e' una rotta interna, e un <a> nudo
     // forzerebbe un ricaricamento completo del desk invece della navigazione
     // client. Non passa da `onBannerCta` perche' quello mappa un path su una TAB
-    // del desk, e la Weekly Pick e' una pagina a se'.
-    <Link className="wp-promo" href="/weekly-pick" aria-label={etichetta}>
+    // del desk, e la Weekly Model Case e' una pagina a se'.
+    <Link className="wp-promo" href="/weekly-model-case" aria-label={etichetta}>
       {/* Immagine statica in /public: <img> e non next/image di proposito —
           e' un creativo a dimensione fissa, gia' compresso a 246KB in WebP
           (dai 2,2MB del PNG originale), e non ha bisogno del loader.
@@ -8926,7 +8926,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   }, []);
 
   const [clientProfile, setClientProfile] = useState<ClientProfile | null>(null);
-  // #MB-1 Match Builder: shared accumulator ids (?mb=) + influencer ref (?ref=).
+  // #MB-1 Build a Probability View: shared accumulator ids (?mb=) + influencer ref (?ref=).
   // The ref is first-touch: persisted once in localStorage and attached to the
   // register payload (app/api/auth, referred_by).
   const [mbSharedIds, setMbSharedIds] = useState<string[]>([]);
@@ -9654,7 +9654,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     { tab: "leaderboard", label: tNav.nav_leaderboard },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
-    ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder", tone: "green" }] : []),
+    ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Build a Probability View", tone: "green" }] : []),
     // #REFERRAL-PANEL: "Invita" visibile solo da loggati (referral = attribuzione al proprio codice).
     ...(hasClientProfile ? [{ tab: "invita" as Tab, label: pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" }) }] : []),
     // #UI-ACCOUNT-DROPDOWN-0623: "Account" → "Plans" tab; l'account vive nel dropdown dal pill.
@@ -9674,7 +9674,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     { tab: "bets",        label: tNav.nav_predictions, glyph: RAIL_GLYPHS["bets"] ?? "#g-desk" },
     { tab: "history",     label: tNav.nav_history,     glyph: RAIL_GLYPHS["history"] ?? "#g-desk" },
     { tab: "leaderboard", label: tNav.nav_leaderboard, glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk" },
-    // #MOB1: Match Builder è una destinazione primaria (loggati) → entra nella
+    // #MOB1: Build a Probability View è una destinazione primaria (loggati) → entra nella
     // bottom bar invece di restare fuori-schermo nella vecchia striscia laterale.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Builder", glyph: RAIL_GLYPHS["match-builder"] ?? "#g-builder" }] : []),
     { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
@@ -9734,7 +9734,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               { tab: "bets" as Tab, label: tNav.nav_predictions },
               { tab: "history" as Tab, label: tNav.nav_history },
               { tab: "leaderboard" as Tab, label: tNav.nav_leaderboard },
-              ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Match Builder" }] : []),
+              ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Build a Probability View" }] : []),
             ].map((item) => (
               <button
                 key={item.tab}
@@ -9841,10 +9841,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 <MenuIcon name="creator" size={18} className="rail-ic" />
                 <span className="rail-label">Creator Picks</span>
               </Link>
-              {/* #WEEKLY-PICK-1: Weekly Pick — la multipla della casa (route) */}
-              <Link className="rail-item" href="/weekly-pick">
+              {/* #WEEKLY-PICK-1: Weekly Model Case — la multipla della casa (route) */}
+              <Link className="rail-item" href="/weekly-model-case">
                 <MenuIcon name="weeklypick" size={18} className="rail-ic" />
-                <span className="rail-label">Weekly Pick</span>
+                <span className="rail-label">Weekly Model Case</span>
               </Link>
               {/* #PARTNERS-RAIL-1: vetrina partner raggiungibile dal rail, non solo dal
                   footer. Link interno neutro (come il "Partner" del footer): il contenuto
@@ -9877,11 +9877,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 <MenuIcon name="creator" size={22} className="am-feat-ic" />
                 <span className="am-feat-l">Creator Picks</span>
               </Link>
-              <Link className="am-feat-tile" href="/weekly-pick">
+              <Link className="am-feat-tile" href="/weekly-model-case">
                 <MenuIcon name="weeklypick" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">Weekly Pick</span>
+                <span className="am-feat-l">Weekly Model Case</span>
               </Link>
-              {/* #MOB1: Match Builder è stato promosso alla bottom tab bar (destinazione
+              {/* #MOB1: Build a Probability View è stato promosso alla bottom tab bar (destinazione
                   primaria) → rimosso da "In Evidenza" per non duplicarlo. */}
               {hasClientProfile && (
                 <button className="am-feat-tile" onClick={() => { setTab("invita"); trackEvent("tab_click", { meta: { tab: "invita", src: "featured-mobile" } }); }}>
@@ -9962,11 +9962,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               )}
             </div>
             {tab === "bets" && (
-              <button className="mb-entry" onClick={() => setTab("match-builder")}>Match Builder →</button>
+              <button className="mb-entry" onClick={() => setTab("match-builder")}>Build a Probability View →</button>
             )}
             {/* #QW3: le stat-tile board (eventi/con-edge/hit) informano solo dove
                 c'è un board o un track record — Previsioni e Storico. Su Classifica
-                e Match Builder erano rumore (un "66.1% HIT" su una classifica). */}
+                e Build a Probability View erano rumore (un "66.1% HIT" su una classifica). */}
             {/* #SETTLE-0909 — SU /history I RIQUADRI MISURANO LO STORICO.
                 Prima erano tre KPI del BOARD LIVE (`/api/predictions` +
                 `/api/tennis`) sotto il titolo "History": «139 EVENTS» erano le
@@ -10012,7 +10012,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 `EVENTI` era diventato il duplicato ESATTO di «Tutti N» sul filtro
                 sport (#BOARD-CONTROLS-0910), quindi lo stesso numero due volte a
                 40px di distanza. `CON EDGE` e' stato rimosso su decisione di
-                Andrea: NON si e' spostato sul filtro «Solo best bets» perche' non
+                Andrea: NON si e' spostato sul filtro «Solo model edges» perche' non
                 e' lo stesso conteggio — usava `MODEL_EDGE_KPI_FLOOR` sull'edge
                 del modello, mentre quel filtro usa il gate best-bet (value bet
                 OPPURE segnale >=58%). Metterlo li' sarebbe stato un numero giusto
@@ -10028,7 +10028,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           {/* #LIVE-STRIP-GIU-0910 — Andrea, 10/09: «la riga con i match in corso
               sono ancora in alto, spostali sotto». Non si rende piu' qui sopra:
               viene passata al board come nodo e resa DOPO la fascia Edge +
-              Weekly Pick, subito prima delle sezioni. Passa da qui perche' i
+              Weekly Model Case, subito prima delle sezioni. Passa da qui perche' i
               dati live (`liveScores`, `liveTennis`) vivono in questo
               componente, non nel board. */}
           {tab === "bets" && (

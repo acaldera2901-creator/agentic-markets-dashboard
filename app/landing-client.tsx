@@ -23,6 +23,7 @@ import { writeRefCode } from "@/lib/referral-code";
 import { PUBLIC_PAID_PLANS } from "@/lib/commercial-plan"; // #HOME-V3: prezzi reali (no fabbricazione)
 // #SEO-ORPHANS-0908: elenco unico guide/pillar, condiviso con footer, /tools e /blog.
 import { BLOG_INDEX, LEARN_GUIDES, LEARN_PILLARS, guideHref } from "@/lib/learn-links";
+import { homeFaq } from "@/lib/home-faq"; // #CONVERSION-FAQ-0916
 import type { TennisMatch } from "@/app/app/page"; // #HOME-V3: tipo del componente board reale
 // #HOME-V3 Anatomy: la scheda è il COMPONENTE REALE della board (TennisMatchCard),
 // non una versione marketing. Lazy-load (ssr:false) per non gonfiare il bundle
@@ -377,6 +378,9 @@ type V3Copy = {
   pcFreeTag: string; pcBaseTag: string; pcProTag: string;
   pcCtaFree: string; pcCtaBase: string; pcCtaPro: string; pcNote: string;
   fnNote: string;
+  // #CONVERSION-FAQ-0916: contorno della sezione FAQ; le domande vivono in
+  // lib/home-faq.ts (condivise col FAQPage JSON-LD di app/page.tsx).
+  faqEyebrow: string; faqHead: string; faqSub: string;
   // #CLV-CLAIM-0831: `chipClv` RIMOSSO. Era il chip di fiducia «CLV verified»
   // sulla landing pubblica, accanto a due claim veri (sigillata prima del
   // fischio, calibrata). Quel terzo non era vero: misurato il 31/08 su
@@ -444,7 +448,11 @@ const V3_EN: V3Copy = {
   pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "FULL RESEARCH BOARD", pcMo: " / mo",
   pcFreeTag: "For learning how the board works.", pcBaseTag: "For the full pre-match picture.", pcProTag: "For full access to the probability board.",
   pcCtaFree: "Read a match free", pcCtaBase: "Start Base", pcCtaPro: "Unlock Pro",
-  pcNote: "Monthly billing · No bookmaker account required · No bets placed for you · No guaranteed returns · 18+",
+  // #CONVERSION-FAQ-0916: «cancel anytime» ripete la riga del checkout
+  // (PlansTab: rinnovo automatico, disdetta dall'account; crypto = 30 giorni
+  // senza rinnovo) — non è una promessa nuova.
+  pcNote: "Monthly or annual billing · Cancel anytime from your account · No bookmaker account required · No bets placed for you · No guaranteed returns · 18+",
+  faqEyebrow: "FAQ", faqHead: "Before your first reading.", faqSub: "Billing, what a reading contains, what “live” means, and what BetRedge does not do — answered before you sign up, not after.",
   // #FREE-BASE-DAILY-QUOTA-0831 — i tre elenchi dicono ora quello che il gate
   // consegna davvero. Base NON aveva "Deep Analysis su ogni scheda" (è Pro-only,
   // la proiezione gliela toglie) né "tutto il feed" (è a quota): due claim che il
@@ -504,7 +512,8 @@ const V3_IT: V3Copy = {
   pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "BOARD DI RICERCA COMPLETO", pcMo: " / mese",
   pcFreeTag: "Per imparare come funziona il board.", pcBaseTag: "Per il quadro pre-partita completo.", pcProTag: "Per l’accesso completo al board di probabilità.",
   pcCtaFree: "Leggi una partita gratis", pcCtaBase: "Inizia con Base", pcCtaPro: "Sblocca Pro",
-  pcNote: "Fatturazione mensile · Nessun conto bookmaker richiesto · Nessuna scommessa piazzata per te · Nessun rendimento garantito · 18+",
+  pcNote: "Mensile o annuale · Disdici quando vuoi dal tuo account · Nessun conto bookmaker richiesto · Nessuna scommessa piazzata per te · Nessun rendimento garantito · 18+",
+  faqEyebrow: "FAQ", faqHead: "Prima della tua prima lettura.", faqSub: "Fatturazione, cosa contiene una lettura, cosa vuol dire «live» e cosa BetRedge non fa — risposte prima dell’iscrizione, non dopo.",
   pcFreeList: ["3 letture del modello per sport, ogni giorno", "Registro pubblico prima del fischio", "Probabilità, quota di mercato e un’anteprima dell’edge", "Senza carta"],
   pcBaseList: ["7 letture del modello per sport, ogni giorno", "Edge % completo e contesto di stake", "Weekly Model Case", "Registro pubblico completo"],
   pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep analysis su ogni scheda", "Board di probabilità live", "Costruisci una vista di probabilità"],
@@ -1010,7 +1019,7 @@ export default function LandingPage() {
         <div className="v-sec-head"><div className="v-kick q">{v.suEyebrow}</div><h2>{v.suHead}</h2><p>{v.suSub}</p></div>
         <div className="v-suite">
           {v.suItems.map((it, i) => (
-            <a className="v-prow" key={it.pk} href={["/predictions", "/weekly-pick", "/match-builder", "/predictions"][i]}>
+            <a className="v-prow" key={it.pk} href={["/predictions", "/weekly-model-case", "/probability-view", "/predictions"][i]}>
               <div><div className="pk">{it.pk}</div><div className="pn">{it.pn}</div></div>
               <p>{it.p}</p>
               <div className="ps">{it.ps}<b>{it.psB}</b></div>
@@ -1103,6 +1112,22 @@ export default function LandingPage() {
           ))}
           <Link href={BLOG_INDEX}>{v.gdAll}</Link>
         </p>
+      </div></section>
+
+      {/* ── #CONVERSION-FAQ-0916 — FAQ (audit §9, posizione 8: dopo prezzo, CTA e
+           guide, prima della porta B2B). Sei domande, tutte visibili — niente
+           accordion: chi arriva qui sta decidendo, e una risposta nascosta dietro
+           un click è una risposta che non legge. Le stesse sei alimentano il
+           FAQPage JSON-LD in app/page.tsx (lib/home-faq.ts è l'unica fonte). È un
+           <dl>: domanda a sinistra, risposta a destra, filetti — la stessa riga
+           di registro delle note della scheda, più larga. ── */}
+      <section className="v-sec v-faq-sec"><div className="v-wrap">
+        <div className="v-sec-head"><div className="v-kick q">{v.faqEyebrow}</div><h2>{v.faqHead}</h2><p>{v.faqSub}</p></div>
+        <dl className="v-faq">
+          {homeFaq(lang).map(([q, a]) => (
+            <div className="row" key={q}><dt>{q}</dt><dd>{a}</dd></div>
+          ))}
+        </dl>
       </div></section>
 
       {/* ── #WIDGET-LANDING-0824: riga per i proprietari di siti. Sta DOPO la CTA

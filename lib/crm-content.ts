@@ -260,7 +260,7 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     // Questo è l'unico touchpoint che porta ALLA Weekly Pick invece che ai piani:
     // per un ex-pagante lo sblocco singolo è il rientro più leggero che esista, e
     // mandarlo alla pagina dei piani sarebbe chiedergli di nuovo un abbonamento.
-    cta: { path: "/weekly-pick", label: WEEKLY_PICK_CTA } },
+    cta: { path: "/weekly-model-case", label: WEEKLY_PICK_CTA } },
   // #CRM-COPY-TRUTHFUL-0817: prometteva "un'offerta riservata / private offer"
   // che non esiste — e NON era nemmeno promo-gated, quindi il CTA portava al
   // prezzo pieno. Nota: la promo di lancio vale sul PRIMO acquisto, quindi per un

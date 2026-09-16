@@ -7,7 +7,7 @@ from ..db import DbUnavailable, fetch_all, measure_latency
 
 BASE = "https://www.betredge.com"
 
-WATCHED_PAGES = ("/", "/predictions", "/plans", "/weekly-pick")
+WATCHED_PAGES = ("/", "/predictions", "/plans", "/weekly-model-case")
 
 # Rotte deliberatamente NON sorvegliate. Esistono su main e sono nello sha
 # deployato, ma rispondono 404 per progetto: fanno notFound() quando il flag

@@ -86,10 +86,10 @@ describe("Weekly Pick nel CRM — destinazione del bottone", () => {
     for (const lang of CRM_LANGS) {
       const r = renderCrm("wb_day7_renew", lang, "test@example.com");
       expect(r, `render fallito: ${lang}`).toBeTruthy();
-      expect(r!.html, lang).toMatch(/\/weekly-pick\?crm=wb_day7_renew/);
+      expect(r!.html, lang).toMatch(/\/weekly-model-case\?crm=wb_day7_renew/);
       // La versione testo è quella che vedono i client che non rendono HTML:
       // se il link vive solo nell'HTML, per loro l'email non ha CTA.
-      expect(r!.text, lang).toMatch(/\/weekly-pick\?crm=wb_day7_renew/);
+      expect(r!.text, lang).toMatch(/\/weekly-model-case\?crm=wb_day7_renew/);
     }
   });
 
