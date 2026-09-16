@@ -6,7 +6,7 @@ import Dashboard from "../app/page";
 
 export const metadata: Metadata = {
   title: "Plans and Pricing | BetRedge",
-  description: "Compare BetRedge Base and Pro subscriptions: what each plan unlocks, current pricing, and how the Weekly Pick fits in.",
+  description: "Compare BetRedge Base and Pro subscriptions: how deep each plan reads, current monthly pricing, and how the Weekly Model Case fits in.",
   alternates: { canonical: "/plans" },
 };
 

@@ -36,23 +36,29 @@ const jetbrainsMono = JetBrains_Mono({
 // da testo generato e il <title> è la copy più visibile del sito). Niente
 // title.template: i tools portano già "| BetRedge" nei loro metaTitle e un
 // template lo raddoppierebbe — ogni rotta scrive il title completo.
+// #CONVERSION-COPY-0916: la categoria nel title (audit Tommy §8 — «sports
+// probability», non «AI predictions»: il secondo è la parola dei tipster e
+// confonde col brand omonimo). Adattato alla convenzione della root («BetRedge:
+// …», niente pipe, niente em-dash). Descrizione sotto i 160 caratteri.
+const SITE_TITLE = "BetRedge: Sports Probability, Market Odds and Transparent Match Analysis";
+const SITE_DESCRIPTION = "Market-implied probability vs a calibrated model, on football and tennis. See the edge, the reasoning and the pre-kick-off record. No tips, no bookmaker.";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.betredge.com"),
-  title: "BetRedge: AI Football and Tennis Predictions",
-  description: "A multi-agent AI desk that turns football and tennis odds into readable probabilities. See how every number is produced.",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   openGraph: {
     type: "website",
     url: "https://www.betredge.com",
     siteName: "BetRedge",
-    title: "BetRedge: AI Football and Tennis Predictions",
-    description: "A multi-agent AI desk that turns football and tennis odds into readable probabilities. See how every number is produced.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [{ url: "/icon.png", alt: "BetRedge" }],
   },
   twitter: {
     card: "summary",
     site: "@BetrEdge",
-    title: "BetRedge: AI Football and Tennis Predictions",
-    description: "A multi-agent AI desk that turns football and tennis odds into readable probabilities. See how every number is produced.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: ["/icon.png"],
   },
 };
@@ -70,7 +76,9 @@ const orgJsonLd = {
   name: "BetRedge",
   url: "https://www.betredge.com",
   logo: "https://www.betredge.com/icon.png",
-  description: "Football and tennis multi-agent AI sports prediction desk",
+  // #CONVERSION-COPY-0916 (audit §8): la distinzione stabile, ripetuta nei dati
+  // strutturati — non un bookmaker, non un exchange, non piazza scommesse.
+  description: "BetRedge is a sports probability engine for football and tennis. It is not a bookmaker or a betting exchange and does not place bets.",
   sameAs: ["https://x.com/BetrEdge", "https://www.instagram.com/betr.edge/"],
 };
 
