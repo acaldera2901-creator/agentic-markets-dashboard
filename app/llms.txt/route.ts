@@ -32,7 +32,7 @@ export async function GET(): Promise<Response> {
     "",
     link("Predictions", "/predictions", "the current board of football and tennis picks, with model probability and confidence"),
     link("Track record", "/history", "every settled prediction, graded and archived"),
-    link("Weekly Pick", "/weekly-pick", "one accumulator a week, built from the model's highest-probability picks"),
+    link("Weekly Model Case", "/weekly-model-case", "one combination of markets a week, built from the model's highest-probability readings and frozen at publish"),
     link("AI football predictions", "/ai-football-predictions", "how the football model works and what it covers"),
     link("AI tennis predictions", "/ai-tennis-predictions", "how the tennis model works and what it covers"),
     "",

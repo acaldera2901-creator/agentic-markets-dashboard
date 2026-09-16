@@ -40,7 +40,7 @@ const PUBLIC_ROUTES: Entry[] = [
   // #SEO-PACK-0810: pillar UK (brief 06) — contenuto statico, weekly.
   { path: "/ai-tennis-predictions", changeFrequency: "weekly" },
   { path: "/ai-football-predictions", changeFrequency: "weekly" },
-  { path: "/weekly-pick", changeFrequency: "daily" },
+  { path: "/weekly-model-case", changeFrequency: "daily" },
   // #BLOG-SSR-0814: indice del blog (i singoli articoli entrano dinamicamente
   // dal DB in fondo alla sitemap).
   { path: "/blog", changeFrequency: "weekly" },

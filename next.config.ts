@@ -76,6 +76,18 @@ const nextConfig: NextConfig = {
   // scroll. Supported in this Next version (config-schema: experimental
   // .scrollRestoration). Presentational only.
   experimental: { scrollRestoration: true },
+  // #CONVERSION-ROUTES-0916: le due rotte di prodotto prendono il nome che la
+  // home usa già (Weekly Model Case, Build a Probability View). La rotta vecchia
+  // NON resta come pagina: un redirect permanente (Next risponde 308, che i
+  // motori trattano come 301) porta sulla nuova, con la query string
+  // conservata — i link /match-builder?mb=…&ref=… dei creator continuano a
+  // funzionare. Due pagine identiche a due URL sarebbero contenuto duplicato.
+  async redirects() {
+    return [
+      { source: "/weekly-pick", destination: "/weekly-model-case", permanent: true },
+      { source: "/match-builder", destination: "/probability-view", permanent: true },
+    ];
+  },
   async headers() {
     return [
       // #WIDGET-EMBED-0824: /embed è l'unico path incorporabile da terzi e porta

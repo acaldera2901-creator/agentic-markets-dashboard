@@ -10,20 +10,20 @@ import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { SeoProse } from "@/components/seo/SeoProse";
 
 export const metadata: Metadata = {
-  title: "Weekly Pick: The House Accumulator | BetRedge",
+  title: "Weekly Model Case: The Weekly Combination Model | BetRedge",
   description: "One accumulator every Monday: the model's highest probability picks combined into a single slip, with the combined probability shown honestly.",
-  alternates: { canonical: "/weekly-pick" },
+  alternates: { canonical: "/weekly-model-case" },
 };
 
 export default function WeeklyPickLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <JsonLd data={breadcrumbJsonLd([["Weekly Pick", "/weekly-pick"]])} />
+      <JsonLd data={breadcrumbJsonLd([["Weekly Model Case", "/weekly-model-case"]])} />
       {children}
       <SeoProse
-        heading="What the Weekly Pick is"
+        heading="What the Weekly Model Case is"
         intro={[
-          "The Weekly Pick is one accumulator, published every Monday and settled at the end of the week. The BetRedge model scores every football and tennis match it covers on form, expected goals, absences, rest, travel and match context, then ranks the outcomes by probability. The highest-probability selections are combined into a single slip.",
+          "The Weekly Model Case is one combination of markets (an accumulator), published every Monday and settled at the end of the week. The BetRedge model scores every football and tennis match it covers on form, expected goals, absences, rest, travel and match context, then ranks the outcomes by probability. The highest-probability selections are combined into a single slip.",
           "The number the page leads with is the combined probability: the chance that every leg lands, not the chance that any one of them does. It is the product of the individual probabilities, so it is always lower than the weakest leg. Four selections at 80 percent each combine to roughly 41 percent. Stating that plainly is the point of the page.",
         ]}
         faq={[
@@ -41,7 +41,7 @@ export default function WeeklyPickLayout({ children }: { children: React.ReactNo
           ],
           [
             "Do I need a subscription?",
-            "The Weekly Pick is included in the Pro plan. Without a plan it can be unlocked one week at a time.",
+            "The Weekly Model Case is included in the Pro plan. Without a plan it can be unlocked one week at a time.",
           ],
         ]}
       />

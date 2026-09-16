@@ -60,7 +60,7 @@ function siteUrl(): string {
 
 // #ATTRIB-EVERYWHERE-0915 — la destinazione di una CTA email, marcata con la
 // mail che l'ha generata. Le email del ciclo di vita (attivazione, benvenuto,
-// ricevuta, disdetta, win-back) mandavano a `/app`, `/plans` e `/weekly-pick`
+// ricevuta, disdetta, win-back) mandavano a `/app`, `/plans` e `/weekly-model-case`
 // senza alcun marcatore: un utente che tornava e si riattivava era indistinguibile
 // da uno arrivato digitando l'indirizzo, e l'email win-back — che esiste SOLO per
 // riportare indietro chi è scaduto — non poteva dimostrare di funzionare.
@@ -635,7 +635,7 @@ export function weeklyPickReceiptEmail(
         }).format(amountMinor / 100)
       : null;
   const week = new Date(weekStartISO).toLocaleDateString(MAIL_LOCALE[l]);
-  const url = mailUrl("/weekly-pick", "mail-wp-receipt");
+  const url = mailUrl("/weekly-model-case", "mail-wp-receipt");
   const lines = [t.recorded(week), amount ? t.amount(amount) : null, t.oneOff];
   const text = lines.filter(Boolean).join(" ");
   return {

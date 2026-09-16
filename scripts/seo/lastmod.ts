@@ -42,7 +42,7 @@ const ROUTE_SOURCES: Record<string, string[]> = {
   "/history": ["app/history"],
   "/ai-tennis-predictions": ["app/ai-tennis-predictions"],
   "/ai-football-predictions": ["app/ai-football-predictions"],
-  "/weekly-pick": ["app/weekly-pick"],
+  "/weekly-model-case": ["app/weekly-pick"],
   "/blog": ["app/blog/page.tsx"],
   "/community": ["app/community"],
   "/partners": ["app/partners"],

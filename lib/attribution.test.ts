@@ -60,7 +60,7 @@ describe("initAttribution", () => {
   it("non sovrascrive mai un record esistente (first-touch)", () => {
     setUrl("/?utm_source=reddit");
     initAttribution();
-    setUrl("/weekly-pick?utm_source=newsletter");
+    setUrl("/weekly-model-case?utm_source=newsletter");
     initAttribution();
     expect(getAttribution()?.utm_source).toBe("reddit");
     expect(getAttribution()?.landing_path).toBe("/");

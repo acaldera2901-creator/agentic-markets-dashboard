@@ -3,7 +3,7 @@
 // col Match Builder. Pagina pubblica di discovery: i match sono visibili a
 // tutti, pick e probabilità restano dietro la registrazione (stessa proiezione
 // per-sessione del board — il lock È la CTA). Ogni card riapre la schedina
-// originale via /match-builder?mb=...&ref=CODICE, quindi il traffico da qui mantiene
+// originale via /probability-view?mb=...&ref=CODICE, quindi il traffico da qui mantiene
 // l'attribution del creator.
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
@@ -206,7 +206,7 @@ export default function CommunityPage() {
             resolved only in a useState initializer at mount. A full load applies
             the ?tab= deep-link correctly. */}
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional hard nav, see comment above */}
-        <a href="/match-builder" className="btn-secondary shrink-0">
+        <a href="/probability-view" className="btn-secondary shrink-0">
           {t.create}
         </a>
       </header>
@@ -278,7 +278,7 @@ export default function CommunityPage() {
               <p className="text-sm font-bold" style={{ color: "var(--am-text)" }}>{t.emptyTitle}</p>
               <p className="text-xs font-mono max-w-sm mx-auto" style={{ color: "var(--am-muted)" }}>{t.emptySub}</p>
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav so the ?tab= deep-link resolves (see header note) */}
-              <a href="/match-builder" className="btn-primary">{t.create}</a>
+              <a href="/probability-view" className="btn-primary">{t.create}</a>
             </div>
           </div>
         )}
@@ -343,7 +343,7 @@ export default function CommunityPage() {
                 </a>
               ) : (
                 <Link
-                  href={`/match-builder?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
+                  href={`/probability-view?mb=${encodeURIComponent(slip.mb_param)}&ref=${encodeURIComponent(slip.creator_code)}`}
                   className="text-xs font-mono px-3 py-1.5 border transition-colors"
                   style={{ borderColor: "var(--am-line-2)", color: "var(--am-muted)" }}
                 >

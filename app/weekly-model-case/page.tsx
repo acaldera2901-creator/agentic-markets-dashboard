@@ -1,5 +1,5 @@
 "use client";
-// /weekly-pick — #WEEKLY-PICK-1. La MULTIPLA DELLA CASA, a livello presentazione:
+// /weekly-model-case (ex /weekly-pick, redirect 308 in next.config) — #WEEKLY-PICK-1. La MULTIPLA DELLA CASA, a livello presentazione:
 // hero display, betslip disegnata con stato live delle legs, come funziona,
 // storico. Riusa il design system lp-* della landing + superfici .wp-*.
 // FTC-safe: nessun edge/vincita promessa (#SEO-AEO-0825: il claim "nessuna
