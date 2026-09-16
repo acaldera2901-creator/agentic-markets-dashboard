@@ -5376,7 +5376,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
     ];
     groups.push({
       key: "esito", icon: "result", title: pick5(lang, { it: "Esito 1X2", en: "Match result", es: "Resultado 1X2", fr: "Résultat 1X2", ru: "Исход 1X2" }),
-      src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
+      // #NO-FP-BADGE-0916: con la quota di un partner NESSUNA targhetta (prima:
+      // la pill "FORTUNEPLAY"). Senza quota resta "solo modello", che spiega
+      // perché quella riga non ha un prezzo accanto.
+      src: fp ? undefined : { kind: "est", label: pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
       chips: esito.map((o) => {
         const q = fpq(o.key);
         return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: !belowFloor && pickKey === o.key };
@@ -5394,7 +5397,6 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       groups.push({
         key: "gol", icon: "goal", title: pick5(lang, { it: "Gol", en: "Goals", es: "Goles", fr: "Buts", ru: "Голы" }),
         meta: `${pick5(lang, { it: "linea", en: "line", es: "línea", fr: "ligne", ru: "линия" })} ${line}${e.goals_summary ? ` · ${pick5(lang, { it: "attesi", en: "exp.", es: "esp.", fr: "att.", ru: "ожид." })} ${e.goals_summary.expected_goals.toFixed(1)}` : ""}`,
-        src: { kind: "fp", label: "FortunePlay" },
         chips: [
           { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: pickSide === "over" },
           { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: pickSide === "under" },
@@ -5484,13 +5486,18 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
       fpMatchId: fp?.id ?? null,
+      // #YBETS-COVERAGE-0916: gli id BetConstruct sono per-operatore → la
+      // scheda deve chiedere i mercati al feed che ha emesso questo id.
+      fpMatchBook: fp?.detailBook ?? null,
       books: [
         ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
         // #PARTNERS-VELOBET-CASEA: i partner solo-landing dipendono dalla geo
         // (Casea ha un link per paese e nessun neutro) → risolti sul country.
         ...landingPartnersFor(geoCountry).map((lp) => ({ name: lp.name, matchUrl: lp.url })),
       ],
-      moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
+      // #NO-FP-BADGE-0916: la sezione non nomina più il book (dopo
+      // #YBETS-COVERAGE-0916 la fonte può essere un secondario).
+      moreLabel: pick5(lang, { it: "Altri mercati", en: "More markets", es: "Más mercados", fr: "Plus de marchés", ru: "Ещё рынки" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
         quotaComb: pick5(lang, { it: "quota combinata", en: "combined odds", es: "cuota combinada", fr: "cote combinée", ru: "комбо кэф" }),
@@ -6065,7 +6072,9 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
     ];
     const groups: MdsGroup[] = [{
       key: "esito", icon: "result", title: pick5(lang, { it: "Vincente match", en: "Match winner", es: "Ganador del partido", fr: "Vainqueur du match", ru: "Победитель матча" }),
-      src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
+      // #NO-FP-BADGE-0916: vedi la card calcio — targhetta solo quando il
+      // prezzo manca ("solo modello").
+      src: fp ? undefined : { kind: "est", label: pick5(lang, { it: "solo modello", en: "model only", es: "solo modelo", fr: "modèle seul", ru: "только модель" }) },
       chips: esito.map((o) => {
         const q = fpq(o.key);
         return { id: `esito-${o.key}`, mkt: pick5(lang, { it: "Vincente", en: "Winner", es: "Ganador", fr: "Vainqueur", ru: "Победитель" }), sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: !belowFloor && pickPlayer === o.key };
@@ -6100,13 +6109,18 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
       fpMatchId: fp?.id ?? null,
+      // #YBETS-COVERAGE-0916: gli id BetConstruct sono per-operatore → la
+      // scheda deve chiedere i mercati al feed che ha emesso questo id.
+      fpMatchBook: fp?.detailBook ?? null,
       books: [
         ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
         // #PARTNERS-VELOBET-CASEA: i partner solo-landing dipendono dalla geo
         // (Casea ha un link per paese e nessun neutro) → risolti sul country.
         ...landingPartnersFor(geoCountry).map((lp) => ({ name: lp.name, matchUrl: lp.url })),
       ],
-      moreLabel: pick5(lang, { it: "Altri mercati FortunePlay", en: "More FortunePlay markets", es: "Más mercados FortunePlay", fr: "Plus de marchés FortunePlay", ru: "Ещё рынки FortunePlay" }),
+      // #NO-FP-BADGE-0916: la sezione non nomina più il book (dopo
+      // #YBETS-COVERAGE-0916 la fonte può essere un secondario).
+      moreLabel: pick5(lang, { it: "Altri mercati", en: "More markets", es: "Más mercados", fr: "Plus de marchés", ru: "Ещё рынки" }),
       labels: {
         schedina: pick5(lang, { it: "La tua schedina", en: "Your betslip", es: "Tu boleto", fr: "Votre coupon", ru: "Ваш купон" }),
         quotaComb: pick5(lang, { it: "quota combinata", en: "combined odds", es: "cuota combinada", fr: "cote combinée", ru: "комбо кэф" }),

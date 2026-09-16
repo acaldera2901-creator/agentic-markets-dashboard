@@ -499,7 +499,9 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
       ];
       groups.push({
         key: "esito", icon: "result", title: L2("Esito 1X2", "Match result"),
-        src: { kind: fp ? "fp" : "est", label: fp ? "FortunePlay" : L2("solo modello", "model only") },
+        // #NO-FP-BADGE-0916: niente targhetta col nome del book; resta
+        // "solo modello" quando la riga non ha prezzo.
+        src: fp ? undefined : { kind: "est", label: L2("solo modello", "model only") },
         chips: esito.map((o) => {
           const q = fpq(o.key);
           return { id: `esito-${o.key}`, mkt: "Esito 1X2", sel: o.sel, prob: pct(o.prob), q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: displayPick === o.key };
@@ -521,7 +523,6 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
       groups.push({
         key: "gol", icon: "goal", title: L2("Gol", "Goals"),
         meta: `${L2("linea", "line")} ${line}${goals ? ` · ${L2("attesi", "exp.")} ${goals.expected_goals.toFixed(1)}` : ""}`,
-        src: { kind: "fp", label: "FortunePlay" },
         chips: [
           { id: "gol-over", mkt: `Gol O/U ${line}`, sel: `Over ${line}`, prob: overP != null ? pct(overP) : null, q: fp.totalOver, value: pv(overVal), rec: pickSide === "over" },
           { id: "gol-under", mkt: `Gol O/U ${line}`, sel: `Under ${line}`, prob: underP != null ? pct(underP) : null, q: fp.totalUnder, value: pv(underVal), rec: pickSide === "under" },
@@ -572,11 +573,13 @@ function WcCard({ p, fp: fpRaw, live, booksBlocked, geoCountry }: { p: Projected
       // A2-B1/A2-B2: mai il landing FortunePlay (nemmeno il generico) per IT.
       matchUrl: booksBlocked ? "" : (fp?.matchUrl || FORTUNEPLAY_BET_URL),
       fpMatchId: fp?.id ?? null,
+      // #YBETS-COVERAGE-0916: gli id BetConstruct sono per-operatore.
+      fpMatchBook: fp?.detailBook ?? null,
       books: [
         ...(fp?.books?.map((b) => ({ name: b.name, matchUrl: b.matchUrl })) ?? []),
         ...landingPartnersFor(geoCountry).map((lp) => ({ name: lp.name, matchUrl: lp.url })),
       ],
-      moreLabel: L2("Altri mercati FortunePlay", "More FortunePlay markets"),
+      moreLabel: L2("Altri mercati", "More markets"),
       labels: {
         schedina: L2("La tua schedina", "Your betslip"),
         quotaComb: L2("quota combinata", "combined odds"),

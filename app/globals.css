@@ -8860,8 +8860,10 @@ button:disabled {
 .mds-gt { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 640; }
 .mds-gt .mds-ico { color: var(--am-muted); }
 .mds-gmeta { font-family: var(--mds-mono); font-size: 10px; color: var(--am-muted-2); }
+/* #NO-FP-BADGE-0916: `.mds-src.fp` (la pill "FORTUNEPLAY") è stata rimossa — le
+   righe mercato non nominano più il book. Restano `us` (best book US) ed `est`
+   (solo modello / modello Pro), che dicono di chi è la stima. */
 .mds-src { margin-left: auto; font-family: var(--mds-mono); font-size: 8.5px; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; }
-.mds-src.fp { color: var(--am-coral); background: var(--am-coral-dim); border: 1px solid var(--am-coral-b); }
 .mds-src.us { color: #9db4d6; background: rgba(120,150,200,.14); border: 1px solid rgba(120,150,200,.30); }
 .mds-src.est { color: #d79a34; background: rgba(215,154,52,.14); border: 1px solid rgba(215,154,52,.30); }
 .mds-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -8914,14 +8916,19 @@ button:disabled {
 .mds-info.open .mds-chevw { transform: rotate(180deg); }
 .mds-cta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 680; font-size: 13px; color: #04140A; background: var(--am-coral); border-radius: 11px; padding: 11px 15px; text-decoration: none; transition: filter .15s; }
 /* #BET-DROPDOWN-1: una sola CTA + menu dei partner (sostituisce .mds-ctas, che
-   impilava una CTA per book). Il menu si apre verso l'ALTO: la bet-bar è sticky
-   in fondo alla scheda, verso il basso finirebbe fuori dal contenitore. */
+   impilava una CTA per book).
+   #BET-MENU-CLIP-0916: il menu NON è più `absolute` dentro la bet-bar — lo
+   ritagliavano `.pdm-body` (overflow-y:auto) e `.pdm-panel` (overflow:hidden)
+   quando sopra la barra c'era poco contenuto (schede "solo modello"). Ora è in
+   un portal su `body`, `position:fixed`, con left/top/max-height calcolati dal
+   componente sul rect del bottone: sceglie il verso in cui c'è spazio e scorre
+   se non ci sta comunque. */
 .mds-books { flex: none; position: relative; }
 .mds-books .mds-cta { border: none; cursor: pointer; font-family: inherit; }
 .mds-bchev { display: inline-flex; transition: transform .15s; }
 .mds-bchev.open { transform: rotate(180deg); }
-.mds-bmenu { position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 30; min-width: 194px; display: flex; flex-direction: column; padding: 5px; border-radius: 12px; background: var(--am-panel); border: 1px solid var(--am-coral-b); box-shadow: 0 12px 32px rgba(0,0,0,.38); }
-.mds-bopt { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--am-text); text-decoration: none; transition: background .12s; }
+.mds-bmenu { position: fixed; z-index: 1100; min-width: 194px; max-width: calc(100vw - 16px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; padding: 5px; border-radius: 12px; background: var(--am-panel); border: 1px solid var(--am-coral-b); box-shadow: 0 12px 32px rgba(0,0,0,.38); }
+.mds-bopt { flex: none; display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--am-text); text-decoration: none; transition: background .12s; }
 .mds-bopt:hover { background: var(--am-coral-dim); }
 .mds-bname { flex: 1 1 auto; }
 .mds-bopt .mds-ico { width: 13px; height: 13px; color: var(--am-coral); }

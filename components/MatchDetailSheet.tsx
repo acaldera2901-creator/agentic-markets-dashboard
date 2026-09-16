@@ -5,12 +5,17 @@
 // dipende dagli helper interni di app/page.tsx. Icone SVG su misura (no emoji).
 // La schedina è componibile lato client: le chip PICK (rec) sono pre-inserite;
 // solo le legs con quota reale moltiplicano la quota combinata (i soft = stima).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MarketIcon } from "./MarketIcon";
 import { partnerLogoByName, sortBooksForMenu } from "../lib/partners";
 import { trackEvent } from "../lib/track-event";
 import { joinFpWithModel } from "../lib/market-join";
 import type { ExtraMarket } from "../lib/poisson-model";
+
+// La scheda è SSR-ata (next/dynamic senza ssr:false): useLayoutEffect sul server
+// non ha un layout da misurare. Sul client serve il timing pre-paint.
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const MARKET_ICON: Record<string, "result" | "goals" | "scorer" | "soft"> = {
   result: "result", goal: "goals", boot: "scorer", flag: "soft",
@@ -31,7 +36,11 @@ export type MdsGroup = {
   icon: "result" | "goal" | "boot" | "flag";
   title: string;
   meta?: string;
-  src: { kind: "fp" | "us" | "est"; label: string };
+  // #NO-FP-BADGE-0916: opzionale. La pill che nominava il book ("FORTUNEPLAY")
+  // è stata tolta dalle righe mercato — un gruppo quotato da un partner non
+  // porta più alcuna targhetta. Restano `us` (best book US) ed `est` (solo
+  // modello / modello Pro), che dicono di CHI è la stima, non dove si scommette.
+  src?: { kind: "us" | "est"; label: string };
   chips: MdsChip[];
   note?: string;
 };
@@ -58,6 +67,10 @@ export type MdsData = {
   groups: MdsGroup[];
   matchUrl: string;
   fpMatchId?: number | null;
+  // #YBETS-COVERAGE-0916: a QUALE book appartiene `fpMatchId`. Gli id BetConstruct
+  // sono per-operatore: senza questo, l'id di un secondario chiesto al primario
+  // restituirebbe i mercati di un'altra partita.
+  fpMatchBook?: string | null;
   /** our model markets (enrichment.extra_markets) — used to attach a real
    * prediction + edge to every FortunePlay "Altri mercati" outcome we can model. */
   extraMarkets?: ExtraMarket[];
@@ -104,10 +117,12 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
   useEffect(() => {
     const id = data.fpMatchId;
     if (!id) return;
+    const book = data.fpMatchBook;
     let alive = true;
     (async () => {
       try {
-        const r = await fetch(`/api/fortuneplay-match?id=${id}`, { credentials: "same-origin" });
+        const qs = `id=${id}${book ? `&book=${encodeURIComponent(book)}` : ""}`;
+        const r = await fetch(`/api/fortuneplay-match?${qs}`, { credentials: "same-origin" });
         if (!r.ok) return;
         const d = await r.json();
         const mk: Array<{ name: string; line: number | null; outcomes: Array<{ label: string; odds: number }> }> = d.markets ?? [];
@@ -135,7 +150,6 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
             key: `x-${gi}`,
             icon: iconFor(name),
             title: name + (!multi && entries[0].line != null ? ` ${entries[0].line}` : ""),
-            src: { kind: "fp" as const, label: "FortunePlay" },
             chips: entries.flatMap((m, ei) =>
               m.outcomes.map((o, oi) => {
                 const pr = predBy.get(`${m.name}|${m.line}|${o.label}`);
@@ -155,7 +169,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
       } catch { /* degrada: nessun mercato extra */ }
     })();
     return () => { alive = false; };
-  }, [data.fpMatchId]);
+  }, [data.fpMatchId, data.fpMatchBook]);
 
   const poolChips = useMemo(() => [...data.groups, ...extraGroups].flatMap((g) => g.chips), [data.groups, extraGroups]);
   const [selected, setSelected] = useState<string[]>(() => data.groups.flatMap((g) => g.chips).filter((c) => c.rec).map((c) => c.id));
@@ -181,10 +195,16 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
   // «schedina composta su BetRedge -> scegli il partner con cui aprirla».
   const booksOpen = booksMenu;
   const booksRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!booksOpen) return;
     function onPointer(e: MouseEvent) {
-      if (booksRef.current && !booksRef.current.contains(e.target as Node)) setBooksMenu(false);
+      const t = e.target as Node;
+      // Il menu vive in un portal FUORI da booksRef: senza questo secondo
+      // controllo il mousedown su una voce chiuderebbe il menu prima del click,
+      // e il link affiliato non si aprirebbe più (né partirebbe il tracking).
+      if (booksRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setBooksMenu(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setBooksMenu(false);
@@ -197,6 +217,52 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
     };
   }, [booksOpen]);
 
+  // #BET-MENU-CLIP-0916 — il menu era `position:absolute` dentro la bet-bar, che
+  // vive dentro `.pdm-body` (overflow-y:auto) dentro `.pdm-panel` (overflow:hidden).
+  // Su una scheda "solo modello" i gruppi mercato sopra la barra sono pochi:
+  // aprendosi verso l'alto il menu usciva dal bordo del pannello e veniva TAGLIATO.
+  // Nessun `min-height` o `padding` risolve il caso generale (dipende da quanti
+  // partner e da quanto è alto il viewport) → il menu si ancora al VIEWPORT
+  // (portal + position:fixed), quindi nessun overflow di un antenato lo ritaglia,
+  // e sceglie il verso in cui c'è spazio.
+  const ANCHOR_GAP = 7, VIEWPORT_MARGIN = 8;
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  const placeMenu = useCallback(() => {
+    const anchor = booksRef.current, menu = menuRef.current;
+    if (!anchor || !menu) return;
+    const r = anchor.getBoundingClientRect();
+    const h = menu.scrollHeight; // altezza naturale, anche se max-height la sta capando
+    const w = menu.offsetWidth;
+    const spaceAbove = r.top - ANCHOR_GAP - VIEWPORT_MARGIN;
+    const spaceBelow = window.innerHeight - r.bottom - ANCHOR_GAP - VIEWPORT_MARGIN;
+    // Verso preferito: ALTO (la bet-bar è in fondo alla scheda). Si ribalta solo
+    // se sopra non ci sta e sotto c'è più spazio.
+    const up = spaceAbove >= h || spaceAbove >= spaceBelow;
+    const maxHeight = Math.max(96, up ? spaceAbove : spaceBelow);
+    const left = Math.min(Math.max(VIEWPORT_MARGIN, r.right - w), Math.max(VIEWPORT_MARGIN, window.innerWidth - w - VIEWPORT_MARGIN));
+    const top = up
+      ? Math.max(VIEWPORT_MARGIN, r.top - ANCHOR_GAP - Math.min(h, maxHeight))
+      : r.bottom + ANCHOR_GAP;
+    setMenuPos({ left, top, maxHeight });
+  }, []);
+  // Layout effect: posiziona PRIMA del paint, così il menu non lampeggia nel
+  // punto dell'apertura precedente (per questo non si azzera `menuPos` alla
+  // chiusura: riposizionarlo pre-paint basta, e un setState nel corpo
+  // dell'effetto è proprio ciò che react-hooks/set-state-in-effect vieta).
+  useIsoLayoutEffect(() => {
+    if (!booksOpen) return;
+    placeMenu();
+    const onMove = () => placeMenu();
+    window.addEventListener("resize", onMove);
+    // capture: intercetta anche lo scroll dei contenitori interni (.pdm-body),
+    // che non fa bolla sulla window.
+    window.addEventListener("scroll", onMove, true);
+    return () => {
+      window.removeEventListener("resize", onMove);
+      window.removeEventListener("scroll", onMove, true);
+    };
+  }, [booksOpen, placeMenu]);
+
   const renderGroup = (g: MdsGroup) => {
     // Solo nostre predizioni: niente chip "stima" (soft grezzo).
     const chips = g.chips.filter((c) => !c.est);
@@ -206,7 +272,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
       <div className="mds-grph">
         <span className="mds-gt"><MarketIcon name={MARKET_ICON[g.icon] ?? "result"} size={18} className="mds-mkico" />{g.title}</span>
         {g.meta && <span className="mds-gmeta">{g.meta}</span>}
-        <span className={`mds-src ${g.src.kind}`}>{g.src.label}</span>
+        {g.src && <span className={`mds-src ${g.src.kind}`}>{g.src.label}</span>}
       </div>
       <div className="mds-chips">
         {chips.map((c) => {
@@ -348,8 +414,19 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                     {data.labels.placeBet ?? ctaLabel}
                     <span className={booksOpen ? "mds-bchev open" : "mds-bchev"}><Ico id="chev" /></span>
                   </button>
-                  {booksOpen && (
-                    <div className="mds-bmenu" role="menu">
+                  {booksOpen && typeof document !== "undefined" && createPortal(
+                    <div
+                      className="mds-bmenu"
+                      role="menu"
+                      ref={menuRef}
+                      style={{
+                        left: menuPos ? `${menuPos.left}px` : 0,
+                        top: menuPos ? `${menuPos.top}px` : 0,
+                        maxHeight: menuPos ? `${menuPos.maxHeight}px` : undefined,
+                        // finché non è misurato resta invisibile (un frame, pre-paint)
+                        visibility: menuPos ? "visible" : "hidden",
+                      }}
+                    >
                       {sortBooksForMenu(data.books).map((b) => {
                         const logo = partnerLogoByName(b.name);
                         return (
@@ -380,7 +457,8 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                           </a>
                         );
                       })}
-                    </div>
+                    </div>,
+                    document.body,
                   )}
                 </div>
               ) : (
