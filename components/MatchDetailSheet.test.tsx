@@ -41,7 +41,6 @@ function makeData(over: Partial<MdsData> = {}): MdsData {
         key: "result",
         icon: "result",
         title: "Risultato",
-        src: { kind: "fp", label: "FORTUNEPLAY" },
         chips: [{ id: "home", mkt: "1X2", sel: "Henan", prob: "53%", q: 1.73, rec: true }],
       },
     ],
@@ -55,6 +54,30 @@ function makeData(over: Partial<MdsData> = {}): MdsData {
 function openMenu() {
   fireEvent.click(screen.getByRole("button", { name: /Piazza la scommessa/ }));
 }
+
+// #NO-FP-BADGE-0916 — Andrea: via il nome del book dalle righe mercato. Una
+// riga con prezzo non porta più alcuna targhetta; "solo modello" (ambra) resta,
+// perché spiega perché quella riga NON ha un prezzo accanto.
+describe("MatchDetailSheet — nessuna targhetta col nome del book", () => {
+  it("una riga quotata non mostra nessuna pill di sorgente", () => {
+    const { container } = render(<MatchDetailSheet data={makeData()} />);
+    expect(container.querySelector(".mds-src")).toBeNull();
+    expect(container.querySelector(".mds-grph")?.textContent).not.toMatch(/fortuneplay/i);
+  });
+
+  it("la targhetta «solo modello» resta dov'era", () => {
+    const { container } = render(<MatchDetailSheet data={makeData({
+      groups: [{
+        key: "result", icon: "result", title: "Risultato",
+        src: { kind: "est", label: "solo modello" },
+        chips: [{ id: "home", mkt: "1X2", sel: "Henan", prob: "53%", q: null }],
+      }],
+    })} />);
+    const pill = container.querySelector(".mds-src");
+    expect(pill?.className).toContain("est");
+    expect(pill?.textContent).toBe("solo modello");
+  });
+});
 
 describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
   it("mostra UNA sola CTA, non una per partner", () => {
@@ -142,8 +165,7 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
           key: "result",
           icon: "result",
           title: "Risultato",
-          src: { kind: "fp", label: "FORTUNEPLAY" },
-          chips: [{ id: "home", mkt: "1X2", sel: "Henan", prob: "53%", q: 1.73 }],
+            chips: [{ id: "home", mkt: "1X2", sel: "Henan", prob: "53%", q: 1.73 }],
         },
       ],
     });
@@ -176,6 +198,45 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
     expect(screen.queryByRole("button", { name: /Piazza la scommessa/ })).toBeNull();
     const cta = screen.getByText(/Apri su FortunePlay/).closest("a") as HTMLAnchorElement;
     expect(cta.getAttribute("href")).toBe(BOOKS[0].matchUrl);
+  });
+
+  // #BET-MENU-CLIP-0916 — il menu viveva dentro la bet-bar, che sta dentro due
+  // contenitori che ritagliano (`.pdm-body` overflow-y:auto, `.pdm-panel`
+  // overflow:hidden): su una scheda "solo modello" si apriva verso l'alto e
+  // usciva dal pannello, tagliato. Ora è in un portal su `document.body`.
+  it("il menu è montato fuori dalla scheda (portal), non dentro la bet-bar", () => {
+    const { container } = render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    const menu = screen.getByRole("menu");
+    expect(container.contains(menu)).toBe(false); // niente antenato che ritaglia
+    expect(menu.closest(".mds-betbar")).toBeNull();
+    expect(document.body.contains(menu)).toBe(true);
+    // ...e si posiziona da sé sul rect del bottone (la regola `position:fixed`
+    // sta in globals.css, che jsdom non carica: qui si verifica che il
+    // componente CALCOLI davvero le coordinate, non che le disegni).
+    expect(menu.style.left).not.toBe("");
+    expect(menu.style.top).not.toBe("");
+    expect(menu.style.maxHeight).not.toBe("");
+    expect(menu.style.visibility).toBe("visible");
+  });
+
+  // Il portal sposta il menu FUORI dal ref che sorveglia il click-fuori: senza
+  // il secondo controllo, il mousedown su una voce lo chiuderebbe prima del
+  // click e il link affiliato non si aprirebbe più.
+  it("il mousedown su una voce NON chiude il menu prima del click", () => {
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    const voce = screen.getByText("FortunePlay").closest("a") as HTMLAnchorElement;
+    fireEvent.mouseDown(voce);
+    expect(screen.getByRole("menu")).toBeTruthy();
+    expect(screen.getByText("FortunePlay")).toBeTruthy();
+  });
+
+  it("un mousedown davvero fuori chiude il menu", () => {
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 
   it("hideBookLinks (geo bloccata) nasconde CTA e menu", () => {
