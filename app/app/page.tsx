@@ -4220,7 +4220,9 @@ function PlansTab({
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
             {/* #CONVERSION-COPY-0916 (audit §3): «stake suggerito» suona da tipster
                 (un'istruzione); «contesto di stake» è quello che il prodotto dà. */}
-            <PlanFeature>{pick5(lang, { it: "Edge %, contesto di stake, closing line value", en: "Edge %, stake context, closing line value", es: "Edge %, contexto de stake, closing line value", fr: "Edge %, contexte de mise, closing line value", ru: "Edge %, контекст ставки, closing line value" })}</PlanFeature>
+            {/* #CLV-CLAIM-0831: «closing line value» tolto — stesso claim del chip
+                rimosso dalla landing il 31/08, misurato senza dato dietro. */}
+            <PlanFeature>{pick5(lang, { it: "Edge % e contesto di stake", en: "Edge % and stake context", es: "Edge % y contexto de stake", fr: "Edge % et contexte de mise", ru: "Edge % и контекст ставки" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Registro pubblico completo", en: "Full public record", es: "Registro público completo", fr: "Registre public complet", ru: "Полный публичный реестр" })}</PlanFeature>
             <PlanFeature locked>{pick5(lang, { it: "Prediction illimitate e Deep Analysis (→ Pro)", en: "Unlimited predictions and Deep Analysis (→ Pro)", es: "Predicciones ilimitadas y Deep Analysis (→ Pro)", fr: "Prédictions illimitées et Deep Analysis (→ Pro)", ru: "Безлимитные прогнозы и Deep Analysis (→ Pro)" })}</PlanFeature>
           </ul>

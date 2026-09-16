@@ -450,7 +450,9 @@ const V3_EN: V3Copy = {
   // la proiezione gliela toglie) né "tutto il feed" (è a quota): due claim che il
   // prodotto non manteneva.
   pcFreeList: ["3 model readings per sport, every day", "Public pre-kick-off record", "Probability, market price and a preview of the edge", "No card required"],
-  pcBaseList: ["7 model readings per sport, every day", "Full edge %, stake context, closing line value", "Weekly Model Case", "Full public record"],
+  // #CLV-CLAIM-0831: «closing line value» tolto anche dalla lista Base — è lo
+  // stesso claim del chip rimosso il 31/08, misurato senza dato dietro.
+  pcBaseList: ["7 model readings per sport, every day", "Full edge % and stake context", "Weekly Model Case", "Full public record"],
   pcProList: ["Everything in Base, with no daily cap", "Deep analysis on every match card", "Live Probability Board", "Build a Probability View"],
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
   fnNote: "No tips. No black box. No guaranteed returns. You make the call.",
@@ -504,7 +506,7 @@ const V3_IT: V3Copy = {
   pcCtaFree: "Leggi una partita gratis", pcCtaBase: "Inizia con Base", pcCtaPro: "Sblocca Pro",
   pcNote: "Fatturazione mensile · Nessun conto bookmaker richiesto · Nessuna scommessa piazzata per te · Nessun rendimento garantito · 18+",
   pcFreeList: ["3 letture del modello per sport, ogni giorno", "Registro pubblico prima del fischio", "Probabilità, quota di mercato e un’anteprima dell’edge", "Senza carta"],
-  pcBaseList: ["7 letture del modello per sport, ogni giorno", "Edge % completo, contesto di stake, closing line value", "Weekly Model Case", "Registro pubblico completo"],
+  pcBaseList: ["7 letture del modello per sport, ogni giorno", "Edge % completo e contesto di stake", "Weekly Model Case", "Registro pubblico completo"],
   pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep analysis su ogni scheda", "Board di probabilità live", "Costruisci una vista di probabilità"],
   fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una probabilità calibrata, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
   fnNote: "Niente dritte. Niente scatola nera. Nessun rendimento garantito. Decidi tu.",
