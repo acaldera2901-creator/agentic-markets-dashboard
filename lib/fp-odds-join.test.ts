@@ -83,6 +83,55 @@ describe("i confini: il giorno e l'unicita'", () => {
   });
 });
 
+// #ODDS-JOIN-NAMES-0916 — i nomi sono quelli veri del 16/09: a sinistra la
+// fixture come la serve `/api/predictions`, a destra le chiavi del feed partner
+// (`/api/fortuneplay-odds`, 859 voci). Tutte e otto erano nel feed e tutte e
+// otto restavano MODEL ONLY, perche' articoli, sigle di club e traduzioni
+// gonfiavano il denominatore dell'overlap.
+describe("i nomi sporchi non fanno piu' perdere la quota", () => {
+  const casi: Array<[string, string, string, string, string]> = [
+    ["articoli it/es", "RC Deportivo La Coruña", "Sevilla FC", "deportivo de a coruna", "sevilla"],
+    ["articolo + club", "Real Racing Club de Santander", "FC Barcelona", "racing santander", "barcelona"],
+    ["citta' tradotta", "FC Bayern München", "1. FC Union Berlin", "bayern munich", "1. union berlin"],
+    ["sigla in coda + congiunzione", "Central Córdoba (Santiago del Estero)", "Defensa y Justicia", "central cordoba sde", "csd defensa y justicia"],
+    ["sigla in testa", "OH Leuven", "RAAL La Louvière", "oud-heverlee leuven", "raal la louviere"],
+    ["sigla in testa (2)", "Austria Lustenau", "Rheindorf Altach", "austria lustenau", "scr altach"],
+    ["nome di club diverso", "AS Roma", "FC Internazionale Milano", "roma", "inter milan"],
+    ["sigla = nome del club", "TPS Turku", "Ilves Tampere", "turun palloseura", "ilves"],
+  ];
+  for (const [perche, h, a, fh, fa] of casi) {
+    it(`${perche}: ${h} v ${a}`, () => {
+      const q = mappa("2026-09-18", voce(fh, fa));
+      const e = abbina(h, a, "2026-09-18T18:00:00Z", q);
+      expect(e.quota, `nessuna quota per ${h} v ${a}`).not.toBeNull();
+    });
+  }
+});
+
+describe("ripulire i nomi non abbassa la barra", () => {
+  it("non abbina il Milan all'Inter (sottostringa, non token)", () => {
+    // "milan" e' SOTTOSTRINGA di "milano": un confronto a stringa abbinerebbe.
+    const q = mappa("2026-09-18", voce("inter milan", "napoli"));
+    expect(abbina("AC Milan", "SSC Napoli", "2026-09-18T18:00:00Z", q).quota).toBeNull();
+  });
+
+  it("non abbina due squadre della stessa citta' dopo la pulizia", () => {
+    const q = mappa("2026-09-18", voce("manchester city", "arsenal"));
+    expect(abbina("Manchester United FC", "Arsenal FC", "2026-09-18T18:00:00Z", q).quota).toBeNull();
+  });
+
+  it("non attacca la quota della partita femminile alla maschile", () => {
+    // caso reale del 19/09: il feed aveva solo `ifk goteborg (wom)`.
+    const q = mappa("2026-09-19", voce("kif orebro dff (wom)", "ifk goteborg (wom)"));
+    expect(abbina("KIF Orebro", "IFK Goteborg", "2026-09-19T14:00:00Z", q).quota).toBeNull();
+  });
+
+  it("le squadre assenti dal feed restano senza quota, non inventata", () => {
+    const q = mappa("2026-09-18", voce("stade reims", "montpellier"));
+    expect(abbina("Stade Laval", "Sochaux", "2026-09-18T18:00:00Z", q).quota).toBeNull();
+  });
+});
+
 describe("indicizzaPerGiorno", () => {
   it("raggruppa per data e scarta chiavi malformate", () => {
     const q: Record<string, Voce> = {
