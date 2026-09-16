@@ -9655,6 +9655,14 @@ button:disabled {
 .hv3 .v-final p.v-final-note{margin:22px auto 0;font-family:var(--v-mono);font-size:11px;letter-spacing:.06em;color:var(--v-muted2)} /* specificità ≥ di `.hv3 .v-final p`, altrimenti resta un lede a 16px */
 /* B2B (editori): un'altra porta, staccata dal percorso consumer */
 .hv3 .v-b2b{border-top:1px solid var(--v-line2);background:var(--v-panel)} /* --v-bg2 era indistinguibile dal fondo (misurato: 3 punti di luminanza) */
+/* #CONVERSION-FAQ-0916 — FAQ: <dl> a due colonne, filetti, tutto visibile.
+   Stessa riga di registro di .v-notes, allargata: domanda 700 a sinistra,
+   risposta muted a destra con measure in ch. Niente accordion, niente icone. */
+.hv3 .v-faq{margin:0;border-bottom:1px solid var(--v-line)}
+.hv3 .v-faq .row{display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(16px,4vw,48px);align-items:start;padding:clamp(18px,2.6vw,26px) 0;border-top:1px solid var(--v-line)}
+.hv3 .v-faq dt{margin:0;font-weight:700;font-size:clamp(16px,1.7vw,19px);letter-spacing:-.01em;line-height:1.35;color:var(--v-text)}
+.hv3 .v-faq dd{margin:0;color:var(--v-muted);font-size:14.5px;line-height:1.55;max-width:62ch}
+@media(max-width:760px){.hv3 .v-faq .row{grid-template-columns:1fr;gap:8px}}
 /* ── end #HOME-V3 ── */
 
 /* ═══════════════════════════════════════════════════════════════════════════
