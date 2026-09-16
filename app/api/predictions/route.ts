@@ -929,7 +929,15 @@ export async function GET(req: Request) {
   // guardia non toglieva nulla), 98 distinte per identità della partita.
   // Ora la chiave è `teamPairKey` e vince la riga più fresca. Fail-open: se
   // l'identità non si calcola, la riga resta. Vedi lib/dedupe-fixtures.ts.
-  const predictions_raw = dedupeByFixture([...primaryNonWc, ...fallbackNonWc, ...fallbackWc]).slice(0, BOARD_ROWS);
+  // #DUP-SAMESLOT-0916 — la regola dei nomi non copre i club che le due fonti
+  // chiamano in modo non riconducibile ("Stade Laval" da ESPN, "Stade
+  // Lavallois" da Odds API: stessa Ligue 2, stesso calcio d'inizio al secondo,
+  // stesso avversario). `competizione` attiva la regola dello slot, che le
+  // fonde senza una lista di alias — solo qui, dove le due fonti convivono.
+  const predictions_raw = dedupeByFixture(
+    [...primaryNonWc, ...fallbackNonWc, ...fallbackWc],
+    { competizione: (r) => r.league },
+  ).slice(0, BOARD_ROWS);
 
   const computedAt = predictions_raw.length
     ? predictions_raw.reduce<string | null>(

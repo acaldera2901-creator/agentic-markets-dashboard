@@ -248,3 +248,58 @@ describe("dedupeByFixture — lettere non decomponibili e numeri nel nome", () =
     expect(out).toHaveLength(2);
   });
 });
+
+// #DUP-SAMESLOT-0916 — QA del 16/09: la stessa partita di Ligue 2 compariva due
+// volte, "Stade Laval v Sochaux" (ESPN) e "Stade Lavallois v Sochaux" (Odds
+// API). La regola dei nomi non le fonde e ha ragione: "laval" e "lavallois" non
+// sono in relazione di sottoinsieme. Le fonde il calendario — stessa
+// competizione, stesso calcio d'inizio al secondo, una squadra in comune.
+describe("la regola dello slot (#DUP-SAMESLOT-0916)", () => {
+  const riga = (league: string, home: string, away: string, id: string, at: string) => ({
+    league, home_team: home, away_team: away,
+    kickoff: "2026-09-18T18:00:00+00:00", match_id: id, computed_at: at,
+  });
+
+  it("fonde Stade Laval e Stade Lavallois, tenendo la piu' fresca", () => {
+    const rows = [
+      riga("FL2", "Stade Laval", "Sochaux", "espn:401876741", "2026-09-15T12:00:00Z"),
+      riga("FL2", "Stade Lavallois", "Sochaux", "oddsapi:7493c9", "2026-09-16T06:00:00Z"),
+    ];
+    const out = dedupeByFixture(rows, { competizione: (r) => r.league });
+    expect(out).toHaveLength(1);
+    expect(out[0].match_id).toBe("oddsapi:7493c9");
+  });
+
+  it("senza `competizione` la regola NON si attiva: storico ed embed restano com'erano", () => {
+    const rows = [
+      riga("FL2", "Stade Laval", "Sochaux", "espn:401876741", "2026-09-15T12:00:00Z"),
+      riga("FL2", "Stade Lavallois", "Sochaux", "oddsapi:7493c9", "2026-09-16T06:00:00Z"),
+    ];
+    expect(dedupeByFixture(rows)).toHaveLength(2);
+  });
+
+  it("NON fonde Dundee FC con Dundee United: due club, due partite vere", () => {
+    // col sottoinsieme al posto dell'uguaglianza questa partita spariva dal board
+    const rows = [
+      riga("SCO", "Dundee FC", "Motherwell", "oddsapi:2ef6c3", "2026-09-16T06:00:00Z"),
+      riga("SCO", "St Mirren", "Dundee United", "oddsapi:27d03c", "2026-09-16T06:00:00Z"),
+    ];
+    expect(dedupeByFixture(rows, { competizione: (r) => r.league })).toHaveLength(2);
+  });
+
+  it("NON fonde due competizioni diverse allo stesso orario", () => {
+    const rows = [
+      riga("PD", "Albacete", "Córdoba", "espn:a", "2026-09-16T06:00:00Z"),
+      riga("ARG", "Córdoba", "Defensa y Justicia", "espn:b", "2026-09-16T06:00:00Z"),
+    ];
+    expect(dedupeByFixture(rows, { competizione: (r) => r.league })).toHaveLength(2);
+  });
+
+  it("NON fonde due turni della stessa competizione nello stesso giorno", () => {
+    const rows = [
+      { ...riga("FL2", "Stade Laval", "Sochaux", "espn:a", "2026-09-16T06:00:00Z"), kickoff: "2026-09-18T16:00:00+00:00" },
+      { ...riga("FL2", "Stade Lavallois", "Pau", "oddsapi:b", "2026-09-16T06:00:00Z"), kickoff: "2026-09-18T20:00:00+00:00" },
+    ];
+    expect(dedupeByFixture(rows, { competizione: (r) => r.league })).toHaveLength(2);
+  });
+});
