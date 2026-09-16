@@ -14,7 +14,7 @@ import {
   computeGoalsSummary,
   blendWithMarket,
   devig1x2,
-  MARKET_BLEND_ALPHA,
+  blendAlphaFor,
   MatchResult,
   modelPoolIsCoherent,
 } from "@/lib/poisson-model";
@@ -508,8 +508,10 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       const marketDevig = odds
         ? devig1x2(odds.oddsHome, odds.oddsDraw, odds.oddsAway)
         : null;
-      const served = blendWithMarket(modelProbs, marketDevig);
-      const blendAlpha = marketDevig ? MARKET_BLEND_ALPHA : null;
+      // #BLEND-ALPHA-0914: peso per lega (0 dove il modello fa danno misurato).
+      const alphaLega = blendAlphaFor(code);
+      const served = blendWithMarket(modelProbs, marketDevig, alphaLega);
+      const blendAlpha = marketDevig ? alphaLega : null;
       probs.pHome = served.pHome;
       probs.pDraw = served.pDraw;
       probs.pAway = served.pAway;
