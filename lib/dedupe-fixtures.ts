@@ -182,7 +182,52 @@ type DedupeOpts<T> = {
   freshness?: (r: T) => string | null | undefined;
   /** parte extra della chiave: mercato, sport… — default nessuna */
   extra?: (r: T) => string;
+  /** #DUP-SAMESLOT-0916 — la competizione della riga (es. "FL2"). Se c'è,
+   *  si attiva la regola dello SLOT: vedi `stessoSlot` più sotto. Opt-in, e
+   *  non a caso: la usa solo il board, dove le due fonti convivono. Lo storico
+   *  e il feed embed restano sulla regola dei nomi, che è più stretta. */
+  competizione?: (r: T) => string | null | undefined;
 };
+
+// ─── Terza regola, OPT-IN: lo SLOT ───────────────────────────────────────────
+// #DUP-SAMESLOT-0916 — misurato il 16/09 sulle 120 righe servite: `Stade Laval
+// v Sochaux` (fonte espn:401876741) e `Stade Lavallois v Sochaux` (fonte
+// oddsapi:7493c980…), stessa Ligue 2, stesso calcio d'inizio al secondo. La
+// regola dei nomi non le fonde, e ha ragione lei: "laval" e "lavallois" non
+// sono in relazione di sottoinsieme, e inventare un alias per ogni club scritto
+// in due modi è la lista a mano che questo file evita apposta.
+//
+// Quello che le fonde senza alias è un vincolo del calendario: alla STESSA ora
+// esatta, nella STESSA competizione, un club gioca UNA partita. Se una delle
+// due squadre combacia, l'altra è lo stesso club scritto diversamente.
+//
+// Le tre condizioni servono tutte e tre. Senza la competizione, «Albacete v
+// Córdoba» (Segunda) e «Central Córdoba v Defensa y Justicia» (Argentina) si
+// fonderebbero: `stessaSquadra` vede "córdoba" ⊂ "central córdoba", e una
+// partita vera sparirebbe dal board. Senza l'ora esatta resterebbe il giorno,
+// che nella stessa competizione contiene più turni infrasettimanali.
+//
+// E la squadra in comune si riconosce per UGUAGLIANZA dei token, non per
+// sottoinsieme come nel passaggio lasco. Misurato il 16/09 provando prima col
+// sottoinsieme: «Dundee FC v Motherwell» si fondeva con «St Mirren v Dundee
+// United» — stessa Premiership, stesso calcio d'inizio, e "dundee" ⊂ "dundee
+// united". Due club diversi della stessa città, e una partita vera sparita dal
+// board. L'uguaglianza le distingue ({dundee} ≠ {dundee, united}) e copre
+// comunque tutte le 13 coppie doppie dei dati veri, perché la squadra che le
+// due fonti scrivono uguale è sempre almeno una delle due.
+function stessoClub(a: string, b: string): boolean {
+  const x = tokenSquadra(a);
+  const y = tokenSquadra(b);
+  if (!x.length || x.length !== y.length) return false;
+  return [...x].sort().join(" ") === [...y].sort().join(" ");
+}
+
+function stessoSlot(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false; // ora sconosciuta → fail-open, nessuna fusione
+  const ta = Date.parse(a);
+  const tb = Date.parse(b);
+  return Number.isFinite(ta) && ta === tb;
+}
 
 export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpts<T> = {}): T[] {
   const winner = new Map<string, number>();
@@ -238,7 +283,18 @@ export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpt
       const rovescio =
         stessaSquadra(ci.home_team ?? "", cj.away_team ?? "") &&
         stessaSquadra(ci.away_team ?? "", cj.home_team ?? "");
-      if (!diritto && !rovescio) continue;
+      // #DUP-SAMESLOT-0916: stessa competizione, stesso calcio d'inizio al
+      // secondo, UNA delle due squadre in comune → è lo stesso incontro.
+      const slot =
+        opts.competizione !== undefined &&
+        !!opts.competizione(ci) &&
+        opts.competizione(ci) === opts.competizione(cj) &&
+        stessoSlot(opts.when ? opts.when(ci) : ci.kickoff, opts.when ? opts.when(cj) : cj.kickoff) &&
+        (stessoClub(ci.home_team ?? "", cj.home_team ?? "") ||
+          stessoClub(ci.away_team ?? "", cj.away_team ?? "") ||
+          stessoClub(ci.home_team ?? "", cj.away_team ?? "") ||
+          stessoClub(ci.away_team ?? "", cj.home_team ?? ""));
+      if (!diritto && !rovescio && !slot) continue;
       // vince la più fresca; a parità la prima, così l'ordine è stabile
       if (fresh(cj) > fresh(ci)) keep[i] = false;
       else keep[j] = false;
