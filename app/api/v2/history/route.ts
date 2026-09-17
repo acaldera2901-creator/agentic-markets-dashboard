@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
+import { edgeTally, EDGE_MIN_CONFIDENCE } from "@/lib/track-record";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
@@ -209,6 +210,11 @@ export async function GET(req: Request) {
   const won      = rows.filter((r) => r.result === "won").length;
   const lost     = rows.filter((r) => r.result === "lost").length;
   const paper    = rows.filter((r) => r.is_paper).length;
+  // #EDGE-SELETTIVITA-0917 — additivo: l'headline NON cambia. Qui si affianca
+  // la sola parte su cui dichiariamo un vantaggio (confidenza >= 62), con il
+  // suo n e la sua quota di volume. Quale dei due numeri vada in testa alla
+  // pagina e' una decisione di prodotto, non una che si prende in una route.
+  const edge     = edgeTally(rows);
   const verified = rows.filter((r) => r.is_verified).length;
 
   // Aggregati opzionali (solo se richiesti) — calcolati sulle stesse righe surfaced.
@@ -256,6 +262,13 @@ export async function GET(req: Request) {
         ? `${((won / decisi) * 100).toFixed(1)}%`
         : null,
       win_rate_display: sufficiente ? formatWilson(w) : null,
+      edge: {
+        ...edge,
+        min_confidence: EDGE_MIN_CONFIDENCE,
+        // La percentuale del RESTO, accanto a quella dell'Edge: senza, il
+        // confronto non e' verificabile da chi legge la risposta.
+        rest_n: decisi - edge.n,
+      },
       insufficient_sample_reason: sufficiente
         ? null
         : `campione insufficiente: ${decisi} esiti verificati su un minimo di ${MIN_SAMPLE}`,
