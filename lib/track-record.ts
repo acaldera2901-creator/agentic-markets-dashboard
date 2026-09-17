@@ -31,3 +31,76 @@ export function isRateMeaningful(decided: number): boolean {
 //
 // Quindi: un segmento con 20 esiti mostra la sua percentuale, l'headline no.
 // Se una delle due va cambiata, si cambia con una decisione, non per simmetria.
+
+// ─── #EDGE-SELETTIVITA-0917 ──────────────────────────────────────────────────
+//
+// LA TERZA SOGLIA, e non e' della stessa famiglia delle due qui sopra: quelle
+// dicono QUANDO una percentuale si puo' pubblicare, questa dice SU QUALI PICK
+// si puo' dire «Edge».
+//
+// Il fatto che la rende necessaria. #PICK-SEMPRE-0911 ha spento i floor: ogni
+// partita porta una pick, e il track record e' passato da 65,1% a 59,6%. Non e'
+// un peggioramento del modello — e' un cambio di popolazione. Misurato il 17/09
+// sulle righe pubblicate (2.880 dopo dedup, letture read-only):
+//
+//   confidenza   [0,50)  40,7% · [50,56) 57,0% · [56,62) 60,1%
+//                [62,70) 63,0% · [70,80) 69,9% · [80,100] 86,5%
+//
+// La monotonia regge sul DATO LIVE, non su un backtest: e' la stessa cosa che
+// il lab aveva trovato il 08/06 (calibrazione + selettivita'), qui confermata su
+// quello che abbiamo davvero servito. Alla soglia 62:
+//
+//   football  >=62: 77,0% (n=204)  ·  <62: 44,7% (n=996)   → +32,3 punti
+//   tennis    >=62: 69,2% (n=951)  ·  <62: 60,6% (n=513)   →  +8,6 punti
+//
+// PERCHE' 62 E NON UN ALTRO NUMERO: e' il floor gia' deciso e gia' scritto per
+// il tennis di alta fascia e per la UEFA Nations League in lib/surfacing-gate.ts
+// (SURFACE_FLOOR_TENNIS, SURFACE_FLOOR_NATIONS_UEFA). Non si inventa una soglia
+// nuova per una nuova etichetta: se ne riusa una che qualcuno ha gia' deciso, o
+// fra un mese ce ne sono tre che nessuno sa piu' distinguere.
+//
+// PROBABILITY-NEUTRAL: questa soglia NON filtra cosa si serve e non tocca
+// nessuna probabilita'. Separa soltanto, dentro il track record, le pick su cui
+// dichiariamo un vantaggio da quelle che pubblichiamo comunque.
+export const EDGE_MIN_CONFIDENCE = 62;
+
+export function isEdgePick(confidence: number | null | undefined): boolean {
+  return typeof confidence === "number"
+    && Number.isFinite(confidence)
+    && confidence >= EDGE_MIN_CONFIDENCE;
+}
+
+export type EdgeTally = {
+  /** Pick con confidenza >= EDGE_MIN_CONFIDENCE e un esito. */
+  n: number;
+  won: number;
+  lost: number;
+  /** Quota di volume: quante delle pick decise portano l'etichetta. */
+  share: number | null;
+  /** null sotto MIN_DECIDED_FOR_RATE: una percentuale su 4 esiti non e' un dato. */
+  win_rate: number | null;
+};
+
+/**
+ * Conta le pick «Edge» fra righe gia' filtrate (mostrate + verificate).
+ *
+ * Funzione pura. Una riga senza confidenza NON e' Edge: l'assenza del dato non
+ * si legge come se fosse sopra soglia — fail-closed, come il resto del gate.
+ */
+export function edgeTally(
+  rows: { result?: string | null; confidence_score?: number | null }[]
+): EdgeTally {
+  const decise = rows.filter((r) => r.result === "won" || r.result === "lost");
+  const edge = decise.filter((r) => isEdgePick(r.confidence_score));
+  const won = edge.filter((r) => r.result === "won").length;
+  const lost = edge.length - won;
+  return {
+    n: edge.length,
+    won,
+    lost,
+    share: decise.length > 0 ? Number((edge.length / decise.length).toFixed(3)) : null,
+    win_rate: isRateMeaningful(edge.length)
+      ? Number(((won / edge.length) * 100).toFixed(1))
+      : null,
+  };
+}
