@@ -74,11 +74,31 @@ export type LandingPartner = { name: string; url: string };
 // /fi/registration, CH → /registration (landing di default).
 // Decisione Andrea (31/07): **nessun fallback** su un mid di un'altra geo → il
 // partner esiste SOLO in questi paesi. Aggiungerne uno = una riga qui.
+// ^ ROVESCIATA il 17/09, vedi CASEA_FALLBACK_URL qui sotto.
 export const CASEA_GEO_URLS: Record<string, string> = {
   NO: "https://csa.lynmonkel.com/?mid=383451_2222324",
   CH: "https://csa.lynmonkel.com/?mid=383451_2222327",
   FI: "https://csa.lynmonkel.com/?mid=383451_2222329",
 };
+
+// #CASEA-ALWAYS-0917 (17/09, decisione esplicita di Andrea) — ATTENZIONE, LEGGERE
+// PRIMA DI TOCCARE: questo NON è un link neutro di Casea. Un link neutro non
+// esiste: il partner ci ha dato tre `mid`, e ogni `mid` È una campagna SEO di un
+// paese preciso. Questo è il mid SVIZZERO usato **deliberatamente come fallback**
+// per tutte le geo che un mid loro non ce l'hanno.
+// Perché proprio il CH e non NO/FI: è l'unico dei tre la cui destinazione non è
+// localizzata. Verificato con curl oggi 17/09, i tre tracker rispondono 302 su:
+//   NO 2222324 → ca52ea.com/no/registration
+//   CH 2222327 → ca52ea.com/registration      ← nessun prefisso di lingua
+//   FI 2222329 → ca52ea.com/fi/registration
+// Quindi un utente italiano o spagnolo atterra sulla registration di default,
+// non su una pagina in norvegese.
+// COSTO ACCETTATO, non un bug: fuori da NO/CH/FI l'attribuzione arriva a Casea
+// taggata come traffico della campagna svizzera. Andrea ha scelto «meglio
+// mostrarlo funzionante che non mostrarlo». Se un giorno la rete ci dà un mid
+// neutro (o uno per le altre geo), si sostituisce QUI e in CASEA_GEO_URLS — non
+// si aggiunge un terzo posto.
+export const CASEA_FALLBACK_URL = CASEA_GEO_URLS.CH;
 
 // #PARTNERS-N1-0915 — rete N1 Partners (RollXO, Hollywin, N1 Bet). Terza forma di
 // geo, distinta dalle due già in casa: Casea ha un mid DIVERSO per paese (mappa
@@ -96,12 +116,14 @@ export const CASEA_GEO_URLS: Record<string, string> = {
 // come gli altri solo-landing si atterra sulla welcome-page, non sul prematch.
 //
 // #GEO-PARTNERS-ALWAYS-0917 (17/09, richiesta esplicita di Andrea) — la restrizione
-// geo sul menu "Piazza la scommessa" è RIMOSSA: `landingPartnersFor` include questi
-// quattro in OGNI geo, come le voci di LANDING_PARTNERS. Il commento sopra resta
-// perché documenta da dove viene il deal e cosa fu misurato il 15/09; quello che è
-// cambiato è la decisione commerciale, non i fatti. Il campo `geos` NON si cancella:
-// (a) è il perimetro originale del deal, (b) resta la fonte di `geoUrlsOf`, cioè
-// della vetrina /partners — che per ora continua a rispettarlo (vedi lib/partners).
+// geo è RIMOSSA su TUTTE le superfici: il menu "Piazza la scommessa"
+// (`landingPartnersFor`) e, dal secondo giro dello stesso giorno, anche la vetrina
+// /partners e la riga loghi del footer (`lib/partners`, via `landingUrlOf`). Il
+// commento sopra resta perché documenta da dove viene il deal e cosa fu misurato il
+// 15/09; quello che è cambiato è la decisione commerciale, non i fatti.
+// Il campo `geos` NON si cancella ma da oggi **nessuna superficie lo legge**: è la
+// memoria del perimetro originale del deal, cioè la riga da cui ripartire se Andrea
+// lo reintroduce o se una rete ce lo impone. Non aggiungerci logica senza dirlo qui.
 export const GEO_LANDING_PARTNERS: readonly { name: string; url: string; geos: readonly string[] }[] = [
   { name: "RollXO", url: "https://rollxo.media/n1xqevdiuw", geos: ["NO", "DE", "AT", "CH"] },
   { name: "Hollywin", url: "https://hollywin.media/n1fy3vie5j", geos: ["NO", "DE", "AT", "CH"] },
@@ -122,23 +144,25 @@ export const GEO_LANDING_PARTNERS: readonly { name: string; url: string; geos: r
   { name: "Stonevegas", url: "https://stnvgs.pleotra.com/?mid=389978_2246288", geos: ["NO", "DE", "AT", "CH"] },
 ] as const;
 
-// Le geo di un partner N1 come mappa cc→url, per chi (lib/partners) consuma
-// `geoUrls`. Qui si rilegge, non si duplica: la fonte resta GEO_LANDING_PARTNERS.
-export function geoUrlsOf(name: string): Record<string, string> {
-  const p = GEO_LANDING_PARTNERS.find((x) => x.name === name);
-  return p ? Object.fromEntries(p.geos.map((g) => [g, p.url])) : {};
+// #GEO-PARTNERS-ALWAYS-0917 — l'unico tracking link di un partner di questa
+// famiglia, valido ovunque. Sostituisce `geoUrlsOf` (che ne derivava una mappa
+// cc→url dal perimetro `geos`): la vetrina /partners non filtra più per geo, quindi
+// una mappa per paese non ha più un consumatore. Qui si rilegge, non si duplica: la
+// fonte resta GEO_LANDING_PARTNERS.
+export function landingUrlOf(name: string): string | undefined {
+  return GEO_LANDING_PARTNERS.find((x) => x.name === name)?.url;
 }
 
 // Partner solo-landing da mostrare in una geo: le voci a link unico (LANDING_PARTNERS
-// + GEO_LANDING_PARTNERS) più quelle con un link PER PAESE, col link del paese.
+// + GEO_LANDING_PARTNERS) più Casea, che è l'unica con un link PER PAESE.
 // `country` viene SEMPRE da /api/geo-books (header server-side, non falsificabile
-// dal client).
-// FAIL-CLOSED dove serve ancora: chi non ha un link neutro (Casea) resta fuori se il
-// paese è ignoto o scoperto. Chi un link neutro ce l'ha, c'è sempre — vedi
-// #GEO-PARTNERS-ALWAYS-0917 sopra.
+// dal client) e serve ormai a una cosa sola: scegliere il mid giusto per Casea.
+// NON è più fail-closed: #GEO-PARTNERS-ALWAYS-0917 ha tolto il filtro geo ai quattro
+// NO+DACH e #CASEA-ALWAYS-0917 ha dato a Casea un fallback. Geo ignota o scoperta →
+// l'elenco è comunque completo, solo con il link di default di Casea.
 export function landingPartnersFor(country: string | null | undefined): LandingPartner[] {
   const cc = (country ?? "").trim().toUpperCase();
-  const casea = cc ? CASEA_GEO_URLS[cc] : undefined;
+  const casea = (cc ? CASEA_GEO_URLS[cc] : undefined) ?? CASEA_FALLBACK_URL;
   const n1 = GEO_LANDING_PARTNERS.map(({ name, url }) => ({ name, url }));
-  return [...LANDING_PARTNERS, ...n1, ...(casea ? [{ name: "Casea", url: casea }] : [])];
+  return [...LANDING_PARTNERS, ...n1, { name: "Casea", url: casea }];
 }
