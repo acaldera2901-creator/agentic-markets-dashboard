@@ -94,6 +94,14 @@ export const CASEA_GEO_URLS: Record<string, string> = {
 // non fa parte del link), l'id-campagna no: 188919 per RollXO e N1 Bet, 190219
 // per Hollywin. `tr_src=seo` è aggiunto dal tracker. Nessun deep-link per evento:
 // come gli altri solo-landing si atterra sulla welcome-page, non sul prematch.
+//
+// #GEO-PARTNERS-ALWAYS-0917 (17/09, richiesta esplicita di Andrea) — la restrizione
+// geo sul menu "Piazza la scommessa" è RIMOSSA: `landingPartnersFor` include questi
+// quattro in OGNI geo, come le voci di LANDING_PARTNERS. Il commento sopra resta
+// perché documenta da dove viene il deal e cosa fu misurato il 15/09; quello che è
+// cambiato è la decisione commerciale, non i fatti. Il campo `geos` NON si cancella:
+// (a) è il perimetro originale del deal, (b) resta la fonte di `geoUrlsOf`, cioè
+// della vetrina /partners — che per ora continua a rispettarlo (vedi lib/partners).
 export const GEO_LANDING_PARTNERS: readonly { name: string; url: string; geos: readonly string[] }[] = [
   { name: "RollXO", url: "https://rollxo.media/n1xqevdiuw", geos: ["NO", "DE", "AT", "CH"] },
   { name: "Hollywin", url: "https://hollywin.media/n1fy3vie5j", geos: ["NO", "DE", "AT", "CH"] },
@@ -121,15 +129,16 @@ export function geoUrlsOf(name: string): Record<string, string> {
   return p ? Object.fromEntries(p.geos.map((g) => [g, p.url])) : {};
 }
 
-// Partner solo-landing da mostrare in una geo: le voci fisse (link unico) più
-// quelle geo-ristrette, col link del paese. `country` viene SEMPRE da
-// /api/geo-books (header server-side, non falsificabile dal client).
-// FAIL-CLOSED come il resto del gate: paese ignoto o senza link → la voce non c'è.
+// Partner solo-landing da mostrare in una geo: le voci a link unico (LANDING_PARTNERS
+// + GEO_LANDING_PARTNERS) più quelle con un link PER PAESE, col link del paese.
+// `country` viene SEMPRE da /api/geo-books (header server-side, non falsificabile
+// dal client).
+// FAIL-CLOSED dove serve ancora: chi non ha un link neutro (Casea) resta fuori se il
+// paese è ignoto o scoperto. Chi un link neutro ce l'ha, c'è sempre — vedi
+// #GEO-PARTNERS-ALWAYS-0917 sopra.
 export function landingPartnersFor(country: string | null | undefined): LandingPartner[] {
   const cc = (country ?? "").trim().toUpperCase();
   const casea = cc ? CASEA_GEO_URLS[cc] : undefined;
-  const n1 = cc
-    ? GEO_LANDING_PARTNERS.filter((p) => p.geos.includes(cc)).map(({ name, url }) => ({ name, url }))
-    : [];
+  const n1 = GEO_LANDING_PARTNERS.map(({ name, url }) => ({ name, url }));
   return [...LANDING_PARTNERS, ...n1, ...(casea ? [{ name: "Casea", url: casea }] : [])];
 }

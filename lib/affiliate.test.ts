@@ -51,29 +51,33 @@ describe("landingPartnersFor(country)", () => {
     }
   });
 
-  // #PARTNERS-N1-0915 — i tre partner N1 hanno UN link valido su PIÙ geo (NO+DACH),
-  // non un link per paese come Casea. L'invariante è la stessa: fuori dal perimetro
-  // del deal non devono comparire, perché lì non abbiamo un link da aprire.
-  it("i partner N1 compaiono in ogni geo del deal, con l'unico link della rete", () => {
-    for (const p of GEO_LANDING_PARTNERS) {
-      for (const cc of p.geos) {
+  // #PARTNERS-N1-0915 → #GEO-PARTNERS-ALWAYS-0917 (17/09, Andrea) — questi quattro
+  // hanno UN link valido ovunque, non un link per paese come Casea: le `geos` erano
+  // il perimetro COMMERCIALE del deal, e Andrea l'ha tolto. Il test che presidiava
+  // l'esclusione fuori NO+DACH ora presidia l'opposto — la stessa invariante di
+  // Beazt/Wildz: chi ha un link neutro sta nel menu in ogni geo, anche ignota.
+  it("i partner a link unico compaiono in OGNI geo, con l'unico link della rete", () => {
+    for (const cc of ["NO", "DE", "AT", "CH", "IT", "ES", "FI", "CA", "GB", "", null, undefined]) {
+      for (const p of GEO_LANDING_PARTNERS) {
         const found = landingPartnersFor(cc).find((x) => x.name === p.name);
-        expect(found, `${p.name} manca in ${cc}`).toBeDefined();
+        expect(found, `${p.name} manca in ${String(cc)}`).toBeDefined();
         expect(found?.url).toBe(p.url);
       }
     }
   });
 
-  it("i partner N1 NON compaiono fuori dal deal, né a geo ignota (fail-closed)", () => {
-    for (const cc of ["IT", "FI", "CA", "GB", "", null, undefined]) {
-      for (const p of GEO_LANDING_PARTNERS) {
-        expect(namesIn(cc), `${p.name} non deve comparire in ${String(cc)}`).not.toContain(p.name);
-      }
+  // Il caso della richiesta di Andrea, scritto per nome: una geo mai coperta dal deal
+  // deve vedere tutti e quattro nel menu.
+  it("in IT e ES ci sono RollXO, Hollywin, N1 Bet, Stonevegas", () => {
+    for (const cc of ["IT", "ES"]) {
+      expect(namesIn(cc)).toEqual(expect.arrayContaining(["RollXO", "Hollywin", "N1 Bet", "Stonevegas"]));
     }
   });
 
-  // `geoUrls` in lib/partners è derivato da qui: se divergesse, la vetrina mostrerebbe
-  // il partner in una geo dove il menu scommessa non ce l'ha (o viceversa).
+  // `geoUrls` in lib/partners è derivato da qui. #GEO-PARTNERS-ALWAYS-0917: da oggi
+  // le due superfici DIVERGONO di proposito — il menu li mostra ovunque, la vetrina
+  // /partners resta sul perimetro del deal finché Andrea non decide anche per quella.
+  // `geos` è la fonte di quella seconda superficie e deve restare esatta.
   it("geoUrlsOf copre esattamente le geo del deal, con lo stesso url", () => {
     for (const p of GEO_LANDING_PARTNERS) {
       expect(Object.keys(geoUrlsOf(p.name)).sort()).toEqual([...p.geos].sort());
@@ -82,11 +86,14 @@ describe("landingPartnersFor(country)", () => {
     expect(geoUrlsOf("Nessuno")).toEqual({});
   });
 
-  it("non duplica né perde voci: NO = fisse + Casea + N1, geo scoperta = fisse", () => {
-    const n1In = (cc: string) => GEO_LANDING_PARTNERS.filter((p) => (p.geos as readonly string[]).includes(cc)).length;
-    expect(landingPartnersFor("NO")).toHaveLength(LANDING_PARTNERS.length + 1 + n1In("NO"));
-    expect(landingPartnersFor("AT")).toHaveLength(LANDING_PARTNERS.length + n1In("AT"));
-    expect(landingPartnersFor("IT")).toHaveLength(LANDING_PARTNERS.length);
+  // #GEO-PARTNERS-ALWAYS-0917: l'unica voce che ancora dipende dalla geo è Casea.
+  // Tutto il resto è una costante: fisse + quelle a link unico, in ogni paese.
+  it("non duplica né perde voci: NO = fisse + link-unico + Casea, IT = fisse + link-unico", () => {
+    const base = LANDING_PARTNERS.length + GEO_LANDING_PARTNERS.length;
+    expect(landingPartnersFor("NO")).toHaveLength(base + 1);
+    expect(landingPartnersFor("AT")).toHaveLength(base);
+    expect(landingPartnersFor("IT")).toHaveLength(base);
+    expect(landingPartnersFor("")).toHaveLength(base);
     expect(new Set(namesIn("NO")).size).toBe(namesIn("NO").length);
   });
 
