@@ -2,14 +2,24 @@
 S7 — Asian Handicap Collector.
 
 Polls Pinnacle or SBOBet every 60s for AH lines/odds.
-Stores results in Redis stream `ah:odds` and optionally to DB.
+Stores results in Redis stream `ah:odds` AND in `ah_odds_history`.
+
+#AH-PERSISTENZA-0917 — il «optionally to DB» di questo docstring e' stato per
+mesi una promessa non mantenuta: nel file non c'era nessuna scrittura, e lo
+stream `ah:odds` non ha mai avuto un consumatore (l'unico `consume()` del repo
+e' la sua definizione in core/redis_client.py). Quindi l'handicap di un book
+sharp veniva interrogato ogni 60 secondi e buttato via. Ora si persiste — a
+cadenza propria, molto piu' lenta del loop, e solo cio' che e' agganciabile a
+una partita.
 """
 import asyncio
 import json
+import time as _time_mod
 from datetime import datetime, timezone
 import httpx
 from agents.base import BaseAgent
 from core.redis_client import publish
+from core.ah_history import scrivi_storia_ah
 from config.settings import settings
 
 
@@ -17,6 +27,15 @@ class AHCollectorAgent(BaseAgent):
     """Polls Asian Handicap odds from Pinnacle (preferred) or SBOBet."""
 
     POLL_INTERVAL = 60  # seconds
+
+    # La persistenza NON segue il loop. A 60s si scriverebbero ~1.400 giri al
+    # giorno per evento: per leggere un movimento di linea non serve, e una
+    # tabella che non si riesce piu' a interrogare e' il difetto che
+    # #PREZZI-STORIA-0911 aveva gia' pagato su odds_snapshots. A 900s restano
+    # ~96 punti al giorno per partita, con risoluzione di 15 minuti vicino al
+    # fischio: quattro volte meglio del cron a 2 ore dei prezzi partner.
+    PERSIST_INTERVAL = 900.0
+    _last_persist: float = 0.0
 
     def __init__(self):
         super().__init__("AHCollectorAgent")
@@ -34,6 +53,7 @@ class AHCollectorAgent(BaseAgent):
                     )
                 if records:
                     self.logger.info(f"AH collector: published {len(records)} markets")
+                await self._persisti(records)
             except Exception as e:
                 self.logger.error(f"AH collector error: {e}")
             await asyncio.sleep(self.POLL_INTERVAL)
@@ -69,12 +89,22 @@ class AHCollectorAgent(BaseAgent):
                             ah = period.get("asian_handicap", {})
                             if not ah:
                                 continue
-                            for alt in ah.get("altLines", [ah]):
+                            # `ah` E' la linea principale; `altLines` sono le
+                            # alternative. Il vecchio `ah.get("altLines", [ah])`
+                            # la scartava proprio quando le alternative c'erano:
+                            # restituiva le alt e MAI la principale, cioe' l'unica
+                            # che serve per misurare un movimento.
+                            linee = [(ah, True)] + [
+                                (a, False) for a in (ah.get("altLines") or [])
+                            ]
+                            for alt, principale in linee:
                                 results.append({
                                     "match_id": str(game.get("id", "")),
                                     "home_team": game.get("home", ""),
                                     "away_team": game.get("away", ""),
                                     "league": event.get("name", ""),
+                                    "commence_time": game.get("starts"),
+                                    "is_main_line": principale,
                                     "ah_line": str(alt.get("hdp", 0)),
                                     "ah_odds_home": str(alt.get("home", 0)),
                                     "ah_odds_away": str(alt.get("away", 0)),
@@ -105,6 +135,7 @@ class AHCollectorAgent(BaseAgent):
                         "home_team": match.get("homeTeam", ""),
                         "away_team": match.get("awayTeam", ""),
                         "league": match.get("league", ""),
+                        "commence_time": match.get("startTime") or match.get("kickoff"),
                         "ah_line": str(match.get("handicap", 0)),
                         "ah_odds_home": str(match.get("homeOdds", 0)),
                         "ah_odds_away": str(match.get("awayOdds", 0)),
@@ -185,6 +216,7 @@ class AHCollectorAgent(BaseAgent):
                                 "home_team": event.get("home_team", ""),
                                 "away_team": event.get("away_team", ""),
                                 "league": sport,
+                                "commence_time": event.get("commence_time"),
                                 "ah_line": str(line or 0),
                                 "ah_odds_home": str(current_home),
                                 "ah_odds_away": str(current_away),
@@ -197,3 +229,31 @@ class AHCollectorAgent(BaseAgent):
         except Exception as e:
             self.logger.warning(f"OddsAPI AH fetch error: {e}")
         return results
+
+
+    async def _persisti(self, records: list[dict]) -> None:
+        """Scrive la storia AH, al piu' una volta ogni PERSIST_INTERVAL.
+
+        Fail-soft per contratto: qualunque cosa vada storta qui non deve fermare
+        la raccolta, che e' il lavoro vero dell'agente.
+        """
+        adesso = _time_mod.monotonic()
+        if self._last_persist and adesso - self._last_persist < self.PERSIST_INTERVAL:
+            return
+        self._last_persist = adesso
+        try:
+            esito = await scrivi_storia_ah(records)
+        except Exception as e:  # difensivo: scrivi_storia_ah gia' non alza
+            self.logger.warning(f"AH persist error: {e}")
+            return
+        # Il conteggio si SCRIVE. Un collector che tace e' indistinguibile da uno
+        # che non raccoglie niente: e' cosi' che questo agente e' rimasto muto
+        # per mesi senza che nessuno se ne accorgesse.
+        self.set_status_detail({"ah_storia": esito.compatto()})
+        if esito.scritti or esito.falliti:
+            self.logger.info(
+                "AH storia: %d scritte, %d scartate, %d fallite",
+                esito.scritti,
+                esito.visti - esito.candidati,
+                esito.falliti,
+            )
