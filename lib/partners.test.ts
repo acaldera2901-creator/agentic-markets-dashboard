@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BET_MENU_ORDER, PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu } from "@/lib/partners";
-import { CASEA_GEO_URLS } from "@/lib/affiliate";
+import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS } from "@/lib/affiliate";
 
 const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 
@@ -19,26 +19,27 @@ describe("partners catalog", () => {
 
   // #PARTNER-FELICEBET: il logo può essere raster se è così che lo fornisce il
   // partner (felicebet.png) — l'invariante è che punti dentro /logos, non il formato.
-  it("every partner has a logo in /logos, a valid category and exactly one link shape", () => {
+  it("every partner has a logo in /logos, a valid category and a default https link", () => {
     for (const p of PARTNERS) {
       expect(p.logo).toMatch(/^\/logos\/.+\.(svg|png)$/);
       expect(["sportsbook", "casino"]).toContain(p.category);
-      // #PARTNERS-VELOBET-CASEA: o un link unico, o una mappa per paese — mai
-      // entrambi (ambiguo su quale vince) e mai nessuno dei due (partner morto).
-      expect(Boolean(p.url) !== Boolean(p.geoUrls)).toBe(true);
-      for (const u of p.url ? [p.url] : Object.values(p.geoUrls ?? {})) {
-        expect(u).toMatch(/^https:\/\//);
-      }
+      // #GEO-PARTNERS-ALWAYS-0917 — l'invariante era XOR (o `url` o `geoUrls`, mai
+      // entrambi). Da oggi `url` è OBBLIGATORIO su tutti: nessun partner è più
+      // geo-ristretto, quindi in ogni paese deve esserci un link da aprire.
+      // `geoUrls` resta un affinamento facoltativo sopra `url`, non un'alternativa.
+      expect(p.url, `${p.id} senza link di default`).toMatch(/^https:\/\//);
+      for (const u of Object.values(p.geoUrls ?? {})) expect(u).toMatch(/^https:\/\//);
     }
   });
 
-  // #PARTNERS-VELOBET-CASEA — Casea ha SOLO i link per paese che ci ha dato il
-  // partner (NO/CH/FI) e nessun link neutro: fuori da quelle geo non esiste.
-  // Fail-closed anche su geo ignota, come tutto il resto del gate.
-  describe("partnersFor(country) — partner geo-ristretti", () => {
+  // #GEO-PARTNERS-ALWAYS-0917 / #CASEA-ALWAYS-0917 (17/09, Andrea) — la vetrina
+  // (/partners + riga loghi del footer) non nasconde più nessun partner per geo,
+  // esattamente come il menu "Piazza la scommessa" dal giro precedente dello stesso
+  // giorno. La geo decide solo QUALE link apre Casea, l'unica con un mid per paese.
+  describe("partnersFor(country) — nessuno sparisce, la geo sceglie solo il link", () => {
     const idsIn = (cc: string | null | undefined) => partnersFor(cc).map((p) => p.id);
 
-    it("mostra Casea solo nei paesi con un link dedicato, col link di quel paese", () => {
+    it("mostra Casea col mid dedicato nei tre paesi che ce l'hanno", () => {
       for (const [cc, url] of Object.entries(CASEA_GEO_URLS)) {
         const casea = partnersFor(cc).find((p) => p.id === "casea");
         expect(casea, `Casea manca in ${cc}`).toBeDefined();
@@ -48,26 +49,42 @@ describe("partners catalog", () => {
       expect(new Set(Object.values(CASEA_GEO_URLS)).size).toBe(Object.keys(CASEA_GEO_URLS).length);
     });
 
-    it("non mostra Casea in una geo senza link dedicato né a geo ignota", () => {
-      for (const cc of ["AT", "IE", "DK", "CA", "us", "", null, undefined]) {
-        expect(idsIn(cc), `Casea non deve comparire in ${String(cc)}`).not.toContain("casea");
+    it("mostra Casea anche fuori da NO/CH/FI e a geo ignota, col fallback dichiarato", () => {
+      for (const cc of ["AT", "IE", "DK", "CA", "us", "IT", "ES", "", null, undefined]) {
+        const casea = partnersFor(cc).find((p) => p.id === "casea");
+        expect(casea, `Casea manca in ${String(cc)}`).toBeDefined();
+        expect(casea?.url, `fallback sbagliato in ${String(cc)}`).toBe(CASEA_FALLBACK_URL);
       }
     });
 
     it("il paese è case/space-insensitive (l'header arriva già ISO-2, ma non ci fidiamo)", () => {
-      expect(idsIn(" no ")).toContain("casea");
+      expect(partnersFor(" no ").find((p) => p.id === "casea")?.url).toBe(CASEA_GEO_URLS.NO);
       expect(partnersFor("no").find((p) => p.id === "casea")?.url).toBe(CASEA_GEO_URLS.NO);
     });
 
-    it("i partner NON geo-ristretti compaiono in ogni geo, VeloBet incluso", () => {
-      const always = ["fortuneplay", "ybets", "betscore", "felicebet", "slotsbonus", "velobet", "ggbet", "beazt", "wildz"];
-      for (const cc of ["NO", "AT", ""]) {
-        for (const id of always) expect(idsIn(cc), `${id} manca in "${cc}"`).toContain(id);
+    // Il caso della richiesta di Andrea scritto per nome: una geo mai coperta dal
+    // deal N1/Playfina vede in vetrina gli stessi partner di una coperta.
+    it("la vetrina ha gli stessi id in ogni geo, IT ed ES comprese", () => {
+      const atteso = PARTNERS.map((p) => p.id).sort();
+      for (const cc of ["NO", "DE", "AT", "CH", "FI", "IT", "ES", "CA", "GB", "", null, undefined]) {
+        expect(idsIn(cc).sort(), `elenco diverso in ${String(cc)}`).toEqual(atteso);
+      }
+    });
+
+    it("i quattro ex NO+DACH sono in vetrina in ogni geo, con l'unico link della rete", () => {
+      for (const cc of ["IT", "ES", "CA", ""]) {
+        for (const p of GEO_LANDING_PARTNERS) {
+          const found = partnersFor(cc).find((x) => x.name === p.name);
+          expect(found, `${p.name} manca in vetrina (${cc})`).toBeDefined();
+          expect(found?.url, `${p.name} con un link diverso dal menu (${cc})`).toBe(p.url);
+        }
       }
     });
 
     it("ogni partner risolto ha un url https (niente stringhe vuote in uscita)", () => {
-      for (const p of partnersFor("NO")) expect(p.url).toMatch(/^https:\/\//);
+      for (const cc of ["NO", "IT", ""]) {
+        for (const p of partnersFor(cc)) expect(p.url, `${p.id} in "${cc}"`).toMatch(/^https:\/\//);
+      }
     });
   });
 

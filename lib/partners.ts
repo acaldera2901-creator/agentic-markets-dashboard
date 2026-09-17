@@ -3,7 +3,7 @@
 // sono importati dalle costanti già esistenti (niente duplicazione); slotsbonus
 // è l'unica URL centralizzata qui (spostata dal footer). Tutti i partner sono
 // gambling → il consumo è SEMPRE geo-gated fail-closed (vedi /api/geo-books).
-import { CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS, geoUrlsOf } from "@/lib/affiliate";
+import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS, landingUrlOf } from "@/lib/affiliate";
 import { BOOKS } from "@/lib/betconstruct-books";
 
 export type PartnerCategory = "sportsbook" | "casino";
@@ -12,9 +12,13 @@ export type Partner = {
   name: string;
   category: PartnerCategory;
   logo: string; // path in /public/logos
-  url?: string; // landing affiliato unico (assente se il partner è geo-ristretto)
-  // #PARTNERS-VELOBET-CASEA: partner con un link DIVERSO per paese e nessun link
-  // neutro (Casea: solo NO/CH/FI) → compare SOLO in quei paesi, col suo link.
+  // #GEO-PARTNERS-ALWAYS-0917 — landing affiliato di default, ORA OBBLIGATORIO su
+  // ogni partner: dal 17/09 nessuno è più geo-ristretto, quindi ognuno deve avere
+  // un link da aprire in qualunque paese. Non è più opzionale.
+  url: string;
+  // #PARTNERS-VELOBET-CASEA: partner con un link DIVERSO per paese (Casea: NO/CH/FI).
+  // Resta un AFFINAMENTO di `url`, non un'alternativa: dove c'è il mid del paese si
+  // usa quello, altrove si cade sul fallback dichiarato in `url` (#CASEA-ALWAYS-0917).
   // Chi renderizza usa `partnersFor(country)`, non `PARTNERS` grezzo.
   geoUrls?: Record<string, string>;
   featured?: boolean;
@@ -24,9 +28,9 @@ export type Partner = {
   logoShape?: "emblem";
 };
 
-// Partner già risolto per una geo: `url` c'è sempre → i componenti non devono
-// gestire il caso "partner senza link".
-export type ResolvedPartner = Partner & { url: string };
+// Partner già risolto per una geo: `url` è quello giusto per QUEL paese (il mid
+// locale se esiste, altrimenti il default) → i componenti non scelgono niente.
+export type ResolvedPartner = Partner;
 
 const YBETS_URL = BOOKS.find((b) => b.key === "ybets")?.landing ?? "https://ybetspromo.io/dputempxc";
 const BETSCORE_URL = LANDING_PARTNERS.find((p) => p.name === "BetScore")?.url
@@ -55,6 +59,14 @@ const BEAZT_URL = LANDING_PARTNERS.find((p) => p.name === "Beazt")?.url
   ?? "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=6056";
 const WILDZ_URL = LANDING_PARTNERS.find((p) => p.name === "Wildz")?.url
   ?? "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge";
+// #PARTNERS-N1-0915 / #PARTNER-STONEVEGAS-0915 → #GEO-PARTNERS-ALWAYS-0917: questi
+// quattro hanno UN tracking link valido ovunque. Fino al 17/09 la vetrina li leggeva
+// come mappa cc→url (`geoUrlsOf`) e li nascondeva fuori NO+DACH; ora sono partner a
+// link unico come tutti gli altri e la fonte resta GEO_LANDING_PARTNERS.
+const ROLLXO_URL = landingUrlOf("RollXO") ?? "https://rollxo.media/n1xqevdiuw";
+const HOLLYWIN_URL = landingUrlOf("Hollywin") ?? "https://hollywin.media/n1fy3vie5j";
+const N1BET_URL = landingUrlOf("N1 Bet") ?? "https://n1betpartners.com/n16rrb51wa";
+const STONEVEGAS_URL = landingUrlOf("Stonevegas") ?? "https://stnvgs.pleotra.com/?mid=389978_2246288";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -78,8 +90,13 @@ export const PARTNERS: Partner[] = [
   // Loghi = wordmark ufficiali dai siti dei partner, ridimensionati (nessun
   // logoShape: 5.6:1 e 2.8:1 sono wordmark, non emblemi).
   { id: "velobet", name: "VeloBet", category: "casino", logo: "/logos/velobet.png", url: VELOBET_URL },
-  // Nessun `url`: Casea vive solo dove il partner ci ha dato un link (NO/CH/FI).
-  { id: "casea", name: "Casea", category: "casino", logo: "/logos/casea.png", geoUrls: CASEA_GEO_URLS },
+  // #CASEA-ALWAYS-0917 — Casea è l'UNICO partner con un link diverso per paese.
+  // `geoUrls` porta i tre mid veri (NO/CH/FI), `url` il fallback deliberato per
+  // tutte le altre geo: NON è un link neutro del partner, è il mid svizzero — la
+  // nota completa (e perché proprio quello) sta in lib/affiliate accanto a
+  // CASEA_FALLBACK_URL. Prima del 17/09 questa riga non aveva `url` e il partner
+  // spariva fuori dai suoi tre paesi.
+  { id: "casea", name: "Casea", category: "casino", logo: "/logos/casea.png", url: CASEA_FALLBACK_URL, geoUrls: CASEA_GEO_URLS },
   // #PARTNER-WILDZ-BEAZT: categoria "casino" per entrambi, come VeloBet — hanno
   // anche uno sportsbook, ma il link affiliato atterra sulla vetrina casinò. La
   // categoria governa solo la sezione della vetrina: nel menu "Piazza la scommessa"
@@ -94,9 +111,9 @@ export const PARTNERS: Partner[] = [
   // logoShape emblema come FortunePlay/FeliceBet (110×54 = 5.961px², misurato).
   { id: "beazt", name: "Beazt", category: "casino", logo: "/logos/beazt.svg", url: BEAZT_URL },
   { id: "wildz", name: "Wildz", category: "casino", logo: "/logos/wildz.svg", url: WILDZ_URL, logoShape: "emblem" },
-  // #PARTNERS-N1-0915 — rete N1 Partners. Nessun `url`: come Casea vivono solo dove
-  // il deal li copre (NO + DACH), e `geoUrls` viene da GEO_LANDING_PARTNERS — la
-  // fonte unica è lì, qui si rilegge. Categoria "casino" come VeloBet/Beazt/Wildz:
+  // #PARTNERS-N1-0915 — rete N1 Partners. `url` unico letto da GEO_LANDING_PARTNERS
+  // (fonte unica lì, qui si rilegge): dal 17/09 compaiono in ogni geo, non più solo
+  // NO+DACH — vedi #GEO-PARTNERS-ALWAYS-0917. Categoria "casino" come VeloBet/Beazt/Wildz:
   // hanno anche lo sportsbook (verificato: le tre landing espongono Sports e i
   // conteggi prematch), ma l'offerta d'ingresso è casinò e il link atterra sulla
   // welcome-page, non sul prematch. Loghi = marchi vettoriali dei brand dal loro
@@ -104,30 +121,34 @@ export const PARTNERS: Partner[] = [
   // e altezza intrinseca 88px: il cap CSS è un max-height e non ingrandisce un file
   // più piccolo. Tutti e tre sono marchi quadrati/compatti (0.8:1–1.9:1) → emblema.
   // Se la rete ci manda i lockup ufficiali, si sostituiscono qui.
-  { id: "rollxo", name: "RollXO", category: "casino", logo: "/logos/rollxo.svg", geoUrls: geoUrlsOf("RollXO"), logoShape: "emblem" },
-  { id: "hollywin", name: "Hollywin", category: "casino", logo: "/logos/hollywin.svg", geoUrls: geoUrlsOf("Hollywin"), logoShape: "emblem" },
-  { id: "n1bet", name: "N1 Bet", category: "casino", logo: "/logos/n1bet.svg", geoUrls: geoUrlsOf("N1 Bet"), logoShape: "emblem" },
-  // #PARTNER-STONEVEGAS-0915 — rete Playfina, stesso perimetro NO+DACH dei tre N1
-  // (istruzione di Andrea, 15/09): nessun `url`, `geoUrls` letto da GEO_LANDING_PARTNERS.
+  { id: "rollxo", name: "RollXO", category: "casino", logo: "/logos/rollxo.svg", url: ROLLXO_URL, logoShape: "emblem" },
+  { id: "hollywin", name: "Hollywin", category: "casino", logo: "/logos/hollywin.svg", url: HOLLYWIN_URL, logoShape: "emblem" },
+  { id: "n1bet", name: "N1 Bet", category: "casino", logo: "/logos/n1bet.svg", url: N1BET_URL, logoShape: "emblem" },
+  // #PARTNER-STONEVEGAS-0915 — rete Playfina, stessa forma di deal dei tre N1: link
+  // unico letto da GEO_LANDING_PARTNERS, ora senza restrizione di geo (17/09).
+  // ATTENZIONE, debito noto e accettato: la sua registration page risponde 403
+  // "not available for your country" fuori dal perimetro NO+DACH (misurato da IP
+  // spagnolo il 15/09, vedi la nota in lib/affiliate). Mostrarlo ovunque è una scelta
+  // esplicita di Andrea: l'utente fuori perimetro può trovare un 403 del PARTNER.
   // Logo = lockup ufficiale del brand (352×186 PNG a sfondo trasparente, preso dalla
   // pagina del partner e autocroppato sull'inchiostro → 333×160). 2.08:1, cioè la
   // forma di Wildz: al cap standard renderebbe 2.406px², sotto tutta la vetrina →
   // emblema, che lo porta a 6.069px² (Wildz emblema: 5.961px²). Categoria "casino"
   // come gli altri solo-landing di questa famiglia: il link atterra sulla pagina di
   // registrazione, non sul prematch.
-  { id: "stonevegas", name: "Stonevegas", category: "casino", logo: "/logos/stonevegas.png", geoUrls: geoUrlsOf("Stonevegas"), logoShape: "emblem" },
+  { id: "stonevegas", name: "Stonevegas", category: "casino", logo: "/logos/stonevegas.png", url: STONEVEGAS_URL, logoShape: "emblem" },
 ];
 
-// #PARTNERS-VELOBET-CASEA — UNICO modo di renderizzare la vetrina (pagina + footer):
-// risolve il link per paese e SCARTA i partner che in quella geo non ce l'hanno.
-// `country` arriva da /api/geo-books (server-side). FAIL-CLOSED: geo ignota ("")
-// → i partner geo-ristretti non compaiono; gli altri restano invariati.
+// #PARTNERS-VELOBET-CASEA — UNICO modo di renderizzare la vetrina (pagina + footer).
+// #GEO-PARTNERS-ALWAYS-0917 / #CASEA-ALWAYS-0917: non SCARTA più nessuno. Ogni
+// partner ha un `url` di default, quindi l'elenco è lo stesso in ogni paese; `cc`
+// serve solo a scegliere il mid locale di chi ha `geoUrls` (oggi il solo Casea).
+// `country` arriva da /api/geo-books (server-side). Geo ignota ("") → tutti, col
+// link di default. Il gate che conta resta quello a monte (`blocked`, fail-closed):
+// nelle geo vietate questa riga non viene proprio renderizzata.
 export function partnersFor(country: string | null | undefined): ResolvedPartner[] {
   const cc = (country ?? "").trim().toUpperCase();
-  return PARTNERS.flatMap((p) => {
-    const url = p.geoUrls ? (cc ? p.geoUrls[cc] : undefined) : p.url;
-    return url ? [{ ...p, url }] : [];
-  });
+  return PARTNERS.map((p) => ({ ...p, url: (cc ? p.geoUrls?.[cc] : undefined) ?? p.url }));
 }
 
 // #BET-DROPDOWN-1: il menu "Piazza la scommessa" nella scheda partita riceve i

@@ -32,28 +32,32 @@ describe("PartnersShowcase", () => {
     expect(container.querySelectorAll(".partners-grid").length).toBe(2);
   });
 
-  // #PARTNERS-VELOBET-CASEA: Casea ha un link solo per NO/CH/FI → senza country
-  // (o in una geo non coperta) la sua card non deve esistere.
-  it("mostra Casea solo quando il country ce l'ha un link, mai senza country", () => {
+  // #GEO-PARTNERS-ALWAYS-0917 / #CASEA-ALWAYS-0917 (17/09, Andrea): la vetrina non
+  // nasconde più nessuno. La griglia Casino ha lo stesso numero di card con o senza
+  // country; a cambiare è SOLO l'href di Casea, l'unica con un mid per paese.
+  it("ha le stesse card in ogni geo: cambia solo il link di Casea", () => {
+    const hrefCasea = (c: HTMLElement) =>
+      (Array.from(c.querySelectorAll("a.partner-card")).find(
+        (a) => a.textContent?.includes("Casea")) as HTMLAnchorElement | undefined)?.href;
+    const casinoCards = (c: HTMLElement) =>
+      c.querySelectorAll(".partners-grid")[1].querySelectorAll(".partner-card").length;
+
     const { container: senza } = render(<PartnersShowcase lang="en" />);
-    expect(screen.queryByText("Casea")).toBeNull();
-    const casinoSenza = senza.querySelectorAll(".partners-grid")[1].querySelectorAll(".partner-card").length;
+    // fuori dai tre paesi di Casea: la card c'è, col fallback svizzero dichiarato
+    expect(hrefCasea(senza)).toBe("https://csa.lynmonkel.com/?mid=383451_2222327");
 
     const { container: conNo } = render(<PartnersShowcase lang="en" country="NO" />);
-    expect(screen.getByText("Casea")).toBeTruthy();
-    const caseaLink = Array.from(conNo.querySelectorAll("a.partner-card")).find(
-      (a) => a.textContent?.includes("Casea")) as HTMLAnchorElement | undefined;
-    expect(caseaLink?.href).toBe("https://csa.lynmonkel.com/?mid=383451_2222324");
-    // #PARTNERS-N1-0915 / #PARTNER-STONEVEGAS-0915: in NO entrano anche i partner
-    // NO+DACH (stessa sezione Casino) → il delta non è più fisso a 1. Restano tutti
-    // e soli i geo-ristretti che in NO hanno un link, e restano in Casino, non altrove.
-    expect(conNo.querySelectorAll(".partners-grid")[1].querySelectorAll(".partner-card").length)
-      .toBe(casinoSenza + ["Casea", "RollXO", "Hollywin", "N1 Bet", "Stonevegas"].length);
+    expect(hrefCasea(conNo)).toBe("https://csa.lynmonkel.com/?mid=383451_2222324");
+    expect(casinoCards(conNo)).toBe(casinoCards(senza));
   });
 
-  it("non mostra Casea in una geo senza link dedicato", () => {
-    render(<PartnersShowcase lang="en" country="AT" />);
-    expect(screen.queryByText("Casea")).toBeNull();
+  // Il caso della richiesta di Andrea, per nome: una geo mai coperta dal deal N1
+  // vede i quattro ex NO+DACH e Casea come tutte le altre.
+  it("in una geo non privilegiata (IT) ci sono i quattro ex NO+DACH e Casea", () => {
+    render(<PartnersShowcase lang="en" country="IT" />);
+    for (const n of ["RollXO", "Hollywin", "N1 Bet", "Stonevegas", "Casea"]) {
+      expect(screen.getByText(n), `${n} manca in vetrina (IT)`).toBeTruthy();
+    }
   });
 
   it("shows the localized title in Italian", () => {

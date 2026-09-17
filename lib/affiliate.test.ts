@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { CASEA_GEO_URLS, GEO_LANDING_PARTNERS, LANDING_PARTNERS, geoUrlsOf, landingPartnersFor } from "@/lib/affiliate";
+import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS, LANDING_PARTNERS, landingPartnersFor, landingUrlOf } from "@/lib/affiliate";
 
 // #PARTNERS-VELOBET-CASEA — questi sono i partner "solo landing" che finiscono nel
 // menu "Piazza la scommessa" della scheda partita (football/tennis/World Cup).
-// L'invariante che conta: un partner che ha un link SOLO per certe geo non deve
-// mai comparire altrove, perché lì non avremmo un link da aprire.
+// L'invariante era: chi ha un link SOLO per certe geo non compare altrove, perché
+// lì non avremmo un link da aprire. Dal 17/09 è ROVESCIATA per decisione di Andrea
+// (#GEO-PARTNERS-ALWAYS-0917 + #CASEA-ALWAYS-0917): ogni partner compare ovunque,
+// e quella che resta è «esiste sempre un link vero da aprire, mai una voce morta».
 describe("landingPartnersFor(country)", () => {
   const namesIn = (cc: string | null | undefined) => landingPartnersFor(cc).map((p) => p.name);
 
@@ -32,10 +34,18 @@ describe("landingPartnersFor(country)", () => {
     }
   });
 
-  it("Casea NON compare in una geo senza link, né a geo ignota (fail-closed)", () => {
-    for (const cc of ["AT", "IE", "DK", "CA", "GB", "", null, undefined]) {
-      expect(namesIn(cc), `Casea non deve comparire in ${String(cc)}`).not.toContain("Casea");
+  // #CASEA-ALWAYS-0917 (17/09, Andrea) — rovescia il fail-closed del 31/07. Casea
+  // c'è ovunque; fuori dai suoi tre paesi apre il mid svizzero come FALLBACK
+  // dichiarato. Il test presidia le due metà della decisione insieme: che la voce
+  // ci sia, e che il link sia esattamente il fallback e non un mid a caso.
+  it("Casea compare anche fuori NO/CH/FI e a geo ignota, col fallback dichiarato", () => {
+    for (const cc of ["AT", "IE", "DK", "CA", "GB", "IT", "ES", "", null, undefined]) {
+      const casea = landingPartnersFor(cc).find((p) => p.name === "Casea");
+      expect(casea, `Casea manca in ${String(cc)}`).toBeDefined();
+      expect(casea?.url, `fallback sbagliato in ${String(cc)}`).toBe(CASEA_FALLBACK_URL);
     }
+    // il fallback è uno dei tre mid veri, non un URL inventato altrove
+    expect(Object.values(CASEA_GEO_URLS)).toContain(CASEA_FALLBACK_URL);
   });
 
   // #PARTNER-WILDZ-BEAZT (02/09, scelta di Andrea) — stanno nel menu "Piazza la
@@ -74,27 +84,24 @@ describe("landingPartnersFor(country)", () => {
     }
   });
 
-  // `geoUrls` in lib/partners è derivato da qui. #GEO-PARTNERS-ALWAYS-0917: da oggi
-  // le due superfici DIVERGONO di proposito — il menu li mostra ovunque, la vetrina
-  // /partners resta sul perimetro del deal finché Andrea non decide anche per quella.
-  // `geos` è la fonte di quella seconda superficie e deve restare esatta.
-  it("geoUrlsOf copre esattamente le geo del deal, con lo stesso url", () => {
-    for (const p of GEO_LANDING_PARTNERS) {
-      expect(Object.keys(geoUrlsOf(p.name)).sort()).toEqual([...p.geos].sort());
-      expect(new Set(Object.values(geoUrlsOf(p.name)))).toEqual(new Set([p.url]));
-    }
-    expect(geoUrlsOf("Nessuno")).toEqual({});
+  // #GEO-PARTNERS-ALWAYS-0917 (secondo giro, 17/09) — `landingUrlOf` sostituisce
+  // `geoUrlsOf`: la vetrina /partners non filtra più per geo, quindi consuma il link
+  // unico invece di una mappa cc→url. È la fonte di lib/partners: se divergesse, la
+  // vetrina aprirebbe un link diverso da quello del menu piazza-scommessa.
+  it("landingUrlOf dà l'unico link della rete, e undefined per un nome ignoto", () => {
+    for (const p of GEO_LANDING_PARTNERS) expect(landingUrlOf(p.name)).toBe(p.url);
+    expect(landingUrlOf("Nessuno")).toBeUndefined();
   });
 
-  // #GEO-PARTNERS-ALWAYS-0917: l'unica voce che ancora dipende dalla geo è Casea.
-  // Tutto il resto è una costante: fisse + quelle a link unico, in ogni paese.
-  it("non duplica né perde voci: NO = fisse + link-unico + Casea, IT = fisse + link-unico", () => {
-    const base = LANDING_PARTNERS.length + GEO_LANDING_PARTNERS.length;
-    expect(landingPartnersFor("NO")).toHaveLength(base + 1);
-    expect(landingPartnersFor("AT")).toHaveLength(base);
-    expect(landingPartnersFor("IT")).toHaveLength(base);
-    expect(landingPartnersFor("")).toHaveLength(base);
-    expect(new Set(namesIn("NO")).size).toBe(namesIn("NO").length);
+  // #GEO-PARTNERS-ALWAYS-0917 + #CASEA-ALWAYS-0917: da oggi NESSUNA voce dipende
+  // dalla geo per esistere — la geo decide solo QUALE link apre Casea. L'elenco ha
+  // la stessa lunghezza in ogni paese, ed è la richiesta di Andrea scritta in numeri.
+  it("stesso numero di voci in ogni geo: fisse + link-unico + Casea", () => {
+    const atteso = LANDING_PARTNERS.length + GEO_LANDING_PARTNERS.length + 1;
+    for (const cc of ["NO", "CH", "FI", "AT", "DE", "IT", "ES", "CA", "GB", "", null, undefined]) {
+      expect(landingPartnersFor(cc), `lunghezza diversa in ${String(cc)}`).toHaveLength(atteso);
+      expect(new Set(namesIn(cc)).size, `doppioni in ${String(cc)}`).toBe(atteso);
+    }
   });
 
   it("ogni voce ha un url https e un nome non vuoto", () => {

@@ -28,12 +28,19 @@ export default function PartnersLayout({ children }: { children: React.ReactNode
         headingLevel="h1"
         intro={[
           "BetRedge is a predictions and analytics product. It publishes a probability and the reasoning behind it for every match it covers. It does not take bets, does not hold customer funds, and does not operate any of the platforms listed on this page.",
-          "Some of those platforms are commercial partners, and the links to them are affiliate links. The list is restricted by country: what appears below depends on where the page is opened from, and in a large part of the world nothing appears at all.",
+          // #GEO-PARTNERS-ALWAYS-0917 / #CASEA-ALWAYS-0917 (17/09) — questa frase
+          // diceva "the list is restricted by country: what appears below depends on
+          // where the page is opened from". Da oggi è FALSA: la vetrina mostra gli
+          // stessi partner ovunque, e il paese decide solo QUALE link apre chi ha una
+          // registrazione localizzata (oggi il solo Casea). Il gate che resta è quello
+          // sull'intera pagina, non sul singolo partner — ed è quello che la FAQ sotto
+          // descrive.
+          "Some of those platforms are commercial partners, and the links to them are affiliate links. The same partners are listed wherever the page is opened from; where an operator runs a country-specific sign-up page, the link points at that country's one.",
         ]}
         faq={[
           [
             "Why is this page sometimes empty?",
-            "The partner list is restricted by country and fails closed. If the country cannot be established, or the country is one where these links are not permitted, nothing is shown. An empty page here is the gate working, not a fault.",
+            "The page as a whole is geo-gated and fails closed: if the location check cannot be completed, or the links are not permitted where the page is opened from, nothing is shown at all. The partner list itself is the same everywhere. An empty page here is the gate working, not a fault.",
           ],
           [
             "Does BetRedge take bets?",
