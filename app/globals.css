@@ -10594,3 +10594,20 @@ button:disabled {
 :root[data-pdm-open] div[class*="tawk" i] {
   z-index: 999 !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   #COOKIE-UNDER-MODAL-0916 — stesso difetto della chat qui sopra, stesso rimedio.
+   La barra del consenso e' `fixed` in fondo allo schermo a z-index 9999: piu'
+   alta del modale (1000) E del menu partner (1100). Su uno schermo corto la
+   bet-bar sticky della scheda finisce DENTRO la fascia della barra, e allora il
+   tap non arriva mai al bottone «Place your bet» — lo intercetta il banner, che
+   e' sopra. Il menu non si apre, e sembra che manchino tutti i partner.
+   Il banner non si nasconde e non si sposta: passa sotto il backdrop finche' la
+   scheda e' aperta e torna esattamente dov'era alla chiusura, quindi il consenso
+   resta chiedibile (nessun consenso e' ne' dato ne' presunto qui dentro).
+   `!important` perche' lo z-index della barra e' inline (vedi CookieBanner.tsx):
+   una regola normale non lo batterebbe.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root[data-pdm-open] .cookie-consent {
+  z-index: 999 !important;
+}

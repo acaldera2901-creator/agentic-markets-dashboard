@@ -246,6 +246,104 @@ describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
   });
 });
 
+// #BET-MENU-VV-0916 — su Safari iOS la toolbar dinamica accorcia il viewport
+// VISIBILE senza toccare `window.innerHeight`. Un menu ancorato a `innerHeight`
+// finisce sotto la piega e perde le ultime voci senza che nulla lo segnali.
+// Qui si misura l'invariante che regge tutti i casi: il menu non esce MAI dalla
+// banda visibile, qualunque cosa faccia il rect dell'ancora.
+describe("MatchDetailSheet — il menu resta dentro il viewport visibile", () => {
+  const MENU_H = 464;   // 13 voci: la misura reale che il giro #BET-MENU-CLIP-0916 ha visto tagliata
+  const MENU_W = 194;   // min-width di .mds-bmenu
+  const MARGIN = 8;     // VIEWPORT_MARGIN nel componente
+  const restore: Array<() => void> = [];
+
+  // jsdom non fa layout: rect, scrollHeight e offsetWidth valgono 0. Li si
+  // fornisce qui, distinguendo ancora e menu dalla loro classe.
+  function stubLayout(anchor: { top: number; height: number; right: number }) {
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        if (!this.classList.contains("mds-books")) return new DOMRect(0, 0, 0, 0);
+        return new DOMRect(anchor.right - 160, anchor.top, 160, anchor.height);
+      });
+    restore.push(() => rect.mockRestore());
+    for (const [prop, value] of [["scrollHeight", MENU_H], ["offsetWidth", MENU_W]] as const) {
+      const prev = Object.getOwnPropertyDescriptor(HTMLElement.prototype, prop);
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        get(this: HTMLElement) { return this.classList.contains("mds-bmenu") ? value : 0; },
+      });
+      restore.push(() => { if (prev) Object.defineProperty(HTMLElement.prototype, prop, prev); });
+    }
+  }
+
+  function stubViewport(visibleHeight: number, layoutHeight: number) {
+    const vv = { height: visibleHeight, width: 390, offsetTop: 0, offsetLeft: 0,
+      addEventListener: () => {}, removeEventListener: () => {} };
+    const prev = Object.getOwnPropertyDescriptor(window, "visualViewport");
+    Object.defineProperty(window, "visualViewport", { configurable: true, value: vv });
+    restore.push(() => { if (prev) Object.defineProperty(window, "visualViewport", prev); });
+    const w = window as unknown as { innerHeight: number; innerWidth: number };
+    const prevH = w.innerHeight, prevW = w.innerWidth;
+    w.innerHeight = layoutHeight; w.innerWidth = 390;
+    restore.push(() => { w.innerHeight = prevH; w.innerWidth = prevW; });
+  }
+
+  afterEach(() => { while (restore.length) restore.pop()!(); });
+
+  const bounds = () => {
+    const menu = screen.getByRole("menu");
+    const top = parseFloat(menu.style.top);
+    const maxHeight = parseFloat(menu.style.maxHeight);
+    return { top, maxHeight, bottom: top + Math.min(MENU_H, maxHeight) };
+  };
+
+  // Il caso della segnalazione: toolbar mostrata, visibile 480 su un layout di
+  // 844. L'ancora (bet-bar sticky) sta a 780 — dentro il layout, SOTTO la piega.
+  it("con la toolbar iOS mostrata il menu non finisce sotto la piega", () => {
+    stubViewport(480, 844);
+    stubLayout({ top: 780, height: 44, right: 382 });
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    const b = bounds();
+    expect(b.top).toBeGreaterThanOrEqual(MARGIN);
+    expect(b.bottom).toBeLessThanOrEqual(480 - MARGIN);
+  });
+
+  // Banda visibile corta e ancora dentro: prima il menu si ribaltava verso il
+  // basso (`spaceBelow` calcolato su innerHeight = 545px di spazio inesistente)
+  // e spariva del tutto. Ora resta sopra, capato, e i partner si raggiungono
+  // scorrendo dentro il menu.
+  it("su una banda corta il menu si cappa invece di ribaltarsi nel vuoto", () => {
+    stubViewport(300, 844);
+    stubLayout({ top: 240, height: 44, right: 382 });
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    const b = bounds();
+    expect(b.top).toBeGreaterThanOrEqual(MARGIN);
+    expect(b.bottom).toBeLessThanOrEqual(300 - MARGIN);
+    // capato, non troncato: l'altezza naturale è maggiore → scroll interno
+    expect(b.maxHeight).toBeLessThan(MENU_H);
+    expect(b.maxHeight).toBeGreaterThan(0);
+  });
+
+  // Senza `visualViewport` (browser vecchi, jsdom nudo) il fallback è
+  // `innerHeight` e l'invariante deve reggere lo stesso.
+  it("senza visualViewport il fallback su innerHeight tiene lo stesso vincolo", () => {
+    const prev = Object.getOwnPropertyDescriptor(window, "visualViewport");
+    Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
+    restore.push(() => { if (prev) Object.defineProperty(window, "visualViewport", prev); });
+    const w = window as unknown as { innerHeight: number };
+    const prevH = w.innerHeight; w.innerHeight = 500;
+    restore.push(() => { w.innerHeight = prevH; });
+    stubLayout({ top: 430, height: 44, right: 382 });
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    const b = bounds();
+    expect(b.top).toBeGreaterThanOrEqual(MARGIN);
+    expect(b.bottom).toBeLessThanOrEqual(500 - MARGIN);
+  });
+});
+
 // #PARTNER-CLICK-TRACK-1: senza questo evento non sappiamo quale partner rende.
 describe("MatchDetailSheet — tracking del partner scelto", () => {
   let calls: Array<{ url: string; body: Record<string, unknown> }>;

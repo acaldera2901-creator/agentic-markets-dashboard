@@ -233,16 +233,37 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
     const r = anchor.getBoundingClientRect();
     const h = menu.scrollHeight; // altezza naturale, anche se max-height la sta capando
     const w = menu.offsetWidth;
-    const spaceAbove = r.top - ANCHOR_GAP - VIEWPORT_MARGIN;
-    const spaceBelow = window.innerHeight - r.bottom - ANCHOR_GAP - VIEWPORT_MARGIN;
+    // #BET-MENU-VV-0916 — il bordo da rispettare è quello del viewport VISIBILE,
+    // non `innerHeight`: su Safari iOS la toolbar dinamica accorcia il visual
+    // viewport lasciando intatto il layout viewport. Ancorato al fondo sbagliato,
+    // il menu perdeva le ultime voci sotto la piega, in silenzio.
+    // `offsetTop/Left` sono 0 salvo pinch-zoom, dove spostano la banda visibile
+    // DENTRO il layout viewport: `position:fixed` e `getBoundingClientRect()`
+    // vivono entrambi in coordinate di layout, quindi si sommano senza conversioni.
+    const vv = window.visualViewport;
+    const vTop = vv?.offsetTop ?? 0, vLeft = vv?.offsetLeft ?? 0;
+    const minTop = vTop + VIEWPORT_MARGIN;
+    const maxBottom = vTop + (vv?.height ?? window.innerHeight) - VIEWPORT_MARGIN;
+    const minLeft = vLeft + VIEWPORT_MARGIN;
+    const maxRight = vLeft + (vv?.width ?? window.innerWidth) - VIEWPORT_MARGIN;
+    const spaceAbove = r.top - ANCHOR_GAP - minTop;
+    const spaceBelow = maxBottom - r.bottom - ANCHOR_GAP;
     // Verso preferito: ALTO (la bet-bar è in fondo alla scheda). Si ribalta solo
     // se sopra non ci sta e sotto c'è più spazio.
     const up = spaceAbove >= h || spaceAbove >= spaceBelow;
-    const maxHeight = Math.max(96, up ? spaceAbove : spaceBelow);
-    const left = Math.min(Math.max(VIEWPORT_MARGIN, r.right - w), Math.max(VIEWPORT_MARGIN, window.innerWidth - w - VIEWPORT_MARGIN));
-    const top = up
-      ? Math.max(VIEWPORT_MARGIN, r.top - ANCHOR_GAP - Math.min(h, maxHeight))
-      : r.bottom + ANCHOR_GAP;
+    // Il pavimento a 96px evita che il menu si riduca a una fessura, ma da solo
+    // maschera lo spazio NEGATIVO (ancora fuori dalla piega): l'altezza va
+    // comunque ri-capata sulla banda visibile, o il menu esce dal fondo.
+    const maxHeight = Math.min(Math.max(96, up ? spaceAbove : spaceBelow), Math.max(0, maxBottom - minTop));
+    const height = Math.min(h, maxHeight);
+    const left = Math.min(Math.max(minLeft, r.right - w), Math.max(minLeft, maxRight - w));
+    // Clamp finale sulla banda visibile, indipendente dal rect dell'ancora:
+    // qualunque cosa le succeda, il menu resta dentro — scorre al suo interno
+    // (`overflow-y:auto`), non deborda.
+    const top = Math.min(
+      Math.max(minTop, up ? r.top - ANCHOR_GAP - height : r.bottom + ANCHOR_GAP),
+      Math.max(minTop, maxBottom - height),
+    );
     setMenuPos({ left, top, maxHeight });
   }, []);
   // Layout effect: posiziona PRIMA del paint, così il menu non lampeggia nel
@@ -257,9 +278,18 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
     // capture: intercetta anche lo scroll dei contenitori interni (.pdm-body),
     // che non fa bolla sulla window.
     window.addEventListener("scroll", onMove, true);
+    // #BET-MENU-VV-0916 — su iOS il `resize` di window NON scatta quando la
+    // toolbar dinamica entra o esce: l'unico evento affidabile per quel cambio
+    // di altezza è `visualViewport.resize`. `scroll` tiene fresco `offsetTop`
+    // durante il pinch-pan.
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", onMove);
+    vv?.addEventListener("scroll", onMove);
     return () => {
       window.removeEventListener("resize", onMove);
       window.removeEventListener("scroll", onMove, true);
+      vv?.removeEventListener("resize", onMove);
+      vv?.removeEventListener("scroll", onMove);
     };
   }, [booksOpen, placeMenu]);
 
