@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/analytics-retention",
       "schedule": "20 3 * * *"
+    },
+    {
+      "path": "/api/cron/closing-price",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
