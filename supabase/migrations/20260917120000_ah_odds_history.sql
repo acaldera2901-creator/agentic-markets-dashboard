@@ -2,11 +2,16 @@
 --
 -- COSA C'ERA PRIMA. `agents/ah_collector.py` gira da mesi nel roster (run.py,
 -- sorvegliato dal watchdog), interroga Pinnacle/SBOBet/The Odds API e pubblica
--- ogni record sullo stream Redis `ah:odds`. Nessuno consuma quello stream:
--- l'unico `consume()` del repo e' la sua definizione in core/redis_client.py,
--- zero chiamanti. Il docstring prometteva «and optionally to DB» e nel file non
--- c'era nessuna scrittura. Quindi il segnale di un book sharp entrava in un tubo
--- e si perdeva ogni 60 secondi.
+-- ogni record sullo stream Redis `ah:odds`. **Nessuno consuma QUELLO stream**:
+-- `ah:odds` compare solo nella riga che lo pubblica. (Correzione, rilievo di
+-- Calde del 17/09: `consume()` ha eccome dei chiamanti — sette, in analyst,
+-- model, research, risk_manager, strategist, trader. La prima stesura di questo
+-- commento diceva «zero chiamanti» perche' il grep era stato troncato e le
+-- occorrenze di `.venv` riempivano l'output. La conclusione non cambia, la
+-- prova che la sosteneva era sbagliata e non si lascia scritta in una
+-- migration.) Il docstring prometteva «and optionally to DB» e nel file non
+-- c'era nessuna scrittura: il segnale di un book sharp entrava in un tubo e si
+-- perdeva ogni 60 secondi.
 --
 -- PERCHE' UNA TABELLA NUOVA E NON `odds_snapshots`. Stessa ragione gia' misurata
 -- per #PREZZI-STORIA-0911: `odds_snapshots` ha superato i 34 milioni di righe e
@@ -52,6 +57,14 @@ CREATE TABLE IF NOT EXISTS ah_odds_history (
   -- partner_price_history).
   minuti_al_via  integer
 );
+
+-- Una riga per partita, fonte e GIRO. Senza questo vincolo un riavvio, un
+-- doppio processo o un replay raddoppiano i punti della serie, e una serie
+-- storica con punti doppi non e' piu' misurabile: il movimento si legge sui
+-- distinti, non sui conteggi. (Riserva di Andrea sull'APPROVE del 17/09.)
+ALTER TABLE ah_odds_history
+  ADD CONSTRAINT ah_odds_history_giro_unico
+  UNIQUE (team_pair_key, source, captured_at);
 
 -- «Tutti gli handicap di QUESTA partita, in ordine di tempo»: apertura,
 -- movimento, chiusura.

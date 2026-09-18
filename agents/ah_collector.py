@@ -6,11 +6,12 @@ Stores results in Redis stream `ah:odds` AND in `ah_odds_history`.
 
 #AH-PERSISTENZA-0917 — il «optionally to DB» di questo docstring e' stato per
 mesi una promessa non mantenuta: nel file non c'era nessuna scrittura, e lo
-stream `ah:odds` non ha mai avuto un consumatore (l'unico `consume()` del repo
-e' la sua definizione in core/redis_client.py). Quindi l'handicap di un book
-sharp veniva interrogato ogni 60 secondi e buttato via. Ora si persiste — a
-cadenza propria, molto piu' lenta del loop, e solo cio' che e' agganciabile a
-una partita.
+stream `ah:odds` non ha mai avuto un consumatore — `ah:odds` compare solo nella
+riga che lo pubblica. (Gli altri stream sono letti eccome: `consume()` ha sette
+chiamanti fra analyst, model, research, risk_manager, strategist e trader.)
+Quindi l'handicap di un book sharp veniva interrogato ogni 60 secondi e buttato
+via. Ora si persiste — a cadenza propria, molto piu' lenta del loop, e solo cio'
+che e' agganciabile a una partita.
 """
 import asyncio
 import json
@@ -237,6 +238,12 @@ class AHCollectorAgent(BaseAgent):
         Fail-soft per contratto: qualunque cosa vada storta qui non deve fermare
         la raccolta, che e' il lavoro vero dell'agente.
         """
+        # Un giro senza record non e' una scrittura: se marcasse comunque
+        # l'orologio, brucerebbe la finestra dei 900s e il primo giro UTILE
+        # dopo di esso aspetterebbe altri 15 minuti. (Riserva di Andrea
+        # sull'APPROVE del 17/09.)
+        if not records:
+            return
         adesso = _time_mod.monotonic()
         if self._last_persist and adesso - self._last_persist < self.PERSIST_INTERVAL:
             return

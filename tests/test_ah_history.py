@@ -203,3 +203,28 @@ async def test_una_scrittura_che_esplode_non_ferma_la_raccolta(monkeypatch):
     monkeypatch.setattr("agents.ah_collector.scrivi_storia_ah", esplode)
     agente = AHCollectorAgent()
     await agente._persisti([_rec()])  # non deve alzare
+
+
+@pytest.mark.asyncio
+async def test_un_giro_a_vuoto_non_brucia_la_finestra(monkeypatch):
+    """Riserva di Andrea sull'APPROVE del 17/09.
+
+    Se un giro senza record marcasse comunque l'orologio, il primo giro UTILE
+    dopo di esso aspetterebbe altri 900 secondi: la cadenza si sposterebbe da
+    sola sui momenti in cui non c'e' niente da scrivere.
+    """
+    from agents.ah_collector import AHCollectorAgent
+
+    chiamate = []
+
+    async def finta_scrittura(records, adesso=None):
+        chiamate.append(len(records))
+        return EsitoAh(visti=len(records), scritti=len(records))
+
+    monkeypatch.setattr("agents.ah_collector.scrivi_storia_ah", finta_scrittura)
+    agente = AHCollectorAgent()
+
+    await agente._persisti([])          # giro a vuoto: non scrive e non marca
+    assert agente._last_persist == 0.0
+    await agente._persisti([_rec()])    # subito dopo: DEVE poter scrivere
+    assert chiamate == [1]
