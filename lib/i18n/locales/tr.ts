@@ -22,7 +22,7 @@ const tr: Record<string, string> = {
   auth_name_label: "İsim", auth_name_placeholder: "Adın",
   auth_not_found: "Profil bulunamadı. Devam etmek için bir müşteri profili oluştur.",
   auth_create_btn: "Planlara devam et",
-  auth_footer: "BetRedge Pro yalnızca kripto ile çalışır. Tahmin verileri, plan etkin olana kadar kilitli kalır.",
+  auth_footer: "BetRedge Pro kart veya kripto ile ödenir. Tahmin verileri, plan etkin olana kadar kilitli kalır.",
   auth_pw_placeholder_new: "En az 8 karakter",
   auth_err_wrongpw: "Yanlış e-posta veya şifre.", auth_err_noaccount: "Bu e-posta için hesap yok. Kaydol.",
   auth_err_exists: "Hesap zaten var — giriş yap.", auth_err_founder: "Bu profil kurucu erişimi gerektirir.",

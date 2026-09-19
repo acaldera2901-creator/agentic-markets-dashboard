@@ -22,7 +22,7 @@ const sv: Record<string, string> = {
   auth_name_label: "Namn", auth_name_placeholder: "Ditt namn",
   auth_not_found: "Profilen hittades inte. Skapa en klientprofil för att fortsätta.",
   auth_create_btn: "Fortsätt till abonnemang",
-  auth_footer: "BetRedge Pro är endast crypto. Prediktionsdata förblir låst tills abonnemanget är aktivt.",
+  auth_footer: "BetRedge Pro betalas med kort eller crypto. Prediktionsdata förblir låst tills abonnemanget är aktivt.",
   auth_pw_placeholder_new: "Minst 8 tecken",
   auth_err_wrongpw: "Fel e-post eller lösenord.", auth_err_noaccount: "Inget konto för denna e-post. Registrera dig.",
   auth_err_exists: "Kontot finns redan — logga in.", auth_err_founder: "Denna profil kräver grundaråtkomst.",
