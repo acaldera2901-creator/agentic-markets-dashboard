@@ -321,10 +321,9 @@ export function launchDeadlineLabel(lang: CrmLang, iso?: string | null): string 
 // Tre casi e non due, perché `plan_source` non basta a decidere in un caso:
 //   - rail one-off (PayGate/crypto, PayPal): il pagamento è singolo → la frase
 //     originale è VERA e resta;
-//   - Shopify: i selling plan sono ricorrenti (MONTH/YEAR) MA esiste anche uno SKU
-//     one-off a 30 giorni, e sul profilo non c'è nulla che distingua i due. Quindi
-//     non si afferma né l'uno né l'altro: si dice che dipende dal piano, che è vero
-//     in ogni caso e non manda nessuno a pagare due volte;
+//   - Shopify: il selling plan è ricorrente (MONTH/YEAR) ma NESSUNO esegue
+//     l'addebito del ciclo successivo (#SHOPIFY-NO-BILLER-0911, sotto) → di fatto
+//     l'accesso si ferma alla scadenza come un one-off;
 //   - tutto il resto (referral, manuale, admin, sorgente assente): NESSUNA clausola.
 //     Chi non ha pagato non deve leggere "paga di nuovo", e su un dato mancante il
 //     silenzio è l'unica cosa che non può essere falsa.
@@ -351,19 +350,35 @@ const RENEWAL_CLAUSE: Record<"oneoff" | "recurring", L10n> = {
  * #CRM-RENEWAL-COND-0819, secondo giro: la prima versione trattava `shopify` come
  * AMBIGUO e usava una frase con un "se". Era inutilmente prudente: `plan-grant.ts:370`
  * distingue GIÀ i due casi e lo scrive nel dato —
- *   `shopify`        = dietro c'è un subscription contract che si rinnova da solo
+ *   `shopify`        = dietro c'è un subscription contract
  *   `shopify_oneoff` = 30 giorni comprati una volta, nessun contratto
- * — quindi la frase può essere CERTA invece di condizionale. L'informazione che
- * cercavo di aggiungere con una colonna nuova esisteva già, sotto un nome che non
- * avevo guardato.
- * `stripe` sta fra i ricorrenti perché quel rail concede abbonamenti (c'è
+ *
+ * #SHOPIFY-NO-BILLER-0911 — terzo giro, e qui la premessa di cui sopra cade.
+ * Su Shopify **il contratto non si addebita da solo**: la piattaforma lo crea al
+ * checkout e poi si ferma; il ciclo successivo parte solo se un'app chiama
+ * `subscriptionBillingAttemptCreate` sul contratto. Nel repo quella chiamata non
+ * esiste (zero occorrenze) e nessuna app di billing possiede i selling plan
+ * `692497973585`/`692498071889` — creati dal nostro custom app, che ha solo
+ * `read_products,write_products`. Quindi a `plan_source='shopify'` l'accesso
+ * scade e basta, esattamente come un one-off, e la frase "si rinnova da solo:
+ * non devi fare nulla" era falsa: il cliente carta l'ha ricevuta tre volte
+ * (ret_7d/3d/1d) prima di decadere in silenzio.
+ * → `shopify` esce dai ricorrenti e prende la clausola one-off, che è l'unica
+ * vera oggi e non promette un addebito che nessuno eseguirà.
+ * **Quando rimettere `shopify` fra i ricorrenti:** solo dopo che un biller reale
+ * (app nativa Shopify Subscriptions o equivalente) possiede i selling plan ED è
+ * verificato un secondo ciclo addebitato davvero — non prima.
+ * `stripe` resta fra i ricorrenti perché lì l'addebito lo esegue Stripe (c'è
  * `stripe_subscription_id` sul profilo); è dormiente, ma se si accende la frase è
  * giusta senza dover ripassare da qui.
  */
 export function renewalClause(lang: CrmLang, planSource?: string | null): string {
   const s = (planSource ?? "").trim().toLowerCase();
-  if (s === "shopify" || s === "stripe") return RENEWAL_CLAUSE.recurring[lang];
-  if (s === "shopify_oneoff" || s === "paygate" || s === "paypal" || s === "crypto") {
+  if (s === "stripe") return RENEWAL_CLAUSE.recurring[lang];
+  if (
+    s === "shopify" || s === "shopify_oneoff" ||
+    s === "paygate" || s === "paypal" || s === "crypto"
+  ) {
     return RENEWAL_CLAUSE.oneoff[lang];
   }
   return "";
