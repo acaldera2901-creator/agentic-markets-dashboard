@@ -199,14 +199,7 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
     // #CRM-COPY-TRUTHFUL-0817: prometteva "il riepilogo del mese", che questa
     // email non contiene e che il prodotto non genera. Al suo posto la cosa vera
     // e concreta: alla scadenza si torna al Free, che è 3 pick per sport al giorno.
-    // #CRM-RENEWAL-COND-0819: la frase sul rinnovo era FALSA per metà dei clienti.
-    // Il 19/08 calde ha verificato nel sorgente che i selling plan Shopify hanno
-    // `billingPolicy.recurring.interval` = MONTH/YEAR, quindi si rinnovano da soli;
-    // solo gli SKU marcati `recurring:false` non lo fanno. Dire "l'accesso non si
-    // rinnova da solo: paga di nuovo" a un abbonato carta è dirgli il contrario del
-    // vero, e nella peggiore delle letture è invitarlo a pagare due volte. Ora la
-    // clausola è il token {renewal}, risolto per rail di pagamento — e in assenza di
-    // informazione NON dice nulla, invece di indovinare.
+    // {renewal} is rail-specific; Shopify billing remains conditional.
     body: {
       it: "Alla scadenza torni al piano Free: 3 pick per sport al giorno. {renewal}",
       en: "When it expires you go back to Free: 3 picks per sport a day. {renewal}",
@@ -215,14 +208,14 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       ru: "После истечения вы вернётесь на тариф Free: 3 прогноза по каждому виду спорта в день. {renewal}" } },
   { key: "ret_3d_before", flow: "retention", day: 3,
     subject: {
-      it: "Rinnova: 3 giorni alla scadenza", en: "Renew: 3 days to expiry", es: "Renueva: quedan 3 días",
-      fr: "Renouvelez : 3 jours avant l'échéance", ru: "Продлите: осталось 3 дня" },
+      it: "Il tuo accesso: 3 giorni al termine", en: "Your access: 3 days remaining", es: "Tu acceso: quedan 3 días",
+      fr: "Votre accès : 3 jours restants", ru: "Ваш доступ: осталось 3 дня" },
     body: {
-      it: "Continua da dove sei. Rinnovo rapido, nessuna interruzione del board.",
-      en: "Continue where you left off. Quick renewal, no break in the board.",
-      es: "Continúa donde estás. Renovación rápida, sin interrupciones del board.",
-      fr: "Reprenez là où vous êtes. Renouvellement rapide, aucune interruption du board.",
-      ru: "Продолжайте с того же места. Быстрое продление, борд без перерывов." } },
+      it: "Mancano 3 giorni al termine dell’accesso indicato nel tuo account. {renewal}",
+      en: "Your account shows 3 days of access remaining. {renewal}",
+      es: "Tu cuenta indica 3 días de acceso restantes. {renewal}",
+      fr: "Votre compte indique 3 jours d’accès restants. {renewal}",
+      ru: "В аккаунте указано: осталось 3 дня доступа. {renewal}" } },
   { key: "ret_1d_before", flow: "retention", day: 1,
     // #CRM-COPY-TRUTHFUL-0817: prometteva un "bonus fedeltà (early access)" e una
     // "streak" che NON esistono nel prodotto (grep: nessun early access, nessuna
@@ -232,11 +225,11 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       it: "Ultimo promemoria: domani scade", en: "Final reminder: expires tomorrow", es: "Último recordatorio: caduca mañana",
       fr: "Dernier rappel : expire demain", ru: "Последнее напоминание: завтра истекает" },
     body: {
-      it: "Domani scade. Rinnova ora per non interrompere l'accesso al board completo; il tuo storico resta salvato in ogni caso.",
-      en: "Expires tomorrow. Renew now to keep the full board without a gap; your history stays saved either way.",
-      es: "Mañana caduca. Renueva ahora para no interrumpir el acceso al board completo; tu historial queda guardado en cualquier caso.",
-      fr: "Ça expire demain. Renouvelez maintenant pour garder le board complet sans interruption ; votre historique reste sauvegardé dans tous les cas.",
-      ru: "Завтра доступ истекает. Продлите сейчас, чтобы не терять полный борд; ваша история сохраняется в любом случае." } },
+      it: "L’accesso indicato nel tuo account termina domani. {renewal}",
+      en: "The access period shown in your account ends tomorrow. {renewal}",
+      es: "El período de acceso indicado en tu cuenta termina mañana. {renewal}",
+      fr: "La période d’accès indiquée dans votre compte se termine demain. {renewal}",
+      ru: "Указанный в аккаунте срок доступа заканчивается завтра. {renewal}" } },
   { key: "wb_day1_expired", flow: "winback", day: 1,
     subject: {
       it: "Il tuo accesso è scaduto", en: "Your access has expired", es: "Tu acceso ha caducado",
@@ -317,24 +310,21 @@ export function launchDeadlineLabel(lang: CrmLang, iso?: string | null): string 
   }
 }
 
-// #CRM-RENEWAL-COND-0819 — la clausola sul rinnovo, per rail di pagamento.
-// Tre casi e non due, perché `plan_source` non basta a decidere in un caso:
-//   - rail one-off (PayGate/crypto, PayPal): il pagamento è singolo → la frase
-//     originale è VERA e resta;
-//   - Shopify: i selling plan sono ricorrenti (MONTH/YEAR) MA esiste anche uno SKU
-//     one-off a 30 giorni, e sul profilo non c'è nulla che distingua i due. Quindi
-//     non si afferma né l'uno né l'altro: si dice che dipende dal piano, che è vero
-//     in ogni caso e non manda nessuno a pagare due volte;
-//   - tutto il resto (referral, manuale, admin, sorgente assente): NESSUNA clausola.
-//     Chi non ha pagato non deve leggere "paga di nuovo", e su un dato mancante il
-//     silenzio è l'unica cosa che non può essere falsa.
-const RENEWAL_CLAUSE: Record<"oneoff" | "recurring", L10n> = {
+// Known one-off rails retain their own wording; Shopify requires checkout verification.
+const RENEWAL_CLAUSE: Record<"oneoff" | "recurring" | "checkout", L10n> = {
   oneoff: {
     it: "L'accesso non si rinnova da solo: per continuare serve un nuovo pagamento.",
     en: "Access doesn't auto-renew: continuing takes a new payment.",
     es: "El acceso no se renueva solo: para continuar hace falta un nuevo pago.",
     fr: "L'accès ne se renouvelle pas tout seul : continuer demande un nouveau paiement.",
     ru: "Доступ не продлевается сам: чтобы продолжить, нужен новый платёж.",
+  },
+  checkout: {
+    it: "Controlla le condizioni di rinnovo mostrate al checkout e nel tuo account, inclusi eventuali addebiti automatici.",
+    en: "Check the renewal conditions shown at checkout and in your account, including any automatic charges.",
+    es: "Consulta las condiciones de renovación del checkout y de tu cuenta, incluidos los posibles cargos automáticos.",
+    fr: "Vérifiez les conditions de renouvellement au checkout et dans votre compte, y compris les éventuels prélèvements automatiques.",
+    ru: "Проверьте условия продления в checkout и в аккаунте, включая возможные автоматические списания.",
   },
   recurring: {
     it: "Il tuo piano si rinnova da solo alla scadenza: non devi fare nulla.",
@@ -345,24 +335,12 @@ const RENEWAL_CLAUSE: Record<"oneoff" | "recurring", L10n> = {
   },
 };
 
-/**
- * Rail → clausola. Sorgente sconosciuta o non-pagante ⇒ stringa vuota (nessun claim).
- *
- * #CRM-RENEWAL-COND-0819, secondo giro: la prima versione trattava `shopify` come
- * AMBIGUO e usava una frase con un "se". Era inutilmente prudente: `plan-grant.ts:370`
- * distingue GIÀ i due casi e lo scrive nel dato —
- *   `shopify`        = dietro c'è un subscription contract che si rinnova da solo
- *   `shopify_oneoff` = 30 giorni comprati una volta, nessun contratto
- * — quindi la frase può essere CERTA invece di condizionale. L'informazione che
- * cercavo di aggiungere con una colonna nuova esisteva già, sotto un nome che non
- * avevo guardato.
- * `stripe` sta fra i ricorrenti perché quel rail concede abbonamenti (c'è
- * `stripe_subscription_id` sul profilo); è dormiente, ma se si accende la frase è
- * giusta senza dover ripassare da qui.
- */
+/** A Shopify source/contract does not prove an external recurring biller.
+ * Unknown/non-paying sources carry no renewal claim. */
 export function renewalClause(lang: CrmLang, planSource?: string | null): string {
   const s = (planSource ?? "").trim().toLowerCase();
-  if (s === "shopify" || s === "stripe") return RENEWAL_CLAUSE.recurring[lang];
+  if (s === "shopify") return RENEWAL_CLAUSE.checkout[lang];
+  if (s === "stripe") return RENEWAL_CLAUSE.recurring[lang];
   if (s === "shopify_oneoff" || s === "paygate" || s === "paypal" || s === "crypto") {
     return RENEWAL_CLAUSE.oneoff[lang];
   }

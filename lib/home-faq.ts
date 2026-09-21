@@ -5,11 +5,9 @@
 //
 // Ogni risposta è scritta contro la checklist di compliance del playbook:
 // nessuna garanzia, nessun rendimento promesso, probabilità del modello sempre
-// distinta dalla certezza, BetRedge mai bookmaker né esecutore. Le frasi su
-// fatturazione e disdetta ripetono quelle del checkout (app/app/page.tsx,
-// PlansTab): abbonamento carta mensile/annuale che si rinnova da sé e si
-// disdice dall'account; crypto = pagamento singolo da 30 giorni, senza
-// rinnovo. Non promettono nulla che il checkout non dica già.
+// distinta dalla certezza, BetRedge mai bookmaker né esecutore. Per il rinnovo
+// valgono le condizioni mostrate al checkout e nell'account: un contratto
+// Shopify non prova da solo l'esecuzione degli addebiti da un'app esterna.
 //
 // EN e IT sono complete; es/fr/ru ricadono su EN come il resto della copy v3.
 
@@ -19,11 +17,11 @@ export const HOME_FAQ = {
   en: [
     [
       "Is billing monthly or annual, and what happens if I cancel?",
-      "Base and Pro are card subscriptions billed monthly or annually. They renew automatically and you can cancel anytime from your account: once cancelled, nothing further is charged. Paying in crypto works differently — a one-time payment for 30 days with no auto-renewal. When it runs out, you buy again only if you want to.",
+      "Base and Pro offer monthly or annual access. Check the renewal conditions shown at checkout and in your account, including any automatic charges and how to manage them. Crypto purchases provide 30 days of access through a separate payment. Contact support if the conditions are unclear before buying.",
     ],
     [
       "What exactly is in a reading, and what does Pro’s deep analysis add?",
-      "Every reading shows four things, time-stamped before kick-off: the market-implied probability (the odds converted into a percentage), the model’s calibrated probability, the edge between the two, and the reasoning in plain words. Deep analysis, on Pro, opens the factors behind that reasoning on every match card — form, expected goals, injuries, Elo, serve and return, head-to-head, surface.",
+      "A reading compares market-implied probability with the model estimate, their gap and the available reasoning. The prospective ledger records published picks with timestamps; the historical record also includes reconstructed or regraded entries and should not be treated as entirely unchanged pre-match evidence. Pro deep analysis adds available factors such as form, expected goals, Elo, serve and return, head-to-head and surface.",
     ],
     [
       "Which sports and markets does BetRedge cover?",
@@ -31,7 +29,7 @@ export const HOME_FAQ = {
     ],
     [
       "What does “live” mean in practice?",
-      "On the Live Probability Board the model’s probability for a match updates as the state of the match changes — score, time, momentum — so you see the same reading moving in real time. It is information, not action: nothing is placed or executed for you. Live readings are part of the Pro plan.",
+      "Live refers to scores and match status updating during play. The model probabilities are pre-match estimates frozen for the event; they do not recalculate from the live score, elapsed time or momentum. Nothing is placed or executed for you.",
     ],
     [
       "Does BetRedge place bets, need a bookmaker account, or promise a return?",
@@ -45,11 +43,11 @@ export const HOME_FAQ = {
   it: [
     [
       "La fatturazione è mensile o annuale, e cosa succede se disdico?",
-      "Base e Pro sono abbonamenti con carta, mensili o annuali. Si rinnovano automaticamente e puoi disdire quando vuoi dal tuo account: dopo la disdetta non viene addebitato più nulla. Il pagamento in crypto funziona diversamente — un pagamento singolo per 30 giorni, senza rinnovo automatico. Alla scadenza ricompri solo se vuoi.",
+      "Base e Pro offrono accesso mensile o annuale. Controlla le condizioni di rinnovo mostrate al checkout e nel tuo account, inclusi eventuali addebiti automatici e come gestirli. Gli acquisti in crypto danno 30 giorni di accesso con un pagamento separato. Se le condizioni non sono chiare, contatta il supporto prima di acquistare.",
     ],
     [
       "Cosa c’è esattamente in una lettura, e cosa aggiunge la deep analysis di Pro?",
-      "Ogni lettura mostra quattro cose, con timestamp prima del fischio: la probabilità implicita del mercato (la quota convertita in percentuale), la probabilità calibrata del modello, l’edge tra le due e il ragionamento in parole semplici. La deep analysis, su Pro, apre i fattori dietro quel ragionamento su ogni scheda — forma, gol attesi, infortuni, Elo, servizio e risposta, scontri diretti, superficie.",
+      "Una lettura confronta la probabilità implicita del mercato con la stima del modello, il loro scarto e il ragionamento disponibile. Il registro prospettico conserva le pick pubblicate con timestamp; lo storico comprende anche voci ricostruite o riclassificate e non equivale interamente a prove pre-partita rimaste immutate. La deep analysis di Pro aggiunge i fattori disponibili, come forma, gol attesi, Elo, servizio e risposta, scontri diretti e superficie.",
     ],
     [
       "Quali sport e mercati copre BetRedge?",
@@ -57,7 +55,7 @@ export const HOME_FAQ = {
     ],
     [
       "Cosa significa «live» in pratica?",
-      "Sul board di probabilità live la probabilità del modello per una partita si aggiorna al cambiare dello stato del match — punteggio, minuto, inerzia — così vedi la stessa lettura muoversi in tempo reale. È informazione, non azione: nulla viene piazzato o eseguito per te. Le letture live fanno parte del piano Pro.",
+      "Live indica punteggi e stato della partita aggiornati durante il gioco. Le probabilità del modello sono stime pre-partita congelate per l’evento: non vengono ricalcolate da punteggio live, minuto o inerzia. Nulla viene piazzato o eseguito per te.",
     ],
     [
       "BetRedge piazza scommesse, richiede un conto bookmaker o promette un rendimento?",

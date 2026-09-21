@@ -107,14 +107,14 @@ const BASE_TRANSLATIONS = {
     plans_base_f1: "Model Edges +EV quando odds ed edge sono disponibili",
     plans_base_f2: "Top Model Signals quando il mercato live è vuoto",
     plans_base_f3: "Probabilità modello, quota disponibile e spiegazione",
-    plans_base_f4: "Tennis Live V4 e Football Live V4 research",
+    plans_base_f4: "Punteggi live, probabilità pre-partita congelate e analisi di calcio e tennis.",
     plans_base_f5: "Storico e track record",
     plans_base_f6: "Execution automatica reale",
     plans_base_f7: "Nessuna promessa di profitto garantito",
     plans_flow1_title: "Signal", plans_flow1_desc: "Gli agenti trovano il value bet.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Il cliente vede quota, edge e perché.",
     plans_flow3_title: "Decide", plans_flow3_desc: "Il cliente decide se entrare: niente execution automatica nel go-live.",
-    plans_flow4_title: "Track", plans_flow4_desc: "Prediction salvate prima dell'evento e misurate nel track record.",
+    plans_flow4_title: "Track", plans_flow4_desc: "Pick prospettiche con timestamp, distinte dallo storico ricostruito o riclassificato.",
     // Prediction card
     pred_why_show: "▼ perché", pred_why_hide: "▲ meno",
     no_clear_favorite: "Nessun favorito netto", open_match: "Partita aperta",
@@ -133,7 +133,7 @@ const BASE_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Passa a Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Sblocca tennis live, football research, Model Edges, spiegazioni modello e track record.",
+    profile_upgrade_desc: "Punteggi live, probabilità pre-partita congelate e analisi di calcio e tennis.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
     // Settings
@@ -366,14 +366,14 @@ const BASE_TRANSLATIONS = {
     plans_base_f1: "Model Edges +EV when odds and edge are available",
     plans_base_f2: "Top Model Signals when live markets are quiet",
     plans_base_f3: "Model probability, available odds and explanation",
-    plans_base_f4: "Tennis Live V4 and Football Live V4 research",
+    plans_base_f4: "Live scores, frozen pre-match probabilities and football/tennis analysis.",
     plans_base_f5: "History and track record",
     plans_base_f6: "Real automated execution",
     plans_base_f7: "No guaranteed profit promises",
     plans_flow1_title: "Signal", plans_flow1_desc: "Agents find the value bet.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Client sees odds, edge and why.",
     plans_flow3_title: "Decide", plans_flow3_desc: "Client decides whether to enter: no automated execution in the go-live.",
-    plans_flow4_title: "Track", plans_flow4_desc: "Predictions are saved before the event and measured in the track record.",
+    plans_flow4_title: "Track", plans_flow4_desc: "Timestamped prospective picks, distinguished from reconstructed or regraded history.",
     // Prediction card
     pred_why_show: "▼ why", pred_why_hide: "▲ less",
     no_clear_favorite: "No clear favourite", open_match: "Open match",
@@ -392,7 +392,7 @@ const BASE_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Upgrade to Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Unlock tennis live, football research, Model Edges, model explanations and track record.",
+    profile_upgrade_desc: "Live scores, frozen pre-match probabilities and football/tennis analysis.",
     profile_upgrade_btn: "Upgrade to Pro",
     profile_logout: "Logout",
     // Settings
@@ -629,14 +629,14 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f1: "Model Edges +EV cuando hay cuotas y edge disponibles",
     plans_base_f2: "Top Model Signals cuando los mercados en vivo están tranquilos",
     plans_base_f3: "Probabilidad del modelo, cuota disponible y explicación",
-    plans_base_f4: "Investigación Tennis Live V4 y Football Live V4",
+    plans_base_f4: "Marcadores en directo, probabilidades prepartido fijas y análisis de fútbol y tenis.",
     plans_base_f5: "Historial y track record",
     plans_base_f6: "Ejecución automática real",
     plans_base_f7: "Sin promesas de beneficio garantizado",
     plans_flow1_title: "Señal", plans_flow1_desc: "Los agentes encuentran el value bet.",
     plans_flow2_title: "Explicar", plans_flow2_desc: "El cliente ve cuota, edge y el porqué.",
     plans_flow3_title: "Decidir", plans_flow3_desc: "El cliente decide si entra: sin ejecución automática en el lanzamiento.",
-    plans_flow4_title: "Seguir", plans_flow4_desc: "Las predicciones se guardan antes del evento y se miden en el track record.",
+    plans_flow4_title: "Seguir", plans_flow4_desc: "Picks prospectivos con marca de tiempo, separados del historial reconstruido o revisado.",
     // Prediction card
     pred_why_show: "▼ por qué", pred_why_hide: "▲ menos",
     no_clear_favorite: "Sin favorito claro", open_match: "Partido abierto",
@@ -655,7 +655,7 @@ const EXTRA_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Pasar a Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Desbloquea tenis en vivo, investigación de fútbol, Model Edges, explicaciones del modelo y track record.",
+    profile_upgrade_desc: "Marcadores en directo, probabilidades prepartido fijas y análisis de fútbol y tenis.",
     profile_upgrade_btn: "Pasar a Pro",
     profile_logout: "Cerrar sesión",
     // Settings
@@ -888,14 +888,14 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f1: "Model Edges +EV quand cotes et edge sont disponibles",
     plans_base_f2: "Top Model Signals quand les marchés en direct sont calmes",
     plans_base_f3: "Probabilité du modèle, cote disponible et explication",
-    plans_base_f4: "Recherche Tennis Live V4 et Football Live V4",
+    plans_base_f4: "Scores en direct, probabilités avant-match figées et analyses football/tennis.",
     plans_base_f5: "Historique et track record",
     plans_base_f6: "Exécution automatique réelle",
     plans_base_f7: "Aucune promesse de profit garanti",
     plans_flow1_title: "Signal", plans_flow1_desc: "Les agents trouvent le value bet.",
     plans_flow2_title: "Expliquer", plans_flow2_desc: "Le client voit la cote, l'edge et le pourquoi.",
     plans_flow3_title: "Décider", plans_flow3_desc: "Le client décide d'entrer ou non : pas d'exécution automatique au lancement.",
-    plans_flow4_title: "Suivre", plans_flow4_desc: "Les prédictions sont enregistrées avant l'événement et mesurées dans le track record.",
+    plans_flow4_title: "Suivre", plans_flow4_desc: "Pronostics prospectifs horodatés, distincts de l’historique reconstruit ou réévalué.",
     // Prediction card
     pred_why_show: "▼ pourquoi", pred_why_hide: "▲ moins",
     no_clear_favorite: "Pas de favori net", open_match: "Match ouvert",
@@ -914,7 +914,7 @@ const EXTRA_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Passer à Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Débloque le tennis en direct, la recherche football, les Model Edges, les explications du modèle et le track record.",
+    profile_upgrade_desc: "Scores en direct, probabilités avant-match figées et analyses football/tennis.",
     profile_upgrade_btn: "Passer à Pro",
     profile_logout: "Déconnexion",
     // Settings
@@ -1147,14 +1147,14 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f1: "Model Edges +EV, когда есть котировки и edge",
     plans_base_f2: "Top Model Signals, когда live-рынки пустые",
     plans_base_f3: "Вероятность модели, доступная котировка и объяснение",
-    plans_base_f4: "Исследование Tennis Live V4 и Football Live V4",
+    plans_base_f4: "Счёт в реальном времени, фиксированные предматчевые вероятности и анализ футбола и тенниса.",
     plans_base_f5: "История и track record",
     plans_base_f6: "Реальное автоматическое исполнение",
     plans_base_f7: "Без обещаний гарантированной прибыли",
     plans_flow1_title: "Сигнал", plans_flow1_desc: "Агенты находят value bet.",
     plans_flow2_title: "Объяснить", plans_flow2_desc: "Клиент видит котировку, edge и почему.",
     plans_flow3_title: "Решить", plans_flow3_desc: "Клиент решает, входить ли: без автоисполнения на старте.",
-    plans_flow4_title: "Отслеживать", plans_flow4_desc: "Прогнозы сохраняются до события и измеряются в track record.",
+    plans_flow4_title: "Отслеживать", plans_flow4_desc: "Прогнозы с отметкой времени отдельно от восстановленной или пересмотренной истории.",
     // Prediction card
     pred_why_show: "▼ почему", pred_why_hide: "▲ меньше",
     no_clear_favorite: "Нет явного фаворита", open_match: "Открытый матч",
@@ -1173,7 +1173,7 @@ const EXTRA_TRANSLATIONS = {
     // Profile panel
     profile_upgrade_eyebrow: "Перейти на Pro",
     profile_upgrade_title: "BetRedge Pro",
-    profile_upgrade_desc: "Открой теннис live, исследование футбола, Model Edges, объяснения модели и track record.",
+    profile_upgrade_desc: "Счёт в реальном времени, фиксированные предматчевые вероятности и анализ футбола и тенниса.",
     profile_upgrade_btn: "Перейти на Pro",
     profile_logout: "Выйти",
     // Settings
@@ -3870,12 +3870,10 @@ function CheckoutModal({
               </button>
             </div>
             <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 8px" }}>
-              {/* Il rail carta crea un ABBONAMENTO Shopify che si rinnova da sé:
-                  dire "pagamento singolo / rinnovo manuale" sarebbe un addebito
-                  ricorrente non dichiarato al momento dell'acquisto. */}
+              {/* Access duration does not establish who executes recurring billing. */}
               {period === "monthly"
-                ? pick5(lang, { it: "Abbonamento: si rinnova automaticamente ogni mese. Puoi disdire quando vuoi dal tuo account.", en: "Subscription: renews automatically every month. You can cancel anytime from your account.", es: "Suscripción: se renueva automáticamente cada mes. Puedes cancelar cuando quieras desde tu cuenta.", fr: "Abonnement : renouvellement automatique chaque mois. Vous pouvez annuler à tout moment depuis votre compte.", ru: "Подписка: продлевается автоматически каждый месяц. Отменить можно в любой момент в аккаунте." })
-                : pick5(lang, { it: "Abbonamento annuale: paghi 11 mensilità, 1 mese è gratis. Si rinnova automaticamente ogni 12 mesi, disdici quando vuoi dal tuo account.", en: "Annual subscription: you pay 11 monthly instalments, 1 month is free. Renews automatically every 12 months; cancel anytime from your account.", es: "Suscripción anual: pagas 11 mensualidades, 1 mes es gratis. Se renueva automáticamente cada 12 meses; cancela cuando quieras desde tu cuenta.", fr: "Abonnement annuel : vous payez 11 mensualités, 1 mois est offert. Renouvellement automatique tous les 12 mois ; annulez à tout moment depuis votre compte.", ru: "Годовая подписка: вы платите за 11 месяцев, 1 месяц бесплатно. Продлевается автоматически каждые 12 месяцев; отменить можно в аккаунте." })}
+                ? pick5(lang, { it: "Accesso mensile. Controlla le condizioni di rinnovo mostrate al checkout e nel tuo account, inclusi eventuali addebiti automatici.", en: "Monthly access. Check the renewal conditions shown at checkout and in your account, including any automatic charges.", es: "Acceso mensual. Consulta las condiciones de renovación del checkout y de tu cuenta, incluidos los posibles cargos automáticos.", fr: "Accès mensuel. Vérifiez les conditions de renouvellement au checkout et dans votre compte, y compris les éventuels prélèvements automatiques.", ru: "Доступ на месяц. Проверьте условия продления в checkout и в аккаунте, включая возможные автоматические списания." })
+                : pick5(lang, { it: "Accesso annuale: paghi 11 mensilità, 1 mese è gratis. Controlla le condizioni di rinnovo mostrate al checkout e nel tuo account, inclusi eventuali addebiti automatici.", en: "Annual access: pay for 11 months, 1 month is free. Check the renewal conditions shown at checkout and in your account, including any automatic charges.", es: "Acceso anual: pagas 11 meses, 1 mes gratis. Consulta las condiciones de renovación del checkout y de tu cuenta, incluidos los posibles cargos automáticos.", fr: "Accès annuel : 11 mois payés, 1 mois offert. Vérifiez les conditions de renouvellement au checkout et dans votre compte, y compris les éventuels prélèvements automatiques.", ru: "Годовой доступ: оплата за 11 месяцев, 1 месяц бесплатно. Проверьте условия продления в checkout и в аккаунте, включая возможные автоматические списания." })}
             </p>
             <button type="button" onClick={payWithCard} disabled={!withdrawalConsent || redirecting}
               style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
@@ -4209,7 +4207,7 @@ function PlansTab({
             <strong>{planPriceCopy("base", lang)}</strong>
             {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
                 Shopify). Il crypto resta disponibile come alternativa. */}
-            <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
+            <span>{pick5(lang, { it: "Carta o crypto · condizioni al checkout", en: "Card or crypto · terms at checkout", es: "Tarjeta o crypto · condiciones en checkout", fr: "Carte ou crypto · conditions au checkout", ru: "Карта или крипто · условия в checkout" })}</span>
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "7 per sport / giorno", en: "7 per sport / day", es: "7 por deporte / día", fr: "7 par sport / jour", ru: "7 на вид спорта / день" })}</strong>
@@ -4251,7 +4249,7 @@ function PlansTab({
             <strong>{planPriceCopy("premium", lang)}</strong>
             {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
                 Shopify). Il crypto resta disponibile come alternativa. */}
-            <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
+            <span>{pick5(lang, { it: "Carta o crypto · condizioni al checkout", en: "Card or crypto · terms at checkout", es: "Tarjeta o crypto · condiciones en checkout", fr: "Carte ou crypto · conditions au checkout", ru: "Карта или крипто · условия в checkout" })}</span>
           </div>
           <div className="plan-core-line">
             <strong>{pick5(lang, { it: "Illimitato", en: "Unlimited", es: "Ilimitado", fr: "Illimité", ru: "Безлимитно" })}</strong>
@@ -4842,7 +4840,7 @@ function ProfilePanel({
             <h3>{daysLeft > 0
               ? `${daysLeft} ${daysLeft === 1 ? pick5(lang, { it: "giorno rimanente", en: "day left", es: "día restante", fr: "jour restant", ru: "день осталось" }) : pick5(lang, { it: "giorni rimanenti", en: "days left", es: "días restantes", fr: "jours restants", ru: "дн. осталось" })}`
               : pick5(lang, { it: "Scaduto", en: "Expired", es: "Caducado", fr: "Expiré", ru: "Истёк" })}</h3>
-            <span>{pick5(lang, { it: "BetRedge Pro · rinnovo mensile", en: "BetRedge Pro · monthly renewal", es: "BetRedge Pro · renovación mensual", fr: "BetRedge Pro · renouvellement mensuel", ru: "BetRedge Pro · ежемесячное продление" })}</span>
+            <span>{pick5(lang, { it: "Durata e condizioni nel tuo account", en: "Access duration and terms in your account", es: "Duración y condiciones en tu cuenta", fr: "Durée et conditions dans votre compte", ru: "Срок доступа и условия в аккаунте" })}</span>
           </div>
           {daysLeft <= 7 && <button onClick={onUpgrade}>{pick5(lang, { it: "Rinnova", en: "Renew", es: "Renovar", fr: "Renouveler", ru: "Продлить" })}</button>}
         </div>
@@ -7527,7 +7525,7 @@ function FAQTab() {
       ["Cosa sblocca il piano Free?", "Profilo, lingua e preview account senza prediction operative."],
       ["Cosa sblocca BetRedge Pro?", "Tennis live, football research, Model Edges, Top Model Signals, spiegazioni modello e track record."],
       ["Gli agenti piazzano bet automaticamente?", "No nel go-live: il piano pubblico è research e signal desk. L'execution resta interna/non venduta."],
-      ["Come pago?", "Con carta (Visa, Mastercard, Amex), Shop Pay o Google Pay: l'abbonamento si rinnova automaticamente e lo disdici quando vuoi dal tuo account. In alternativa puoi pagare in crypto (USDT TRC20)."],
+      ["Come pago?", "Controlla le condizioni di rinnovo mostrate al checkout e nel tuo account, inclusi eventuali addebiti automatici."],
       ["Come viene attivato il piano?", "Dopo il TX hash il piano viene verificato internamente o attivato secondo la policy operativa configurata."],
     ],
     en: [
@@ -7535,7 +7533,7 @@ function FAQTab() {
       ["What does Free unlock?", "Profile, language and account preview without operational predictions."],
       ["What does BetRedge Pro unlock?", "Tennis live, football research, Model Edges, Top Model Signals, model explanations and track record."],
       ["Do agents place bets automatically?", "Not in the go-live: the public plan is research and signal desk. Execution remains internal/not sold."],
-      ["How do I pay?", "By card (Visa, Mastercard, Amex), Shop Pay or Google Pay: the subscription renews automatically and you can cancel anytime from your account. You can also pay in crypto (USDT TRC20)."],
+      ["How do I pay?", "Check the renewal conditions shown at checkout and in your account, including any automatic charges."],
       ["How is the plan activated?", "After the TX hash, the plan is internally reviewed or activated according to the configured operating policy."],
     ],
     es: [
@@ -7543,7 +7541,7 @@ function FAQTab() {
       ["¿Qué desbloquea el plan Free?", "Perfil, idioma y vista previa de cuenta, sin predicciones operativas."],
       ["¿Qué desbloquea BetRedge Pro?", "Tenis live, football research, Model Edges, Top Model Signals, explicaciones del modelo y track record."],
       ["¿Los agentes hacen apuestas automáticamente?", "No en el lanzamiento: el plan público es research y signal desk. La ejecución sigue siendo interna/no se vende."],
-      ["¿Cómo pago?", "Con tarjeta (Visa, Mastercard, Amex), Shop Pay o Google Pay: la suscripción se renueva automáticamente y puedes cancelar cuando quieras desde tu cuenta. También puedes pagar en crypto (USDT TRC20)."],
+      ["¿Cómo pago?", "Consulta las condiciones de renovación del checkout y de tu cuenta, incluidos los posibles cargos automáticos."],
       ["¿Cómo se activa el plan?", "Tras el TX hash, el plan se revisa internamente o se activa según la política operativa configurada."],
     ],
     fr: [
@@ -7551,7 +7549,7 @@ function FAQTab() {
       ["Que débloque le plan Free ?", "Profil, langue et aperçu du compte, sans prédictions opérationnelles."],
       ["Que débloque BetRedge Pro ?", "Tennis live, football research, Model Edges, Top Model Signals, explications du modèle et track record."],
       ["Les agents placent-ils des paris automatiquement ?", "Pas au lancement : le plan public est research et signal desk. L'exécution reste interne/non vendue."],
-      ["Comment payer ?", "Par carte (Visa, Mastercard, Amex), Shop Pay ou Google Pay : l'abonnement se renouvelle automatiquement et vous pouvez annuler à tout moment depuis votre compte. Vous pouvez aussi payer en crypto (USDT TRC20)."],
+      ["Comment payer ?", "Vérifiez les conditions de renouvellement au checkout et dans votre compte, y compris les éventuels prélèvements automatiques."],
       ["Comment le plan est-il activé ?", "Après le TX hash, le plan est vérifié en interne ou activé selon la politique opérationnelle configurée."],
     ],
     ru: [
@@ -7559,7 +7557,7 @@ function FAQTab() {
       ["Что открывает план Free?", "Профиль, язык и предпросмотр аккаунта, без рабочих прогнозов."],
       ["Что открывает BetRedge Pro?", "Tennis live, football research, Model Edges, Top Model Signals, пояснения модели и track record."],
       ["Размещают ли агенты ставки автоматически?", "Не на старте: публичный план — это research и signal desk. Исполнение остаётся внутренним/не продаётся."],
-      ["Как оплатить?", "Картой (Visa, Mastercard, Amex), Shop Pay или Google Pay: подписка продлевается автоматически, отменить можно в любой момент в аккаунте. Также можно оплатить в крипто (USDT TRC20)."],
+      ["Как оплатить?", "Проверьте условия продления в checkout и в аккаунте, включая возможные автоматические списания."],
       ["Как активируется план?", "После TX hash план проверяется вручную или активируется согласно настроенной операционной политике."],
     ],
   });

@@ -19,7 +19,7 @@ export default function TermsPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Terms of Service</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: June 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: September 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -46,16 +46,16 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">4. Accounts &amp; Plans</h2>
           <p className="text-xs leading-relaxed">
-            BetRedge offers a free tier and paid subscription plans (Base and Pro). The features included in each plan, and the current price, are those displayed on the <Link href="/plans" className="underline hover:text-[var(--am-coral)]">Plans page</Link> at the time of purchase. You are responsible for keeping your login credentials secure and for all activity under your profile.
+            BetRedge offers a free tier and paid access plans (Base and Pro). The features included in each plan, and the current price, are those displayed on the <Link href="/plans" className="underline hover:text-[var(--am-coral)]">Plans page</Link> at the time of purchase. You are responsible for keeping your login credentials secure and for all activity under your profile.
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">5. Payments &amp; Billing</h2>
           <ul className="text-xs space-y-2 list-disc list-inside">
-            <li>Subscription fees are charged in advance for each billing period at the price shown on the Plans page, via the payment methods offered at checkout.</li>
+            <li>Access fees, duration and available payment methods are displayed at checkout. Review the renewal conditions shown at checkout and in your account before purchasing.</li>
             <li>Prices are exclusive of any taxes, duties, or transaction fees that may apply; you are responsible for these where applicable.</li>
-            <li>By subscribing to a recurring plan, you authorize us (or our payment provider) to charge the applicable fee for each billing period until you cancel.</li>
+            <li>Any authorization for recurring charges depends on the renewal conditions presented for the specific purchase. A plan label alone does not establish automatic renewal.</li>
             <li>We may change plan prices or features; any change applies from your next billing period, and we will give reasonable notice where required by law.</li>
           </ul>
         </section>
@@ -63,8 +63,8 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">6. Renewal, Cancellation &amp; Refunds</h2>
           <ul className="text-xs space-y-2 list-disc list-inside">
-            <li><strong className="text-[var(--am-text)]">Auto-renewal:</strong> Recurring subscriptions renew automatically at the end of each billing period unless cancelled beforehand.</li>
-            <li><strong className="text-[var(--am-text)]">Cancellation:</strong> You may cancel at any time. Cancellation stops future renewals; you retain access until the end of the period already paid for.</li>
+            <li><strong className="text-[var(--am-text)]">Auto-renewal:</strong> Check whether your purchase includes automatic renewal, its schedule and any future charge in the checkout and account conditions.</li>
+            <li><strong className="text-[var(--am-text)]">Cancellation:</strong> Follow the management or cancellation instructions shown for your purchase. If these are unclear or unavailable, contact support before purchasing or before the stated renewal date.</li>
             <li><strong className="text-[var(--am-text)]">Refunds:</strong> Except where a refund is required by mandatory consumer-protection law, subscription fees already paid are non-refundable. To request a cancellation or refund, email <a href="mailto:info@betredge.com" className="underline hover:text-[var(--am-coral)]">info@betredge.com</a>.</li>
             <li><strong className="text-[var(--am-text)]">Disputes:</strong> If you believe you were charged in error, contact us before initiating a chargeback so we can resolve the issue directly.</li>
           </ul>

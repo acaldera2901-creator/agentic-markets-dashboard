@@ -255,15 +255,20 @@ describe("clausola sul rinnovo: condizionale al rail, muta se non sa", () => {
     }
   });
 
-  it("rail ricorrenti: dice che si rinnova da solo, senza 'se'", () => {
-    // plan-grant.ts distingue GIA' i due casi shopify: 'shopify' = subscription
-    // contract, 'shopify_oneoff' = 30 giorni una volta. Quindi la frase e' certa.
-    for (const src of ["shopify", "stripe"]) {
+  it("Stripe conserva la clausola del proprio rail ricorrente", () => {
+    for (const src of ["stripe"]) {
       const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: src });
       expect(m!.text, src).toMatch(/si rinnova da solo/i);
       expect(m!.text, src).not.toMatch(/non si rinnova/i);
       expect(m!.text, src).not.toMatch(/se.*rinnovo automatico/i);
     }
+  });
+
+  it("Shopify richiede di verificare condizioni e possibili addebiti", () => {
+    // A subscription contract does not establish whether an external biller runs.
+    const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: "shopify" });
+    expect(m!.text).toMatch(/condizioni.*checkout.*account/i);
+    expect(m!.text).not.toMatch(/si rinnova da solo|nessun addebito automatico/i);
   });
 
   it("shopify_oneoff sta con i one-off, non con i ricorrenti", () => {

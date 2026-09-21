@@ -62,11 +62,11 @@ describe("superfici pubbliche: nessun claim che il database smentisce", () => {
   });
 
   it("il badge della prova resta, senza la meta' falsa", () => {
-    // Il badge e' renderizzato: togliere il claim non deve svuotarlo, perche'
-    // l'altra meta' — sigillata prima del fischio — e' vera e misurabile.
+    // The combined public history includes reconstructed/regraded entries;
+    // only the prospective ledger supports the pre-kickoff timestamp claim.
     const src = readFileSync(join(ROOT, "app/landing-client.tsx"), "utf8");
-    expect(src).toContain('prBadge: "LOGGED PRE-KICK-OFF"');
-    expect(src).toContain('prBadge: "REGISTRATA PRIMA DEL FISCHIO"');
+    expect(src).toContain('prBadge: "HISTORY & PROSPECTIVE LEDGER"');
+    expect(src).toContain('prBadge: "STORICO E REGISTRO PROSPETTICO"');
   });
 
   it("i due chip rimasti sono ancora li' — la rimozione non ha svuotato la fila", () => {
