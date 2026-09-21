@@ -57,6 +57,25 @@ async function servedIds() {
 }
 
 describe("board v2 — gate di completezza (football + tennis)", () => {
+  it("collapses reversed tennis participants without changing the selected player", async () => {
+    dbQuery.mockResolvedValue([TENNIS, { ...TENNIS, id: "reversed", home_team: TENNIS.away_team, away_team: TENNIS.home_team }]);
+    expect(await servedIds()).toHaveLength(1);
+  });
+
+  it("withholds tennis fixtures whose sources declare opposing winners", async () => {
+    dbQuery.mockResolvedValue([TENNIS, { ...TENNIS, id: "opposite", home_team: TENNIS.away_team, away_team: TENNIS.home_team, pick: TENNIS.away_team }]);
+    expect(await servedIds()).toHaveLength(0);
+  });
+  it("display filters cannot hide a contradictory source from reconciliation", async () => {
+    dbQuery.mockImplementation((sql: string) => Promise.resolve(
+      /competition ILIKE|status = \$/.test(sql)
+        ? [{ ...TENNIS, competition: "Ankara Open", status: "open" }]
+        : [{ ...TENNIS, competition: "Ankara Open", status: "open" }, { ...TENNIS, id: "partner", competition: "Partner feed", status: "upcoming", pick: TENNIS.away_team }]
+    ));
+    const { GET } = await import("./route");
+    const response = await GET(new Request("https://x/api/v2/predictions?competition=Ankara&status=open"));
+    expect((await response.json()).predictions).toHaveLength(0);
+  });
   it("serve il tennis (pick + confidence_score, p_home null)", async () => {
     const ids = await servedIds();
     expect(ids).toContain("t1");

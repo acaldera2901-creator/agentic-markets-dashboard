@@ -8,6 +8,7 @@ import { PREDICTION_WINDOW_DAYS, V2_MAX_ROWS, isRowCapReached } from "@/lib/pred
 import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { buildSoftLookup } from "@/lib/soft-lookup";
 import { parseFinalScore } from "./final-score";
+import { deduplicatePredictions } from "@/lib/prediction-dedup";
 
 export const dynamic = "force-dynamic";
 
@@ -39,14 +40,11 @@ export async function GET(req: Request) {
     values.push(sport);
     conditions.push(`sport = $${values.length}`);
   }
-  if (competition && competition !== "all") {
-    values.push(`%${competition}%`);
-    conditions.push(`competition ILIKE $${values.length}`);
-  }
-  if (status && status !== "all") {
-    values.push(status);
-    conditions.push(`status = $${values.length}`);
-  }
+  // Display filters run after source reconciliation. Otherwise filtering out
+  // a partner/tournament label could make a contradictory pick reappear.
+  const selectable = (row: Record<string, unknown>) =>
+    (!competition || competition === "all" || String(row.competition ?? "").toLowerCase().includes(competition.toLowerCase())) &&
+    (!status || status === "all" || row.status === status);
 
   // #V2-ROW-CAP-0803: il tetto è una costante dichiarata (lib/prediction-window),
   // non un 100 sepolto nella query, e passa come parametro come tutto il resto.
@@ -101,7 +99,7 @@ export async function GET(req: Request) {
   // senza riga completa spariscono (opzione A, niente card vuote).
   const served: Array<Record<string, unknown>> = [];
   {
-    const dedup = new Map<string, Record<string, unknown>>();
+    const complete: Array<Record<string, unknown>> = [];
     for (const r of rows as unknown as Array<Record<string, unknown>>) {
       // Completa = probabilità usabile. Football/1X2: p_home numerico (coalescato
       // dai notes sopra). Tennis/2-vie (market ML): niente p_home ma un pick reale
@@ -129,16 +127,13 @@ export async function GET(req: Request) {
         // (locked/unlocked) resta quella di sempre, a valle di questo filtro.
         typeof r.confidence_score === "number";
       if (!hasProb) continue; // incompleta → nascosta
-      const key = [
-        String(r.sport ?? ""),
-        String(r.home_team ?? "").trim().toLowerCase(),
-        String(r.away_team ?? "").trim().toLowerCase(),
-        String(r.starts_at ?? "").slice(0, 10),
-      ].join("|");
-      const cur = dedup.get(key);
-      if (!cur || (r.pick && !cur.pick)) dedup.set(key, r);
+      complete.push(r);
     }
-    served.push(...dedup.values());
+    const dedup = deduplicatePredictions(complete, selectable);
+    if (dedup.conflictedFixtures > 0) {
+      console.warn(`[v2/predictions] ${dedup.conflictedFixtures} tennis source conflicts withheld`);
+    }
+    served.push(...dedup.rows);
   }
 
   // #PLAYER-GOALSCORER (scheda WC): mercati marcatore dalle λ-nazionale gia` sulla

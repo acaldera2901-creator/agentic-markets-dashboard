@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import VercelAnalytics from "@/components/VercelAnalytics";
+import type { ComponentProps } from "react";
+import type { Analytics } from "@vercel/analytics/next";
+
+const capture = vi.hoisted(() => ({ beforeSend: undefined as ComponentProps<typeof Analytics>["beforeSend"] }));
 
 // #SEO-ANALYTICS-0915 — il gate di consenso è il requisito di compliance di
 // questo componente, non un dettaglio: <Analytics /> inietta
@@ -12,7 +16,10 @@ import VercelAnalytics from "@/components/VercelAnalytics";
 // verificato è SE lo montiamo, non cosa fa dentro (è codice di terze parti,
 // testarlo sarebbe testare il loro SDK).
 vi.mock("@vercel/analytics/next", () => ({
-  Analytics: () => <div data-testid="vercel-analytics" />,
+  Analytics: (props: ComponentProps<typeof Analytics>) => {
+    capture.beforeSend = props.beforeSend;
+    return <div data-testid="vercel-analytics" />;
+  },
 }));
 
 const mounted = () => screen.queryByTestId("vercel-analytics") !== null;
@@ -20,6 +27,7 @@ const mounted = () => screen.queryByTestId("vercel-analytics") !== null;
 describe("VercelAnalytics — gate di consenso (ePrivacy)", () => {
   beforeEach(() => {
     localStorage.clear();
+    capture.beforeSend = undefined;
   });
 
   it("senza consenso NON monta lo script", () => {
@@ -76,5 +84,36 @@ describe("VercelAnalytics — gate di consenso (ePrivacy)", () => {
       window.dispatchEvent(new StorageEvent("storage", { key: "agentic-lang" }));
     });
     expect(mounted()).toBe(false);
+  });
+
+  it.each(["betredge:gdpr-consent", "storage"])("withdrawal via %s unmounts analytics", (event) => {
+    localStorage.setItem("gdpr_consent", "accepted");
+    render(<VercelAnalytics />);
+    expect(mounted()).toBe(true);
+    act(() => {
+      localStorage.setItem("gdpr_consent", "declined");
+      window.dispatchEvent(event === "storage" ? new StorageEvent(event, { key: "gdpr_consent" }) : new Event(event));
+    });
+    expect(mounted()).toBe(false);
+  });
+
+  it("clearing storage in another tab revokes consent too", () => {
+    localStorage.setItem("gdpr_consent", "accepted");
+    render(<VercelAnalytics />);
+    act(() => { localStorage.clear(); window.dispatchEvent(new StorageEvent("storage", { key: null })); });
+    expect(mounted()).toBe(false);
+  });
+
+  it("the already-injected SDK drops events after withdrawal, even before a consent event", () => {
+    localStorage.setItem("gdpr_consent", "accepted");
+    render(<VercelAnalytics />);
+    const beforeSend = capture.beforeSend;
+    expect(beforeSend).toBeTypeOf("function");
+    const event = { type: "pageview" as const, url: "https://www.betredge.com/tools" };
+    expect(beforeSend!(event)).toEqual(event);
+    localStorage.setItem("gdpr_consent", "declined");
+    expect(beforeSend!(event)).toBeNull();
+    localStorage.removeItem("gdpr_consent");
+    expect(beforeSend!(event)).toBeNull();
   });
 });
