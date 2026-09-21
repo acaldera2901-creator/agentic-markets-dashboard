@@ -10,18 +10,21 @@
      Single source of truth: changing these --am-* values ripropaga su tutte
      le classi bespoke via gli alias legacy in fondo al blocco. */
 
-  /* Base backgrounds — deep indigo-black, not flat black */
-  --am-bg:         #0B0C0E;
-  --am-bg-2:       #0E1013;
-  --am-panel:      #131519;
-  --am-panel-2:    #181B20;
-  --am-panel-3:    #1E2229;
-  --am-bar:        rgba(8,10,18,0.98);   /* header/banner bands (era hex dark opaco) */
-  --am-inset:      #0C0D10;    /* superfici recessed: input, pill, segmented */
+  /* Base backgrounds — indigo-black (#RESTYLING-0921). Prima erano neutri
+     (#0B0C0E…): il brief chiede Indigo/Black. Spostata la TINTA (hue ~232°,
+     croma bassa), tenuta la LUMINANZA: i rapporti AA misurati sui commenti
+     sotto restano validi entro ±0,05. */
+  --am-bg:         #0A0B12;
+  --am-bg-2:       #0E1019;
+  --am-panel:      #12141D;
+  --am-panel-2:    #171A25;
+  --am-panel-3:    #1E2231;
+  --am-bar:        rgba(9,10,20,0.98);   /* header/banner bands (era hex dark opaco) */
+  --am-inset:      #0B0C13;    /* superfici recessed: input, pill, segmented */
 
-  /* Borders — neutral-cool, low chroma for depth */
-  --am-line:       #21252C;
-  --am-line-2:     #2C313A;
+  /* Borders — indigo-cool, low chroma for depth */
+  --am-line:       #232838;
+  --am-line-2:     #2F3547;
   /* LEVEL-UP 1c+: hairline delle CORNICI chamfer (rail/book-main/betslip/glass-card).
      Su dark serve un filo CHIARO (i --line neutri spariscono sul quasi-nero) → white
      alpha; su light un filo scuro. Fa leggere il taglio obliquo senza fare "gabbia". */
@@ -84,6 +87,57 @@
   --am-muted-2:    #767E89;  /* #UI-MACHINA-0802: era #6E7682 → 4.31:1 sul footer scuro, sotto AA. */
   --am-hi:         rgba(255,255,255,0.05);
 
+  /* ── #RESTYLING-0921 — ruoli semantici del brief (dark) ──────────────────
+     Regola: Royal = struttura; Sky = dato secondario/mercato; Edge (neon
+     green) e Live (neon yellow) sono ACCENTI — testo, bordo, numero, un fill
+     su UNA CTA per schermata. Mai fill di superficie. «Se tutto è
+     evidenziato, nulla è evidenziato.» Il brand green --am-coral resta il
+     verde del logo; --am-edge è il suo gradino più chiaro che regge sul
+     pannello indigo (10,7:1 su --am-panel; --am-coral ci fa 5,1:1). */
+  --am-royal:      #5B82FF;   /* tab attiva, link, selected, focus — 5,3:1 su panel */
+  --am-royal-2:    #2F5BE8;   /* fill selected/tab con testo bianco (5,5:1) */
+  --am-royal-dim:  rgba(91,130,255,0.14);
+  --am-royal-b:    rgba(91,130,255,0.38);
+  --am-royal-ink:  #FFFFFF;
+  --am-sky:        #8FBBFF;   /* market probability, chart secondario */
+  --am-sky-dim:    rgba(143,187,255,0.12);
+  --am-sky-b:      rgba(143,187,255,0.32);
+  --am-edge:       #3EE07F;   /* edge positivo, CTA primaria, upgrade */
+  --am-edge-dim:   rgba(62,224,127,0.12);
+  --am-edge-b:     rgba(62,224,127,0.36);
+  --am-edge-ink:   #06140C;   /* testo su fill --am-edge */
+  --am-live:       #FFD84D;   /* live, featured, starting soon, attenzione */
+  --am-live-dim:   rgba(255,216,77,0.12);
+  --am-live-b:     rgba(255,216,77,0.36);
+  --am-live-ink:   #1A1500;
+
+  /* Forma: le card si ammorbidiscono (8–12px), i controlli dentro le card 6px.
+     --am-btn-radius 0 resta per i tasti legacy del desk: le pagine che lo usano
+     verranno rifatte, non riskinnate al volo. */
+  --am-r-card:     12px;
+  --am-r-card-sm:  8px;
+  --am-r-ctl:      6px;
+  --am-r-chip:     4px;   /* chip squadrata, non pillola: è una label, non un tasto */
+  /* Dark: profondità da superficie+filo, ombra quasi nulla (brief). */
+  --am-shadow-card:       0 1px 0 0 rgba(255,255,255,0.025) inset, 0 12px 32px -22px rgba(0,0,0,0.75);
+  --am-shadow-card-hover: 0 1px 0 0 rgba(255,255,255,0.04) inset, 0 16px 36px -20px rgba(0,0,0,0.8);
+
+  /* Spacing scale del brief: 4/8/12/16/24/32/48/64 */
+  --am-s-1: 4px;  --am-s-2: 8px;  --am-s-3: 12px; --am-s-4: 16px;
+  --am-s-5: 24px; --am-s-6: 32px; --am-s-7: 48px; --am-s-8: 64px;
+
+  /* Ruoli tipografici. UI = Hanken (titoli, corpo, label). NUM = JetBrains Mono
+     SOLO per quote, percentuali, date, label tecniche. HUD = Saira Condensed,
+     registro legacy della scheda #CARD-HUD-0830, non usato dal nuovo sistema. */
+  --am-font-ui:    var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  --am-font-num:   var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --am-font-hud:   var(--font-tech), var(--font-display), sans-serif;
+  /* Scala dei numeri: il numero domina la label (32/24/17 contro 11). */
+  --am-num-lg:     32px;
+  --am-num-md:     24px;
+  --am-num-sm:     17px;
+  --am-label:      11px;
+
   /* Semantic aliases consumed by bespoke rules (--border / --accent / --ring) */
   --accent: var(--am-panel-3);
   --border: var(--am-line);
@@ -116,16 +170,19 @@
    automaticamente perché puntano ad altri --am-*. Accenti approfonditi per AA
    su fondo chiaro (spec §3.2). */
 :root[data-theme="light"] {
-  --am-bg:         #F4F5F7;
-  --am-bg-2:       #EEF0F3;
+  /* #RESTYLING-0921: beige/off-white (carta editoriale), non grigio-azzurro.
+     Il light è caldo dove il dark è freddo: la temperatura distingue i due
+     modi, non solo l'inversione. Luminanze pari alle precedenti. */
+  --am-bg:         #F3F1EB;
+  --am-bg-2:       #ECE9E1;
   --am-panel:      #FFFFFF;
-  --am-panel-2:    #FBFCFD;
-  --am-panel-3:    #EEF0F3;
-  --am-bar:        rgba(255,255,255,0.96);
-  --am-inset:      #EEF0F3;
+  --am-panel-2:    #FAF9F5;
+  --am-panel-3:    #EFECE5;
+  --am-bar:        rgba(255,254,251,0.96);
+  --am-inset:      #EFECE5;
 
-  --am-line:       #E3E6EB;
-  --am-line-2:     #D2D7DE;
+  --am-line:       #E3DFD6;
+  --am-line-2:     #D1CCC0;
   /* LEVEL-UP 1e: bordi chamfer troppo tenui su bianco → filo più marcato (era
      frame-edge .22 / chamfer-line #E3E6EB, si perdevano). Solo light. */
   --am-frame-edge:       rgba(18,22,28,0.34);
@@ -159,6 +216,31 @@
   --am-muted:      #4A515B;
   --am-muted-2:    #616975;  /* #PRO-AA-0822: #666E7B lasciava «/ mo» a 4.42:1 e «Русский» a 4.31:1 sui pannelli tinti. Ora >=4.65:1 su quei fondi. */  /* #UI-MACHINA-0802: era #79818D → 3.61:1 sul footer 10.5px, sotto AA. Stesso valore e stessa ragione di --v-muted2 (#V3-LABELS-AA): il namespace --am-* era rimasto indietro. */
   --am-hi:         rgba(255,255,255,0.9);
+
+  /* #RESTYLING-0921 — ruoli semantici (light). Il neon come TESTO su bianco
+     non regge l'AA, quindi qui gli accenti scendono di valore: stessa tinta,
+     un gradino più scuro. Rapporti su #FFFFFF: royal 7,1 · sky 5,3 ·
+     edge 4,65 (è il --am-coral light già misurato #PRO-AA-0822) · live 6,4. */
+  --am-royal:      #1E48D6;
+  --am-royal-2:    #1E48D6;
+  --am-royal-dim:  rgba(30,72,214,0.09);
+  --am-royal-b:    rgba(30,72,214,0.32);
+  --am-royal-ink:  #FFFFFF;
+  --am-sky:        #1F6FB2;
+  --am-sky-dim:    rgba(31,111,178,0.09);
+  --am-sky-b:      rgba(31,111,178,0.30);
+  --am-edge:       #137437;
+  --am-edge-dim:   rgba(19,116,55,0.09);
+  --am-edge-b:     rgba(19,116,55,0.32);
+  --am-edge-ink:   #FFFFFF;
+  --am-live:       #7A5A00;   /* testo e puntino; il live non ha mai un fill pieno */
+  --am-live-dim:   rgba(245,196,0,0.16);
+  --am-live-b:     rgba(122,90,0,0.34);
+  --am-live-ink:   #1A1500;
+
+  /* Light: la carta ha ombra, leggera e calda. */
+  --am-shadow-card:       0 1px 2px rgba(28,25,18,0.05), 0 12px 28px -18px rgba(28,25,18,0.16);
+  --am-shadow-card-hover: 0 1px 2px rgba(28,25,18,0.06), 0 16px 32px -16px rgba(28,25,18,0.22);
 
   --ring:         rgba(21,128,61,0.38);  /* LEVEL-UP 1b: focus ring legacy → verde */
 }

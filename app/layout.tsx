@@ -6,6 +6,7 @@ import VercelAnalytics from "@/components/VercelAnalytics";
 import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
+import "./design-system.css"; // #RESTYLING-0921 — componenti br-*, solo token --am-*
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-display",
@@ -23,10 +24,12 @@ const sairaCondensed = Saira_Condensed({
   display: "swap",
 });
 
+// #RESTYLING-0921: aggiunto il 700. I numeri della PredictionCard (Model /
+// Market / Edge) devono dominare le label: il 600 a 32px non basta, il 700 sì.
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 // #SEO-SCAFFOLDING-0721: metadataBase + OG/Twitter site-wide (prima: zero → le
