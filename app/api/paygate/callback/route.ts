@@ -79,6 +79,7 @@ export async function GET(req: Request) {
     const decision = evaluateCallback({
       order: { status: order.status, amount_usd: order.amount_usd },
       valueCoin: serverValue,
+      coin: verify.coin,
     });
     if (!decision.grant) {
       console.warn(`[paygate/callback] no-grant: ${decision.reason} (order=${order.id}, server value_coin=${String(serverValue)})`);

@@ -79,6 +79,7 @@ export async function settlePendingOrder(order: PendingOrder): Promise<SettleRes
   const decision = evaluateCallback({
     order: { status: order.status, amount_usd: order.amount_usd },
     valueCoin: serverValue,
+    coin: verify.coin,
   });
   if (!decision.grant) return { granted: false, reason: decision.reason };
 

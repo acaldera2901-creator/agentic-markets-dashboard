@@ -199,30 +199,30 @@ describe("weekly-pick grant gating (evaluateCallback)", () => {
   const AMOUNT = WEEKLY_PICK_PRICE_USD; // 12.99
 
   it("grants when the order is pending and the paid value clears the floor", () => {
-    const d = evaluateCallback({ order: { status: "pending", amount_usd: AMOUNT }, valueCoin: 12.0 });
+    const d = evaluateCallback({ order: { status: "pending", amount_usd: AMOUNT }, valueCoin: 12.0, coin: "polygon-usdc" });
     expect(d.grant).toBe(true);
   });
 
   it("does NOT grant when the payment is unconfirmed (value_coin missing)", () => {
-    const d = evaluateCallback({ order: { status: "pending", amount_usd: AMOUNT }, valueCoin: null });
+    const d = evaluateCallback({ order: { status: "pending", amount_usd: AMOUNT }, valueCoin: null, coin: "polygon-usdc" });
     expect(d.grant).toBe(false);
     expect(d.reason).toBe("missing value_coin");
   });
 
   it("does NOT grant on a replayed/already-processed order (status != pending)", () => {
-    const d = evaluateCallback({ order: { status: "paid", amount_usd: AMOUNT }, valueCoin: 12.0 });
+    const d = evaluateCallback({ order: { status: "paid", amount_usd: AMOUNT }, valueCoin: 12.0, coin: "polygon-usdc" });
     expect(d.grant).toBe(false);
     expect(d.reason).toBe("order not pending");
   });
 
   it("does NOT grant when the paid value is below the sanity floor", () => {
-    const d = evaluateCallback({ order: { status: "pending", amount_usd: AMOUNT }, valueCoin: 1.0 });
+    const d = evaluateCallback({ order: { status: "pending", amount_usd: AMOUNT }, valueCoin: 1.0, coin: "polygon-usdc" });
     expect(d.grant).toBe(false);
     expect(d.reason).toBe("amount below threshold");
   });
 
   it("does NOT grant when the order is unknown (token not found)", () => {
-    const d = evaluateCallback({ order: null, valueCoin: 12.0 });
+    const d = evaluateCallback({ order: null, valueCoin: 12.0, coin: "polygon-usdc" });
     expect(d.grant).toBe(false);
     expect(d.reason).toBe("order not found");
   });
