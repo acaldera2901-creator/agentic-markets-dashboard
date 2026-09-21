@@ -47,17 +47,36 @@ jobs:
       - name: Rigenera lo snapshot
         id: refresh
         run: |
+          set +e
           python scripts/refresh_history_snapshot.py | tee refresh.log
+          refresh_exit=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$refresh_exit" >> "$GITHUB_OUTPUT"
           echo "changed=$(git diff --quiet -- data/summer_leagues/history.json && echo no || echo yes)" >> "$GITHUB_OUTPUT"
+
+      - name: Conserva evidenze e snapshot anche in caso di refresh parziale
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: history-refresh-evidence
+          path: |
+            refresh.log
+            data/summer_leagues/history.json
+
+      - name: Segnala le sorgenti non aggiornate
+        if: steps.refresh.outputs.exit_code != '0'
+        run: |
+          echo "Refresh incompleto: consultare l'artefatto per lega. Nessuna PR automatica pubblicata."
+          exit 1
 
       # Il gate di replay-safety gira anche qui: se il refresh introducesse uno
       # stato che rompe le migration, si ferma prima della PR.
       - name: Migration replay-safety
-        if: steps.refresh.outputs.changed == 'yes'
+        if: success() && steps.refresh.outputs.changed == 'yes'
         run: python scripts/check_migrations_replayable.py
 
       - name: Apri la PR
-        if: steps.refresh.outputs.changed == 'yes'
+        if: success() && steps.refresh.outputs.changed == 'yes'
         uses: peter-evans/create-pull-request@v6
         with:
           branch: auto/history-refresh

@@ -30,6 +30,7 @@ import type { MatchResult } from "@/lib/poisson-model";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import type { FDMatch } from "@/lib/football-data";
 import { ESPN_HEADERS, ESPN_SITE_API } from "@/lib/espn";
+import { snapshotReadiness } from "@/lib/data-readiness";
 
 // Display names drive the per-league surfacing floor (lib/surfacing-gate.ts
 // CLUB_FLOOR_OVERRIDES matches on these): keep them aligned with the lab table.
@@ -214,9 +215,10 @@ export function fetchSummerHistory(code: string): MatchResult[] {
   }));
 }
 
-export function summerSnapshotAgeDays(): number {
-  const gen = new Date((historySnapshot as SnapshotShape).generated_at);
-  return Math.floor((Date.now() - gen.getTime()) / 86_400_000);
+export function summerSnapshotAgeDays(code?: string): number {
+  const summary = snapshotReadiness(historySnapshot);
+  if (code) return summary.leagues[code]?.age_days ?? Infinity;
+  return Math.max(...Object.values(summary.leagues).map(row => row.age_days ?? Infinity));
 }
 
 // ── Team-name matching (fixtures source ↔ model names) ──────────────────────
