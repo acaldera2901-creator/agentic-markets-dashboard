@@ -78,6 +78,39 @@ describe("initAttribution", () => {
     expect(getAttribution()?.referrer).toBe("https://www.google.com/");
   });
 
+  // #MIS-C — le tre chiavi che c'erano negli eventi e non nell'attribuzione.
+  // Prima di questo commit un iscritto da Telegram o da una mail del ciclo di
+  // vita arrivava in profiles.acquisition senza sorgente: non "poca", assente.
+  it("cattura src: un iscritto da un canale Telegram e' attribuibile", () => {
+    setUrl("/?src=tg-free");
+    initAttribution();
+    expect(getAttribution()?.src).toBe("tg-free");
+  });
+
+  it("cattura crm: la cta di una mail del ciclo di vita e' attribuibile", () => {
+    setUrl("/weekly-model-case?crm=wb_day7_renew");
+    initAttribution();
+    const a = getAttribution();
+    expect(a?.crm).toBe("wb_day7_renew");
+    expect(a?.landing_path).toBe("/weekly-model-case");
+  });
+
+  it("cattura ref: il codice creator resta nella sorgente first-touch", () => {
+    setUrl("/?ref=TG3");
+    initAttribution();
+    expect(getAttribution()?.ref).toBe("TG3");
+  });
+
+  // La cattura e la sanificazione server-side leggono LA STESSA costante:
+  // se una chiave entra nel record ma non nell'allowlist, il server la butta
+  // via in silenzio e l'attribuzione torna vuota a DB.
+  it("ogni chiave catturata sopravvive a sanitizeAttribution (client e server allineati)", () => {
+    setUrl("/tools?src=tg-free&crm=wb_day7_renew&ref=TG3&utm_source=reddit");
+    initAttribution();
+    const raw = JSON.parse(window.localStorage.getItem("am_attrib") as string);
+    expect(sanitizeAttribution(raw)).toEqual(raw);
+  });
+
   it("traffico diretto: nessun utm, ma la landing resta misurata", () => {
     setUrl("/partners");
     initAttribution();

@@ -70,17 +70,33 @@ def test_le_iscrizioni_portano_il_confronto_col_periodo_precedente(mocker):
     assert "-3 sui 7 precedenti" in v.headline
 
 
-def test_il_traffico_dice_se_il_tracking_non_registra(mocker):
-    # site_visits ha UNA riga in tutto, del 14 giugno: dire "0 visite" farebbe
-    # credere che il tracking funzioni e che nessuno sia passato.
-    mocker.patch.object(business, "fetch_all", side_effect=[[(800, 600)], [(0, 1)]])
+def test_il_traffico_legge_solo_events(mocker):
+    # #MIS-A: site_visits e' del backoffice separato di Tommy (una riga
+    # sintetica del 14/06, mai scritta da noi). Leggerla accanto a events
+    # faceva dire "tracking visite non attivo" mentre events registrava.
+    # Una query sola, una fonte sola.
+    fetch = mocker.patch.object(business, "fetch_all", return_value=[(800, 210, 600)])
     v = business.check_traffico()
-    assert "tracking visite non attivo" in v.headline
-    assert "non registra" in v.evidence["site_visits"]
+    assert fetch.call_count == 1
+    sql = fetch.call_args[0][0]
+    assert "site_visits" not in sql
+    assert "event_type = 'page_view'" in sql
+    assert v.source == "db:events"
+    assert "800 pagine viste in 7 giorni (+200)" in v.headline
+    assert "210 sessioni" in v.headline
+    assert v.evidence["viste_7"] == 800
+    assert v.evidence["sessioni_7"] == 210
+    assert "site_visits" not in v.evidence
 
-    mocker.patch.object(business, "fetch_all", side_effect=[[(800, 600)], [(120, 4000)]])
+
+def test_le_sessioni_dichiarano_di_contare_solo_chi_ha_dato_il_consenso(mocker):
+    # Senza consenso il beacon parte senza session_id: le sessioni sono una
+    # sottostima nota. Non dichiararlo sarebbe sostituire una bugia con
+    # un'altra.
+    mocker.patch.object(business, "fetch_all", return_value=[(800, 210, 600)])
     v = business.check_traffico()
-    assert "120 visite" in v.headline
+    assert "consenso" in v.evidence["caveat_sessioni"]
+    assert "session_id" in v.evidence["caveat_sessioni"]
 
 
 def test_l_incassato_dichiara_cosa_resta_fuori_dalla_somma(mocker):

@@ -364,10 +364,15 @@ describe("MatchDetailSheet — tracking del partner scelto", () => {
     openMenu();
     fireEvent.click(screen.getByText(name));
   };
+  // #MIS-B: sulla stessa apertura viaggiano DUE eventi (partner_menu_open al
+  // click sulla CTA, partner_click sulla voce). Il filtro e' per event_type,
+  // non per URL, o le asserzioni sul click contano anche il denominatore.
+  const beacons = (tipo: string) =>
+    calls.filter((c) => c.url === "/api/track" && c.body.event_type === tipo);
 
   it("registra quale partner è stato scelto", () => {
     clickPartner("FeliceBet");
-    const ev = calls.filter((c) => c.url === "/api/track");
+    const ev = beacons("partner_click");
     expect(ev).toHaveLength(1);
     expect(ev[0].body.event_type).toBe("partner_click");
     expect(ev[0].body.partner_id).toBe("FeliceBet");
@@ -381,7 +386,7 @@ describe("MatchDetailSheet — tracking del partner scelto", () => {
 
   it("senza consenso GDPR non manda nessun session_id", () => {
     clickPartner("BetScore");
-    const ev = calls.filter((c) => c.url === "/api/track");
+    const ev = beacons("partner_click");
     expect(ev).toHaveLength(1); // l'evento parte comunque, anonimo
     expect(ev[0].body.session_id).toBeUndefined();
     expect(sessionStorage.getItem("am_sid")).toBeNull(); // nessun id creato di nascosto
@@ -390,7 +395,7 @@ describe("MatchDetailSheet — tracking del partner scelto", () => {
   it("col consenso allega il session_id", () => {
     localStorage.setItem("gdpr_consent", "accepted");
     clickPartner("BetScore");
-    const ev = calls.filter((c) => c.url === "/api/track");
+    const ev = beacons("partner_click");
     expect(ev).toHaveLength(1);
     expect(typeof ev[0].body.session_id).toBe("string");
   });
@@ -402,5 +407,29 @@ describe("MatchDetailSheet — tracking del partner scelto", () => {
     const link = screen.getByText("FortunePlay").closest("a") as HTMLAnchorElement;
     expect(() => fireEvent.click(link)).not.toThrow();
     expect(link.getAttribute("href")).toBe(BOOKS[0].matchUrl);
+  });
+
+  // #MIS-B — il DENOMINATORE. Senza l'apertura registrata, "zero click" non si
+  // distingue da "nessuno ha aperto il menu": e' la stessa riga di dashboard.
+  it("registra l'apertura del menu con quanti book erano in lista", () => {
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu();
+    const ev = beacons("partner_menu_open");
+    expect(ev).toHaveLength(1);
+    expect((ev[0].body.meta as Record<string, unknown>).count).toBe(BOOKS.length);
+    expect((ev[0].body.meta as Record<string, unknown>).surface).toBe("match_sheet");
+  });
+
+  it("non lo registra alla CHIUSURA: il numeratore non si gonfia da solo", () => {
+    render(<MatchDetailSheet data={makeData()} />);
+    openMenu(); // apre
+    openMenu(); // richiude
+    expect(beacons("partner_menu_open")).toHaveLength(1);
+  });
+
+  it("apertura e click restano due eventi distinti", () => {
+    clickPartner("YBets");
+    expect(beacons("partner_menu_open")).toHaveLength(1);
+    expect(beacons("partner_click")).toHaveLength(1);
   });
 });

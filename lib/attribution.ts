@@ -12,7 +12,17 @@ const MAX_VALUE_LEN = 200;
 const MAX_PAYLOAD_BYTES = 2048;
 
 // Chiavi note: sono anche l'allowlist usata dalla sanificazione server-side.
+// #MIS-C — `src`, `ref` e `crm` erano nelle chiavi lette dagli EVENTI
+// (SEARCH_SOURCE_KEYS, piu' in basso) ma non qui: un iscritto arrivato da un
+// canale Telegram (`?src=tg-free`) o da una mail del ciclo di vita
+// (`?crm=wb_day7_renew`) finiva in `profiles.acquisition` senza sorgente,
+// strutturalmente inattribuibile. Le due liste ora si sovrappongono e la
+// cattura passa da `sourceFromSearch`: una fonte sola per le chiavi di
+// provenienza, niente parsing reimplementato.
 export const ATTRIBUTION_KEYS = [
+  "src",
+  "ref",
+  "crm",
   "utm_source",
   "utm_medium",
   "utm_campaign",
@@ -23,8 +33,6 @@ export const ATTRIBUTION_KEYS = [
 ] as const;
 
 export type Attribution = Partial<Record<(typeof ATTRIBUTION_KEYS)[number], string>>;
-
-const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content"] as const;
 
 // Client-only. Idempotente: se un record esiste già non tocca nulla.
 // Nessuna scrittura prima del consenso: stessa regola di lib/track-event
@@ -41,12 +49,9 @@ export function initAttribution(): void {
   // storageGet/storageSet non lanciano mai — niente try/catch che li riavvolga.
   if (storageGet("gdpr_consent") !== "accepted") return;
   if (storageGet(KEY)) return; // first-touch: mai sovrascrivere
-  const q = new URLSearchParams(window.location.search);
-  const rec: Attribution = {};
-  for (const k of UTM_KEYS) {
-    const v = q.get(k);
-    if (v) rec[k] = v.slice(0, MAX_VALUE_LEN);
-  }
+  // Stessa funzione che legge la provenienza per gli eventi (#ATTRIB-EVERYWHERE-0915):
+  // stesse chiavi, stessa ripulitura. Due parser divergono e il secondo sbaglia.
+  const rec: Attribution = { ...sourceFromSearch(window.location.search) };
   // Il referrer interno non è una sorgente di acquisizione: se l'utente arriva
   // dalla home a /tools, la sorgente resta quella con cui è entrato in home.
   const ref = typeof document !== "undefined" ? document.referrer : "";

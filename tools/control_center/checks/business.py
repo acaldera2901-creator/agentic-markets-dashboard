@@ -81,36 +81,44 @@ def check_incassato() -> Verdict:
 
 
 def check_traffico() -> Verdict:
+    """Traffico a 7 giorni letto SOLO da `events`.
+
+    #MIS-A — leggeva anche `site_visits`, che ha una riga sintetica del
+    14/06 e non e' nostra: appartiene al backoffice separato di Tommy, che
+    e' live e la legge. Due sistemi di telemetria, uno solo scritto: il
+    ramo difensivo "tracking visite non attivo" diceva che il tracking non
+    andava mentre `events` registrava regolarmente.
+
+    Le SESSIONI contano solo il traffico CON CONSENSO: senza consenso il
+    beacon parte comunque ma senza `session_id` (regola in
+    lib/track-event.ts), e circa un page_view su cinque arriva cosi'. Il
+    caveat sta nell'evidenza perche' e' vero: senza dichiararlo avremmo
+    solo sostituito un numero falso con un altro.
+    """
     try:
-        eventi = fetch_all(
+        righe = fetch_all(
             "select count(*) filter (where created_at > now() - interval '7 days'), "
+            "       count(distinct session_id) filter "
+            "           (where created_at > now() - interval '7 days'), "
             "       count(*) filter (where created_at > now() - interval '14 days' "
             "                          and created_at <= now() - interval '7 days') "
-            "from events"
-        )[0]
-        visite = fetch_all(
-            "select count(*) filter (where ts > now() - interval '7 days'), count(*) "
-            "from site_visits"
+            "from events where event_type = 'page_view'"
         )[0]
     except DbUnavailable as exc:
         return unknown(f"database non raggiungibile: {exc}", "db:events")
-    ora, prima = int(eventi[0] or 0), int(eventi[1] or 0)
-    visite_7, visite_totali = int(visite[0] or 0), int(visite[1] or 0)
-    delta = ora - prima
+    viste, sessioni, prima = int(righe[0] or 0), int(righe[1] or 0), int(righe[2] or 0)
+    delta = viste - prima
     segno = f"{delta:+d}" if delta else "="
-
-    prove = {"eventi_7": ora, "eventi_precedenti_7": prima, "visite_7": visite_7}
-    # Dire "0 visite" farebbe credere che il tracking funzioni e che nessuno
-    # sia passato. Misurato il 2026-08-20: site_visits ha UNA riga in tutto,
-    # del 14 giugno. Il numero non e' basso: non viene scritto.
-    if visite_totali <= 1:
-        prove["site_visits"] = f"praticamente vuota ({visite_totali} righe in tutto): non registra"
-        coda = "tracking visite non attivo"
-    else:
-        coda = f"{visite_7} visite"
     return info(
-        f"{ora} eventi in 7 giorni ({segno}), {coda}",
-        "db:events+site_visits", value=ora, evidence=prove,
+        f"{viste} pagine viste in 7 giorni ({segno}), {sessioni} sessioni",
+        "db:events", value=viste,
+        evidence={
+            "viste_7": viste,
+            "viste_precedenti_7": prima,
+            "sessioni_7": sessioni,
+            "caveat_sessioni": "solo traffico con consenso: senza consenso il "
+                               "beacon parte senza session_id (~20% dei page_view)",
+        },
     )
 
 
