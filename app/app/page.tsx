@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, Fragment } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
@@ -57,10 +57,14 @@ import {
   WatchlistButton,
 } from "@/components/ui";
 import { LobbySection } from "@/components/lobby/LobbySection";
+import { HomeFaq } from "@/components/lobby/HomeFaq";
+import { HeroBanner } from "@/components/lobby/HeroBanner";
+import { SportCategoryTile, SportTileRow } from "@/components/lobby/SportCategoryTile";
+import { AccumulatorPromoTile } from "@/components/lobby/AccumulatorPromoTile";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
-import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId } from "@/lib/ui/lobby";
+import { buildLobbySections, lobbyCounts, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId } from "@/lib/ui/lobby";
 import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -1638,6 +1642,11 @@ interface Prediction {
   pick?: string | null;
   confidence_score?: number | null;
   explanation?: string | null;
+  // #RESTYLING-0921 — riga CHIUSA: probabilità e quota dell'esito di punta,
+  // senza dire quale sia (la tripla e le quote per esito non arrivano). Vedi la
+  // nota `lockedHeadline` in app/api/predictions/route.ts.
+  model_prob?: number | null;
+  market_odds?: number | null;
   affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
 
@@ -1810,6 +1819,10 @@ export interface TennisMatch { // #HOME-V3: riusato 1:1 nella sezione Anatomy de
   // purpose (different reason, different copy). Legacy payloads omit it.
   no_market?: boolean | null;
   explanation?: string | null;
+  // #RESTYLING-0921 — riga CHIUSA: probabilità e quota dell'esito di punta,
+  // senza dire quale sia. Stessa regola della board calcio.
+  model_prob?: number | null;
+  market_odds?: number | null;
   affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
 
@@ -9036,9 +9049,200 @@ function HomeLobby({
     );
   };
 
+  // ── #RESTYLING-0921 round 2: hero + tile per sport ──────────────────────
+  //
+  // I numeri delle pill sono CONTEGGI REALI e NON CAPPATI: le fasce mostrano al
+  // massimo LOBBY_ROW_CAP righe, ma «Live now 3» quando ce ne sono 11 sarebbe un
+  // numero sbagliato scritto in grande. Un conteggio a zero non diventa una pill
+  // (`value: null` → HeroBanner non la rende): meglio due pill vere che tre di
+  // cui una dice zero.
+  const heroCounts = useMemo(
+    () => lobbyCounts([...footballItems, ...tennisItems]),
+    [footballItems, tennisItems],
+  );
+
+  // La parola accentata va in <em> (il CSS la colora in lime): è enfasi, non un
+  // colore appiccicato addosso.
+  const heroTitle = pick5<React.ReactNode>(lang, {
+    it: <>Le migliori occasioni <em>di oggi.</em></>,
+    en: <>Top opportunities <em>today.</em></>,
+    es: <>Las mejores oportunidades <em>de hoy.</em></>,
+    fr: <>Les meilleures opportunités <em>du jour.</em></>,
+    ru: <>Лучшие возможности <em>на сегодня.</em></>,
+  });
+
+  // La checklist dice SOLO cose che il prodotto fa già e che si possono
+  // verificare aprendo una card: il confronto model/mercato, l'edge in punti,
+  // i due sport serviti, il builder. «Trusted by 100K+ bettors» dell'immagine
+  // di riferimento è un placeholder, non un nostro dato: non c'è.
+  const heroPoints = pick5<string[]>(lang, {
+    it: [
+      "La probabilità del modello accanto al prezzo del mercato",
+      "L'edge in punti percentuali, o nessun edge dichiarato",
+      "Calcio e tennis, aggiornati durante la giornata",
+      "Costruisci la tua multipla con la probabilità congiunta",
+    ],
+    en: [
+      "The model's probability next to the market price",
+      "The edge in percentage points, or no edge claimed",
+      "Football and tennis, updated through the day",
+      "Build your own accumulator with its joint probability",
+    ],
+    es: [
+      "La probabilidad del modelo junto al precio del mercado",
+      "El edge en puntos porcentuales, o ningún edge declarado",
+      "Fútbol y tenis, actualizados durante el día",
+      "Crea tu combinada con su probabilidad conjunta",
+    ],
+    fr: [
+      "La probabilité du modèle à côté du prix du marché",
+      "L'edge en points de pourcentage, ou aucun edge annoncé",
+      "Football et tennis, mis à jour tout au long de la journée",
+      "Composez votre combiné avec sa probabilité conjointe",
+    ],
+    ru: [
+      "Вероятность модели рядом с ценой рынка",
+      "Edge в процентных пунктах — или никакого edge",
+      "Футбол и теннис, обновления в течение дня",
+      "Соберите свой экспресс с совокупной вероятностью",
+    ],
+  });
+
+  const hero = view !== "home" ? null : (
+    <HeroBanner
+      eyebrow={pick5(lang, {
+        it: "PREVISIONI CON L'AI", en: "AI POWERED PREDICTIONS", es: "PREDICCIONES CON IA",
+        fr: "PRÉDICTIONS PAR IA", ru: "ПРОГНОЗЫ НА БАЗЕ ИИ",
+      })}
+      title={heroTitle}
+      subtitle={pick5(lang, {
+        it: "La probabilità del nostro modello accanto a quella del mercato, su ogni partita. Dove sono lontane, c'è una decisione da prendere.",
+        en: "Our model's probability next to the market's, on every match. Where they diverge, there's a decision to make.",
+        es: "La probabilidad de nuestro modelo junto a la del mercado, en cada partido. Donde se separan, hay una decisión que tomar.",
+        fr: "La probabilité de notre modèle à côté de celle du marché, sur chaque match. Là où elles divergent, il y a une décision à prendre.",
+        ru: "Вероятность нашей модели рядом с рыночной — в каждом матче. Где они расходятся, там и решение.",
+      })}
+      stats={[
+        {
+          kind: "live",
+          label: pick5(lang, { it: "In corso ora", en: "Live now", es: "En vivo", fr: "En direct", ru: "В игре" }),
+          value: heroCounts.live || null,
+        },
+        {
+          kind: "starting-soon",
+          label: pick5(lang, { it: "A breve", en: "Starting soon", es: "Empiezan pronto", fr: "Bientôt", ru: "Скоро" }),
+          value: heroCounts.soon || null,
+        },
+        {
+          kind: "high-edge",
+          label: pick5(lang, { it: "Edge alto", en: "High edge", es: "Edge alto", fr: "Edge élevé", ru: "Высокий edge" }),
+          value: heroCounts.highEdge || null,
+        },
+      ]}
+      cta={{
+        label: pick5(lang, {
+          it: "Guarda le partite di oggi", en: "Explore today's picks", es: "Mira los partidos de hoy",
+          fr: "Voir les matchs du jour", ru: "Смотреть матчи дня",
+        }),
+        // Link vero (tasto centrale, condivisione), ma la vista completa è già
+        // in pagina: si cambia taglio, non si naviga.
+        href: TAB_PATHS.bets,
+        onClick: (ev) => {
+          ev.preventDefault();
+          trackEvent("card_open", { meta: { surface: "hero", section: "cta" } });
+          onExplore("all");
+        },
+      }}
+      secondary={{
+        label: pick5(lang, { it: "Come funziona", en: "How it works", es: "Cómo funciona", fr: "Comment ça marche", ru: "Как это работает" }),
+        href: "/how-it-works",
+      }}
+      aside={{
+        title: pick5(lang, { it: "Cosa trovi qui", en: "What you get", es: "Qué encuentras aquí", fr: "Ce que vous trouvez ici", ru: "Что здесь есть" }),
+        points: heroPoints,
+      }}
+      // Foto vera, non il pattern di fallback: l'asset è on-palette (navy /
+      // royal, nessun marchio visibile sulla maglia) e il soggetto sta a
+      // destra, dove il banner ha la sua finestra (`.br-hero__art`).
+      // È un DERIVATO web del master di art-director — 183 KB contro i 3,6 MB
+      // del PNG 2688px. È la prima immagine della homepage: quel peso è LCP.
+      //   sips -s format jpeg -s formatOptions 82 -Z 1600 \
+      //     public/images/hero/hero-football-desktop.png \
+      //     --out public/images/hero/hero-football-desktop-1600w.jpg
+      // `alt=""`: è decorativa, il contenuto è il testo accanto.
+      image={{ src: "/images/hero/hero-football-desktop-1600w.jpg", alt: "" }}
+    />
+  );
+
+  // Le tile: conteggio REALE per gli sport che serviamo, nessun conteggio per
+  // quelli che non serviamo — `count` assente → la tile dice «Coming soon» e non
+  // è un link (SportCategoryTile). Mai uno zero finto per far numero.
+  const sportTiles = view !== "home" ? null : (
+    <SportTileRow label={pick5(lang, { it: "Sfoglia per sport", en: "Browse by sport", es: "Explorar por deporte", fr: "Parcourir par sport", ru: "По виду спорта" })}>
+      {([
+        { sport: "football", label: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), count: footballItems.length },
+        { sport: "tennis", label: pick5(lang, { it: "Tennis", en: "Tennis", es: "Tenis", fr: "Tennis", ru: "Теннис" }), count: tennisItems.length },
+        { sport: "basketball", label: pick5(lang, { it: "Basket", en: "Basketball", es: "Baloncesto", fr: "Basket", ru: "Баскетбол" }), count: null },
+        { sport: "esports", label: "Esports", count: null },
+      ] as const).map((t) => (
+        <SportCategoryTile
+          key={t.sport}
+          sport={t.sport}
+          label={t.label}
+          count={t.count}
+          countLabel={pick5(lang, {
+            it: "{n} partite oggi", en: "{n} picks today", es: "{n} partidos hoy",
+            fr: "{n} matchs aujourd'hui", ru: "{n} матчей сегодня",
+          })}
+          comingSoonLabel={pick5(lang, { it: "In arrivo", en: "Coming soon", es: "Pronto", fr: "Bientôt", ru: "Скоро" })}
+          href={t.count == null ? undefined : `${TAB_PATHS.bets}?sport=${t.sport}`}
+          onClick={t.count == null ? undefined : (ev) => {
+            ev.preventDefault();
+            onExplore(t.sport as "football" | "tennis");
+          }}
+        />
+      ))}
+      <AccumulatorPromoTile
+        title={pick5(lang, {
+          it: "Costruisci la tua multipla", en: "Build your own accumulator", es: "Crea tu combinada",
+          fr: "Composez votre combiné", ru: "Соберите свой экспресс",
+        })}
+        subtitle={pick5(lang, {
+          it: "Unisci più partite e leggi la probabilità congiunta.",
+          en: "Combine matches and read the joint probability.",
+          es: "Combina partidos y lee la probabilidad conjunta.",
+          fr: "Combinez des matchs et lisez la probabilité conjointe.",
+          ru: "Объедините матчи и посмотрите совокупную вероятность.",
+        })}
+        href={TAB_PATHS["match-builder"]}
+      />
+    </SportTileRow>
+  );
+
+  // Dove entra la riga di tile: subito DOPO «Live now», che è la fascia con cui
+  // la Home apre il presente. Se oggi non c'è nulla in gioco quella fascia non
+  // esiste (lib/ui/lobby.ts non rende una sezione vuota), e le tile vanno dopo
+  // la prima fascia che c'è — non in cima, dove ruberebbero il posto all'hero.
+  const tilesAfter = shown.some((s) => s.id === "live") ? "live" : shown[0]?.id;
+
+  // La FAQ chiude la Home: è il testo che "/" deve mostrare perché il suo
+  // FAQPage JSON-LD sia legittimo (vedi components/lobby/HomeFaq.tsx). Solo
+  // sulla Home: sotto «Calcio» o «La tua watchlist» non c'entra niente.
+  const faq = view !== "home" ? null : (
+    <HomeFaq
+      lang={lang}
+      title={pick5(lang, {
+        it: "Prima della tua prima lettura", en: "Before your first reading",
+        es: "Antes de tu primera lectura", fr: "Avant votre première lecture",
+        ru: "Перед первым прогнозом",
+      })}
+    />
+  );
+
   if (shown.length === 0) {
     return (
       <div className="br-lobby">
+        {hero}
         <p className="br-empty">
           {q
             ? pick5(lang, {
@@ -9080,12 +9284,18 @@ function HomeLobby({
             </>
           )}
         </p>
+        {/* Anche a board vuota: la riga di tile è navigazione, non un dato, e
+            su una giornata senza partite è l'unica cosa che resta da fare
+            (sfogliare uno sport, aprire il builder). */}
+        {sportTiles}
+        {faq}
       </div>
     );
   }
 
   return (
     <div className="br-lobby">
+      {hero}
       {shown.map((sec) => {
         const copy = LOBBY_COPY[sec.id];
         const total = totalFor(sec.id);
@@ -9093,25 +9303,28 @@ function HomeLobby({
         // «Vedi tutte» compare solo se c'è davvero altro da vedere.
         const more = view === "home" && (isSport ? (total ?? 0) > sec.items.length : sec.items.length >= LOBBY_ROW_CAP);
         return (
-          <LobbySection
-            key={sec.id}
-            title={it ? copy.it : copy.en}
-            hint={(it ? copy.hintIt : copy.hintEn) || null}
-            count={isSport ? total : null}
-            action={more ? (
-              <button
-                type="button"
-                className="br-sec__link"
-                onClick={() => (isSport ? onExplore(sec.id as "football" | "tennis") : onExplore("all"))}
-              >
-                {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
-              </button>
-            ) : null}
-          >
-            {sec.items.map((item, i) => renderCard(item, i, sec.id))}
-          </LobbySection>
+          <Fragment key={sec.id}>
+            <LobbySection
+              title={it ? copy.it : copy.en}
+              hint={(it ? copy.hintIt : copy.hintEn) || null}
+              count={isSport ? total : null}
+              action={more ? (
+                <button
+                  type="button"
+                  className="br-sec__link"
+                  onClick={() => (isSport ? onExplore(sec.id as "football" | "tennis") : onExplore("all"))}
+                >
+                  {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
+                </button>
+              ) : null}
+            >
+              {sec.items.map((item, i) => renderCard(item, i, sec.id))}
+            </LobbySection>
+            {sec.id === tilesAfter && sportTiles}
+          </Fragment>
         );
       })}
+      {faq}
     </div>
   );
 }
@@ -9125,7 +9338,6 @@ function UnifiedBetsTab({
   onSignIn,
   onRegister,
   onGate,
-  isSignalPreviewUnlocked,
   isFreeClient,
   isPremiumClient,
   isLoggedIn,
@@ -9150,7 +9362,6 @@ function UnifiedBetsTab({
   onSignIn: () => void;
   onRegister: () => void;
   onGate?: () => void;
-  isSignalPreviewUnlocked: boolean;
   isFreeClient: boolean;
   isPremiumClient?: boolean;
   isLoggedIn: boolean;
@@ -9195,11 +9406,21 @@ function UnifiedBetsTab({
           per-card free preview renders (1 pick/sport + free-preview-wall);
           anonymous (no profile → no signal preview) still hits the auth wall,
           and pending_payment still hits the plan wall. */}
-      {/* #RESTYLING-0921 — la lobby sta DENTRO lo stesso muro del board: le sue
-          righe sono le stesse, con la stessa proiezione d'accesso. Spostarla
-          fuori significherebbe mostrare da anonimo ciò che il board nasconde. */}
+      {/* #RESTYLING-0921 round 2 — IL MURO DI TUTTA LA BOARD È GIÙ.
+          Round 1: lobby e board stavano dentro lo stesso overlay, perché la
+          lobby mostra le stesse righe. Corretto in astratto, sbagliato nei
+          fatti: da anonimo la Home era un rettangolo sfocato dietro un
+          «Accedi», cioè zero valore prima del muro, ed è il bug che QA ha
+          misurato (fasce che non rendevano, «MODEL 0%»).
+          Il gate non è stato rimosso: è stato SPOSTATO dove appartiene, cioè
+          server-side nella proiezione d'accesso (app/api/predictions,
+          app/api/tennis + lib/access-projection). Da anonimo escono partita,
+          model, mercato ed edge; NON escono la pick, la motivazione, la
+          confidenza e l'analisi profonda — un overlay di CSS non proteggeva
+          nulla di più, e nascondeva l'unica cosa che vende il prodotto.
+          L'invito a registrarsi resta: è la `reg-nudge` qui sopra. */}
       <LockedGate
-        isUnlocked={Boolean(isPremiumClient || isSignalPreviewUnlocked)}
+        isUnlocked
         mode={isLoggedIn ? "plan" : "auth"}
         onUnlock={() => onGate?.()}
       >
@@ -9269,7 +9490,13 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       const url = new URL(window.location.href);
       // Solo sulle pagine del desk: se siamo altrove (es. render annidato futuro)
       // la barra URL non va toccata.
-      if (!PATH_TO_TAB[url.pathname] && url.pathname !== "/app") return;
+      // #RESTYLING-0921 round 2: "/" è una pagina del desk — è la Home del
+      // prodotto (app/page.tsx). Sulla lobby l'URL resta "/" (riscriverlo in
+      // "/predictions" al mount cambierebbe la barra sotto il naso a chi è
+      // appena arrivato); da lì un cambio tab va sul path della tab, così un
+      // reload o un link condiviso riapre quello che si stava guardando.
+      if (!PATH_TO_TAB[url.pathname] && url.pathname !== "/app" && url.pathname !== "/") return;
+      if (url.pathname === "/" && tab === "bets" && !url.searchParams.has("tab")) return;
       if (PATH_TO_TAB[url.pathname] === tab && !url.searchParams.has("tab")) return;
       url.pathname = TAB_PATHS[tab];
       url.searchParams.delete("tab");
@@ -10133,7 +10360,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // #FUNNEL-INTENT-0908: il muro protegge i DATI, non il listino. Il listino si
   // apre; predizioni, storico e il resto del desk restano chiusi esattamente
   // com'erano — la condizione non è rimossa, è discriminata per pagina.
-  const mustAuth = authChecked && !hasSession && tab !== "plans";
+  // #RESTYLING-0921 round 2 (decisione Andrea, sezione 4 del digest): la
+  // landing marketing non è più la porta d'ingresso — "/" apre la Home/lobby
+  // del prodotto, ANCHE da anonimo. Un modale non chiudibile davanti alla
+  // vetrina la renderebbe inesistente, quindi la tab `bets` esce dal muro.
+  // I dati NON restano scoperti: li protegge dove va protetto, cioè
+  // server-side, la proiezione d'accesso (lib/access-projection.ts +
+  // `lockedHeadline`) — da anonimo escono model, mercato ed edge, mai la pick,
+  // la motivazione o l'analisi profonda. Storico, leaderboard, builder e
+  // invito restano dietro il muro.
+  const mustAuth = authChecked && !hasSession && tab !== "plans" && tab !== "bets";
 
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
@@ -10625,7 +10861,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
               onBannerCta={handleBannerCta}
-              isSignalPreviewUnlocked={isSignalPreviewUnlocked}
               isFreeClient={isFreeClient}
               isPremiumClient={isClientUnlocked}
               isLoggedIn={hasClientProfile}

@@ -1367,3 +1367,32 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   --am-panel-2: #10204F;
   border-color: rgba(30,72,214,0.45);
 }
+
+/* ── FAQ in coda alla Home (#RESTYLING-0921 round 2) ──────────────────────
+   Sta su "/" perché lo schema FAQPage vive su "/" e deve avere le sue
+   risposte visibili (vedi components/lobby/HomeFaq.tsx). Due colonne su
+   desktop: sei risposte lunghe in colonna unica farebbero una coda più alta
+   del prodotto che stanno spiegando. */
+.br-faq { display: flex; flex-direction: column; gap: var(--am-s-4); }
+.br-faq__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--am-s-5) var(--am-s-6);
+  margin: 0;
+}
+.br-faq__item { min-width: 0; }
+.br-faq__q {
+  font-family: var(--am-font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--am-text);
+}
+.br-faq__a {
+  margin: 6px 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--am-muted);
+  max-width: 68ch;
+}

@@ -261,10 +261,9 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
     }
   );
 
-  // La regressione che farebbe piu' danno: aprire il listino non deve aprire il
-  // prodotto. Le predizioni e lo storico sono la cosa che si vende.
+  // La regressione che farebbe piu' danno: aprire il listino non deve aprire
+  // tutto il desk. Lo storico completo resta la cosa che si vende.
   it.each([
-    ["/predictions", "bets"],
     ["/history", "history"],
   ] as const)("il muro di login RESTA su %s per un anonimo", async (path, tab) => {
     mount(path, tab);
@@ -274,5 +273,27 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
     // E non deve essere chiudibile: niente × nel modale del muro.
     const closeX = document.querySelector('.auth-modal-backdrop [aria-label="Close"], .auth-modal-backdrop [aria-label="Chiudi"]');
     expect(closeX, "il muro sui dati non deve essere chiudibile").toBeNull();
+  });
+
+  // #RESTYLING-0921 round 2 (decisione Andrea, sezione 4 del digest): la lobby
+  // NON ha piu' il muro. La landing marketing non e' piu' la porta d'ingresso
+  // — "/" apre la Home del prodotto — e un modale non chiudibile davanti alla
+  // vetrina la renderebbe inesistente: zero valore mostrato prima di chiedere
+  // un pagamento.
+  //
+  // Il gate non e' sparito, e' scritto dove conta: la proiezione d'accesso
+  // server-side (app/api/predictions, app/api/tennis) da anonimo manda la
+  // partita, la probabilita' del modello, la quota di mercato e quindi l'edge,
+  // e NON manda la pick, la motivazione, la confidenza ne' l'analisi profonda.
+  // Questo test vigila sul muro; i numeri li vigila lib/ui/desk-card.test.ts.
+  it.each([
+    ["/predictions", "bets"],
+    ["/", "bets"],
+  ] as const)("la lobby su %s si apre anche da anonimo", async (path, tab) => {
+    mount(path, tab);
+    // Il reconcile della sessione deve aver girato (authChecked): prima di
+    // quello il muro non e' ancora deciso e l'asserzione non varrebbe nulla.
+    await new Promise((r) => setTimeout(r, 400));
+    expect(wallIsUp(), `${path} e' la vetrina: nessun muro`).toBe(false);
   });
 });

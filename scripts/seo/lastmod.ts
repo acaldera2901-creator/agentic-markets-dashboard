@@ -36,8 +36,11 @@ const toolSources = (locale: string, page: string) => [
 ];
 
 const ROUTE_SOURCES: Record<string, string[]> = {
-  "/": ["app/page.tsx", "app/landing-client.tsx"],
+  // #RESTYLING-0921 round 2: "/" rende il desk (app/app/page.tsx), non più la
+  // landing — e la landing è ora la sorgente di /how-it-works.
+  "/": ["app/page.tsx", "app/app/page.tsx"],
   "/predictions": ["app/predictions"],
+  "/how-it-works": ["app/how-it-works", "app/landing-client.tsx"],
   "/plans": ["app/plans"],
   "/history": ["app/history"],
   "/ai-tennis-predictions": ["app/ai-tennis-predictions"],
