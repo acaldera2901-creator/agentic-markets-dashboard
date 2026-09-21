@@ -75,10 +75,43 @@ function byKickoffAsc(a: LobbyItem, b: LobbyItem): number {
 
 /** Una riga entra in «Top Opportunities» / «High Edge» solo se ha un edge
  *  REALE: serve un prezzo di mercato. Senza, è una stima del modello — vera,
- *  ma non un'opportunità contro il mercato. E una riga chiusa non può stare in
- *  una fascia che si chiama «High Edge»: annuncerebbe il numero che nasconde. */
+ *  ma non un'opportunità contro il mercato.
+ *
+ *  #RESTYLING-0921 round 2: la clausola `&& !it.data.locked` è CADUTA. Aveva
+ *  senso finché una riga chiusa non portava numeri — annunciare «High edge»
+ *  nascondendo l'edge era contraddittorio. Ora la riga chiusa porta model,
+ *  mercato e quindi edge VERI e nasconde solo la PICK (vedi `lockedHeadline` in
+ *  app/api/predictions/route.ts): con quella clausola la Home di un anonimo
+ *  perdeva del tutto le due fasce che spiegano il prodotto. */
 function hasRealEdge(it: LobbyItem): boolean {
-  return it.data.marketPct != null && it.data.edgePct != null && !it.data.locked;
+  return it.data.marketPct != null && it.data.edgePct != null;
+}
+
+/** I conteggi delle pill dell'hero (#RESTYLING-0921 round 2).
+ *
+ *  NON sono i conteggi delle fasce: quelle mostrano al massimo LOBBY_ROW_CAP
+ *  righe, e «Live now 6» scritto in grande quando in gioco ce ne sono 11 è un
+ *  numero sbagliato. Qui si contano le righe che ESISTONO.
+ *
+ *  Sta in questo modulo, e non nel componente, per la stessa ragione di
+ *  buildLobbySections: `Date.now()` in un `useMemo` è una chiamata impura in
+ *  render (il compilatore React la rifiuta), e perché così le tre regole —
+ *  live, imminenza, edge — si testano senza montare il desk. */
+export function lobbyCounts(
+  items: readonly LobbyItem[],
+  now: number = Date.now(),
+): { live: number; soon: number; highEdge: number } {
+  let live = 0;
+  let soon = 0;
+  let highEdge = 0;
+  for (const it of items) {
+    if (it.data.isLive) live += 1;
+    else if (startingSoonLabel(it.data.startsAt, now) != null) soon += 1;
+    // Stessa condizione di `hasRealEdge`: senza prezzo di mercato non c'è un
+    // edge da contare, e la soglia è l'unica del prodotto (EDGE_HIGH_PP).
+    if (it.data.marketPct != null && (it.data.edgePct ?? 0) >= EDGE_HIGH_PP) highEdge += 1;
+  }
+  return { live, soon, highEdge };
 }
 
 export type BuildLobbyInput = {

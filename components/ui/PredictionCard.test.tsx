@@ -44,14 +44,20 @@ describe("PredictionCard", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Live");
     expect(screen.queryByText("Today · 20:45")).toBeNull();
   });
-  it("premiumLocked: Model/Market visibili, Pick ed Edge chiusi, CTA unlock", () => {
+  // #RESTYLING-0921 round 2 — il free tier vede i NUMERI, paga per il LATO.
+  // Prima il lucchetto copriva anche l'edge: la card diceva «MODEL 64 · MARKET
+  // 52» e poi nascondeva il 12, che il lettore calcola in testa. E senza il
+  // numero il badge «High edge» non poteva comparire, quindi la fascia High
+  // Edge della Home restava muta per chi non aveva un account.
+  it("premiumLocked: Model/Market/Edge veri e badge, solo la Pick chiusa", () => {
     render(<PredictionCard data={data} variant="premiumLocked" href="/plans" />);
     expect(screen.getByText("64")).toBeInTheDocument();
+    expect(screen.getByText("52")).toBeInTheDocument();
+    expect(screen.getByText(/\+12\.0/)).toHaveAttribute("data-tone", "pos");
+    expect(screen.getByText("High edge")).toHaveAttribute("data-kind", "high-edge");
     expect(screen.getByText("Pro pick")).toBeInTheDocument();
     expect(screen.queryByText("Arsenal to win")).toBeNull();
-    expect(screen.getByText("Pro")).toHaveAttribute("data-tone", "locked");
     expect(screen.getByRole("link", { name: /unlock full analysis/i })).toHaveAttribute("data-tone", "unlock");
-    expect(screen.queryByText("High edge")).toBeNull();
   });
   it("senza mercato: nota «model estimate», nessun edge, nessun badge", () => {
     render(<PredictionCard data={{ ...data, marketPct: null, edgePct: null }} href="/p/1" />);

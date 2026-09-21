@@ -68,7 +68,10 @@ export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = 
         ) : (
           <strong className="br-mh__pick-v">{pick}</strong>
         )}
-        <EdgeBadge edgePct={edgePct} size="chip" locked={locked} />
+        {/* #RESTYLING-0921 round 2: `locked` copre la PICK, non l'edge — i tre
+            numeri sono il valore che il free deve vedere (nota in
+            components/ui/PredictionCard.tsx). */}
+        <EdgeBadge edgePct={edgePct} size="chip" />
       </div>
     </header>
   );

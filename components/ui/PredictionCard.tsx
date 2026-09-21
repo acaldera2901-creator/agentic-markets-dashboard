@@ -8,8 +8,13 @@
 //   compact        la card della lobby, CTA come link testuale (royal)
 //   featured       più aria, teaser del «perché», l'UNICA con la CTA verde piena
 //   live           LiveBadge col minuto al posto del kickoff
-//   premiumLocked  Model/Market visibili (valore free), Pick ed Edge chiusi,
-//                  CTA «Unlock full analysis» in outline verde
+//   premiumLocked  Model/Market/Edge VERI e visibili (il valore free), solo la
+//                  Pick chiusa, CTA «Unlock full analysis» in outline verde
+//
+// #RESTYLING-0921 round 2 — il lucchetto copre la PICK, mai i numeri. Prima
+// copriva anche l'edge, ed era incoerente: la card mostrava «MODEL 64 ·
+// MARKET 52» e poi un lucchetto al posto di 12, che il lettore calcola in
+// testa. Ciò che si paga è il LATO su cui scommettere, non la sottrazione.
 //
 // Il verde compare in una card compatta solo nel numero dell'edge. Se ogni
 // card avesse la CTA verde, l'edge non si vedrebbe più.
@@ -61,11 +66,11 @@ const BADGE_LABEL: Record<PredictionCardBadgeKind, string> = {
   featured: "Featured",
 };
 
-function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant, locked: boolean): { kind: PredictionCardBadgeKind; label?: string } | null {
+function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): { kind: PredictionCardBadgeKind; label?: string } | null {
   if (variant === "featured") return { kind: "featured" };
-  // Una card chiusa non annuncia «High edge»: nasconderebbe l'edge e insieme
-  // lo dichiarerebbe. O si vede il numero, o non si vede il badge.
-  if (locked) return null;
+  // La regola resta «o si vede il numero, o non si vede il badge» — ed è per
+  // questo che il guard su `locked` è caduto nel round 2: ora l'edge di una
+  // card chiusa È visibile, quindi il badge non promette nulla di nascosto.
   if (data.edgePct != null && data.edgePct >= EDGE_HIGH_PP) return { kind: "high-edge" };
   return null;
 }
@@ -73,7 +78,7 @@ function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant, l
 export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className }: PredictionCardProps) {
   const locked = variant === "premiumLocked" || data.locked === true;
   const live = variant === "live" || data.isLive;
-  const resolvedBadge = badge === undefined ? deriveBadge(data, variant, locked) : badge;
+  const resolvedBadge = badge === undefined ? deriveBadge(data, variant) : badge;
   const hasMarket = data.marketPct != null;
   const featured = variant === "featured";
   const size = featured ? "lg" : "md";
@@ -118,7 +123,9 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
         )}
       </p>
 
-      <ProbabilityComparison modelPct={data.modelPct} marketPct={data.marketPct} edgePct={data.edgePct} size={size} locked={locked} />
+      {/* Nessun `locked`: i tre numeri sono il valore che il free deve vedere.
+          Il lucchetto sta sulla pick, qui sopra. */}
+      <ProbabilityComparison modelPct={data.modelPct} marketPct={data.marketPct} edgePct={data.edgePct} size={size} />
 
       {extra}
 

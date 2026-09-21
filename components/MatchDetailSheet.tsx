@@ -435,12 +435,14 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
             actions={data.head.actions}
           />
           <div className="br-md__numbers">
+            {/* #RESTYLING-0921 round 2: senza `locked` — model, mercato ed edge
+                sono veri e visibili anche da free; dietro il piano resta la
+                pick (MatchHeader) e l'analisi profonda qui sotto. */}
             <ProbabilityComparison
               modelPct={data.head.modelPct}
               marketPct={data.head.marketPct}
               edgePct={data.head.edgePct}
               size="lg"
-              locked={data.head.locked}
             />
             {data.head.confidence != null && !data.head.locked && (
               <ConfidenceIndicator score={data.head.confidence} layout="stack" showPercent />

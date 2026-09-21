@@ -19,9 +19,13 @@ describe("MatchHeader", () => {
     expect(screen.getByText("71′")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("2");
   });
-  it("locked: Pro pick e lucchetto sull'edge", () => {
-    render(<MatchHeader sport="tennis" league="ATP" home="Sinner" away="Alcaraz" pick="Sinner" edgePct={8} locked />);
+  // #RESTYLING-0921 round 2: il lucchetto copre la PICK, non l'edge. L'edge è
+  // la sottrazione fra due numeri che la testata mostra comunque: nasconderlo
+  // era teatro, e lasciava il free senza il confronto che il prodotto promette.
+  it("locked: Pro pick al posto del nome, ma l'edge resta un numero vero", () => {
+    render(<MatchHeader sport="tennis" league="ATP" home="Sinner" away="Alcaraz" pick="P1" edgePct={8} locked />);
     expect(screen.getByText("Pro pick")).toBeInTheDocument();
-    expect(screen.getByText("Pro")).toHaveAttribute("data-tone", "locked");
+    expect(screen.queryByText("P1")).toBeNull();
+    expect(screen.getByText("+8.0")).toHaveAttribute("data-tone", "pos");
   });
 });

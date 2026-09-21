@@ -76,6 +76,41 @@ describe("fromDeskFootball", () => {
     expect(fromDeskFootball({ ...football, locked: true }).locked).toBe(true);
     expect(fromDeskFootball(football, { locked: true }).locked).toBe(true);
   });
+
+  // #RESTYLING-0921 round 2 — il bug «MODEL 0%» trovato da QA sul round 1.
+  // Su una riga chiusa il server manda i due numeri dell'esito di punta e NON
+  // la tripla: l'adapter deve leggere quelli, e non moltiplicare per 100 un
+  // null (in JS fa 0, non null — è da lì che nasceva lo zero falso).
+  it("riga chiusa: legge i due numeri dell'esito di punta e non nomina la pick", () => {
+    const d = fromDeskFootball(
+      {
+        ...football,
+        locked: true,
+        p_home: null, p_draw: null, p_away: null,
+        odds_home: null, odds_draw: null, odds_away: null,
+        best_selection: null,
+        model_prob: 0.64, market_odds: 1.92,
+      },
+      { winLabel: "to win" },
+    );
+    expect(d.pick).toBeNull();
+    expect(Math.round(d.modelPct!)).toBe(64);
+    expect(Math.round(d.marketPct!)).toBe(52);
+    expect(d.edgePct).toBeCloseTo(11.92, 2);
+  });
+
+  it("riga chiusa senza nemmeno i due numeri: «—», non zero", () => {
+    const d = fromDeskFootball({
+      ...football,
+      locked: true,
+      p_home: null, p_draw: null, p_away: null,
+      odds_home: null, odds_draw: null, odds_away: null,
+      best_selection: null,
+    });
+    expect(d.modelPct).toBeNull();
+    expect(d.marketPct).toBeNull();
+    expect(d.edgePct).toBeNull();
+  });
 });
 
 describe("fromDeskTennis", () => {
@@ -93,5 +128,17 @@ describe("fromDeskTennis", () => {
   it("senza best_selection prende il favorito del modello", () => {
     const d = fromDeskTennis({ ...tennis, best_selection: null, p1: 0.4, p2: 0.6 });
     expect(d.pick).toBe("Alcaraz");
+  });
+
+  // È la board tennis che serviva `p1: null` esplicito: qui lo zero falso si
+  // vedeva davvero in produzione (il football ometteva i campi → NaN → «—»).
+  it("riga chiusa: numeri veri dall'esito di punta, nessun nome, nessuno zero", () => {
+    const d = fromDeskTennis(
+      { ...tennis, locked: true, p1: null, p2: null, odds_p1: null, odds_p2: null, best_selection: null, model_prob: 0.58, market_odds: 1.8 },
+      { winLabel: "to win" },
+    );
+    expect(d.pick).toBeNull();
+    expect(Math.round(d.modelPct!)).toBe(58);
+    expect(Math.round(d.marketPct!)).toBe(56);
   });
 });

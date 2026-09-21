@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP } from "./lobby";
+import { buildLobbySections, lobbyCounts, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP } from "./lobby";
 import type { LobbyItem } from "./lobby";
 import type { PredictionCardData } from "./prediction-card";
 
@@ -58,19 +58,32 @@ describe("buildLobbySections", () => {
     expect(top.items.map((i) => i.data.id)).toEqual(["high", "low"]);
   });
 
-  it("senza prezzo di mercato o se chiusa, una riga non entra in Top né in High Edge", () => {
+  it("senza prezzo di mercato una riga non entra in Top né in High Edge", () => {
     const secs = buildLobbySections({
-      football: [
-        item({ id: "nomarket", marketPct: null, edgePct: null }),
-        item({ id: "locked", edgePct: 30, locked: true }),
-      ],
+      football: [item({ id: "nomarket", marketPct: null, edgePct: null })],
       tennis: [],
       now: NOW,
     });
     expect(secs.find((s) => s.id === "top")).toBeUndefined();
     expect(secs.find((s) => s.id === "edge")).toBeUndefined();
-    // restano comunque visibili nella sezione del loro sport
-    expect(secs.find((s) => s.id === "football")!.items).toHaveLength(2);
+    // resta comunque visibile nella sezione del suo sport
+    expect(secs.find((s) => s.id === "football")!.items).toHaveLength(1);
+  });
+
+  // #RESTYLING-0921 round 2: una riga CHIUSA porta model, mercato ed edge veri
+  // (nasconde solo la pick), quindi ha tutti i requisiti per stare in Top e in
+  // High Edge. Escluderla lasciava la Home di un anonimo senza le due fasce che
+  // spiegano il prodotto — il bug segnalato da QA sul round 1.
+  it("una riga chiusa con un edge reale entra in Top e in High Edge", () => {
+    const secs = buildLobbySections({
+      football: [
+        item({ id: "locked", edgePct: 30, locked: true }),
+        item({ id: "open", edgePct: 20 }),
+      ],
+      tennis: [],
+      now: NOW,
+    });
+    expect(secs.find((s) => s.id === "top")!.items.map((i) => i.data.id)).toEqual(["locked", "open"]);
   });
 
   it("High Edge non ripete ciò che è già in Top", () => {
@@ -113,5 +126,34 @@ describe("buildLobbySections", () => {
   it("la chiave distingue calcio e tennis con lo stesso id", () => {
     expect(lobbyKey(item({ id: "1" }).data)).toBe("football:1");
     expect(lobbyKey(item({ id: "1", sport: "tennis" }).data)).toBe("tennis:1");
+  });
+});
+
+// #RESTYLING-0921 round 2 — i numeri delle pill dell'hero.
+describe("lobbyCounts", () => {
+  it("conta le righe che ESISTONO, non quelle che una fascia mostra", () => {
+    // edgePct: 1 = sotto EDGE_HIGH_PP, così le righe che servono a contare live
+    // e imminenza non finiscono anche nel conteggio dell'edge.
+    const rows = [
+      item({ id: "l1", isLive: true, edgePct: 1 }),
+      item({ id: "l2", isLive: true, edgePct: 1 }),
+      item({ id: "s1", startsAt: inMinutes(40), edgePct: 1 }),
+      item({ id: "s2", startsAt: inMinutes(170), edgePct: 1 }),
+      item({ id: "far", startsAt: inMinutes(600), edgePct: 1 }),
+      ...Array.from({ length: LOBBY_ROW_CAP + 3 }, (_, i) => item({ id: `e${i}`, edgePct: 12 })),
+    ];
+    const c = lobbyCounts(rows, NOW);
+    expect(c.live).toBe(2);
+    expect(c.soon).toBe(2);
+    // Oltre il cap della fascia: la pill dice il totale vero.
+    expect(c.highEdge).toBe(LOBBY_ROW_CAP + 3);
+  });
+
+  it("una riga live non è «a breve», e senza mercato non è «edge alto»", () => {
+    const c = lobbyCounts([
+      item({ id: "live-soon", isLive: true, startsAt: inMinutes(10), edgePct: 1 }),
+      item({ id: "nomarket", marketPct: null, edgePct: null }),
+    ], NOW);
+    expect(c).toEqual({ live: 1, soon: 0, highEdge: 0 });
   });
 });

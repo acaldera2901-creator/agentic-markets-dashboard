@@ -128,9 +128,9 @@ function markModelEstimate(row: PredictionRow): PredictionRow {
 
 // ─── Per-tier read projection (P0: stop premium enrichment leaking to Base) ─────
 //
-// Anonymous / free (non-PotD): row is locked — pick, probabilities, edge and all
-//   enrichment are stripped; only the matchup + kickoff stay visible (the card
-//   blurs on `locked`). Mirrors the tennis board behaviour.
+// Anonymous / free (non-PotD): row is locked — the pick, the full 1X2 triple,
+//   the edge and all enrichment are stripped; the matchup, the kickoff and the
+//   two headline numbers stay visible (see `lockedHeadline`).
 // base/premium/admin or the free Pick of the Day: unlocked.
 // The public paid plan is `base`, so active paid users see the advanced enrichment.
 
@@ -145,7 +145,44 @@ type ProjectedPredictionRow = Partial<PredictionRow> & {
   kickoff: string;
   locked: boolean;
   pick_of_day: boolean;
+  /** #RESTYLING-0921 — solo sulle righe chiuse: i due numeri dell'esito di
+   *  punta, senza dire quale sia. */
+  model_prob?: number | null;
+  market_odds?: number | null;
 };
+
+// #RESTYLING-0921 — COSA VEDE UNA RIGA CHIUSA, e perché.
+//
+// Prima: niente. La proiezione teneva solo la partita e il calcio d'inizio,
+// quindi da anonimo la Home scriveva «MODEL —» su tutto e le fasce che
+// confrontano modello e mercato (Top opportunities, High edge) non
+// renderizzavano affatto — un muro davanti alla vetrina, cioè il contrario di
+// ciò che il prodotto deve dimostrare prima di chiedere un pagamento
+// (decisione Andrea, ROUND 2 in docs/redesign-brief-digest.md).
+//
+// Ora: i DUE NUMERI dell'esito che la card mostrerebbe da sbloccata — la
+// probabilità del modello e la quota reale di quello stesso esito — senza dire
+// QUALE esito sia. Model, Market e quindi l'Edge diventano veri per tutti; la
+// pick (il lato su cui scommettere), la motivazione, la confidenza e l'analisi
+// profonda restano dietro il piano.
+//
+// L'esito è il favorito del modello, che con #PICK-SEMPRE-0911
+// (PICK_SEMPRE_FAVORITO) è anche `best_selection`: il numero mostrato da chiusa
+// è quindi lo STESSO che comparirà dopo lo sblocco. Se cambiasse, la vetrina
+// mentirebbe due volte.
+function lockedHeadline(p: PredictionRow): { prob: number | null; odds: number | null } {
+  const legs: Array<[number | null | undefined, number | null | undefined]> = [
+    [p.p_home, p.odds_home],
+    [p.p_draw, p.odds_draw],
+    [p.p_away, p.odds_away],
+  ];
+  let best: { prob: number; odds: number | null } | null = null;
+  for (const [prob, odds] of legs) {
+    if (prob == null || !Number.isFinite(prob)) continue;
+    if (best == null || prob > best.prob) best = { prob, odds: odds ?? null };
+  }
+  return best ?? { prob: null, odds: null };
+}
 
 function projectPredictionRow(
   p: PredictionRow,
@@ -164,8 +201,10 @@ function projectPredictionRow(
   };
 
   if (!isUnlocked(state, rankInSport)) {
-    // Locked: keep the matchup visible, blank everything the card would reveal.
-    return { ...base, locked: true };
+    // Locked: matchup + i due numeri dell'esito di punta. Il resto — pick,
+    // tripla, edge, enrichment — non esce.
+    const head = lockedHeadline(p);
+    return { ...base, locked: true, model_prob: head.prob, market_odds: head.odds };
   }
 
   const isPaid = state === "base" || state === "premium" || state === "admin_full";

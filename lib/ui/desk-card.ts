@@ -17,7 +17,13 @@
 import type { PredictionCardData } from "@/lib/ui/prediction-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
 
-/** Il sottoinsieme di `Prediction` (calcio) che serve alla card. */
+/** Il sottoinsieme di `Prediction` (calcio) che serve alla card.
+ *
+ *  #RESTYLING-0921 — la tripla e le quote sono OPZIONALI: su una riga chiusa il
+ *  server non le manda (proiezione d'accesso) e al loro posto arrivano
+ *  `model_prob` e `market_odds`, i due numeri dell'esito di punta senza dire
+ *  QUALE sia. Il tipo dichiarava `p_home: number` mentre a runtime arrivava
+ *  `undefined`/`null`: è da lì che nasceva «MODEL 0%». */
 export type DeskFootballRow = {
   match_id: string;
   league: string;
@@ -25,31 +31,38 @@ export type DeskFootballRow = {
   home_team: string;
   away_team: string;
   kickoff: string;
-  p_home: number;
-  p_draw: number;
-  p_away: number;
-  odds_home: number | null;
-  odds_draw: number | null;
-  odds_away: number | null;
-  best_selection: string | null;
+  p_home?: number | null;
+  p_draw?: number | null;
+  p_away?: number | null;
+  odds_home?: number | null;
+  odds_draw?: number | null;
+  odds_away?: number | null;
+  /** Riga chiusa: probabilità dell'esito di punta (senza nominarlo). */
+  model_prob?: number | null;
+  /** Riga chiusa: quota reale dello stesso esito, o null. */
+  market_odds?: number | null;
+  best_selection?: string | null;
   locked?: boolean;
   confidence_score?: number | null;
   explanation?: string | null;
   enrichment?: { surface?: { below_floor: boolean } | null } | null;
 };
 
-/** Il sottoinsieme di `TennisMatch` che serve alla card. */
+/** Il sottoinsieme di `TennisMatch` che serve alla card. Vedi la nota sopra
+ *  per i campi opzionali. */
 export type DeskTennisRow = {
   id: string;
   player1: string;
   player2: string;
   tournament: string;
   scheduled: string;
-  p1: number;
-  p2: number;
-  odds_p1: number | null;
-  odds_p2: number | null;
-  best_selection: "P1" | "P2" | null;
+  p1?: number | null;
+  p2?: number | null;
+  odds_p1?: number | null;
+  odds_p2?: number | null;
+  model_prob?: number | null;
+  market_odds?: number | null;
+  best_selection?: "P1" | "P2" | null;
   locked?: boolean;
   confidence_score?: number | null;
   explanation?: string | null;
@@ -71,12 +84,34 @@ type FootballKey = "HOME" | "DRAW" | "AWAY";
 /** L'esito più probabile secondo il modello. Il fallback quando il server non
  *  asserisce una pick direzionale (below floor, o best_selection assente). */
 export function topFootballKey(row: Pick<DeskFootballRow, "p_home" | "p_draw" | "p_away">): FootballKey {
-  if (row.p_home >= row.p_draw && row.p_home >= row.p_away) return "HOME";
-  return row.p_draw >= row.p_away ? "DRAW" : "AWAY";
+  const h = num(row.p_home) ?? -1;
+  const d = num(row.p_draw) ?? -1;
+  const a = num(row.p_away) ?? -1;
+  if (h >= d && h >= a) return "HOME";
+  return d >= a ? "DRAW" : "AWAY";
 }
 
-function isFootballKey(v: string | null): v is FootballKey {
+function isFootballKey(v: string | null | undefined): v is FootballKey {
   return v === "HOME" || v === "DRAW" || v === "AWAY";
+}
+
+/** Un numero, o null. `null * 100` fa **0**, non null: è da qui che passava il
+ *  «MODEL 0%» delle righe chiuse (il board tennis serve `p1: null`). Ogni
+ *  probabilità/quota passa da qui prima di diventare una percentuale. */
+function num(v: number | null | undefined): number | null {
+  return v == null || !Number.isFinite(v) ? null : v;
+}
+
+/** Probabilità 0-1 → percentuale, o null. */
+function toPct(prob: number | null | undefined): number | null {
+  const p = num(prob);
+  return p == null ? null : p * 100;
+}
+
+/** Quota decimale → probabilità implicita in percentuale, o null. */
+function impliedPct(odds: number | null | undefined): number | null {
+  const o = num(odds);
+  return o != null && o > 1 ? (1 / o) * 100 : null;
 }
 
 /** Sotto il floor non c'è un favorito netto: si NOMINA l'esito più probabile,
@@ -87,11 +122,15 @@ function footballBelowFloor(row: DeskFootballRow): boolean {
 
 export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {}): PredictionCardData {
   const belowFloor = footballBelowFloor(row);
+  // Riga chiusa: la tripla non c'è. I numeri arrivano già scelti dal server
+  // (l'esito di punta), e la pick NON si nomina — non perché sia sfocata, ma
+  // perché il nome dell'esito è esattamente ciò che il piano Pro vende.
+  const hasTriple = num(row.p_home) != null && num(row.p_draw) != null && num(row.p_away) != null;
   const top = topFootballKey(row);
   const key: FootballKey = belowFloor || !isFootballKey(row.best_selection) ? top : row.best_selection;
 
-  const prob = key === "HOME" ? row.p_home : key === "DRAW" ? row.p_draw : row.p_away;
-  const odds = key === "HOME" ? row.odds_home : key === "DRAW" ? row.odds_draw : row.odds_away;
+  const prob = hasTriple ? (key === "HOME" ? row.p_home : key === "DRAW" ? row.p_draw : row.p_away) : row.model_prob;
+  const odds = hasTriple ? (key === "HOME" ? row.odds_home : key === "DRAW" ? row.odds_draw : row.odds_away) : row.market_odds;
 
   const name =
     key === "HOME" ? row.home_team
@@ -100,10 +139,12 @@ export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {
 
   // Il pareggio non «vince», e sotto il floor non si consiglia niente: in
   // entrambi i casi si nomina l'esito e basta.
-  const pick = belowFloor || key === "DRAW" || !opts.winLabel ? name : `${name} ${opts.winLabel}`;
+  const pick = !hasTriple ? null
+    : belowFloor || key === "DRAW" || !opts.winLabel ? name
+    : `${name} ${opts.winLabel}`;
 
-  const modelPct = prob * 100;
-  const marketPct = odds != null && odds > 1 ? (1 / odds) * 100 : null;
+  const modelPct = toPct(prob);
+  const marketPct = impliedPct(odds);
 
   return {
     id: row.match_id,
@@ -127,13 +168,16 @@ export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {
 }
 
 export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): PredictionCardData {
-  const key: "P1" | "P2" = row.best_selection ?? (row.p1 >= row.p2 ? "P1" : "P2");
-  const prob = key === "P1" ? row.p1 : row.p2;
-  const odds = key === "P1" ? row.odds_p1 : row.odds_p2;
+  // Vedi la nota in fromDeskFootball: riga chiusa = numeri dal server, nessun
+  // nome. `row.p1 >= row.p2` con due null è `true` e sceglieva P1 a caso.
+  const hasPair = num(row.p1) != null && num(row.p2) != null;
+  const key: "P1" | "P2" = row.best_selection ?? ((num(row.p1) ?? 0) >= (num(row.p2) ?? 0) ? "P1" : "P2");
+  const prob = hasPair ? (key === "P1" ? row.p1 : row.p2) : row.model_prob;
+  const odds = hasPair ? (key === "P1" ? row.odds_p1 : row.odds_p2) : row.market_odds;
   const name = key === "P1" ? row.player1 : row.player2;
 
-  const modelPct = prob * 100;
-  const marketPct = odds != null && odds > 1 ? (1 / odds) * 100 : null;
+  const modelPct = toPct(prob);
+  const marketPct = impliedPct(odds);
 
   return {
     id: row.id,
@@ -145,7 +189,7 @@ export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): 
     kickoffLabel: opts.kickoffLabel ?? null,
     isLive: opts.isLive ?? false,
     liveMinute: opts.liveMinute ?? null,
-    pick: opts.winLabel ? `${name} ${opts.winLabel}` : name,
+    pick: !hasPair ? null : opts.winLabel ? `${name} ${opts.winLabel}` : name,
     market: "Match winner",
     modelPct,
     marketPct,
