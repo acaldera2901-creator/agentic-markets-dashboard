@@ -143,3 +143,23 @@ export function GlyphRank({ rank, size = 22, className }: { rank: 1 | 2 | 3 } & 
     </svg>
   );
 }
+
+// #RESTYLING-0921 — due segni per il nuovo sistema. Bookmark per la
+// watchlist (il fill lo dà il CSS quando è salvato, via `fill: currentColor`),
+// freccia per la CTA «View analysis»: dice «vai a vedere», non «compra».
+export function GlyphBookmark({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <path d="M6.5 3.5h11v17l-5.5-3.6L6.5 20.5z" />
+    </svg>
+  );
+}
+
+export function GlyphArrow({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <path d="M4 12h15" />
+      <path d="M13 6l6 6-6 6" />
+    </svg>
+  );
+}
