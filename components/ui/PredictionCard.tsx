@@ -48,6 +48,10 @@ export type PredictionCardProps = {
   onOpen?: (ev: MouseEvent<HTMLAnchorElement>) => void;
   /** Slot sotto la riga MODEL|MARKET|EDGE (es. ConfidenceIndicator). */
   extra?: ReactNode;
+  /** Solo `featured` (round 2): foto/crest della partita in testa alla card,
+   *  a tutta larghezza, con il gradiente che la riporta nel pannello. Il
+   *  chiamante passa un <img> (o nulla: la card resta quella del round 1). */
+  media?: ReactNode;
   className?: string;
 };
 
@@ -66,18 +70,23 @@ function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant, l
   return null;
 }
 
-export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, className }: PredictionCardProps) {
+export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className }: PredictionCardProps) {
   const locked = variant === "premiumLocked" || data.locked === true;
   const live = variant === "live" || data.isLive;
   const resolvedBadge = badge === undefined ? deriveBadge(data, variant, locked) : badge;
   const hasMarket = data.marketPct != null;
-  const size = variant === "featured" ? "lg" : "md";
+  const featured = variant === "featured";
+  const size = featured ? "lg" : "md";
+  // Round 2: nella Featured i crest sono il «volto» della partita (36px), non
+  // un puntino accanto al nome.
+  const crestSize = featured ? 36 : 22;
   const ctaTone = locked ? "unlock" : variant === "featured" ? "primary" : "link";
   const ctaText = locked ? "Unlock full analysis" : "View analysis";
   const showWhy = variant === "featured" && !!data.explanation && !locked;
 
   return (
     <article className={["br-card", className].filter(Boolean).join(" ")} data-variant={variant} data-id={data.id} data-live={live || undefined}>
+      {featured && media ? <div className="br-card__media" data-testid="card-media">{media}</div> : null}
       <header className="br-card__kicker">
         <SportChip sport={data.sport} />
         <LeagueChip league={data.league} />
@@ -94,9 +103,9 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
 
       <div className="br-card__match">
         <h3 className="br-card__teams">
-          <span className="br-card__team"><Crest team={data.home} sport={data.sport} size={22} /><span>{data.home}</span></span>
+          <span className="br-card__team"><Crest team={data.home} sport={data.sport} size={crestSize} /><span>{data.home}</span></span>
           <span className="br-card__vs">vs</span>
-          <span className="br-card__team"><Crest team={data.away} sport={data.sport} size={22} /><span>{data.away}</span></span>
+          <span className="br-card__team"><Crest team={data.away} sport={data.sport} size={crestSize} /><span>{data.away}</span></span>
         </h3>
       </div>
 

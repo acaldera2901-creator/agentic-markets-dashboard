@@ -10,21 +10,24 @@
      Single source of truth: changing these --am-* values ripropaga su tutte
      le classi bespoke via gli alias legacy in fondo al blocco. */
 
-  /* Base backgrounds — indigo-black (#RESTYLING-0921). Prima erano neutri
-     (#0B0C0E…): il brief chiede Indigo/Black. Spostata la TINTA (hue ~232°,
-     croma bassa), tenuta la LUMINANZA: i rapporti AA misurati sui commenti
-     sotto restano validi entro ±0,05. */
-  --am-bg:         #0A0B12;
-  --am-bg-2:       #0E1019;
-  --am-panel:      #12141D;
-  --am-panel-2:    #171A25;
-  --am-panel-3:    #1E2231;
-  --am-bar:        rgba(9,10,20,0.98);   /* header/banner bands (era hex dark opaco) */
-  --am-inset:      #0B0C13;    /* superfici recessed: input, pill, segmented */
+  /* Base backgrounds — navy royal (#RESTYLING-0921 round 2). Il round 1 era
+     indigo-quasi-nero (#0A0B12, croma ~3%): Andrea l'ha letto «troppo quant».
+     Ora la tinta resta a ~228° ma la croma sale (il blu si VEDE) e la
+     luminanza sale di un gradino: sfondo #060B24, pannello #0C1741. I rapporti
+     AA sono stati rimisurati su questa rampa (vedi i commenti ai grigi sotto):
+     testo 15,0:1, muted 8,2:1, muted-2 6,1:1, royal 5,1:1 su --am-panel. */
+  --am-bg:         #060B24;
+  --am-bg-2:       #081033;
+  --am-panel:      #0C1741;
+  --am-panel-2:    #10204F;
+  --am-panel-3:    #182B66;
+  --am-bar:        rgba(5,9,30,0.97);   /* header/banner bands */
+  --am-inset:      #050A20;    /* superfici recessed: input, pill, segmented */
 
-  /* Borders — indigo-cool, low chroma for depth */
-  --am-line:       #232838;
-  --am-line-2:     #2F3547;
+  /* Borders — un FILO BLU LUMINOSO, non un grigio: è il bordo delle card in
+     ref-01. Alpha sul royal così regge su bg, panel e panel-2 senza tre hex. */
+  --am-line:       rgba(90,133,255,0.30);
+  --am-line-2:     rgba(90,133,255,0.50);
   /* LEVEL-UP 1c+: hairline delle CORNICI chamfer (rail/book-main/betslip/glass-card).
      Su dark serve un filo CHIARO (i --line neutri spariscono sul quasi-nero) → white
      alpha; su light un filo scuro. Fa leggere il taglio obliquo senza fare "gabbia". */
@@ -83,8 +86,8 @@
 
   /* Typography */
   --am-text:       #EDEFF2;
-  --am-muted:      #AEB4BE;
-  --am-muted-2:    #767E89;  /* #UI-MACHINA-0802: era #6E7682 → 4.31:1 sul footer scuro, sotto AA. */
+  --am-muted:      #A9B3CC;  /* round 2: grigio-blu, in famiglia col navy. 8,2:1 su panel. */
+  --am-muted-2:    #909AAE;  /* round 2: era #767E89 → sul pannello navy faceva 4,21:1 (sotto AA per le label a 11px). Ora 6,1:1 su panel, 5,5:1 su panel-2, 4,7:1 su panel-3. */
   --am-hi:         rgba(255,255,255,0.05);
 
   /* ── #RESTYLING-0921 — ruoli semantici del brief (dark) ──────────────────
@@ -93,23 +96,40 @@
      su UNA CTA per schermata. Mai fill di superficie. «Se tutto è
      evidenziato, nulla è evidenziato.» Il brand green --am-coral resta il
      verde del logo; --am-edge è il suo gradino più chiaro che regge sul
-     pannello indigo (10,7:1 su --am-panel; --am-coral ci fa 5,1:1). */
-  --am-royal:      #5B82FF;   /* tab attiva, link, selected, focus — 5,3:1 su panel */
-  --am-royal-2:    #2F5BE8;   /* fill selected/tab con testo bianco (5,5:1) */
-  --am-royal-dim:  rgba(91,130,255,0.14);
-  --am-royal-b:    rgba(91,130,255,0.38);
+     pannello navy (11,9:1 su --am-panel; --am-coral ci fa 5,1:1).
+
+     Round 2 (feedback Andrea, ref-01): la regola non cambia, il VOLUME sì.
+     Il neon era «tenue» (#3EE07F / #FFD84D con dim al 12%): ora è pieno
+     (#3DF56E / #FFE818), il badge LIVE e «High edge» sono fill con inchiostro
+     scuro, e i tre --am-*-glow danno l'alone. Il glow è un'ombra dell'accento,
+     non un blur di sfondo: sta SOLO su badge, CTA e numero. */
+  --am-royal:      #5A85FF;   /* tab attiva, link, selected, focus — 5,1:1 su panel, 4,65 su panel-2 */
+  --am-royal-2:    #2A5BFF;   /* fill selected/tab con testo bianco (5,2:1) */
+  --am-royal-dim:  rgba(90,133,255,0.16);
+  --am-royal-b:    rgba(90,133,255,0.42);
   --am-royal-ink:  #FFFFFF;
-  --am-sky:        #8FBBFF;   /* market probability, chart secondario */
-  --am-sky-dim:    rgba(143,187,255,0.12);
-  --am-sky-b:      rgba(143,187,255,0.32);
-  --am-edge:       #3EE07F;   /* edge positivo, CTA primaria, upgrade */
-  --am-edge-dim:   rgba(62,224,127,0.12);
-  --am-edge-b:     rgba(62,224,127,0.36);
-  --am-edge-ink:   #06140C;   /* testo su fill --am-edge */
-  --am-live:       #FFD84D;   /* live, featured, starting soon, attenzione */
-  --am-live-dim:   rgba(255,216,77,0.12);
-  --am-live-b:     rgba(255,216,77,0.36);
-  --am-live-ink:   #1A1500;
+  --am-royal-glow: 0 0 0 1px rgba(90,133,255,0.32), 0 0 28px -8px rgba(90,133,255,0.65);
+  --am-sky:        #7FC4FF;   /* market probability, chart secondario — 9,3:1 */
+  --am-sky-dim:    rgba(127,196,255,0.12);
+  --am-sky-b:      rgba(127,196,255,0.36);
+  --am-edge:       #3DF56E;   /* edge positivo, CTA primaria, upgrade — 11,9:1 su panel */
+  --am-edge-dim:   rgba(61,245,110,0.14);
+  --am-edge-b:     rgba(61,245,110,0.45);
+  --am-edge-ink:   #06140C;   /* testo su fill --am-edge (13,0:1) */
+  --am-edge-glow:  0 0 0 1px rgba(61,245,110,0.35), 0 0 22px -4px rgba(61,245,110,0.60);
+  --am-edge-text-glow: 0 0 14px rgba(61,245,110,0.40);
+  --am-live:       #FFE818;   /* live, starting soon, attenzione — 13,8:1 */
+  --am-live-dim:   rgba(255,232,24,0.14);
+  --am-live-b:     rgba(255,232,24,0.45);
+  --am-live-ink:   #141200;   /* testo su fill --am-live (15,1:1) */
+  --am-live-glow:  0 0 0 1px rgba(255,232,24,0.35), 0 0 20px -4px rgba(255,232,24,0.60);
+  /* Il fill del badge LIVE. In dark coincide con --am-live; in light si stacca
+     (là --am-live è un testo scuro e come fondo renderebbe il badge illeggibile). */
+  --am-live-fill:      var(--am-live);
+  --am-live-fill-ink:  var(--am-live-ink);
+  /* La parola evidenziata dell'headline hero: lime, non lo stesso verde
+     dell'edge — così «today.» e «+18» non si confondono (ref-01). 14,3:1. */
+  --am-lime:       #C8FF3D;
 
   /* Forma: le card si ammorbidiscono (8–12px), i controlli dentro le card 6px.
      --am-btn-radius 0 resta per i tasti legacy del desk: le pagine che lo usano
@@ -118,9 +138,11 @@
   --am-r-card-sm:  8px;
   --am-r-ctl:      6px;
   --am-r-chip:     4px;   /* chip squadrata, non pillola: è una label, non un tasto */
-  /* Dark: profondità da superficie+filo, ombra quasi nulla (brief). */
-  --am-shadow-card:       0 1px 0 0 rgba(255,255,255,0.025) inset, 0 12px 32px -22px rgba(0,0,0,0.75);
-  --am-shadow-card-hover: 0 1px 0 0 rgba(255,255,255,0.04) inset, 0 16px 36px -20px rgba(0,0,0,0.8);
+  /* Dark: profondità da superficie+filo; all'hover il filo blu si accende
+     (round 2: è il «bordo luminoso» di ref-01, ma solo quando la card è
+     quella che stai guardando — tutte accese = nessuna accesa). */
+  --am-shadow-card:       0 1px 0 0 rgba(255,255,255,0.03) inset, 0 12px 32px -22px rgba(0,0,0,0.85);
+  --am-shadow-card-hover: 0 1px 0 0 rgba(255,255,255,0.05) inset, 0 0 0 1px rgba(90,133,255,0.28), 0 0 30px -10px rgba(90,133,255,0.55), 0 16px 36px -20px rgba(0,0,0,0.85);
 
   /* Spacing scale del brief: 4/8/12/16/24/32/48/64 */
   --am-s-1: 4px;  --am-s-2: 8px;  --am-s-3: 12px; --am-s-4: 16px;
@@ -233,10 +255,19 @@
   --am-edge-dim:   rgba(19,116,55,0.09);
   --am-edge-b:     rgba(19,116,55,0.32);
   --am-edge-ink:   #FFFFFF;
-  --am-live:       #7A5A00;   /* testo e puntino; il live non ha mai un fill pieno */
+  --am-live:       #7A5A00;   /* testo e puntino; su carta il live resta un testo (il fill giallo pieno è del dark) */
   --am-live-dim:   rgba(245,196,0,0.16);
   --am-live-b:     rgba(122,90,0,0.34);
   --am-live-ink:   #1A1500;
+  /* Round 2: su carta niente neon e niente alone — un'ombra corta e colorata
+     fa lo stesso lavoro (dice «questo è acceso») senza sparare. */
+  --am-royal-glow: 0 6px 18px -10px rgba(30,72,214,0.55);
+  --am-edge-glow:  0 6px 18px -10px rgba(19,116,55,0.55);
+  --am-edge-text-glow: none;
+  --am-live-glow:  0 6px 18px -10px rgba(122,90,0,0.45);
+  --am-live-fill:      #FFE818;   /* il badge LIVE resta giallo neon anche su carta: inchiostro 15,1:1 */
+  --am-live-fill-ink:  #141200;
+  --am-lime:       #4C7A00;   /* la parola evidenziata dell'hero su carta: 5,0:1 su bianco */
 
   /* Light: la carta ha ombra, leggera e calda. */
   --am-shadow-card:       0 1px 2px rgba(28,25,18,0.05), 0 12px 28px -18px rgba(28,25,18,0.16);

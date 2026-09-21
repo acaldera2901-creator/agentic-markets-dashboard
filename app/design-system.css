@@ -60,7 +60,11 @@
   text-overflow: ellipsis;
 }
 
-/* ── Live badge: il giallo è un puntino e una parola, mai un fondo pieno ── */
+/* ── Live badge: giallo neon PIENO con inchiostro scuro e un alone (round 2).
+   Il round 1 lo faceva «puntino + parola su dim» e Andrea l'ha letto timido:
+   il LIVE è l'unica cosa che succede ADESSO sulla pagina, e deve vincere da
+   tre metri (ref-01). Resta l'unico fill giallo del sistema: featured e
+   starting-soon sono outline, così il pieno vuol dire una cosa sola. ── */
 .br-live {
   display: inline-flex;
   align-items: center;
@@ -68,24 +72,25 @@
   padding: 4px 8px 4px 7px;
   font-family: var(--am-font-num);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1;
-  color: var(--am-live);
-  background: var(--am-live-dim);
-  border: 1px solid var(--am-live-b);
+  color: var(--am-live-fill-ink);
+  background: var(--am-live-fill);
+  border: 1px solid transparent;
   border-radius: var(--am-r-chip);
+  box-shadow: var(--am-live-glow);
   white-space: nowrap;
 }
 .br-live__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--am-live);
+  background: var(--am-live-fill-ink);
   animation: br-pulse 1.6s ease-in-out infinite;
 }
-.br-live__min { font-weight: 600; color: var(--am-text); }
+.br-live__min { font-weight: 700; color: var(--am-live-fill-ink); opacity: 0.8; }
 @keyframes br-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%      { opacity: 0.45; transform: scale(0.8); }
@@ -107,16 +112,26 @@
   border: 1px solid;
   white-space: nowrap;
 }
+/* «High edge» è l'altro fill del sistema: verde neon pieno + alone. È un
+   badge raro per costruzione (edge ≥ 5pp), quindi può permettersi il volume. */
 .br-badge[data-kind="high-edge"] {
-  color: var(--am-edge);
-  border-color: var(--am-edge-b);
-  background: var(--am-edge-dim);
+  color: var(--am-edge-ink);
+  border-color: transparent;
+  background: var(--am-edge);
+  font-weight: 800;
+  box-shadow: var(--am-edge-glow);
 }
-.br-badge[data-kind="starting-soon"],
-.br-badge[data-kind="featured"] {
+.br-badge[data-kind="starting-soon"] {
   color: var(--am-live);
   border-color: var(--am-live-b);
   background: var(--am-live-dim);
+}
+/* Featured = «scelta della redazione/modello», dato di contesto: sky outline
+   come il «Value pick» di ref-01, non un secondo giallo. */
+.br-badge[data-kind="featured"] {
+  color: var(--am-sky);
+  border-color: var(--am-sky-b);
+  background: var(--am-sky-dim);
 }
 
 /* ── EdgeBadge: un numero con segno, tonalità semantica ───────────────── */
@@ -142,7 +157,11 @@
   border: 1px solid transparent;
   letter-spacing: 0;
 }
-.br-edge[data-tone="pos"]  { color: var(--am-edge); }
+/* Il numero dell'edge positivo ha un alone di testo (round 2): è IL dato
+   della card, e in una griglia di 5 card è quello che l'occhio deve trovare
+   per primo. Sul chip (13px) l'alone si spegne: troppo piccolo, sporcherebbe. */
+.br-edge[data-tone="pos"]  { color: var(--am-edge); text-shadow: var(--am-edge-text-glow); }
+.br-edge[data-size="chip"][data-tone="pos"] { text-shadow: none; }
 .br-edge[data-tone="neg"]  { color: var(--am-negative); }
 .br-edge[data-tone="flat"] { color: var(--am-muted); }
 .br-edge[data-tone="none"],
@@ -298,8 +317,10 @@
 .br-cta[data-tone="primary"] {
   color: var(--am-edge-ink);
   background: var(--am-edge);
+  font-weight: 700;
+  box-shadow: var(--am-edge-glow);
 }
-.br-cta[data-tone="primary"]:hover { filter: brightness(0.94); }
+.br-cta[data-tone="primary"]:hover { filter: brightness(1.06); }
 .br-cta[data-tone="unlock"] {
   color: var(--am-edge);
   background: var(--am-edge-dim);
@@ -422,13 +443,31 @@
   color: var(--am-muted-2);
 }
 
-/* Featured: più aria, sfondo un gradino sopra, il teaser del «perché». */
+/* Featured: più aria, sfondo un gradino sopra, il teaser del «perché».
+   Round 2: crest più grandi (36px, dal TSX) e uno slot `media` opzionale in
+   testa — foto/crest della partita che sanguina fino ai bordi della card, con
+   un gradiente che la riporta nel pannello (ref-01, «Featured predictions»). */
 .br-card[data-variant="featured"] {
   padding: var(--am-s-5);
   gap: var(--am-s-4);
   background: var(--am-panel-2);
+  border-color: var(--am-line-2);
 }
-.br-card[data-variant="featured"] .br-card__teams { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.br-card__media {
+  position: relative;
+  margin: calc(-1 * var(--am-s-5)) calc(-1 * var(--am-s-5)) calc(-1 * var(--am-s-2));
+  height: 120px;
+  overflow: hidden;
+  border-radius: var(--am-r-card) var(--am-r-card) 0 0;
+  background: var(--am-panel-3);
+}
+.br-card__media > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.br-card__media::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(6,11,36,0.10) 0%, rgba(16,32,79,0.55) 60%, var(--am-panel-2) 100%);
+}
+.br-card[data-variant="featured"] .br-card__teams { font-size: 22px; font-weight: 700; letter-spacing: -0.012em; }
 .br-card[data-variant="featured"] .br-card__pick-v { font-size: 16px; font-weight: 600; white-space: normal; }
 .br-card__why {
   margin: 0;
@@ -922,4 +961,409 @@
      una riga da 12 caratteri. */
   .br-md__why > li { grid-template-columns: 1fr; gap: 2px; }
   .br-md__locked { flex-direction: column; align-items: stretch; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * HERO + TILES — #RESTYLING-0921 round 2 (feedback Andrea, ref-01)
+ *
+ * Il round 1 apriva la Home con la prima fascia di card: corretto per un
+ * terminale, freddo per uno sportsbook. Qui in testa arriva un banner che
+ * dice in una riga cosa fa il prodotto, mostra tre conteggi VERI (live /
+ * starting soon / high edge) e ha l'unica CTA verde piena della schermata.
+ * Sotto, una riga di tile per sport e una tile promozionale che porta al
+ * probability builder. Stessi token, stesso breakpoint 640.
+ *
+ * Il neon resta accento: nel banner il verde è la parola dell'headline, la
+ * CTA e i numeri; la superficie è navy con un gradiente royal — non un fill.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.br-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--am-s-5);
+  align-items: stretch;
+  padding: var(--am-s-6) var(--am-s-6) var(--am-s-6) calc(var(--am-s-6) + 4px);
+  min-height: 300px;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--am-text);
+  /* Il banner è il pezzo più grande della pagina: radius 16, un gradino
+     sopra le card (12) — la forma dice la gerarchia. */
+  border-radius: 16px;
+  border: 1px solid var(--am-line-2);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(42,91,255,0.55) 0%, rgba(42,91,255,0.0) 55%),
+    radial-gradient(80% 120% at 0% 100%, rgba(90,133,255,0.18) 0%, transparent 60%),
+    linear-gradient(100deg, var(--am-bg-2) 0%, var(--am-panel) 55%, var(--am-panel-2) 100%);
+  box-shadow: var(--am-shadow-card);
+}
+.br-hero[data-has-aside="false"] { grid-template-columns: minmax(0, 1fr); }
+/* Il filo verticale a sinistra (ref-01): lime che sfuma verso il basso. È
+   l'unico elemento di colore «pieno» oltre la CTA, e non è un fill. */
+.br-hero::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 10%; bottom: 10%;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--am-lime), var(--am-edge) 45%, transparent);
+  box-shadow: var(--am-edge-glow);
+}
+
+/* ── L'immagine: foto vera se c'è, altrimenti il pattern «floodlight» ──── */
+.br-hero__art {
+  position: absolute;
+  inset: 0 0 0 42%;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.br-hero__art > img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center right;
+  display: block;
+  /* Il gradiente che «integra» la foto nel banner: a sinistra scompare nel
+     testo, in basso nel pannello. Niente foto tagliata di netto. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%), linear-gradient(180deg, #000 60%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%), linear-gradient(180deg, #000 60%, transparent 100%);
+  mask-composite: intersect;
+}
+.br-hero__art > svg { width: 100%; height: 100%; display: block; }
+.br-hero[data-has-aside="true"] .br-hero__art { inset: 0 300px 0 40%; }
+
+/* ── Contenuto ─────────────────────────────────────────────────────────── */
+.br-hero__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--am-s-4);
+  min-width: 0;
+}
+.br-hero__eyebrow {
+  margin: 0;
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--am-edge);
+}
+.br-hero__title {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: clamp(34px, 4.4vw, 58px);
+  font-weight: 800;
+  letter-spacing: -0.028em;
+  line-height: 1.0;
+  text-wrap: balance;
+  max-width: 16ch;
+  color: var(--am-text);
+}
+/* <em> = la parola accentata (stress emphasis, semantica giusta): lime, non
+   corsivo. Lime e non edge-green così «today.» e «+18» non sono lo stesso
+   colore: uno è voce, l'altro è dato. */
+.br-hero__title em { font-style: normal; color: var(--am-lime); }
+.br-hero__sub {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--am-muted);
+  max-width: 52ch;
+}
+
+/* Le pill dei conteggi: superficie inset + filo, numero mono grande. Non
+   sono bottoni a meno che il chiamante non passi un href. */
+.br-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--am-s-3);
+  list-style: none;
+  margin: var(--am-s-1) 0 0;
+  padding: 0;
+}
+.br-hero__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px 0 12px;
+  border-radius: var(--am-r-card-sm);
+  border: 1px solid var(--am-line-2);
+  background: rgba(5,10,32,0.72);
+  color: var(--am-text);
+  text-decoration: none;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+a.br-hero__stat:hover { border-color: var(--am-royal); box-shadow: var(--am-royal-glow); }
+a.br-hero__stat:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-hero__stat svg { color: var(--am-royal); flex: none; }
+.br-hero__stat-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--am-edge);
+  box-shadow: 0 0 10px rgba(61,245,110,0.8);
+  flex: none;
+}
+.br-hero__stat[data-kind="live"] .br-hero__stat-dot { animation: br-pulse 1.6s ease-in-out infinite; }
+.br-hero__stat-n {
+  font-family: var(--am-font-num);
+  font-size: var(--am-num-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-left: 4px;
+  color: var(--am-text);
+}
+.br-hero__stat[data-kind="high-edge"] .br-hero__stat-n { color: var(--am-edge); text-shadow: var(--am-edge-text-glow); }
+
+.br-hero__ctas { display: flex; align-items: center; gap: var(--am-s-3); flex-wrap: wrap; margin-top: var(--am-s-2); }
+/* La CTA primaria dell'hero è un gradino più grande della .br-cta primary
+   delle Featured: 48px, 15px/700, stesso verde, stesso alone. */
+.br-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  font-family: var(--am-font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  border-radius: var(--am-r-card-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--am-edge-ink);
+  background: var(--am-edge);
+  box-shadow: var(--am-edge-glow);
+  transition: filter 120ms ease, transform 120ms ease;
+}
+.br-hero__cta:hover { filter: brightness(1.06); }
+.br-hero__cta:hover svg { transform: translateX(2px); }
+.br-hero__cta svg { transition: transform 160ms ease; }
+.br-hero__cta:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
+.br-hero__cta[data-tone="ghost"] {
+  color: var(--am-text);
+  background: rgba(5,10,32,0.55);
+  border-color: var(--am-line-2);
+  box-shadow: none;
+}
+.br-hero__cta[data-tone="ghost"]:hover { border-color: var(--am-royal); filter: none; }
+
+/* ── La scatola dei value prop (destra) ────────────────────────────────── */
+.br-hero__aside {
+  position: relative;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-3);
+  padding: var(--am-s-4) var(--am-s-4) var(--am-s-4);
+  border-radius: var(--am-r-card);
+  border: 1px solid var(--am-line-2);
+  background: rgba(6,11,36,0.78);
+  box-shadow: var(--am-royal-glow);
+}
+.br-hero__aside-h {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--am-text);
+}
+.br-hero__aside-h em { font-style: normal; color: var(--am-lime); }
+.br-hero__aside-sub { margin: 0; font-family: var(--am-font-ui); font-size: 13.5px; line-height: 1.45; color: var(--am-muted); }
+.br-hero__points {
+  list-style: none;
+  margin: var(--am-s-1) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.br-hero__points li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--am-text);
+}
+/* Il check sta in un disco royal outline: è una spunta, non un bottone. */
+.br-hero__points li > i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--am-royal);
+  color: var(--am-royal);
+}
+
+/* ── Tile per sport ────────────────────────────────────────────────────── */
+.br-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--am-s-3);
+}
+.br-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-height: 72px;
+  padding: var(--am-s-3) var(--am-s-3) var(--am-s-3) var(--am-s-3);
+  border-radius: var(--am-r-card-sm);
+  border: 1px solid var(--am-line);
+  background: var(--am-panel);
+  color: var(--am-text);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-shadow: var(--am-shadow-card-hover); }
+.br-tile:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-tile[aria-current="true"] { border-color: var(--am-royal); box-shadow: var(--am-royal-glow); }
+/* Senza dati la tile non è un link: superficie un gradino sotto, cursore
+   normale, e lo dice («Coming soon») invece di mostrare uno zero. */
+.br-tile[data-state="soon"] { cursor: default; background: var(--am-bg-2); color: var(--am-muted); }
+.br-tile__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--am-inset);
+  border: 1px solid var(--am-line);
+  color: var(--am-royal);
+  overflow: hidden;
+}
+.br-tile__icon > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.br-tile[data-state="soon"] .br-tile__icon { color: var(--am-muted-2); }
+.br-tile__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.br-tile__name {
+  font-family: var(--am-font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1.15;
+  color: inherit;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.br-tile__meta {
+  font-family: var(--am-font-num);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--am-muted-2);
+  white-space: nowrap;
+}
+.br-tile__meta > b { font-weight: 700; color: var(--am-text); }
+.br-tile[data-state="soon"] .br-tile__meta { text-transform: uppercase; letter-spacing: 0.08em; font-size: 10.5px; }
+.br-tile__go { color: var(--am-muted-2); flex: none; transition: transform 160ms ease, color 160ms ease; }
+a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: translateX(2px); color: var(--am-royal); }
+
+/* ── Tile promozionale: «Build your own accumulator» ───────────────────── */
+/* Occupa due colonne della riga e ha il filo verde: è l'unica tile che porta
+   fuori dalla lista, verso uno strumento. Superficie navy con un lavaggio
+   royal, non un fill verde — il verde è il bordo, l'icona e la freccia. */
+.br-promo {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-4);
+  min-height: 72px;
+  padding: var(--am-s-3) var(--am-s-4);
+  border-radius: var(--am-r-card-sm);
+  border: 1px solid var(--am-edge-b);
+  background:
+    radial-gradient(90% 160% at 100% 50%, rgba(42,91,255,0.35) 0%, transparent 60%),
+    var(--am-panel-2);
+  color: var(--am-text);
+  text-decoration: none;
+  min-width: 0;
+  transition: box-shadow 140ms ease, border-color 140ms ease;
+}
+.br-promo:hover { box-shadow: var(--am-edge-glow); border-color: var(--am-edge); }
+.br-promo:focus-visible { outline: 2px solid var(--am-edge); outline-offset: 2px; }
+.br-promo__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  flex: none;
+  border-radius: var(--am-r-card-sm);
+  background: var(--am-edge-dim);
+  border: 1px solid var(--am-edge-b);
+  color: var(--am-edge);
+}
+.br-promo__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.br-promo__title { font-family: var(--am-font-ui); font-size: 16px; font-weight: 700; letter-spacing: -0.008em; line-height: 1.15; color: var(--am-text); }
+.br-promo__sub { font-family: var(--am-font-ui); font-size: 13px; line-height: 1.4; color: var(--am-muted); }
+.br-promo__go { color: var(--am-edge); flex: none; transition: transform 160ms ease; }
+.br-promo:hover .br-promo__go { transform: translateX(3px); }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 980px) {
+  .br-hero { grid-template-columns: minmax(0, 1fr); }
+  .br-hero[data-has-aside="true"] .br-hero__art { inset: 0 0 auto 30%; height: 60%; }
+  .br-hero__aside { align-self: stretch; }
+}
+@media (max-width: 640px) {
+  .br-hero { padding: var(--am-s-5) var(--am-s-4) var(--am-s-5) calc(var(--am-s-4) + 4px); min-height: 0; border-radius: var(--am-r-card); }
+  .br-hero__title { font-size: 34px; max-width: none; }
+  .br-hero__sub { font-size: 15px; }
+  .br-hero__art { inset: 0 0 auto 20%; height: 45%; opacity: 0.55; }
+  .br-hero__stats { gap: var(--am-s-2); }
+  .br-hero__stat { min-height: 40px; padding: 0 12px 0 10px; font-size: 13px; }
+  .br-hero__stat-n { font-size: 20px; }
+  .br-hero__cta { min-height: 44px; width: 100%; justify-content: center; }
+  .br-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--am-s-2); }
+  .br-promo { grid-column: 1 / -1; }
+  .br-tile { min-height: 64px; padding: 10px; gap: 10px; }
+  .br-tile__icon { width: 38px; height: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .br-hero__stat-dot, .br-live__dot { animation: none; }
+  .br-hero__cta, .br-hero__cta svg, .br-tile, .br-tile__go, .br-promo, .br-promo__go, .br-hero__stat { transition: none; }
+  .br-hero__cta:hover svg, a.br-tile:hover .br-tile__go, .br-promo:hover .br-promo__go { transform: none; }
+}
+
+/* Light (carta): il banner resta scuro — è l'unico pezzo della pagina che
+   tiene il navy anche nel tema chiaro, come la copertina di un giornale
+   sportivo su carta beige (ref-02, pannello 3 fa lo stesso). Serve quindi
+   ri-dichiarare qui i colori che il tema chiaro avrebbe scurito. */
+:root[data-theme="light"] .br-hero {
+  --am-text: #EDEFF2;
+  --am-muted: #A9B3CC;
+  --am-edge: #3DF56E;
+  --am-edge-ink: #06140C;
+  --am-edge-glow: 0 0 0 1px rgba(61,245,110,0.35), 0 0 22px -4px rgba(61,245,110,0.60);
+  --am-edge-text-glow: 0 0 14px rgba(61,245,110,0.40);
+  --am-lime: #C8FF3D;
+  --am-royal: #5A85FF;
+  --am-royal-glow: 0 0 0 1px rgba(90,133,255,0.32), 0 0 28px -8px rgba(90,133,255,0.65);
+  --am-line-2: rgba(90,133,255,0.50);
+  --am-bg-2: #081033;
+  --am-panel: #0C1741;
+  --am-panel-2: #10204F;
+  border-color: rgba(30,72,214,0.45);
 }

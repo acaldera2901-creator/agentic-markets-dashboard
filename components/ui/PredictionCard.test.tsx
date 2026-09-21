@@ -32,6 +32,13 @@ describe("PredictionCard", () => {
     expect(screen.getByText(/why the model disagrees/i)).toBeInTheDocument();
     expect(screen.getByText("Featured")).toHaveAttribute("data-kind", "featured");
   });
+  it("featured: lo slot media compare solo se passato, e solo nella featured", () => {
+    const { unmount } = render(<PredictionCard data={data} variant="featured" href="/p/1" media={<img alt="" src="/x.jpg" />} />);
+    expect(screen.getByTestId("card-media")).toBeInTheDocument();
+    unmount();
+    render(<PredictionCard data={data} href="/p/1" media={<img alt="" src="/x.jpg" />} />);
+    expect(screen.queryByTestId("card-media")).toBeNull();
+  });
   it("live: badge live col minuto al posto del kickoff", () => {
     render(<PredictionCard data={{ ...data, isLive: true, liveMinute: 58 }} variant="live" href="/p/1" />);
     expect(screen.getByRole("status")).toHaveTextContent("Live");

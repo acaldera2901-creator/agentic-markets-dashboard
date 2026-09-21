@@ -163,3 +163,25 @@ export function GlyphArrow({ size = 18, className }: P) {
     </svg>
   );
 }
+
+// #RESTYLING-0921 round 2 — tre lastre impilate: l'accumulatore (tile «Build
+// your own accumulator»). Rombi e non rettangoli: è un segno, non una lista.
+export function GlyphStack({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <path d="M12 3.5 20 8l-8 4.5L4 8z" />
+      <path d="M4 12l8 4.5 8-4.5" />
+      <path d="M4 16l8 4.5 8-4.5" />
+    </svg>
+  );
+}
+
+// Orologio: la pill «Starting soon» dell'hero.
+export function GlyphClock({ size = 18, className }: P) {
+  return (
+    <svg {...base(size)} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
