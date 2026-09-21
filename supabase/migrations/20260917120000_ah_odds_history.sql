@@ -62,6 +62,13 @@ CREATE TABLE IF NOT EXISTS ah_odds_history (
 -- doppio processo o un replay raddoppiano i punti della serie, e una serie
 -- storica con punti doppi non e' piu' misurabile: il movimento si legge sui
 -- distinti, non sui conteggi. (Riserva di Andrea sull'APPROVE del 17/09.)
+--
+-- Il DROP ... IF EXISTS che precede non e' cosmetico: e' la convenzione di
+-- #MIGRATION-REPLAY-0801, perche' un ADD CONSTRAINT nudo erra alla seconda
+-- esecuzione e ferma `supabase db push` a meta'.
+ALTER TABLE ah_odds_history
+  DROP CONSTRAINT IF EXISTS ah_odds_history_giro_unico;
+
 ALTER TABLE ah_odds_history
   ADD CONSTRAINT ah_odds_history_giro_unico
   UNIQUE (team_pair_key, source, captured_at);
