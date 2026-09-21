@@ -432,9 +432,13 @@ button:disabled {
 
 /* ── Layout ──────────────────────────────────────────────────── */
 
+/* #RESTYLING-0921 — UNA COLONNA SOLA, perché la rail non c'è più.
+   La prima traccia era la `.sports-rail` (210px); toltala dal JSX, l'unico
+   figlio rimasto (`.book-main`) ereditava quella traccia e tutta la lobby
+   rendeva dentro 182px su un desktop da 1512, con 1260px vuoti a destra. */
 .book-layout {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -3619,9 +3623,9 @@ button:disabled {
 /* ── Responsive ──────────────────────────────────────────────── */
 
 @media (max-width: 1200px) {
-  .book-layout {
-    grid-template-columns: 160px minmax(0, 1fr) minmax(0, 280px);
-  }
+  /* #RESTYLING-0921 — via l'override a tre tracce (160px · 1fr · 280px):
+     descriveva rail + main + right-rail, e nessuna delle due rail esiste
+     più nel JSX. Restava a schiacciare `.book-main` in 160px. */
 
   .client-summary-strip,
   .client-dashboard-overview,
