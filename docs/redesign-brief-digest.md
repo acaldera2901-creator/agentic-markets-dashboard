@@ -87,3 +87,33 @@ Criterio di successo (non "sembra più bello"): card→detail CTR, predictions v
 
 ## Scope di QUESTO round (deciso in sessione 2026-09-21)
 Prima preview: solo priorità **1 e 2** (Home/Discover lobby + Prediction card/Match detail), col nuovo design system (palette/tipografia/token) applicato a queste pagine, mobile-aware. Il resto (Track Record, Pricing, Tools, Profile) resta per un round successivo dopo che Andrea ha visto e deciso sulla preview.
+
+---
+
+## ROUND 2 — feedback di Andrea dopo aver visto la preview (2026-09-21, stesso giorno)
+
+Verdetto: **"ok ma non ok"** — direzione giusta, esecuzione visiva troppo timida/quant. Andrea ha condiviso 2 immagini generate con ChatGPT (salvate qui in `docs/reference/ref-01-hero-lobby.png` e `docs/reference/ref-02-mockup-board.png`) come riferimento visivo primario: **guardale prima di scrivere codice**, contano più di questo testo per tono ed energia.
+
+### 1. Palette — deve essere esattamente questa (lista di Andrea, verbatim)
+Indigo · Royal blue · Light blue · Neon yellow · Neon green · Beige · Black.
+
+Il problema del round 1 non era la lista dei ruoli (era già questa) — era la **saturazione/energia**: troppo editoriale-quant, non abbastanza "sportsbook vivo". Guardando `ref-01`: il dark mode è un **blu royal/navy acceso** (non indigo-quasi-nero), i badge LIVE sono **giallo neon pieno** (non un accento tenue), "High edge"/edge positivo è **verde neon pieno con glow**, i bordi delle card hanno un filo blu luminoso. Vai più vivido di quanto il round 1 abbia fatto — resta la regola "gli accenti neon non sono fill di intere sezioni", ma i badge/CTA/numeri edge possono e devono essere molto più accesi.
+
+### 2. Hero banner nuovo in Home (da `ref-01`, in cima, sopra "Featured predictions")
+Banner largo, non una semplice fascia di token: foto reale/action-shot di un atleta (calciatore) integrata nel banner con gradiente, non un semplice colore piatto. Contenuto: eyebrow "AI POWERED PREDICTIONS", headline grande a due righe con una parola/frase evidenziata in verde neon ("Top opportunities **today**." / variante "See the **value**. Make better decisions."), sottotitolo breve, riga di pill con contatori reali (Live now · Starting soon · High edge), CTA primaria piena in giallo/verde neon ("Explore today's picks →"). A destra: box con checklist di 4-5 value prop ("Models vs market probabilities", "Real edge, real opportunities", "Covers football, tennis & more", "Build your own accumulator", "Trusted by...") — **il numero "Trusted by 100K+ bettors" nell'immagine è un placeholder di ChatGPT, NON un dato vero: se non abbiamo quel numero reale, non lo mettiamo (mai claim non verificabili — vedi regole FTC/claim nel CLAUDE.md aziendale). Sostituire con qualcosa di vero o ometterlo.**
+
+Non serve costruire un carosello/rotazione di banner in questo round — un banner statico ma ben fatto, in tema, basta.
+
+### 3. Sezioni lobby aggiuntive viste in `ref-01` (oltre a quelle già fatte nel round 1)
+- **Featured predictions**: 3 card grandi con foto/crest reali delle squadre/giocatori, badge "High edge" o "Value pick" in alto a destra della card.
+- Riga di **tile per categoria sport**: Football, Tennis, Basketball, Esports, "More sports", e una tile promozionale **"Build your own accumulator"** che rimanda al Probability Builder/Tools esistente. Se non c'è pipeline dati per Basketball/Esports, NON inventare picks — tile con badge "Coming soon"/contatore assente, mai numeri finti (stessa regola del round 1).
+
+### 4. Via la landing page iniziale — accesso diretto al prodotto, anche senza account
+Decisione esplicita di Andrea: **eliminare la landing page marketing come porta d'ingresso**. Chi arriva su `/` deve entrare direttamente nella Home/lobby del prodotto (quella di cui sopra), non in una pagina di vendita. Deve funzionare **anche da anonimo/senza login**, mostrando i dati reali della fascia free — non la versione azzerata/bloccata vista nel round 1 (bug `MODEL 0%`, sezioni che non rendono da logged-out). Coerente con la sezione "Conversione" di questo stesso digest: il free deve mostrare Model/Market/Edge **reali**, solo l'analisi profonda (injury report completo, market movement, deep stats) resta dietro paywall — mai un muro totale prima di aver visto valore.
+Attenzione SEO: `app/page.tsx` oggi porta canonical + FAQ JSON-LD della vecchia landing (`landing-client.tsx`, 1182 righe). Non va distrutto alla cieca: la nuova Home-prodotto su `/` deve conservare i segnali SEO essenziali (FAQ schema, meta description, canonical) — se il modo più semplice è tenere il contenuto informativo/FAQ più in basso nella pagina o spostarlo su una pagina informativa dedicata linkata da "How it works", va bene, ma va deciso con criterio e dichiarato nel report, non cancellato in silenzio.
+
+### 5. Cose viste in `ref-02` (mockup board) utili ma NON tutte per questo round
+Light mode (pannello 3), match detail con tab Overview/Model/Stats/Lineups/H2H/News + card "Why this pick?" con badge di confidence (pannello 4), pricing Free/Base/Pro con toggle Monthly/Yearly (pannello 5), track record con barre settimanali (pannello 8) — utili come riferimento di stile per quando si arriverà a quelle pagine, ma **priorità di questo round resta**: palette/energia visiva corretta, hero banner, sezioni lobby di `ref-01`, rimozione della landing. Match detail a tab completo, pricing e track record restano al giro successivo se il tempo non basta — dichiararlo, non abbozzarlo male.
+
+### Scope esplicito ROUND 2
+Must: palette più vivida (indigo/royal-blue/neon come da `ref-01`), HeroBanner nuovo, sezioni Featured/sport-tiles/accumulator-tile in Home, root `/` che porta dritto al prodotto anche da anonimo con dati free reali (fix del bug MODEL 0% incluso). Nice-to-have se avanza tempo: match detail a tab, light mode allineata a `ref-02` pannello 3, pricing/track record. Bug già noti dal round 1 da fixare in questo passaggio: flash nav in inglese per utenti non-EN (SSR/CSR mismatch), stringhe fisse EN nei componenti condivisi (almeno le più visibili: "Pick"/"Model"/"Market"/"View analysis"/badge).
