@@ -25,6 +25,11 @@
 export const BROWSER_ANALYTICS_EVENTS = [
   "page_view", "tab_click", "plan_view", "language_change", "theme_change",
   "conversion", "partner_click", "mb_link_copied",
+  // #MIS-B — il DENOMINATORE del click affiliato. Senza, "0 click" non si
+  // distingue da "il menu non l'ha aperto nessuno": e' la stessa riga di
+  // dashboard e non si sa quale delle due storie racconti. `meta.count` porta
+  // quanti book erano in lista al momento dell'apertura.
+  "partner_menu_open",
   "operator_sidebar_click", "sportsbook_sidebar_click", "sportsbook_click",
   // #INVITE-ROBUSTNESS-0813 — il boundary globale (app/global-error.tsx) riporta
   // qui digest + path + user agent. Senza questa riga il report verrebbe scartato

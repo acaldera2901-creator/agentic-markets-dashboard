@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { PartnersShowcase } from "@/components/PartnersShowcase";
 
 describe("PartnersShowcase", () => {
@@ -63,5 +63,71 @@ describe("PartnersShowcase", () => {
   it("shows the localized title in Italian", () => {
     render(<PartnersShowcase lang="it" />);
     expect(screen.getByText("I nostri partner")).toBeTruthy();
+  });
+});
+
+// #MIS-B — la vetrina mandava gli utenti ai partner senza lasciare traccia:
+// l'unico click affiliato misurato era quello della scheda partita, quindi
+// "/partners non converte" e "/partners non e' misurata" erano la stessa riga
+// di dashboard. Stessa forma di payload della scheda partita, cosi'
+// l'aggregazione admin per partner_id continua a funzionare.
+describe("PartnersShowcase — tracking del click affiliato", () => {
+  let calls: Array<{ url: string; body: Record<string, unknown> }>;
+
+  beforeEach(() => {
+    calls = [];
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), body: JSON.parse(String(init?.body ?? "{}")) });
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) } as Response);
+    }));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const clickPartner = (name: string) => {
+    render(<PartnersShowcase lang="en" country="IT" />);
+    const card = Array.from(document.querySelectorAll("a.partner-card")).find(
+      (a) => a.textContent?.includes(name));
+    fireEvent.click(card as HTMLElement);
+    return calls.filter((c) => c.url === "/api/track");
+  };
+
+  it("registra quale partner e' stato scelto, dalla vetrina", () => {
+    const ev = clickPartner("FortunePlay");
+    expect(ev).toHaveLength(1);
+    expect(ev[0].body.event_type).toBe("partner_click");
+    expect(ev[0].body.partner_id).toBe("FortunePlay");
+    expect((ev[0].body.meta as Record<string, unknown>).surface).toBe("partners_page");
+  });
+
+  it("distingue i partner fra loro", () => {
+    expect(clickPartner("YBets")[0].body.partner_id).toBe("YBets");
+  });
+
+  it("senza consenso GDPR l'evento parte comunque, ma anonimo", () => {
+    const ev = clickPartner("BetScore");
+    expect(ev[0].body.session_id).toBeUndefined();
+    expect(sessionStorage.getItem("am_sid")).toBeNull();
+  });
+
+  // Il vincolo del gate: gli href sono i link affiliati con i parametri delle
+  // reti dentro. Il beacon non li tocca e non passa da nessun hop server-side.
+  it("non cambia l'href del partner ne' lo fa passare da un nostro endpoint", () => {
+    render(<PartnersShowcase lang="en" country="IT" />);
+    const card = Array.from(document.querySelectorAll("a.partner-card")).find(
+      (a) => a.textContent?.includes("YBets")) as HTMLAnchorElement;
+    const before = card.getAttribute("href");
+    fireEvent.click(card);
+    expect(card.getAttribute("href")).toBe(before);
+    expect(before).toMatch(/^https:\/\//);
+    expect(before).not.toContain("/api/");
+  });
+
+  it("il link resta cliccabile anche se il beacon fallisce", () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
+    render(<PartnersShowcase lang="en" country="IT" />);
+    const card = document.querySelector("a.partner-card") as HTMLElement;
+    expect(() => fireEvent.click(card)).not.toThrow();
   });
 });

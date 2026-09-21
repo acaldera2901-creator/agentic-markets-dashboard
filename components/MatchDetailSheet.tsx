@@ -437,7 +437,19 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                   <button
                     type="button"
                     className="mds-cta"
-                    onClick={() => setBooksMenu((o) => !o)}
+                    onClick={() => {
+                      // #MIS-B: il denominatore del partner_click. Si emette
+                      // solo in APERTURA (non alla chiusura) e fuori
+                      // dall'updater di stato, che React puo' rieseguire.
+                      // `count` = i book in lista, cioe' quanti ne ha visti
+                      // davvero chi ha aperto.
+                      if (!booksOpen) {
+                        trackEvent("partner_menu_open", {
+                          meta: { surface: "match_sheet", count: data.books?.length ?? 0 },
+                        });
+                      }
+                      setBooksMenu((o) => !o);
+                    }}
                     aria-expanded={booksOpen}
                     aria-haspopup="menu"
                   >

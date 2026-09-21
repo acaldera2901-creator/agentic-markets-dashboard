@@ -1,9 +1,17 @@
+"use client";
+
 // Presentazionale puro: riceve `lang` + il `country` già risolto e consuma il
 // catalogo da lib/partners. Nessuna logica geo qui — il gate fail-closed
 // (blocked) è nel page che lo monta; il `country` serve solo a risolvere i
 // partner con un link diverso per paese (#PARTNERS-VELOBET-CASEA).
+//
+// #MIS-B — client component per una ragione sola: il beacon sul click
+// affiliato. La vetrina mandava gli utenti ai partner senza lasciare traccia,
+// quindi i click dalla scheda partita erano l'UNICO click misurato e
+// /partners contava zero per costruzione.
 import Link from "next/link";
 import { partnersFor, PARTNERS_COPY, PARTNER_TAGLINES, type PartnersLang, type ResolvedPartner } from "@/lib/partners";
+import { trackEvent } from "@/lib/track-event";
 
 function PartnerCard({ p, lang, featured }: { p: ResolvedPartner; lang: PartnersLang; featured?: boolean }) {
   const t = PARTNERS_COPY[lang];
@@ -13,6 +21,18 @@ function PartnerCard({ p, lang, featured }: { p: ResolvedPartner; lang: Partners
       href={p.url}
       target="_blank"
       rel="nofollow sponsored noopener"
+      onClick={() => {
+        // Stessa forma del click partner nella scheda partita: `partner_id` e'
+        // il NOME, cosi' l'aggregazione admin per partner_id continua a
+        // funzionare e guadagna la vetrina. Fire-and-forget (il .catch sta in
+        // trackEvent): non attende e non puo' mai bloccare l'apertura del link.
+        // L'href non si tocca — i parametri di tracking delle reti restano
+        // esattamente quelli.
+        trackEvent("partner_click", {
+          partner_id: p.name,
+          meta: { surface: "partners_page" },
+        });
+      }}
     >
       <span className="partner-logo-wrap">
         {/* loghi statici in /public → <img> semplice, niente next/image */}
