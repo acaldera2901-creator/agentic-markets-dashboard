@@ -11,7 +11,8 @@ const approx = (a: number, b: number, eps = 1e-9) =>
 // ── MARKET_BLEND_ALPHA ─────────────────────────────────────────────────────
 // Backtest-justified default (docs/internal/reliability-upgrade-2026-06-06.md):
 // α≈0.3 keeps almost all of the calibration gain while preserving model identity.
-assert.equal(MARKET_BLEND_ALPHA, 0.3);
+// #BLEND-ALPHA-0914: 0.3 -> 0.1 (misura su prediction_log, vedi lib/poisson-model.ts).
+assert.equal(MARKET_BLEND_ALPHA, 0.1);
 
 // ── devig1x2 ───────────────────────────────────────────────────────────────
 // Fair (no-vig) book: 1/2/4 → inverse 0.5/0.25/0.25, sum = 1 → unchanged.

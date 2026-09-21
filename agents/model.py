@@ -32,7 +32,7 @@ from core.supabase_client import (
     upsert_unified_rows,
     wc_prediction_to_unified_row,
 )
-from core.market_blend import MARKET_BLEND_ALPHA, devig_1x2, blend_with_market
+from core.market_blend import blend_alpha_for, devig_1x2, blend_with_market
 from models.dixon_coles import DixonColesModel
 from models.conformal import calibrate_from_history, get_interval, interval_width
 from context.context_service import ContextService
@@ -414,7 +414,9 @@ class ModelAgent(BaseAgent):
                     )
                     served_model_label = "Elo rating model"
                     v2_served = True
-            p_home, p_draw, p_away = blend_with_market(served_a, served_d, served_b, market)
+            # #BLEND-ALPHA-0914: peso per competizione (WC -> 0: si serve il prezzo).
+            alpha_lega = blend_alpha_for(payload.get("league"))
+            p_home, p_draw, p_away = blend_with_market(served_a, served_d, served_b, market, alpha=alpha_lega)
             pred = DCPrediction(
                 match_id=str(payload.get("match_id")),
                 league=payload["league"],
@@ -595,7 +597,7 @@ class ModelAgent(BaseAgent):
                         odds=odds_triple,
                         market=market,
                         model_version=served_version,
-                        blend_alpha=MARKET_BLEND_ALPHA if market else None,
+                        blend_alpha=alpha_lega if market else None,
                     )
             # Shadow A/B (#WC-ELO-V2): il CONTRO-FATTUALE viene sempre loggato —
             # con v2 promosso al servito lo shadow è il v1 Poisson calibrato
