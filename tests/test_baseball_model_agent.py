@@ -28,6 +28,7 @@ from agents.baseball_model_agent import (
 )
 from config.settings import settings
 from core.odds_api_client import devig_two_way, market_consensus
+from tests.unified_schema_contract import assert_unified_schema
 
 
 # ── market math (odds_api_client helpers shared with the MMA agent) ───────────
@@ -175,7 +176,9 @@ def test_build_unified_row_contract():
     assert row["source_id"] == "824012"          # str, stable dedup key
     assert row["league"] == "MLB"
     assert row["pick"] == "HOME"                  # p_home .657 → favourite home
-    assert row["p_draw"] is None                  # 2-outcome sport
+    assert_unified_schema(row)
+    assert row["event_name"] == "Los Angeles Dodgers vs San Diego Padres"
+    assert json.loads(row["notes"])["p_draw"] is None
     assert row["confidence_score"] == 66
     assert row["edge_percent"] is None            # market-anchored, no edge claim
     assert row["signal_type"] == "paper"          # DARK phase

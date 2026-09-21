@@ -237,7 +237,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _history(self) -> bytes:
         try:
-            righe = Path(HISTORY_FILE).read_text().splitlines()[-HISTORY_LIMIT:]
+            righe = Path(HISTORY_FILE).read_text(encoding="utf-8").splitlines()[-HISTORY_LIMIT:]
         except (FileNotFoundError, OSError):
             return b"[]"
         out = []

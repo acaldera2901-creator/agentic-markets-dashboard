@@ -26,7 +26,7 @@ def read_state(path: Path | None = None) -> dict:
     """
     target = Path(path) if path else STATE_FILE
     try:
-        return json.loads(target.read_text())
+        return json.loads(target.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return {}
 
@@ -37,7 +37,7 @@ def write_state(state: dict, path: Path | None = None) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(target.parent), prefix=".state-", suffix=".tmp")
     try:
-        with os.fdopen(fd, "w") as fh:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(state, fh, indent=1, ensure_ascii=False, default=str)
             fh.flush()
             os.fsync(fh.fileno())
@@ -61,7 +61,7 @@ def append_history(
         "at": generated_at,
         "checks": {cid: {"level": v.level, "value": v.value} for cid, v in verdicts.items()},
     }
-    with target.open("a") as fh:
+    with target.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
 
 

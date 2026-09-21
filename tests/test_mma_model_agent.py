@@ -15,6 +15,7 @@ from agents.mma_model_agent import (
     match_ufc_event,
 )
 from config.settings import settings
+from tests.unified_schema_contract import assert_unified_schema
 
 
 # ── tiers ─────────────────────────────────────────────────────────────────────
@@ -81,7 +82,9 @@ def test_build_unified_row_contract():
     # fighters ride the home/away slots (prod convention, contract doc)
     assert row["home_team"] == "Fighter A" and row["away_team"] == "Fighter B"
     assert row["pick"] == "HOME"
-    assert row["p_draw"] is None
+    assert_unified_schema(row)
+    assert row["event_name"] == "Fighter A vs Fighter B"
+    assert json.loads(row["notes"])["p_draw"] is None
     assert row["confidence_score"] == 74
     assert row["odds"] == 1.35
     assert row["edge_percent"] is None
