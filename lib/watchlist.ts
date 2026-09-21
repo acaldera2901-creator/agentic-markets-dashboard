@@ -71,7 +71,6 @@ export function useWatchlist(): Watchlist {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lo storage non esiste sul server: leggerlo in render romperebbe l'idratazione (#STORAGE-CRASH-0813)
     setSaved(new Set(parseWatchlist(storageGet(WATCHLIST_KEY))));
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- idem: il flag segue la stessa lettura
     setLoading(false);
   }, []);
 

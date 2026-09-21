@@ -58,6 +58,8 @@ import {
 } from "@/components/ui";
 import { LobbySection } from "@/components/lobby/LobbySection";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
+import { edgePointsFrom } from "@/lib/ui/prediction-card";
+import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId } from "@/lib/ui/lobby";
 import { useWatchlist } from "@/lib/watchlist";
 
@@ -4925,6 +4927,31 @@ function LockedGate({
 // λ/Δ/pp jargon, no model-ids, no "?": missing facts are simply omitted.
 // it = Italian; every other language falls back to English (same posture as the
 // rest of the app's es/fr/ru handling).
+// #RESTYLING-0921 — la forma come SEQUENZA (W/D/L in ordine), non come
+// conteggio: la scheda partita mostra le ultime partite una per una, e
+// «3V-1N-1P» perde l'informazione che conta, cioè quando sono arrivate.
+// Le righe Mondiale portano solo i conteggi: lì la sequenza non esiste e la
+// sezione non si rende (meglio niente che un ordine inventato).
+function formResults(f?: string | WcFormCounts | null): string[] | null {
+  if (typeof f !== "string") return null;
+  const letters = f.toUpperCase().replace(/[^WDL]/g, "").split("");
+  return letters.length ? letters.slice(-5) : null;
+}
+
+// Le etichette delle sezioni nuove della scheda partita. Il componente ha i
+// suoi default in inglese; qui si localizzano come tutto il resto del desk.
+function MDS_SECTION_LABELS(lang: Lang) {
+  return {
+    why: pick5(lang, { it: "Perché il modello sceglie questo pick", en: "Why the model likes this pick", es: "Por qué el modelo elige este pronóstico", fr: "Pourquoi le modèle choisit ce pronostic", ru: "Почему модель выбирает этот прогноз" }),
+    form: pick5(lang, { it: "Forma recente", en: "Recent form", es: "Forma reciente", fr: "Forme récente", ru: "Текущая форма" }),
+    teamNews: pick5(lang, { it: "Infortuni e news squadra", en: "Injuries & team news", es: "Lesiones y noticias", fr: "Blessures et actualités", ru: "Травмы и новости" }),
+    teamNewsLocked: pick5(lang, { it: "L'analisi completa di infortuni e formazioni per questa partita fa parte di Pro.", en: "The full injury and team-news read for this match is part of Pro.", es: "El análisis completo de lesiones y alineaciones de este partido es parte de Pro.", fr: "L'analyse complète des blessures et compositions de ce match fait partie de Pro.", ru: "Полный разбор травм и составов этого матча входит в Pro." }),
+    teamNewsNone: pick5(lang, { it: "Nessuna assenza segnalata.", en: "No reported absences.", es: "Sin ausencias reportadas.", fr: "Aucune absence signalée.", ru: "Об отсутствиях не сообщается." }),
+    markets: pick5(lang, { it: "Mercati", en: "Markets", es: "Mercados", fr: "Marchés", ru: "Рынки" }),
+    unlock: pick5(lang, { it: "Sblocca l'analisi completa", en: "Unlock full analysis", es: "Desbloquear el análisis completo", fr: "Débloquer l'analyse complète", ru: "Открыть полный анализ" }),
+  };
+}
+
 function teamFormCounts(f?: string | WcFormCounts | null): { w: number; d: number; l: number } | null {
   if (!f) return null;
   if (typeof f === "string") {
@@ -5462,11 +5489,69 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       });
     }
 
+    // #RESTYLING-0921 — forma recente e team news, solo se ci sono davvero.
+    const formRow = (() => {
+      const h = formResults(e.form_home), a = formResults(e.form_away);
+      if (!h || !a) return null;
+      return { home: { name: p.home_team, results: h }, away: { name: p.away_team, results: a } };
+    })();
+    const injHome = e.injuries_home ?? e.squad?.injuries_home ?? null;
+    const injAway = e.injuries_away ?? e.squad?.injuries_away ?? null;
+    const teamNewsBlock = injHome || injAway
+      ? { home: { name: p.home_team, items: injHome ?? [] }, away: { name: p.away_team, items: injAway ?? [] } }
+      : null;
+
+    // #RESTYLING-0921 — la testa nuova + la progressive disclosure. I numeri
+    // vengono dagli stessi campi dell'hero: `shownProb` è la probabilità che
+    // la scheda già dichiara, il mercato è 1/quota dello stesso esito, e
+    // l'edge è la loro DIFFERENZA (mai `p.edge`, che è il value — la nota in
+    // lib/ui/prediction-card.ts spiega perché non sono la stessa cosa).
+    const headModelPct = shownProb != null ? shownProb * 100 : null;
+    const headMarketPct = shownOdds != null && shownOdds > 1 ? (1 / shownOdds) * 100 : null;
+    const whyLang: WhyLang = lang === "it" ? "it" : "en";
     return {
       league: p.league_name || p.league,
       when: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
       home: p.home_team, away: p.away_team,
       extraMarkets: e.extra_markets ?? undefined, // real model prediction for FP goal-derived markets
+      head: {
+        sport: "football",
+        league: p.league_name || p.league,
+        kickoffLabel: fmtKickoff(p.kickoff, lang, tz, e.time_confirmed),
+        isLive: isLive || isPaused,
+        liveMinute: live?.minute ?? null,
+        score: hasScore && live && live.home_score != null && live.away_score != null
+          ? { home: live.home_score, away: live.away_score }
+          : null,
+        // Sotto il floor niente pick direzionale, esattamente come l'hero.
+        pick: belowFloor ? null : (shownName ?? null),
+        modelPct: headModelPct,
+        marketPct: headMarketPct,
+        edgePct: belowFloor ? null : edgePointsFrom(headModelPct, headMarketPct),
+        confidence: confScore,
+      },
+      why: footballWhyReasons({
+        home: p.home_team, away: p.away_team,
+        formHome: e.form_home, formAway: e.form_away,
+        xgHome: e.xg_home, xgaHome: e.xga_home, xgAway: e.xg_away, xgaAway: e.xga_away,
+        expectedGoals: e.goals_summary?.expected_goals ?? null,
+        goalsBandLow: e.goals_summary?.band_low ?? null,
+        goalsBandHigh: e.goals_summary?.band_high ?? null,
+        matchesHome: e.matches?.home ?? e.team_matches ?? null,
+        matchesAway: e.matches?.away ?? e.team_matches ?? null,
+        reliability: e.reliability ?? null,
+        topScorer: (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0] ?? null,
+        modelPct: headModelPct, marketPct: headMarketPct,
+      }, whyLang),
+      form: formRow,
+      // Gli infortuni sono in PREMIUM_ENRICHMENT_KEYS: per un piano non-Pro il
+      // server li toglie e qui NON arrivano. `teamNewsLocked` si accende solo
+      // quando il piano è il motivo dell'assenza — mai per dire «non ci sono
+      // infortuni», che è un'informazione diversa e la diamo quando la sappiamo.
+      teamNews: teamNewsBlock,
+      teamNewsLocked: teamNewsBlock == null && !isPremium,
+      onUnlock: onGate,
+      sections: MDS_SECTION_LABELS(lang),
       // #FLOOR-MODAL-0821 — il modale deve dire la STESSA cosa della scheda.
       // Trovato da PRO loggato in produzione: la scheda diceva «no clear
       // favourite» e il modale, a un clic di distanza, «Our prediction · Ried to
@@ -6102,10 +6187,40 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         return { id: `esito-${o.key}`, mkt: pick5(lang, { it: "Vincente", en: "Winner", es: "Ganador", fr: "Vainqueur", ru: "Победитель" }), sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: !belowFloor && pickPlayer === o.key };
       }),
     }];
+    // #RESTYLING-0921 — testa nuova + «perché». Vedi la card calcio: l'edge
+    // è la differenza fra i due numeri mostrati, non `m.edge` (che è il value).
+    const headModelPct = pickProb != null ? pickProb * 100 : null;
+    const headMarketPct = fpPickOdds != null && fpPickOdds > 1 ? (1 / fpPickOdds) * 100 : null;
     return {
       league: m.tournament,
       when: fmtKickoff(m.scheduled, lang, tz),
       home: m.player1, away: m.player2,
+      head: {
+        sport: "tennis",
+        league: m.tournament,
+        kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
+        pick: belowFloor ? null : (pickName ?? null),
+        modelPct: headModelPct,
+        marketPct: headMarketPct,
+        edgePct: belowFloor ? null : edgePointsFrom(headModelPct, headMarketPct),
+        confidence: m.confidence_score ?? null,
+      },
+      why: tennisWhyReasons({
+        p1: m.player1, p2: m.player2,
+        surface: m.surface,
+        eloP1: m.elo_p1, eloP2: m.elo_p2,
+        surfaceMatchesP1: m.surface_matches_p1, surfaceMatchesP2: m.surface_matches_p2,
+        serveFormP1: m.serve_form_p1, serveFormP2: m.serve_form_p2,
+        returnFormP1: m.return_form_p1, returnFormP2: m.return_form_p2,
+        h2hP1: m.h2h_p1_wins, h2hP2: m.h2h_p2_wins,
+        restDaysP1: m.p1_rest_days, restDaysP2: m.p2_rest_days,
+        modelPct: headModelPct, marketPct: headMarketPct,
+      }, lang === "it" ? "it" : "en"),
+      // Il tennis non porta né forma W/D/L né liste infortuni nel payload:
+      // le due sezioni semplicemente non esistono qui. Le sue motivazioni
+      // (Elo per superficie, servizio, risposta, precedenti, riposo) sono già
+      // nel blocco «perché» sopra, che per il tennis è più ricco del calcio.
+      sections: MDS_SECTION_LABELS(lang),
       // #FLOOR-MODAL-0821 — stessa cosa della scheda, anche qui (vedi il calcio).
       hero: {
         flag: belowFloor
@@ -10319,43 +10434,15 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 cerca, invece di stare ovunque. */}
 
         <section className="book-main">
-          {/* #MOBILE-FEATURED-1: gruppo "In Evidenza" — solo mobile (≤760px, dove il
-              rail sparisce). Rispecchia il FEATURED del rail PC con le nostre icone;
-              tile prominenti che vanno a capo (nessuno scroll → tutto visibile). */}
-          <nav className="am-featured" aria-label={tNav.featured_label}>
-            <span className="am-featured-lab">{tNav.featured_label}</span>
-            <div className="am-featured-grid">
-              {/* #TOOLS-HUB-0805: specchia la voce Strumenti del rail (su mobile
-                  il rail sparisce, senza questa tile l'hub /tools resterebbe
-                  raggiungibile solo dal footer). */}
-              <Link className="am-feat-tile" href="/tools">
-                <MenuIcon name="tools" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
-              </Link>
-              <Link className="am-feat-tile" href="/community">
-                <MenuIcon name="creator" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">Creator Picks</span>
-              </Link>
-              <Link className="am-feat-tile" href="/weekly-model-case">
-                <MenuIcon name="weeklypick" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">Weekly Model Case</span>
-              </Link>
-              {/* #MOB1: Build a Probability View è stato promosso alla bottom tab bar (destinazione
-                  primaria) → rimosso da "In Evidenza" per non duplicarlo. */}
-              {hasClientProfile && (
-                <button className="am-feat-tile" onClick={() => { setTab("invita"); trackEvent("tab_click", { meta: { tab: "invita", src: "featured-mobile" } }); }}>
-                  <MenuIcon name="invite" size={22} className="am-feat-ic" />
-                  <span className="am-feat-l">{pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}</span>
-                </button>
-              )}
-              {/* #PARTNERS-RAIL-1 (mobile): specchia la voce Partner del rail — su mobile
-                  il rail sparisce, quindi senza questa tile la vetrina resta solo nel footer. */}
-              <Link className="am-feat-tile" href="/partners">
-                <MenuIcon name="partner" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">{pick5(uiLanguage, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}</span>
-              </Link>
-            </div>
-          </nav>
+          {/* #RESTYLING-0921 — via anche la griglia "In evidenza" mobile.
+              Era lo SPECCHIO della rail (#MOBILE-FEATURED-1 lo dice: «rispecchia
+              il FEATURED del rail PC»), quindi toglierne una sola avrebbe
+              sistemato il desktop e lasciato il telefono com'era. Cinque tile
+              di navigazione stavano SOPRA il contenuto, cioè la prima cosa che
+              si vedeva aprendo la Home da telefono non era una partita.
+              Le sue voci sono tutte ancora raggiungibili, in due tocchi:
+              Strumenti → bottom bar · Creator Picks, Weekly Model Case,
+              Partner, Invita → Profilo (menu Account). */}
           <div className="book-main-head am-deskhead">
             <div className="am-deskhead-titles">
               {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading.

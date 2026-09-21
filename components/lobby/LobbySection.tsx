@@ -7,7 +7,7 @@
 // UNA domanda dominante e che l'utente sappia sempre perché sta guardando
 // quelle righe: «le partite dove il modello si discosta di più dal mercato» fa
 // esattamente questo, e vale come metodologia dichiarata.
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 export function LobbySection({
   title,
@@ -23,11 +23,16 @@ export function LobbySection({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  // Il titolo nomina la sezione: così ogni fascia è un landmark e chi naviga
+  // con uno screen reader può saltare da «Top opportunities» a «Live now»
+  // invece di attraversare tutte le card. Un <section> senza nome accessibile
+  // non è un landmark e non compare nell'elenco delle regioni.
+  const titleId = useId();
   return (
-    <section className="br-sec">
+    <section className="br-sec" aria-labelledby={titleId}>
       <div className="br-sec__head">
         <div className="br-sec__titles">
-          <h2 className="br-sec__title">
+          <h2 className="br-sec__title" id={titleId}>
             {title}
             {count != null && <span className="br-sec__n">{count}</span>}
           </h2>
