@@ -868,50 +868,50 @@ async def record_pick_settlement(
         return False
 
 
-async def unified_tennis_ancora_aperte(giorni: int = 30) -> list[str]:
-    """#SETTLE-0909 — i `source_id` delle righe tennis PUBBLICATE e ancora senza
-    esito, con la partita gia' passata.
+async def unified_tennis_ancora_aperte(
+    *, after_id: str | None = None,
+) -> tuple[list[str], str | None] | None:
+    """One bounded page of past, still-open public tennis predictions.
 
-    Serve alla riconciliazione del ponte. Il difetto che chiude, misurato il
-    10/09: 27 pick mostrate con `result` NULL, partite fra l'11/06 e il 24/08.
-    A monte erano `outcome = 'expired'` col `winner` NULL — cioe' lo spazzino le
-    aveva marcate scadute e il ponte verso la riga pubblica non era passato. Da
-    lì nessuno le riguardava piu': lo spazzino a monte seleziona
-    `outcome IS NULL`, e il backstop TS pretende `winner NOT NULL`. Un buco
-    permanente per costruzione.
-    La domanda giusta non e' «quali predizioni ho chiuso», e' «quali righe
-    PUBBLICHE sono ancora aperte»: la si chiede alla tabella pubblica, che e'
-    l'unica che sa la verita' su cosa vede un cliente. Fail-soft: in caso di
-    errore ritorna vuoto e il ciclo prosegue.
+    Scan by the immutable UUID primary key, never OFFSET: completed rows can
+    disappear while scanning. No age cutoff hides historical bridge failures.
+    The caller owns the cursor and wraps after the last page. None means a
+    failed read (retry the same page), unlike ([], None), which ends the scan.
     """
     base = _rest_base()
     if not base:
-        return []
-    da = (datetime.now(timezone.utc) - timedelta(days=giorni)).isoformat()
-    adesso = datetime.now(timezone.utc).isoformat()
+        return None
+    page_size = 200
+    params = {
+        "select": "id,source_id",
+        "sport": "eq.tennis",
+        "source_table": "eq.tennis_predictions",
+        "result": "is.null",
+        "pick": "not.is.null",
+        "starts_at": f"lt.{datetime.now(timezone.utc).isoformat()}",
+        "order": "id.asc",
+        "limit": str(page_size),
+    }
+    if after_id:
+        params["id"] = f"gt.{after_id}"
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(
-                f"{base}/unified_predictions",
-                params={
-                    "select": "source_id",
-                    "sport": "eq.tennis",
-                    "source_table": "eq.tennis_predictions",
-                    "result": "is.null",
-                    "pick": "not.is.null",
-                    "starts_at": f"lt.{adesso}",
-                    "and": f"(starts_at.gte.{da})",
-                    "limit": "500",
-                },
+                f"{base}/unified_predictions", params=params,
                 headers=_service_headers(),
             )
             if resp.status_code != 200:
                 logger.warning("lettura righe tennis aperte: %s", resp.status_code)
-                return []
-            return [str(r["source_id"]) for r in resp.json() if r.get("source_id")]
+                return None
+            rows = resp.json()
+            next_cursor = str(rows[-1]["id"]) if len(rows) == page_size else None
+            missing = [r["id"] for r in rows if not r.get("source_id")]
+            if missing:
+                logger.warning("righe tennis senza source_id: %s", missing)
+            return [str(r["source_id"]) for r in rows if r.get("source_id")], next_cursor
     except Exception as exc:
         logger.warning("lettura righe tennis aperte fallita: %s", exc)
-        return []
+        return None
 
 
 async def settle_unified_tennis(
