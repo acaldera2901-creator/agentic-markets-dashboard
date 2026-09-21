@@ -818,6 +818,14 @@
   .br-nav { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .br-nav::-webkit-scrollbar { display: none; }
   .br-search input { width: 9ch; }
+  /* La zona destra prende una riga sua e può andare a capo. Senza questo
+     eredita `flex: 0 0 auto` da .am-topright (globals.css) e resta larga
+     quanto il suo max-content: con search + watchlist aggiunte nel round 2
+     fa 410px, cioè 20px più del telefono, e la larghezza la imponeva a
+     TUTTO il documento (misurato @390px: scrollWidth 426 vs client 390).
+     È la stessa causa radice di #RESPONSIVE-0618, che però era stata
+     chiusa sulle vecchie classi. */
+  .br-navright { flex: 1 1 100%; justify-content: flex-end; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
