@@ -1,22 +1,49 @@
 name: Supabase Migrations
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'supabase/migrations/**'
   workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: 'Full 40-character commit SHA explicitly approved for the reconciled migration plan'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-database-migrations
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    # Deliberately closed until the owner reconciles SQL/schema/history and
+    # configures required reviewers on this GitHub environment. Missing = skip.
+    if: vars.DB_MIGRATIONS_RECONCILED == 'true'
     runs-on: ubuntu-latest
+    environment: production-database
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.approved_sha }}
+
+      - name: Verify approved artifact
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+        run: |
+          [[ "$APPROVED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$APPROVED_SHA"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check migration replay safety
+        run: python scripts/check_migrations_replayable.py
 
       - uses: supabase/setup-cli@v1
         with:
