@@ -65,7 +65,10 @@ export function useDetailModal(enabled: boolean) {
   const cardProps = enabled
     ? { ref: cardRef, role: "button" as const, tabIndex: 0, "aria-haspopup": "dialog" as const, onClick: openModal, onKeyDown: onCardKey }
     : { ref: cardRef };
-  return { open, rect, close, cardProps };
+  // #RESTYLING-0921: `openModal` esce dall'hook perché la scheda ora si apre
+  // anche SENZA un click sulla card — da un deep-link `?match=` e dalle card
+  // della lobby, che rimandano qui invece di costruirsi una seconda scheda.
+  return { open, rect, close, cardProps, openModal };
 }
 
 // click guard per i controlli interni alla card della griglia (non devono

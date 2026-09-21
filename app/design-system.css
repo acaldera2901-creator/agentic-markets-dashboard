@@ -561,3 +561,222 @@
   .br-cta svg, .br-cta, .br-watch, .br-card { transition: none; }
   .br-cta:hover svg { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * LOBBY + NAV — #RESTYLING-0921 (parte 2: IA e pagine)
+ *
+ * La Home smette di essere «dashboard → filtri → contenuto» e diventa una
+ * lobby: fasce di contenuto già rilevante, i filtri dietro «Explore». Qui
+ * vivono solo il contenitore delle fasce e la nav: le card sono quelle sopra.
+ * Stessi token --am-*, stesso breakpoint 640.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.br-lobby {
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-7);
+  padding: var(--am-s-5) var(--am-s-4) var(--am-s-6);
+}
+
+/* ── Una fascia ─────────────────────────────────────────────────────────── */
+.br-sec { display: flex; flex-direction: column; gap: var(--am-s-4); }
+
+.br-sec__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--am-s-4);
+  /* Una riga sottile sotto il titolo: separa le fasce senza incorniciarle.
+     Il brief chiede meno bordi, non più. */
+  border-bottom: 1px solid var(--am-line);
+  padding-bottom: var(--am-s-3);
+}
+.br-sec__titles { min-width: 0; }
+.br-sec__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--am-s-2);
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--am-text);
+  line-height: 1.2;
+}
+/* Il conteggio è un dato, quindi mono — e piccolo: il titolo deve vincerlo. */
+.br-sec__n {
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--am-muted-2);
+}
+.br-sec__hint {
+  margin: 5px 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--am-muted);
+  max-width: 68ch;
+}
+.br-sec__action { flex: 0 0 auto; }
+
+.br-sec__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  cursor: pointer;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--am-royal);
+  text-decoration: none;
+  border-radius: var(--am-r-ctl);
+}
+.br-sec__link:hover { text-decoration: underline; }
+.br-sec__link:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+
+.br-sec__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(302px, 1fr));
+  gap: var(--am-s-4);
+  align-items: start;
+}
+/* La card featured occupa due colonne quando ci sono: è il top pick, e in una
+   griglia di uguali non si distinguerebbe. Sotto le due colonne torna sola. */
+@media (min-width: 980px) {
+  .br-sec__grid > .br-card[data-variant="featured"] { grid-column: span 2; }
+}
+
+.br-empty {
+  padding: var(--am-s-5);
+  border: 1px dashed var(--am-line-2);
+  border-radius: var(--am-r-card);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--am-muted);
+  text-align: center;
+}
+
+/* ── Nav primaria (una sola: la rail laterale è stata tolta dalla lobby) ── */
+.br-nav { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.br-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--am-r-ctl);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--am-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
+}
+.br-nav__item:hover { color: var(--am-text); background: var(--am-royal-dim); }
+.br-nav__item:focus-visible { outline: 2px solid var(--am-royal); outline-offset: -2px; }
+/* Lo stato selezionato è ROYAL, non verde: il verde è riservato all'edge e
+   alla CTA di upgrade (regola del brief). */
+.br-nav__item[aria-current="page"] { color: var(--am-royal); background: var(--am-royal-dim); }
+.br-nav__item[data-live="true"]::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--am-live);
+}
+
+/* ── Zona destra: ricerca · watchlist · account ─────────────────────────── */
+.br-navright { display: flex; align-items: center; gap: var(--am-s-2); min-width: 0; }
+
+.br-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  height: 34px;
+  min-width: 0;
+  background: var(--am-inset);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-ctl);
+  color: var(--am-muted-2);
+}
+.br-search:focus-within { border-color: var(--am-royal); color: var(--am-text); }
+.br-search svg { width: 14px; height: 14px; flex: 0 0 auto; }
+.br-search input {
+  width: 15ch;
+  min-width: 0;
+  background: none;
+  border: 0;
+  outline: 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  color: var(--am-text);
+}
+.br-search input::placeholder { color: var(--am-muted-2); }
+
+.br-watchnav {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  background: none;
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-ctl);
+  cursor: pointer;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--am-muted);
+}
+.br-watchnav:hover { color: var(--am-text); border-color: var(--am-line-2); }
+.br-watchnav[aria-current="page"] { color: var(--am-royal); border-color: var(--am-royal-b); background: var(--am-royal-dim); }
+.br-watchnav:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-watchnav__n {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--am-text);
+}
+
+/* Le destinazioni secondarie (History, Plans, Invite, Partner, Creator…)
+   vivono nel menu Account: fuori dalla nav primaria, raggiungibili in un
+   click. #RESTYLING-0921 — prima erano tutte in una rail sempre a schermo. */
+.br-acct-links { display: flex; flex-direction: column; padding: var(--am-s-2) 0; border-top: 1px solid var(--am-line); }
+.br-acct-links a, .br-acct-links button {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  padding: 9px 14px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  font-family: var(--am-font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--am-text);
+}
+.br-acct-links a:hover, .br-acct-links button:hover { background: var(--am-royal-dim); color: var(--am-royal); }
+
+@media (max-width: 640px) {
+  .br-lobby { gap: var(--am-s-6); padding: var(--am-s-4) var(--am-s-3) var(--am-s-7); }
+  .br-sec__grid { grid-template-columns: 1fr; gap: var(--am-s-3); }
+  .br-sec__head { flex-wrap: wrap; align-items: flex-start; gap: var(--am-s-2); }
+  .br-sec__title { font-size: 17px; }
+  /* La nav primaria scorre in orizzontale invece di andare a capo: la bottom
+     bar resta il modo principale di muoversi, questa è il secondo. */
+  .br-nav { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .br-nav::-webkit-scrollbar { display: none; }
+  .br-search input { width: 9ch; }
+}

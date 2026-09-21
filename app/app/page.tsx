@@ -48,6 +48,18 @@ import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { campaignsFor, campaignSport } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
+// #RESTYLING-0921 — design system del redesign. La card nuova si importa con
+// un alias: `PredictionCard` è già il nome della card legacy del board, che
+// resta viva (è lei a possedere la scheda-dettaglio e la schedina).
+import {
+  PredictionCard as BrPredictionCard,
+  ConfidenceIndicator,
+  WatchlistButton,
+} from "@/components/ui";
+import { LobbySection } from "@/components/lobby/LobbySection";
+import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
+import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId } from "@/lib/ui/lobby";
+import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
 // fuori dal bundle iniziale di /app. MatchDetailSheet = solo all'apertura scheda
@@ -2224,6 +2236,7 @@ function SportsbookBoard({
   onBannerCta,
   hitRate,
   liveStrip,
+  autoOpenKey,
 }: {
   predictions: Prediction[];
   fpOdds: Record<string, FpOddsEntry>;
@@ -2237,6 +2250,9 @@ function SportsbookBoard({
   onBannerCta?: (href: string) => boolean;
   hitRate?: string | null;
   liveStrip?: React.ReactNode;
+  /** #RESTYLING-0921 — `sport:id` della partita da aprire subito (deep-link
+   *  `?match=` o click da una card della lobby). */
+  autoOpenKey?: string | null;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
   // ?sport= deep-link dalla landing: applicato dopo il mount per non rompere
@@ -2605,7 +2621,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const out: React.ReactNode[] = [
-                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `football:${p.match_id}`} />,
                       ];
                       if (i === fpGridAt) {
                         out.push(<FreePaywall key="fp-grid" count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} inGrid />);
@@ -2668,7 +2684,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />
+                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `tennis:${m.id}`} />
                       );
                       // #BANNER-FEED-FIX-0708: nel feed tennis i banner sono tile QUADRATI 1:1
                       // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
@@ -5209,7 +5225,7 @@ function McCardPhoto({ sport, i, surface }: { sport: "football" | "tennis" | "wc
   );
 }
 
-function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -5520,8 +5536,14 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
   // "ingrandisce" nella scheda-dettaglio completa. Locked/preview non aprono il
   // modal (locked → gate via overlay; preview → niente da rivelare).
   const modalEnabled = !p.locked && !isPreview;
-  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
+  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps, openModal } = useDetailModal(modalEnabled);
   const modalTitleId = `pdm-${p.match_id}`;
+  // #RESTYLING-0921 — una card si apre da sola quando è LEI la partita chiesta
+  // da un link (`/predictions?match=football:123`) o dalla lobby. Il dettaglio
+  // resta uno solo: la lobby non ricostruisce una seconda scheda, manda qui.
+  useEffect(() => {
+    if (autoOpen && modalEnabled) openModal();
+  }, [autoOpen, modalEnabled, openModal]);
 
   // ── chrome riusabile (griglia + header modal): top + fixture/scorebar ──
   const headerNode = (
@@ -5936,7 +5958,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 
 // #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
-export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -6141,8 +6163,12 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   // Detail modal (stesso shell del calcio). Locked/preview restano inline.
   const modalEnabled = !m.locked && !isPreview;
-  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
+  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps, openModal } = useDetailModal(modalEnabled);
   const modalTitleId = `pdm-t-${m.id}`;
+  // #RESTYLING-0921 — vedi la card calcio: deep-link `?match=tennis:…` e lobby.
+  useEffect(() => {
+    if (autoOpen && modalEnabled) openModal();
+  }, [autoOpen, modalEnabled, openModal]);
 
   const headerNode = (
     <>
@@ -7801,6 +7827,7 @@ function AccountMenu({
   onLogout,
   onGoToPlans,
   onSelectLang,
+  onGoToTab,
 }: {
   profile: ClientProfile;
   lang: Lang;
@@ -7808,6 +7835,8 @@ function AccountMenu({
   onLogout: () => void;
   onGoToPlans: () => void;
   onSelectLang: (l: Lang) => void;
+  /** #RESTYLING-0921 — le destinazioni di servizio uscite dalla nav primaria. */
+  onGoToTab: (tab: Tab) => void;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -7862,6 +7891,29 @@ function AccountMenu({
                 ? pick5(lang, { it: "Gestisci", en: "Manage", es: "Gestionar", fr: "Gérer", ru: "Управлять" })
                 : pick5(lang, { it: "Vedi i piani", en: "See plans", es: "Ver planes", fr: "Voir les offres", ru: "Тарифы" })} →
             </button>
+          </div>
+
+          {/* #RESTYLING-0921 — qui sono finite le destinazioni che prima
+              occupavano insieme la topnav E la rail laterale. Sono di servizio
+              o editoriali: si cercano, non si guardano di continuo. */}
+          <div className="br-acct-links">
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("history"); }}>
+              {pick5(lang, { it: "Storico verificato", en: "Verified history", es: "Historial verificado", fr: "Historique vérifié", ru: "Проверенная история" })}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("leaderboard"); }}>
+              {pick5(lang, { it: "Classifica", en: "Leaderboard", es: "Clasificación", fr: "Classement", ru: "Рейтинг" })}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("match-builder"); }}>
+              Build a Probability View
+            </button>
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("invita"); }}>
+              {pick5(lang, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}
+            </button>
+            <Link href="/community" onClick={() => setOpen(false)}>Creator Picks</Link>
+            <Link href="/weekly-model-case" onClick={() => setOpen(false)}>Weekly Model Case</Link>
+            <Link href="/partners" onClick={() => setOpen(false)}>
+              {pick5(lang, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}
+            </Link>
           </div>
 
           <div className="acct-menu-prefs">
@@ -8706,6 +8758,249 @@ function WeeklyPickPromo() {
   );
 }
 
+// ─── HOME / DISCOVER LOBBY ────────────────────────────────────────────────
+// #RESTYLING-0921 — priorità 1 del brief. La Home non è più «dashboard →
+// filtri → contenuto»: è una lobby di fasce già rilevanti, e i filtri vivono
+// dietro «Explore» (che è il board di sempre, intatto).
+//
+// Le righe sono le STESSE che il board riceve: stessa proiezione d'accesso
+// server-side (`locked`), stessa finestra di mercato. La lobby ordina e
+// raggruppa, non aggiunge dati — e una fascia senza righe non si rende
+// (lib/ui/lobby.ts). Per questo la Home di un giorno vuoto è corta, non finta.
+
+/** Le viste del desk raggiungibili dalla nav primaria. */
+type DeskView = "home" | "live" | "football" | "tennis" | "watchlist" | "explore";
+
+const LOBBY_COPY: Record<LobbySectionId, { it: string; en: string; hintIt: string; hintEn: string }> = {
+  top: {
+    it: "Migliori opportunità", en: "Top opportunities",
+    hintIt: "Dove il modello si discosta di più dal mercato, fra le partite non ancora iniziate.",
+    hintEn: "Where the model disagrees most with the market, among matches yet to start.",
+  },
+  live: {
+    it: "In corso ora", en: "Live now",
+    hintIt: "Partite in gioco adesso.", hintEn: "Matches in play right now.",
+  },
+  soon: {
+    it: "Si parte a breve", en: "Starting soon",
+    hintIt: "Nelle prossime tre ore.", hintEn: "In the next three hours.",
+  },
+  edge: {
+    it: "Edge alto", en: "High edge",
+    hintIt: "Almeno 5 punti di differenza fra la probabilità del modello e quella del mercato.",
+    hintEn: "At least 5 points between the model's probability and the market's.",
+  },
+  football: { it: "Calcio", en: "Football", hintIt: "", hintEn: "" },
+  tennis: { it: "Tennis", en: "Tennis", hintIt: "", hintEn: "" },
+  watchlist: {
+    it: "La tua watchlist", en: "Your watchlist",
+    hintIt: "Le partite che hai messo da parte, su questo dispositivo.",
+    hintEn: "The matches you saved, on this device.",
+  },
+};
+
+/** Le fasce che una vista mostra. `home` le mostra tutte, in ordine di brief. */
+const VIEW_SECTIONS: Record<Exclude<DeskView, "explore">, LobbySectionId[] | null> = {
+  home: null, // tutte
+  live: ["live"],
+  football: ["football"],
+  tennis: ["tennis"],
+  watchlist: ["watchlist"],
+};
+
+function HomeLobby({
+  view,
+  predictions,
+  tennisMatches,
+  query,
+  watchSaved,
+  onToggleWatch,
+  onOpenMatch,
+  onExplore,
+  onGoHome,
+}: {
+  view: Exclude<DeskView, "explore">;
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  query: string;
+  watchSaved: ReadonlySet<string>;
+  onToggleWatch: (key: string) => void;
+  onOpenMatch: (key: string) => void;
+  onExplore: (sport: "all" | "football" | "tennis") => void;
+  onGoHome: () => void;
+}) {
+  const lang = useLang();
+  const tz = useTz();
+  const liveMap = useLive();
+  const liveTennisMap = useLiveTennis();
+  const it = lang === "it";
+
+  const winLabel = pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" });
+  const drawLabel = pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" });
+
+  const q = query.trim().toLowerCase();
+
+  // Le righe → dati card. La memo tiene fuori `Date.now()`: le sezioni si
+  // ricalcolano quando cambiano i dati, non a ogni render.
+  const footballItems: LobbyItem[] = useMemo(() => predictions
+    .filter((p) => isBoardVisibleMarket(p.kickoff))
+    .filter((p) => !q || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(q))
+    .map((p) => {
+      const live = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
+      const inPlay = live?.match_status === "IN_PLAY" || live?.match_status === "PAUSED";
+      const data = fromDeskFootball(p, {
+        winLabel, drawLabel,
+        kickoffLabel: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
+        isLive: inPlay,
+        liveMinute: live?.minute ?? null,
+      });
+      return { data, key: lobbyKey(data) };
+    }), [predictions, liveMap, lang, tz, q, winLabel, drawLabel]);
+
+  const tennisItems: LobbyItem[] = useMemo(() => tennisMatches
+    .filter((m) => isTennisMarketVisible(m.scheduled))
+    .filter((m) => !q || `${m.player1} ${m.player2} ${m.tournament}`.toLowerCase().includes(q))
+    .map((m) => {
+      const lm = liveTennisMap[tennisPairKey(m.player1, m.player2)];
+      const inPlay = !!lm && !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || "");
+      const data = fromDeskTennis(m, {
+        winLabel,
+        kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
+        isLive: inPlay,
+      });
+      return { data, key: lobbyKey(data) };
+    }), [tennisMatches, liveTennisMap, lang, tz, q, winLabel]);
+
+  const sections = useMemo(
+    () => buildLobbySections({ football: footballItems, tennis: tennisItems, saved: watchSaved }),
+    [footballItems, tennisItems, watchSaved],
+  );
+
+  const wanted = VIEW_SECTIONS[view];
+  const shown = wanted ? sections.filter((s) => wanted.includes(s.id)) : sections;
+
+  // Totali reali per sezione: quante righe ESISTONO, non quante se ne vedono.
+  const totalFor = (id: LobbySectionId) =>
+    id === "football" ? footballItems.length : id === "tennis" ? tennisItems.length : null;
+
+  const renderCard = (item: LobbyItem, idx: number, sectionId: LobbySectionId) => {
+    const d = item.data;
+    const locked = d.locked === true;
+    // Il top pick della lobby è l'unica card «featured»: se tutte lo fossero,
+    // nessuna lo sarebbe.
+    const variant = locked ? "premiumLocked"
+      : d.isLive ? "live"
+      : sectionId === "top" && idx === 0 ? "featured"
+      : "compact";
+    const soon = !d.isLive ? startingSoonLabel(d.startsAt) : null;
+    // Il badge «Starting soon» vince su «High edge» solo nella sua fascia:
+    // altrove l'informazione che serve è l'edge. Una card chiusa non annuncia
+    // nulla (lo decide PredictionCard).
+    const badge = sectionId === "soon" && soon ? ({ kind: "starting-soon" as const, label: soon }) : undefined;
+
+    return (
+      <BrPredictionCard
+        key={item.key}
+        data={d}
+        variant={variant}
+        badge={badge}
+        href={`${TAB_PATHS.bets}?match=${encodeURIComponent(item.key)}`}
+        saved={watchSaved.has(item.key)}
+        onToggleWatchlist={() => onToggleWatch(item.key)}
+        onOpen={(ev) => {
+          // La scheda è già in pagina: si apre, non si naviga. L'href resta
+          // vero per il tasto centrale e per la condivisione.
+          ev.preventDefault();
+          trackEvent("card_open", { meta: { surface: "lobby", section: sectionId, sport: d.sport } });
+          onOpenMatch(item.key);
+        }}
+        extra={d.confidence != null && !locked
+          ? <ConfidenceIndicator score={d.confidence} />
+          : undefined}
+      />
+    );
+  };
+
+  if (shown.length === 0) {
+    return (
+      <div className="br-lobby">
+        <p className="br-empty">
+          {q
+            ? pick5(lang, {
+                it: `Nessuna partita per «${query}». Prova con un altro nome, o guarda tutto il listino.`,
+                en: `No match for “${query}”. Try another name, or browse the full board.`,
+                es: `Ningún partido para «${query}». Prueba otro nombre o mira todo el listado.`,
+                fr: `Aucun match pour « ${query} ». Essayez un autre nom, ou parcourez tout le tableau.`,
+                ru: `Ничего не найдено по «${query}». Попробуйте другое имя или откройте весь список.`,
+              })
+            : view === "watchlist"
+            ? pick5(lang, {
+                it: "La watchlist è vuota. Il segnalibro su una card mette la partita qui.",
+                en: "Your watchlist is empty. The bookmark on a card puts a match here.",
+                es: "Tu watchlist está vacía. El marcador de una ficha pone el partido aquí.",
+                fr: "Votre watchlist est vide. Le marque-page d'une carte met le match ici.",
+                ru: "Список пуст. Закладка на карточке добавляет матч сюда.",
+              })
+            : view === "live"
+            ? pick5(lang, {
+                it: "Nessuna partita in corso adesso.",
+                en: "No matches in play right now.",
+                es: "Ningún partido en juego ahora.",
+                fr: "Aucun match en cours.",
+                ru: "Сейчас нет матчей в игре.",
+              })
+            : pick5(lang, {
+                it: "Nessuna partita da mostrare al momento.",
+                en: "Nothing to show right now.",
+                es: "Nada que mostrar ahora mismo.",
+                fr: "Rien à afficher pour le moment.",
+                ru: "Пока нечего показать.",
+              })}
+          {view !== "home" && (
+            <>
+              {" "}
+              <button type="button" className="br-sec__link" onClick={onGoHome}>
+                {pick5(lang, { it: "Torna alla home", en: "Back to home", es: "Volver al inicio", fr: "Retour à l'accueil", ru: "На главную" })}
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="br-lobby">
+      {shown.map((sec) => {
+        const copy = LOBBY_COPY[sec.id];
+        const total = totalFor(sec.id);
+        const isSport = sec.id === "football" || sec.id === "tennis";
+        // «Vedi tutte» compare solo se c'è davvero altro da vedere.
+        const more = view === "home" && (isSport ? (total ?? 0) > sec.items.length : sec.items.length >= LOBBY_ROW_CAP);
+        return (
+          <LobbySection
+            key={sec.id}
+            title={it ? copy.it : copy.en}
+            hint={(it ? copy.hintIt : copy.hintEn) || null}
+            count={isSport ? total : null}
+            action={more ? (
+              <button
+                type="button"
+                className="br-sec__link"
+                onClick={() => (isSport ? onExplore(sec.id as "football" | "tennis") : onExplore("all"))}
+              >
+                {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
+              </button>
+            ) : null}
+          >
+            {sec.items.map((item, i) => renderCard(item, i, sec.id))}
+          </LobbySection>
+        );
+      })}
+    </div>
+  );
+}
+
 function UnifiedBetsTab({
   predictions,
   fpOdds,
@@ -8723,6 +9018,14 @@ function UnifiedBetsTab({
   onBannerCta,
   hitRate,
   liveStrip,
+  view,
+  query,
+  watchSaved,
+  onToggleWatch,
+  onOpenMatch,
+  onExplore,
+  onGoHome,
+  autoOpenKey,
 }: {
   predictions: Prediction[];
   fpOdds: Record<string, FpOddsEntry>;
@@ -8741,6 +9044,16 @@ function UnifiedBetsTab({
   hitRate?: string | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
   liveStrip?: React.ReactNode;
+  /** #RESTYLING-0921 — la vista scelta in nav. Tutto ciò che non è "explore"
+   *  è la lobby; "explore" è il board di sempre, filtri compresi. */
+  view: DeskView;
+  query: string;
+  watchSaved: ReadonlySet<string>;
+  onToggleWatch: (key: string) => void;
+  onOpenMatch: (key: string) => void;
+  onExplore: (sport: "all" | "football" | "tennis") => void;
+  onGoHome: () => void;
+  autoOpenKey?: string | null;
 }) {
   const lang = useLang();
 
@@ -8767,25 +9080,43 @@ function UnifiedBetsTab({
           per-card free preview renders (1 pick/sport + free-preview-wall);
           anonymous (no profile → no signal preview) still hits the auth wall,
           and pending_payment still hits the plan wall. */}
+      {/* #RESTYLING-0921 — la lobby sta DENTRO lo stesso muro del board: le sue
+          righe sono le stesse, con la stessa proiezione d'accesso. Spostarla
+          fuori significherebbe mostrare da anonimo ciò che il board nasconde. */}
       <LockedGate
         isUnlocked={Boolean(isPremiumClient || isSignalPreviewUnlocked)}
         mode={isLoggedIn ? "plan" : "auth"}
         onUnlock={() => onGate?.()}
       >
-        <SportsbookBoard
-          liveStrip={liveStrip}
-          predictions={predictions}
-          fpOdds={fpOdds}
-          tennisMatches={tennisMatches}
-          onSelect={onSelect}
-          onBetNow={onBetNow}
-          onGate={onGate}
-          isFreeClient={isFreeClient}
-          isPremium={isPremiumClient}
-          tennisIsPlaceholder={tennisIsPlaceholder}
-          onBannerCta={onBannerCta}
-          hitRate={hitRate}
-        />
+        {view === "explore" ? (
+          <SportsbookBoard
+            liveStrip={liveStrip}
+            predictions={predictions}
+            fpOdds={fpOdds}
+            tennisMatches={tennisMatches}
+            onSelect={onSelect}
+            onBetNow={onBetNow}
+            onGate={onGate}
+            isFreeClient={isFreeClient}
+            isPremium={isPremiumClient}
+            tennisIsPlaceholder={tennisIsPlaceholder}
+            onBannerCta={onBannerCta}
+            hitRate={hitRate}
+            autoOpenKey={autoOpenKey}
+          />
+        ) : (
+          <HomeLobby
+            view={view}
+            predictions={predictions}
+            tennisMatches={tennisMatches}
+            query={query}
+            watchSaved={watchSaved}
+            onToggleWatch={onToggleWatch}
+            onOpenMatch={onOpenMatch}
+            onExplore={onExplore}
+            onGoHome={onGoHome}
+          />
+        )}
       </LockedGate>
     </>
   );
@@ -8830,6 +9161,49 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       window.history.replaceState(null, "", url);
     } catch { /* URL non disponibile: no-op */ }
   }, [tab]);
+  // ── #RESTYLING-0921: la vista della Home ────────────────────────────────
+  // La nav primaria non cambia più `tab` (che è il capitolo del desk): sceglie
+  // quale taglio della lobby si vede. "explore" è il board di sempre — filtri,
+  // ricerca, ordinamenti — che resta intatto sotto un nome suo.
+  const [deskView, setDeskView] = useState<DeskView>("home");
+  const [lobbyQuery, setLobbyQuery] = useState("");
+  // `sport:id` della partita da aprire: viene da un link condiviso `?match=`
+  // oppure dal click su una card della lobby. La scheda la rende il board, che
+  // è l'unico posto dove vive — nessun secondo dettaglio da tenere allineato.
+  const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
+  const watchlist = useWatchlist();
+
+  const openMatchFromLobby = useCallback((key: string) => {
+    setAutoOpenKey(key);
+    setDeskView("explore");
+  }, []);
+
+  const showExplore = useCallback((sport: "all" | "football" | "tennis") => {
+    setAutoOpenKey(null);
+    setDeskView("explore");
+    try {
+      // Il board legge `?sport=` al mount per il deep-link dalla landing: qui
+      // si riusa lo stesso canale invece di aggiungergli un secondo ingresso.
+      const url = new URL(window.location.href);
+      if (sport === "all") url.searchParams.delete("sport");
+      else url.searchParams.set("sport", sport);
+      window.history.replaceState(null, "", url);
+    } catch { /* URL non disponibile: il board parte da "all" */ }
+  }, []);
+
+  // Deep-link `?match=football:123` — un link condiviso apre la partita. Letto
+  // una volta al mount: dopo, la vista la comanda la nav.
+  useEffect(() => {
+    try {
+      const raw = new URLSearchParams(window.location.search).get("match");
+      if (!raw) return;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- la query string non esiste sul server: leggerla in render romperebbe l'idratazione (#418)
+      setAutoOpenKey(raw);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- idem: la vista dipende dallo stesso parametro
+      setDeskView("explore");
+    } catch { /* URL non disponibile: nessun deep-link */ }
+  }, []);
+
   // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a una pagina del desk ma
   // `tab` viene letto dall'URL solo al mount: un <Link> alla STESSA route non lo
   // risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
@@ -9677,6 +10051,28 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
   const tUI = TRANSLATIONS[uiLanguage];
 
+  // #RESTYLING-0921 — il pallino sulla voce «Live» si accende solo se c'è
+  // davvero qualcosa in gioco. Un indicatore sempre acceso è un ornamento, e
+  // il brief vieta esplicitamente l'urgenza costruita.
+  const liveOnBoardCount = useMemo(() => {
+    const football = liveFootballOnBoard(predictions, (p) =>
+      orientLive(liveScores[p.match_id] ?? findLiveByTeams(liveScores, p.home_team, p.away_team), p.home_team, p.away_team),
+    ).length;
+    const tennisLive = liveTennis.filter(
+      (lm) => !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || ""),
+    ).length;
+    return football + tennisLive;
+  }, [liveScores, predictions, liveTennis]);
+
+  // #RESTYLING-0921 — il titolo della pagina dice quale taglio si sta guardando.
+  const deskHeading = pick5(uiLanguage, {
+    it: { home: "Oggi", live: "In corso ora", football: "Calcio", tennis: "Tennis", watchlist: "La tua watchlist", explore: "Esplora tutto" }[deskView],
+    en: { home: "Today", live: "Live now", football: "Football", tennis: "Tennis", watchlist: "Your watchlist", explore: "Explore all" }[deskView],
+    es: { home: "Hoy", live: "En vivo", football: "Fútbol", tennis: "Tenis", watchlist: "Tu watchlist", explore: "Explorar todo" }[deskView],
+    fr: { home: "Aujourd'hui", live: "En direct", football: "Football", tennis: "Tennis", watchlist: "Votre watchlist", explore: "Tout explorer" }[deskView],
+    ru: { home: "Сегодня", live: "В игре", football: "Футбол", tennis: "Теннис", watchlist: "Избранное", explore: "Все матчи" }[deskView],
+  });
+
   const liveTennisMap = useMemo(() => {
     const map: Record<string, LiveTennisMatch> = {};
     for (const lm of liveTennis) map[tennisPairKey(lm.player1, lm.player2)] = lm;
@@ -9684,14 +10080,48 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   }, [liveTennis]);
 
   // #MOBILE-1: voci della bottom tab bar (solo mobile). Riusa setTab + label i18n + glifi rail.
-  const BOTTOM_TABS: { tab: Tab; label: string; glyph: string }[] = [
-    { tab: "bets",        label: tNav.nav_predictions, glyph: RAIL_GLYPHS["bets"] ?? "#g-desk" },
-    { tab: "history",     label: tNav.nav_history,     glyph: RAIL_GLYPHS["history"] ?? "#g-desk" },
-    { tab: "leaderboard", label: tNav.nav_leaderboard, glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk" },
-    // #MOB1: Build a Probability View è una destinazione primaria (loggati) → entra nella
-    // bottom bar invece di restare fuori-schermo nella vecchia striscia laterale.
-    ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Builder", glyph: RAIL_GLYPHS["match-builder"] ?? "#g-builder" }] : []),
-    { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
+  // #RESTYLING-0921 — le cinque del brief: Home · Explore · Watchlist · Tools ·
+  // Profile. Prima erano Predictions/History/Leaderboard/Builder/Piani, cioè le
+  // stesse voci della topnav desktop: su telefono la scoperta non aveva un
+  // ingresso e la watchlist non esisteva. History e Leaderboard restano
+  // raggiungibili da Profile (menu Account), come su desktop.
+  const BOTTOM_TABS: {
+    id: string;
+    label: string;
+    glyph: string;
+    icon?: React.ComponentProps<typeof MenuIcon>["name"];
+    href?: string;
+    active: boolean;
+    go?: () => void;
+  }[] = [
+    {
+      id: "home", label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }),
+      glyph: RAIL_GLYPHS["bets"] ?? "#g-desk", icon: RAIL_ICONS["bets"],
+      active: tab === "bets" && deskView !== "explore" && deskView !== "watchlist",
+      go: () => { setTab("bets"); setAutoOpenKey(null); setDeskView("home"); },
+    },
+    {
+      id: "explore", label: pick5(uiLanguage, { it: "Esplora", en: "Explore", es: "Explorar", fr: "Explorer", ru: "Обзор" }),
+      glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk", icon: RAIL_ICONS["leaderboard"],
+      active: tab === "bets" && deskView === "explore",
+      go: () => { setTab("bets"); showExplore("all"); },
+    },
+    {
+      id: "watchlist", label: pick5(uiLanguage, { it: "Watchlist", en: "Watchlist", es: "Watchlist", fr: "Watchlist", ru: "Избранное" }),
+      glyph: "#g-desk", icon: "weeklypick",
+      active: tab === "bets" && deskView === "watchlist",
+      go: () => { setTab("bets"); setAutoOpenKey(null); setDeskView("watchlist"); },
+    },
+    {
+      id: "tools", label: pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" }),
+      glyph: "#g-desk", icon: "tools", href: "/tools", active: false,
+    },
+    {
+      id: "profile", label: pick5(uiLanguage, { it: "Profilo", en: "Profile", es: "Perfil", fr: "Profil", ru: "Профиль" }),
+      glyph: RAIL_GLYPHS["account"] ?? "#g-desk", icon: "account",
+      active: tab === "plans",
+      go: () => { setTab("plans"); },
+    },
   ];
 
   return (
@@ -9743,32 +10173,81 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
 
-          <nav className="am-topnav">
-            {[
-              { tab: "bets" as Tab, label: tNav.nav_predictions },
-              { tab: "history" as Tab, label: tNav.nav_history },
-              { tab: "leaderboard" as Tab, label: tNav.nav_leaderboard },
-              ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Build a Probability View" }] : []),
-            ].map((item) => (
+          {/* ── Nav primaria — #RESTYLING-0921 ──────────────────────────────
+              Home/Discover · Live · Football · Tennis · Tools. Cinque voci,
+              tutte destinazioni di CONTENUTO. History, Plans, Invite, Partner,
+              Creator Picks, Weekly e la lingua sono passate nel menu Account:
+              erano sette voci di servizio in mezzo a quelle che portano a una
+              partita, e occupavano insieme la topnav E la rail laterale. */}
+          <nav className="br-nav" aria-label={pick5(uiLanguage, { it: "Navigazione principale", en: "Primary navigation", es: "Navegación principal", fr: "Navigation principale", ru: "Основная навигация" })}>
+            {([
+              { view: "home" as DeskView, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
+              { view: "live" as DeskView, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }), live: true },
+              { view: "football" as DeskView, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
+              { view: "tennis" as DeskView, label: "Tennis" },
+            ]).map((item) => (
               <button
-                key={item.tab}
-                className={tab === item.tab ? "active" : ""}
-                onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
+                key={item.view}
+                type="button"
+                className="br-nav__item"
+                data-live={item.live && liveOnBoardCount > 0 ? "true" : undefined}
+                aria-current={tab === "bets" && deskView === item.view ? "page" : undefined}
+                onClick={() => {
+                  setTab("bets");
+                  setAutoOpenKey(null);
+                  setDeskView(item.view);
+                  trackEvent("nav_click", { meta: { view: item.view } });
+                }}
               >
                 {item.label}
               </button>
             ))}
-            {/* #UI-ACCOUNT-DROPDOWN-0623: "Plans" è ora una tab di primo livello
-                (l'account è nel dropdown dal pill). */}
-            <button
-              className={tab === "plans" ? "active" : ""}
-              onClick={() => { setTab("plans"); trackEvent("tab_click", { meta: { tab: "plans" } }); }}
-            >
-              {pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" })}
-            </button>
+            <Link className="br-nav__item" href="/tools">
+              {pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}
+            </Link>
           </nav>
 
-          <div className="am-topright">
+          <div className="am-topright br-navright">
+            {/* #RESTYLING-0921 — Search e Watchlist stanno a DESTRA, accanto
+                all'account: sono strumenti dell'utente, non destinazioni. La
+                ricerca filtra la lobby mentre si scrive; il board sotto
+                «Explore» conserva la sua, che cerca dentro ai filtri. */}
+            <label className="br-search">
+              <svg aria-hidden="true"><use href="#g-search" /></svg>
+              <input
+                type="search"
+                value={lobbyQuery}
+                onChange={(ev) => {
+                  setLobbyQuery(ev.target.value);
+                  // Cercare è un atto di scoperta: riporta alla lobby, dove il
+                  // risultato si vede. Restare su una vista filtrata per sport
+                  // mentre si cerca un'altra squadra dà zero risultati e sembra
+                  // un guasto.
+                  if (ev.target.value && (tab !== "bets" || deskView === "explore")) {
+                    setTab("bets");
+                    setDeskView("home");
+                  }
+                }}
+                placeholder={pick5(uiLanguage, { it: "Cerca squadra, giocatore…", en: "Search team, player…", es: "Buscar equipo, jugador…", fr: "Chercher équipe, joueur…", ru: "Поиск команды, игрока…" })}
+                aria-label={pick5(uiLanguage, { it: "Cerca una partita", en: "Search a match", es: "Buscar un partido", fr: "Chercher un match", ru: "Найти матч" })}
+              />
+            </label>
+
+            <button
+              type="button"
+              className="br-watchnav"
+              aria-current={tab === "bets" && deskView === "watchlist" ? "page" : undefined}
+              onClick={() => {
+                setTab("bets");
+                setAutoOpenKey(null);
+                setDeskView("watchlist");
+                trackEvent("nav_click", { meta: { view: "watchlist" } });
+              }}
+            >
+              {pick5(uiLanguage, { it: "Watchlist", en: "Watchlist", es: "Watchlist", fr: "Watchlist", ru: "Избранное" })}
+              {watchlist.saved.size > 0 && <span className="br-watchnav__n">{watchlist.saved.size}</span>}
+            </button>
+
             {/* theme toggle segmentato DARK/LIGHT — riusa toggleTheme/theme esistenti */}
             <div className="am-tt" role="group" aria-label={tNav.theme_aria}>
               <button
@@ -9797,6 +10276,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 onLogout={logoutClientProfile}
                 onGoToPlans={() => { setTab("plans"); trackEvent("tab_click", { meta: { tab: "plans", src: "acct-menu" } }); }}
                 onSelectLang={selectLanguage}
+                onGoToTab={(t) => { setTab(t); trackEvent("tab_click", { meta: { tab: t, src: "acct-menu" } }); }}
               />
             ) : (
               <>
@@ -9824,54 +10304,19 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         {/* ── Desk (nav + content) ── */}
         <div className="portal-desk">
           <section className="book-layout">
-            <aside className="sports-rail">
-              {/* ── DESK group — mockup .rail .navlab + boxed active state ── */}
-              <span className="rail-lab">Desk</span>
-              {navItems.map((item) => (
-                <button
-                  key={item.tab}
-                  className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
-                  onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
-                >
-                  {RAIL_ICONS[item.tab]
-                    ? <MenuIcon name={RAIL_ICONS[item.tab]} size={18} className="rail-ic" />
-                    : <svg className="rail-ic" aria-hidden="true"><use href={RAIL_GLYPHS[item.tab] ?? "#g-desk"} /></svg>}
-                  <span className="rail-label">{item.label}</span>
-                  {item.value && <strong className="n">{item.value}</strong>}
-                </button>
-              ))}
-              {/* ── IN EVIDENZA group ── */}
-              <span className="rail-sep" />
-              <span className="rail-lab is-second">{tNav.featured_label}</span>
-              {/* #TOOLS-HUB-0805: al posto della World Cup (torneo finito, hub
-                  archiviato ma ancora online) ci sono i calcolatori gratuiti.
-                  Rotta, non tab, come era per l'hub WC. */}
-              <Link className="rail-item" href="/tools">
-                <MenuIcon name="tools" size={18} className="rail-ic" />
-                <span className="rail-label">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
-              </Link>
-              {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
-              <Link className="rail-item" href="/community">
-                <MenuIcon name="creator" size={18} className="rail-ic" />
-                <span className="rail-label">Creator Picks</span>
-              </Link>
-              {/* #WEEKLY-PICK-1: Weekly Model Case — la multipla della casa (route) */}
-              <Link className="rail-item" href="/weekly-model-case">
-                <MenuIcon name="weeklypick" size={18} className="rail-ic" />
-                <span className="rail-label">Weekly Model Case</span>
-              </Link>
-              {/* #PARTNERS-RAIL-1: vetrina partner raggiungibile dal rail, non solo dal
-                  footer. Link interno neutro (come il "Partner" del footer): il contenuto
-                  gambling della pagina resta geo-gated fail-closed lato /partners. */}
-              <Link className="rail-item" href="/partners">
-                <MenuIcon name="partner" size={18} className="rail-ic" />
-                <span className="rail-label">{pick5(uiLanguage, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}</span>
-              </Link>
-              <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
-                ↻ {refreshing ? "..." : tUI.refresh_odds}
-                <span className="sync">live</span>
-              </button>
-            </aside>
+            {/* #RESTYLING-0921 — LA RAIL LATERALE NON C'È PIÙ.
+                Era la seconda nav persistente: ripeteva alla lettera le voci
+                della topnav («Desk») e aggiungeva quattro rotte («In evidenza»)
+                che restavano a schermo su ogni pagina. Il brief la nomina
+                esplicitamente fra le cose da togliere, e con la topnav nuova
+                era anche l'unica ragione per cui il contenuto partiva da metà
+                schermo. Dove sono finite le sue voci:
+                  · Predictions/History/Leaderboard/Builder/Plans → menu Account
+                  · Tools → nav primaria
+                  · Creator Picks / Weekly Model Case / Partner → menu Account
+                  · Aggiorna quote → testa del desk, accanto al titolo
+                Niente è stato rimosso dal prodotto: è stato spostato dove si
+                cerca, invece di stare ovunque. */}
 
         <section className="book-main">
           {/* #MOBILE-FEATURED-1: gruppo "In Evidenza" — solo mobile (≤760px, dove il
@@ -9913,8 +10358,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           </nav>
           <div className="book-main-head am-deskhead">
             <div className="am-deskhead-titles">
-              {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading */}
-              <h1>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+              {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading.
+                  #RESTYLING-0921: sul desk l'h1 segue la VISTA, non la tab: con
+                  la nav nuova «Predictions» era il titolo anche di Live, Calcio
+                  e Watchlist. Resta un solo h1 per pagina. */}
+              <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
               {/* #BOARD-HEAD-0910 — Andrea, 10/09: «togli questa parte».
                   Sulla BOARD il sottotitolo non si rende piu': era due righe di
                   prosa sopra il contenuto che l'utente e' venuto a vedere.
@@ -9976,7 +10424,27 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               )}
             </div>
             {tab === "bets" && (
-              <button className="mb-entry" onClick={() => setTab("match-builder")}>Build a Probability View →</button>
+              <div className="am-deskhead-tools">
+                {/* #RESTYLING-0921 — «Explore» è il board di sempre (filtri,
+                    ordinamenti, ricerca dentro ai filtri): la configurazione
+                    esiste ancora, ma sta DOPO la scoperta, non prima. */}
+                {deskView !== "explore" ? (
+                  <button className="mb-entry" onClick={() => showExplore("all")}>
+                    {pick5(uiLanguage, { it: "Esplora con i filtri", en: "Explore with filters", es: "Explorar con filtros", fr: "Explorer avec les filtres", ru: "Все матчи с фильтрами" })} →
+                  </button>
+                ) : (
+                  <button className="mb-entry" onClick={() => { setAutoOpenKey(null); setDeskView("home"); }}>
+                    ← {pick5(uiLanguage, { it: "Torna alla home", en: "Back to home", es: "Volver al inicio", fr: "Retour à l'accueil", ru: "На главную" })}
+                  </button>
+                )}
+                {/* Il comando «aggiorna quote» viveva in fondo alla rail
+                    laterale, che non c'è più: sta qui, accanto al contenuto che
+                    aggiorna. */}
+                <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
+                  ↻ {refreshing ? "..." : tUI.refresh_odds}
+                  <span className="sync">live</span>
+                </button>
+              </div>
             )}
             {/* #QW3: le stat-tile board (eventi/con-edge/hit) informano solo dove
                 c'è un board o un track record — Previsioni e Storico. Su Classifica
@@ -10076,6 +10544,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               hitRate={v2RateMeaningful ? historyV2Stats?.win_rate ?? null : null}
+              view={deskView}
+              query={lobbyQuery}
+              watchSaved={watchlist.saved}
+              onToggleWatch={watchlist.toggle}
+              onOpenMatch={openMatchFromLobby}
+              onExplore={showExplore}
+              onGoHome={() => { setAutoOpenKey(null); setDeskView("home"); }}
+              autoOpenKey={autoOpenKey}
             />
           )}
           {/* #UI-ACCOUNT-DROPDOWN-0623: la tab "Plans" rende direttamente PlansTab.
@@ -10171,20 +10647,33 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
       {/* #MOBILE-1: bottom tab bar — visibile solo ≤760px (CSS), sostituisce la sidebar-muro */}
       <nav className="am-bottomnav" aria-label="Mobile navigation">
-        {BOTTOM_TABS.map((b) => (
-          <button
-            key={b.tab}
-            className={`bn ${tab === b.tab ? "on" : ""}`}
-            aria-current={tab === b.tab ? "page" : undefined}
-            onClick={() => { setTab(b.tab); trackEvent("tab_click", { meta: { tab: b.tab, src: "bottomnav" } }); }}
-          >
-            {/* #MOBILE-FEATURED-1: nostre icone illustrate come nel rail PC; glifo di fallback. */}
-            {RAIL_ICONS[b.tab]
-              ? <MenuIcon name={RAIL_ICONS[b.tab]} size={20} />
-              : <svg aria-hidden="true"><use href={b.glyph} /></svg>}
-            <span className="bn-l">{b.label}</span>
-          </button>
-        ))}
+        {BOTTOM_TABS.map((b) => {
+          /* #MOBILE-FEATURED-1: nostre icone illustrate come nel rail PC; glifo di fallback. */
+          const inner = (
+            <>
+              {b.icon
+                ? <MenuIcon name={b.icon} size={20} />
+                : <svg aria-hidden="true"><use href={b.glyph} /></svg>}
+              <span className="bn-l">{b.label}</span>
+            </>
+          );
+          // Tools è una ROTTA, non una tab: deve restare un link vero (apribile
+          // in una scheda nuova), non un bottone che finge di navigare.
+          return b.href ? (
+            <Link key={b.id} href={b.href} className="bn" onClick={() => trackEvent("tab_click", { meta: { tab: b.id, src: "bottomnav" } })}>
+              {inner}
+            </Link>
+          ) : (
+            <button
+              key={b.id}
+              className={`bn ${b.active ? "on" : ""}`}
+              aria-current={b.active ? "page" : undefined}
+              onClick={() => { b.go?.(); trackEvent("tab_click", { meta: { tab: b.id, src: "bottomnav" } }); }}
+            >
+              {inner}
+            </button>
+          );
+        })}
       </nav>
     </main>
     </GeoCountryCtx.Provider>

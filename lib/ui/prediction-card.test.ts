@@ -41,14 +41,27 @@ const base: UnifiedPrediction = {
 };
 
 describe("fromUnifiedPrediction", () => {
-  it("modello da fair_odds, mercato da odds, edge in pp dal prodotto", () => {
+  // #RESTYLING-0921 — l'edge si DERIVA da model−market, non si legge da
+  // `edge_percent` (che è il value p·odds−1: su questa riga varrebbe +23.1,
+  // mentre la card mostra 64 e 52 affiancati). Il fixture teneva
+  // `edge_percent: 12` scritto a mano, coerente con la differenza ma non con la
+  // pipeline: il test passava per costruzione. Ora il numero viene dai due che
+  // la card rende davvero.
+  it("modello da fair_odds, mercato da odds, edge = model − market", () => {
     const d = fromUnifiedPrediction(base, { kickoffLabel: "Today · 20:45" });
     expect(d.home).toBe("Arsenal");
     expect(d.away).toBe("Chelsea");
     expect(Math.round(d.modelPct!)).toBe(64);
     expect(Math.round(d.marketPct!)).toBe(52);
-    expect(d.edgePct).toBe(12);
+    expect(d.edgePct).toBeCloseTo(12.02, 2);
     expect(d.kickoffLabel).toBe("Today · 20:45");
+  });
+
+  it("ignora edge_percent (value) quando diverge dalla differenza mostrata", () => {
+    // odds 2.0 / fair 1.60 → model 62.5, market 50 → +12.5 pp.
+    // `edge_percent` direbbe 25 (value): la card mostrerebbe 62 · 50 · +25.
+    const d = fromUnifiedPrediction({ ...base, odds: 2.0, fair_odds: 1.6, edge_percent: 25 });
+    expect(d.edgePct).toBeCloseTo(12.5, 2);
   });
   it("senza quota di mercato non dichiara un edge", () => {
     const d = fromUnifiedPrediction({ ...base, odds: null, edge_percent: 9 });

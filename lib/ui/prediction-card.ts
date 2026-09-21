@@ -40,6 +40,31 @@ export function formatPct(pct: number | null | undefined): string {
   return String(Math.round(Math.max(0, Math.min(100, pct))));
 }
 
+/** L'EDGE della card è la differenza fra i due numeri che la card mostra.
+ *
+ *  Non è pedanteria: `UnifiedPrediction.edge_percent` NON è quella differenza.
+ *  lib/unified-adapter.ts lo calcola come `row.edge * 100`, e `row.edge` è
+ *  `fpEdge(p, odds) = p·odds − 1`, cioè il VALUE della scommessa. I due
+ *  differiscono per un fattore `odds`:
+ *
+ *    value%      = (p·odds − 1)·100
+ *    model−market = p·100 − (1/odds)·100 = value% / odds
+ *
+ *  Con p=0.64 e odds=1.92: value% = 22.9, model−market = 12.0. Una card che
+ *  scrive «MODEL 64 · MARKET 52 · EDGE +22.9» si contraddice da sola in due
+ *  secondi — ed è esattamente il tempo che il brief le concede. Anche la barra
+ *  di ProbabilityComparison colora il gap `model − market`: col value% il
+ *  numero e la barra direbbero due cose diverse.
+ *
+ *  Il value resta il numero giusto ALTROVE (il board lo mostra come «value»):
+ *  qui vale la definizione che rende leggibile il confronto affiancato.
+ */
+export function edgePointsFrom(modelPct: number | null, marketPct: number | null): number | null {
+  if (modelPct == null || marketPct == null) return null;
+  if (!Number.isFinite(modelPct) || !Number.isFinite(marketPct)) return null;
+  return Math.round((modelPct - marketPct) * 100) / 100;
+}
+
 export type PredictionCardData = {
   id: string;
   sport: string;
@@ -78,6 +103,7 @@ export function fromUnifiedPrediction(
   const home = (isTennis ? p.player_one : p.home_team) ?? p.home_team ?? p.player_one ?? "";
   const away = (isTennis ? p.player_two : p.away_team) ?? p.away_team ?? p.player_two ?? "";
   const marketPct = p.odds != null ? toPct(impliedProbability(p.odds)) : null;
+  const modelPct = p.fair_odds != null ? toPct(impliedProbability(p.fair_odds)) : null;
   return {
     id: p.id,
     sport: p.sport,
@@ -89,9 +115,10 @@ export function fromUnifiedPrediction(
     isLive: p.is_live,
     pick: p.pick,
     market: p.market,
-    modelPct: p.fair_odds != null ? toPct(impliedProbability(p.fair_odds)) : null,
+    modelPct,
     marketPct,
-    edgePct: marketPct == null ? null : p.edge_percent,
+    // NON `p.edge_percent`: quello è il value (p·odds−1). Vedi edgePointsFrom.
+    edgePct: edgePointsFrom(modelPct, marketPct),
     confidence: p.confidence_score,
     explanation: p.explanation,
     locked: extra.locked ?? false,

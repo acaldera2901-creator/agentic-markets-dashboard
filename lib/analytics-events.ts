@@ -51,6 +51,14 @@ export const BROWSER_ANALYTICS_EVENTS = [
   // QUALE sito converte (dichiarato dal client, come ogni altro evento qui:
   // buono per misurare, mai per decidere accessi).
   "widget_view", "widget_click",
+  // #RESTYLING-0921 — i due numeri che dicono se la lobby funziona. Il brief
+  // fissa come criterio di successo il CTR card→dettaglio e non "sembra più
+  // bello": `card_open` porta `meta.section` (quale fascia ha prodotto il
+  // click) e `meta.sport`, quindi una fascia che nessuno apre si vede e si
+  // toglie. `nav_click` porta `meta.view` e dice se Live/Calcio/Tennis
+  // meritano un posto nella nav primaria o se è solo la Home a lavorare.
+  // Nessun dato personale: solo il nome della fascia e dello sport.
+  "card_open", "nav_click",
 ] as const;
 
 // Eventi che il client NON emette piu' ma che restano nello storico con un

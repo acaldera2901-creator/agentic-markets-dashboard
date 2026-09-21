@@ -17,7 +17,7 @@
 // La card NON è un link intero (accessibilità: un solo target, testo
 // leggibile): il link è la CTA. `onOpen` è l'hook analytics del click.
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { Crest } from "@/components/ui/Crest";
 import { SportChip } from "@/components/ui/SportChip";
 import { LeagueChip } from "@/components/ui/LeagueChip";
@@ -41,7 +41,11 @@ export type PredictionCardProps = {
   badge?: { kind: PredictionCardBadgeKind; label?: string } | null;
   saved?: boolean;
   onToggleWatchlist?: () => void;
-  onOpen?: () => void;
+  /** Click sulla CTA. Riceve l'evento: chi ha già la scheda in pagina (la
+   *  lobby del desk) fa preventDefault e apre il modal, mentre `href` resta un
+   *  link vero — tasto centrale, «apri in nuova scheda» e condivisione
+   *  continuano a funzionare. #RESTYLING-0921 */
+  onOpen?: (ev: MouseEvent<HTMLAnchorElement>) => void;
   /** Slot sotto la riga MODEL|MARKET|EDGE (es. ConfidenceIndicator). */
   extra?: ReactNode;
   className?: string;
