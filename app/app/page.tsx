@@ -48,7 +48,7 @@ import { canonicalPlayerKey } from "@/lib/tennis-names";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
-import { campaignsFor, campaignSport } from "@/lib/house-banners";
+import { campaignsFor, campaignSport, copyFor, ctaLabelFor } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
 // #RESTYLING-0921 — design system del redesign. La card nuova si importa con
 // un alias: `PredictionCard` è già il nome della card legacy del board, che
@@ -60,15 +60,16 @@ import {
 } from "@/components/ui";
 import { LobbySection } from "@/components/lobby/LobbySection";
 import { HomeFaq } from "@/components/lobby/HomeFaq";
-import { HeroBanner } from "@/components/lobby/HeroBanner";
-import { SportCategoryTile, SportTileRow } from "@/components/lobby/SportCategoryTile";
-import { AccumulatorPromoTile } from "@/components/lobby/AccumulatorPromoTile";
+import { HeroPortrait, RailDeep } from "@/components/lobby/HeroPortrait";
+import { FieldTile, FieldTileGrid } from "@/components/lobby/FieldTile";
+import { DeepDiveCard, DeepDiveGrid } from "@/components/lobby/DeepDiveCard";
+import { UpcomingList, type UpcomingRow } from "@/components/lobby/UpcomingList";
 import { ProBand } from "@/components/lobby/ProBand";
 import { SportHero } from "@/components/lobby/SportHero";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
-import { buildLobbySections, lobbyCounts, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
+import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
 import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -8434,6 +8435,7 @@ const VIEW_SECTIONS: Record<Exclude<DeskView, "explore">, LobbySectionId[] | nul
 
 function HomeLobby({
   view,
+  isPro,
   predictions,
   tennisMatches,
   query,
@@ -8445,6 +8447,9 @@ function HomeLobby({
   onGoPro,
 }: {
   view: Exclude<DeskView, "explore">;
+  /** #RESTYLING-0921 round 7 — chi ha già il Pro non vede la pubblicità del
+   *  Pro. Era il debito dichiarato del round 6. */
+  isPro: boolean;
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   query: string;
@@ -8551,82 +8556,72 @@ function HomeLobby({
     );
   };
 
-  // ── #RESTYLING-0921 round 2: hero + tile per sport ──────────────────────
+  // ── #RESTYLING-0921 round 7: l'hero è una CARD VERTICALE ────────────────
   //
-  // I numeri delle pill sono CONTEGGI REALI e NON CAPPATI: le fasce mostrano al
-  // massimo LOBBY_ROW_CAP righe, ma «Live now 3» quando ce ne sono 11 sarebbe un
-  // numero sbagliato scritto in grande. Un conteggio a zero non diventa una pill
-  // (`value: null` → HeroBanner non la rende): meglio due pill vere che tre di
-  // cui una dice zero.
-  const heroCounts = useMemo(
-    () => lobbyCounts([...footballItems, ...tennisItems]),
-    [footballItems, tennisItems],
+  // Il round 4 aveva un quadratino, il round 3 un banner largo: il riferimento
+  // di Codex non ha né l'uno né l'altro. Ha una card 3:4 nel rail sinistro
+  // (26% della riga), con le card vere del board nella colonna accanto —
+  // misurata 359×610 sul suo CSS computato. Dentro: la label in alto, il
+  // titolo su tre righe con l'ultima in gradiente lime, una riga di testo e
+  // una barra CTA lime a tutta larghezza.
+  //
+  // La foto è quella di art-director (round 6): 705×941, atleta d'azione in
+  // luce da stadio, nessun testo cotto dentro. La `-420` è la versione per
+  // telefono, la sceglie il browser via srcset.
+  const hero = view !== "home" ? null : (
+    <HeroPortrait
+      label={pick5(lang, {
+        it: "BETREDGE CALCIO", en: "BETREDGE FOOTBALL", es: "BETREDGE FÚTBOL",
+        fr: "BETREDGE FOOTBALL", ru: "BETREDGE ФУТБОЛ",
+      })}
+      lines={pick5<string[]>(lang, {
+        it: ["Leggi", "il", "gioco."],
+        en: ["Read", "the", "game."],
+        es: ["Lee", "el", "juego."],
+        fr: ["Lisez", "le", "jeu."],
+        ru: ["Читай", "игру."],
+      })}
+      sub={pick5(lang, {
+        it: "La tua prossima lettura parte da qui.",
+        en: "Your next read starts here.",
+        es: "Tu próxima lectura empieza aquí.",
+        fr: "Votre prochaine lecture commence ici.",
+        ru: "Ваш следующий разбор начинается здесь.",
+      })}
+      cta={pick5(lang, {
+        it: "Esplora il calcio", en: "Explore football", es: "Explora el fútbol",
+        fr: "Explorer le football", ru: "Открыть футбол",
+      })}
+      href={`${TAB_PATHS.bets}?sport=football`}
+      onClick={(ev) => {
+        ev.preventDefault();
+        trackEvent("card_open", { meta: { surface: "hero", section: "cta" } });
+        onExplore("football");
+      }}
+      image={{ src: "/images/hero/hero-football-portrait.jpg", srcSm: "/images/hero/hero-football-portrait-420.jpg", alt: "" }}
+    />
   );
 
-  // La parola accentata va in <em> (il CSS la colora in lime): è enfasi, non un
-  // colore appiccicato addosso.
-  const heroTitle = pick5<React.ReactNode>(lang, {
-    it: <>Le migliori occasioni <em>di oggi.</em></>,
-    en: <>Top opportunities <em>today.</em></>,
-    es: <>Las mejores oportunidades <em>de hoy.</em></>,
-    fr: <>Les meilleures opportunités <em>du jour.</em></>,
-    ru: <>Лучшие возможности <em>на сегодня.</em></>,
-  });
-
-  // Round 4: il banner è QUADRATO e piccolo (components/lobby/HeroBanner.tsx),
-  // e di fianco ci stanno le card vere. Dentro un quadrato da ~340px non entra
-  // più il sottotitolo di tre righe del round 3: quello che diceva — «la
-  // probabilità del nostro modello accanto a quella del mercato» — lo dice
-  // adesso l'hint della fascia che gli sta a fianco, e per esteso
-  // /how-it-works, dove porta la CTA secondaria. Restano eyebrow, headline, i
-  // tre numeri veri e le due CTA.
-  const hero = view !== "home" ? null : (
-    <HeroBanner
-      eyebrow={pick5(lang, {
-        it: "PREVISIONI CON L'AI", en: "AI POWERED PREDICTIONS", es: "PREDICCIONES CON IA",
-        fr: "PRÉDICTIONS PAR IA", ru: "ПРОГНОЗЫ НА БАЗЕ ИИ",
+  // Sotto l'hero, nel rail: il secondo richiamo al Pro del riferimento. Non è
+  // un doppione della fascia Pro — quella parla a tutta la pagina, questo sta
+  // nella colonna e nomina UNA cosa sola, la Deep Analysis.
+  const railDeep = view !== "home" || isPro ? null : (
+    <RailDeep
+      label="DEEP ANALYSIS"
+      lines={pick5<string[]>(lang, {
+        it: ["Il perché.", "Oltre il numero."],
+        en: ["The why.", "Beyond the number."],
+        es: ["El porqué.", "Más allá del número."],
+        fr: ["Le pourquoi.", "Au-delà du chiffre."],
+        ru: ["Почему.", "За пределами числа."],
       })}
-      title={heroTitle}
-      stats={[
-        {
-          kind: "live",
-          label: pick5(lang, { it: "In corso ora", en: "Live now", es: "En vivo", fr: "En direct", ru: "В игре" }),
-          value: heroCounts.live || null,
-        },
-        {
-          kind: "starting-soon",
-          label: pick5(lang, { it: "A breve", en: "Starting soon", es: "Empiezan pronto", fr: "Bientôt", ru: "Скоро" }),
-          value: heroCounts.soon || null,
-        },
-        {
-          kind: "high-edge",
-          label: pick5(lang, { it: "Edge alto", en: "High edge", es: "Edge alto", fr: "Edge élevé", ru: "Высокий edge" }),
-          value: heroCounts.highEdge || null,
-        },
-      ]}
-      cta={{
-        label: pick5(lang, {
-          it: "Guarda le partite di oggi", en: "Explore today's picks", es: "Mira los partidos de hoy",
-          fr: "Voir les matchs du jour", ru: "Смотреть матчи дня",
-        }),
-        // Link vero (tasto centrale, condivisione), ma la vista completa è già
-        // in pagina: si cambia taglio, non si naviga.
-        href: TAB_PATHS.bets,
-        onClick: (ev) => {
-          ev.preventDefault();
-          trackEvent("card_open", { meta: { surface: "hero", section: "cta" } });
-          onExplore("all");
-        },
+      cta={pick5(lang, { it: "Scopri Pro", en: "Discover Pro", es: "Descubre Pro", fr: "Découvrir Pro", ru: "Узнать о Pro" })}
+      href={TAB_PATHS.plans}
+      onClick={(ev) => {
+        ev.preventDefault();
+        trackEvent("tab_click", { meta: { tab: "plans", src: "raildeep-home" } });
+        onGoPro();
       }}
-      secondary={{
-        label: pick5(lang, { it: "Come funziona", en: "How it works", es: "Cómo funciona", fr: "Comment ça marche", ru: "Как это работает" }),
-        href: "/how-it-works",
-      }}
-      // Round 4: l'immagine quadrata della casa (art-director, mapping in
-      // docs/reference/round4/NOTE.md) — un pallone che si dissolve in una
-      // mesh di dati blu/lime. 960² su desktop, 480² sotto i 640px: la sceglie
-      // il browser via srcset. `alt=""`: è decorativa, il contenuto è il testo.
-      image={{ src: "/images/hero/hero-square.jpg", srcSm: "/images/hero/hero-square-480.jpg", alt: "" }}
     />
   );
 
@@ -8762,59 +8757,163 @@ function HomeLobby({
     </>
   ) : null;
 
-  // Le tile: conteggio REALE per gli sport che serviamo, nessun conteggio per
-  // quelli che non serviamo — `count` assente → la tile dice «Coming soon» e non
-  // è un link (SportCategoryTile). Mai uno zero finto per far numero.
+  // ── #RESTYLING-0921 round 7: «Scegli il tuo campo» ──────────────────────
   //
-  // #RESTYLING-0921 round 4 — le icone sono i raster della casa
-  // (/public/banners/sport-*-sm.png): football e tennis erano già in
-  // produzione ed è lo stile che Andrea ha indicato, basketball e «more» li ha
-  // fatti art-director nello stesso trattamento. Al posto di Esports c'è
-  // «More sports» (richiesta esplicita): sport-esports.png resta su disco ma
-  // fuori uso. Il `-sm` è 48² ed è la misura in cui la tile lo mostra.
+  // La riga di iconcine del round 2-4 diventa quattro TILE FOTOGRAFICHE
+  // grandi, quattro su una riga (333×245 nel riferimento). Una foto d'azione
+  // dice «qui si gioca a questo» in un colpo d'occhio; un'icona da 48px no.
+  // Le foto sono quelle di art-director (round 6, derivate in
+  // public/images/tiles/), senza testo cotto dentro.
+  //
+  // Il conteggio resta un DATO: `count: null` → la tile dice «In arrivo» e
+  // smette di essere un link. Mai uno zero finto per far numero.
   const sportTiles = view !== "home" ? null : (
-    <SportTileRow label={pick5(lang, { it: "Sfoglia per sport", en: "Browse by sport", es: "Explorar por deporte", fr: "Parcourir par sport", ru: "По виду спорта" })}>
-      {([
-        { sport: "football", label: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), count: footballItems.length, icon: "sport-football" },
-        { sport: "tennis", label: pick5(lang, { it: "Tennis", en: "Tennis", es: "Tenis", fr: "Tennis", ru: "Теннис" }), count: tennisItems.length, icon: "sport-tennis" },
-        { sport: "basketball", label: pick5(lang, { it: "Basket", en: "Basketball", es: "Baloncesto", fr: "Basket", ru: "Баскетбол" }), count: null, icon: "sport-basketball" },
-        { sport: "more", label: pick5(lang, { it: "Altri sport", en: "More sports", es: "Más deportes", fr: "Autres sports", ru: "Другие виды" }), count: null, icon: "sport-more" },
-      ] as const).map((t) => (
-        <SportCategoryTile
-          key={t.sport}
-          sport={t.sport}
-          label={t.label}
-          count={t.count}
-          // `alt=""`: il nome dello sport è già scritto nella tile, accanto.
-          icon={<img src={`/banners/${t.icon}-sm.png`} alt="" width={48} height={48} loading="lazy" decoding="async" />}
-          countLabel={pick5(lang, {
-            it: "{n} partite oggi", en: "{n} picks today", es: "{n} partidos hoy",
-            fr: "{n} matchs aujourd'hui", ru: "{n} матчей сегодня",
-          })}
-          comingSoonLabel={pick5(lang, { it: "In arrivo", en: "Coming soon", es: "Pronto", fr: "Bientôt", ru: "Скоро" })}
-          href={t.count == null ? undefined : `${TAB_PATHS.bets}?sport=${t.sport}`}
-          onClick={t.count == null ? undefined : (ev) => {
-            ev.preventDefault();
-            onExplore(t.sport as "football" | "tennis");
-          }}
-        />
-      ))}
-      <AccumulatorPromoTile
-        title={pick5(lang, {
-          it: "Costruisci la tua multipla", en: "Build your own accumulator", es: "Crea tu combinada",
-          fr: "Composez votre combiné", ru: "Соберите свой экспресс",
-        })}
-        subtitle={pick5(lang, {
-          it: "Unisci più partite e leggi la probabilità congiunta.",
-          en: "Combine matches and read the joint probability.",
-          es: "Combina partidos y lee la probabilidad conjunta.",
-          fr: "Combinez des matchs et lisez la probabilité conjointe.",
-          ru: "Объедините матчи и посмотрите совокупную вероятность.",
-        })}
-        href={TAB_PATHS["match-builder"]}
-      />
-    </SportTileRow>
+    <LobbySection
+      title={pick5(lang, {
+        it: "Scegli il tuo campo.", en: "Choose your field.", es: "Elige tu campo.",
+        fr: "Choisissez votre terrain.", ru: "Выберите своё поле.",
+      })}
+      eyebrow={pick5(lang, {
+        it: "LE DISCIPLINE", en: "THE SPORTS", es: "LAS DISCIPLINAS",
+        fr: "LES DISCIPLINES", ru: "ВИДЫ СПОРТА",
+      })}
+      plain
+    >
+      <FieldTileGrid label={pick5(lang, { it: "Sfoglia per sport", en: "Browse by sport", es: "Explorar por deporte", fr: "Parcourir par sport", ru: "По виду спорта" })}>
+        {([
+          { sport: "football", index: "01", kicker: "FOOTBALL", label: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), count: footballItems.length, img: "field-football", accent: false, icon: "sport-football" },
+          { sport: "tennis", index: "02", kicker: "TENNIS", label: "Tennis", count: tennisItems.length, img: "field-tennis", accent: true, icon: "sport-tennis" },
+          { sport: "basketball", index: "03", kicker: "BASKETBALL", label: pick5(lang, { it: "Basket", en: "Basketball", es: "Baloncesto", fr: "Basket", ru: "Баскетбол" }), count: null, img: "field-basketball", accent: false, icon: "sport-basketball" },
+          { sport: "more", index: "04", kicker: "NEXT UP", label: pick5(lang, { it: "Altri sport", en: "More sports", es: "Más deportes", fr: "Autres sports", ru: "Другие виды" }), count: null, img: "field-nextup", accent: false, icon: "sport-more" },
+        ] as const).map((t) => (
+          <FieldTile
+            key={t.sport}
+            sport={t.sport}
+            index={t.index}
+            kicker={t.kicker}
+            label={t.label}
+            count={t.count}
+            accent={t.accent}
+            image={{ src: `/images/tiles/${t.img}.jpg`, srcSm: `/images/tiles/${t.img}-420.jpg` }}
+            /* `alt=""`: il nome dello sport è già scritto nella tile, sotto. */
+            icon={<img src={`/banners/${t.icon}-sm.png`} alt="" width={31} height={31} loading="lazy" decoding="async" />}
+            exploreLabel={pick5(lang, { it: "Esplora", en: "Explore", es: "Explorar", fr: "Explorer", ru: "Открыть" })}
+            comingSoonLabel={pick5(lang, { it: "In arrivo", en: "Coming soon", es: "Pronto", fr: "Bientôt", ru: "Скоро" })}
+            href={t.count == null ? undefined : `${TAB_PATHS.bets}?sport=${t.sport}`}
+            onClick={t.count == null ? undefined : (ev: React.MouseEvent<HTMLElement>) => {
+              ev.preventDefault();
+              onExplore(t.sport as "football" | "tennis");
+            }}
+          />
+        ))}
+      </FieldTileGrid>
+    </LobbySection>
   );
+
+  // ── #RESTYLING-0921 round 7: «Da approfondire» ──────────────────────────
+  //
+  // I creativi della casa messi GRANDI e affiancati, col testo SOTTO la foto e
+  // non cotto dentro — così il titolo è testo vero, tradotto, indicizzabile e
+  // leggibile da uno screen reader. È il trattamento del riferimento.
+  //
+  // Andrea, 22/09: «anche i banner vanno usati gli stessi, deve essere tutto
+  // nuovo». Quindi non ne girano due fissi: girano TUTTE le campagne valide
+  // per chi sta guardando (`campaignsFor`), che è la stessa fonte del board e
+  // delle pagine tool. A chi ha il Pro, Deep Analysis non compare: sarebbe la
+  // pubblicità di ciò che ha già comprato — lo dice già `audiences`.
+  const deepDives = view !== "home" ? null : (() => {
+    const campaigns = campaignsFor("desk-feed", isPro ? "premium" : "free");
+    const cards = campaigns.filter((c) => c.creative);
+    if (cards.length === 0) return null;
+    return (
+      <LobbySection
+        title={pick5(lang, {
+          it: "Da approfondire.", en: "Worth a closer look.", es: "Para profundizar.",
+          fr: "À creuser.", ru: "Стоит изучить.",
+        })}
+        eyebrow={pick5(lang, {
+          it: "LE CAMPAGNE", en: "THE CAMPAIGNS", es: "LAS CAMPAÑAS",
+          fr: "LES CAMPAGNES", ru: "КАМПАНИИ",
+        })}
+        plain
+      >
+        <DeepDiveGrid>
+          {cards.map((c) => {
+            const copy = copyFor(c, lang);
+            return (
+              <DeepDiveCard
+                key={c.id}
+                eyebrow={copy.eyebrow}
+                title={copy.eyebrow}
+                sub={copy.sub}
+                cta={ctaLabelFor(c, lang)}
+                href={c.cta.href}
+                image={{ src: c.creative!.src, srcSm: c.creative!.sm }}
+                onClick={() => trackEvent("card_open", { meta: { surface: "deepdive", section: c.id } })}
+              />
+            );
+          })}
+        </DeepDiveGrid>
+      </LobbySection>
+    );
+  })();
+
+  // ── #RESTYLING-0921 round 7: «Prossimi match» ───────────────────────────
+  //
+  // Le stesse partite, in RIGHE compatte invece che in card. È la vista con
+  // cui il riferimento fa scorrere il calendario: chi vuole vedere venti
+  // partite invece di sei non deve scrollare sei schermate di card.
+  // Non sostituisce le fasce: è una vista in più, e sta in fondo.
+  const upcoming = view !== "home" ? null : (() => {
+    const rows: UpcomingRow[] = [...footballItems, ...tennisItems]
+      .filter((i) => !i.data.isLive)
+      .sort((a, b) => new Date(a.data.startsAt).getTime() - new Date(b.data.startsAt).getTime())
+      .slice(0, 10)
+      .map((i) => {
+        // Il desk scrive «mer 23 set, 13:37»: la virgola separa il giorno
+        // dall'ora, e nel riferimento sono due righe. Se il formato cambia
+        // (o la lingua non usa la virgola) resta tutto sulla prima riga:
+        // meglio una riga lunga che una data tagliata a metà parola.
+        const label = i.data.kickoffLabel ?? "";
+        const cut = label.lastIndexOf(", ");
+        const day = cut > 0 ? label.slice(0, cut) : label;
+        const time = cut > 0 ? label.slice(cut + 2) : null;
+        return {
+          key: i.key,
+          day: day || "—",
+          time,
+          home: i.data.home,
+          away: i.data.away,
+          league: i.data.league ?? "",
+          modelPct: i.data.modelPct,
+          href: TAB_PATHS.bets,
+          onClick: (ev: React.MouseEvent<HTMLAnchorElement>) => {
+            ev.preventDefault();
+            onOpenMatch(i.key);
+          },
+        };
+      });
+    if (rows.length === 0) return null;
+    return (
+      <LobbySection
+        title={pick5(lang, {
+          it: "Prossimi match.", en: "Upcoming matches.", es: "Próximos partidos.",
+          fr: "Prochains matchs.", ru: "Ближайшие матчи.",
+        })}
+        eyebrow={pick5(lang, {
+          it: "IL CALENDARIO", en: "THE SCHEDULE", es: "EL CALENDARIO",
+          fr: "LE CALENDRIER", ru: "КАЛЕНДАРЬ",
+        })}
+        plain
+      >
+        <UpcomingList
+          rows={rows}
+          vsLabel="vs"
+          modelLabel={pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}
+        />
+      </LobbySection>
+    );
+  })();
 
   // ── #RESTYLING-0921 round 4: la prima fascia sale accanto all'hero ──────
   //
@@ -8893,7 +8992,7 @@ function HomeLobby({
             cosa c'è oltre. Il badge del conteggio si spegne da sé a zero. */}
         {sectionTop}
         {hero}
-        {hero && proBand}
+        {hero && !isPro && proBand}
         <p className="br-empty">
           {q
             ? pick5(lang, {
@@ -8949,21 +9048,30 @@ function HomeLobby({
       {/* Round 6: su Calcio e Tennis la vista apre con il suo hero e la
           fascia Pro; sulla Home `sectionTop` è null e non rende nulla. */}
       {sectionTop}
-      {/* La prima riga: quadrato piccolo a sinistra, prodotto vero a destra. */}
+      {/* Round 7: il rail del riferimento — hero verticale a sinistra (26%),
+          le card vere del board nella colonna accanto. */}
       {hero && sideSection ? (
-        <div className="br-home-top">
-          {hero}
+        <div className="br-homerail">
+          <div>
+            {hero}
+            {railDeep}
+          </div>
           {renderSection(sideSection, HERO_SIDE_CAP)}
         </div>
       ) : hero}
-      {/* Round 6: la fascia Pro subito sotto l'hero della Home. */}
-      {hero && proBand}
+      {/* Round 6: la fascia Pro subito sotto l'hero della Home.
+          Round 7: non a chi il Pro ce l'ha già — era il debito dichiarato. */}
+      {hero && !isPro && proBand}
       {belowSections.map((sec) => (
         <Fragment key={sec.id}>
           {renderSection(sec)}
           {sec.id === tilesAfter && sportTiles}
         </Fragment>
       ))}
+      {/* Round 7: la sequenza di chiusura del riferimento — le campagne, poi
+          il calendario in righe compatte, poi le risposte. */}
+      {deepDives}
+      {upcoming}
       {faq}
     </div>
   );
@@ -8980,6 +9088,7 @@ function UnifiedBetsTab({
   onGate,
   isFreeClient,
   isPremiumClient,
+  isProClient,
   isLoggedIn,
   tennisIsPlaceholder,
   onBannerCta,
@@ -9005,6 +9114,8 @@ function UnifiedBetsTab({
   onGate?: () => void;
   isFreeClient: boolean;
   isPremiumClient?: boolean;
+  /** Pro vero (non «sbloccato»): gate della fascia Pro e del rail. */
+  isProClient?: boolean;
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
@@ -9091,6 +9202,7 @@ function UnifiedBetsTab({
         ) : (
           <HomeLobby
             view={view}
+            isPro={!!isProClient}
             predictions={predictions}
             tennisMatches={tennisMatches}
             query={query}
@@ -10602,6 +10714,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               onBannerCta={handleBannerCta}
               isFreeClient={isFreeClient}
               isPremiumClient={isClientUnlocked}
+              /* #RESTYLING-0921 round 7 — il PRO vero, non «sbloccato»: la
+                 fascia Pro e il richiamo del rail non devono comparire a chi
+                 il Pro ce l'ha già. Stesso gate del pulsante in nav. */
+              isProClient={!!clientProfile && profileHasPremium(clientProfile)}
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               hitRate={v2RateMeaningful ? historyV2Stats?.win_rate ?? null : null}

@@ -34,6 +34,10 @@ export function crestInitials(team: string | null | undefined): string {
   if (all.length === 0) return "";
   const signal = all.filter((w) => !NOISE.has(w.toLowerCase()));
   const use = signal.length > 0 ? signal : all;
+  // Una sigla già maiuscola nel nome È l'identità: «PSV Eindhoven» è PSV, non
+  // PE. Vale solo se sta in tre lettere — oltre non entra nel quadratino.
+  const acronym = use.find((w) => w.length >= 2 && w.length <= 3 && w === w.toUpperCase() && /[A-Z]/.test(w));
+  if (acronym) return acronym;
   if (use.length === 1) return use[0].slice(0, 3).toUpperCase();
   return use
     .slice(0, 3)

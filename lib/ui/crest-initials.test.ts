@@ -19,6 +19,11 @@ describe("crestInitials", () => {
     expect(crestInitials("Manchester City")).toBe("MC");
   });
 
+  it("una sigla già maiuscola nel nome è l'identità", () => {
+    expect(crestInitials("PSV Eindhoven")).toBe("PSV");
+    expect(crestInitials("AZ Alkmaar")).toBe("AZ");
+  });
+
   it("toglie i diacritici invece di perderli", () => {
     expect(crestInitials("Atlético Madrid")).toBe("AM");
     expect(crestInitials("Köln")).toBe("KOL");
@@ -40,7 +45,7 @@ describe("crestInitials", () => {
   });
 
   it("se TUTTE le parole sono rumore, si usa comunque il nome", () => {
-    expect(crestInitials("FC AC")).toBe("FA");
+    expect(crestInitials("FC AC")).toBe("FC");
   });
 
   it("è deterministica", () => {

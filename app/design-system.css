@@ -2313,7 +2313,10 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 .br-ctx__link:hover { color: var(--am-text); }
 .br-ctx__link:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 .br-ctx__link[aria-current="page"] { color: var(--am-royal-t); }
-.br-ctx__sep { color: var(--am-line-2); }
+/* Round 7: era --am-line-2, cioè il colore di un BORDO usato per scrivere —
+   sulla carta nuova faceva 1,48:1. Una barra separatrice è testo e va su un
+   token di testo. */
+.br-ctx__sep { color: var(--am-muted-2); }
 .br-ctx__state { white-space: nowrap; color: var(--am-muted-2); }
 .br-ctx__state b { font-weight: 700; color: var(--am-text); }
 
@@ -2610,3 +2613,421 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   border-color: rgba(13,35,67,0.22);
   box-shadow: inset 0 -3px rgba(0,0,0,0.14);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * HOME ROUND 7 — #RESTYLING-0921
+ *
+ * I blocchi della Home del riferimento, nelle misure lette dal suo CSS
+ * computato (art-director, 22/09 notte), non stimate a occhio:
+ *   hero portrait 359×610 nel rail sinistro (26% della riga) ·
+ *   tile «Scegli il tuo campo» 333×245, quattro su una riga ·
+ *   «Da approfondire» due banner 16:9 con la barra di testo SOTTO ·
+ *   «Prossimi match» righe da 90px su cinque colonne.
+ *
+ * Tre motivi ricorrenti del riferimento, replicati qui perché senza non è
+ * la stessa pagina: il velo sulle foto è SEMPRE un gradiente a più stop su
+ * uno pseudo-elemento (mai un colore piatto), il raggio è deliberatamente
+ * misto (6 sulle superfici fotografiche, 5 sui contenitori, 3 sui chip), e
+ * i blocchi «Pro» hanno un filo azzurro da 4px sul bordo sinistro.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero portrait ──────────────────────────────────────────────────── */
+.br-hp {
+  position: relative;
+  display: block;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 590px;
+  border: 1px solid var(--am-line);
+  border-radius: 6px;
+  background: #061A35;
+  color: #F4F3EE;
+  text-decoration: none;
+}
+.br-hp__img {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% center;
+  transition: transform 0.5s;
+}
+.br-hp:hover .br-hp__img { transform: scale(1.035); }
+.br-hp__scrim {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(rgba(2,11,34,0.25) 0%, transparent 25%, rgba(3,17,37,0.27) 45%, rgba(2,10,24,0.94) 88%);
+}
+.br-hp__label {
+  display: block;
+  padding: 20px;
+  font-family: var(--am-font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.br-hp__copy { position: absolute; bottom: 25px; left: 24px; right: 24px; }
+.br-hp__title {
+  display: block;
+  font-family: var(--am-font-display);
+  font-size: clamp(40px, 4.6vw, 68px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 15px rgba(0,16,26,0.5);
+}
+.br-hp__line { display: block; }
+/* L'ultima riga è l'accento: gradiente lime→verde ritagliato sul testo. Il
+   fallback è il lime pieno, per i browser senza background-clip: text. */
+.br-hp__line[data-accent="true"] {
+  color: var(--am-lime-fill);
+  background: linear-gradient(100deg, #E5FF00, #68FF13);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.br-hp__sub {
+  display: block;
+  margin: 18px 0;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.4;
+  color: #E3EDFF;
+}
+.br-hp__cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 15px;
+  border-radius: 3px;
+  background: var(--am-lime-fill);
+  color: var(--am-lime-fill-ink);
+  font-family: var(--am-font-hud);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* ── Il blocco Pro sotto l'hero ─────────────────────────────────────── */
+.br-raildeep {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 22px;
+  border: 1px solid var(--am-line);
+  border-left: 4px solid var(--am-sky);
+  border-radius: 5px;
+  background: linear-gradient(120deg, #133CAD, #092351);
+  color: #F4F3EE;
+  text-decoration: none;
+}
+.br-raildeep__label,
+.br-raildeep__cta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--am-sky);
+}
+.br-raildeep__cta { color: var(--am-lime-fill); }
+.br-raildeep__h {
+  display: block;
+  margin: 14px 0 18px;
+  font-family: var(--am-font-display);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.08;
+  text-transform: uppercase;
+  color: #F3EDDC;
+}
+.br-raildeep__h span { display: block; }
+
+/* ── «Scegli il tuo campo» ──────────────────────────────────────────── */
+.br-fields {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.br-field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 245px;
+  padding: 22px;
+  border: 1px solid var(--am-line);
+  border-radius: 6px;
+  background: #09204A;
+  color: #F3EDDC;
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.br-field__img {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+/* Solo la tile «altri sport» è sfocata: è un segnaposto, non uno sport. Il
+   basket la sua foto ce l'ha e si vede — «in arrivo» lo dice il chip, non
+   servono due segnali per la stessa cosa (ed è quello che fa il riferimento). */
+.br-field[data-sport="more"] .br-field__img { filter: blur(3px); opacity: 0.5; }
+.br-field__scrim {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(rgba(1,14,32,0.19), rgba(2,16,33,0.13) 30%, rgba(2,12,28,0.96) 100%);
+}
+a.br-field:hover, button.br-field:hover { border-color: var(--am-sky); }
+a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transform: scale(1.055); }
+.br-field__kicker {
+  position: absolute;
+  left: 20px;
+  top: 22px;
+  max-width: 60%;
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 5px #000;
+}
+/* Il quadratino della pallina è ruotato di −8°, la pallina dentro contro-ruota
+   di 8° e resta dritta: è il taglio obliquo che il riferimento usa dappertutto
+   (il tick della card, il badge edge, la spazzata del live). */
+.br-field__icon {
+  position: absolute;
+  right: 17px;
+  top: 17px;
+  display: grid;
+  place-items: center;
+  width: 49px;
+  height: 49px;
+  border: 1px solid rgba(131,214,255,0.47);
+  border-radius: 10px;
+  background: rgba(7,33,73,0.8);
+  box-shadow: inset 0 0 16px rgba(40,151,255,0.25);
+  transform: rotate(-8deg);
+}
+.br-field__icon > * { transform: rotate(8deg); display: block; }
+.br-field__name {
+  margin-top: auto;
+  padding-top: 70px;
+  font-family: var(--am-font-display);
+  font-size: clamp(30px, 3.2vw, 43px);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 0 2px 15px rgba(0,0,0,0.67);
+}
+.br-field__name[data-accent="true"] { color: var(--am-lime-fill); }
+.br-field__go {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.br-field__go b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(111,186,255,0.31);
+  border-radius: 3px;
+  background: rgba(150,220,255,0.10);
+  font-size: 18px;
+  /* La tile è una foto scura in ENTRAMBI i temi: l'azzurro chiaro è quello del
+     tema scuro, non del tema corrente. In chiaro --am-sky scende a #1F6FB2 e
+     sul fondo della tile faceva 3,02:1. Stesso motivo del crest. */
+  color: #81D9FF;
+}
+.br-field__soon {
+  align-self: flex-start;
+  margin-top: 16px;
+  padding: 5px 8px;
+  border: 1px solid rgba(164,194,230,0.33);
+  background: rgba(9,26,52,0.73);
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── «Da approfondire» ──────────────────────────────────────────────── */
+/* Il riferimento ne affianca due da 679px. Qui ne girano quattro o cinque (le
+   campagne valide per chi guarda), quindi la colonna minima è 400px: su 1400
+   fa tre per riga, larghe abbastanza perché la barra di testo stia su una riga
+   sola — sotto i 400 il titolo andava a capo e il sottotitolo su quattro. */
+.br-dds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 22px;
+}
+.br-dd {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  border-radius: 6px;
+  background: var(--am-panel);
+  color: var(--am-text);
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.br-dd:hover { border-color: var(--am-sky); }
+.br-dd__shot { display: block; }
+.br-dd__img { display: block; width: 100%; height: auto; }
+.br-dd__body {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 17px 20px;
+  font-family: var(--am-font-ui);
+}
+.br-dd__eyebrow { display: none; } /* l'occhiello è già cotto nel creativo */
+.br-dd__title { flex: 0 0 auto; font-size: 15px; font-weight: 700; white-space: nowrap; }
+.br-dd__sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--am-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-dd__cta {
+  margin-left: auto;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  font-family: var(--am-font-hud);
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--am-lime);
+}
+
+/* ── «Prossimi match» ───────────────────────────────────────────────── */
+.br-rows {
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  border-radius: 5px;
+  background: var(--am-panel);
+}
+.br-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 150px 100px 15px;
+  align-items: center;
+  gap: 20px;
+  padding: 17px 20px;
+  border-top: 1px solid var(--am-line);
+  color: var(--am-text);
+  text-decoration: none;
+}
+.br-row:first-child { border-top: 0; }
+.br-row:hover { background: var(--am-panel-2); }
+.br-row__when {
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--am-muted);
+}
+.br-row__when span { display: block; }
+.br-row__teams {
+  min-width: 0;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-row__vs {
+  margin: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--am-muted);
+}
+.br-row__league {
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  color: var(--am-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-row__prob { font-family: var(--am-font-hud); line-height: 1.1; }
+.br-row__prob b {
+  display: block;
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--am-sky);
+}
+.br-row__prob small {
+  display: block;
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--am-muted);
+}
+.br-row__prob-empty { color: var(--am-muted-2); }
+.br-row__go { font-size: 15px; color: var(--am-muted); }
+
+/* ── Il rail: hero a sinistra, prodotto vero a destra ───────────────── */
+.br-homerail {
+  display: grid;
+  grid-template-columns: minmax(260px, 26%) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+
+@media (max-width: 1150px) {
+  .br-fields { gap: 10px; }
+  .br-hp { min-height: 520px; }
+}
+@media (max-width: 900px) {
+  .br-homerail { grid-template-columns: 1fr; }
+  .br-hp { min-height: 420px; }
+  .br-hp__title { font-size: clamp(38px, 9vw, 56px); }
+}
+@media (max-width: 780px) {
+  .br-fields { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .br-row { grid-template-columns: 78px minmax(0, 1fr) 62px 12px; gap: 12px; padding: 13px 14px; }
+  .br-row__league { display: none; }
+  .br-row__prob b { font-size: 22px; }
+  .br-dd__body { flex-wrap: wrap; gap: 8px 12px; }
+}
+
+/* L'occhiello sopra il titolo di sezione (round 7): il riferimento ne ha uno
+   su ogni blocco. Azzurro, piccolo, spaziato — dice di cosa parla la sezione
+   prima che il titolo la nomini. */
+.br-sec__eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--am-sky);
+}
+.br-sec__body { display: block; }

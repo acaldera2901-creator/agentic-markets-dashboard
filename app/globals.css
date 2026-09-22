@@ -275,7 +275,7 @@
 
   --am-text:       #14171C;
   --am-muted:      #4A515B;
-  --am-muted-2:    #616975;  /* #PRO-AA-0822: #666E7B lasciava «/ mo» a 4.42:1 e «Русский» a 4.31:1 sui pannelli tinti. Ora >=4.65:1 su quei fondi. */  /* #UI-MACHINA-0802: era #79818D → 3.61:1 sul footer 10.5px, sotto AA. Stesso valore e stessa ragione di --v-muted2 (#V3-LABELS-AA): il namespace --am-* era rimasto indietro. */
+  --am-muted-2:    #565E69;  /* #RESTYLING-0921 round 7: la carta nuova (#f3eddc, e #EEE7D4 sulle barre) è più scura della vecchia e #616975 ci faceva 4,49:1 — sotto AA per la barra contesto a 11px. Ora 5,3:1 sulla barra, 6,4:1 sul pannello. */  /* #PRO-AA-0822: #666E7B lasciava «/ mo» a 4.42:1 e «Русский» a 4.31:1 sui pannelli tinti. Ora >=4.65:1 su quei fondi. */  /* #UI-MACHINA-0802: era #79818D → 3.61:1 sul footer 10.5px, sotto AA. Stesso valore e stessa ragione di --v-muted2 (#V3-LABELS-AA): il namespace --am-* era rimasto indietro. */
   --am-hi:         rgba(255,255,255,0.9);
 
   /* #RESTYLING-0921 — ruoli semantici (light). Il neon come TESTO su bianco
