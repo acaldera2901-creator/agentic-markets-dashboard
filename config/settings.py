@@ -357,6 +357,17 @@ class Settings(BaseSettings):
     HEARTBEAT_INTERVAL: int = 30
     HEARTBEAT_TIMEOUT: int = 60
 
+    # #FLOTTA-FERMA-0912: il watchdog porta la cartella della flotta a origin/main prima
+    # di riavviarla. Default ON perche' il difetto che chiude e' l'assenza di chiunque lo
+    # faccia: fra il 12/09 e il 22/09/2026 quattro riavvii hanno lasciato gli agenti sul
+    # codice dell'11/09, e nessun comando falliva. Le guardie stanno in core/fleet_updater
+    # (solo main, albero pulito, fetch prima del confronto, solo fast-forward): in ogni
+    # caso dubbio salta. Per spegnerlo su una macchina: WATCHDOG_AUTO_UPDATE=false.
+    WATCHDOG_AUTO_UPDATE: bool = True
+    # Ogni quanto il watchdog interroga il remoto. Il watchdog gira ogni 60s: un fetch al
+    # minuto e' rumore di rete senza valore, visto che i merge su main sono pochi al giorno.
+    WATCHDOG_UPDATE_CHECK_SECONDS: int = 300
+
     # Data collection
     DATA_COLLECTION_DAYS_AHEAD: int = 7
     TENNIS_RAPIDAPI_HOST: str = "v1.tennis.api-sports.io"
