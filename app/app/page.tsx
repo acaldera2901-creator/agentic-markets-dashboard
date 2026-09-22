@@ -2292,6 +2292,9 @@ function SportsbookBoard({
   // Il taglio lo fa il CSS, che sopra i 640px non esiste — cosi' il desktop
   // continua a mostrare tutto come prima.
   const [boardLimitata, setBoardLimitata] = useState(true);
+  // #RESTYLING-0921 round 5 — il segnalibro delle card nuove: una sola lettura
+  // dello storage per tutto il board, non una per card.
+  const watchlist = useWatchlist();
   const footballValue = predictions
     .filter(isFootballBestBet)
     .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
@@ -2466,7 +2469,7 @@ function SportsbookBoard({
   const showTennisSection = sportFilter !== "football" && !competitionFilter.startsWith("football:");
 
   return (
-    <div className={"sportsbook-board" + (boardLimitata ? " mob-limita" : "")}>
+    <div className={"sportsbook-board br-board" + (boardLimitata ? " mob-limita" : "")}>
       {/* #BOARD-DENSITY-0910 — qui c'erano tre chip: «Showing 72 · Football 56 ·
           Tennis 16». Due dei tre numeri ricomparivano IDENTICI 40px sotto, sui
           pulsanti dei filtri («Football 56», «Tennis 16»): 27px di altezza per
@@ -2508,7 +2511,7 @@ function SportsbookBoard({
         </button>
       )}
 
-      <div className="sports-filter-bar am-filters">
+      <div className="sports-filter-bar am-filters br-filters">
         <div className="am-seg" aria-label="Sport filter">
           <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>
             {labels.allSports} <span className="ct">{contaTutti}</span>
@@ -2594,20 +2597,20 @@ function SportsbookBoard({
       {liveStrip}
 
       {filteredTotal === 0 ? (
-        <div className="book-empty">{labels.noResults}</div>
+        <div className="book-empty br-board-empty">{labels.noResults}</div>
       ) : (
         <>
           {showFootballSection && (
             <section>
-              <div className="sport-band">
-                <span className="glyph"><SportIcon sport="football" size={26} /></span>
+              <div className="sport-band br-band">
+                <span className="glyph"><SportIcon sport="football" size={26} variant="sm" /></span>
                 <h2>{t.board_football}</h2>
                 <span className="ct">{footballRows.length} {t.board_markets}</span>
                 <span className="rule" />
                 <span className="note">{footballValue.length} {t.board_value}</span>
               </div>
               {footballRows.length ? (
-                <div className="am-grid">
+                <div className="am-grid br-board-grid">
                   {(() => {
                     // #HOUSE-PHOTO-1: banner foto intercalati ogni ~8 card; ogni campagna
                     // del pool calcio (footballFeed) usata UNA sola volta → nessun duplicato.
@@ -2638,7 +2641,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const out: React.ReactNode[] = [
-                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `football:${p.match_id}`} />,
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `football:${p.match_id}`} saved={watchlist.saved.has(`football:${p.match_id}`)} onToggleWatch={watchlist.toggle} />,
                       ];
                       if (i === fpGridAt) {
                         out.push(<FreePaywall key="fp-grid" count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} inGrid />);
@@ -2657,7 +2660,7 @@ function SportsbookBoard({
                 </div>
               ) : (
                 /* P6: honest empty-state — WC countdown message + hub link */
-                <div className="book-empty wc-empty-state">
+                <div className="book-empty br-board-empty wc-empty-state">
                   <div>{pick5(lang, {
                     it: "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale.",
                     en: "No football signals right now. The first signals arrive when World Cup markets open.",
@@ -2683,15 +2686,15 @@ function SportsbookBoard({
 
           {showTennisSection && (
             <section>
-              <div className="sport-band amber">
-                <span className="glyph"><SportIcon sport="tennis" size={26} /></span>
+              <div className="sport-band amber br-band">
+                <span className="glyph"><SportIcon sport="tennis" size={26} variant="sm" /></span>
                 <h2>{t.board_tennis}</h2>
                 <span className="ct">{tennisRows.length} {t.board_matches}</span>
                 <span className="rule" />
                 <span className="note">{tennisValue.length} {t.board_value}</span>
               </div>
               {tennisRows.length ? (
-                <div className="am-grid">
+                <div className="am-grid br-board-grid">
                   {(() => {
                     // #HOUSE-PHOTO-1: banner tennis dal pool DISGIUNTO (tennisFeed), ognuno una
                     // volta sola → mai duplicati col feed calcio nella stessa pagina.
@@ -2701,7 +2704,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `tennis:${m.id}`} />
+                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `tennis:${m.id}`} saved={watchlist.saved.has(`tennis:${m.id}`)} onToggleWatch={watchlist.toggle} />
                       );
                       // #BANNER-FEED-FIX-0708: nel feed tennis i banner sono tile QUADRATI 1:1
                       // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
@@ -2716,7 +2719,7 @@ function SportsbookBoard({
                   })()}
                 </div>
               ) : (
-                <div className="book-empty">{t.board_tennis_empty}</div>
+                <div className="book-empty br-board-empty">{t.board_tennis_empty}</div>
               )}
             </section>
           )}
@@ -5267,7 +5270,7 @@ function McCardPhoto({ sport, i, surface }: { sport: "football" | "tennis" | "wc
   );
 }
 
-function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean }) {
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, saved, onToggleWatch }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; saved?: boolean; onToggleWatch?: (key: string) => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -5645,405 +5648,68 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
     if (autoOpen && modalEnabled) openModal();
   }, [autoOpen, modalEnabled, openModal]);
 
-  // ── chrome riusabile (griglia + header modal): top + fixture/scorebar ──
-  const headerNode = (
-    <>
-      {/* top: sport glyph + league + when (live pulse) */}
-      <div className="top">
-        <div className="comp">
-          <SportMark sport={p.enrichment?.kind === "world_cup" || p.league === "WC" ? "worldcup" : "football"} size={15} className="sgi" />
-          <span className="league">{p.league_name || p.league}</span>
-          {p.match_type && p.match_type !== "STANDARD" && <MatchTypeBadge matchType={p.match_type} />}
-        </div>
-        {/* #LIVE-1: in-play hint without a feed — only for viewers with NO feed. */}
-        {scStatus === "live" || (!isPremium && !isFutureMarket(p.kickoff) && !isFinished && !hasScore) ? (
-          <span className="when live"><span className="pulse" />{scStatus === "live" && live?.minute != null ? `${live.minute}'` : "LIVE"}</span>
-        ) : (
-          <span className="when">{fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed)}</span>
-        )}
-      </div>
-
-      {/* fixture + scorebar (inset readout) */}
-      <div className="fx">
-        <div className="teams">{p.home_team}<span className="vs">v</span>{p.away_team}</div>
-        {hasScore ? (
-          <div className="scorebar">
-            <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
-            <span className="sc">{live?.home_score ?? 0}<span className="x">–</span>{live?.away_score ?? 0}</span>
-            <span className="grow" />
-            {verdict && <span className={`verd ${verdict.correct ? "correct" : "wrong"}`}>{verdict.text}</span>}
-          </div>
-        ) : (
-          <div className="scorebar">
-            <span className="stt">{isFutureMarket(p.kickoff) ? "Kickoff" : pick5(lang, { it: "Programmato", en: "Scheduled", es: "Programado", fr: "Programmé", ru: "Запланирован" })}</span>
-            <span className="sc sched">{fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed)}</span>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  // ── readout riusabile (griglia + lead colonna sinistra modal) ──
-  const readoutNode = (
-    <>
-      {/* model-vs-market readout / gate overlay */}
-      {p.locked ? (
-        <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
-            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
-            vietate dalla regola standing di giugno E promettevano una struttura
-            che il prodotto sbloccato non ha (pronostico + quota + value). Un
-            lucchetto su una struttura vera converte meglio di una promessa
-            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
-          <div className="v2r is-locked" aria-hidden="true">
-            <div className="v2r-l">
-              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
-              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
-            </div>
-            <div className="v2r-q">
-              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-            </div>
-          </div>
-          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
-              anonimo, falso per un Free che il login l'ha gia' fatto e che da
-              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
-              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
-              cosa dell'azione. */}
-          <span className="locked-cta">{isFree
-            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
-            : t.locked_title}</span>
-        </div>
-      ) : (
-        <>
-          <div
-            className={`v2r${onSelect && isValueBet && p.best_selection ? " sel" : ""}`}
-            onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
-          >
-            <div className="v2r-l">
-              {/* #UI-MACHINA-0802 — sotto il floor la scheda mostrava l'esito piu'
-                  probabile con l'occhiello "Il nostro pronostico", cioe' lo faceva
-                  passare per una pick. Lo standard chiede: esito piu' probabile,
-                  edge assente, ED ETICHETTA che dice che non c'e' un favorito
-                  netto. L'edge era gia' soppresso; mancava di dirlo. */}
-              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
-                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
-                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick">{shownName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
-                  dalla scheda. Su 8 schede della board 6 la portavano, e la
-                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
-                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
-                  nostro pronostico», l'esito non dice «vince», edge e value
-                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
-              {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
-              )}
-            </div>
-            <div className="v2r-q">
-              {isPreview ? (
-                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-              ) : (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{shownProb != null ? pct(shownProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
-                  {(shownOdds != null || (!belowFloor && !useHeadline && fpValue != null && fpValue > 0)) ? (
-                    <span className="v2r-sub">{shownOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {shownOdds.toFixed(2)}</> : null}{(!belowFloor && !useHeadline && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-
-  // ── corpo completo: vive SOLO nel modal (la griglia mostra solo la sintesi) ──
-  const bodyNode = (
-    <>
-      {!p.locked && e.goals_summary && (
-        <GoalsBlock summary={e.goals_summary} markets={e.extra_markets ?? []} lang={lang} />
-      )}
-
-      {!p.locked && e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
-        <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={p.home_team} awayTeam={p.away_team} lang={lang} />
-      )}
-
-      {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
-      <div className="why">
-        <details className="why-box">
-          <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
-          <p className="why-txt">
-            {isPreview
-              ? (lang === "it"
-                  ? "Il ragionamento del modello e l'edge sono riservati al piano Pro. Sblocca per leggere perché il modello sceglie questo pronostico."
-                  : "The model's reasoning and edge are reserved for the Pro plan. Unlock to read why the model makes this call.")
-              : buildFootballWhy(p, lang)}
-          </p>
-          {!isPreview && (
-            <button className="why-more" onClick={() => setShowWhy(!showWhy)}>
-              {showWhy
-                ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
-                : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
-            </button>
-          )}
-        </details>
-
-        {/* footer action row */}
-        <div className="act">
-          {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
-              altrimenti vecchio CTA. FT → status note. */}
-          {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (via onBetNow). */}
-          {!isPreview && onBetNow && (isFinished ? (
-            <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
-          ) : (
-            <button className="betbtn" onClick={fp?.matchUrl ? () => window.open(fp.matchUrl, "_blank", "noopener,noreferrer") : onBetNow}>{t.bet_now}</button>
-          ))}
-          <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
-          {isPreview || p.locked ? (
-            <span className="gate">Pro</span>
-          ) : isFinished ? (
-            <span className="gate settled">{pick5(lang, { it: "Settlato", en: "Settled", es: "Liquidado", fr: "Réglé", ru: "Рассчитан" })}</span>
-          ) : (
-            <span className="gate">Pro</span>
-          )}
-        </div>
-
-        {/* expandable analysis body */}
-        {isPreview ? (
-          <div className="nudge">
-            <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
-            <em>{pick5(lang, { it: "Sblocca edge%, ragionamento AI e segnali con Pro (29.99 USDT/mese).", en: "Unlock edge%, AI reasoning and signals with Pro (29.99 USDT/month).", es: "Desbloquea edge%, razonamiento de IA y señales con Pro (29.99 USDT/mes).", fr: "Débloquez edge%, raisonnement IA et signaux avec Pro (29.99 USDT/mois).", ru: "Откройте edge%, ИИ-обоснование и сигналы с Pro (29.99 USDT/мес)." })}</em>
-          </div>
-        ) : showWhy && (
-        <div className="why-body">
-          {p.pick && (
-            <p className="why-prose mono">Pick: <strong>{p.pick}</strong>{p.confidence_score != null ? ` · ${p.confidence_score}%` : ""}</p>
-          )}
-
-          {/* Schedina (extra markets) — demoted into the expansion */}
-          {extraPicks.length > 0 && (
-            <div className="extra-markets">
-              <span className="extra-markets-label">{pick5(lang, { it: "Schedina", en: "Acca picks", es: "Combinada", fr: "Combiné", ru: "Экспресс" })}</span>
-              {extraPicks.map((m) => {
-                const strength = m.p >= 0.80 ? "high" : m.p >= 0.65 ? "mid" : "low";
-                return (
-                  <span key={m.key} className={`extra-market-pill ${strength}`}>
-                    <span className="extra-market-name">{m.label}</span>
-                    <span className="extra-market-pct">{Math.round(m.p * 100)}%</span>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Affiliate bonus CTA — demoted into the expansion */}
-          {p.affiliate && (
-            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
-              {p.affiliate.bonus} · {p.affiliate.bookmaker} →
-            </a>
-          )}
-          {p.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
-
-      {/* Deep Analysis — Premium only */}
-      {isPremium && (
-        <div className="deep-analysis-panel">
-          <div className="da-header">
-            <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{pick5(lang, { it: "Analisi approfondita", en: "Deep Analysis", es: "Análisis profundo", fr: "Analyse approfondie", ru: "Глубокий анализ" })}</span>
-          </div>
-          {(e.xg_home != null || e.xg_away != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Gol attesi", en: "Expected goals", es: "Goles esperados", fr: "Buts attendus", ru: "Ожидаемые голы" })}</span>
-              <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
-            </div>
-          )}
-          {e.goals_summary && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Risultato probabile", en: "Likely result", es: "Resultado probable", fr: "Résultat probable", ru: "Вероятный счёт" })}</span>
-              <span className="da-value">{e.goals_summary.band_low === e.goals_summary.band_high ? `${e.goals_summary.band_low}` : `${e.goals_summary.band_low}-${e.goals_summary.band_high}`} {pick5(lang, { it: "gol", en: "goals", es: "goles", fr: "buts", ru: "гола" })} ({Math.round(e.goals_summary.band_p * 100)}%)</span>
-            </div>
-          )}
-          {(() => {
-            const o25 = (e.extra_markets ?? []).find((m) => m.key === "over_2_5");
-            return o25 ? (
-              <div className="da-row">
-                <span className="da-label">Over 2.5</span>
-                <span className="da-value">{Math.round(o25.p * 100)}%</span>
-              </div>
-            ) : null;
-          })()}
-          {(e.form_home || e.form_away) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Forma", en: "Form", es: "Forma", fr: "Forme", ru: "Форма" })}</span>
-              <span className="da-value">{fmtFormAny(e.form_home) ?? "–"} vs {fmtFormAny(e.form_away) ?? "–"}</span>
-            </div>
-          )}
-          {(() => {
-            const ts = (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0];
-            return ts ? (
-              <div className="da-row">
-                <span className="da-label">{pick5(lang, { it: "Marcatore top", en: "Top scorer", es: "Goleador top", fr: "Buteur n°1", ru: "Топ-бомбардир" })}</span>
-                <span className="da-value">{ts.name} {Math.round(ts.pScores * 100)}%</span>
-              </div>
-            ) : null;
-          })()}
-          {(e.ppda_home != null || e.ppda_away != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Pressing", en: "Pressing", es: "Presión", fr: "Pressing", ru: "Прессинг" })}</span>
-              <span className="da-value">{e.ppda_home?.toFixed(1) ?? "–"} vs {e.ppda_away?.toFixed(1) ?? "–"}</span>
-            </div>
-          )}
-          {/* World Cup context rows — real venue/squad/sample data */}
-          {e.kind === "world_cup" && e.venue && (e.venue.travel_km_home != null || e.venue.travel_km_away != null) && (
-            <div className="da-row">
-              <span className="da-label">✈️ {pick5(lang, { it: "Trasferta", en: "Travel", es: "Viaje", fr: "Déplacement", ru: "Переезд" })}</span>
-              <span className="da-value">{e.venue.travel_km_home != null ? `${Math.round(e.venue.travel_km_home).toLocaleString()} km` : "–"} vs {e.venue.travel_km_away != null ? `${Math.round(e.venue.travel_km_away).toLocaleString()} km` : "–"}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && e.venue && (e.venue.rest_days_home != null || e.venue.rest_days_away != null) && (
-            <div className="da-row">
-              <span className="da-label">😴 {pick5(lang, { it: "Riposo", en: "Rest", es: "Descanso", fr: "Repos", ru: "Отдых" })}</span>
-              <span className="da-value">{e.venue.rest_days_home ?? "–"} vs {e.venue.rest_days_away ?? "–"} {pick5(lang, { it: "giorni", en: "days", es: "días", fr: "jours", ru: "дней" })}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && e.venue?.host_advantage && (
-            <div className="da-row">
-              <span className="da-label">🏟️ Host</span>
-              <span className="da-value">{e.venue.host_advantage}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && ((e.squad?.injuries_home?.length ?? 0) > 0 || (e.squad?.injuries_away?.length ?? 0) > 0) && (
-            <div className="da-row">
-              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni rosa", en: "Squad injuries", es: "Lesiones plantilla", fr: "Blessures effectif", ru: "Травмы состава" })}</span>
-              <span className="da-value">{e.squad?.injuries_home?.length ?? 0} vs {e.squad?.injuries_away?.length ?? 0}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && e.matches && (e.matches.home != null || e.matches.away != null) && (
-            <div className="da-row">
-              <span className="da-label">🗃️ {pick5(lang, { it: "Campione", en: "Sample", es: "Muestra", fr: "Échantillon", ru: "Выборка" })}</span>
-              <span className="da-value">{e.matches.home ?? "–"} vs {e.matches.away ?? "–"} {pick5(lang, { it: "partite", en: "matches", es: "partidos", fr: "matchs", ru: "матчей" })}</span>
-            </div>
-          )}
-          {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
-            <div className="da-row">
-              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
-              <span className="da-value">H:{e.injuries_home?.length ?? 0} · A:{e.injuries_away?.length ?? 0}</span>
-            </div>
-          )}
-          {e.weather && (
-            <div className="da-row">
-              <span className="da-label">{e.weather.icon} {pick5(lang, { it: "Meteo", en: "Weather", es: "Clima", fr: "Météo", ru: "Погода" })}</span>
-              <span className="da-value">{e.weather.temp}°C · {e.weather.condition} · {e.weather.wind}km/h</span>
-            </div>
-          )}
-          {(() => {
-            const pk = p.best_selection;
-            const pr = pk === "HOME" ? p.p_home : pk === "DRAW" ? p.p_draw : pk === "AWAY" ? p.p_away : null;
-            const od = pk === "HOME" ? p.odds_home : pk === "DRAW" ? p.odds_draw : pk === "AWAY" ? p.odds_away : null;
-            const mi = od && od > 0 ? 1 / od : null;
-            if (pr == null || mi == null) return null;
-            // #QW4: cap the value multiplier at DISPLAY only (source untouched);
-            // a stale-odds "+599%" reads as too-good-to-be-true for the fan.
-            const edFmt = p.edge == null ? null
-              : p.edge > 0 ? fmtValuePct(p.edge)
-              : { text: `${(p.edge * 100).toFixed(1)}%`, extreme: false };
-            const ed = edFmt ? ` (${edFmt.text})` : "";
-            return (
-              <>
-              <div className="da-row">
-                <span className="da-label">{pick5(lang, { it: "Modello vs Mercato", en: "Model vs Market", es: "Modelo vs Mercado", fr: "Modèle vs Marché", ru: "Модель vs Рынок" })}</span>
-                <span className={`da-value${edFmt?.extreme ? " is-extreme" : ""}`}>{Math.round(pr * 100)}% vs {Math.round(mi * 100)}%{ed}</span>
-              </div>
-              {/* #QW4: riga in chiaro — traduce l'edge per il tifoso non esperto.
-                  Solo quando il modello è davvero sopra l'implicita (edge > 0):
-                  altrimenti la frase non sarebbe onesta. */}
-              {pr > mi && (
-              <p className="da-plain">{pick5(lang, {
-                it: "Il modello stima questo esito più probabile di quanto lasci intendere la quota.",
-                en: "The model rates this outcome more likely than the odds imply.",
-                es: "El modelo estima este resultado más probable de lo que sugiere la cuota.",
-                fr: "Le modèle juge ce résultat plus probable que ne le suggère la cote.",
-                ru: "Модель считает этот исход более вероятным, чем следует из коэффициента.",
-              })}</p>
-              )}
-              </>
-            );
-          })()}
-          {e.extra_markets && e.extra_markets.some((m) => m.edge != null) && (
-            <div className="da-row da-markets-row">
-              <span className="da-label">{pick5(lang, { it: "Mercati", en: "Markets", es: "Mercados", fr: "Marchés", ru: "Рынки" })}</span>
-              <div className="da-markets-list">
-                {e.extra_markets.filter((m) => m.edge != null).slice(0, 4).map((m) => (
-                  <span key={m.key} className={`da-market-pill${m.edge != null && m.edge > 0.02 ? " value" : ""}`}>
-                    {m.label}{m.edge != null ? ` ${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%` : ""}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {e.research && (
-            <div className="da-research">
-              <span className="da-label"><GlyphModel size={12} /> AI</span>
-              <p className="da-research-text">{e.research}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Deep Analysis locked teaser — Base users only (demoted into expansion) */}
-      {!isPremium && (
-        <div className="deep-analysis-locked">
-          <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita disponibile con BetRedge Pro (29.99 USDT/mese)", en: "Deep analysis available with BetRedge Pro (29.99 USDT/month)", es: "Análisis profundo disponible con BetRedge Pro (29.99 USDT/mes)", fr: "Analyse approfondie disponible avec BetRedge Pro (29.99 USDT/mois)", ru: "Глубокий анализ доступен с BetRedge Pro (29.99 USDT/мес)" })}</span>
-        </div>
-      )}
-        </div>
-        )}
-      </div>
-    </>
-  );
-
-  // Locked / preview: nessun modal (gate / niente da rivelare) → resta il layout
-  // inline completo di prima, identico. Le card "vere" diventano una sintesi
-  // compatta cliccabile che apre la scheda-dettaglio.
-  if (!modalEnabled) {
-    return (
-      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud" {...cardProps}>
-        <McCardPhoto sport="football" i={idx} />
-        {headerNode}
-        {readoutNode}
-        {bodyNode}
-      </div></article>
-    );
-  }
+  // #RESTYLING-0921 round 5 — IL CORPO DELLA CARD È QUELLO DEL DESIGN SYSTEM.
+  //
+  // Fino al round 4 questa card disegnava da sé tre blocchi (`headerNode`,
+  // `readoutNode`, `bodyNode`: ~360 righe di `.pred.hud`, `.v2r`, `.da-*`) ed
+  // era l'ultima superficie viva del sito vecchio — la si incontra cliccando
+  // Football/Tennis in nav, «See all», «Explore» e da «View analysis» della
+  // lobby, cioè quasi ovunque oltre la prima schermata. Ora rende
+  // `PredictionCard` del design system, la STESSA della Home: un linguaggio
+  // solo su tutto il prodotto.
+  //
+  // Quello che la card faceva in linea (quote per esito, «Piazza la
+  // scommessa», mercati extra) NON è sparito: vive nella scheda-dettaglio che
+  // questo componente continua a possedere — il livello 2 del brief, dove c'è
+  // il tempo di leggerlo. «View analysis» la apre.
+  const cardData = fromDeskFootball(p, {
+    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
+    drawLabel: pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" }),
+    kickoffLabel: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
+    isLive: isLive || isPaused,
+    liveMinute: live?.minute ?? null,
+  });
+  const matchKey = `football:${p.match_id}`;
 
   return (
     <>
-      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud is-clickable" {...cardProps}>
-        <McCardPhoto sport="football" i={idx} />
-        {headerNode}
-        {readoutNode}
-        <div className="pred-more" aria-hidden="true">
-          <span className="pm-lab">{pick5(lang, { it: "Apri scheda completa", en: "Open full card", es: "Abrir ficha completa", fr: "Ouvrir la fiche complète", ru: "Открыть карточку" })}</span>
-          <span className="pm-chev" />
-        </div>
-      </div></article>
-      <PredictionDetailModal
-        open={modalOpen}
-        onClose={closeModal}
-        anchorRect={modalRect}
-        titleId={modalTitleId}
-        lang={lang}
-        title={<>{p.home_team} <span className="pdm-v">v</span> {p.away_team}</>}
-        subtitle={p.league_name || p.league}
-        hideHead
-        hideExtraMarkets
-      >
-        <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
-      </PredictionDetailModal>
+      {/* Il `ref` di `useDetailModal` serve a misurare DA DOVE si apre la
+          scheda. Solo il ref: `role="button"`/`tabIndex`/`onClick` degli
+          stessi `cardProps` farebbero dell'intera card un bersaglio, e la card
+          nuova ne ha di proposito uno solo — la CTA. */}
+      <div ref={cardProps.ref} className="br-board-card">
+        <BrPredictionCard
+          data={cardData}
+          variant={p.locked ? "premiumLocked" : isLive || isPaused ? "live" : "compact"}
+          href={`${TAB_PATHS.bets}?match=${encodeURIComponent(matchKey)}`}
+          saved={saved}
+          onToggleWatchlist={onToggleWatch ? () => onToggleWatch(matchKey) : undefined}
+          onOpen={(ev) => {
+            ev.preventDefault();
+            // Riga chiusa o anteprima: la CTA è «Unlock full analysis» e porta
+            // al gate, non a una scheda che non abbiamo il diritto di aprire.
+            if (!modalEnabled) { onGate?.(); return; }
+            trackEvent("card_open", { meta: { surface: "board", sport: "football" } });
+            openModal();
+          }}
+          extra={cardData.confidence != null && !p.locked ? <ConfidenceIndicator score={cardData.confidence} /> : undefined}
+        />
+      </div>
+      {modalEnabled && (
+        <PredictionDetailModal
+          open={modalOpen}
+          onClose={closeModal}
+          anchorRect={modalRect}
+          titleId={modalTitleId}
+          lang={lang}
+          title={<>{p.home_team} <span className="pdm-v">v</span> {p.away_team}</>}
+          subtitle={p.league_name || p.league}
+          hideHead
+          hideExtraMarkets
+        >
+          <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
+        </PredictionDetailModal>
+      )}
     </>
   );
 }
@@ -6058,7 +5724,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 
 // #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
-export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean }) {
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, saved, onToggleWatch }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; saved?: boolean; onToggleWatch?: (key: string) => void }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -6300,265 +5966,53 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
     if (autoOpen && modalEnabled) openModal();
   }, [autoOpen, modalEnabled, openModal]);
 
-  const headerNode = (
-    <>
-      {/* top: surface glyph + tournament + when */}
-      <div className="top">
-        <div className="comp">
-          <SportIcon sport="tennis" size={15} className="sgi" variant="sm" />
-          <span className="league">{m.tournament}</span>
-          {m.round && <span className="rnd">{m.round}</span>}
-        </div>
-        {liveIsOn ? (
-          <span className="when live"><span className="pulse" />live</span>
-        ) : (
-          <span className="when">{scheduledDate}</span>
-        )}
-      </div>
-
-      {/* fixture + scorebar */}
-      <div className="fx">
-        <div className="teams">{m.player1}<span className="vs">v</span>{m.player2}</div>
-        {liveMatch ? (
-          <div className="scorebar">
-            <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
-            <span className="sc">{liveSetsLabel || "0-0"}</span>
-            <span className="grow" />
-            {liveMatch.status_detail && <span className="verd">{liveMatch.status_detail}</span>}
-          </div>
-        ) : (
-          <div className="scorebar">
-            <span className="stt">{pick5(lang, { it: "Programmato", en: "Scheduled", es: "Programado", fr: "Programmé", ru: "Запланирован" })}</span>
-            <span className="sc sched">{scheduledDate} · {surface.label}</span>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  const readoutNode = (
-    <>
-      {/* verdict line + rows / gate overlay */}
-      {m.locked ? (
-        <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
-            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
-            vietate dalla regola standing di giugno E promettevano una struttura
-            che il prodotto sbloccato non ha (pronostico + quota + value). Un
-            lucchetto su una struttura vera converte meglio di una promessa
-            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
-          <div className="v2r is-locked" aria-hidden="true">
-            <div className="v2r-l">
-              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
-              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
-            </div>
-            <div className="v2r-q">
-              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-            </div>
-          </div>
-          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
-              anonimo, falso per un Free che il login l'ha gia' fatto e che da
-              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
-              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
-              cosa dell'azione. */}
-          <span className="locked-cta">{isFree
-            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
-            : t.locked_title}</span>
-        </div>
-      ) : (
-        <>
-          <div
-            className={`v2r${onSelect && isValue && pickPlayer ? " sel" : ""}`}
-            onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
-          >
-            <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
-                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
-                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
-                  dalla scheda. Su 8 schede della board 6 la portavano, e la
-                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
-                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
-                  nostro pronostico», l'esito non dice «vince», edge e value
-                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
-              {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
-              )}
-            </div>
-            <div className="v2r-q">
-              {isPreview ? (
-                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-              ) : (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{pickProb != null ? pct(pickProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
-                  {(fpPickOdds != null || (!belowFloor && fpValue != null && fpValue > 0)) ? (
-                    <span className="v2r-sub">{fpPickOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {fpPickOdds.toFixed(2)}</> : null}{(!belowFloor && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-
-  const bodyNode = (
-    <>
-      {/* WHY — Elo readout + expandable analysis */}
-      <div className="why">
-        <details className="why-box">
-          <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
-          <p className="why-txt">
-            {isPreview
-              ? (lang === "it"
-                  ? "Il ragionamento del modello e l'edge sono riservati al piano Pro. Sblocca per leggere perché il modello sceglie questo pronostico."
-                  : "The model's reasoning and edge are reserved for the Pro plan. Unlock to read why the model makes this call.")
-              : buildTennisWhy(m, lang)}
-          </p>
-          {!isPreview && (
-            <button className="why-more" onClick={handleWhyClick}>
-              {loadingAnalysis
-                ? pick5(lang, { it: "Carico l'analisi…", en: "Loading analysis…", es: "Cargando análisis…", fr: "Chargement de l'analyse…", ru: "Загрузка анализа…" })
-                : showWhy
-                  ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
-                  : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
-            </button>
-          )}
-        </details>
-
-        {/* footer action row */}
-        <div className="act">
-          {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (via onBetNow). */}
-          {!isPreview && onBetNow && (liveIsFinal ? (
-            <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
-          ) : (
-            <button className="betbtn" onClick={fp?.matchUrl ? () => window.open(fp.matchUrl, "_blank", "noopener,noreferrer") : onBetNow}>{t.bet_now}</button>
-          ))}
-          <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
-          <span className="gate">Pro</span>
-        </div>
-
-        {/* expandable analysis body */}
-        {isPreview ? (
-          <div className="nudge">
-            <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
-            <em>{pick5(lang, { it: "Sblocca edge%, analisi del modello e segnali tennis con Pro (29.99 USDT/mese).", en: "Unlock edge%, model analysis and tennis signals with Pro (29.99 USDT/month).", es: "Desbloquea edge%, análisis del modelo y señales de tenis con Pro (29.99 USDT/mes).", fr: "Débloquez edge%, analyse du modèle et signaux tennis avec Pro (29.99 USDT/mois).", ru: "Откройте edge%, анализ модели и теннисные сигналы с Pro (29.99 USDT/мес)." })}</em>
-          </div>
-        ) : showWhy && (
-        <div className="why-body">
-          {/* AI analysis — shown first when available */}
-          {aiAnalysis && lang === "it" ? (
-            <>
-              <div className="wlab"><GlyphModel size={12} /> {t.tennis_ai_label}</div>
-              <p className="why-prose mono">{aiAnalysis}</p>
-            </>
-          ) : loadingAnalysis ? (
-            <p className="why-prose">{t.tennis_ai_loading}</p>
-          ) : null}
-
-          {m.pick && (
-            <p className="why-prose mono">Pick: <strong>{m.pick}</strong>{m.confidence_score != null ? ` · ${m.confidence_score}%` : ""}</p>
-          )}
-
-          {/* Affiliate bonus CTA + pick-of-day — demoted into the expansion */}
-          {m.affiliate && (
-            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
-              {m.affiliate.bonus} · {m.affiliate.bookmaker} →
-            </a>
-          )}
-          {m.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
-
-      {/* Deep Analysis — Premium only */}
-      {isPremium && (
-        <div className="deep-analysis-panel">
-          <div className="da-header">
-            <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{pick5(lang, { it: "Analisi del modello", en: "Model analysis", es: "Análisis del modelo", fr: "Analyse du modèle", ru: "Анализ модели" })}</span>
-          </div>
-          <div className="da-row">
-            <span className="da-label">{pick5(lang, { it: "Forza sulla superficie", en: "Strength on this surface", es: "Fuerza en esta superficie", fr: "Niveau sur cette surface", ru: "Сила на этом покрытии" })}</span>
-            <span className="da-value">{m.elo_p1?.toFixed(0) ?? "–"} vs {m.elo_p2?.toFixed(0) ?? "–"}</span>
-          </div>
-          {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Forza generale", en: "Overall strength", es: "Fuerza general", fr: "Niveau général", ru: "Общая сила" })}</span>
-              <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
-            </div>
-          )}
-          {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Match su questa superficie", en: "Matches on this surface", es: "Partidos en esta superficie", fr: "Matchs sur cette surface", ru: "Матчи на покрытии" })}</span>
-              <span className="da-value">{m.surface_matches_p1 ?? "–"} vs {m.surface_matches_p2 ?? "–"}</span>
-            </div>
-          )}
-          {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Probabilità modello", en: "Model probability", es: "Probabilidad del modelo", fr: "Probabilité du modèle", ru: "Вероятность модели" })}</span>
-              <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
-            </div>
-          )}
-          {(m.h2h_p1_wins != null || m.h2h_p2_wins != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Testa a testa", en: "Head-to-head", es: "Cara a cara", fr: "Confrontations", ru: "Личные встречи" })}</span>
-              <span className="da-value">{m.h2h_p1_wins ?? 0}–{m.h2h_p2_wins ?? 0}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Deep Analysis locked teaser — Base users only (demoted into expansion) */}
-      {!isPremium && (
-        <div className="deep-analysis-locked">
-          <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita del modello disponibile con BetRedge Pro (29.99 USDT/mese)", en: "Deep model analysis available with BetRedge Pro (29.99 USDT/month)", es: "Análisis profundo del modelo disponible con BetRedge Pro (29.99 USDT/mes)", fr: "Analyse approfondie du modèle disponible avec BetRedge Pro (29.99 USDT/mois)", ru: "Глубокий анализ модели доступен с BetRedge Pro (29.99 USDT/мес)" })}</span>
-        </div>
-      )}
-        </div>
-        )}
-      </div>
-    </>
-  );
-
-  if (!modalEnabled) {
-    return (
-      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis" {...cardProps}>
-        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
-        {headerNode}
-        {readoutNode}
-        {bodyNode}
-      </div></article>
-    );
-  }
+  // #RESTYLING-0921 round 5 — vedi la card calcio: il corpo è
+  // `PredictionCard` del design system, la stessa della Home. I tre blocchi
+  // che questa card disegnava da sé (`headerNode`/`readoutNode`/`bodyNode`,
+  // ~220 righe di `.pred.hud.tennis`) erano l'altra metà del sito vecchio.
+  // Quote, set e mercati restano nella scheda-dettaglio, che apre «View
+  // analysis».
+  const cardData = fromDeskTennis(m, {
+    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
+    kickoffLabel: scheduledDate,
+    isLive: liveIsOn,
+    liveMinute: liveIsOn && liveSetsLabel ? liveSetsLabel : null,
+  });
+  const matchKey = `tennis:${m.id}`;
 
   return (
     <>
-      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis is-clickable" {...cardProps}>
-        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
-        {headerNode}
-        {readoutNode}
-        <div className="pred-more" aria-hidden="true">
-          <span className="pm-lab">{pick5(lang, { it: "Apri scheda completa", en: "Open full card", es: "Abrir ficha completa", fr: "Ouvrir la fiche complète", ru: "Открыть карточку" })}</span>
-          <span className="pm-chev" />
-        </div>
-      </div></article>
-      <PredictionDetailModal
-        open={modalOpen}
-        onClose={closeModal}
-        anchorRect={modalRect}
-        titleId={modalTitleId}
-        lang={lang}
-        title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
-        subtitle={<>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
-        hideHead
-        hideExtraMarkets
-      >
-        <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
-      </PredictionDetailModal>
+      <div ref={cardProps.ref} className="br-board-card">
+        <BrPredictionCard
+          data={cardData}
+          variant={m.locked ? "premiumLocked" : liveIsOn ? "live" : "compact"}
+          href={`${TAB_PATHS.bets}?match=${encodeURIComponent(matchKey)}`}
+          saved={saved}
+          onToggleWatchlist={onToggleWatch ? () => onToggleWatch(matchKey) : undefined}
+          onOpen={(ev) => {
+            ev.preventDefault();
+            if (!modalEnabled) { onGate?.(); return; }
+            trackEvent("card_open", { meta: { surface: "board", sport: "tennis" } });
+            openModal();
+          }}
+          extra={cardData.confidence != null && !m.locked ? <ConfidenceIndicator score={cardData.confidence} /> : undefined}
+        />
+      </div>
+      {modalEnabled && (
+        <PredictionDetailModal
+          open={modalOpen}
+          onClose={closeModal}
+          anchorRect={modalRect}
+          titleId={modalTitleId}
+          lang={lang}
+          title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
+          subtitle={<>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
+          hideHead
+          hideExtraMarkets
+        >
+          <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
+        </PredictionDetailModal>
+      )}
     </>
   );
 }

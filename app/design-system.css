@@ -1559,3 +1559,158 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   color: var(--am-muted);
   max-width: 68ch;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * BOARD («Explore») — #RESTYLING-0921 round 5 (2026-09-22)
+ *
+ * `SportsbookBoard` è la superficie più usata del prodotto — ci si arriva da
+ * Football/Tennis in nav, da «See all», da «Explore» e da «View analysis» —
+ * ed è l'unica che i round 1-4 non avevano toccato: filtri, bande sport e
+ * card erano ancora del sito vecchio, così oltre la prima schermata il
+ * redesign finiva di colpo.
+ *
+ * Le card ora sono `.br-card` (il componente della Home). Qui restano i
+ * CONTROLLI, portati sugli stessi token: niente `--am-coral` (il verde del
+ * brand vecchio) sul segmento attivo, niente pannello azzurrino attorno ai
+ * filtri, e il titolo di sezione nella voce della casa — Saira Condensed
+ * maiuscolo, la stessa di `.br-sec__title`.
+ *
+ * Le classi vecchie restano in piedi sotto (`.am-filters`, `.sport-band`,
+ * `.am-grid`): qui si aggiunge un secondo nome sullo stesso elemento e si
+ * sovrascrive quel che è fuori sistema. Riscrivere il board da zero avrebbe
+ * voluto dire rifare anche il cap mobile e la collocazione dei banner house,
+ * che funzionano.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.br-board { display: grid; gap: var(--am-s-4); padding: var(--am-s-4) var(--am-s-4) var(--am-s-6); }
+
+/* ── La barra dei filtri ─────────────────────────────────────────────────── */
+.sports-filter-bar.br-filters {
+  gap: var(--am-s-2);
+  padding: var(--am-s-3);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  /* Era `rgba(59,130,246,0.035)`, un azzurro fuori dai token: la barra
+     sembrava un pannello di configurazione appiccicato sopra il contenuto. */
+  background: var(--am-panel);
+}
+
+.br-filters .am-seg {
+  background: var(--am-inset);
+  border-color: var(--am-line);
+  border-radius: var(--am-r-ctl);
+}
+.br-filters .am-seg button {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--am-muted);
+}
+.br-filters .am-seg button:hover:not(.on) { background: var(--am-royal-dim); color: var(--am-text); }
+.br-filters .am-seg button.on {
+  background: var(--am-royal-dim);
+  color: var(--am-royal);
+  box-shadow: inset 0 0 0 1px var(--am-royal-b);
+}
+.br-filters .am-seg button.on .ct { color: var(--am-royal); opacity: 0.85; }
+.br-filters .am-seg button .ct { font-family: var(--am-font-num); }
+.br-filters .am-seg button:focus-visible { outline: 2px solid var(--am-royal); outline-offset: -2px; }
+/* Le icone sport dei segmenti sono i raster della casa: ritagliati, quindi
+   niente cornice né disco attorno (stessa regola di `.br-chip__ico`). */
+.br-filters .am-seg button .ic { border-radius: 3px; }
+
+.br-filters .am-mini-field > span {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--am-muted-2);
+}
+.br-filters .am-mini-field select {
+  font-family: var(--am-font-num);
+  font-size: 11.5px;
+  border-radius: var(--am-r-ctl);
+  border-color: var(--am-line);
+}
+.br-filters .am-mini-field select:focus-visible {
+  border-color: var(--am-royal);
+  box-shadow: 0 0 0 2px var(--am-royal-dim);
+}
+.br-filters .am-search {
+  border-radius: var(--am-r-ctl);
+  border-color: var(--am-line);
+  background: var(--am-inset);
+}
+.br-filters .am-search:focus-within { border-color: var(--am-royal); }
+.br-filters .am-search input { font-family: var(--am-font-ui); font-size: 13px; }
+
+/* ── La banda di sezione (Football / Tennis) ─────────────────────────────── */
+.sport-band.br-band { margin: var(--am-s-5) 0 var(--am-s-3); gap: var(--am-s-3); }
+/* Il PNG è già ritagliato sulla sua tile: il disco bordato attorno lo tagliava
+   (stessa lezione delle sport-tile del round 4). */
+.sport-band.br-band .glyph {
+  width: 28px; height: 28px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+/* La misura la dà `size` sul componente (stile inline): qui solo l'angolo. */
+.sport-band.br-band .glyph img { border-radius: 6px; }
+.sport-band.br-band h2 {
+  font-family: var(--am-font-hud);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-text);
+}
+.sport-band.br-band .ct,
+.sport-band.br-band .note {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+/* L'ambra della banda tennis era l'ultimo colore-per-sport rimasto: il round 3
+   ha deciso un elemento colorato per superficie, e qui è il segno LIVE. */
+.sport-band.amber.br-band .glyph svg { color: var(--am-muted); }
+
+/* ── La griglia ──────────────────────────────────────────────────────────── */
+/* Doppia classe per battere `.am-grid` (12 colonne fisse, con `.card` a span 4
+   e `.card.tennis` a span 3): le card nuove non sono `.card`, quindi senza
+   questo finirebbero una per colonna. Stessa misura di `.br-sec__grid`, così
+   una card è larga uguale sulla Home e qui. */
+.am-grid.br-board-grid {
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: var(--am-s-3);
+  padding: 0 0 var(--am-s-3);
+  align-items: start;
+}
+.br-board-card { min-width: 0; display: grid; }
+.am-grid.br-board-grid > .free-paywall.fp-in-grid,
+.am-grid.br-board-grid > .house-banner.hb-billboard,
+.am-grid.br-board-grid > .house-banner.hb-leaderboard { grid-column: 1 / -1; }
+.am-grid.br-board-grid > .house-banner.hb-rectangle,
+.am-grid.br-board-grid > .house-banner.hb-halfpage { grid-column: span 2; }
+
+.book-empty.br-board-empty {
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--am-muted);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  background: var(--am-panel);
+  padding: var(--am-s-5);
+}
+
+@media (max-width: 640px) {
+  .br-board { padding: var(--am-s-3) var(--am-s-3) var(--am-s-6); }
+  .am-grid.br-board-grid { grid-template-columns: 1fr; }
+  .sport-band.br-band h2 { font-size: 22px; }
+}
