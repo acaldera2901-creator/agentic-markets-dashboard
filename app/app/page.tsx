@@ -8216,13 +8216,13 @@ function FeaturedEdge({
 
   // Locked / teaser variant — never expose pick name or probability.
   if (!isPremiumClient) {
-    // #RESTYLING-0921 round 5 — `br-edge` al posto di `edge-chamfer chamfer`:
+    // #RESTYLING-0921 round 5 — `br-edgeday` al posto di `edge-chamfer chamfer`:
     // il blocco era l'ultimo pannello con fotografia di scena, velo, alone e
     // angoli smussati, e accanto al board rifatto stonava. Le classi INTERNE
     // restano (`.big`, `.why`, `.eyebrow`…): cambia il trattamento, non il
     // contenuto né la struttura.
     return (
-      <div className="br-edge">
+      <div className="br-edgeday">
       <section className={`featured featured-locked is-${sport}`} aria-label={eyebrow}>
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
@@ -8257,7 +8257,7 @@ function FeaturedEdge({
   }
 
   return (
-    <div className="br-edge">
+    <div className="br-edgeday">
     <section className={`featured is-${sport}`} aria-label={eyebrow}>
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>

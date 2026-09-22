@@ -1806,21 +1806,13 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
  * ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Edge del giorno ─────────────────────────────────────────────────────── */
-.br-edge { min-width: 0; }
-/* ATTENZIONE: `.br-edge` in cima a questo file è il BADGE numerico (inline-flex,
-   mono, 700, nowrap, line-height 1). Qui lo stesso nome fa da contenitore del
-   blocco, quindi il pannello ereditava tutta quella tipografia: la frase del
-   modello restava su una riga sola e veniva tagliata a metà parola, e le
-   etichette giravano in mono. Finché i due nomi non vengono separati, il
-   contenitore si rimette in tipografia di testo. */
-.edge-split > .br-edge {
-  font-family: var(--am-font-ui);
-  font-weight: 400;
-  letter-spacing: normal;
-  line-height: normal;
-  white-space: normal;
-}
-.br-edge > .featured {
+.br-edgeday { min-width: 0; }
+/* Il contenitore si chiama `br-edgeday`, non `br-edge`: quel nome è già il
+   BADGE numerico in cima a questo file (inline-flex, mono, 700, nowrap,
+   line-height 1). Con lo stesso nome il pannello ne ereditava la tipografia —
+   la frase del modello restava su una riga e veniva tagliata a metà parola, le
+   etichette giravano in mono. Due cose diverse, due nomi diversi. */
+.br-edgeday > .featured {
   margin: 0;
   background: var(--am-panel);
   border: 1px solid var(--am-line);
@@ -1832,19 +1824,19 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 /* `::before` era la fotografia, `::after` il velo che la teneva leggibile, e
    la regola base ci aggiungeva un radiale verde. Spenti tutti e tre: la
    profondità la fanno superficie e bordo (round 3). */
-.br-edge > .featured::before,
-.br-edge > .featured::after { content: none; background: none; }
+.br-edgeday > .featured::before,
+.br-edgeday > .featured::after { content: none; background: none; }
 /* Il pannello ora è CHIARO in tema chiaro: cadono gli override che forzavano
    verde e bianco perché sotto c'era una foto notturna in entrambi i temi. */
-:root[data-theme="light"] .br-edge .featured .eyebrow { color: var(--am-muted-2); }
-:root[data-theme="light"] .br-edge .featured .hero-prob .num { color: var(--am-text); }
-:root[data-theme="light"] .br-edge .featured .hero-prob .num .pc { color: var(--am-edge); }
-:root[data-theme="light"] .br-edge .featured .eyebrow .dot { background: none; }
+:root[data-theme="light"] .br-edgeday .featured .eyebrow { color: var(--am-muted-2); }
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .num { color: var(--am-text); }
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .num .pc { color: var(--am-edge); }
+:root[data-theme="light"] .br-edgeday .featured .eyebrow .dot { background: none; }
 
 /* `:root` per pareggiare machina.css (`[data-mc-ground] .eyebrow`, 0-4-0), che
    colora l'occhiello col verde della scena: qui l'elemento colorato è il
    numero, non la sua etichetta. */
-:root .br-edge .featured .eyebrow {
+:root .br-edgeday .featured .eyebrow {
   font-family: var(--am-font-ui);
   font-size: var(--am-label);
   font-weight: 500;
@@ -1853,16 +1845,16 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   margin-bottom: var(--am-s-3);
 }
 /* La tacca obliqua accanto all'occhiello era decorazione: la label sta da sé. */
-.br-edge .featured .eyebrow .dot { display: none; }
+.br-edgeday .featured .eyebrow .dot { display: none; }
 
-.br-edge .featured .fxname {
+.br-edgeday .featured .fxname {
   font-family: var(--am-font-ui);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--am-text);
 }
-.br-edge .featured .league {
+.br-edgeday .featured .league {
   font-family: var(--am-font-num);
   font-size: 11px;
   font-weight: 500;
@@ -1871,17 +1863,17 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   color: var(--am-muted-2);
 }
 /* Il filo d'accento verticale accanto al numero: un effetto in meno. */
-.br-edge .featured .hero-prob { padding-left: 0; }
-.br-edge .featured .hero-prob::before { content: none; }
-.br-edge .featured .hero-prob .num {
+.br-edgeday .featured .hero-prob { padding-left: 0; }
+.br-edgeday .featured .hero-prob::before { content: none; }
+.br-edgeday .featured .hero-prob .num {
   font-family: var(--am-font-num);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   color: var(--am-text);
 }
-.br-edge .featured .hero-prob .num .pc { color: var(--am-edge); }
-.br-edge .featured .hero-prob .subl {
+.br-edgeday .featured .hero-prob .num .pc { color: var(--am-edge); }
+.br-edgeday .featured .hero-prob .subl {
   font-family: var(--am-font-ui);
   font-size: var(--am-label);
   font-weight: 500;
@@ -1890,7 +1882,7 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   color: var(--am-muted-2);
 }
 /* Il chip dell'edge: outline monocromo come `.br-badge`, non una pillola piena. */
-.br-edge .featured .edge {
+.br-edgeday .featured .edge {
   border-radius: var(--am-r-ctl);
   clip-path: none;
   border: 1px solid var(--am-line-2);
@@ -1902,9 +1894,9 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.br-edge .featured .edge svg { color: var(--am-edge); }
+.br-edgeday .featured .edge svg { color: var(--am-edge); }
 /* La CTA del gate: lo stesso outline verde di `.br-cta[data-tone="unlock"]`. */
-.br-edge .featured .featured-unlock {
+.br-edgeday .featured .featured-unlock {
   border-radius: var(--am-r-ctl);
   clip-path: none;
   border: 1px solid var(--am-edge-b);
@@ -1914,8 +1906,8 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   font-size: 13px;
   font-weight: 600;
 }
-.br-edge .featured .featured-unlock:hover { background: var(--am-edge-b); filter: none; }
-.br-edge .featured .why .wlab {
+.br-edgeday .featured .featured-unlock:hover { background: var(--am-edge-b); filter: none; }
+.br-edgeday .featured .why .wlab {
   font-family: var(--am-font-ui);
   font-size: var(--am-label);
   font-weight: 500;
@@ -1923,16 +1915,16 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   text-transform: uppercase;
   color: var(--am-muted-2);
 }
-.br-edge .featured .why .wlab .tri { color: var(--am-muted-2); }
-.br-edge .featured .why .line { color: var(--am-muted); font-family: var(--am-font-ui); }
-.br-edge .featured .why dt {
+.br-edgeday .featured .why .wlab .tri { color: var(--am-muted-2); }
+.br-edgeday .featured .why .line { color: var(--am-muted); font-family: var(--am-font-ui); }
+.br-edgeday .featured .why dt {
   font-family: var(--am-font-ui);
   font-size: var(--am-label);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--am-muted-2);
 }
-.br-edge .featured .why dd .tnum { font-family: var(--am-font-num); color: var(--am-text); }
+.br-edgeday .featured .why dd .tnum { font-family: var(--am-font-num); color: var(--am-text); }
 
 /* ── Weekly Model Case ───────────────────────────────────────────────────── */
 /* La classe `wp-promo` resta sull'elemento solo per la sua collocazione nella
@@ -2003,28 +1995,28 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
    (`[data-mc-ground] .eyebrow::before`, 0-4-0). Il `:root` davanti serve a
    pareggiare quella specificità: design-system.css viene dopo, quindi vince.
    Scritta senza, la regola sembrava applicata e non lo era. */
-:root .br-edge .featured .eyebrow::before { content: none; }
+:root .br-edgeday .featured .eyebrow::before { content: none; }
 
 /* Il pannello dell'Edge era SCURO in entrambi i temi, perché sotto c'era una
    fotografia notturna: da lì una serie di override che in tema chiaro
    forzavano bianco e grigio-chiaro sul testo. Ora il pannello è `--am-panel`,
    quindi in chiaro quel testo era bianco su bianco — invisibile, misurato allo
    screenshot. Ogni riga qui rimette il token giusto. */
-:root[data-theme="light"] .br-edge .featured .fxname,
-:root[data-theme="light"] .br-edge .featured .hero-prob .pickname { color: var(--am-text); }
-:root[data-theme="light"] .br-edge .featured .hero-prob .pickname.locked-text { color: var(--am-muted); }
-:root[data-theme="light"] .br-edge .featured .league,
-:root[data-theme="light"] .br-edge .featured .hero-prob .subl,
-:root[data-theme="light"] .br-edge .featured .edge-plain { color: var(--am-muted-2); }
-:root[data-theme="light"] .br-edge .featured .edge,
-:root[data-theme="light"] .br-edge .featured .edge.is-extreme {
+:root[data-theme="light"] .br-edgeday .featured .fxname,
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .pickname { color: var(--am-text); }
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .pickname.locked-text { color: var(--am-muted); }
+:root[data-theme="light"] .br-edgeday .featured .league,
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .subl,
+:root[data-theme="light"] .br-edgeday .featured .edge-plain { color: var(--am-muted-2); }
+:root[data-theme="light"] .br-edgeday .featured .edge,
+:root[data-theme="light"] .br-edgeday .featured .edge.is-extreme {
   color: var(--am-muted);
   border-color: var(--am-line-2);
   background: none;
 }
-:root[data-theme="light"] .br-edge .featured .edge svg,
-:root[data-theme="light"] .br-edge .featured .edge.is-extreme svg { color: var(--am-edge); }
-:root[data-theme="light"] .br-edge .featured .featured-unlock {
+:root[data-theme="light"] .br-edgeday .featured .edge svg,
+:root[data-theme="light"] .br-edgeday .featured .edge.is-extreme svg { color: var(--am-edge); }
+:root[data-theme="light"] .br-edgeday .featured .featured-unlock {
   color: var(--am-edge);
   border-color: var(--am-edge-b);
   background: var(--am-edge-dim);
