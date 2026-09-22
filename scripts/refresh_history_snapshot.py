@@ -32,6 +32,10 @@ FAIL-CLOSED SULLE SORGENTI: se una sorgente non risponde o torna zero partite,
 il blocco di quella lega NON viene sovrascritto — si tiene quello precedente e
 lo si segnala. Un download andato male non deve mai degradare il board (era il
 buco di gen_summer_history.py, che riscriveva il file da zero).
+Ogni lega distingue fetched_at (download riuscito) da last_match_at (data
+dell'ultima partita). Un fallimento conserva i dati e fetched_at precedenti,
+scrive refresh_status/refresh_error ed esce 1 anche se altre leghe riescono.
+generated_at avanza solo quando tutte le sorgenti richieste riescono.
 
 Run (dalla radice del repo, nessun path da modificare):
     PYTHONUTF8=1 python scripts/refresh_history_snapshot.py [--out <altro-repo>]
@@ -46,10 +50,12 @@ import argparse
 import csv
 import io
 import json
+import os
+import tempfile
 import sys
 import unicodedata
 import urllib.request
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
 
@@ -344,11 +350,11 @@ def collect_mmz_league(code: str, div: str, slug: str, since: date,
     cur = today.year if today.month >= 7 else today.year - 1
     raw: list[tuple[str, str, int, int, date]] = []
     for yr in (cur - 1, cur):
-        try:
-            fdms = fd.parse_csv(fd.download_csv(code, yr), code)
-        except Exception as e:  # noqa: BLE001
-            print(f"  · {code} stagione {yr}/{yr + 1} non disponibile ({type(e).__name__}) — normale prima del via")
-            continue
+        # Both seasons cover the requested rolling window. A failed download
+        # must not silently replace the complete old block with partial history.
+        fdms = fd.parse_csv(fd.download_csv(code, yr), code)
+        if not fdms:
+            raise ValueError(f"empty season {yr}/{yr + 1} for {code}")
         for m in fdms:
             if m.date < since:
                 continue
@@ -405,44 +411,64 @@ def main() -> int:
     print(f"snapshot precedente: generated_at={doc.get('generated_at')} · leghe={len(prev)}")
     print(f"finestra: dal {since} a oggi\n")
 
+    attempted_at = datetime.now(timezone.utc).isoformat()
     kept_stale: list[str] = []
-    for code, (cc, slug) in NEW_LEAGUES.items():
+    succeeded = 0
+    sources = [
+        (code, cc, slug, collect_new_league, FD_NEW.format(cc=cc))
+        for code, (cc, slug) in NEW_LEAGUES.items()
+    ] + [
+        (code, div, slug, collect_mmz_league,
+         f"https://www.football-data.co.uk/mmz4281/{{season}}/{div}.csv")
+        for code, (div, slug) in MMZ_LEAGUES.items()
+    ]
+    for code, source_code, slug, collect, source in sources:
+        before = prev.get(code, {})
         try:
-            matches, unmatched = collect_new_league(code, cc, slug, since, teams_of(prev.get(code, {})))
+            matches, unmatched = collect(code, source_code, slug, since, teams_of(before))
+            if not matches:
+                raise ValueError("zero matches in requested window")
         except Exception as e:  # noqa: BLE001
-            print(f"{code}: SORGENTE NON RAGGIUNTA ({type(e).__name__}) — tengo il blocco precedente")
+            print(f"{code}: SORGENTE NON AGGIORNATA ({type(e).__name__}: {e}) - tengo il blocco precedente")
             kept_stale.append(code)
-            continue
-        if not matches:
-            print(f"{code}: zero partite in finestra — tengo il blocco precedente (fail-closed)")
-            kept_stale.append(code)
-            continue
-        report(code, prev.get(code, {}), matches, unmatched)
-        doc["leagues"][code] = {"espn_slug": slug or "", "matches": matches}
-        doc.setdefault("unmatched", {})[code] = sorted(unmatched)
+            block = dict(before)
+            block.setdefault("matches", [])
+            block.setdefault("espn_slug", slug or "")
+            # Legacy generated_at is not proof that this league was fetched.
+            block.setdefault("fetched_at", None)
+            block.update(refresh_status="failed", refresh_error=f"{type(e).__name__}: {e}")
+        else:
+            report(code, before, matches, unmatched)
+            block = {"espn_slug": slug or "", "matches": matches,
+                     "fetched_at": attempted_at, "refresh_status": "ok", "refresh_error": None}
+            doc.setdefault("unmatched", {})[code] = sorted(unmatched)
+            succeeded += 1
+        block.update(attempted_at=attempted_at, source=source,
+                     last_match_at=max((m["date"] for m in block["matches"]), default=None))
+        doc.setdefault("leagues", {})[code] = block
 
-    for code, (div, slug) in MMZ_LEAGUES.items():
-        try:
-            matches, unmatched = collect_mmz_league(code, div, slug, since, teams_of(prev.get(code, {})))
-        except Exception as e:  # noqa: BLE001
-            print(f"{code}: SORGENTE NON RAGGIUNTA ({type(e).__name__}) — tengo il blocco precedente")
-            kept_stale.append(code)
-            continue
-        if not matches:
-            print(f"{code}: zero partite in finestra — tengo il blocco precedente (fail-closed)")
-            kept_stale.append(code)
-            continue
-        report(code, prev.get(code, {}), matches, unmatched)
-        doc["leagues"][code] = {"espn_slug": slug, "matches": matches}
-        doc.setdefault("unmatched", {})[code] = sorted(unmatched)
-
-    doc["generated_at"] = str(date.today())
+    doc["refresh_attempted_at"] = attempted_at
+    doc["refresh_status"] = "partial" if kept_stale and succeeded else "failed" if kept_stale else "ok"
+    doc["failed_leagues"] = kept_stale
+    if not kept_stale:
+        doc["generated_at"] = str(date.today())
     doc["window_days"] = WINDOW_DAYS
-    target.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+    # Publish one complete JSON file, including failures, without truncating the
+    # previous snapshot if serialization or the disk write fails.
+    fd, temporary = tempfile.mkstemp(dir=target.parent, prefix=".history-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            json.dump(doc, handle, ensure_ascii=False, indent=1)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
     print(f"\nscritto {target} ({target.stat().st_size // 1024} KB, leghe: {sorted(doc['leagues'])})")
     if kept_stale:
-        print(f"⚠ blocchi NON aggiornati (sorgente assente): {kept_stale} — riprovare al prossimo refresh")
-    return 0
+        print(f"blocchi NON aggiornati: {kept_stale} - refresh {doc['refresh_status']}")
+    return 1 if kept_stale else 0
 
 
 def report(code: str, before: dict, matches: list[dict], unmatched: set[str]) -> None:

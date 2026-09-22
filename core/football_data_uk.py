@@ -165,10 +165,11 @@ def download_csv(league: str, start_year: int, timeout: float = 30.0) -> str:
         # Senza questo controllo lo storico della League Two si riempie di
         # quinta divisione inglese e quello della Segunda di terza scozzese: dati
         # plausibili a occhio, sbagliati nel modello, e nessun errore da nessuna
-        # parte. Fail-closed: se l'URL finale non è quello chiesto, la stagione
-        # non esiste e il chiamante deve trattarlo come assente.
+        # parte. The canonical www -> apex redirect is allowed ONLY with the
+        # identical HTTPS path (season/division) and no extra query or port.
         final = resp.geturl()
-        if final != url:
+        if final not in (url, url.replace("https://www.football-data.co.uk/",
+                                          "https://football-data.co.uk/", 1)):
             raise FileNotFoundError(
                 f"{url} redirige a {final}: stagione non pubblicata, non è la divisione richiesta"
             )
