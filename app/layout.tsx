@@ -61,6 +61,13 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: ["/icon.png"],
   },
+  // #SEO-BING-0922: verifica proprietà su Bing Webmaster Tools — non rimuovere,
+  // la verifica cade se il tag sparisce (IndexNow è già live, mancava solo questo).
+  verification: {
+    other: {
+      "msvalidate.01": "BAA6D2C6D8E4064609E4C3190FB62B93",
+    },
+  },
 };
 
 // #SEO-SCAFFOLDING-0721: dati strutturati per Google/AI answer engines.
