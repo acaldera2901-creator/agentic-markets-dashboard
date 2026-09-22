@@ -58,6 +58,7 @@ import {
   ConfidenceIndicator,
   WatchlistButton,
 } from "@/components/ui";
+import { IconArrow } from "@/components/ui/icons";
 import { LobbySection } from "@/components/lobby/LobbySection";
 import { HomeFaq } from "@/components/lobby/HomeFaq";
 import { HeroBanner } from "@/components/lobby/HeroBanner";
@@ -8198,8 +8199,13 @@ function FeaturedEdge({
 
   // Locked / teaser variant — never expose pick name or probability.
   if (!isPremiumClient) {
+    // #RESTYLING-0921 round 5 — `br-edge` al posto di `edge-chamfer chamfer`:
+    // il blocco era l'ultimo pannello con fotografia di scena, velo, alone e
+    // angoli smussati, e accanto al board rifatto stonava. Le classi INTERNE
+    // restano (`.big`, `.why`, `.eyebrow`…): cambia il trattamento, non il
+    // contenuto né la struttura.
     return (
-      <div className="edge-chamfer chamfer">
+      <div className="br-edge">
       <section className={`featured featured-locked is-${sport}`} aria-label={eyebrow}>
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
@@ -8234,7 +8240,7 @@ function FeaturedEdge({
   }
 
   return (
-    <div className="edge-chamfer chamfer">
+    <div className="br-edge">
     <section className={`featured is-${sport}`} aria-label={eyebrow}>
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
@@ -8323,21 +8329,37 @@ function WeeklyPickPromo() {
     ru: "Weekly Model Case — экспресс от команды. Смотреть экспресс этой недели.",
   });
   return (
-    // `Link` e non `<a>`: /weekly-pick e' una rotta interna, e un <a> nudo
+    // `Link` e non `<a>`: /weekly-model-case e' una rotta interna, e un <a> nudo
     // forzerebbe un ricaricamento completo del desk invece della navigazione
     // client. Non passa da `onBannerCta` perche' quello mappa un path su una TAB
     // del desk, e la Weekly Model Case e' una pagina a se'.
-    <Link className="wp-promo" href="/weekly-model-case" aria-label={etichetta}>
-      {/* Immagine statica in /public: <img> e non next/image di proposito —
-          e' un creativo a dimensione fissa, gia' compresso a 246KB in WebP
-          (dai 2,2MB del PNG originale), e non ha bisogno del loader.
-          #WP-PROMO-FLASH-0910 — `eager` e non `lazy`: il banner sta NELLA PRIMA
-          SCHERMATA, dove `lazy` non risparmia niente e sposta solo il download
-          dopo il layout, quindi il riquadro si vedeva vuoto e poi si dipingeva.
-          `width`/`height` restano perche' danno l'aspect-ratio: il posto e' gia'
-          riservato prima che il byte arrivi, quindi nulla si muove. */}
+    <Link className="br-promo" href="/weekly-model-case" aria-label={etichetta}>
+      {/* L'icona è quella del round 4 (`/icons/menu-weeklypick.png`), la stessa
+          che il menu usa per questa voce: un prodotto, un segno. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/banners/weekly-pick-promo.webp" alt={etichetta} width={1600} height={900} loading="eager" fetchPriority="high" decoding="async" />
+      <img className="br-promo__ico" src="/icons/menu-weeklypick.png" alt="" width={44} height={44} loading="eager" decoding="async" />
+      <span className="br-promo__body">
+        <span className="br-label">{pick5(lang, {
+          it: "Una a settimana", en: "One a week", es: "Una por semana",
+          fr: "Une par semaine", ru: "Одна в неделю",
+        })}</span>
+        <span className="br-promo__title">Weekly Model Case</span>
+        <span className="br-promo__sub">{pick5(lang, {
+          it: "La multipla della casa: le pick migliori della settimana in una schedina sola, con il perché di ognuna.",
+          en: "The house accumulator: the week's best picks in a single slip, with the reasoning behind each one.",
+          es: "La combinada de la casa: las mejores pick de la semana en un solo boleto, con el porqué de cada una.",
+          fr: "Le combiné de la maison : les meilleures pick de la semaine en un seul coupon, avec le pourquoi de chacune.",
+          ru: "Экспресс от команды: лучшие ставки недели в одном купоне, с обоснованием каждой.",
+        })}</span>
+      </span>
+      <span className="br-promo__cta">
+        {pick5(lang, {
+          it: "Vedi la schedina di questa settimana", en: "View this week's pick",
+          es: "Ver la combinada de esta semana", fr: "Voir le combiné de cette semaine",
+          ru: "Смотреть экспресс недели",
+        })}
+        <IconArrow size={14} />
+      </span>
     </Link>
   );
 }
