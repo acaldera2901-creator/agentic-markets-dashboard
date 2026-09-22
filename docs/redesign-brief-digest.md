@@ -224,5 +224,75 @@ I quattro punti sopra sono wirati nel prodotto. Cosa è cambiato davvero:
 - **Non committati di proposito**: `sport-esports.png`/`-sm.png` (fuori uso), i master in `docs/reference/round4/` tranne `NOTE.md`, gli hero PNG del round 2 (3–4 MB l'uno) e i `public/images/sport-tiles/` mai wirati.
 - **Debito segnalato, non toccato**: la tile Tennis con 0 partite scrive «0 picks today» (`count: tennisItems.length`, mai `null`) — difetto del round 2, fuori dal perimetro di questo giro. E `public/images/hero/hero-tex-leather-1400w.jpg` è rimasto in git pur essendo ora senza consumatori (citato in `docs/ui_memory.md`).
 
+## ROUND 5 — "sito di merda", scoperto il vero problema (2026-09-22 pomeriggio)
+
+Andrea, guardando la preview round 4: bocciature puntuali + una scoperta strutturale mia prima di rispondere.
+
+### Feedback puntuale (4 screenshot)
+1. **Nav in alto**: icone e colori da sistemare — il toggle DARK/LIGHT mostra ancora il verde brand vecchio (`#23A559`), fuori dalla palette royal/lime del round 3-4; le icone nav vanno verificate contro lo stesso sistema.
+2. **Home**: via il bottone "REFRESH ODDS LIVE" in alto a destra. Le prediction card vanno **rimpicciolite, tutte alla STESSA dimensione**, e nella prima schermata all'ingresso l'utente deve vederne **di più** (oggi solo 2 a fianco dell'hero).
+3. **"View analysis" apre il sito vecchio con lo stile vecchio.**
+4. **Chip lega/sport** (badge "⊛ FOOTBALL", "🎾 TENNIS" visti su filtri/card) — icone da sistemare con quelle fatte da Codex, non quelle attuali.
+
+### La scoperta (verificata nel codice, non un'impressione)
+Il punto 3 non è un bug isolato: **`app/app/page.tsx` monta due esperienze diverse a seconda della vista** — `view === "explore"` renderizza `<SportsbookBoard>` (il vecchio board con filtri/sort/ricerca, **mai toccato in nessuno dei 4 round**), qualunque altra vista renderizza `<HomeLobby>` (quello restylato). Si arriva a `SportsbookBoard` cliccando "Football"/"Tennis" in nav, "See all", "Explore" da bottom-nav — cioè **quasi ogni percorso oltre la primissima schermata**. È esattamente perché il round 1 aveva dichiarato "il board di sempre — filtri, sort, ricerca — resta intatto sotto Explore", scelta corretta per lo scope di allora (priorità 1+2 del brief) ma che oggi, con la Home bella, rende il resto del sito uno stacco netto e brutto.
+
+### Messaggio di fondo di Andrea (ripetuto, ora con urgenza): 
+**"Bisogna togliere tutto quello che è rimasto del sito vecchio e fare il restyling completo, non a metà."** Motivo dichiarato: deve mostrare il restyle ai collaboratori, non vuole arrivarci con "un sito di merda" — c'è una scadenza sociale/temporale reale dietro, non solo gusto estetico.
+
+### Piano ROUND 5
+**Fase A — fix puntuali, veloci** (nav colori/icone, via bottone refresh, card home uniformi/più piccole/più numerose in prima schermata, chip sport con icone Codex `sport-football-sm.png`/`sport-tennis-sm.png` invece delle SVG round-3).
+
+**Fase B — `SportsbookBoard` (il vero blocco)**: è la superficie più usata del prodotto (tutto ciò che sta oltre la teaser Home) ed è rimasta interamente non restylata — filtri, ricerca, sort, card, tutto vecchio stile. Va portata al linguaggio dei round 3-4: `PredictionCard` (quella nuova, già esistente) al posto delle card vecchie, palette/tipografia/icone coerenti su filtri e controlli. Non serve reinventare componenti — riusare quello che i round precedenti hanno già costruito, il lavoro qui è di wiring/applicazione su scala, non design da zero.
+
+**Fase C — resto del sito** (Track Record, Pricing, Tools/Probability Builder, Profile/Invite/Partner/Creator/Weekly Pick/Leaderboard/Match Builder): oggi tutti fuori scope dichiarato dei round 1-4, tutti probabilmente ancora vecchio stile. Da confermare con un giro di ricognizione prima di promettere tempi ad Andrea — non fingere che sia una coda breve se non lo è.
+
 ### Messaggio di fondo di Andrea (da tenere per ogni round successivo)
 "Questa piattaforma deve essere unica e non deve essere AI slop, abbiamo collegato Codex appunto per questo, per creare qualcosa di unico da offrire alle persone. Ci stiamo mettendo tempo, denaro e persone: la piattaforma deve essere più custom e personalizzata possibile, ma nello stesso momento intuitiva e facile da capire per chi arriva."
+
+### ROUND 5 — fatto (2026-09-22, programmatore)
+
+**Fase A — Home.** Il segmento attivo di DARK/LIGHT passa da `--am-coral` a
+`--am-royal-2`/`--am-royal-ink`; le altre icone nav erano già sul sistema
+(royal/muted) e restano. Via «REFRESH ODDS · live» dalla testa della Home, e
+con lui `handleRefresh`/`refreshing`, che non aveva altri usi — le prediction
+si rileggono da sole ogni 60 minuti. Le card della lobby sono TUTTE della
+stessa dimensione: la lobby non chiede più la variante `featured` (due colonne,
+numero a 52px); `live` e `premiumLocked` restano perché non cambiano la
+scatola. E rimpiccioliscono: padding 16→12, gap 12→8, numero 40→30px, colonna
+minima 302→248px, `HERO_SIDE_CAP` 2→6 — su 1280 sono sei card sopra la piega
+invece di due. Il chip sport usa i raster `/banners/sport-*-sm.png` (fallback
+SVG per gli sport senza raster).
+
+**Fase B — `SportsbookBoard`.** `PredictionCard` (calcio) e `TennisMatchCard`
+disegnavano da sé `headerNode`/`readoutNode`/`bodyNode` — ~580 righe di
+`.pred.hud`/`.v2r`/`.da-*`, rimosse — e ora rendono `PredictionCard` del design
+system via `fromDeskFootball`/`fromDeskTennis`. Quote per esito, «Piazza la
+scommessa» e mercati extra NON spariscono: vivono nella scheda-dettaglio, che i
+due componenti continuano a possedere e che «View analysis» apre (su riga
+chiusa la CTA è «Unlock full analysis» → gate). Del vecchio `cardProps` resta
+solo il `ref`, che misura da dove si apre la scheda. Watchlist anche sul board
+(`useWatchlist` una volta per board). Filtri/sort/ricerca: via coral e pannello
+azzurrino, tipografia sui token; bande Football/Tennis in Saira Condensed
+maiuscolo, glifo senza il disco che tagliava il PNG; griglia da 12 colonne
+fisse ad `auto-fill` 248px, la stessa misura della Home. `BestBetsBoard` non
+toccato: non ha call site.
+
+**Fase C — resto del sito, alla radice.** `--am-coral` valeva ancora #23A559 in
+scuro e lo rendevano tutte le viste non restylate: ora `--am-coral` È
+`--am-edge` (#3DF56E). In chiaro non cambia nulla, i due token erano già lo
+stesso #137437. Tre punti pagavano bianco su fill verde (crollavano a ~1,6:1)
+e passano a `--am-coral-ink`. L'h1 del desk — uno per pagina, quindi Piani,
+Storico, Classifica, Invito, Build a Probability View, Explore e Today insieme
+— prende la voce della casa (Saira Condensed 800 maiuscolo), come le teste di
+sezione dei Piani e dello Storico; l'eyebrow diventa la label del design
+system. Via l'ultimo alone: `.featured::before`.
+
+**NON fatto, dichiarato.** Il LAYOUT delle viste di Fase C non è toccato —
+Classifica e Invito sono Tailwind grezzo, `TrackRecordView` si inietta il
+proprio `<style>` `tr-*`, `MatchBuilderTab` è `mb-*`: sono viste da rifare a
+vista, una per una, non da riskinnare alla cieca. Restano old-style nella
+struttura anche `FeaturedEdge` (il blocco Edge del board, ora senza glow ma
+ancora `.featured`), `AccountMenu` (`acct-*`) e il bottom-nav (`am-bottomnav`).
+E resta il debito del round 4: la tile Tennis con 0 partite scrive «0 picks
+today».
