@@ -503,11 +503,16 @@
   align-items: center;
   gap: var(--am-s-4);
 }
+/* Il nome sta accanto al totem finché ci sta; quando non ci sta più va a capo
+   INTERO sotto il totem. Senza questo wrap la colonna stringe il nome e il
+   testo si spezza a metà parola — «Chelsea» → «Chelse»/«a» nella scheda
+   partita, che è larga 468px fissi (.pdm-panel.pdm-compact) a ogni viewport. */
 .br-mh__team {
   display: flex;
   align-items: center;
   gap: var(--am-s-3);
   min-width: 0;
+  flex-wrap: wrap;
 }
 .br-mh__team[data-side="away"] { flex-direction: row-reverse; text-align: right; }
 .br-mh__name {
@@ -517,7 +522,11 @@
   letter-spacing: -0.015em;
   line-height: 1.1;
   color: var(--am-text);
-  overflow-wrap: anywhere;
+  /* `anywhere` spezzava dentro la parola appena la colonna stringeva: mai. Si
+     rompe solo una parola che da sola non entra nemmeno su una riga tutta sua. */
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
 }
 .br-mh__mid {
   display: flex;
