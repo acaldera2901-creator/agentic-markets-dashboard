@@ -2108,3 +2108,17 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 @media (max-width: 640px) {
   .tl-head h1 { font-size: 24px; }
 }
+
+/* #RESTYLING-0921 round 5 — le icone della nav primaria sono raster (NavIcon).
+   Le regole sopra colorano l'`svg` per dire quale voce è attiva: un PNG il
+   colore ce l'ha suo, quindi la stessa gerarchia si fa con l'opacità — la
+   voce corrente e quella sotto il cursore a pieno, le altre un gradino sotto.
+   I raster sono già ritagliati: niente disco né cornice attorno. */
+.br-nav__item img {
+  border-radius: 4px;
+  opacity: 0.78;
+  transition: opacity 140ms ease;
+}
+.br-nav__item:hover img,
+.br-nav__item[aria-current="page"] img,
+.br-nav__item[data-live="true"] img { opacity: 1; }

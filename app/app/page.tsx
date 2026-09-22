@@ -33,7 +33,7 @@ import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
-import { MenuIcon } from "@/app/components/menu-icon";
+import { MenuIcon, NavIcon, type NavName } from "@/app/components/menu-icon";
 // #RESTYLING-0921 round 3: il set di icone della casa (nav, bottom-nav, search).
 import { Icon, IconSearch, type IconName } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
@@ -10029,10 +10029,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 suo segno (IconLive), non con un puntino giallo — un secondo
                 colore nella nav era il primo «tutto evidenziato» della pagina. */}
             {([
-              { view: "home" as DeskView, icon: "home" as IconName, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
-              { view: "live" as DeskView, icon: "live" as IconName, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }) },
-              { view: "football" as DeskView, icon: "football" as IconName, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
-              { view: "tennis" as DeskView, icon: "tennis" as IconName, label: "Tennis" },
+              { view: "home" as DeskView, icon: "home" as NavName, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
+              { view: "live" as DeskView, icon: "live" as NavName, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }) },
+              { view: "football" as DeskView, icon: "football" as NavName, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
+              { view: "tennis" as DeskView, icon: "tennis" as NavName, label: "Tennis" },
             ]).map((item) => (
               <button
                 key={item.view}
@@ -10047,12 +10047,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   trackEvent("nav_click", { meta: { view: item.view } });
                 }}
               >
-                <Icon name={item.icon} size={18} />
+                <NavIcon name={item.icon} size={18} />
                 {item.label}
               </button>
             ))}
             <Link className="br-nav__item" href="/tools">
-              <Icon name="tools" size={18} />
+              <NavIcon name="tools" size={18} />
               {pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}
             </Link>
           </nav>
