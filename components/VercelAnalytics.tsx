@@ -20,21 +20,21 @@
 import { useEffect, useState } from "react";
 import { Analytics } from "@vercel/analytics/next";
 
+function hasConsent(): boolean {
+  try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
+}
+
 export default function VercelAnalytics() {
   const [consented, setConsented] = useState(false);
 
   useEffect(() => {
-    const hasConsent = () => {
-      try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
-    };
-
     // Consenso già dato in una sessione precedente → monta subito.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-sync da localStorage: un lazy initializer divergerebbe dal markup renderizzato lato server (dove consented è sempre false).
-    if (hasConsent()) setConsented(true);
+    setConsented(hasConsent());
 
     // Accept dato adesso: stesso tab via evento custom del banner, altri tab via storage.
-    const onConsent = () => { if (hasConsent()) setConsented(true); };
-    const onStorage = (e: StorageEvent) => { if (e.key === "gdpr_consent") onConsent(); };
+    const onConsent = () => setConsented(hasConsent());
+    const onStorage = (e: StorageEvent) => { if (e.key === "gdpr_consent" || e.key === null) onConsent(); };
     window.addEventListener("betredge:gdpr-consent", onConsent);
     window.addEventListener("storage", onStorage);
     return () => {
@@ -44,5 +44,7 @@ export default function VercelAnalytics() {
   }, []);
 
   if (!consented) return null;
-  return <Analytics />;
+  // Unmounting does not remove the SDK already injected into the document.
+  // Its callback must consult current consent before every subsequent event.
+  return <Analytics beforeSend={(event) => hasConsent() ? event : null} />;
 }

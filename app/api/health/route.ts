@@ -5,6 +5,8 @@ import { verifyBearer } from "@/lib/admin-auth";
 import { CORE_AGENTS, SIGNAL_ONLY_AGENTS, KNOWN_AGENTS } from "@/lib/agent-roster";
 // #FLEET-CODE-SHA-0908: which commit the Python fleet runs, read from its heartbeats.
 import { summarizeFleetVersion } from "@/lib/fleet-version";
+import { runtimeReadiness, snapshotReadiness } from "@/lib/data-readiness";
+import historySnapshot from "@/data/summer_leagues/history.json";
 
 interface HeartbeatRow {
   agent_name: string;
@@ -28,7 +30,7 @@ function parseStatus(lastSeen: string | null): "alive" | "stale" | "offline" {
 }
 
 export async function GET(req: Request) {
-  const [rows, tennisActivityRows] = await Promise.all([
+  const [rows, tennisActivityRows, ahHistory] = await Promise.all([
     dbQuery<HeartbeatRow>(
       `SELECT agent_name, last_seen, status_detail FROM agent_heartbeats`
     ),
@@ -39,6 +41,9 @@ export async function GET(req: Request) {
         (SELECT COUNT(*) FROM tennis_predictions) AS predictions,
         (SELECT COUNT(*) FROM tennis_bets) AS signals
     `),
+    dbQuery<{ captured_at: string }>(`SELECT captured_at FROM ah_odds_history ORDER BY captured_at DESC LIMIT 1`)
+      .then(rows => ({ latest: rows[0]?.captured_at ?? null, failed: false }))
+      .catch(() => ({ latest: null, failed: true })),
   ]);
 
   const tennisActivity = tennisActivityRows[0];
@@ -79,7 +84,7 @@ export async function GET(req: Request) {
   const signalAlive = signalAgents.filter((a) => a.status === "alive").length;
   const signalOffline = signalAgents.filter((a) => a.status === "offline").length;
 
-  const status = coreOffline > 0 ? "degraded" : coreStale > 0 ? "warning" : "ok";
+  const liveness = coreOffline > 0 ? "degraded" : coreStale > 0 ? "warning" : "ok";
 
   // #LIVE-VERSION-1: short sha of the deployed commit (auto-injected by Vercel).
   // Lets internal tooling verify the served version without manual deploy
@@ -92,17 +97,27 @@ export async function GET(req: Request) {
   // what the Python processes stamp into their heartbeats; `matches_web` is the
   // one-glance answer "are the two halves on the same commit?".
   const fleet = summarizeFleetVersion(rows, commit);
+  const runtime = runtimeReadiness({
+    fleetSha: fleet.code_sha, consistent: fleet.consistent,
+    expectedSha: process.env.FLEET_EXPECTED_CODE_SHA ?? null,
+    latestAhAt: ahHistory.latest, queryFailed: ahHistory.failed,
+  });
+  const history = snapshotReadiness(historySnapshot);
+  const statuses = [liveness, runtime.status, history.status];
+  const status = statuses.includes("degraded") ? "degraded" : statuses.includes("warning") ? "warning" : "ok";
 
   // SEC #SEC-HEALTH-1: public callers get a bare liveness probe only — no agent
   // names, topology, or counts. Internal monitoring authenticates with RESEARCH_SECRET.
   // The fleet version stays behind auth too (review of #REQ-260908-betredge-01):
   // the only consumer is our own tooling, so a public field is surface with no benefit.
   if (!verifyBearer(req, process.env.RESEARCH_SECRET)) {
-    return NextResponse.json({ status, commit, timestamp: new Date().toISOString() });
+    return NextResponse.json({ status, liveness, commit, timestamp: new Date().toISOString() });
   }
 
   return NextResponse.json({
     status,
+    liveness,
+    readiness: { runtime, history },
     commit,
     fleet,
     timestamp: new Date().toISOString(),

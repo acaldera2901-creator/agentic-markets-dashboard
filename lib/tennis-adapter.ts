@@ -277,6 +277,41 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
         d.neutral_venue, d.team_news_summary, d.world_cup_stage, d.source_table, d.source_id,
       ]
     );
+
+    // Capture the actual published row, not the source candidate that may have
+    // been frozen/rejected by the upsert. Database time enforces no look-ahead;
+    // later syncs never rewrite this first declaration. The distribution below
+    // records the calibrated probability shown to the reader, oriented to teams.
+    try {
+      await dbQuery(
+        `INSERT INTO pick_ledger (
+          source_table, source_id, model_version, sport, league, competition,
+          home_team, away_team, market, pick,
+          p_home, p_draw, p_away, confidence,
+          odds, bookmaker, is_paper, signal_type, commence_time, captured_at
+        )
+        SELECT source_table, source_id, model_version, sport, league, competition,
+               home_team, away_team, market, pick,
+               CASE WHEN pick = home_team THEN confidence_score / 100.0
+                    ELSE 1 - confidence_score / 100.0 END,
+               0,
+               CASE WHEN pick = away_team THEN confidence_score / 100.0
+                    ELSE 1 - confidence_score / 100.0 END,
+               confidence_score / 100.0,
+               odds, bookmaker, is_paper, signal_type, starts_at, NOW()
+          FROM unified_predictions
+         WHERE source_table = $1 AND source_id = $2
+           AND sport = 'tennis' AND starts_at > NOW()
+           AND published_at IS NOT NULL AND published_at <= NOW()
+           AND settled_at IS NULL AND is_demo = FALSE
+           AND pick IN (home_team, away_team)
+           AND confidence_score > 0 AND confidence_score <= 100
+        ON CONFLICT (source_table, source_id, model_version) DO NOTHING`,
+        [d.source_table, d.source_id]
+      );
+    } catch (error) {
+      console.warn("tennis pick_ledger write failed (non-fatal):", error);
+    }
   }
   return report;
 }
