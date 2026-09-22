@@ -330,6 +330,28 @@ Palette indigo/royal/lime, tipografia Saira Condensed sui titoli, card con sola 
 
 Reference site navigabile per chiunque abbia bisogno di più dettaglio: apri con `mcp__claude-in-chrome` (autenticato su questa macchina), non con WebFetch/curl.
 
+---
+
+## ROUND 7 — "fa cagare non è cambiato nulla": clone totale, non più aggiunte (2026-09-22 notte)
+
+Il round 6 (aggiunte sopra il sito esistente: nav Pro, barra contesto, fascia Pro, hero di sezione) **non basta**. Andrea, letterale: **"la home deve essere come quella fatta da GPT, e le altre pagine anche, la grafica deve essere totalmente quella fatta da Codex ma con la nostra logica."** Non sono più aggiunte incrementali: è un **clone visivo totale** del riferimento (font, colori, layout Home, tutte le pagine), con i nostri dati/backend/logica sotto.
+
+Il round 6 aveva rimandato per prudenza esattamente le due cose che contano di più (font e colori base, "tocca ogni pagina, va fatto con un giro suo") — **quel giro è questo, si fa ora, senza mezze misure**. Andrea ha già visto la versione cauta e ha detto che non cambia nulla dal suo punto di vista: la prudenza tecnica va bilanciata con l'urgenza, non usata per rimandare ancora.
+
+### Cosa cambia, sitewide, non solo sulle superfici nuove
+1. **Font**: Anton (display/H1/numeri) + Barlow Condensed 800 (CTA/label) + Manrope (corpo) **ovunque**, sostituendo Saira Condensed/Hanken Grotesk in tutto il sito — non solo nei componenti del round 6.
+2. **Token colore base** (`app/globals.css`, sia dark che light) portati ai valori esatti misurati: bg `#071329` · panel `#0d2343` · royal `#145aff` · sky `#81d9ff` · lime `#c8ff00` · paper (light) `#f3eddc` · muted `#a8bdd6` · line `rgba(72,164,255,.4)`. Dove il nuovo royal più scuro rompe un contrasto AA, il fix è sul testo/bordo specifico (es. `--am-*-ink` più chiaro), non un ripensamento sul colore base.
+3. **Home ricostruita sul layout del riferimento**: hero **card portrait** (non il quadrato piccolo attuale, non il banner largo del round 4) con le foto `hero-{football,tennis}-portrait-3x4.jpg` già pronte; sezione **"Scegli il tuo campo"** con le 4 tile fotografiche grandi (calcio/tennis/basket/altri sport, foto già pronte `tile-*-4x3.jpg`); sezione **"Da approfondire"** con la griglia di 2 banner finiti affiancati (i banner Codex del round 5 già wired, es. Deep Analysis + Weekly Pick — riusarli, sono già a posto); sezione **lista "Prossimi match"** compatta (righe, non card a griglia) come vista aggiuntiva.
+4. **Crest → CSS puro**: sostituire i 12 totem illustrati con il sistema a 2 tinte per ruolo (casa/trasferta) misurato dal riferimento — concept già pronto in `docs/reference/round6/crest-concept.png`, variante A. Zero asset, il cambio più economico e più fedele.
+5. **Applicare tutto questo anche alle pagine già toccate nei round precedenti** (board Explore, Tools, Piani, Storico, Classifica, match detail) — i font/colori sono token, quindi in gran parte si propaga da solo cambiando `globals.css`, ma verificare pagina per pagina che non ci siano stili hardcoded che ignorano i token.
+
+### Debito del round 6 da chiudere in questo stesso giro
+- **H1 doppio** su Calcio/Tennis/Home (il vecchio h1 del desk + il nuovo dell'hero di sezione, es. "FOOTBALL" ripetuto 3 volte) — degradare/unificare.
+- **Fascia Pro visibile anche a chi è già Pro** — va gated come il pulsante nav (`profileHasPremium`).
+- Nav a 5 lingue (RU/FR vanno a capo in alcuni casi) — verificare dopo il cambio font, le proporzioni cambiano con Anton/Barlow.
+
+Non è più "quanto rischiamo": Andrea ha già visto la versione prudente e l'ha bocciata. Il compito adesso è fare il cambio vero, verificarlo bene (contrasto, build, screenshot reali su più pagine), e riportare onestamente cosa non regge — non evitarlo.
+
 ### Misure esatte dal riferimento (art-director, CSS letto via JS — non stime a occhio)
 **Non è Saira Condensed.** Il riferimento usa: **Anton** (display/H1/numeri), **Barlow Condensed 800** (CTA "PASSA A PRO", label PRO), **Manrope** (corpo, iniziali crest). Cambiare i font dei nuovi componenti (e valutare se allineare anche quelli esistenti, per non avere due sistemi tipografici in parallelo).
 
@@ -340,3 +362,68 @@ Reference site navigabile per chiunque abbia bisogno di più dettaglio: apri con
 **Crest = puro CSS, non immagini**: 30×30px, radius 6, bordo `1px rgba(105,186,255,.333)`, inset shadow `0 -3px rgba(50,141,217,.17)` in basso, testo Manrope 800 10px con 1-3 iniziali. **Due tinte per RUOLO (casa/trasferta), non per squadra**: casa `bg #051d39 / testo #9cdfff`, trasferta `bg #233457 / testo #dbe9ff`. Concept renderizzati in `docs/reference/round6/crest-concept.png` (4 varianti A-D, A = replica 1:1 del riferimento, consigliata da art-director come punto di partenza — costa zero, nessun asset).
 
 **Foto pronte** (derivati web-ready in `docs/reference/round6/`): `hero-{football,tennis,basketball}-wide.jpg` (1600×900, hero di sezione) · `tile-{football,tennis,basketball,nextup}-4x3.jpg` (sezione "Scegli il tuo campo") · `hero-{football,tennis}-portrait-3x4.jpg` (705×941, per l'hero Home in stile card portrait come il riferimento). Tutte controllate: nessun testo cotto, nessun marchio, volti generici.
+
+### ROUND 7 — fatto (2026-09-22 notte, programmatore)
+
+Quattro commit, uno per area, ciascuno con build e test verdi.
+
+**Font.** Manrope sostituisce Hanken Grotesk sul corpo (`--font-display`),
+Barlow Condensed sostituisce Saira Condensed su label/CTA (`--font-tech`, stesso
+ruolo e stessi due pesi, quindi nessuna regola CSS è cambiata), e Anton entra
+come display (`--font-anton` → `--am-font-display`): h1 di pagina, hero, teste
+di sezione, numero eroe della card. Anton ha UN solo peso: dove le regole
+chiedevano 800 ora chiedono 400, o il browser lo sintetizza e sporca le aste.
+`--am-font-num` resta JetBrains Mono: quote, date e tabelle vogliono le cifre
+tabulari che Anton non ha.
+
+**Colore.** I valori sono letti dal CSS computato del riferimento: bg #071329 ·
+panel #0d2343 · royal #145aff · sky #81d9ff · lime #c8ff00 · muted #a8bdd6 ·
+filo rgba(72,164,255,.4) · carta #f3eddc. `--am-coral` — l'accento di tutte le
+superfici mai rifatte a mano — va al lime con loro.
+**Il royal è un colore da FILL, non da inchiostro**: #145aff come testo su
+pannello fa 2,94:1, e nel riferimento infatti non scrive mai. Quindi `--am-royal`
+riempie e nasce `--am-royal-t` (#6EA4FF, 6,3:1) per il royal che scrive — 18
+`color:`, 4 `border-color:` e 13 `outline:` ripuntati lì. In chiaro i due
+coincidono (#145aff su carta fa 4,56:1 e passa).
+Altri tre contrasti sistemati puntualmente: `--am-muted-2` light 4,49→5,3:1 (la
+carta nuova è più scura), il separatore «/» della barra contesto che scriveva
+col colore di un bordo (1,48:1), la freccia della tile sport che teneva
+`--am-sky` su una foto scura in entrambi i temi (3,02:1 in chiaro).
+E 85 tinte verdi scritte a mano in `globals.css`/`machina.css` — che i token non
+toccano — convertite al lime. Il verde SEMANTICO (P&L) non è toccato.
+
+**Home.** Ricostruita sul layout del riferimento: hero CARD VERTICALE nel rail
+sinistro (26%) con le card vere accanto · `RailDeep` sotto · «Scegli il tuo
+campo» con quattro tile fotografiche da 245px · «Da approfondire» con TUTTE le
+campagne valide per chi guarda (non due fisse — richiesta esplicita di Andrea:
+«anche i banner vanno usati gli stessi») · «Prossimi match» in righe compatte a
+cinque colonne. Nel riferimento l'hero NON ha un badge statistico dentro: il
+numero sta sulle card.
+
+**Crest.** I 12 totem del round 4 lasciano il posto al quadratino con 1-3
+iniziali, due tinte per RUOLO (casa/trasferta). Zero asset, zero rete, zero
+rischio marchio, e funziona su un campionato mai visto — cosa che i totem, per
+costruzione, non potevano fare. `lib/ui/crest-initials.ts`, dieci test. I totem
+restano raggiungibili passandoli esplicitamente: in panchina, non nel cestino.
+
+**Debito del round 6 chiuso.** Fascia Pro e richiamo del rail gated su `isPro`
+(il PRO vero, non «sbloccato»). H1 doppio su Calcio/Tennis risolto: lo porta
+l'hero di sezione, il desk non lo scrive più su quelle viste.
+
+**Debito nuovo, dichiarato.** `HeroBanner`, `SportCategoryTile` e
+`AccumulatorPromoTile` non hanno più call site (li ha sostituiti `HeroPortrait`
+/ `FieldTile`): restano su disco coi loro test, che ora non guardano più nulla
+di renderizzato. Non li ho cancellati perché in sei round la direzione è
+cambiata sei volte e sono l'unico modo di tornare indietro in un commit; se il
+round 7 regge, vanno tolti insieme ai loro test. Stesso discorso per
+`lib/ui/totem-assets.ts`.
+
+**Non verificato.** Il database locale è vuoto: la Home piena è stata
+fotografata con una fixture temporanea nella route `/api/predictions`, montata
+per la verifica e rimossa prima del commit (`BR_FIXTURE=1`, mai committata).
+Con dati veri il comportamento non dovrebbe cambiare — le righe passano dagli
+stessi adapter — ma resta da guardare sulla preview della PR.
+Non ho potuto fotografare a 390px nella finestra vera (Chrome non scende sotto
+~1500px su questa macchina): la Home a 390 è stata renderizzata in un iframe da
+390px, che risponde alle stesse media query — nessun overflow orizzontale,
+tile a due colonne, rail a colonna singola.
