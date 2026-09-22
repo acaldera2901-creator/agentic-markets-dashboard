@@ -81,6 +81,24 @@ export function chromeLang(locale: ToolLocale): "it" | "en" | "es" | "fr" | "ru"
   return locale === "it" || locale === "es" || locale === "fr" || locale === "ru" ? locale : "en";
 }
 
+/** #RESTYLING-0921 round 5 — la nav primaria delle pagine /tools.
+ *
+ *  /tools sta fuori dal desk e ci si arriva dalla nav di OGNI pagina: senza,
+ *  chi ci atterrava restava con un solo «← Home» e la pagina sembrava un altro
+ *  sito. Sono rotte vere (il desk le monta come stato client, qui sono
+ *  navigazioni), quindi non serve replicare le viste — bastano le destinazioni
+ *  che esistono come URL. */
+export function chromeNav(locale: ToolLocale): { href: string; label: string; icon: "home" | "explore" | "ledger" | "tools" | "profile" }[] {
+  const it = chromeLang(locale) === "it";
+  return [
+    { href: "/", label: it ? "Home" : "Home", icon: "home" },
+    { href: "/predictions", label: it ? "Previsioni" : "Predictions", icon: "explore" },
+    { href: "/history", label: it ? "Storico" : "Track record", icon: "ledger" },
+    { href: "/plans", label: it ? "Piani" : "Plans", icon: "profile" },
+    { href: "/tools", label: it ? "Strumenti" : "Tools", icon: "tools" },
+  ];
+}
+
 /** Codice hreflang: coincide col locale, ma passa da qui per non spargere magia. */
 export function hreflangFor(locale: ToolLocale): string {
   return locale;

@@ -2029,3 +2029,90 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   border-color: var(--am-edge-b);
   background: var(--am-edge-dim);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * /tools — #RESTYLING-0921 round 5 fase C-bis (2026-09-22)
+ *
+ * L'hub dei calcolatori e le undici pagine-tool sono la superficie SEO del
+ * prodotto, e ci si arriva dalla nav di ogni pagina: erano rimaste un mondo
+ * a sé. Il fondo era lo stesso del desk (misurato: `--am-bg` in entrambi), ma
+ * tutto il resto no — h1 in Hanken Grotesk invece della voce della casa, le
+ * card con hover e CTA in verde dove il resto del sito usa royal per i link,
+ * e nessuna nav primaria: solo un «← Home» isolato. Quest'ultima è risolta
+ * nel TSX (`chromeNav`, passata a `SiteTopbar`), qui c'è il resto.
+ *
+ * I componenti interni dei calcolatori non si toccano: fanno i conti, e i
+ * conti sono giusti.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.tl-head h1 {
+  font-family: var(--am-font-hud);
+  font-size: clamp(26px, 3.6vw, 38px);
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.tl-section h2,
+.tl-cta h2 {
+  font-family: var(--am-font-hud);
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+/* L'occhiello è la label del design system, non una riga verde in più. */
+.tl-eyebrow {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--am-muted-2);
+}
+/* «FREE» resta l'unico elemento colorato dell'intestazione: outline, non fill. */
+.tl-eyebrow .tl-free {
+  border-color: var(--am-edge-b);
+  background: none;
+  color: var(--am-edge);
+  border-radius: var(--am-r-ctl);
+  font-weight: 600;
+}
+/* Le card dei tool prendono la forma e l'hover delle card del prodotto. */
+.tl-card { border-radius: var(--am-r-card); box-shadow: var(--am-shadow-card); }
+.tl-card:hover {
+  border-color: var(--am-line-2);
+  transform: none;
+  box-shadow: var(--am-shadow-card-hover);
+}
+.tl-card h2 { font-family: var(--am-font-ui); font-weight: 700; }
+.tl-card p { font-family: var(--am-font-ui); }
+/* Un link è royal in tutto il sito: qui era verde mono, come una CTA primaria. */
+.tl-card-cta {
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--am-royal);
+}
+/* Il blocco CTA era un pannello verde pieno: superficie del sistema, e il
+   verde resta dov'è un'azione — sul pulsante. */
+.tl-cta {
+  border-color: var(--am-line);
+  background: var(--am-panel);
+  border-radius: var(--am-r-card);
+}
+.tl-cta-btn {
+  border-radius: var(--am-r-ctl);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: none;
+}
+.tl-cta-btn:hover { box-shadow: none; filter: brightness(1.06); }
+
+@media (max-width: 640px) {
+  .tl-head h1 { font-size: 24px; }
+}

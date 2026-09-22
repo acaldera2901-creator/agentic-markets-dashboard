@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
 import LangDropdown from "@/components/LangDropdown";
+import { Icon } from "@/components/ui/icons";
 
 type AuthState =
   | { status: "loading" }
@@ -42,6 +43,7 @@ export default function SiteTopbar({
   backLabel = "Board",
   hideLang = false,
   lang: langOverride,
+  nav,
 }: {
   backHref?: string;
   backLabel?: string;
@@ -52,6 +54,13 @@ export default function SiteTopbar({
    *  dropdown nascosto non poteva nemmeno correggerlo. Le altre pagine non
    *  passano il prop e continuano a seguire localStorage. */
   lang?: SiteLang;
+  /** #RESTYLING-0921 round 5 — la nav primaria, per le pagine che stanno FUORI
+   *  dal desk e che senza di lei sembrano un altro sito: /tools ci si arriva
+   *  dalla nav di ogni pagina e poi si restava con un solo «← Home».
+   *  Opt-in: le pagine World Cup non la passano e non cambiano.
+   *  Sono `Link` veri perché da qui ogni voce È una navigazione — la nav del
+   *  desk cambia stato client, questa no, e non serve che lo faccia. */
+  nav?: { href: string; label: string; icon: "home" | "explore" | "ledger" | "tools" | "profile" }[];
 }) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
   const router = useRouter();
@@ -186,8 +195,24 @@ export default function SiteTopbar({
             <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
             <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
-          <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>
+          {!nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
         </div>
+
+        {nav && (
+          <nav className="br-nav" aria-label={lang === "it" ? "Navigazione principale" : "Primary"}>
+            {nav.map((n) => (
+              <Link
+                key={n.href}
+                href={n.href}
+                className="br-nav__item"
+                aria-current={pathname === n.href || pathname.startsWith(n.href + "/") ? "page" : undefined}
+              >
+                <Icon name={n.icon} size={18} />
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         <div className="am-topright">
           <div className="am-tt" role="group" aria-label="Theme">

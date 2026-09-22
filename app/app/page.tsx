@@ -2330,7 +2330,24 @@ function SportsbookBoard({
   // esistenti sono tutte `audiences: ["base","premium"]`. Perché il Free ne veda
   // uno serve una campagna desk-feed che lo elenchi: è una scelta di contenuto
   // (AD/marketing), non di codice.
-  const feedCampsAll = campaignsFor("desk-feed", boardAudience);
+  // #RESTYLING-0921 round 5 — I BANNER HOUSE SONO SPENTI SUL BOARD.
+  //
+  // Le quattro campagne `desk-feed` vive (ole-football-signal,
+  // ole-multisport-edge, ole-multisport-readable, ole-square-1) sono creativi
+  // del brand VECCHIO: verde #23A559 e logo precedente, e alti 698-1245px in
+  // una griglia di card da ~253px. In mezzo al board rifatto erano il pezzo
+  // più fuori posto della pagina.
+  //
+  // Questo è un INTERRUTTORE, non una cancellazione: il componente
+  // `HouseBanner`, le campagne e i file restano dove sono, e rimettere `true`
+  // li riaccende. Si riaccende quando esistono creativi nella veste nuova —
+  // è una consegna di grafica, non di codice.
+  //
+  // La griglia si richiude da sé: i banner venivano INSERITI nel flatMap, non
+  // nascosti con `display:none`, quindi senza di loro non resta nessun posto
+  // vuoto da colmare.
+  const BOARD_HOUSE_FEED = false;
+  const feedCampsAll = BOARD_HOUSE_FEED ? campaignsFor("desk-feed", boardAudience) : [];
   const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis");
   const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis");
 

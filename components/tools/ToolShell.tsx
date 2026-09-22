@@ -10,7 +10,7 @@ import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getToolsCopy } from "@/lib/tools/copy";
-import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
+import { TOOL_SLUGS, chromeLang, chromeNav, toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
 import { toolJsonLd } from "@/lib/tools/seo";
 import { ToolCalculator } from "./ToolCalculator";
 import { LocalePicker } from "./LocalePicker";
@@ -25,7 +25,7 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
 
   return (
     <div className="portal-root tl-root" lang={locale}>
-      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
+      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} nav={chromeNav(locale)} />
       <main className="tl-page">
         <header className="tl-head tl-head--tool">
           {/* L'icona identifica il tool a colpo d'occhio e lega la pagina al rail
