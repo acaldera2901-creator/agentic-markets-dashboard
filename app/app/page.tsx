@@ -35,7 +35,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon, NavIcon, type NavName } from "@/app/components/menu-icon";
 // #RESTYLING-0921 round 3: il set di icone della casa (nav, bottom-nav, search).
-import { Icon, IconSearch, type IconName } from "@/components/ui/icons";
+import { Icon, IconSearch, IconArrow, type IconName } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
 import { getSessionId, trackEvent } from "@/lib/track-event";
@@ -63,6 +63,8 @@ import { HomeFaq } from "@/components/lobby/HomeFaq";
 import { HeroBanner } from "@/components/lobby/HeroBanner";
 import { SportCategoryTile, SportTileRow } from "@/components/lobby/SportCategoryTile";
 import { AccumulatorPromoTile } from "@/components/lobby/AccumulatorPromoTile";
+import { ProBand } from "@/components/lobby/ProBand";
+import { SportHero } from "@/components/lobby/SportHero";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
@@ -8440,6 +8442,7 @@ function HomeLobby({
   onOpenMatch,
   onExplore,
   onGoHome,
+  onGoPro,
 }: {
   view: Exclude<DeskView, "explore">;
   predictions: Prediction[];
@@ -8450,6 +8453,9 @@ function HomeLobby({
   onOpenMatch: (key: string) => void;
   onExplore: (sport: "all" | "football" | "tennis") => void;
   onGoHome: () => void;
+  /** Porta alla tab Piani. La lobby non conosce `setTab`: la fascia Pro e
+      l'hero di sezione chiedono soltanto «portami lì». */
+  onGoPro: () => void;
 }) {
   const lang = useLang();
   const tz = useTz();
@@ -8624,6 +8630,138 @@ function HomeLobby({
     />
   );
 
+  // ── #RESTYLING-0921 round 6: hero di sezione e fascia Pro ───────────────
+  //
+  // DOVE VANNO. Sulla Home: la fascia Pro subito sotto l'hero. Su Calcio e
+  // Tennis: prima l'hero della sezione, poi la fascia. È la sequenza del
+  // riferimento di Andrea, e ha una logica sua — la fascia arriva dopo che
+  // si è appena letto di cosa parla la pagina, non prima.
+  //
+  // IL TESTO DELLA FASCIA CAMBIA CON IL POSTO. Una sola frase buona per
+  // tutte e tre sarebbe un banner, e un banner si impara a saltare. Ogni
+  // riga nomina qualcosa che il piano Pro dà DAVVERO (la lista è quella di
+  // PlansTab: Deep Analysis con forma/infortuni/campo, Live V4 research,
+  // prediction illimitate, edge su tutto): nessuna promessa che non trovi
+  // scritta anche nella pagina dei piani.
+  const proBand = (
+    <ProBand
+      label="BETREDGE PRO"
+      headline={view === "football"
+        ? pick5(lang, {
+            it: "La lettura completa del match.", en: "The full read on every match.",
+            es: "La lectura completa del partido.", fr: "La lecture complète du match.",
+            ru: "Полное прочтение матча.",
+          })
+        : view === "tennis"
+        ? pick5(lang, {
+            it: "Ogni match, dentro i numeri.", en: "Every match, inside the numbers.",
+            es: "Cada partido, dentro de los números.", fr: "Chaque match, dans les chiffres.",
+            ru: "Каждый матч — внутри цифр.",
+          })
+        : pick5(lang, {
+            it: "Ogni partita, fino in fondo.", en: "Every match, all the way down.",
+            es: "Cada partido, hasta el fondo.", fr: "Chaque match, jusqu'au bout.",
+            ru: "Каждый матч — до конца.",
+          })}
+      sub={view === "football"
+        ? pick5(lang, {
+            it: "Forma, infortuni e campo nella Deep Analysis.", en: "Form, injuries and venue in Deep Analysis.",
+            es: "Forma, lesiones y estadio en el Deep Analysis.", fr: "Forme, blessures et stade dans la Deep Analysis.",
+            ru: "Форма, травмы и арена в Deep Analysis.",
+          })
+        : view === "tennis"
+        ? pick5(lang, {
+            it: "Tennis Live V4 research ed edge su tutto.", en: "Tennis Live V4 research and edge on everything.",
+            es: "Tennis Live V4 research y edge en todo.", fr: "Tennis Live V4 research et edge sur tout.",
+            ru: "Tennis Live V4 research и edge по всему.",
+          })
+        : pick5(lang, {
+            it: "Deep Analysis, edge su tutto e prediction illimitate.",
+            en: "Deep Analysis, edge on everything and unlimited predictions.",
+            es: "Deep Analysis, edge en todo y predicciones ilimitadas.",
+            fr: "Deep Analysis, edge sur tout et prédictions illimitées.",
+            ru: "Deep Analysis, edge по всему и прогнозы без лимита.",
+          })}
+      cta={{
+        label: view === "home"
+          ? pick5(lang, { it: "Scopri Pro", en: "Discover Pro", es: "Descubre Pro", fr: "Découvrir Pro", ru: "Узнать о Pro" })
+          : pick5(lang, { it: "Confronta i piani", en: "Compare plans", es: "Comparar planes", fr: "Comparer les offres", ru: "Сравнить тарифы" }),
+        href: TAB_PATHS.plans,
+        onClick: (ev) => {
+          ev.preventDefault();
+          trackEvent("tab_click", { meta: { tab: "plans", src: `proband-${view}` } });
+          onGoPro();
+        },
+      }}
+    />
+  );
+
+  // L'hero di sezione. Il badge porta il conteggio REALE delle partite di
+  // quello sport sul board — lo stesso numero che la fascia sotto mostra
+  // accanto al titolo. Con una ricerca attiva il badge sparisce: «12 partite
+  // sul board» mentre a schermo ce ne sono 2 filtrate sarebbe una cifra che
+  // non corrisponde a nulla di visibile.
+  //
+  // LE FOTO sono quelle di art-director (round 6, mapping e verifiche in
+  // docs/reference/round6/NOTE.md): 1600×900 fotorealistiche, atleta nella
+  // metà destra e metà sinistra scura — girate apposta perché il testo stia
+  // in HTML sopra la parte buia, non cotto dentro il JPEG. La `-800` è la
+  // versione per telefono, la sceglie il browser via srcset. Senza `image`
+  // il componente resta valido: rende il suo fondo a gradiente.
+  const sportHero = view !== "football" && view !== "tennis" ? null : (
+    <SportHero
+      eyebrow={view === "football" ? "BetRedge Football" : "BetRedge Tennis"}
+      title={view === "football"
+        ? pick5(lang, { it: "Calcio.", en: "Football.", es: "Fútbol.", fr: "Football.", ru: "Футбол." })
+        : "Tennis."}
+      accent={view === "football"
+        ? pick5(lang, {
+            it: "Leggi il gioco.", en: "Read the game.", es: "Lee el juego.",
+            fr: "Lisez le jeu.", ru: "Читай игру.",
+          })
+        : pick5(lang, {
+            it: "Punto su punto.", en: "Point by point.", es: "Punto a punto.",
+            fr: "Point par point.", ru: "Очко за очком.",
+          })}
+      /* Il tennis non gioca «partite»: gioca match. Una riga sola per due
+         sport avrebbe risparmiato sei righe di codice e detto una cosa
+         sbagliata su metà del sito. */
+      subtitle={view === "football"
+        ? pick5(lang, {
+            it: "Probabilità e contesto, partita per partita.",
+            en: "Probability and context, match by match.",
+            es: "Probabilidad y contexto, partido a partido.",
+            fr: "Probabilité et contexte, match après match.",
+            ru: "Вероятность и контекст, матч за матчем.",
+          })
+        : pick5(lang, {
+            it: "Probabilità e contesto, match per match.",
+            en: "Probability and context, match by match.",
+            es: "Probabilidad y contexto, match a match.",
+            fr: "Probabilité et contexte, match après match.",
+            ru: "Вероятность и контекст, матч за матчем.",
+          })}
+      stat={{
+        value: q ? null : (view === "football" ? footballItems.length : tennisItems.length),
+        label: pick5(lang, {
+          it: "partite sul board", en: "matches on the board", es: "partidos en el board",
+          fr: "matchs sur le board", ru: "матчей на борде",
+        }),
+      }}
+      image={view === "football"
+        ? { src: "/images/hero/section-football-wide.jpg", srcSm: "/images/hero/section-football-wide-800.jpg" }
+        : { src: "/images/hero/section-tennis-wide.jpg", srcSm: "/images/hero/section-tennis-wide-800.jpg" }}
+    />
+  );
+
+  /** Il blocco in testa a una vista: hero di sezione + fascia Pro sotto. */
+  const sectionTop = sportHero ? (
+    <>
+      {sportHero}
+      {proBand}
+    </>
+  ) : null;
+
   // Le tile: conteggio REALE per gli sport che serviamo, nessun conteggio per
   // quelli che non serviamo — `count` assente → la tile dice «Coming soon» e non
   // è un link (SportCategoryTile). Mai uno zero finto per far numero.
@@ -8749,7 +8887,13 @@ function HomeLobby({
   if (shown.length === 0) {
     return (
       <div className="br-lobby">
+        {/* Round 6: hero di sezione e fascia Pro stanno ANCHE a board vuota.
+            Sono il posto e l'offerta, non un contorno del listino: se oggi su
+            Calcio non gioca nessuno, la pagina deve dire almeno dove sei e
+            cosa c'è oltre. Il badge del conteggio si spegne da sé a zero. */}
+        {sectionTop}
         {hero}
+        {hero && proBand}
         <p className="br-empty">
           {q
             ? pick5(lang, {
@@ -8802,6 +8946,9 @@ function HomeLobby({
 
   return (
     <div className="br-lobby">
+      {/* Round 6: su Calcio e Tennis la vista apre con il suo hero e la
+          fascia Pro; sulla Home `sectionTop` è null e non rende nulla. */}
+      {sectionTop}
       {/* La prima riga: quadrato piccolo a sinistra, prodotto vero a destra. */}
       {hero && sideSection ? (
         <div className="br-home-top">
@@ -8809,6 +8956,8 @@ function HomeLobby({
           {renderSection(sideSection, HERO_SIDE_CAP)}
         </div>
       ) : hero}
+      {/* Round 6: la fascia Pro subito sotto l'hero della Home. */}
+      {hero && proBand}
       {belowSections.map((sec) => (
         <Fragment key={sec.id}>
           {renderSection(sec)}
@@ -8843,6 +8992,7 @@ function UnifiedBetsTab({
   onOpenMatch,
   onExplore,
   onGoHome,
+  onGoPro,
   autoOpenKey,
 }: {
   predictions: Prediction[];
@@ -8870,6 +9020,8 @@ function UnifiedBetsTab({
   onOpenMatch: (key: string) => void;
   onExplore: (sport: "all" | "football" | "tennis") => void;
   onGoHome: () => void;
+  /** #RESTYLING-0921 round 6 — porta alla tab Piani (fascia Pro della lobby). */
+  onGoPro: () => void;
   autoOpenKey?: string | null;
 }) {
   const lang = useLang();
@@ -8947,6 +9099,7 @@ function UnifiedBetsTab({
             onOpenMatch={onOpenMatch}
             onExplore={onExplore}
             onGoHome={onGoHome}
+            onGoPro={onGoPro}
           />
         )}
       </LockedGate>
@@ -9915,6 +10068,15 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     ru: { home: "Сегодня", live: "В игре", football: "Футбол", tennis: "Теннис", watchlist: "Избранное", explore: "Все матчи" }[deskView],
   });
 
+  // #RESTYLING-0921 round 6 — l'ultimo segmento del percorso nella fascia di
+  // contesto. Sul desk («bets») il capitolo è la VISTA, e `deskHeading` la
+  // nomina già in cinque lingue; sulle altre tab il capitolo è la tab stessa,
+  // e la sua label esiste già in `navItems`. Nessun dizionario nuovo: due
+  // nomi per la stessa cosa divergono al primo copy che cambia.
+  const contextCrumb = tab === "bets"
+    ? deskHeading
+    : navItems.find((n) => n.tab === tab)?.label ?? deskHeading;
+
   const liveTennisMap = useMemo(() => {
     const map: Record<string, LiveTennisMatch> = {};
     for (const lm of liveTennis) map[tennisPairKey(lm.player1, lm.player2)] = lm;
@@ -10138,7 +10300,87 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               </>
             )}
 
+            {/* ── «Passa a Pro» — #RESTYLING-0921 round 6 ─────────────────
+                Nel riferimento di Andrea (betredge-studio-0922) questo tasto
+                lime è fisso in nav, accanto ad Accedi. Da noi il passaggio a
+                Pro si incontrava SOLO sbattendo contro una CTA bloccata su
+                una card: chi non apriva una partita non sapeva che esistesse
+                un piano. Ora è in chrome, cioè sempre, su ogni schermata.
+                È un <Link> vero (tasto centrale, condivisione) ma la vista è
+                già in pagina: `setTab` cambia capitolo senza navigare.
+                A chi il Pro ce l'ha già NON si mostra: vendergli ciò che ha
+                comprato è la cosa che fa sembrare un sito uno sconosciuto. */}
+            {!(clientProfile && profileHasPremium(clientProfile)) && (
+              <Link
+                className="br-upgrade"
+                href={TAB_PATHS.plans}
+                onClick={(ev) => {
+                  ev.preventDefault();
+                  setTab("plans");
+                  trackEvent("tab_click", { meta: { tab: "plans", src: "nav-upgrade" } });
+                }}
+              >
+                {pick5(uiLanguage, {
+                  it: "Passa a Pro", en: "Go Pro", es: "Hazte Pro",
+                  fr: "Passer à Pro", ru: "Перейти на Pro",
+                })}
+                <IconArrow size={15} />
+              </Link>
+            )}
+
             <LangDropdown value={uiLanguage} onSelect={selectLanguage} />
+          </div>
+        </div>
+
+        {/* ── Fascia di contesto — #RESTYLING-0921 round 6 ─────────────────
+            Sotto la nav, undici pixel di testo: a sinistra dove sei, a
+            destra dove puoi andare in un clic. Viene dal riferimento
+            («BETREDGE / READ THE GAME.» a sinistra, sport e stato a destra),
+            con due differenze volute: il nostro lato sinistro è un PERCORSO
+            vero — cambia con la sezione, non è uno slogan fisso — e a destra
+            non c'è nessun «anteprima con dati demo», perché i nostri numeri
+            sono quelli veri. Lo stato compare solo quando c'è davvero
+            qualcosa in gioco; a board fermo la fascia resta un percorso e
+            due link, senza inventarsi un'urgenza. */}
+        <div className="br-ctx">
+          <div className="br-ctx__in">
+            <p className="br-ctx__path">
+              BetRedge <span className="br-ctx__sep">/</span>{" "}
+              <span className="br-ctx__here">{contextCrumb}</span>
+            </p>
+            <div className="br-ctx__aside">
+              {([
+                { view: "football" as DeskView, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
+                { view: "tennis" as DeskView, label: "Tennis" },
+              ]).map((s, i) => (
+                <Fragment key={s.view}>
+                  {i > 0 && <span className="br-ctx__sep" aria-hidden>·</span>}
+                  <button
+                    type="button"
+                    className="br-ctx__link"
+                    aria-current={tab === "bets" && deskView === s.view ? "page" : undefined}
+                    onClick={() => {
+                      setTab("bets");
+                      setAutoOpenKey(null);
+                      setDeskView(s.view);
+                      trackEvent("nav_click", { meta: { view: s.view, src: "ctxbar" } });
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                </Fragment>
+              ))}
+              {liveOnBoardCount > 0 && (
+                <span className="br-ctx__state">
+                  <span className="br-ctx__sep" aria-hidden>·</span>{" "}
+                  <b>{liveOnBoardCount}</b>{" "}
+                  {pick5(uiLanguage, {
+                    it: "in corso ora", en: "live now", es: "en vivo",
+                    fr: "en direct", ru: "в игре",
+                  })}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -10370,6 +10612,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               onOpenMatch={openMatchFromLobby}
               onExplore={showExplore}
               onGoHome={() => { setAutoOpenKey(null); setDeskView("home"); }}
+              onGoPro={() => { setTab("plans"); }}
               autoOpenKey={autoOpenKey}
             />
           )}

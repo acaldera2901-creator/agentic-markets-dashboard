@@ -2179,3 +2179,392 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 .br-nav__item:hover img,
 .br-nav__item[aria-current="page"] img,
 .br-nav__item[data-live="true"] img { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * ROUND 6 — IL PERCORSO VERSO PRO (#RESTYLING-0921, 2026-09-22)
+ *
+ * Quattro pezzi nuovi, tutti dal riferimento che Andrea ha fatto costruire
+ * con Sites (betredge-studio-0922, screenshot in docs/reference/round6/):
+ *
+ *   .br-upgrade   il tasto lime «Passa a Pro», sempre in nav
+ *   .br-ctx       la fascia sottile di contesto sotto la nav
+ *   .br-proband   la fascia blu «BETREDGE PRO», ricorrente dopo gli hero
+ *   .br-sporthero l'hero a piena larghezza di Calcio e Tennis
+ *
+ * PERCHÉ TUTTI E QUATTRO INSIEME. Sono un solo gesto: dire dove si è
+ * (.br-ctx), dire cosa è questa sezione (.br-sporthero), e offrire il
+ * passaggio a Pro due volte — una in chrome, sempre presente e discreta
+ * (.br-upgrade), una in pagina, dopo l'hero, dove si è appena capito di
+ * cosa si sta parlando (.br-proband). Prima di questo round il passaggio a
+ * Pro si incontrava SOLO sbattendo contro una CTA bloccata.
+ *
+ * SUL LIME E IL TEMA CHIARO. `--am-lime` cambia valore fra i temi (dark
+ * #C8FF3D su inchiostro scuro, light #4C7A00 su inchiostro bianco): il
+ * tasto e i numeri usano la coppia lime/lime-ink e restano leggibili in
+ * entrambi senza una riga di override. La fascia .br-proband fa eccezione
+ * ed è navy in tutti e due i temi — è un annuncio, e lo stesso precedente
+ * di .br-hero, che su carta resta scuro (riga 1526).
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. «Passa a Pro» in nav ─────────────────────────────────────────────
+   L'unico fill lime del chrome. È anche l'unica CTA piena della topbar:
+   Accedi/Registrati restano un tasto di testo e uno secondario, così la
+   gerarchia ha un vertice solo. Al restringersi perde la freccia e cala di
+   corpo, ma non si nasconde mai: è la CTA di questo round. */
+.br-upgrade {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--am-r-ctl);
+  background: var(--am-lime);
+  color: var(--am-lime-ink);
+  font-family: var(--am-font-hud);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter 140ms ease;
+}
+/* SU CARTA IL LIME RESTA ACIDO. `--am-lime` nel tema chiaro vale #4C7A00 su
+   inchiostro bianco: è pensato per una PAROLA su fondo chiaro, e come fill
+   dava un tasto verde scuro accanto a «Registrati», che è verde scuro anche
+   lui — due tasti identici, e quello che doveva essere IL vertice della
+   gerarchia spariva dentro l'altro (visto sullo screenshot light a 1280).
+   Qui il valore misurato sul riferimento (#C8FF00) vale in entrambi i temi:
+   su bianco è il colore più acceso della pagina e non somiglia a nient'altro,
+   e l'inchiostro scuro ci fa 17,9:1 — più della coppia di default. */
+:root[data-theme="light"] .br-upgrade { background: #C8FF00; color: #0B1400; }
+.br-upgrade:hover { filter: brightness(1.08); }
+/* `currentColor` e non `--am-lime-ink`: sul chiaro il token è bianco, ma il
+   tasto lì ha inchiostro scuro (override qui sopra) e l'anello sarebbe stato
+   bianco su lime, cioè quasi invisibile. */
+.br-upgrade:focus-visible { outline: none; box-shadow: inset 0 0 0 3px currentColor; }
+.br-upgrade svg { flex: 0 0 auto; transition: transform 140ms ease; }
+.br-upgrade:hover svg { transform: translateX(2px); }
+
+/* IL PREZZO DEL TASTO, pagato dove costa meno.
+   `.am-topbar-in` va a capo quando la riga non basta (#RESPONSIVE-0618,
+   globals.css): giusto su telefono, ma i ~124px del tasto nuovo la facevano
+   andare a capo già su un portatile — due righe di chrome sopra ogni pagina.
+   Il caso peggiore è l'utente ANONIMO, che al posto del pill account ha due
+   tasti (Accedi + Registrati): a 1280px mancano ~50px.
+   Misurato con Playwright a 1366/1280/1200/1100, con l'albero pulito come
+   riferimento: la barra stava su una riga fino a ~1198px e col tasto nuovo
+   risaliva a ~1340px. Questi quattro ritocchi la riportano a UNA riga fino a
+   1280px — il portatile comune — e sotto va a capo come faceva prima, che è
+   il punto in cui deve farlo.
+   Il campo di ricerca non si può invece lasciar comprimere da solo: in un
+   flex che va a capo il browser spezza la riga PRIMA di restringere, quindi
+   `min-width: 0` non cambia niente (provato e misurato). A 8ch il placeholder
+   resta troncato come già era a 15ch, e digitando il campo scorre.
+   `:has(.br-upgrade)` tiene il gap più stretto sulla sola topbar del desk:
+   quella delle pagine statiche (SiteTopbar) non ha il tasto e resta com'era. */
+.br-navright .br-search input { width: 8ch; }
+.br-navright { gap: 6px; }
+.am-topbar-in:has(.br-upgrade) { gap: 16px; }
+
+/* ── 2. La fascia di contesto ────────────────────────────────────────────
+   Undici pixel di testo sotto la nav: a sinistra dove sei, a destra dove
+   puoi andare in un clic. Non è una seconda nav — le voci a destra sono le
+   stesse due della primaria, ripetute perché qui costano una riga e là un
+   viaggio con gli occhi. Vive DENTRO `.am-topbar`, quindi resta appiccicata
+   in alto con lei. */
+.br-ctx {
+  border-top: 1px solid var(--am-line);
+  background: var(--am-inset);
+}
+.br-ctx__in {
+  max-width: 1340px;
+  margin: 0 auto;
+  padding: 7px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--am-s-4);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.br-ctx__path { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Il nome della sezione è l'unica parola a pieno valore della fascia. */
+.br-ctx__here { color: var(--am-text); }
+.br-ctx__aside { display: flex; align-items: center; gap: var(--am-s-3); min-width: 0; }
+.br-ctx__link {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--am-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.br-ctx__link:hover { color: var(--am-text); }
+.br-ctx__link:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-ctx__link[aria-current="page"] { color: var(--am-royal); }
+.br-ctx__sep { color: var(--am-line-2); }
+.br-ctx__state { white-space: nowrap; color: var(--am-muted-2); }
+.br-ctx__state b { font-weight: 700; color: var(--am-text); }
+
+/* ── 3. La fascia «BETREDGE PRO» ─────────────────────────────────────────
+   Riga sola, gradiente royal→sky, filo lime a sinistra. Il gradiente è
+   l'UNICA superficie colorata del sistema, e sta qui perché questa fascia
+   deve staccarsi dal resto della pagina senza essere un pannello in più:
+   passa da royal a un blu più freddo lungo 110°, come nel riferimento.
+   Niente `--am-edge`: il verde resta il colore del dato. */
+/* I tre valori letterali qui sotto sono MISURATI sul riferimento, non
+   scelti a occhio: art-director ha letto il CSS live via JS e li ha messi a
+   verbale in docs/reference/round6/NOTE.md — gradiente 110° #144CFF →
+   #096AC5 (70%) → #1682AA, filo sinistro 4px #81D9FF, label lime #C8FF00.
+   Restano letterali e NON token perché questa fascia è navy in entrambi i
+   temi (stesso precedente di .br-hero su carta): un token che cambia col
+   tema qui produrrebbe una fascia chiara su fondo chiaro.
+   NOTA per il round prossimo: i token base del sito (--am-royal #5A85FF)
+   sono più slavati del royal del riferimento (#145AFF). Allinearli è un
+   cambio globale con conseguenze sul contrasto misurato, e va fatto in un
+   commit suo — non di straforo dentro una fascia. */
+.br-proband {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-4);
+  padding: 13px var(--am-s-5);
+  border-left: 4px solid #81D9FF;
+  border-radius: var(--am-r-card-sm);
+  background: linear-gradient(110deg, #144CFF 0%, #096AC5 70%, #1682AA 100%);
+  color: #FFFFFF;
+}
+.br-proband__label {
+  flex: 0 0 auto;
+  font-family: var(--am-font-hud);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #C8FF00;
+}
+.br-proband__rule {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.32);
+}
+.br-proband__copy {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px var(--am-s-3);
+  font-family: var(--am-font-ui);
+  line-height: 1.35;
+}
+.br-proband__head { font-size: 15px; font-weight: 700; }
+.br-proband__sub { font-size: 13px; color: rgba(255,255,255,0.80); }
+.br-proband__cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.br-proband__cta:hover { text-decoration: underline; }
+.br-proband__cta:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 3px; border-radius: 2px; }
+.br-proband__cta svg { transition: transform 140ms ease; }
+.br-proband__cta:hover svg { transform: translateX(3px); }
+
+/* ── 4. L'hero di sezione (Calcio, Tennis) ───────────────────────────────
+   Bassa e larga (280px), foto a destra che sfuma nel navy verso sinistra,
+   testo in HTML sopra. Finché art-director non consegna le foto d'azione
+   `data-art="type"` rende un fondo a gradiente nei token di casa: è un hero
+   finito, non un buco in attesa. */
+.br-sporthero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* 300px è la misura del riferimento (~1410×300 su viewport 1546). Più
+     bassa e il 16:9 della foto si riduce a una fessura; più alta e la prima
+     card del board esce dalla prima schermata. */
+  min-height: 300px;
+  padding: var(--am-s-6);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  background: var(--am-panel);
+  /* La fascia è sempre scura, come .br-hero: le foto d'azione sono girate
+     in luce da stadio e su carta bianca non avrebbero dove appoggiarsi. */
+  --am-text: #EDEFF2;
+  --am-muted: #A9B3CC;
+  --am-lime: #C8FF3D;
+  color: var(--am-text);
+}
+:root[data-theme="light"] .br-sporthero { border-color: rgba(30,72,214,0.45); background: #0C1741; }
+.br-sporthero__art { position: absolute; inset: 0; z-index: 0; }
+.br-sporthero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* L'asse che conta davvero è la Y, e non è ovvio: la fascia è 16:9 di
+     sorgente dentro un riquadro ~4.4:1, quindi `cover` scala sulla LARGHEZZA
+     e ritaglia in ALTEZZA — con `center` restava la banda mediana, cioè
+     pantaloncini e stadio scuro, e la fascia sembrava vuota (visto dal vivo
+     prima di correggere). A 10% entra la parte alta: volto e busto.
+     La X conta solo sotto i ~640px, dove il ritaglio diventa verticale: 72%
+     tiene l'atleta in quadro e taglia il tabellone LED sfocato di sinistra. */
+  object-position: 72% 10%;
+  display: block;
+}
+/* Il velo: orizzontale, da sinistra — il testo è ancorato a sinistra. A
+   destra arriva a zero, così il soggetto della foto si vede intero. Non si
+   scurisce la foto in post (nota di AD): lo scrim è CSS, quindi si regola
+   senza rigenerare 1,6MB di JPEG. */
+.br-sporthero[data-art="photo"] .br-sporthero__art::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, #071329 95%, transparent) 0%,
+    color-mix(in srgb, #071329 86%, transparent) 34%,
+    color-mix(in srgb, #071329 48%, transparent) 60%,
+    color-mix(in srgb, #071329 12%, transparent) 86%,
+    transparent 100%);
+}
+/* Il placeholder: la stessa geometria del velo, fatta di solo colore. */
+.br-sporthero[data-art="type"] .br-sporthero__art {
+  background:
+    radial-gradient(120% 140% at 88% 18%, rgba(90,133,255,0.38) 0%, transparent 62%),
+    linear-gradient(104deg, #060B24 0%, #0C1741 46%, #182B66 100%);
+}
+
+.br-sporthero__text { position: relative; z-index: 1; min-width: 0; }
+.br-sporthero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 var(--am-s-3);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--am-muted);
+}
+/* Due righe, sempre: la seconda è l'accento e va a capo da sola (`block`),
+   non quando capita che la larghezza lo imponga. */
+.br-sporthero__title {
+  margin: 0;
+  font-family: var(--am-font-hud);
+  font-size: clamp(34px, 5.2vw, 64px);
+  font-weight: 800;
+  line-height: 0.94;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+.br-sporthero__line { display: block; }
+.br-sporthero__title em { font-style: normal; color: var(--am-lime); }
+.br-sporthero__sub {
+  margin: var(--am-s-3) 0 0;
+  max-width: 46ch;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--am-muted);
+}
+
+/* Il badge: un numero vero e la sua etichetta, in un angolo. Riquadro a filo
+   e fondo scuro, non un fill neon — la regola della casa sugli accenti. */
+.br-sporthero__stat {
+  position: absolute;
+  z-index: 1;
+  right: var(--am-s-6);
+  bottom: var(--am-s-6);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: var(--am-r-card-sm);
+  background: rgba(6,11,36,0.52);
+  backdrop-filter: blur(3px);
+}
+.br-sporthero__stat-n {
+  font-family: var(--am-font-hud);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--am-lime);
+}
+.br-sporthero__stat-l {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--am-text);
+}
+
+@media (max-width: 640px) {
+  /* Nav: sul telefono resta il tasto, senza freccia e con la label corta. */
+  .br-upgrade { height: 30px; padding: 0 10px; font-size: 13px; gap: 5px; }
+  .br-upgrade svg { display: none; }
+
+  /* Contesto: il percorso si accorcia da solo (ellipsis); a destra resta lo
+     stato, che è l'unica parte che non si ottiene con un tocco altrove. */
+  .br-ctx__in { padding: 6px var(--am-s-4); gap: var(--am-s-2); }
+  .br-ctx__aside .br-ctx__link, .br-ctx__aside .br-ctx__sep { display: none; }
+
+  /* Fascia Pro: due righe. La CTA va sotto e allineata a sinistra — a
+     destra, su 390px, finirebbe sotto la headline. */
+  .br-proband { flex-wrap: wrap; gap: var(--am-s-2) var(--am-s-3); padding: var(--am-s-3) var(--am-s-4); }
+  .br-proband__rule { display: none; }
+  .br-proband__label { font-size: 13px; }
+  .br-proband__copy { flex-basis: 100%; }
+  .br-proband__head { font-size: 14px; }
+  .br-proband__sub { font-size: 12.5px; }
+
+  /* Hero: più basso, e il badge smette di galleggiare sopra il testo —
+     scende in fondo come una riga, dove nessuna headline ci finisce sotto. */
+  .br-sporthero { min-height: 0; padding: var(--am-s-5) var(--am-s-4); gap: var(--am-s-4); }
+  /* Su 390px il ritaglio sale a 75% (indicazione di AD): a 65% l'atleta
+     entrerebbe nella colonna del testo, che qui è tutta la larghezza. */
+  .br-sporthero__img { object-position: 75% center; }
+  /* E il velo diventa quasi pieno: il testo non ha più una metà scura sua. */
+  .br-sporthero[data-art="photo"] .br-sporthero__art::after {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, #071329 62%, transparent) 0%,
+      color-mix(in srgb, #071329 84%, transparent) 55%,
+      color-mix(in srgb, #071329 94%, transparent) 100%);
+  }
+  .br-sporthero__title { font-size: clamp(28px, 10vw, 40px); }
+  .br-sporthero__sub { font-size: 13px; }
+  .br-sporthero__stat {
+    position: static;
+    align-self: flex-start;
+    margin-top: var(--am-s-4);
+    padding: 7px 12px;
+  }
+  .br-sporthero__stat-n { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .br-upgrade, .br-upgrade svg, .br-proband__cta svg { transition: none; }
+  .br-upgrade:hover svg, .br-proband__cta:hover svg { transform: none; }
+}
