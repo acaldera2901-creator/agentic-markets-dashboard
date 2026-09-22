@@ -545,7 +545,13 @@
 :root:not([data-theme="light"]) [data-mc] .pcard-b{padding:.85rem 1rem;display:grid;gap:.2rem}
 :root:not([data-theme="light"]) [data-mc] .pcard-b b{font-size:1rem}
 :root:not([data-theme="light"]) [data-mc] .pcard-f{margin-top:auto;padding:0 1rem 1rem;display:grid;gap:.5rem}
-:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--mc-accent,#33c974)}
+/* Round 8: era `var(--mc-accent,#33c974)`, e `--mc-accent` non è definito da
+   nessuna parte — quindi vinceva sempre il fallback, cioè il verde del brand
+   vecchio. Questa riga sta DOPO la 474 e la sovrascriveva: ogni occhiello
+   dentro [data-mc-ground] (tutta la dashboard, quindi anche /plans) restava
+   verde mentre il resto del sito era passato al lime. Stesso fallback della
+   474, che il round 7 aveva già portato a --verde-b (#C8FF00). */
+:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--mc-accent,var(--verde-b))}
 :root:not([data-theme="light"]) [data-mc] .scene .eyebrow{color:#fff!important}
 
 /* Un figlio di grid/flex non scende sotto la larghezza del suo contenuto:
@@ -723,8 +729,16 @@
 
    Il verde #23A559 sui lavaggi del fondo scende a 4,38–4,44:1 — appena sotto.
    È esattamente il caso per cui esiste il TERZO gradino #33C974: il verde
-   dell'occhiello quando cade sul lavaggio verde. Non è un valore nuovo. */
-:root:not([data-theme="light"]) [data-mc-ground] .v-kick,:root:not([data-theme="light"]) [data-mc-ground] .lab,:root:not([data-theme="light"]) [data-mc-ground] .res{color:#33c974}
+   dell'occhiello quando cade sul lavaggio verde. Non è un valore nuovo.
+
+   Round 8: la riga si spezza in due, perché i tre nodi non erano la stessa
+   cosa. `.v-kick` e `.lab` sono OCCHIELLI — colore di brand, e il brand ora è
+   lime. `.res` è l'esito di una giocata (`.res.lost` è rosso due righe sotto):
+   lì il verde è SEMANTICO, dice «vinta», e passarlo al lime avrebbe tolto la
+   coppia verde/rosso che è l'unica cosa che si legge a colpo d'occhio su
+   /history. Resta #33C974 per la ragione scritta qui sopra. */
+:root:not([data-theme="light"]) [data-mc-ground] .v-kick,:root:not([data-theme="light"]) [data-mc-ground] .lab{color:var(--verde-b)}
+:root:not([data-theme="light"]) [data-mc-ground] .res{color:#33c974}
 /* i grigi al gradino validato del sistema */
 :root:not([data-theme="light"]) [data-mc-ground] .v-anat-cap,:root:not([data-theme="light"]) [data-mc-ground] .sp,:root:not([data-theme="light"]) [data-mc-ground] .ps,:root:not([data-theme="light"]) [data-mc-ground] .v-wall-head span,
 :root:not([data-theme="light"]) [data-mc-ground] .v-tier .price small{color:#a3a9b2}
