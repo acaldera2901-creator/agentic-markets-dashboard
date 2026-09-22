@@ -139,7 +139,7 @@ def _coda_log_errori(label: str, righe: int = 12) -> str | None:
     if not percorso:
         return None
     try:
-        contenuto = Path(percorso).read_text(errors="replace").splitlines()
+        contenuto = Path(percorso).read_text(encoding="utf-8", errors="replace").splitlines()
     except (OSError, FileNotFoundError):
         return None
     if not contenuto:
@@ -151,7 +151,7 @@ def _verdetto_reporter(label: str, riga: dict) -> Verdict:
     """Un daemon che giudica: il suo exit e' un puntatore, non il verdetto."""
     report = REPORTER[label]
     try:
-        testo = report.read_text()
+        testo = report.read_text(encoding="utf-8")
     except (OSError, FileNotFoundError):
         return unknown(
             f"ha segnalato problemi (exit {riga['status']}) ma {report.name} non e' leggibile",

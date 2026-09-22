@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 
@@ -11,6 +12,10 @@ def stato_isolato(tmp_path, mocker):
     mocker.patch.object(actions, "TOKEN_FILE", tmp_path / "token")
     mocker.patch.object(actions, "JOBS_DIR", tmp_path / "jobs")
     mocker.patch.object(actions, "REPORTS_DIR", tmp_path / "reports")
+    # launchctl is mocked in these unit tests; supply its POSIX uid input on
+    # Windows too so command construction still receives portable coverage.
+    if not hasattr(os, "getuid"):
+        mocker.patch.object(actions.os, "getuid", return_value=1000, create=True)
     return tmp_path
 
 
@@ -18,6 +23,11 @@ def test_il_token_e_stabile_e_privato(stato_isolato):
     a = actions.ensure_token()
     b = actions.ensure_token()
     assert a == b and len(a) >= 24
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX mode 0600 has no Windows ACL equivalent")
+def test_il_token_ha_permessi_posix_privati(stato_isolato):
+    actions.ensure_token()
     assert oct((stato_isolato / "token").stat().st_mode)[-3:] == "600"
 
 

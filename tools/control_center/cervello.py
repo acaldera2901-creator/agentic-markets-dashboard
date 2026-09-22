@@ -479,7 +479,7 @@ def _scrivi(dati: dict, percorso: Path) -> None:
     percorso.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(percorso.parent), prefix=".cervello-", suffix=".tmp")
     try:
-        with os.fdopen(fd, "w") as fh:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
             # Compatto e non indentato: con `indent` lo stesso grafo passa da
             # 200 KB a 700 KB, e nessuno legge questo file a mano.
             json.dump(dati, fh, ensure_ascii=False, separators=(",", ":"))
@@ -511,12 +511,12 @@ def impronta(nodi: list[dict], archi: list[dict]) -> str:
 def aggiorna(radice: Path = RADICE, uscita: Path = USCITA, cache: Path = CACHE) -> dict:
     partenza = time.perf_counter()
     try:
-        vecchia = json.loads(cache.read_text())
+        vecchia = json.loads(cache.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         vecchia = {}
     precedente: dict = {}
     try:
-        precedente = json.loads(uscita.read_text())
+        precedente = json.loads(uscita.read_text(encoding="utf-8"))
         posizioni = {
             nodo["id"]: (nodo["x"], nodo["y"])
             for nodo in precedente.get("nodes", [])

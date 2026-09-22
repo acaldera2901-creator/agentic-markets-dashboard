@@ -166,7 +166,8 @@ def test_un_reporter_punta_al_messaggio_non_al_messaggero(mocker, tmp_path):
         "# daemon-health\n"
         "✅ learning-loop     ok\n"
         "❌ ig-refresh-news   news-of-day.json · 3g fa\n"
-        "❌ ig-build-queue    build-queue.out.log · 3g fa\n"
+        "❌ ig-build-queue    build-queue.out.log · 3g fa\n",
+        encoding="utf-8",
     )
     mocker.patch.dict(daemons.REPORTER, {"com.tal.reporter": report}, clear=False)
     out = "PID\tStatus\tLabel\n-\t1\tcom.tal.reporter\n"
