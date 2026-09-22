@@ -1463,12 +1463,12 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
      79px di testo, e a 390px si leggeva «Footb…», «More spo…», «Coming soon»
      tagliato, con «45 picks today» che usciva dal riquadro (il meta ha
      `white-space: nowrap` e nessun clip, quindi il testo debordava dipinto
-     fuori dal suo box). Icona più piccola, niente freccia — la tile è tutta
-     toccabile — e le due righe di testo vanno a capo invece di troncarsi. */
+     fuori dal suo box). Icona più piccola e le due righe di testo che vanno a
+     capo invece di troncarsi. La freccia resta: è l'unico segno che la tile è
+     toccabile, e con l'icona più piccola lo spazio adesso basta. */
   .br-tile { min-height: 64px; padding: 10px; gap: 8px; }
   .br-tile__icon { width: 30px; height: 30px; }
   .br-tile__icon[data-kind="raster"] { width: 32px; height: 32px; }
-  .br-tile__go { display: none; }
   .br-tile__name { white-space: normal; overflow: visible; }
   .br-tile__meta { white-space: normal; }
 
