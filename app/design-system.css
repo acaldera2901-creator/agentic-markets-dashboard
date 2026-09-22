@@ -55,6 +55,16 @@
   color: var(--am-text);
 }
 .br-chip[data-kind="sport"] svg { color: var(--am-muted); }
+/* Round 5: l'icona sport è il raster della casa (SportChip). I PNG sono già
+   ritagliati sulla loro tile scura — niente disco, niente cornice attorno. */
+.br-chip__ico {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 3px;
+}
 /* La lega è contesto, non categoria: testo e basta, niente cornice. */
 .br-chip[data-kind="league"] {
   padding: 4px 0;
@@ -300,11 +310,16 @@
 .br-cta[data-tone="unlock"]:hover { background: var(--am-edge-b); }
 
 /* ── PredictionCard ───────────────────────────────────────────────────── */
+/* Round 5: la card rimpicciolisce. Andrea, sulla preview del round 4: «troppo
+   grandi, e nella prima schermata se ne vedono due». Meno padding, meno gap,
+   numero più contenuto — la card resta leggibile in 2-3 secondi ma tre ne
+   stanno dove prima ne stavano due. La misura che comanda è `.br-sec__grid`,
+   qui si accompagna: una card piccola in una colonna larga è solo aria. */
 .br-card {
   position: relative;
   display: grid;
-  gap: var(--am-s-3);
-  padding: var(--am-s-4);
+  gap: var(--am-s-2);
+  padding: var(--am-s-3);
   background: var(--am-panel);
   border: 1px solid var(--am-line);
   border-radius: var(--am-r-card);
@@ -413,7 +428,10 @@
 }
 .br-card__model-n {
   font-family: var(--am-font-num);
-  font-size: 40px;
+  /* Round 5: 40 → 30px. Resta l'elemento che domina la card (il pick sta a
+     15px, le label a 11), ma in una card più fitta un 40 spingeva da solo la
+     card oltre i 260px di altezza. */
+  font-size: 30px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
@@ -686,14 +704,20 @@
 .br-sec__link:hover { text-decoration: underline; }
 .br-sec__link:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
 
+/* Round 5: 302 → 248px di colonna minima. Su 1280 la lobby passa da 3 a 4
+   card per riga, e nella colonna accanto all'hero da 2 a 3 — la richiesta di
+   Andrea era esattamente «nella prima schermata se ne devono vedere di più».
+   `auto-fill` fa il resto da solo su ogni larghezza. */
 .br-sec__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(302px, 1fr));
-  gap: var(--am-s-4);
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: var(--am-s-3);
   align-items: start;
 }
 /* La card featured occupa due colonne quando ci sono: è il top pick, e in una
-   griglia di uguali non si distinguerebbe. Sotto le due colonne torna sola. */
+   griglia di uguali non si distinguerebbe. Sotto le due colonne torna sola.
+   Round 5: la lobby non produce più `featured` (tutte le card devono avere la
+   STESSA dimensione), la regola resta per gli altri usi della variante. */
 @media (min-width: 980px) {
   .br-sec__grid > .br-card[data-variant="featured"] { grid-column: span 2; }
 }

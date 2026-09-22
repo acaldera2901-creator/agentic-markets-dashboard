@@ -9013,17 +9013,17 @@ function HomeLobby({
   const totalFor = (id: LobbySectionId) =>
     id === "football" ? footballItems.length : id === "tennis" ? tennisItems.length : null;
 
-  const renderCard = (item: LobbyItem, idx: number, sectionId: LobbySectionId, plain = false) => {
+  const renderCard = (item: LobbyItem, sectionId: LobbySectionId) => {
     const d = item.data;
     const locked = d.locked === true;
-    // Il top pick della lobby è l'unica card «featured»: se tutte lo fossero,
-    // nessuna lo sarebbe. `plain` la spegne: nella colonna accanto all'hero
-    // (round 4) la featured occuperebbe due colonne su due e la seconda card
-    // finirebbe sotto, a colonna già finita.
-    const variant = locked ? "premiumLocked"
-      : d.isLive ? "live"
-      : !plain && sectionId === "top" && idx === 0 ? "featured"
-      : "compact";
+    // #RESTYLING-0921 round 5 — TUTTE LE CARD HANNO LA STESSA DIMENSIONE.
+    // Fino al round 4 il top pick era `featured`: due colonne, più padding,
+    // numero a 52px, teaser del «perché». Andrea, sulla preview: le card
+    // «sono di dimensioni diverse a seconda della sezione», e devono essere
+    // tutte uguali. `live` e `premiumLocked` non cambiano la scatola (cambiano
+    // solo cosa ci sta dentro), quindi restano. La variante `featured` esiste
+    // ancora nel componente, semplicemente la lobby non la chiede più.
+    const variant = locked ? "premiumLocked" : d.isLive ? "live" : "compact";
     const soon = !d.isLive ? startingSoonLabel(d.startsAt) : null;
     // Il badge «Starting soon» vince su «High edge» solo nella sua fascia:
     // altrove l'informazione che serve è l'edge. Una card chiusa non annuncia
@@ -9195,11 +9195,15 @@ function HomeLobby({
   // prezzo di mercato (lib/ui/lobby.ts non rende una sezione vuota) sale
   // «Live now», o quella che c'è. Niente duplicati: la fascia salita non si
   // ripete sotto, e «Vedi tutte» resta il modo di aprire il resto.
-  const HERO_SIDE_CAP = 2;
+  // Round 5: da 2 a 6. Con la colonna minima a 248px (design-system.css) la
+  // fascia accanto all'hero rende 3 card per riga su 1280 — due righe, sei
+  // card sopra la piega invece di due. Era la richiesta esplicita: «nella
+  // primissima schermata deve vederne di più».
+  const HERO_SIDE_CAP = 6;
   const sideSection = view === "home" ? shown[0] : undefined;
   const belowSections = sideSection ? shown.slice(1) : shown;
 
-  const renderSection = (sec: LobbySectionData, cap?: number, plain = false) => {
+  const renderSection = (sec: LobbySectionData, cap?: number) => {
     const copy = LOBBY_COPY[sec.id];
     const total = totalFor(sec.id);
     const isSport = sec.id === "football" || sec.id === "tennis";
@@ -9226,7 +9230,7 @@ function HomeLobby({
           </button>
         ) : null}
       >
-        {items.map((item, i) => renderCard(item, i, sec.id, plain))}
+        {items.map((item) => renderCard(item, sec.id))}
       </LobbySection>
     );
   };
@@ -9310,7 +9314,7 @@ function HomeLobby({
       {hero && sideSection ? (
         <div className="br-home-top">
           {hero}
-          {renderSection(sideSection, HERO_SIDE_CAP, true)}
+          {renderSection(sideSection, HERO_SIDE_CAP)}
         </div>
       ) : hero}
       {belowSections.map((sec) => (
@@ -9820,7 +9824,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [predFallback, setPredFallback] = useState(false);
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [liveTennis, setLiveTennis] = useState<LiveTennisMatch[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
   // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
@@ -10297,14 +10300,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     } catch { /* silent */ }
   }, []);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      // Il POST /api/predictions è cron-only (bearer CRON_SECRET): dal client
-      // rispondeva sempre 401. Il refresh utente rilegge i dati già serviti.
-      await Promise.all([fetchPredictions(), fetchTennis(), fetchHistoryV2()]);
-    } finally { setRefreshing(false); }
-  };
+  // #RESTYLING-0921 round 5 — `handleRefresh` è rimosso insieme al bottone
+  // «REFRESH ODDS» che lo chiamava (unico chiamante). I tre fetch che faceva
+  // girano comunque sui loro intervalli qui sotto.
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -10768,13 +10766,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     ← {pick5(uiLanguage, { it: "Torna alla home", en: "Back to home", es: "Volver al inicio", fr: "Retour à l'accueil", ru: "На главную" })}
                   </button>
                 )}
-                {/* Il comando «aggiorna quote» viveva in fondo alla rail
-                    laterale, che non c'è più: sta qui, accanto al contenuto che
-                    aggiorna. */}
-                <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
-                  ↻ {refreshing ? "..." : tUI.refresh_odds}
-                  <span className="sync">live</span>
-                </button>
+                {/* #RESTYLING-0921 round 5 — via «REFRESH ODDS · live».
+                    Le prediction si rileggono da sole ogni 60 minuti
+                    (#PLAN-REFRESH-0831) e il router.refresh() manuale non
+                    ricalcolava nulla: era un comando da dashboard in testa a
+                    una lobby di scoperta. `handleRefresh` resta per il
+                    rimontaggio dati, senza un bottone che lo annunci. */}
               </div>
             )}
             {/* #QW3: le stat-tile board (eventi/con-edge/hit) informano solo dove

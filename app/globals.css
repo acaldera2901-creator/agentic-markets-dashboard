@@ -4125,7 +4125,11 @@ button:disabled {
   color: var(--muted-2);
   cursor: pointer;
 }
-.am-tt button.on { background: var(--am-coral); color: var(--bg); }
+/* #RESTYLING-0921 round 5 — il segmento attivo era `--am-coral` (#23A559, il
+   verde del brand vecchio): l'unico pezzo di topbar rimasto fuori dalla
+   palette royal/lime dei round 3-4, accanto a una nav già tutta royal.
+   `--am-royal-2` è il token del "fill selected" (testo bianco, 5,2:1). */
+.am-tt button.on { background: var(--am-royal-2); color: var(--am-royal-ink); }
 
 /* account pill */
 .am-acct {
