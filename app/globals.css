@@ -39,8 +39,18 @@
   --am-chamfer-line:   var(--am-line);
   --am-chamfer-line-2: var(--am-line-2);
 
-  /* Brand accents — green primary (rebrand 2026-06-22, da logo BetrEdge verde) */
-  --am-coral:      #23A559;   /* primary: CTA, nav attiva, top-pick (brand green) */
+  /* Brand accents — green primary (rebrand 2026-06-22, da logo BetrEdge verde)
+     #RESTYLING-0921 round 5 — IN SCURO IL BRAND GREEN VALE #3DF56E, NON #23A559.
+     È la stessa decisione che il round 3 aveva già preso per i ruoli semantici
+     e scritto venti righe più sotto: sul pannello navy #23A559 fa 5,1:1,
+     #3DF56E ne fa 11,9. Fino al round 4 la decisione era applicata solo ai
+     token nuovi (--am-edge), quindi ogni superficie non ancora restylata —
+     Piani, Storico, Classifica, Invito, Strumenti — continuava a rendere il
+     verde vecchio: da lì il «fuori palette» segnalato sul toggle DARK/LIGHT,
+     che era solo il pezzo più visibile di un problema di tutto il sito.
+     Ora --am-coral È --am-edge. In CHIARO non cambia niente: il valore light
+     era già #137437 su entrambi i token (#PRO-AA-0822). */
+  --am-coral:      #3DF56E;   /* primary: CTA, nav attiva, top-pick (brand green) */
   --am-coral-2:    #15703B;   /* fill/gradiente (green scuro) */
   --am-orange:     #FB923C;   /* secondario caldo, gradiente con coral */
   --am-cobalt:     #3B82F6;   /* dati e output modello, link */
@@ -56,8 +66,8 @@
   --am-negative-b:   rgba(248,113,113,0.30);
 
   /* Brand accent dim/border helpers (sostituiscono i vecchi --am-green-*) */
-  --am-coral-dim:  rgba(35,165,89,0.13);
-  --am-coral-b:    rgba(35,165,89,0.34);
+  --am-coral-dim:  rgba(61,245,110,0.14);
+  --am-coral-b:    rgba(61,245,110,0.45);
   --am-coral-ink:  #06140C;   /* testo scuro leggibile su fill green */
 
   /* Legacy semantic names kept as internal aliases (do not reference --am-green
@@ -4953,7 +4963,7 @@ button:disabled {
 .free-paywall .fp-cta {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 11px 20px; border-radius: 9px; border: 0; cursor: pointer;
-  background: var(--am-coral); color: #fff; font-weight: 700; font-size: 14px;
+  background: var(--am-coral); color: var(--am-coral-ink); font-weight: 700; font-size: 14px;
   box-shadow: 0 6px 18px -8px var(--am-coral);
 }
 .free-paywall .fp-cta:hover { filter: brightness(1.06); }
@@ -8167,7 +8177,7 @@ button:disabled {
 .lp-phone-row svg { width: 15px; height: 15px; color: var(--am-coral); flex: none; }
 .lp-phone-bar { flex: 1; height: 5px; border-radius: 3px; background: var(--am-line-2); }
 .lp-phone-odd { font-family: var(--font-mono, ui-monospace), monospace; font-size: 11px; color: var(--am-cobalt-2); }
-.lp-phone-cta { text-align: center; font-weight: 800; font-size: 10px; letter-spacing: .08em; color: #fff; background: linear-gradient(180deg, var(--am-coral), var(--am-coral-2)); border-radius: 8px; padding: 8px; }
+.lp-phone-cta { text-align: center; font-weight: 800; font-size: 10px; letter-spacing: .08em; color: #fff; background: var(--am-coral-2); border-radius: 8px; padding: 8px; }
 .lp-soon { margin-top: 12px; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--am-muted); }
 
 /* ══ What is BetRedge (#HOME-VALUEPROP-1) ══════════════════════════════════
@@ -8987,7 +8997,7 @@ button:disabled {
 .mds-chip:focus-visible { outline: 2px solid var(--am-positive); outline-offset: 2px; }
 .mds-chip.rec { border-color: var(--am-coral-b); background: color-mix(in srgb, var(--am-coral) 8%, var(--am-inset)); }
 .mds-chip.on { border-color: var(--am-coral); background: var(--am-coral-dim); }
-.mds-pickbadge { position: absolute; top: -8px; left: 10px; display: inline-flex; align-items: center; gap: 3px; font-family: var(--mds-mono); font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: var(--am-coral); border-radius: 999px; padding: 2px 7px; }
+.mds-pickbadge { position: absolute; top: -8px; left: 10px; display: inline-flex; align-items: center; gap: 3px; font-family: var(--mds-mono); font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-coral-ink); background: var(--am-coral); border-radius: 999px; padding: 2px 7px; }
 .mds-pickbadge .mds-ico { width: 9px; height: 9px; color: #fff; }
 .mds-tick { position: absolute; top: 8px; right: 8px; width: 15px; height: 15px; color: var(--am-coral); }
 .mds-cl { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 16px; }

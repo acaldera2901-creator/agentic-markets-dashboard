@@ -1714,3 +1714,70 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   .am-grid.br-board-grid { grid-template-columns: 1fr; }
   .sport-band.br-band h2 { font-size: 22px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * IL RESTO DEL SITO — #RESTYLING-0921 round 5 fase C (2026-09-22)
+ *
+ * Piani, Storico, Classifica, Invito, Build a Probability View e Strumenti
+ * sono rimasti fuori dallo scope dichiarato dei round 1-4. Rifarli uno per uno
+ * non entra in una giornata, e non serve: quello che li fa leggere «vecchio
+ * dashboard» accanto alla Home è quasi tutto in due cose — il verde del brand
+ * vecchio (risolto alla radice in globals.css, `--am-coral` ora vale
+ * `--am-edge`) e il TITOLO, che lì è un grassetto stretto generico mentre su
+ * Home e board è la voce della casa: Saira Condensed 800 maiuscolo.
+ *
+ * Qui si dà quella voce ai titoli condivisi, che è la firma che attraversa la
+ * pagina — «la gerarchia la fa la tipografia, non i badge» (round 3). Il
+ * layout di quelle viste non si tocca: riscriverli è il giro dopo, e va fatto
+ * a vista, non alla cieca sotto scadenza.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* Il titolo di OGNI vista del desk (Piani, Storico, Classifica, Invito,
+   Build a Probability View, Explore, Today): un solo h1 per pagina
+   (#SEO-PACK-0810), ora nella voce della casa. */
+.book-main-head h1,
+.book-main-head h2 {
+  font-family: var(--am-font-hud);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.am-deskhead .am-sub { font-family: var(--am-font-ui); }
+
+/* Le teste di sezione delle stesse viste. */
+.plans-hero h3,
+.plan-card-head h4,
+.am-history .hh h2 {
+  font-family: var(--am-font-hud);
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+.plans-hero h3 { font-size: 26px; }
+.plan-card-head h4 { font-size: 21px; }
+.am-history .hh h2 { font-size: 24px; }
+
+/* L'eyebrow è la label tecnica del design system, non un testo colorato in più:
+   stessa misura, stessa tracciatura, stesso grigio di `.br-label`. */
+.plans-hero .eyebrow,
+.plan-card-head .eyebrow {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+
+/* Round 3: «zero glow». L'alone radiale dietro il blocco Edge del board era
+   l'ultimo rimasto in pagina — la profondità la fanno superficie e bordo. */
+.featured::before { background: none; }
+
+@media (max-width: 640px) {
+  .book-main-head h1,
+  .book-main-head h2 { font-size: 24px; }
+  .plans-hero h3 { font-size: 22px; }
+}
