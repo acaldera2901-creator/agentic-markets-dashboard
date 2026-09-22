@@ -317,7 +317,10 @@
    qui si accompagna: una card piccola in una colonna larga è solo aria. */
 .br-card {
   position: relative;
-  display: grid;
+  /* Colonna flex, non grid: è ciò che rende vero il `margin-top:auto` del
+     piede, e quindi allinea le CTA di una riga sulla stessa linea. */
+  display: flex;
+  flex-direction: column;
   gap: var(--am-s-2);
   padding: var(--am-s-3);
   background: var(--am-panel);
@@ -712,7 +715,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
   gap: var(--am-s-3);
-  align-items: start;
+  /* Le righe hanno già altezza uniforme: con `start` le card non la
+     riempivano, e un nome squadra che va a capo bastava a sfalsare in
+     altezza la card accanto e la sua CTA. */
+  align-items: stretch;
 }
 /* La card featured occupa due colonne quando ci sono: è il top pick, e in una
    griglia di uguali non si distinguerebbe. Sotto le due colonne torna sola.
@@ -1801,6 +1807,19 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 
 /* ── Edge del giorno ─────────────────────────────────────────────────────── */
 .br-edge { min-width: 0; }
+/* ATTENZIONE: `.br-edge` in cima a questo file è il BADGE numerico (inline-flex,
+   mono, 700, nowrap, line-height 1). Qui lo stesso nome fa da contenitore del
+   blocco, quindi il pannello ereditava tutta quella tipografia: la frase del
+   modello restava su una riga sola e veniva tagliata a metà parola, e le
+   etichette giravano in mono. Finché i due nomi non vengono separati, il
+   contenitore si rimette in tipografia di testo. */
+.edge-split > .br-edge {
+  font-family: var(--am-font-ui);
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: normal;
+  white-space: normal;
+}
 .br-edge > .featured {
   margin: 0;
   background: var(--am-panel);
