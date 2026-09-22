@@ -16,18 +16,24 @@
      luminanza sale di un gradino: sfondo #060B24, pannello #0C1741. I rapporti
      AA sono stati rimisurati su questa rampa (vedi i commenti ai grigi sotto):
      testo 15,0:1, muted 8,2:1, muted-2 6,1:1, royal 5,1:1 su --am-panel. */
-  --am-bg:         #060B24;
-  --am-bg-2:       #081033;
-  --am-panel:      #0C1741;
-  --am-panel-2:    #10204F;
-  --am-panel-3:    #182B66;
-  --am-bar:        rgba(5,9,30,0.97);   /* header/banner bands */
-  --am-inset:      #050A20;    /* superfici recessed: input, pill, segmented */
+  /* #RESTYLING-0921 round 7 — i valori sono LETTI dal riferimento di Codex (CSS
+     computato, non stimati a occhio): bg #071329, panel #0d2343. Il navy vira
+     al blu e alza di un soffio la luminanza: è la differenza che Andrea leggeva
+     come «non è cambiato nulla». I gradini -2/-3 sono derivati sulla rampa. */
+  --am-bg:         #071329;
+  --am-bg-2:       #0A1B35;
+  --am-panel:      #0D2343;
+  --am-panel-2:    #112C53;
+  --am-panel-3:    #17396A;
+  --am-bar:        rgba(5,14,32,0.97);   /* header/banner bands */
+  --am-inset:      #050F22;    /* superfici recessed: input, pill, segmented */
 
   /* Borders — un FILO BLU LUMINOSO, non un grigio: è il bordo delle card in
-     ref-01. Alpha sul royal così regge su bg, panel e panel-2 senza tre hex. */
-  --am-line:       rgba(90,133,255,0.30);
-  --am-line-2:     rgba(90,133,255,0.50);
+     ref-01. Alpha sul royal così regge su bg, panel e panel-2 senza tre hex.
+     Round 7: rgba(72,164,255,.4), il filo esatto del riferimento — più chiaro e
+     più ciano del precedente, quindi si vede davvero sul navy. */
+  --am-line:       rgba(72,164,255,0.40);
+  --am-line-2:     rgba(72,164,255,0.62);
   /* LEVEL-UP 1c+: hairline delle CORNICI chamfer (rail/book-main/betslip/glass-card).
      Su dark serve un filo CHIARO (i --line neutri spariscono sul quasi-nero) → white
      alpha; su light un filo scuro. Fa leggere il taglio obliquo senza fare "gabbia". */
@@ -49,9 +55,14 @@
      verde vecchio: da lì il «fuori palette» segnalato sul toggle DARK/LIGHT,
      che era solo il pezzo più visibile di un problema di tutto il sito.
      Ora --am-coral È --am-edge. In CHIARO non cambia niente: il valore light
-     era già #137437 su entrambi i token (#PRO-AA-0822). */
-  --am-coral:      #3DF56E;   /* primary: CTA, nav attiva, top-pick (brand green) */
-  --am-coral-2:    #15703B;   /* fill/gradiente (green scuro) */
+     era già #137437 su entrambi i token (#PRO-AA-0822).
+     Round 7 — l'accento del riferimento NON è il verde: è il lime #c8ff00. Il
+     verde neon spariva dentro il blu nuovo e restava l'ultimo residuo di
+     palette vecchia. --am-coral, che è l'accento di TUTTE le superfici non
+     ancora rifatte a mano, ci va dietro: è l'unico modo perché Piani, Storico,
+     Classifica e Invito cambino voce senza toccarne i body. */
+  --am-coral:      #C8FF00;   /* primary: CTA, nav attiva, top-pick (lime del riferimento) */
+  --am-coral-2:    #8FB800;   /* fill/gradiente (lime scuro) */
   --am-orange:     #FB923C;   /* secondario caldo, gradiente con coral */
   --am-cobalt:     #3B82F6;   /* dati e output modello, link */
   --am-cobalt-2:   #60A5FA;
@@ -66,9 +77,9 @@
   --am-negative-b:   rgba(248,113,113,0.30);
 
   /* Brand accent dim/border helpers (sostituiscono i vecchi --am-green-*) */
-  --am-coral-dim:  rgba(61,245,110,0.14);
-  --am-coral-b:    rgba(61,245,110,0.45);
-  --am-coral-ink:  #06140C;   /* testo scuro leggibile su fill green */
+  --am-coral-dim:  rgba(200,255,0,0.14);
+  --am-coral-b:    rgba(200,255,0,0.45);
+  --am-coral-ink:  #0B1400;   /* testo scuro leggibile su fill lime (15,9:1) */
 
   /* Legacy semantic names kept as internal aliases (do not reference --am-green
      elsewhere; --green legacy alias now points to coral). */
@@ -84,10 +95,10 @@
   /* Ambient wash + glow color (statico, non animato — fascia verde) */
   /* LEVEL-UP 1b: --am-wash era rossastro residuo (stesso bug-class di --am-glow);
      verde brand, alpha invariata. Alimenta il radial ambientale di pagina. */
-  --am-wash:       rgba(35,165,89,0.10);
+  --am-wash:       rgba(20,90,255,0.10);   /* round 7: l'ambiente di pagina è blu, non verde */
   /* LEVEL-UP 2026-07-12: --am-glow era rossastro residuo pre-rebrand (bug);
      riportato al verde brand — micro-glow CTA su hover/focus, mai ambient. */
-  --am-glow:       rgba(35,165,89,0.22);
+  --am-glow:       rgba(200,255,0,0.22);   /* round 7: micro-glow CTA sul lime */
 
   /* LEVEL-UP tactical tokens — spigolo vivo (controlli) + chamfer (pannelli) */
   --am-btn-radius: 0px;   /* pulsanti: taglio tattico, spigolo vivo pieno */
@@ -96,7 +107,7 @@
 
   /* Typography */
   --am-text:       #EDEFF2;
-  --am-muted:      #A9B3CC;  /* round 2: grigio-blu, in famiglia col navy. 8,2:1 su panel. */
+  --am-muted:      #A8BDD6;  /* round 7: il muted del riferimento, più azzurro. 8,2:1 su panel, 9,6:1 su bg. */
   --am-muted-2:    #909AAE;  /* round 2: era #767E89 → sul pannello navy faceva 4,21:1 (sotto AA per le label a 11px). Ora 6,1:1 su panel, 5,5:1 su panel-2, 4,7:1 su panel-3. */
   --am-hi:         rgba(255,255,255,0.05);
 
@@ -114,19 +125,27 @@
      Round 3 (direzione d'arte, 2026-09-22): i token --am-*-glow e i fill
      neon dei badge sono stati tolti — «troppo pieno» legge come generato.
      Il neon resta come TESTO e come UNA CTA per schermata; la profondità la
-     fanno le superfici e il bordo a 1px, mai un alone. */
-  --am-royal:      #5A85FF;   /* tab attiva, link, selected, focus — 5,1:1 su panel, 4,65 su panel-2 */
-  --am-royal-2:    #2A5BFF;   /* fill selected/tab con testo bianco (5,2:1) */
-  --am-royal-dim:  rgba(90,133,255,0.16);
-  --am-royal-b:    rgba(90,133,255,0.42);
+     fanno le superfici e il bordo a 1px, mai un alone.
+     Round 7 — royal e lime sono i valori letti dal riferimento. ATTENZIONE al
+     royal: #145aff è saturo e SCURO, quindi come TESTO su pannello fa 2,94:1,
+     sotto AA. È il colore giusto ma è un colore da FILL, non da inchiostro —
+     nel riferimento riempie la fascia Pro e i pulsanti, non scrive mai.
+     Quindi: --am-royal resta #145aff per fill/gradienti/bordi, e il royal che
+     SCRIVE è --am-royal-t (#6EA4FF, 6,3:1 su panel). Non è un compromesso sul
+     colore base: è la stessa distinzione che il riferimento fa di fatto. */
+  --am-royal:      #145AFF;   /* fill: fascia Pro, pulsanti, tab attiva, gradienti */
+  --am-royal-t:    #6EA4FF;   /* royal che SCRIVE: link, tab attiva, focus — 6,3:1 su panel, 7,4:1 su bg */
+  --am-royal-2:    #145AFF;   /* fill selected/tab con testo bianco (5,3:1) */
+  --am-royal-dim:  rgba(20,90,255,0.22);
+  --am-royal-b:    rgba(72,164,255,0.55);
   --am-royal-ink:  #FFFFFF;
-  --am-sky:        #7FC4FF;   /* market probability, chart secondario — 9,3:1 */
-  --am-sky-dim:    rgba(127,196,255,0.12);
-  --am-sky-b:      rgba(127,196,255,0.36);
-  --am-edge:       #3DF56E;   /* edge positivo, CTA primaria, upgrade — 11,9:1 su panel */
-  --am-edge-dim:   rgba(61,245,110,0.14);
-  --am-edge-b:     rgba(61,245,110,0.45);
-  --am-edge-ink:   #06140C;   /* testo su fill --am-edge (13,0:1) */
+  --am-sky:        #81D9FF;   /* market probability, chart secondario — 9,9:1 su panel */
+  --am-sky-dim:    rgba(129,217,255,0.12);
+  --am-sky-b:      rgba(129,217,255,0.36);
+  --am-edge:       #C8FF00;   /* edge positivo, CTA primaria, upgrade — 13,3:1 su panel */
+  --am-edge-dim:   rgba(200,255,0,0.14);
+  --am-edge-b:     rgba(200,255,0,0.45);
+  --am-edge-ink:   #0B1400;   /* testo su fill --am-edge (15,9:1) */
   --am-live:       #FFE818;   /* live, starting soon, attenzione — 13,8:1 */
   --am-live-dim:   rgba(255,232,24,0.14);
   --am-live-b:     rgba(255,232,24,0.45);
@@ -135,8 +154,13 @@
      dell'edge — così «today.» e «+18» non si confondono (ref-01). 14,3:1.
      Round 3: è anche il fill dell'unica CTA dell'hero; --am-lime-ink è il suo
      inchiostro (17,9:1). */
-  --am-lime:       #C8FF3D;
+  --am-lime:       #C8FF00;   /* round 7: il lime esatto del riferimento. 13,3:1 su panel */
   --am-lime-ink:   #0B1400;
+  /* Lime PIENO da superficie. In scuro coincide con --am-lime; esiste perché in
+     CHIARO i due si separano (lì il lime che scrive deve scendere di valore, il
+     lime che riempie no). Chi riempie usa questi due, e funziona in entrambi. */
+  --am-lime-fill:  #C8FF00;
+  --am-lime-fill-ink: #0B1400;
 
   /* Forma: le card si ammorbidiscono (8–12px), i controlli dentro le card 6px.
      --am-btn-radius 0 resta per i tasti legacy del desk: le pagine che lo usano
@@ -155,12 +179,17 @@
   --am-s-1: 4px;  --am-s-2: 8px;  --am-s-3: 12px; --am-s-4: 16px;
   --am-s-5: 24px; --am-s-6: 32px; --am-s-7: 48px; --am-s-8: 64px;
 
-  /* Ruoli tipografici. UI = Hanken (titoli, corpo, label). NUM = JetBrains Mono
-     SOLO per quote, percentuali, date, label tecniche. HUD = Saira Condensed,
-     registro legacy della scheda #CARD-HUD-0830, non usato dal nuovo sistema. */
+  /* Ruoli tipografici — #RESTYLING-0921 round 7, i tre font del riferimento.
+     UI = Manrope (corpo, label, testo). HUD = Barlow Condensed 700/800 (label,
+     CTA, teste condensate maiuscole; sostituisce Saira Condensed uno-a-uno).
+     DISPLAY = Anton (H1, hero, numeri eroe): è la voce del sito, e prima non
+     c'era. NUM = JetBrains Mono, e ci resta: quote, date e tabelle vogliono le
+     cifre tabulari che Anton non ha. I numeri EROE (percentuale della card,
+     badge statistico dell'hero) vanno invece su --am-font-display. */
   --am-font-ui:    var(--font-display), ui-sans-serif, system-ui, sans-serif;
   --am-font-num:   var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --am-font-hud:   var(--font-tech), var(--font-display), sans-serif;
+  --am-font-display: var(--font-anton), var(--font-tech), Impact, sans-serif;
   /* Scala dei numeri: il numero domina la label (32/24/17 contro 11). */
   --am-num-lg:     32px;
   --am-num-md:     24px;
@@ -171,7 +200,7 @@
   --accent: var(--am-panel-3);
   --border: var(--am-line);
   --input: var(--am-line);
-  --ring: rgba(35,165,89,0.40);  /* LEVEL-UP 1b: focus ring legacy → verde */
+  --ring: rgba(72,164,255,0.45);  /* round 7: il focus ring è blu come il filo delle card */
   --radius: 0.5rem;
 
   /* Legacy aliases — keep existing dashboard CSS working, point at --am-* */
@@ -202,16 +231,19 @@
   /* #RESTYLING-0921: beige/off-white (carta editoriale), non grigio-azzurro.
      Il light è caldo dove il dark è freddo: la temperatura distingue i due
      modi, non solo l'inversione. Luminanze pari alle precedenti. */
-  --am-bg:         #F3F1EB;
-  --am-bg-2:       #ECE9E1;
-  --am-panel:      #FFFFFF;
-  --am-panel-2:    #FAF9F5;
-  --am-panel-3:    #EFECE5;
-  --am-bar:        rgba(255,254,251,0.96);
-  --am-inset:      #EFECE5;
+  /* #RESTYLING-0921 round 7 — la carta del riferimento è #f3eddc: più calda e
+     più gialla della nostra (#F3F1EB era quasi grigia). Gli altri gradini
+     seguono la stessa temperatura. */
+  --am-bg:         #F3EDDC;
+  --am-bg-2:       #EBE4D0;
+  --am-panel:      #FFFCF4;
+  --am-panel-2:    #F9F4E6;
+  --am-panel-3:    #EEE7D4;
+  --am-bar:        rgba(255,252,244,0.96);
+  --am-inset:      #EEE7D4;
 
-  --am-line:       #E3DFD6;
-  --am-line-2:     #D1CCC0;
+  --am-line:       #DED5BE;
+  --am-line-2:     #C9BFA4;
   /* LEVEL-UP 1e: bordi chamfer troppo tenui su bianco → filo più marcato (era
      frame-edge .22 / chamfer-line #E3E6EB, si perdevano). Solo light. */
   --am-frame-edge:       rgba(18,22,28,0.34);
@@ -250,10 +282,14 @@
      non regge l'AA, quindi qui gli accenti scendono di valore: stessa tinta,
      un gradino più scuro. Rapporti su #FFFFFF: royal 7,1 · sky 5,3 ·
      edge 4,65 (è il --am-coral light già misurato #PRO-AA-0822) · live 6,4. */
-  --am-royal:      #1E48D6;
-  --am-royal-2:    #1E48D6;
-  --am-royal-dim:  rgba(30,72,214,0.09);
-  --am-royal-b:    rgba(30,72,214,0.32);
+  /* Round 7 — il royal del riferimento (#145aff) su carta fa 4,56:1: passa AA
+     come testo normale, quindi in CHIARO royal e royal-t coincidono. È il dark,
+     non il light, ad avere bisogno della distinzione fill/inchiostro. */
+  --am-royal:      #145AFF;
+  --am-royal-t:    #144BD6;   /* 5,7:1 su carta: il royal che scrive piccolo (label 11px) */
+  --am-royal-2:    #145AFF;
+  --am-royal-dim:  rgba(20,90,255,0.10);
+  --am-royal-b:    rgba(20,90,255,0.34);
   --am-royal-ink:  #FFFFFF;
   --am-sky:        #1F6FB2;
   --am-sky-dim:    rgba(31,111,178,0.09);
@@ -266,8 +302,15 @@
   --am-live-dim:   rgba(245,196,0,0.16);
   --am-live-b:     rgba(122,90,0,0.34);
   --am-live-ink:   #1A1500;
+  /* Round 7 — il lime #c8ff00 su carta fa 1,2:1: come TESTO non esiste. Su
+     carta resta un fill (con inchiostro scuro) e, quando deve scrivere, scende
+     di valore restando la stessa tinta. --am-lime-fill è il lime pieno per le
+     superfici che nel riferimento sono lime anche in chiaro (CTA Pro, barra
+     dell'hero): il suo inchiostro è scuro, non bianco. */
   --am-lime:       #4C7A00;   /* la parola evidenziata dell'hero su carta: 5,0:1 su bianco */
-  --am-lime-ink:   #FFFFFF;   /* se il lime fa da fill fuori dall'hero (che resta navy) */
+  --am-lime-ink:   #FFFFFF;   /* se il lime SCURO fa da fill */
+  --am-lime-fill:  #C8FF00;   /* lime pieno, solo superficie */
+  --am-lime-fill-ink: #0B1400;
 
   /* Light: la carta ha ombra, leggera e calda. */
   --am-shadow-card:       0 1px 2px rgba(28,25,18,0.05), 0 12px 28px -18px rgba(28,25,18,0.16);
@@ -8730,7 +8773,7 @@ button:disabled {
      22px al posto dei PNG; la voce attiva è ROYAL come nella nav desktop —
      il verde è dell'edge, non della struttura. */
   .am-bottomnav .bn svg { width: 22px; height: 22px; }
-  .am-bottomnav .bn.on { color: var(--am-royal); }
+  .am-bottomnav .bn.on { color: var(--am-royal-t); }
   .am-bottomnav .bn .bn-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* entry-point Match Builder dentro Prediction (mobile) */
@@ -10442,14 +10485,14 @@ button:disabled {
    pesa quanto una cifra e sporca la lettura del numero. */
 .mds-pick-hud .mds-probu { font-size: 0.34em; opacity: 0.7; margin-left: 0.04em; letter-spacing: 0; }
 .mds-pick-hud .mds-probn {
-  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;
   font-size: 54px; font-weight: 800; line-height: 0.84; letter-spacing: -0.03em;
   color: var(--am-positive); text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
   font-variant-numeric: tabular-nums;
 }
 /* la pick sotto il numero, in condensata maiuscola: si legge come un verdetto. */
 .mds-pick-hud .mds-pk {
-  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
+  font-family: var(--font-tech), "Barlow Condensed", "Manrope", sans-serif;
   font-size: 20px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.005em; line-height: 1.06; margin-top: 8px;
 }
@@ -10469,7 +10512,7 @@ button:disabled {
    condensata, alone corto, % ridotto. Nessun colore nuovo.
    ══════════════════════════════════════════════════════════════════════════ */
 .featured .hero-prob .num {
-  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 0.84;
@@ -10478,7 +10521,7 @@ button:disabled {
 .featured .hero-prob .num .pc { font-size: 0.34em; opacity: 0.7; font-weight: 800; margin-left: 0.04em; }
 /* la pick sotto il numero, in condensata maiuscola: stesso verdetto delle schede */
 .featured .hero-prob .pickname {
-  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
+  font-family: var(--font-tech), "Barlow Condensed", "Manrope", sans-serif;
   font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.005em;
 }
 /* Due metriche in una griglia da tre lasciavano un buco a destra. `auto-fit` le
@@ -10569,7 +10612,7 @@ button:disabled {
 .featured .why dd.pair { display: flex; align-items: baseline; gap: 10px; }
 .featured .why dd.pair .side { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .featured .why dd.pair .side b {
-  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;
   font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.02em;
   /* `--am-muted-2` misurava 4,46:1 sul fondo scuro: passa come testo grande
      (soglia 3:1) ma questo e' un DATO che si legge, non decorazione. */

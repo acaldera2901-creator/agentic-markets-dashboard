@@ -15,7 +15,7 @@
   --verde:#15703b;      /* sulla carta: bianco sopra 6,15:1 */
   --verde-b:#23a559;    /* sul buio: 5,59:1 */
   --d-football:#6d28d9; --d-tennis:#c2410c; --d-wc:#0369a1;
-  --fd:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
+  --fd:"Manrope","Helvetica Neue",Arial,sans-serif;
   --fm:"JetBrains Mono",ui-monospace,Menlo,monospace;
 }
 /* La carta ha materia: grana finissima + una luce calda in alto. Un grigio
@@ -945,7 +945,7 @@
 
 /* IL NUMERO. Condensata pesante, alone corto — non un neon diffuso. */
 [data-mc] .pred.hud .v2r-qn:not(.lock) {
-  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;
   font-size: clamp(44px, 4.2rem, 68px); font-weight: 800; line-height: .84;
   letter-spacing: -.03em; color: var(--am-positive, #34D399);
   text-shadow: 0 0 22px rgba(52,211,153,.34);
@@ -962,7 +962,7 @@
    numero (var(--fm)); l'avevo corretto sull'istanza invece che sulla classe, e
    la pick e' andata in produzione senza condensata in tema chiaro. */
 [data-mc] .pred.hud .v2r:not(.is-locked) .v2r-pick {
-  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
+  font-family: var(--font-tech), "Barlow Condensed", "Manrope", sans-serif;
   font-size: 1.18rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .005em; line-height: 1.06; white-space: normal;
 }
@@ -1053,7 +1053,7 @@
   background: linear-gradient(180deg, rgba(35,165,89,.07), rgba(255,255,255,0) 62%), #fff;
 }
 :root[data-theme="light"] [data-mc] .pred.hud .v2r-qn:not(.lock) {
-  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;
   color: var(--am-coral, #23A559); text-shadow: none;
 }
 :root[data-theme="light"] [data-mc] .pred.hud .v2r:not(.is-locked) .v2r-conf .d { background: rgba(0,0,0,.10); }

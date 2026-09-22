@@ -238,7 +238,7 @@
   border-radius: 2px;
   background: var(--am-panel-3);
 }
-.br-conf__segs i[data-on="true"] { background: var(--am-royal); }
+.br-conf__segs i[data-on="true"] { background: var(--am-royal-t); }
 .br-conf[data-bucket="bassa"] .br-conf__segs i[data-on="true"] { background: var(--am-muted-2); }
 .br-conf__val {
   font-family: var(--am-font-num);
@@ -263,11 +263,11 @@
 }
 .br-watch:hover { color: var(--am-text); border-color: var(--am-line-2); }
 .br-watch[aria-pressed="true"] {
-  color: var(--am-royal);
+  color: var(--am-royal-t);
   border-color: var(--am-royal-b);
   background: var(--am-royal-dim);
 }
-.br-watch:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-watch:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 
 /* ── CTA: link nelle card compatte, fill verde solo su Featured, outline su Unlock ── */
 .br-cta {
@@ -289,10 +289,10 @@
 }
 .br-cta svg { transition: transform 160ms ease; }
 .br-cta:hover svg { transform: translateX(2px); }
-.br-cta:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-cta:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 .br-cta[data-tone="link"] {
   padding-left: 0; padding-right: 0;
-  color: var(--am-royal);
+  color: var(--am-royal-t);
   background: none;
 }
 .br-cta[data-tone="link"]:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -430,12 +430,12 @@
   min-width: 0;
 }
 .br-card__model-n {
-  font-family: var(--am-font-num);
+  font-family: var(--am-font-display);
   /* Round 5: 40 → 30px. Resta l'elemento che domina la card (il pick sta a
      15px, le label a 11), ma in una card più fitta un 40 spingeva da solo la
      card oltre i 260px di altezza. */
   font-size: 30px;
-  font-weight: 700;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -664,9 +664,9 @@
   align-items: baseline;
   gap: var(--am-s-2);
   margin: 0;
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   letter-spacing: 0.005em;
   text-transform: uppercase;
   color: var(--am-text);
@@ -700,12 +700,12 @@
   font-family: var(--am-font-ui);
   font-size: 13px;
   font-weight: 600;
-  color: var(--am-royal);
+  color: var(--am-royal-t);
   text-decoration: none;
   border-radius: var(--am-r-ctl);
 }
 .br-sec__link:hover { text-decoration: underline; }
-.br-sec__link:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-sec__link:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 
 /* Round 5: 302 → 248px di colonna minima. Su 1280 la lobby passa da 3 a 4
    card per riga, e nella colonna accanto all'hero da 2 a 3 — la richiesta di
@@ -759,10 +759,10 @@
   transition: color 120ms ease, background 120ms ease;
 }
 .br-nav__item:hover { color: var(--am-text); background: var(--am-royal-dim); }
-.br-nav__item:focus-visible { outline: 2px solid var(--am-royal); outline-offset: -2px; }
+.br-nav__item:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: -2px; }
 /* Lo stato selezionato è ROYAL, non verde: il verde è riservato all'edge e
    alla CTA di upgrade (regola del brief). */
-.br-nav__item[aria-current="page"] { color: var(--am-royal); background: var(--am-royal-dim); }
+.br-nav__item[aria-current="page"] { color: var(--am-royal-t); background: var(--am-royal-dim); }
 /* Round 3: l'icona 18px prima della label. Quando c'è davvero qualcosa in
    gioco (data-live, dal TSX) l'icona Live sale a pieno valore: un segnale di
    valore, non un puntino giallo — un secondo colore nella nav era il primo
@@ -786,7 +786,7 @@
   border-radius: var(--am-r-ctl);
   color: var(--am-muted-2);
 }
-.br-search:focus-within { border-color: var(--am-royal); color: var(--am-text); }
+.br-search:focus-within { border-color: var(--am-royal-t); color: var(--am-text); }
 .br-search svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .br-search input {
   width: 15ch;
@@ -817,8 +817,8 @@
   color: var(--am-muted);
 }
 .br-watchnav:hover { color: var(--am-text); border-color: var(--am-line-2); }
-.br-watchnav[aria-current="page"] { color: var(--am-royal); border-color: var(--am-royal-b); background: var(--am-royal-dim); }
-.br-watchnav:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-watchnav[aria-current="page"] { color: var(--am-royal-t); border-color: var(--am-royal-b); background: var(--am-royal-dim); }
+.br-watchnav:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 .br-watchnav__n {
   font-family: var(--am-font-num);
   font-size: 11px;
@@ -845,7 +845,7 @@
   font-weight: 500;
   color: var(--am-text);
 }
-.br-acct-links a:hover, .br-acct-links button:hover { background: var(--am-royal-dim); color: var(--am-royal); }
+.br-acct-links a:hover, .br-acct-links button:hover { background: var(--am-royal-dim); color: var(--am-royal-t); }
 
 @media (max-width: 640px) {
   .br-lobby { gap: var(--am-s-6); padding: var(--am-s-4) var(--am-s-3) var(--am-s-7); }
@@ -1148,9 +1148,9 @@
    dentro una parola da 102px. 12cqi = tre righe da ~40px a quella misura. */
 .br-hero__title {
   margin: 0;
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: clamp(30px, 12cqi, 48px);
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   line-height: 0.9;
   letter-spacing: -0.015em;
   text-transform: uppercase;
@@ -1334,9 +1334,9 @@ a.br-hero__stat:focus-visible { outline: 2px solid var(--am-text); outline-offse
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-shadow: var(--am-shadow-card-hover); }
-.br-tile:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-tile:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 /* Selezionata: bordo royal (struttura), nessun alone. */
-.br-tile[aria-current="true"] { border-color: var(--am-royal); }
+.br-tile[aria-current="true"] { border-color: var(--am-royal-t); }
 /* Senza dati la tile non è un link: superficie un gradino sotto, cursore
    normale, e lo dice («Coming soon») invece di mostrare uno zero. */
 .br-tile[data-state="soon"] { cursor: default; background: var(--am-bg-2); color: var(--am-muted); }
@@ -1349,7 +1349,7 @@ a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-sha
   border-radius: 50%;
   background: var(--am-inset);
   border: 1px solid var(--am-line);
-  color: var(--am-royal);
+  color: var(--am-royal-t);
   overflow: hidden;
 }
 .br-tile__icon > img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -1388,7 +1388,7 @@ a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-sha
 .br-tile__meta > b { font-weight: 700; color: var(--am-text); }
 .br-tile[data-state="soon"] .br-tile__meta { text-transform: uppercase; letter-spacing: 0.12em; font-size: 10.5px; }
 .br-tile__go { color: var(--am-muted-2); flex: none; transition: transform 160ms ease, color 160ms ease; }
-a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: translateX(2px); color: var(--am-royal); }
+a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: translateX(2px); color: var(--am-royal-t); }
 
 /* ── Tile promozionale: «Build your own accumulator» ───────────────────── */
 /* Occupa due colonne della riga: è l'unica tile che porta fuori dalla lista,
@@ -1410,7 +1410,7 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   transition: box-shadow 140ms ease, border-color 140ms ease;
 }
 .br-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
-.br-promo:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 .br-promo__icon {
   display: inline-flex;
   align-items: center;
@@ -1617,12 +1617,12 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 .br-filters .am-seg button:hover:not(.on) { background: var(--am-royal-dim); color: var(--am-text); }
 .br-filters .am-seg button.on {
   background: var(--am-royal-dim);
-  color: var(--am-royal);
+  color: var(--am-royal-t);
   box-shadow: inset 0 0 0 1px var(--am-royal-b);
 }
-.br-filters .am-seg button.on .ct { color: var(--am-royal); opacity: 0.85; }
+.br-filters .am-seg button.on .ct { color: var(--am-royal-t); opacity: 0.85; }
 .br-filters .am-seg button .ct { font-family: var(--am-font-num); }
-.br-filters .am-seg button:focus-visible { outline: 2px solid var(--am-royal); outline-offset: -2px; }
+.br-filters .am-seg button:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: -2px; }
 /* Le icone sport dei segmenti sono i raster della casa: ritagliati, quindi
    niente cornice né disco attorno (stessa regola di `.br-chip__ico`). */
 .br-filters .am-seg button .ic { border-radius: 3px; }
@@ -1641,7 +1641,7 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   border-color: var(--am-line);
 }
 .br-filters .am-mini-field select:focus-visible {
-  border-color: var(--am-royal);
+  border-color: var(--am-royal-t);
   box-shadow: 0 0 0 2px var(--am-royal-dim);
 }
 .br-filters .am-search {
@@ -1649,7 +1649,7 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   border-color: var(--am-line);
   background: var(--am-inset);
 }
-.br-filters .am-search:focus-within { border-color: var(--am-royal); }
+.br-filters .am-search:focus-within { border-color: var(--am-royal-t); }
 .br-filters .am-search input { font-family: var(--am-font-ui); font-size: 13px; }
 
 /* ── La banda di sezione (Football / Tennis) ─────────────────────────────── */
@@ -1665,9 +1665,9 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 /* La misura la dà `size` sul componente (stile inline): qui solo l'angolo. */
 .sport-band.br-band .glyph img { border-radius: 6px; }
 .sport-band.br-band h2 {
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   letter-spacing: 0.005em;
   text-transform: uppercase;
   line-height: 1;
@@ -1755,9 +1755,9 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
    (#SEO-PACK-0810), ora nella voce della casa. */
 .book-main-head h1,
 .book-main-head h2 {
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   letter-spacing: 0.005em;
   text-transform: uppercase;
   line-height: 1;
@@ -1768,8 +1768,8 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 .plans-hero h3,
 .plan-card-head h4,
 .am-history .hh h2 {
-  font-family: var(--am-font-hud);
-  font-weight: 800;
+  font-family: var(--am-font-display);
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   letter-spacing: 0.005em;
   text-transform: uppercase;
   line-height: 1.05;
@@ -1968,9 +1968,9 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 }
 .br-promo__body { grid-area: body; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .br-promo__title {
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   letter-spacing: 0.005em;
   text-transform: uppercase;
   line-height: 1;
@@ -1990,10 +1990,10 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   font-family: var(--am-font-ui);
   font-size: 13px;
   font-weight: 600;
-  color: var(--am-royal);
+  color: var(--am-royal-t);
 }
 .br-promo:hover .br-promo__cta { text-decoration: underline; }
-.br-promo:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.br-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 
 @media (max-width: 640px) {
   .br-promo__title { font-size: 21px; }
@@ -2022,7 +2022,7 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 .wp-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
-.wp-promo:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.wp-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 .wp-promo img { display: block; width: 100%; height: auto; }
 @media (prefers-reduced-motion: reduce) { .wp-promo { transition: none; } }
 /* Un ultimo residuo decorativo: l'occhiello dell'Edge aveva anche una tacca
@@ -2073,17 +2073,17 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
  * ═══════════════════════════════════════════════════════════════════════ */
 
 .tl-head h1 {
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: clamp(26px, 3.6vw, 38px);
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   letter-spacing: 0.005em;
   text-transform: uppercase;
   line-height: 1;
 }
 .tl-section h2,
 .tl-cta h2 {
-  font-family: var(--am-font-hud);
-  font-weight: 800;
+  font-family: var(--am-font-display);
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   letter-spacing: 0.005em;
   text-transform: uppercase;
   line-height: 1.05;
@@ -2120,7 +2120,7 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--am-royal);
+  color: var(--am-royal-t);
 }
 /* Il blocco CTA era un pannello verde pieno: superficie del sistema, e il
    verde resta dov'è un'azione — sul pulsante. */
@@ -2158,7 +2158,7 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 .tl-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
-.tl-promo:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.tl-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 .tl-promo img { display: block; width: 100%; height: auto; }
 @media (prefers-reduced-motion: reduce) { .tl-promo { transition: none; } }
 
@@ -2311,8 +2311,8 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   white-space: nowrap;
 }
 .br-ctx__link:hover { color: var(--am-text); }
-.br-ctx__link:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
-.br-ctx__link[aria-current="page"] { color: var(--am-royal); }
+.br-ctx__link:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.br-ctx__link[aria-current="page"] { color: var(--am-royal-t); }
 .br-ctx__sep { color: var(--am-line-2); }
 .br-ctx__state { white-space: nowrap; color: var(--am-muted-2); }
 .br-ctx__state b { font-weight: 700; color: var(--am-text); }
@@ -2471,9 +2471,9 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
    non quando capita che la larghezza lo imponga. */
 .br-sporthero__title {
   margin: 0;
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: clamp(34px, 5.2vw, 64px);
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   line-height: 0.94;
   letter-spacing: -0.012em;
   text-transform: uppercase;
@@ -2507,9 +2507,9 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   backdrop-filter: blur(3px);
 }
 .br-sporthero__stat-n {
-  font-family: var(--am-font-hud);
+  font-family: var(--am-font-display);
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
   line-height: 1;
   color: var(--am-lime);
 }

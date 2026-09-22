@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, JetBrains_Mono, Saira_Condensed } from "next/font/google";
+import { Anton, Barlow_Condensed, JetBrains_Mono, Manrope } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import VercelAnalytics from "@/components/VercelAnalytics";
@@ -8,7 +8,12 @@ import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
 import "./design-system.css"; // #RESTYLING-0921 — componenti br-*, solo token --am-*
 
-const hankenGrotesk = Hanken_Grotesk({
+// #RESTYLING-0921 round 7 — i tre font del riferimento, misurati sul sito di
+// Codex, non scelti a gusto: Manrope per il corpo (era Hanken Grotesk),
+// Barlow Condensed per label/CTA/teste condensate (era Saira Condensed — stessi
+// due pesi, quindi sostituzione uno-a-uno) e Anton per il display (H1, hero,
+// numeri eroe), che prima non esisteva nel sistema.
+const manrope = Manrope({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -17,10 +22,22 @@ const hankenGrotesk = Hanken_Grotesk({
 // #CARD-HUD-0830 — la condensata pesante del registro gaming: regge i numeri
 // enormi della scheda senza diventare Oswald, che si vede ovunque. Solo due pesi:
 // 700 per i nomi, 800 per il numero eroe.
-const sairaCondensed = Saira_Condensed({
+// #RESTYLING-0921 round 7: Saira Condensed → Barlow Condensed (il condensato del
+// riferimento). Stesso ruolo, stessi due pesi: nessuna regola CSS cambia.
+const barlowCondensed = Barlow_Condensed({
   variable: "--font-tech",
   subsets: ["latin"],
   weight: ["700", "800"],
+  display: "swap",
+});
+
+// #RESTYLING-0921 round 7 — Anton, il display del riferimento. Un solo peso
+// (400) per disegno: dove serve "più grassetto" si va più grandi, non si chiede
+// un 800 che il browser sintetizzerebbe sporcando le aste.
+const anton = Anton({
+  variable: "--font-anton",
+  subsets: ["latin"],
+  weight: ["400"],
   display: "swap",
 });
 
@@ -108,7 +125,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme')
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${hankenGrotesk.variable} ${jetbrainsMono.variable} ${sairaCondensed.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
