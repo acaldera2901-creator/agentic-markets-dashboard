@@ -288,11 +288,21 @@ Storico, Classifica, Invito, Build a Probability View, Explore e Today insieme
 sezione dei Piani e dello Storico; l'eyebrow diventa la label del design
 system. Via l'ultimo alone: `.featured::before`.
 
+**Fase B-bis — i due blocchi in mezzo al board.** `FeaturedEdge` era un
+pannello con fotografia di scena, velo a gradiente, alone radiale e angoli
+smussati: ora è un pannello piatto del design system (`--am-panel`, bordo 1px),
+struttura interna invariata. Conseguenza sistemata: quel pannello era scuro in
+entrambi i temi, quindi una decina di regole forzavano testo bianco — in tema
+chiaro «Arsenal vs Chelsea» e «PICK LOCKED» erano bianco su bianco, visto allo
+screenshot e rimesso sui token. La `WeeklyPickPromo` era un creativo 16:9 col
+titolo, l'atleta e il pulsante cotti dentro l'immagine: riscritta nel TSX come
+pannello nativo — icona `/icons/menu-weeklypick.png` del round 4, titolo in
+Saira Condensed, copy in cinque lingue, CTA «View this week's pick».
+
 **NON fatto, dichiarato.** Il LAYOUT delle viste di Fase C non è toccato —
 Classifica e Invito sono Tailwind grezzo, `TrackRecordView` si inietta il
 proprio `<style>` `tr-*`, `MatchBuilderTab` è `mb-*`: sono viste da rifare a
 vista, una per una, non da riskinnare alla cieca. Restano old-style nella
-struttura anche `FeaturedEdge` (il blocco Edge del board, ora senza glow ma
-ancora `.featured`), `AccountMenu` (`acct-*`) e il bottom-nav (`am-bottomnav`).
+struttura `AccountMenu` (`acct-*`) e il bottom-nav (`am-bottomnav`).
 E resta il debito del round 4: la tile Tennis con 0 partite scrive «0 picks
 today».
