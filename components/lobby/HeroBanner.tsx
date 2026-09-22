@@ -1,32 +1,39 @@
-// components/lobby/HeroBanner.tsx — #RESTYLING-0921 round 2
+// components/lobby/HeroBanner.tsx — #RESTYLING-0921 round 3
 //
-// Il banner in testa alla Home (ref-01): eyebrow, headline a due righe con
-// UNA parola in lime, sottotitolo, le pill dei conteggi veri, la CTA verde
-// piena — l'unica della schermata — e, a destra, la scatola dei value prop.
+// Il banner in testa alla Home. Round 3 (direzione d'arte in
+// docs/redesign-brief-digest.md): via la foto dell'atleta — la TIPOGRAFIA è
+// l'immagine. Headline in Saira Condensed 800 maiuscolo a corpo enorme, una
+// sola parola in lime; sotto, i tre numeri veri come striscia di cifre
+// tabulari (niente pill, niente bordo, niente puntino luminoso); una sola CTA
+// piena col taglio della casa in alto a sinistra. Zero glow, zero gradiente
+// radiale: il fondo è un MATERIALE reale in duotone navy (variante A) oppure,
+// senza asset e su telefono, solo il pannello con una riga di calce disegnata
+// (variante B). Vedi docs/reference/round3/hero-concept.html.
 //
 // Tutto ciò che è un NUMERO o una PROMESSA arriva dal chiamante:
 //   - `stats`  → i conteggi (live / starting soon / high edge). Una stat con
-//                value null NON si rende: meglio due pill vere che tre con un
+//                value null NON si rende: meglio due cifre vere che tre con un
 //                trattino.
-//   - `points` → la checklist. Nessun default: «Trusted by 100K+ bettors»
-//                nell'immagine di riferimento è un placeholder di ChatGPT, non
-//                un dato nostro. Se non c'è, la scatola non c'è.
-//   - `image`  → foto vera (action-shot) se esiste. Senza, il pattern
-//                «floodlight» qui sotto: gradienti + fasci di luce in royal,
-//                nessuna foto stock finta.
+//   - `points` → la checklist (`aside`). Nessun default: «Trusted by 100K+
+//                bettors» nell'immagine di riferimento era un placeholder di
+//                ChatGPT, non un dato nostro. Round 3: la scatola a destra non
+//                esiste più; se il chiamante passa i punti, stanno in coda al
+//                banner come una riga piana, senza cornice.
+//   - `image`  → la TEXTURE (materiale vero, macro, trattato in duotone dal
+//                CSS). Senza, la variante B. È decorativa: `alt` di default "".
 //
 // La parola accentata si passa come <em> dentro `title`: semantica di
 // enfasi, resa in lime dal CSS (.br-hero__title em).
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
-import { GlyphArrow, GlyphBars, GlyphCheck, GlyphClock } from "@/components/ui/glyphs";
+import { IconArrow, IconCheck } from "@/components/ui/icons";
 
 export type HeroStatKind = "live" | "starting-soon" | "high-edge";
 
 export type HeroStat = {
   kind: HeroStatKind;
   label: string;
-  /** null = non lo sappiamo → la pill non si rende. */
+  /** null = non lo sappiamo → la cifra non si rende. */
   value: number | null;
   href?: string;
   onClick?: (ev: MouseEvent<HTMLAnchorElement>) => void;
@@ -40,47 +47,20 @@ export type HeroBannerProps = {
   stats?: HeroStat[];
   cta: { label: string; href: string; onClick?: (ev: MouseEvent<HTMLAnchorElement>) => void };
   secondary?: { label: string; href: string; onClick?: (ev: MouseEvent<HTMLAnchorElement>) => void };
-  /** Scatola a destra. Omessa → niente scatola, il banner va a tutta larghezza. */
+  /** Punti in coda al banner. Omessi → niente. */
   aside?: { title?: ReactNode; subtitle?: string; points: string[] };
-  /** Foto vera. Omessa → pattern astratto. */
+  /** Texture di fondo (materiale reale). Omessa → variante B, solo tipografia. */
   image?: { src: string; alt?: string };
   className?: string;
 };
 
-function StatIcon({ kind }: { kind: HeroStatKind }) {
-  if (kind === "live") return <i className="br-hero__stat-dot" aria-hidden />;
-  if (kind === "starting-soon") return <GlyphClock size={16} />;
-  return <GlyphBars size={16} />;
-}
-
-// Il pattern di default: fasci di luce da stadio (floodlight) in royal, che
-// convergono verso l'angolo in alto a destra. Niente blob, niente mesh: linee
-// e un'ellisse — riferiscono il dominio (il campo sotto i riflettori).
-function Floodlight() {
+// La riga di calce della variante B: una linea sola, 2px, −7°. È un <svg>
+// (non un div ruotato) così la linea è disegnata, scala col banner e non
+// produce overflow. Su telefono la texture si spegne e resta questa.
+function ChalkLine() {
   return (
-    <svg viewBox="0 0 640 300" preserveAspectRatio="xMaxYMid slice" aria-hidden focusable="false">
-      <defs>
-        <linearGradient id="br-hero-beam" x1="1" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="rgb(127,196,255)" stopOpacity="0.55" />
-          <stop offset="0.6" stopColor="rgb(90,133,255)" stopOpacity="0.10" />
-          <stop offset="1" stopColor="rgb(90,133,255)" stopOpacity="0" />
-        </linearGradient>
-        <radialGradient id="br-hero-pitch" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="rgb(61,245,110)" stopOpacity="0.28" />
-          <stop offset="1" stopColor="rgb(61,245,110)" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="520" cy="300" rx="360" ry="120" fill="url(#br-hero-pitch)" />
-      <g fill="url(#br-hero-beam)">
-        <path d="M640 0 L380 300 L520 300 Z" />
-        <path d="M640 0 L120 300 L300 300 Z" opacity="0.7" />
-        <path d="M640 0 L560 300 L640 300 Z" opacity="0.5" />
-      </g>
-      <g stroke="rgb(127,196,255)" strokeOpacity="0.35" strokeWidth="1" fill="none">
-        <path d="M0 262 H640" />
-        <path d="M0 282 H640" strokeOpacity="0.18" />
-        <ellipse cx="520" cy="262" rx="70" ry="18" />
-      </g>
+    <svg className="br-hero__line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden focusable="false">
+      <line x1="-4" y1="52" x2="104" y2="40" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -92,51 +72,55 @@ export function HeroBanner({ eyebrow, title, subtitle, stats, cta, secondary, as
     <section
       className={["br-hero", className].filter(Boolean).join(" ")}
       data-has-aside={hasAside ? "true" : "false"}
+      data-art={image ? "material" : "type"}
       aria-label={eyebrow}
     >
+      {/* Fondo: texture (se c'è) + riga di calce. Il velo duotone e la grana
+          stanno nel CSS (.br-hero__art::after, .br-hero__grain). */}
       <div className="br-hero__art">
-        {image ? <img src={image.src} alt={image.alt ?? ""} /> : <Floodlight />}
+        {image && <img className="br-hero__tex" src={image.src} alt={image.alt ?? ""} />}
+        <ChalkLine />
       </div>
+      <i className="br-hero__grain" aria-hidden />
 
-      <div className="br-hero__body">
-        <p className="br-hero__eyebrow">{eyebrow}</p>
-        <h1 className="br-hero__title">{title}</h1>
+      <p className="br-hero__eyebrow">{eyebrow}</p>
+      <h1 className="br-hero__title">{title}</h1>
+
+      <div className="br-hero__row">
         {subtitle && <p className="br-hero__sub">{subtitle}</p>}
-
         {shownStats.length > 0 && (
           <ul className="br-hero__stats">
             {shownStats.map((s) => {
               const inner = (
                 <>
-                  <StatIcon kind={s.kind} />
-                  <span>{s.label}</span>
-                  <span className="br-hero__stat-n">{s.value}</span>
+                  <b className="br-hero__stat-n">{s.value}</b>
+                  <span className="br-hero__stat-l">{s.label}</span>
                 </>
               );
               return (
-                <li key={s.kind}>
+                <li key={s.kind} data-kind={s.kind}>
                   {s.href ? (
-                    <Link href={s.href} className="br-hero__stat" data-kind={s.kind} onClick={s.onClick}>{inner}</Link>
+                    <Link href={s.href} className="br-hero__stat" onClick={s.onClick}>{inner}</Link>
                   ) : (
-                    <span className="br-hero__stat" data-kind={s.kind}>{inner}</span>
+                    <span className="br-hero__stat">{inner}</span>
                   )}
                 </li>
               );
             })}
           </ul>
         )}
+      </div>
 
-        <div className="br-hero__ctas">
-          <Link href={cta.href} className="br-hero__cta" data-tone="primary" onClick={cta.onClick}>
-            {cta.label}
-            <GlyphArrow size={16} />
+      <div className="br-hero__ctas">
+        <Link href={cta.href} className="br-hero__cta" data-tone="primary" onClick={cta.onClick}>
+          {cta.label}
+          <IconArrow size={16} />
+        </Link>
+        {secondary && (
+          <Link href={secondary.href} className="br-hero__cta" data-tone="ghost" onClick={secondary.onClick}>
+            {secondary.label}
           </Link>
-          {secondary && (
-            <Link href={secondary.href} className="br-hero__cta" data-tone="ghost" onClick={secondary.onClick}>
-              {secondary.label}
-            </Link>
-          )}
-        </div>
+        )}
       </div>
 
       {hasAside && aside && (
@@ -145,7 +129,7 @@ export function HeroBanner({ eyebrow, title, subtitle, stats, cta, secondary, as
           {aside.subtitle && <p className="br-hero__aside-sub">{aside.subtitle}</p>}
           <ul className="br-hero__points">
             {aside.points.map((p) => (
-              <li key={p}><i aria-hidden><GlyphCheck size={12} /></i>{p}</li>
+              <li key={p}><IconCheck size={12} stroke={2} />{p}</li>
             ))}
           </ul>
         </aside>

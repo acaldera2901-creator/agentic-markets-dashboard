@@ -100,15 +100,16 @@
 
      Round 2 (feedback Andrea, ref-01): la regola non cambia, il VOLUME sì.
      Il neon era «tenue» (#3EE07F / #FFD84D con dim al 12%): ora è pieno
-     (#3DF56E / #FFE818), il badge LIVE e «High edge» sono fill con inchiostro
-     scuro, e i tre --am-*-glow danno l'alone. Il glow è un'ombra dell'accento,
-     non un blur di sfondo: sta SOLO su badge, CTA e numero. */
+     (#3DF56E / #FFE818).
+     Round 3 (direzione d'arte, 2026-09-22): i token --am-*-glow e i fill
+     neon dei badge sono stati tolti — «troppo pieno» legge come generato.
+     Il neon resta come TESTO e come UNA CTA per schermata; la profondità la
+     fanno le superfici e il bordo a 1px, mai un alone. */
   --am-royal:      #5A85FF;   /* tab attiva, link, selected, focus — 5,1:1 su panel, 4,65 su panel-2 */
   --am-royal-2:    #2A5BFF;   /* fill selected/tab con testo bianco (5,2:1) */
   --am-royal-dim:  rgba(90,133,255,0.16);
   --am-royal-b:    rgba(90,133,255,0.42);
   --am-royal-ink:  #FFFFFF;
-  --am-royal-glow: 0 0 0 1px rgba(90,133,255,0.32), 0 0 28px -8px rgba(90,133,255,0.65);
   --am-sky:        #7FC4FF;   /* market probability, chart secondario — 9,3:1 */
   --am-sky-dim:    rgba(127,196,255,0.12);
   --am-sky-b:      rgba(127,196,255,0.36);
@@ -116,20 +117,16 @@
   --am-edge-dim:   rgba(61,245,110,0.14);
   --am-edge-b:     rgba(61,245,110,0.45);
   --am-edge-ink:   #06140C;   /* testo su fill --am-edge (13,0:1) */
-  --am-edge-glow:  0 0 0 1px rgba(61,245,110,0.35), 0 0 22px -4px rgba(61,245,110,0.60);
-  --am-edge-text-glow: 0 0 14px rgba(61,245,110,0.40);
   --am-live:       #FFE818;   /* live, starting soon, attenzione — 13,8:1 */
   --am-live-dim:   rgba(255,232,24,0.14);
   --am-live-b:     rgba(255,232,24,0.45);
   --am-live-ink:   #141200;   /* testo su fill --am-live (15,1:1) */
-  --am-live-glow:  0 0 0 1px rgba(255,232,24,0.35), 0 0 20px -4px rgba(255,232,24,0.60);
-  /* Il fill del badge LIVE. In dark coincide con --am-live; in light si stacca
-     (là --am-live è un testo scuro e come fondo renderebbe il badge illeggibile). */
-  --am-live-fill:      var(--am-live);
-  --am-live-fill-ink:  var(--am-live-ink);
   /* La parola evidenziata dell'headline hero: lime, non lo stesso verde
-     dell'edge — così «today.» e «+18» non si confondono (ref-01). 14,3:1. */
+     dell'edge — così «today.» e «+18» non si confondono (ref-01). 14,3:1.
+     Round 3: è anche il fill dell'unica CTA dell'hero; --am-lime-ink è il suo
+     inchiostro (17,9:1). */
   --am-lime:       #C8FF3D;
+  --am-lime-ink:   #0B1400;
 
   /* Forma: le card si ammorbidiscono (8–12px), i controlli dentro le card 6px.
      --am-btn-radius 0 resta per i tasti legacy del desk: le pagine che lo usano
@@ -259,15 +256,8 @@
   --am-live-dim:   rgba(245,196,0,0.16);
   --am-live-b:     rgba(122,90,0,0.34);
   --am-live-ink:   #1A1500;
-  /* Round 2: su carta niente neon e niente alone — un'ombra corta e colorata
-     fa lo stesso lavoro (dice «questo è acceso») senza sparare. */
-  --am-royal-glow: 0 6px 18px -10px rgba(30,72,214,0.55);
-  --am-edge-glow:  0 6px 18px -10px rgba(19,116,55,0.55);
-  --am-edge-text-glow: none;
-  --am-live-glow:  0 6px 18px -10px rgba(122,90,0,0.45);
-  --am-live-fill:      #FFE818;   /* il badge LIVE resta giallo neon anche su carta: inchiostro 15,1:1 */
-  --am-live-fill-ink:  #141200;
   --am-lime:       #4C7A00;   /* la parola evidenziata dell'hero su carta: 5,0:1 su bianco */
+  --am-lime-ink:   #FFFFFF;   /* se il lime fa da fill fuori dall'hero (che resta navy) */
 
   /* Light: la carta ha ombra, leggera e calda. */
   --am-shadow-card:       0 1px 2px rgba(28,25,18,0.05), 0 12px 28px -18px rgba(28,25,18,0.16);
@@ -8712,8 +8702,11 @@ button:disabled {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 9px; letter-spacing: .03em; background: none; border: 0; cursor: pointer; min-width: 0;
   }
-  .am-bottomnav .bn svg { width: 20px; height: 20px; }
-  .am-bottomnav .bn.on { color: var(--am-coral); }
+  /* #RESTYLING-0921 round 3: icone della casa (components/ui/icons.tsx) a
+     22px al posto dei PNG; la voce attiva è ROYAL come nella nav desktop —
+     il verde è dell'edge, non della struttura. */
+  .am-bottomnav .bn svg { width: 22px; height: 22px; }
+  .am-bottomnav .bn.on { color: var(--am-royal); }
   .am-bottomnav .bn .bn-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* entry-point Match Builder dentro Prediction (mobile) */

@@ -11,7 +11,7 @@ import { SportChip } from "@/components/ui/SportChip";
 import { LeagueChip } from "@/components/ui/LeagueChip";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { EdgeBadge } from "@/components/ui/EdgeBadge";
-import { GlyphLock } from "@/components/ui/glyphs";
+import { IconLock } from "@/components/ui/icons";
 
 type Props = {
   sport: string;
@@ -63,7 +63,7 @@ export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = 
         <span className="br-label">Pick</span>
         {locked || !pick ? (
           <strong className="br-mh__pick-v" data-locked="true">
-            <GlyphLock size={16} />{locked ? "Pro pick" : "No pick"}
+            <IconLock size={16} />{locked ? "Pro pick" : "No pick"}
           </strong>
         ) : (
           <strong className="br-mh__pick-v">{pick}</strong>

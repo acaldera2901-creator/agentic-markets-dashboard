@@ -14,8 +14,13 @@
  * componenti responsive (ui_memory, 2026-05).
  *
  * Gerarchia tipografica, in una riga: i NUMERI sono JetBrains Mono 700 a
- * 32/24/17px; le LABEL sono Hanken 500 a 11px maiuscole tracciate. Tre leve
- * (dimensione, peso, colore) per far dominare il numero, non una.
+ * 32/24/17px; le LABEL sono 11px maiuscole tracciate a .12em — UNO solo
+ * (round 3: oscillavano tra .05 e .22em). Tre leve (dimensione, peso,
+ * colore) per far dominare il numero, non una.
+ *
+ * Round 3 (direzione d'arte, docs/redesign-brief-digest.md): zero glow, zero
+ * fill neon sui badge, un elemento colorato per card oltre al testo. I token
+ * --am-*-glow non esistono più.
  */
 
 /* ── Label tecnica (condivisa) ─────────────────────────────────────────── */
@@ -23,7 +28,7 @@
   font-family: var(--am-font-ui);
   font-size: var(--am-label);
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--am-muted-2);
   line-height: 1.2;
@@ -37,7 +42,7 @@
   font-family: var(--am-font-num);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   line-height: 1;
   border-radius: var(--am-r-chip);
@@ -60,43 +65,32 @@
   text-overflow: ellipsis;
 }
 
-/* ── Live badge: giallo neon PIENO con inchiostro scuro e un alone (round 2).
-   Il round 1 lo faceva «puntino + parola su dim» e Andrea l'ha letto timido:
-   il LIVE è l'unica cosa che succede ADESSO sulla pagina, e deve vincere da
-   tre metri (ref-01). Resta l'unico fill giallo del sistema: featured e
-   starting-soon sono outline, così il pieno vuol dire una cosa sola. ── */
+/* ── Live: la parola in giallo con il suo segno (IconLive) e il minuto.
+   Round 3: niente fill, niente alone, niente puntino che pulsa. Il round 2
+   lo faceva pieno «per vincere da tre metri», ma insieme al verde pieno del
+   badge High edge e ai glow faceva «tutto evidenziato». Il giallo resta
+   l'UNICO elemento colorato oltre al testo in una card live: per questo basta
+   che sia testo. ── */
 .br-live {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px 4px 7px;
+  gap: 5px;
   font-family: var(--am-font-num);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   line-height: 1;
-  color: var(--am-live-fill-ink);
-  background: var(--am-live-fill);
-  border: 1px solid transparent;
-  border-radius: var(--am-r-chip);
-  box-shadow: var(--am-live-glow);
+  color: var(--am-live);
   white-space: nowrap;
 }
-.br-live__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--am-live-fill-ink);
-  animation: br-pulse 1.6s ease-in-out infinite;
-}
-.br-live__min { font-weight: 700; color: var(--am-live-fill-ink); opacity: 0.8; }
-@keyframes br-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.45; transform: scale(0.8); }
-}
+.br-live__min { font-weight: 500; opacity: 0.85; }
 
-/* ── Badge contestuale della card (High edge / Starting soon / Featured) ── */
+/* ── Badge contestuale della card (High edge / Starting soon / Featured) ──
+   Outline monocromo, per tutti e tre: il significato lo danno la parola e il
+   segno (IconEdge / IconClock / IconStar), non un terzo colore. Il verde
+   della card sta nel numero dell'edge, il giallo nel LIVE: un badge colorato
+   in più era un accento che ne copriva un altro. */
 .br-badge {
   display: inline-flex;
   align-items: center;
@@ -105,33 +99,13 @@
   font-family: var(--am-font-num);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   line-height: 1;
   border-radius: var(--am-r-chip);
-  border: 1px solid;
+  border: 1px solid var(--am-line-2);
+  color: var(--am-muted);
   white-space: nowrap;
-}
-/* «High edge» è l'altro fill del sistema: verde neon pieno + alone. È un
-   badge raro per costruzione (edge ≥ 5pp), quindi può permettersi il volume. */
-.br-badge[data-kind="high-edge"] {
-  color: var(--am-edge-ink);
-  border-color: transparent;
-  background: var(--am-edge);
-  font-weight: 800;
-  box-shadow: var(--am-edge-glow);
-}
-.br-badge[data-kind="starting-soon"] {
-  color: var(--am-live);
-  border-color: var(--am-live-b);
-  background: var(--am-live-dim);
-}
-/* Featured = «scelta della redazione/modello», dato di contesto: sky outline
-   come il «Value pick» di ref-01, non un secondo giallo. */
-.br-badge[data-kind="featured"] {
-  color: var(--am-sky);
-  border-color: var(--am-sky-b);
-  background: var(--am-sky-dim);
 }
 
 /* ── EdgeBadge: un numero con segno, tonalità semantica ───────────────── */
@@ -157,11 +131,10 @@
   border: 1px solid transparent;
   letter-spacing: 0;
 }
-/* Il numero dell'edge positivo ha un alone di testo (round 2): è IL dato
-   della card, e in una griglia di 5 card è quello che l'occhio deve trovare
-   per primo. Sul chip (13px) l'alone si spegne: troppo piccolo, sporcherebbe. */
-.br-edge[data-tone="pos"]  { color: var(--am-edge); text-shadow: var(--am-edge-text-glow); }
-.br-edge[data-size="chip"][data-tone="pos"] { text-shadow: none; }
+/* Il numero dell'edge positivo è IL dato della card: verde, e in una compact
+   è l'unica cosa colorata. Lo trova l'occhio per il colore e il corpo, non
+   per un alone (round 3: via il text-shadow). */
+.br-edge[data-tone="pos"]  { color: var(--am-edge); }
 .br-edge[data-tone="neg"]  { color: var(--am-negative); }
 .br-edge[data-tone="flat"] { color: var(--am-muted); }
 .br-edge[data-tone="none"],
@@ -284,7 +257,6 @@
   border-color: var(--am-royal-b);
   background: var(--am-royal-dim);
 }
-.br-watch[aria-pressed="true"] svg { fill: currentColor; }
 .br-watch:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
 
 /* ── CTA: link nelle card compatte, fill verde solo su Featured, outline su Unlock ── */
@@ -318,7 +290,6 @@
   color: var(--am-edge-ink);
   background: var(--am-edge);
   font-weight: 700;
-  box-shadow: var(--am-edge-glow);
 }
 .br-cta[data-tone="primary"]:hover { filter: brightness(1.06); }
 .br-cta[data-tone="unlock"] {
@@ -445,8 +416,9 @@
 
 /* Featured: più aria, sfondo un gradino sopra, il teaser del «perché».
    Round 2: crest più grandi (36px, dal TSX) e uno slot `media` opzionale in
-   testa — foto/crest della partita che sanguina fino ai bordi della card, con
-   un gradiente che la riporta nel pannello (ref-01, «Featured predictions»). */
+   testa — foto/crest della partita che sanguina fino ai bordi della card.
+   Round 3: la foto va in duotone (grayscale + luminosity sul pannello) sotto
+   un velo piatto, non un gradiente che «sfuma» — finisce dove finisce. */
 .br-card[data-variant="featured"] {
   padding: var(--am-s-5);
   gap: var(--am-s-4);
@@ -461,11 +433,12 @@
   border-radius: var(--am-r-card) var(--am-r-card) 0 0;
   background: var(--am-panel-3);
 }
-.br-card__media > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.br-card__media > img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1); mix-blend-mode: luminosity; }
 .br-card__media::after {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(6,11,36,0.10) 0%, rgba(16,32,79,0.55) 60%, var(--am-panel-2) 100%);
+  background: color-mix(in srgb, var(--am-panel-2) 45%, transparent);
+  border-bottom: 1px solid var(--am-line);
 }
 .br-card[data-variant="featured"] .br-card__teams { font-size: 22px; font-weight: 700; letter-spacing: -0.012em; }
 .br-card[data-variant="featured"] .br-card__pick-v { font-size: 16px; font-weight: 600; white-space: normal; }
@@ -538,7 +511,7 @@
   font-family: var(--am-font-num);
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--am-muted-2);
 }
@@ -596,7 +569,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .br-live__dot { animation: none; }
   .br-cta svg, .br-cta, .br-watch, .br-card { transition: none; }
   .br-cta:hover svg { transform: none; }
 }
@@ -631,17 +603,20 @@
   padding-bottom: var(--am-s-3);
 }
 .br-sec__titles { min-width: 0; }
+/* Round 3: la stessa voce dell'hero — Saira Condensed 800 maiuscolo — così la
+   firma attraversa la pagina, e la gerarchia la fa la tipografia, non i badge. */
 .br-sec__title {
   display: flex;
   align-items: baseline;
   gap: var(--am-s-2);
   margin: 0;
-  font-family: var(--am-font-ui);
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--am-font-hud);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
   color: var(--am-text);
-  line-height: 1.2;
+  line-height: 1;
 }
 /* Il conteggio è un dato, quindi mono — e piccolo: il titolo deve vincerlo. */
 .br-sec__n {
@@ -725,12 +700,13 @@
 /* Lo stato selezionato è ROYAL, non verde: il verde è riservato all'edge e
    alla CTA di upgrade (regola del brief). */
 .br-nav__item[aria-current="page"] { color: var(--am-royal); background: var(--am-royal-dim); }
-.br-nav__item[data-live="true"]::before {
-  content: "";
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--am-live);
-}
+/* Round 3: l'icona 18px prima della label. Quando c'è davvero qualcosa in
+   gioco (data-live, dal TSX) l'icona Live sale a pieno valore: un segnale di
+   valore, non un puntino giallo — un secondo colore nella nav era il primo
+   «tutto evidenziato» della pagina. */
+.br-nav__item svg { color: var(--am-muted-2); }
+.br-nav__item:hover svg, .br-nav__item[aria-current="page"] svg { color: inherit; }
+.br-nav__item[data-live="true"] svg { color: var(--am-text); }
 
 /* ── Zona destra: ricerca · watchlist · account ─────────────────────────── */
 .br-navright { display: flex; align-items: center; gap: var(--am-s-2); min-width: 0; }
@@ -812,11 +788,17 @@
   .br-lobby { gap: var(--am-s-6); padding: var(--am-s-4) var(--am-s-3) var(--am-s-7); }
   .br-sec__grid { grid-template-columns: 1fr; gap: var(--am-s-3); }
   .br-sec__head { flex-wrap: wrap; align-items: flex-start; gap: var(--am-s-2); }
-  .br-sec__title { font-size: 17px; }
+  .br-sec__title { font-size: 22px; }
   /* La nav primaria scorre in orizzontale invece di andare a capo: la bottom
      bar resta il modo principale di muoversi, questa è il secondo. */
   .br-nav { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .br-nav::-webkit-scrollbar { display: none; }
+  /* La topbar è un grid item di .portal-root: il suo min-width «auto» vale il
+     min-content dei figli, e quello della nav (uno scroll container) si
+     calcola come se l'overflow fosse visibile. Con le icone del round 3 le
+     cinque voci fanno 435px: il documento si allargava a 467 (misurato
+     @390px). min-width 0 la riporta alla colonna, e la nav scorre. */
+  .am-topbar { min-width: 0; }
   .br-search input { width: 9ch; }
   /* La zona destra prende una riga sua e può andare a capo. Senza questo
      eredita `flex: 0 0 auto` da .am-topright (globals.css) e resta larga
@@ -972,176 +954,205 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * HERO + TILES — #RESTYLING-0921 round 2 (feedback Andrea, ref-01)
+ * HERO + TILES — #RESTYLING-0921 round 3 (direzione d'arte, 2026-09-22)
  *
- * Il round 1 apriva la Home con la prima fascia di card: corretto per un
- * terminale, freddo per uno sportsbook. Qui in testa arriva un banner che
- * dice in una riga cosa fa il prodotto, mostra tre conteggi VERI (live /
- * starting soon / high edge) e ha l'unica CTA verde piena della schermata.
- * Sotto, una riga di tile per sport e una tile promozionale che porta al
- * probability builder. Stessi token, stesso breakpoint 640.
- *
- * Il neon resta accento: nel banner il verde è la parola dell'headline, la
- * CTA e i numeri; la superficie è navy con un gradiente royal — non un fill.
+ * Il round 2 apriva la Home con una foto AI di un atleta su navy, glow verde
+ * e glow giallo insieme, filo lime, scatola dei value prop a fianco: il
+ * template più comune dei generatori, e l'occhio lo riconosce prima di
+ * leggere una parola. Qui la TIPOGRAFIA è l'immagine — Saira Condensed 800
+ * maiuscolo a corpo enorme, una sola parola in lime — e il fondo è un
+ * materiale reale in duotone navy (variante A) oppure il pannello nudo con
+ * una riga di calce disegnata (variante B: senza asset, e su telefono).
+ * Zero glow, zero radial-gradient, un solo elemento colorato oltre al testo
+ * (la CTA). La profondità la fanno le superfici e il bordo a 1px.
+ * Sotto, una riga di tile per sport e la tile promozionale. Stessi token,
+ * stesso breakpoint 640. Concept: docs/reference/round3/hero-concept.html.
  * ═══════════════════════════════════════════════════════════════════════ */
 
 .br-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: var(--am-s-5);
-  align-items: stretch;
-  padding: var(--am-s-6) var(--am-s-6) var(--am-s-6) calc(var(--am-s-6) + 4px);
-  min-height: 300px;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: end;
+  padding: var(--am-s-7) var(--am-s-6) var(--am-s-6);
+  min-height: 420px;
   overflow: hidden;
   isolation: isolate;
+  /* Contenitore per la headline: sotto i 640 il corpo si misura sulla
+     larghezza REALE del banner (cqi), non sul viewport — dentro .book-main
+     il banner a 390px è largo 310, non 358. */
+  container-type: inline-size;
   color: var(--am-text);
-  /* Il banner è il pezzo più grande della pagina: radius 16, un gradino
-     sopra le card (12) — la forma dice la gerarchia. */
-  border-radius: 16px;
-  border: 1px solid var(--am-line-2);
-  background:
-    radial-gradient(120% 140% at 100% 0%, rgba(42,91,255,0.55) 0%, rgba(42,91,255,0.0) 55%),
-    radial-gradient(80% 120% at 0% 100%, rgba(90,133,255,0.18) 0%, transparent 60%),
-    linear-gradient(100deg, var(--am-bg-2) 0%, var(--am-panel) 55%, var(--am-panel-2) 100%);
+  border-radius: var(--am-r-card);
+  border: 1px solid var(--am-line);
+  background: var(--am-panel);
   box-shadow: var(--am-shadow-card);
 }
-.br-hero[data-has-aside="false"] { grid-template-columns: minmax(0, 1fr); }
-/* Il filo verticale a sinistra (ref-01): lime che sfuma verso il basso. È
-   l'unico elemento di colore «pieno» oltre la CTA, e non è un fill. */
-.br-hero::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 10%; bottom: 10%;
-  width: 3px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--am-lime), var(--am-edge) 45%, transparent);
-  box-shadow: var(--am-edge-glow);
-}
 
-/* ── L'immagine: foto vera se c'è, altrimenti il pattern «floodlight» ──── */
+/* ── Il fondo: materiale in duotone (A) o riga di calce (B) ─────────────── */
 .br-hero__art {
   position: absolute;
-  inset: 0 0 0 42%;
-  z-index: -1;
+  inset: 0;
+  z-index: -2;
   pointer-events: none;
   overflow: hidden;
 }
-.br-hero__art > img {
+/* La texture diventa duotone QUI, non nell'asset: grayscale + luminosity sul
+   pannello navy. Così anche la foto vera che sostituirà il concept uscirà
+   dello stesso colore, qualunque sia la sua dominante. */
+.br-hero__tex {
+  position: absolute;
+  inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
   object-position: center right;
   display: block;
-  /* Il gradiente che «integra» la foto nel banner: a sinistra scompare nel
-     testo, in basso nel pannello. Niente foto tagliata di netto. */
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%), linear-gradient(180deg, #000 60%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%), linear-gradient(180deg, #000 60%, transparent 100%);
-  mask-composite: intersect;
+  filter: grayscale(1) contrast(1.08);
+  mix-blend-mode: luminosity;
 }
-.br-hero__art > svg { width: 100%; height: 100%; display: block; }
-.br-hero[data-has-aside="true"] .br-hero__art { inset: 0 300px 0 40%; }
+/* Il velo: lineare (mai radiale), navy 92% → 15% da sinistra, 85% → 0 dal
+   basso. È ciò che fa leggere il testo sopra il materiale. */
+.br-hero[data-art="material"] .br-hero__art::after {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--am-bg) 92%, transparent) 0%,
+      color-mix(in srgb, var(--am-bg) 55%, transparent) 45%,
+      color-mix(in srgb, var(--am-bg) 15%, transparent) 100%),
+    linear-gradient(0deg,
+      color-mix(in srgb, var(--am-bg) 85%, transparent) 0%,
+      transparent 45%);
+}
+/* La riga di calce (variante B): una linea sola, 2px, −7°. Il viewBox
+   quadrato con `slice` tiene l'angolo fisso a qualunque proporzione. */
+.br-hero__line {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  stroke: color-mix(in srgb, var(--am-text) 55%, transparent);
+  stroke-width: 2px;
+}
+.br-hero[data-art="material"] .br-hero__line { display: none; }
+/* Grana: feTurbulence SVG a opacità 7%. Pesa zero, non è un PNG che si ripete. */
+.br-hero__grain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.07;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
 
 /* ── Contenuto ─────────────────────────────────────────────────────────── */
-.br-hero__body {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: var(--am-s-4);
-  min-width: 0;
-}
 .br-hero__eyebrow {
-  margin: 0;
+  margin: 0 0 var(--am-s-3);
   font-family: var(--am-font-num);
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--am-edge);
+  color: var(--am-muted);
 }
+/* La voce del prodotto: condensed 800, interlinea .88, tracking stretto,
+   massimo 13ch → tre righe. */
 .br-hero__title {
   margin: 0;
-  font-family: var(--am-font-ui);
-  font-size: clamp(34px, 4.4vw, 58px);
+  font-family: var(--am-font-hud);
+  font-size: clamp(56px, 8vw, 104px);
   font-weight: 800;
-  letter-spacing: -0.028em;
-  line-height: 1.0;
-  text-wrap: balance;
-  max-width: 16ch;
+  line-height: 0.88;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  max-width: 13ch;
   color: var(--am-text);
 }
 /* <em> = la parola accentata (stress emphasis, semantica giusta): lime, non
    corsivo. Lime e non edge-green così «today.» e «+18» non sono lo stesso
    colore: uno è voce, l'altro è dato. */
 .br-hero__title em { font-style: normal; color: var(--am-lime); }
+
+.br-hero__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--am-s-6);
+  flex-wrap: wrap;
+  margin-top: var(--am-s-5);
+}
 .br-hero__sub {
   margin: 0;
   font-family: var(--am-font-ui);
   font-size: 17px;
   line-height: 1.45;
   color: var(--am-muted);
-  max-width: 52ch;
+  max-width: 44ch;
 }
 
-/* Le pill dei conteggi: superficie inset + filo, numero mono grande. Non
-   sono bottoni a meno che il chiamante non passi un href. */
+/* I tre numeri veri: una striscia, non tre pill. Tabulari, grandi, senza
+   cornice. Solo High edge è lime. Con href sono link; il testo dice già dove. */
 .br-hero__stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--am-s-3);
+  gap: var(--am-s-6);
   list-style: none;
-  margin: var(--am-s-1) 0 0;
+  margin: 0;
   padding: 0;
 }
+.br-hero__stats li { display: flex; }
 .br-hero__stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 14px 0 12px;
-  border-radius: var(--am-r-card-sm);
-  border: 1px solid var(--am-line-2);
-  background: rgba(5,10,32,0.72);
-  color: var(--am-text);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: inherit;
   text-decoration: none;
-  font-family: var(--am-font-ui);
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
-a.br-hero__stat:hover { border-color: var(--am-royal); box-shadow: var(--am-royal-glow); }
-a.br-hero__stat:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
-.br-hero__stat svg { color: var(--am-royal); flex: none; }
-.br-hero__stat-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--am-edge);
-  box-shadow: 0 0 10px rgba(61,245,110,0.8);
-  flex: none;
-}
-.br-hero__stat[data-kind="live"] .br-hero__stat-dot { animation: br-pulse 1.6s ease-in-out infinite; }
+a.br-hero__stat:hover .br-hero__stat-l { color: var(--am-text); }
+a.br-hero__stat:focus-visible { outline: 2px solid var(--am-text); outline-offset: 4px; }
 .br-hero__stat-n {
   font-family: var(--am-font-num);
-  font-size: var(--am-num-md);
+  font-size: 40px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   line-height: 1;
-  margin-left: 4px;
   color: var(--am-text);
 }
-.br-hero__stat[data-kind="high-edge"] .br-hero__stat-n { color: var(--am-edge); text-shadow: var(--am-edge-text-glow); }
+.br-hero__stats li[data-kind="high-edge"] .br-hero__stat-n { color: var(--am-lime); }
+.br-hero__stat-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+  white-space: nowrap;
+}
+/* Il live ha un quadratino pieno, bianco: un segno, non un secondo colore. */
+.br-hero__stats li[data-kind="live"] .br-hero__stat-l::before {
+  content: "";
+  width: 6px; height: 6px;
+  background: var(--am-text);
+}
 
-.br-hero__ctas { display: flex; align-items: center; gap: var(--am-s-3); flex-wrap: wrap; margin-top: var(--am-s-2); }
-/* La CTA primaria dell'hero è un gradino più grande della .br-cta primary
-   delle Featured: 48px, 15px/700, stesso verde, stesso alone. */
+/* Una sola CTA piena: lime con inchiostro, e il TAGLIO in alto a sinistra
+   (la firma della casa, la stessa delle icone). Niente ombra, niente alone.
+   Il focus ring è inset perché il clip-path taglierebbe un outline esterno. */
+.br-hero__ctas {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  flex-wrap: wrap;
+  margin-top: var(--am-s-5);
+}
 .br-hero__cta {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 48px;
   padding: 0 20px;
   font-family: var(--am-font-ui);
@@ -1149,80 +1160,68 @@ a.br-hero__stat:focus-visible { outline: 2px solid var(--am-royal); outline-offs
   font-weight: 700;
   line-height: 1;
   text-decoration: none;
-  border-radius: var(--am-r-card-sm);
   border: 1px solid transparent;
+  border-radius: 0;
   cursor: pointer;
   white-space: nowrap;
-  color: var(--am-edge-ink);
-  background: var(--am-edge);
-  box-shadow: var(--am-edge-glow);
-  transition: filter 120ms ease, transform 120ms ease;
+  color: var(--am-lime-ink);
+  background: var(--am-lime);
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+  transition: filter 120ms ease;
 }
-.br-hero__cta:hover { filter: brightness(1.06); }
-.br-hero__cta:hover svg { transform: translateX(2px); }
+.br-hero__cta:hover { filter: brightness(1.05); }
 .br-hero__cta svg { transition: transform 160ms ease; }
-.br-hero__cta:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
+.br-hero__cta:hover svg { transform: translateX(2px); }
+.br-hero__cta:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--am-lime-ink); }
 .br-hero__cta[data-tone="ghost"] {
   color: var(--am-text);
-  background: rgba(5,10,32,0.55);
-  border-color: var(--am-line-2);
-  box-shadow: none;
+  background: transparent;
+  border-color: color-mix(in srgb, var(--am-text) 28%, transparent);
+  clip-path: none;
 }
-.br-hero__cta[data-tone="ghost"]:hover { border-color: var(--am-royal); filter: none; }
+.br-hero__cta[data-tone="ghost"]:hover { border-color: var(--am-text); filter: none; }
+.br-hero__cta[data-tone="ghost"]:focus-visible { box-shadow: none; outline: 2px solid var(--am-text); outline-offset: 2px; }
 
-/* ── La scatola dei value prop (destra) ────────────────────────────────── */
+/* ── I punti (se il chiamante li passa): una riga piana in coda, senza
+   scatola. Round 3: la scatola a fianco della headline non esiste più. ─── */
 .br-hero__aside {
-  position: relative;
-  align-self: center;
   display: flex;
   flex-direction: column;
-  gap: var(--am-s-3);
-  padding: var(--am-s-4) var(--am-s-4) var(--am-s-4);
-  border-radius: var(--am-r-card);
-  border: 1px solid var(--am-line-2);
-  background: rgba(6,11,36,0.78);
-  box-shadow: var(--am-royal-glow);
+  gap: var(--am-s-2);
+  margin-top: var(--am-s-5);
+  padding-top: var(--am-s-4);
+  border-top: 1px solid color-mix(in srgb, var(--am-text) 14%, transparent);
 }
 .br-hero__aside-h {
   margin: 0;
-  font-family: var(--am-font-ui);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-  color: var(--am-text);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
 }
 .br-hero__aside-h em { font-style: normal; color: var(--am-lime); }
 .br-hero__aside-sub { margin: 0; font-family: var(--am-font-ui); font-size: 13.5px; line-height: 1.45; color: var(--am-muted); }
 .br-hero__points {
   list-style: none;
-  margin: var(--am-s-1) 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: var(--am-s-2) var(--am-s-5);
 }
 .br-hero__points li {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-family: var(--am-font-ui);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.3;
   color: var(--am-text);
 }
-/* Il check sta in un disco royal outline: è una spunta, non un bottone. */
-.br-hero__points li > i {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px; height: 22px;
-  flex: none;
-  border-radius: 50%;
-  border: 1.5px solid var(--am-royal);
-  color: var(--am-royal);
-}
+.br-hero__points li svg { color: var(--am-muted); }
 
 /* ── Tile per sport ────────────────────────────────────────────────────── */
 .br-tiles {
@@ -1248,7 +1247,8 @@ a.br-hero__stat:focus-visible { outline: 2px solid var(--am-royal); outline-offs
 }
 a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-shadow: var(--am-shadow-card-hover); }
 .br-tile:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
-.br-tile[aria-current="true"] { border-color: var(--am-royal); box-shadow: var(--am-royal-glow); }
+/* Selezionata: bordo royal (struttura), nessun alone. */
+.br-tile[aria-current="true"] { border-color: var(--am-royal); }
 /* Senza dati la tile non è un link: superficie un gradino sotto, cursore
    normale, e lo dice («Coming soon») invece di mostrare uno zero. */
 .br-tile[data-state="soon"] { cursor: default; background: var(--am-bg-2); color: var(--am-muted); }
@@ -1285,14 +1285,14 @@ a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-sha
   white-space: nowrap;
 }
 .br-tile__meta > b { font-weight: 700; color: var(--am-text); }
-.br-tile[data-state="soon"] .br-tile__meta { text-transform: uppercase; letter-spacing: 0.08em; font-size: 10.5px; }
+.br-tile[data-state="soon"] .br-tile__meta { text-transform: uppercase; letter-spacing: 0.12em; font-size: 10.5px; }
 .br-tile__go { color: var(--am-muted-2); flex: none; transition: transform 160ms ease, color 160ms ease; }
 a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: translateX(2px); color: var(--am-royal); }
 
 /* ── Tile promozionale: «Build your own accumulator» ───────────────────── */
-/* Occupa due colonne della riga e ha il filo verde: è l'unica tile che porta
-   fuori dalla lista, verso uno strumento. Superficie navy con un lavaggio
-   royal, non un fill verde — il verde è il bordo, l'icona e la freccia. */
+/* Occupa due colonne della riga: è l'unica tile che porta fuori dalla lista,
+   verso uno strumento. Round 3: bordo a 1px come le altre, superficie
+   panel-2, nessun lavaggio radiale — il verde resta SOLO su icona e freccia. */
 .br-promo {
   grid-column: span 2;
   display: flex;
@@ -1301,17 +1301,15 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   min-height: 72px;
   padding: var(--am-s-3) var(--am-s-4);
   border-radius: var(--am-r-card-sm);
-  border: 1px solid var(--am-edge-b);
-  background:
-    radial-gradient(90% 160% at 100% 50%, rgba(42,91,255,0.35) 0%, transparent 60%),
-    var(--am-panel-2);
+  border: 1px solid var(--am-line);
+  background: var(--am-panel-2);
   color: var(--am-text);
   text-decoration: none;
   min-width: 0;
   transition: box-shadow 140ms ease, border-color 140ms ease;
 }
-.br-promo:hover { box-shadow: var(--am-edge-glow); border-color: var(--am-edge); }
-.br-promo:focus-visible { outline: 2px solid var(--am-edge); outline-offset: 2px; }
+.br-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.br-promo:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
 .br-promo__icon {
   display: inline-flex;
   align-items: center;
@@ -1319,8 +1317,8 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   width: 44px; height: 44px;
   flex: none;
   border-radius: var(--am-r-card-sm);
-  background: var(--am-edge-dim);
-  border: 1px solid var(--am-edge-b);
+  background: var(--am-inset);
+  border: 1px solid var(--am-line);
   color: var(--am-edge);
 }
 .br-promo__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
@@ -1330,28 +1328,30 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 .br-promo:hover .br-promo__go { transform: translateX(3px); }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 980px) {
-  .br-hero { grid-template-columns: minmax(0, 1fr); }
-  .br-hero[data-has-aside="true"] .br-hero__art { inset: 0 0 auto 30%; height: 60%; }
-  .br-hero__aside { align-self: stretch; }
-}
 @media (max-width: 640px) {
-  .br-hero { padding: var(--am-s-5) var(--am-s-4) var(--am-s-5) calc(var(--am-s-4) + 4px); min-height: 0; border-radius: var(--am-r-card); }
-  .br-hero__title { font-size: 34px; max-width: none; }
+  .br-hero { padding: var(--am-s-5) var(--am-s-4) var(--am-s-4); min-height: 0; }
+  /* Variante B su telefono: la texture e il suo velo si spengono, resta la
+     riga di calce. Su 390px il materiale sotto tre righe da 56px è rumore. */
+  .br-hero__tex,
+  .br-hero[data-art="material"] .br-hero__art::after { display: none; }
+  .br-hero[data-art="material"] .br-hero__line { display: block; }
+  /* 17,5cqi = la parola più lunga della headline (OPPORTUNITIES, 13 lettere
+     condensed 800) entra nel content-box del banner senza spezzarsi né
+     uscire dal bordo: misurata 217px a 39px → 48px su 276px disponibili. */
+  .br-hero__title { max-width: none; font-size: clamp(36px, 17.5cqi, 56px); }
   .br-hero__sub { font-size: 15px; }
-  .br-hero__art { inset: 0 0 auto 20%; height: 45%; opacity: 0.55; }
-  .br-hero__stats { gap: var(--am-s-2); }
-  .br-hero__stat { min-height: 40px; padding: 0 12px 0 10px; font-size: 13px; }
-  .br-hero__stat-n { font-size: 20px; }
-  .br-hero__cta { min-height: 44px; width: 100%; justify-content: center; }
+  .br-hero__row { gap: var(--am-s-4); margin-top: var(--am-s-4); }
+  .br-hero__stats { gap: var(--am-s-5); }
+  .br-hero__stat-n { font-size: 32px; }
+  .br-hero__ctas { flex-direction: column; align-items: stretch; margin-top: var(--am-s-4); }
+  .br-hero__cta { min-height: 44px; justify-content: center; }
   .br-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--am-s-2); }
   .br-promo { grid-column: 1 / -1; }
   .br-tile { min-height: 64px; padding: 10px; gap: 10px; }
   .br-tile__icon { width: 38px; height: 38px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .br-hero__stat-dot, .br-live__dot { animation: none; }
-  .br-hero__cta, .br-hero__cta svg, .br-tile, .br-tile__go, .br-promo, .br-promo__go, .br-hero__stat { transition: none; }
+  .br-hero__cta, .br-hero__cta svg, .br-tile, .br-tile__go, .br-promo, .br-promo__go { transition: none; }
   .br-hero__cta:hover svg, a.br-tile:hover .br-tile__go, .br-promo:hover .br-promo__go { transform: none; }
 }
 
@@ -1362,17 +1362,12 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 :root[data-theme="light"] .br-hero {
   --am-text: #EDEFF2;
   --am-muted: #A9B3CC;
-  --am-edge: #3DF56E;
-  --am-edge-ink: #06140C;
-  --am-edge-glow: 0 0 0 1px rgba(61,245,110,0.35), 0 0 22px -4px rgba(61,245,110,0.60);
-  --am-edge-text-glow: 0 0 14px rgba(61,245,110,0.40);
+  --am-muted-2: #909AAE;
   --am-lime: #C8FF3D;
-  --am-royal: #5A85FF;
-  --am-royal-glow: 0 0 0 1px rgba(90,133,255,0.32), 0 0 28px -8px rgba(90,133,255,0.65);
-  --am-line-2: rgba(90,133,255,0.50);
-  --am-bg-2: #081033;
+  --am-lime-ink: #0B1400;
+  --am-line: rgba(90,133,255,0.30);
+  --am-bg: #060B24;
   --am-panel: #0C1741;
-  --am-panel-2: #10204F;
   border-color: rgba(30,72,214,0.45);
 }
 

@@ -34,6 +34,8 @@ import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
+// #RESTYLING-0921 round 3: il set di icone della casa (nav, bottom-nav, search).
+import { Icon, IconSearch, type IconName } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
 import { getSessionId, trackEvent } from "@/lib/track-event";
@@ -9071,43 +9073,10 @@ function HomeLobby({
     ru: <>Лучшие возможности <em>на сегодня.</em></>,
   });
 
-  // La checklist dice SOLO cose che il prodotto fa già e che si possono
-  // verificare aprendo una card: il confronto model/mercato, l'edge in punti,
-  // i due sport serviti, il builder. «Trusted by 100K+ bettors» dell'immagine
-  // di riferimento è un placeholder, non un nostro dato: non c'è.
-  const heroPoints = pick5<string[]>(lang, {
-    it: [
-      "La probabilità del modello accanto al prezzo del mercato",
-      "L'edge in punti percentuali, o nessun edge dichiarato",
-      "Calcio e tennis, aggiornati durante la giornata",
-      "Costruisci la tua multipla con la probabilità congiunta",
-    ],
-    en: [
-      "The model's probability next to the market price",
-      "The edge in percentage points, or no edge claimed",
-      "Football and tennis, updated through the day",
-      "Build your own accumulator with its joint probability",
-    ],
-    es: [
-      "La probabilidad del modelo junto al precio del mercado",
-      "El edge en puntos porcentuales, o ningún edge declarado",
-      "Fútbol y tenis, actualizados durante el día",
-      "Crea tu combinada con su probabilidad conjunta",
-    ],
-    fr: [
-      "La probabilité du modèle à côté du prix du marché",
-      "L'edge en points de pourcentage, ou aucun edge annoncé",
-      "Football et tennis, mis à jour tout au long de la journée",
-      "Composez votre combiné avec sa probabilité conjointe",
-    ],
-    ru: [
-      "Вероятность модели рядом с ценой рынка",
-      "Edge в процентных пунктах — или никакого edge",
-      "Футбол и теннис, обновления в течение дня",
-      "Соберите свой экспресс с совокупной вероятностью",
-    ],
-  });
-
+  // Round 3: la scatola dei value prop a fianco della headline non c'è più
+  // (direzione d'arte: la tipografia è l'immagine, e a fianco non ci sta
+  // nulla). I quattro punti che elencava vivono già, per esteso, su
+  // /how-it-works — la CTA secondaria porta lì.
   const hero = view !== "home" ? null : (
     <HeroBanner
       eyebrow={pick5(lang, {
@@ -9157,20 +9126,22 @@ function HomeLobby({
         label: pick5(lang, { it: "Come funziona", en: "How it works", es: "Cómo funciona", fr: "Comment ça marche", ru: "Как это работает" }),
         href: "/how-it-works",
       }}
-      aside={{
-        title: pick5(lang, { it: "Cosa trovi qui", en: "What you get", es: "Qué encuentras aquí", fr: "Ce que vous trouvez ici", ru: "Что здесь есть" }),
-        points: heroPoints,
-      }}
-      // Foto vera, non il pattern di fallback: l'asset è on-palette (navy /
-      // royal, nessun marchio visibile sulla maglia) e il soggetto sta a
-      // destra, dove il banner ha la sua finestra (`.br-hero__art`).
-      // È un DERIVATO web del master di art-director — 183 KB contro i 3,6 MB
-      // del PNG 2688px. È la prima immagine della homepage: quel peso è LCP.
-      //   sips -s format jpeg -s formatOptions 82 -Z 1600 \
-      //     public/images/hero/hero-football-desktop.png \
-      //     --out public/images/hero/hero-football-desktop-1600w.jpg
-      // `alt=""`: è decorativa, il contenuto è il testo accanto.
-      image={{ src: "/images/hero/hero-football-desktop-1600w.jpg", alt: "" }}
+      // Round 3: non più la foto dell'atleta (il pattern più riconoscibile di
+      // «immagine generata»), ma un MATERIALE — macro di pelle di pallone con
+      // la cucitura — che il CSS tratta in duotone navy.
+      //
+      // ⚠️ PLACEHOLDER DI CONCEPT — da sostituire con una foto reale prima
+      // della prod. Questa texture è quella generata da art-director per il
+      // concept (docs/reference/round3/hero-tex-leather.png). In produzione ci
+      // va una fotografia vera dello stesso soggetto (un pallone sul tavolo,
+      // luce radente, macro — basta il telefono) o uno stock con licenza,
+      // trattata con lo stesso duotone. Derivato web: 1400px, JPEG q68 — sotto
+      // il velo al 92% il dettaglio in più non si vede, il peso sì (LCP).
+      //   sips -s format jpeg -s formatOptions 68 -Z 1400 \
+      //     docs/reference/round3/hero-tex-leather.png \
+      //     --out public/images/hero/hero-tex-leather-1400w.jpg
+      // `alt=""`: è decorativa, il contenuto è il testo.
+      image={{ src: "/images/hero/hero-tex-leather-1400w.jpg", alt: "" }}
     />
   );
 
@@ -10402,9 +10373,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
   const tUI = TRANSLATIONS[uiLanguage];
 
-  // #RESTYLING-0921 — il pallino sulla voce «Live» si accende solo se c'è
-  // davvero qualcosa in gioco. Un indicatore sempre acceso è un ornamento, e
-  // il brief vieta esplicitamente l'urgenza costruita.
+  // #RESTYLING-0921 — la voce «Live» si accende solo se c'è davvero qualcosa
+  // in gioco. Un indicatore sempre acceso è un ornamento, e il brief vieta
+  // esplicitamente l'urgenza costruita. Round 3: «acceso» è l'icona che passa
+  // a pieno valore (data-live), non un puntino giallo — niente secondo colore.
   const liveOnBoardCount = useMemo(() => {
     const football = liveFootballOnBoard(predictions, (p) =>
       orientLive(liveScores[p.match_id] ?? findLiveByTeams(liveScores, p.home_team, p.away_team), p.home_team, p.away_team),
@@ -10436,40 +10408,42 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // stesse voci della topnav desktop: su telefono la scoperta non aveva un
   // ingresso e la watchlist non esisteva. History e Leaderboard restano
   // raggiungibili da Profile (menu Account), come su desktop.
+  // Round 3: le icone sono quelle di components/ui/icons.tsx — un solo sistema
+  // al posto dei PNG 3D menu-*.png (il pezzo più «AI» della barra) e dei glifi
+  // sprite di fallback.
   const BOTTOM_TABS: {
     id: string;
     label: string;
-    glyph: string;
-    icon?: React.ComponentProps<typeof MenuIcon>["name"];
+    icon: IconName;
     href?: string;
     active: boolean;
     go?: () => void;
   }[] = [
     {
       id: "home", label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }),
-      glyph: RAIL_GLYPHS["bets"] ?? "#g-desk", icon: RAIL_ICONS["bets"],
+      icon: "home",
       active: tab === "bets" && deskView !== "explore" && deskView !== "watchlist",
       go: () => { setTab("bets"); setAutoOpenKey(null); setDeskView("home"); },
     },
     {
       id: "explore", label: pick5(uiLanguage, { it: "Esplora", en: "Explore", es: "Explorar", fr: "Explorer", ru: "Обзор" }),
-      glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk", icon: RAIL_ICONS["leaderboard"],
+      icon: "explore",
       active: tab === "bets" && deskView === "explore",
       go: () => { setTab("bets"); showExplore("all"); },
     },
     {
       id: "watchlist", label: pick5(uiLanguage, { it: "Watchlist", en: "Watchlist", es: "Watchlist", fr: "Watchlist", ru: "Избранное" }),
-      glyph: "#g-desk", icon: "weeklypick",
+      icon: "bookmark",
       active: tab === "bets" && deskView === "watchlist",
       go: () => { setTab("bets"); setAutoOpenKey(null); setDeskView("watchlist"); },
     },
     {
       id: "tools", label: pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" }),
-      glyph: "#g-desk", icon: "tools", href: "/tools", active: false,
+      icon: "tools", href: "/tools", active: false,
     },
     {
       id: "profile", label: pick5(uiLanguage, { it: "Profilo", en: "Profile", es: "Perfil", fr: "Profil", ru: "Профиль" }),
-      glyph: RAIL_GLYPHS["account"] ?? "#g-desk", icon: "account",
+      icon: "profile",
       active: tab === "plans",
       go: () => { setTab("plans"); },
     },
@@ -10531,17 +10505,20 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               erano sette voci di servizio in mezzo a quelle che portano a una
               partita, e occupavano insieme la topnav E la rail laterale. */}
           <nav className="br-nav" aria-label={pick5(uiLanguage, { it: "Navigazione principale", en: "Primary navigation", es: "Navegación principal", fr: "Navigation principale", ru: "Основная навигация" })}>
+            {/* Round 3: icona 18px prima della label. Il Live si dice con il
+                suo segno (IconLive), non con un puntino giallo — un secondo
+                colore nella nav era il primo «tutto evidenziato» della pagina. */}
             {([
-              { view: "home" as DeskView, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
-              { view: "live" as DeskView, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }), live: true },
-              { view: "football" as DeskView, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
-              { view: "tennis" as DeskView, label: "Tennis" },
+              { view: "home" as DeskView, icon: "home" as IconName, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
+              { view: "live" as DeskView, icon: "live" as IconName, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }) },
+              { view: "football" as DeskView, icon: "football" as IconName, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
+              { view: "tennis" as DeskView, icon: "tennis" as IconName, label: "Tennis" },
             ]).map((item) => (
               <button
                 key={item.view}
                 type="button"
                 className="br-nav__item"
-                data-live={item.live && liveOnBoardCount > 0 ? "true" : undefined}
+                data-live={item.view === "live" && liveOnBoardCount > 0 ? "true" : undefined}
                 aria-current={tab === "bets" && deskView === item.view ? "page" : undefined}
                 onClick={() => {
                   setTab("bets");
@@ -10550,10 +10527,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   trackEvent("nav_click", { meta: { view: item.view } });
                 }}
               >
+                <Icon name={item.icon} size={18} />
                 {item.label}
               </button>
             ))}
             <Link className="br-nav__item" href="/tools">
+              <Icon name="tools" size={18} />
               {pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}
             </Link>
           </nav>
@@ -10564,7 +10543,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 ricerca filtra la lobby mentre si scrive; il board sotto
                 «Explore» conserva la sua, che cerca dentro ai filtri. */}
             <label className="br-search">
-              <svg aria-hidden="true"><use href="#g-search" /></svg>
+              <IconSearch size={14} stroke={2} />
               <input
                 type="search"
                 value={lobbyQuery}
@@ -10970,12 +10949,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       {/* #MOBILE-1: bottom tab bar — visibile solo ≤760px (CSS), sostituisce la sidebar-muro */}
       <nav className="am-bottomnav" aria-label="Mobile navigation">
         {BOTTOM_TABS.map((b) => {
-          /* #MOBILE-FEATURED-1: nostre icone illustrate come nel rail PC; glifo di fallback. */
           const inner = (
             <>
-              {b.icon
-                ? <MenuIcon name={b.icon} size={20} />
-                : <svg aria-hidden="true"><use href={b.glyph} /></svg>}
+              <Icon name={b.icon} size={22} />
               <span className="bn-l">{b.label}</span>
             </>
           );

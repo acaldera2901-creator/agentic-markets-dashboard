@@ -11,7 +11,7 @@ import { MarketIcon } from "./MarketIcon";
 import { MatchHeader } from "./ui/MatchHeader";
 import { ProbabilityComparison } from "./ui/ProbabilityComparison";
 import { ConfidenceIndicator } from "./ui/ConfidenceIndicator";
-import { GlyphLock } from "./ui/glyphs";
+import { IconLock } from "./ui/icons";
 import { partnerLogoByName, sortBooksForMenu } from "../lib/partners";
 import { trackEvent } from "../lib/track-event";
 import { joinFpWithModel } from "../lib/market-join";
@@ -493,12 +493,12 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                    limite, non come banner. */
                 <div className="br-md__locked">
                   <p>
-                    <GlyphLock size={14} />
+                    <IconLock size={14} />
                     {data.sections?.teamNewsLocked ?? "The full injury and team-news read for this match is part of Pro."}
                   </p>
                   {data.onUnlock && (
                     <button type="button" className="br-cta" data-tone="unlock" onClick={data.onUnlock}>
-                      <GlyphLock size={14} />{data.sections?.unlock ?? "Unlock full analysis"}
+                      <IconLock size={14} />{data.sections?.unlock ?? "Unlock full analysis"}
                     </button>
                   )}
                 </div>

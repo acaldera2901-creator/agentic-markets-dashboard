@@ -4,7 +4,7 @@
 // watchlist. Lo stato salvato è ROYAL (struttura/selected), non verde: il
 // verde è dell'edge. aria-pressed dice lo stato agli screen reader, la label
 // cambia col verbo. 32px su desktop, 40px al pollice (design-system.css).
-import { GlyphBookmark } from "@/components/ui/glyphs";
+import { IconBookmark } from "@/components/ui/icons";
 
 type Props = {
   saved: boolean;
@@ -24,7 +24,7 @@ export function WatchlistButton({ saved, onToggle, className, labels }: Props) {
       title={saved ? l.remove : l.save}
       onClick={(e) => { e.stopPropagation(); onToggle(); }}
     >
-      <GlyphBookmark size={16} />
+      <IconBookmark size={16} filled={saved} />
     </button>
   );
 }

@@ -29,7 +29,7 @@ import { LeagueChip } from "@/components/ui/LeagueChip";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { ProbabilityComparison } from "@/components/ui/ProbabilityComparison";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
-import { GlyphArrow, GlyphLock } from "@/components/ui/glyphs";
+import { IconArrow, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
 import { EDGE_HIGH_PP, type PredictionCardData } from "@/lib/ui/prediction-card";
 
 export type PredictionCardVariant = "compact" | "featured" | "live" | "premiumLocked";
@@ -66,6 +66,14 @@ const BADGE_LABEL: Record<PredictionCardBadgeKind, string> = {
   featured: "Featured",
 };
 
+// Round 3: il badge è outline monocromo — il significato lo danno la parola e
+// il segno, non un terzo colore accanto all'edge e al LIVE.
+function BadgeIcon({ kind }: { kind: PredictionCardBadgeKind }) {
+  if (kind === "high-edge") return <IconEdge size={12} stroke={2} />;
+  if (kind === "starting-soon") return <IconClock size={12} stroke={2} />;
+  return <IconStar size={12} stroke={2} />;
+}
+
 function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): { kind: PredictionCardBadgeKind; label?: string } | null {
   if (variant === "featured") return { kind: "featured" };
   // La regola resta «o si vede il numero, o non si vede il badge» — ed è per
@@ -99,7 +107,7 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
         {(resolvedBadge || onToggleWatchlist) && (
           <span className="br-card__side">
             {resolvedBadge && (
-              <span className="br-badge" data-kind={resolvedBadge.kind}>{resolvedBadge.label ?? BADGE_LABEL[resolvedBadge.kind]}</span>
+              <span className="br-badge" data-kind={resolvedBadge.kind}><BadgeIcon kind={resolvedBadge.kind} />{resolvedBadge.label ?? BADGE_LABEL[resolvedBadge.kind]}</span>
             )}
             {onToggleWatchlist && <WatchlistButton saved={!!saved} onToggle={onToggleWatchlist} />}
           </span>
@@ -117,7 +125,7 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
       <p className="br-card__pick">
         <span className="br-label">Pick</span>
         {locked ? (
-          <span className="br-card__pick-v" data-locked="true"><GlyphLock size={13} />Pro pick</span>
+          <span className="br-card__pick-v" data-locked="true"><IconLock size={13} stroke={2} />Pro pick</span>
         ) : (
           <span className="br-card__pick-v" title={data.pick ?? undefined}>{data.pick ?? "—"}</span>
         )}
@@ -136,9 +144,9 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
           <p className="br-card__note">Model estimate · no market price yet</p>
         ) : <span />}
         <Link href={href} className="br-cta" data-tone={ctaTone} onClick={onOpen} aria-label={`${ctaText}: ${data.home} vs ${data.away}`}>
-          {locked && <GlyphLock size={14} />}
+          {locked && <IconLock size={14} />}
           {ctaText}
-          {!locked && <GlyphArrow size={14} />}
+          {!locked && <IconArrow size={14} />}
         </Link>
       </footer>
     </article>

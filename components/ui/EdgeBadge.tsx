@@ -3,7 +3,7 @@
 // L'edge è un numero con un segno, non una parola. Verde SOLO se positivo e
 // oltre il rumore (EDGE_FLAT_PP), rosso se negativo, neutro se piatto,
 // «—» se non c'è un prezzo di mercato: senza mercato non si dichiara un edge.
-import { GlyphLock } from "@/components/ui/glyphs";
+import { IconLock } from "@/components/ui/icons";
 import { edgeTone, formatEdge } from "@/lib/ui/prediction-card";
 
 export type EdgeBadgeSize = "chip" | "sm" | "md" | "lg";
@@ -20,7 +20,7 @@ export function EdgeBadge({ edgePct, size = "chip", locked = false, className }:
   if (locked) {
     return (
       <span className={["br-edge", className].filter(Boolean).join(" ")} data-tone="locked" data-size={size} aria-label="Edge available on Pro">
-        <GlyphLock size={size === "chip" ? 12 : 14} />Pro
+        <IconLock size={size === "chip" ? 12 : 14} stroke={2} />Pro
       </span>
     );
   }

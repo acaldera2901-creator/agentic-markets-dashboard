@@ -10,7 +10,7 @@
 // — il componente non aggiunge urgenza.
 import Link from "next/link";
 import type { MouseEvent } from "react";
-import { GlyphArrow, GlyphStack } from "@/components/ui/glyphs";
+import { IconArrow, IconStack } from "@/components/ui/icons";
 
 export type AccumulatorPromoTileProps = {
   title: string;
@@ -23,12 +23,12 @@ export type AccumulatorPromoTileProps = {
 export function AccumulatorPromoTile({ title, subtitle, href, onClick, className }: AccumulatorPromoTileProps) {
   return (
     <Link href={href} className={["br-promo", className].filter(Boolean).join(" ")} onClick={onClick}>
-      <span className="br-promo__icon"><GlyphStack size={22} /></span>
+      <span className="br-promo__icon"><IconStack size={22} /></span>
       <span className="br-promo__text">
         <span className="br-promo__title">{title}</span>
         {subtitle && <span className="br-promo__sub">{subtitle}</span>}
       </span>
-      <GlyphArrow size={18} className="br-promo__go" />
+      <IconArrow size={18} className="br-promo__go" />
     </Link>
   );
 }

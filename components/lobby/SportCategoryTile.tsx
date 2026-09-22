@@ -6,13 +6,12 @@
 // soon» — e smette di essere un link. Mai uno zero finto, mai un numero
 // inventato (regola del round 1, vale anche qui).
 //
-// L'icona di default è il SportIcon a tratto in royal su un disco inset; il
+// L'icona di default è l'IconSport della casa (round 3) su un disco inset; il
 // chiamante può passare `icon` (un raster on-palette, quando ne avremo uno —
 // i sport-*-sm.png attuali hanno swoosh rossi fuori palette e non si usano).
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
-import { SportIcon } from "@/components/ui/SportIcon";
-import { GlyphArrow } from "@/components/ui/glyphs";
+import { IconArrow, IconSport } from "@/components/ui/icons";
 
 export type SportCategoryTileProps = {
   sport: string;
@@ -38,14 +37,14 @@ export function SportCategoryTile({
   const cls = ["br-tile", className].filter(Boolean).join(" ");
   const body = (
     <>
-      <span className="br-tile__icon">{icon ?? <SportIcon sport={sport} size={20} />}</span>
+      <span className="br-tile__icon">{icon ?? <IconSport sport={sport} size={20} />}</span>
       <span className="br-tile__text">
         <span className="br-tile__name">{label}</span>
         <span className="br-tile__meta">
           {soon ? comingSoonLabel : renderCount(countLabel, count)}
         </span>
       </span>
-      {!soon && <GlyphArrow size={16} className="br-tile__go" />}
+      {!soon && <IconArrow size={16} className="br-tile__go" />}
     </>
   );
 
