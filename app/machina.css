@@ -12,8 +12,16 @@
 :root:not([data-theme="light"]) [data-mc-ground],:root:not([data-theme="light"]) [data-mc]{
   --paper:#eae8e4; --card:#ffffff; --ink:#0c0e11; --ink2:#4f4c47; --ink3:#56524b; --rule:#cfcbc4;
   --night:#0c0e11; --night2:#15181c; --night3:#2a2f36;
-  --verde:#15703b;      /* sulla carta: bianco sopra 6,15:1 */
-  --verde-b:#23a559;    /* sul buio: 5,59:1 */
+  /* #RESTYLING-0921 round 7 — il verde del brand vecchio lascia il posto al
+     lime del riferimento anche qui: machina è il registro «carta» di landing,
+     privacy, termini, partner e widget, e restava l'ultima superficie con la
+     palette di prima. Due valori perché i fondi sono due: sulla carta il lime
+     pieno non si legge (1,2:1), quindi lì scende di valore restando la stessa
+     tinta; sul buio resta pieno.
+     #436A00 sulla carta: 5,2:1 come testo, 6,4:1 col bianco sopra.
+     #C8FF00 sul buio: 16,4:1 come testo, 16,0:1 con l'inchiostro scuro. */
+  --verde:#436A00;
+  --verde-b:#C8FF00;
   --d-football:#6d28d9; --d-tennis:#c2410c; --d-wc:#0369a1;
   --fd:"Manrope","Helvetica Neue",Arial,sans-serif;
   --fm:"JetBrains Mono",ui-monospace,Menlo,monospace;
@@ -153,8 +161,8 @@
 :root:not([data-theme="light"]) [data-mc] .league{font-family:var(--fm);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:#dfe3e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 :root:not([data-theme="light"]) [data-mc] .when{font-family:var(--fm);font-variant-numeric:tabular-nums;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#c3c9d1;white-space:nowrap}
 :root:not([data-theme="light"]) [data-mc] .when.live{color:#fff;display:inline-flex;align-items:center;gap:.35rem}
-:root:not([data-theme="light"]) [data-mc] .pulse{width:7px;height:7px;border-radius:50%;background:var(--verde-b);box-shadow:0 0 0 0 rgba(35,165,89,.7);animation:pulse 1.8s infinite}
-@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(35,165,89,0)}100%{box-shadow:0 0 0 0 rgba(35,165,89,0)}}
+:root:not([data-theme="light"]) [data-mc] .pulse{width:7px;height:7px;border-radius:50%;background:var(--verde-b);box-shadow:0 0 0 0 rgba(200,255,0,.7);animation:pulse 1.8s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(200,255,0,0)}100%{box-shadow:0 0 0 0 rgba(200,255,0,0)}}
 :root:not([data-theme="light"]) [data-mc] .fx{padding:0 .95rem .85rem;display:grid;gap:.65rem}
 :root:not([data-theme="light"]) [data-mc] .teams{font-weight:700;letter-spacing:-.02em;font-size:1.2rem;line-height:1.18;text-wrap:balance}
 :root:not([data-theme="light"]) [data-mc] .vs{display:inline-block;margin-inline:.45rem;font-family:var(--fm);font-size:.64rem;font-weight:400;color:var(--ink3);vertical-align:.14em}
@@ -426,7 +434,7 @@
   background-image:
     radial-gradient(1000px 640px at 6% -6%, rgba(109,40,217,.30), transparent 64%),
     radial-gradient(900px 600px at 98% 6%, rgba(194,65,12,.24), transparent 62%),
-    radial-gradient(1200px 760px at 46% 108%, rgba(35,165,89,.22), transparent 64%),
+    radial-gradient(1200px 760px at 46% 108%, rgba(200,255,0,.22), transparent 64%),
     radial-gradient(760px 500px at 80% 58%, rgba(3,105,161,.18), transparent 62%),
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.05'/></svg>");
   background-attachment:fixed,fixed,fixed,fixed,fixed;
@@ -1050,7 +1058,7 @@
    `.v2r` diventa OPACO: la fascia finisce dove inizia il blocco dati, qualunque
    altezza abbia. Stesso risultato di prima, senza costante da mantenere. */
 :root[data-theme="light"] [data-mc] .pred.hud .v2r:not(.is-locked) {
-  background: linear-gradient(180deg, rgba(35,165,89,.07), rgba(255,255,255,0) 62%), #fff;
+  background: linear-gradient(180deg, rgba(200,255,0,.07), rgba(255,255,255,0) 62%), #fff;
 }
 :root[data-theme="light"] [data-mc] .pred.hud .v2r-qn:not(.lock) {
   font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;

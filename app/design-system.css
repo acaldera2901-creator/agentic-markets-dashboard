@@ -1440,8 +1440,10 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   gap: 8px;
   padding: 12px 18px;
   border-radius: 9999px;
-  background: #23a559;
-  color: #fff;
+  /* Round 7: era il verde del brand vecchio, l'ultimo rimasto scritto a mano
+     nel design system. Ora è il lime, con inchiostro scuro (15,9:1). */
+  background: var(--am-lime-fill);
+  color: var(--am-lime-fill-ink);
   font-family: var(--am-font-ui);
   font-weight: 600;
   font-size: 14px;

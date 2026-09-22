@@ -10537,7 +10537,19 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   #RESTYLING-0921: sul desk l'h1 segue la VISTA, non la tab: con
                   la nav nuova «Predictions» era il titolo anche di Live, Calcio
                   e Watchlist. Resta un solo h1 per pagina. */}
-              <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+              {/* #RESTYLING-0921 round 7 — su Calcio e Tennis l'h1 lo porta
+                  l'hero di sezione («CALCIO. LEGGI IL GIOCO.»), che è il titolo
+                  vero della pagina. Tenere anche questo faceva scrivere
+                  «Calcio» TRE volte sopra la piega — l'h1 del desk, quello
+                  dell'hero e la banda di sezione — e due h1 nello stesso
+                  documento. Il percorso in alto («BetRedge / Calcio») dice
+                  comunque dove sei, quindi non si perde nulla.
+                  Sulla Home e su tutte le altre tab l'h1 resta qui: la card
+                  dell'hero non ne ha uno, e una pagina senza h1 è una
+                  regressione SEO (#SEO-PACK-0810). */}
+              {!(tab === "bets" && (deskView === "football" || deskView === "tennis")) && (
+                <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+              )}
               {/* #BOARD-HEAD-0910 — Andrea, 10/09: «togli questa parte».
                   Sulla BOARD il sottotitolo non si rende piu': era due righe di
                   prosa sopra il contenuto che l'utente e' venuto a vedere.
