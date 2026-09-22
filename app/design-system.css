@@ -2898,7 +2898,12 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
 }
 .br-dd:hover { border-color: var(--am-sky); }
 .br-dd__shot { display: block; }
-.br-dd__img { display: block; width: 100%; height: auto; }
+/* Round 8: i creativi sono tutti 1120×630 e l'immagine è `loading="lazy"`.
+   Senza un rapporto dichiarato il posto valeva 0px fino al decode e poi
+   saltava a ~330: le card sotto ballavano a ogni caricamento. L'aspect-ratio
+   riserva lo spazio subito (gli attributi width/height sul tag fanno lo
+   stesso lavoro per chi non supporta la proprietà). */
+.br-dd__img { display: block; width: 100%; height: auto; aspect-ratio: 1120 / 630; }
 .br-dd__body {
   display: flex;
   align-items: center;
@@ -2995,6 +3000,84 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
 .br-row__prob-empty { color: var(--am-muted-2); }
 .br-row__go { font-size: 15px; color: var(--am-muted); }
 
+/* ── Il titolo tipografico della Home (round 8) ──────────────────────
+   La sezione che apre la pagina nel riferimento: occhiello, una riga in
+   Anton alla misura in cui il font si legge come SCELTA e non come font,
+   e la nota di spalla a destra. Sta sopra il rail, non al posto suo.
+
+   84px è la misura del riferimento (computata a 1512px). Il clamp la tiene
+   lì fin verso i 1500 e la scende a 40px su telefono, dove 84px si mangiava
+   due schermate prima che si vedesse una partita. Niente padding verticale:
+   la spaziatura la dà già il `gap` di .br-lobby, e sommarli faceva un buco. */
+.br-headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.br-headline__main { min-width: 0; }
+.br-headline__eyebrow {
+  display: block;
+  margin: 0 0 6px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--am-sky);
+}
+.br-headline__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-size: clamp(40px, 5.6vw, 84px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--am-text);
+}
+/* La parola accento: gradiente lime ritagliato sul testo, come il
+   riferimento e come .br-hp__line[data-accent]. Il `color` resta sotto come
+   fallback per i browser senza background-clip: text. */
+.br-headline__accent {
+  font-style: normal;
+  color: var(--am-lime);
+  background: linear-gradient(100deg, #EAFF19, #7AFF20);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.br-headline__note {
+  flex: 0 0 auto;
+  text-align: right;
+  font-family: var(--am-font-ui);
+}
+.br-headline__lines {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--am-text);
+}
+.br-headline__hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--am-muted-2);
+}
+/* In chiaro il neon su carta non esiste (#C8FF00 fa 1,1:1 su bianco):
+   l'accento torna testo pieno al gradino chiaro del token — --am-lime in
+   light è #4C7A00, che il round 7 aveva scelto proprio per «la parola
+   evidenziata dell'hero su carta». Misurato sul fondo vero (#F3EDDC, non
+   bianco): 4,39:1 — sopra il 3:1 che l'AA chiede a 84px, che è testo grande.
+   In scuro resta il gradiente, misurato 11,7:1 per l'occhiello e 16:1 per la
+   nota sullo stesso fondo. */
+:root[data-theme="light"] .br-headline__accent {
+  background: none;
+  color: var(--am-lime);
+  -webkit-text-fill-color: currentColor;
+}
+
 /* ── Il rail: hero a sinistra, prodotto vero a destra ───────────────── */
 .br-homerail {
   display: grid;
@@ -3011,6 +3094,10 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   .br-homerail { grid-template-columns: 1fr; }
   .br-hp { min-height: 420px; }
   .br-hp__title { font-size: clamp(38px, 9vw, 56px); }
+  /* Sotto i 900 la nota di spalla non ha più colonna: scende sotto il titolo
+     e si allinea a sinistra con lui, invece di restare appesa a destra. */
+  .br-headline { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .br-headline__note { text-align: left; }
 }
 @media (max-width: 780px) {
   .br-fields { grid-template-columns: repeat(2, 1fr); gap: 14px; }

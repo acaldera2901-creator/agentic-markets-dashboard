@@ -65,6 +65,7 @@ import { FieldTile, FieldTileGrid } from "@/components/lobby/FieldTile";
 import { DeepDiveCard, DeepDiveGrid } from "@/components/lobby/DeepDiveCard";
 import { UpcomingList, type UpcomingRow } from "@/components/lobby/UpcomingList";
 import { ProBand } from "@/components/lobby/ProBand";
+import { PageHeadline } from "@/components/lobby/PageHeadline";
 import { SportHero } from "@/components/lobby/SportHero";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
@@ -8556,6 +8557,48 @@ function HomeLobby({
     );
   };
 
+  // ── #RESTYLING-0921 round 8: il titolo che apre la Home ─────────────────
+  //
+  // Il riferimento apre con una sezione tipografica a sé — occhiello, una
+  // riga enorme in Anton con l'ultima parola in lime, la nota di spalla a
+  // destra — e SOLO SOTTO arriva il rail hero+card. Da noi quella sezione non
+  // esisteva: si partiva dal rail, cioè dallo stesso impianto di prima, ed è
+  // la ragione per cui qa-andrea ha letto la Home come «non ancora un clone»
+  // pur avendo font e colori giusti. Il font nuovo non si vedeva mai a una
+  // misura in cui si legge come scelta.
+  //
+  // LA NOTA DI SPALLA NON È QUELLA DEL RIFERIMENTO. Lì dice «Anteprima
+  // grafica · dati dimostrativi» perché quel sito è un mockup. Da noi i dati
+  // sono veri, quindi la riga piccola dice la cosa vera che va detta: la
+  // stessa nota di rischio del footer e della landing, in corto.
+  const homeHeadline = view !== "home" ? null : (
+    <PageHeadline
+      eyebrow={pick5(lang, {
+        it: "CALCIO. TENNIS. IL TUO EDGE.", en: "FOOTBALL. TENNIS. YOUR EDGE.",
+        es: "FÚTBOL. TENIS. TU EDGE.", fr: "FOOTBALL. TENNIS. VOTRE EDGE.",
+        ru: "ФУТБОЛ. ТЕННИС. ТВОЙ EDGE.",
+      })}
+      lead={pick5(lang, { it: "Il tuo", en: "Your", es: "Tu", fr: "Votre", ru: "Твой" })}
+      accent={pick5(lang, {
+        it: "matchday.", en: "matchday.", es: "matchday.", fr: "matchday.", ru: "матчдей.",
+      })}
+      note={pick5<string[]>(lang, {
+        it: ["Le partite. Le probabilità.", "Il contesto per leggerle."],
+        en: ["The matches. The probabilities.", "The context to read them."],
+        es: ["Los partidos. Las probabilidades.", "El contexto para leerlas."],
+        fr: ["Les matchs. Les probabilités.", "Le contexte pour les lire."],
+        ru: ["Матчи. Вероятности.", "Контекст, чтобы их прочесть."],
+      })}
+      hint={pick5(lang, {
+        it: "Analisi probabilistica · nessuna garanzia di profitto · 18+",
+        en: "Probabilistic analysis · no guaranteed returns · 18+",
+        es: "Análisis probabilístico · sin garantía de beneficios · 18+",
+        fr: "Analyse probabiliste · aucun gain garanti · 18+",
+        ru: "Вероятностный анализ · без гарантии прибыли · 18+",
+      })}
+    />
+  );
+
   // ── #RESTYLING-0921 round 7: l'hero è una CARD VERTICALE ────────────────
   //
   // Il round 4 aveva un quadratino, il round 3 un banner largo: il riferimento
@@ -8749,11 +8792,16 @@ function HomeLobby({
     />
   );
 
-  /** Il blocco in testa a una vista: hero di sezione + fascia Pro sotto. */
+  /** Il blocco in testa a una vista: hero di sezione + fascia Pro sotto.
+   *
+   * Round 8: la fascia NON va a chi il Pro ce l'ha già. Era il gate che il
+   * round 7 aveva messo sulla Home (`hero && !isPro && proBand`) e dimenticato
+   * qui: su Calcio e Tennis un abbonato Pro si vedeva ancora invitare ad
+   * abbonarsi, in cima alla pagina, su entrambe le sezioni. */
   const sectionTop = sportHero ? (
     <>
       {sportHero}
-      {proBand}
+      {!isPro && proBand}
     </>
   ) : null;
 
@@ -8823,7 +8871,12 @@ function HomeLobby({
   // pubblicità di ciò che ha già comprato — lo dice già `audiences`.
   const deepDives = view !== "home" ? null : (() => {
     const campaigns = campaignsFor("desk-feed", isPro ? "premium" : "free");
-    const cards = campaigns.filter((c) => c.creative);
+    // Round 8: DUE, come il riferimento — non quattro. Quattro creativi da
+    // 1120×630 uno dietro l'altro erano mezza Home di pubblicità della casa
+    // dopo il board, e alla terza card nessuno le guarda più. Gli altri
+    // banner restano in circolo altrove (board, tool, feed): la precisazione
+    // di Andrea era «usarli tutti nel SITO», non tutti qui.
+    const cards = campaigns.filter((c) => c.creative).slice(0, 2);
     if (cards.length === 0) return null;
     return (
       <LobbySection
@@ -8991,6 +9044,7 @@ function HomeLobby({
             Calcio non gioca nessuno, la pagina deve dire almeno dove sei e
             cosa c'è oltre. Il badge del conteggio si spegne da sé a zero. */}
         {sectionTop}
+        {homeHeadline}
         {hero}
         {hero && !isPro && proBand}
         <p className="br-empty">
@@ -9048,6 +9102,8 @@ function HomeLobby({
       {/* Round 6: su Calcio e Tennis la vista apre con il suo hero e la
           fascia Pro; sulla Home `sectionTop` è null e non rende nulla. */}
       {sectionTop}
+      {/* Round 8: il titolo tipografico apre la Home, sopra il rail. */}
+      {homeHeadline}
       {/* Round 7: il rail del riferimento — hero verticale a sinistra (26%),
           le card vere del board nella colonna accanto. */}
       {hero && sideSection ? (
@@ -10544,10 +10600,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   dell'hero e la banda di sezione — e due h1 nello stesso
                   documento. Il percorso in alto («BetRedge / Calcio») dice
                   comunque dove sei, quindi non si perde nulla.
-                  Sulla Home e su tutte le altre tab l'h1 resta qui: la card
-                  dell'hero non ne ha uno, e una pagina senza h1 è una
+                  Round 8 — ora vale anche per la HOME: il titolo tipografico
+                  («IL TUO MATCHDAY.») è un h1, e il round 7 non poteva
+                  prevederlo perché quella sezione non esisteva. Tenere anche
+                  questo lasciava «Oggi» in grande sopra il titolo grande e due
+                  h1 nel documento. Sulle altre tab l'h1 resta qui: là non c'è
+                  nessun heading che lo porti, e una pagina senza h1 è una
                   regressione SEO (#SEO-PACK-0810). */}
-              {!(tab === "bets" && (deskView === "football" || deskView === "tennis")) && (
+              {!(tab === "bets" && (deskView === "home" || deskView === "football" || deskView === "tennis")) && (
                 <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
               )}
               {/* #BOARD-HEAD-0910 — Andrea, 10/09: «togli questa parte».
