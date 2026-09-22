@@ -50,6 +50,7 @@ class _SessioneFinta:
 def _agente():
     a = TennisSettlementAgent.__new__(TennisSettlementAgent)
     a.logger = logging.getLogger("test")
+    a._reconcile_cursor = None
     return a
 
 
@@ -66,7 +67,7 @@ async def _gira(aperte, righe_locali):
         return True
 
     with patch.object(ts, "unified_tennis_ancora_aperte",
-                      new=AsyncMock(return_value=aperte)), \
+                      new=AsyncMock(return_value=(aperte, None))), \
          patch.object(ts, "AsyncSessionLocal", lambda: _SessioneFinta(righe_locali)), \
          patch.object(ts, "settle_unified_tennis", new=ponte):
         await _agente()._riconcilia_ponte()
@@ -126,15 +127,57 @@ class TestGiraOgniCiclo:
         sola eredita lo stesso difetto che deve curare. Due cicli, due passate.
         """
         a = _agente()
-        a._stale_expired = True  # salta il bulk-expire
         passate = []
 
         async def finta():
             passate.append(1)
 
-        with patch.object(a, "_settle_recent", new=AsyncMock()), \
+        expiry = AsyncMock()
+        with patch.object(a, "_bulk_expire_stale", new=expiry), \
+             patch.object(a, "_settle_recent", new=AsyncMock()), \
              patch.object(a, "_riconcilia_ponte", new=finta):
             await a._settlement_cycle()
             await a._settlement_cycle()
 
         assert len(passate) == 2, "la riconciliazione deve girare a OGNI ciclo"
+        assert expiry.await_count == 2, "anche lo scaduto deve essere raccolto a ogni ciclo"
+
+
+@pytest.mark.asyncio
+async def test_missing_sources_do_not_prevent_cursor_progress_and_errors_retry():
+    a = _agente()
+    pages = AsyncMock(side_effect=[(["missing"], "cursor1"), None, ([], None)])
+    with patch.object(ts, "unified_tennis_ancora_aperte", pages), \
+         patch.object(ts, "AsyncSessionLocal", lambda: _SessioneFinta([])):
+        await a._riconcilia_ponte()
+        assert a._reconcile_cursor == "cursor1"
+        await a._riconcilia_ponte()
+        assert a._reconcile_cursor == "cursor1"
+        await a._riconcilia_ponte()
+        assert a._reconcile_cursor is None
+    assert [call.kwargs["after_id"] for call in pages.await_args_list] == [None, "cursor1", "cursor1"]
+
+
+@pytest.mark.asyncio
+async def test_one_failed_bridge_does_not_starve_other_rows(caplog):
+    a = _agente()
+    bridge = AsyncMock(side_effect=[RuntimeError("temporary failure"), True])
+    with patch.object(ts, "unified_tennis_ancora_aperte", AsyncMock(return_value=(["bad", "good"], "cursor1"))), \
+         patch.object(ts, "AsyncSessionLocal", lambda: _SessioneFinta([
+             _pred("bad", outcome="expired"), _pred("good", outcome="expired")
+         ])), patch.object(ts, "settle_unified_tennis", bridge):
+        await a._riconcilia_ponte()
+    assert bridge.await_count == 2
+    assert a._reconcile_cursor == "cursor1"
+    assert "bad" in caplog.text and "temporary failure" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_upstream_read_failure_keeps_page_for_retry(caplog):
+    a = _agente()
+    a._reconcile_cursor = "cursor1"
+    with patch.object(ts, "unified_tennis_ancora_aperte", AsyncMock(return_value=(["bad"], "cursor2"))), \
+         patch.object(ts, "AsyncSessionLocal", side_effect=RuntimeError("DB down")):
+        await a._riconcilia_ponte()
+    assert a._reconcile_cursor == "cursor1"
+    assert "DB down" in caplog.text
