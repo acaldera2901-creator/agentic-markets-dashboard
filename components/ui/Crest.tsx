@@ -1,39 +1,31 @@
 import { crestUrl } from "@/lib/ui/crest-assets";
-import { totemFor, type TotemAsset } from "@/lib/ui/totem-assets";
+import { crestInitials } from "@/lib/ui/crest-initials";
+import { type TotemAsset } from "@/lib/ui/totem-assets";
 
 type Props = {
   team: string | null;
   sport: string;
   size?: number;
   className?: string;
-  /** #RESTYLING-0921 round 4 — totem già risolto dal chiamante (`totemPair`),
-   *  quando le due squadre della stessa partita devono avere badge diversi.
-   *  Omesso: si ricava da `totemFor(team, sport)`. Vale solo nel ramo senza
-   *  crest con licenza: `CREST_MAP` resta prioritaria. */
+  /** #RESTYLING-0921 round 7 — casa o trasferta. NON è la squadra: il crest del
+   *  riferimento distingue le due tinte per RUOLO, non per identità, così la
+   *  riga si legge a colpo d'occhio e nessuna squadra deve avere un asset. */
+  role?: "home" | "away";
+  /** #RESTYLING-0921 round 4 — i totem illustrati. Dal round 7 non sono più il
+   *  default (il riferimento non li ha) ma restano raggiungibili passandoli
+   *  esplicitamente: il lavoro del round 4 non si butta, va in panchina. */
   totem?: TotemAsset | null;
 };
 
-// Tinta deterministica dal nome (hash → hue), saturazione/luminosità fisse.
-function tint(team: string | null): string {
-  if (!team) return "hsl(220 8% 40%)";
-  let h = 0;
-  for (let i = 0; i < team.length; i++) h = (h * 31 + team.charCodeAt(i)) % 360;
-  return `hsl(${h} 42% 42%)`;
-}
-
-export function Crest({ team, sport, size = 44, className, totem }: Props) {
+export function Crest({ team, sport, size = 44, className, role = "home", totem }: Props) {
   const url = crestUrl(team, sport);
   if (url) {
     return <img src={url} alt={team ?? ""} width={size} height={size} className={className} />;
   }
-  // #RESTYLING-0921 round 4 — al posto dello scudo tinto proceduralmente, un
-  // totem disegnato (lib/ui/totem-assets.ts). Il -sm è 48²: sopra quella
-  // misura si passa al 128² per non stirarlo.
-  const badge = totem === undefined ? totemFor(team, sport) : totem;
-  if (badge) {
+  if (totem) {
     return (
       <img
-        src={size > 48 ? badge.src : badge.srcSm}
+        src={size > 48 ? totem.src : totem.srcSm}
         alt={team ?? ""}
         width={size}
         height={size}
@@ -43,11 +35,19 @@ export function Crest({ team, sport, size = 44, className, totem }: Props) {
       />
     );
   }
-  // Senza nome squadra non c'è un totem deterministico da assegnare: resta lo
-  // scudo neutro, che non promette un'identità che non abbiamo.
+  // #RESTYLING-0921 round 7 — il crest del riferimento: un quadratino di due
+  // tinte (casa scura, trasferta chiara) con 1-3 iniziali. Zero asset, zero
+  // richieste di rete, e funziona su un campionato che non abbiamo mai visto.
   return (
-    <svg width={size} height={size * (44 / 40)} viewBox="0 0 40 44" className={className} aria-label={team ?? "squadra"} role="img">
-      <path d="M20 2 4 8v14c0 10 7 16 16 20 9-4 16-10 16-20V8L20 2Z" fill={tint(team)} />
-    </svg>
+    <span
+      className={["br-crest", className].filter(Boolean).join(" ")}
+      data-role={role}
+      data-sport={sport}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.34) }}
+      role="img"
+      aria-label={team ?? "squadra"}
+    >
+      <span aria-hidden="true">{crestInitials(team)}</span>
+    </span>
   );
 }

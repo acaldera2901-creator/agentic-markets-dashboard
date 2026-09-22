@@ -12,7 +12,6 @@ import { LeagueChip } from "@/components/ui/LeagueChip";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { EdgeBadge } from "@/components/ui/EdgeBadge";
 import { IconLock } from "@/components/ui/icons";
-import { totemPair } from "@/lib/ui/totem-assets";
 
 type Props = {
   sport: string;
@@ -31,9 +30,6 @@ type Props = {
 };
 
 export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = false, liveMinute, score, pick, edgePct, locked = false, actions, className }: Props) {
-  // Round 4: i due totem risolti insieme, così la testa della partita non
-  // mostra mai lo stesso badge a sinistra e a destra.
-  const totems = totemPair(home, away, sport);
   return (
     <header className={["br-mh", className].filter(Boolean).join(" ")} data-live={isLive}>
       <div className="br-mh__kicker">
@@ -47,7 +43,7 @@ export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = 
           è sua. Gli screen reader leggono «Arsenal vs Chelsea». */}
       <h1 className="br-mh__teams">
         <span className="br-mh__team" data-side="home">
-          <Crest team={home} sport={sport} size={56} totem={totems.home} />
+          <Crest team={home} sport={sport} size={56} role="home" />
           <span className="br-mh__name">{home}</span>
         </span>
         <span className="br-mh__mid">
@@ -58,7 +54,7 @@ export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = 
           )}
         </span>
         <span className="br-mh__team" data-side="away">
-          <Crest team={away} sport={sport} size={56} totem={totems.away} />
+          <Crest team={away} sport={sport} size={56} role="away" />
           <span className="br-mh__name">{away}</span>
         </span>
       </h1>

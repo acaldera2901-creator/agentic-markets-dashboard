@@ -2568,3 +2568,45 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   .br-upgrade, .br-upgrade svg, .br-proband__cta svg { transition: none; }
   .br-upgrade:hover svg, .br-proband__cta:hover svg { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * CREST — #RESTYLING-0921 round 7
+ *
+ * Il riferimento non disegna scudetti: mette un quadratino con le iniziali, e
+ * distingue le due squadre per RUOLO (casa scura, trasferta chiara), non per
+ * identità. È la scelta più economica e la più onesta: zero asset da produrre
+ * e mantenere, zero richieste di rete, zero rischio marchio, e funziona su un
+ * campionato che non abbiamo mai visto — cosa che i 12 totem del round 4, per
+ * costruzione, non potevano fare.
+ *
+ * I valori (tinte, raggio, bordo, l'inset shadow in basso) sono letti dal CSS
+ * computato del riferimento. La misura la dà il componente via style inline,
+ * perché il crest compare a 22, 36 e 56px nello stesso sito.
+ * ═══════════════════════════════════════════════════════════════════════ */
+.br-crest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  border: 1px solid rgba(105,186,255,0.333);
+  box-shadow: inset 0 -3px rgba(50,141,217,0.17);
+  font-family: var(--am-font-ui);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+  overflow: hidden;
+}
+/* Casa: il fondo più scuro, l'inchiostro ciano. 11,6:1. */
+.br-crest[data-role="home"] { background: #051D39; color: #9CDFFF; }
+/* Trasferta: il fondo più chiaro, l'inchiostro quasi bianco. 10,1:1. */
+.br-crest[data-role="away"] { background: #233457; color: #DBE9FF; }
+/* Su carta le due tinte restano quelle — il crest è una targhetta, non una
+   superficie di pagina — ma il filo azzurro sparisce sul bianco: lì lo fa il
+   bordo scuro. */
+:root[data-theme="light"] .br-crest {
+  border-color: rgba(13,35,67,0.22);
+  box-shadow: inset 0 -3px rgba(0,0,0,0.14);
+}

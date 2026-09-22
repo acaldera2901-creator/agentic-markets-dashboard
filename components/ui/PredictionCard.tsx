@@ -34,7 +34,6 @@ import { LiveBadge } from "@/components/ui/LiveBadge";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
 import { IconArrow, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
 import { EDGE_HIGH_PP, formatPct, type PredictionCardData } from "@/lib/ui/prediction-card";
-import { totemPair } from "@/lib/ui/totem-assets";
 
 export type PredictionCardVariant = "compact" | "featured" | "live" | "premiumLocked";
 export type PredictionCardBadgeKind = "high-edge" | "starting-soon" | "featured";
@@ -98,10 +97,6 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
   // Round 2: nella Featured i crest sono il «volto» della partita (36px), non
   // un puntino accanto al nome.
   const crestSize = featured ? 36 : 22;
-  // Round 4: i badge sono i totem di lib/ui/totem-assets.ts. `totemPair` li
-  // risolve insieme così le due squadre di una stessa card non pescano mai lo
-  // stesso simbolo (12 totem, la collisione capita).
-  const totems = totemPair(data.home, data.away, data.sport);
   const ctaTone = locked ? "unlock" : variant === "featured" ? "primary" : "link";
   const ctaText = locked ? "Unlock full analysis" : "View analysis";
   const showWhy = variant === "featured" && !!data.explanation && !locked;
@@ -125,9 +120,9 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
 
       <div className="br-card__match">
         <h3 className="br-card__teams">
-          <span className="br-card__team"><Crest team={data.home} sport={data.sport} size={crestSize} totem={totems.home} /><span>{data.home}</span></span>
+          <span className="br-card__team"><Crest team={data.home} sport={data.sport} size={crestSize} role="home" /><span>{data.home}</span></span>
           <span className="br-card__vs">vs</span>
-          <span className="br-card__team"><Crest team={data.away} sport={data.sport} size={crestSize} totem={totems.away} /><span>{data.away}</span></span>
+          <span className="br-card__team"><Crest team={data.away} sport={data.sport} size={crestSize} role="away" /><span>{data.away}</span></span>
         </h3>
       </div>
 
