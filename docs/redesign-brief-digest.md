@@ -306,3 +306,37 @@ vista, una per una, non da riskinnare alla cieca. Restano old-style nella
 struttura `AccountMenu` (`acct-*`) e il bottom-nav (`am-bottomnav`).
 E resta il debito del round 4: la tile Tennis con 0 partite scrive «0 picks
 today».
+
+---
+
+## ROUND 6 — Andrea ha fatto costruire un riferimento con Codex Sites (2026-09-22 sera)
+
+Bocciato di nuovo tutto il round 5: **"no non mi piace"**. Andrea ha usato lo strumento "Sites" di ChatGPT (indipendente dal nostro codice — non è gptimg, è un sito intero costruito e ospitato da OpenAI) per farsi costruire un riferimento vero, navigabile, partendo dal nostro preview. Riferimento live: **https://betredge-studio-0922.sven-leicht-7829.chatgpt.site** (richiede login ChatGPT — **raggiungibile solo con `mcp__claude-in-chrome` sul profilo Chrome di questa macchina, già autenticato**; `curl`/`WebFetch` senza cookie danno "Sign in required", verificato). Thread di riferimento: `codex://threads/01a0c974-e197-7fb0-8536-c4acd236e7f8` (278 item, 27 messaggi narrativi, già letti ed estratti — non serve rileggerlo, il succo è qui sotto).
+
+Istruzione di Andrea, letterale: **"voglio che sia in questo stile esattamente... dovete rifare la piattaforma, fai tutto quello che dice codex... non ci preoccupiamo per i volti, quella chat sa già tutto"** — cioè: questo riferimento è lo stile bersaglio esatto; non serve rincorrere le stesse foto pixel-per-pixel (non estraibili: il fetch delle immagini dalla pagina autenticata è bloccato dal tool per sicurezza — `[BLOCKED: Base64 encoded data]` — quindi le foto vanno rigenerate via `gptimg`, non copiate).
+
+### Cosa dice il riferimento (letto dalla conversazione + navigato dal vivo, screenshot in `docs/reference/round6/`)
+Percorso di design di Codex (iterato più volte con Andrea, ultima versione = quella live oggi): prima un taglio "magazine editoriale" con foto stock e corsivi — **bocciato da Andrea stesso dentro quella chat** ("ho sbagliato direzione... fotografia e corsivi hanno allontanato il sito dai banner") — poi tornato a: tipografia sportiva forte condensata (zero serif/corsivo — **coerente con quello che già facciamo**, Saira Condensed), foto d'azione vere coordinate ai banner (luce da stadio, blu elettrico + lime, **non l'astrazione "data-ball" che avevamo scelto noi**), crest squadra semplici (quadrato colorato scuro + 2 iniziali bianche, **più semplici dei nostri totem illustrati**), un pulsante lime **"PASSA A PRO"** sempre visibile nella nav (noi non ce l'abbiamo), una barra secondaria sottile sotto la nav con breadcrumb/contesto (noi non ce l'abbiamo), **fasce blu a gradiente "BETREDGE PRO" ricorrenti** dopo ogni hero che spingono al confronto piani (priorità dichiarata da Andrea nella chat Codex: "la priorità diventa portare l'utente ai piani a pagamento"), hero di sezione (Calcio, Tennis) **a piena larghezza con foto d'azione + testo sovrapposto in HTML** (non cotto nell'immagine — eyebrow, headline 2 righe con la 2a in lime, badge statistico in un angolo tipo "08 PARTITE SUL BOARD"), card con **solo la nostra percentuale** (identico a quanto già facciamo dal round 4) e CTA bloccata "🔒 Analisi Pro".
+
+### Cosa è già allineato (non ripartire da zero)
+Palette indigo/royal/lime, tipografia Saira Condensed sui titoli, card con sola percentuale modello, CTA Pro bloccata sul contenuto — **già fatto nei round precedenti**. Il delta reale è più piccolo di quanto sembri al primo sguardo.
+
+### Piano ROUND 6
+1. **Nav**: pulsante lime pieno "Passa a Pro"/"Upgrade to Pro" sempre visibile (stile "PASSA A PRO" del riferimento) accanto ad Accedi/Registrati.
+2. **Barra contesto sotto la nav**: sottile, breadcrumb a sinistra + info contestuale a destra (stile "BETREDGE / READ THE GAME." nel riferimento).
+3. **Hero di sezione** (Football, Tennis — Basketball se ha senso vista "Coming soon"): foto d'azione piena larghezza (da generare via `gptimg`, stile luce da stadio/blu-lime — vedi screenshot di riferimento `docs/reference/round6/ref-football-hero-crop.png`, **niente testo cotto nella foto**), eyebrow+headline HTML sovrapposti, badge statistico reale (conteggio partite) in un angolo.
+4. **Fascia Pro ricorrente**: barra orizzontale gradiente blu, label "BETREDGE PRO" + headline breve + CTA "Confronta i piani"/"Scopri Pro" — sotto ogni hero di sezione e in home dopo l'hero principale.
+5. **Crest semplificati**: valutare se sostituire (o affiancare come variante) i totem illustrati con quadrato colorato + 2 iniziali, per aderenza esatta al riferimento — è un cambio di sistema, deciderlo con criterio (i totem sono un lavoro validato del round 4, i quadrati-iniziali sono più semplici e più vicini al riferimento di Andrea: la richiesta "esattamente questo stile" pesa più della coerenza col lavoro precedente).
+
+Reference site navigabile per chiunque abbia bisogno di più dettaglio: apri con `mcp__claude-in-chrome` (autenticato su questa macchina), non con WebFetch/curl.
+
+### Misure esatte dal riferimento (art-director, CSS letto via JS — non stime a occhio)
+**Non è Saira Condensed.** Il riferimento usa: **Anton** (display/H1/numeri), **Barlow Condensed 800** (CTA "PASSA A PRO", label PRO), **Manrope** (corpo, iniziali crest). Cambiare i font dei nuovi componenti (e valutare se allineare anche quelli esistenti, per non avere due sistemi tipografici in parallelo).
+
+**Token colore esatti (il nostro royal è troppo tenue rispetto al riferimento — probabile causa principale del "non mi piace"):** bg `#071329` · panel `#0d2343` · **royal `#145aff`** (il nostro `--am-royal` attuale è `#5A85FF`, molto meno saturo) · blue/sky `#81d9ff` · **lime `#c8ff00`** · paper (light) `#f3eddc` · muted `#a8bdd6` · line `rgba(72,164,255,.4)`.
+
+**Hero**: scrim `linear-gradient(rgba(2,11,34,.25) 0%, transparent 25%, rgba(3,17,37,.27) 45%, rgba(2,10,24,.94) 88%)`, bordo card `1px rgba(72,164,255,.4)`, radius 6, hover `scale(1.035)`. H2 `clamp(48px,4.6vw,68px)`, seconda riga in gradiente lime→verde `#e5ff00→#68ff13`. **L'hero della Home nel riferimento è una card PORTRAIT** 357×608 (non un banner largo) con l'immagine a `object-position 60% center`, copy in basso a sinistra, badge statistico in basso a destra (numero Anton lime + label 10px). Fascia Pro: gradiente royal con una barra lime 4px sul bordo sinistro.
+
+**Crest = puro CSS, non immagini**: 30×30px, radius 6, bordo `1px rgba(105,186,255,.333)`, inset shadow `0 -3px rgba(50,141,217,.17)` in basso, testo Manrope 800 10px con 1-3 iniziali. **Due tinte per RUOLO (casa/trasferta), non per squadra**: casa `bg #051d39 / testo #9cdfff`, trasferta `bg #233457 / testo #dbe9ff`. Concept renderizzati in `docs/reference/round6/crest-concept.png` (4 varianti A-D, A = replica 1:1 del riferimento, consigliata da art-director come punto di partenza — costa zero, nessun asset).
+
+**Foto pronte** (derivati web-ready in `docs/reference/round6/`): `hero-{football,tennis,basketball}-wide.jpg` (1600×900, hero di sezione) · `tile-{football,tennis,basketball,nextup}-4x3.jpg` (sezione "Scegli il tuo campo") · `hero-{football,tennis}-portrait-3x4.jpg` (705×941, per l'hero Home in stile card portrait come il riferimento). Tutte controllate: nessun testo cotto, nessun marchio, volti generici.
