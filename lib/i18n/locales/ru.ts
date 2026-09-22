@@ -22,7 +22,7 @@ const ru: Record<string, string> = {
   auth_name_label: "Имя", auth_name_placeholder: "Ваше имя",
   auth_not_found: "Профиль не найден. Создайте клиентский профиль, чтобы продолжить.",
   auth_create_btn: "Перейти к тарифам",
-  auth_footer: "BetRedge Pro — только крипта. Данные прогнозов остаются заблокированными до активации тарифа.",
+  auth_footer: "BetRedge Pro — оплата картой или криптой. Данные прогнозов остаются заблокированными до активации тарифа.",
   auth_pw_placeholder_new: "Не менее 8 символов",
   auth_err_wrongpw: "Неверный email или пароль.", auth_err_noaccount: "Нет аккаунта с таким email. Зарегистрируйтесь.",
   auth_err_exists: "Аккаунт уже существует — войдите.", auth_err_founder: "Этот профиль требует доступа основателя.",

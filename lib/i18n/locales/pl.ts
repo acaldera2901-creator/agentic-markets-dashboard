@@ -22,7 +22,7 @@ const pl: Record<string, string> = {
   auth_name_label: "Imię", auth_name_placeholder: "Twoje imię",
   auth_not_found: "Nie znaleziono profilu. Utwórz profil klienta, aby kontynuować.",
   auth_create_btn: "Przejdź do planów",
-  auth_footer: "BetRedge Pro działa wyłącznie w kryptowalutach. Dane predykcji pozostają zablokowane do czasu aktywacji planu.",
+  auth_footer: "BetRedge Pro opłacasz kartą lub kryptowalutami. Dane predykcji pozostają zablokowane do czasu aktywacji planu.",
   auth_pw_placeholder_new: "Co najmniej 8 znaków",
   auth_err_wrongpw: "Błędny e-mail lub hasło.", auth_err_noaccount: "Brak konta dla tego e-maila. Zarejestruj się.",
   auth_err_exists: "Konto już istnieje — zaloguj się.", auth_err_founder: "Ten profil wymaga dostępu założyciela.",
