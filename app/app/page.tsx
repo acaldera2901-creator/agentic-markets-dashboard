@@ -9356,8 +9356,13 @@ function UnifiedBetsTab({
 
   return (
     <>
+      {/* Striscia free-tier. I colori arrivano dai token, non da utility
+          bianche fisse: su tema light `text-gray-300` su `bg-white/5`
+          misurava 1,39:1 (QA round 3, 2026-09-22). --am-muted/--am-line/
+          --am-panel-2 si ribaltano con data-theme, quindi resta leggibile
+          in entrambi i temi. */}
       {!isLoggedIn && (
-        <div className="reg-nudge flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-gray-300">
+        <div className="reg-nudge flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-[var(--am-line)] bg-[var(--am-panel-2)] text-xs font-mono text-[var(--am-muted)]">
           <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica.", en: "Register to save selections, get alerts and unlock auto-execution.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear la ejecución automática.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer l'exécution automatique.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть авто-исполнение." })}</span>
           <div className="flex gap-2 shrink-0">
             <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onSignIn}>{pick5(lang, { it: "Accedi", en: "Sign In", es: "Acceder", fr: "Connexion", ru: "Войти" })}</button>
