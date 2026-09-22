@@ -1703,6 +1703,15 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 .am-grid.br-board-grid > .house-banner.hb-leaderboard { grid-column: 1 / -1; }
 .am-grid.br-board-grid > .house-banner.hb-rectangle,
 .am-grid.br-board-grid > .house-banner.hb-halfpage { grid-column: span 2; }
+/* #RESTYLING-0921 — il tile del creativo nuovo: DUE colonne di card, cioè ~512px,
+   che a 16:9 fa ~288px di altezza. È la misura chiesta da Andrea («senza
+   abbondare») e dall'AD: poco più di una card, e soprattutto NON la riga intera,
+   che a questa larghezza farebbe ~585px di altezza — il motivo per cui i banner
+   del brand vecchio erano stati spenti. `align-self:start` perché la griglia
+   allinea in alto e il tile è alto quanto la sua immagine: non va tirato
+   all'altezza della card più alta della riga, che su un rapporto fisso sarebbe
+   un taglio. */
+.am-grid.br-board-grid > .house-banner.hb-cr-baked { grid-column: span 2; align-self: start; }
 
 .book-empty.br-board-empty {
   font-family: var(--am-font-ui);
@@ -1718,6 +1727,9 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 @media (max-width: 640px) {
   .br-board { padding: var(--am-s-3) var(--am-s-3) var(--am-s-6); }
   .am-grid.br-board-grid { grid-template-columns: 1fr; }
+  /* A colonna singola `span 2` sborderebbe: il tile prende la riga, che qui è
+     larga una card — la stessa misura delle schede accanto. */
+  .am-grid.br-board-grid > .house-banner.hb-cr-baked { grid-column: 1 / -1; }
   .sport-band.br-band h2 { font-size: 22px; }
 }
 
@@ -1987,9 +1999,32 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   .br-promo__title { font-size: 21px; }
 }
 
-/* La promo tiene la sua colonna nella riga: la regola stava su `.wp-promo`,
-   che non c'è più (era tutta la vestizione dell'immagine-banner). */
+/* La promo tiene la sua colonna nella riga. La regola vale per entrambe le
+   vesti: `br-promo` era il pannello nativo del 21/09, `wp-promo` è il creativo
+   che l'ha sostituito il 22/09 (#RESTYLING-0921). La gemella su `.wp-promo` sta
+   in globals.css con la spiegazione del perché la colonna è `-2` e non `2`. */
 .edge-split > .br-promo { grid-column: -2; }
+
+/* #RESTYLING-0921 — la Weekly Model Case è di nuovo il CREATIVO finito: headline,
+   CTA e «18+ · Play responsibly» sono cotti nei pixel, quindi qui non c'è niente
+   da impaginare — solo la cornice dell'immagine. Nessun padding e nessuno sfondo:
+   un bordo attorno a un banner che ha già il suo, e l'immagine a filo.
+   `height:auto` e non un'altezza fissa: il box segue il rapporto 16:9 del
+   creativo, che a 480px di larghezza fa 270px — la misura esatta per cui
+   `.edge-split` è stata calibrata il 10/09 (vedi il commento là). Stirarlo o
+   ritagliarlo taglierebbe il disclaimer, che sta in basso. */
+.wp-promo {
+  display: block;
+  border-radius: var(--am-r-card);
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  box-shadow: var(--am-shadow-card);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.wp-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.wp-promo:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.wp-promo img { display: block; width: 100%; height: auto; }
+@media (prefers-reduced-motion: reduce) { .wp-promo { transition: none; } }
 /* Un ultimo residuo decorativo: l'occhiello dell'Edge aveva anche una tacca
    in `::before`, oltre al `.dot` — e non è nostra, arriva da machina.css
    (`[data-mc-ground] .eyebrow::before`, 0-4-0). Il `:root` davanti serve a
@@ -2104,6 +2139,28 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   box-shadow: none;
 }
 .tl-cta-btn:hover { box-shadow: none; filter: brightness(1.06); }
+
+/* #RESTYLING-0921 — il banner di cross-promo fra tool. `max-width:560px` e non
+   la larghezza piena della colonna (1080): il creativo è 16:9, a tutta colonna
+   sarebbe alto 607px e mangerebbe lo schermo prima della CTA. A 560 fa 315px,
+   cioè poco più della card di un tool. Centrato perché la pagina è a colonna
+   unica e un banner allineato a sinistra sotto un testo giustificato sembra
+   caduto lì. */
+.tl-promo {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: clamp(30px, 4vw, 48px) auto 0;
+  border-radius: var(--am-r-card);
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  box-shadow: var(--am-shadow-card);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.tl-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.tl-promo:focus-visible { outline: 2px solid var(--am-royal); outline-offset: 2px; }
+.tl-promo img { display: block; width: 100%; height: auto; }
+@media (prefers-reduced-motion: reduce) { .tl-promo { transition: none; } }
 
 @media (max-width: 640px) {
   .tl-head h1 { font-size: 24px; }

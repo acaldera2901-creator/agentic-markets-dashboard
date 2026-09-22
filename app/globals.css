@@ -5915,6 +5915,16 @@ button:disabled {
 .am-grid > .house-banner.hb-cr-billboard .hb-cr-img,
 .am-grid > .house-banner.hb-cr-leaderboard .hb-cr-img{ aspect-ratio: 16 / 9; object-fit: cover; }
 
+/* #RESTYLING-0921 — il tile del creativo NUOVO (`hb-cr-baked`) NON prende la sua
+   larghezza da qui. Vive solo dentro `.am-grid.br-board-grid`, che dal round 5
+   non è più la griglia a 12 colonne di questo blocco ma un `auto-fill` di colonne
+   da 248px: là una card è UNA colonna, non quattro, quindi `span 4` qui e `span 4`
+   là sono due misure diverse. La regola di larghezza sta in design-system.css
+   accanto alle sue sorelle (`.am-grid.br-board-grid > .house-banner.*`); qui
+   restano solo le proprietà che dalla griglia non dipendono. */
+.am-grid > .house-banner.hb-cr-baked > a{ display: block; }
+.am-grid > .house-banner.hb-cr-baked .hb-cr-img{ aspect-ratio: 16 / 9; object-fit: cover; }
+
 /* Tablet (≤1080): board 2-up. Landscape e quadrato → span 6 (una card, mai full-width). */
 @container (max-width: 1080px) {
   .am-grid > .house-banner.hb-cr-billboard,

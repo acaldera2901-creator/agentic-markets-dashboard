@@ -58,7 +58,6 @@ import {
   ConfidenceIndicator,
   WatchlistButton,
 } from "@/components/ui";
-import { IconArrow } from "@/components/ui/icons";
 import { LobbySection } from "@/components/lobby/LobbySection";
 import { HomeFaq } from "@/components/lobby/HomeFaq";
 import { HeroBanner } from "@/components/lobby/HeroBanner";
@@ -2330,26 +2329,34 @@ function SportsbookBoard({
   // esistenti sono tutte `audiences: ["base","premium"]`. Perché il Free ne veda
   // uno serve una campagna desk-feed che lo elenchi: è una scelta di contenuto
   // (AD/marketing), non di codice.
-  // #RESTYLING-0921 round 5 — I BANNER HOUSE SONO SPENTI SUL BOARD.
+  // #RESTYLING-0921 round 5 — I BANNER HOUSE SUL BOARD, riaccesi il 22/09.
   //
-  // Le quattro campagne `desk-feed` vive (ole-football-signal,
-  // ole-multisport-edge, ole-multisport-readable, ole-square-1) sono creativi
-  // del brand VECCHIO: verde #23A559 e logo precedente, e alti 698-1245px in
-  // una griglia di card da ~253px. In mezzo al board rifatto erano il pezzo
-  // più fuori posto della pagina.
+  // Erano stati spenti perché le quattro campagne `desk-feed` di allora
+  // (ole-football-signal, ole-multisport-edge, ole-multisport-readable,
+  // ole-square-1) sono creativi del brand VECCHIO: verde #23A559 e logo
+  // precedente, in mezzo al board rifatto erano il pezzo più fuori posto della
+  // pagina. Il 22/09 Andrea ha consegnato i creativi nella veste nuova, quindi
+  // la condizione posta allora («si riaccende quando esistono creativi nella
+  // veste nuova») è soddisfatta.
   //
-  // Questo è un INTERRUTTORE, non una cancellazione: il componente
-  // `HouseBanner`, le campagne e i file restano dove sono, e rimettere `true`
-  // li riaccende. Si riaccende quando esistono creativi nella veste nuova —
-  // è una consegna di grafica, non di codice.
+  // Il filtro su `creative` è ciò che tiene fuori i quattro vecchi: non basta
+  // riaccendere l'interruttore, perché `campaignsFor` li restituirebbe insieme
+  // ai nuovi. Solo una campagna che dichiara il SUO creativo entra nel board.
+  // L'interruttore resta perché spegnere tutto deve costare una riga.
   //
-  // La griglia si richiude da sé: i banner venivano INSERITI nel flatMap, non
+  // La griglia si richiude da sé: i banner sono INSERITI nel flatMap, non
   // nascosti con `display:none`, quindi senza di loro non resta nessun posto
   // vuoto da colmare.
-  const BOARD_HOUSE_FEED = false;
-  const feedCampsAll = BOARD_HOUSE_FEED ? campaignsFor("desk-feed", boardAudience) : [];
+  const BOARD_HOUSE_FEED = true;
+  const feedCampsAll = BOARD_HOUSE_FEED
+    ? campaignsFor("desk-feed", boardAudience).filter((c) => c.creative)
+    : [];
   const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis");
   const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis");
+  // «Senza abbondare» (Andrea, 22/09): non più di DUE tile per caricamento, e
+  // uno ogni 6 card (la cadenza sta nel `% 6` sotto). Il cap vive qui e non nel
+  // pool perché il pool serve anche a garantire che i due tile siano DIVERSI.
+  const FEED_TILES_MAX = 2;
 
   const labels = {
     allSports: t.bf_allsports,
@@ -2668,7 +2675,7 @@ function SportsbookBoard({
                       // MAI due affiancati. Compatto (span-8, una card gli sta a fianco →
                       // riga piena, zero gutter) e mostrato INTERO (aspect 16:9 → nessun crop
                       // del logo/claim baked). Distribuiti ogni 6 card a punti diversi.
-                      if (placed < footballFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
+                      if (placed < Math.min(footballFeed.length, FEED_TILES_MAX) && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
                         out.push(<HouseBanner key={`house-feed-${camp.id}`} campaign={{ ...camp, format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />);
                       }
@@ -8350,33 +8357,25 @@ function WeeklyPickPromo() {
     // forzerebbe un ricaricamento completo del desk invece della navigazione
     // client. Non passa da `onBannerCta` perche' quello mappa un path su una TAB
     // del desk, e la Weekly Model Case e' una pagina a se'.
-    <Link className="br-promo" href="/weekly-model-case" aria-label={etichetta}>
-      {/* L'icona è quella del round 4 (`/icons/menu-weeklypick.png`), la stessa
-          che il menu usa per questa voce: un prodotto, un segno. */}
+    //
+    // #RESTYLING-0921 — dal 22/09 torna il CREATIVO al posto del pannello
+    // nativo. Il pannello era nato il 21/09 alle 14:46 perche' l'immagine di
+    // allora era del brand vecchio; Andrea ha consegnato quella nuova e ha
+    // chiesto di rimetterla. La classe resta `wp-promo`: e' il gancio che tiene
+    // la promo nella sua colonna (`.edge-split > .wp-promo`, grid-column -2) in
+    // entrambi i layout, e la regola non e' mai stata rimossa.
+    <Link className="wp-promo" href="/weekly-model-case" aria-label={etichetta}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="br-promo__ico" src="/icons/menu-weeklypick.png" alt="" width={44} height={44} loading="eager" decoding="async" />
-      <span className="br-promo__body">
-        <span className="br-label">{pick5(lang, {
-          it: "Una a settimana", en: "One a week", es: "Una por semana",
-          fr: "Une par semaine", ru: "Одна в неделю",
-        })}</span>
-        <span className="br-promo__title">Weekly Model Case</span>
-        <span className="br-promo__sub">{pick5(lang, {
-          it: "La multipla della casa: le pick migliori della settimana in una schedina sola, con il perché di ognuna.",
-          en: "The house accumulator: the week's best picks in a single slip, with the reasoning behind each one.",
-          es: "La combinada de la casa: las mejores pick de la semana en un solo boleto, con el porqué de cada una.",
-          fr: "Le combiné de la maison : les meilleures pick de la semaine en un seul coupon, avec le pourquoi de chacune.",
-          ru: "Экспресс от команды: лучшие ставки недели в одном купоне, с обоснованием каждой.",
-        })}</span>
-      </span>
-      <span className="br-promo__cta">
-        {pick5(lang, {
-          it: "Vedi la schedina di questa settimana", en: "View this week's pick",
-          es: "Ver la combinada de esta semana", fr: "Voir le combiné de cette semaine",
-          ru: "Смотреть экспресс недели",
-        })}
-        <IconArrow size={14} />
-      </span>
+      <img
+        src="/banners/andrea-picks/weekly-pick.jpg"
+        srcSet="/banners/andrea-picks/weekly-pick-sm.jpg 560w, /banners/andrea-picks/weekly-pick.jpg 1120w"
+        sizes="(max-width: 900px) 100vw, 480px"
+        alt={etichetta}
+        width={1120}
+        height={630}
+        loading="eager"
+        decoding="async"
+      />
     </Link>
   );
 }

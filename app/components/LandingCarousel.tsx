@@ -68,17 +68,22 @@ const SLIDE_DEFS: SlideDef[] = [
   // 1 · hero BetRedge multi-sport — banner storico "BETR EDGE" tutti-gli-sport.
   //     PRIMA slide (Andrea: "il banner betredge deve essere il primo"), priority.
   { kind: "creative", img: "/banners/hero-allsports.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — Your edge on every sport" },
-  // 2 · Ole calcio — FROM SIGNAL TO YOUR CALL (calciatore; No black box · Model vs market)
-  { kind: "creative", img: "/banners/creatives/ole-football-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Footballer in action, probability engine not a bookmaker" },
-  // 3 · Ole tennis — MORE INSIGHT. MORE PROFITS. (tennista; probabilità, quote ed edge nel tennis)
-  { kind: "creative", img: "/banners/creatives/ole-tennis-insight.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — More insight, more profits. Tennis player in action with probability, odds and edge" },
+  // 2 · Calcio — READ THE GAME. Creativo del brand NUOVO (#RESTYLING-0921), al
+  //     posto di `ole-football-signal.jpg` che era verde e logo vecchio. Porta al
+  //     board gia' filtrato su calcio: la CTA cotta dice «Explore football», e
+  //     mandarla su /plans sarebbe una promessa diversa da quella disegnata.
+  { kind: "creative", img: "/banners/andrea-picks/football.jpg", href: "/predictions?sport=football", imgAlt: "BetRedge — Read the game. Footballer in action, model probabilities on every match" },
+  // 3 · Tennis — BEYOND THE RANKING. Creativo del brand NUOVO: sostituisce da solo
+  //     i DUE slide tennis vecchi (`ole-tennis-insight` + `ole-tennis-signal`), che
+  //     erano la stessa promessa detta due volte in una veste ritirata.
+  { kind: "creative", img: "/banners/andrea-picks/tennis.jpg", href: "/predictions?sport=tennis", imgAlt: "BetRedge — Beyond the ranking. Tennis player in action, calibrated probabilities on every surface" },
   // 4 · Ole multi-sport — SEE THE EDGE BEFORE IT MOVES (basket/football; probabilità calibrate)
+  //     BRAND VECCHIO: da ritirare, ma nel lotto del 22/09 non c'e' un creativo
+  //     multisport che lo sostituisca — decide Andrea (nota AD del 22/09).
   { kind: "creative", img: "/banners/creatives/ole-multisport-edge.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — See the edge before it moves. Multi-sport athletes, calibrated probabilities and clear reasoning" },
-  // 5 · Ole tennis — FROM SIGNAL TO YOUR CALL (tennista; No black box · Model vs market)
-  { kind: "creative", img: "/banners/creatives/ole-tennis-signal.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — From signal to your call. Tennis player in action, probability and edge in tennis" },
-  // 6 · Ole multi-sport — ONE MODEL, EVERY SPORT (hockey/baseball/tennis/calcio)
+  // 5 · Ole multi-sport — ONE MODEL, EVERY SPORT (hockey/baseball/tennis/calcio)
   { kind: "creative", img: "/banners/creatives/ole-multisport-onemodel.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — One model, every sport. Athletes across disciplines, one probability model" },
-  // 7 · Ole multi-sport — WE MAKE THE BOOK READABLE, EVERY SPORT (probability engine, not a bookmaker)
+  // 6 · Ole multi-sport — WE MAKE THE BOOK READABLE, EVERY SPORT (probability engine, not a bookmaker)
   { kind: "creative", img: "/banners/creatives/ole-multisport-readable.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — We make the book readable, every sport. Probability engine, not a bookmaker" },
 ];
 
