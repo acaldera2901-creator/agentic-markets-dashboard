@@ -10,16 +10,24 @@ const data: PredictionCardData = {
   explanation: "Arsenal's xG trend is stronger than the line implies.",
 };
 
+// #RESTYLING-0921 round 4 — la card di livello 1 mostra UN SOLO numero, il
+// nostro. Market ed Edge non spariscono dal prodotto: stanno nella scheda
+// partita, dove components/lobby/lobby-render.test.tsx li verifica.
 describe("PredictionCard", () => {
-  it("compact: teaser completo, badge High edge derivato, CTA come link", () => {
+  it("compact: un solo numero (il nostro), badge High edge derivato, CTA come link", () => {
     render(<PredictionCard data={data} href="/predictions/p1" />);
     const card = screen.getByRole("article");
     expect(card).toHaveAttribute("data-variant", "compact");
     expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Arsenal");
     expect(screen.getByText("Arsenal to win")).toBeInTheDocument();
     expect(screen.getByText("64")).toBeInTheDocument();
-    expect(screen.getByText("52")).toBeInTheDocument();
-    expect(screen.getByText(/\+12\.0/)).toHaveAttribute("data-tone", "pos");
+    expect(screen.getByText("Our model")).toBeInTheDocument();
+    // Il mercato e l'edge NON si vedono qui, e neppure le loro etichette.
+    expect(screen.queryByText("52")).toBeNull();
+    expect(screen.queryByText(/\+12\.0/)).toBeNull();
+    expect(screen.queryByText("Market")).toBeNull();
+    expect(screen.queryByText("Edge")).toBeNull();
+    // Il badge resta: è una parola, non un quarto numero da confrontare.
     expect(screen.getByText("High edge")).toHaveAttribute("data-kind", "high-edge");
     const cta = screen.getByRole("link", { name: /view analysis/i });
     expect(cta).toHaveAttribute("href", "/predictions/p1");
@@ -44,25 +52,33 @@ describe("PredictionCard", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Live");
     expect(screen.queryByText("Today · 20:45")).toBeNull();
   });
-  // #RESTYLING-0921 round 2 — il free tier vede i NUMERI, paga per il LATO.
-  // Prima il lucchetto copriva anche l'edge: la card diceva «MODEL 64 · MARKET
-  // 52» e poi nascondeva il 12, che il lettore calcola in testa. E senza il
-  // numero il badge «High edge» non poteva comparire, quindi la fascia High
-  // Edge della Home restava muta per chi non aveva un account.
-  it("premiumLocked: Model/Market/Edge veri e badge, solo la Pick chiusa", () => {
+  // #RESTYLING-0921 round 2 — il free tier vede il NUMERO, paga per il LATO.
+  // Il lucchetto sta sulla pick: nascondere anche la probabilità toglierebbe
+  // alla Home di un anonimo l'unica cosa che spiega il prodotto, e il badge
+  // «High edge» non potrebbe più comparire.
+  it("premiumLocked: la nostra percentuale vera e il badge, solo la Pick chiusa", () => {
     render(<PredictionCard data={data} variant="premiumLocked" href="/plans" />);
     expect(screen.getByText("64")).toBeInTheDocument();
-    expect(screen.getByText("52")).toBeInTheDocument();
-    expect(screen.getByText(/\+12\.0/)).toHaveAttribute("data-tone", "pos");
+    expect(screen.queryByText("52")).toBeNull();
     expect(screen.getByText("High edge")).toHaveAttribute("data-kind", "high-edge");
     expect(screen.getByText("Pro pick")).toBeInTheDocument();
     expect(screen.queryByText("Arsenal to win")).toBeNull();
     expect(screen.getByRole("link", { name: /unlock full analysis/i })).toHaveAttribute("data-tone", "unlock");
   });
-  it("senza mercato: nota «model estimate», nessun edge, nessun badge", () => {
+  // Round 4: senza prezzo di mercato la card non aveva più niente da dire in
+  // proposito — la nota «no market price yet» parlava di un numero che non è
+  // più a schermo. La nostra percentuale c'è lo stesso; il badge no, perché
+  // senza mercato non c'è edge.
+  it("senza mercato: resta la nostra percentuale, nessun badge", () => {
     render(<PredictionCard data={{ ...data, marketPct: null, edgePct: null }} href="/p/1" />);
-    expect(screen.getByText(/model estimate/i)).toBeInTheDocument();
+    expect(screen.getByText("64")).toBeInTheDocument();
+    expect(screen.queryByText(/no market price/i)).toBeNull();
     expect(screen.queryByText("High edge")).toBeNull();
+  });
+  it("senza probabilità del modello il numero è un trattino, non uno zero", () => {
+    render(<PredictionCard data={{ ...data, modelPct: null, marketPct: null, edgePct: null }} href="/p/1" />);
+    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.queryByText("0")).toBeNull();
   });
   it("badge esplicito e watchlist controllata", () => {
     const onToggle = vi.fn();

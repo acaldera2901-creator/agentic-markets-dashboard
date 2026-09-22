@@ -398,6 +398,31 @@
   font-weight: 500;
 }
 
+/* ── #RESTYLING-0921 round 4 — il numero della card ─────────────────────
+   Un numero solo, il nostro, e la sua etichetta di fianco sulla linea di base:
+   «64% OUR MODEL» si legge in un colpo, e costa una riga invece di tre celle.
+   Più grande della vecchia riga MODEL|MARKET|EDGE (40 contro 24) perché adesso
+   è l'unico dato della card: se non domina lui, domina il nome della squadra.
+   Il confronto col mercato sta nella scheda partita (.br-md__numbers). */
+.br-card__model {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--am-s-2);
+  min-width: 0;
+}
+.br-card__model-n {
+  font-family: var(--am-font-num);
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--am-text);
+}
+.br-card__model[data-size="lg"] .br-card__model-n { font-size: 52px; }
+.br-card__model-pc { font-size: 0.5em; font-weight: 500; opacity: 0.8; margin-left: 1px; }
+
 .br-card__foot {
   display: flex;
   align-items: center;
@@ -406,12 +431,6 @@
   padding-top: var(--am-s-1);
   margin-top: auto;   /* in una griglia le CTA si allineano al fondo della riga */
   min-width: 0;
-}
-.br-card__note {
-  margin: 0;
-  font-family: var(--am-font-num);
-  font-size: 11px;
-  color: var(--am-muted-2);
 }
 
 /* Featured: più aria, sfondo un gradino sopra, il teaser del «perché».
@@ -556,9 +575,14 @@
   .br-card[data-variant="featured"] { padding: var(--am-s-4); }
   .br-card__teams { font-size: 15px; }
   .br-card[data-variant="featured"] .br-card__teams { font-size: 18px; }
-  /* Model / Market / Edge restano tre colonne, nello stesso ordine. Solo più piccoli. */
+  /* Model / Market / Edge (scheda partita) restano tre colonne, nello stesso
+     ordine. Solo più piccoli. */
   .br-prob[data-size="lg"] .br-prob__num, .br-edge[data-size="lg"] { font-size: var(--am-num-md); }
   .br-prob[data-size="md"] .br-prob__num, .br-edge[data-size="md"] { font-size: 20px; }
+  /* Il numero della card resta il protagonista anche a 390px, ma 40px accanto
+     a un nome squadra da 15px sbilancia la card: 32. */
+  .br-card__model-n { font-size: var(--am-num-lg); }
+  .br-card__model[data-size="lg"] .br-card__model-n { font-size: 40px; }
   .br-watch { width: 40px; height: 40px; }
   .br-cta { min-height: 40px; }
   .br-card__foot { flex-wrap: wrap; }
@@ -954,28 +978,48 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * HERO + TILES — #RESTYLING-0921 round 3 (direzione d'arte, 2026-09-22)
+ * HERO + TILES — #RESTYLING-0921 round 4 (2026-09-22)
  *
- * Il round 2 apriva la Home con una foto AI di un atleta su navy, glow verde
- * e glow giallo insieme, filo lime, scatola dei value prop a fianco: il
- * template più comune dei generatori, e l'occhio lo riconosce prima di
- * leggere una parola. Qui la TIPOGRAFIA è l'immagine — Saira Condensed 800
- * maiuscolo a corpo enorme, una sola parola in lime — e il fondo è un
- * materiale reale in duotone navy (variante A) oppure il pannello nudo con
- * una riga di calce disegnata (variante B: senza asset, e su telefono).
- * Zero glow, zero radial-gradient, un solo elemento colorato oltre al testo
- * (la CTA). La profondità la fanno le superfici e il bordo a 1px.
- * Sotto, una riga di tile per sport e la tile promozionale. Stessi token,
- * stesso breakpoint 640. Concept: docs/reference/round3/hero-concept.html.
+ * Round 2: foto AI di un atleta, due glow, scatola dei value prop — il
+ * template dei generatori. Round 3: via la foto, tipografia enorme su texture
+ * in duotone — bocciato nella FORMA: «quadrato, non largo, decisamente più
+ * piccolo, e nello spazio a fianco le prediction card».
+ *
+ * Round 4, quindi: il banner è un QUADRATO che sta in meno di un terzo della
+ * riga (`.br-home-top`), con l'immagine della casa a tutta superficie e il
+ * testo in basso sotto un velo lineare. Di fianco, nella stessa riga, la prima
+ * fascia della lobby con le sue card vere. Resta la variante B — pannello nudo
+ * con la riga di calce — per chi non passa un'immagine.
+ * Sotto, la riga di tile per sport e la tile promozionale. Stessi token,
+ * stesso breakpoint 640.
  * ═══════════════════════════════════════════════════════════════════════ */
+
+/* La prima riga della Home: quadrato piccolo a sinistra, prodotto a destra.
+   Il 30% è la misura del vincolo («nemmeno metà schermo»), il cap a 420px
+   impedisce che su un monitor largo il quadrato torni a essere un banner. */
+.br-home-top {
+  display: grid;
+  grid-template-columns: minmax(240px, 30%) minmax(0, 1fr);
+  gap: var(--am-s-5);
+  align-items: start;
+}
+/* Sotto i 1080 due colonne lasciano alle card meno di una card: si impila. */
+@media (max-width: 1080px) {
+  .br-home-top { grid-template-columns: minmax(0, 1fr); gap: var(--am-s-6); }
+}
 
 .br-hero {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: end;
-  padding: var(--am-s-7) var(--am-s-6) var(--am-s-6);
-  min-height: 420px;
+  /* Quadrato E piccolo: il cap sta QUI e non sulla colonna, perché a board
+     vuota il banner si rende da solo in `.br-lobby` (flex column) e senza il
+     cap tornerebbe un quadrato a tutta larghezza — cioè il banner enorme che
+     il round 4 doveva togliere. */
+  aspect-ratio: 1 / 1;
+  max-width: 420px;
+  padding: var(--am-s-5);
   overflow: hidden;
   isolation: isolate;
   /* Contenitore per la headline: sotto i 640 il corpo si misura sulla
@@ -989,7 +1033,7 @@
   box-shadow: var(--am-shadow-card);
 }
 
-/* ── Il fondo: materiale in duotone (A) o riga di calce (B) ─────────────── */
+/* ── Il fondo: l'immagine (A) o la riga di calce (B) ───────────────────── */
 .br-hero__art {
   position: absolute;
   inset: 0;
@@ -997,32 +1041,35 @@
   pointer-events: none;
   overflow: hidden;
 }
-/* La texture diventa duotone QUI, non nell'asset: grayscale + luminosity sul
-   pannello navy. Così anche la foto vera che sostituirà il concept uscirà
-   dello stesso colore, qualunque sia la sua dominante. */
+/* Round 4: niente duotone. L'immagine è già nella palette della casa (navy,
+   blu, lime) e la si mostra com'è — era proprio il trattamento che la
+   spegneva a rendere il banner del round 3 «non accattivante». */
 .br-hero__tex {
   position: absolute;
   inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
-  object-position: center right;
+  object-position: center;
   display: block;
-  filter: grayscale(1) contrast(1.08);
-  mix-blend-mode: luminosity;
+  /* Specchiata. Nell'asset il pallone — la parte CHIARA — sta a sinistra, ed
+     è esattamente dove cade il testo, allineato a sinistra: «OPPORTUNITIES»
+     bianco su bianco. Ribaltata, sotto il testo resta la mesh scura e il
+     pallone si prende la metà destra, che è libera. Nessun testo dentro
+     l'immagine, quindi lo specchio non rompe niente. */
+  transform: scaleX(-1);
 }
-/* Il velo: lineare (mai radiale), navy 92% → 15% da sinistra, 85% → 0 dal
-   basso. È ciò che fa leggere il testo sopra il materiale. */
-.br-hero[data-art="material"] .br-hero__art::after {
+/* Il velo: lineare (mai radiale), dal basso — il testo è ancorato in fondo al
+   quadrato. Serve a far leggere il testo, non a spegnere l'immagine: in cima
+   arriva a zero e il soggetto si vede intero. */
+.br-hero[data-art="photo"] .br-hero__art::after {
   content: "";
   position: absolute; inset: 0;
-  background:
-    linear-gradient(90deg,
-      color-mix(in srgb, var(--am-bg) 92%, transparent) 0%,
-      color-mix(in srgb, var(--am-bg) 55%, transparent) 45%,
-      color-mix(in srgb, var(--am-bg) 15%, transparent) 100%),
-    linear-gradient(0deg,
-      color-mix(in srgb, var(--am-bg) 85%, transparent) 0%,
-      transparent 45%);
+  background: linear-gradient(0deg,
+    color-mix(in srgb, var(--am-bg) 96%, transparent) 0%,
+    color-mix(in srgb, var(--am-bg) 88%, transparent) 38%,
+    color-mix(in srgb, var(--am-bg) 58%, transparent) 62%,
+    color-mix(in srgb, var(--am-bg) 18%, transparent) 84%,
+    transparent 96%);
 }
 /* La riga di calce (variante B): una linea sola, 2px, −7°. Il viewBox
    quadrato con `slice` tiene l'angolo fisso a qualunque proporzione. */
@@ -1034,7 +1081,7 @@
   stroke: color-mix(in srgb, var(--am-text) 55%, transparent);
   stroke-width: 2px;
 }
-.br-hero[data-art="material"] .br-hero__line { display: none; }
+.br-hero[data-art="photo"] .br-hero__line { display: none; }
 /* Grana: feTurbulence SVG a opacità 7%. Pesa zero, non è un PNG che si ripete. */
 .br-hero__grain {
   position: absolute;
@@ -1048,25 +1095,27 @@
 
 /* ── Contenuto ─────────────────────────────────────────────────────────── */
 .br-hero__eyebrow {
-  margin: 0 0 var(--am-s-3);
+  margin: 0 0 var(--am-s-2);
   font-family: var(--am-font-num);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--am-muted);
 }
-/* La voce del prodotto: condensed 800, interlinea .88, tracking stretto,
-   massimo 13ch → tre righe. */
+/* La voce del prodotto: condensed 800, interlinea .88, tracking stretto.
+   Round 4: il corpo si misura sul QUADRATO (cqi), non sul viewport — il
+   banner è largo ~340px dentro una pagina da 1280, e 8vw ci scriverebbe
+   dentro una parola da 102px. 12cqi = tre righe da ~40px a quella misura. */
 .br-hero__title {
   margin: 0;
   font-family: var(--am-font-hud);
-  font-size: clamp(56px, 8vw, 104px);
+  font-size: clamp(30px, 12cqi, 48px);
   font-weight: 800;
-  line-height: 0.88;
+  line-height: 0.9;
   letter-spacing: -0.015em;
   text-transform: uppercase;
-  max-width: 13ch;
+  max-width: 12ch;
   color: var(--am-text);
 }
 /* <em> = la parola accentata (stress emphasis, semantica giusta): lime, non
@@ -1078,24 +1127,24 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--am-s-6);
+  gap: var(--am-s-3);
   flex-wrap: wrap;
-  margin-top: var(--am-s-5);
+  margin-top: var(--am-s-4);
 }
 .br-hero__sub {
   margin: 0;
   font-family: var(--am-font-ui);
-  font-size: 17px;
+  font-size: 14px;
   line-height: 1.45;
   color: var(--am-muted);
   max-width: 44ch;
 }
 
-/* I tre numeri veri: una striscia, non tre pill. Tabulari, grandi, senza
-   cornice. Solo High edge è lime. Con href sono link; il testo dice già dove. */
+/* I tre numeri veri: una striscia, non tre pill. Tabulari, senza cornice.
+   Solo High edge è lime. Con href sono link; il testo dice già dove. */
 .br-hero__stats {
   display: flex;
-  gap: var(--am-s-6);
+  gap: var(--am-s-4);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1112,7 +1161,7 @@ a.br-hero__stat:hover .br-hero__stat-l { color: var(--am-text); }
 a.br-hero__stat:focus-visible { outline: 2px solid var(--am-text); outline-offset: 4px; }
 .br-hero__stat-n {
   font-family: var(--am-font-num);
-  font-size: 40px;
+  font-size: var(--am-num-md);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
@@ -1123,9 +1172,9 @@ a.br-hero__stat:focus-visible { outline: 2px solid var(--am-text); outline-offse
 .br-hero__stat-l {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-family: var(--am-font-num);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1145,18 +1194,18 @@ a.br-hero__stat:focus-visible { outline: 2px solid var(--am-text); outline-offse
 .br-hero__ctas {
   display: flex;
   align-items: center;
-  gap: var(--am-s-3);
+  gap: var(--am-s-2);
   flex-wrap: wrap;
-  margin-top: var(--am-s-5);
+  margin-top: var(--am-s-4);
 }
 .br-hero__cta {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 0 20px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
   font-family: var(--am-font-ui);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1;
   text-decoration: none;
@@ -1265,6 +1314,19 @@ a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-sha
   overflow: hidden;
 }
 .br-tile__icon > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* #RESTYLING-0921 round 4 — le icone sport sono i raster della casa (pallone
+   con la fiamma, fondo trasparente). Il disco inset con bordo era la cornice
+   dell'icona di LINEA: sotto un PNG ritagliato taglierebbe la fiamma agli
+   angoli. Qui la cornice sparisce e l'immagine sta intera (`contain`). */
+.br-tile__icon[data-kind="raster"] {
+  width: 48px; height: 48px;
+  border: 0;
+  background: none;
+  border-radius: 0;
+}
+.br-tile__icon[data-kind="raster"] > img { object-fit: contain; }
+/* Uno sport senza pipeline è un'icona spenta, non un'icona diversa. */
+.br-tile[data-state="soon"] .br-tile__icon[data-kind="raster"] > img { opacity: 0.55; filter: saturate(0.55); }
 .br-tile[data-state="soon"] .br-tile__icon { color: var(--am-muted-2); }
 .br-tile__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
 .br-tile__name {
@@ -1329,26 +1391,18 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .br-hero { padding: var(--am-s-5) var(--am-s-4) var(--am-s-4); min-height: 0; }
-  /* Variante B su telefono: la texture e il suo velo si spengono, resta la
-     riga di calce. Su 390px il materiale sotto tre righe da 56px è rumore. */
-  .br-hero__tex,
-  .br-hero[data-art="material"] .br-hero__art::after { display: none; }
-  .br-hero[data-art="material"] .br-hero__line { display: block; }
-  /* 17,5cqi = la parola più lunga della headline (OPPORTUNITIES, 13 lettere
-     condensed 800) entra nel content-box del banner senza spezzarsi né
-     uscire dal bordo: misurata 217px a 39px → 48px su 276px disponibili. */
-  .br-hero__title { max-width: none; font-size: clamp(36px, 17.5cqi, 56px); }
-  .br-hero__sub { font-size: 15px; }
-  .br-hero__row { gap: var(--am-s-4); margin-top: var(--am-s-4); }
-  .br-hero__stats { gap: var(--am-s-5); }
-  .br-hero__stat-n { font-size: 32px; }
-  .br-hero__ctas { flex-direction: column; align-items: stretch; margin-top: var(--am-s-4); }
-  .br-hero__cta { min-height: 44px; justify-content: center; }
+  /* Round 4: su telefono l'immagine RESTA — è il quadrato, non un fondo. Il
+     corpo della headline si misura già sul container (cqi), quindi qui serve
+     solo restringere il padding e tenere il testo dentro il quadrato. */
+  .br-hero { padding: var(--am-s-4); }
+  .br-hero__title { max-width: none; }
+  .br-hero__row { gap: var(--am-s-3); }
+  .br-hero__cta { flex: 1 1 auto; justify-content: center; }
   .br-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--am-s-2); }
   .br-promo { grid-column: 1 / -1; }
   .br-tile { min-height: 64px; padding: 10px; gap: 10px; }
   .br-tile__icon { width: 38px; height: 38px; }
+  .br-tile__icon[data-kind="raster"] { width: 40px; height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .br-hero__cta, .br-hero__cta svg, .br-tile, .br-tile__go, .br-promo, .br-promo__go { transition: none; }

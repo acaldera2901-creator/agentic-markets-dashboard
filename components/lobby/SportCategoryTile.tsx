@@ -7,8 +7,10 @@
 // inventato (regola del round 1, vale anche qui).
 //
 // L'icona di default è l'IconSport della casa (round 3) su un disco inset; il
-// chiamante può passare `icon` (un raster on-palette, quando ne avremo uno —
-// i sport-*-sm.png attuali hanno swoosh rossi fuori palette e non si usano).
+// chiamante può passare `icon` — round 4: i raster della casa in
+// /public/banners/sport-*-sm.png, lo stile che Andrea ha indicato con due
+// screenshot. Un'icona passata perde disco e cornice (lo fa il CSS su
+// `data-kind="raster"`): sono PNG ritagliati, un cerchio li taglierebbe.
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
 import { IconArrow, IconSport } from "@/components/ui/icons";
@@ -37,7 +39,7 @@ export function SportCategoryTile({
   const cls = ["br-tile", className].filter(Boolean).join(" ");
   const body = (
     <>
-      <span className="br-tile__icon">{icon ?? <IconSport sport={sport} size={20} />}</span>
+      <span className="br-tile__icon" data-kind={icon ? "raster" : "line"}>{icon ?? <IconSport sport={sport} size={20} />}</span>
       <span className="br-tile__text">
         <span className="br-tile__name">{label}</span>
         <span className="br-tile__meta">

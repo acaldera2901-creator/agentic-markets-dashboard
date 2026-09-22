@@ -66,7 +66,7 @@ import { AccumulatorPromoTile } from "@/components/lobby/AccumulatorPromoTile";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
-import { buildLobbySections, lobbyCounts, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId } from "@/lib/ui/lobby";
+import { buildLobbySections, lobbyCounts, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
 import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -9013,14 +9013,16 @@ function HomeLobby({
   const totalFor = (id: LobbySectionId) =>
     id === "football" ? footballItems.length : id === "tennis" ? tennisItems.length : null;
 
-  const renderCard = (item: LobbyItem, idx: number, sectionId: LobbySectionId) => {
+  const renderCard = (item: LobbyItem, idx: number, sectionId: LobbySectionId, plain = false) => {
     const d = item.data;
     const locked = d.locked === true;
     // Il top pick della lobby è l'unica card «featured»: se tutte lo fossero,
-    // nessuna lo sarebbe.
+    // nessuna lo sarebbe. `plain` la spegne: nella colonna accanto all'hero
+    // (round 4) la featured occuperebbe due colonne su due e la seconda card
+    // finirebbe sotto, a colonna già finita.
     const variant = locked ? "premiumLocked"
       : d.isLive ? "live"
-      : sectionId === "top" && idx === 0 ? "featured"
+      : !plain && sectionId === "top" && idx === 0 ? "featured"
       : "compact";
     const soon = !d.isLive ? startingSoonLabel(d.startsAt) : null;
     // Il badge «Starting soon» vince su «High edge» solo nella sua fascia:
@@ -9073,10 +9075,13 @@ function HomeLobby({
     ru: <>Лучшие возможности <em>на сегодня.</em></>,
   });
 
-  // Round 3: la scatola dei value prop a fianco della headline non c'è più
-  // (direzione d'arte: la tipografia è l'immagine, e a fianco non ci sta
-  // nulla). I quattro punti che elencava vivono già, per esteso, su
-  // /how-it-works — la CTA secondaria porta lì.
+  // Round 4: il banner è QUADRATO e piccolo (components/lobby/HeroBanner.tsx),
+  // e di fianco ci stanno le card vere. Dentro un quadrato da ~340px non entra
+  // più il sottotitolo di tre righe del round 3: quello che diceva — «la
+  // probabilità del nostro modello accanto a quella del mercato» — lo dice
+  // adesso l'hint della fascia che gli sta a fianco, e per esteso
+  // /how-it-works, dove porta la CTA secondaria. Restano eyebrow, headline, i
+  // tre numeri veri e le due CTA.
   const hero = view !== "home" ? null : (
     <HeroBanner
       eyebrow={pick5(lang, {
@@ -9084,13 +9089,6 @@ function HomeLobby({
         fr: "PRÉDICTIONS PAR IA", ru: "ПРОГНОЗЫ НА БАЗЕ ИИ",
       })}
       title={heroTitle}
-      subtitle={pick5(lang, {
-        it: "La probabilità del nostro modello accanto a quella del mercato, su ogni partita. Dove sono lontane, c'è una decisione da prendere.",
-        en: "Our model's probability next to the market's, on every match. Where they diverge, there's a decision to make.",
-        es: "La probabilidad de nuestro modelo junto a la del mercado, en cada partido. Donde se separan, hay una decisión que tomar.",
-        fr: "La probabilité de notre modèle à côté de celle du marché, sur chaque match. Là où elles divergent, il y a une décision à prendre.",
-        ru: "Вероятность нашей модели рядом с рыночной — в каждом матче. Где они расходятся, там и решение.",
-      })}
       stats={[
         {
           kind: "live",
@@ -9126,41 +9124,39 @@ function HomeLobby({
         label: pick5(lang, { it: "Come funziona", en: "How it works", es: "Cómo funciona", fr: "Comment ça marche", ru: "Как это работает" }),
         href: "/how-it-works",
       }}
-      // Round 3: non più la foto dell'atleta (il pattern più riconoscibile di
-      // «immagine generata»), ma un MATERIALE — macro di pelle di pallone con
-      // la cucitura — che il CSS tratta in duotone navy.
-      //
-      // ⚠️ PLACEHOLDER DI CONCEPT — da sostituire con una foto reale prima
-      // della prod. Questa texture è quella generata da art-director per il
-      // concept (docs/reference/round3/hero-tex-leather.png). In produzione ci
-      // va una fotografia vera dello stesso soggetto (un pallone sul tavolo,
-      // luce radente, macro — basta il telefono) o uno stock con licenza,
-      // trattata con lo stesso duotone. Derivato web: 1400px, JPEG q68 — sotto
-      // il velo al 92% il dettaglio in più non si vede, il peso sì (LCP).
-      //   sips -s format jpeg -s formatOptions 68 -Z 1400 \
-      //     docs/reference/round3/hero-tex-leather.png \
-      //     --out public/images/hero/hero-tex-leather-1400w.jpg
-      // `alt=""`: è decorativa, il contenuto è il testo.
-      image={{ src: "/images/hero/hero-tex-leather-1400w.jpg", alt: "" }}
+      // Round 4: l'immagine quadrata della casa (art-director, mapping in
+      // docs/reference/round4/NOTE.md) — un pallone che si dissolve in una
+      // mesh di dati blu/lime. 960² su desktop, 480² sotto i 640px: la sceglie
+      // il browser via srcset. `alt=""`: è decorativa, il contenuto è il testo.
+      image={{ src: "/images/hero/hero-square.jpg", srcSm: "/images/hero/hero-square-480.jpg", alt: "" }}
     />
   );
 
   // Le tile: conteggio REALE per gli sport che serviamo, nessun conteggio per
   // quelli che non serviamo — `count` assente → la tile dice «Coming soon» e non
   // è un link (SportCategoryTile). Mai uno zero finto per far numero.
+  //
+  // #RESTYLING-0921 round 4 — le icone sono i raster della casa
+  // (/public/banners/sport-*-sm.png): football e tennis erano già in
+  // produzione ed è lo stile che Andrea ha indicato, basketball e «more» li ha
+  // fatti art-director nello stesso trattamento. Al posto di Esports c'è
+  // «More sports» (richiesta esplicita): sport-esports.png resta su disco ma
+  // fuori uso. Il `-sm` è 48² ed è la misura in cui la tile lo mostra.
   const sportTiles = view !== "home" ? null : (
     <SportTileRow label={pick5(lang, { it: "Sfoglia per sport", en: "Browse by sport", es: "Explorar por deporte", fr: "Parcourir par sport", ru: "По виду спорта" })}>
       {([
-        { sport: "football", label: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), count: footballItems.length },
-        { sport: "tennis", label: pick5(lang, { it: "Tennis", en: "Tennis", es: "Tenis", fr: "Tennis", ru: "Теннис" }), count: tennisItems.length },
-        { sport: "basketball", label: pick5(lang, { it: "Basket", en: "Basketball", es: "Baloncesto", fr: "Basket", ru: "Баскетбол" }), count: null },
-        { sport: "esports", label: "Esports", count: null },
+        { sport: "football", label: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), count: footballItems.length, icon: "sport-football" },
+        { sport: "tennis", label: pick5(lang, { it: "Tennis", en: "Tennis", es: "Tenis", fr: "Tennis", ru: "Теннис" }), count: tennisItems.length, icon: "sport-tennis" },
+        { sport: "basketball", label: pick5(lang, { it: "Basket", en: "Basketball", es: "Baloncesto", fr: "Basket", ru: "Баскетбол" }), count: null, icon: "sport-basketball" },
+        { sport: "more", label: pick5(lang, { it: "Altri sport", en: "More sports", es: "Más deportes", fr: "Autres sports", ru: "Другие виды" }), count: null, icon: "sport-more" },
       ] as const).map((t) => (
         <SportCategoryTile
           key={t.sport}
           sport={t.sport}
           label={t.label}
           count={t.count}
+          // `alt=""`: il nome dello sport è già scritto nella tile, accanto.
+          icon={<img src={`/banners/${t.icon}-sm.png`} alt="" width={48} height={48} loading="lazy" decoding="async" />}
           countLabel={pick5(lang, {
             it: "{n} partite oggi", en: "{n} picks today", es: "{n} partidos hoy",
             fr: "{n} matchs aujourd'hui", ru: "{n} матчей сегодня",
@@ -9190,11 +9186,55 @@ function HomeLobby({
     </SportTileRow>
   );
 
+  // ── #RESTYLING-0921 round 4: la prima fascia sale accanto all'hero ──────
+  //
+  // Il quadrato occupa meno di un terzo della riga: lo spazio che libera non
+  // resta vuoto, ci vanno le prime card vere della lobby — «il primo schermo
+  // deve mostrare prodotto, non solo un banner». La fascia che sale è la PRIMA
+  // che esiste: di norma «Top opportunities», ma se oggi nessuna partita ha un
+  // prezzo di mercato (lib/ui/lobby.ts non rende una sezione vuota) sale
+  // «Live now», o quella che c'è. Niente duplicati: la fascia salita non si
+  // ripete sotto, e «Vedi tutte» resta il modo di aprire il resto.
+  const HERO_SIDE_CAP = 2;
+  const sideSection = view === "home" ? shown[0] : undefined;
+  const belowSections = sideSection ? shown.slice(1) : shown;
+
+  const renderSection = (sec: LobbySectionData, cap?: number, plain = false) => {
+    const copy = LOBBY_COPY[sec.id];
+    const total = totalFor(sec.id);
+    const isSport = sec.id === "football" || sec.id === "tennis";
+    const items = cap == null ? sec.items : sec.items.slice(0, cap);
+    // «Vedi tutte» compare solo se c'è davvero altro da vedere: righe tagliate
+    // dal cap, righe oltre l'assaggio, o un totale più grande di ciò che si
+    // vede.
+    const more = view === "home" && (
+      items.length < sec.items.length
+      || (isSport ? (total ?? 0) > items.length : sec.items.length >= LOBBY_ROW_CAP)
+    );
+    return (
+      <LobbySection
+        title={it ? copy.it : copy.en}
+        hint={(it ? copy.hintIt : copy.hintEn) || null}
+        count={isSport ? total : null}
+        action={more ? (
+          <button
+            type="button"
+            className="br-sec__link"
+            onClick={() => (isSport ? onExplore(sec.id as "football" | "tennis") : onExplore("all"))}
+          >
+            {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
+          </button>
+        ) : null}
+      >
+        {items.map((item, i) => renderCard(item, i, sec.id, plain))}
+      </LobbySection>
+    );
+  };
+
   // Dove entra la riga di tile: subito DOPO «Live now», che è la fascia con cui
   // la Home apre il presente. Se oggi non c'è nulla in gioco quella fascia non
-  // esiste (lib/ui/lobby.ts non rende una sezione vuota), e le tile vanno dopo
-  // la prima fascia che c'è — non in cima, dove ruberebbero il posto all'hero.
-  const tilesAfter = shown.some((s) => s.id === "live") ? "live" : shown[0]?.id;
+  // esiste, e le tile vanno dopo la prima fascia rimasta sotto l'hero.
+  const tilesAfter = belowSections.some((s) => s.id === "live") ? "live" : belowSections[0]?.id;
 
   // La FAQ chiude la Home: è il testo che "/" deve mostrare perché il suo
   // FAQPage JSON-LD sia legittimo (vedi components/lobby/HomeFaq.tsx). Solo
@@ -9266,35 +9306,19 @@ function HomeLobby({
 
   return (
     <div className="br-lobby">
-      {hero}
-      {shown.map((sec) => {
-        const copy = LOBBY_COPY[sec.id];
-        const total = totalFor(sec.id);
-        const isSport = sec.id === "football" || sec.id === "tennis";
-        // «Vedi tutte» compare solo se c'è davvero altro da vedere.
-        const more = view === "home" && (isSport ? (total ?? 0) > sec.items.length : sec.items.length >= LOBBY_ROW_CAP);
-        return (
-          <Fragment key={sec.id}>
-            <LobbySection
-              title={it ? copy.it : copy.en}
-              hint={(it ? copy.hintIt : copy.hintEn) || null}
-              count={isSport ? total : null}
-              action={more ? (
-                <button
-                  type="button"
-                  className="br-sec__link"
-                  onClick={() => (isSport ? onExplore(sec.id as "football" | "tennis") : onExplore("all"))}
-                >
-                  {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
-                </button>
-              ) : null}
-            >
-              {sec.items.map((item, i) => renderCard(item, i, sec.id))}
-            </LobbySection>
-            {sec.id === tilesAfter && sportTiles}
-          </Fragment>
-        );
-      })}
+      {/* La prima riga: quadrato piccolo a sinistra, prodotto vero a destra. */}
+      {hero && sideSection ? (
+        <div className="br-home-top">
+          {hero}
+          {renderSection(sideSection, HERO_SIDE_CAP, true)}
+        </div>
+      ) : hero}
+      {belowSections.map((sec) => (
+        <Fragment key={sec.id}>
+          {renderSection(sec)}
+          {sec.id === tilesAfter && sportTiles}
+        </Fragment>
+      ))}
       {faq}
     </div>
   );

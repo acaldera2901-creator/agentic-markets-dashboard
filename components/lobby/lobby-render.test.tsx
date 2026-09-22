@@ -1,7 +1,10 @@
 // #RESTYLING-0921 — verifica di INTEGRAZIONE, non di unità: i moduli puri
 // hanno già i loro test, qui si controlla che i pezzi montati insieme rendano
 // davvero i numeri giusti. È il test che avrebbe preso l'edge sbagliato: una
-// card che scrive «MODEL 64 · MARKET 52 · EDGE +22.9» type-checka benissimo.
+// schermata che scrive «MODEL 64 · MARKET 52 · EDGE +22.9» type-checka
+// benissimo. Round 4: quella riga non sta più sulla card ma nella scheda
+// partita, e il test l'ha seguita là — vedi «i numeri della card arrivano
+// interi alla scheda», in fondo.
 import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { LobbySection } from "./LobbySection";
@@ -23,22 +26,25 @@ const row: DeskFootballRow = {
 };
 
 describe("card della lobby", () => {
-  it("rende MODEL, MARKET e un EDGE che è la loro differenza", () => {
+  // #RESTYLING-0921 round 4 — livello 1 mostra SOLO la nostra percentuale. Che
+  // l'edge sia davvero la differenza fra i due numeri resta la regola che
+  // questo file esiste per difendere, e si verifica dove i due numeri stanno
+  // adesso: nella scheda partita, in fondo a questo stesso file.
+  it("mostra la nostra percentuale, e NON il mercato né l'edge", () => {
     const data = fromDeskFootball(row, { winLabel: "to win", kickoffLabel: "Today · 20:45" });
     render(<PredictionCard data={data} href="/predictions?match=football:m1" />);
 
     expect(screen.getByText("64")).toBeInTheDocument();
-    expect(screen.getByText("52")).toBeInTheDocument();
-    // 64 − 52 = +11.9, NON +22.9 (che sarebbe il value p·odds−1)
-    expect(screen.getByText("+11.9")).toBeInTheDocument();
-    expect(screen.queryByText("+22.9")).not.toBeInTheDocument();
+    expect(screen.getByText("Our model")).toBeInTheDocument();
+    expect(screen.queryByText("52")).not.toBeInTheDocument();
+    expect(screen.queryByText("+11.9")).not.toBeInTheDocument();
     expect(screen.getByText("Arsenal to win")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View analysis/i })).toHaveAttribute(
       "href", "/predictions?match=football:m1",
     );
   });
 
-  it("una card chiusa mostra Model e Market ma non il pick né l'edge", () => {
+  it("una card chiusa mostra la nostra percentuale ma non il pick", () => {
     const data = fromDeskFootball({ ...row, locked: true }, { winLabel: "to win" });
     render(<PredictionCard data={data} variant="premiumLocked" href="/x" />);
     expect(screen.getByText("64")).toBeInTheDocument();
@@ -47,10 +53,11 @@ describe("card della lobby", () => {
     expect(screen.getByRole("link", { name: /Unlock full analysis/i })).toBeInTheDocument();
   });
 
-  it("senza quota di mercato la card lo DICE invece di inventare un edge", () => {
+  it("senza quota di mercato la card non promette un edge che non ha", () => {
     const data = fromDeskFootball({ ...row, odds_home: null }, { winLabel: "to win" });
     render(<PredictionCard data={data} href="/x" />);
-    expect(screen.getByText(/no market price yet/i)).toBeInTheDocument();
+    expect(screen.getByText("64")).toBeInTheDocument();
+    expect(screen.queryByText("High edge")).not.toBeInTheDocument();
   });
 });
 
@@ -109,6 +116,28 @@ describe("scheda partita con la testa nuova", () => {
     expect(screen.getByRole("heading", { name: /Why the model likes this pick/i })).toBeInTheDocument();
     expect(screen.getByText(/Last 5: Arsenal 3W-1D-1L/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Recent form/i })).toBeInTheDocument();
+  });
+
+  // #RESTYLING-0921 round 4 — il confronto si è spostato QUI, e con lui il
+  // test che difendeva il numero: l'edge è la differenza fra i due numeri che
+  // si vedono (64 − 52 = +11.9), non il value p·odds−1 (+22.9). I numeri
+  // arrivano dalla stessa riga di board che alimenta la card, non a mano.
+  it("i numeri della card arrivano interi alla scheda, e l'edge è la loro differenza", () => {
+    const data = fromDeskFootball(row, { winLabel: "to win" });
+    render(<MatchDetailSheet hideBookLinks data={{
+      ...base,
+      head: {
+        sport: data.sport, league: data.league, kickoffLabel: "Today · 20:45",
+        pick: data.pick, modelPct: data.modelPct, marketPct: data.marketPct, edgePct: data.edgePct,
+      },
+    }} />);
+    expect(screen.getByText("64")).toBeInTheDocument();
+    expect(screen.getByText("52")).toBeInTheDocument();
+    expect(screen.getAllByText("+11.9").length).toBeGreaterThan(0);
+    expect(screen.queryByText("+22.9")).not.toBeInTheDocument();
+    expect(screen.getByText("Model")).toBeInTheDocument();
+    expect(screen.getByText("Market")).toBeInTheDocument();
+    expect(screen.getByText("Edge")).toBeInTheDocument();
   });
 
   it("senza `head` la scheda resta quella di prima (WcBoard, weekly-model-case)", () => {

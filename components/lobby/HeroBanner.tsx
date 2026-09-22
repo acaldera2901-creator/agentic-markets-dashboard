@@ -1,14 +1,17 @@
-// components/lobby/HeroBanner.tsx — #RESTYLING-0921 round 3
+// components/lobby/HeroBanner.tsx — #RESTYLING-0921 round 4
 //
-// Il banner in testa alla Home. Round 3 (direzione d'arte in
-// docs/redesign-brief-digest.md): via la foto dell'atleta — la TIPOGRAFIA è
-// l'immagine. Headline in Saira Condensed 800 maiuscolo a corpo enorme, una
-// sola parola in lime; sotto, i tre numeri veri come striscia di cifre
-// tabulari (niente pill, niente bordo, niente puntino luminoso); una sola CTA
-// piena col taglio della casa in alto a sinistra. Zero glow, zero gradiente
-// radiale: il fondo è un MATERIALE reale in duotone navy (variante A) oppure,
-// senza asset e su telefono, solo il pannello con una riga di calce disegnata
-// (variante B). Vedi docs/reference/round3/hero-concept.html.
+// Il banner in testa alla Home. Round 4: QUADRATO e PICCOLO — occupa meno di
+// metà larghezza (il layout lo decide `.br-home-top` in app/design-system.css)
+// e nello spazio che libera di fianco ci vanno prediction card vere, non aria.
+// Dentro il quadrato: l'immagine della casa a tutta superficie, e sopra — in
+// basso, sotto un velo — eyebrow, headline breve, i numeri veri e la CTA.
+//
+// Perché: il banner largo del round 3 (tipografia enorme su texture in duotone)
+// è stato bocciato nella FORMA prima che nel contenuto — «quadrato, non largo,
+// decisamente più piccolo, e a fianco le card». La texture trattata in duotone
+// dal CSS non c'è più: l'immagine è già nella palette (pallone che si dissolve
+// in mesh dati blu/lime) e si mostra com'è. Resta la variante B — pannello
+// nudo con la riga di calce — per chi non passa `image`.
 //
 // Tutto ciò che è un NUMERO o una PROMESSA arriva dal chiamante:
 //   - `stats`  → i conteggi (live / starting soon / high edge). Una stat con
@@ -19,8 +22,10 @@
 //                ChatGPT, non un dato nostro. Round 3: la scatola a destra non
 //                esiste più; se il chiamante passa i punti, stanno in coda al
 //                banner come una riga piana, senza cornice.
-//   - `image`  → la TEXTURE (materiale vero, macro, trattato in duotone dal
-//                CSS). Senza, la variante B. È decorativa: `alt` di default "".
+//   - `image`  → l'immagine del quadrato, 1:1. `srcSm` è la versione ≤640px
+//                (480², un quarto del peso): la sceglie il browser via
+//                srcset/sizes. Senza `image`, la variante B. È decorativa:
+//                `alt` di default "".
 //
 // La parola accentata si passa come <em> dentro `title`: semantica di
 // enfasi, resa in lime dal CSS (.br-hero__title em).
@@ -49,8 +54,8 @@ export type HeroBannerProps = {
   secondary?: { label: string; href: string; onClick?: (ev: MouseEvent<HTMLAnchorElement>) => void };
   /** Punti in coda al banner. Omessi → niente. */
   aside?: { title?: ReactNode; subtitle?: string; points: string[] };
-  /** Texture di fondo (materiale reale). Omessa → variante B, solo tipografia. */
-  image?: { src: string; alt?: string };
+  /** L'immagine del quadrato. Omessa → variante B, solo tipografia. */
+  image?: { src: string; srcSm?: string; alt?: string };
   className?: string;
 };
 
@@ -72,13 +77,26 @@ export function HeroBanner({ eyebrow, title, subtitle, stats, cta, secondary, as
     <section
       className={["br-hero", className].filter(Boolean).join(" ")}
       data-has-aside={hasAside ? "true" : "false"}
-      data-art={image ? "material" : "type"}
+      data-art={image ? "photo" : "type"}
       aria-label={eyebrow}
     >
-      {/* Fondo: texture (se c'è) + riga di calce. Il velo duotone e la grana
-          stanno nel CSS (.br-hero__art::after, .br-hero__grain). */}
+      {/* Fondo: l'immagine (se c'è) + riga di calce. Il velo che regge il testo
+          e la grana stanno nel CSS (.br-hero__art::after, .br-hero__grain). */}
       <div className="br-hero__art">
-        {image && <img className="br-hero__tex" src={image.src} alt={image.alt ?? ""} />}
+        {image && (
+          <img
+            className="br-hero__tex"
+            src={image.src}
+            srcSet={image.srcSm ? `${image.srcSm} 480w, ${image.src} 960w` : undefined}
+            sizes="(max-width: 640px) 100vw, 420px"
+            width={960}
+            height={960}
+            alt={image.alt ?? ""}
+            /* È l'LCP della Home: si carica subito, non in coda. */
+            fetchPriority="high"
+            decoding="async"
+          />
+        )}
         <ChalkLine />
       </div>
       <i className="br-hero__grain" aria-hidden />

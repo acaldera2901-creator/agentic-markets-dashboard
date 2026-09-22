@@ -71,9 +71,29 @@ describe("HeroBanner", () => {
     const { container, unmount } = render(<HeroBanner eyebrow="P" title="T" cta={{ label: "Go", href: "/" }} />);
     expect(container.querySelector(".br-hero__art svg")).not.toBeNull();
     expect(container.querySelector(".br-hero__art img")).toBeNull();
+    expect(screen.getByRole("region")).toHaveAttribute("data-art", "type");
     unmount();
     render(<HeroBanner eyebrow="P" title="T" cta={{ label: "Go", href: "/" }} image={{ src: "/banners/x.jpg", alt: "A striker" }} />);
     expect(screen.getByRole("img", { name: "A striker" })).toHaveAttribute("src", "/banners/x.jpg");
+    expect(screen.getByRole("region")).toHaveAttribute("data-art", "photo");
+  });
+
+  // #RESTYLING-0921 round 4 — il quadrato è piccolo, e su telefono non deve
+  // scaricare il 960²: `srcSm` diventa la candidata a 480w. Senza `srcSm` non
+  // si dichiara un srcset, che punterebbe a un file che non esiste.
+  it("con `srcSm` l'immagine ha il srcset a due candidate, senza `srcSm` nessuno", () => {
+    const { container, unmount } = render(
+      <HeroBanner eyebrow="P" title="T" cta={{ label: "Go", href: "/" }}
+        image={{ src: "/images/hero/hero-square.jpg", srcSm: "/images/hero/hero-square-480.jpg" }} />,
+    );
+    expect(container.querySelector(".br-hero__tex")).toHaveAttribute(
+      "srcset", "/images/hero/hero-square-480.jpg 480w, /images/hero/hero-square.jpg 960w",
+    );
+    unmount();
+    const second = render(
+      <HeroBanner eyebrow="P" title="T" cta={{ label: "Go", href: "/" }} image={{ src: "/images/hero/hero-square.jpg" }} />,
+    );
+    expect(second.container.querySelector(".br-hero__tex")).not.toHaveAttribute("srcset");
   });
 });
 
@@ -96,6 +116,19 @@ describe("SportCategoryTile", () => {
     expect(tile).toHaveAttribute("aria-disabled", "true");
     expect(tile).toHaveTextContent("Coming soon");
     expect(tile).not.toHaveTextContent("0");
+  });
+
+  // #RESTYLING-0921 round 4 — un'icona passata è un raster della casa, e il
+  // disco inset con bordo (cornice dell'icona di linea) le taglierebbe gli
+  // angoli: il marcatore che lo spegne nel CSS deve esserci.
+  it("l'icona passata marca la cornice come raster; senza icona resta quella di linea", () => {
+    const { container, unmount } = render(
+      <SportCategoryTile sport="basketball" label="Basketball" icon={<img src="/banners/sport-basketball-sm.png" alt="" />} />,
+    );
+    expect(container.querySelector(".br-tile__icon")).toHaveAttribute("data-kind", "raster");
+    unmount();
+    const second = render(<SportCategoryTile sport="football" label="Football" count={3} href="/x" />);
+    expect(second.container.querySelector(".br-tile__icon")).toHaveAttribute("data-kind", "line");
   });
 
   it("senza href ma con onClick è un bottone; `active` marca aria-current; la riga è un nav nominato", () => {
