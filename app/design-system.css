@@ -1398,15 +1398,65 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
 .br-promo__go { color: var(--am-edge); flex: none; transition: transform 160ms ease; }
 .br-promo:hover .br-promo__go { transform: translateX(3px); }
 
+/* Ripiego di contatto quando il widget di chat è bloccato (components/LiveChat.tsx).
+   Stessa posizione di prima — in basso a destra, sopra la barra inferiore. */
+.br-chatfb {
+  position: fixed;
+  right: 20px;
+  bottom: 96px;
+  z-index: 2147483000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 9999px;
+  background: #23a559;
+  color: #fff;
+  font-family: var(--am-font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
+  /* Su telefono il ripiego è una sola icona, come ogni lancia-chat mobile: il
+     pill con la scritta era largo 121px e arrivava a 141px dal bordo destro,
+     dentro la fascia della CTA dell'hero. Tondo a 44px sta in 52px e la CTA
+     (ora larga quanto il testo) gli resta fuori. */
+  .br-chatfb {
+    right: 8px;
+    gap: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .br-chatfb__t {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   /* Round 4: su telefono l'immagine RESTA — è il quadrato, non un fondo. Il
      corpo della headline si misura già sul container (cqi), quindi qui serve
      solo restringere il padding e tenere il testo dentro il quadrato. */
   .br-hero { padding: var(--am-s-4); }
   .br-hero__title { max-width: none; }
   .br-hero__row { gap: var(--am-s-3); }
-  .br-hero__cta { flex: 1 1 auto; justify-content: center; }
+  /* Le CTA restano larghe quanto il loro testo, come su desktop. Con `flex: 1`
+     si stiravano per tutto il quadrato fino a 57px dal bordo destro dello
+     schermo, cioè dentro l'angolo dove sta il lancia-chat (fisso, in basso a
+     destra): a 390×844 il pill «Contact us» copriva 84×31px della CTA primaria
+     «Explore today's picks», arrivando sopra la freccia. Misurato sul preview. */
+  .br-hero__cta { justify-content: center; }
   .br-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--am-s-2); }
   .br-promo { grid-column: 1 / -1; }
   .br-tile { min-height: 64px; padding: 10px; gap: 10px; }
