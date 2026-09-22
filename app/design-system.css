@@ -1459,9 +1459,32 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   .br-hero__cta { justify-content: center; }
   .br-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--am-s-2); }
   .br-promo { grid-column: 1 / -1; }
-  .br-tile { min-height: 64px; padding: 10px; gap: 10px; }
-  .br-tile__icon { width: 38px; height: 38px; }
-  .br-tile__icon[data-kind="raster"] { width: 40px; height: 40px; }
+  /* A due colonne la tile è larga 151px: con l'icona a 40 e la freccia restavano
+     79px di testo, e a 390px si leggeva «Footb…», «More spo…», «Coming soon»
+     tagliato, con «45 picks today» che usciva dal riquadro (il meta ha
+     `white-space: nowrap` e nessun clip, quindi il testo debordava dipinto
+     fuori dal suo box). Icona più piccola, niente freccia — la tile è tutta
+     toccabile — e le due righe di testo vanno a capo invece di troncarsi. */
+  .br-tile { min-height: 64px; padding: 10px; gap: 8px; }
+  .br-tile__icon { width: 30px; height: 30px; }
+  .br-tile__icon[data-kind="raster"] { width: 32px; height: 32px; }
+  .br-tile__go { display: none; }
+  .br-tile__name { white-space: normal; overflow: visible; }
+  .br-tile__meta { white-space: normal; }
+
+  /* L'hero è il pezzo di questo round: su telefono partiva a y=500 su 844 e la
+     sua parte bassa finiva sotto la barra inferiore. Qui si recuperano ~60px
+     dalla cornice che gli sta sopra (titolo, i due bottoni secondari, la
+     striscia register), senza togliere nulla: l'hero rientra intero sopra la
+     piega a 390×844 e a 360×780. Misurato sul preview. */
+  .book-main { padding-top: 6px; }
+  .book-main-head.am-deskhead { gap: 6px; margin-bottom: 6px; }
+  .am-deskhead-titles h1 { font-size: 20px; line-height: 1.15; }
+  .am-deskhead-tools { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .am-deskhead-tools > .mb-entry,
+  .am-deskhead-tools > .rail-refresh { min-height: 36px; height: 36px; }
+  .book-main > .reg-nudge { margin-top: 6px; padding-top: 6px; padding-bottom: 6px; gap: 8px; }
+  .br-lobby { padding-top: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .br-hero__cta, .br-hero__cta svg, .br-tile, .br-tile__go, .br-promo, .br-promo__go { transition: none; }
