@@ -8758,7 +8758,12 @@ button:disabled {
 
   .am-bottomnav {
     display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-    background: color-mix(in srgb, var(--am-bg2) 92%, transparent);
+    /* `--am-bg2` non è mai esistito (arriva così da #68): il color-mix era
+       invalido, la dichiarazione cadeva e la barra restava TRASPARENTE. Non
+       si vedeva finché dietro passava roba scura; col lime #c8ff00 della CTA
+       hero del round 7 le etichette scendono a 2,11:1. Il token giusto è
+       quello del fondo, che esiste: `--am-bg`. */
+    background: color-mix(in srgb, var(--am-bg) 92%, transparent);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     border-top: 1px solid var(--am-line);
     padding-bottom: env(safe-area-inset-bottom, 0px);
