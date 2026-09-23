@@ -54,9 +54,11 @@ export type MdsGroup = {
  *  rendono la scheda esattamente come prima.
  *
  *  Round 13: `marketPct` non è più un campo della testa. Serviva solo alla riga
- *  MODEL | MARKET | EDGE, che non esiste più; l'edge continua ad arrivare già
- *  calcolato dal chiamante (`edgePct`), e il confronto col mercato si legge in
- *  «Why the model likes this pick». */
+ *  MODEL | MARKET | EDGE, che non esiste più.
+ *  Round 14: se ne va anche `edgePct`, che reggeva il chip accanto al pick —
+ *  nella scheda non resta alcun numero di mercato, solo il modello. Il dato
+ *  continua a esistere dove serve (ordinamento e fascia «High edge» della
+ *  lobby, lib/ui/lobby.ts): è la SCHEDA che non lo mostra più. */
 export type MdsHead = {
   sport: string;
   league: string | null;
@@ -66,7 +68,6 @@ export type MdsHead = {
   score?: { home: number; away: number } | null;
   pick: string | null;
   modelPct: number | null;
-  edgePct: number | null;
   confidence?: number | null;
   locked?: boolean;
   /** Slot a destra del kicker: watchlist, share… */
@@ -434,7 +435,6 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
             liveMinute={data.head.liveMinute}
             score={data.head.score ?? null}
             pick={data.head.pick}
-            edgePct={data.head.edgePct}
             locked={data.head.locked}
             actions={data.head.actions}
           />

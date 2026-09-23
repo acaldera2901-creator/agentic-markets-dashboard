@@ -2,15 +2,20 @@
 //
 // La testa della match page: risponde a «cosa sto guardando?» in un colpo
 // d'occhio — sport/lega/quando, le due squadre grandi con lo stemma, e sotto
-// il PICK con il suo edge. Solo presentazione: il «perché il modello pensa
-// questo» (livelli 2/3 del brief) è la pagina sotto, non questo header.
+// il PICK. Solo presentazione: il «perché il modello pensa questo» (livelli
+// 2/3 del brief) è la pagina sotto, non questo header.
 // `actions` è lo slot a destra del kicker (WatchlistButton, share…).
+//
+// Round 14: via anche il chip dell'edge accanto al pick — era l'ultimo numero
+// di mercato rimasto nella scheda dopo il round 13, e poteva essere NEGATIVO
+// («−3,2%»), cioè la scheda diceva a chi la apriva che il mercato ci batte.
+// Andrea: «non deve esserci più nessun riferimento nelle schede per quanto
+// riguarda il market, solo modello». Resta la sola percentuale del modello.
 import type { ReactNode } from "react";
 import { Crest } from "@/components/ui/Crest";
 import { SportChip } from "@/components/ui/SportChip";
 import { LeagueChip } from "@/components/ui/LeagueChip";
 import { LiveBadge } from "@/components/ui/LiveBadge";
-import { EdgeBadge } from "@/components/ui/EdgeBadge";
 import { IconLock } from "@/components/ui/icons";
 
 type Props = {
@@ -23,13 +28,12 @@ type Props = {
   liveMinute?: string | number | null;
   score?: { home: number; away: number } | null;
   pick: string | null;
-  edgePct: number | null;
   locked?: boolean;
   actions?: ReactNode;
   className?: string;
 };
 
-export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = false, liveMinute, score, pick, edgePct, locked = false, actions, className }: Props) {
+export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = false, liveMinute, score, pick, locked = false, actions, className }: Props) {
   return (
     <header className={["br-mh", className].filter(Boolean).join(" ")} data-live={isLive}>
       <div className="br-mh__kicker">
@@ -68,10 +72,6 @@ export function MatchHeader({ sport, league, home, away, kickoffLabel, isLive = 
         ) : (
           <strong className="br-mh__pick-v">{pick}</strong>
         )}
-        {/* #RESTYLING-0921 round 2: `locked` copre la PICK, non l'edge — i tre
-            numeri sono il valore che il free deve vedere (nota in
-            components/ui/PredictionCard.tsx). */}
-        <EdgeBadge edgePct={edgePct} size="chip" />
       </div>
     </header>
   );

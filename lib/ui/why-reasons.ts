@@ -122,14 +122,24 @@ export function footballWhyReasons(input: FootballWhyInput, lang: WhyLang = "en"
     });
   }
 
-  // 5. Quanto regge il campione, e il confronto col mercato. È la riga che può
-  //    mentire, quindi dice sempre la verità meno comoda per prima.
-  out.push(sampleAndMarket(input, lang));
+  // 5. Quanto regge il campione. È la riga che può mentire, quindi dice sempre
+  //    la verità meno comoda per prima.
+  const rel = reliability(input, lang);
+  if (rel) out.push(rel);
 
   return out.slice(0, 5);
 }
 
-function sampleAndMarket(input: FootballWhyInput, lang: WhyLang): WhyReason {
+/** #RESTYLING-0921 round 14 — questa riga si chiamava `sampleAndMarket` e
+ *  scriveva il confronto in cifre: «il mercato dà 58%, il modello 49%». Era
+ *  l'ultimo posto della scheda dove il mercato compariva con un numero, e nella
+ *  metà dei casi quel numero diceva che il mercato ci batte. Andrea: «non deve
+ *  esserci più nessun riferimento nelle schede per quanto riguarda il market,
+ *  solo modello». Resta quello che il numero di mercato NON è: la dimensione
+ *  del campione, e — quando un prezzo non c'è — il fatto che allora questa è
+ *  una stima del modello e non un edge. Quella frase è una garanzia verso
+ *  l'utente (FTC-safe), non un vanto: non si tocca. */
+function reliability(input: FootballWhyInput, lang: WhyLang): WhyReason | null {
   const label = L(lang, { it: "Affidabilità", en: "Reliability" });
   if (input.reliability === "insufficient_data") {
     return { label, text: L(lang, {
@@ -159,21 +169,12 @@ function sampleAndMarket(input: FootballWhyInput, lang: WhyLang): WhyReason {
     ].filter(Boolean).join(" — ") + "." };
   }
 
-  const gap = input.modelPct != null ? input.modelPct - input.marketPct : null;
-  const market = gap == null
-    ? L(lang, { it: "il mercato prezza questa partita", en: "the market prices this game" })
-    : gap > 0
-      ? L(lang, {
-          it: `il mercato dà ${Math.round(input.marketPct)}%, il modello ${Math.round(input.modelPct!)}%`,
-          en: `the market says ${Math.round(input.marketPct)}%, the model ${Math.round(input.modelPct!)}%`,
-        })
-      : L(lang, {
-          it: `il mercato è più alto del modello (${Math.round(input.marketPct)}% contro ${Math.round(input.modelPct!)}%)`,
-          en: `the market is above the model (${Math.round(input.marketPct)}% vs ${Math.round(input.modelPct!)}%)`,
-        });
-
+  // C'è un prezzo di mercato, quindi la riga non deve dichiarare «stima, non
+  // edge»: resta il solo campione. Se non c'è nemmeno quello, la riga non
+  // esiste — una voce di riempimento vale meno di una lista più corta.
   const caveat = small ? L(lang, { it: " Campione piccolo: da prendere con cautela.", en: " Small sample: treat with care." }) : "";
-  return { label, text: [sample, market].filter(Boolean).join(" — ") + "." + caveat };
+  if (!sample) return null;
+  return { label, text: sample + "." + caveat };
 }
 
 export type TennisWhyInput = {

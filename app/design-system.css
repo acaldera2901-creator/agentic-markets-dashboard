@@ -118,44 +118,10 @@
   white-space: nowrap;
 }
 
-/* ── EdgeBadge: un numero con segno, tonalità semantica ───────────────── */
-.br-edge {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  font-family: var(--am-font-num);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  white-space: nowrap;
-}
-.br-edge[data-size="lg"] { font-size: var(--am-num-lg); }
-.br-edge[data-size="md"] { font-size: var(--am-num-md); }
-.br-edge[data-size="sm"] { font-size: var(--am-num-sm); }
-/* «chip»: la versione incorniciata per righe di lista e header, 13px. */
-.br-edge[data-size="chip"] {
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: var(--am-r-chip);
-  border: 1px solid transparent;
-  letter-spacing: 0;
-}
-/* Il numero dell'edge positivo è IL dato della card: verde, e in una compact
-   è l'unica cosa colorata. Lo trova l'occhio per il colore e il corpo, non
-   per un alone (round 3: via il text-shadow). */
-.br-edge[data-tone="pos"]  { color: var(--am-edge); }
-.br-edge[data-tone="neg"]  { color: var(--am-negative); }
-.br-edge[data-tone="flat"] { color: var(--am-muted); }
-.br-edge[data-tone="none"],
-.br-edge[data-tone="locked"] { color: var(--am-muted-2); font-weight: 500; }
-.br-edge[data-size="chip"][data-tone="pos"]  { background: var(--am-edge-dim);     border-color: var(--am-edge-b); }
-.br-edge[data-size="chip"][data-tone="neg"]  { background: var(--am-negative-dim); border-color: var(--am-negative-b); }
-.br-edge[data-size="chip"][data-tone="flat"],
-.br-edge[data-size="chip"][data-tone="none"],
-.br-edge[data-size="chip"][data-tone="locked"] { background: var(--am-hi); border-color: var(--am-line); }
-.br-edge__pc { font-size: 0.6em; font-weight: 500; opacity: 0.8; }
-.br-edge[data-tone="locked"] svg { align-self: center; }
+/* #RESTYLING-0921 round 14 — qui viveva `.br-edge`, il chip dell'edge accanto
+   al pick. Via il componente (components/ui/EdgeBadge.tsx), via le sue regole:
+   nella scheda non compare più nessun numero di mercato. `.br-edgeday`, più
+   sotto, è un'altra cosa — la fascia «High edge» della lobby — e resta. */
 
 /* ── ConfidenceIndicator: secondario per definizione, quindi niente verde ── */
 .br-conf {
@@ -616,7 +582,6 @@
   color: var(--am-muted);
   font-weight: 600;
 }
-.br-mh__pick .br-edge { margin-left: auto; }
 
 /* ── Mobile: una sola query, lo stesso 640 di mobile.css ──────────────── */
 @media (max-width: 640px) {
@@ -624,8 +589,6 @@
   .br-card[data-variant="featured"] { padding: var(--am-s-4); }
   .br-card__teams { font-size: 15px; }
   .br-card[data-variant="featured"] .br-card__teams { font-size: 18px; }
-  .br-edge[data-size="lg"] { font-size: var(--am-num-md); }
-  .br-edge[data-size="md"] { font-size: 20px; }
   /* Il numero della card resta il protagonista anche a 390px, ma 40px accanto
      a un nome squadra da 15px sbilancia la card: 32. */
   .br-card__model-n { font-size: var(--am-num-lg); }
@@ -2378,9 +2341,15 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
    puoi andare in un clic. Non è una seconda nav — le voci a destra sono le
    stesse due della primaria, ripetute perché qui costano una riga e là un
    viaggio con gli occhi. Vive DENTRO `.am-topbar`, quindi resta appiccicata
-   in alto con lei. */
+   in alto con lei.
+
+   Round 14 — VIA IL FILETTO BLU. `--am-line` è `rgba(72,164,255,.4)`: su un
+   bordo di 1px largo tutto lo schermo non si legge come una riga di
+   separazione, si legge come una STRISCIA COLORATA, ed è la prima cosa che
+   l'occhio trova arrivando sulla pagina (Andrea l'ha cerchiata nello
+   screenshot). Il separatore lo fa già il cambio di fondo: `--am-inset` è più
+   scuro della topbar, quindi il gradino c'è senza doverlo disegnare. */
 .br-ctx {
-  border-top: 1px solid var(--am-line);
   background: var(--am-inset);
 }
 .br-ctx__in {

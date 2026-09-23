@@ -125,45 +125,12 @@ export default function SiteTopbar({
     return () => { cancelled = true; };
   }, []);
 
-  // Theme toggle — presentation only, mirrors app/page.tsx (data-theme on <html>
-  // + agentic-theme in localStorage; the pre-paint script in layout.tsx already
-  // set data-theme, here we just sync + flip). WcBoard is outside page.tsx's
-  // React tree, so the WC chrome owns its own toggle, same contract.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    // #UI-THEME-HARDEN-0623: ri-applica la scelta salvata (localStorage → prefers) e
-    // ri-asserta data-theme, così un reset da idratazione non lascia il tema sbagliato.
-    let t = "";
-    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-    if (t !== "light" && t !== "dark") {
-      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
-    setTheme(t as "dark" | "light");
-    document.documentElement.setAttribute("data-theme", t);
-  }, []);
-  const setThemeTo = (next: "dark" | "light") => {
-    if (next === theme) return;
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("agentic-theme", next); } catch {}
-  };
-  // #THEME-CONSISTENCY-0623: segue il tema di sistema SOLO finché l'utente non
-  // ha scelto manualmente (agentic-theme vuoto). Stesso contratto di home/desk.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      let chosen = "";
-      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-      if (chosen === "light" || chosen === "dark") return;
-      const next: "dark" | "light" = e.matches ? "light" : "dark";
-      setTheme(next);
-      document.documentElement.setAttribute("data-theme", next);
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // #RESTYLING-0921 round 14 — via lo stato del tema, il suo toggle e
+  // l'ascolto di `prefers-color-scheme`. Il sito è solo scuro: `data-theme`
+  // lo scrive il server in app/layout.tsx e nessuno lo cambia più. Questa
+  // chrome viveva fuori dall'albero di page.tsx e quindi si portava dietro
+  // una copia della stessa logica — tre copie da tenere in pari erano il
+  // prezzo di una scelta che l'utente non ha più.
 
   // Language: the WC chrome lives outside page.tsx's LanguageCtx, so it reads the
   // shared `agentic-lang` key (same as WcBoard) and re-renders on mount. Toggling
@@ -215,23 +182,6 @@ export default function SiteTopbar({
         )}
 
         <div className="am-topright">
-          <div className="am-tt" role="group" aria-label="Theme">
-            <button
-              className={theme === "dark" ? "on" : ""}
-              aria-pressed={theme === "dark"}
-              onClick={() => setThemeTo("dark")}
-            >
-              DARK
-            </button>
-            <button
-              className={theme === "light" ? "on" : ""}
-              aria-pressed={theme === "light"}
-              onClick={() => setThemeTo("light")}
-            >
-              LIGHT
-            </button>
-          </div>
-
           {auth.status === "authed" ? (
             /* #UI-LOGOUT-TOPBAR-0623: Logout in topbar accanto alla pill nome+piano.
                WC è route separata dal desk → POST /api/auth {action:"logout"} poi

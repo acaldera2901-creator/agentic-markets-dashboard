@@ -4197,7 +4197,12 @@ button:disabled {
    `--am-royal-2` è il token del "fill selected" (testo bianco, 5,2:1). */
 .am-tt button.on { background: var(--am-royal-2); color: var(--am-royal-ink); }
 
-/* account pill */
+/* account pill — #RESTYLING-0921 round 14: non è più una pillola.
+   Andrea, sugli arrotondamenti della topbar: «cambiamo la forma di questi
+   tasti». `999px` è la forma della MEDICINA, non dello sport: tutti i comandi
+   della barra passano al raggio dei CTA delle card (`--am-r-ctl`), così la
+   topbar e il contenuto parlano la stessa lingua. Il badge del piano scende a
+   `--am-r-chip`, il raggio delle etichette: è una targhetta, non un tasto. */
 .am-acct {
   display: inline-flex;
   align-items: center;
@@ -4208,7 +4213,7 @@ button:disabled {
   color: var(--text);
   padding: 6px 7px 6px 11px;
   border: 1px solid var(--line-2);
-  border-radius: 999px;
+  border-radius: var(--am-r-ctl);
   background: var(--panel);
   box-shadow: inset 0 1px 0 var(--am-hi);
   cursor: pointer;
@@ -4221,7 +4226,7 @@ button:disabled {
   color: var(--am-coral);
   background: var(--am-coral-dim);
   border: 1px solid var(--am-coral-b);
-  border-radius: 999px;
+  border-radius: var(--am-r-chip);
   padding: 2px 7px;
 }
 
@@ -4233,7 +4238,7 @@ button:disabled {
   color: var(--text);
   padding: 7px 13px;
   border: 1px solid var(--line-2);
-  border-radius: 7px;
+  border-radius: var(--am-r-ctl);
   background: var(--panel);
   box-shadow: inset 0 1px 0 var(--am-hi);
   cursor: pointer;
@@ -4246,7 +4251,7 @@ button:disabled {
   color: var(--bg);
   padding: 7px 14px;
   border: 1px solid var(--am-coral);
-  border-radius: 7px;
+  border-radius: var(--am-r-ctl);
   background: var(--am-coral);
   cursor: pointer;
 }
@@ -4258,7 +4263,7 @@ button:disabled {
   height: 34px;
   padding: 0 8px;
   border: 1px solid var(--line-2);
-  border-radius: 7px;
+  border-radius: var(--am-r-ctl);
   background: var(--panel);
   color: var(--muted);
   cursor: pointer;
@@ -7637,13 +7642,8 @@ button:disabled {
 :root[data-theme="light"] .lp-nav { background: var(--am-bar); }
 .lp-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 .lp-nav-right { display: flex; align-items: center; gap: clamp(8px, 1.4vw, 16px); }
-.lp-theme { display: inline-flex; background: var(--am-inset); border: 1px solid var(--am-line); border-radius: 999px; padding: 2px; }
-.lp-theme button {
-  font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .06em;
-  padding: 5px 11px; border: 0; border-radius: 999px; background: transparent;
-  color: var(--am-muted); cursor: pointer; transition: all .18s;
-}
-.lp-theme button.on { background: var(--am-coral); color: var(--bg); /* #UI-MACHINA-0802: era #fff su verde brand = 3.18:1, sotto AA. var(--bg) fa 6.15:1 in scuro e 4.60:1 in chiaro — stesso pattern di .am-tt button.on (riga 4021). */ }
+/* #RESTYLING-0921 round 14 — via `.lp-theme`: il segmentato DARK/LIGHT della
+   home non esiste più (app/landing-client.tsx), e con lui le sue regole. */
 /* #UI-HOMEAUTH-0623: ora possono essere <button> (aprono la modale in-place) →
    font:inherit + line-height per renderli identici ai vecchi <a>. */
 /* LEVEL-UP HOME — controlli tattici (come /app): spigolo vivo 0px, label mono
@@ -8632,8 +8632,7 @@ button:disabled {
     grid-template-areas: "track" "model" "plans" "app";
   }
   /* #HOME-CREATIVE-3d: il Login (.lp-nav-link) ora resta visibile su mobile
-     (prima nascosto → c'era solo Register). Theme toggle resta nascosto su mobile. */
-  .lp-theme { display: none; }
+     (prima nascosto → c'era solo Register). */
   .lp-steps { grid-template-columns: 1fr; gap: 24px; }
   .lp-kpis { gap: 22px; }
   /* edge scanner: colonne più compatte, padding ridotto, tag nascosto */
@@ -8670,7 +8669,16 @@ button:disabled {
    visivo), su mobile si ricompone e la pagina rientra in 390px.
    Verificato (Playwright @390px): docW /app 492→390, /world-cup 462→390, 0 overflow.
    ════════════════════════════════════════════════════════════════════════════ */
-.am-topbar-in { flex-wrap: wrap; height: auto; min-height: 60px; row-gap: 10px; }
+/* #RESTYLING-0921 round 14 — `align-content: center` e padding verticale.
+   `flex-wrap: wrap` rende la barra MULTI-LINEA, e in un flex multi-linea non
+   comanda più `align-items` ma `align-content`: col default le righe si
+   impacchettano in alto, quindi appena il contenuto va a capo (il caso di chi
+   è loggato: pill account + Go Pro + EN) il blocco logo+nav si incollava al
+   bordo superiore invece di stare a metà — il disallineamento fotografato da
+   Andrea. Il padding sostituisce l'altezza fissa come ciò che dà aria: con
+   `min-height` da sola, la seconda riga cresceva verso il basso appoggiata al
+   bordo. */
+.am-topbar-in { flex-wrap: wrap; align-content: center; height: auto; min-height: 60px; row-gap: 10px; padding-block: 8px; }
 .am-topright  { flex-wrap: wrap; justify-content: flex-end; }
 .am-topnav    { flex-wrap: wrap; }
 .wc-hub-hero  { flex-wrap: wrap; row-gap: 12px; }

@@ -68,7 +68,6 @@ import { ProBand } from "@/components/lobby/ProBand";
 import { PageHeadline } from "@/components/lobby/PageHeadline";
 import { SportHero } from "@/components/lobby/SportHero";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
-import { edgePointsFrom } from "@/lib/ui/prediction-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
 import { useWatchlist } from "@/lib/watchlist";
@@ -325,7 +324,7 @@ const BASE_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Mercati", nav_predictions: "Previsioni", nav_leaderboard: "Classifica", nav_account: "Account",
     auth_signin: "Accedi", auth_register: "Registrati",
-    theme_aria: "Tema", featured_label: "In evidenza",
+    featured_label: "In evidenza",
     kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit", kpi_settled_lbl: "Pick chiuse", kpi_coverage: "Verificate",
     season_pause: "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026).",
     footer_pastperf: "Le performance passate non garantiscono risultati futuri.",
@@ -584,7 +583,7 @@ const BASE_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Markets", nav_predictions: "Predictions", nav_leaderboard: "Leaderboard", nav_account: "Account",
     auth_signin: "Sign In", auth_register: "Register",
-    theme_aria: "Theme", featured_label: "Featured",
+    featured_label: "Featured",
     kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit", kpi_settled_lbl: "Settled picks", kpi_coverage: "Verified",
     season_pause: "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026).",
     footer_pastperf: "Past performance does not guarantee future results.",
@@ -846,7 +845,7 @@ const EXTRA_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Mercados", nav_predictions: "Predicciones", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
     auth_signin: "Entrar", auth_register: "Registrarse",
-    theme_aria: "Tema", featured_label: "Destacados",
+    featured_label: "Destacados",
     kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto", kpi_settled_lbl: "Pronósticos cerrados", kpi_coverage: "Verificados",
     season_pause: "Temporada en pausa — no hay partidos programados en las próximas 48h. Las predicciones vuelven automáticamente cuando las ligas se reanuden (julio 2026).",
     footer_pastperf: "El rendimiento pasado no garantiza resultados futuros.",
@@ -1105,7 +1104,7 @@ const EXTRA_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Marchés", nav_predictions: "Prédictions", nav_leaderboard: "Classement", nav_account: "Compte",
     auth_signin: "Connexion", auth_register: "S'inscrire",
-    theme_aria: "Thème", featured_label: "À la une",
+    featured_label: "À la une",
     kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite", kpi_settled_lbl: "Pronostics clôturés", kpi_coverage: "Vérifiés",
     season_pause: "Saison en pause — aucun match programmé dans les 48 prochaines heures. Les prédictions reviennent automatiquement à la reprise des ligues (juillet 2026).",
     footer_pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
@@ -1364,7 +1363,7 @@ const EXTRA_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Рынки", nav_predictions: "Прогнозы", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
     auth_signin: "Войти", auth_register: "Регистрация",
-    theme_aria: "Тема", featured_label: "Избранное",
+    featured_label: "Избранное",
     kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность", kpi_settled_lbl: "Закрытые прогнозы", kpi_coverage: "Проверено",
     season_pause: "Сезон на паузе — в ближайшие 48 часов матчей не запланировано. Прогнозы вернутся автоматически с возобновлением лиг (июль 2026).",
     footer_pastperf: "Прошлые результаты не гарантируют будущих.",
@@ -5587,7 +5586,6 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         // Sotto il floor niente pick direzionale, esattamente come l'hero.
         pick: belowFloor ? null : (shownName ?? null),
         modelPct: headModelPct,
-        edgePct: belowFloor ? null : edgePointsFrom(headModelPct, headMarketPct),
         confidence: confScore,
       },
       why: footballWhyReasons({
@@ -5929,7 +5927,6 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
         pick: belowFloor ? null : (pickName ?? null),
         modelPct: headModelPct,
-        edgePct: belowFloor ? null : edgePointsFrom(headModelPct, headMarketPct),
         confidence: m.confidence_score ?? null,
       },
       why: tennisWhyReasons({
@@ -9611,37 +9608,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   useEffect(() => {
     try { document.documentElement.lang = uiLanguage; } catch { /* no-op */ }
   }, [uiLanguage]);
-  // Theme toggle (Cobalt & Coral redesign, F1) — presentation only, no logic change.
-  // #UI-THEME-HARDEN-0623: il pre-paint setta data-theme, MA su /app l'idratazione
-  // può resettare data-theme al valore SSR ("dark"), lasciando il desk scuro
-  // nonostante la scelta light. Qui non ci limitiamo a leggere data-theme: ri-leggiamo
-  // la scelta salvata (localStorage → prefers, stessa logica del pre-paint) e la
-  // RI-APPLICHIAMO a data-theme, così il tema scelto vince sempre.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    let t = "";
-    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-    // #UI-MACHINA-0802: default SCURO, non quello del sistema — vedi il commento
-    // in app/layout.tsx. La scelta esplicita salvata vince comunque.
-    if (t !== "light" && t !== "dark") {
-      t = "dark";
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
-    setTheme(t as "dark" | "light");
-    document.documentElement.setAttribute("data-theme", t);
-  }, []);
-  const toggleTheme = () => {
-    const next: "dark" | "light" = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("agentic-theme", next); } catch {}
-    trackEvent("theme_change", { meta: { theme: next } });
-  };
-  // #THEME-CONSISTENCY-0623 → superato da #UI-MACHINA-0802: l'ascolto del tema
-  // di sistema e' RIMOSSO. Prima, chi non
-  // aveva scelto seguiva il sistema; ora il default e' scuro, quindi un cambio
-  // di sistema non deve piu' ribaltare la veste sotto i piedi dell'utente.
-  // Chi vuole il chiaro lo preme, e la scelta persiste.
+  // #RESTYLING-0921 round 14 — IL TEMA NON È PIÙ UNA SCELTA. Andrea:
+  // «togliamo la versione light, deve rimanere solo la dark ma senza bottone».
+  // Qui vivevano lo stato `theme`, il ri-assert post-idratazione e
+  // `toggleTheme`: senza un controllo che li chiami non hanno più un mestiere.
+  // Il tema lo fissa `<html data-theme="dark">` in app/layout.tsx, una volta,
+  // lato server: niente stato, niente localStorage, niente flash.
 
   // #UI-SCROLLTOP-0623: cambiare scheda è solo client-state (setTab), quindi la
   // pagina restava ferma a metà contenuto della scheda precedente. Riporta in
@@ -10637,24 +10609,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               {watchlist.saved.size > 0 && <span className="br-watchnav__n">{watchlist.saved.size}</span>}
             </button>
 
-            {/* theme toggle segmentato DARK/LIGHT — riusa toggleTheme/theme esistenti */}
-            <div className="am-tt" role="group" aria-label={tNav.theme_aria}>
-              <button
-                className={theme === "dark" ? "on" : ""}
-                aria-pressed={theme === "dark"}
-                onClick={() => { if (theme !== "dark") toggleTheme(); }}
-              >
-                DARK
-              </button>
-              <button
-                className={theme === "light" ? "on" : ""}
-                aria-pressed={theme === "light"}
-                onClick={() => { if (theme !== "light") toggleTheme(); }}
-              >
-                LIGHT
-              </button>
-            </div>
-
+            {/* #RESTYLING-0921 round 14 — qui stava il segmentato DARK/LIGHT.
+                Il sito è solo scuro: il tasto non ha più un secondo stato da
+                offrire, e i ~85px che occupava sono aria in più per la barra,
+                che con l'account loggato andava a capo. Niente lo sostituisce:
+                lo spazio resta libero. */}
             {clientProfile ? (
               /* #UI-ACCOUNT-DROPDOWN-0623: il pill apre il menu account a tendina
                  (account rifatto). Niente più tab Account né Logout separato. */

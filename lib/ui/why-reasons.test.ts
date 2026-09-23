@@ -22,9 +22,9 @@ describe("footballWhyReasons", () => {
   const base = { home: "Arsenal", away: "Chelsea", modelPct: 64, marketPct: 52 };
 
   it("con dati poveri resta cortissimo: nessuna riga di riempimento", () => {
-    const r = footballWhyReasons(base, "en");
-    expect(r).toHaveLength(1);
-    expect(r[0].label).toBe("Reliability");
+    // Round 14: c'è un prezzo di mercato ma nessun campione da dichiarare —
+    // prima restava la riga col confronto in cifre, ora non resta nulla.
+    expect(footballWhyReasons(base, "en")).toHaveLength(0);
   });
 
   it("ogni riga nasce da un campo presente, e non se ne inventano", () => {
@@ -39,7 +39,21 @@ describe("footballWhyReasons", () => {
     expect(r.map((x) => x.label)).toEqual(["Form", "xG", "Goals", "Scorer", "Reliability"]);
     expect(r[0].text).toContain("3W-1D-1L");
     expect(r[3].text).toContain("34%");
-    expect(r[4].text).toContain("the market says 52%");
+    expect(r[4].text).toBe("20 and 18 matches in the sample.");
+  });
+
+  it("nessuna riga scrive la percentuale del mercato (#RESTYLING-0921 round 14)", () => {
+    // Andrea: «non deve esserci più nessun riferimento nelle schede per quanto
+    // riguarda il market, solo modello». `marketPct: 52` non deve comparire in
+    // nessuna forma, e nemmeno la parola «market» con un numero accanto.
+    const r = footballWhyReasons({
+      ...base,
+      formHome: "WWWDL", formAway: "LLDWW",
+      matchesHome: 20, matchesAway: 18,
+    }, "en");
+    const tutto = r.map((x) => x.text).join(" ");
+    expect(tutto).not.toContain("52%");
+    expect(tutto).not.toMatch(/market\s+(says|is above)/i);
   });
 
   it("mai più di cinque righe", () => {

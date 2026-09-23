@@ -113,21 +113,22 @@ const serviceJsonLd = {
   ],
 };
 
-// No-flash theme bootstrap (Cobalt & Coral redesign, F1).
-// Runs before paint: resolves agentic-theme (localStorage) → prefers-color-scheme,
-// then sets data-theme on <html>. Default dark. Pure presentation, no logic change.
-// #UI-MACHINA-0802: senza una scelta esplicita il tema e' SCURO, non quello del
-// sistema operativo. Il restyling e' un mondo visivo scuro (fondo cinematico) e
-// vive dentro :root:not([data-theme="light"]): seguendo il sistema, chi ha il
-// Mac in chiaro non vedrebbe MAI la veste nuova. La scelta manuale continua a
-// vincere e a persistere: chi preme LIGHT resta sul prodotto di oggi.
-const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+// #RESTYLING-0921 round 14 — IL TEMA È UNO SOLO, E LO DECIDE IL SERVER.
+// Qui girava, prima del paint, uno script che leggeva `agentic-theme` da
+// localStorage e ne ricavava `data-theme`. Aveva senso finché il tema era una
+// scelta; Andrea l'ha chiusa: «togliamo la versione light, deve rimanere solo
+// la dark ma senza bottone». Il valore lo scrive l'attributo statico qui
+// sotto, quindi non c'è più niente da bootstrappare e niente da cui flashare.
+// Le regole `:root[data-theme="light"]` restano nei CSS: non sono più
+// raggiungibili (nessun codice scrive quel valore) e toglierle vorrebbe dire
+// rigenerare app/machina.css, che è un file GENERATO e il cui tema scuro è
+// scritto proprio come `:root:not([data-theme="light"])`. Si è tolto il modo
+// di accenderlo, non le migliaia di righe che non si accendono più.
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
+    <html lang="en" data-theme="dark" className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}

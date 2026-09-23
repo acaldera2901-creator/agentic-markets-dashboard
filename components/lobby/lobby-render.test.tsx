@@ -100,7 +100,7 @@ describe("scheda partita con la testa nuova", () => {
       ...base,
       head: {
         sport: "football", league: "Premier League", kickoffLabel: "Today · 20:45",
-        pick: "Arsenal to win", modelPct: 64, edgePct: 11.9, confidence: 74,
+        pick: "Arsenal to win", modelPct: 64, confidence: 74,
       },
       why: footballWhyReasons({
         home: "Arsenal", away: "Chelsea", formHome: "WWDLW", formAway: "LDWLL",
@@ -110,10 +110,9 @@ describe("scheda partita con la testa nuova", () => {
     }} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Arsenal");
-    // #RESTYLING-0921 round 13 — l'edge compare UNA volta sola, accanto al pick.
-    // La seconda occorrenza era la cella EDGE del riquadro Model/Market/Edge,
-    // che non esiste più.
-    expect(screen.getAllByText("+11.9")).toHaveLength(1);
+    // #RESTYLING-0921 round 14 — l'edge non compare PIÙ: né nel riquadro (tolto
+    // al round 13), né nel chip accanto al pick (tolto qui).
+    expect(screen.queryByText("+11.9")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Why the model likes this pick/i })).toBeInTheDocument();
     expect(screen.getByText(/Last 5: Arsenal 3W-1D-1L/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Recent form/i })).toBeInTheDocument();
@@ -121,29 +120,31 @@ describe("scheda partita con la testa nuova", () => {
 
   // #RESTYLING-0921 round 13 — il riquadro MODEL | MARKET | EDGE è stato tolto:
   // «a volte siamo sotto il mercato», e un confronto a tre vie in testa alla
-  // scheda urla la cosa sbagliata. Resta LA NOSTRA percentuale, come sulla
-  // card. Il mercato non sparisce dal prodotto: si legge a parole nel «perché»
-  // (riga Market di lib/ui/why-reasons.ts), e l'edge resta accanto al pick.
-  it("in testa c'è solo la percentuale del modello, non il confronto col mercato", () => {
+  // scheda urla la cosa sbagliata.
+  // Round 14 — se ne va anche il chip dell'edge accanto al pick, l'ultimo
+  // numero di mercato della scheda, e quello poteva pure essere NEGATIVO.
+  // Andrea: «le chip negative non vanno bene e non deve esserci più nessun
+  // riferimento nelle schede per quanto riguarda il market, solo modello».
+  it("in testa c'è SOLO la percentuale del modello: nessun numero di mercato", () => {
     const data = fromDeskFootball(row, { winLabel: "to win" });
-    render(<MatchDetailSheet hideBookLinks data={{
+    const { container } = render(<MatchDetailSheet hideBookLinks data={{
       ...base,
       head: {
         sport: data.sport, league: data.league, kickoffLabel: "Today · 20:45",
-        pick: data.pick, modelPct: data.modelPct, edgePct: data.edgePct,
+        pick: data.pick, modelPct: data.modelPct,
       },
     }} />);
     expect(screen.getByText("64")).toBeInTheDocument();
     expect(screen.getByText("Our model")).toBeInTheDocument();
-    // L'edge accanto al pick resta la differenza fra i due numeri (64 − 52 =
-    // +11.9), non il value p·odds−1 (+22.9).
-    expect(screen.getAllByText("+11.9").length).toBeGreaterThan(0);
+    // Né la differenza modello−mercato (+11.9), né il value p·odds−1 (+22.9),
+    // né il numero del mercato, né le tre label del vecchio riquadro.
+    expect(screen.queryByText("+11.9")).not.toBeInTheDocument();
     expect(screen.queryByText("+22.9")).not.toBeInTheDocument();
-    // Niente più celle affiancate: né il numero del mercato, né le tre label.
     expect(screen.queryByText("52")).not.toBeInTheDocument();
     expect(screen.queryByText("Model")).not.toBeInTheDocument();
     expect(screen.queryByText("Market")).not.toBeInTheDocument();
     expect(screen.queryByText("Edge")).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".br-edge")).toHaveLength(0);
   });
 
   it("senza `head` la scheda resta quella di prima (WcBoard, weekly-model-case)", () => {
@@ -156,7 +157,7 @@ describe("scheda partita con la testa nuova", () => {
   it("il blocco Pro nomina ciò che c'è dietro invece di sfocare numeri finti", () => {
     render(<MatchDetailSheet hideBookLinks data={{
       ...base,
-      head: { sport: "football", league: "PL", pick: null, modelPct: 64, edgePct: 11.9, locked: true },
+      head: { sport: "football", league: "PL", pick: null, modelPct: 64, locked: true },
       teamNewsLocked: true,
     }} />);
     expect(screen.getByText(/part of Pro/i)).toBeInTheDocument();

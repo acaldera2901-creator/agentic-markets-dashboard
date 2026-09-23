@@ -1,25 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { edgeTone, formatEdge, formatPct, fromUnifiedPrediction, EDGE_FLAT_PP } from "./prediction-card";
+import { formatPct, fromUnifiedPrediction } from "./prediction-card";
 import type { UnifiedPrediction } from "@/lib/unified-adapter";
 
-describe("edgeTone", () => {
-  it("null → none, |edge| < soglia → flat, altrimenti segno", () => {
-    expect(edgeTone(null)).toBe("none");
-    expect(edgeTone(Number.NaN)).toBe("none");
-    expect(edgeTone(EDGE_FLAT_PP - 0.1)).toBe("flat");
-    expect(edgeTone(-0.4)).toBe("flat");
-    expect(edgeTone(4.3)).toBe("pos");
-    expect(edgeTone(-2.1)).toBe("neg");
-  });
-});
-
-describe("formatEdge / formatPct", () => {
-  it("segno sempre, un decimale, meno tipografico", () => {
-    expect(formatEdge(12)).toBe("+12.0");
-    expect(formatEdge(-1.25)).toBe("−1.3");
-    expect(formatEdge(0)).toBe("0.0");
-    expect(formatEdge(null)).toBe("—");
-  });
+// Round 14: `edgeTone`/`formatEdge` non esistono più — l'edge non si scrive in
+// nessuna vista, quindi non c'è più un tono da dipingere né un segno da
+// stampare. I loro test se ne vanno con loro.
+describe("formatPct", () => {
   it("percentuale intera, clampata", () => {
     expect(formatPct(64.4)).toBe("64");
     expect(formatPct(120)).toBe("100");

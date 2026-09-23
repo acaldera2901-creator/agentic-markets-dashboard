@@ -564,7 +564,6 @@ function anatomyFallbackMatch(): TennisMatch {
 
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("en");
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [mounted, setMounted] = useState(false);
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
   // #UI-HOMEAUTH-0623 (spec #4): Sign In/Register aprono la modale IN-PLACE sulla
@@ -587,28 +586,17 @@ export default function LandingPage() {
   const [anatomyIsLive, setAnatomyIsLive] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mounted + lingua e tema da localStorage: il pattern SSR-safe canonico, e lo storage va letto solo dopo il mount (#STORAGE-CRASH-0813)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mounted + lingua da localStorage: il pattern SSR-safe canonico, e lo storage va letto solo dopo il mount (#STORAGE-CRASH-0813)
     setMounted(true);
     try {
       const sl = localStorage.getItem("agentic-lang");
       if (sl && (LANGS as string[]).includes(sl)) setLang(sl as Lang);
     } catch {}
-    // #UI-THEME-HARDEN-0623: ri-applica la scelta salvata (localStorage → prefers,
-    // stessa logica del pre-paint) e ri-asserta data-theme, così un eventuale reset
-    // da idratazione non lascia il tema sbagliato.
-    let t = "";
-    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-    // #UI-MACHINA-0802: default SCURO, non quello del sistema — vedi app/layout.tsx.
-    if (t !== "light" && t !== "dark") {
-      t = "dark";
-    }
-    setTheme(t as "dark" | "light");
-    document.documentElement.setAttribute("data-theme", t);
   }, []);
 
-  // #THEME-CONSISTENCY-0623 → superato da #UI-MACHINA-0802: l'ascolto del tema di
-  // sistema è rimosso anche qui, così landing e desk restano sullo stesso
-  // contratto (default scuro, scelta manuale che vince e persiste).
+  // #RESTYLING-0921 round 14 — niente stato del tema, niente ri-assert di
+  // `data-theme`: il sito è solo scuro e l'attributo lo scrive il server in
+  // app/layout.tsx. Qui restava solo un modo per farlo diventare chiaro.
 
   // #PRICING-CREATORS-0706: i link invito creator (/r/CODICE) atterrano QUI con
   // ?ref=. First-touch identico al desk (#MB-1): persistiamo una volta sola in
@@ -751,11 +739,6 @@ export default function LandingPage() {
     setLang(next);
     try { localStorage.setItem("agentic-lang", next); } catch {}
   };
-  const setThemeMode = (mode: "dark" | "light") => {
-    setTheme(mode);
-    document.documentElement.setAttribute("data-theme", mode);
-    try { localStorage.setItem("agentic-theme", mode); } catch {}
-  };
   // #UI-LOGOUT-TOPBAR-0623: logout dalla home (route separata dal desk) → invalida
   // la sessione lato server poi ricarica "/" in stato anonimo.
   const logoutHome = async () => {
@@ -791,10 +774,8 @@ export default function LandingPage() {
           <Wordmark />
         </Link>
         <div className="lp-nav-right">
-          <div className="lp-theme" role="group" aria-label="Theme">
-            <button className={theme === "dark" ? "on" : ""} onClick={() => setThemeMode("dark")}>DARK</button>
-            <button className={theme === "light" ? "on" : ""} onClick={() => setThemeMode("light")}>LIGHT</button>
-          </div>
+          {/* #RESTYLING-0921 round 14 — via il segmentato DARK/LIGHT: il sito
+              è solo scuro, quindi il tasto non aveva più niente da offrire. */}
           {auth.status === "authed" ? (
             /* #UI-LOGOUT-TOPBAR-0623: da loggati il Logout è in topbar accanto alla
                pill nome+piano (che resta link all'account). Su home/route separate
@@ -1151,7 +1132,10 @@ export default function LandingPage() {
           {/* Il widget VERO accanto alla riga che lo vende: la sezione si
               dimostra da sola invece di descriversi. */}
           <div style={{ flex: "1 1 300px", maxWidth: 400, width: "100%" }}>
-            <WidgetLivePreview lang={lang} theme={theme} />
+            {/* Il WIDGET resta bi-tema: è il prodotto che i partner incastonano
+                nel LORO sito, dove il chiaro esiste ancora (app/widget). Qui
+                lo si mostra scuro perché scura è la pagina che lo ospita. */}
+            <WidgetLivePreview lang={lang} theme="dark" />
           </div>
         </div>
       </div></section>

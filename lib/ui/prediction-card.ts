@@ -1,40 +1,28 @@
 // lib/ui/prediction-card.ts — #RESTYLING-0921
 //
 // La grammatica numerica della PredictionCard, fuori dal JSX così è testabile
-// e condivisa da EdgeBadge, PredictionCard, MatchHeader.
+// e condivisa da PredictionCard e MatchHeader.
 //
 // Convenzione del prodotto (lib/unified-adapter.ts): l'edge è in PUNTI
 // percentuali = probabilità modello − probabilità implicita del mercato, e
 // senza un prezzo di mercato reale NON si dichiara un edge (resta «model
-// estimate»). La card eredita la regola: marketPct null → edge null → «—».
+// estimate»).
+//
+// Round 14: l'edge non si SCRIVE più da nessuna parte nell'interfaccia — via
+// il chip accanto al pick, ultimo numero di mercato rimasto nella scheda. Resta
+// un numero di ORDINAMENTO (quali partite salgono in cima, quali entrano nella
+// fascia «High edge»: lib/ui/lobby.ts), quindi `edgePointsFrom` e
+// `EDGE_HIGH_PP` vivono; `edgeTone`/`formatEdge`, che servivano solo a
+// dipingerlo e a scriverlo col segno, sono stati rimossi con l'EdgeBadge.
 
 import { impliedProbability } from "@/lib/betting-math";
 import type { UnifiedPrediction } from "@/lib/unified-adapter";
 
-export type EdgeTone = "pos" | "neg" | "flat" | "none";
-
-/** Sotto questo |edge| (pp) il numero è rumore: si mostra neutro, non verde. */
-export const EDGE_FLAT_PP = 1;
 /** Da qui in su la card si merita il badge «High edge». Allineato a
  *  computeRisk() dell'adapter, dove edge > 4% = rischio basso. */
 export const EDGE_HIGH_PP = 5;
 
-export function edgeTone(edgePct: number | null | undefined): EdgeTone {
-  if (edgePct == null || !Number.isFinite(edgePct)) return "none";
-  if (Math.abs(edgePct) < EDGE_FLAT_PP) return "flat";
-  return edgePct > 0 ? "pos" : "neg";
-}
-
-/** «+12.0» / «−1.2» (meno tipografico U+2212, non il trattino) / «—». */
-export function formatEdge(edgePct: number | null | undefined): string {
-  if (edgePct == null || !Number.isFinite(edgePct)) return "—";
-  const abs = Math.abs(edgePct).toFixed(1);
-  if (edgePct > 0) return `+${abs}`;
-  if (edgePct < 0) return `−${abs}`;
-  return abs;
-}
-
-/** Percentuale intera per la riga MODEL | MARKET: «64». null → «—». */
+/** Percentuale intera del modello: «64». null → «—». */
 export function formatPct(pct: number | null | undefined): string {
   if (pct == null || !Number.isFinite(pct)) return "—";
   return String(Math.round(Math.max(0, Math.min(100, pct))));
@@ -52,8 +40,7 @@ export function formatPct(pct: number | null | undefined): string {
  *
  *  Con p=0.64 e odds=1.92: value% = 22.9, model−market = 12.0. Una card che
  *  scrive «MODEL 64 · MARKET 52 · EDGE +22.9» si contraddice da sola in due
- *  secondi — ed è esattamente il tempo che il brief le concede. Vale ancora
- *  per l'EdgeBadge accanto al pick e per la riga «Market» del «perché».
+ *  secondi — ed è esattamente il tempo che il brief le concede.
  *
  *  Il value resta il numero giusto ALTROVE (il board lo mostra come «value»):
  *  qui vale la definizione che rende leggibile il confronto affiancato.
