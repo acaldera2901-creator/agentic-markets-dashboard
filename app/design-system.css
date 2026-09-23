@@ -3190,22 +3190,24 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
 
 /* #MOBILE-0923 — «Upcoming matches» non diceva contro chi.
    Le colonne affiancate (data · squadre · % · freccia) su 390px lasciano ai
-   nomi 78px netti: «Borussia Mönchengladbach vs Eintracht Frankfurt» si taglia
-   subito dopo la prima parola, e su una riga di tennis («Alina Korneeva vs
-   Darya Astakhova», 241px richiesti) l'avversario spariva del tutto. Su OGNI
-   riga mancava metà della partita: la riga esisteva ma non informava.
+   nomi 78px netti: «Borussia Mönchengladbach vs Eintracht Frankfurt» si legge
+   «Borussia Moenchengladbach vs Eintracht Frankfu…», e su una riga di tennis
+   («Alina Korneeva vs Darya Astakhova», 241px richiesti) spariva del tutto
+   l'avversario. Su OGNI riga mancava metà della partita: la riga esisteva ma
+   non informava.
    La data sale su una riga sua (ci sta intera, con un punto medio al posto
-   dell'a-capo) e i nomi prendono la larghezza che era sua: da 78 a 211px
-   (misurato @390 sul CSS compilato). La percentuale e la freccia restano a
-   destra a cavallo delle due righe: l'altezza della riga non cambia.
-   STA QUI, e non più in alto accanto a `.br-row`, per una ragione sola: il
+   dell'a-capo) e i nomi prendono la larghezza che era sua: 212px, e «Hu Jia
+   vs Vit Kopriva» o «Deniz Dilek vs Solana Sierra» si leggono interi. La
+   percentuale e la freccia restano a destra, a cavallo delle due righe:
+   l'altezza della riga non cambia.
+   STA QUI, e non più in alto vicino a `.br-row`, per una ragione sola: il
    blocco `@media (max-width: 780px)` qui sopra riscrive
-   `grid-template-columns` con la STESSA specificità, e a parità vince
-   l'ultimo dichiarato nel file. Scritto prima, questo fix veniva sovrascritto
-   in silenzio e il nome restava a 78px. Non si vedeva iniettando la regola
-   nel browser — uno <style> aggiunto in coda al documento scavalca sempre
-   l'ordine del foglio compilato: una media query di soglia più bassa va
-   verificata NEL file, non solo in pagina. */
+   `grid-template-columns` con la stessa specificità. A parità di specificità
+   vince l'ultimo dichiarato nel file — scritto prima, questo fix veniva
+   sovrascritto in silenzio e il nome restava a 78px. (Non si vedeva
+   iniettando la regola nel browser: uno <style> aggiunto in coda al documento
+   scavalca sempre l'ordine del foglio compilato. Lezione: una media query di
+   soglia più bassa va verificata NEL file, non solo in pagina.) */
 @media (max-width: 480px) {
   .br-row { grid-template-columns: minmax(0, 1fr) auto 12px; gap: 2px 10px; padding: 12px 14px; }
   .br-row__when { grid-column: 1; grid-row: 1; }
@@ -3229,3 +3231,93 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   color: var(--am-sky);
 }
 .br-sec__body { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * MOBILE — #MOBILE-0923 round 17 · la testata restituisce lo schermo
+ *
+ * PERCHÉ IL BLOCCO STA IN FONDO AL FILE. Le regole qui sotto riscrivono
+ * `.br-*` che sono dichiarate PRIMA in questo stesso foglio, e `.am-topbar-in`
+ * che è dichiarata in globals.css. A parità di specificità vince l'ultima
+ * dichiarata, e design-system.css è importato per ultimo (layout.tsx:
+ * globals → machina → mobile → design-system). È la stessa ragione scritta
+ * nel blocco `@media (max-width: 480px)` qui sopra, e il motivo per cui
+ * `app/mobile.css` — che pure è IL posto del pavimento mobile — non può
+ * ospitarle: è importato PRIMA di questo foglio, quindi sui `.br-*` perde.
+ *
+ * MISURATO @390×844 e @375×667 (Playwright, preview PR #430, sessione
+ * sloggata, dati veri):
+ *   · testata 194px = 25% dello schermo a 390, 31% a 375 — e la prima riga
+ *     di contenuto cadeva a 208px, con il titolo dell'hero al 42%;
+ *   · 194px nascono da QUATTRO righe, e la prima è vuota per 267px su 358:
+ *     il solo logo (91px), perché `.br-nav` ha base `auto` (= max-content,
+ *     435px) e non entrando accanto al logo si prendeva una riga sua;
+ *   · 11 bersagli di tocco sotto i 44px, tutti della famiglia `.br-*` nata
+ *     col restyling: la nav della testata (5 voci a 30,75px), «Go Pro» a
+ *     30px, il CTA della fascia Pro a 21px.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* ── 1. La nav sale accanto al logo ──────────────────────────────────────
+   * Con base `auto` la nav valeva il suo max-content (435px): non entrava
+   * mai accanto al logo e andava a capo, lasciando la prima riga occupata
+   * al 25% e spendendo 30,75px + 16 di gap per una riga che poteva non
+   * esistere. Con base 0 la nav prende lo spazio che resta (251px) e scorre
+   * dentro di sé — cosa che faceva GIÀ a 334px, perché le cinque voci ne
+   * chiedono 435: cambia quante se ne vedono ferme (da ~4 a ~3), non se si
+   * raggiungono. Il prezzo è accettabile perché su telefono Home, Live e
+   * Tools stanno anche nella barra in basso, sotto il pollice: questa nav è
+   * la seconda strada, non l'unica.
+   *
+   * `min-width: 220px` NON è decorazione: è la soglia sotto la quale la nav
+   * non vale la pena di stare in riga. Il break delle righe flex guarda la
+   * base clampata dal minimo, quindi la regola si legge «la nav chiede 220px:
+   * se accanto al logo non ci stanno, prenditi una riga tua». Sul desk
+   * (358 − 91 di logo − 16 di gap = 251 disponibili) ci stanno e la riga si
+   * risparmia; su /tools, dove Sign In e Register stanno sulla STESSA riga
+   * perché quella testata non ha `.br-navright` a spingerli a capo, non ci
+   * stanno e la nav torna a capo come prima. Senza questo minimo su /tools la
+   * nav si schiacciava a ~110px e si vedeva solo «Home», con la seconda voce
+   * tagliata a metà icona: una riga in meno pagata con una nav inservibile.
+   * Verificato a 390 e 375. */
+  .br-nav { flex: 1 1 0; min-width: 220px; }
+
+  /* ── 2. Il pavimento di 44px arriva anche ai `.br-*` ─────────────────────
+   * 44px è lo standard già scritto e motivato in app/mobile.css (§2): qui si
+   * estende alla famiglia nata col restyling, che mobile.css non poteva
+   * raggiungere né per nome (classi nuove) né per ordine (foglio importato
+   * prima). Misure di partenza in coda a ogni riga.
+   * NB: `.am-brandmark` e `.hb-x` NON sono in lista: hanno già un'area
+   * sensibile di 44×44 da pseudo-elemento (mobile.css §2), quindi il loro
+   * box piccolo è voluto e va lasciato stare. */
+  .br-nav__item,        /* 65×30,75 · le 5 voci, su ogni pagina del desk */
+  .br-upgrade,          /* 75×30    · «Go Pro», accanto a Sign In/Register da 44 */
+  .br-sec__link,        /* 87×32    · «Back to home» */
+  .br-proband__cta {    /* 124×21   · «Compare plans» / «Discover Pro» */
+    min-height: 44px;
+  }
+  /* `.am-deskhead-tools > .mb-entry` fissa 36px più in alto in questo stesso
+     foglio (specificità 0,2,0): il `min-height: 44px` di mobile.css §2 non la
+     batteva. `height: auto` toglie l'altezza fissa che bloccava il minimo. */
+  .am-deskhead-tools > .mb-entry { min-height: 44px; height: auto; }
+
+  /* ── 3. Le righe della testata si stringono ──────────────────────────────
+   * `row-gap` vale 16px per via di `.am-topbar-in:has(.br-upgrade)` (0,2,0),
+   * che alza il gap per tenere larga la barra su desktop. globals.css:8681
+   * aveva già scritto l'intento giusto per il mobile — `row-gap: 10px` — ma
+   * con specificità 0,1,0 non arrivava. Si ripete il selettore con `:has()`
+   * per pareggiare il peso. Le pagine /tools, che non hanno «Go Pro», erano
+   * già a 10px: ora le due testate si comportano allo stesso modo. */
+  .am-topbar-in,
+  .am-topbar-in:has(.br-upgrade) { row-gap: 10px; }
+
+  /* ── 4. Il nome del torneo smette di sparire ─────────────────────────────
+   * `.br-chip[data-kind="league"]` ha `max-width: 22ch` = 145px, ma il suo
+   * contenitore `.br-card__kicker` ne misura 280: il taglio non lo faceva lo
+   * spazio, lo faceva il tetto. Misurato sul preview: «Singapore Tennis Open
+   * presented by BNP Paribas» chiede 364px e ne riceveva 145 (si leggeva
+   * «Singapore Tennis Open pr…»), «Turk Telekom Ankara Open» 190, «Delta
+   * Motors Tolentino Open» 214. Col tetto al 100% i primi due entrano interi
+   * e il terzo tronca a 280 invece che a 145. Il `flex: 0 1 auto` e il
+   * `min-width: 9ch` già dichiarati restano: la lega continua a cedere spazio
+   * al chip dello sport quando serve, non lo ruba. */
+  .br-chip[data-kind="league"] { max-width: 100%; }
+}
