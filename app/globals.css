@@ -150,6 +150,14 @@
   --am-live-dim:   rgba(255,232,24,0.14);
   --am-live-b:     rgba(255,232,24,0.45);
   --am-live-ink:   #141200;   /* testo su fill --am-live (15,1:1) */
+  /* Round 11 — LA PERCENTUALE HA UN TOKEN SUO. Al round 10 riusava --am-live,
+     cioè il colore che significa «in corso / attenzione»: due significati sullo
+     stesso valore, e al primo ritocco dell'uno si sarebbe spostato l'altro.
+     Il valore è quello campionato dallo swatch di Andrea (23/09): stessa tinta
+     della famiglia lime del brand (75°, come --am-edge) ma più chiara. Sul
+     gradiente della card fa 4,92:1 su #155CE3 e 11,6:1 su #102B63 — AA anche
+     se non fosse, com'è, testo a 30px. */
+  --am-pct:        #D3FE50;
   /* La parola evidenziata dell'headline hero: lime, non lo stesso verde
      dell'edge — così «today.» e «+18» non si confondono (ref-01). 14,3:1.
      Round 3: è anche il fill dell'unica CTA dell'hero; --am-lime-ink è il suo
@@ -302,6 +310,11 @@
   --am-live-dim:   rgba(245,196,0,0.16);
   --am-live-b:     rgba(122,90,0,0.34);
   --am-live-ink:   #1A1500;
+  /* In chiaro la card è carta bianca: #D3FE50 ci farebbe 1,1:1, cioè niente.
+     La percentuale scende di valore restando la stessa tinta — è esattamente
+     il gradino che il round 7 aveva già misurato per il lime (5,0:1 su carta),
+     quindi nessun colore nuovo da certificare. */
+  --am-pct:        #4C7A00;
   /* Round 7 — il lime #c8ff00 su carta fa 1,2:1: come TESTO non esiste. Su
      carta resta un fill (con inchiostro scuro) e, quando deve scrivere, scende
      di valore restando la stessa tinta. --am-lime-fill è il lime pieno per le

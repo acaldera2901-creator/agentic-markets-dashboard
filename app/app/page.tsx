@@ -5304,7 +5304,7 @@ function McCardPhoto({ sport, i, surface }: { sport: "football" | "tennis" | "wc
   );
 }
 
-function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, onAutoOpenClose, saved, onToggleWatch }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; onAutoOpenClose?: () => void; saved?: boolean; onToggleWatch?: (key: string) => void }) {
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, onAutoOpenClose, saved, onToggleWatch, headless }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; onAutoOpenClose?: () => void; saved?: boolean; onToggleWatch?: (key: string) => void; headless?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -5711,6 +5711,10 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
           scheda. Solo il ref: `role="button"`/`tabIndex`/`onClick` degli
           stessi `cardProps` farebbero dell'intera card un bersaglio, e la card
           nuova ne ha di proposito uno solo — la CTA. */}
+      {/* #RESTYLING-0921 round 11 — `headless`: la card non si disegna, resta
+          solo la sua scheda. È così che `MatchDetailHost` apre il dettaglio
+          SOPRA la vista dov'è l'utente, invece di montarci dietro il board. */}
+      {!headless && (
       <div ref={cardProps.ref} className="br-board-card">
         <BrPredictionCard
           data={cardData}
@@ -5729,6 +5733,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
           extra={cardData.confidence != null && !p.locked ? <ConfidenceIndicator score={cardData.confidence} /> : undefined}
         />
       </div>
+      )}
       {modalEnabled && (
         <PredictionDetailModal
           open={modalOpen}
@@ -5758,7 +5763,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 
 // #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
-export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, onAutoOpenClose, saved, onToggleWatch }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; onAutoOpenClose?: () => void; saved?: boolean; onToggleWatch?: (key: string) => void }) {
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, onAutoOpenClose, saved, onToggleWatch, headless }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; onAutoOpenClose?: () => void; saved?: boolean; onToggleWatch?: (key: string) => void; headless?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -6016,6 +6021,8 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   return (
     <>
+      {/* `headless`: vedi PredictionCard — solo la scheda, nessuna card. */}
+      {!headless && (
       <div ref={cardProps.ref} className="br-board-card">
         <BrPredictionCard
           data={cardData}
@@ -6032,6 +6039,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
           extra={cardData.confidence != null && !m.locked ? <ConfidenceIndicator score={cardData.confidence} /> : undefined}
         />
       </div>
+      )}
       {modalEnabled && (
         <PredictionDetailModal
           open={modalOpen}
@@ -9163,6 +9171,82 @@ function HomeLobby({
   );
 }
 
+/** #RESTYLING-0921 round 11 — LA SCHEDA SI APRE SOPRA LA VISTA DOV'È L'UTENTE.
+ *
+ * Al round 10 `SportsbookBoard` era rimasto come «ospite» della scheda: con un
+ * `autoOpenKey` la lobby si smontava e al suo posto si montava il board, che è
+ * proprio la pagina che quel round aveva eliminato. Dietro al velo sfocato del
+ * modal ricomparivano i filtri ALL/FOOTBALL/TENNIS, «Edge of the day» e il
+ * banner Weekly Pick: Andrea ci ha riconosciuto, giustamente, il sito vecchio.
+ *
+ * Il contenitore-ospite non serviva: serviva solo il posto dove i dati della
+ * scheda vengono risolti, e quel posto sono le due card. Quindi qui si monta
+ * LA SOLA card della partita chiesta, in `headless` — disegna la scheda e non
+ * disegna sé stessa — accanto alla vista, che resta quella vera e resta sotto.
+ *
+ * Se la chiave non trova la sua riga (link vecchio, partita fuori finestra,
+ * riga chiusa) non si rende nulla: l'utente resta sulla vista, che è l'unico
+ * comportamento sensato — prima restava sul board.
+ */
+function MatchDetailHost({
+  matchKey, predictions, tennisMatches, fpOdds,
+  onSelect, onBetNow, onGate, isFreeClient, isPremium, onClose,
+}: {
+  matchKey: string;
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  fpOdds: Record<string, FpOddsEntry>;
+  onSelect: (s: SlipSelection) => void;
+  onBetNow?: () => void;
+  onGate?: () => void;
+  isFreeClient: boolean;
+  isPremium?: boolean;
+  onClose: () => void;
+}) {
+  const indiceQuotePartner = useMemo(() => indicizzaPerGiorno(fpOdds), [fpOdds]);
+  const sep = matchKey.indexOf(":");
+  const sport = sep > 0 ? matchKey.slice(0, sep) : "";
+  const id = sep > 0 ? matchKey.slice(sep + 1) : "";
+
+  if (sport === "football") {
+    const p = predictions.find((x) => String(x.match_id) === id);
+    if (!p) return null;
+    return (
+      <PredictionCard
+        headless
+        p={p}
+        fp={abbinaQuotaPartner(p.home_team, p.away_team, p.kickoff, fpOdds, indiceQuotePartner).quota ?? undefined}
+        onSelect={onSelect}
+        onBetNow={onBetNow}
+        onGate={onGate}
+        isPremium={isPremium}
+        isFree={isFreeClient}
+        autoOpen
+        onAutoOpenClose={onClose}
+      />
+    );
+  }
+  if (sport === "tennis") {
+    const m = tennisMatches.find((x) => String(x.id) === id);
+    if (!m) return null;
+    return (
+      <TennisMatchCard
+        headless
+        m={m}
+        fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]}
+        onSelect={onSelect}
+        onBetNow={onBetNow}
+        onGate={onGate}
+        isPremium={isPremium}
+        isFree={isFreeClient}
+        autoOpen
+        onAutoOpenClose={onClose}
+      />
+    );
+  }
+  return null;
+}
+
 function UnifiedBetsTab({
   predictions,
   fpOdds,
@@ -9270,40 +9354,37 @@ function UnifiedBetsTab({
         mode={isLoggedIn ? "plan" : "auth"}
         onUnlock={() => onGate?.()}
       >
-        {/* Round 10 — il board NON è più una vista: è l'ospite della
-            scheda-dettaglio. Compare solo quando c'è una partita da aprire
-            (`autoOpenKey`), e sparisce appena la si chiude. Nessun link ci
-            porta più «e basta». */}
-        {autoOpenKey ? (
-          <SportsbookBoard
-            liveStrip={liveStrip}
+        {/* Round 11 — la vista NON si smonta mai per far posto alla scheda.
+            La lobby resta quella su cui l'utente sta (Home/Live/Calcio/Tennis)
+            ed è lei che si vede sfocata dietro il modal; la scheda la apre
+            `MatchDetailHost`, che monta solo la card della partita chiesta e
+            non disegna nulla di suo. Al round 10 al posto della lobby si
+            montava `SportsbookBoard` — cioè la pagina appena eliminata. */}
+        <HomeLobby
+          view={view}
+          isPro={!!isProClient}
+          predictions={predictions}
+          tennisMatches={tennisMatches}
+          query={query}
+          watchSaved={watchSaved}
+          onToggleWatch={onToggleWatch}
+          onOpenMatch={onOpenMatch}
+          onSeeAll={onSeeAll}
+          onGoHome={onGoHome}
+          onGoPro={onGoPro}
+        />
+        {autoOpenKey && (
+          <MatchDetailHost
+            matchKey={autoOpenKey}
             predictions={predictions}
-            fpOdds={fpOdds}
             tennisMatches={tennisMatches}
+            fpOdds={fpOdds}
             onSelect={onSelect}
             onBetNow={onBetNow}
             onGate={onGate}
             isFreeClient={isFreeClient}
             isPremium={isPremiumClient}
-            tennisIsPlaceholder={tennisIsPlaceholder}
-            onBannerCta={onBannerCta}
-            hitRate={hitRate}
-            autoOpenKey={autoOpenKey}
-            onAutoOpenClose={onAutoOpenClose}
-          />
-        ) : (
-          <HomeLobby
-            view={view}
-            isPro={!!isProClient}
-            predictions={predictions}
-            tennisMatches={tennisMatches}
-            query={query}
-            watchSaved={watchSaved}
-            onToggleWatch={onToggleWatch}
-            onOpenMatch={onOpenMatch}
-            onSeeAll={onSeeAll}
-            onGoHome={onGoHome}
-            onGoPro={onGoPro}
+            onClose={() => onAutoOpenClose?.()}
           />
         )}
       </LockedGate>
@@ -10713,11 +10794,13 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     rimasto al board generico, che non è più una destinazione.
                     Dalle viste di sport/live si torna alla Home; sulla Home non
                     c'è nulla da cui tornare. */}
-                {/* `autoOpenKey` nella condizione è la via d'uscita di scorta:
-                    se il link `?match=` punta a una riga che il board non può
-                    aprire (chiusa, o non più in finestra) la scheda non compare
-                    e senza questo bottone si resterebbe sul board. */}
-                {(deskView !== "home" || autoOpenKey) && (
+                {/* Round 11 — via `|| autoOpenKey`. Serviva quando aprire una
+                    partita SOSTITUIVA la vista col board: se il link `?match=`
+                    puntava a una riga non apribile si restava sul board senza
+                    uscita. Ora la vista sotto non si smonta mai, quindi una
+                    chiave che non trova la sua riga lascia semplicemente
+                    l'utente dov'è — e sulla Home non c'è nulla da cui tornare. */}
+                {deskView !== "home" && (
                   <button className="mb-entry" onClick={() => { setAutoOpenKey(null); setDeskView("home"); }}>
                     ← {pick5(uiLanguage, { it: "Torna alla home", en: "Back to home", es: "Volver al inicio", fr: "Retour à l'accueil", ru: "На главную" })}
                   </button>

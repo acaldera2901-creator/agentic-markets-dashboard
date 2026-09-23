@@ -473,13 +473,14 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   line-height: 1;
-  /* Round 10: la percentuale del modello è GIALLA, col token che il sito usa
-     già per live e starting-soon — così il numero parla la stessa lingua
-     degli altri dettagli accesi invece di essere un bianco in più. Sul blu
-     della card #FFE818 fa 4,58:1 sull'estremo chiaro (#155CE3) e 10,9:1 su
-     quello scuro (#102B63): AA anche se non fosse, com'è, testo grande.
-     In chiaro `--am-live` è già l'oro scuro #7A5A00 (8,4:1 sulla carta). */
-  color: var(--am-live);
+  /* Round 11: la percentuale ha il SUO token — --am-pct, #D3FE50, lo swatch
+     che Andrea ha mandato il 23/09. Al round 10 prendeva in prestito
+     --am-live, che sul sito significa «in corso / attenzione»: un valore solo
+     per due significati, e al primo ritocco dell'uno si spostava l'altro.
+     Sul blu della card fa 4,92:1 sull'estremo chiaro (#155CE3) e 11,6:1 su
+     quello scuro (#102B63) — AA anche se non fosse, com'è, testo a 30px.
+     In chiaro --am-pct è il lime scuro #4C7A00 (5,0:1 sulla carta). */
+  color: var(--am-pct);
 }
 .br-card__model[data-size="lg"] .br-card__model-n { font-size: 52px; }
 .br-card__model-pc { font-size: 0.5em; font-weight: 500; opacity: 0.8; margin-left: 1px; }
