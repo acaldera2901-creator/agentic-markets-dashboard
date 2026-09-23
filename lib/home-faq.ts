@@ -12,60 +12,71 @@
 // rinnovo. Non promettono nulla che il checkout non dica già.
 //
 // EN e IT sono complete; es/fr/ru ricadono su EN come il resto della copy v3.
+//
+// #RESTYLING-0921 — RISCRITTURA DI VOCE (Andrea, 23/09: «così è troppo AI»).
+// I FATTI sono identici a prima, riga per riga: fatturazione, crypto a 30
+// giorni, le quattro cose dentro una lettura, i fattori della deep analysis,
+// calcio+tennis con 1X2 e vincente match, il live come informazione e non
+// azione, il 71% come stima su molte situazioni simili, tre letture per sport
+// al giorno sul Free. È cambiato SOLO come sono dette. Il tic che si è tolto è
+// l'antitesi «X, non Y» ripetuta in cinque risposte su sei e la lunghezza
+// uniforme di ogni risposta: una FAQ scritta da una persona è corta dove la
+// risposta è corta. Se un giorno cambia un fatto, si cambia qui e basta —
+// questo file resta l'unica fonte, e il FAQPage JSON-LD la legge da qui.
 
 export type FaqItem = readonly [question: string, answer: string];
 
 export const HOME_FAQ = {
   en: [
     [
-      "Is billing monthly or annual, and what happens if I cancel?",
-      "Base and Pro are card subscriptions billed monthly or annually. They renew automatically and you can cancel anytime from your account: once cancelled, nothing further is charged. Paying in crypto works differently — a one-time payment for 30 days with no auto-renewal. When it runs out, you buy again only if you want to.",
+      "Monthly or annual, and what happens if I cancel?",
+      "Your choice. Base and Pro are card subscriptions, monthly or annual, and they renew on their own until you stop them. You cancel from your account whenever you like, and from that moment we charge you nothing. Crypto works differently: you pay once, you get 30 days, nothing renews. When the 30 days run out, you buy again or you don’t.",
     ],
     [
-      "What exactly is in a reading, and what does Pro’s deep analysis add?",
-      "Every reading shows four things, time-stamped before kick-off: the market-implied probability (the odds converted into a percentage), the model’s calibrated probability, the edge between the two, and the reasoning in plain words. Deep analysis, on Pro, opens the factors behind that reasoning on every match card — form, expected goals, injuries, Elo, serve and return, head-to-head, surface.",
+      "What’s actually in a reading, and what does Pro’s deep analysis add?",
+      "Four things, all stamped before kick-off: what the market thinks (the odds turned into a percentage), what our model thinks (its calibrated probability), the gap between the two, and the reasoning written out in plain words. Deep analysis is the layer underneath that reasoning, and it comes with Pro: on any match card you can open the factors the model actually weighed — form, expected goals, injuries, Elo, serve and return numbers, head-to-head, surface.",
     ],
     [
-      "Which sports and markets does BetRedge cover?",
-      "Football and tennis. In football the reading is on the match result (home, draw, away); in tennis on the match winner. Coverage follows the competitions on the board each day and is listed there — no other sports for now.",
+      "Which sports and markets do you cover?",
+      "Football and tennis, and for now that’s where it stops. In football we read the match result: home, draw, away. In tennis, the winner of the match. Which competitions are in depends on the day, and the board tells you which ones are there.",
     ],
     [
-      "What does “live” mean in practice?",
-      "On the Live Probability Board the model’s probability for a match updates as the state of the match changes — score, time, momentum — so you see the same reading moving in real time. It is information, not action: nothing is placed or executed for you. Live readings are part of the Pro plan.",
+      "What does “live” actually mean here?",
+      "It means the number moves while the match does. On the Live Probability Board the model re-reads a game as the score, the clock and the momentum change, so you watch the same probability shift in real time. At no point is anything placed or executed for you — you are reading a screen. Live comes with Pro.",
     ],
     [
       "Does BetRedge place bets, need a bookmaker account, or promise a return?",
-      "No to all three. BetRedge is a probability engine, not a bookmaker or an exchange: it never places a bet, never holds your money and does not require an account anywhere else. A model probability is an estimate — a 71% reading means the model would expect that outcome about 71 times in 100 across many similar situations, not that this match is certain. No return is promised, and the public record shows how past readings settled, not a forecast.",
+      "No, no and no. We are a probability engine. We don’t take bets, we never touch your money, and you don’t need an account anywhere else to use us. And a probability is an estimate, never a verdict: when the model says 71%, it means that across many situations resembling this one it would expect that outcome around 71 times in 100 — about this particular match it does not know. We promise no return of any kind. The public record shows how past readings settled; it says nothing about the next one.",
     ],
     [
       "How am I meant to use it?",
-      "Open the board, pick a fixture and read it in order — market, model, edge, why — then check the public record to see how earlier readings settled. Whatever you decide to do with that, you decide it yourself. Start free with three readings per sport a day; move to Base or Pro when you want the whole board.",
+      "Open the board, pick a match, and read it in the order it is written: market, model, edge, why. Then look at the public record to see how earlier readings settled, so you know what kind of thing you are reading. What you do after that is yours, and nobody here decides it for you. Free gives you three readings per sport a day; Base and Pro open the rest of the board.",
     ],
   ],
   it: [
     [
-      "La fatturazione è mensile o annuale, e cosa succede se disdico?",
-      "Base e Pro sono abbonamenti con carta, mensili o annuali. Si rinnovano automaticamente e puoi disdire quando vuoi dal tuo account: dopo la disdetta non viene addebitato più nulla. Il pagamento in crypto funziona diversamente — un pagamento singolo per 30 giorni, senza rinnovo automatico. Alla scadenza ricompri solo se vuoi.",
+      "Mensile o annuale, e cosa succede se disdico?",
+      "Come preferisci. Base e Pro sono abbonamenti con carta, mensili o annuali, e si rinnovano da soli finché non li fermi. La disdetta la fai dal tuo account quando vuoi, e da quel momento non ti addebitiamo più niente. Le crypto funzionano in un altro modo: paghi una volta, hai 30 giorni, non si rinnova nulla. Quando scadono, o ricompri o no.",
     ],
     [
-      "Cosa c’è esattamente in una lettura, e cosa aggiunge la deep analysis di Pro?",
-      "Ogni lettura mostra quattro cose, con timestamp prima del fischio: la probabilità implicita del mercato (la quota convertita in percentuale), la probabilità calibrata del modello, l’edge tra le due e il ragionamento in parole semplici. La deep analysis, su Pro, apre i fattori dietro quel ragionamento su ogni scheda — forma, gol attesi, infortuni, Elo, servizio e risposta, scontri diretti, superficie.",
+      "Cosa c’è davvero dentro una lettura, e cosa aggiunge la deep analysis di Pro?",
+      "Quattro cose, tutte registrate prima del fischio: cosa pensa il mercato (la quota convertita in percentuale), cosa pensa il nostro modello (la sua probabilità calibrata), la distanza fra le due, e il ragionamento scritto in parole normali. La deep analysis è lo strato sotto quel ragionamento, e arriva con Pro: da qualsiasi scheda apri i fattori che il modello ha davvero pesato — forma, gol attesi, infortuni, Elo, numeri di servizio e risposta, scontri diretti, superficie.",
     ],
     [
-      "Quali sport e mercati copre BetRedge?",
-      "Calcio e tennis. Nel calcio la lettura è sull’esito della partita (1, X, 2); nel tennis sul vincitore del match. La copertura segue le competizioni presenti sul board ogni giorno ed è elencata lì — per ora nessun altro sport.",
+      "Quali sport e mercati coprite?",
+      "Calcio e tennis, e per ora finisce lì. Nel calcio leggiamo l’esito della partita: 1, X, 2. Nel tennis, chi vince il match. Quali competizioni ci siano dipende dal giorno, e te lo dice il board.",
     ],
     [
-      "Cosa significa «live» in pratica?",
-      "Sul board di probabilità live la probabilità del modello per una partita si aggiorna al cambiare dello stato del match — punteggio, minuto, inerzia — così vedi la stessa lettura muoversi in tempo reale. È informazione, non azione: nulla viene piazzato o eseguito per te. Le letture live fanno parte del piano Pro.",
+      "Cosa vuol dire «live», in concreto?",
+      "Vuol dire che il numero si muove mentre si muove la partita. Sul board di probabilità live il modello rilegge il match mentre cambiano punteggio, minuto e inerzia, e tu vedi la stessa probabilità spostarsi in tempo reale. In nessun momento viene piazzato o eseguito qualcosa per te: stai leggendo uno schermo. Il live arriva con Pro.",
     ],
     [
       "BetRedge piazza scommesse, richiede un conto bookmaker o promette un rendimento?",
-      "No a tutte e tre. BetRedge è un motore di probabilità, non un bookmaker né un exchange: non piazza mai una scommessa, non custodisce il tuo denaro e non richiede un conto altrove. Una probabilità del modello è una stima — una lettura al 71% significa che il modello si aspetterebbe quell’esito circa 71 volte su 100 in molte situazioni simili, non che questa partita sia certa. Nessun rendimento è promesso, e il registro pubblico mostra come si sono chiuse le letture passate, non una previsione.",
+      "No, no e no. Siamo un motore di probabilità. Non accettiamo scommesse, non tocchiamo mai i tuoi soldi, e per usarci non ti serve un conto da nessun’altra parte. E una probabilità è una stima, mai una sentenza: quando il modello dice 71%, sta dicendo che su molte situazioni simili a questa si aspetterebbe quell’esito circa 71 volte su 100 — su questa partita qui non lo sa. Non promettiamo nessun rendimento. Il registro pubblico mostra come si sono chiuse le letture passate, e sulla prossima non dice niente.",
     ],
     [
       "Come dovrei usarlo?",
-      "Apri il board, scegli una partita e leggila in ordine — mercato, modello, edge, perché — poi controlla nel registro pubblico come si sono chiuse le letture precedenti. Qualunque cosa decidi di farne, la decidi tu. Inizia gratis con tre letture per sport al giorno; passa a Base o Pro quando vuoi tutto il board.",
+      "Apri il board, scegli una partita e leggila nell’ordine in cui è scritta: mercato, modello, edge, perché. Poi guarda il registro pubblico per vedere come si sono chiuse le letture precedenti, così sai che cosa stai leggendo. Cosa fai dopo lo decidi tu, e nessuno qui lo decide al posto tuo. Il Free ti dà tre letture per sport al giorno; Base e Pro aprono il resto del board.",
     ],
   ],
 } as const satisfies Record<string, readonly FaqItem[]>;

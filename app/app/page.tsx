@@ -8622,12 +8622,18 @@ function HomeLobby({
       accent={pick5(lang, {
         it: "matchday.", en: "matchday.", es: "matchday.", fr: "matchday.", ru: "матчдей.",
       })}
+      /* Round 13 — la spalla non è più la tripletta di frammenti («Le partite.
+         Le probabilità. Il contesto per leggerle.»): era la cadenza che fa
+         suonare una pagina scritta a macchina, ed è così che Andrea l'ha letta
+         il 23/09. Dice la stessa identica cosa nominando ciò che sulla pagina
+         c'è davvero — le partite del board, il numero, e il perché di quel
+         numero — invece di tre sostantivi in fila. */
       note={pick5<string[]>(lang, {
-        it: ["Le partite. Le probabilità.", "Il contesto per leggerle."],
-        en: ["The matches. The probabilities.", "The context to read them."],
-        es: ["Los partidos. Las probabilidades.", "El contexto para leerlas."],
-        fr: ["Les matchs. Les probabilités.", "Le contexte pour les lire."],
-        ru: ["Матчи. Вероятности.", "Контекст, чтобы их прочесть."],
+        it: ["Ogni partita sul board,", "il numero e il perché."],
+        en: ["Every match on the board,", "the number and the why."],
+        es: ["Cada partido del board,", "el número y el porqué."],
+        fr: ["Chaque match du board,", "le chiffre et le pourquoi."],
+        ru: ["Каждый матч на борде,", "число и почему именно оно."],
       })}
       hint={pick5(lang, {
         it: "Analisi probabilistica · nessuna garanzia di profitto · 18+",
@@ -8664,12 +8670,16 @@ function HomeLobby({
         fr: ["Lisez", "le", "jeu."],
         ru: ["Читай", "игру."],
       })}
+      /* Round 13 — «La tua prossima lettura parte da qui» era la formula
+         «il tuo X parte da qui»: non dice niente, e su un prodotto di
+         scommesse è a una parola di distanza da una promessa che non
+         possiamo fare. Al suo posto ciò che la card apre davvero. */
       sub={pick5(lang, {
-        it: "La tua prossima lettura parte da qui.",
-        en: "Your next read starts here.",
-        es: "Tu próxima lectura empieza aquí.",
-        fr: "Votre prochaine lecture commence ici.",
-        ru: "Ваш следующий разбор начинается здесь.",
+        it: "Tutto il calcio sul board di oggi.",
+        en: "Every football match on today’s board.",
+        es: "Todo el fútbol del board de hoy.",
+        fr: "Tout le football du board du jour.",
+        ru: "Весь футбол на сегодняшнем борде.",
       })}
       cta={pick5(lang, {
         it: "Esplora il calcio", en: "Explore football", es: "Explora el fútbol",
