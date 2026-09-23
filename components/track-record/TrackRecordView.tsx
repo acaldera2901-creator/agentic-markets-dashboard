@@ -72,6 +72,13 @@ const CSS = `
 .tr-root .tr-score .cn{font-size:11px;color:var(--mut2)}
 .tr-root .tr-empty{text-align:center;color:var(--mut2);font-family:var(--font-display);font-size:13px;padding:20px}
 @media(max-width:760px){.tr-root .tr-hbot{flex-direction:column}.tr-root .tr-lrow{grid-template-columns:60px 1fr 64px}.tr-root .tr-lrow .comp,.tr-root .tr-lrow .pr{display:none}}
+/* #MOBILE-0923 — i filtri sport della Track Record (All · Football · Tennis)
+   misuravano 44×28, 97×28 e 84×28 a 390px: 16px sotto il pavimento di 44
+   dichiarato in app/mobile.css §2. Il pavimento non li raggiungeva perché
+   questo CSS è iniettato dal componente, quindi arriva DOPO ogni foglio
+   importato. Si alza solo .btn: le altre .tr-pill sono etichette, non
+   bersagli, e ingrandirle gonfierebbe la riga senza motivo. */
+@media(max-width:640px){.tr-root .tr-pill.btn{min-height:44px}}
 `;
 
 export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en" }) {
