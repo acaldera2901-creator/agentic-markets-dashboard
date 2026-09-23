@@ -9,9 +9,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { createPortal } from "react-dom";
 import { MarketIcon } from "./MarketIcon";
 import { MatchHeader } from "./ui/MatchHeader";
-import { ProbabilityComparison } from "./ui/ProbabilityComparison";
 import { ConfidenceIndicator } from "./ui/ConfidenceIndicator";
 import { IconLock } from "./ui/icons";
+import { formatPct } from "../lib/ui/prediction-card";
 import { partnerLogoByName, sortBooksForMenu } from "../lib/partners";
 import { trackEvent } from "../lib/track-event";
 import { joinFpWithModel } from "../lib/market-join";
@@ -48,10 +48,15 @@ export type MdsGroup = {
   chips: MdsChip[];
   note?: string;
 };
-/** #RESTYLING-0921 — la testa della match page secondo il brief: sport/lega/
- *  quando, le due squadre grandi, il pick e la riga MODEL | MARKET | EDGE in
- *  evidenza. TUTTO OPZIONALE: i chiamanti che non la passano (WcBoard,
- *  weekly-model-case) rendono la scheda esattamente come prima. */
+/** #RESTYLING-0921 — la testa della match page: sport/lega/quando, le due
+ *  squadre grandi, il pick e LA NOSTRA percentuale in evidenza. TUTTO
+ *  OPZIONALE: i chiamanti che non la passano (WcBoard, weekly-model-case)
+ *  rendono la scheda esattamente come prima.
+ *
+ *  Round 13: `marketPct` non è più un campo della testa. Serviva solo alla riga
+ *  MODEL | MARKET | EDGE, che non esiste più; l'edge continua ad arrivare già
+ *  calcolato dal chiamante (`edgePct`), e il confronto col mercato si legge in
+ *  «Why the model likes this pick». */
 export type MdsHead = {
   sport: string;
   league: string | null;
@@ -61,7 +66,6 @@ export type MdsHead = {
   score?: { home: number; away: number } | null;
   pick: string | null;
   modelPct: number | null;
-  marketPct: number | null;
   edgePct: number | null;
   confidence?: number | null;
   locked?: boolean;
@@ -435,15 +439,24 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
             actions={data.head.actions}
           />
           <div className="br-md__numbers">
-            {/* #RESTYLING-0921 round 2: senza `locked` — model, mercato ed edge
-                sono veri e visibili anche da free; dietro il piano resta la
-                pick (MatchHeader) e l'analisi profonda qui sotto. */}
-            <ProbabilityComparison
-              modelPct={data.head.modelPct}
-              marketPct={data.head.marketPct}
-              edgePct={data.head.edgePct}
-              size="lg"
-            />
+            {/* #RESTYLING-0921 round 13 — UN NUMERO SOLO, IL NOSTRO.
+                Fino al round 12 qui c'era il riquadro MODEL | MARKET | EDGE con
+                la barra di confronto. Andrea, sulla scheda aperta: «non mi piace
+                quel rettangolo che fa vedere modello vs mercato, perché a volte
+                siamo sotto il mercato — enfatizza di più solo la percentuale del
+                vincitore». Quindi la testa porta la stessa cosa della card in
+                griglia: la probabilità del modello per il pick, grande, in
+                --am-pct. Il confronto col mercato NON sparisce dal prodotto —
+                resta scritto in «Why the model likes this pick», dove la riga
+                Market lo dice in entrambe le direzioni (lib/ui/why-reasons.ts),
+                cioè dove c'è il tempo di leggerlo invece di un numero che urla. */}
+            <p className="br-card__model br-md__pct" data-size="lg">
+              <span className="br-card__model-n">
+                {formatPct(data.head.modelPct)}
+                {data.head.modelPct != null && <span className="br-card__model-pc">%</span>}
+              </span>
+              <span className="br-label">Our model</span>
+            </p>
             {data.head.confidence != null && !data.head.locked && (
               <ConfidenceIndicator score={data.head.confidence} layout="stack" showPercent />
             )}

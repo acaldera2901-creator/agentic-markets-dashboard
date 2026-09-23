@@ -8,7 +8,6 @@ export { Sheet } from "./Sheet";
 // #RESTYLING-0921 — design system del redesign (classi br-* in app/design-system.css)
 export { PredictionCard, type PredictionCardProps, type PredictionCardVariant, type PredictionCardBadgeKind } from "./PredictionCard";
 export { MatchHeader } from "./MatchHeader";
-export { ProbabilityComparison, type ProbabilitySize } from "./ProbabilityComparison";
 export { EdgeBadge, type EdgeBadgeSize } from "./EdgeBadge";
 export { ConfidenceIndicator } from "./ConfidenceIndicator";
 export { SportChip, sportLabel } from "./SportChip";

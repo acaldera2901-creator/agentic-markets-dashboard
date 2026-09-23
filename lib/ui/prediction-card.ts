@@ -1,7 +1,7 @@
 // lib/ui/prediction-card.ts — #RESTYLING-0921
 //
 // La grammatica numerica della PredictionCard, fuori dal JSX così è testabile
-// e condivisa da EdgeBadge, ProbabilityComparison, MatchHeader.
+// e condivisa da EdgeBadge, PredictionCard, MatchHeader.
 //
 // Convenzione del prodotto (lib/unified-adapter.ts): l'edge è in PUNTI
 // percentuali = probabilità modello − probabilità implicita del mercato, e
@@ -52,9 +52,8 @@ export function formatPct(pct: number | null | undefined): string {
  *
  *  Con p=0.64 e odds=1.92: value% = 22.9, model−market = 12.0. Una card che
  *  scrive «MODEL 64 · MARKET 52 · EDGE +22.9» si contraddice da sola in due
- *  secondi — ed è esattamente il tempo che il brief le concede. Anche la barra
- *  di ProbabilityComparison colora il gap `model − market`: col value% il
- *  numero e la barra direbbero due cose diverse.
+ *  secondi — ed è esattamente il tempo che il brief le concede. Vale ancora
+ *  per l'EdgeBadge accanto al pick e per la riga «Market» del «perché».
  *
  *  Il value resta il numero giusto ALTROVE (il board lo mostra come «value»):
  *  qui vale la definizione che rende leggibile il confronto affiancato.

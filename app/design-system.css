@@ -157,68 +157,6 @@
 .br-edge__pc { font-size: 0.6em; font-weight: 500; opacity: 0.8; }
 .br-edge[data-tone="locked"] svg { align-self: center; }
 
-/* ── ProbabilityComparison: MODEL | MARKET | EDGE + barra del gap ─────── */
-.br-prob {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: var(--am-s-3);
-  row-gap: var(--am-s-2);
-  align-items: end;
-}
-.br-prob__cell {
-  display: flex;
-  flex-direction: column;
-  gap: var(--am-s-1);
-  min-width: 0;
-}
-.br-prob__num {
-  font-family: var(--am-font-num);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: var(--am-text);
-  white-space: nowrap;
-}
-.br-prob[data-size="lg"] .br-prob__num { font-size: var(--am-num-lg); }
-.br-prob[data-size="md"] .br-prob__num { font-size: var(--am-num-md); }
-.br-prob[data-size="sm"] .br-prob__num { font-size: var(--am-num-sm); }
-/* Il mercato è il dato secondario: azzurro, come nel brief. */
-.br-prob__cell[data-role="market"] .br-prob__num { color: var(--am-sky); }
-.br-prob__cell[data-role="market"][data-empty="true"] .br-prob__num { color: var(--am-muted-2); font-weight: 500; }
-.br-prob__pc { font-size: 0.6em; font-weight: 500; opacity: 0.8; margin-left: 1px; }
-
-/* Barra: track neutro, fill mercato azzurro, tacca modello, gap colorato.
-   È il «perché?» reso visibile senza una parola. */
-.br-prob__bar {
-  grid-column: 1 / -1;
-  position: relative;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--am-panel-3);
-  overflow: visible;
-  margin-top: var(--am-s-1);
-}
-.br-prob__bar-market {
-  position: absolute; inset: 0 auto 0 0;
-  border-radius: 2px;
-  background: var(--am-sky);
-  opacity: 0.55;
-}
-.br-prob__bar-gap {
-  position: absolute; top: 0; bottom: 0;
-  border-radius: 2px;
-}
-.br-prob__bar-gap[data-tone="pos"] { background: var(--am-edge); opacity: 0.85; }
-.br-prob__bar-gap[data-tone="neg"] { background: var(--am-negative); opacity: 0.7; }
-.br-prob__bar-model {
-  position: absolute; top: -3px;
-  width: 2px; height: 10px;
-  margin-left: -1px;
-  border-radius: 1px;
-  background: var(--am-text);
-}
-
 /* ── ConfidenceIndicator: secondario per definizione, quindi niente verde ── */
 .br-conf {
   display: flex;
@@ -567,14 +505,32 @@
   flex-wrap: wrap;
 }
 .br-mh__kicker .br-card__side { margin-left: auto; }
+/* #RESTYLING-0921 round 13 — LE DUE SQUADRE SI IMPILANO, SEMPRE.
+   Fino al round 12 erano tre colonne affiancate (`1fr auto 1fr`) e il divisore
+   in mezzo. Con nomi lunghi il testo FINIVA SOPRA il «vs» e sopra l'altra
+   squadra: nello screenshot di Andrea un doppio di tennis si leggeva
+   «…Bayerlova/JasmijBrooks/Lizette». Misurato a 1280 dark sulla scheda:
+   home 431→692, mid 612→668, away 684→849 — tre scatole che si sovrappongono.
+
+   La causa non era il wrap ma il MINIMO: `.br-mh__name` è un flex item, quindi
+   `min-width: auto`, quindi non può stringersi sotto la sua min-content; e
+   `overflow-wrap: break-word` NON abbassa la min-content (solo `anywhere` lo
+   fa, e spezza a metà parola — bocciato al round precedente). Un token lungo
+   come «Bayerlova/Jasmijn» sfondava la colonna e sconfinava nelle altre.
+
+   Le colonne affiancate su una scheda larga 468px fissi non reggono nomi veri:
+   impilare è la forma giusta, non un ripiego per telefoni — era già così sotto
+   i 640px. Il «vs» sta su una riga sua, con un filo che lo separa davvero, e
+   ogni nome ha tutta la larghezza. Sovrapporsi diventa impossibile per
+   costruzione, non per un valore azzeccato. */
 .br-mh__teams {
   margin: 0;              /* è un h1: via il margine di default */
   font-size: inherit;
   font-weight: inherit;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: var(--am-s-4);
+  gap: var(--am-s-3);
 }
 /* Il nome sta accanto al totem finché ci sta; quando non ci sta più va a capo
    INTERO sotto il totem. Senza questo wrap la colonna stringe il nome e il
@@ -587,7 +543,6 @@
   min-width: 0;
   flex-wrap: wrap;
 }
-.br-mh__team[data-side="away"] { flex-direction: row-reverse; text-align: right; }
 .br-mh__name {
   font-family: var(--am-font-ui);
   font-size: 28px;
@@ -595,6 +550,10 @@
   letter-spacing: -0.015em;
   line-height: 1.1;
   color: var(--am-text);
+  /* Rete di sicurezza: senza `min-width: 0` il nome resta incomprimibile e
+     torna a sfondare (vedi sopra). Con lo stack non serve quasi mai, ma un
+     token unico più largo della scheda esiste e va spezzato invece di uscire. */
+  min-width: 0;
   /* `anywhere` spezzava dentro la parola appena la colonna stringeva: mai. Si
      rompe solo una parola che da sola non entra nemmeno su una riga tutta sua. */
   overflow-wrap: break-word;
@@ -603,10 +562,18 @@
 }
 .br-mh__mid {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: var(--am-s-1);
-  min-width: 56px;
+  gap: var(--am-s-3);
+  min-width: 0;
+}
+/* Il filo che porta il «vs» a fondo riga: separa le due squadre senza
+   aggiungere un altro elemento al markup. */
+.br-mh__mid::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--am-line);
 }
 .br-mh__vs {
   font-family: var(--am-font-num);
@@ -657,10 +624,8 @@
   .br-card[data-variant="featured"] { padding: var(--am-s-4); }
   .br-card__teams { font-size: 15px; }
   .br-card[data-variant="featured"] .br-card__teams { font-size: 18px; }
-  /* Model / Market / Edge (scheda partita) restano tre colonne, nello stesso
-     ordine. Solo più piccoli. */
-  .br-prob[data-size="lg"] .br-prob__num, .br-edge[data-size="lg"] { font-size: var(--am-num-md); }
-  .br-prob[data-size="md"] .br-prob__num, .br-edge[data-size="md"] { font-size: 20px; }
+  .br-edge[data-size="lg"] { font-size: var(--am-num-md); }
+  .br-edge[data-size="md"] { font-size: 20px; }
   /* Il numero della card resta il protagonista anche a 390px, ma 40px accanto
      a un nome squadra da 15px sbilancia la card: 32. */
   .br-card__model-n { font-size: var(--am-num-lg); }
@@ -668,9 +633,8 @@
   .br-watch { width: 40px; height: 40px; }
   .br-cta { min-height: 40px; }
   .br-card__foot { flex-wrap: wrap; }
-  .br-mh__teams { grid-template-columns: 1fr; gap: var(--am-s-3); }
-  .br-mh__team[data-side="away"] { flex-direction: row; text-align: left; }
-  .br-mh__mid { flex-direction: row; justify-content: flex-start; }
+  /* Lo stack delle squadre è ora il default (vedi .br-mh__teams): qui resta
+     solo la misura del nome. */
   .br-mh__name { font-size: 22px; }
 }
 
@@ -1024,7 +988,17 @@
   border: 1px solid var(--am-line);
   border-radius: var(--am-r-card);
 }
-.br-md__numbers > .br-prob { flex: 1 1 260px; }
+/* #RESTYLING-0921 round 13 — un numero solo, il nostro, grande. Riusa
+   `.br-card__model` (stessa famiglia, stessa misura lg, stesso --am-pct della
+   card in griglia) e cambia solo l'asse: l'etichetta va SOTTO il numero, che
+   qui è il protagonista del blocco e non condivide più la riga con altri due. */
+.br-md__pct {
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.br-md__pct .br-card__model-n { line-height: 0.95; }
 
 .br-md__sec { display: flex; flex-direction: column; gap: var(--am-s-3); }
 
@@ -3123,11 +3097,18 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   color: var(--am-muted);
 }
 .br-row__when span { display: block; }
+/* #RESTYLING-0921 round 13 — «anche esternamente alle schede prediction
+   enfatizziamo il nome e la percentuale» (Andrea). Questa riga è la vista più
+   dimessa in cui compare una partita: il nome stava a 14/600, cioè meno del
+   nome sulla card (16/600), e la percentuale era la SOLA cosa grande — ma in
+   --am-sky, che in questo design system è il colore del MERCATO. Un numero
+   nostro colorato da mercato dice la cosa sbagliata a chi scorre. */
 .br-row__teams {
   min-width: 0;
   font-family: var(--am-font-ui);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.008em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3136,7 +3117,7 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   margin: 0 10px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--am-muted);
+  color: var(--am-muted-2);
 }
 .br-row__league {
   font-family: var(--am-font-ui);
@@ -3147,11 +3128,13 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   white-space: nowrap;
 }
 .br-row__prob { font-family: var(--am-font-hud); line-height: 1.1; }
+/* La percentuale prende il token della card: è lo stesso dato, quindi lo
+   stesso colore ovunque compaia. */
 .br-row__prob b {
   display: block;
-  font-size: 27px;
+  font-size: 30px;
   font-weight: 700;
-  color: var(--am-sky);
+  color: var(--am-pct);
 }
 .br-row__prob small {
   display: block;
@@ -3304,7 +3287,8 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   .br-field__icon { right: 13px; top: 13px; width: 42px; height: 42px; }
   .br-row { grid-template-columns: 78px minmax(0, 1fr) 62px 12px; gap: 12px; padding: 13px 14px; }
   .br-row__league { display: none; }
-  .br-row__prob b { font-size: 22px; }
+  .br-row__teams { font-size: 15px; }
+  .br-row__prob b { font-size: 24px; }
   .br-dd__body { flex-wrap: wrap; gap: 8px 12px; }
 }
 

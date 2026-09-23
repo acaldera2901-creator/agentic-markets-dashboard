@@ -9071,14 +9071,21 @@ button:disabled {
 .mds-pickbadge { position: absolute; top: -8px; left: 10px; display: inline-flex; align-items: center; gap: 3px; font-family: var(--mds-mono); font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-coral-ink); background: var(--am-coral); border-radius: 999px; padding: 2px 7px; }
 .mds-pickbadge .mds-ico { width: 9px; height: 9px; color: #fff; }
 .mds-tick { position: absolute; top: 8px; right: 8px; width: 15px; height: 15px; color: var(--am-coral); }
-.mds-cl { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 16px; }
+/* #RESTYLING-0921 round 13 — le righe mercato sono l'altra vista compatta in
+   cui compaiono un NOME (l'esito: una squadra, un marcatore) e LA NOSTRA
+   percentuale. Il nome stava a 12/600, cioè più piccolo della quota che gli
+   sta accanto; e la percentuale era --am-coral, lo stesso colore con cui la
+   chip dice «selezionata» — il numero spariva dentro lo stato del bottone.
+   Nome più leggibile, percentuale nel token del dato (--am-pct), come sulla
+   card e in testa alla scheda. */
+.mds-cl { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 16px; }
 .mds-cm { display: flex; align-items: baseline; gap: 7px; }
-/* #GOLIVE: la NOSTRA prediction è protagonista (verde BetRedge, marchio R², più grande
-   della quota). La quota FortunePlay è secondaria. Quando non c'è quota, la % è l'unico hero. */
-.mds-cm .mds-p { font-family: var(--mds-mono); font-size: 16px; color: var(--am-coral); font-weight: 840; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 4px; }
-.mds-cm .mds-p .mds-pmark { font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 4px; background: color-mix(in srgb, var(--am-coral) 18%, transparent); color: var(--am-coral); line-height: 1; }
+/* #GOLIVE: la NOSTRA prediction è protagonista (marchio R², più grande della
+   quota). La quota FortunePlay è secondaria. Senza quota, la % è l'unico hero. */
+.mds-cm .mds-p { font-family: var(--mds-mono); font-size: 17px; color: var(--am-pct); font-weight: 840; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 4px; }
+.mds-cm .mds-p .mds-pmark { font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 4px; background: color-mix(in srgb, var(--am-pct) 18%, transparent); color: var(--am-pct); line-height: 1; }
 .mds-cm .mds-q { font-family: var(--mds-mono); font-size: 12.5px; font-weight: 720; letter-spacing: -0.01em; color: var(--am-muted); margin-left: auto; }
-.mds-cm.noodds .mds-p { font-size: 17px; }
+.mds-cm.noodds .mds-p { font-size: 18px; }
 .mds-cm .mds-cv { font-family: var(--mds-mono); font-size: 9.5px; font-weight: 800; color: var(--am-coral); }
 .mds-note { font-family: var(--mds-mono); font-size: 9.5px; color: var(--am-muted-2); margin: 9px 0 0; line-height: 1.5; }
 /* Altri mercati FortunePlay (collassabile) */

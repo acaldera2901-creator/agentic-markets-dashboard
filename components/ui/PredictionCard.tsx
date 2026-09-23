@@ -7,11 +7,13 @@
 // #RESTYLING-0921 round 4 — LA CARD MOSTRA UN SOLO NUMERO, IL NOSTRO.
 // Fino al round 3 c'era la riga MODEL | MARKET | EDGE con la barra di
 // confronto: giudicata «troppo confusionaria» a livello 1 — tre dati da
-// mettere in relazione mentre si scorre. Il confronto NON sparisce dal
-// prodotto, cambia posto: vive al livello 2, nella scheda partita
-// (components/MatchDetailSheet.tsx → `.br-md__numbers`, ProbabilityComparison
-// size="lg"), dove c'è il tempo di leggerlo. Qui resta la probabilità del
-// modello, grande, protagonista.
+// mettere in relazione mentre si scorre. Qui resta la probabilità del modello,
+// grande, protagonista.
+//
+// Round 13: la stessa riga è stata tolta anche dal livello 2 (la scheda
+// partita), che adesso ripete questo trattamento — numero grande in --am-pct,
+// «Our model» sotto. Il confronto col mercato non sparisce dal prodotto: si
+// legge in «Why the model likes this pick», a parole, in entrambe le direzioni.
 //
 // Varianti:
 //   compact        la card della lobby, CTA come link testuale (royal)

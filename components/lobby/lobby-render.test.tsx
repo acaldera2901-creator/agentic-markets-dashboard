@@ -3,8 +3,8 @@
 // davvero i numeri giusti. È il test che avrebbe preso l'edge sbagliato: una
 // schermata che scrive «MODEL 64 · MARKET 52 · EDGE +22.9» type-checka
 // benissimo. Round 4: quella riga non sta più sulla card ma nella scheda
-// partita, e il test l'ha seguita là — vedi «i numeri della card arrivano
-// interi alla scheda», in fondo.
+// partita. Round 13: non sta più nemmeno lì — ovunque si mostra un numero si
+// mostra IL NOSTRO, e il confronto col mercato si legge a parole nel «perché».
 import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { LobbySection } from "./LobbySection";
@@ -95,12 +95,12 @@ describe("scheda partita con la testa nuova", () => {
     },
   };
 
-  it("mette in testa squadre, pick e la riga Model/Market/Edge", () => {
+  it("mette in testa squadre, pick e LA NOSTRA percentuale", () => {
     render(<MatchDetailSheet hideBookLinks data={{
       ...base,
       head: {
         sport: "football", league: "Premier League", kickoffLabel: "Today · 20:45",
-        pick: "Arsenal to win", modelPct: 64, marketPct: 52, edgePct: 11.9, confidence: 74,
+        pick: "Arsenal to win", modelPct: 64, edgePct: 11.9, confidence: 74,
       },
       why: footballWhyReasons({
         home: "Arsenal", away: "Chelsea", formHome: "WWDLW", formAway: "LDWLL",
@@ -110,34 +110,40 @@ describe("scheda partita con la testa nuova", () => {
     }} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Arsenal");
-    // L'edge compare due volte di proposito: accanto al pick nella testa, e
-    // nella riga Model | Market | Edge. Devono dire lo stesso numero.
-    expect(screen.getAllByText("+11.9")).toHaveLength(2);
+    // #RESTYLING-0921 round 13 — l'edge compare UNA volta sola, accanto al pick.
+    // La seconda occorrenza era la cella EDGE del riquadro Model/Market/Edge,
+    // che non esiste più.
+    expect(screen.getAllByText("+11.9")).toHaveLength(1);
     expect(screen.getByRole("heading", { name: /Why the model likes this pick/i })).toBeInTheDocument();
     expect(screen.getByText(/Last 5: Arsenal 3W-1D-1L/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Recent form/i })).toBeInTheDocument();
   });
 
-  // #RESTYLING-0921 round 4 — il confronto si è spostato QUI, e con lui il
-  // test che difendeva il numero: l'edge è la differenza fra i due numeri che
-  // si vedono (64 − 52 = +11.9), non il value p·odds−1 (+22.9). I numeri
-  // arrivano dalla stessa riga di board che alimenta la card, non a mano.
-  it("i numeri della card arrivano interi alla scheda, e l'edge è la loro differenza", () => {
+  // #RESTYLING-0921 round 13 — il riquadro MODEL | MARKET | EDGE è stato tolto:
+  // «a volte siamo sotto il mercato», e un confronto a tre vie in testa alla
+  // scheda urla la cosa sbagliata. Resta LA NOSTRA percentuale, come sulla
+  // card. Il mercato non sparisce dal prodotto: si legge a parole nel «perché»
+  // (riga Market di lib/ui/why-reasons.ts), e l'edge resta accanto al pick.
+  it("in testa c'è solo la percentuale del modello, non il confronto col mercato", () => {
     const data = fromDeskFootball(row, { winLabel: "to win" });
     render(<MatchDetailSheet hideBookLinks data={{
       ...base,
       head: {
         sport: data.sport, league: data.league, kickoffLabel: "Today · 20:45",
-        pick: data.pick, modelPct: data.modelPct, marketPct: data.marketPct, edgePct: data.edgePct,
+        pick: data.pick, modelPct: data.modelPct, edgePct: data.edgePct,
       },
     }} />);
     expect(screen.getByText("64")).toBeInTheDocument();
-    expect(screen.getByText("52")).toBeInTheDocument();
+    expect(screen.getByText("Our model")).toBeInTheDocument();
+    // L'edge accanto al pick resta la differenza fra i due numeri (64 − 52 =
+    // +11.9), non il value p·odds−1 (+22.9).
     expect(screen.getAllByText("+11.9").length).toBeGreaterThan(0);
     expect(screen.queryByText("+22.9")).not.toBeInTheDocument();
-    expect(screen.getByText("Model")).toBeInTheDocument();
-    expect(screen.getByText("Market")).toBeInTheDocument();
-    expect(screen.getByText("Edge")).toBeInTheDocument();
+    // Niente più celle affiancate: né il numero del mercato, né le tre label.
+    expect(screen.queryByText("52")).not.toBeInTheDocument();
+    expect(screen.queryByText("Model")).not.toBeInTheDocument();
+    expect(screen.queryByText("Market")).not.toBeInTheDocument();
+    expect(screen.queryByText("Edge")).not.toBeInTheDocument();
   });
 
   it("senza `head` la scheda resta quella di prima (WcBoard, weekly-model-case)", () => {
@@ -150,7 +156,7 @@ describe("scheda partita con la testa nuova", () => {
   it("il blocco Pro nomina ciò che c'è dietro invece di sfocare numeri finti", () => {
     render(<MatchDetailSheet hideBookLinks data={{
       ...base,
-      head: { sport: "football", league: "PL", pick: null, modelPct: 64, marketPct: 52, edgePct: 11.9, locked: true },
+      head: { sport: "football", league: "PL", pick: null, modelPct: 64, edgePct: 11.9, locked: true },
       teamNewsLocked: true,
     }} />);
     expect(screen.getByText(/part of Pro/i)).toBeInTheDocument();

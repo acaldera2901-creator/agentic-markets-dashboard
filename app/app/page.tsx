@@ -5587,7 +5587,6 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         // Sotto il floor niente pick direzionale, esattamente come l'hero.
         pick: belowFloor ? null : (shownName ?? null),
         modelPct: headModelPct,
-        marketPct: headMarketPct,
         edgePct: belowFloor ? null : edgePointsFrom(headModelPct, headMarketPct),
         confidence: confScore,
       },
@@ -5930,7 +5929,6 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
         pick: belowFloor ? null : (pickName ?? null),
         modelPct: headModelPct,
-        marketPct: headMarketPct,
         edgePct: belowFloor ? null : edgePointsFrom(headModelPct, headMarketPct),
         confidence: m.confidence_score ?? null,
       },
