@@ -23,6 +23,16 @@
 // uniforme di ogni risposta: una FAQ scritta da una persona è corta dove la
 // risposta è corta. Se un giorno cambia un fatto, si cambia qui e basta —
 // questo file resta l'unica fonte, e il FAQPage JSON-LD la legge da qui.
+//
+// #RESTYLING-0921 round 15 — DUE FATTI CORRETTI in «Come dovrei usarlo?».
+// (1) La card non mostra più «mercato, modello, edge, perché»: dal round 13/14
+// mostra SOLO la percentuale del modello, e il resto vive nella scheda che si
+// apre. La FAQ descriveva un prodotto che non esiste più.
+// (2) «Il Free ti dà tre letture per sport al giorno» è vero per un account
+// free REGISTRATO: `showcaseAllowance` (lib/access-projection.ts) dà 3 a
+// `free` e **0** ad `anonymous`. Da sloggato erano zero, e la Home è la pagina
+// che legge chi non ha ancora un account. Ora la riga dice «con un account
+// gratuito», che è la cosa vera.
 
 export type FaqItem = readonly [question: string, answer: string];
 
@@ -50,7 +60,7 @@ export const HOME_FAQ = {
     ],
     [
       "How am I meant to use it?",
-      "Open the board, pick a match, and read it in the order it is written: market, model, edge, why. Then look at the public record to see how earlier readings settled, so you know what kind of thing you are reading. What you do after that is yours, and nobody here decides it for you. Free gives you three readings per sport a day; Base and Pro open the rest of the board.",
+      "Open the board and scan the cards: each one shows the model’s probability for that match, and nothing else — one number, so you can read twenty matches in a glance. When one is worth a closer look, open it: inside is the full reading, the reasoning written out in plain words. Then look at the public record to see how earlier readings settled, so you know what kind of thing you are reading. What you do after that is yours, and nobody here decides it for you. A free account opens three readings per sport a day; Base and Pro open the rest of the board.",
     ],
   ],
   it: [
@@ -76,7 +86,7 @@ export const HOME_FAQ = {
     ],
     [
       "Come dovrei usarlo?",
-      "Apri il board, scegli una partita e leggila nell’ordine in cui è scritta: mercato, modello, edge, perché. Poi guarda il registro pubblico per vedere come si sono chiuse le letture precedenti, così sai che cosa stai leggendo. Cosa fai dopo lo decidi tu, e nessuno qui lo decide al posto tuo. Il Free ti dà tre letture per sport al giorno; Base e Pro aprono il resto del board.",
+      "Apri il board e scorri le card: ognuna mostra la probabilità del modello per quella partita, e nient’altro — un numero solo, così ne leggi venti in un colpo d’occhio. Quando una merita attenzione, aprila: dentro c’è la lettura completa, col ragionamento scritto in parole normali. Poi guarda il registro pubblico per vedere come si sono chiuse le letture precedenti, così sai che cosa stai leggendo. Cosa fai dopo lo decidi tu, e nessuno qui lo decide al posto tuo. Con un account gratuito apri tre letture per sport al giorno; Base e Pro aprono il resto del board.",
     ],
   ],
 } as const satisfies Record<string, readonly FaqItem[]>;

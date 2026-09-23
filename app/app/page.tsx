@@ -8470,6 +8470,7 @@ function HomeLobby({
   watchSaved,
   onToggleWatch,
   onOpenMatch,
+  onGate,
   onSeeAll,
   onGoHome,
   onGoPro,
@@ -8484,6 +8485,9 @@ function HomeLobby({
   watchSaved: ReadonlySet<string>;
   onToggleWatch: (key: string) => void;
   onOpenMatch: (key: string) => void;
+  /** Il gate esistente (registrazione da anonimo, Piani da loggato). Una card
+   *  chiusa non apre nessuna scheda: chiama questo. */
+  onGate?: () => void;
   /** Round 10: «Vedi tutte» porta a una delle viste che esistono già (Live,
    *  Football, Tennis), non più al board generico. */
   onSeeAll: (view: "live" | "football" | "tennis") => void;
@@ -8584,6 +8588,12 @@ function HomeLobby({
           // La scheda è già in pagina: si apre, non si naviga. L'href resta
           // vero per il tasto centrale e per la condivisione.
           ev.preventDefault();
+          // Card chiusa: la CTA è «Unlock full analysis» e porta al gate.
+          // Senza questa guardia il click era MORTO: `onOpenMatch` arriva a
+          // `MatchDetailHost` → `PredictionCard autoOpen`, dove
+          // `modalEnabled = !p.locked` è falso e `openModal()` non parte mai.
+          // È la stessa guardia che il ramo board ha sempre avuto.
+          if (locked) { onGate?.(); return; }
           trackEvent("card_open", { meta: { surface: "lobby", section: sectionId, sport: d.sport } });
           onOpenMatch(item.key);
         }}
@@ -8989,6 +8999,9 @@ function HomeLobby({
           href: TAB_PATHS.bets,
           onClick: (ev: React.MouseEvent<HTMLAnchorElement>) => {
             ev.preventDefault();
+            // Stessa guardia delle card: una riga chiusa porta al gate, non a
+            // una scheda che non si aprirebbe.
+            if (i.data.locked === true) { onGate?.(); return; }
             onOpenMatch(i.key);
           },
         };
@@ -9458,6 +9471,7 @@ function UnifiedBetsTab({
           watchSaved={watchSaved}
           onToggleWatch={onToggleWatch}
           onOpenMatch={onOpenMatch}
+          onGate={onGate}
           onSeeAll={onSeeAll}
           onGoHome={onGoHome}
           onGoPro={onGoPro}
