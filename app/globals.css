@@ -10432,8 +10432,13 @@ button:disabled {
      scorrono in orizzontale DENTRO la loro riga — stesso comportamento della
      barra sport in home. I link restano tutti nel DOM (gli hreflang stanno nel
      <head>, questa lista è solo UX). */
+  /* #MOBILE-0923: scorrevano, ma il bordo destro tagliava «FRANÇAIS» a metà
+     parola (misurato @390px: 853px di chip in 294 di finestra) e sembrava un
+     testo rotto, non una riga che continua. La sfumatura lo dice. */
   .tl-langs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
-    -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    -webkit-overflow-scrolling: touch; padding-bottom: 2px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%); }
   .tl-langs::-webkit-scrollbar { display: none; }
   .tl-langs a { flex: 0 0 auto; }
 }
@@ -10458,6 +10463,27 @@ button:disabled {
 @media (max-width: 640px) {
   .cookie-consent { display: flow-root !important; padding: 8px 16px !important; }
   .cookie-consent-actions { float: right; margin: 0 0 0 10px; }
+}
+
+/* #MOBILE-0923 — la barra dei cookie SEPPELLIVA la bottom bar.
+   Misurato @390×844: banner `bottom: 0` (inline), y 770→844, z-index 9999;
+   .am-bottomnav y 787→845, z-index 60. Sovrapposizione 57px su 58, cioè il
+   98% della nav primaria del telefono — icone, etichette e area toccabile.
+   Finché il consenso non è dato (= alla PRIMA visita di chiunque, che è
+   esattamente quando la navigazione serve di più) su mobile non esistevano
+   né Home, né Live, né Watchlist, né Strumenti, né Profilo.
+   Il banner si alza dell'altezza della barra invece di coprirla: restano
+   toccabili entrambi e nessuno dei due si nasconde, quindi il consenso resta
+   chiedibile e rifiutabile esattamente com'era (cambia la quota, non il
+   contenuto né la simmetria dei due tasti). `:has` perché la bottom bar
+   esiste solo sulle pagine del desk: su /tools, /plans e sul resto del sito
+   il banner resta a filo pavimento. `!important` perché `bottom` arriva
+   inline da CookieBanner.tsx — stessa ragione della regola su
+   [data-pdm-open] più sotto. */
+@media (max-width: 900px) {
+  body:has(.am-bottomnav) .cookie-consent {
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 /* Hover/focus: stanno qui e non inline perché lo stile inline non esprime

@@ -954,16 +954,31 @@
   .br-sec__head { flex-wrap: wrap; align-items: flex-start; gap: var(--am-s-2); }
   .br-sec__title { font-size: 22px; }
   /* La nav primaria scorre in orizzontale invece di andare a capo: la bottom
-     bar resta il modo principale di muoversi, questa è il secondo. */
-  .br-nav { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+     bar resta il modo principale di muoversi, questa è il secondo.
+     #MOBILE-0923: scorreva, ma NIENTE lo diceva. Misurato @390px/EN: contenuto
+     447px in una finestra di 358 — «Tools» cadeva a x=463, cioè 73px fuori dal
+     telefono, tagliato netto contro il bordo come una voce rotta. Due mosse:
+     (a) la voce si stringe (icona fuori: il segno per immagini ce l'ha già la
+     bottom bar, qui la parola basta) e in EN/FR/IT le cinque voci ci stanno
+     tutte; (b) dove NON ci stanno — ES «Herramientas», RU «Инструменты», 402
+     e 418px: nessun ritocco le fa entrare — una sfumatura sul bordo destro
+     dice che la riga continua, invece di fingere un taglio. */
+  .br-nav {
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    gap: 0;
+    padding-right: 6px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent 100%);
+  }
   .br-nav::-webkit-scrollbar { display: none; }
+  .br-nav__item { padding: 6px 6px; font-size: 12.5px; gap: 3px; }
+  .br-nav__item img { width: 15px !important; height: 15px !important; }
   /* La topbar è un grid item di .portal-root: il suo min-width «auto» vale il
      min-content dei figli, e quello della nav (uno scroll container) si
      calcola come se l'overflow fosse visibile. Con le icone del round 3 le
      cinque voci fanno 435px: il documento si allargava a 467 (misurato
      @390px). min-width 0 la riporta alla colonna, e la nav scorre. */
   .am-topbar { min-width: 0; }
-  .br-search input { width: 9ch; }
   /* La zona destra prende una riga sua e può andare a capo. Senza questo
      eredita `flex: 0 0 auto` da .am-topright (globals.css) e resta larga
      quanto il suo max-content: con search + watchlist aggiunte nel round 2
@@ -2633,6 +2648,26 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   .br-upgrade { height: 30px; padding: 0 10px; font-size: 13px; gap: 5px; }
   .br-upgrade svg { display: none; }
 
+  /* #MOBILE-0923 — il campo di ricerca diceva «Search t».
+     A 8ch il placeholder («Search team, player…», «Cerca squadra, giocatore…»)
+     si tronca a metà della SECONDA parola: misurato @390px il campo era largo
+     106px, perché nella stessa riga stavano anche Watchlist, Accedi e
+     Registrati. Non è un'abbreviazione, è una parola tagliata: si legge
+     «Search t» e non si sa più cosa si può cercare.
+     Due mosse, in quest'ordine:
+     (a) la Watchlist esce dalla topbar del telefono. Non si perde — è la terza
+         voce della bottom bar, che qui è la nav primaria (.am-bottomnav): in
+         chrome era una seconda copia dello stesso tasto, e teneva occupati gli
+         81px che mancavano alla ricerca.
+     (b) la ricerca va in fondo alla zona destra (`order`) e si prende la riga
+         intera: 315px @390px, placeholder per esteso in tutte e cinque le
+         lingue. Le righe restano due: la ricerca non ne aggiunge una, occupa
+         quella dove prima galleggiavano da soli «Passa a Pro» e la lingua
+         (119px di contenuto su 358 di riga). */
+  .br-watchnav { display: none; }
+  .br-navright .br-search { order: 9; flex: 1 1 100%; }
+  .br-navright .br-search input { width: 100%; }
+
   /* Contesto: il percorso si accorcia da solo (ellipsis); a destra resta lo
      stato, che è l'unica parte che non si ottiene con un tocco altrove. */
   .br-ctx__in { padding: 6px var(--am-s-4); gap: var(--am-s-2); }
@@ -2903,7 +2938,13 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   position: absolute;
   left: 20px;
   top: 22px;
-  max-width: 60%;
+  /* #MOBILE-0923: era `60%`, che è una frazione della tile e non ha idea di
+     dove stia l'icona. Su due colonne @390px la tile scende a 172px: il 60%
+     fa 103px, l'icona (49px, `right: 17px`) comincia a 106 — e «03 /
+     BASKETBALL», che a quella larghezza va su due righe, finiva con la
+     seconda riga SOTTO la pallina. Ora la larghezza è quella che resta
+     davvero: 20 (left) + 49 (icona) + 17 (right) + 6 di respiro. */
+  max-width: calc(100% - 92px);
   font-family: var(--am-font-ui);
   font-size: 10px;
   font-weight: 700;
@@ -3203,6 +3244,24 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
 }
 @media (max-width: 780px) {
   .br-fields { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  /* #MOBILE-0923 — «BASKETBAL». Il nome è `clamp(30px, 3.2vw, 43px)`: sotto i
+     ~940px il vw non conta più e il minimo resta fisso a 30px, ma la tile no —
+     su due colonne @390px è larga 148px, cioè 112 di testo al netto dei 18 di
+     padding, e BASKETBALL in Anton a 30px ne chiede ~128. `.br-field` ha
+     `overflow: hidden`: la parola veniva tagliata a metà lettera contro il
+     bordo della foto, e si leggeva «BASKETBAL».
+     Due px presi dove non si vedono (il padding) e un minimo che segue davvero
+     la larghezza: il nome resta grande (~26px @390) e ci sta su una riga.
+     `overflow-wrap` è la rete per le lingue più lunghe (ES «BALONCESTO», RU
+     «БАСКЕТБОЛ»): vanno a capo invece di sparire nel ritaglio. */
+  .br-field { padding: 14px; }
+  /* 6,2vw = 24,2px @390: BASKETBALL in Anton misura 108px sui 118 della
+     colonna (a 26,5px ne misurava esattamente 118 e andava a capo sull'ultima
+     lettera — «BASKETBAL / L», che è peggio del taglio). Misurato con
+     canvas.measureText sul font vero, non a occhio. */
+  .br-field__name { font-size: clamp(20px, 6.2vw, 30px); overflow-wrap: anywhere; }
+  .br-field__kicker { left: 14px; top: 16px; max-width: calc(100% - 75px); }
+  .br-field__icon { right: 13px; top: 13px; width: 42px; height: 42px; }
   .br-row { grid-template-columns: 78px minmax(0, 1fr) 62px 12px; gap: 12px; padding: 13px 14px; }
   .br-row__league { display: none; }
   .br-row__prob b { font-size: 22px; }
