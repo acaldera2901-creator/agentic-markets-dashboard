@@ -378,7 +378,18 @@
 }
 /* La lega tronca fino a 9ch; oltre, è il gruppo badge+watch a passare in
    seconda riga (meta sopra, stato sotto) — non la lega a sparire. */
-.br-card__kicker > .br-chip[data-kind="league"] { flex: 0 1 auto; min-width: 9ch; }
+/* #MOBILE-0923: «tronca» era un modo di dire — il chip si accorciava e basta,
+   senza puntini, quindi il taglio cadeva a metà lettera: @390 sul preview si
+   leggeva «DELTA MOTORS TOLENT|» e «TURK TELEKOM ANKAR|» (364px di nome in
+   145 di chip). Un'ellissi dice che il nome continua; una lettera tagliata
+   dice che la pagina è rotta. */
+.br-card__kicker > .br-chip[data-kind="league"] {
+  flex: 0 1 auto;
+  min-width: 9ch;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .br-card__when {
   font-family: var(--am-font-num);
   font-size: 11px;
@@ -3025,7 +3036,16 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
    sola — sotto i 400 il titolo andava a capo e il sottotitolo su quattro. */
 .br-dds {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  /* #MOBILE-0923 — `minmax(400px, 1fr)` non ha un massimo: una traccia da 400
+     resta 400 anche dentro una colonna da 310. Misurato @390 sul preview, dove
+     le campagne ci sono davvero (in locale la stagione è ferma e la sezione
+     non monta — ed è per questo che in dodici round non era mai saltato
+     fuori): la card andava da x=40 a x=440, cioè 50px fuori dallo schermo, e
+     con lei il sottotitolo («Compare model and market probabilit…») e la CTA,
+     che si leggeva «OPEN B…» e non si poteva toccare.
+     `min(400px, 100%)` dà alla traccia il massimo che le mancava: sopra i
+     400px di colonna si comporta esattamente come prima. */
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
   gap: 22px;
 }
 .br-dd {
@@ -3142,6 +3162,26 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
 }
 .br-row__prob-empty { color: var(--am-muted-2); }
 .br-row__go { font-size: 15px; color: var(--am-muted); }
+
+/* #MOBILE-0923 — «Upcoming matches» non diceva contro chi.
+   Le colonne affiancate (data · squadre · % · freccia) su 390px lasciano ai
+   nomi 92px netti: misurato sul preview, «Alina Korneeva vs Darya Astakhova»
+   chiede 241px e si leggeva «Alina Korne…». Su OGNI riga della lista mancava
+   l'avversario, cioè metà della partita — la riga esisteva ma non informava.
+   La data sale su una riga sua (dove ci sta per intero, con un punto medio al
+   posto dell'a-capo) e i nomi prendono la larghezza che era sua: 212px, e
+   «Hu Jia vs Vit Kopriva» o «Deniz Dilek vs Solana Sierra» si leggono interi.
+   La percentuale e la freccia restano a destra, a cavallo delle due righe:
+   l'altezza della riga non cambia. */
+@media (max-width: 480px) {
+  .br-row { grid-template-columns: minmax(0, 1fr) auto 12px; gap: 2px 10px; padding: 12px 14px; }
+  .br-row__when { grid-column: 1; grid-row: 1; }
+  .br-row__when span { display: inline; }
+  .br-row__when span + span::before { content: " · "; }
+  .br-row__teams { grid-column: 1; grid-row: 2; }
+  .br-row__prob { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+  .br-row__go { grid-column: 3; grid-row: 1 / span 2; }
+}
 
 /* ── Il titolo tipografico della Home (round 8) ──────────────────────
    La sezione che apre la pagina nel riferimento: occhiello, una riga in
