@@ -86,6 +86,17 @@ describe("buildLobbySections", () => {
     expect(secs.find((s) => s.id === "top")!.items.map((i) => i.data.id)).toEqual(["locked", "open"]);
   });
 
+  // #RESTYLING-0921 round 10 — da quando «Esplora tutto» non esiste più, le
+  // viste Football e Tennis sono l'UNICO posto dove sta l'elenco completo: una
+  // riga tagliata lì è una riga che nessuno può più raggiungere.
+  it("la fascia sport è un assaggio in Home e l'elenco intero nella sua vista", () => {
+    const rows = Array.from({ length: LOBBY_ROW_CAP + 4 }, (_, i) => item({ id: `f${i}` }));
+    const home = buildLobbySections({ football: rows, tennis: [], now: NOW });
+    expect(home.find((s) => s.id === "football")!.items).toHaveLength(LOBBY_ROW_CAP);
+    const full = buildLobbySections({ football: rows, tennis: [], now: NOW, fullSportLists: true });
+    expect(full.find((s) => s.id === "football")!.items).toHaveLength(rows.length);
+  });
+
   it("High Edge non ripete ciò che è già in Top", () => {
     const rows = Array.from({ length: LOBBY_ROW_CAP + 2 }, (_, i) =>
       item({ id: `f${i}`, edgePct: 30 - i }),

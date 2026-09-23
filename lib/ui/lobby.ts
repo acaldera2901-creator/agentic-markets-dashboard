@@ -120,10 +120,17 @@ export type BuildLobbyInput = {
   /** Chiavi `lobbyKey` salvate in watchlist. */
   saved?: ReadonlySet<string>;
   now?: number;
+  /** #RESTYLING-0921 round 10 — le fasce «Calcio» e «Tennis» sono un ASSAGGIO
+   *  (LOBBY_ROW_CAP) quando stanno in Home insieme alle altre, ma l'ELENCO
+   *  INTERO quando SONO la vista. Prima il resto si trovava in «Esplora
+   *  tutto»: da quando quella pagina non esiste più, una riga tagliata qui
+   *  sarebbe una riga irraggiungibile. Le fasce curate (top/soon/edge)
+   *  restano cappate: quelle sono una selezione, non un elenco. */
+  fullSportLists?: boolean;
 };
 
 /** Le sezioni della lobby, nell'ordine del brief, GIÀ private di quelle vuote. */
-export function buildLobbySections({ football, tennis, saved, now = Date.now() }: BuildLobbyInput): LobbySection[] {
+export function buildLobbySections({ football, tennis, saved, now = Date.now(), fullSportLists = false }: BuildLobbyInput): LobbySection[] {
   const all = [...football, ...tennis];
 
   const live = all.filter((it) => it.data.isLive).sort(byKickoffAsc);
@@ -157,8 +164,8 @@ export function buildLobbySections({ football, tennis, saved, now = Date.now() }
     { id: "live", items: live },
     { id: "soon", items: soon },
     { id: "edge", items: edge },
-    { id: "football", items: football.slice(0, LOBBY_ROW_CAP) },
-    { id: "tennis", items: tennis.slice(0, LOBBY_ROW_CAP) },
+    { id: "football", items: fullSportLists ? football : football.slice(0, LOBBY_ROW_CAP) },
+    { id: "tennis", items: fullSportLists ? tennis : tennis.slice(0, LOBBY_ROW_CAP) },
     { id: "watchlist", items: watchlist },
   ];
 

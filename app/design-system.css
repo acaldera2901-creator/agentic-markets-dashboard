@@ -323,11 +323,20 @@
   flex-direction: column;
   gap: var(--am-s-2);
   padding: var(--am-s-3);
-  /* Round 9: la card è un gradiente, non una tinta piatta — gli stop sono
-     quelli misurati sul riferimento (`.card`), che alza appena l'angolo in
-     alto a sinistra e fa leggere la card come un OGGETTO invece che come un
-     buco nel fondo. In chiaro torna `--am-panel` (vedi override sotto). */
-  background: linear-gradient(135deg, #143056, #0a1c36);
+  /* Round 10 — IL BLU È DI TUTTE LE CARD. Andrea, 23/09, sulla card
+     «Tranmere Rovers vs Walsall»: «quel colore blu deve diventare il colore
+     di tutte le card prediction». Al round 9 il blu acceso stava solo sulla
+     riga con più edge; qui diventa la superficie standard, con gli stop
+     esatti del riferimento (`.card.featured`, 130deg da #155CE3). La
+     distinzione della card high-edge non si perde: passa al filo e al bagliore
+     (vedi la regola `:has(.br-badge[data-kind="high-edge"])` più sotto).
+     In chiaro torna `--am-panel` (override qui sotto). */
+  background: linear-gradient(130deg, #155ce3, #102b63);
+  /* Su #155ce3 il muted normale (#909AAE) fa 2,0:1 — sotto AA. #DCE8FB fa
+     4,6:1 sull'estremo chiaro e 11:1 su quello scuro: le label restano
+     leggibili su tutta la diagonale del gradiente. */
+  --am-muted-2: #dce8fb;
+  --am-muted: #dce8fb;
   border: 1px solid var(--am-line);
   border-radius: var(--am-r-card);
   box-shadow: var(--am-shadow-card);
@@ -335,34 +344,28 @@
   min-width: 0;
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
-:root[data-theme="light"] .br-card { background: var(--am-panel); }
+:root[data-theme="light"] .br-card {
+  background: var(--am-panel);
+  /* Il muted alzato serve solo sul blu: su carta tornano i token del tema. */
+  --am-muted-2: #565e69;
+  --am-muted: #4a515b;
+}
 .br-card:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
 .br-card:focus-within { border-color: var(--am-royal-b); }
 
-/* Round 9 — il punto di luce che ci mancava (#RESTYLING-0921).
-   Misurato il 23/09 su Home 1512px: fondo pagina e velo delle foto sono
-   IDENTICI al riferimento (token `#071329`/`#0d2343`, scrim stesso gradiente
-   a 4 stop), e la foto sorgente è vicina (L 43,3 contro 49,6). Ciò che
-   mancava erano i PUNTI DI LUCE: solo l'8,9% dei nostri pixel stava sopra
-   L=55, contro il 24,9% del riferimento — 2,8 volte meno. Il riferimento
-   ricava quella luce da una card in blu acceso (`.card.featured`). Qui la
-   prende la card con più edge, che è anche quella che merita l'occhio.
-   Il gancio è il badge che c'è già: nessuna modifica al componente. */
+/* Round 10 — la card con più edge ora si distingue per FILO, non per fondo.
+   Il fondo blu (round 9, dalla `.card.featured` del riferimento) è passato a
+   tutte le card: se restasse anche qui, la riga che merita l'occhio sarebbe
+   identica alle altre. Il segnale è quindi il bordo acceso del riferimento
+   (#65B3FF) più un anello soffuso dello stesso blu — nessun colore nuovo,
+   nessun dato nuovo: il gancio resta il badge che c'è già. */
 .br-card:has(.br-badge[data-kind="high-edge"]) {
-  /* Stop e filo esatti del riferimento. */
-  background: linear-gradient(130deg, #155ce3, #102b63);
   border-color: #65b3ff;
-  /* Su #155ce3 il muted normale (#909AAE) fa 2,0:1 — sotto AA. #DCE8FB fa
-     4,6:1 sull'estremo chiaro e 11:1 su quello scuro: le label restano
-     leggibili su tutta la diagonale del gradiente. */
-  --am-muted-2: #dce8fb;
-  --am-muted: #dce8fb;
+  box-shadow: 0 0 0 1px rgba(101,179,255,0.35), 0 0 24px -8px rgba(101,179,255,0.55), var(--am-shadow-card);
 }
 :root[data-theme="light"] .br-card:has(.br-badge[data-kind="high-edge"]) {
-  background: var(--am-panel);
   border-color: var(--am-line);
-  --am-muted-2: #565e69;
-  --am-muted: #4a515b;
+  box-shadow: var(--am-shadow-card);
 }
 
 .br-card__kicker {
@@ -470,7 +473,13 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   line-height: 1;
-  color: var(--am-text);
+  /* Round 10: la percentuale del modello è GIALLA, col token che il sito usa
+     già per live e starting-soon — così il numero parla la stessa lingua
+     degli altri dettagli accesi invece di essere un bianco in più. Sul blu
+     della card #FFE818 fa 4,58:1 sull'estremo chiaro (#155CE3) e 10,9:1 su
+     quello scuro (#102B63): AA anche se non fosse, com'è, testo grande.
+     In chiaro `--am-live` è già l'oro scuro #7A5A00 (8,4:1 sulla carta). */
+  color: var(--am-live);
 }
 .br-card__model[data-size="lg"] .br-card__model-n { font-size: 52px; }
 .br-card__model-pc { font-size: 0.5em; font-weight: 500; opacity: 0.8; margin-left: 1px; }
