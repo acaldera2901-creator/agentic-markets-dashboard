@@ -3320,4 +3320,22 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
    * `min-width: 9ch` già dichiarati restano: la lega continua a cedere spazio
    * al chip dello sport quando serve, non lo ruba. */
   .br-chip[data-kind="league"] { max-width: 100%; }
+
+  /* ── 5. Anche il pavimento TIPOGRAFICO arriva ai `.br-*` ─────────────────
+   * Stessa storia del §2, sull'altro asse. app/mobile.css §1 fissa a 11px il
+   * minimo per un'etichetta su telefono («sotto gli 11px non si legge: si
+   * indovina»), e per la stessa doppia ragione — classi nuove, foglio
+   * importato prima — non arrivava alla famiglia del restyling. Misurato
+   * @390: l'etichetta sotto la percentuale delle righe partita e i due testi
+   * delle tile sport della Home stavano a 10px.
+   * NON sono in lista, e volutamente:
+   *   · `.br-crest` (7px) — le due iniziali dentro un disco da 22px: alzarle
+   *     le farebbe uscire dal disco, ed è un segno di identità, non un testo
+   *     che si legge;
+   *   · `.lang-dd-caret` (9px) — è il triangolino «▾», decorazione pura. */
+  .br-row__prob small,  /* 10px · «model» sotto l'88% di ogni riga */
+  .br-field__kicker,    /* 10px · «01 FOOTBALL» sulle tile «Scegli il tuo campo» */
+  .br-field__soon {     /* 10px · «In arrivo» sulle tile senza partite */
+    font-size: 11px;
+  }
 }
