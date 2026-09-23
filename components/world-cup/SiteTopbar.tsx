@@ -158,9 +158,11 @@ export default function SiteTopbar({
       <div className="am-topbar-in">
         <div className="am-brandmark">
           <Link href="/" className="wc-topbar-home" aria-label="BetrEdge">
-            {/* #UI-LOGO-THEME-0623: logo theme-aware (bianco dark / nero light), swap CSS no-flash */}
+            {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: resta il solo bianco. Il tema è
+                statico e scuro (vedi la nota qui sopra, riga 129), quindi il gemello
+                nero era `display: none` per sempre — e un <img> display:none il
+                browser lo scarica comunque: 590 KB a pagina, misurati. */}
             <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
-            <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
           {!nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
         </div>

@@ -10530,9 +10530,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       <header className="am-topbar">
         <div className="am-topbar-in">
           <Link href="/" className="am-brandmark" aria-label="BetrEdge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
-            {/* #UI-LOGO-THEME-0623: logo theme-aware (bianco dark / nero light), swap CSS no-flash */}
+            {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: erano due <img> che si scambiavano
+                via CSS su `data-theme`. Il gemello nero è stato tolto: `data-theme`
+                lo scrive statico il server a "dark" (app/layout.tsx) e nessun codice
+                scrive più "light", quindi `.brand-logo-light` era `display: none` per
+                sempre — ma un <img> display:none il browser lo SCARICA lo stesso.
+                Misurato @390 sul preview: 590 KB per pagina, il 30% di tutto il
+                payload di immagini, per un elemento che non può accendersi. */}
             <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
-            <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
 
           {/* ── Nav primaria — #RESTYLING-0921 ──────────────────────────────

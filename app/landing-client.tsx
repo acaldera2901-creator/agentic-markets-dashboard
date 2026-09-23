@@ -296,13 +296,15 @@ const COPY = {
 // BrandMark rende il logo all'altezza `size`; Wordmark è incluso nell'immagine
 // (resta come no-op per non toccare i call-site esistenti).
 function BrandMark({ size = 32 }: { size?: number }) {
-  // #UI-LOGO-THEME-0623: due loghi (bianco per dark, nero per light), swap via CSS
-  // su data-theme → no flash, niente JS.
+  // #UI-LOGO-THEME-0623 → #MOBILE-0923: erano due loghi (bianco per dark, nero
+  // per light) scambiati via CSS su data-theme. Il nero è stato tolto: il tema
+  // ora è statico e solo scuro, quindi `.brand-logo-light` era `display: none`
+  // per sempre — e un <img> display:none il browser lo scarica comunque (590 KB
+  // a pagina, misurati). Vedi la nota estesa in app/app/page.tsx.
   const s = { height: size, width: "auto" as const };
   return (
     <span style={{ display: "inline-flex", alignItems: "center" }}>
       <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={s} />
-      <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={s} />
     </span>
   );
 }
