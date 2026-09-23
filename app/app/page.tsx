@@ -10432,15 +10432,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     ru: { home: "Сегодня", live: "В игре", football: "Футбол", tennis: "Теннис", watchlist: "Избранное" }[deskView],
   });
 
-  // #RESTYLING-0921 round 6 — l'ultimo segmento del percorso nella fascia di
-  // contesto. Sul desk («bets») il capitolo è la VISTA, e `deskHeading` la
-  // nomina già in cinque lingue; sulle altre tab il capitolo è la tab stessa,
-  // e la sua label esiste già in `navItems`. Nessun dizionario nuovo: due
-  // nomi per la stessa cosa divergono al primo copy che cambia.
-  const contextCrumb = tab === "bets"
-    ? deskHeading
-    : navItems.find((n) => n.tab === tab)?.label ?? deskHeading;
-
   const liveTennisMap = useMemo(() => {
     const map: Record<string, LiveTennisMatch> = {};
     for (const lm of liveTennis) map[tennisPairKey(lm.player1, lm.player2)] = lm;
@@ -10683,57 +10674,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           </div>
         </div>
 
-        {/* ── Fascia di contesto — #RESTYLING-0921 round 6 ─────────────────
-            Sotto la nav, undici pixel di testo: a sinistra dove sei, a
-            destra dove puoi andare in un clic. Viene dal riferimento
-            («BETREDGE / READ THE GAME.» a sinistra, sport e stato a destra),
-            con due differenze volute: il nostro lato sinistro è un PERCORSO
-            vero — cambia con la sezione, non è uno slogan fisso — e a destra
-            non c'è nessun «anteprima con dati demo», perché i nostri numeri
-            sono quelli veri. Lo stato compare solo quando c'è davvero
-            qualcosa in gioco; a board fermo la fascia resta un percorso e
-            due link, senza inventarsi un'urgenza. */}
-        <div className="br-ctx">
-          <div className="br-ctx__in">
-            <p className="br-ctx__path">
-              BetRedge <span className="br-ctx__sep">/</span>{" "}
-              <span className="br-ctx__here">{contextCrumb}</span>
-            </p>
-            <div className="br-ctx__aside">
-              {([
-                { view: "football" as DeskView, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
-                { view: "tennis" as DeskView, label: "Tennis" },
-              ]).map((s, i) => (
-                <Fragment key={s.view}>
-                  {i > 0 && <span className="br-ctx__sep" aria-hidden>·</span>}
-                  <button
-                    type="button"
-                    className="br-ctx__link"
-                    aria-current={tab === "bets" && deskView === s.view ? "page" : undefined}
-                    onClick={() => {
-                      setTab("bets");
-                      setAutoOpenKey(null);
-                      setDeskView(s.view);
-                      trackEvent("nav_click", { meta: { view: s.view, src: "ctxbar" } });
-                    }}
-                  >
-                    {s.label}
-                  </button>
-                </Fragment>
-              ))}
-              {liveOnBoardCount > 0 && (
-                <span className="br-ctx__state">
-                  <span className="br-ctx__sep" aria-hidden>·</span>{" "}
-                  <b>{liveOnBoardCount}</b>{" "}
-                  {pick5(uiLanguage, {
-                    it: "in corso ora", en: "live now", es: "en vivo",
-                    fr: "en direct", ru: "в игре",
-                  })}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* #RESTYLING-0921 round 16 — LA FASCIA DI CONTESTO NON C'È PIÙ.
+            Ripeteva sotto la nav quello che la nav diceva già sopra (dove sei,
+            Calcio · Tennis) e rubava una riga a tutte le pagine. Il percorso
+            lo dice il titolo della vista, gli sport li dice la nav. */}
       </header>
 
       {/* #BANNERS-IN-GRID: rimossa anche la banda house desk-top sotto l'header
