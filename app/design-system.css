@@ -1,0 +1,3341 @@
+/* app/design-system.css — #RESTYLING-0921
+ *
+ * Il design system del redesign (brief 2026-09-21): le classi dei componenti
+ * condivisi in components/ui/ (PredictionCard, ProbabilityComparison,
+ * EdgeBadge, chips, LiveBadge, WatchlistButton, MatchHeader,
+ * ConfidenceIndicator). Vive in un file suo perché globals.css è un monolite
+ * da 10.600 righe e un blocco in fondo sarebbe la 157ª sedimentazione (vedi
+ * l'intestazione di mobile.css). Qui: un namespace (`br-`), un breakpoint
+ * (640px, lo stesso di mobile.css), zero colori letterali — solo token --am-*,
+ * così dark e light si risolvono da soli su :root[data-theme].
+ *
+ * Perché classi e non inline style come Button/Chip legacy: la PredictionCard
+ * cambia forma sotto i 640px e Andrea ha bocciato gli inline style sui
+ * componenti responsive (ui_memory, 2026-05).
+ *
+ * Gerarchia tipografica, in una riga: i NUMERI sono JetBrains Mono 700 a
+ * 32/24/17px; le LABEL sono 11px maiuscole tracciate a .12em — UNO solo
+ * (round 3: oscillavano tra .05 e .22em). Tre leve (dimensione, peso,
+ * colore) per far dominare il numero, non una.
+ *
+ * Round 3 (direzione d'arte, docs/redesign-brief-digest.md): zero glow, zero
+ * fill neon sui badge, un elemento colorato per card oltre al testo. I token
+ * --am-*-glow non esistono più.
+ */
+
+/* ── Label tecnica (condivisa) ─────────────────────────────────────────── */
+.br-label {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+  line-height: 1.2;
+}
+
+/* ── Chip: sport / league ──────────────────────────────────────────────── */
+.br-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  border-radius: var(--am-r-chip);
+  white-space: nowrap;
+  color: var(--am-muted);
+}
+.br-chip[data-kind="sport"] {
+  padding: 4px 7px;
+  border: 1px solid var(--am-line-2);
+  color: var(--am-text);
+}
+.br-chip[data-kind="sport"] svg { color: var(--am-muted); }
+/* Round 5: l'icona sport è il raster della casa (SportChip). I PNG sono già
+   ritagliati sulla loro tile scura — niente disco, niente cornice attorno. */
+.br-chip__ico {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 3px;
+}
+/* La lega è contesto, non categoria: testo e basta, niente cornice. */
+.br-chip[data-kind="league"] {
+  padding: 4px 0;
+  font-weight: 500;
+  color: var(--am-muted);
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Live: la parola in giallo con il suo segno (IconLive) e il minuto.
+   Round 3: niente fill, niente alone, niente puntino che pulsa. Il round 2
+   lo faceva pieno «per vincere da tre metri», ma insieme al verde pieno del
+   badge High edge e ai glow faceva «tutto evidenziato». Il giallo resta
+   l'UNICO elemento colorato oltre al testo in una card live: per questo basta
+   che sia testo. ── */
+.br-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-live);
+  white-space: nowrap;
+}
+.br-live__min { font-weight: 500; opacity: 0.85; }
+
+/* ── Badge contestuale della card (High edge / Starting soon / Featured) ──
+   Outline monocromo, per tutti e tre: il significato lo danno la parola e il
+   segno (IconEdge / IconClock / IconStar), non un terzo colore. Il verde
+   della card sta nel numero dell'edge, il giallo nel LIVE: un badge colorato
+   in più era un accento che ne copriva un altro. */
+.br-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  border-radius: var(--am-r-chip);
+  border: 1px solid var(--am-line-2);
+  color: var(--am-muted);
+  white-space: nowrap;
+}
+
+/* #RESTYLING-0921 round 14 — qui viveva `.br-edge`, il chip dell'edge accanto
+   al pick. Via il componente (components/ui/EdgeBadge.tsx), via le sue regole:
+   nella scheda non compare più nessun numero di mercato. `.br-edgeday`, più
+   sotto, è un'altra cosa — la fascia «High edge» della lobby — e resta. */
+
+/* ── ConfidenceIndicator: secondario per definizione, quindi niente verde ── */
+.br-conf {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  min-width: 0;
+}
+.br-conf[data-layout="stack"] {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--am-s-1);
+}
+.br-conf__segs { display: inline-flex; gap: 3px; }
+.br-conf__segs i {
+  display: block;
+  width: 14px; height: 6px;
+  border-radius: 2px;
+  background: var(--am-panel-3);
+}
+.br-conf__segs i[data-on="true"] { background: var(--am-royal-t); }
+.br-conf[data-bucket="bassa"] .br-conf__segs i[data-on="true"] { background: var(--am-muted-2); }
+.br-conf__val {
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--am-text);
+}
+
+/* ── WatchlistButton: 32px desktop, 40px al pollice; lo stato salvato è royal ── */
+.br-watch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-ctl);
+  background: transparent;
+  color: var(--am-muted);
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.br-watch:hover { color: var(--am-text); border-color: var(--am-line-2); }
+.br-watch[aria-pressed="true"] {
+  color: var(--am-royal-t);
+  border-color: var(--am-royal-b);
+  background: var(--am-royal-dim);
+}
+.br-watch:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+
+/* ── CTA: link nelle card compatte, fill verde solo su Featured, outline su Unlock ── */
+.br-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 12px;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  border-radius: var(--am-r-ctl);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.br-cta svg { transition: transform 160ms ease; }
+.br-cta:hover svg { transform: translateX(2px); }
+.br-cta:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.br-cta[data-tone="link"] {
+  padding-left: 0; padding-right: 0;
+  color: var(--am-royal-t);
+  background: none;
+}
+.br-cta[data-tone="link"]:hover { text-decoration: underline; text-underline-offset: 3px; }
+.br-cta[data-tone="primary"] {
+  color: var(--am-edge-ink);
+  background: var(--am-edge);
+  font-weight: 700;
+}
+.br-cta[data-tone="primary"]:hover { filter: brightness(1.06); }
+.br-cta[data-tone="unlock"] {
+  color: var(--am-edge);
+  background: var(--am-edge-dim);
+  border-color: var(--am-edge-b);
+}
+.br-cta[data-tone="unlock"]:hover { background: var(--am-edge-b); }
+
+/* ── PredictionCard ───────────────────────────────────────────────────── */
+/* Round 5: la card rimpicciolisce. Andrea, sulla preview del round 4: «troppo
+   grandi, e nella prima schermata se ne vedono due». Meno padding, meno gap,
+   numero più contenuto — la card resta leggibile in 2-3 secondi ma tre ne
+   stanno dove prima ne stavano due. La misura che comanda è `.br-sec__grid`,
+   qui si accompagna: una card piccola in una colonna larga è solo aria. */
+.br-card {
+  position: relative;
+  /* Colonna flex, non grid: è ciò che rende vero il `margin-top:auto` del
+     piede, e quindi allinea le CTA di una riga sulla stessa linea. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-2);
+  padding: var(--am-s-3);
+  /* Round 10 — IL BLU È DI TUTTE LE CARD. Andrea, 23/09, sulla card
+     «Tranmere Rovers vs Walsall»: «quel colore blu deve diventare il colore
+     di tutte le card prediction». Al round 9 il blu acceso stava solo sulla
+     riga con più edge; qui diventa la superficie standard, con gli stop
+     esatti del riferimento (`.card.featured`, 130deg da #155CE3). La
+     distinzione della card high-edge non si perde: passa al filo e al bagliore
+     (vedi la regola `:has(.br-badge[data-kind="high-edge"])` più sotto).
+     In chiaro torna `--am-panel` (override qui sotto). */
+  background: linear-gradient(130deg, #155ce3, #102b63);
+  /* Su #155ce3 il muted normale (#909AAE) fa 2,0:1 — sotto AA. #DCE8FB fa
+     4,6:1 sull'estremo chiaro e 11:1 su quello scuro: le label restano
+     leggibili su tutta la diagonale del gradiente. */
+  --am-muted-2: #dce8fb;
+  --am-muted: #dce8fb;
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  box-shadow: var(--am-shadow-card);
+  color: var(--am-text);
+  min-width: 0;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+:root[data-theme="light"] .br-card {
+  background: var(--am-panel);
+  /* Il muted alzato serve solo sul blu: su carta tornano i token del tema. */
+  --am-muted-2: #565e69;
+  --am-muted: #4a515b;
+}
+.br-card:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.br-card:focus-within { border-color: var(--am-royal-b); }
+
+/* Round 10 — la card con più edge ora si distingue per FILO, non per fondo.
+   Il fondo blu (round 9, dalla `.card.featured` del riferimento) è passato a
+   tutte le card: se restasse anche qui, la riga che merita l'occhio sarebbe
+   identica alle altre. Il segnale è quindi il bordo acceso del riferimento
+   (#65B3FF) più un anello soffuso dello stesso blu — nessun colore nuovo,
+   nessun dato nuovo: il gancio resta il badge che c'è già. */
+.br-card:has(.br-badge[data-kind="high-edge"]) {
+  border-color: #65b3ff;
+  box-shadow: 0 0 0 1px rgba(101,179,255,0.35), 0 0 24px -8px rgba(101,179,255,0.55), var(--am-shadow-card);
+}
+:root[data-theme="light"] .br-card:has(.br-badge[data-kind="high-edge"]) {
+  border-color: var(--am-line);
+  box-shadow: var(--am-shadow-card);
+}
+
+.br-card__kicker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--am-s-1) var(--am-s-2);
+  min-height: 32px;
+  min-width: 0;
+}
+/* La lega tronca fino a 9ch; oltre, è il gruppo badge+watch a passare in
+   seconda riga (meta sopra, stato sotto) — non la lega a sparire. */
+/* #MOBILE-0923: «tronca» era un modo di dire — il chip si accorciava e basta,
+   senza puntini, quindi il taglio cadeva a metà lettera: @390 sul preview si
+   leggeva «DELTA MOTORS TOLENT|» e «TURK TELEKOM ANKAR|» (364px di nome in
+   145 di chip). Un'ellissi dice che il nome continua; una lettera tagliata
+   dice che la pagina è rotta. */
+.br-card__kicker > .br-chip[data-kind="league"] {
+  flex: 0 1 auto;
+  min-width: 9ch;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.br-card__when {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--am-muted-2);
+  white-space: nowrap;
+}
+.br-card__side {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  margin-left: auto;
+  flex: none;
+}
+
+.br-card__match {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  min-width: 0;
+}
+.br-card__teams {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--am-s-2);
+  font-family: var(--am-font-ui);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+  color: var(--am-text);
+  min-width: 0;
+}
+.br-card__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.br-card__team > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.br-card__vs {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--am-muted-2);
+}
+
+.br-card__pick {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--am-s-2);
+  min-width: 0;
+}
+.br-card__pick-v {
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--am-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-card__pick-v[data-locked="true"] {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--am-muted);
+  font-weight: 500;
+}
+
+/* ── #RESTYLING-0921 round 4 — il numero della card ─────────────────────
+   Un numero solo, il nostro, e la sua etichetta di fianco sulla linea di base:
+   «64% OUR MODEL» si legge in un colpo, e costa una riga invece di tre celle.
+   Più grande della vecchia riga MODEL|MARKET|EDGE (40 contro 24) perché adesso
+   è l'unico dato della card: se non domina lui, domina il nome della squadra.
+   Il confronto col mercato sta nella scheda partita (.br-md__numbers). */
+.br-card__model {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--am-s-2);
+  min-width: 0;
+}
+.br-card__model-n {
+  font-family: var(--am-font-display);
+  /* Round 5: 40 → 30px. Resta l'elemento che domina la card (il pick sta a
+     15px, le label a 11), ma in una card più fitta un 40 spingeva da solo la
+     card oltre i 260px di altezza. */
+  font-size: 30px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  /* Round 11: la percentuale ha il SUO token — --am-pct, #D3FE50, lo swatch
+     che Andrea ha mandato il 23/09. Al round 10 prendeva in prestito
+     --am-live, che sul sito significa «in corso / attenzione»: un valore solo
+     per due significati, e al primo ritocco dell'uno si spostava l'altro.
+     Sul blu della card fa 4,92:1 sull'estremo chiaro (#155CE3) e 11,6:1 su
+     quello scuro (#102B63) — AA anche se non fosse, com'è, testo a 30px.
+     In chiaro --am-pct è il lime scuro #4C7A00 (5,0:1 sulla carta). */
+  color: var(--am-pct);
+}
+.br-card__model[data-size="lg"] .br-card__model-n { font-size: 52px; }
+.br-card__model-pc { font-size: 0.5em; font-weight: 500; opacity: 0.8; margin-left: 1px; }
+
+.br-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--am-s-3);
+  padding-top: var(--am-s-1);
+  margin-top: auto;   /* in una griglia le CTA si allineano al fondo della riga */
+  min-width: 0;
+}
+
+/* Featured: più aria, sfondo un gradino sopra, il teaser del «perché».
+   Round 2: crest più grandi (36px, dal TSX) e uno slot `media` opzionale in
+   testa — foto/crest della partita che sanguina fino ai bordi della card.
+   Round 3: la foto va in duotone (grayscale + luminosity sul pannello) sotto
+   un velo piatto, non un gradiente che «sfuma» — finisce dove finisce. */
+.br-card[data-variant="featured"] {
+  padding: var(--am-s-5);
+  gap: var(--am-s-4);
+  background: var(--am-panel-2);
+  border-color: var(--am-line-2);
+}
+.br-card__media {
+  position: relative;
+  margin: calc(-1 * var(--am-s-5)) calc(-1 * var(--am-s-5)) calc(-1 * var(--am-s-2));
+  height: 120px;
+  overflow: hidden;
+  border-radius: var(--am-r-card) var(--am-r-card) 0 0;
+  background: var(--am-panel-3);
+}
+.br-card__media > img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1); mix-blend-mode: luminosity; }
+.br-card__media::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--am-panel-2) 45%, transparent);
+  border-bottom: 1px solid var(--am-line);
+}
+.br-card[data-variant="featured"] .br-card__teams { font-size: 22px; font-weight: 700; letter-spacing: -0.012em; }
+.br-card[data-variant="featured"] .br-card__pick-v { font-size: 16px; font-weight: 600; white-space: normal; }
+.br-card__why {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--am-muted);
+  max-width: 62ch;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.br-card__why strong { color: var(--am-text); font-weight: 600; }
+.br-card[data-variant="featured"] .br-card__foot { flex-wrap: wrap; }
+
+/* PremiumLocked: stessa card, gli slot bloccati lo dicono senza sfocature. */
+.br-card[data-variant="premiumLocked"] .br-card__pick-v[data-locked="true"] svg { color: var(--am-muted-2); }
+
+/* ── MatchHeader (testa della match page) ─────────────────────────────── */
+.br-mh {
+  display: grid;
+  gap: var(--am-s-4);
+  padding: var(--am-s-5) 0 var(--am-s-4);
+  border-bottom: 1px solid var(--am-line);
+  min-width: 0;
+}
+.br-mh__kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  flex-wrap: wrap;
+}
+.br-mh__kicker .br-card__side { margin-left: auto; }
+/* #RESTYLING-0921 round 13 — LE DUE SQUADRE SI IMPILANO, SEMPRE.
+   Fino al round 12 erano tre colonne affiancate (`1fr auto 1fr`) e il divisore
+   in mezzo. Con nomi lunghi il testo FINIVA SOPRA il «vs» e sopra l'altra
+   squadra: nello screenshot di Andrea un doppio di tennis si leggeva
+   «…Bayerlova/JasmijBrooks/Lizette». Misurato a 1280 dark sulla scheda:
+   home 431→692, mid 612→668, away 684→849 — tre scatole che si sovrappongono.
+
+   La causa non era il wrap ma il MINIMO: `.br-mh__name` è un flex item, quindi
+   `min-width: auto`, quindi non può stringersi sotto la sua min-content; e
+   `overflow-wrap: break-word` NON abbassa la min-content (solo `anywhere` lo
+   fa, e spezza a metà parola — bocciato al round precedente). Un token lungo
+   come «Bayerlova/Jasmijn» sfondava la colonna e sconfinava nelle altre.
+
+   Le colonne affiancate su una scheda larga 468px fissi non reggono nomi veri:
+   impilare è la forma giusta, non un ripiego per telefoni — era già così sotto
+   i 640px. Il «vs» sta su una riga sua, con un filo che lo separa davvero, e
+   ogni nome ha tutta la larghezza. Sovrapporsi diventa impossibile per
+   costruzione, non per un valore azzeccato. */
+.br-mh__teams {
+  margin: 0;              /* è un h1: via il margine di default */
+  font-size: inherit;
+  font-weight: inherit;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: var(--am-s-3);
+}
+/* Il nome sta accanto al totem finché ci sta; quando non ci sta più va a capo
+   INTERO sotto il totem. Senza questo wrap la colonna stringe il nome e il
+   testo si spezza a metà parola — «Chelsea» → «Chelse»/«a» nella scheda
+   partita, che è larga 468px fissi (.pdm-panel.pdm-compact) a ogni viewport. */
+.br-mh__team {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.br-mh__name {
+  font-family: var(--am-font-ui);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  color: var(--am-text);
+  /* Rete di sicurezza: senza `min-width: 0` il nome resta incomprimibile e
+     torna a sfondare (vedi sopra). Con lo stack non serve quasi mai, ma un
+     token unico più largo della scheda esiste e va spezzato invece di uscire. */
+  min-width: 0;
+  /* `anywhere` spezzava dentro la parola appena la colonna stringeva: mai. Si
+     rompe solo una parola che da sola non entra nemmeno su una riga tutta sua. */
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+.br-mh__mid {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-width: 0;
+}
+/* Il filo che porta il «vs» a fondo riga: separa le due squadre senza
+   aggiungere un altro elemento al markup. */
+.br-mh__mid::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--am-line);
+}
+.br-mh__vs {
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.br-mh__score {
+  font-family: var(--am-font-num);
+  font-size: var(--am-num-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--am-text);
+}
+.br-mh__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  flex-wrap: wrap;
+  padding: var(--am-s-3) var(--am-s-4);
+  background: var(--am-panel);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card-sm);
+}
+.br-mh__pick-v {
+  font-family: var(--am-font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--am-text);
+}
+.br-mh__pick-v[data-locked="true"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--am-muted);
+  font-weight: 600;
+}
+
+/* ── Mobile: una sola query, lo stesso 640 di mobile.css ──────────────── */
+@media (max-width: 640px) {
+  .br-card { padding: 14px; }
+  .br-card[data-variant="featured"] { padding: var(--am-s-4); }
+  .br-card__teams { font-size: 15px; }
+  .br-card[data-variant="featured"] .br-card__teams { font-size: 18px; }
+  /* Il numero della card resta il protagonista anche a 390px, ma 40px accanto
+     a un nome squadra da 15px sbilancia la card: 32. */
+  .br-card__model-n { font-size: var(--am-num-lg); }
+  .br-card__model[data-size="lg"] .br-card__model-n { font-size: 40px; }
+  .br-watch { width: 40px; height: 40px; }
+  .br-cta { min-height: 40px; }
+  .br-card__foot { flex-wrap: wrap; }
+  /* Lo stack delle squadre è ora il default (vedi .br-mh__teams): qui resta
+     solo la misura del nome. */
+  .br-mh__name { font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .br-cta svg, .br-cta, .br-watch, .br-card { transition: none; }
+  .br-cta:hover svg { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * LOBBY + NAV — #RESTYLING-0921 (parte 2: IA e pagine)
+ *
+ * La Home smette di essere «dashboard → filtri → contenuto» e diventa una
+ * lobby: fasce di contenuto già rilevante, i filtri dietro «Explore». Qui
+ * vivono solo il contenitore delle fasce e la nav: le card sono quelle sopra.
+ * Stessi token --am-*, stesso breakpoint 640.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.br-lobby {
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-7);
+  padding: var(--am-s-5) var(--am-s-4) var(--am-s-6);
+}
+
+/* ── Una fascia ─────────────────────────────────────────────────────────── */
+.br-sec { display: flex; flex-direction: column; gap: var(--am-s-4); }
+
+.br-sec__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--am-s-4);
+  /* Una riga sottile sotto il titolo: separa le fasce senza incorniciarle.
+     Il brief chiede meno bordi, non più. */
+  border-bottom: 1px solid var(--am-line);
+  padding-bottom: var(--am-s-3);
+}
+.br-sec__titles { min-width: 0; }
+/* Round 3: la stessa voce dell'hero — Saira Condensed 800 maiuscolo — così la
+   firma attraversa la pagina, e la gerarchia la fa la tipografia, non i badge. */
+.br-sec__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--am-s-2);
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-size: 26px;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--am-text);
+  line-height: 1;
+}
+/* Il conteggio è un dato, quindi mono — e piccolo: il titolo deve vincerlo. */
+.br-sec__n {
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--am-muted-2);
+}
+.br-sec__hint {
+  margin: 5px 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--am-muted);
+  max-width: 68ch;
+}
+.br-sec__action { flex: 0 0 auto; }
+
+.br-sec__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  cursor: pointer;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--am-royal-t);
+  text-decoration: none;
+  border-radius: var(--am-r-ctl);
+}
+.br-sec__link:hover { text-decoration: underline; }
+.br-sec__link:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+
+/* Round 5: 302 → 248px di colonna minima. Su 1280 la lobby passa da 3 a 4
+   card per riga, e nella colonna accanto all'hero da 2 a 3 — la richiesta di
+   Andrea era esattamente «nella prima schermata se ne devono vedere di più».
+   `auto-fill` fa il resto da solo su ogni larghezza. */
+.br-sec__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: var(--am-s-3);
+  /* Le righe hanno già altezza uniforme: con `start` le card non la
+     riempivano, e un nome squadra che va a capo bastava a sfalsare in
+     altezza la card accanto e la sua CTA. */
+  align-items: stretch;
+}
+/* La card featured occupa due colonne quando ci sono: è il top pick, e in una
+   griglia di uguali non si distinguerebbe. Sotto le due colonne torna sola.
+   Round 5: la lobby non produce più `featured` (tutte le card devono avere la
+   STESSA dimensione), la regola resta per gli altri usi della variante. */
+@media (min-width: 980px) {
+  .br-sec__grid > .br-card[data-variant="featured"] { grid-column: span 2; }
+}
+
+/* ── #RESTYLING-0921 round 12: il banner di casa IN MEZZO ALLE SCHEDE ─────
+ *
+ * «Ridimensionalo nella maniera corretta, così che se il banner viene messo in
+ * mezzo alle schede prediction non stoni con la dimensione» (Andrea, 23/09).
+ * Quindi: DUE colonne di card in larghezza, e l'altezza della RIGA — non la
+ * sua. Un 16:9 lasciato libero su due colonne misura ~332px contro i ~279 di
+ * una card (misurati dal vivo a 1280): la riga si allungherebbe a ogni banner
+ * e il ritmo della griglia salterebbe, che è esattamente ciò che non deve
+ * succedere.
+ *
+ * Il trucco è che il contenuto del tile è in `absolute`: così il tile non
+ * porta altezza propria, la riga la decidono le schede, e `align-self:
+ * stretch` gliela passa. Il ritaglio verticale lo fa `object-fit: cover` — i
+ * creativi hanno headline, logo e CTA cotti dentro con abbondante margine dai
+ * bordi, quindi un taglio simmetrico di ~8% per lato non tocca il testo. */
+.br-sec__grid > .house-banner.hb-cr-baked {
+  grid-column: span 2;
+  align-self: stretch;
+  position: relative;
+  /* QUANTO BASSO PUÒ ANDARE, e non è un numero a caso. Il ritaglio verticale
+     cresce quando la riga si abbassa, e i creativi hanno headline (dall'8% in
+     giù) e logo (fino all'89%) cotti dentro: sotto i ~256px il taglio
+     supererebbe quei margini e mangerebbe il logo — visto dal vivo sulla
+     griglia tennis, dove la riga è 231. Qui la riga si alza di 25px, una
+     volta, invece di pubblicare un marchio tagliato.
+     Serve anche se il banner finisse da solo su una riga (`auto-fill` che
+     manda a capo): senza, sarebbe alto zero. */
+  min-height: 256px;
+}
+.br-sec__grid > .house-banner.hb-cr-baked > a { position: absolute; inset: 0; display: block; }
+.br-sec__grid > .house-banner.hb-cr-baked .hb-cr-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* batte l'`aspect-ratio: 16/9` di globals.css: qui la forma la dà la riga */
+  aspect-ratio: auto;
+  object-fit: cover;
+  /* 60% e non `center`, perché i margini del creativo non sono simmetrici:
+     sopra la headline c'è ~16% di cielo, sotto il logo ~11%. Con `center` il
+     taglio è metà e metà e il logo in basso a sinistra va via per primo (visto
+     dal vivo). Al 60% si prende più aria dall'alto, che è quella che avanza. */
+  object-position: center 60%;
+}
+/* A una colonna il `span 2` sborderebbe e il tile sarebbe sempre solo sulla
+   sua riga: torna un'immagine in flusso, 16:9 intera, larga come una card. */
+@media (max-width: 640px) {
+  .br-sec__grid > .house-banner.hb-cr-baked {
+    grid-column: 1 / -1;
+    position: relative;
+    min-height: 0;
+  }
+  .br-sec__grid > .house-banner.hb-cr-baked > a { position: static; }
+  .br-sec__grid > .house-banner.hb-cr-baked .hb-cr-img {
+    position: static;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.br-empty {
+  padding: var(--am-s-5);
+  border: 1px dashed var(--am-line-2);
+  border-radius: var(--am-r-card);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--am-muted);
+  text-align: center;
+}
+
+/* ── Nav primaria (una sola: la rail laterale è stata tolta dalla lobby) ── */
+.br-nav { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.br-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--am-r-ctl);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--am-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
+}
+.br-nav__item:hover { color: var(--am-text); background: var(--am-royal-dim); }
+.br-nav__item:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: -2px; }
+/* Lo stato selezionato è ROYAL, non verde: il verde è riservato all'edge e
+   alla CTA di upgrade (regola del brief). */
+.br-nav__item[aria-current="page"] { color: var(--am-royal-t); background: var(--am-royal-dim); }
+/* Round 3: l'icona 18px prima della label. Quando c'è davvero qualcosa in
+   gioco (data-live, dal TSX) l'icona Live sale a pieno valore: un segnale di
+   valore, non un puntino giallo — un secondo colore nella nav era il primo
+   «tutto evidenziato» della pagina. */
+.br-nav__item svg { color: var(--am-muted-2); }
+.br-nav__item:hover svg, .br-nav__item[aria-current="page"] svg { color: inherit; }
+.br-nav__item[data-live="true"] svg { color: var(--am-text); }
+
+/* ── Zona destra: ricerca · watchlist · account ─────────────────────────── */
+.br-navright { display: flex; align-items: center; gap: var(--am-s-2); min-width: 0; }
+
+.br-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  height: 34px;
+  min-width: 0;
+  background: var(--am-inset);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-ctl);
+  color: var(--am-muted-2);
+}
+.br-search:focus-within { border-color: var(--am-royal-t); color: var(--am-text); }
+.br-search svg { width: 14px; height: 14px; flex: 0 0 auto; }
+.br-search input {
+  width: 15ch;
+  min-width: 0;
+  background: none;
+  border: 0;
+  outline: 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  color: var(--am-text);
+}
+.br-search input::placeholder { color: var(--am-muted-2); }
+
+.br-watchnav {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  background: none;
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-ctl);
+  cursor: pointer;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--am-muted);
+}
+.br-watchnav:hover { color: var(--am-text); border-color: var(--am-line-2); }
+.br-watchnav[aria-current="page"] { color: var(--am-royal-t); border-color: var(--am-royal-b); background: var(--am-royal-dim); }
+.br-watchnav:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.br-watchnav__n {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--am-text);
+}
+
+/* Le destinazioni secondarie (History, Plans, Invite, Partner, Creator…)
+   vivono nel menu Account: fuori dalla nav primaria, raggiungibili in un
+   click. #RESTYLING-0921 — prima erano tutte in una rail sempre a schermo. */
+.br-acct-links { display: flex; flex-direction: column; padding: var(--am-s-2) 0; border-top: 1px solid var(--am-line); }
+.br-acct-links a, .br-acct-links button {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  padding: 9px 14px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  font-family: var(--am-font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--am-text);
+}
+.br-acct-links a:hover, .br-acct-links button:hover { background: var(--am-royal-dim); color: var(--am-royal-t); }
+
+@media (max-width: 640px) {
+  .br-lobby { gap: var(--am-s-6); padding: var(--am-s-4) var(--am-s-3) var(--am-s-7); }
+  .br-sec__grid { grid-template-columns: 1fr; gap: var(--am-s-3); }
+  .br-sec__head { flex-wrap: wrap; align-items: flex-start; gap: var(--am-s-2); }
+  .br-sec__title { font-size: 22px; }
+  /* La nav primaria scorre in orizzontale invece di andare a capo: la bottom
+     bar resta il modo principale di muoversi, questa è il secondo.
+     #MOBILE-0923: scorreva, ma NIENTE lo diceva. Misurato @390px/EN: contenuto
+     447px in una finestra di 358 — «Tools» cadeva a x=463, cioè 73px fuori dal
+     telefono, tagliato netto contro il bordo come una voce rotta. Due mosse:
+     (a) la voce si stringe (icona fuori: il segno per immagini ce l'ha già la
+     bottom bar, qui la parola basta) e in EN/FR/IT le cinque voci ci stanno
+     tutte; (b) dove NON ci stanno — ES «Herramientas», RU «Инструменты», 402
+     e 418px: nessun ritocco le fa entrare — una sfumatura sul bordo destro
+     dice che la riga continua, invece di fingere un taglio. */
+  .br-nav {
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    gap: 0;
+    padding-right: 6px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent 100%);
+  }
+  .br-nav::-webkit-scrollbar { display: none; }
+  .br-nav__item { padding: 6px 6px; font-size: 12.5px; gap: 3px; }
+  .br-nav__item img { width: 15px !important; height: 15px !important; }
+  /* La topbar è un grid item di .portal-root: il suo min-width «auto» vale il
+     min-content dei figli, e quello della nav (uno scroll container) si
+     calcola come se l'overflow fosse visibile. Con le icone del round 3 le
+     cinque voci fanno 435px: il documento si allargava a 467 (misurato
+     @390px). min-width 0 la riporta alla colonna, e la nav scorre. */
+  .am-topbar { min-width: 0; }
+  /* La zona destra prende una riga sua e può andare a capo. Senza questo
+     eredita `flex: 0 0 auto` da .am-topright (globals.css) e resta larga
+     quanto il suo max-content: con search + watchlist aggiunte nel round 2
+     fa 410px, cioè 20px più del telefono, e la larghezza la imponeva a
+     TUTTO il documento (misurato @390px: scrollWidth 426 vs client 390).
+     È la stessa causa radice di #RESPONSIVE-0618, che però era stata
+     chiusa sulle vecchie classi. */
+  .br-navright { flex: 1 1 100%; justify-content: flex-end; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * MATCH DETAIL — #RESTYLING-0921 (livelli 2/3 del brief)
+ *
+ * La scheda partita risponde a UNA domanda: «perché il modello pensa
+ * questo?». Quindi l'ordine è testa → numeri → perché → forma → news →
+ * mercati. I mercati restano (sono la parte operativa), ma dopo la
+ * spiegazione, non al posto suo.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.br-md { display: flex; flex-direction: column; gap: var(--am-s-5); padding: var(--am-s-5) var(--am-s-5) var(--am-s-2); }
+
+/* I numeri subito sotto la testa, su una superficie loro: è il blocco che
+   deve vincere la pagina. */
+.br-md__numbers {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--am-s-4);
+  padding: var(--am-s-4);
+  background: var(--am-panel-2);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+}
+/* #RESTYLING-0921 round 13 — un numero solo, il nostro, grande. Riusa
+   `.br-card__model` (stessa famiglia, stessa misura lg, stesso --am-pct della
+   card in griglia) e cambia solo l'asse: l'etichetta va SOTTO il numero, che
+   qui è il protagonista del blocco e non condivide più la riga con altri due. */
+.br-md__pct {
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.br-md__pct .br-card__model-n { line-height: 0.95; }
+
+.br-md__sec { display: flex; flex-direction: column; gap: var(--am-s-3); }
+
+.br-md__h {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--am-text);
+}
+.br-md__h--markets { margin-top: var(--am-s-2); padding-top: var(--am-s-4); border-top: 1px solid var(--am-line); }
+
+/* ── Why: una riga per motivo, l'etichetta dice da quale campo nasce ───── */
+.br-md__why { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--am-s-3); }
+.br-md__why > li {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: var(--am-s-3);
+  align-items: baseline;
+}
+.br-md__why > li > .br-label { padding-top: 2px; }
+.br-md__why-t {
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--am-text);
+}
+
+/* ── Forma recente ─────────────────────────────────────────────────────── */
+.br-md__form { display: flex; flex-direction: column; gap: var(--am-s-2); }
+.br-md__formrow { display: flex; align-items: center; gap: var(--am-s-3); }
+.br-md__formname {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--am-text);
+}
+.br-md__formres { display: inline-flex; gap: 4px; flex: 0 0 auto; }
+.br-md__formres > i {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--am-r-chip);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+  border: 1px solid var(--am-line-2);
+  color: var(--am-muted);
+}
+/* Vinta = edge green, persa = negativo, pari = neutra. Il colore non è l'unico
+   segnale: la lettera dice la stessa cosa. */
+.br-md__formres > i[data-r="W"] { background: var(--am-edge-dim); border-color: var(--am-edge-b); color: var(--am-edge); }
+.br-md__formres > i[data-r="L"] { background: var(--am-negative-dim); border-color: var(--am-negative-b); color: var(--am-negative); }
+.br-md__formres > i[data-r="D"] { color: var(--am-muted); }
+
+/* ── Infortuni / team news ─────────────────────────────────────────────── */
+.br-md__news { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--am-s-4); }
+.br-md__news ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.br-md__news li {
+  font-family: var(--am-font-ui);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--am-text);
+  padding-left: 14px;
+  position: relative;
+}
+.br-md__news li::before {
+  content: "";
+  position: absolute;
+  left: 2px; top: 8px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--am-line-2);
+}
+.br-md__none { margin: 0; font-family: var(--am-font-ui); font-size: 13.5px; color: var(--am-muted); }
+
+/* Il blocco Pro: dice COSA c'è dietro, non mostra numeri sfocati. */
+.br-md__locked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--am-s-3);
+  padding: var(--am-s-4);
+  border: 1px solid var(--am-edge-b);
+  border-radius: var(--am-r-card);
+  background: var(--am-edge-dim);
+}
+.br-md__locked p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--am-text);
+  max-width: 54ch;
+}
+
+@media (max-width: 640px) {
+  .br-md { padding: var(--am-s-4) var(--am-s-3) 0; gap: var(--am-s-4); }
+  .br-md__numbers { padding: var(--am-s-3); }
+  /* L'etichetta va sopra il testo: 92px di colonna su un telefono lasciano
+     una riga da 12 caratteri. */
+  .br-md__why > li { grid-template-columns: 1fr; gap: 2px; }
+  .br-md__locked { flex-direction: column; align-items: stretch; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * HERO + TILES — #RESTYLING-0921 round 4 (2026-09-22)
+ *
+ * Round 2: foto AI di un atleta, due glow, scatola dei value prop — il
+ * template dei generatori. Round 3: via la foto, tipografia enorme su texture
+ * in duotone — bocciato nella FORMA: «quadrato, non largo, decisamente più
+ * piccolo, e nello spazio a fianco le prediction card».
+ *
+ * Round 4, quindi: il banner è un QUADRATO che sta in meno di un terzo della
+ * riga (`.br-home-top`), con l'immagine della casa a tutta superficie e il
+ * testo in basso sotto un velo lineare. Di fianco, nella stessa riga, la prima
+ * fascia della lobby con le sue card vere. Resta la variante B — pannello nudo
+ * con la riga di calce — per chi non passa un'immagine.
+ * Sotto, la riga di tile per sport e la tile promozionale. Stessi token,
+ * stesso breakpoint 640.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* La prima riga della Home: quadrato piccolo a sinistra, prodotto a destra.
+   Il 30% è la misura del vincolo («nemmeno metà schermo»), il cap a 420px
+   impedisce che su un monitor largo il quadrato torni a essere un banner. */
+.br-home-top {
+  display: grid;
+  grid-template-columns: minmax(240px, 30%) minmax(0, 1fr);
+  gap: var(--am-s-5);
+  align-items: start;
+}
+/* Sotto i 1080 due colonne lasciano alle card meno di una card: si impila. */
+@media (max-width: 1080px) {
+  .br-home-top { grid-template-columns: minmax(0, 1fr); gap: var(--am-s-6); }
+}
+
+.br-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: end;
+  /* Quadrato E piccolo: il cap sta QUI e non sulla colonna, perché a board
+     vuota il banner si rende da solo in `.br-lobby` (flex column) e senza il
+     cap tornerebbe un quadrato a tutta larghezza — cioè il banner enorme che
+     il round 4 doveva togliere. */
+  aspect-ratio: 1 / 1;
+  max-width: 420px;
+  padding: var(--am-s-5);
+  overflow: hidden;
+  isolation: isolate;
+  /* Contenitore per la headline: sotto i 640 il corpo si misura sulla
+     larghezza REALE del banner (cqi), non sul viewport — dentro .book-main
+     il banner a 390px è largo 310, non 358. */
+  container-type: inline-size;
+  color: var(--am-text);
+  border-radius: var(--am-r-card);
+  border: 1px solid var(--am-line);
+  background: var(--am-panel);
+  box-shadow: var(--am-shadow-card);
+}
+
+/* ── Il fondo: l'immagine (A) o la riga di calce (B) ───────────────────── */
+.br-hero__art {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* Round 4: niente duotone. L'immagine è già nella palette della casa (navy,
+   blu, lime) e la si mostra com'è — era proprio il trattamento che la
+   spegneva a rendere il banner del round 3 «non accattivante». */
+.br-hero__tex {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  /* Specchiata. Nell'asset il pallone — la parte CHIARA — sta a sinistra, ed
+     è esattamente dove cade il testo, allineato a sinistra: «OPPORTUNITIES»
+     bianco su bianco. Ribaltata, sotto il testo resta la mesh scura e il
+     pallone si prende la metà destra, che è libera. Nessun testo dentro
+     l'immagine, quindi lo specchio non rompe niente. */
+  transform: scaleX(-1);
+}
+/* Il velo: lineare (mai radiale), dal basso — il testo è ancorato in fondo al
+   quadrato. Serve a far leggere il testo, non a spegnere l'immagine: in cima
+   arriva a zero e il soggetto si vede intero. */
+.br-hero[data-art="photo"] .br-hero__art::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(0deg,
+    color-mix(in srgb, var(--am-bg) 96%, transparent) 0%,
+    color-mix(in srgb, var(--am-bg) 88%, transparent) 38%,
+    color-mix(in srgb, var(--am-bg) 58%, transparent) 62%,
+    color-mix(in srgb, var(--am-bg) 18%, transparent) 84%,
+    transparent 96%);
+}
+/* La riga di calce (variante B): una linea sola, 2px, −7°. Il viewBox
+   quadrato con `slice` tiene l'angolo fisso a qualunque proporzione. */
+.br-hero__line {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  stroke: color-mix(in srgb, var(--am-text) 55%, transparent);
+  stroke-width: 2px;
+}
+.br-hero[data-art="photo"] .br-hero__line { display: none; }
+/* Grana: feTurbulence SVG a opacità 7%. Pesa zero, non è un PNG che si ripete. */
+.br-hero__grain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.07;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ── Contenuto ─────────────────────────────────────────────────────────── */
+.br-hero__eyebrow {
+  margin: 0 0 var(--am-s-2);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted);
+}
+/* La voce del prodotto: condensed 800, interlinea .88, tracking stretto.
+   Round 4: il corpo si misura sul QUADRATO (cqi), non sul viewport — il
+   banner è largo ~340px dentro una pagina da 1280, e 8vw ci scriverebbe
+   dentro una parola da 102px. 12cqi = tre righe da ~40px a quella misura. */
+.br-hero__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-size: clamp(30px, 12cqi, 48px);
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  line-height: 0.9;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  max-width: 12ch;
+  color: var(--am-text);
+}
+/* <em> = la parola accentata (stress emphasis, semantica giusta): lime, non
+   corsivo. Lime e non edge-green così «today.» e «+18» non sono lo stesso
+   colore: uno è voce, l'altro è dato. */
+.br-hero__title em { font-style: normal; color: var(--am-lime); }
+
+.br-hero__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--am-s-3);
+  flex-wrap: wrap;
+  margin-top: var(--am-s-4);
+}
+.br-hero__sub {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--am-muted);
+  max-width: 44ch;
+}
+
+/* I tre numeri veri: una striscia, non tre pill. Tabulari, senza cornice.
+   Solo High edge è lime. Con href sono link; il testo dice già dove. */
+.br-hero__stats {
+  display: flex;
+  gap: var(--am-s-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.br-hero__stats li { display: flex; }
+.br-hero__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+a.br-hero__stat:hover .br-hero__stat-l { color: var(--am-text); }
+a.br-hero__stat:focus-visible { outline: 2px solid var(--am-text); outline-offset: 4px; }
+.br-hero__stat-n {
+  font-family: var(--am-font-num);
+  font-size: var(--am-num-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--am-text);
+}
+.br-hero__stats li[data-kind="high-edge"] .br-hero__stat-n { color: var(--am-lime); }
+.br-hero__stat-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--am-font-num);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+  white-space: nowrap;
+}
+/* Il live ha un quadratino pieno, bianco: un segno, non un secondo colore. */
+.br-hero__stats li[data-kind="live"] .br-hero__stat-l::before {
+  content: "";
+  width: 6px; height: 6px;
+  background: var(--am-text);
+}
+
+/* Una sola CTA piena: lime con inchiostro, e il TAGLIO in alto a sinistra
+   (la firma della casa, la stessa delle icone). Niente ombra, niente alone.
+   Il focus ring è inset perché il clip-path taglierebbe un outline esterno. */
+.br-hero__ctas {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  flex-wrap: wrap;
+  margin-top: var(--am-s-4);
+}
+.br-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--am-lime-ink);
+  background: var(--am-lime);
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+  transition: filter 120ms ease;
+}
+.br-hero__cta:hover { filter: brightness(1.05); }
+.br-hero__cta svg { transition: transform 160ms ease; }
+.br-hero__cta:hover svg { transform: translateX(2px); }
+.br-hero__cta:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--am-lime-ink); }
+.br-hero__cta[data-tone="ghost"] {
+  color: var(--am-text);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--am-text) 28%, transparent);
+  clip-path: none;
+}
+.br-hero__cta[data-tone="ghost"]:hover { border-color: var(--am-text); filter: none; }
+.br-hero__cta[data-tone="ghost"]:focus-visible { box-shadow: none; outline: 2px solid var(--am-text); outline-offset: 2px; }
+
+/* ── I punti (se il chiamante li passa): una riga piana in coda, senza
+   scatola. Round 3: la scatola a fianco della headline non esiste più. ─── */
+.br-hero__aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-2);
+  margin-top: var(--am-s-5);
+  padding-top: var(--am-s-4);
+  border-top: 1px solid color-mix(in srgb, var(--am-text) 14%, transparent);
+}
+.br-hero__aside-h {
+  margin: 0;
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.br-hero__aside-h em { font-style: normal; color: var(--am-lime); }
+.br-hero__aside-sub { margin: 0; font-family: var(--am-font-ui); font-size: 13.5px; line-height: 1.45; color: var(--am-muted); }
+.br-hero__points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--am-s-2) var(--am-s-5);
+}
+.br-hero__points li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--am-text);
+}
+.br-hero__points li svg { color: var(--am-muted); }
+
+/* ── Tile per sport ────────────────────────────────────────────────────── */
+.br-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--am-s-3);
+}
+.br-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-height: 72px;
+  padding: var(--am-s-3) var(--am-s-3) var(--am-s-3) var(--am-s-3);
+  border-radius: var(--am-r-card-sm);
+  border: 1px solid var(--am-line);
+  background: var(--am-panel);
+  color: var(--am-text);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+a.br-tile:hover, button.br-tile:hover { border-color: var(--am-royal-b); box-shadow: var(--am-shadow-card-hover); }
+.br-tile:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+/* Selezionata: bordo royal (struttura), nessun alone. */
+.br-tile[aria-current="true"] { border-color: var(--am-royal-t); }
+/* Senza dati la tile non è un link: superficie un gradino sotto, cursore
+   normale, e lo dice («Coming soon») invece di mostrare uno zero. */
+.br-tile[data-state="soon"] { cursor: default; background: var(--am-bg-2); color: var(--am-muted); }
+.br-tile__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--am-inset);
+  border: 1px solid var(--am-line);
+  color: var(--am-royal-t);
+  overflow: hidden;
+}
+.br-tile__icon > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* #RESTYLING-0921 round 4 — le icone sport sono i raster della casa (pallone
+   con la fiamma, fondo trasparente). Il disco inset con bordo era la cornice
+   dell'icona di LINEA: sotto un PNG ritagliato taglierebbe la fiamma agli
+   angoli. Qui la cornice sparisce e l'immagine sta intera (`contain`). */
+.br-tile__icon[data-kind="raster"] {
+  width: 48px; height: 48px;
+  border: 0;
+  background: none;
+  border-radius: 0;
+}
+.br-tile__icon[data-kind="raster"] > img { object-fit: contain; }
+/* Uno sport senza pipeline è un'icona spenta, non un'icona diversa. */
+.br-tile[data-state="soon"] .br-tile__icon[data-kind="raster"] > img { opacity: 0.55; filter: saturate(0.55); }
+.br-tile[data-state="soon"] .br-tile__icon { color: var(--am-muted-2); }
+.br-tile__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.br-tile__name {
+  font-family: var(--am-font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1.15;
+  color: inherit;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.br-tile__meta {
+  font-family: var(--am-font-num);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--am-muted-2);
+  white-space: nowrap;
+}
+.br-tile__meta > b { font-weight: 700; color: var(--am-text); }
+.br-tile[data-state="soon"] .br-tile__meta { text-transform: uppercase; letter-spacing: 0.12em; font-size: 10.5px; }
+.br-tile__go { color: var(--am-muted-2); flex: none; transition: transform 160ms ease, color 160ms ease; }
+a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: translateX(2px); color: var(--am-royal-t); }
+
+/* ── Tile promozionale: «Build your own accumulator» ───────────────────── */
+/* Occupa due colonne della riga: è l'unica tile che porta fuori dalla lista,
+   verso uno strumento. Round 3: bordo a 1px come le altre, superficie
+   panel-2, nessun lavaggio radiale — il verde resta SOLO su icona e freccia. */
+.br-promo {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-4);
+  min-height: 72px;
+  padding: var(--am-s-3) var(--am-s-4);
+  border-radius: var(--am-r-card-sm);
+  border: 1px solid var(--am-line);
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  text-decoration: none;
+  min-width: 0;
+  transition: box-shadow 140ms ease, border-color 140ms ease;
+}
+.br-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.br-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.br-promo__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  flex: none;
+  border-radius: var(--am-r-card-sm);
+  background: var(--am-inset);
+  border: 1px solid var(--am-line);
+  color: var(--am-edge);
+}
+.br-promo__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.br-promo__title { font-family: var(--am-font-ui); font-size: 16px; font-weight: 700; letter-spacing: -0.008em; line-height: 1.15; color: var(--am-text); }
+.br-promo__sub { font-family: var(--am-font-ui); font-size: 13px; line-height: 1.4; color: var(--am-muted); }
+.br-promo__go { color: var(--am-edge); flex: none; transition: transform 160ms ease; }
+.br-promo:hover .br-promo__go { transform: translateX(3px); }
+
+/* Ripiego di contatto quando il widget di chat è bloccato (components/LiveChat.tsx).
+   Stessa posizione di prima — in basso a destra, sopra la barra inferiore. */
+.br-chatfb {
+  position: fixed;
+  right: 20px;
+  bottom: 96px;
+  z-index: 2147483000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 9999px;
+  /* Round 7: era il verde del brand vecchio, l'ultimo rimasto scritto a mano
+     nel design system. Ora è il lime, con inchiostro scuro (15,9:1). */
+  background: var(--am-lime-fill);
+  color: var(--am-lime-fill-ink);
+  font-family: var(--am-font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Su telefono il ripiego è una sola icona, come ogni lancia-chat mobile: il
+     pill con la scritta era largo 121px e arrivava a 141px dal bordo destro,
+     dentro la fascia della CTA dell'hero. Tondo a 44px sta in 52px e la CTA
+     (ora larga quanto il testo) gli resta fuori. */
+  .br-chatfb {
+    right: 8px;
+    gap: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .br-chatfb__t {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* Round 4: su telefono l'immagine RESTA — è il quadrato, non un fondo. Il
+     corpo della headline si misura già sul container (cqi), quindi qui serve
+     solo restringere il padding e tenere il testo dentro il quadrato. */
+  .br-hero { padding: var(--am-s-4); }
+  .br-hero__title { max-width: none; }
+  .br-hero__row { gap: var(--am-s-3); }
+  /* Le CTA restano larghe quanto il loro testo, come su desktop. Con `flex: 1`
+     si stiravano per tutto il quadrato fino a 57px dal bordo destro dello
+     schermo, cioè dentro l'angolo dove sta il lancia-chat (fisso, in basso a
+     destra): a 390×844 il pill «Contact us» copriva 84×31px della CTA primaria
+     «Explore today's picks», arrivando sopra la freccia. Misurato sul preview. */
+  .br-hero__cta { justify-content: center; }
+  .br-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--am-s-2); }
+  .br-promo { grid-column: 1 / -1; }
+  /* A due colonne la tile è larga 151px: con l'icona a 40 e la freccia restavano
+     79px di testo, e a 390px si leggeva «Footb…», «More spo…», «Coming soon»
+     tagliato, con «45 picks today» che usciva dal riquadro (il meta ha
+     `white-space: nowrap` e nessun clip, quindi il testo debordava dipinto
+     fuori dal suo box). Icona più piccola e le due righe di testo che vanno a
+     capo invece di troncarsi. La freccia resta: è l'unico segno che la tile è
+     toccabile, e con l'icona più piccola lo spazio adesso basta. */
+  .br-tile { min-height: 64px; padding: 10px; gap: 8px; }
+  .br-tile__icon { width: 30px; height: 30px; }
+  .br-tile__icon[data-kind="raster"] { width: 32px; height: 32px; }
+  .br-tile__name { white-space: normal; overflow: visible; }
+  .br-tile__meta { white-space: normal; }
+
+  /* L'hero è il pezzo di questo round: su telefono partiva a y=500 su 844 e la
+     sua parte bassa finiva sotto la barra inferiore. Qui si recuperano ~60px
+     dalla cornice che gli sta sopra (titolo, i due bottoni secondari, la
+     striscia register), senza togliere nulla: l'hero rientra intero sopra la
+     piega a 390×844 e a 360×780. Misurato sul preview. */
+  .book-main { padding-top: 6px; }
+  .book-main-head.am-deskhead { gap: 6px; margin-bottom: 6px; }
+  .am-deskhead-titles h1 { font-size: 20px; line-height: 1.15; }
+  .am-deskhead-tools { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .am-deskhead-tools > .mb-entry,
+  .am-deskhead-tools > .rail-refresh { min-height: 36px; height: 36px; }
+  .book-main > .reg-nudge { margin-top: 6px; padding-top: 6px; padding-bottom: 6px; gap: 8px; }
+  .br-lobby { padding-top: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .br-hero__cta, .br-hero__cta svg, .br-tile, .br-tile__go, .br-promo, .br-promo__go { transition: none; }
+  .br-hero__cta:hover svg, a.br-tile:hover .br-tile__go, .br-promo:hover .br-promo__go { transform: none; }
+}
+
+/* Light (carta): il banner resta scuro — è l'unico pezzo della pagina che
+   tiene il navy anche nel tema chiaro, come la copertina di un giornale
+   sportivo su carta beige (ref-02, pannello 3 fa lo stesso). Serve quindi
+   ri-dichiarare qui i colori che il tema chiaro avrebbe scurito. */
+:root[data-theme="light"] .br-hero {
+  --am-text: #EDEFF2;
+  --am-muted: #A9B3CC;
+  --am-muted-2: #909AAE;
+  --am-lime: #C8FF3D;
+  --am-lime-ink: #0B1400;
+  --am-line: rgba(90,133,255,0.30);
+  --am-bg: #060B24;
+  --am-panel: #0C1741;
+  border-color: rgba(30,72,214,0.45);
+}
+
+/* ── FAQ in coda alla Home (#RESTYLING-0921 round 2) ──────────────────────
+   Sta su "/" perché lo schema FAQPage vive su "/" e deve avere le sue
+   risposte visibili (vedi components/lobby/HomeFaq.tsx). Due colonne su
+   desktop: sei risposte lunghe in colonna unica farebbero una coda più alta
+   del prodotto che stanno spiegando. */
+.br-faq { display: flex; flex-direction: column; gap: var(--am-s-4); }
+.br-faq__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--am-s-5) var(--am-s-6);
+  margin: 0;
+}
+.br-faq__item { min-width: 0; }
+.br-faq__q {
+  font-family: var(--am-font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--am-text);
+}
+.br-faq__a {
+  margin: 6px 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--am-muted);
+  max-width: 68ch;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * BOARD («Explore») — #RESTYLING-0921 round 5 (2026-09-22)
+ *
+ * `SportsbookBoard` è la superficie più usata del prodotto — ci si arriva da
+ * Football/Tennis in nav, da «See all», da «Explore» e da «View analysis» —
+ * ed è l'unica che i round 1-4 non avevano toccato: filtri, bande sport e
+ * card erano ancora del sito vecchio, così oltre la prima schermata il
+ * redesign finiva di colpo.
+ *
+ * Le card ora sono `.br-card` (il componente della Home). Qui restano i
+ * CONTROLLI, portati sugli stessi token: niente `--am-coral` (il verde del
+ * brand vecchio) sul segmento attivo, niente pannello azzurrino attorno ai
+ * filtri, e il titolo di sezione nella voce della casa — Saira Condensed
+ * maiuscolo, la stessa di `.br-sec__title`.
+ *
+ * Le classi vecchie restano in piedi sotto (`.am-filters`, `.sport-band`,
+ * `.am-grid`): qui si aggiunge un secondo nome sullo stesso elemento e si
+ * sovrascrive quel che è fuori sistema. Riscrivere il board da zero avrebbe
+ * voluto dire rifare anche il cap mobile e la collocazione dei banner house,
+ * che funzionano.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.br-board { display: grid; gap: var(--am-s-4); padding: var(--am-s-4) var(--am-s-4) var(--am-s-6); }
+
+/* ── La barra dei filtri ─────────────────────────────────────────────────── */
+.sports-filter-bar.br-filters {
+  gap: var(--am-s-2);
+  padding: var(--am-s-3);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  /* Era `rgba(59,130,246,0.035)`, un azzurro fuori dai token: la barra
+     sembrava un pannello di configurazione appiccicato sopra il contenuto. */
+  background: var(--am-panel);
+}
+
+.br-filters .am-seg {
+  background: var(--am-inset);
+  border-color: var(--am-line);
+  border-radius: var(--am-r-ctl);
+}
+.br-filters .am-seg button {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--am-muted);
+}
+.br-filters .am-seg button:hover:not(.on) { background: var(--am-royal-dim); color: var(--am-text); }
+.br-filters .am-seg button.on {
+  background: var(--am-royal-dim);
+  color: var(--am-royal-t);
+  box-shadow: inset 0 0 0 1px var(--am-royal-b);
+}
+.br-filters .am-seg button.on .ct { color: var(--am-royal-t); opacity: 0.85; }
+.br-filters .am-seg button .ct { font-family: var(--am-font-num); }
+.br-filters .am-seg button:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: -2px; }
+/* Le icone sport dei segmenti sono i raster della casa: ritagliati, quindi
+   niente cornice né disco attorno (stessa regola di `.br-chip__ico`). */
+.br-filters .am-seg button .ic { border-radius: 3px; }
+
+.br-filters .am-mini-field > span {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--am-muted-2);
+}
+.br-filters .am-mini-field select {
+  font-family: var(--am-font-num);
+  font-size: 11.5px;
+  border-radius: var(--am-r-ctl);
+  border-color: var(--am-line);
+}
+.br-filters .am-mini-field select:focus-visible {
+  border-color: var(--am-royal-t);
+  box-shadow: 0 0 0 2px var(--am-royal-dim);
+}
+.br-filters .am-search {
+  border-radius: var(--am-r-ctl);
+  border-color: var(--am-line);
+  background: var(--am-inset);
+}
+.br-filters .am-search:focus-within { border-color: var(--am-royal-t); }
+.br-filters .am-search input { font-family: var(--am-font-ui); font-size: 13px; }
+
+/* ── La banda di sezione (Football / Tennis) ─────────────────────────────── */
+.sport-band.br-band { margin: var(--am-s-5) 0 var(--am-s-3); gap: var(--am-s-3); }
+/* Il PNG è già ritagliato sulla sua tile: il disco bordato attorno lo tagliava
+   (stessa lezione delle sport-tile del round 4). */
+.sport-band.br-band .glyph {
+  width: 28px; height: 28px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+/* La misura la dà `size` sul componente (stile inline): qui solo l'angolo. */
+.sport-band.br-band .glyph img { border-radius: 6px; }
+.sport-band.br-band h2 {
+  font-family: var(--am-font-display);
+  font-size: 26px;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-text);
+}
+.sport-band.br-band .ct,
+.sport-band.br-band .note {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+/* L'ambra della banda tennis era l'ultimo colore-per-sport rimasto: il round 3
+   ha deciso un elemento colorato per superficie, e qui è il segno LIVE. */
+.sport-band.amber.br-band .glyph svg { color: var(--am-muted); }
+
+/* ── La griglia ──────────────────────────────────────────────────────────── */
+/* Doppia classe per battere `.am-grid` (12 colonne fisse, con `.card` a span 4
+   e `.card.tennis` a span 3): le card nuove non sono `.card`, quindi senza
+   questo finirebbero una per colonna. Stessa misura di `.br-sec__grid`, così
+   una card è larga uguale sulla Home e qui. */
+.am-grid.br-board-grid {
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: var(--am-s-3);
+  padding: 0 0 var(--am-s-3);
+  align-items: start;
+}
+.br-board-card { min-width: 0; display: grid; }
+.am-grid.br-board-grid > .free-paywall.fp-in-grid,
+.am-grid.br-board-grid > .house-banner.hb-billboard,
+.am-grid.br-board-grid > .house-banner.hb-leaderboard { grid-column: 1 / -1; }
+.am-grid.br-board-grid > .house-banner.hb-rectangle,
+.am-grid.br-board-grid > .house-banner.hb-halfpage { grid-column: span 2; }
+/* #RESTYLING-0921 — il tile del creativo nuovo: DUE colonne di card, cioè ~512px,
+   che a 16:9 fa ~288px di altezza. È la misura chiesta da Andrea («senza
+   abbondare») e dall'AD: poco più di una card, e soprattutto NON la riga intera,
+   che a questa larghezza farebbe ~585px di altezza — il motivo per cui i banner
+   del brand vecchio erano stati spenti. `align-self:start` perché la griglia
+   allinea in alto e il tile è alto quanto la sua immagine: non va tirato
+   all'altezza della card più alta della riga, che su un rapporto fisso sarebbe
+   un taglio. */
+.am-grid.br-board-grid > .house-banner.hb-cr-baked { grid-column: span 2; align-self: start; }
+
+.book-empty.br-board-empty {
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--am-muted);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  background: var(--am-panel);
+  padding: var(--am-s-5);
+}
+
+@media (max-width: 640px) {
+  .br-board { padding: var(--am-s-3) var(--am-s-3) var(--am-s-6); }
+  .am-grid.br-board-grid { grid-template-columns: 1fr; }
+  /* A colonna singola `span 2` sborderebbe: il tile prende la riga, che qui è
+     larga una card — la stessa misura delle schede accanto. */
+  .am-grid.br-board-grid > .house-banner.hb-cr-baked { grid-column: 1 / -1; }
+  .sport-band.br-band h2 { font-size: 22px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * IL RESTO DEL SITO — #RESTYLING-0921 round 5 fase C (2026-09-22)
+ *
+ * Piani, Storico, Classifica, Invito, Build a Probability View e Strumenti
+ * sono rimasti fuori dallo scope dichiarato dei round 1-4. Rifarli uno per uno
+ * non entra in una giornata, e non serve: quello che li fa leggere «vecchio
+ * dashboard» accanto alla Home è quasi tutto in due cose — il verde del brand
+ * vecchio (risolto alla radice in globals.css, `--am-coral` ora vale
+ * `--am-edge`) e il TITOLO, che lì è un grassetto stretto generico mentre su
+ * Home e board è la voce della casa: Saira Condensed 800 maiuscolo.
+ *
+ * Qui si dà quella voce ai titoli condivisi, che è la firma che attraversa la
+ * pagina — «la gerarchia la fa la tipografia, non i badge» (round 3). Il
+ * layout di quelle viste non si tocca: riscriverli è il giro dopo, e va fatto
+ * a vista, non alla cieca sotto scadenza.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* Il titolo di OGNI vista del desk (Piani, Storico, Classifica, Invito,
+   Build a Probability View, Explore, Today): un solo h1 per pagina
+   (#SEO-PACK-0810), ora nella voce della casa. */
+.book-main-head h1,
+.book-main-head h2 {
+  font-family: var(--am-font-display);
+  font-size: 30px;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.am-deskhead .am-sub { font-family: var(--am-font-ui); }
+
+/* Le teste di sezione delle stesse viste. */
+.plans-hero h3,
+.plan-card-head h4,
+.am-history .hh h2 {
+  font-family: var(--am-font-display);
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+.plans-hero h3 { font-size: 26px; }
+.plan-card-head h4 { font-size: 21px; }
+.am-history .hh h2 { font-size: 24px; }
+
+/* L'eyebrow è la label tecnica del design system, non un testo colorato in più:
+   stessa misura, stessa tracciatura, stesso grigio di `.br-label`. */
+.plans-hero .eyebrow,
+.plan-card-head .eyebrow {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+
+/* Round 3: «zero glow». L'alone radiale dietro il blocco Edge del board era
+   l'ultimo rimasto in pagina — la profondità la fanno superficie e bordo. */
+.featured::before { background: none; }
+
+@media (max-width: 640px) {
+  .book-main-head h1,
+  .book-main-head h2 { font-size: 24px; }
+  .plans-hero h3 { font-size: 22px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * EDGE DEL GIORNO + WEEKLY MODEL CASE — #RESTYLING-0921 round 5 (2026-09-22)
+ *
+ * Sono i due blocchi in mezzo al board, e con tutto il resto rifatto erano
+ * rimasti gli unici pezzi del round 2: l'Edge era un pannello con fotografia
+ * di scena (stadio/campo), velo a gradiente, alone verde e angoli smussati;
+ * la Weekly Model Case era un creativo 16:9 col titolo, l'atleta e il
+ * pulsante COTTI DENTRO l'immagine.
+ *
+ * Diventano due pannelli del design system: superficie piatta, un bordo da
+ * 1px, il testo che è testo. La struttura dell'Edge non si tocca — restano
+ * `.big`, `.why`, `.eyebrow`, `.hero-prob`, le metriche e il gate bloccato —
+ * cambia solo il trattamento. La Weekly Model Case invece è riscritta nel TSX,
+ * perché un'immagine con le parole dentro non si può riskinnare: il testo
+ * non era selezionabile, non si traduceva e non si ridimensionava.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Edge del giorno ─────────────────────────────────────────────────────── */
+.br-edgeday { min-width: 0; }
+/* Il contenitore si chiama `br-edgeday`, non `br-edge`: quel nome è già il
+   BADGE numerico in cima a questo file (inline-flex, mono, 700, nowrap,
+   line-height 1). Con lo stesso nome il pannello ne ereditava la tipografia —
+   la frase del modello restava su una riga e veniva tagliata a metà parola, le
+   etichette giravano in mono. Due cose diverse, due nomi diversi. */
+.br-edgeday > .featured {
+  margin: 0;
+  background: var(--am-panel);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  box-shadow: var(--am-shadow-card);
+  clip-path: none;
+  overflow: hidden;
+}
+/* `::before` era la fotografia, `::after` il velo che la teneva leggibile, e
+   la regola base ci aggiungeva un radiale verde. Spenti tutti e tre: la
+   profondità la fanno superficie e bordo (round 3). */
+.br-edgeday > .featured::before,
+.br-edgeday > .featured::after { content: none; background: none; }
+/* Il pannello ora è CHIARO in tema chiaro: cadono gli override che forzavano
+   verde e bianco perché sotto c'era una foto notturna in entrambi i temi. */
+:root[data-theme="light"] .br-edgeday .featured .eyebrow { color: var(--am-muted-2); }
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .num { color: var(--am-text); }
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .num .pc { color: var(--am-edge); }
+:root[data-theme="light"] .br-edgeday .featured .eyebrow .dot { background: none; }
+
+/* `:root` per pareggiare machina.css (`[data-mc-ground] .eyebrow`, 0-4-0), che
+   colora l'occhiello col verde della scena: qui l'elemento colorato è il
+   numero, non la sua etichetta. */
+:root .br-edgeday .featured .eyebrow {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--am-muted-2);
+  margin-bottom: var(--am-s-3);
+}
+/* La tacca obliqua accanto all'occhiello era decorazione: la label sta da sé. */
+.br-edgeday .featured .eyebrow .dot { display: none; }
+
+.br-edgeday .featured .fxname {
+  font-family: var(--am-font-ui);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--am-text);
+}
+.br-edgeday .featured .league {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+/* Il filo d'accento verticale accanto al numero: un effetto in meno. */
+.br-edgeday .featured .hero-prob { padding-left: 0; }
+.br-edgeday .featured .hero-prob::before { content: none; }
+.br-edgeday .featured .hero-prob .num {
+  font-family: var(--am-font-num);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--am-text);
+}
+.br-edgeday .featured .hero-prob .num .pc { color: var(--am-edge); }
+.br-edgeday .featured .hero-prob .subl {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+/* Il chip dell'edge: outline monocromo come `.br-badge`, non una pillola piena. */
+.br-edgeday .featured .edge {
+  border-radius: var(--am-r-ctl);
+  clip-path: none;
+  border: 1px solid var(--am-line-2);
+  background: none;
+  color: var(--am-muted);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.br-edgeday .featured .edge svg { color: var(--am-edge); }
+/* La CTA del gate: lo stesso outline verde di `.br-cta[data-tone="unlock"]`. */
+.br-edgeday .featured .featured-unlock {
+  border-radius: var(--am-r-ctl);
+  clip-path: none;
+  border: 1px solid var(--am-edge-b);
+  background: var(--am-edge-dim);
+  color: var(--am-edge);
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+}
+.br-edgeday .featured .featured-unlock:hover { background: var(--am-edge-b); filter: none; }
+.br-edgeday .featured .why .wlab {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.br-edgeday .featured .why .wlab .tri { color: var(--am-muted-2); }
+.br-edgeday .featured .why .line { color: var(--am-muted); font-family: var(--am-font-ui); }
+.br-edgeday .featured .why dt {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.br-edgeday .featured .why dd .tnum { font-family: var(--am-font-num); color: var(--am-text); }
+
+/* ── Weekly Model Case ───────────────────────────────────────────────────── */
+/* La classe `wp-promo` resta sull'elemento solo per la sua collocazione nella
+   riga (`.edge-split > .wp-promo`): tutto il resto lo detta `br-promo`. */
+.br-promo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "ico body" "cta cta";
+  gap: var(--am-s-3) var(--am-s-4);
+  align-content: start;
+  padding: var(--am-s-4);
+  background: var(--am-panel);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  box-shadow: var(--am-shadow-card);
+  clip-path: none;
+  text-decoration: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.br-promo:hover { transform: none; border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.br-promo__ico {
+  grid-area: ico;
+  align-self: start;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--am-r-card-sm);
+}
+.br-promo__body { grid-area: body; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.br-promo__title {
+  font-family: var(--am-font-display);
+  font-size: 24px;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-text);
+}
+.br-promo__sub {
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--am-muted);
+}
+.br-promo__cta {
+  grid-area: cta;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--am-royal-t);
+}
+.br-promo:hover .br-promo__cta { text-decoration: underline; }
+.br-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .br-promo__title { font-size: 21px; }
+}
+
+/* La promo tiene la sua colonna nella riga. La regola vale per entrambe le
+   vesti: `br-promo` era il pannello nativo del 21/09, `wp-promo` è il creativo
+   che l'ha sostituito il 22/09 (#RESTYLING-0921). La gemella su `.wp-promo` sta
+   in globals.css con la spiegazione del perché la colonna è `-2` e non `2`. */
+.edge-split > .br-promo { grid-column: -2; }
+
+/* #RESTYLING-0921 — la Weekly Model Case è di nuovo il CREATIVO finito: headline,
+   CTA e «18+ · Play responsibly» sono cotti nei pixel, quindi qui non c'è niente
+   da impaginare — solo la cornice dell'immagine. Nessun padding e nessuno sfondo:
+   un bordo attorno a un banner che ha già il suo, e l'immagine a filo.
+   `height:auto` e non un'altezza fissa: il box segue il rapporto 16:9 del
+   creativo, che a 480px di larghezza fa 270px — la misura esatta per cui
+   `.edge-split` è stata calibrata il 10/09 (vedi il commento là). Stirarlo o
+   ritagliarlo taglierebbe il disclaimer, che sta in basso. */
+.wp-promo {
+  display: block;
+  border-radius: var(--am-r-card);
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  box-shadow: var(--am-shadow-card);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.wp-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.wp-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.wp-promo img { display: block; width: 100%; height: auto; }
+@media (prefers-reduced-motion: reduce) { .wp-promo { transition: none; } }
+/* Un ultimo residuo decorativo: l'occhiello dell'Edge aveva anche una tacca
+   in `::before`, oltre al `.dot` — e non è nostra, arriva da machina.css
+   (`[data-mc-ground] .eyebrow::before`, 0-4-0). Il `:root` davanti serve a
+   pareggiare quella specificità: design-system.css viene dopo, quindi vince.
+   Scritta senza, la regola sembrava applicata e non lo era. */
+:root .br-edgeday .featured .eyebrow::before { content: none; }
+
+/* Il pannello dell'Edge era SCURO in entrambi i temi, perché sotto c'era una
+   fotografia notturna: da lì una serie di override che in tema chiaro
+   forzavano bianco e grigio-chiaro sul testo. Ora il pannello è `--am-panel`,
+   quindi in chiaro quel testo era bianco su bianco — invisibile, misurato allo
+   screenshot. Ogni riga qui rimette il token giusto. */
+:root[data-theme="light"] .br-edgeday .featured .fxname,
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .pickname { color: var(--am-text); }
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .pickname.locked-text { color: var(--am-muted); }
+:root[data-theme="light"] .br-edgeday .featured .league,
+:root[data-theme="light"] .br-edgeday .featured .hero-prob .subl,
+:root[data-theme="light"] .br-edgeday .featured .edge-plain { color: var(--am-muted-2); }
+:root[data-theme="light"] .br-edgeday .featured .edge,
+:root[data-theme="light"] .br-edgeday .featured .edge.is-extreme {
+  color: var(--am-muted);
+  border-color: var(--am-line-2);
+  background: none;
+}
+:root[data-theme="light"] .br-edgeday .featured .edge svg,
+:root[data-theme="light"] .br-edgeday .featured .edge.is-extreme svg { color: var(--am-edge); }
+:root[data-theme="light"] .br-edgeday .featured .featured-unlock {
+  color: var(--am-edge);
+  border-color: var(--am-edge-b);
+  background: var(--am-edge-dim);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * /tools — #RESTYLING-0921 round 5 fase C-bis (2026-09-22)
+ *
+ * L'hub dei calcolatori e le undici pagine-tool sono la superficie SEO del
+ * prodotto, e ci si arriva dalla nav di ogni pagina: erano rimaste un mondo
+ * a sé. Il fondo era lo stesso del desk (misurato: `--am-bg` in entrambi), ma
+ * tutto il resto no — h1 in Hanken Grotesk invece della voce della casa, le
+ * card con hover e CTA in verde dove il resto del sito usa royal per i link,
+ * e nessuna nav primaria: solo un «← Home» isolato. Quest'ultima è risolta
+ * nel TSX (`chromeNav`, passata a `SiteTopbar`), qui c'è il resto.
+ *
+ * I componenti interni dei calcolatori non si toccano: fanno i conti, e i
+ * conti sono giusti.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+.tl-head h1 {
+  font-family: var(--am-font-display);
+  font-size: clamp(26px, 3.6vw, 38px);
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.tl-section h2,
+.tl-cta h2 {
+  font-family: var(--am-font-display);
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+/* L'occhiello è la label del design system, non una riga verde in più. */
+.tl-eyebrow {
+  font-family: var(--am-font-ui);
+  font-size: var(--am-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--am-muted-2);
+}
+/* «FREE» resta l'unico elemento colorato dell'intestazione: outline, non fill. */
+.tl-eyebrow .tl-free {
+  border-color: var(--am-edge-b);
+  background: none;
+  color: var(--am-edge);
+  border-radius: var(--am-r-ctl);
+  font-weight: 600;
+}
+/* Le card dei tool prendono la forma e l'hover delle card del prodotto. */
+.tl-card { border-radius: var(--am-r-card); box-shadow: var(--am-shadow-card); }
+.tl-card:hover {
+  border-color: var(--am-line-2);
+  transform: none;
+  box-shadow: var(--am-shadow-card-hover);
+}
+.tl-card h2 { font-family: var(--am-font-ui); font-weight: 700; }
+.tl-card p { font-family: var(--am-font-ui); }
+/* Un link è royal in tutto il sito: qui era verde mono, come una CTA primaria. */
+.tl-card-cta {
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--am-royal-t);
+}
+/* Il blocco CTA era un pannello verde pieno: superficie del sistema, e il
+   verde resta dov'è un'azione — sul pulsante. */
+.tl-cta {
+  border-color: var(--am-line);
+  background: var(--am-panel);
+  border-radius: var(--am-r-card);
+}
+.tl-cta-btn {
+  border-radius: var(--am-r-ctl);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: none;
+}
+.tl-cta-btn:hover { box-shadow: none; filter: brightness(1.06); }
+
+/* #RESTYLING-0921 — il banner di cross-promo fra tool. `max-width:560px` e non
+   la larghezza piena della colonna (1080): il creativo è 16:9, a tutta colonna
+   sarebbe alto 607px e mangerebbe lo schermo prima della CTA. A 560 fa 315px,
+   cioè poco più della card di un tool. Centrato perché la pagina è a colonna
+   unica e un banner allineato a sinistra sotto un testo giustificato sembra
+   caduto lì. */
+.tl-promo {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: clamp(30px, 4vw, 48px) auto 0;
+  border-radius: var(--am-r-card);
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  box-shadow: var(--am-shadow-card);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.tl-promo:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
+.tl-promo:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.tl-promo img { display: block; width: 100%; height: auto; }
+@media (prefers-reduced-motion: reduce) { .tl-promo { transition: none; } }
+
+@media (max-width: 640px) {
+  .tl-head h1 { font-size: 24px; }
+}
+
+/* #RESTYLING-0921 round 5 — le icone della nav primaria sono raster (NavIcon).
+   Le regole sopra colorano l'`svg` per dire quale voce è attiva: un PNG il
+   colore ce l'ha suo, quindi la stessa gerarchia si fa con l'opacità — la
+   voce corrente e quella sotto il cursore a pieno, le altre un gradino sotto.
+   I raster sono già ritagliati: niente disco né cornice attorno. */
+.br-nav__item img {
+  border-radius: 4px;
+  opacity: 0.78;
+  transition: opacity 140ms ease;
+}
+.br-nav__item:hover img,
+.br-nav__item[aria-current="page"] img,
+.br-nav__item[data-live="true"] img { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * ROUND 6 — IL PERCORSO VERSO PRO (#RESTYLING-0921, 2026-09-22)
+ *
+ * Quattro pezzi nuovi, tutti dal riferimento che Andrea ha fatto costruire
+ * con Sites (betredge-studio-0922, screenshot in docs/reference/round6/):
+ *
+ *   .br-upgrade   il tasto lime «Passa a Pro», sempre in nav
+ *   .br-ctx       la fascia sottile di contesto sotto la nav — RIMOSSA nel round 16
+ *   .br-proband   la fascia blu «BETREDGE PRO», ricorrente dopo gli hero
+ *   .br-sporthero l'hero a piena larghezza di Calcio e Tennis
+ *
+ * PERCHÉ ALLORA TUTTI E QUATTRO INSIEME. Erano un solo gesto: dire dove si è
+ * (.br-ctx), dire cosa è questa sezione (.br-sporthero), e offrire il
+ * passaggio a Pro due volte — una in chrome, sempre presente e discreta
+ * (.br-upgrade), una in pagina, dopo l'hero, dove si è appena capito di
+ * cosa si sta parlando (.br-proband). Prima di questo round il passaggio a
+ * Pro si incontrava SOLO sbattendo contro una CTA bloccata.
+ *
+ * SUL LIME E IL TEMA CHIARO. `--am-lime` cambia valore fra i temi (dark
+ * #C8FF3D su inchiostro scuro, light #4C7A00 su inchiostro bianco): il
+ * tasto e i numeri usano la coppia lime/lime-ink e restano leggibili in
+ * entrambi senza una riga di override. La fascia .br-proband fa eccezione
+ * ed è navy in tutti e due i temi — è un annuncio, e lo stesso precedente
+ * di .br-hero, che su carta resta scuro (riga 1526).
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. «Passa a Pro» in nav ─────────────────────────────────────────────
+   L'unico fill lime del chrome. È anche l'unica CTA piena della topbar:
+   Accedi/Registrati restano un tasto di testo e uno secondario, così la
+   gerarchia ha un vertice solo. Al restringersi perde la freccia e cala di
+   corpo, ma non si nasconde mai: è la CTA di questo round. */
+.br-upgrade {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--am-r-ctl);
+  background: var(--am-lime);
+  color: var(--am-lime-ink);
+  font-family: var(--am-font-hud);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter 140ms ease;
+}
+/* SU CARTA IL LIME RESTA ACIDO. `--am-lime` nel tema chiaro vale #4C7A00 su
+   inchiostro bianco: è pensato per una PAROLA su fondo chiaro, e come fill
+   dava un tasto verde scuro accanto a «Registrati», che è verde scuro anche
+   lui — due tasti identici, e quello che doveva essere IL vertice della
+   gerarchia spariva dentro l'altro (visto sullo screenshot light a 1280).
+   Qui il valore misurato sul riferimento (#C8FF00) vale in entrambi i temi:
+   su bianco è il colore più acceso della pagina e non somiglia a nient'altro,
+   e l'inchiostro scuro ci fa 17,9:1 — più della coppia di default. */
+:root[data-theme="light"] .br-upgrade { background: #C8FF00; color: #0B1400; }
+.br-upgrade:hover { filter: brightness(1.08); }
+/* `currentColor` e non `--am-lime-ink`: sul chiaro il token è bianco, ma il
+   tasto lì ha inchiostro scuro (override qui sopra) e l'anello sarebbe stato
+   bianco su lime, cioè quasi invisibile. */
+.br-upgrade:focus-visible { outline: none; box-shadow: inset 0 0 0 3px currentColor; }
+.br-upgrade svg { flex: 0 0 auto; transition: transform 140ms ease; }
+.br-upgrade:hover svg { transform: translateX(2px); }
+
+/* IL PREZZO DEL TASTO, pagato dove costa meno.
+   `.am-topbar-in` va a capo quando la riga non basta (#RESPONSIVE-0618,
+   globals.css): giusto su telefono, ma i ~124px del tasto nuovo la facevano
+   andare a capo già su un portatile — due righe di chrome sopra ogni pagina.
+   Il caso peggiore è l'utente ANONIMO, che al posto del pill account ha due
+   tasti (Accedi + Registrati): a 1280px mancano ~50px.
+   Misurato con Playwright a 1366/1280/1200/1100, con l'albero pulito come
+   riferimento: la barra stava su una riga fino a ~1198px e col tasto nuovo
+   risaliva a ~1340px. Questi quattro ritocchi la riportano a UNA riga fino a
+   1280px — il portatile comune — e sotto va a capo come faceva prima, che è
+   il punto in cui deve farlo.
+   Il campo di ricerca non si può invece lasciar comprimere da solo: in un
+   flex che va a capo il browser spezza la riga PRIMA di restringere, quindi
+   `min-width: 0` non cambia niente (provato e misurato). A 8ch il placeholder
+   resta troncato come già era a 15ch, e digitando il campo scorre.
+   `:has(.br-upgrade)` tiene il gap più stretto sulla sola topbar del desk:
+   quella delle pagine statiche (SiteTopbar) non ha il tasto e resta com'era. */
+.br-navright .br-search input { width: 8ch; }
+.br-navright { gap: 6px; }
+.am-topbar-in:has(.br-upgrade) { gap: 16px; }
+
+/* ── 2. La fascia di contesto — RIMOSSA (round 16) ──────────────────────
+   Ripeteva sotto la nav quello che la nav diceva già sopra. Via il markup
+   e via le sue regole: una classe che nessuno stampa è debito. */
+
+/* ── 3. La fascia «BETREDGE PRO» ─────────────────────────────────────────
+   Riga sola, gradiente royal→sky, filo lime a sinistra. Il gradiente è
+   l'UNICA superficie colorata del sistema, e sta qui perché questa fascia
+   deve staccarsi dal resto della pagina senza essere un pannello in più:
+   passa da royal a un blu più freddo lungo 110°, come nel riferimento.
+   Niente `--am-edge`: il verde resta il colore del dato. */
+/* I tre valori letterali qui sotto sono MISURATI sul riferimento, non
+   scelti a occhio: art-director ha letto il CSS live via JS e li ha messi a
+   verbale in docs/reference/round6/NOTE.md — gradiente 110° #144CFF →
+   #096AC5 (70%) → #1682AA, filo sinistro 4px #81D9FF, label lime #C8FF00.
+   Restano letterali e NON token perché questa fascia è navy in entrambi i
+   temi (stesso precedente di .br-hero su carta): un token che cambia col
+   tema qui produrrebbe una fascia chiara su fondo chiaro.
+   NOTA per il round prossimo: i token base del sito (--am-royal #5A85FF)
+   sono più slavati del royal del riferimento (#145AFF). Allinearli è un
+   cambio globale con conseguenze sul contrasto misurato, e va fatto in un
+   commit suo — non di straforo dentro una fascia. */
+.br-proband {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-4);
+  padding: 13px var(--am-s-5);
+  border-left: 4px solid #81D9FF;
+  border-radius: var(--am-r-card-sm);
+  background: linear-gradient(110deg, #144CFF 0%, #096AC5 70%, #1682AA 100%);
+  color: #FFFFFF;
+}
+.br-proband__label {
+  flex: 0 0 auto;
+  font-family: var(--am-font-hud);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #C8FF00;
+}
+.br-proband__rule {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.32);
+}
+.br-proband__copy {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px var(--am-s-3);
+  font-family: var(--am-font-ui);
+  line-height: 1.35;
+}
+.br-proband__head { font-size: 15px; font-weight: 700; }
+.br-proband__sub { font-size: 13px; color: rgba(255,255,255,0.80); }
+.br-proband__cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.br-proband__cta:hover { text-decoration: underline; }
+.br-proband__cta:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 3px; border-radius: 2px; }
+.br-proband__cta svg { transition: transform 140ms ease; }
+.br-proband__cta:hover svg { transform: translateX(3px); }
+
+/* ── 4. L'hero di sezione (Calcio, Tennis) ───────────────────────────────
+   Bassa e larga (280px), foto a destra che sfuma nel navy verso sinistra,
+   testo in HTML sopra. Finché art-director non consegna le foto d'azione
+   `data-art="type"` rende un fondo a gradiente nei token di casa: è un hero
+   finito, non un buco in attesa. */
+.br-sporthero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* 300px è la misura del riferimento (~1410×300 su viewport 1546). Più
+     bassa e il 16:9 della foto si riduce a una fessura; più alta e la prima
+     card del board esce dalla prima schermata. */
+  min-height: 300px;
+  padding: var(--am-s-6);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-card);
+  background: var(--am-panel);
+  /* La fascia è sempre scura, come .br-hero: le foto d'azione sono girate
+     in luce da stadio e su carta bianca non avrebbero dove appoggiarsi. */
+  --am-text: #EDEFF2;
+  --am-muted: #A9B3CC;
+  --am-lime: #C8FF3D;
+  color: var(--am-text);
+}
+:root[data-theme="light"] .br-sporthero { border-color: rgba(30,72,214,0.45); background: #0C1741; }
+.br-sporthero__art { position: absolute; inset: 0; z-index: 0; }
+.br-sporthero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Round 12: la sorgente non è più 16:9 ma 3:1 (1600×533), cioè quasi la
+     forma del riquadro — misurato dal vivo, 1190×298 a viewport 1280 = 4:1.
+     `cover` scala sulla LARGHEZZA e dell'altezza resta fuori un quarto, non
+     più il 60%: a `top` restano in quadro la testa dell'atleta, il pallone e
+     gli archi di energia, e cade solo il prato in basso. Col 10% di prima
+     (tarato sul 16:9) la testa usciva dal quadro.
+     La X conta solo sotto i ~640px, dove il ritaglio diventa verticale: 72%
+     tiene l'atleta in quadro e taglia il tabellone LED sfocato di sinistra. */
+  object-position: 72% top;
+  display: block;
+}
+/* Il velo: orizzontale, da sinistra — il testo è ancorato a sinistra. A
+   destra arriva a zero, così il soggetto della foto si vede intero. Non si
+   scurisce la foto in post (nota di AD): lo scrim è CSS, quindi si regola
+   senza rigenerare 1,6MB di JPEG. */
+.br-sporthero[data-art="photo"] .br-sporthero__art::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, #071329 95%, transparent) 0%,
+    color-mix(in srgb, #071329 86%, transparent) 34%,
+    color-mix(in srgb, #071329 48%, transparent) 60%,
+    color-mix(in srgb, #071329 12%, transparent) 86%,
+    transparent 100%);
+}
+/* Il placeholder: la stessa geometria del velo, fatta di solo colore. */
+.br-sporthero[data-art="type"] .br-sporthero__art {
+  background:
+    radial-gradient(120% 140% at 88% 18%, rgba(90,133,255,0.38) 0%, transparent 62%),
+    linear-gradient(104deg, #060B24 0%, #0C1741 46%, #182B66 100%);
+}
+
+.br-sporthero__text { position: relative; z-index: 1; min-width: 0; }
+.br-sporthero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 var(--am-s-3);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--am-muted);
+}
+/* Due righe, sempre: la seconda è l'accento e va a capo da sola (`block`),
+   non quando capita che la larghezza lo imponga. */
+.br-sporthero__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-size: clamp(34px, 5.2vw, 64px);
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  line-height: 0.94;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+.br-sporthero__line { display: block; }
+.br-sporthero__title em { font-style: normal; color: var(--am-lime); }
+.br-sporthero__sub {
+  margin: var(--am-s-3) 0 0;
+  max-width: 46ch;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--am-muted);
+}
+
+/* Il badge: un numero vero e la sua etichetta, in un angolo. Riquadro a filo
+   e fondo scuro, non un fill neon — la regola della casa sugli accenti. */
+.br-sporthero__stat {
+  position: absolute;
+  z-index: 1;
+  right: var(--am-s-6);
+  bottom: var(--am-s-6);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: var(--am-r-card-sm);
+  background: rgba(6,11,36,0.52);
+  backdrop-filter: blur(3px);
+}
+.br-sporthero__stat-n {
+  font-family: var(--am-font-display);
+  font-size: 34px;
+  font-weight: 400;  /* Anton ha un solo peso: l'800 lo farebbe sintetizzare al browser */
+  line-height: 1;
+  color: var(--am-lime);
+}
+.br-sporthero__stat-l {
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--am-text);
+}
+
+@media (max-width: 640px) {
+  /* Nav: sul telefono resta il tasto, senza freccia e con la label corta. */
+  .br-upgrade { height: 30px; padding: 0 10px; font-size: 13px; gap: 5px; }
+  .br-upgrade svg { display: none; }
+
+  /* #MOBILE-0923 — il campo di ricerca diceva «Search t».
+     A 8ch il placeholder («Search team, player…», «Cerca squadra, giocatore…»)
+     si tronca a metà della SECONDA parola: misurato @390px il campo era largo
+     106px, perché nella stessa riga stavano anche Watchlist, Accedi e
+     Registrati. Non è un'abbreviazione, è una parola tagliata: si legge
+     «Search t» e non si sa più cosa si può cercare.
+     Due mosse, in quest'ordine:
+     (a) la Watchlist esce dalla topbar del telefono. Non si perde — è la terza
+         voce della bottom bar, che qui è la nav primaria (.am-bottomnav): in
+         chrome era una seconda copia dello stesso tasto, e teneva occupati gli
+         81px che mancavano alla ricerca.
+     (b) la ricerca va in fondo alla zona destra (`order`) e si prende la riga
+         intera: 315px @390px, placeholder per esteso in tutte e cinque le
+         lingue. Le righe restano due: la ricerca non ne aggiunge una, occupa
+         quella dove prima galleggiavano da soli «Passa a Pro» e la lingua
+         (119px di contenuto su 358 di riga). */
+  .br-watchnav { display: none; }
+  .br-navright .br-search { order: 9; flex: 1 1 100%; }
+  .br-navright .br-search input { width: 100%; }
+
+  /* Fascia Pro: due righe. La CTA va sotto e allineata a sinistra — a
+     destra, su 390px, finirebbe sotto la headline. */
+  .br-proband { flex-wrap: wrap; gap: var(--am-s-2) var(--am-s-3); padding: var(--am-s-3) var(--am-s-4); }
+  .br-proband__rule { display: none; }
+  .br-proband__label { font-size: 13px; }
+  .br-proband__copy { flex-basis: 100%; }
+  .br-proband__head { font-size: 14px; }
+  .br-proband__sub { font-size: 12.5px; }
+
+  /* Hero: più basso, e il badge smette di galleggiare sopra il testo —
+     scende in fondo come una riga, dove nessuna headline ci finisce sotto. */
+  .br-sporthero { min-height: 0; padding: var(--am-s-5) var(--am-s-4); gap: var(--am-s-4); }
+  /* Su 390px il ritaglio sale a 75% (indicazione di AD): a 65% l'atleta
+     entrerebbe nella colonna del testo, che qui è tutta la larghezza. */
+  .br-sporthero__img { object-position: 75% center; }
+  /* E il velo diventa quasi pieno: il testo non ha più una metà scura sua. */
+  .br-sporthero[data-art="photo"] .br-sporthero__art::after {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, #071329 62%, transparent) 0%,
+      color-mix(in srgb, #071329 84%, transparent) 55%,
+      color-mix(in srgb, #071329 94%, transparent) 100%);
+  }
+  .br-sporthero__title { font-size: clamp(28px, 10vw, 40px); }
+  .br-sporthero__sub { font-size: 13px; }
+  .br-sporthero__stat {
+    position: static;
+    align-self: flex-start;
+    margin-top: var(--am-s-4);
+    padding: 7px 12px;
+  }
+  .br-sporthero__stat-n { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .br-upgrade, .br-upgrade svg, .br-proband__cta svg { transition: none; }
+  .br-upgrade:hover svg, .br-proband__cta:hover svg { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * CREST — #RESTYLING-0921 round 7
+ *
+ * Il riferimento non disegna scudetti: mette un quadratino con le iniziali, e
+ * distingue le due squadre per RUOLO (casa scura, trasferta chiara), non per
+ * identità. È la scelta più economica e la più onesta: zero asset da produrre
+ * e mantenere, zero richieste di rete, zero rischio marchio, e funziona su un
+ * campionato che non abbiamo mai visto — cosa che i 12 totem del round 4, per
+ * costruzione, non potevano fare.
+ *
+ * I valori (tinte, raggio, bordo, l'inset shadow in basso) sono letti dal CSS
+ * computato del riferimento. La misura la dà il componente via style inline,
+ * perché il crest compare a 22, 36 e 56px nello stesso sito.
+ * ═══════════════════════════════════════════════════════════════════════ */
+.br-crest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  border: 1px solid rgba(105,186,255,0.333);
+  box-shadow: inset 0 -3px rgba(50,141,217,0.17);
+  font-family: var(--am-font-ui);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+  overflow: hidden;
+}
+/* Casa: il fondo più scuro, l'inchiostro ciano. 11,6:1. */
+.br-crest[data-role="home"] { background: #051D39; color: #9CDFFF; }
+/* Trasferta: il fondo più chiaro, l'inchiostro quasi bianco. 10,1:1. */
+.br-crest[data-role="away"] { background: #233457; color: #DBE9FF; }
+/* Su carta le due tinte restano quelle — il crest è una targhetta, non una
+   superficie di pagina — ma il filo azzurro sparisce sul bianco: lì lo fa il
+   bordo scuro. */
+:root[data-theme="light"] .br-crest {
+  border-color: rgba(13,35,67,0.22);
+  box-shadow: inset 0 -3px rgba(0,0,0,0.14);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * HOME ROUND 7 — #RESTYLING-0921
+ *
+ * I blocchi della Home del riferimento, nelle misure lette dal suo CSS
+ * computato (art-director, 22/09 notte), non stimate a occhio:
+ *   hero portrait 359×610 nel rail sinistro (26% della riga) ·
+ *   tile «Scegli il tuo campo» 333×245, quattro su una riga ·
+ *   «Da approfondire» due banner 16:9 con la barra di testo SOTTO ·
+ *   «Prossimi match» righe da 90px su cinque colonne.
+ *
+ * Tre motivi ricorrenti del riferimento, replicati qui perché senza non è
+ * la stessa pagina: il velo sulle foto è SEMPRE un gradiente a più stop su
+ * uno pseudo-elemento (mai un colore piatto), il raggio è deliberatamente
+ * misto (6 sulle superfici fotografiche, 5 sui contenitori, 3 sui chip), e
+ * i blocchi «Pro» hanno un filo azzurro da 4px sul bordo sinistro.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero portrait ──────────────────────────────────────────────────── */
+.br-hp {
+  position: relative;
+  display: block;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 590px;
+  border: 1px solid var(--am-line);
+  border-radius: 6px;
+  background: #061A35;
+  color: #F4F3EE;
+  text-decoration: none;
+}
+.br-hp__img {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% center;
+  transition: transform 0.5s;
+}
+.br-hp:hover .br-hp__img { transform: scale(1.035); }
+.br-hp__scrim {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(rgba(2,11,34,0.25) 0%, transparent 25%, rgba(3,17,37,0.27) 45%, rgba(2,10,24,0.94) 88%);
+}
+.br-hp__label {
+  display: block;
+  padding: 20px;
+  font-family: var(--am-font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.br-hp__copy { position: absolute; bottom: 25px; left: 24px; right: 24px; }
+.br-hp__title {
+  display: block;
+  font-family: var(--am-font-display);
+  font-size: clamp(40px, 4.6vw, 68px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 15px rgba(0,16,26,0.5);
+}
+.br-hp__line { display: block; }
+/* L'ultima riga è l'accento: gradiente lime→verde ritagliato sul testo. Il
+   fallback è il lime pieno, per i browser senza background-clip: text. */
+.br-hp__line[data-accent="true"] {
+  color: var(--am-lime-fill);
+  background: linear-gradient(100deg, #E5FF00, #68FF13);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.br-hp__sub {
+  display: block;
+  margin: 18px 0;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.4;
+  color: #E3EDFF;
+}
+.br-hp__cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 15px;
+  border-radius: 3px;
+  background: var(--am-lime-fill);
+  color: var(--am-lime-fill-ink);
+  font-family: var(--am-font-hud);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* ── Il blocco Pro sotto l'hero ─────────────────────────────────────── */
+.br-raildeep {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 22px;
+  border: 1px solid var(--am-line);
+  border-left: 4px solid var(--am-sky);
+  border-radius: 5px;
+  background: linear-gradient(120deg, #133CAD, #092351);
+  color: #F4F3EE;
+  text-decoration: none;
+}
+.br-raildeep__label,
+.br-raildeep__cta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--am-sky);
+}
+.br-raildeep__cta { color: var(--am-lime-fill); }
+.br-raildeep__h {
+  display: block;
+  margin: 14px 0 18px;
+  font-family: var(--am-font-display);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.08;
+  text-transform: uppercase;
+  color: #F3EDDC;
+}
+.br-raildeep__h span { display: block; }
+
+/* ── «Scegli il tuo campo» ──────────────────────────────────────────── */
+.br-fields {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.br-field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 245px;
+  padding: 22px;
+  border: 1px solid var(--am-line);
+  border-radius: 6px;
+  background: #09204A;
+  color: #F3EDDC;
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.br-field__img {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+/* Solo la tile «altri sport» è sfocata: è un segnaposto, non uno sport. Il
+   basket la sua foto ce l'ha e si vede — «in arrivo» lo dice il chip, non
+   servono due segnali per la stessa cosa (ed è quello che fa il riferimento). */
+.br-field[data-sport="more"] .br-field__img { filter: blur(3px); opacity: 0.5; }
+.br-field__scrim {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(rgba(1,14,32,0.19), rgba(2,16,33,0.13) 30%, rgba(2,12,28,0.96) 100%);
+}
+a.br-field:hover, button.br-field:hover { border-color: var(--am-sky); }
+a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transform: scale(1.055); }
+.br-field__kicker {
+  position: absolute;
+  left: 20px;
+  top: 22px;
+  /* #MOBILE-0923: era `60%`, che è una frazione della tile e non ha idea di
+     dove stia l'icona. Su due colonne @390px la tile scende a 172px: il 60%
+     fa 103px, l'icona (49px, `right: 17px`) comincia a 106 — e «03 /
+     BASKETBALL», che a quella larghezza va su due righe, finiva con la
+     seconda riga SOTTO la pallina. Ora la larghezza è quella che resta
+     davvero: 20 (left) + 49 (icona) + 17 (right) + 6 di respiro. */
+  max-width: calc(100% - 92px);
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 5px #000;
+}
+/* Il quadratino della pallina è ruotato di −8°, la pallina dentro contro-ruota
+   di 8° e resta dritta: è il taglio obliquo che il riferimento usa dappertutto
+   (il tick della card, il badge edge, la spazzata del live). */
+.br-field__icon {
+  position: absolute;
+  right: 17px;
+  top: 17px;
+  display: grid;
+  place-items: center;
+  width: 49px;
+  height: 49px;
+  border: 1px solid rgba(131,214,255,0.47);
+  border-radius: 10px;
+  background: rgba(7,33,73,0.8);
+  box-shadow: inset 0 0 16px rgba(40,151,255,0.25);
+  transform: rotate(-8deg);
+}
+.br-field__icon > * { transform: rotate(8deg); display: block; }
+.br-field__name {
+  margin-top: auto;
+  padding-top: 70px;
+  font-family: var(--am-font-display);
+  font-size: clamp(30px, 3.2vw, 43px);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 0 2px 15px rgba(0,0,0,0.67);
+}
+.br-field__name[data-accent="true"] { color: var(--am-lime-fill); }
+.br-field__go {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.br-field__go b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(111,186,255,0.31);
+  border-radius: 3px;
+  background: rgba(150,220,255,0.10);
+  font-size: 18px;
+  /* La tile è una foto scura in ENTRAMBI i temi: l'azzurro chiaro è quello del
+     tema scuro, non del tema corrente. In chiaro --am-sky scende a #1F6FB2 e
+     sul fondo della tile faceva 3,02:1. Stesso motivo del crest. */
+  color: #81D9FF;
+}
+.br-field__soon {
+  align-self: flex-start;
+  margin-top: 16px;
+  padding: 5px 8px;
+  border: 1px solid rgba(164,194,230,0.33);
+  background: rgba(9,26,52,0.73);
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── «Da approfondire» ──────────────────────────────────────────────── */
+/* Il riferimento ne affianca due da 679px. Qui ne girano quattro o cinque (le
+   campagne valide per chi guarda), quindi la colonna minima è 400px: su 1400
+   fa tre per riga, larghe abbastanza perché la barra di testo stia su una riga
+   sola — sotto i 400 il titolo andava a capo e il sottotitolo su quattro. */
+.br-dds {
+  display: grid;
+  /* #MOBILE-0923 — `minmax(400px, 1fr)` non ha un massimo: una traccia da 400
+     resta 400 anche dentro una colonna da 310. Misurato @390 sul preview, dove
+     le campagne ci sono davvero (in locale la stagione è ferma e la sezione
+     non monta — ed è per questo che in dodici round non era mai saltato
+     fuori): la card andava da x=40 a x=440, cioè 50px fuori dallo schermo, e
+     con lei il sottotitolo («Compare model and market probabilit…») e la CTA,
+     che si leggeva «OPEN B…» e non si poteva toccare.
+     `min(400px, 100%)` dà alla traccia il massimo che le mancava: sopra i
+     400px di colonna si comporta esattamente come prima. */
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+  gap: 22px;
+}
+.br-dd {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  border-radius: 6px;
+  background: var(--am-panel);
+  color: var(--am-text);
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.br-dd:hover { border-color: var(--am-sky); }
+.br-dd__shot { display: block; }
+/* Round 8: i creativi sono tutti 1120×630 e l'immagine è `loading="lazy"`.
+   Senza un rapporto dichiarato il posto valeva 0px fino al decode e poi
+   saltava a ~330: le card sotto ballavano a ogni caricamento. L'aspect-ratio
+   riserva lo spazio subito (gli attributi width/height sul tag fanno lo
+   stesso lavoro per chi non supporta la proprietà). */
+.br-dd__img { display: block; width: 100%; height: auto; aspect-ratio: 1120 / 630; }
+.br-dd__body {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 17px 20px;
+  font-family: var(--am-font-ui);
+}
+.br-dd__eyebrow { display: none; } /* l'occhiello è già cotto nel creativo */
+.br-dd__title { flex: 0 0 auto; font-size: 15px; font-weight: 700; white-space: nowrap; }
+.br-dd__sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--am-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-dd__cta {
+  margin-left: auto;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  font-family: var(--am-font-hud);
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--am-lime);
+}
+
+/* ── «Prossimi match» ───────────────────────────────────────────────── */
+.br-rows {
+  overflow: hidden;
+  border: 1px solid var(--am-line);
+  border-radius: 5px;
+  background: var(--am-panel);
+}
+.br-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 150px 100px 15px;
+  align-items: center;
+  gap: 20px;
+  padding: 17px 20px;
+  border-top: 1px solid var(--am-line);
+  color: var(--am-text);
+  text-decoration: none;
+}
+.br-row:first-child { border-top: 0; }
+.br-row:hover { background: var(--am-panel-2); }
+.br-row__when {
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--am-muted);
+}
+.br-row__when span { display: block; }
+/* #RESTYLING-0921 round 13 — «anche esternamente alle schede prediction
+   enfatizziamo il nome e la percentuale» (Andrea). Questa riga è la vista più
+   dimessa in cui compare una partita: il nome stava a 14/600, cioè meno del
+   nome sulla card (16/600), e la percentuale era la SOLA cosa grande — ma in
+   --am-sky, che in questo design system è il colore del MERCATO. Un numero
+   nostro colorato da mercato dice la cosa sbagliata a chi scorre. */
+.br-row__teams {
+  min-width: 0;
+  font-family: var(--am-font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.008em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-row__vs {
+  margin: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--am-muted-2);
+}
+.br-row__league {
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  color: var(--am-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-row__prob { font-family: var(--am-font-hud); line-height: 1.1; }
+/* La percentuale prende il token della card: è lo stesso dato, quindi lo
+   stesso colore ovunque compaia. */
+.br-row__prob b {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--am-pct);
+}
+.br-row__prob small {
+  display: block;
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--am-muted);
+}
+.br-row__prob-empty { color: var(--am-muted-2); }
+.br-row__go { font-size: 15px; color: var(--am-muted); }
+
+/* Il blocco vive più in basso, DOPO il `@media (max-width: 780px)` che
+   ridefinisce `.br-row`: stessa specificità, quindi conta l'ordine nel file.
+   Vedi la nota lì. */
+
+/* ── Il titolo tipografico della Home (round 8) ──────────────────────
+   La sezione che apre la pagina nel riferimento: occhiello, una riga in
+   Anton alla misura in cui il font si legge come SCELTA e non come font,
+   e la nota di spalla a destra. Sta sopra il rail, non al posto suo.
+
+   84px è la misura del riferimento (computata a 1512px). Il clamp la tiene
+   lì fin verso i 1500 e la scende a 40px su telefono, dove 84px si mangiava
+   due schermate prima che si vedesse una partita. Niente padding verticale:
+   la spaziatura la dà già il `gap` di .br-lobby, e sommarli faceva un buco. */
+.br-headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.br-headline__main { min-width: 0; }
+.br-headline__eyebrow {
+  display: block;
+  margin: 0 0 6px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--am-sky);
+}
+.br-headline__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-size: clamp(40px, 5.6vw, 84px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--am-text);
+}
+/* La parola accento: gradiente lime ritagliato sul testo, come il
+   riferimento e come .br-hp__line[data-accent]. Il `color` resta sotto come
+   fallback per i browser senza background-clip: text. */
+.br-headline__accent {
+  font-style: normal;
+  color: var(--am-lime);
+  background: linear-gradient(100deg, #EAFF19, #7AFF20);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.br-headline__note {
+  flex: 0 0 auto;
+  text-align: right;
+  font-family: var(--am-font-ui);
+}
+.br-headline__lines {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--am-text);
+}
+.br-headline__hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--am-muted-2);
+}
+/* In chiaro il neon su carta non esiste (#C8FF00 fa 1,1:1 su bianco):
+   l'accento torna testo pieno al gradino chiaro del token — --am-lime in
+   light è #4C7A00, che il round 7 aveva scelto proprio per «la parola
+   evidenziata dell'hero su carta». Misurato sul fondo vero (#F3EDDC, non
+   bianco): 4,39:1 — sopra il 3:1 che l'AA chiede a 84px, che è testo grande.
+   In scuro resta il gradiente, misurato 11,7:1 per l'occhiello e 16:1 per la
+   nota sullo stesso fondo. */
+:root[data-theme="light"] .br-headline__accent {
+  background: none;
+  color: var(--am-lime);
+  -webkit-text-fill-color: currentColor;
+}
+
+/* ── Il rail: hero a sinistra, prodotto vero a destra ───────────────── */
+.br-homerail {
+  display: grid;
+  grid-template-columns: minmax(260px, 26%) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+
+@media (max-width: 1150px) {
+  .br-fields { gap: 10px; }
+  .br-hp { min-height: 520px; }
+}
+@media (max-width: 900px) {
+  .br-homerail { grid-template-columns: 1fr; }
+  .br-hp { min-height: 420px; }
+  .br-hp__title { font-size: clamp(38px, 9vw, 56px); }
+  /* Sotto i 900 la nota di spalla non ha più colonna: scende sotto il titolo
+     e si allinea a sinistra con lui, invece di restare appesa a destra. */
+  .br-headline { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .br-headline__note { text-align: left; }
+}
+@media (max-width: 780px) {
+  .br-fields { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  /* #MOBILE-0923 — «BASKETBAL». Il nome è `clamp(30px, 3.2vw, 43px)`: sotto i
+     ~940px il vw non conta più e il minimo resta fisso a 30px, ma la tile no —
+     su due colonne @390px è larga 148px, cioè 112 di testo al netto dei 18 di
+     padding, e BASKETBALL in Anton a 30px ne chiede ~128. `.br-field` ha
+     `overflow: hidden`: la parola veniva tagliata a metà lettera contro il
+     bordo della foto, e si leggeva «BASKETBAL».
+     Due px presi dove non si vedono (il padding) e un minimo che segue davvero
+     la larghezza: il nome resta grande (~26px @390) e ci sta su una riga.
+     `overflow-wrap` è la rete per le lingue più lunghe (ES «BALONCESTO», RU
+     «БАСКЕТБОЛ»): vanno a capo invece di sparire nel ritaglio. */
+  .br-field { padding: 14px; }
+  /* 6,2vw = 24,2px @390: BASKETBALL in Anton misura 108px sui 118 della
+     colonna (a 26,5px ne misurava esattamente 118 e andava a capo sull'ultima
+     lettera — «BASKETBAL / L», che è peggio del taglio). Misurato con
+     canvas.measureText sul font vero, non a occhio. */
+  .br-field__name { font-size: clamp(20px, 6.2vw, 30px); overflow-wrap: anywhere; }
+  .br-field__kicker { left: 14px; top: 16px; max-width: calc(100% - 75px); }
+  .br-field__icon { right: 13px; top: 13px; width: 42px; height: 42px; }
+  .br-row { grid-template-columns: 78px minmax(0, 1fr) 62px 12px; gap: 12px; padding: 13px 14px; }
+  .br-row__league { display: none; }
+  .br-row__teams { font-size: 15px; }
+  .br-row__prob b { font-size: 24px; }
+  .br-dd__body { flex-wrap: wrap; gap: 8px 12px; }
+}
+
+/* #MOBILE-0923 — «Upcoming matches» non diceva contro chi.
+   Le colonne affiancate (data · squadre · % · freccia) su 390px lasciano ai
+   nomi 78px netti: «Borussia Mönchengladbach vs Eintracht Frankfurt» si legge
+   «Borussia Moenchengladbach vs Eintracht Frankfu…», e su una riga di tennis
+   («Alina Korneeva vs Darya Astakhova», 241px richiesti) spariva del tutto
+   l'avversario. Su OGNI riga mancava metà della partita: la riga esisteva ma
+   non informava.
+   La data sale su una riga sua (ci sta intera, con un punto medio al posto
+   dell'a-capo) e i nomi prendono la larghezza che era sua: 212px, e «Hu Jia
+   vs Vit Kopriva» o «Deniz Dilek vs Solana Sierra» si leggono interi. La
+   percentuale e la freccia restano a destra, a cavallo delle due righe:
+   l'altezza della riga non cambia.
+   STA QUI, e non più in alto vicino a `.br-row`, per una ragione sola: il
+   blocco `@media (max-width: 780px)` qui sopra riscrive
+   `grid-template-columns` con la stessa specificità. A parità di specificità
+   vince l'ultimo dichiarato nel file — scritto prima, questo fix veniva
+   sovrascritto in silenzio e il nome restava a 78px. (Non si vedeva
+   iniettando la regola nel browser: uno <style> aggiunto in coda al documento
+   scavalca sempre l'ordine del foglio compilato. Lezione: una media query di
+   soglia più bassa va verificata NEL file, non solo in pagina.) */
+@media (max-width: 480px) {
+  .br-row { grid-template-columns: minmax(0, 1fr) auto 12px; gap: 2px 10px; padding: 12px 14px; }
+  .br-row__when { grid-column: 1; grid-row: 1; }
+  .br-row__when span { display: inline; }
+  .br-row__when span + span::before { content: " · "; }
+  .br-row__teams { grid-column: 1; grid-row: 2; }
+  .br-row__prob { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+  .br-row__go { grid-column: 3; grid-row: 1 / span 2; }
+}
+
+/* L'occhiello sopra il titolo di sezione (round 7): il riferimento ne ha uno
+   su ogni blocco. Azzurro, piccolo, spaziato — dice di cosa parla la sezione
+   prima che il titolo la nomini. */
+.br-sec__eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--am-sky);
+}
+.br-sec__body { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * MOBILE — #MOBILE-0923 round 17 · la testata restituisce lo schermo
+ *
+ * PERCHÉ IL BLOCCO STA IN FONDO AL FILE. Le regole qui sotto riscrivono
+ * `.br-*` che sono dichiarate PRIMA in questo stesso foglio, e `.am-topbar-in`
+ * che è dichiarata in globals.css. A parità di specificità vince l'ultima
+ * dichiarata, e design-system.css è importato per ultimo (layout.tsx:
+ * globals → machina → mobile → design-system). È la stessa ragione scritta
+ * nel blocco `@media (max-width: 480px)` qui sopra, e il motivo per cui
+ * `app/mobile.css` — che pure è IL posto del pavimento mobile — non può
+ * ospitarle: è importato PRIMA di questo foglio, quindi sui `.br-*` perde.
+ *
+ * MISURATO @390×844 e @375×667 (Playwright, preview PR #430, sessione
+ * sloggata, dati veri):
+ *   · testata 194px = 25% dello schermo a 390, 31% a 375 — e la prima riga
+ *     di contenuto cadeva a 208px, con il titolo dell'hero al 42%;
+ *   · 194px nascono da QUATTRO righe, e la prima è vuota per 267px su 358:
+ *     il solo logo (91px), perché `.br-nav` ha base `auto` (= max-content,
+ *     435px) e non entrando accanto al logo si prendeva una riga sua;
+ *   · 11 bersagli di tocco sotto i 44px, tutti della famiglia `.br-*` nata
+ *     col restyling: la nav della testata (5 voci a 30,75px), «Go Pro» a
+ *     30px, il CTA della fascia Pro a 21px.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* ── 1. La nav sale accanto al logo ──────────────────────────────────────
+   * Con base `auto` la nav valeva il suo max-content (435px): non entrava
+   * mai accanto al logo e andava a capo, lasciando la prima riga occupata
+   * al 25% e spendendo 30,75px + 16 di gap per una riga che poteva non
+   * esistere. Con base 0 la nav prende lo spazio che resta (251px) e scorre
+   * dentro di sé — cosa che faceva GIÀ a 334px, perché le cinque voci ne
+   * chiedono 435: cambia quante se ne vedono ferme (da ~4 a ~3), non se si
+   * raggiungono. Il prezzo è accettabile perché su telefono Home, Live e
+   * Tools stanno anche nella barra in basso, sotto il pollice: questa nav è
+   * la seconda strada, non l'unica.
+   *
+   * `min-width: 220px` NON è decorazione: è la soglia sotto la quale la nav
+   * non vale la pena di stare in riga. Il break delle righe flex guarda la
+   * base clampata dal minimo, quindi la regola si legge «la nav chiede 220px:
+   * se accanto al logo non ci stanno, prenditi una riga tua». Sul desk
+   * (358 − 91 di logo − 16 di gap = 251 disponibili) ci stanno e la riga si
+   * risparmia; su /tools, dove Sign In e Register stanno sulla STESSA riga
+   * perché quella testata non ha `.br-navright` a spingerli a capo, non ci
+   * stanno e la nav torna a capo come prima. Senza questo minimo su /tools la
+   * nav si schiacciava a ~110px e si vedeva solo «Home», con la seconda voce
+   * tagliata a metà icona: una riga in meno pagata con una nav inservibile.
+   * Verificato a 390 e 375. */
+  .br-nav { flex: 1 1 0; min-width: 220px; }
+
+  /* ── 2. Il pavimento di 44px arriva anche ai `.br-*` ─────────────────────
+   * 44px è lo standard già scritto e motivato in app/mobile.css (§2): qui si
+   * estende alla famiglia nata col restyling, che mobile.css non poteva
+   * raggiungere né per nome (classi nuove) né per ordine (foglio importato
+   * prima). Misure di partenza in coda a ogni riga.
+   * NB: `.am-brandmark` e `.hb-x` NON sono in lista: hanno già un'area
+   * sensibile di 44×44 da pseudo-elemento (mobile.css §2), quindi il loro
+   * box piccolo è voluto e va lasciato stare. */
+  .br-nav__item,        /* 65×30,75 · le 5 voci, su ogni pagina del desk */
+  .br-upgrade,          /* 75×30    · «Go Pro», accanto a Sign In/Register da 44 */
+  .br-sec__link,        /* 87×32    · «Back to home» */
+  .br-proband__cta {    /* 124×21   · «Compare plans» / «Discover Pro» */
+    min-height: 44px;
+  }
+  /* `.am-deskhead-tools > .mb-entry` fissa 36px più in alto in questo stesso
+     foglio (specificità 0,2,0): il `min-height: 44px` di mobile.css §2 non la
+     batteva. `height: auto` toglie l'altezza fissa che bloccava il minimo. */
+  .am-deskhead-tools > .mb-entry { min-height: 44px; height: auto; }
+
+  /* ── 3. Le righe della testata si stringono ──────────────────────────────
+   * `row-gap` vale 16px per via di `.am-topbar-in:has(.br-upgrade)` (0,2,0),
+   * che alza il gap per tenere larga la barra su desktop. globals.css:8681
+   * aveva già scritto l'intento giusto per il mobile — `row-gap: 10px` — ma
+   * con specificità 0,1,0 non arrivava. Si ripete il selettore con `:has()`
+   * per pareggiare il peso. Le pagine /tools, che non hanno «Go Pro», erano
+   * già a 10px: ora le due testate si comportano allo stesso modo. */
+  .am-topbar-in,
+  .am-topbar-in:has(.br-upgrade) { row-gap: 10px; }
+
+  /* ── 4. Il nome del torneo smette di sparire ─────────────────────────────
+   * `.br-chip[data-kind="league"]` ha `max-width: 22ch` = 145px, ma il suo
+   * contenitore `.br-card__kicker` ne misura 280: il taglio non lo faceva lo
+   * spazio, lo faceva il tetto. Misurato sul preview: «Singapore Tennis Open
+   * presented by BNP Paribas» chiede 364px e ne riceveva 145 (si leggeva
+   * «Singapore Tennis Open pr…»), «Turk Telekom Ankara Open» 190, «Delta
+   * Motors Tolentino Open» 214. Col tetto al 100% i primi due entrano interi
+   * e il terzo tronca a 280 invece che a 145. Il `flex: 0 1 auto` e il
+   * `min-width: 9ch` già dichiarati restano: la lega continua a cedere spazio
+   * al chip dello sport quando serve, non lo ruba. */
+  .br-chip[data-kind="league"] { max-width: 100%; }
+
+  /* ── 5. Anche il pavimento TIPOGRAFICO arriva ai `.br-*` ─────────────────
+   * Stessa storia del §2, sull'altro asse. app/mobile.css §1 fissa a 11px il
+   * minimo per un'etichetta su telefono («sotto gli 11px non si legge: si
+   * indovina»), e per la stessa doppia ragione — classi nuove, foglio
+   * importato prima — non arrivava alla famiglia del restyling. Misurato
+   * @390: l'etichetta sotto la percentuale delle righe partita e i due testi
+   * delle tile sport della Home stavano a 10px.
+   * NON sono in lista, e volutamente:
+   *   · `.br-crest` (7px) — le due iniziali dentro un disco da 22px: alzarle
+   *     le farebbe uscire dal disco, ed è un segno di identità, non un testo
+   *     che si legge;
+   *   · `.lang-dd-caret` (9px) — è il triangolino «▾», decorazione pura. */
+  .br-row__prob small,  /* 10px · «model» sotto l'88% di ogni riga */
+  .br-field__kicker,    /* 10px · «01 FOOTBALL» sulle tile «Scegli il tuo campo» */
+  .br-field__soon {     /* 10px · «In arrivo» sulle tile senza partite */
+    font-size: 11px;
+  }
+}

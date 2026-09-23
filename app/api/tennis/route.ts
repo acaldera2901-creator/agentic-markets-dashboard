@@ -108,11 +108,20 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       }
       return withAffiliate(out) as T & { locked: boolean; pick_of_day: boolean };
     }
-    // locked: keep matchup + surface visible, blank the numbers the card would show
+    // locked: matchup + surface + i DUE numeri dell'esito di punta (probabilità
+    // del modello e quota reale dello STESSO lato), senza dire quale sia. Il
+    // resto — probabilità per lato, edge, direzione, feature deep — non esce.
+    // #RESTYLING-0921: motivazione completa nella nota `lockedHeadline` in
+    // app/api/predictions/route.ts. Prima qui usciva solo `p1: null`, e la card
+    // scriveva «MODEL 0%»: in JS `null * 100` fa 0, non null.
+    const headProb = Math.max(m.p1, m.p2);
+    const headOdds = (m.p1 >= m.p2 ? m.odds_p1 : m.odds_p2) ?? null;
     return {
       ...m,
       locked: true,
       pick_of_day: isPotD,
+      model_prob: Number.isFinite(headProb) ? headProb : null,
+      market_odds: headOdds,
       p1: null, p2: null, odds_p1: null, odds_p2: null, edge: null, best_selection: null,
       elo_p1: null, elo_p2: null, elo_p1_overall: null, elo_p2_overall: null,
       serve_form_p1: null, serve_form_p2: null, return_form_p1: null, return_form_p2: null,

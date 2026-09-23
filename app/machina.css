@@ -12,10 +12,18 @@
 :root:not([data-theme="light"]) [data-mc-ground],:root:not([data-theme="light"]) [data-mc]{
   --paper:#eae8e4; --card:#ffffff; --ink:#0c0e11; --ink2:#4f4c47; --ink3:#56524b; --rule:#cfcbc4;
   --night:#0c0e11; --night2:#15181c; --night3:#2a2f36;
-  --verde:#15703b;      /* sulla carta: bianco sopra 6,15:1 */
-  --verde-b:#23a559;    /* sul buio: 5,59:1 */
+  /* #RESTYLING-0921 round 7 — il verde del brand vecchio lascia il posto al
+     lime del riferimento anche qui: machina è il registro «carta» di landing,
+     privacy, termini, partner e widget, e restava l'ultima superficie con la
+     palette di prima. Due valori perché i fondi sono due: sulla carta il lime
+     pieno non si legge (1,2:1), quindi lì scende di valore restando la stessa
+     tinta; sul buio resta pieno.
+     #436A00 sulla carta: 5,2:1 come testo, 6,4:1 col bianco sopra.
+     #C8FF00 sul buio: 16,4:1 come testo, 16,0:1 con l'inchiostro scuro. */
+  --verde:#436A00;
+  --verde-b:#C8FF00;
   --d-football:#6d28d9; --d-tennis:#c2410c; --d-wc:#0369a1;
-  --fd:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
+  --fd:"Manrope","Helvetica Neue",Arial,sans-serif;
   --fm:"JetBrains Mono",ui-monospace,Menlo,monospace;
 }
 /* La carta ha materia: grana finissima + una luce calda in alto. Un grigio
@@ -153,8 +161,8 @@
 :root:not([data-theme="light"]) [data-mc] .league{font-family:var(--fm);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:#dfe3e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 :root:not([data-theme="light"]) [data-mc] .when{font-family:var(--fm);font-variant-numeric:tabular-nums;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#c3c9d1;white-space:nowrap}
 :root:not([data-theme="light"]) [data-mc] .when.live{color:#fff;display:inline-flex;align-items:center;gap:.35rem}
-:root:not([data-theme="light"]) [data-mc] .pulse{width:7px;height:7px;border-radius:50%;background:var(--verde-b);box-shadow:0 0 0 0 rgba(35,165,89,.7);animation:pulse 1.8s infinite}
-@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(35,165,89,0)}100%{box-shadow:0 0 0 0 rgba(35,165,89,0)}}
+:root:not([data-theme="light"]) [data-mc] .pulse{width:7px;height:7px;border-radius:50%;background:var(--verde-b);box-shadow:0 0 0 0 rgba(200,255,0,.7);animation:pulse 1.8s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(200,255,0,0)}100%{box-shadow:0 0 0 0 rgba(200,255,0,0)}}
 :root:not([data-theme="light"]) [data-mc] .fx{padding:0 .95rem .85rem;display:grid;gap:.65rem}
 :root:not([data-theme="light"]) [data-mc] .teams{font-weight:700;letter-spacing:-.02em;font-size:1.2rem;line-height:1.18;text-wrap:balance}
 :root:not([data-theme="light"]) [data-mc] .vs{display:inline-block;margin-inline:.45rem;font-family:var(--fm);font-size:.64rem;font-weight:400;color:var(--ink3);vertical-align:.14em}
@@ -426,7 +434,7 @@
   background-image:
     radial-gradient(1000px 640px at 6% -6%, rgba(109,40,217,.30), transparent 64%),
     radial-gradient(900px 600px at 98% 6%, rgba(194,65,12,.24), transparent 62%),
-    radial-gradient(1200px 760px at 46% 108%, rgba(35,165,89,.22), transparent 64%),
+    radial-gradient(1200px 760px at 46% 108%, rgba(200,255,0,.22), transparent 64%),
     radial-gradient(760px 500px at 80% 58%, rgba(3,105,161,.18), transparent 62%),
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.05'/></svg>");
   background-attachment:fixed,fixed,fixed,fixed,fixed;
@@ -537,7 +545,13 @@
 :root:not([data-theme="light"]) [data-mc] .pcard-b{padding:.85rem 1rem;display:grid;gap:.2rem}
 :root:not([data-theme="light"]) [data-mc] .pcard-b b{font-size:1rem}
 :root:not([data-theme="light"]) [data-mc] .pcard-f{margin-top:auto;padding:0 1rem 1rem;display:grid;gap:.5rem}
-:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--mc-accent,#33c974)}
+/* Round 8: era `var(--mc-accent,#33c974)`, e `--mc-accent` non è definito da
+   nessuna parte — quindi vinceva sempre il fallback, cioè il verde del brand
+   vecchio. Questa riga sta DOPO la 474 e la sovrascriveva: ogni occhiello
+   dentro [data-mc-ground] (tutta la dashboard, quindi anche /plans) restava
+   verde mentre il resto del sito era passato al lime. Stesso fallback della
+   474, che il round 7 aveva già portato a --verde-b (#C8FF00). */
+:root:not([data-theme="light"]) [data-mc-ground] .eyebrow{color:var(--mc-accent,var(--verde-b))}
 :root:not([data-theme="light"]) [data-mc] .scene .eyebrow{color:#fff!important}
 
 /* Un figlio di grid/flex non scende sotto la larghezza del suo contenuto:
@@ -715,8 +729,16 @@
 
    Il verde #23A559 sui lavaggi del fondo scende a 4,38–4,44:1 — appena sotto.
    È esattamente il caso per cui esiste il TERZO gradino #33C974: il verde
-   dell'occhiello quando cade sul lavaggio verde. Non è un valore nuovo. */
-:root:not([data-theme="light"]) [data-mc-ground] .v-kick,:root:not([data-theme="light"]) [data-mc-ground] .lab,:root:not([data-theme="light"]) [data-mc-ground] .res{color:#33c974}
+   dell'occhiello quando cade sul lavaggio verde. Non è un valore nuovo.
+
+   Round 8: la riga si spezza in due, perché i tre nodi non erano la stessa
+   cosa. `.v-kick` e `.lab` sono OCCHIELLI — colore di brand, e il brand ora è
+   lime. `.res` è l'esito di una giocata (`.res.lost` è rosso due righe sotto):
+   lì il verde è SEMANTICO, dice «vinta», e passarlo al lime avrebbe tolto la
+   coppia verde/rosso che è l'unica cosa che si legge a colpo d'occhio su
+   /history. Resta #33C974 per la ragione scritta qui sopra. */
+:root:not([data-theme="light"]) [data-mc-ground] .v-kick,:root:not([data-theme="light"]) [data-mc-ground] .lab{color:var(--verde-b)}
+:root:not([data-theme="light"]) [data-mc-ground] .res{color:#33c974}
 /* i grigi al gradino validato del sistema */
 :root:not([data-theme="light"]) [data-mc-ground] .v-anat-cap,:root:not([data-theme="light"]) [data-mc-ground] .sp,:root:not([data-theme="light"]) [data-mc-ground] .ps,:root:not([data-theme="light"]) [data-mc-ground] .v-wall-head span,
 :root:not([data-theme="light"]) [data-mc-ground] .v-tier .price small{color:#a3a9b2}
@@ -945,7 +967,7 @@
 
 /* IL NUMERO. Condensata pesante, alone corto — non un neon diffuso. */
 [data-mc] .pred.hud .v2r-qn:not(.lock) {
-  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;
   font-size: clamp(44px, 4.2rem, 68px); font-weight: 800; line-height: .84;
   letter-spacing: -.03em; color: var(--am-positive, #34D399);
   text-shadow: 0 0 22px rgba(52,211,153,.34);
@@ -962,7 +984,7 @@
    numero (var(--fm)); l'avevo corretto sull'istanza invece che sulla classe, e
    la pick e' andata in produzione senza condensata in tema chiaro. */
 [data-mc] .pred.hud .v2r:not(.is-locked) .v2r-pick {
-  font-family: var(--font-tech), "Saira Condensed", "Hanken Grotesk", sans-serif;
+  font-family: var(--font-tech), "Barlow Condensed", "Manrope", sans-serif;
   font-size: 1.18rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .005em; line-height: 1.06; white-space: normal;
 }
@@ -1050,10 +1072,10 @@
    `.v2r` diventa OPACO: la fascia finisce dove inizia il blocco dati, qualunque
    altezza abbia. Stesso risultato di prima, senza costante da mantenere. */
 :root[data-theme="light"] [data-mc] .pred.hud .v2r:not(.is-locked) {
-  background: linear-gradient(180deg, rgba(35,165,89,.07), rgba(255,255,255,0) 62%), #fff;
+  background: linear-gradient(180deg, rgba(200,255,0,.07), rgba(255,255,255,0) 62%), #fff;
 }
 :root[data-theme="light"] [data-mc] .pred.hud .v2r-qn:not(.lock) {
-  font-family: var(--font-tech), "Saira Condensed", ui-monospace, monospace;
+  font-family: var(--font-tech), "Barlow Condensed", ui-monospace, monospace;
   color: var(--am-coral, #23A559); text-shadow: none;
 }
 :root[data-theme="light"] [data-mc] .pred.hud .v2r:not(.is-locked) .v2r-conf .d { background: rgba(0,0,0,.10); }

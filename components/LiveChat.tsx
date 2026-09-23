@@ -128,31 +128,12 @@ export function LiveChat() {
   const lang = (typeof window !== "undefined" && localStorage.getItem("agentic-lang")) || "en";
   const label = CONTACT_LABELS[lang] ?? CONTACT_LABELS.en;
   return (
-    <a
-      href={`mailto:${CONTACT_EMAIL}`}
-      aria-label={label}
-      title={label}
-      style={{
-        position: "fixed",
-        right: 20,
-        bottom: 96, // clear the cookie-consent banner (verify px a video)
-        zIndex: 2147483000,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "12px 18px",
-        borderRadius: 9999,
-        background: "#23A559",
-        color: "#fff",
-        fontWeight: 600,
-        fontSize: 14,
-        lineHeight: 1,
-        textDecoration: "none",
-        boxShadow: "0 6px 20px rgba(0,0,0,0.28)",
-      }}
-    >
+    // #RESTYLING-0921 — lo stile è passato in app/design-system.css (.br-chatfb):
+    // in stile inline non si può scrivere la media query che su telefono riduce
+    // il pill a sola icona. Da largo copriva la CTA dell'hero (misurato a 390px).
+    <a href={`mailto:${CONTACT_EMAIL}`} aria-label={label} title={label} className="br-chatfb">
       <span aria-hidden="true">✉</span>
-      {label}
+      <span className="br-chatfb__t">{label}</span>
     </a>
   );
 }

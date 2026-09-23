@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
 import LangDropdown from "@/components/LangDropdown";
+import { Icon } from "@/components/ui/icons";
 
 type AuthState =
   | { status: "loading" }
@@ -42,6 +43,7 @@ export default function SiteTopbar({
   backLabel = "Board",
   hideLang = false,
   lang: langOverride,
+  nav,
 }: {
   backHref?: string;
   backLabel?: string;
@@ -52,6 +54,13 @@ export default function SiteTopbar({
    *  dropdown nascosto non poteva nemmeno correggerlo. Le altre pagine non
    *  passano il prop e continuano a seguire localStorage. */
   lang?: SiteLang;
+  /** #RESTYLING-0921 round 5 — la nav primaria, per le pagine che stanno FUORI
+   *  dal desk e che senza di lei sembrano un altro sito: /tools ci si arriva
+   *  dalla nav di ogni pagina e poi si restava con un solo «← Home».
+   *  Opt-in: le pagine World Cup non la passano e non cambiano.
+   *  Sono `Link` veri perché da qui ogni voce È una navigazione — la nav del
+   *  desk cambia stato client, questa no, e non serve che lo faccia. */
+  nav?: { href: string; label: string; icon: "home" | "explore" | "ledger" | "tools" | "profile" }[];
 }) {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
   const router = useRouter();
@@ -116,45 +125,12 @@ export default function SiteTopbar({
     return () => { cancelled = true; };
   }, []);
 
-  // Theme toggle — presentation only, mirrors app/page.tsx (data-theme on <html>
-  // + agentic-theme in localStorage; the pre-paint script in layout.tsx already
-  // set data-theme, here we just sync + flip). WcBoard is outside page.tsx's
-  // React tree, so the WC chrome owns its own toggle, same contract.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    // #UI-THEME-HARDEN-0623: ri-applica la scelta salvata (localStorage → prefers) e
-    // ri-asserta data-theme, così un reset da idratazione non lascia il tema sbagliato.
-    let t = "";
-    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-    if (t !== "light" && t !== "dark") {
-      t = (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
-    setTheme(t as "dark" | "light");
-    document.documentElement.setAttribute("data-theme", t);
-  }, []);
-  const setThemeTo = (next: "dark" | "light") => {
-    if (next === theme) return;
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("agentic-theme", next); } catch {}
-  };
-  // #THEME-CONSISTENCY-0623: segue il tema di sistema SOLO finché l'utente non
-  // ha scelto manualmente (agentic-theme vuoto). Stesso contratto di home/desk.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      let chosen = "";
-      try { chosen = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-      if (chosen === "light" || chosen === "dark") return;
-      const next: "dark" | "light" = e.matches ? "light" : "dark";
-      setTheme(next);
-      document.documentElement.setAttribute("data-theme", next);
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // #RESTYLING-0921 round 14 — via lo stato del tema, il suo toggle e
+  // l'ascolto di `prefers-color-scheme`. Il sito è solo scuro: `data-theme`
+  // lo scrive il server in app/layout.tsx e nessuno lo cambia più. Questa
+  // chrome viveva fuori dall'albero di page.tsx e quindi si portava dietro
+  // una copia della stessa logica — tre copie da tenere in pari erano il
+  // prezzo di una scelta che l'utente non ha più.
 
   // Language: the WC chrome lives outside page.tsx's LanguageCtx, so it reads the
   // shared `agentic-lang` key (same as WcBoard) and re-renders on mount. Toggling
@@ -182,31 +158,32 @@ export default function SiteTopbar({
       <div className="am-topbar-in">
         <div className="am-brandmark">
           <Link href="/" className="wc-topbar-home" aria-label="BetrEdge">
-            {/* #UI-LOGO-THEME-0623: logo theme-aware (bianco dark / nero light), swap CSS no-flash */}
+            {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: resta il solo bianco. Il tema è
+                statico e scuro (vedi la nota qui sopra, riga 129), quindi il gemello
+                nero era `display: none` per sempre — e un <img> display:none il
+                browser lo scarica comunque: 590 KB a pagina, misurati. */}
             <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
-            <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
-          <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>
+          {!nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
         </div>
 
-        <div className="am-topright">
-          <div className="am-tt" role="group" aria-label="Theme">
-            <button
-              className={theme === "dark" ? "on" : ""}
-              aria-pressed={theme === "dark"}
-              onClick={() => setThemeTo("dark")}
-            >
-              DARK
-            </button>
-            <button
-              className={theme === "light" ? "on" : ""}
-              aria-pressed={theme === "light"}
-              onClick={() => setThemeTo("light")}
-            >
-              LIGHT
-            </button>
-          </div>
+        {nav && (
+          <nav className="br-nav" aria-label={lang === "it" ? "Navigazione principale" : "Primary"}>
+            {nav.map((n) => (
+              <Link
+                key={n.href}
+                href={n.href}
+                className="br-nav__item"
+                aria-current={pathname === n.href || pathname.startsWith(n.href + "/") ? "page" : undefined}
+              >
+                <Icon name={n.icon} size={18} />
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+        )}
 
+        <div className="am-topright">
           {auth.status === "authed" ? (
             /* #UI-LOGOUT-TOPBAR-0623: Logout in topbar accanto alla pill nome+piano.
                WC è route separata dal desk → POST /api/auth {action:"logout"} poi

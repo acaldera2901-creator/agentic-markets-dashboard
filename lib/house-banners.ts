@@ -121,6 +121,11 @@ export interface HouseCampaign {
   /** Foto di sfondo opzionale (#HOUSE-PHOTO-1). Se assente → rendering sobrio
    *  identico a prima. overlay: direzione gradiente coral (l=left, b=bottom, d=diagonal). */
   image?: { src: string; overlay?: "l" | "b" | "d" };
+  /** Creativo FINITO del brand nuovo (#RESTYLING-0921), con headline, logo e CTA
+   *  già cotti nei pixel. Se presente vince su creativeFor() e il tile diventa un
+   *  solo <Link> con l'<img>: NIENTE footer con una seconda CTA, sarebbe doppia.
+   *  `sm` è il derivato 560w per lo srcset (i master sono 1120w). */
+  creative?: { src: string; sm: string };
 }
 
 // ── Campagne ────────────────────────────────────────────────────────────────
@@ -282,6 +287,143 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
       ru: { eyebrow: "BetRedge Pro", headline: "Теннис прочитан моделью, турнир за турниром", sub: "Калиброванные вероятности на каждом покрытии. Полная история." },
     },
     cta: { href: "/plans", it: "Esplora il tennis →", en: "Explore tennis →", es: "Explorar el tenis →", fr: "Explorer le tennis →", ru: "Смотреть теннис →" },
+  },
+
+  // ── DESK FEED · creativi del brand nuovo (#RESTYLING-0921) ──────────────
+  // Sono i 5 banner scelti da Andrea il 22/09 (mappa AD in
+  // docs/reference/round5/NOTE-banner-andrea.md). Headline, logo, CTA e
+  // «18+ · Play responsibly» sono cotti nell'immagine in inglese: `copy` e `cta`
+  // qui servono solo ad `alt`/`aria-label` nelle 5 lingue, non si vedono.
+  // Regola AD: un banner porta DOVE l'utente non è già — nessuno di questi punta
+  // alla pagina che lo ospita.
+  {
+    id: "feed-best-bets",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    glyphs: ["#g-ball", "#g-racket"],
+    copy: {
+      it: { eyebrow: "Best Bets", headline: "Dove la probabilità del modello si stacca dal prezzo di mercato", sub: "Confronta probabilità del modello e del mercato." },
+      en: { eyebrow: "Best Bets", headline: "Where the model's probability parts ways with the market price", sub: "Compare model and market probabilities." },
+      es: { eyebrow: "Best Bets", headline: "Donde la probabilidad del modelo se separa del precio de mercado", sub: "Compara probabilidades del modelo y del mercado." },
+      fr: { eyebrow: "Best Bets", headline: "Là où la probabilité du modèle s'écarte du prix du marché", sub: "Compare les probabilités du modèle et du marché." },
+      ru: { eyebrow: "Best Bets", headline: "Там, где вероятность модели расходится с ценой рынка", sub: "Сравни вероятности модели и рынка." },
+    },
+    cta: { href: "/predictions", it: "Apri le Best Bets →", en: "Open Best Bets →", es: "Abrir Best Bets →", fr: "Ouvrir Best Bets →", ru: "Открыть Best Bets →" },
+    creative: { src: "/banners/andrea-picks/best-bets.jpg", sm: "/banners/andrea-picks/best-bets-sm.jpg" },
+  },
+  {
+    id: "feed-match-builder",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    glyphs: ["#g-ball", "#g-racket"],
+    copy: {
+      it: { eyebrow: "Match Builder", headline: "Costruisci la partita mercato per mercato", sub: "Esito, gol, cartellini e corner in un pannello solo." },
+      en: { eyebrow: "Match Builder", headline: "Build the match market by market", sub: "Result, goals, cards and corners in one panel." },
+      es: { eyebrow: "Match Builder", headline: "Construye el partido mercado a mercado", sub: "Resultado, goles, tarjetas y córners en un solo panel." },
+      fr: { eyebrow: "Match Builder", headline: "Construis le match marché par marché", sub: "Résultat, buts, cartons et corners dans un seul panneau." },
+      ru: { eyebrow: "Match Builder", headline: "Собери матч рынок за рынком", sub: "Исход, голы, карточки и угловые в одной панели." },
+    },
+    cta: { href: "/probability-view", it: "Apri il Match Builder →", en: "Open Match Builder →", es: "Abrir Match Builder →", fr: "Ouvrir Match Builder →", ru: "Открыть Match Builder →" },
+    creative: { src: "/banners/andrea-picks/match-builder.jpg", sm: "/banners/andrea-picks/match-builder-sm.jpg" },
+  },
+  {
+    id: "feed-free-tools",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    glyphs: ["#g-desk"],
+    copy: {
+      it: { eyebrow: "Strumenti gratuiti", headline: "I conti che fai prima di puntare, in una pagina", sub: "Quote, margine, EV e Kelly. Senza account." },
+      en: { eyebrow: "Free tools", headline: "The maths you run before a bet, on one page", sub: "Odds, margin, EV and Kelly. No account needed." },
+      es: { eyebrow: "Herramientas gratis", headline: "Las cuentas previas a la apuesta, en una página", sub: "Cuotas, margen, EV y Kelly. Sin cuenta." },
+      fr: { eyebrow: "Outils gratuits", headline: "Les calculs d'avant-pari, sur une page", sub: "Cotes, marge, EV et Kelly. Sans compte." },
+      ru: { eyebrow: "Бесплатные инструменты", headline: "Расчёты до ставки — на одной странице", sub: "Коэффициенты, маржа, EV и Келли. Без аккаунта." },
+    },
+    cta: { href: "/tools", it: "Apri gli strumenti →", en: "Explore free tools →", es: "Abrir las herramientas →", fr: "Ouvrir les outils →", ru: "Открыть инструменты →" },
+    creative: { src: "/banners/andrea-picks/free-tools.jpg", sm: "/banners/andrea-picks/free-tools-sm.jpg" },
+  },
+  {
+    id: "feed-track-record",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    glyphs: ["#g-rank"],
+    copy: {
+      it: { eyebrow: "Track record", headline: "Ogni pick che il modello ha chiuso, aperta alla lettura", sub: "Lo storico completo, vinte e perse." },
+      en: { eyebrow: "Track record", headline: "Every pick the model has closed, open to read", sub: "The full history, wins and losses." },
+      es: { eyebrow: "Track record", headline: "Cada pick que el modelo ha cerrado, abierta a la lectura", sub: "El historial completo, ganadas y perdidas." },
+      fr: { eyebrow: "Track record", headline: "Chaque pick clôturée par le modèle, ouverte à la lecture", sub: "L'historique complet, gagnées et perdues." },
+      ru: { eyebrow: "Track record", headline: "Каждая закрытая моделью ставка — открыта для чтения", sub: "Полная история, выигрыши и проигрыши." },
+    },
+    cta: { href: "/history", it: "Apri lo storico →", en: "Open the track record →", es: "Abrir el historial →", fr: "Ouvrir l'historique →", ru: "Открыть историю →" },
+    creative: { src: "/banners/andrea-picks/track-record.jpg", sm: "/banners/andrea-picks/track-record-sm.jpg" },
+  },
+  {
+    // Solo anon/free: la CTA cotta dice «Explore Pro», e a chi il Pro ce l'ha già
+    // sarebbe una pubblicità di ciò che ha comprato.
+    id: "feed-deep-analysis",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free"],
+    glyphs: ["#g-ball", "#g-racket"],
+    copy: {
+      it: { eyebrow: "Deep Analysis", headline: "Il perché dietro ogni probabilità, non solo il numero", sub: "Forma, gol attesi e contesto, riga per riga." },
+      en: { eyebrow: "Deep Analysis", headline: "The why behind every probability, not just the number", sub: "Form, expected goals and context, line by line." },
+      es: { eyebrow: "Deep Analysis", headline: "El porqué detrás de cada probabilidad, no solo el número", sub: "Forma, goles esperados y contexto, línea a línea." },
+      fr: { eyebrow: "Deep Analysis", headline: "Le pourquoi derrière chaque probabilité, pas seulement le chiffre", sub: "Forme, buts attendus et contexte, ligne par ligne." },
+      ru: { eyebrow: "Deep Analysis", headline: "Почему за каждой вероятностью, а не только число", sub: "Форма, ожидаемые голы и контекст — строка за строкой." },
+    },
+    cta: { href: "/plans", it: "Scopri il Pro →", en: "Explore Pro →", es: "Descubrir Pro →", fr: "Découvrir Pro →", ru: "Узнать о Pro →" },
+    creative: { src: "/banners/andrea-picks/deep-analysis-pro.jpg", sm: "/banners/andrea-picks/deep-analysis-pro-sm.jpg" },
+  },
+  // #RESTYLING-0921 round 12 — DUE CREATIVI PER LE GRIGLIE DI SCHEDE.
+  //
+  // Il board tennis renderizzava ZERO banner: `tennisFeed` filtra su
+  // `campaignSport(c) === "tennis"` e nessuna delle cinque campagne sopra è
+  // tennis (hanno entrambi i glifi, o nessuno dei due → "neutral", che finisce
+  // nel feed calcio). Non era una scelta, era un buco.
+  //
+  // Le due qui sotto lo chiudono e insieme danno alle due griglie creativi
+  // DIVERSI da quelli che la Home mostra in «Da approfondire» — che pesca i
+  // primi due della lista. Il soggetto della foto decide il feed: la ragazza
+  // col rovescio dell'EV Calculator sta nel tennis, il calciatore dell'Odds
+  // Converter nel calcio. Entrambe portano DOVE l'utente non è (un tool),
+  // che è la regola AD di sempre, e nessuna delle due alza la densità: il
+  // cap per griglia resta due (`FEED_TILES_MAX`).
+  {
+    id: "feed-ev-calculator",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    // Solo racket: è ciò che manda la campagna nel feed TENNIS (campaignSport).
+    glyphs: ["#g-racket"],
+    copy: {
+      it: { eyebrow: "EV Calculator", headline: "Misura il valore prima di puntare, non dopo", sub: "Confronta la tua probabilità con il prezzo." },
+      en: { eyebrow: "EV Calculator", headline: "Measure the value before the bet, not after", sub: "Compare your probability with the price." },
+      es: { eyebrow: "EV Calculator", headline: "Mide el valor antes de apostar, no después", sub: "Compara tu probabilidad con el precio." },
+      fr: { eyebrow: "EV Calculator", headline: "Mesure la valeur avant le pari, pas après", sub: "Compare ta probabilité avec le prix." },
+      ru: { eyebrow: "EV Calculator", headline: "Измерь ценность до ставки, а не после", sub: "Сравни свою вероятность с ценой." },
+    },
+    cta: { href: "/tools/ev-calculator", it: "Calcola l'EV →", en: "Calculate expected value →", es: "Calcular el EV →", fr: "Calculer l'EV →", ru: "Посчитать EV →" },
+    creative: { src: "/banners/andrea-picks/ev-calculator.jpg", sm: "/banners/andrea-picks/ev-calculator-sm.jpg" },
+  },
+  {
+    id: "feed-odds-converter",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    glyphs: ["#g-ball"],
+    copy: {
+      it: { eyebrow: "Odds Converter", headline: "Lo stesso prezzo in tre formati, e la probabilità implicita", sub: "Decimali, frazionarie, americane." },
+      en: { eyebrow: "Odds Converter", headline: "One price in three formats, and the probability behind it", sub: "Decimal, fractional, American." },
+      es: { eyebrow: "Odds Converter", headline: "Un precio en tres formatos, y la probabilidad implícita", sub: "Decimales, fraccionarias, americanas." },
+      fr: { eyebrow: "Odds Converter", headline: "Un prix en trois formats, et la probabilité implicite", sub: "Décimales, fractionnaires, américaines." },
+      ru: { eyebrow: "Odds Converter", headline: "Одна цена в трёх форматах и вероятность за ней", sub: "Десятичные, дробные, американские." },
+    },
+    cta: { href: "/tools/odds-converter", it: "Converti le quote →", en: "Convert your odds →", es: "Convertir las cuotas →", fr: "Convertir les cotes →", ru: "Конвертировать коэффициенты →" },
+    creative: { src: "/banners/andrea-picks/odds-converter.jpg", sm: "/banners/andrea-picks/odds-converter-sm.jpg" },
   },
 
   // ── DESK BOTTOM (billboard) ─────────────────────────────────────────────
@@ -526,6 +668,10 @@ export function campaignSport(c: HouseCampaign): "football" | "tennis" | "neutra
 /** Creativo Ole per la campagna, del FORMATO adatto allo slot (aspect coerente →
  *  niente crop/gap/minuscoli) E coerente per SPORT con la sezione che lo ospita. */
 export function creativeFor(campaign: HouseCampaign): string {
+  // #RESTYLING-0921: un creativo dichiarato sulla campagna vince sulla rotazione
+  // Ole, che è del brand vecchio. Nessun hash, nessun pool: questa campagna ha
+  // la SUA immagine.
+  if (campaign.creative) return campaign.creative.src;
   const id = campaign.id;
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;

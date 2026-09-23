@@ -82,11 +82,13 @@ export default function WidgetPage() {
       <div className="v-wrap">
         <nav className="wg-nav">
           <Link href="/" aria-label="BetRedge home" style={{ display: "inline-flex", alignItems: "center" }}>
-            {/* #UI-LOGO-THEME-0623: due file, swap via CSS su data-theme (nessun flash). */}
+            {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: era una coppia scambiata via CSS
+                su data-theme. Resta il solo bianco: il tema del SITO è statico e
+                scuro, e un <img> display:none si scarica comunque (590 KB a
+                pagina). Nota: il `data-theme` documentato qui sotto è quello
+                dell'EMBED, che ha i suoi file `-48` e non passa da queste classi. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetRedge" style={{ height: 26, width: "auto" }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 26, width: "auto" }} />
           </Link>
           <div style={{ display: "flex", gap: 16 }}>
             <Link href="/predictions">Predictions</Link>

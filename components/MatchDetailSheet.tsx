@@ -5,9 +5,13 @@
 // dipende dagli helper interni di app/page.tsx. Icone SVG su misura (no emoji).
 // La schedina è componibile lato client: le chip PICK (rec) sono pre-inserite;
 // solo le legs con quota reale moltiplicano la quota combinata (i soft = stima).
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MarketIcon } from "./MarketIcon";
+import { MatchHeader } from "./ui/MatchHeader";
+import { ConfidenceIndicator } from "./ui/ConfidenceIndicator";
+import { IconLock } from "./ui/icons";
+import { formatPct } from "../lib/ui/prediction-card";
 import { partnerLogoByName, sortBooksForMenu } from "../lib/partners";
 import { trackEvent } from "../lib/track-event";
 import { joinFpWithModel } from "../lib/market-join";
@@ -44,11 +48,71 @@ export type MdsGroup = {
   chips: MdsChip[];
   note?: string;
 };
+/** #RESTYLING-0921 — la testa della match page: sport/lega/quando, le due
+ *  squadre grandi, il pick e LA NOSTRA percentuale in evidenza. TUTTO
+ *  OPZIONALE: i chiamanti che non la passano (WcBoard, weekly-model-case)
+ *  rendono la scheda esattamente come prima.
+ *
+ *  Round 13: `marketPct` non è più un campo della testa. Serviva solo alla riga
+ *  MODEL | MARKET | EDGE, che non esiste più.
+ *  Round 14: se ne va anche `edgePct`, che reggeva il chip accanto al pick —
+ *  nella scheda non resta alcun numero di mercato, solo il modello. Il dato
+ *  continua a esistere dove serve (ordinamento e fascia «High edge» della
+ *  lobby, lib/ui/lobby.ts): è la SCHEDA che non lo mostra più. */
+export type MdsHead = {
+  sport: string;
+  league: string | null;
+  kickoffLabel?: string | null;
+  isLive?: boolean;
+  liveMinute?: string | number | null;
+  score?: { home: number; away: number } | null;
+  pick: string | null;
+  modelPct: number | null;
+  confidence?: number | null;
+  locked?: boolean;
+  /** Slot a destra del kicker: watchlist, share… */
+  actions?: ReactNode;
+};
+
+/** Una riga di «Why the model likes this pick» (lib/ui/why-reasons.ts). */
+export type MdsWhy = { label: string; text: string };
+
+/** Forma recente: già risolta in lettere W/D/L dal chiamante. */
+export type MdsForm = {
+  home: { name: string; results: string[] };
+  away: { name: string; results: string[] };
+};
+
+/** Infortuni e news squadra. `locked` = il piano non li include, ma SAPPIAMO
+ *  che per questa partita esistono: si annuncia il contenuto, non si finge. */
+export type MdsTeamNews = {
+  home: { name: string; items: string[] };
+  away: { name: string; items: string[] };
+};
+
+export type MdsSectionLabels = {
+  why: string;
+  form: string;
+  teamNews: string;
+  teamNewsLocked: string;
+  teamNewsNone: string;
+  markets: string;
+  unlock: string;
+};
+
 export type MdsData = {
   league: string;
   when: string;
   home: string;
   away: string;
+  // ── #RESTYLING-0921: testa nuova + progressive disclosure (tutto opzionale)
+  head?: MdsHead | null;
+  why?: MdsWhy[] | null;
+  form?: MdsForm | null;
+  teamNews?: MdsTeamNews | null;
+  teamNewsLocked?: boolean;
+  onUnlock?: () => void;
+  sections?: MdsSectionLabels;
   hero: {
     flag: string;
     pick: string;
@@ -350,7 +414,132 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
         </defs>
       </svg>
 
-      {/* HERO */}
+      {/* ── #RESTYLING-0921 — LA TESTA DELLA MATCH PAGE ───────────────────
+          Il brief: «header match + pick grande · Model/Market/Edge molto
+          evidenti · Confidence come indicatore secondario». Sostituisce
+          l'hero solo per i chiamanti che passano `head`; gli altri
+          (WcBoard, weekly-model-case) vedono l'hero di prima, invariato.
+
+          Sotto la testa comincia la progressive disclosure: prima il PERCHÉ,
+          poi forma e news, e solo dopo i mercati — che sono la parte
+          operativa, non la spiegazione. */}
+      {data.head ? (
+        <div className="br-md">
+          <MatchHeader
+            sport={data.head.sport}
+            league={data.head.league}
+            home={data.home}
+            away={data.away}
+            kickoffLabel={data.head.kickoffLabel ?? data.when}
+            isLive={data.head.isLive}
+            liveMinute={data.head.liveMinute}
+            score={data.head.score ?? null}
+            pick={data.head.pick}
+            locked={data.head.locked}
+            actions={data.head.actions}
+          />
+          <div className="br-md__numbers">
+            {/* #RESTYLING-0921 round 13 — UN NUMERO SOLO, IL NOSTRO.
+                Fino al round 12 qui c'era il riquadro MODEL | MARKET | EDGE con
+                la barra di confronto. Andrea, sulla scheda aperta: «non mi piace
+                quel rettangolo che fa vedere modello vs mercato, perché a volte
+                siamo sotto il mercato — enfatizza di più solo la percentuale del
+                vincitore». Quindi la testa porta la stessa cosa della card in
+                griglia: la probabilità del modello per il pick, grande, in
+                --am-pct. Il confronto col mercato NON sparisce dal prodotto —
+                resta scritto in «Why the model likes this pick», dove la riga
+                Market lo dice in entrambe le direzioni (lib/ui/why-reasons.ts),
+                cioè dove c'è il tempo di leggerlo invece di un numero che urla. */}
+            <p className="br-card__model br-md__pct" data-size="lg">
+              <span className="br-card__model-n">
+                {formatPct(data.head.modelPct)}
+                {data.head.modelPct != null && <span className="br-card__model-pc">%</span>}
+              </span>
+              <span className="br-label">Our model</span>
+            </p>
+            {data.head.confidence != null && !data.head.locked && (
+              <ConfidenceIndicator score={data.head.confidence} layout="stack" showPercent />
+            )}
+          </div>
+
+          {/* Livello 2 — «Why the model likes this pick». Ogni riga porta
+              l'etichetta del campo da cui nasce: si vede da dove viene. */}
+          {data.why && data.why.length > 0 && (
+            <section className="br-md__sec">
+              <h3 className="br-md__h">{data.sections?.why ?? "Why the model likes this pick"}</h3>
+              <ul className="br-md__why">
+                {data.why.map((r, i) => (
+                  <li key={i}>
+                    <span className="br-label">{r.label}</span>
+                    <span className="br-md__why-t">{r.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {data.form && (
+            <section className="br-md__sec">
+              <h3 className="br-md__h">{data.sections?.form ?? "Recent form"}</h3>
+              <div className="br-md__form">
+                {[data.form.home, data.form.away].map((side) => (
+                  <div className="br-md__formrow" key={side.name}>
+                    <span className="br-md__formname">{side.name}</span>
+                    <span className="br-md__formres">
+                      {side.results.map((r, i) => (
+                        <i key={i} data-r={r.toUpperCase()} aria-hidden="true">{r.toUpperCase()}</i>
+                      ))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {(data.teamNews || data.teamNewsLocked) && (
+            <section className="br-md__sec">
+              <h3 className="br-md__h">{data.sections?.teamNews ?? "Injuries & team news"}</h3>
+              {data.teamNewsLocked ? (
+                /* Contenuto Pro: si NOMINA ciò che c'è dietro, non si mostra
+                   un blur di numeri finti. La CTA è contestuale, come chiede
+                   il brief — arriva qui, dove l'utente ha incontrato il
+                   limite, non come banner. */
+                <div className="br-md__locked">
+                  <p>
+                    <IconLock size={14} />
+                    {data.sections?.teamNewsLocked ?? "The full injury and team-news read for this match is part of Pro."}
+                  </p>
+                  {data.onUnlock && (
+                    <button type="button" className="br-cta" data-tone="unlock" onClick={data.onUnlock}>
+                      <IconLock size={14} />{data.sections?.unlock ?? "Unlock full analysis"}
+                    </button>
+                  )}
+                </div>
+              ) : data.teamNews && (data.teamNews.home.items.length > 0 || data.teamNews.away.items.length > 0) ? (
+                <div className="br-md__news">
+                  {[data.teamNews.home, data.teamNews.away].map((side) => (
+                    <div key={side.name}>
+                      <span className="br-label">{side.name}</span>
+                      {side.items.length ? (
+                        <ul>{side.items.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                      ) : (
+                        <p className="br-md__none">{data.sections?.teamNewsNone ?? "No reported absences."}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="br-md__none">{data.sections?.teamNewsNone ?? "No reported absences."}</p>
+              )}
+            </section>
+          )}
+
+          {data.groups.length > 0 && (
+            <h3 className="br-md__h br-md__h--markets">{data.sections?.markets ?? "Markets"}</h3>
+          )}
+        </div>
+      ) : (
+      /* HERO */
       <div className="mds-hero">
         <div className="mds-htop">
           <span className="mds-comp"><Ico id="trophy" />{data.league}</span>
@@ -386,6 +575,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
           )}
         </div>
       </div>
+      )}
 
       {/* MARKET GROUPS (modello + FortunePlay base) */}
       {data.groups.map(renderGroup)}

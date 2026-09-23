@@ -408,4 +408,14 @@
    */
   .am-acct .plan { font-size: 11px !important; }   /* era 9.5px · "PRO" */
   .hb-eyebrow { font-size: 11px !important; }      /* era 10px  · "BetRedge Pro" */
+
+  /* ── 19. Il segmentato delle pagine /tools — #MOBILE-0923 ────────────────
+   * Misurato @390 su /tools/ev-calculator: 154×36 e 168×36. È il comando che
+   * sceglie da dove arriva la probabilità («My own estimate» / «From a sharp
+   * book»), cioè il primo tocco della calcolatrice, e stava 8px sotto il
+   * pavimento. In globals.css:10238 l'altezza è FISSA (`height: 36px`), non
+   * un minimo: un `min-height` qui non la batterebbe, perché `height` vince
+   * su `min-height` solo quando è maggiore — quindi si riscrive `height`.
+   * Stessa specificità (0,1,0), ma questo foglio è importato dopo globals. */
+  .tl-seg-btn { height: 44px; }
 }

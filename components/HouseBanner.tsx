@@ -221,6 +221,37 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
     // .hb-cr-grid) → stessa altezza delle card adiacenti, ZERO gutter. Posizionamento e
     // span guidati da .hb-cr-* in globals.css (niente gridColumn/maxWidth inline).
     if (inGrid) {
+      // #RESTYLING-0921 — creativo del brand NUOVO: headline, logo, «18+» e la CTA
+      // sono già cotti nei pixel, quindi il tile è SOLO il link con l'immagine.
+      // Niente footer: la `hb-cr-foot-cta` sotto aggiungerebbe una seconda CTA
+      // identica a quella disegnata dentro il banner. Tutto il riquadro è il link
+      // — un overlay allineato al pulsante dipinto si disallinea al primo resize.
+      // Il testo per chi non vede l'immagine sta nell'alt e nell'aria-label.
+      if (campaign.creative) {
+        return (
+          <aside className="house-banner hb-creative hb-cr-grid hb-cr-baked" aria-label={c.eyebrow}>
+            <Link href={campaign.cta.href} onClick={onCtaClick} aria-label={ctaLabel}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="hb-cr-img"
+                src={campaign.creative.src}
+                srcSet={`${campaign.creative.sm} 560w, ${campaign.creative.src} 1120w`}
+                // Misurato a 1280 di viewport: il tile occupa 2 colonne da 304px
+                // = 620px. Dichiararne 560 faceva scegliere il derivato piccolo,
+                // che poi saliva del 10%. Con 620 il desktop prende il master da
+                // 1120w e il telefono resta sul 560w.
+                sizes="(max-width: 640px) 100vw, 620px"
+                alt={c.headline}
+                width={1120}
+                height={630}
+                loading="lazy"
+                decoding="async"
+              />
+            </Link>
+            {dismissBtn}
+          </aside>
+        );
+      }
       // #BANNER-FEED-FIX-0708: il creativo QUADRATO (feed tennis) è una FOTO senza
       // copy baked → mostrarlo intero lascerebbe una banda vuota sotto (slop). La
       // riempiamo con un footer brandizzato (eyebrow + headline + CTA) → tile promo

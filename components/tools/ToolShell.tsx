@@ -10,7 +10,7 @@ import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getToolsCopy } from "@/lib/tools/copy";
-import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
+import { TOOL_SLUGS, chromeLang, chromeNav, toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
 import { toolJsonLd } from "@/lib/tools/seo";
 import { ToolCalculator } from "./ToolCalculator";
 import { LocalePicker } from "./LocalePicker";
@@ -22,10 +22,13 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
   const copy = getToolsCopy(locale);
   const t = copy.tools[slug];
   const others = TOOL_SLUGS.filter((s) => s !== slug);
+  // Dei dieci creativi consegnati il 22/09 solo due sono di un tool: l'EV
+  // Calculator e l'Odds Converter. Si promuovono a vicenda, e mai sé stessi.
+  const promoted: ToolSlug = slug === "ev-calculator" ? "odds-converter" : "ev-calculator";
 
   return (
     <div className="portal-root tl-root" lang={locale}>
-      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
+      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} nav={chromeNav(locale)} />
       <main className="tl-page">
         <header className="tl-head tl-head--tool">
           {/* L'icona identifica il tool a colpo d'occhio e lega la pagina al rail
@@ -93,6 +96,31 @@ export function ToolShell({ slug, locale }: { slug: ToolSlug; locale: ToolLocale
             ))}
           </div>
         </section>
+
+        {/* #RESTYLING-0921 — cross-promo fra tool, UN banner per pagina.
+            Regola AD: un banner porta dove l'utente NON è già, quindi la pagina
+            dell'EV Calculator promuove l'Odds Converter e tutte le altre
+            promuovono l'EV Calculator. La headline e la CTA sono cotte
+            nell'immagine in inglese; il testo accessibile invece è tradotto,
+            e viene dal dizionario del tool di destinazione — così resta nelle
+            11 lingue senza aggiungere stringhe da tradurre a mano. */}
+        <Link
+          className="tl-promo"
+          href={toolPath(promoted, locale)}
+          aria-label={`${copy.tools[promoted].h1} — ${copy.tools[promoted].lede}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/banners/andrea-picks/${promoted}.jpg`}
+            srcSet={`/banners/andrea-picks/${promoted}-sm.jpg 560w, /banners/andrea-picks/${promoted}.jpg 1120w`}
+            sizes="(max-width: 600px) 100vw, 560px"
+            alt={`${copy.tools[promoted].h1} — ${copy.tools[promoted].lede}`}
+            width={1120}
+            height={630}
+            loading="lazy"
+            decoding="async"
+          />
+        </Link>
 
         <aside className="tl-cta">
           <div className="tl-cta-body">

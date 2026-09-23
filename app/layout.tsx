@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, JetBrains_Mono, Saira_Condensed } from "next/font/google";
+import { Anton, Barlow_Condensed, JetBrains_Mono, Manrope } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import VercelAnalytics from "@/components/VercelAnalytics";
 import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
+import "./design-system.css"; // #RESTYLING-0921 — componenti br-*, solo token --am-*
 
-const hankenGrotesk = Hanken_Grotesk({
+// #RESTYLING-0921 round 7 — i tre font del riferimento, misurati sul sito di
+// Codex, non scelti a gusto: Manrope per il corpo (era Hanken Grotesk),
+// Barlow Condensed per label/CTA/teste condensate (era Saira Condensed — stessi
+// due pesi, quindi sostituzione uno-a-uno) e Anton per il display (H1, hero,
+// numeri eroe), che prima non esisteva nel sistema.
+const manrope = Manrope({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -16,17 +22,31 @@ const hankenGrotesk = Hanken_Grotesk({
 // #CARD-HUD-0830 — la condensata pesante del registro gaming: regge i numeri
 // enormi della scheda senza diventare Oswald, che si vede ovunque. Solo due pesi:
 // 700 per i nomi, 800 per il numero eroe.
-const sairaCondensed = Saira_Condensed({
+// #RESTYLING-0921 round 7: Saira Condensed → Barlow Condensed (il condensato del
+// riferimento). Stesso ruolo, stessi due pesi: nessuna regola CSS cambia.
+const barlowCondensed = Barlow_Condensed({
   variable: "--font-tech",
   subsets: ["latin"],
   weight: ["700", "800"],
   display: "swap",
 });
 
+// #RESTYLING-0921 round 7 — Anton, il display del riferimento. Un solo peso
+// (400) per disegno: dove serve "più grassetto" si va più grandi, non si chiede
+// un 800 che il browser sintetizzerebbe sporcando le aste.
+const anton = Anton({
+  variable: "--font-anton",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+});
+
+// #RESTYLING-0921: aggiunto il 700. I numeri della PredictionCard (Model /
+// Market / Edge) devono dominare le label: il 600 a 32px non basta, il 700 sì.
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 // #SEO-SCAFFOLDING-0721: metadataBase + OG/Twitter site-wide (prima: zero → le
@@ -100,21 +120,22 @@ const serviceJsonLd = {
   ],
 };
 
-// No-flash theme bootstrap (Cobalt & Coral redesign, F1).
-// Runs before paint: resolves agentic-theme (localStorage) → prefers-color-scheme,
-// then sets data-theme on <html>. Default dark. Pure presentation, no logic change.
-// #UI-MACHINA-0802: senza una scelta esplicita il tema e' SCURO, non quello del
-// sistema operativo. Il restyling e' un mondo visivo scuro (fondo cinematico) e
-// vive dentro :root:not([data-theme="light"]): seguendo il sistema, chi ha il
-// Mac in chiaro non vedrebbe MAI la veste nuova. La scelta manuale continua a
-// vincere e a persistere: chi preme LIGHT resta sul prodotto di oggi.
-const themeScript = `(function(){try{var t=localStorage.getItem('agentic-theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+// #RESTYLING-0921 round 14 — IL TEMA È UNO SOLO, E LO DECIDE IL SERVER.
+// Qui girava, prima del paint, uno script che leggeva `agentic-theme` da
+// localStorage e ne ricavava `data-theme`. Aveva senso finché il tema era una
+// scelta; Andrea l'ha chiusa: «togliamo la versione light, deve rimanere solo
+// la dark ma senza bottone». Il valore lo scrive l'attributo statico qui
+// sotto, quindi non c'è più niente da bootstrappare e niente da cui flashare.
+// Le regole `:root[data-theme="light"]` restano nei CSS: non sono più
+// raggiungibili (nessun codice scrive quel valore) e toglierle vorrebbe dire
+// rigenerare app/machina.css, che è un file GENERATO e il cui tema scuro è
+// scritto proprio come `:root:not([data-theme="light"])`. Si è tolto il modo
+// di accenderlo, non le migliaia di righe che non si accendono più.
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${hankenGrotesk.variable} ${jetbrainsMono.variable} ${sairaCondensed.variable}`}>
+    <html lang="en" data-theme="dark" className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}

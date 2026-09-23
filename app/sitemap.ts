@@ -35,6 +35,9 @@ const PUBLIC_ROUTES: Entry[] = [
   // i path veri del desk. Plans/history sono pagine di prodotto indicizzabili;
   // leaderboard/match-builder/invite restano fuori (contenuto dietro login).
   { path: "/predictions", changeFrequency: "daily" },
+  // #RESTYLING-0921 round 2: la vecchia landing vive qui, ora che "/" porta
+  // direttamente nel prodotto. Contenuto informativo → weekly, non daily.
+  { path: "/how-it-works", changeFrequency: "weekly" },
   { path: "/plans", changeFrequency: "weekly" },
   { path: "/history", changeFrequency: "daily" },
   // #SEO-PACK-0810: pillar UK (brief 06) — contenuto statico, weekly.

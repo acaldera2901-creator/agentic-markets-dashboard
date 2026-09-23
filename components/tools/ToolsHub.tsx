@@ -8,7 +8,7 @@ import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getToolsCopy } from "@/lib/tools/copy";
-import { TOOL_SLUGS, chromeLang, toolPath, type ToolLocale } from "@/lib/tools/registry";
+import { TOOL_SLUGS, chromeLang, chromeNav, toolPath, type ToolLocale } from "@/lib/tools/registry";
 import { hubJsonLd } from "@/lib/tools/seo";
 import { LocalePicker } from "./LocalePicker";
 import { ToolIcon } from "./ToolIcon";
@@ -24,7 +24,7 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
     <div className="portal-root tl-root mc-scene-stadium" data-mc-ground lang={locale}>
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
-      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} />
+      <SiteTopbar backHref="/" backLabel={copy.common.backLabel} hideLang lang={chromeLang(locale)} nav={chromeNav(locale)} />
       <main className="tl-page">
         <header className="tl-head tl-head--tool">
           {/* Stessa calcolatrice della voce "Strumenti" nel rail: l'hub si

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, Fragment } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
@@ -33,7 +33,9 @@ import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
-import { MenuIcon } from "@/app/components/menu-icon";
+import { MenuIcon, NavIcon, type NavName } from "@/app/components/menu-icon";
+// #RESTYLING-0921 round 3: il set di icone della casa (nav, bottom-nav, search).
+import { Icon, IconSearch, IconArrow, type IconName } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
 import { getSessionId, trackEvent } from "@/lib/track-event";
@@ -46,8 +48,29 @@ import { canonicalPlayerKey } from "@/lib/tennis-names";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { HouseBanner } from "@/components/HouseBanner";
 import { SiteFooter } from "@/components/SiteFooter";
-import { campaignsFor, campaignSport } from "@/lib/house-banners";
+import { campaignsFor, campaignSport, copyFor, ctaLabelFor } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
+// #RESTYLING-0921 — design system del redesign. La card nuova si importa con
+// un alias: `PredictionCard` è già il nome della card legacy del board, che
+// resta viva (è lei a possedere la scheda-dettaglio e la schedina).
+import {
+  PredictionCard as BrPredictionCard,
+  ConfidenceIndicator,
+  WatchlistButton,
+} from "@/components/ui";
+import { LobbySection } from "@/components/lobby/LobbySection";
+import { HomeFaq } from "@/components/lobby/HomeFaq";
+import { HeroPortrait, RailDeep } from "@/components/lobby/HeroPortrait";
+import { FieldTile, FieldTileGrid } from "@/components/lobby/FieldTile";
+import { DeepDiveCard, DeepDiveGrid } from "@/components/lobby/DeepDiveCard";
+import { UpcomingList, type UpcomingRow } from "@/components/lobby/UpcomingList";
+import { ProBand } from "@/components/lobby/ProBand";
+import { PageHeadline } from "@/components/lobby/PageHeadline";
+import { SportHero } from "@/components/lobby/SportHero";
+import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
+import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
+import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
+import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
 // fuori dal bundle iniziale di /app. MatchDetailSheet = solo all'apertura scheda
@@ -301,7 +324,7 @@ const BASE_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Mercati", nav_predictions: "Previsioni", nav_leaderboard: "Classifica", nav_account: "Account",
     auth_signin: "Accedi", auth_register: "Registrati",
-    theme_aria: "Tema", featured_label: "In evidenza",
+    featured_label: "In evidenza",
     kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit", kpi_settled_lbl: "Pick chiuse", kpi_coverage: "Verificate",
     season_pause: "Stagione in pausa — nessuna partita programmata nelle prossime 48h. Le prediction tornano automaticamente con la ripresa delle leghe (luglio 2026).",
     footer_pastperf: "Le performance passate non garantiscono risultati futuri.",
@@ -560,7 +583,7 @@ const BASE_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Markets", nav_predictions: "Predictions", nav_leaderboard: "Leaderboard", nav_account: "Account",
     auth_signin: "Sign In", auth_register: "Register",
-    theme_aria: "Theme", featured_label: "Featured",
+    featured_label: "Featured",
     kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit", kpi_settled_lbl: "Settled picks", kpi_coverage: "Verified",
     season_pause: "Season pause — no fixtures in the next 48h. Predictions return automatically when leagues resume (July 2026).",
     footer_pastperf: "Past performance does not guarantee future results.",
@@ -822,7 +845,7 @@ const EXTRA_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Mercados", nav_predictions: "Predicciones", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
     auth_signin: "Entrar", auth_register: "Registrarse",
-    theme_aria: "Tema", featured_label: "Destacados",
+    featured_label: "Destacados",
     kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto", kpi_settled_lbl: "Pronósticos cerrados", kpi_coverage: "Verificados",
     season_pause: "Temporada en pausa — no hay partidos programados en las próximas 48h. Las predicciones vuelven automáticamente cuando las ligas se reanuden (julio 2026).",
     footer_pastperf: "El rendimiento pasado no garantiza resultados futuros.",
@@ -1081,7 +1104,7 @@ const EXTRA_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Marchés", nav_predictions: "Prédictions", nav_leaderboard: "Classement", nav_account: "Compte",
     auth_signin: "Connexion", auth_register: "S'inscrire",
-    theme_aria: "Thème", featured_label: "À la une",
+    featured_label: "À la une",
     kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite", kpi_settled_lbl: "Pronostics clôturés", kpi_coverage: "Vérifiés",
     season_pause: "Saison en pause — aucun match programmé dans les 48 prochaines heures. Les prédictions reviennent automatiquement à la reprise des ligues (juillet 2026).",
     footer_pastperf: "Les performances passées ne garantissent pas les résultats futurs.",
@@ -1340,7 +1363,7 @@ const EXTRA_TRANSLATIONS = {
     // Topnav / shell (i18n migration)
     nav_markets: "Рынки", nav_predictions: "Прогнозы", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
     auth_signin: "Войти", auth_register: "Регистрация",
-    theme_aria: "Тема", featured_label: "Избранное",
+    featured_label: "Избранное",
     kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность", kpi_settled_lbl: "Закрытые прогнозы", kpi_coverage: "Проверено",
     season_pause: "Сезон на паузе — в ближайшие 48 часов матчей не запланировано. Прогнозы вернутся автоматически с возобновлением лиг (июль 2026).",
     footer_pastperf: "Прошлые результаты не гарантируют будущих.",
@@ -1624,6 +1647,11 @@ interface Prediction {
   pick?: string | null;
   confidence_score?: number | null;
   explanation?: string | null;
+  // #RESTYLING-0921 — riga CHIUSA: probabilità e quota dell'esito di punta,
+  // senza dire quale sia (la tripla e le quote per esito non arrivano). Vedi la
+  // nota `lockedHeadline` in app/api/predictions/route.ts.
+  model_prob?: number | null;
+  market_odds?: number | null;
   affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
 
@@ -1796,6 +1824,10 @@ export interface TennisMatch { // #HOME-V3: riusato 1:1 nella sezione Anatomy de
   // purpose (different reason, different copy). Legacy payloads omit it.
   no_market?: boolean | null;
   explanation?: string | null;
+  // #RESTYLING-0921 — riga CHIUSA: probabilità e quota dell'esito di punta,
+  // senza dire quale sia. Stessa regola della board calcio.
+  model_prob?: number | null;
+  market_odds?: number | null;
   affiliate?: { bookmaker: string; bonus: string; url: string; odds: number | null } | null;
 }
 
@@ -2224,6 +2256,8 @@ function SportsbookBoard({
   onBannerCta,
   hitRate,
   liveStrip,
+  autoOpenKey,
+  onAutoOpenClose,
 }: {
   predictions: Prediction[];
   fpOdds: Record<string, FpOddsEntry>;
@@ -2237,6 +2271,13 @@ function SportsbookBoard({
   onBannerCta?: (href: string) => boolean;
   hitRate?: string | null;
   liveStrip?: React.ReactNode;
+  /** #RESTYLING-0921 — `sport:id` della partita da aprire subito (deep-link
+   *  `?match=` o click da una card della lobby). */
+  autoOpenKey?: string | null;
+  /** #RESTYLING-0921 round 10 — la scheda aperta da `autoOpenKey` è stata
+   *  chiusa: il desk torna alla vista della lobby da cui era partita. Il
+   *  board non è più una destinazione, solo l'ospite del dettaglio. */
+  onAutoOpenClose?: () => void;
 }) {
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "tennis">("all");
   // ?sport= deep-link dalla landing: applicato dopo il mount per non rompere
@@ -2259,6 +2300,9 @@ function SportsbookBoard({
   // Il taglio lo fa il CSS, che sopra i 640px non esiste — cosi' il desktop
   // continua a mostrare tutto come prima.
   const [boardLimitata, setBoardLimitata] = useState(true);
+  // #RESTYLING-0921 round 5 — il segnalibro delle card nuove: una sola lettura
+  // dello storage per tutto il board, non una per card.
+  const watchlist = useWatchlist();
   const footballValue = predictions
     .filter(isFootballBestBet)
     .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
@@ -2293,9 +2337,40 @@ function SportsbookBoard({
   // esistenti sono tutte `audiences: ["base","premium"]`. Perché il Free ne veda
   // uno serve una campagna desk-feed che lo elenchi: è una scelta di contenuto
   // (AD/marketing), non di codice.
-  const feedCampsAll = campaignsFor("desk-feed", boardAudience);
-  const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis");
-  const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis");
+  // #RESTYLING-0921 round 5 — I BANNER HOUSE SUL BOARD, riaccesi il 22/09.
+  //
+  // Erano stati spenti perché le quattro campagne `desk-feed` di allora
+  // (ole-football-signal, ole-multisport-edge, ole-multisport-readable,
+  // ole-square-1) sono creativi del brand VECCHIO: verde #23A559 e logo
+  // precedente, in mezzo al board rifatto erano il pezzo più fuori posto della
+  // pagina. Il 22/09 Andrea ha consegnato i creativi nella veste nuova, quindi
+  // la condizione posta allora («si riaccende quando esistono creativi nella
+  // veste nuova») è soddisfatta.
+  //
+  // Il filtro su `creative` è ciò che tiene fuori i quattro vecchi: non basta
+  // riaccendere l'interruttore, perché `campaignsFor` li restituirebbe insieme
+  // ai nuovi. Solo una campagna che dichiara il SUO creativo entra nel board.
+  // L'interruttore resta perché spegnere tutto deve costare una riga.
+  //
+  // La griglia si richiude da sé: i banner sono INSERITI nel flatMap, non
+  // nascosti con `display:none`, quindi senza di loro non resta nessun posto
+  // vuoto da colmare.
+  const BOARD_HOUSE_FEED = true;
+  const feedCampsAll = BOARD_HOUSE_FEED
+    ? campaignsFor("desk-feed", boardAudience).filter((c) => c.creative)
+    : [];
+  // Round 12: il board pesca dal FONDO della lista, la Home dalla testa.
+  // `deepDives` (sezione «Da approfondire») fa `.slice(0, 2)` sulla stessa
+  // fonte, quindi finché il board prendeva i primi due l'utente che passava
+  // dalla Home a Calcio rivedeva gli stessi due creativi. Non è una regola
+  // nuova da ricordare: è l'ordine di dichiarazione in HOUSE_CAMPAIGNS che
+  // fa da priorità, e la coda è ciò che la Home non usa.
+  const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis").reverse();
+  const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis").reverse();
+  // «Senza abbondare» (Andrea, 22/09): non più di DUE tile per caricamento, e
+  // uno ogni 6 card (la cadenza sta nel `% 6` sotto). Il cap vive qui e non nel
+  // pool perché il pool serve anche a garantire che i due tile siano DIVERSI.
+  const FEED_TILES_MAX = 2;
 
   const labels = {
     allSports: t.bf_allsports,
@@ -2433,7 +2508,7 @@ function SportsbookBoard({
   const showTennisSection = sportFilter !== "football" && !competitionFilter.startsWith("football:");
 
   return (
-    <div className={"sportsbook-board" + (boardLimitata ? " mob-limita" : "")}>
+    <div className={"sportsbook-board br-board" + (boardLimitata ? " mob-limita" : "")}>
       {/* #BOARD-DENSITY-0910 — qui c'erano tre chip: «Showing 72 · Football 56 ·
           Tennis 16». Due dei tre numeri ricomparivano IDENTICI 40px sotto, sui
           pulsanti dei filtri («Football 56», «Tennis 16»): 27px di altezza per
@@ -2475,7 +2550,7 @@ function SportsbookBoard({
         </button>
       )}
 
-      <div className="sports-filter-bar am-filters">
+      <div className="sports-filter-bar am-filters br-filters">
         <div className="am-seg" aria-label="Sport filter">
           <button className={sportFilter === "all" ? "on" : ""} onClick={() => setSportFilter("all")}>
             {labels.allSports} <span className="ct">{contaTutti}</span>
@@ -2561,20 +2636,20 @@ function SportsbookBoard({
       {liveStrip}
 
       {filteredTotal === 0 ? (
-        <div className="book-empty">{labels.noResults}</div>
+        <div className="book-empty br-board-empty">{labels.noResults}</div>
       ) : (
         <>
           {showFootballSection && (
             <section>
-              <div className="sport-band">
-                <span className="glyph"><SportIcon sport="football" size={26} /></span>
+              <div className="sport-band br-band">
+                <span className="glyph"><SportIcon sport="football" size={26} variant="sm" /></span>
                 <h2>{t.board_football}</h2>
                 <span className="ct">{footballRows.length} {t.board_markets}</span>
                 <span className="rule" />
                 <span className="note">{footballValue.length} {t.board_value}</span>
               </div>
               {footballRows.length ? (
-                <div className="am-grid">
+                <div className="am-grid br-board-grid">
                   {(() => {
                     // #HOUSE-PHOTO-1: banner foto intercalati ogni ~8 card; ogni campagna
                     // del pool calcio (footballFeed) usata UNA sola volta → nessun duplicato.
@@ -2605,7 +2680,7 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((p, i) => {
                       const out: React.ReactNode[] = [
-                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />,
+                        <PredictionCard key={p.match_id} p={p} idx={i} fp={quotaPartner(p.home_team, p.away_team, p.kickoff)} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `football:${p.match_id}`} onAutoOpenClose={onAutoOpenClose} saved={watchlist.saved.has(`football:${p.match_id}`)} onToggleWatch={watchlist.toggle} />,
                       ];
                       if (i === fpGridAt) {
                         out.push(<FreePaywall key="fp-grid" count={filteredTotal} hitRate={hitRate} lang={lang} onUpgrade={onGate} inGrid />);
@@ -2614,7 +2689,7 @@ function SportsbookBoard({
                       // MAI due affiancati. Compatto (span-8, una card gli sta a fianco →
                       // riga piena, zero gutter) e mostrato INTERO (aspect 16:9 → nessun crop
                       // del logo/claim baked). Distribuiti ogni 6 card a punti diversi.
-                      if (placed < footballFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
+                      if (placed < Math.min(footballFeed.length, FEED_TILES_MAX) && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
                         const camp = footballFeed[placed++];
                         out.push(<HouseBanner key={`house-feed-${camp.id}`} campaign={{ ...camp, format: "billboard" }} lang={lang} onCta={onBannerCta} inGrid />);
                       }
@@ -2624,7 +2699,7 @@ function SportsbookBoard({
                 </div>
               ) : (
                 /* P6: honest empty-state — WC countdown message + hub link */
-                <div className="book-empty wc-empty-state">
+                <div className="book-empty br-board-empty wc-empty-state">
                   <div>{pick5(lang, {
                     it: "Nessun segnale calcio in questo momento. I primi segnali arrivano con l'apertura dei mercati del Mondiale.",
                     en: "No football signals right now. The first signals arrive when World Cup markets open.",
@@ -2650,15 +2725,15 @@ function SportsbookBoard({
 
           {showTennisSection && (
             <section>
-              <div className="sport-band amber">
-                <span className="glyph"><SportIcon sport="tennis" size={26} /></span>
+              <div className="sport-band amber br-band">
+                <span className="glyph"><SportIcon sport="tennis" size={26} variant="sm" /></span>
                 <h2>{t.board_tennis}</h2>
                 <span className="ct">{tennisRows.length} {t.board_matches}</span>
                 <span className="rule" />
                 <span className="note">{tennisValue.length} {t.board_value}</span>
               </div>
               {tennisRows.length ? (
-                <div className="am-grid">
+                <div className="am-grid br-board-grid">
                   {(() => {
                     // #HOUSE-PHOTO-1: banner tennis dal pool DISGIUNTO (tennisFeed), ognuno una
                     // volta sola → mai duplicati col feed calcio nella stessa pagina.
@@ -2668,13 +2743,16 @@ function SportsbookBoard({
                     let placed = 0;
                     return rows.flatMap((m, i) => {
                       const card = (
-                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} />
+                        <TennisMatchCard key={m.id} m={m} idx={i} fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]} onSelect={onSelect} onBetNow={onBetNow} onGate={onGate} isPremium={isPremium} isFree={isFreeClient} autoOpen={autoOpenKey === `tennis:${m.id}`} onAutoOpenClose={onAutoOpenClose} saved={watchlist.saved.has(`tennis:${m.id}`)} onToggleWatch={watchlist.toggle} />
                       );
                       // #BANNER-FEED-FIX-0708: nel feed tennis i banner sono tile QUADRATI 1:1
                       // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
                       // mostrati INTERI (nessun crop del soggetto/testo). Singoli e distribuiti
                       // ogni 6 card a punti diversi.
-                      if (placed < tennisFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
+                      // Round 12: lo stesso cap del calcio. Finché `tennisFeed`
+                      // era vuoto il limite non si vedeva; ora che una campagna
+                      // tennis esiste, «senza abbondare» vale anche qui.
+                      if (placed < Math.min(tennisFeed.length, FEED_TILES_MAX) && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
                         const camp = tennisFeed[placed++];
                         return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={{ ...camp, format: "rectangle" }} lang={lang} onCta={onBannerCta} inGrid />];
                       }
@@ -2683,7 +2761,7 @@ function SportsbookBoard({
                   })()}
                 </div>
               ) : (
-                <div className="book-empty">{t.board_tennis_empty}</div>
+                <div className="book-empty br-board-empty">{t.board_tennis_empty}</div>
               )}
             </section>
           )}
@@ -4909,6 +4987,31 @@ function LockedGate({
 // λ/Δ/pp jargon, no model-ids, no "?": missing facts are simply omitted.
 // it = Italian; every other language falls back to English (same posture as the
 // rest of the app's es/fr/ru handling).
+// #RESTYLING-0921 — la forma come SEQUENZA (W/D/L in ordine), non come
+// conteggio: la scheda partita mostra le ultime partite una per una, e
+// «3V-1N-1P» perde l'informazione che conta, cioè quando sono arrivate.
+// Le righe Mondiale portano solo i conteggi: lì la sequenza non esiste e la
+// sezione non si rende (meglio niente che un ordine inventato).
+function formResults(f?: string | WcFormCounts | null): string[] | null {
+  if (typeof f !== "string") return null;
+  const letters = f.toUpperCase().replace(/[^WDL]/g, "").split("");
+  return letters.length ? letters.slice(-5) : null;
+}
+
+// Le etichette delle sezioni nuove della scheda partita. Il componente ha i
+// suoi default in inglese; qui si localizzano come tutto il resto del desk.
+function MDS_SECTION_LABELS(lang: Lang) {
+  return {
+    why: pick5(lang, { it: "Perché il modello sceglie questo pick", en: "Why the model likes this pick", es: "Por qué el modelo elige este pronóstico", fr: "Pourquoi le modèle choisit ce pronostic", ru: "Почему модель выбирает этот прогноз" }),
+    form: pick5(lang, { it: "Forma recente", en: "Recent form", es: "Forma reciente", fr: "Forme récente", ru: "Текущая форма" }),
+    teamNews: pick5(lang, { it: "Infortuni e news squadra", en: "Injuries & team news", es: "Lesiones y noticias", fr: "Blessures et actualités", ru: "Травмы и новости" }),
+    teamNewsLocked: pick5(lang, { it: "L'analisi completa di infortuni e formazioni per questa partita fa parte di Pro.", en: "The full injury and team-news read for this match is part of Pro.", es: "El análisis completo de lesiones y alineaciones de este partido es parte de Pro.", fr: "L'analyse complète des blessures et compositions de ce match fait partie de Pro.", ru: "Полный разбор травм и составов этого матча входит в Pro." }),
+    teamNewsNone: pick5(lang, { it: "Nessuna assenza segnalata.", en: "No reported absences.", es: "Sin ausencias reportadas.", fr: "Aucune absence signalée.", ru: "Об отсутствиях не сообщается." }),
+    markets: pick5(lang, { it: "Mercati", en: "Markets", es: "Mercados", fr: "Marchés", ru: "Рынки" }),
+    unlock: pick5(lang, { it: "Sblocca l'analisi completa", en: "Unlock full analysis", es: "Desbloquear el análisis completo", fr: "Débloquer l'analyse complète", ru: "Открыть полный анализ" }),
+  };
+}
+
 function teamFormCounts(f?: string | WcFormCounts | null): { w: number; d: number; l: number } | null {
   if (!f) return null;
   if (typeof f === "string") {
@@ -5209,7 +5312,7 @@ function McCardPhoto({ sport, i, surface }: { sport: "football" | "tennis" | "wc
   );
 }
 
-function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
+function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, onAutoOpenClose, saved, onToggleWatch, headless }: { p: Prediction; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; onAutoOpenClose?: () => void; saved?: boolean; onToggleWatch?: (key: string) => void; headless?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const t = useT();
   const lang = useLang();
@@ -5446,11 +5549,67 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       });
     }
 
+    // #RESTYLING-0921 — forma recente e team news, solo se ci sono davvero.
+    const formRow = (() => {
+      const h = formResults(e.form_home), a = formResults(e.form_away);
+      if (!h || !a) return null;
+      return { home: { name: p.home_team, results: h }, away: { name: p.away_team, results: a } };
+    })();
+    const injHome = e.injuries_home ?? e.squad?.injuries_home ?? null;
+    const injAway = e.injuries_away ?? e.squad?.injuries_away ?? null;
+    const teamNewsBlock = injHome || injAway
+      ? { home: { name: p.home_team, items: injHome ?? [] }, away: { name: p.away_team, items: injAway ?? [] } }
+      : null;
+
+    // #RESTYLING-0921 — la testa nuova + la progressive disclosure. I numeri
+    // vengono dagli stessi campi dell'hero: `shownProb` è la probabilità che
+    // la scheda già dichiara, il mercato è 1/quota dello stesso esito, e
+    // l'edge è la loro DIFFERENZA (mai `p.edge`, che è il value — la nota in
+    // lib/ui/prediction-card.ts spiega perché non sono la stessa cosa).
+    const headModelPct = shownProb != null ? shownProb * 100 : null;
+    const headMarketPct = shownOdds != null && shownOdds > 1 ? (1 / shownOdds) * 100 : null;
+    const whyLang: WhyLang = lang === "it" ? "it" : "en";
     return {
       league: p.league_name || p.league,
       when: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
       home: p.home_team, away: p.away_team,
       extraMarkets: e.extra_markets ?? undefined, // real model prediction for FP goal-derived markets
+      head: {
+        sport: "football",
+        league: p.league_name || p.league,
+        kickoffLabel: fmtKickoff(p.kickoff, lang, tz, e.time_confirmed),
+        isLive: isLive || isPaused,
+        liveMinute: live?.minute ?? null,
+        score: hasScore && live && live.home_score != null && live.away_score != null
+          ? { home: live.home_score, away: live.away_score }
+          : null,
+        // Sotto il floor niente pick direzionale, esattamente come l'hero.
+        pick: belowFloor ? null : (shownName ?? null),
+        modelPct: headModelPct,
+        confidence: confScore,
+      },
+      why: footballWhyReasons({
+        home: p.home_team, away: p.away_team,
+        formHome: e.form_home, formAway: e.form_away,
+        xgHome: e.xg_home, xgaHome: e.xga_home, xgAway: e.xg_away, xgaAway: e.xga_away,
+        expectedGoals: e.goals_summary?.expected_goals ?? null,
+        goalsBandLow: e.goals_summary?.band_low ?? null,
+        goalsBandHigh: e.goals_summary?.band_high ?? null,
+        matchesHome: e.matches?.home ?? e.team_matches ?? null,
+        matchesAway: e.matches?.away ?? e.team_matches ?? null,
+        reliability: e.reliability ?? null,
+        topScorer: (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0] ?? null,
+        modelPct: headModelPct, marketPct: headMarketPct,
+      }, whyLang),
+      form: formRow,
+      // Gli infortuni sono in PREMIUM_ENRICHMENT_KEYS: per un piano non-Pro il
+      // server li toglie e qui NON arrivano. `teamNewsLocked` si accende solo
+      // quando il piano è il motivo dell'assenza — mai per dire «non ci sono
+      // infortuni», che è un'informazione diversa e la diamo quando la sappiamo.
+      teamNews: teamNewsBlock,
+      teamNewsLocked: teamNewsBlock == null && !isPremium,
+      onUnlock: onGate,
+      sections: MDS_SECTION_LABELS(lang),
       // #FLOOR-MODAL-0821 — il modale deve dire la STESSA cosa della scheda.
       // Trovato da PRO loggato in produzione: la scheda diceva «no clear
       // favourite» e il modale, a un clic di distanza, «Our prediction · Ried to
@@ -5520,408 +5679,82 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
   // "ingrandisce" nella scheda-dettaglio completa. Locked/preview non aprono il
   // modal (locked → gate via overlay; preview → niente da rivelare).
   const modalEnabled = !p.locked && !isPreview;
-  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
+  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps, openModal } = useDetailModal(modalEnabled);
   const modalTitleId = `pdm-${p.match_id}`;
+  // #RESTYLING-0921 — una card si apre da sola quando è LEI la partita chiesta
+  // da un link (`/predictions?match=football:123`) o dalla lobby. Il dettaglio
+  // resta uno solo: la lobby non ricostruisce una seconda scheda, manda qui.
+  useEffect(() => {
+    if (autoOpen && modalEnabled) openModal();
+  }, [autoOpen, modalEnabled, openModal]);
 
-  // ── chrome riusabile (griglia + header modal): top + fixture/scorebar ──
-  const headerNode = (
-    <>
-      {/* top: sport glyph + league + when (live pulse) */}
-      <div className="top">
-        <div className="comp">
-          <SportMark sport={p.enrichment?.kind === "world_cup" || p.league === "WC" ? "worldcup" : "football"} size={15} className="sgi" />
-          <span className="league">{p.league_name || p.league}</span>
-          {p.match_type && p.match_type !== "STANDARD" && <MatchTypeBadge matchType={p.match_type} />}
-        </div>
-        {/* #LIVE-1: in-play hint without a feed — only for viewers with NO feed. */}
-        {scStatus === "live" || (!isPremium && !isFutureMarket(p.kickoff) && !isFinished && !hasScore) ? (
-          <span className="when live"><span className="pulse" />{scStatus === "live" && live?.minute != null ? `${live.minute}'` : "LIVE"}</span>
-        ) : (
-          <span className="when">{fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed)}</span>
-        )}
-      </div>
-
-      {/* fixture + scorebar (inset readout) */}
-      <div className="fx">
-        <div className="teams">{p.home_team}<span className="vs">v</span>{p.away_team}</div>
-        {hasScore ? (
-          <div className="scorebar">
-            <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
-            <span className="sc">{live?.home_score ?? 0}<span className="x">–</span>{live?.away_score ?? 0}</span>
-            <span className="grow" />
-            {verdict && <span className={`verd ${verdict.correct ? "correct" : "wrong"}`}>{verdict.text}</span>}
-          </div>
-        ) : (
-          <div className="scorebar">
-            <span className="stt">{isFutureMarket(p.kickoff) ? "Kickoff" : pick5(lang, { it: "Programmato", en: "Scheduled", es: "Programado", fr: "Programmé", ru: "Запланирован" })}</span>
-            <span className="sc sched">{fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed)}</span>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  // ── readout riusabile (griglia + lead colonna sinistra modal) ──
-  const readoutNode = (
-    <>
-      {/* model-vs-market readout / gate overlay */}
-      {p.locked ? (
-        <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
-            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
-            vietate dalla regola standing di giugno E promettevano una struttura
-            che il prodotto sbloccato non ha (pronostico + quota + value). Un
-            lucchetto su una struttura vera converte meglio di una promessa
-            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
-          <div className="v2r is-locked" aria-hidden="true">
-            <div className="v2r-l">
-              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
-              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
-            </div>
-            <div className="v2r-q">
-              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-            </div>
-          </div>
-          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
-              anonimo, falso per un Free che il login l'ha gia' fatto e che da
-              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
-              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
-              cosa dell'azione. */}
-          <span className="locked-cta">{isFree
-            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
-            : t.locked_title}</span>
-        </div>
-      ) : (
-        <>
-          <div
-            className={`v2r${onSelect && isValueBet && p.best_selection ? " sel" : ""}`}
-            onClick={onSelect && isValueBet && p.best_selection ? (ev) => { ev.stopPropagation(); handleSelect(); } : undefined}
-          >
-            <div className="v2r-l">
-              {/* #UI-MACHINA-0802 — sotto il floor la scheda mostrava l'esito piu'
-                  probabile con l'occhiello "Il nostro pronostico", cioe' lo faceva
-                  passare per una pick. Lo standard chiede: esito piu' probabile,
-                  edge assente, ED ETICHETTA che dice che non c'e' un favorito
-                  netto. L'edge era gia' soppresso; mancava di dirlo. */}
-              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
-                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
-                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick">{shownName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
-                  dalla scheda. Su 8 schede della board 6 la portavano, e la
-                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
-                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
-                  nostro pronostico», l'esito non dice «vince», edge e value
-                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
-              {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
-              )}
-            </div>
-            <div className="v2r-q">
-              {isPreview ? (
-                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-              ) : (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{shownProb != null ? pct(shownProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
-                  {(shownOdds != null || (!belowFloor && !useHeadline && fpValue != null && fpValue > 0)) ? (
-                    <span className="v2r-sub">{shownOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {shownOdds.toFixed(2)}</> : null}{(!belowFloor && !useHeadline && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-
-  // ── corpo completo: vive SOLO nel modal (la griglia mostra solo la sintesi) ──
-  const bodyNode = (
-    <>
-      {!p.locked && e.goals_summary && (
-        <GoalsBlock summary={e.goals_summary} markets={e.extra_markets ?? []} lang={lang} />
-      )}
-
-      {!p.locked && e.goalscorer_markets && e.goalscorer_markets.length > 0 && (
-        <GoalscorerBlock markets={e.goalscorer_markets} homeTeam={p.home_team} awayTeam={p.away_team} lang={lang} />
-      )}
-
-      {/* WHY — readout + expandable analysis (deep-analysis / schedina / affiliate live here) */}
-      <div className="why">
-        <details className="why-box">
-          <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
-          <p className="why-txt">
-            {isPreview
-              ? (lang === "it"
-                  ? "Il ragionamento del modello e l'edge sono riservati al piano Pro. Sblocca per leggere perché il modello sceglie questo pronostico."
-                  : "The model's reasoning and edge are reserved for the Pro plan. Unlock to read why the model makes this call.")
-              : buildFootballWhy(p, lang)}
-          </p>
-          {!isPreview && (
-            <button className="why-more" onClick={() => setShowWhy(!showWhy)}>
-              {showWhy
-                ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
-                : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
-            </button>
-          )}
-        </details>
-
-        {/* footer action row */}
-        <div className="act">
-          {/* bet action: dropdown partner affiliati quando attivo (→ sito esterno),
-              altrimenti vecchio CTA. FT → status note. */}
-          {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (via onBetNow). */}
-          {!isPreview && onBetNow && (isFinished ? (
-            <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
-          ) : (
-            <button className="betbtn" onClick={fp?.matchUrl ? () => window.open(fp.matchUrl, "_blank", "noopener,noreferrer") : onBetNow}>{t.bet_now}</button>
-          ))}
-          <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
-          {isPreview || p.locked ? (
-            <span className="gate">Pro</span>
-          ) : isFinished ? (
-            <span className="gate settled">{pick5(lang, { it: "Settlato", en: "Settled", es: "Liquidado", fr: "Réglé", ru: "Рассчитан" })}</span>
-          ) : (
-            <span className="gate">Pro</span>
-          )}
-        </div>
-
-        {/* expandable analysis body */}
-        {isPreview ? (
-          <div className="nudge">
-            <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
-            <em>{pick5(lang, { it: "Sblocca edge%, ragionamento AI e segnali con Pro (29.99 USDT/mese).", en: "Unlock edge%, AI reasoning and signals with Pro (29.99 USDT/month).", es: "Desbloquea edge%, razonamiento de IA y señales con Pro (29.99 USDT/mes).", fr: "Débloquez edge%, raisonnement IA et signaux avec Pro (29.99 USDT/mois).", ru: "Откройте edge%, ИИ-обоснование и сигналы с Pro (29.99 USDT/мес)." })}</em>
-          </div>
-        ) : showWhy && (
-        <div className="why-body">
-          {p.pick && (
-            <p className="why-prose mono">Pick: <strong>{p.pick}</strong>{p.confidence_score != null ? ` · ${p.confidence_score}%` : ""}</p>
-          )}
-
-          {/* Schedina (extra markets) — demoted into the expansion */}
-          {extraPicks.length > 0 && (
-            <div className="extra-markets">
-              <span className="extra-markets-label">{pick5(lang, { it: "Schedina", en: "Acca picks", es: "Combinada", fr: "Combiné", ru: "Экспресс" })}</span>
-              {extraPicks.map((m) => {
-                const strength = m.p >= 0.80 ? "high" : m.p >= 0.65 ? "mid" : "low";
-                return (
-                  <span key={m.key} className={`extra-market-pill ${strength}`}>
-                    <span className="extra-market-name">{m.label}</span>
-                    <span className="extra-market-pct">{Math.round(m.p * 100)}%</span>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Affiliate bonus CTA — demoted into the expansion */}
-          {p.affiliate && (
-            <a className="bonus-cta" href={p.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
-              {p.affiliate.bonus} · {p.affiliate.bookmaker} →
-            </a>
-          )}
-          {p.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
-
-      {/* Deep Analysis — Premium only */}
-      {isPremium && (
-        <div className="deep-analysis-panel">
-          <div className="da-header">
-            <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{pick5(lang, { it: "Analisi approfondita", en: "Deep Analysis", es: "Análisis profundo", fr: "Analyse approfondie", ru: "Глубокий анализ" })}</span>
-          </div>
-          {(e.xg_home != null || e.xg_away != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Gol attesi", en: "Expected goals", es: "Goles esperados", fr: "Buts attendus", ru: "Ожидаемые голы" })}</span>
-              <span className="da-value">{e.xg_home?.toFixed(2) ?? "–"} vs {e.xg_away?.toFixed(2) ?? "–"}</span>
-            </div>
-          )}
-          {e.goals_summary && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Risultato probabile", en: "Likely result", es: "Resultado probable", fr: "Résultat probable", ru: "Вероятный счёт" })}</span>
-              <span className="da-value">{e.goals_summary.band_low === e.goals_summary.band_high ? `${e.goals_summary.band_low}` : `${e.goals_summary.band_low}-${e.goals_summary.band_high}`} {pick5(lang, { it: "gol", en: "goals", es: "goles", fr: "buts", ru: "гола" })} ({Math.round(e.goals_summary.band_p * 100)}%)</span>
-            </div>
-          )}
-          {(() => {
-            const o25 = (e.extra_markets ?? []).find((m) => m.key === "over_2_5");
-            return o25 ? (
-              <div className="da-row">
-                <span className="da-label">Over 2.5</span>
-                <span className="da-value">{Math.round(o25.p * 100)}%</span>
-              </div>
-            ) : null;
-          })()}
-          {(e.form_home || e.form_away) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Forma", en: "Form", es: "Forma", fr: "Forme", ru: "Форма" })}</span>
-              <span className="da-value">{fmtFormAny(e.form_home) ?? "–"} vs {fmtFormAny(e.form_away) ?? "–"}</span>
-            </div>
-          )}
-          {(() => {
-            const ts = (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0];
-            return ts ? (
-              <div className="da-row">
-                <span className="da-label">{pick5(lang, { it: "Marcatore top", en: "Top scorer", es: "Goleador top", fr: "Buteur n°1", ru: "Топ-бомбардир" })}</span>
-                <span className="da-value">{ts.name} {Math.round(ts.pScores * 100)}%</span>
-              </div>
-            ) : null;
-          })()}
-          {(e.ppda_home != null || e.ppda_away != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Pressing", en: "Pressing", es: "Presión", fr: "Pressing", ru: "Прессинг" })}</span>
-              <span className="da-value">{e.ppda_home?.toFixed(1) ?? "–"} vs {e.ppda_away?.toFixed(1) ?? "–"}</span>
-            </div>
-          )}
-          {/* World Cup context rows — real venue/squad/sample data */}
-          {e.kind === "world_cup" && e.venue && (e.venue.travel_km_home != null || e.venue.travel_km_away != null) && (
-            <div className="da-row">
-              <span className="da-label">✈️ {pick5(lang, { it: "Trasferta", en: "Travel", es: "Viaje", fr: "Déplacement", ru: "Переезд" })}</span>
-              <span className="da-value">{e.venue.travel_km_home != null ? `${Math.round(e.venue.travel_km_home).toLocaleString()} km` : "–"} vs {e.venue.travel_km_away != null ? `${Math.round(e.venue.travel_km_away).toLocaleString()} km` : "–"}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && e.venue && (e.venue.rest_days_home != null || e.venue.rest_days_away != null) && (
-            <div className="da-row">
-              <span className="da-label">😴 {pick5(lang, { it: "Riposo", en: "Rest", es: "Descanso", fr: "Repos", ru: "Отдых" })}</span>
-              <span className="da-value">{e.venue.rest_days_home ?? "–"} vs {e.venue.rest_days_away ?? "–"} {pick5(lang, { it: "giorni", en: "days", es: "días", fr: "jours", ru: "дней" })}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && e.venue?.host_advantage && (
-            <div className="da-row">
-              <span className="da-label">🏟️ Host</span>
-              <span className="da-value">{e.venue.host_advantage}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && ((e.squad?.injuries_home?.length ?? 0) > 0 || (e.squad?.injuries_away?.length ?? 0) > 0) && (
-            <div className="da-row">
-              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni rosa", en: "Squad injuries", es: "Lesiones plantilla", fr: "Blessures effectif", ru: "Травмы состава" })}</span>
-              <span className="da-value">{e.squad?.injuries_home?.length ?? 0} vs {e.squad?.injuries_away?.length ?? 0}</span>
-            </div>
-          )}
-          {e.kind === "world_cup" && e.matches && (e.matches.home != null || e.matches.away != null) && (
-            <div className="da-row">
-              <span className="da-label">🗃️ {pick5(lang, { it: "Campione", en: "Sample", es: "Muestra", fr: "Échantillon", ru: "Выборка" })}</span>
-              <span className="da-value">{e.matches.home ?? "–"} vs {e.matches.away ?? "–"} {pick5(lang, { it: "partite", en: "matches", es: "partidos", fr: "matchs", ru: "матчей" })}</span>
-            </div>
-          )}
-          {((e.injuries_home?.length ?? 0) > 0 || (e.injuries_away?.length ?? 0) > 0) && (
-            <div className="da-row">
-              <span className="da-label"><GlyphInjury size={12} /> {pick5(lang, { it: "Infortuni", en: "Injuries", es: "Lesiones", fr: "Blessures", ru: "Травмы" })}</span>
-              <span className="da-value">H:{e.injuries_home?.length ?? 0} · A:{e.injuries_away?.length ?? 0}</span>
-            </div>
-          )}
-          {e.weather && (
-            <div className="da-row">
-              <span className="da-label">{e.weather.icon} {pick5(lang, { it: "Meteo", en: "Weather", es: "Clima", fr: "Météo", ru: "Погода" })}</span>
-              <span className="da-value">{e.weather.temp}°C · {e.weather.condition} · {e.weather.wind}km/h</span>
-            </div>
-          )}
-          {(() => {
-            const pk = p.best_selection;
-            const pr = pk === "HOME" ? p.p_home : pk === "DRAW" ? p.p_draw : pk === "AWAY" ? p.p_away : null;
-            const od = pk === "HOME" ? p.odds_home : pk === "DRAW" ? p.odds_draw : pk === "AWAY" ? p.odds_away : null;
-            const mi = od && od > 0 ? 1 / od : null;
-            if (pr == null || mi == null) return null;
-            // #QW4: cap the value multiplier at DISPLAY only (source untouched);
-            // a stale-odds "+599%" reads as too-good-to-be-true for the fan.
-            const edFmt = p.edge == null ? null
-              : p.edge > 0 ? fmtValuePct(p.edge)
-              : { text: `${(p.edge * 100).toFixed(1)}%`, extreme: false };
-            const ed = edFmt ? ` (${edFmt.text})` : "";
-            return (
-              <>
-              <div className="da-row">
-                <span className="da-label">{pick5(lang, { it: "Modello vs Mercato", en: "Model vs Market", es: "Modelo vs Mercado", fr: "Modèle vs Marché", ru: "Модель vs Рынок" })}</span>
-                <span className={`da-value${edFmt?.extreme ? " is-extreme" : ""}`}>{Math.round(pr * 100)}% vs {Math.round(mi * 100)}%{ed}</span>
-              </div>
-              {/* #QW4: riga in chiaro — traduce l'edge per il tifoso non esperto.
-                  Solo quando il modello è davvero sopra l'implicita (edge > 0):
-                  altrimenti la frase non sarebbe onesta. */}
-              {pr > mi && (
-              <p className="da-plain">{pick5(lang, {
-                it: "Il modello stima questo esito più probabile di quanto lasci intendere la quota.",
-                en: "The model rates this outcome more likely than the odds imply.",
-                es: "El modelo estima este resultado más probable de lo que sugiere la cuota.",
-                fr: "Le modèle juge ce résultat plus probable que ne le suggère la cote.",
-                ru: "Модель считает этот исход более вероятным, чем следует из коэффициента.",
-              })}</p>
-              )}
-              </>
-            );
-          })()}
-          {e.extra_markets && e.extra_markets.some((m) => m.edge != null) && (
-            <div className="da-row da-markets-row">
-              <span className="da-label">{pick5(lang, { it: "Mercati", en: "Markets", es: "Mercados", fr: "Marchés", ru: "Рынки" })}</span>
-              <div className="da-markets-list">
-                {e.extra_markets.filter((m) => m.edge != null).slice(0, 4).map((m) => (
-                  <span key={m.key} className={`da-market-pill${m.edge != null && m.edge > 0.02 ? " value" : ""}`}>
-                    {m.label}{m.edge != null ? ` ${m.edge > 0 ? "+" : ""}${(m.edge * 100).toFixed(1)}%` : ""}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {e.research && (
-            <div className="da-research">
-              <span className="da-label"><GlyphModel size={12} /> AI</span>
-              <p className="da-research-text">{e.research}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Deep Analysis locked teaser — Base users only (demoted into expansion) */}
-      {!isPremium && (
-        <div className="deep-analysis-locked">
-          <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita disponibile con BetRedge Pro (29.99 USDT/mese)", en: "Deep analysis available with BetRedge Pro (29.99 USDT/month)", es: "Análisis profundo disponible con BetRedge Pro (29.99 USDT/mes)", fr: "Analyse approfondie disponible avec BetRedge Pro (29.99 USDT/mois)", ru: "Глубокий анализ доступен с BetRedge Pro (29.99 USDT/мес)" })}</span>
-        </div>
-      )}
-        </div>
-        )}
-      </div>
-    </>
-  );
-
-  // Locked / preview: nessun modal (gate / niente da rivelare) → resta il layout
-  // inline completo di prima, identico. Le card "vere" diventano una sintesi
-  // compatta cliccabile che apre la scheda-dettaglio.
-  if (!modalEnabled) {
-    return (
-      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud" {...cardProps}>
-        <McCardPhoto sport="football" i={idx} />
-        {headerNode}
-        {readoutNode}
-        {bodyNode}
-      </div></article>
-    );
-  }
+  // #RESTYLING-0921 round 5 — IL CORPO DELLA CARD È QUELLO DEL DESIGN SYSTEM.
+  //
+  // Fino al round 4 questa card disegnava da sé tre blocchi (`headerNode`,
+  // `readoutNode`, `bodyNode`: ~360 righe di `.pred.hud`, `.v2r`, `.da-*`) ed
+  // era l'ultima superficie viva del sito vecchio — la si incontra cliccando
+  // Football/Tennis in nav, «See all», «Explore» e da «View analysis» della
+  // lobby, cioè quasi ovunque oltre la prima schermata. Ora rende
+  // `PredictionCard` del design system, la STESSA della Home: un linguaggio
+  // solo su tutto il prodotto.
+  //
+  // Quello che la card faceva in linea (quote per esito, «Piazza la
+  // scommessa», mercati extra) NON è sparito: vive nella scheda-dettaglio che
+  // questo componente continua a possedere — il livello 2 del brief, dove c'è
+  // il tempo di leggerlo. «View analysis» la apre.
+  const cardData = fromDeskFootball(p, {
+    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
+    drawLabel: pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" }),
+    kickoffLabel: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
+    isLive: isLive || isPaused,
+    liveMinute: live?.minute ?? null,
+  });
+  const matchKey = `football:${p.match_id}`;
 
   return (
     <>
-      <article className="card" data-mc style={{ "--mc-accent": "var(--d-football)" } as React.CSSProperties}><div className="pred hud is-clickable" {...cardProps}>
-        <McCardPhoto sport="football" i={idx} />
-        {headerNode}
-        {readoutNode}
-        <div className="pred-more" aria-hidden="true">
-          <span className="pm-lab">{pick5(lang, { it: "Apri scheda completa", en: "Open full card", es: "Abrir ficha completa", fr: "Ouvrir la fiche complète", ru: "Открыть карточку" })}</span>
-          <span className="pm-chev" />
-        </div>
-      </div></article>
-      <PredictionDetailModal
-        open={modalOpen}
-        onClose={closeModal}
-        anchorRect={modalRect}
-        titleId={modalTitleId}
-        lang={lang}
-        title={<>{p.home_team} <span className="pdm-v">v</span> {p.away_team}</>}
-        subtitle={p.league_name || p.league}
-        hideHead
-        hideExtraMarkets
-      >
-        <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
-      </PredictionDetailModal>
+      {/* Il `ref` di `useDetailModal` serve a misurare DA DOVE si apre la
+          scheda. Solo il ref: `role="button"`/`tabIndex`/`onClick` degli
+          stessi `cardProps` farebbero dell'intera card un bersaglio, e la card
+          nuova ne ha di proposito uno solo — la CTA. */}
+      {/* #RESTYLING-0921 round 11 — `headless`: la card non si disegna, resta
+          solo la sua scheda. È così che `MatchDetailHost` apre il dettaglio
+          SOPRA la vista dov'è l'utente, invece di montarci dietro il board. */}
+      {!headless && (
+      <div ref={cardProps.ref} className="br-board-card">
+        <BrPredictionCard
+          data={cardData}
+          variant={p.locked ? "premiumLocked" : isLive || isPaused ? "live" : "compact"}
+          href={`${TAB_PATHS.bets}?match=${encodeURIComponent(matchKey)}`}
+          saved={saved}
+          onToggleWatchlist={onToggleWatch ? () => onToggleWatch(matchKey) : undefined}
+          onOpen={(ev) => {
+            ev.preventDefault();
+            // Riga chiusa o anteprima: la CTA è «Unlock full analysis» e porta
+            // al gate, non a una scheda che non abbiamo il diritto di aprire.
+            if (!modalEnabled) { onGate?.(); return; }
+            trackEvent("card_open", { meta: { surface: "board", sport: "football" } });
+            openModal();
+          }}
+          extra={cardData.confidence != null && !p.locked ? <ConfidenceIndicator score={cardData.confidence} /> : undefined}
+        />
+      </div>
+      )}
+      {modalEnabled && (
+        <PredictionDetailModal
+          open={modalOpen}
+          onClose={() => { closeModal(); if (autoOpen) onAutoOpenClose?.(); }}
+          anchorRect={modalRect}
+          titleId={modalTitleId}
+          lang={lang}
+          title={<>{p.home_team} <span className="pdm-v">v</span> {p.away_team}</>}
+          subtitle={p.league_name || p.league}
+          hideHead
+          hideExtraMarkets
+        >
+          <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
+        </PredictionDetailModal>
+      )}
     </>
   );
 }
@@ -5936,7 +5769,7 @@ const SURFACE_META: Record<string, { label: string; color: string }> = {
 
 
 // #HOME-V3: esportata per riuso 1:1 nella sezione "Anatomy of a reading" della home.
-export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number }) {
+export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremium, isFree, onGate, idx, autoOpen, onAutoOpenClose, saved, onToggleWatch, headless }: { m: TennisMatch; fp?: FpOddsEntry; onSelect?: (s: SlipSelection) => void; onBetNow?: () => void; isPreview?: boolean; isPremium?: boolean; isFree?: boolean; onGate?: () => void; idx?: number; autoOpen?: boolean; onAutoOpenClose?: () => void; saved?: boolean; onToggleWatch?: (key: string) => void; headless?: boolean }) {
   const [showWhy, setShowWhy] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -6080,10 +5913,38 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         return { id: `esito-${o.key}`, mkt: pick5(lang, { it: "Vincente", en: "Winner", es: "Ganador", fr: "Vainqueur", ru: "Победитель" }), sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: !belowFloor && pickPlayer === o.key };
       }),
     }];
+    // #RESTYLING-0921 — testa nuova + «perché». Vedi la card calcio: l'edge
+    // è la differenza fra i due numeri mostrati, non `m.edge` (che è il value).
+    const headModelPct = pickProb != null ? pickProb * 100 : null;
+    const headMarketPct = fpPickOdds != null && fpPickOdds > 1 ? (1 / fpPickOdds) * 100 : null;
     return {
       league: m.tournament,
       when: fmtKickoff(m.scheduled, lang, tz),
       home: m.player1, away: m.player2,
+      head: {
+        sport: "tennis",
+        league: m.tournament,
+        kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
+        pick: belowFloor ? null : (pickName ?? null),
+        modelPct: headModelPct,
+        confidence: m.confidence_score ?? null,
+      },
+      why: tennisWhyReasons({
+        p1: m.player1, p2: m.player2,
+        surface: m.surface,
+        eloP1: m.elo_p1, eloP2: m.elo_p2,
+        surfaceMatchesP1: m.surface_matches_p1, surfaceMatchesP2: m.surface_matches_p2,
+        serveFormP1: m.serve_form_p1, serveFormP2: m.serve_form_p2,
+        returnFormP1: m.return_form_p1, returnFormP2: m.return_form_p2,
+        h2hP1: m.h2h_p1_wins, h2hP2: m.h2h_p2_wins,
+        restDaysP1: m.p1_rest_days, restDaysP2: m.p2_rest_days,
+        modelPct: headModelPct, marketPct: headMarketPct,
+      }, lang === "it" ? "it" : "en"),
+      // Il tennis non porta né forma W/D/L né liste infortuni nel payload:
+      // le due sezioni semplicemente non esistono qui. Le sue motivazioni
+      // (Elo per superficie, servizio, risposta, precedenti, riposo) sono già
+      // nel blocco «perché» sopra, che per il tennis è più ricco del calcio.
+      sections: MDS_SECTION_LABELS(lang),
       // #FLOOR-MODAL-0821 — stessa cosa della scheda, anche qui (vedi il calcio).
       hero: {
         flag: belowFloor
@@ -6141,268 +6002,63 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
 
   // Detail modal (stesso shell del calcio). Locked/preview restano inline.
   const modalEnabled = !m.locked && !isPreview;
-  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps } = useDetailModal(modalEnabled);
+  const { open: modalOpen, rect: modalRect, close: closeModal, cardProps, openModal } = useDetailModal(modalEnabled);
   const modalTitleId = `pdm-t-${m.id}`;
+  // #RESTYLING-0921 — vedi la card calcio: deep-link `?match=tennis:…` e lobby.
+  useEffect(() => {
+    if (autoOpen && modalEnabled) openModal();
+  }, [autoOpen, modalEnabled, openModal]);
 
-  const headerNode = (
-    <>
-      {/* top: surface glyph + tournament + when */}
-      <div className="top">
-        <div className="comp">
-          <SportIcon sport="tennis" size={15} className="sgi" variant="sm" />
-          <span className="league">{m.tournament}</span>
-          {m.round && <span className="rnd">{m.round}</span>}
-        </div>
-        {liveIsOn ? (
-          <span className="when live"><span className="pulse" />live</span>
-        ) : (
-          <span className="when">{scheduledDate}</span>
-        )}
-      </div>
-
-      {/* fixture + scorebar */}
-      <div className="fx">
-        <div className="teams">{m.player1}<span className="vs">v</span>{m.player2}</div>
-        {liveMatch ? (
-          <div className="scorebar">
-            <span className={`stt${scStatus === "live" ? " live" : ""}`}>{scLabel}</span>
-            <span className="sc">{liveSetsLabel || "0-0"}</span>
-            <span className="grow" />
-            {liveMatch.status_detail && <span className="verd">{liveMatch.status_detail}</span>}
-          </div>
-        ) : (
-          <div className="scorebar">
-            <span className="stt">{pick5(lang, { it: "Programmato", en: "Scheduled", es: "Programado", fr: "Programmé", ru: "Запланирован" })}</span>
-            <span className="sc sched">{scheduledDate} · {surface.label}</span>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  const readoutNode = (
-    <>
-      {/* verdict line + rows / gate overlay */}
-      {m.locked ? (
-        <div className="lock-overlay" role="button" onClick={() => onGate?.()}>
-        {/* #UI-MACHINA-0802 — lo stato bloccato mostra la FORMA VERA del readout
-            coi valori mascherati, non tre barre HOME/DRAW/AWAY: quelle sono
-            vietate dalla regola standing di giugno E promettevano una struttura
-            che il prodotto sbloccato non ha (pronostico + quota + value). Un
-            lucchetto su una struttura vera converte meglio di una promessa
-            diversa da cio' che consegni. Nessun dato nuovo esposto. */}
-          <div className="v2r is-locked" aria-hidden="true">
-            <div className="v2r-l">
-              <span className="v2r-eye">{pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick blurred">▒▒▒▒▒▒▒▒▒</span>
-              <span className="v2r-conf">{[0, 1, 2, 3].map((i) => <span key={i} className="d" />)}</span>
-            </div>
-            <div className="v2r-q">
-              <span className="v2r-qlab">{pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "\u041a\u043e\u044d\u0444. FortunePlay" })}</span>
-              <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-            </div>
-          </div>
-          {/* #FREE-BOARD-FULL-0831: `locked_title` dice "Accedi" — giusto per un
-              anonimo, falso per un Free che il login l'ha gia' fatto e che da
-              oggi si trova questa riga su OGNI scheda bloccata. Il click porta
-              gia' ai Piani (focusClientPlans): qui l'etichetta dice la stessa
-              cosa dell'azione. */}
-          <span className="locked-cta">{isFree
-            ? pick5(lang, { it: "Passa a Pro per vedere prediction, edge e spiegazioni", en: "Go Pro to see predictions, edge and explanations", es: "Pasa a Pro para ver predicciones, edge y explicaciones", fr: "Passez \u00e0 Pro pour voir les pr\u00e9dictions, l'edge et les explications", ru: "\u041f\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043d\u0430 Pro, \u0447\u0442\u043e\u0431\u044b \u0443\u0432\u0438\u0434\u0435\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b, edge \u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0435\u043d\u0438\u044f" })
-            : t.locked_title}</span>
-        </div>
-      ) : (
-        <>
-          <div
-            className={`v2r${onSelect && isValue && pickPlayer ? " sel" : ""}`}
-            onClick={onSelect && isValue && pickPlayer ? (ev) => { ev.stopPropagation(); handleSelect(pickPlayer as "P1" | "P2"); } : undefined}
-          >
-            <div className="v2r-l">
-              <span className="v2r-eye">{isPreview ? <><GlyphLock size={11} /> Pro</> : belowFloor
-                ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })
-                : pick5(lang, { it: "Il nostro pronostico", en: "Our prediction", es: "Nuestro pron\u00f3stico", fr: "Notre pronostic", ru: "\u041d\u0430\u0448 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" })}</span>
-              <span className="v2r-pick">{pickName ?? pick5(lang, { it: "Lettura modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du mod\u00e8le", ru: "\u0427\u0442\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-              {/* #FLOOR-LABEL-0830 — Andrea: via l'etichetta «no clear favourite»
-                  dalla scheda. Su 8 schede della board 6 la portavano, e la
-                  griglia leggeva come «non abbiamo un'opinione». Resta tutto il
-                  resto del gate: l'occhiello e' «Lettura del modello» e non «Il
-                  nostro pronostico», l'esito non dice «vince», edge e value
-                  restano soppressi. Si toglie l'etichetta, non la sostanza. */}
-              {!isPreview && confScore != null && (
-                <span className="v2r-conf" data-conf={confKey} title={confLabel ?? undefined}>{[0, 1, 2, 3].map((i) => <span key={i} className={`d${i < confDots ? " on" : ""}`} />)}</span>
-              )}
-            </div>
-            <div className="v2r-q">
-              {isPreview ? (
-                <span className="v2r-qn lock"><GlyphLock size={22} /></span>
-              ) : (
-                <>
-                  <span className="v2r-qlab">{pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" })}</span>
-                  <span className="v2r-qn">{pickProb != null ? pct(pickProb).replace("%", "") : "\u2013"}<span className="u">%</span></span>
-                  {(fpPickOdds != null || (!belowFloor && fpValue != null && fpValue > 0)) ? (
-                    <span className="v2r-sub">{fpPickOdds != null ? <>{pick5(lang, { it: "quota", en: "odds", es: "cuota", fr: "cote", ru: "\u043a\u043e\u044d\u0444." })} {fpPickOdds.toFixed(2)}</> : null}{(!belowFloor && fpValue != null && fpValue > 0) ? (() => { const vv = fmtValuePct(fpValue!); return <span className={`v2r-val${vv.extreme ? " is-extreme" : ""}`} title={pick5(lang, { it: "Value indicativo del modello rispetto alla quota FortunePlay. Non \u00e8 una garanzia di vincita. +18, gioca responsabilmente.", en: "Indicative model value vs the FortunePlay price. Not a guarantee of winning. 18+, play responsibly.", es: "Value indicativo del modelo frente a la cuota FortunePlay. No garantiza ganancias. +18, juega con responsabilidad.", fr: "Valeur indicative du mod\u00e8le par rapport \u00e0 la cote FortunePlay. Aucune garantie de gain. 18+, jouez de mani\u00e8re responsable.", ru: "\u041e\u0440\u0438\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u043e\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u043d\u043e\u0441\u0442\u044c. 18+" })}>value {vv.text.replace(/^\+/, "")}</span>; })() : null}</span>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-
-  const bodyNode = (
-    <>
-      {/* WHY — Elo readout + expandable analysis */}
-      <div className="why">
-        <details className="why-box">
-          <summary className="why-lab">{pick5(lang, { it: "Perché", en: "Why", es: "Por qué", fr: "Pourquoi", ru: "Почему" })}<span className="why-caret" aria-hidden="true" /></summary>
-          <p className="why-txt">
-            {isPreview
-              ? (lang === "it"
-                  ? "Il ragionamento del modello e l'edge sono riservati al piano Pro. Sblocca per leggere perché il modello sceglie questo pronostico."
-                  : "The model's reasoning and edge are reserved for the Pro plan. Unlock to read why the model makes this call.")
-              : buildTennisWhy(m, lang)}
-          </p>
-          {!isPreview && (
-            <button className="why-more" onClick={handleWhyClick}>
-              {loadingAnalysis
-                ? pick5(lang, { it: "Carico l'analisi…", en: "Loading analysis…", es: "Cargando análisis…", fr: "Chargement de l'analyse…", ru: "Загрузка анализа…" })
-                : showWhy
-                  ? pick5(lang, { it: "Nascondi analisi", en: "Hide analysis", es: "Ocultar análisis", fr: "Masquer l'analyse", ru: "Скрыть анализ" })
-                  : pick5(lang, { it: "Leggi l'analisi completa", en: "Read full analysis", es: "Leer el análisis completo", fr: "Lire l'analyse complète", ru: "Читать полный анализ" })} <span className="ar">→</span>
-            </button>
-          )}
-        </details>
-
-        {/* footer action row */}
-        <div className="act">
-          {/* #PARTNER-REMOVE-0626: Place bet → link invito FortunePlay (via onBetNow). */}
-          {!isPreview && onBetNow && (liveIsFinal ? (
-            <span className="ft-note">{pick5(lang, { it: "Terminata — in arrivo nello storico", en: "Full time — moving to history", es: "Finalizado — pasando al historial", fr: "Terminé — passe à l'historique", ru: "Матч окончен — переходит в историю" })}</span>
-          ) : (
-            <button className="betbtn" onClick={fp?.matchUrl ? () => window.open(fp.matchUrl, "_blank", "noopener,noreferrer") : onBetNow}>{t.bet_now}</button>
-          ))}
-          <span className="model">{pick5(lang, { it: "Modello calibrato", en: "Calibrated model", es: "Modelo calibrado", fr: "Modèle calibré", ru: "Калиброванная модель" })}</span>
-          <span className="gate">Pro</span>
-        </div>
-
-        {/* expandable analysis body */}
-        {isPreview ? (
-          <div className="nudge">
-            <strong>{pick5(lang, { it: "Edge e analisi richiedono BetRedge Pro", en: "Edge and analysis require BetRedge Pro", es: "Edge y análisis requieren BetRedge Pro", fr: "Edge et analyse nécessitent BetRedge Pro", ru: "Edge и анализ доступны с BetRedge Pro" })}</strong>
-            <em>{pick5(lang, { it: "Sblocca edge%, analisi del modello e segnali tennis con Pro (29.99 USDT/mese).", en: "Unlock edge%, model analysis and tennis signals with Pro (29.99 USDT/month).", es: "Desbloquea edge%, análisis del modelo y señales de tenis con Pro (29.99 USDT/mes).", fr: "Débloquez edge%, analyse du modèle et signaux tennis avec Pro (29.99 USDT/mois).", ru: "Откройте edge%, анализ модели и теннисные сигналы с Pro (29.99 USDT/мес)." })}</em>
-          </div>
-        ) : showWhy && (
-        <div className="why-body">
-          {/* AI analysis — shown first when available */}
-          {aiAnalysis && lang === "it" ? (
-            <>
-              <div className="wlab"><GlyphModel size={12} /> {t.tennis_ai_label}</div>
-              <p className="why-prose mono">{aiAnalysis}</p>
-            </>
-          ) : loadingAnalysis ? (
-            <p className="why-prose">{t.tennis_ai_loading}</p>
-          ) : null}
-
-          {m.pick && (
-            <p className="why-prose mono">Pick: <strong>{m.pick}</strong>{m.confidence_score != null ? ` · ${m.confidence_score}%` : ""}</p>
-          )}
-
-          {/* Affiliate bonus CTA + pick-of-day — demoted into the expansion */}
-          {m.affiliate && (
-            <a className="bonus-cta" href={m.affiliate.url} target="_blank" rel="nofollow sponsored noopener">
-              {m.affiliate.bonus} · {m.affiliate.bookmaker} →
-            </a>
-          )}
-          {m.pick_of_day && <span className="badge-potd">Pick of the Day</span>}
-
-      {/* Deep Analysis — Premium only */}
-      {isPremium && (
-        <div className="deep-analysis-panel">
-          <div className="da-header">
-            <span className="da-badge">⚡ Pro</span>
-            <span className="da-title">{pick5(lang, { it: "Analisi del modello", en: "Model analysis", es: "Análisis del modelo", fr: "Analyse du modèle", ru: "Анализ модели" })}</span>
-          </div>
-          <div className="da-row">
-            <span className="da-label">{pick5(lang, { it: "Forza sulla superficie", en: "Strength on this surface", es: "Fuerza en esta superficie", fr: "Niveau sur cette surface", ru: "Сила на этом покрытии" })}</span>
-            <span className="da-value">{m.elo_p1?.toFixed(0) ?? "–"} vs {m.elo_p2?.toFixed(0) ?? "–"}</span>
-          </div>
-          {(m.elo_p1_overall != null || m.elo_p2_overall != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Forza generale", en: "Overall strength", es: "Fuerza general", fr: "Niveau général", ru: "Общая сила" })}</span>
-              <span className="da-value">{m.elo_p1_overall?.toFixed(0) ?? "–"} vs {m.elo_p2_overall?.toFixed(0) ?? "–"}</span>
-            </div>
-          )}
-          {(m.surface_matches_p1 != null || m.surface_matches_p2 != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Match su questa superficie", en: "Matches on this surface", es: "Partidos en esta superficie", fr: "Matchs sur cette surface", ru: "Матчи на покрытии" })}</span>
-              <span className="da-value">{m.surface_matches_p1 ?? "–"} vs {m.surface_matches_p2 ?? "–"}</span>
-            </div>
-          )}
-          {(m.elo_raw_p1 != null || m.elo_raw_p2 != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Probabilità modello", en: "Model probability", es: "Probabilidad del modelo", fr: "Probabilité du modèle", ru: "Вероятность модели" })}</span>
-              <span className="da-value">{m.elo_raw_p1 != null ? `${Math.round(m.elo_raw_p1 * 100)}%` : "–"} vs {m.elo_raw_p2 != null ? `${Math.round(m.elo_raw_p2 * 100)}%` : "–"}</span>
-            </div>
-          )}
-          {(m.h2h_p1_wins != null || m.h2h_p2_wins != null) && (
-            <div className="da-row">
-              <span className="da-label">{pick5(lang, { it: "Testa a testa", en: "Head-to-head", es: "Cara a cara", fr: "Confrontations", ru: "Личные встречи" })}</span>
-              <span className="da-value">{m.h2h_p1_wins ?? 0}–{m.h2h_p2_wins ?? 0}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Deep Analysis locked teaser — Base users only (demoted into expansion) */}
-      {!isPremium && (
-        <div className="deep-analysis-locked">
-          <span>⚡</span>
-          <span>{pick5(lang, { it: "Analisi approfondita del modello disponibile con BetRedge Pro (29.99 USDT/mese)", en: "Deep model analysis available with BetRedge Pro (29.99 USDT/month)", es: "Análisis profundo del modelo disponible con BetRedge Pro (29.99 USDT/mes)", fr: "Analyse approfondie du modèle disponible avec BetRedge Pro (29.99 USDT/mois)", ru: "Глубокий анализ модели доступен с BetRedge Pro (29.99 USDT/мес)" })}</span>
-        </div>
-      )}
-        </div>
-        )}
-      </div>
-    </>
-  );
-
-  if (!modalEnabled) {
-    return (
-      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis" {...cardProps}>
-        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
-        {headerNode}
-        {readoutNode}
-        {bodyNode}
-      </div></article>
-    );
-  }
+  // #RESTYLING-0921 round 5 — vedi la card calcio: il corpo è
+  // `PredictionCard` del design system, la stessa della Home. I tre blocchi
+  // che questa card disegnava da sé (`headerNode`/`readoutNode`/`bodyNode`,
+  // ~220 righe di `.pred.hud.tennis`) erano l'altra metà del sito vecchio.
+  // Quote, set e mercati restano nella scheda-dettaglio, che apre «View
+  // analysis».
+  const cardData = fromDeskTennis(m, {
+    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
+    kickoffLabel: scheduledDate,
+    isLive: liveIsOn,
+    liveMinute: liveIsOn && liveSetsLabel ? liveSetsLabel : null,
+  });
+  const matchKey = `tennis:${m.id}`;
 
   return (
     <>
-      <article className="card tennis" data-mc style={{ "--mc-accent": "var(--d-tennis)" } as React.CSSProperties}><div className="pred hud tennis is-clickable" {...cardProps}>
-        <McCardPhoto sport="tennis" i={idx} surface={m.surface} />
-        {headerNode}
-        {readoutNode}
-        <div className="pred-more" aria-hidden="true">
-          <span className="pm-lab">{pick5(lang, { it: "Apri scheda completa", en: "Open full card", es: "Abrir ficha completa", fr: "Ouvrir la fiche complète", ru: "Открыть карточку" })}</span>
-          <span className="pm-chev" />
-        </div>
-      </div></article>
-      <PredictionDetailModal
-        open={modalOpen}
-        onClose={closeModal}
-        anchorRect={modalRect}
-        titleId={modalTitleId}
-        lang={lang}
-        title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
-        subtitle={<>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
-        hideHead
-        hideExtraMarkets
-      >
-        <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
-      </PredictionDetailModal>
+      {/* `headless`: vedi PredictionCard — solo la scheda, nessuna card. */}
+      {!headless && (
+      <div ref={cardProps.ref} className="br-board-card">
+        <BrPredictionCard
+          data={cardData}
+          variant={m.locked ? "premiumLocked" : liveIsOn ? "live" : "compact"}
+          href={`${TAB_PATHS.bets}?match=${encodeURIComponent(matchKey)}`}
+          saved={saved}
+          onToggleWatchlist={onToggleWatch ? () => onToggleWatch(matchKey) : undefined}
+          onOpen={(ev) => {
+            ev.preventDefault();
+            if (!modalEnabled) { onGate?.(); return; }
+            trackEvent("card_open", { meta: { surface: "board", sport: "tennis" } });
+            openModal();
+          }}
+          extra={cardData.confidence != null && !m.locked ? <ConfidenceIndicator score={cardData.confidence} /> : undefined}
+        />
+      </div>
+      )}
+      {modalEnabled && (
+        <PredictionDetailModal
+          open={modalOpen}
+          onClose={() => { closeModal(); if (autoOpen) onAutoOpenClose?.(); }}
+          anchorRect={modalRect}
+          titleId={modalTitleId}
+          lang={lang}
+          title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
+          subtitle={<>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
+          hideHead
+          hideExtraMarkets
+        >
+          <MatchDetailSheet data={mdsData} hideBookLinks={!onBetNow} />
+        </PredictionDetailModal>
+      )}
     </>
   );
 }
@@ -7801,6 +7457,7 @@ function AccountMenu({
   onLogout,
   onGoToPlans,
   onSelectLang,
+  onGoToTab,
 }: {
   profile: ClientProfile;
   lang: Lang;
@@ -7808,6 +7465,8 @@ function AccountMenu({
   onLogout: () => void;
   onGoToPlans: () => void;
   onSelectLang: (l: Lang) => void;
+  /** #RESTYLING-0921 — le destinazioni di servizio uscite dalla nav primaria. */
+  onGoToTab: (tab: Tab) => void;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -7862,6 +7521,29 @@ function AccountMenu({
                 ? pick5(lang, { it: "Gestisci", en: "Manage", es: "Gestionar", fr: "Gérer", ru: "Управлять" })
                 : pick5(lang, { it: "Vedi i piani", en: "See plans", es: "Ver planes", fr: "Voir les offres", ru: "Тарифы" })} →
             </button>
+          </div>
+
+          {/* #RESTYLING-0921 — qui sono finite le destinazioni che prima
+              occupavano insieme la topnav E la rail laterale. Sono di servizio
+              o editoriali: si cercano, non si guardano di continuo. */}
+          <div className="br-acct-links">
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("history"); }}>
+              {pick5(lang, { it: "Storico verificato", en: "Verified history", es: "Historial verificado", fr: "Historique vérifié", ru: "Проверенная история" })}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("leaderboard"); }}>
+              {pick5(lang, { it: "Classifica", en: "Leaderboard", es: "Clasificación", fr: "Classement", ru: "Рейтинг" })}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("match-builder"); }}>
+              Build a Probability View
+            </button>
+            <button type="button" onClick={() => { setOpen(false); onGoToTab("invita"); }}>
+              {pick5(lang, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}
+            </button>
+            <Link href="/community" onClick={() => setOpen(false)}>Creator Picks</Link>
+            <Link href="/weekly-model-case" onClick={() => setOpen(false)}>Weekly Model Case</Link>
+            <Link href="/partners" onClick={() => setOpen(false)}>
+              {pick5(lang, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}
+            </Link>
           </div>
 
           <div className="acct-menu-prefs">
@@ -8562,8 +8244,13 @@ function FeaturedEdge({
 
   // Locked / teaser variant — never expose pick name or probability.
   if (!isPremiumClient) {
+    // #RESTYLING-0921 round 5 — `br-edgeday` al posto di `edge-chamfer chamfer`:
+    // il blocco era l'ultimo pannello con fotografia di scena, velo, alone e
+    // angoli smussati, e accanto al board rifatto stonava. Le classi INTERNE
+    // restano (`.big`, `.why`, `.eyebrow`…): cambia il trattamento, non il
+    // contenuto né la struttura.
     return (
-      <div className="edge-chamfer chamfer">
+      <div className="br-edgeday">
       <section className={`featured featured-locked is-${sport}`} aria-label={eyebrow}>
         <div className="big">
           <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
@@ -8598,7 +8285,7 @@ function FeaturedEdge({
   }
 
   return (
-    <div className="edge-chamfer chamfer">
+    <div className="br-edgeday">
     <section className={`featured is-${sport}`} aria-label={eyebrow}>
       <div className="big">
         <div className="eyebrow"><span className="dot" /> {eyebrow}</div>
@@ -8687,23 +8374,979 @@ function WeeklyPickPromo() {
     ru: "Weekly Model Case — экспресс от команды. Смотреть экспресс этой недели.",
   });
   return (
-    // `Link` e non `<a>`: /weekly-pick e' una rotta interna, e un <a> nudo
+    // `Link` e non `<a>`: /weekly-model-case e' una rotta interna, e un <a> nudo
     // forzerebbe un ricaricamento completo del desk invece della navigazione
     // client. Non passa da `onBannerCta` perche' quello mappa un path su una TAB
     // del desk, e la Weekly Model Case e' una pagina a se'.
+    //
+    // #RESTYLING-0921 — dal 22/09 torna il CREATIVO al posto del pannello
+    // nativo. Il pannello era nato il 21/09 alle 14:46 perche' l'immagine di
+    // allora era del brand vecchio; Andrea ha consegnato quella nuova e ha
+    // chiesto di rimetterla. La classe resta `wp-promo`: e' il gancio che tiene
+    // la promo nella sua colonna (`.edge-split > .wp-promo`, grid-column -2) in
+    // entrambi i layout, e la regola non e' mai stata rimossa.
     <Link className="wp-promo" href="/weekly-model-case" aria-label={etichetta}>
-      {/* Immagine statica in /public: <img> e non next/image di proposito —
-          e' un creativo a dimensione fissa, gia' compresso a 246KB in WebP
-          (dai 2,2MB del PNG originale), e non ha bisogno del loader.
-          #WP-PROMO-FLASH-0910 — `eager` e non `lazy`: il banner sta NELLA PRIMA
-          SCHERMATA, dove `lazy` non risparmia niente e sposta solo il download
-          dopo il layout, quindi il riquadro si vedeva vuoto e poi si dipingeva.
-          `width`/`height` restano perche' danno l'aspect-ratio: il posto e' gia'
-          riservato prima che il byte arrivi, quindi nulla si muove. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/banners/weekly-pick-promo.webp" alt={etichetta} width={1600} height={900} loading="eager" fetchPriority="high" decoding="async" />
+      <img
+        src="/banners/andrea-picks/weekly-pick.jpg"
+        srcSet="/banners/andrea-picks/weekly-pick-sm.jpg 560w, /banners/andrea-picks/weekly-pick.jpg 1120w"
+        sizes="(max-width: 900px) 100vw, 480px"
+        alt={etichetta}
+        width={1120}
+        height={630}
+        loading="eager"
+        decoding="async"
+      />
     </Link>
   );
+}
+
+// ─── HOME / DISCOVER LOBBY ────────────────────────────────────────────────
+// #RESTYLING-0921 — priorità 1 del brief. La Home non è più «dashboard →
+// filtri → contenuto»: è una lobby di fasce già rilevanti.
+//
+// Round 10 — «ESPLORA TUTTO» NON ESISTE PIÙ COME DESTINAZIONE. Andrea, 23/09:
+// «dobbiamo tenere il sito più pulito e semplice, non avremo la pagina explore
+// all ma teniamo tutte le predizioni divise tra Home, Live, Football e Tennis,
+// non aggiungiamo pagine nuove». Le viste restano quattro più la watchlist, e
+// ogni riga è raggiungibile da una di esse: Football e Tennis mostrano il loro
+// elenco INTERO (nessun cap), Live tutte quelle in gioco, la Home i tagli
+// curati. Il board di sempre (`SportsbookBoard`) non è più una vista: resta
+// soltanto come OSPITE della scheda-dettaglio, che è l'unico posto dove vive
+// (`PredictionDetailModal` + `MatchDetailSheet`). Ci si entra aprendo una
+// partita e se ne esce chiudendola — non lo si può scegliere da nessun link.
+//
+// Le righe sono le STESSE che il board riceve: stessa proiezione d'accesso
+// server-side (`locked`), stessa finestra di mercato. La lobby ordina e
+// raggruppa, non aggiunge dati — e una fascia senza righe non si rende
+// (lib/ui/lobby.ts). Per questo la Home di un giorno vuoto è corta, non finta.
+
+/** Le viste del desk raggiungibili dalla nav primaria. */
+type DeskView = "home" | "live" | "football" | "tennis" | "watchlist";
+
+const LOBBY_COPY: Record<LobbySectionId, { it: string; en: string; hintIt: string; hintEn: string }> = {
+  top: {
+    it: "Migliori opportunità", en: "Top opportunities",
+    hintIt: "Dove il modello si discosta di più dal mercato, fra le partite non ancora iniziate.",
+    hintEn: "Where the model disagrees most with the market, among matches yet to start.",
+  },
+  live: {
+    it: "In corso ora", en: "Live now",
+    hintIt: "Partite in gioco adesso.", hintEn: "Matches in play right now.",
+  },
+  soon: {
+    it: "Si parte a breve", en: "Starting soon",
+    hintIt: "Nelle prossime tre ore.", hintEn: "In the next three hours.",
+  },
+  edge: {
+    it: "Edge alto", en: "High edge",
+    hintIt: "Almeno 5 punti di differenza fra la probabilità del modello e quella del mercato.",
+    hintEn: "At least 5 points between the model's probability and the market's.",
+  },
+  football: { it: "Calcio", en: "Football", hintIt: "", hintEn: "" },
+  tennis: { it: "Tennis", en: "Tennis", hintIt: "", hintEn: "" },
+  watchlist: {
+    it: "La tua watchlist", en: "Your watchlist",
+    hintIt: "Le partite che hai messo da parte, su questo dispositivo.",
+    hintEn: "The matches you saved, on this device.",
+  },
+};
+
+/** Le fasce che una vista mostra. `home` le mostra tutte, in ordine di brief. */
+const VIEW_SECTIONS: Record<DeskView, LobbySectionId[] | null> = {
+  home: null, // tutte
+  live: ["live"],
+  football: ["football"],
+  tennis: ["tennis"],
+  watchlist: ["watchlist"],
+};
+
+function HomeLobby({
+  view,
+  isPro,
+  predictions,
+  tennisMatches,
+  query,
+  watchSaved,
+  onToggleWatch,
+  onOpenMatch,
+  onGate,
+  onSeeAll,
+  onGoHome,
+  onGoPro,
+}: {
+  view: DeskView;
+  /** #RESTYLING-0921 round 7 — chi ha già il Pro non vede la pubblicità del
+   *  Pro. Era il debito dichiarato del round 6. */
+  isPro: boolean;
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  query: string;
+  watchSaved: ReadonlySet<string>;
+  onToggleWatch: (key: string) => void;
+  onOpenMatch: (key: string) => void;
+  /** Il gate esistente (registrazione da anonimo, Piani da loggato). Una card
+   *  chiusa non apre nessuna scheda: chiama questo. */
+  onGate?: () => void;
+  /** Round 10: «Vedi tutte» porta a una delle viste che esistono già (Live,
+   *  Football, Tennis), non più al board generico. */
+  onSeeAll: (view: "live" | "football" | "tennis") => void;
+  onGoHome: () => void;
+  /** Porta alla tab Piani. La lobby non conosce `setTab`: la fascia Pro e
+      l'hero di sezione chiedono soltanto «portami lì». */
+  onGoPro: () => void;
+}) {
+  const lang = useLang();
+  const tz = useTz();
+  const liveMap = useLive();
+  const liveTennisMap = useLiveTennis();
+  const it = lang === "it";
+
+  const winLabel = pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" });
+  const drawLabel = pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" });
+
+  const q = query.trim().toLowerCase();
+
+  // Le righe → dati card. La memo tiene fuori `Date.now()`: le sezioni si
+  // ricalcolano quando cambiano i dati, non a ogni render.
+  const footballItems: LobbyItem[] = useMemo(() => predictions
+    .filter((p) => isBoardVisibleMarket(p.kickoff))
+    .filter((p) => !q || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(q))
+    .map((p) => {
+      const live = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
+      const inPlay = live?.match_status === "IN_PLAY" || live?.match_status === "PAUSED";
+      const data = fromDeskFootball(p, {
+        winLabel, drawLabel,
+        kickoffLabel: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
+        isLive: inPlay,
+        liveMinute: live?.minute ?? null,
+      });
+      return { data, key: lobbyKey(data) };
+    }), [predictions, liveMap, lang, tz, q, winLabel, drawLabel]);
+
+  const tennisItems: LobbyItem[] = useMemo(() => tennisMatches
+    .filter((m) => isTennisMarketVisible(m.scheduled))
+    .filter((m) => !q || `${m.player1} ${m.player2} ${m.tournament}`.toLowerCase().includes(q))
+    .map((m) => {
+      const lm = liveTennisMap[tennisPairKey(m.player1, m.player2)];
+      const inPlay = !!lm && !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || "");
+      const data = fromDeskTennis(m, {
+        winLabel,
+        kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
+        isLive: inPlay,
+      });
+      return { data, key: lobbyKey(data) };
+    }), [tennisMatches, liveTennisMap, lang, tz, q, winLabel]);
+
+  // Round 10: nelle viste Football e Tennis la fascia dello sport è l'elenco
+  // intero, non l'assaggio da sei — è lì che ora vivono tutte le predizioni di
+  // quello sport, visto che «Esplora tutto» non esiste più.
+  const sections = useMemo(
+    () => buildLobbySections({
+      football: footballItems,
+      tennis: tennisItems,
+      saved: watchSaved,
+      fullSportLists: view === "football" || view === "tennis",
+    }),
+    [footballItems, tennisItems, watchSaved, view],
+  );
+
+  const wanted = VIEW_SECTIONS[view];
+  const shown = wanted ? sections.filter((s) => wanted.includes(s.id)) : sections;
+
+  // Totali reali per sezione: quante righe ESISTONO, non quante se ne vedono.
+  const totalFor = (id: LobbySectionId) =>
+    id === "football" ? footballItems.length : id === "tennis" ? tennisItems.length : null;
+
+  const renderCard = (item: LobbyItem, sectionId: LobbySectionId) => {
+    const d = item.data;
+    const locked = d.locked === true;
+    // #RESTYLING-0921 round 5 — TUTTE LE CARD HANNO LA STESSA DIMENSIONE.
+    // Fino al round 4 il top pick era `featured`: due colonne, più padding,
+    // numero a 52px, teaser del «perché». Andrea, sulla preview: le card
+    // «sono di dimensioni diverse a seconda della sezione», e devono essere
+    // tutte uguali. `live` e `premiumLocked` non cambiano la scatola (cambiano
+    // solo cosa ci sta dentro), quindi restano. La variante `featured` esiste
+    // ancora nel componente, semplicemente la lobby non la chiede più.
+    const variant = locked ? "premiumLocked" : d.isLive ? "live" : "compact";
+    const soon = !d.isLive ? startingSoonLabel(d.startsAt) : null;
+    // Il badge «Starting soon» vince su «High edge» solo nella sua fascia:
+    // altrove l'informazione che serve è l'edge. Una card chiusa non annuncia
+    // nulla (lo decide PredictionCard).
+    const badge = sectionId === "soon" && soon ? ({ kind: "starting-soon" as const, label: soon }) : undefined;
+
+    return (
+      <BrPredictionCard
+        key={item.key}
+        data={d}
+        variant={variant}
+        badge={badge}
+        href={`${TAB_PATHS.bets}?match=${encodeURIComponent(item.key)}`}
+        saved={watchSaved.has(item.key)}
+        onToggleWatchlist={() => onToggleWatch(item.key)}
+        onOpen={(ev) => {
+          // La scheda è già in pagina: si apre, non si naviga. L'href resta
+          // vero per il tasto centrale e per la condivisione.
+          ev.preventDefault();
+          // Card chiusa: la CTA è «Unlock full analysis» e porta al gate.
+          // Senza questa guardia il click era MORTO: `onOpenMatch` arriva a
+          // `MatchDetailHost` → `PredictionCard autoOpen`, dove
+          // `modalEnabled = !p.locked` è falso e `openModal()` non parte mai.
+          // È la stessa guardia che il ramo board ha sempre avuto.
+          if (locked) { onGate?.(); return; }
+          trackEvent("card_open", { meta: { surface: "lobby", section: sectionId, sport: d.sport } });
+          onOpenMatch(item.key);
+        }}
+        extra={d.confidence != null && !locked
+          ? <ConfidenceIndicator score={d.confidence} />
+          : undefined}
+      />
+    );
+  };
+
+  // ── #RESTYLING-0921 round 8: il titolo che apre la Home ─────────────────
+  //
+  // Il riferimento apre con una sezione tipografica a sé — occhiello, una
+  // riga enorme in Anton con l'ultima parola in lime, la nota di spalla a
+  // destra — e SOLO SOTTO arriva il rail hero+card. Da noi quella sezione non
+  // esisteva: si partiva dal rail, cioè dallo stesso impianto di prima, ed è
+  // la ragione per cui qa-andrea ha letto la Home come «non ancora un clone»
+  // pur avendo font e colori giusti. Il font nuovo non si vedeva mai a una
+  // misura in cui si legge come scelta.
+  //
+  // LA NOTA DI SPALLA NON È QUELLA DEL RIFERIMENTO. Lì dice «Anteprima
+  // grafica · dati dimostrativi» perché quel sito è un mockup. Da noi i dati
+  // sono veri, quindi la riga piccola dice la cosa vera che va detta: la
+  // stessa nota di rischio del footer e della landing, in corto.
+  const homeHeadline = view !== "home" ? null : (
+    <PageHeadline
+      eyebrow={pick5(lang, {
+        it: "CALCIO. TENNIS. IL TUO EDGE.", en: "FOOTBALL. TENNIS. YOUR EDGE.",
+        es: "FÚTBOL. TENIS. TU EDGE.", fr: "FOOTBALL. TENNIS. VOTRE EDGE.",
+        ru: "ФУТБОЛ. ТЕННИС. ТВОЙ EDGE.",
+      })}
+      lead={pick5(lang, { it: "Il tuo", en: "Your", es: "Tu", fr: "Votre", ru: "Твой" })}
+      accent={pick5(lang, {
+        it: "matchday.", en: "matchday.", es: "matchday.", fr: "matchday.", ru: "матчдей.",
+      })}
+      /* Round 13 — la spalla non è più la tripletta di frammenti («Le partite.
+         Le probabilità. Il contesto per leggerle.»): era la cadenza che fa
+         suonare una pagina scritta a macchina, ed è così che Andrea l'ha letta
+         il 23/09. Dice la stessa identica cosa nominando ciò che sulla pagina
+         c'è davvero — le partite del board, il numero, e il perché di quel
+         numero — invece di tre sostantivi in fila. */
+      note={pick5<string[]>(lang, {
+        it: ["Ogni partita sul board,", "il numero e il perché."],
+        en: ["Every match on the board,", "the number and the why."],
+        es: ["Cada partido del board,", "el número y el porqué."],
+        fr: ["Chaque match du board,", "le chiffre et le pourquoi."],
+        ru: ["Каждый матч на борде,", "число и почему именно оно."],
+      })}
+      hint={pick5(lang, {
+        it: "Analisi probabilistica · nessuna garanzia di profitto · 18+",
+        en: "Probabilistic analysis · no guaranteed returns · 18+",
+        es: "Análisis probabilístico · sin garantía de beneficios · 18+",
+        fr: "Analyse probabiliste · aucun gain garanti · 18+",
+        ru: "Вероятностный анализ · без гарантии прибыли · 18+",
+      })}
+    />
+  );
+
+  // ── #RESTYLING-0921 round 7: l'hero è una CARD VERTICALE ────────────────
+  //
+  // Il round 4 aveva un quadratino, il round 3 un banner largo: il riferimento
+  // di Codex non ha né l'uno né l'altro. Ha una card 3:4 nel rail sinistro
+  // (26% della riga), con le card vere del board nella colonna accanto —
+  // misurata 359×610 sul suo CSS computato. Dentro: la label in alto, il
+  // titolo su tre righe con l'ultima in gradiente lime, una riga di testo e
+  // una barra CTA lime a tutta larghezza.
+  //
+  // La foto è quella di art-director (round 6): 705×941, atleta d'azione in
+  // luce da stadio, nessun testo cotto dentro. La `-420` è la versione per
+  // telefono, la sceglie il browser via srcset.
+  const hero = view !== "home" ? null : (
+    <HeroPortrait
+      label={pick5(lang, {
+        it: "BETREDGE CALCIO", en: "BETREDGE FOOTBALL", es: "BETREDGE FÚTBOL",
+        fr: "BETREDGE FOOTBALL", ru: "BETREDGE ФУТБОЛ",
+      })}
+      lines={pick5<string[]>(lang, {
+        it: ["Leggi", "il", "gioco."],
+        en: ["Read", "the", "game."],
+        es: ["Lee", "el", "juego."],
+        fr: ["Lisez", "le", "jeu."],
+        ru: ["Читай", "игру."],
+      })}
+      /* Round 13 — «La tua prossima lettura parte da qui» era la formula
+         «il tuo X parte da qui»: non dice niente, e su un prodotto di
+         scommesse è a una parola di distanza da una promessa che non
+         possiamo fare. Al suo posto ciò che la card apre davvero. */
+      sub={pick5(lang, {
+        it: "Tutto il calcio sul board di oggi.",
+        en: "Every football match on today’s board.",
+        es: "Todo el fútbol del board de hoy.",
+        fr: "Tout le football du board du jour.",
+        ru: "Весь футбол на сегодняшнем борде.",
+      })}
+      cta={pick5(lang, {
+        it: "Esplora il calcio", en: "Explore football", es: "Explora el fútbol",
+        fr: "Explorer le football", ru: "Открыть футбол",
+      })}
+      href={`${TAB_PATHS.bets}?sport=football`}
+      onClick={(ev) => {
+        ev.preventDefault();
+        trackEvent("card_open", { meta: { surface: "hero", section: "cta" } });
+        onSeeAll("football");
+      }}
+      image={{ src: "/images/hero/hero-football-portrait.jpg", srcSm: "/images/hero/hero-football-portrait-420.jpg", alt: "" }}
+    />
+  );
+
+  // Sotto l'hero, nel rail: il secondo richiamo al Pro del riferimento. Non è
+  // un doppione della fascia Pro — quella parla a tutta la pagina, questo sta
+  // nella colonna e nomina UNA cosa sola, la Deep Analysis.
+  const railDeep = view !== "home" || isPro ? null : (
+    <RailDeep
+      label="DEEP ANALYSIS"
+      lines={pick5<string[]>(lang, {
+        it: ["Il perché.", "Oltre il numero."],
+        en: ["The why.", "Beyond the number."],
+        es: ["El porqué.", "Más allá del número."],
+        fr: ["Le pourquoi.", "Au-delà du chiffre."],
+        ru: ["Почему.", "За пределами числа."],
+      })}
+      cta={pick5(lang, { it: "Scopri Pro", en: "Discover Pro", es: "Descubre Pro", fr: "Découvrir Pro", ru: "Узнать о Pro" })}
+      href={TAB_PATHS.plans}
+      onClick={(ev) => {
+        ev.preventDefault();
+        trackEvent("tab_click", { meta: { tab: "plans", src: "raildeep-home" } });
+        onGoPro();
+      }}
+    />
+  );
+
+  // ── #RESTYLING-0921 round 6: hero di sezione e fascia Pro ───────────────
+  //
+  // DOVE VANNO. Sulla Home: la fascia Pro subito sotto l'hero. Su Calcio e
+  // Tennis: prima l'hero della sezione, poi la fascia. È la sequenza del
+  // riferimento di Andrea, e ha una logica sua — la fascia arriva dopo che
+  // si è appena letto di cosa parla la pagina, non prima.
+  //
+  // IL TESTO DELLA FASCIA CAMBIA CON IL POSTO. Una sola frase buona per
+  // tutte e tre sarebbe un banner, e un banner si impara a saltare. Ogni
+  // riga nomina qualcosa che il piano Pro dà DAVVERO (la lista è quella di
+  // PlansTab: Deep Analysis con forma/infortuni/campo, Live V4 research,
+  // prediction illimitate, edge su tutto): nessuna promessa che non trovi
+  // scritta anche nella pagina dei piani.
+  const proBand = (
+    <ProBand
+      label="BETREDGE PRO"
+      headline={view === "football"
+        ? pick5(lang, {
+            it: "La lettura completa del match.", en: "The full read on every match.",
+            es: "La lectura completa del partido.", fr: "La lecture complète du match.",
+            ru: "Полное прочтение матча.",
+          })
+        : view === "tennis"
+        ? pick5(lang, {
+            it: "Ogni match, dentro i numeri.", en: "Every match, inside the numbers.",
+            es: "Cada partido, dentro de los números.", fr: "Chaque match, dans les chiffres.",
+            ru: "Каждый матч — внутри цифр.",
+          })
+        : pick5(lang, {
+            it: "Ogni partita, fino in fondo.", en: "Every match, all the way down.",
+            es: "Cada partido, hasta el fondo.", fr: "Chaque match, jusqu'au bout.",
+            ru: "Каждый матч — до конца.",
+          })}
+      sub={view === "football"
+        ? pick5(lang, {
+            it: "Forma, infortuni e campo nella Deep Analysis.", en: "Form, injuries and venue in Deep Analysis.",
+            es: "Forma, lesiones y estadio en el Deep Analysis.", fr: "Forme, blessures et stade dans la Deep Analysis.",
+            ru: "Форма, травмы и арена в Deep Analysis.",
+          })
+        : view === "tennis"
+        ? pick5(lang, {
+            it: "Tennis Live V4 research ed edge su tutto.", en: "Tennis Live V4 research and edge on everything.",
+            es: "Tennis Live V4 research y edge en todo.", fr: "Tennis Live V4 research et edge sur tout.",
+            ru: "Tennis Live V4 research и edge по всему.",
+          })
+        : pick5(lang, {
+            it: "Deep Analysis, edge su tutto e prediction illimitate.",
+            en: "Deep Analysis, edge on everything and unlimited predictions.",
+            es: "Deep Analysis, edge en todo y predicciones ilimitadas.",
+            fr: "Deep Analysis, edge sur tout et prédictions illimitées.",
+            ru: "Deep Analysis, edge по всему и прогнозы без лимита.",
+          })}
+      cta={{
+        label: view === "home"
+          ? pick5(lang, { it: "Scopri Pro", en: "Discover Pro", es: "Descubre Pro", fr: "Découvrir Pro", ru: "Узнать о Pro" })
+          : pick5(lang, { it: "Confronta i piani", en: "Compare plans", es: "Comparar planes", fr: "Comparer les offres", ru: "Сравнить тарифы" }),
+        href: TAB_PATHS.plans,
+        onClick: (ev) => {
+          ev.preventDefault();
+          trackEvent("tab_click", { meta: { tab: "plans", src: `proband-${view}` } });
+          onGoPro();
+        },
+      }}
+    />
+  );
+
+  // L'hero di sezione. Il badge porta il conteggio REALE delle partite di
+  // quello sport sul board — lo stesso numero che la fascia sotto mostra
+  // accanto al titolo. Con una ricerca attiva il badge sparisce: «12 partite
+  // sul board» mentre a schermo ce ne sono 2 filtrate sarebbe una cifra che
+  // non corrisponde a nulla di visibile.
+  //
+  // LE FOTO sono quelle di art-director (round 6, mapping e verifiche in
+  // docs/reference/round6/NOTE.md): 1600×900 fotorealistiche, atleta nella
+  // metà destra e metà sinistra scura — girate apposta perché il testo stia
+  // in HTML sopra la parte buia, non cotto dentro il JPEG. La `-800` è la
+  // versione per telefono, la sceglie il browser via srcset. Senza `image`
+  // il componente resta valido: rende il suo fondo a gradiente.
+  const sportHero = view !== "football" && view !== "tennis" ? null : (
+    <SportHero
+      eyebrow={view === "football" ? "BetRedge Football" : "BetRedge Tennis"}
+      title={view === "football"
+        ? pick5(lang, { it: "Calcio.", en: "Football.", es: "Fútbol.", fr: "Football.", ru: "Футбол." })
+        : "Tennis."}
+      accent={view === "football"
+        ? pick5(lang, {
+            it: "Leggi il gioco.", en: "Read the game.", es: "Lee el juego.",
+            fr: "Lisez le jeu.", ru: "Читай игру.",
+          })
+        : pick5(lang, {
+            it: "Punto su punto.", en: "Point by point.", es: "Punto a punto.",
+            fr: "Point par point.", ru: "Очко за очком.",
+          })}
+      /* Il tennis non gioca «partite»: gioca match. Una riga sola per due
+         sport avrebbe risparmiato sei righe di codice e detto una cosa
+         sbagliata su metà del sito. */
+      subtitle={view === "football"
+        ? pick5(lang, {
+            it: "Probabilità e contesto, partita per partita.",
+            en: "Probability and context, match by match.",
+            es: "Probabilidad y contexto, partido a partido.",
+            fr: "Probabilité et contexte, match après match.",
+            ru: "Вероятность и контекст, матч за матчем.",
+          })
+        : pick5(lang, {
+            it: "Probabilità e contesto, match per match.",
+            en: "Probability and context, match by match.",
+            es: "Probabilidad y contexto, match a match.",
+            fr: "Probabilité et contexte, match après match.",
+            ru: "Вероятность и контекст, матч за матчем.",
+          })}
+      stat={{
+        value: q ? null : (view === "football" ? footballItems.length : tennisItems.length),
+        label: pick5(lang, {
+          it: "partite sul board", en: "matches on the board", es: "partidos en el board",
+          fr: "matchs sur le board", ru: "матчей на борде",
+        }),
+      }}
+      image={view === "football"
+        ? { src: "/images/hero/section-football-wide.jpg", srcSm: "/images/hero/section-football-wide-800.jpg" }
+        : { src: "/images/hero/section-tennis-wide.jpg", srcSm: "/images/hero/section-tennis-wide-800.jpg" }}
+    />
+  );
+
+  /** Il blocco in testa a una vista: hero di sezione + fascia Pro sotto.
+   *
+   * Round 8: la fascia NON va a chi il Pro ce l'ha già. Era il gate che il
+   * round 7 aveva messo sulla Home (`hero && !isPro && proBand`) e dimenticato
+   * qui: su Calcio e Tennis un abbonato Pro si vedeva ancora invitare ad
+   * abbonarsi, in cima alla pagina, su entrambe le sezioni. */
+  const sectionTop = sportHero ? (
+    <>
+      {sportHero}
+      {!isPro && proBand}
+    </>
+  ) : null;
+
+  // ── #RESTYLING-0921 round 7: «Scegli il tuo campo» ──────────────────────
+  //
+  // La riga di iconcine del round 2-4 diventa quattro TILE FOTOGRAFICHE
+  // grandi, quattro su una riga (333×245 nel riferimento). Una foto d'azione
+  // dice «qui si gioca a questo» in un colpo d'occhio; un'icona da 48px no.
+  // Le foto sono quelle di art-director (round 6, derivate in
+  // public/images/tiles/), senza testo cotto dentro.
+  //
+  // Il conteggio resta un DATO: `count: null` → la tile dice «In arrivo» e
+  // smette di essere un link. Mai uno zero finto per far numero.
+  const sportTiles = view !== "home" ? null : (
+    <LobbySection
+      title={pick5(lang, {
+        it: "Scegli il tuo campo.", en: "Choose your field.", es: "Elige tu campo.",
+        fr: "Choisissez votre terrain.", ru: "Выберите своё поле.",
+      })}
+      eyebrow={pick5(lang, {
+        it: "LE DISCIPLINE", en: "THE SPORTS", es: "LAS DISCIPLINAS",
+        fr: "LES DISCIPLINES", ru: "ВИДЫ СПОРТА",
+      })}
+      plain
+    >
+      <FieldTileGrid label={pick5(lang, { it: "Sfoglia per sport", en: "Browse by sport", es: "Explorar por deporte", fr: "Parcourir par sport", ru: "По виду спорта" })}>
+        {([
+          { sport: "football", index: "01", kicker: "FOOTBALL", label: pick5(lang, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }), count: footballItems.length, img: "field-football", accent: false, icon: "sport-football" },
+          { sport: "tennis", index: "02", kicker: "TENNIS", label: "Tennis", count: tennisItems.length, img: "field-tennis", accent: true, icon: "sport-tennis" },
+          { sport: "basketball", index: "03", kicker: "BASKETBALL", label: pick5(lang, { it: "Basket", en: "Basketball", es: "Baloncesto", fr: "Basket", ru: "Баскетбол" }), count: null, img: "field-basketball", accent: false, icon: "sport-basketball" },
+          { sport: "more", index: "04", kicker: "NEXT UP", label: pick5(lang, { it: "Altri sport", en: "More sports", es: "Más deportes", fr: "Autres sports", ru: "Другие виды" }), count: null, img: "field-nextup", accent: false, icon: "sport-more" },
+        ] as const).map((t) => (
+          <FieldTile
+            key={t.sport}
+            sport={t.sport}
+            index={t.index}
+            kicker={t.kicker}
+            label={t.label}
+            count={t.count}
+            accent={t.accent}
+            image={{ src: `/images/tiles/${t.img}.jpg`, srcSm: `/images/tiles/${t.img}-420.jpg` }}
+            /* `alt=""`: il nome dello sport è già scritto nella tile, sotto. */
+            icon={<img src={`/banners/${t.icon}-sm.png`} alt="" width={31} height={31} loading="lazy" decoding="async" />}
+            exploreLabel={pick5(lang, { it: "Esplora", en: "Explore", es: "Explorar", fr: "Explorer", ru: "Открыть" })}
+            comingSoonLabel={pick5(lang, { it: "In arrivo", en: "Coming soon", es: "Pronto", fr: "Bientôt", ru: "Скоро" })}
+            href={t.count == null ? undefined : `${TAB_PATHS.bets}?sport=${t.sport}`}
+            onClick={t.count == null ? undefined : (ev: React.MouseEvent<HTMLElement>) => {
+              ev.preventDefault();
+              onSeeAll(t.sport as "football" | "tennis");
+            }}
+          />
+        ))}
+      </FieldTileGrid>
+    </LobbySection>
+  );
+
+  // ── #RESTYLING-0921 round 7: «Da approfondire» ──────────────────────────
+  //
+  // I creativi della casa messi GRANDI e affiancati, col testo SOTTO la foto e
+  // non cotto dentro — così il titolo è testo vero, tradotto, indicizzabile e
+  // leggibile da uno screen reader. È il trattamento del riferimento.
+  //
+  // Andrea, 22/09: «anche i banner vanno usati gli stessi, deve essere tutto
+  // nuovo». Quindi non ne girano due fissi: girano TUTTE le campagne valide
+  // per chi sta guardando (`campaignsFor`), che è la stessa fonte del board e
+  // delle pagine tool. A chi ha il Pro, Deep Analysis non compare: sarebbe la
+  // pubblicità di ciò che ha già comprato — lo dice già `audiences`.
+  const deepDives = view !== "home" ? null : (() => {
+    const campaigns = campaignsFor("desk-feed", isPro ? "premium" : "free");
+    // Round 8: DUE, come il riferimento — non quattro. Quattro creativi da
+    // 1120×630 uno dietro l'altro erano mezza Home di pubblicità della casa
+    // dopo il board, e alla terza card nessuno le guarda più. Gli altri
+    // banner restano in circolo altrove (board, tool, feed): la precisazione
+    // di Andrea era «usarli tutti nel SITO», non tutti qui.
+    const cards = campaigns.filter((c) => c.creative).slice(0, 2);
+    if (cards.length === 0) return null;
+    return (
+      <LobbySection
+        title={pick5(lang, {
+          it: "Da approfondire.", en: "Worth a closer look.", es: "Para profundizar.",
+          fr: "À creuser.", ru: "Стоит изучить.",
+        })}
+        eyebrow={pick5(lang, {
+          it: "LE CAMPAGNE", en: "THE CAMPAIGNS", es: "LAS CAMPAÑAS",
+          fr: "LES CAMPAGNES", ru: "КАМПАНИИ",
+        })}
+        plain
+      >
+        <DeepDiveGrid>
+          {cards.map((c) => {
+            const copy = copyFor(c, lang);
+            return (
+              <DeepDiveCard
+                key={c.id}
+                eyebrow={copy.eyebrow}
+                title={copy.eyebrow}
+                sub={copy.sub}
+                cta={ctaLabelFor(c, lang)}
+                href={c.cta.href}
+                image={{ src: c.creative!.src, srcSm: c.creative!.sm }}
+                onClick={() => trackEvent("card_open", { meta: { surface: "deepdive", section: c.id } })}
+              />
+            );
+          })}
+        </DeepDiveGrid>
+      </LobbySection>
+    );
+  })();
+
+  // ── #RESTYLING-0921 round 7: «Prossimi match» ───────────────────────────
+  //
+  // Le stesse partite, in RIGHE compatte invece che in card. È la vista con
+  // cui il riferimento fa scorrere il calendario: chi vuole vedere venti
+  // partite invece di sei non deve scrollare sei schermate di card.
+  // Non sostituisce le fasce: è una vista in più, e sta in fondo.
+  const upcoming = view !== "home" ? null : (() => {
+    const rows: UpcomingRow[] = [...footballItems, ...tennisItems]
+      .filter((i) => !i.data.isLive)
+      .sort((a, b) => new Date(a.data.startsAt).getTime() - new Date(b.data.startsAt).getTime())
+      .slice(0, 10)
+      .map((i) => {
+        // Il desk scrive «mer 23 set, 13:37»: la virgola separa il giorno
+        // dall'ora, e nel riferimento sono due righe. Se il formato cambia
+        // (o la lingua non usa la virgola) resta tutto sulla prima riga:
+        // meglio una riga lunga che una data tagliata a metà parola.
+        const label = i.data.kickoffLabel ?? "";
+        const cut = label.lastIndexOf(", ");
+        const day = cut > 0 ? label.slice(0, cut) : label;
+        const time = cut > 0 ? label.slice(cut + 2) : null;
+        return {
+          key: i.key,
+          day: day || "—",
+          time,
+          home: i.data.home,
+          away: i.data.away,
+          league: i.data.league ?? "",
+          modelPct: i.data.modelPct,
+          href: TAB_PATHS.bets,
+          onClick: (ev: React.MouseEvent<HTMLAnchorElement>) => {
+            ev.preventDefault();
+            // Stessa guardia delle card: una riga chiusa porta al gate, non a
+            // una scheda che non si aprirebbe.
+            if (i.data.locked === true) { onGate?.(); return; }
+            onOpenMatch(i.key);
+          },
+        };
+      });
+    if (rows.length === 0) return null;
+    return (
+      <LobbySection
+        title={pick5(lang, {
+          it: "Prossimi match.", en: "Upcoming matches.", es: "Próximos partidos.",
+          fr: "Prochains matchs.", ru: "Ближайшие матчи.",
+        })}
+        eyebrow={pick5(lang, {
+          it: "IL CALENDARIO", en: "THE SCHEDULE", es: "EL CALENDARIO",
+          fr: "LE CALENDRIER", ru: "КАЛЕНДАРЬ",
+        })}
+        plain
+      >
+        <UpcomingList
+          rows={rows}
+          vsLabel="vs"
+          modelLabel={pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}
+        />
+      </LobbySection>
+    );
+  })();
+
+  // ── #RESTYLING-0921 round 4: la prima fascia sale accanto all'hero ──────
+  //
+  // Il quadrato occupa meno di un terzo della riga: lo spazio che libera non
+  // resta vuoto, ci vanno le prime card vere della lobby — «il primo schermo
+  // deve mostrare prodotto, non solo un banner». La fascia che sale è la PRIMA
+  // che esiste: di norma «Top opportunities», ma se oggi nessuna partita ha un
+  // prezzo di mercato (lib/ui/lobby.ts non rende una sezione vuota) sale
+  // «Live now», o quella che c'è. Niente duplicati: la fascia salita non si
+  // ripete sotto, e «Vedi tutte» resta il modo di aprire il resto.
+  // Round 5: da 2 a 6. Con la colonna minima a 248px (design-system.css) la
+  // fascia accanto all'hero rende 3 card per riga su 1280 — due righe, sei
+  // card sopra la piega invece di due. Era la richiesta esplicita: «nella
+  // primissima schermata deve vederne di più».
+  const HERO_SIDE_CAP = 6;
+  const sideSection = view === "home" ? shown[0] : undefined;
+  const belowSections = sideSection ? shown.slice(1) : shown;
+
+  // ── #RESTYLING-0921 round 12: I BANNER DI CASA DENTRO LE GRIGLIE ────────
+  //
+  // La cadenza «uno ogni sei card» esiste dal round 5, ma vive dentro
+  // `SportsbookBoard` — che dal round 10 non è più una vista e si monta solo
+  // come ospite della scheda. Misurato il 23/09 su build di produzione: sulle
+  // pagine Calcio e Tennis i banner resi erano ZERO. Qui la cadenza torna
+  // dove le card stanno davvero, cioè in `renderSection`.
+  //
+  // Solo sulle viste piene: sulla Home le fasce sono assaggi da sei card e la
+  // pubblicità della casa ce l'ha già, in «Da approfondire». Il pool è
+  // ROVESCIATO rispetto a quello della Home (che pesca i primi due), così chi
+  // passa da Home a Calcio non rivede gli stessi due creativi.
+  const gridFeed = useMemo(() => {
+    if (view !== "football" && view !== "tennis") return [];
+    const all = campaignsFor("desk-feed", isPro ? "premium" : "free").filter((c) => c.creative);
+    // Il soggetto della foto decide la sezione: un creativo col calciatore in
+    // mezzo alle schede di tennis è la cosa più fuori posto della pagina.
+    const mine = view === "tennis"
+      ? all.filter((c) => campaignSport(c) === "tennis")
+      : all.filter((c) => campaignSport(c) !== "tennis");
+    return mine.reverse();
+  }, [view, isPro]);
+  // «Senza abbondare» (Andrea, 22/09): due per fascia, uno ogni sei card.
+  const GRID_TILES_MAX = 2;
+  const GRID_EVERY = 6;
+
+  const renderSection = (sec: LobbySectionData, cap?: number) => {
+    const copy = LOBBY_COPY[sec.id];
+    const total = totalFor(sec.id);
+    const isSport = sec.id === "football" || sec.id === "tennis";
+    const items = cap == null ? sec.items : sec.items.slice(0, cap);
+    // Round 10: «Vedi tutte» porta a una VISTA che esiste — Live, Football,
+    // Tennis. I tagli curati (Top opportunities, Starting soon, High edge) non
+    // hanno più un board generico dove mandare, e non ne aprono uno: le loro
+    // righe stanno per intero dentro Football, Tennis e Live, che è
+    // esattamente la divisione chiesta da Andrea.
+    const seeAllView = sec.id === "football" || sec.id === "tennis" || sec.id === "live" ? sec.id : null;
+    // …e compare solo se c'è davvero altro da vedere: righe tagliate dal cap,
+    // righe oltre l'assaggio, o un totale più grande di ciò che si vede.
+    const more = view === "home" && seeAllView != null && (
+      items.length < sec.items.length
+      || (isSport ? (total ?? 0) > items.length : sec.items.length >= LOBBY_ROW_CAP)
+    );
+    return (
+      <LobbySection
+        title={it ? copy.it : copy.en}
+        hint={(it ? copy.hintIt : copy.hintEn) || null}
+        count={isSport ? total : null}
+        action={more && seeAllView ? (
+          <button
+            type="button"
+            className="br-sec__link"
+            onClick={() => onSeeAll(seeAllView)}
+          >
+            {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
+          </button>
+        ) : null}
+      >
+        {(() => {
+          // La griglia si richiude da sé: i banner sono INSERITI nel flatMap,
+          // non nascosti con `display:none`, quindi senza di loro non resta
+          // nessun posto vuoto da colmare.
+          const pool = isSport ? gridFeed : [];
+          const cap2 = Math.min(pool.length, GRID_TILES_MAX);
+          let placed = 0;
+          return items.flatMap((item, i) => {
+            const out: React.ReactNode[] = [renderCard(item, sec.id)];
+            // `i < items.length - 1`: mai come ultimo elemento della fascia —
+            // là sotto c'è già la fine della griglia, e un banner in coda
+            // sembrerebbe il piè di pagina della sezione.
+            if (placed < cap2 && i > 0 && (i + 1) % GRID_EVERY === 0 && i < items.length - 1) {
+              const camp = pool[placed++];
+              out.push(
+                <HouseBanner
+                  key={`house-grid-${sec.id}-${camp.id}`}
+                  campaign={camp}
+                  lang={lang}
+                  inGrid
+                />,
+              );
+            }
+            return out;
+          });
+        })()}
+      </LobbySection>
+    );
+  };
+
+  // Dove entra la riga di tile: subito DOPO «Live now», che è la fascia con cui
+  // la Home apre il presente. Se oggi non c'è nulla in gioco quella fascia non
+  // esiste, e le tile vanno dopo la prima fascia rimasta sotto l'hero.
+  const tilesAfter = belowSections.some((s) => s.id === "live") ? "live" : belowSections[0]?.id;
+
+  // La FAQ chiude la Home: è il testo che "/" deve mostrare perché il suo
+  // FAQPage JSON-LD sia legittimo (vedi components/lobby/HomeFaq.tsx). Solo
+  // sulla Home: sotto «Calcio» o «La tua watchlist» non c'entra niente.
+  const faq = view !== "home" ? null : (
+    <HomeFaq
+      lang={lang}
+      title={pick5(lang, {
+        it: "Prima della tua prima lettura", en: "Before your first reading",
+        es: "Antes de tu primera lectura", fr: "Avant votre première lecture",
+        ru: "Перед первым прогнозом",
+      })}
+    />
+  );
+
+  if (shown.length === 0) {
+    // #RESTYLING-0921 round 12 — IL SALTO DELLA HOME AL CARICAMENTO.
+    //
+    // Misurato sul build di produzione con l'API ritardata di 500ms: a 60ms
+    // `.br-hp` (l'hero della Home) è 1192×590, a 638ms diventa 310×590. Non
+    // c'entrano le foto né gli `aspect-ratio`: è QUESTO ramo. Finché il
+    // fetch del board è in volo `shown` è vuoto, e qui l'hero veniva reso
+    // NUDO — a tutta larghezza — mentre il ramo con i dati lo mette nel rail
+    // a 26%. Due contenitori diversi per lo stesso elemento: mezzo secondo
+    // di banner grande, poi lo scatto alla misura giusta.
+    //
+    // La cura è dare all'hero la STESSA geometria nei due rami: il rail c'è
+    // sempre, e nella colonna di destra — dove poi arriveranno le card — sta
+    // intanto la riga che spiega perché non ce ne sono. Il testo non si
+    // duplica: è `emptyNote`, la stessa `<p>` di prima estratta in una const.
+    const emptyNote = (
+        <p className="br-empty">
+          {q
+            ? pick5(lang, {
+                it: `Nessuna partita per «${query}». Prova con un altro nome, o guarda tutto il listino.`,
+                en: `No match for “${query}”. Try another name, or browse the full board.`,
+                es: `Ningún partido para «${query}». Prueba otro nombre o mira todo el listado.`,
+                fr: `Aucun match pour « ${query} ». Essayez un autre nom, ou parcourez tout le tableau.`,
+                ru: `Ничего не найдено по «${query}». Попробуйте другое имя или откройте весь список.`,
+              })
+            : view === "watchlist"
+            ? pick5(lang, {
+                it: "La watchlist è vuota. Il segnalibro su una card mette la partita qui.",
+                en: "Your watchlist is empty. The bookmark on a card puts a match here.",
+                es: "Tu watchlist está vacía. El marcador de una ficha pone el partido aquí.",
+                fr: "Votre watchlist est vide. Le marque-page d'une carte met le match ici.",
+                ru: "Список пуст. Закладка на карточке добавляет матч сюда.",
+              })
+            : view === "live"
+            ? pick5(lang, {
+                it: "Nessuna partita in corso adesso.",
+                en: "No matches in play right now.",
+                es: "Ningún partido en juego ahora.",
+                fr: "Aucun match en cours.",
+                ru: "Сейчас нет матчей в игре.",
+              })
+            : pick5(lang, {
+                it: "Nessuna partita da mostrare al momento.",
+                en: "Nothing to show right now.",
+                es: "Nada que mostrar ahora mismo.",
+                fr: "Rien à afficher pour le moment.",
+                ru: "Пока нечего показать.",
+              })}
+          {view !== "home" && (
+            <>
+              {" "}
+              <button type="button" className="br-sec__link" onClick={onGoHome}>
+                {pick5(lang, { it: "Torna alla home", en: "Back to home", es: "Volver al inicio", fr: "Retour à l'accueil", ru: "На главную" })}
+              </button>
+            </>
+          )}
+        </p>
+    );
+    return (
+      <div className="br-lobby">
+        {/* Round 6: hero di sezione e fascia Pro stanno ANCHE a board vuota.
+            Sono il posto e l'offerta, non un contorno del listino: se oggi su
+            Calcio non gioca nessuno, la pagina deve dire almeno dove sei e
+            cosa c'è oltre. Il badge del conteggio si spegne da sé a zero. */}
+        {sectionTop}
+        {homeHeadline}
+        {hero ? (
+          <div className="br-homerail">
+            <div>
+              {hero}
+              {railDeep}
+            </div>
+            {emptyNote}
+          </div>
+        ) : emptyNote}
+        {hero && !isPro && proBand}
+        {/* Anche a board vuota: la riga di tile è navigazione, non un dato, e
+            su una giornata senza partite è l'unica cosa che resta da fare
+            (sfogliare uno sport, aprire il builder). */}
+        {sportTiles}
+        {faq}
+      </div>
+    );
+  }
+
+  return (
+    <div className="br-lobby">
+      {/* Round 6: su Calcio e Tennis la vista apre con il suo hero e la
+          fascia Pro; sulla Home `sectionTop` è null e non rende nulla. */}
+      {sectionTop}
+      {/* Round 8: il titolo tipografico apre la Home, sopra il rail. */}
+      {homeHeadline}
+      {/* Round 7: il rail del riferimento — hero verticale a sinistra (26%),
+          le card vere del board nella colonna accanto. */}
+      {hero && sideSection ? (
+        <div className="br-homerail">
+          <div>
+            {hero}
+            {railDeep}
+          </div>
+          {renderSection(sideSection, HERO_SIDE_CAP)}
+        </div>
+      ) : hero}
+      {/* Round 6: la fascia Pro subito sotto l'hero della Home.
+          Round 7: non a chi il Pro ce l'ha già — era il debito dichiarato. */}
+      {hero && !isPro && proBand}
+      {belowSections.map((sec) => (
+        <Fragment key={sec.id}>
+          {renderSection(sec)}
+          {sec.id === tilesAfter && sportTiles}
+        </Fragment>
+      ))}
+      {/* Round 7: la sequenza di chiusura del riferimento — le campagne, poi
+          il calendario in righe compatte, poi le risposte. */}
+      {deepDives}
+      {upcoming}
+      {faq}
+    </div>
+  );
+}
+
+/** #RESTYLING-0921 round 11 — LA SCHEDA SI APRE SOPRA LA VISTA DOV'È L'UTENTE.
+ *
+ * Al round 10 `SportsbookBoard` era rimasto come «ospite» della scheda: con un
+ * `autoOpenKey` la lobby si smontava e al suo posto si montava il board, che è
+ * proprio la pagina che quel round aveva eliminato. Dietro al velo sfocato del
+ * modal ricomparivano i filtri ALL/FOOTBALL/TENNIS, «Edge of the day» e il
+ * banner Weekly Pick: Andrea ci ha riconosciuto, giustamente, il sito vecchio.
+ *
+ * Il contenitore-ospite non serviva: serviva solo il posto dove i dati della
+ * scheda vengono risolti, e quel posto sono le due card. Quindi qui si monta
+ * LA SOLA card della partita chiesta, in `headless` — disegna la scheda e non
+ * disegna sé stessa — accanto alla vista, che resta quella vera e resta sotto.
+ *
+ * Se la chiave non trova la sua riga (link vecchio, partita fuori finestra,
+ * riga chiusa) non si rende nulla: l'utente resta sulla vista, che è l'unico
+ * comportamento sensato — prima restava sul board.
+ */
+function MatchDetailHost({
+  matchKey, predictions, tennisMatches, fpOdds,
+  onSelect, onBetNow, onGate, isFreeClient, isPremium, onClose,
+}: {
+  matchKey: string;
+  predictions: Prediction[];
+  tennisMatches: TennisMatch[];
+  fpOdds: Record<string, FpOddsEntry>;
+  onSelect: (s: SlipSelection) => void;
+  onBetNow?: () => void;
+  onGate?: () => void;
+  isFreeClient: boolean;
+  isPremium?: boolean;
+  onClose: () => void;
+}) {
+  const indiceQuotePartner = useMemo(() => indicizzaPerGiorno(fpOdds), [fpOdds]);
+  const sep = matchKey.indexOf(":");
+  const sport = sep > 0 ? matchKey.slice(0, sep) : "";
+  const id = sep > 0 ? matchKey.slice(sep + 1) : "";
+
+  if (sport === "football") {
+    const p = predictions.find((x) => String(x.match_id) === id);
+    if (!p) return null;
+    return (
+      <PredictionCard
+        headless
+        p={p}
+        fp={abbinaQuotaPartner(p.home_team, p.away_team, p.kickoff, fpOdds, indiceQuotePartner).quota ?? undefined}
+        onSelect={onSelect}
+        onBetNow={onBetNow}
+        onGate={onGate}
+        isPremium={isPremium}
+        isFree={isFreeClient}
+        autoOpen
+        onAutoOpenClose={onClose}
+      />
+    );
+  }
+  if (sport === "tennis") {
+    const m = tennisMatches.find((x) => String(x.id) === id);
+    if (!m) return null;
+    return (
+      <TennisMatchCard
+        headless
+        m={m}
+        fp={fpOdds[teamPairKey("tennis", m.player1, m.player2, m.scheduled) ?? ""]}
+        onSelect={onSelect}
+        onBetNow={onBetNow}
+        onGate={onGate}
+        isPremium={isPremium}
+        isFree={isFreeClient}
+        autoOpen
+        onAutoOpenClose={onClose}
+      />
+    );
+  }
+  return null;
 }
 
 function UnifiedBetsTab({
@@ -8715,14 +9358,24 @@ function UnifiedBetsTab({
   onSignIn,
   onRegister,
   onGate,
-  isSignalPreviewUnlocked,
   isFreeClient,
   isPremiumClient,
+  isProClient,
   isLoggedIn,
   tennisIsPlaceholder,
   onBannerCta,
   hitRate,
   liveStrip,
+  view,
+  query,
+  watchSaved,
+  onToggleWatch,
+  onOpenMatch,
+  onSeeAll,
+  onGoHome,
+  onGoPro,
+  autoOpenKey,
+  onAutoOpenClose,
 }: {
   predictions: Prediction[];
   fpOdds: Record<string, FpOddsEntry>;
@@ -8732,22 +9385,40 @@ function UnifiedBetsTab({
   onSignIn: () => void;
   onRegister: () => void;
   onGate?: () => void;
-  isSignalPreviewUnlocked: boolean;
   isFreeClient: boolean;
   isPremiumClient?: boolean;
+  /** Pro vero (non «sbloccato»): gate della fascia Pro e del rail. */
+  isProClient?: boolean;
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
   hitRate?: string | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
   liveStrip?: React.ReactNode;
+  /** #RESTYLING-0921 — la vista scelta in nav: è sempre un taglio della lobby. */
+  view: DeskView;
+  query: string;
+  watchSaved: ReadonlySet<string>;
+  onToggleWatch: (key: string) => void;
+  onOpenMatch: (key: string) => void;
+  onSeeAll: (view: "live" | "football" | "tennis") => void;
+  onGoHome: () => void;
+  /** #RESTYLING-0921 round 6 — porta alla tab Piani (fascia Pro della lobby). */
+  onGoPro: () => void;
+  autoOpenKey?: string | null;
+  onAutoOpenClose?: () => void;
 }) {
   const lang = useLang();
 
   return (
     <>
+      {/* Striscia free-tier. I colori arrivano dai token, non da utility
+          bianche fisse: su tema light `text-gray-300` su `bg-white/5`
+          misurava 1,39:1 (QA round 3, 2026-09-22). --am-muted/--am-line/
+          --am-panel-2 si ribaltano con data-theme, quindi resta leggibile
+          in entrambi i temi. */}
       {!isLoggedIn && (
-        <div className="reg-nudge flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-white/10 bg-white/5 text-xs font-mono text-gray-300">
+        <div className="reg-nudge flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-[var(--am-line)] bg-[var(--am-panel-2)] text-xs font-mono text-[var(--am-muted)]">
           <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica.", en: "Register to save selections, get alerts and unlock auto-execution.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear la ejecución automática.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer l'exécution automatique.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть авто-исполнение." })}</span>
           <div className="flex gap-2 shrink-0">
             <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onSignIn}>{pick5(lang, { it: "Accedi", en: "Sign In", es: "Acceder", fr: "Connexion", ru: "Войти" })}</button>
@@ -8767,25 +9438,58 @@ function UnifiedBetsTab({
           per-card free preview renders (1 pick/sport + free-preview-wall);
           anonymous (no profile → no signal preview) still hits the auth wall,
           and pending_payment still hits the plan wall. */}
+      {/* #RESTYLING-0921 round 2 — IL MURO DI TUTTA LA BOARD È GIÙ.
+          Round 1: lobby e board stavano dentro lo stesso overlay, perché la
+          lobby mostra le stesse righe. Corretto in astratto, sbagliato nei
+          fatti: da anonimo la Home era un rettangolo sfocato dietro un
+          «Accedi», cioè zero valore prima del muro, ed è il bug che QA ha
+          misurato (fasce che non rendevano, «MODEL 0%»).
+          Il gate non è stato rimosso: è stato SPOSTATO dove appartiene, cioè
+          server-side nella proiezione d'accesso (app/api/predictions,
+          app/api/tennis + lib/access-projection). Da anonimo escono partita,
+          model, mercato ed edge; NON escono la pick, la motivazione, la
+          confidenza e l'analisi profonda — un overlay di CSS non proteggeva
+          nulla di più, e nascondeva l'unica cosa che vende il prodotto.
+          L'invito a registrarsi resta: è la `reg-nudge` qui sopra. */}
       <LockedGate
-        isUnlocked={Boolean(isPremiumClient || isSignalPreviewUnlocked)}
+        isUnlocked
         mode={isLoggedIn ? "plan" : "auth"}
         onUnlock={() => onGate?.()}
       >
-        <SportsbookBoard
-          liveStrip={liveStrip}
+        {/* Round 11 — la vista NON si smonta mai per far posto alla scheda.
+            La lobby resta quella su cui l'utente sta (Home/Live/Calcio/Tennis)
+            ed è lei che si vede sfocata dietro il modal; la scheda la apre
+            `MatchDetailHost`, che monta solo la card della partita chiesta e
+            non disegna nulla di suo. Al round 10 al posto della lobby si
+            montava `SportsbookBoard` — cioè la pagina appena eliminata. */}
+        <HomeLobby
+          view={view}
+          isPro={!!isProClient}
           predictions={predictions}
-          fpOdds={fpOdds}
           tennisMatches={tennisMatches}
-          onSelect={onSelect}
-          onBetNow={onBetNow}
+          query={query}
+          watchSaved={watchSaved}
+          onToggleWatch={onToggleWatch}
+          onOpenMatch={onOpenMatch}
           onGate={onGate}
-          isFreeClient={isFreeClient}
-          isPremium={isPremiumClient}
-          tennisIsPlaceholder={tennisIsPlaceholder}
-          onBannerCta={onBannerCta}
-          hitRate={hitRate}
+          onSeeAll={onSeeAll}
+          onGoHome={onGoHome}
+          onGoPro={onGoPro}
         />
+        {autoOpenKey && (
+          <MatchDetailHost
+            matchKey={autoOpenKey}
+            predictions={predictions}
+            tennisMatches={tennisMatches}
+            fpOdds={fpOdds}
+            onSelect={onSelect}
+            onBetNow={onBetNow}
+            onGate={onGate}
+            isFreeClient={isFreeClient}
+            isPremium={isPremiumClient}
+            onClose={() => onAutoOpenClose?.()}
+          />
+        )}
       </LockedGate>
     </>
   );
@@ -8823,13 +9527,63 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       const url = new URL(window.location.href);
       // Solo sulle pagine del desk: se siamo altrove (es. render annidato futuro)
       // la barra URL non va toccata.
-      if (!PATH_TO_TAB[url.pathname] && url.pathname !== "/app") return;
+      // #RESTYLING-0921 round 2: "/" è una pagina del desk — è la Home del
+      // prodotto (app/page.tsx). Sulla lobby l'URL resta "/" (riscriverlo in
+      // "/predictions" al mount cambierebbe la barra sotto il naso a chi è
+      // appena arrivato); da lì un cambio tab va sul path della tab, così un
+      // reload o un link condiviso riapre quello che si stava guardando.
+      if (!PATH_TO_TAB[url.pathname] && url.pathname !== "/app" && url.pathname !== "/") return;
+      if (url.pathname === "/" && tab === "bets" && !url.searchParams.has("tab")) return;
       if (PATH_TO_TAB[url.pathname] === tab && !url.searchParams.has("tab")) return;
       url.pathname = TAB_PATHS[tab];
       url.searchParams.delete("tab");
       window.history.replaceState(null, "", url);
     } catch { /* URL non disponibile: no-op */ }
   }, [tab]);
+  // ── #RESTYLING-0921: la vista della Home ────────────────────────────────
+  // La nav primaria non cambia più `tab` (che è il capitolo del desk): sceglie
+  // quale taglio della lobby si vede. Round 10: le viste sono TUTTE lobby —
+  // «Esplora tutto» non è più una di esse (vedi il blocco HOME/DISCOVER LOBBY).
+  const [deskView, setDeskView] = useState<DeskView>("home");
+  const [lobbyQuery, setLobbyQuery] = useState("");
+  // `sport:id` della partita da aprire: viene da un link condiviso `?match=`
+  // oppure dal click su una card della lobby. La scheda la rende il board, che
+  // è l'unico posto dove vive — nessun secondo dettaglio da tenere allineato.
+  const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
+  const watchlist = useWatchlist();
+
+  // Round 10: aprire una partita non cambia più vista — monta il board dietro
+  // la scheda (è lì che il dettaglio vive) e lo smonta alla chiusura, quindi
+  // si torna esattamente dove si era.
+  const openMatchFromLobby = useCallback((key: string) => {
+    setAutoOpenKey(key);
+  }, []);
+
+  const showView = useCallback((view: "live" | "football" | "tennis") => {
+    setAutoOpenKey(null);
+    setDeskView(view);
+  }, []);
+
+  // Deep-link al mount: `?match=football:123` apre la partita (chiudendola si
+  // torna alla vista sotto), `?sport=football|tennis` — quello che la landing
+  // scrive nelle sue CTA — apre la vista di quello sport. Round 10: prima
+  // `?sport=` lo leggeva solo il board, che non è più una destinazione; senza
+  // questa riga le CTA della landing sarebbero atterrate su una Home generica.
+  useEffect(() => {
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      const raw = qs.get("match");
+      if (raw) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- la query string non esiste sul server: leggerla in render romperebbe l'idratazione (#418)
+        setAutoOpenKey(raw);
+        return;
+      }
+      const sport = qs.get("sport");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- idem: il deep-link si applica DOPO il mount di proposito
+      if (sport === "football" || sport === "tennis") setDeskView(sport);
+    } catch { /* URL non disponibile: nessun deep-link */ }
+  }, []);
+
   // #QA-SERGIO-BAGS-1: i CTA dei banner house puntano a una pagina del desk ma
   // `tab` viene letto dall'URL solo al mount: un <Link> alla STESSA route non lo
   // risincronizza → il bottone sembrava morto. Qui intercettiamo i deep-link
@@ -8868,37 +9622,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   useEffect(() => {
     try { document.documentElement.lang = uiLanguage; } catch { /* no-op */ }
   }, [uiLanguage]);
-  // Theme toggle (Cobalt & Coral redesign, F1) — presentation only, no logic change.
-  // #UI-THEME-HARDEN-0623: il pre-paint setta data-theme, MA su /app l'idratazione
-  // può resettare data-theme al valore SSR ("dark"), lasciando il desk scuro
-  // nonostante la scelta light. Qui non ci limitiamo a leggere data-theme: ri-leggiamo
-  // la scelta salvata (localStorage → prefers, stessa logica del pre-paint) e la
-  // RI-APPLICHIAMO a data-theme, così il tema scelto vince sempre.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    let t = "";
-    try { t = localStorage.getItem("agentic-theme") ?? ""; } catch {}
-    // #UI-MACHINA-0802: default SCURO, non quello del sistema — vedi il commento
-    // in app/layout.tsx. La scelta esplicita salvata vince comunque.
-    if (t !== "light" && t !== "dark") {
-      t = "dark";
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- ri-assert post-idratazione: una lazy initializer mismatcherebbe l'HTML SSR.
-    setTheme(t as "dark" | "light");
-    document.documentElement.setAttribute("data-theme", t);
-  }, []);
-  const toggleTheme = () => {
-    const next: "dark" | "light" = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("agentic-theme", next); } catch {}
-    trackEvent("theme_change", { meta: { theme: next } });
-  };
-  // #THEME-CONSISTENCY-0623 → superato da #UI-MACHINA-0802: l'ascolto del tema
-  // di sistema e' RIMOSSO. Prima, chi non
-  // aveva scelto seguiva il sistema; ora il default e' scuro, quindi un cambio
-  // di sistema non deve piu' ribaltare la veste sotto i piedi dell'utente.
-  // Chi vuole il chiaro lo preme, e la scelta persiste.
+  // #RESTYLING-0921 round 14 — IL TEMA NON È PIÙ UNA SCELTA. Andrea:
+  // «togliamo la versione light, deve rimanere solo la dark ma senza bottone».
+  // Qui vivevano lo stato `theme`, il ri-assert post-idratazione e
+  // `toggleTheme`: senza un controllo che li chiami non hanno più un mestiere.
+  // Il tema lo fissa `<html data-theme="dark">` in app/layout.tsx, una volta,
+  // lato server: niente stato, niente localStorage, niente flash.
 
   // #UI-SCROLLTOP-0623: cambiare scheda è solo client-state (setTab), quindi la
   // pagina restava ferma a metà contenuto della scheda precedente. Riporta in
@@ -9104,7 +9833,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [predFallback, setPredFallback] = useState(false);
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [liveTennis, setLiveTennis] = useState<LiveTennisMatch[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
   // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
@@ -9581,14 +10309,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     } catch { /* silent */ }
   }, []);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      // Il POST /api/predictions è cron-only (bearer CRON_SECRET): dal client
-      // rispondeva sempre 401. Il refresh utente rilegge i dati già serviti.
-      await Promise.all([fetchPredictions(), fetchTennis(), fetchHistoryV2()]);
-    } finally { setRefreshing(false); }
-  };
+  // #RESTYLING-0921 round 5 — `handleRefresh` è rimosso insieme al bottone
+  // «REFRESH ODDS» che lo chiamava (unico chiamante). I tre fetch che faceva
+  // girano comunque sui loro intervalli qui sotto.
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -9644,7 +10367,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // #FUNNEL-INTENT-0908: il muro protegge i DATI, non il listino. Il listino si
   // apre; predizioni, storico e il resto del desk restano chiusi esattamente
   // com'erano — la condizione non è rimossa, è discriminata per pagina.
-  const mustAuth = authChecked && !hasSession && tab !== "plans";
+  // #RESTYLING-0921 round 2 (decisione Andrea, sezione 4 del digest): la
+  // landing marketing non è più la porta d'ingresso — "/" apre la Home/lobby
+  // del prodotto, ANCHE da anonimo. Un modale non chiudibile davanti alla
+  // vetrina la renderebbe inesistente, quindi la tab `bets` esce dal muro.
+  // I dati NON restano scoperti: li protegge dove va protetto, cioè
+  // server-side, la proiezione d'accesso (lib/access-projection.ts +
+  // `lockedHeadline`) — da anonimo escono model, mercato ed edge, mai la pick,
+  // la motivazione o l'analisi profonda. Storico, leaderboard, builder e
+  // invito restano dietro il muro.
+  const mustAuth = authChecked && !hasSession && tab !== "plans" && tab !== "bets";
 
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
@@ -9677,6 +10409,29 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
   const tUI = TRANSLATIONS[uiLanguage];
 
+  // #RESTYLING-0921 — la voce «Live» si accende solo se c'è davvero qualcosa
+  // in gioco. Un indicatore sempre acceso è un ornamento, e il brief vieta
+  // esplicitamente l'urgenza costruita. Round 3: «acceso» è l'icona che passa
+  // a pieno valore (data-live), non un puntino giallo — niente secondo colore.
+  const liveOnBoardCount = useMemo(() => {
+    const football = liveFootballOnBoard(predictions, (p) =>
+      orientLive(liveScores[p.match_id] ?? findLiveByTeams(liveScores, p.home_team, p.away_team), p.home_team, p.away_team),
+    ).length;
+    const tennisLive = liveTennis.filter(
+      (lm) => !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || ""),
+    ).length;
+    return football + tennisLive;
+  }, [liveScores, predictions, liveTennis]);
+
+  // #RESTYLING-0921 — il titolo della pagina dice quale taglio si sta guardando.
+  const deskHeading = pick5(uiLanguage, {
+    it: { home: "Oggi", live: "In corso ora", football: "Calcio", tennis: "Tennis", watchlist: "La tua watchlist" }[deskView],
+    en: { home: "Today", live: "Live now", football: "Football", tennis: "Tennis", watchlist: "Your watchlist" }[deskView],
+    es: { home: "Hoy", live: "En vivo", football: "Fútbol", tennis: "Tenis", watchlist: "Tu watchlist" }[deskView],
+    fr: { home: "Aujourd'hui", live: "En direct", football: "Football", tennis: "Tennis", watchlist: "Votre watchlist" }[deskView],
+    ru: { home: "Сегодня", live: "В игре", football: "Футбол", tennis: "Теннис", watchlist: "Избранное" }[deskView],
+  });
+
   const liveTennisMap = useMemo(() => {
     const map: Record<string, LiveTennisMatch> = {};
     for (const lm of liveTennis) map[tennisPairKey(lm.player1, lm.player2)] = lm;
@@ -9684,14 +10439,51 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   }, [liveTennis]);
 
   // #MOBILE-1: voci della bottom tab bar (solo mobile). Riusa setTab + label i18n + glifi rail.
-  const BOTTOM_TABS: { tab: Tab; label: string; glyph: string }[] = [
-    { tab: "bets",        label: tNav.nav_predictions, glyph: RAIL_GLYPHS["bets"] ?? "#g-desk" },
-    { tab: "history",     label: tNav.nav_history,     glyph: RAIL_GLYPHS["history"] ?? "#g-desk" },
-    { tab: "leaderboard", label: tNav.nav_leaderboard, glyph: RAIL_GLYPHS["leaderboard"] ?? "#g-desk" },
-    // #MOB1: Build a Probability View è una destinazione primaria (loggati) → entra nella
-    // bottom bar invece di restare fuori-schermo nella vecchia striscia laterale.
-    ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Builder", glyph: RAIL_GLYPHS["match-builder"] ?? "#g-builder" }] : []),
-    { tab: "plans",       label: pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" }), glyph: RAIL_GLYPHS["account"] ?? "#g-desk" },
+  // #RESTYLING-0921 — Home · Live · Watchlist · Tools · Profile. History e
+  // Leaderboard restano raggiungibili da Profile (menu Account), come su
+  // desktop. Round 10: al posto di «Explore» (che portava al board generico,
+  // ora rimosso) c'è «Live», che su telefono è la vista che si cerca davvero
+  // mentre si gioca; Football e Tennis restano nelle tile «Sfoglia per sport»
+  // della Home.
+  // Round 3: le icone sono quelle di components/ui/icons.tsx — un solo sistema
+  // al posto dei PNG 3D menu-*.png (il pezzo più «AI» della barra) e dei glifi
+  // sprite di fallback.
+  const BOTTOM_TABS: {
+    id: string;
+    label: string;
+    icon: IconName;
+    href?: string;
+    active: boolean;
+    go?: () => void;
+  }[] = [
+    {
+      id: "home", label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }),
+      icon: "home",
+      active: tab === "bets" && deskView === "home",
+      go: () => { setTab("bets"); setAutoOpenKey(null); setDeskView("home"); },
+    },
+    {
+      id: "live", label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }),
+      icon: "live",
+      active: tab === "bets" && deskView === "live",
+      go: () => { setTab("bets"); showView("live"); },
+    },
+    {
+      id: "watchlist", label: pick5(uiLanguage, { it: "Watchlist", en: "Watchlist", es: "Watchlist", fr: "Watchlist", ru: "Избранное" }),
+      icon: "bookmark",
+      active: tab === "bets" && deskView === "watchlist",
+      go: () => { setTab("bets"); setAutoOpenKey(null); setDeskView("watchlist"); },
+    },
+    {
+      id: "tools", label: pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" }),
+      icon: "tools", href: "/tools", active: false,
+    },
+    {
+      id: "profile", label: pick5(uiLanguage, { it: "Profilo", en: "Profile", es: "Perfil", fr: "Profil", ru: "Профиль" }),
+      icon: "profile",
+      active: tab === "plans",
+      go: () => { setTab("plans"); },
+    },
   ];
 
   return (
@@ -9738,55 +10530,100 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       <header className="am-topbar">
         <div className="am-topbar-in">
           <Link href="/" className="am-brandmark" aria-label="BetrEdge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
-            {/* #UI-LOGO-THEME-0623: logo theme-aware (bianco dark / nero light), swap CSS no-flash */}
+            {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: erano due <img> che si scambiavano
+                via CSS su `data-theme`. Il gemello nero è stato tolto: `data-theme`
+                lo scrive statico il server a "dark" (app/layout.tsx) e nessun codice
+                scrive più "light", quindi `.brand-logo-light` era `display: none` per
+                sempre — ma un <img> display:none il browser lo SCARICA lo stesso.
+                Misurato @390 sul preview: 590 KB per pagina, il 30% di tutto il
+                payload di immagini, per un elemento che non può accendersi. */}
             <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
-            <img className="brand-logo-light" src="/logos/betredge-logo-black.png" alt="" aria-hidden="true" style={{ height: 30, width: "auto" }} />
           </Link>
 
-          <nav className="am-topnav">
-            {[
-              { tab: "bets" as Tab, label: tNav.nav_predictions },
-              { tab: "history" as Tab, label: tNav.nav_history },
-              { tab: "leaderboard" as Tab, label: tNav.nav_leaderboard },
-              ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Build a Probability View" }] : []),
-            ].map((item) => (
+          {/* ── Nav primaria — #RESTYLING-0921 ──────────────────────────────
+              Home/Discover · Live · Football · Tennis · Tools. Cinque voci,
+              tutte destinazioni di CONTENUTO. History, Plans, Invite, Partner,
+              Creator Picks, Weekly e la lingua sono passate nel menu Account:
+              erano sette voci di servizio in mezzo a quelle che portano a una
+              partita, e occupavano insieme la topnav E la rail laterale. */}
+          <nav className="br-nav" aria-label={pick5(uiLanguage, { it: "Navigazione principale", en: "Primary navigation", es: "Navegación principal", fr: "Navigation principale", ru: "Основная навигация" })}>
+            {/* Round 3: icona 18px prima della label. Il Live si dice con il
+                suo segno (IconLive), non con un puntino giallo — un secondo
+                colore nella nav era il primo «tutto evidenziato» della pagina. */}
+            {([
+              { view: "home" as DeskView, icon: "home" as NavName, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
+              { view: "live" as DeskView, icon: "live" as NavName, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }) },
+              { view: "football" as DeskView, icon: "football" as NavName, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
+              { view: "tennis" as DeskView, icon: "tennis" as NavName, label: "Tennis" },
+            ]).map((item) => (
               <button
-                key={item.tab}
-                className={tab === item.tab ? "active" : ""}
-                onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
+                key={item.view}
+                type="button"
+                className="br-nav__item"
+                data-live={item.view === "live" && liveOnBoardCount > 0 ? "true" : undefined}
+                aria-current={tab === "bets" && deskView === item.view ? "page" : undefined}
+                onClick={() => {
+                  setTab("bets");
+                  setAutoOpenKey(null);
+                  setDeskView(item.view);
+                  trackEvent("nav_click", { meta: { view: item.view } });
+                }}
               >
+                <NavIcon name={item.icon} size={18} />
                 {item.label}
               </button>
             ))}
-            {/* #UI-ACCOUNT-DROPDOWN-0623: "Plans" è ora una tab di primo livello
-                (l'account è nel dropdown dal pill). */}
-            <button
-              className={tab === "plans" ? "active" : ""}
-              onClick={() => { setTab("plans"); trackEvent("tab_click", { meta: { tab: "plans" } }); }}
-            >
-              {pick5(uiLanguage, { it: "Piani", en: "Plans", es: "Planes", fr: "Offres", ru: "Тарифы" })}
-            </button>
+            <Link className="br-nav__item" href="/tools">
+              <NavIcon name="tools" size={18} />
+              {pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}
+            </Link>
           </nav>
 
-          <div className="am-topright">
-            {/* theme toggle segmentato DARK/LIGHT — riusa toggleTheme/theme esistenti */}
-            <div className="am-tt" role="group" aria-label={tNav.theme_aria}>
-              <button
-                className={theme === "dark" ? "on" : ""}
-                aria-pressed={theme === "dark"}
-                onClick={() => { if (theme !== "dark") toggleTheme(); }}
-              >
-                DARK
-              </button>
-              <button
-                className={theme === "light" ? "on" : ""}
-                aria-pressed={theme === "light"}
-                onClick={() => { if (theme !== "light") toggleTheme(); }}
-              >
-                LIGHT
-              </button>
-            </div>
+          <div className="am-topright br-navright">
+            {/* #RESTYLING-0921 — Search e Watchlist stanno a DESTRA, accanto
+                all'account: sono strumenti dell'utente, non destinazioni. La
+                ricerca filtra la lobby mentre si scrive, su tutte le viste. */}
+            <label className="br-search">
+              <IconSearch size={14} stroke={2} />
+              <input
+                type="search"
+                value={lobbyQuery}
+                onChange={(ev) => {
+                  setLobbyQuery(ev.target.value);
+                  // Cercare è un atto di scoperta: riporta alla lobby, dove il
+                  // risultato si vede. Restare su una vista filtrata per sport
+                  // mentre si cerca un'altra squadra dà zero risultati e sembra
+                  // un guasto.
+                  if (ev.target.value && tab !== "bets") {
+                    setTab("bets");
+                    setDeskView("home");
+                  }
+                }}
+                placeholder={pick5(uiLanguage, { it: "Cerca squadra, giocatore…", en: "Search team, player…", es: "Buscar equipo, jugador…", fr: "Chercher équipe, joueur…", ru: "Поиск команды, игрока…" })}
+                aria-label={pick5(uiLanguage, { it: "Cerca una partita", en: "Search a match", es: "Buscar un partido", fr: "Chercher un match", ru: "Найти матч" })}
+              />
+            </label>
 
+            <button
+              type="button"
+              className="br-watchnav"
+              aria-current={tab === "bets" && deskView === "watchlist" ? "page" : undefined}
+              onClick={() => {
+                setTab("bets");
+                setAutoOpenKey(null);
+                setDeskView("watchlist");
+                trackEvent("nav_click", { meta: { view: "watchlist" } });
+              }}
+            >
+              {pick5(uiLanguage, { it: "Watchlist", en: "Watchlist", es: "Watchlist", fr: "Watchlist", ru: "Избранное" })}
+              {watchlist.saved.size > 0 && <span className="br-watchnav__n">{watchlist.saved.size}</span>}
+            </button>
+
+            {/* #RESTYLING-0921 round 14 — qui stava il segmentato DARK/LIGHT.
+                Il sito è solo scuro: il tasto non ha più un secondo stato da
+                offrire, e i ~85px che occupava sono aria in più per la barra,
+                che con l'account loggato andava a capo. Niente lo sostituisce:
+                lo spazio resta libero. */}
             {clientProfile ? (
               /* #UI-ACCOUNT-DROPDOWN-0623: il pill apre il menu account a tendina
                  (account rifatto). Niente più tab Account né Logout separato. */
@@ -9797,6 +10634,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 onLogout={logoutClientProfile}
                 onGoToPlans={() => { setTab("plans"); trackEvent("tab_click", { meta: { tab: "plans", src: "acct-menu" } }); }}
                 onSelectLang={selectLanguage}
+                onGoToTab={(t) => { setTab(t); trackEvent("tab_click", { meta: { tab: t, src: "acct-menu" } }); }}
               />
             ) : (
               <>
@@ -9809,9 +10647,42 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               </>
             )}
 
+            {/* ── «Passa a Pro» — #RESTYLING-0921 round 6 ─────────────────
+                Nel riferimento di Andrea (betredge-studio-0922) questo tasto
+                lime è fisso in nav, accanto ad Accedi. Da noi il passaggio a
+                Pro si incontrava SOLO sbattendo contro una CTA bloccata su
+                una card: chi non apriva una partita non sapeva che esistesse
+                un piano. Ora è in chrome, cioè sempre, su ogni schermata.
+                È un <Link> vero (tasto centrale, condivisione) ma la vista è
+                già in pagina: `setTab` cambia capitolo senza navigare.
+                A chi il Pro ce l'ha già NON si mostra: vendergli ciò che ha
+                comprato è la cosa che fa sembrare un sito uno sconosciuto. */}
+            {!(clientProfile && profileHasPremium(clientProfile)) && (
+              <Link
+                className="br-upgrade"
+                href={TAB_PATHS.plans}
+                onClick={(ev) => {
+                  ev.preventDefault();
+                  setTab("plans");
+                  trackEvent("tab_click", { meta: { tab: "plans", src: "nav-upgrade" } });
+                }}
+              >
+                {pick5(uiLanguage, {
+                  it: "Passa a Pro", en: "Go Pro", es: "Hazte Pro",
+                  fr: "Passer à Pro", ru: "Перейти на Pro",
+                })}
+                <IconArrow size={15} />
+              </Link>
+            )}
+
             <LangDropdown value={uiLanguage} onSelect={selectLanguage} />
           </div>
         </div>
+
+        {/* #RESTYLING-0921 round 16 — LA FASCIA DI CONTESTO NON C'È PIÙ.
+            Ripeteva sotto la nav quello che la nav diceva già sopra (dove sei,
+            Calcio · Tennis) e rubava una riga a tutte le pagine. Il percorso
+            lo dice il titolo della vista, gli sport li dice la nav. */}
       </header>
 
       {/* #BANNERS-IN-GRID: rimossa anche la banda house desk-top sotto l'header
@@ -9824,97 +10695,53 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         {/* ── Desk (nav + content) ── */}
         <div className="portal-desk">
           <section className="book-layout">
-            <aside className="sports-rail">
-              {/* ── DESK group — mockup .rail .navlab + boxed active state ── */}
-              <span className="rail-lab">Desk</span>
-              {navItems.map((item) => (
-                <button
-                  key={item.tab}
-                  className={`rail-item ${tab === item.tab ? "is-active" : ""} ${item.tone ?? ""}`}
-                  onClick={() => { setTab(item.tab); trackEvent("tab_click", { meta: { tab: item.tab } }); }}
-                >
-                  {RAIL_ICONS[item.tab]
-                    ? <MenuIcon name={RAIL_ICONS[item.tab]} size={18} className="rail-ic" />
-                    : <svg className="rail-ic" aria-hidden="true"><use href={RAIL_GLYPHS[item.tab] ?? "#g-desk"} /></svg>}
-                  <span className="rail-label">{item.label}</span>
-                  {item.value && <strong className="n">{item.value}</strong>}
-                </button>
-              ))}
-              {/* ── IN EVIDENZA group ── */}
-              <span className="rail-sep" />
-              <span className="rail-lab is-second">{tNav.featured_label}</span>
-              {/* #TOOLS-HUB-0805: al posto della World Cup (torneo finito, hub
-                  archiviato ma ancora online) ci sono i calcolatori gratuiti.
-                  Rotta, non tab, come era per l'hub WC. */}
-              <Link className="rail-item" href="/tools">
-                <MenuIcon name="tools" size={18} className="rail-ic" />
-                <span className="rail-label">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
-              </Link>
-              {/* #MB-2: Creator Picks — schedine pubblicate dalla community */}
-              <Link className="rail-item" href="/community">
-                <MenuIcon name="creator" size={18} className="rail-ic" />
-                <span className="rail-label">Creator Picks</span>
-              </Link>
-              {/* #WEEKLY-PICK-1: Weekly Model Case — la multipla della casa (route) */}
-              <Link className="rail-item" href="/weekly-model-case">
-                <MenuIcon name="weeklypick" size={18} className="rail-ic" />
-                <span className="rail-label">Weekly Model Case</span>
-              </Link>
-              {/* #PARTNERS-RAIL-1: vetrina partner raggiungibile dal rail, non solo dal
-                  footer. Link interno neutro (come il "Partner" del footer): il contenuto
-                  gambling della pagina resta geo-gated fail-closed lato /partners. */}
-              <Link className="rail-item" href="/partners">
-                <MenuIcon name="partner" size={18} className="rail-ic" />
-                <span className="rail-label">{pick5(uiLanguage, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}</span>
-              </Link>
-              <button className="rail-refresh" onClick={handleRefresh} disabled={refreshing}>
-                ↻ {refreshing ? "..." : tUI.refresh_odds}
-                <span className="sync">live</span>
-              </button>
-            </aside>
+            {/* #RESTYLING-0921 — LA RAIL LATERALE NON C'È PIÙ.
+                Era la seconda nav persistente: ripeteva alla lettera le voci
+                della topnav («Desk») e aggiungeva quattro rotte («In evidenza»)
+                che restavano a schermo su ogni pagina. Il brief la nomina
+                esplicitamente fra le cose da togliere, e con la topnav nuova
+                era anche l'unica ragione per cui il contenuto partiva da metà
+                schermo. Dove sono finite le sue voci:
+                  · Predictions/History/Leaderboard/Builder/Plans → menu Account
+                  · Tools → nav primaria
+                  · Creator Picks / Weekly Model Case / Partner → menu Account
+                  · Aggiorna quote → testa del desk, accanto al titolo
+                Niente è stato rimosso dal prodotto: è stato spostato dove si
+                cerca, invece di stare ovunque. */}
 
         <section className="book-main">
-          {/* #MOBILE-FEATURED-1: gruppo "In Evidenza" — solo mobile (≤760px, dove il
-              rail sparisce). Rispecchia il FEATURED del rail PC con le nostre icone;
-              tile prominenti che vanno a capo (nessuno scroll → tutto visibile). */}
-          <nav className="am-featured" aria-label={tNav.featured_label}>
-            <span className="am-featured-lab">{tNav.featured_label}</span>
-            <div className="am-featured-grid">
-              {/* #TOOLS-HUB-0805: specchia la voce Strumenti del rail (su mobile
-                  il rail sparisce, senza questa tile l'hub /tools resterebbe
-                  raggiungibile solo dal footer). */}
-              <Link className="am-feat-tile" href="/tools">
-                <MenuIcon name="tools" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">{pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}</span>
-              </Link>
-              <Link className="am-feat-tile" href="/community">
-                <MenuIcon name="creator" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">Creator Picks</span>
-              </Link>
-              <Link className="am-feat-tile" href="/weekly-model-case">
-                <MenuIcon name="weeklypick" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">Weekly Model Case</span>
-              </Link>
-              {/* #MOB1: Build a Probability View è stato promosso alla bottom tab bar (destinazione
-                  primaria) → rimosso da "In Evidenza" per non duplicarlo. */}
-              {hasClientProfile && (
-                <button className="am-feat-tile" onClick={() => { setTab("invita"); trackEvent("tab_click", { meta: { tab: "invita", src: "featured-mobile" } }); }}>
-                  <MenuIcon name="invite" size={22} className="am-feat-ic" />
-                  <span className="am-feat-l">{pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" })}</span>
-                </button>
-              )}
-              {/* #PARTNERS-RAIL-1 (mobile): specchia la voce Partner del rail — su mobile
-                  il rail sparisce, quindi senza questa tile la vetrina resta solo nel footer. */}
-              <Link className="am-feat-tile" href="/partners">
-                <MenuIcon name="partner" size={22} className="am-feat-ic" />
-                <span className="am-feat-l">{pick5(uiLanguage, { it: "Partner", en: "Partner", es: "Partner", fr: "Partenaire", ru: "Партнёр" })}</span>
-              </Link>
-            </div>
-          </nav>
+          {/* #RESTYLING-0921 — via anche la griglia "In evidenza" mobile.
+              Era lo SPECCHIO della rail (#MOBILE-FEATURED-1 lo dice: «rispecchia
+              il FEATURED del rail PC»), quindi toglierne una sola avrebbe
+              sistemato il desktop e lasciato il telefono com'era. Cinque tile
+              di navigazione stavano SOPRA il contenuto, cioè la prima cosa che
+              si vedeva aprendo la Home da telefono non era una partita.
+              Le sue voci sono tutte ancora raggiungibili, in due tocchi:
+              Strumenti → bottom bar · Creator Picks, Weekly Model Case,
+              Partner, Invita → Profilo (menu Account). */}
           <div className="book-main-head am-deskhead">
             <div className="am-deskhead-titles">
-              {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading */}
-              <h1>{navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+              {/* #SEO-PACK-0810: h1 (prima h2) — il desk era la pagina prodotto senza heading.
+                  #RESTYLING-0921: sul desk l'h1 segue la VISTA, non la tab: con
+                  la nav nuova «Predictions» era il titolo anche di Live, Calcio
+                  e Watchlist. Resta un solo h1 per pagina. */}
+              {/* #RESTYLING-0921 round 7 — su Calcio e Tennis l'h1 lo porta
+                  l'hero di sezione («CALCIO. LEGGI IL GIOCO.»), che è il titolo
+                  vero della pagina. Tenere anche questo faceva scrivere
+                  «Calcio» TRE volte sopra la piega — l'h1 del desk, quello
+                  dell'hero e la banda di sezione — e due h1 nello stesso
+                  documento. Il percorso in alto («BetRedge / Calcio») dice
+                  comunque dove sei, quindi non si perde nulla.
+                  Round 8 — ora vale anche per la HOME: il titolo tipografico
+                  («IL TUO MATCHDAY.») è un h1, e il round 7 non poteva
+                  prevederlo perché quella sezione non esisteva. Tenere anche
+                  questo lasciava «Oggi» in grande sopra il titolo grande e due
+                  h1 nel documento. Sulle altre tab l'h1 resta qui: là non c'è
+                  nessun heading che lo porti, e una pagina senza h1 è una
+                  regressione SEO (#SEO-PACK-0810). */}
+              {!(tab === "bets" && (deskView === "home" || deskView === "football" || deskView === "tennis")) && (
+                <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+              )}
               {/* #BOARD-HEAD-0910 — Andrea, 10/09: «togli questa parte».
                   Sulla BOARD il sottotitolo non si rende piu': era due righe di
                   prosa sopra il contenuto che l'utente e' venuto a vedere.
@@ -9976,7 +10803,29 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               )}
             </div>
             {tab === "bets" && (
-              <button className="mb-entry" onClick={() => setTab("match-builder")}>Build a Probability View →</button>
+              <div className="am-deskhead-tools">
+                {/* Round 10 — via «Esplora con i filtri»: era l'unico ingresso
+                    rimasto al board generico, che non è più una destinazione.
+                    Dalle viste di sport/live si torna alla Home; sulla Home non
+                    c'è nulla da cui tornare. */}
+                {/* Round 11 — via `|| autoOpenKey`. Serviva quando aprire una
+                    partita SOSTITUIVA la vista col board: se il link `?match=`
+                    puntava a una riga non apribile si restava sul board senza
+                    uscita. Ora la vista sotto non si smonta mai, quindi una
+                    chiave che non trova la sua riga lascia semplicemente
+                    l'utente dov'è — e sulla Home non c'è nulla da cui tornare. */}
+                {deskView !== "home" && (
+                  <button className="mb-entry" onClick={() => { setAutoOpenKey(null); setDeskView("home"); }}>
+                    ← {pick5(uiLanguage, { it: "Torna alla home", en: "Back to home", es: "Volver al inicio", fr: "Retour à l'accueil", ru: "На главную" })}
+                  </button>
+                )}
+                {/* #RESTYLING-0921 round 5 — via «REFRESH ODDS · live».
+                    Le prediction si rileggono da sole ogni 60 minuti
+                    (#PLAN-REFRESH-0831) e il router.refresh() manuale non
+                    ricalcolava nulla: era un comando da dashboard in testa a
+                    una lobby di scoperta. `handleRefresh` resta per il
+                    rimontaggio dati, senza un bottone che lo annunci. */}
+              </div>
             )}
             {/* #QW3: le stat-tile board (eventi/con-edge/hit) informano solo dove
                 c'è un board o un track record — Previsioni e Storico. Su Classifica
@@ -10070,12 +10919,25 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               onRegister={() => openAuth("create")}
               onGate={handleProtectedUnlock}
               onBannerCta={handleBannerCta}
-              isSignalPreviewUnlocked={isSignalPreviewUnlocked}
               isFreeClient={isFreeClient}
               isPremiumClient={isClientUnlocked}
+              /* #RESTYLING-0921 round 7 — il PRO vero, non «sbloccato»: la
+                 fascia Pro e il richiamo del rail non devono comparire a chi
+                 il Pro ce l'ha già. Stesso gate del pulsante in nav. */
+              isProClient={!!clientProfile && profileHasPremium(clientProfile)}
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               hitRate={v2RateMeaningful ? historyV2Stats?.win_rate ?? null : null}
+              view={deskView}
+              query={lobbyQuery}
+              watchSaved={watchlist.saved}
+              onToggleWatch={watchlist.toggle}
+              onOpenMatch={openMatchFromLobby}
+              onSeeAll={showView}
+              onGoHome={() => { setAutoOpenKey(null); setDeskView("home"); }}
+              onGoPro={() => { setTab("plans"); }}
+              autoOpenKey={autoOpenKey}
+              onAutoOpenClose={() => setAutoOpenKey(null)}
             />
           )}
           {/* #UI-ACCOUNT-DROPDOWN-0623: la tab "Plans" rende direttamente PlansTab.
@@ -10171,20 +11033,30 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
       {/* #MOBILE-1: bottom tab bar — visibile solo ≤760px (CSS), sostituisce la sidebar-muro */}
       <nav className="am-bottomnav" aria-label="Mobile navigation">
-        {BOTTOM_TABS.map((b) => (
-          <button
-            key={b.tab}
-            className={`bn ${tab === b.tab ? "on" : ""}`}
-            aria-current={tab === b.tab ? "page" : undefined}
-            onClick={() => { setTab(b.tab); trackEvent("tab_click", { meta: { tab: b.tab, src: "bottomnav" } }); }}
-          >
-            {/* #MOBILE-FEATURED-1: nostre icone illustrate come nel rail PC; glifo di fallback. */}
-            {RAIL_ICONS[b.tab]
-              ? <MenuIcon name={RAIL_ICONS[b.tab]} size={20} />
-              : <svg aria-hidden="true"><use href={b.glyph} /></svg>}
-            <span className="bn-l">{b.label}</span>
-          </button>
-        ))}
+        {BOTTOM_TABS.map((b) => {
+          const inner = (
+            <>
+              <Icon name={b.icon} size={22} />
+              <span className="bn-l">{b.label}</span>
+            </>
+          );
+          // Tools è una ROTTA, non una tab: deve restare un link vero (apribile
+          // in una scheda nuova), non un bottone che finge di navigare.
+          return b.href ? (
+            <Link key={b.id} href={b.href} className="bn" onClick={() => trackEvent("tab_click", { meta: { tab: b.id, src: "bottomnav" } })}>
+              {inner}
+            </Link>
+          ) : (
+            <button
+              key={b.id}
+              className={`bn ${b.active ? "on" : ""}`}
+              aria-current={b.active ? "page" : undefined}
+              onClick={() => { b.go?.(); trackEvent("tab_click", { meta: { tab: b.id, src: "bottomnav" } }); }}
+            >
+              {inner}
+            </button>
+          );
+        })}
       </nav>
     </main>
     </GeoCountryCtx.Provider>
