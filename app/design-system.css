@@ -323,7 +323,11 @@
   flex-direction: column;
   gap: var(--am-s-2);
   padding: var(--am-s-3);
-  background: var(--am-panel);
+  /* Round 9: la card è un gradiente, non una tinta piatta — gli stop sono
+     quelli misurati sul riferimento (`.card`), che alza appena l'angolo in
+     alto a sinistra e fa leggere la card come un OGGETTO invece che come un
+     buco nel fondo. In chiaro torna `--am-panel` (vedi override sotto). */
+  background: linear-gradient(135deg, #143056, #0a1c36);
   border: 1px solid var(--am-line);
   border-radius: var(--am-r-card);
   box-shadow: var(--am-shadow-card);
@@ -331,8 +335,35 @@
   min-width: 0;
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
+:root[data-theme="light"] .br-card { background: var(--am-panel); }
 .br-card:hover { border-color: var(--am-line-2); box-shadow: var(--am-shadow-card-hover); }
 .br-card:focus-within { border-color: var(--am-royal-b); }
+
+/* Round 9 — il punto di luce che ci mancava (#RESTYLING-0921).
+   Misurato il 23/09 su Home 1512px: fondo pagina e velo delle foto sono
+   IDENTICI al riferimento (token `#071329`/`#0d2343`, scrim stesso gradiente
+   a 4 stop), e la foto sorgente è vicina (L 43,3 contro 49,6). Ciò che
+   mancava erano i PUNTI DI LUCE: solo l'8,9% dei nostri pixel stava sopra
+   L=55, contro il 24,9% del riferimento — 2,8 volte meno. Il riferimento
+   ricava quella luce da una card in blu acceso (`.card.featured`). Qui la
+   prende la card con più edge, che è anche quella che merita l'occhio.
+   Il gancio è il badge che c'è già: nessuna modifica al componente. */
+.br-card:has(.br-badge[data-kind="high-edge"]) {
+  /* Stop e filo esatti del riferimento. */
+  background: linear-gradient(130deg, #155ce3, #102b63);
+  border-color: #65b3ff;
+  /* Su #155ce3 il muted normale (#909AAE) fa 2,0:1 — sotto AA. #DCE8FB fa
+     4,6:1 sull'estremo chiaro e 11:1 su quello scuro: le label restano
+     leggibili su tutta la diagonale del gradiente. */
+  --am-muted-2: #dce8fb;
+  --am-muted: #dce8fb;
+}
+:root[data-theme="light"] .br-card:has(.br-badge[data-kind="high-edge"]) {
+  background: var(--am-panel);
+  border-color: var(--am-line);
+  --am-muted-2: #565e69;
+  --am-muted: #4a515b;
+}
 
 .br-card__kicker {
   display: flex;
