@@ -68,7 +68,11 @@ export function SportHero({ eyebrow, title, accent, subtitle, stat, image, mark,
           <img
             className="br-sporthero__img"
             src={image.src}
-            srcSet={image.srcSm ? `${image.srcSm} 720w, ${image.src} 1440w` : undefined}
+            /* Round 12: i descrittori dicono la larghezza VERA dei file
+               (800/1600), non 720/1440 come prima. Con `sizes` a 1340px la
+               scelta non cambia, ma un descrittore che mente sulla sorgente è
+               una trappola per il prossimo che tocca `sizes`. */
+            srcSet={image.srcSm ? `${image.srcSm} 800w, ${image.src} 1600w` : undefined}
             sizes="(max-width: 640px) 100vw, 1340px"
             alt={image.alt ?? ""}
             /* È il primo elemento della vista: si carica subito, non in coda. */

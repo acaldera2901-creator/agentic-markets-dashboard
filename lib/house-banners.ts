@@ -378,6 +378,53 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     cta: { href: "/plans", it: "Scopri il Pro →", en: "Explore Pro →", es: "Descubrir Pro →", fr: "Découvrir Pro →", ru: "Узнать о Pro →" },
     creative: { src: "/banners/andrea-picks/deep-analysis-pro.jpg", sm: "/banners/andrea-picks/deep-analysis-pro-sm.jpg" },
   },
+  // #RESTYLING-0921 round 12 — DUE CREATIVI PER LE GRIGLIE DI SCHEDE.
+  //
+  // Il board tennis renderizzava ZERO banner: `tennisFeed` filtra su
+  // `campaignSport(c) === "tennis"` e nessuna delle cinque campagne sopra è
+  // tennis (hanno entrambi i glifi, o nessuno dei due → "neutral", che finisce
+  // nel feed calcio). Non era una scelta, era un buco.
+  //
+  // Le due qui sotto lo chiudono e insieme danno alle due griglie creativi
+  // DIVERSI da quelli che la Home mostra in «Da approfondire» — che pesca i
+  // primi due della lista. Il soggetto della foto decide il feed: la ragazza
+  // col rovescio dell'EV Calculator sta nel tennis, il calciatore dell'Odds
+  // Converter nel calcio. Entrambe portano DOVE l'utente non è (un tool),
+  // che è la regola AD di sempre, e nessuna delle due alza la densità: il
+  // cap per griglia resta due (`FEED_TILES_MAX`).
+  {
+    id: "feed-ev-calculator",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    // Solo racket: è ciò che manda la campagna nel feed TENNIS (campaignSport).
+    glyphs: ["#g-racket"],
+    copy: {
+      it: { eyebrow: "EV Calculator", headline: "Misura il valore prima di puntare, non dopo", sub: "Confronta la tua probabilità con il prezzo." },
+      en: { eyebrow: "EV Calculator", headline: "Measure the value before the bet, not after", sub: "Compare your probability with the price." },
+      es: { eyebrow: "EV Calculator", headline: "Mide el valor antes de apostar, no después", sub: "Compara tu probabilidad con el precio." },
+      fr: { eyebrow: "EV Calculator", headline: "Mesure la valeur avant le pari, pas après", sub: "Compare ta probabilité avec le prix." },
+      ru: { eyebrow: "EV Calculator", headline: "Измерь ценность до ставки, а не после", sub: "Сравни свою вероятность с ценой." },
+    },
+    cta: { href: "/tools/ev-calculator", it: "Calcola l'EV →", en: "Calculate expected value →", es: "Calcular el EV →", fr: "Calculer l'EV →", ru: "Посчитать EV →" },
+    creative: { src: "/banners/andrea-picks/ev-calculator.jpg", sm: "/banners/andrea-picks/ev-calculator-sm.jpg" },
+  },
+  {
+    id: "feed-odds-converter",
+    slot: "desk-feed",
+    format: "billboard",
+    audiences: ["anon", "free", "base", "premium"],
+    glyphs: ["#g-ball"],
+    copy: {
+      it: { eyebrow: "Odds Converter", headline: "Lo stesso prezzo in tre formati, e la probabilità implicita", sub: "Decimali, frazionarie, americane." },
+      en: { eyebrow: "Odds Converter", headline: "One price in three formats, and the probability behind it", sub: "Decimal, fractional, American." },
+      es: { eyebrow: "Odds Converter", headline: "Un precio en tres formatos, y la probabilidad implícita", sub: "Decimales, fraccionarias, americanas." },
+      fr: { eyebrow: "Odds Converter", headline: "Un prix en trois formats, et la probabilité implicite", sub: "Décimales, fractionnaires, américaines." },
+      ru: { eyebrow: "Odds Converter", headline: "Одна цена в трёх форматах и вероятность за ней", sub: "Десятичные, дробные, американские." },
+    },
+    cta: { href: "/tools/odds-converter", it: "Converti le quote →", en: "Convert your odds →", es: "Convertir las cuotas →", fr: "Convertir les cotes →", ru: "Конвертировать коэффициенты →" },
+    creative: { src: "/banners/andrea-picks/odds-converter.jpg", sm: "/banners/andrea-picks/odds-converter-sm.jpg" },
+  },
 
   // ── DESK BOTTOM (billboard) ─────────────────────────────────────────────
   {

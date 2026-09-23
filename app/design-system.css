@@ -769,6 +769,66 @@
   .br-sec__grid > .br-card[data-variant="featured"] { grid-column: span 2; }
 }
 
+/* ── #RESTYLING-0921 round 12: il banner di casa IN MEZZO ALLE SCHEDE ─────
+ *
+ * «Ridimensionalo nella maniera corretta, così che se il banner viene messo in
+ * mezzo alle schede prediction non stoni con la dimensione» (Andrea, 23/09).
+ * Quindi: DUE colonne di card in larghezza, e l'altezza della RIGA — non la
+ * sua. Un 16:9 lasciato libero su due colonne misura ~332px contro i ~279 di
+ * una card (misurati dal vivo a 1280): la riga si allungherebbe a ogni banner
+ * e il ritmo della griglia salterebbe, che è esattamente ciò che non deve
+ * succedere.
+ *
+ * Il trucco è che il contenuto del tile è in `absolute`: così il tile non
+ * porta altezza propria, la riga la decidono le schede, e `align-self:
+ * stretch` gliela passa. Il ritaglio verticale lo fa `object-fit: cover` — i
+ * creativi hanno headline, logo e CTA cotti dentro con abbondante margine dai
+ * bordi, quindi un taglio simmetrico di ~8% per lato non tocca il testo. */
+.br-sec__grid > .house-banner.hb-cr-baked {
+  grid-column: span 2;
+  align-self: stretch;
+  position: relative;
+  /* QUANTO BASSO PUÒ ANDARE, e non è un numero a caso. Il ritaglio verticale
+     cresce quando la riga si abbassa, e i creativi hanno headline (dall'8% in
+     giù) e logo (fino all'89%) cotti dentro: sotto i ~256px il taglio
+     supererebbe quei margini e mangerebbe il logo — visto dal vivo sulla
+     griglia tennis, dove la riga è 231. Qui la riga si alza di 25px, una
+     volta, invece di pubblicare un marchio tagliato.
+     Serve anche se il banner finisse da solo su una riga (`auto-fill` che
+     manda a capo): senza, sarebbe alto zero. */
+  min-height: 256px;
+}
+.br-sec__grid > .house-banner.hb-cr-baked > a { position: absolute; inset: 0; display: block; }
+.br-sec__grid > .house-banner.hb-cr-baked .hb-cr-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* batte l'`aspect-ratio: 16/9` di globals.css: qui la forma la dà la riga */
+  aspect-ratio: auto;
+  object-fit: cover;
+  /* 60% e non `center`, perché i margini del creativo non sono simmetrici:
+     sopra la headline c'è ~16% di cielo, sotto il logo ~11%. Con `center` il
+     taglio è metà e metà e il logo in basso a sinistra va via per primo (visto
+     dal vivo). Al 60% si prende più aria dall'alto, che è quella che avanza. */
+  object-position: center 60%;
+}
+/* A una colonna il `span 2` sborderebbe e il tile sarebbe sempre solo sulla
+   sua riga: torna un'immagine in flusso, 16:9 intera, larga come una card. */
+@media (max-width: 640px) {
+  .br-sec__grid > .house-banner.hb-cr-baked {
+    grid-column: 1 / -1;
+    position: relative;
+    min-height: 0;
+  }
+  .br-sec__grid > .house-banner.hb-cr-baked > a { position: static; }
+  .br-sec__grid > .house-banner.hb-cr-baked .hb-cr-img {
+    position: static;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+}
+
 .br-empty {
   padding: var(--am-s-5);
   border: 1px dashed var(--am-line-2);
@@ -2469,14 +2529,15 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* L'asse che conta davvero è la Y, e non è ovvio: la fascia è 16:9 di
-     sorgente dentro un riquadro ~4.4:1, quindi `cover` scala sulla LARGHEZZA
-     e ritaglia in ALTEZZA — con `center` restava la banda mediana, cioè
-     pantaloncini e stadio scuro, e la fascia sembrava vuota (visto dal vivo
-     prima di correggere). A 10% entra la parte alta: volto e busto.
+  /* Round 12: la sorgente non è più 16:9 ma 3:1 (1600×533), cioè quasi la
+     forma del riquadro — misurato dal vivo, 1190×298 a viewport 1280 = 4:1.
+     `cover` scala sulla LARGHEZZA e dell'altezza resta fuori un quarto, non
+     più il 60%: a `top` restano in quadro la testa dell'atleta, il pallone e
+     gli archi di energia, e cade solo il prato in basso. Col 10% di prima
+     (tarato sul 16:9) la testa usciva dal quadro.
      La X conta solo sotto i ~640px, dove il ritaglio diventa verticale: 72%
      tiene l'atleta in quadro e taglia il tabellone LED sfocato di sinistra. */
-  object-position: 72% 10%;
+  object-position: 72% top;
   display: block;
 }
 /* Il velo: orizzontale, da sinistra — il testo è ancorato a sinistra. A

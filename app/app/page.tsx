@@ -2360,8 +2360,14 @@ function SportsbookBoard({
   const feedCampsAll = BOARD_HOUSE_FEED
     ? campaignsFor("desk-feed", boardAudience).filter((c) => c.creative)
     : [];
-  const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis");
-  const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis");
+  // Round 12: il board pesca dal FONDO della lista, la Home dalla testa.
+  // `deepDives` (sezione «Da approfondire») fa `.slice(0, 2)` sulla stessa
+  // fonte, quindi finché il board prendeva i primi due l'utente che passava
+  // dalla Home a Calcio rivedeva gli stessi due creativi. Non è una regola
+  // nuova da ricordare: è l'ordine di dichiarazione in HOUSE_CAMPAIGNS che
+  // fa da priorità, e la coda è ciò che la Home non usa.
+  const footballFeed = feedCampsAll.filter((c) => campaignSport(c) !== "tennis").reverse();
+  const tennisFeed = feedCampsAll.filter((c) => campaignSport(c) === "tennis").reverse();
   // «Senza abbondare» (Andrea, 22/09): non più di DUE tile per caricamento, e
   // uno ogni 6 card (la cadenza sta nel `% 6` sotto). Il cap vive qui e non nel
   // pool perché il pool serve anche a garantire che i due tile siano DIVERSI.
@@ -2744,7 +2750,10 @@ function SportsbookBoard({
                       // (span-3 come una card tennis), SEMPRE con creativo TENNIS (mai calcio) e
                       // mostrati INTERI (nessun crop del soggetto/testo). Singoli e distribuiti
                       // ogni 6 card a punti diversi.
-                      if (placed < tennisFeed.length && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
+                      // Round 12: lo stesso cap del calcio. Finché `tennisFeed`
+                      // era vuoto il limite non si vedeva; ora che una campagna
+                      // tennis esiste, «senza abbondare» vale anche qui.
+                      if (placed < Math.min(tennisFeed.length, FEED_TILES_MAX) && i > 0 && (i + 1) % 6 === 0 && i < rows.length - 1) {
                         const camp = tennisFeed[placed++];
                         return [card, <HouseBanner key={`house-tennis-${camp.id}`} campaign={{ ...camp, format: "rectangle" }} lang={lang} onCta={onBannerCta} inGrid />];
                       }
@@ -9018,6 +9027,32 @@ function HomeLobby({
   const sideSection = view === "home" ? shown[0] : undefined;
   const belowSections = sideSection ? shown.slice(1) : shown;
 
+  // ── #RESTYLING-0921 round 12: I BANNER DI CASA DENTRO LE GRIGLIE ────────
+  //
+  // La cadenza «uno ogni sei card» esiste dal round 5, ma vive dentro
+  // `SportsbookBoard` — che dal round 10 non è più una vista e si monta solo
+  // come ospite della scheda. Misurato il 23/09 su build di produzione: sulle
+  // pagine Calcio e Tennis i banner resi erano ZERO. Qui la cadenza torna
+  // dove le card stanno davvero, cioè in `renderSection`.
+  //
+  // Solo sulle viste piene: sulla Home le fasce sono assaggi da sei card e la
+  // pubblicità della casa ce l'ha già, in «Da approfondire». Il pool è
+  // ROVESCIATO rispetto a quello della Home (che pesca i primi due), così chi
+  // passa da Home a Calcio non rivede gli stessi due creativi.
+  const gridFeed = useMemo(() => {
+    if (view !== "football" && view !== "tennis") return [];
+    const all = campaignsFor("desk-feed", isPro ? "premium" : "free").filter((c) => c.creative);
+    // Il soggetto della foto decide la sezione: un creativo col calciatore in
+    // mezzo alle schede di tennis è la cosa più fuori posto della pagina.
+    const mine = view === "tennis"
+      ? all.filter((c) => campaignSport(c) === "tennis")
+      : all.filter((c) => campaignSport(c) !== "tennis");
+    return mine.reverse();
+  }, [view, isPro]);
+  // «Senza abbondare» (Andrea, 22/09): due per fascia, uno ogni sei card.
+  const GRID_TILES_MAX = 2;
+  const GRID_EVERY = 6;
+
   const renderSection = (sec: LobbySectionData, cap?: number) => {
     const copy = LOBBY_COPY[sec.id];
     const total = totalFor(sec.id);
@@ -9050,7 +9085,32 @@ function HomeLobby({
           </button>
         ) : null}
       >
-        {items.map((item) => renderCard(item, sec.id))}
+        {(() => {
+          // La griglia si richiude da sé: i banner sono INSERITI nel flatMap,
+          // non nascosti con `display:none`, quindi senza di loro non resta
+          // nessun posto vuoto da colmare.
+          const pool = isSport ? gridFeed : [];
+          const cap2 = Math.min(pool.length, GRID_TILES_MAX);
+          let placed = 0;
+          return items.flatMap((item, i) => {
+            const out: React.ReactNode[] = [renderCard(item, sec.id)];
+            // `i < items.length - 1`: mai come ultimo elemento della fascia —
+            // là sotto c'è già la fine della griglia, e un banner in coda
+            // sembrerebbe il piè di pagina della sezione.
+            if (placed < cap2 && i > 0 && (i + 1) % GRID_EVERY === 0 && i < items.length - 1) {
+              const camp = pool[placed++];
+              out.push(
+                <HouseBanner
+                  key={`house-grid-${sec.id}-${camp.id}`}
+                  campaign={camp}
+                  lang={lang}
+                  inGrid
+                />,
+              );
+            }
+            return out;
+          });
+        })()}
       </LobbySection>
     );
   };
@@ -9075,16 +9135,21 @@ function HomeLobby({
   );
 
   if (shown.length === 0) {
-    return (
-      <div className="br-lobby">
-        {/* Round 6: hero di sezione e fascia Pro stanno ANCHE a board vuota.
-            Sono il posto e l'offerta, non un contorno del listino: se oggi su
-            Calcio non gioca nessuno, la pagina deve dire almeno dove sei e
-            cosa c'è oltre. Il badge del conteggio si spegne da sé a zero. */}
-        {sectionTop}
-        {homeHeadline}
-        {hero}
-        {hero && !isPro && proBand}
+    // #RESTYLING-0921 round 12 — IL SALTO DELLA HOME AL CARICAMENTO.
+    //
+    // Misurato sul build di produzione con l'API ritardata di 500ms: a 60ms
+    // `.br-hp` (l'hero della Home) è 1192×590, a 638ms diventa 310×590. Non
+    // c'entrano le foto né gli `aspect-ratio`: è QUESTO ramo. Finché il
+    // fetch del board è in volo `shown` è vuoto, e qui l'hero veniva reso
+    // NUDO — a tutta larghezza — mentre il ramo con i dati lo mette nel rail
+    // a 26%. Due contenitori diversi per lo stesso elemento: mezzo secondo
+    // di banner grande, poi lo scatto alla misura giusta.
+    //
+    // La cura è dare all'hero la STESSA geometria nei due rami: il rail c'è
+    // sempre, e nella colonna di destra — dove poi arriveranno le card — sta
+    // intanto la riga che spiega perché non ce ne sono. Il testo non si
+    // duplica: è `emptyNote`, la stessa `<p>` di prima estratta in una const.
+    const emptyNote = (
         <p className="br-empty">
           {q
             ? pick5(lang, {
@@ -9126,6 +9191,25 @@ function HomeLobby({
             </>
           )}
         </p>
+    );
+    return (
+      <div className="br-lobby">
+        {/* Round 6: hero di sezione e fascia Pro stanno ANCHE a board vuota.
+            Sono il posto e l'offerta, non un contorno del listino: se oggi su
+            Calcio non gioca nessuno, la pagina deve dire almeno dove sei e
+            cosa c'è oltre. Il badge del conteggio si spegne da sé a zero. */}
+        {sectionTop}
+        {homeHeadline}
+        {hero ? (
+          <div className="br-homerail">
+            <div>
+              {hero}
+              {railDeep}
+            </div>
+            {emptyNote}
+          </div>
+        ) : emptyNote}
+        {hero && !isPro && proBand}
         {/* Anche a board vuota: la riga di tile è navigazione, non un dato, e
             su una giornata senza partite è l'unica cosa che resta da fare
             (sfogliare uno sport, aprire il builder). */}
