@@ -8800,6 +8800,14 @@ button:disabled {
      il verde è dell'edge, non della struttura. */
   .am-bottomnav .bn svg { width: 22px; height: 22px; }
   .am-bottomnav .bn.on { color: var(--am-royal-t); }
+  /* #NAV-ICONS-ELECTRIC-0924: le icone sono tornate PNG (bottomnav-*.png,
+     stile "electric" round 15) — un <img> non risponde a `color`/currentColor
+     come la SVG del round 3, quindi l'affordance attivo/non-attivo non può
+     più essere un cambio di tinta sull'icona. Uso l'opacità: 100% da attiva,
+     58% da inattiva — stesso principio (l'etichetta di testo sotto continua
+     a cambiare colore via `.bn.on { color }` sopra, quella è ancora testo vero). */
+  .am-bottomnav .bn img { opacity: .58; transition: opacity .15s ease; }
+  .am-bottomnav .bn.on img { opacity: 1; }
   .am-bottomnav .bn .bn-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* entry-point Match Builder dentro Prediction (mobile) */

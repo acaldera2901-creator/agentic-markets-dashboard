@@ -33,9 +33,9 @@ import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
-import { MenuIcon, NavIcon, type NavName } from "@/app/components/menu-icon";
+import { MenuIcon, NavIcon, BottomNavIcon, type NavName, type BottomNavName } from "@/app/components/menu-icon";
 // #RESTYLING-0921 round 3: il set di icone della casa (nav, bottom-nav, search).
-import { Icon, IconSearch, IconArrow, IconSignIn, IconRegister, type IconName } from "@/components/ui/icons";
+import { IconSearch, IconArrow, IconSignIn, IconRegister } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
 import { getSessionId, trackEvent } from "@/lib/track-event";
@@ -10460,7 +10460,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const BOTTOM_TABS: {
     id: string;
     label: string;
-    icon: IconName;
+    icon: BottomNavName;
     href?: string;
     active: boolean;
     go?: () => void;
@@ -11069,7 +11069,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         {BOTTOM_TABS.map((b) => {
           const inner = (
             <>
-              <Icon name={b.icon} size={22} />
+              <BottomNavIcon name={b.icon} size={22} />
               <span className="bn-l">{b.label}</span>
             </>
           );
