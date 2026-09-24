@@ -8511,9 +8511,86 @@ function HomeLobby({
 
   const q = query.trim().toLowerCase();
 
+  // #LOBBY-FILTERS-0924 — Andrea, 24/09: «mancano i filtri per i match»
+  // (mobile e desktop). Esistevano nel vecchio `SportsbookBoard` (competition/
+  // surface/sort) ma quel componente non è più una vista dal round 10 — solo
+  // il suo aspetto va lasciato dov'è: al round 11 Andrea aveva riconosciuto
+  // ESATTAMENTE quella barra come «il sito vecchio» quando ricompariva dietro
+  // il modal. Quindi la LOGICA torna (stessa derivazione competizioni/superfici,
+  // stesso ordinamento sbloccate-prima + live-prima), ma solo su Calcio/Tennis
+  // (le uniche viste con l'elenco intero — round 10) e con un aspetto nuovo,
+  // non le classi `.sports-filter-bar`/`.am-mini-field` del vecchio board.
+  const [competitionFilter, setCompetitionFilter] = useState("all");
+  const [surfaceFilter, setSurfaceFilter] = useState<"all" | TennisMatch["surface"]>("all");
+  const [sortMode, setSortMode] = useState<"edge" | "time" | "odds" | "probability">("time");
+  // Il filtro competizione non ha senso portato da Calcio a Tennis (leghe vs
+  // tornei): si azzera ad ogni cambio vista, non solo quando si esce da
+  // Calcio/Tennis.
+  useEffect(() => { setCompetitionFilter("all"); }, [view]);
+
+  const footballCompetitionOptions = useMemo(
+    () => Array.from(new Map(predictions.map((p) => [p.league, `${LEAGUE_FLAGS[p.league] ?? ""} ${p.league_name || p.league}`.trim()])).entries())
+      .sort((a, b) => a[1].localeCompare(b[1])),
+    [predictions],
+  );
+  const tennisCompetitionOptions = useMemo(
+    () => Array.from(new Set(tennisMatches.map((m) => m.tournament))).sort(),
+    [tennisMatches],
+  );
+  const surfaceOptions = useMemo(
+    () => Array.from(new Set(tennisMatches.map((m) => m.surface))).sort(),
+    [tennisMatches],
+  );
+
+  const isFootballLive = (p: Prediction) => {
+    const l = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
+    return l?.match_status === "IN_PLAY" || l?.match_status === "PAUSED";
+  };
+  const isTennisLive = (m: TennisMatch) => {
+    const lm = liveTennisMap[tennisPairKey(m.player1, m.player2)];
+    return !!lm && !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || "");
+  };
+
+  // Applicati SOLO sulla vista a cui appartengono (round 10: Home pesca dagli
+  // stessi pool per le sue fasce curate — «Top opportunities», «Live now» — e
+  // quelle non si toccano). #UNLOCKED-FIRST-0831: le righe sbloccate aprono
+  // comunque la lista, il filtro/ordinamento vale per il resto.
+  const footballSource = useMemo(() => {
+    if (view !== "football") return predictions;
+    const rows = competitionFilter === "all" ? predictions : predictions.filter((p) => p.league === competitionFilter);
+    return [...rows].sort((a, b) => {
+      const gate = compareUnlockedFirst(a, b);
+      if (gate !== 0) return gate;
+      const la = isFootballLive(a), lb = isFootballLive(b);
+      if (la !== lb) return la ? -1 : 1;
+      if (sortMode === "time") return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
+      if (sortMode === "odds") return (selectedFootballOdds(b) ?? 0) - (selectedFootballOdds(a) ?? 0);
+      if (sortMode === "probability") return selectedFootballProbability(b) - selectedFootballProbability(a);
+      if (a.edge == null && b.edge == null) return selectedFootballProbability(b) - selectedFootballProbability(a);
+      return (b.edge ?? -1) - (a.edge ?? -1);
+    });
+  }, [predictions, view, competitionFilter, sortMode, liveMap]);
+
+  const tennisSource = useMemo(() => {
+    if (view !== "tennis") return tennisMatches;
+    let rows = competitionFilter === "all" ? tennisMatches : tennisMatches.filter((m) => m.tournament === competitionFilter);
+    if (surfaceFilter !== "all") rows = rows.filter((m) => m.surface === surfaceFilter);
+    return [...rows].sort((a, b) => {
+      const gate = compareUnlockedFirst(a, b);
+      if (gate !== 0) return gate;
+      const la = isTennisLive(a), lb = isTennisLive(b);
+      if (la !== lb) return la ? -1 : 1;
+      if (sortMode === "time") return new Date(a.scheduled).getTime() - new Date(b.scheduled).getTime();
+      if (sortMode === "odds") return (selectedTennisOdds(b) ?? 0) - (selectedTennisOdds(a) ?? 0);
+      if (sortMode === "probability") return selectedTennisProbability(b) - selectedTennisProbability(a);
+      if (a.edge == null && b.edge == null) return selectedTennisProbability(b) - selectedTennisProbability(a);
+      return (b.edge ?? -1) - (a.edge ?? -1);
+    });
+  }, [tennisMatches, view, competitionFilter, surfaceFilter, sortMode, liveTennisMap]);
+
   // Le righe → dati card. La memo tiene fuori `Date.now()`: le sezioni si
   // ricalcolano quando cambiano i dati, non a ogni render.
-  const footballItems: LobbyItem[] = useMemo(() => predictions
+  const footballItems: LobbyItem[] = useMemo(() => footballSource
     .filter((p) => isBoardVisibleMarket(p.kickoff))
     .filter((p) => !q || `${p.home_team} ${p.away_team} ${p.league_name} ${p.league}`.toLowerCase().includes(q))
     .map((p) => {
@@ -8526,9 +8603,9 @@ function HomeLobby({
         liveMinute: live?.minute ?? null,
       });
       return { data, key: lobbyKey(data) };
-    }), [predictions, liveMap, lang, tz, q, winLabel, drawLabel]);
+    }), [footballSource, liveMap, lang, tz, q, winLabel, drawLabel]);
 
-  const tennisItems: LobbyItem[] = useMemo(() => tennisMatches
+  const tennisItems: LobbyItem[] = useMemo(() => tennisSource
     .filter((m) => isTennisMarketVisible(m.scheduled))
     .filter((m) => !q || `${m.player1} ${m.player2} ${m.tournament}`.toLowerCase().includes(q))
     .map((m) => {
@@ -8540,7 +8617,7 @@ function HomeLobby({
         isLive: inPlay,
       });
       return { data, key: lobbyKey(data) };
-    }), [tennisMatches, liveTennisMap, lang, tz, q, winLabel]);
+    }), [tennisSource, liveTennisMap, lang, tz, q, winLabel]);
 
   // Round 10: nelle viste Football e Tennis la fascia dello sport è l'elenco
   // intero, non l'assaggio da sei — è lì che ora vivono tutte le predizioni di
@@ -9092,7 +9169,46 @@ function HomeLobby({
       items.length < sec.items.length
       || (isSport ? (total ?? 0) > items.length : sec.items.length >= LOBBY_ROW_CAP)
     );
+    // #LOBBY-FILTERS-0924 — la barra vale solo sull'elenco intero (Calcio o
+    // Tennis come VISTA, non come fascia curata della Home: lì `sec.id` può
+    // valere "football"/"tennis" ma è l'assaggio da sei, non ha filtri).
+    const showFilters = isSport && view === sec.id;
     return (
+      <>
+      {showFilters && (
+        <div className="br-lobby-filters" role="group" aria-label={pick5(lang, {
+          it: "Filtra e ordina", en: "Filter and sort", es: "Filtrar y ordenar",
+          fr: "Filtrer et trier", ru: "Фильтр и сортировка",
+        })}>
+          <label className="br-lobby-filter">
+            <span>{pick5(lang, { it: "Competizione", en: "Competition", es: "Competición", fr: "Compétition", ru: "Турнир" })}</span>
+            <select value={competitionFilter} onChange={(e) => setCompetitionFilter(e.target.value)}>
+              <option value="all">{pick5(lang, { it: "Tutte", en: "All", es: "Todas", fr: "Toutes", ru: "Все" })}</option>
+              {view === "tennis"
+                ? tennisCompetitionOptions.map((tour) => <option key={tour} value={tour}>{tour}</option>)
+                : footballCompetitionOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          {view === "tennis" && (
+            <label className="br-lobby-filter">
+              <span>{pick5(lang, { it: "Superficie", en: "Surface", es: "Superficie", fr: "Surface", ru: "Покрытие" })}</span>
+              <select value={surfaceFilter} onChange={(e) => setSurfaceFilter(e.target.value as "all" | TennisMatch["surface"])}>
+                <option value="all">{pick5(lang, { it: "Tutte", en: "All", es: "Todas", fr: "Toutes", ru: "Все" })}</option>
+                {surfaceOptions.map((surface) => <option key={surface} value={surface}>{surface}</option>)}
+              </select>
+            </label>
+          )}
+          <label className="br-lobby-filter">
+            <span>{pick5(lang, { it: "Ordina", en: "Sort", es: "Ordenar", fr: "Trier", ru: "Сортировка" })}</span>
+            <select value={sortMode} onChange={(e) => setSortMode(e.target.value as "edge" | "time" | "odds" | "probability")}>
+              <option value="time">{pick5(lang, { it: "Orario", en: "Time", es: "Hora", fr: "Heure", ru: "Время" })}</option>
+              <option value="edge">Edge</option>
+              <option value="odds">{pick5(lang, { it: "Quota", en: "Odds", es: "Cuota", fr: "Cote", ru: "Кэф" })}</option>
+              <option value="probability">{pick5(lang, { it: "Probabilità", en: "Probability", es: "Probabilidad", fr: "Probabilité", ru: "Вероятность" })}</option>
+            </select>
+          </label>
+        </div>
+      )}
       <LobbySection
         title={it ? copy.it : copy.en}
         hint={(it ? copy.hintIt : copy.hintEn) || null}
@@ -9134,6 +9250,7 @@ function HomeLobby({
           });
         })()}
       </LobbySection>
+      </>
     );
   };
 
@@ -9643,10 +9760,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // cima a ogni cambio tab (instant). I CTA che puntano ai Piani fanno il loro
   // scrollIntoView in un doppio rAF DOPO questo reset, quindi vincono e atterrano
   // sui piani. Presentazionale.
+  // #UI-SCROLLTOP-0924: mancava `deskView` — dentro la scheda "bets" la nav
+  // primaria (Home/Live/Football/Tennis/Watchlist) cambia SOLO `deskView`,
+  // `tab` resta sempre "bets" (i click handler della nav fanno sempre
+  // `setTab("bets"); setDeskView(item.view)`). L'effetto quindi non scattava
+  // mai passando da una vista sport all'altra — Andrea, 24/09: cambiando
+  // pagina lo scroll restava a metà della vista precedente, mobile e desktop.
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.scrollTo(0, 0);
-  }, [tab]);
+  }, [tab, deskView]);
 
   // #AUTORELOAD: quando è live un nuovo deploy, le schede aperte si aggiornano da
   // sole. La baseline è il build-id della PRIMA risposta di /api/version (stesso
