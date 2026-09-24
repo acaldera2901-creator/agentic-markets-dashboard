@@ -8774,6 +8774,11 @@ button:disabled {
   /* contenuto a tutta larghezza + spazio per la barra fissa */
   .portal-columns { display: block !important; }
   .portal-desk { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important; }
+  /* #TOOLS-BOTTOMNAV-0924 — stesso spazio riservato di `.portal-desk`, per le
+     due pagine fuori dal desk che ora montano la stessa bottom bar fissa
+     (ToolsHub `.tl-page`, la landing/how-it-works `.lp`): senza, l'ultimo
+     pezzo di contenuto finisce sotto la barra. */
+  .tl-page, .lp { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
   /* header snello: niente toggle tema su mobile (teniamo dark) */
   .am-tt { display: none !important; }
 

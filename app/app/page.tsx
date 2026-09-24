@@ -9671,6 +9671,17 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // quale taglio della lobby si vede. Round 10: le viste sono TUTTE lobby —
   // «Esplora tutto» non è più una di esse (vedi il blocco HOME/DISCOVER LOBBY).
   const [deskView, setDeskView] = useState<DeskView>("home");
+  // #DESKVIEW-DEEPLINK-0924 — `?view=` deep-link da FUORI il desk (bottom-nav
+  // di /tools, /how-it-works, o qualunque pagina esterna): fino a oggi non
+  // esisteva alcun modo di atterrare su Live/Football/Tennis/Watchlist da un
+  // link esterno, sempre e solo Home. Applicato DOPO il mount (stesso motivo
+  // del deep-link ?sport= nel vecchio SportsbookBoard): l'SSR rende sempre
+  // "home", leggerlo in render romperebbe l'idratazione.
+  useEffect(() => {
+    const v = new URLSearchParams(window.location.search).get("view");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deep-link post-mount di proposito, vedi sopra
+    if (v === "home" || v === "live" || v === "football" || v === "tennis" || v === "watchlist") setDeskView(v);
+  }, []);
   const [lobbyQuery, setLobbyQuery] = useState("");
   // `sport:id` della partita da aprire: viene da un link condiviso `?match=`
   // oppure dal click su una card della lobby. La scheda la rende il board, che
