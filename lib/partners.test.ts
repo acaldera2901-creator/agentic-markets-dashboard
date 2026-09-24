@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { BET_MENU_ORDER, PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu } from "@/lib/partners";
-import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS } from "@/lib/affiliate";
+import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS } from "@/lib/affiliate";
 
 const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 
 describe("partners catalog", () => {
   it("has exactly the approved partners, no Stake/Roobet", () => {
     const ids = PARTNERS.map((p) => p.id).sort();
-    expect(ids).toEqual(["beazt", "betscore", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "n1bet", "rollxo", "slotsbonus", "stonevegas", "velobet", "wildz", "ybets"]);
+    expect(ids).toEqual(["beazt", "betscore", "betwinner", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "n1bet", "rollxo", "slotsbonus", "stonevegas", "velobet", "wildz", "ybets"]);
   });
 
   // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno
@@ -23,12 +23,13 @@ describe("partners catalog", () => {
     for (const p of PARTNERS) {
       expect(p.logo).toMatch(/^\/logos\/.+\.(svg|png)$/);
       expect(["sportsbook", "casino"]).toContain(p.category);
-      // #GEO-PARTNERS-ALWAYS-0917 — l'invariante era XOR (o `url` o `geoUrls`, mai
-      // entrambi). Da oggi `url` è OBBLIGATORIO su tutti: nessun partner è più
-      // geo-ristretto, quindi in ogni paese deve esserci un link da aprire.
-      // `geoUrls` resta un affinamento facoltativo sopra `url`, non un'alternativa.
-      expect(p.url, `${p.id} senza link di default`).toMatch(/^https:\/\//);
+      // #GEO-PARTNERS-ALWAYS-0917 → #PARTNER-BETWINNER-0924. L'invariante non è più
+      // «`url` obbligatorio su tutti» ma «nessuna riga senza un link da aprire»:
+      // o c'è `url` (vale ovunque) o c'è almeno una geo in `geoUrls` (e allora il
+      // partner esiste solo lì). Una riga con nessuno dei due è una voce morta.
+      if (p.url !== undefined) expect(p.url, `${p.id}: url non https`).toMatch(/^https:\/\//);
       for (const u of Object.values(p.geoUrls ?? {})) expect(u).toMatch(/^https:\/\//);
+      expect(p.url ?? Object.values(p.geoUrls ?? {})[0], `${p.id} senza nessun link`).toMatch(/^https:\/\//);
     }
   });
 
@@ -64,11 +65,42 @@ describe("partners catalog", () => {
 
     // Il caso della richiesta di Andrea scritto per nome: una geo mai coperta dal
     // deal N1/Playfina vede in vetrina gli stessi partner di una coperta.
+    // #PARTNER-BETWINNER-0924: l'atteso non è più `PARTNERS` intero ma «tutti quelli
+    // con un link di default». BetWinner non ne ha e sta fuori da queste geo — è la
+    // sua eccezione, non un allentamento della regola per gli altri.
     it("la vetrina ha gli stessi id in ogni geo, IT ed ES comprese", () => {
-      const atteso = PARTNERS.map((p) => p.id).sort();
+      const atteso = PARTNERS.filter((p) => p.url).map((p) => p.id).sort();
       for (const cc of ["NO", "DE", "AT", "CH", "FI", "IT", "ES", "CA", "GB", "", null, undefined]) {
         expect(idsIn(cc).sort(), `elenco diverso in ${String(cc)}`).toEqual(atteso);
       }
+    });
+
+    // #PARTNER-BETWINNER-0924 — le due metà della decisione, insieme: dentro le 9 geo
+    // la card c'è col link di QUEL mercato; fuori (e a geo ignota, cioè prima che
+    // /api/geo-books risponda) non c'è affatto. Non esiste un fallback da controllare:
+    // se un domani qualcuno ne elegge uno, questo test glielo dice in faccia.
+    it("BetWinner c'è solo nelle sue 9 geo, col link di quel mercato", () => {
+      for (const [cc, url] of Object.entries(BETWINNER_GEO_URLS)) {
+        const bw = partnersFor(cc).find((p) => p.id === "betwinner");
+        expect(bw, `BetWinner manca in ${cc}`).toBeDefined();
+        expect(bw?.url, `link sbagliato in ${cc}`).toBe(url);
+      }
+      expect(Object.keys(BETWINNER_GEO_URLS).sort())
+        .toEqual(["AR", "BR", "CO", "ID", "IN", "KE", "MX", "MY", "NG"]);
+      // IN e BR hanno un tracker proprio, i 7 restanti condividono quello multi-mercato
+      expect(new Set(Object.values(BETWINNER_GEO_URLS)).size).toBe(3);
+      expect(BETWINNER_GEO_URLS.IN).not.toBe(BETWINNER_GEO_URLS.BR);
+      for (const cc of ["KE", "AR", "MX", "CO", "ID", "MY"]) {
+        expect(BETWINNER_GEO_URLS[cc], `${cc} non usa il link condiviso`).toBe(BETWINNER_GEO_URLS.NG);
+      }
+    });
+
+    it("BetWinner non compare fuori dalle sue geo né a geo ignota", () => {
+      for (const cc of ["IT", "ES", "NO", "DE", "CH", "FI", "GB", "US", "CA", "", null, undefined]) {
+        expect(idsIn(cc), `BetWinner non dovrebbe esserci in ${String(cc)}`).not.toContain("betwinner");
+      }
+      // case/space-insensitive anche per lui: l'header arriva ISO-2, ma non ci fidiamo
+      expect(partnersFor(" in ").find((p) => p.id === "betwinner")?.url).toBe(BETWINNER_GEO_URLS.IN);
     });
 
     it("i quattro ex NO+DACH sono in vetrina in ogni geo, con l'unico link della rete", () => {

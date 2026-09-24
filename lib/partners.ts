@@ -3,7 +3,7 @@
 // sono importati dalle costanti già esistenti (niente duplicazione); slotsbonus
 // è l'unica URL centralizzata qui (spostata dal footer). Tutti i partner sono
 // gambling → il consumo è SEMPRE geo-gated fail-closed (vedi /api/geo-books).
-import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS, landingUrlOf } from "@/lib/affiliate";
+import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS, landingUrlOf } from "@/lib/affiliate";
 import { BOOKS } from "@/lib/betconstruct-books";
 
 export type PartnerCategory = "sportsbook" | "casino";
@@ -12,10 +12,16 @@ export type Partner = {
   name: string;
   category: PartnerCategory;
   logo: string; // path in /public/logos
-  // #GEO-PARTNERS-ALWAYS-0917 — landing affiliato di default, ORA OBBLIGATORIO su
-  // ogni partner: dal 17/09 nessuno è più geo-ristretto, quindi ognuno deve avere
-  // un link da aprire in qualunque paese. Non è più opzionale.
-  url: string;
+  // #GEO-PARTNERS-ALWAYS-0917 — landing affiliato di default. Dal 17/09 ce l'hanno
+  // tutti: nessun partner è più geo-ristretto, quindi ognuno ha un link da aprire in
+  // qualunque paese.
+  // #PARTNER-BETWINNER-0924 — torna OPZIONALE per un caso solo, non per rilassare la
+  // regola: BetWinner ci ha dato 3 tracker per 9 mercati e NESSUN link neutro, e
+  // nessuno dei 3 è eleggibile a fallback (sono campagne di mercati diversi, non
+  // localizzazioni della stessa). Chi non ha `url` compare SOLO nelle geo di
+  // `geoUrls` — `partnersFor` lo scarta altrove, fail-closed. Regola: si omette
+  // `url` solo quando un link da aprire ovunque non esiste davvero.
+  url?: string;
   // #PARTNERS-VELOBET-CASEA: partner con un link DIVERSO per paese (Casea: NO/CH/FI).
   // Resta un AFFINAMENTO di `url`, non un'alternativa: dove c'è il mid del paese si
   // usa quello, altrove si cade sul fallback dichiarato in `url` (#CASEA-ALWAYS-0917).
@@ -30,7 +36,9 @@ export type Partner = {
 
 // Partner già risolto per una geo: `url` è quello giusto per QUEL paese (il mid
 // locale se esiste, altrimenti il default) → i componenti non scelgono niente.
-export type ResolvedPartner = Partner;
+// Qui `url` è OBBLIGATORIO: chi non ne aveva uno risolvibile è già stato scartato
+// da `partnersFor`, quindi i componenti non devono difendersi da un undefined.
+export type ResolvedPartner = Omit<Partner, "url"> & { url: string };
 
 const YBETS_URL = BOOKS.find((b) => b.key === "ybets")?.landing ?? "https://ybetspromo.io/dputempxc";
 const BETSCORE_URL = LANDING_PARTNERS.find((p) => p.name === "BetScore")?.url
@@ -83,6 +91,20 @@ export const PARTNERS: Partner[] = [
   // — la vetrina mette ogni logo su placca scura fissa, un quadrato pieno stonerebbe.
   // Nessun logoShape: 5.1:1 è un wordmark come VeloBet, non un emblema.
   { id: "ggbet", name: "GG.BET", category: "sportsbook", logo: "/logos/ggbet.png", url: GGBET_URL },
+  // #PARTNER-BETWINNER-0924 — l'UNICO partner senza `url`: 3 tracker per 9 mercati e
+  // nessun link neutro (la nota sta accanto a BETWINNER_GEO_URLS in lib/affiliate).
+  // Conseguenza voluta: compare SOLO in IN/BR/NG/KE/AR/MX/CO/ID/MY, e a geo ignota
+  // non compare — è la stessa forma che aveva Casea prima del 17/09.
+  // Logo = wordmark ufficiale del brand preso dal loro sito affiliati
+  // (betwinneraffiliates.com/images/betwinneraff-logo.svg): dal lockup ufficiale sono
+  // stati tenuti i due gruppi del marchio, `BET` (#FFCE06) e `WINNER` (#FFFFFF), e
+  // rimosso il solo gruppo `affiliates` (che nomina il programma, non il partner);
+  // viewBox ricalcolato sull'inchiostro col rasterizzatore (2 0 182.875 19). Nessun
+  // ridisegno: i path sono quelli del file del brand. 9.6:1 è largo perfino per un
+  // wordmark → nessun logoShape, il cap CSS è `max-width:100%` e lo lascia alto ~22px
+  // dentro la placca, in linea con gli altri. Se BetWinner ci manda il suo file
+  // ufficiale, si sostituisce public/logos/betwinner.svg e basta.
+  { id: "betwinner", name: "BetWinner", category: "sportsbook", logo: "/logos/betwinner.svg", geoUrls: BETWINNER_GEO_URLS },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
   // #PARTNERS-VELOBET-CASEA (2026-07-31). Categoria "casino" per entrambi (scelta
   // Andrea): VeloBet è casinò + sportsbook (il suo JSON-LD si chiama "Velobet
@@ -146,9 +168,15 @@ export const PARTNERS: Partner[] = [
 // `country` arriva da /api/geo-books (server-side). Geo ignota ("") → tutti, col
 // link di default. Il gate che conta resta quello a monte (`blocked`, fail-closed):
 // nelle geo vietate questa riga non viene proprio renderizzata.
+// #PARTNER-BETWINNER-0924: torna a SCARTARE qualcuno, ma solo chi non ha proprio un
+// link da aprire in quel paese (oggi il solo BetWinner, fuori dalle sue 9 geo). Per
+// tutti gli altri niente cambia: hanno `url`, quindi l'elenco è lo stesso ovunque.
 export function partnersFor(country: string | null | undefined): ResolvedPartner[] {
   const cc = (country ?? "").trim().toUpperCase();
-  return PARTNERS.map((p) => ({ ...p, url: (cc ? p.geoUrls?.[cc] : undefined) ?? p.url }));
+  return PARTNERS.flatMap((p) => {
+    const url = (cc ? p.geoUrls?.[cc] : undefined) ?? p.url;
+    return url ? [{ ...p, url }] : [];
+  });
 }
 
 // #BET-DROPDOWN-1: il menu "Piazza la scommessa" nella scheda partita riceve i
@@ -283,6 +311,17 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook con cobertura de esports, además de deportes tradicionales.",
     fr: "Sportsbook couvrant l'esport, en plus des sports traditionnels.",
     ru: "Букмекер с киберспортом и традиционными видами спорта.",
+  },
+  // #PARTNER-BETWINNER-0924: copy FTC-safe — nessun claim su bonus o quote. Quello
+  // che possiamo dire con certezza è il fatto verificato: il link porta alla
+  // registrazione della campagna del tuo paese (è l'unica ragione per cui questo
+  // partner è geo-ristretto).
+  betwinner: {
+    it: "Sportsbook internazionale, registrazione dedicata al tuo paese.",
+    en: "International sportsbook, with a sign-up dedicated to your country.",
+    es: "Sportsbook internacional, con registro dedicado a tu país.",
+    fr: "Sportsbook international, avec une inscription dédiée à votre pays.",
+    ru: "Международный букмекер с регистрацией для вашей страны.",
   },
   // #PARTNERS-VELOBET-CASEA: copy FTC-safe, nessun claim su bonus (i loro siti li
   // pubblicizzano, noi non li abbiamo verificati → non li dichiariamo).

@@ -100,6 +100,32 @@ export const CASEA_GEO_URLS: Record<string, string> = {
 // si aggiunge un terzo posto.
 export const CASEA_FALLBACK_URL = CASEA_GEO_URLS.CH;
 
+// #PARTNER-BETWINNER-0924 — BetWinner (rete propria, tracker bwredir/bwref). Come
+// Casea prima del 17/09: link PER PAESE e **nessun link neutro**, quindi il partner
+// esiste SOLO in queste 9 geo. Differenza da Casea: qui non c'è un mid "di default"
+// da eleggere a fallback — i tre link sono domini di tracking diversi consegnati da
+// Andrea per mercati precisi, e usarne uno fuori dal suo mercato non è un costo di
+// attribuzione ma un link che manda l'utente sulla campagna sbagliata. Per questo
+// NON ha `url` in lib/partners e la vetrina lo nasconde fuori lista (fail-closed).
+// Verificato con curl (24/09) sul link condiviso: 302 → redirector con
+// `"cid":"betwinner"`, `"sid":"betwinner"`, dominio finale `betwinner-72427.pro`.
+// I 7 paesi condivisi hanno LO STESSO link: è così che l'ha consegnato Andrea, non
+// una svista — bwredir.com è il tracker multi-mercato, IN e BR hanno il loro.
+// Aggiungere un paese = una riga qui. Se un giorno arriva un link neutro, si mette
+// `url` sulla riga di lib/partners e il partner smette di essere geo-ristretto.
+const BETWINNER_SHARED_URL = "https://bwredir.com/3aME?p=%2Fregistration%2F";
+export const BETWINNER_GEO_URLS: Record<string, string> = {
+  IN: "https://bwref-dfsm2e1i.com/3aME?p=%2Fregistration%2F",
+  BR: "https://gbaodm2hp.com/3aME?p=%2Fregistration%2F",
+  NG: BETWINNER_SHARED_URL,
+  KE: BETWINNER_SHARED_URL,
+  AR: BETWINNER_SHARED_URL,
+  MX: BETWINNER_SHARED_URL,
+  CO: BETWINNER_SHARED_URL,
+  ID: BETWINNER_SHARED_URL,
+  MY: BETWINNER_SHARED_URL,
+};
+
 // #PARTNERS-N1-0915 — rete N1 Partners (RollXO, Hollywin, N1 Bet). Terza forma di
 // geo, distinta dalle due già in casa: Casea ha un mid DIVERSO per paese (mappa
 // cc→url), gli altri hanno un link unico valido ovunque. Qui il deal è un solo

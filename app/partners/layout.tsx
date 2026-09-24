@@ -35,12 +35,18 @@ export default function PartnersLayout({ children }: { children: React.ReactNode
           // registrazione localizzata (oggi il solo Casea). Il gate che resta è quello
           // sull'intera pagina, non sul singolo partner — ed è quello che la FAQ sotto
           // descrive.
-          "Some of those platforms are commercial partners, and the links to them are affiliate links. The same partners are listed wherever the page is opened from; where an operator runs a country-specific sign-up page, the link points at that country's one.",
+          // #PARTNER-BETWINNER-0924 — "the same partners wherever" è tornata FALSA per
+          // un caso: BetWinner ha un tracking link solo per 9 mercati e nessun link
+          // neutro, quindi fuori di lì non c'è niente da aprire e la sua card non c'è.
+          // Questa frase e la FAQ sotto finiscono nel JSON-LD (FAQPage): una frase
+          // falsa qui è una dichiarazione falsa in structured data, non una svista di
+          // copy. Si riscrive con la regola vera, non col caso particolare.
+          "Some of those platforms are commercial partners, and the links to them are affiliate links. Nearly all of them are listed wherever the page is opened from; where an operator runs a country-specific sign-up page, the link points at that country's one, and an operator that only runs sign-up pages for a few countries is listed in those countries only.",
         ]}
         faq={[
           [
             "Why is this page sometimes empty?",
-            "The page as a whole is geo-gated and fails closed: if the location check cannot be completed, or the links are not permitted where the page is opened from, nothing is shown at all. The partner list itself is the same everywhere. An empty page here is the gate working, not a fault.",
+            "The page as a whole is geo-gated and fails closed: if the location check cannot be completed, or the links are not permitted where the page is opened from, nothing is shown at all. An empty page here is the gate working, not a fault. An operator whose sign-up page only exists for a few countries is listed in those countries only, so the list can be one entry shorter elsewhere.",
           ],
           [
             "Does BetRedge take bets?",

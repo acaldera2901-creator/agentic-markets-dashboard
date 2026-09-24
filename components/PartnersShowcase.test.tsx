@@ -60,6 +60,39 @@ describe("PartnersShowcase", () => {
     }
   });
 
+  // #PARTNER-BETWINNER-0924 — il primo partner che la vetrina deve NASCONDERE da
+  // quando (17/09) non nascondeva più nessuno: 3 tracker per 9 mercati, nessun link
+  // neutro, quindi fuori dalle sue geo non c'è niente da aprire. Il test presidia
+  // entrambe le metà sul componente vero, non solo su `partnersFor`.
+  it("BetWinner: c'è in IN col suo link, non c'è in IT né a geo ignota", () => {
+    const { container: conIn } = render(<PartnersShowcase lang="en" country="IN" />);
+    const card = Array.from(conIn.querySelectorAll("a.partner-card")).find(
+      (a) => a.textContent?.includes("BetWinner")) as HTMLAnchorElement | undefined;
+    expect(card, "BetWinner manca in vetrina (IN)").toBeTruthy();
+    expect(card?.href).toBe("https://bwref-dfsm2e1i.com/3aME?p=%2Fregistration%2F");
+    expect(card?.querySelector("img")?.getAttribute("src")).toContain("betwinner.svg");
+
+    const has = (c: HTMLElement) => Array.from(c.querySelectorAll("a.partner-card"))
+      .some((a) => a.textContent?.includes("BetWinner"));
+    const { container: conIt } = render(<PartnersShowcase lang="en" country="IT" />);
+    expect(has(conIt), "BetWinner non dovrebbe comparire in IT").toBe(false);
+    const { container: senza } = render(<PartnersShowcase lang="en" />);
+    expect(has(senza), "BetWinner non dovrebbe comparire a geo ignota").toBe(false);
+  });
+
+  it("i 7 mercati che condividono il tracker aprono lo stesso link", () => {
+    const href = (cc: string) => {
+      const { container } = render(<PartnersShowcase lang="en" country={cc} />);
+      return (Array.from(container.querySelectorAll("a.partner-card")).find(
+        (a) => a.textContent?.includes("BetWinner")) as HTMLAnchorElement | undefined)?.href;
+    };
+    const atteso = "https://bwredir.com/3aME?p=%2Fregistration%2F";
+    for (const cc of ["NG", "KE", "AR", "MX", "CO", "ID", "MY"]) {
+      expect(href(cc), `link sbagliato in ${cc}`).toBe(atteso);
+    }
+    expect(href("BR")).toBe("https://gbaodm2hp.com/3aME?p=%2Fregistration%2F");
+  });
+
   it("shows the localized title in Italian", () => {
     render(<PartnersShowcase lang="it" />);
     expect(screen.getByText("I nostri partner")).toBeTruthy();
