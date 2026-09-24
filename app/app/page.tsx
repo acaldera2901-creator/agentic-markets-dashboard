@@ -5727,6 +5727,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
           variant={p.locked ? "premiumLocked" : isLive || isPaused ? "live" : "compact"}
           href={`${TAB_PATHS.bets}?match=${encodeURIComponent(matchKey)}`}
           saved={saved}
+          lang={lang}
           onToggleWatchlist={onToggleWatch ? () => onToggleWatch(matchKey) : undefined}
           onOpen={(ev) => {
             ev.preventDefault();
@@ -6033,6 +6034,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
           variant={m.locked ? "premiumLocked" : liveIsOn ? "live" : "compact"}
           href={`${TAB_PATHS.bets}?match=${encodeURIComponent(matchKey)}`}
           saved={saved}
+          lang={lang}
           onToggleWatchlist={onToggleWatch ? () => onToggleWatch(matchKey) : undefined}
           onOpen={(ev) => {
             ev.preventDefault();
@@ -8664,6 +8666,7 @@ function HomeLobby({
         badge={badge}
         href={`${TAB_PATHS.bets}?match=${encodeURIComponent(item.key)}`}
         saved={watchSaved.has(item.key)}
+        lang={lang}
         onToggleWatchlist={() => onToggleWatch(item.key)}
         onOpen={(ev) => {
           // La scheda è già in pagina: si apre, non si naviga. L'href resta
