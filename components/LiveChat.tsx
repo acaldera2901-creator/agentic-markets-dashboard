@@ -69,10 +69,16 @@ export function LiveChat() {
     // #HOME-CREATIVE-3d: su mobile il launcher copriva il tile "World Cup" della
     // barra sport in basso → lo alzo (yOffset) sopra la barra. Posizione standard
     // su desktop. customStyle dev'essere settato PRIMA del caricamento dello script.
+    // #MOBILE-NAV-0924: 88 → 66. Era un numero scritto due volte e diverso —
+    // qui 88, in app/mobile.css §3 `bottom: 68px !important`, che vinceva:
+    // questa riga non faceva niente e chi la leggeva credeva il contrario.
+    // 66 = barra in basso misurata (57,5px) + 8 d'aria; la safe-area della
+    // tacca la aggiunge il CSS, che è l'unico posto dove si può scrivere
+    // `env(safe-area-inset-bottom)`.
     w.Tawk_API.customStyle = {
       visibility: {
         desktop: { position: "br", xOffset: 20, yOffset: 20 },
-        mobile: { position: "br", xOffset: 12, yOffset: 88 },
+        mobile: { position: "br", xOffset: 12, yOffset: 66 },
       },
     };
     // Callback ufficiale Tawk: se scatta, il widget è vivo → niente fallback.

@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
 import LangDropdown from "@/components/LangDropdown";
-import { Icon } from "@/components/ui/icons";
+import { Icon, IconSignIn, IconRegister } from "@/components/ui/icons";
 
 type AuthState =
   | { status: "loading" }
@@ -199,8 +199,12 @@ export default function SiteTopbar({
             </>
           ) : auth.status === "anonymous" ? (
             <>
-              <Link href="/app?auth=login" className="am-auth-secondary">{lang === "it" ? "Accedi" : "Sign In"}</Link>
-              <Link href="/app?auth=register" className="am-auth-primary">{lang === "it" ? "Registrati" : "Register"}</Link>
+              {/* #AUTH-ICONS-0924 — stessa coppia di segni del desk: chi passa
+                  da /tools o /world-cup al desk ritrova lo stesso tasto. Il
+                  tasto «Esci» qui sopra riusa `.am-auth-secondary` ma NON è un
+                  accesso: resta senza icona, o direbbe la cosa opposta. */}
+              <Link href="/app?auth=login" className="am-auth-secondary"><IconSignIn size={15} stroke={2} />{lang === "it" ? "Accedi" : "Sign In"}</Link>
+              <Link href="/app?auth=register" className="am-auth-primary"><IconRegister size={15} stroke={2} />{lang === "it" ? "Registrati" : "Register"}</Link>
             </>
           ) : null /* loading: render nothing, no flicker of wrong state */}
 
