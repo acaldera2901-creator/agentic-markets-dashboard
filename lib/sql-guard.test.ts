@@ -65,6 +65,10 @@ const ALLOWLIST = new Set<string>([
   // Placeholder list `$1, $2, …` per un IN (…) variadico — valori nei params.
   // Preesistente, emersa quando dbQueryStrict è entrata nello scope del guard.
   "lib/weekly-pick-server.ts::placeholders",
+  // #PIPELINE-HEALTH-0924 — stesso idioma: placeholder list `$2, $3, …` fatta
+  // di soli $N per l'IN (…) delle 5 leghe watchlist; le leghe e l'orizzonte
+  // giorni viaggiano nell'array params ($1 = HORIZON_DAYS, resto = i codici).
+  "app/api/cron/pipeline-health/route.ts::codePlaceholders",
 ]);
 
 function walk(dir: string, acc: string[]): void {
