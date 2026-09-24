@@ -115,6 +115,40 @@ export function IconProfile(p: IconProps) {
   );
 }
 
+/* ── Accesso ──────────────────────────────────────────────────────────────
+ * #AUTH-ICONS-0924 — Andrea, guardando la preview mobile: «aggiungi icone ai
+ * pulsanti in basso». Accedi e Registrati erano gli unici comandi del sito
+ * con la sola parola, mentre tutto intorno — nav, chip, voci del menu — ha
+ * il suo segno. Due icone e non una: sono due azioni diverse, e il segno
+ * deve dire QUALE delle due, non «qui si fa account».
+ * Stile: questa firma (griglia 24, punte piatte, giunti a spigolo), NON i
+ * PNG 3D di `app/components/menu-icon.tsx`. Quelli sono asset illustrati per
+ * voci grandi; qui servono due segni da 14px dentro un bottone. */
+
+/** Accesso: la freccia ENTRA nella porta. Sign In. */
+export function IconSignIn(p: IconProps) {
+  return (
+    <Svg {...p}>
+      {/* la porta resta aperta dal lato da cui si entra */}
+      <path d="M13.5 3.5H20.5V20.5H13.5" />
+      <path d="M4 12h8" />
+      <path d="M8.25 8.25 12 12l-3.75 3.75" />
+    </Svg>
+  );
+}
+
+/** Registrazione: la persona di `IconProfile` spostata per fare posto al più.
+ *  Il più dice «uno nuovo»; una spunta direbbe «fatto», che è un altro stato. */
+export function IconRegister(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="9.5" cy="8.25" r="3.75" />
+      <path d="M2.75 20.5v-.5c0-3.6 3.15-6 6.75-6 .9 0 1.77.15 2.55.42" />
+      <path d="M17.75 14.25v6.25M14.625 17.375h6.25" />
+    </Svg>
+  );
+}
+
 /** Ricerca. */
 export function IconSearch(p: IconProps) {
   return (
@@ -334,6 +368,8 @@ export const ICONS = {
   explore: IconExplore,
   tools: IconTools,
   profile: IconProfile,
+  signin: IconSignIn,
+  register: IconRegister,
   search: IconSearch,
   bookmark: IconBookmark,
   football: IconFootball,

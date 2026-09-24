@@ -16,6 +16,7 @@ import { HouseBanner } from "@/components/HouseBanner";
 import { WidgetLivePreview } from "@/components/WidgetLivePreview";
 import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
+import { IconSignIn, IconRegister } from "@/components/ui/icons";
 import { SiteFooter } from "@/components/SiteFooter";
 import { LiveChat } from "@/components/LiveChat";
 import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
@@ -793,8 +794,10 @@ export default function LandingPage() {
           ) : auth.status === "anonymous" ? (
             <>
               {/* #UI-HOMEAUTH-0623: aprono la modale IN-PLACE, non navigano più su /app */}
-              <button type="button" className="lp-nav-link" onClick={() => setAuthModal("login")}>{t.signin}</button>
-              <button type="button" className="lp-nav-cta" onClick={() => setAuthModal("create")}>{t.register}</button>
+              {/* #AUTH-ICONS-0924 — anche qui, che è la PRIMA volta che un
+                  visitatore vede i due tasti. */}
+              <button type="button" className="lp-nav-link" onClick={() => setAuthModal("login")}><IconSignIn size={14} stroke={2} />{t.signin}</button>
+              <button type="button" className="lp-nav-cta" onClick={() => setAuthModal("create")}><IconRegister size={14} stroke={2} />{t.register}</button>
             </>
           ) : null /* loading: niente flicker di stato errato */}
           <LangDropdown value={lang} onSelect={selectLang} variant="landing" />

@@ -3557,3 +3557,71 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   /* ── 7. Il logo non spinge ──────────────────────────────────────────── */
   .am-topbar-in:has(.br-navright) > .am-brandmark { flex: 0 0 auto; min-width: 0; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * #AUTH-ICONS-0924 — i due tasti di accesso ospitano il loro segno
+ *
+ * Andrea, sulla preview mobile: «aggiungi icone ai pulsanti in basso».
+ * Erano gli unici comandi del sito con la sola parola, mentre le tile
+ * Calcio/Tennis subito sopra avevano già la loro.
+ *
+ * `.btn-primary`/`.btn-secondary` (la coppia nella fascia «Registrati per
+ * salvare le selezioni…») erano già `inline-flex` con `gap: 8px`: lì non
+ * serve niente. Le quattro classi qui sotto invece no — erano pensate per
+ * un testo e basta, quindi l'icona sarebbe atterrata sulla linea di base
+ * del testo, più bassa di mezzo carattere. `inline-flex` + `align-items`
+ * le mette sull'asse del testo, e il gap dà lo stesso respiro delle voci
+ * della nav (7px, #MOBILE-NAV-0924).
+ * ═══════════════════════════════════════════════════════════════════════ */
+.am-auth-secondary,
+.am-auth-primary,
+.lp-nav-link,
+.lp-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+/* L'icona non si comprime mai: in una barra che va a capo il flex
+   restringerebbe prima il figlio più elastico, e un segno schiacciato si
+   legge come un difetto di rendering. */
+.am-auth-secondary > svg,
+.am-auth-primary > svg,
+.lp-nav-link > svg,
+.lp-nav-cta > svg,
+.btn-secondary > svg,
+.btn-primary > svg { flex: 0 0 auto; }
+
+@media (max-width: 640px) {
+  /* #AUTH-ICONS-0924 — il prezzo delle icone, pagato dove non si vede.
+   *
+   * Le due icone allargano i tasti di ~22px l'uno, e la riga 1 dell'utente
+   * ANONIMO ne ha quattro cose: logo + Accedi + Registrati + lingua. Misurato
+   * a 390px: in EN entrava per un pelo, in IT/ES/RU no — e la lingua tornava
+   * a capo da sola, allineata a sinistra, cioè esattamente la «riga sospesa»
+   * che questo branch è nato per togliere (RU: 371px di contenuto su 358).
+   *
+   * Tre riduzioni, tutte cose che su un telefono sono giuste comunque:
+   *   · il padding dei tasti era quello del desktop (13-14px per lato) →  10;
+   *   · il gap fra segno e parola allineato a quello della ricerca (6);
+   *   · il logo scende da 30 a 26px. È alto quanto un tasto da 44 con dentro
+   *     testo da 12,5: a 26 sta in proporzione ai comandi che ha accanto, e
+   *     restituisce 12px alla riga. `!important` perché l'altezza è scritta
+   *     inline sul tag <img> (stesso motivo, e stesso precedente, della
+   *     regola sulle icone della nav qui sopra).
+   * Dopo: RU 343px su 358, IT 326, EN 318 — la lingua resta in riga 1 in
+   * tutte e cinque. Se una traduzione futura sfora, la barra torna a tre
+   * righe: si allunga, non si rompe.
+   * `nowrap` perché su /how-it-works «SIGN IN» andava a capo DENTRO il tasto
+   * («SIGN» sopra, «IN» sotto): in un flex il testo è un elemento anonimo e
+   * si spezza prima che il bottone chieda la sua larghezza. */
+  .am-auth-secondary,
+  .am-auth-primary,
+  .lp-nav-link,
+  .lp-nav-cta {
+    gap: 6px;
+    padding-inline: 10px;
+    white-space: nowrap;
+  }
+  .am-topbar-in .brand-logo-dark { height: 26px !important; }
+}

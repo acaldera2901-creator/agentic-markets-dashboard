@@ -35,7 +35,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon, NavIcon, type NavName } from "@/app/components/menu-icon";
 // #RESTYLING-0921 round 3: il set di icone della casa (nav, bottom-nav, search).
-import { Icon, IconSearch, IconArrow, type IconName } from "@/components/ui/icons";
+import { Icon, IconSearch, IconArrow, IconSignIn, IconRegister, type IconName } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
 import { getSessionId, trackEvent } from "@/lib/track-event";
@@ -9425,8 +9425,13 @@ function UnifiedBetsTab({
         <div className="reg-nudge flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-[var(--am-line)] bg-[var(--am-panel-2)] text-xs font-mono text-[var(--am-muted)]">
           <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica.", en: "Register to save selections, get alerts and unlock auto-execution.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear la ejecución automática.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer l'exécution automatique.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть авто-исполнение." })}</span>
           <div className="flex gap-2 shrink-0">
-            <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onSignIn}>{pick5(lang, { it: "Accedi", en: "Sign In", es: "Acceder", fr: "Connexion", ru: "Войти" })}</button>
-            <button className="btn-primary" style={{ fontSize: "11px", padding: "3px 10px" }} onClick={onRegister}>{pick5(lang, { it: "Registrati", en: "Register", es: "Registrarse", fr: "S'inscrire", ru: "Регистрация" })}</button>
+            {/* #AUTH-ICONS-0924 — è la coppia che Andrea ha visto nello
+                screenshot: sotto l'hero, senza segno, mentre le tile sport
+                sopra ce l'avevano. `.btn-*` è già `inline-flex` con gap 8,
+                quindi l'icona entra senza toccare il CSS del bottone; il gap
+                scende a 6 perché qui il corpo è 11px, non 12. */}
+            <button className="btn-secondary" style={{ fontSize: "11px", padding: "3px 10px", gap: "6px" }} onClick={onSignIn}><IconSignIn size={14} stroke={2} />{pick5(lang, { it: "Accedi", en: "Sign In", es: "Acceder", fr: "Connexion", ru: "Войти" })}</button>
+            <button className="btn-primary" style={{ fontSize: "11px", padding: "3px 10px", gap: "6px" }} onClick={onRegister}><IconRegister size={14} stroke={2} />{pick5(lang, { it: "Registrati", en: "Register", es: "Registrarse", fr: "S'inscrire", ru: "Регистрация" })}</button>
           </div>
         </div>
       )}
@@ -10660,10 +10665,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               />
             ) : (
               <>
+                {/* #AUTH-ICONS-0924 — il segno prima della parola, come ogni
+                    altro comando della barra. `stroke={2}` perché a 15px il
+                    tratto di base (1,75 su griglia 24) scende sotto 1,1px e
+                    sbiadisce: è la regola scritta in components/ui/icons.tsx. */}
                 <button className="am-auth-secondary" onClick={() => openAuth("login")}>
+                  <IconSignIn size={15} stroke={2} />
                   {tNav.auth_signin}
                 </button>
                 <button className="am-auth-primary" onClick={() => openAuth("create")}>
+                  <IconRegister size={15} stroke={2} />
                   {tNav.auth_register}
                 </button>
               </>
