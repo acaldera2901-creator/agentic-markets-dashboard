@@ -723,11 +723,17 @@
 }
 .br-lobby-filter > select:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 @media (max-width: 640px) {
-  /* Su un telefono tre select da 132px non ci stanno in riga leggibili:
-     ognuna prende la metà, la terza va sotto piena larghezza. */
-  .br-lobby-filters { gap: var(--am-s-3); }
-  .br-lobby-filter { flex: 1 1 calc(50% - var(--am-s-3)); min-width: 0; }
-  .br-lobby-filter > select { width: 100%; min-width: 0; }
+  /* #LOBBY-FILTERS-MOBILE-0924 — verificato su preview reale (390×844): con
+     "competizione"/"superficie" al 50% e "ordina" a piena larghezza sotto, la
+     barra arriva a 139px su una vista (Tennis) il cui hero occupa già ~780px
+     di 844 — l'ultima select ("Ordina") finiva dietro la bottom-bar fissa,
+     leggibile solo scrollando. Tre colonne uguali invece di due dimezzano
+     l'altezza aggiunta (una riga sola): 3×select da ~104px + 2 gap di 8px
+     stanno in 358px (390 − 32 di gutter laterale).
+  */
+  .br-lobby-filters { gap: var(--am-s-2); }
+  .br-lobby-filter { flex: 1 1 0; min-width: 0; }
+  .br-lobby-filter > select { width: 100%; min-width: 0; padding-inline: 6px; }
 }
 
 /* Round 5: 302 → 248px di colonna minima. Su 1280 la lobby passa da 3 a 4
