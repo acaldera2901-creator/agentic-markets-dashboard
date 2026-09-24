@@ -3339,3 +3339,221 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
     font-size: 11px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * MOBILE — #MOBILE-NAV-0924 · la testata del desk, rifatta su DUE righe
+ *
+ * Segnalato da Andrea con uno screenshot da iPhone in produzione, dopo il
+ * merge di #RESTYLING-0921 + #MOBILE-0923: nav accavallata («Live» e
+ * «Football» si toccavano), «Tools» tagliato a metà parola, pill account
+ * + lingua sospesi su una riga loro allineata a destra, testata alta 155px
+ * su 844 (il 18% dello schermo prima di vedere un dato).
+ *
+ * PERCHÉ IL GIRO PRECEDENTE NON BASTAVA. Non era regredito: aveva risolto
+ * l'OVERFLOW (0px fuori dal documento, misurato) e trattato il sintomo
+ * stringendo le voci — padding 6px, gap 3px fra icona e label, gap 0 fra
+ * una voce e l'altra, scorrimento orizzontale con una sfumatura sul bordo.
+ * «Zero overflow» però non vuol dire «si legge»: le cinque voci chiedono
+ * 334px e ne ricevevano 255, quindi due erano sempre fuori vista, e lo
+ * spazio fra icona e parola era MINORE di quello fra due voci diverse —
+ * che è esattamente la lettura sbagliata («⚽Football🎾Tennis» come una
+ * parola sola). Nessun ritocco di padding lo ripara: a 390px le cinque
+ * etichette con aria decente chiedono ~440px di riga su 358 disponibili.
+ *
+ * LA DECISIONE. Su telefono la nav primaria è la barra in basso
+ * (.am-bottomnav: Home · Live · Watchlist · Tools · Profilo), sotto il
+ * pollice. Tre delle cinque voci della testata sono la sua copia. Restano
+ * quindi solo CALCIO e TENNIS, le due destinazioni che la barra in basso
+ * non ha, scritte per esteso e con il loro respiro. Meglio meno voci
+ * leggibili che cinque accavallate.
+ *
+ * LA GRIGLIA. Due righe vere, ognuna dal margine sinistro al destro:
+ *   riga 1 · logo ......................... account · piano · lingua
+ *   riga 2 · [Calcio] [Tennis] [ricerca ────────────────────────────]
+ * Niente più terza riga sospesa. Si ottiene con `display: contents` sulla
+ * zona destra (i suoi figli diventano elementi della stessa riga flex
+ * della testata, quindi ordinabili) e uno `::before` a larghezza piena che
+ * fa da interruzione di riga fra i due gruppi.
+ *
+ * MISURATO @390×844 e @428×926 (Playwright, iPhone UA, sessione finta
+ * `profa finale PRO` come nello screenshot di Andrea) — numeri nel commit.
+ *
+ * PERCHÉ IN FONDO AL FILE: stessa ragione del blocco #MOBILE-0923 qui
+ * sopra — queste regole riscrivono `.br-*` dichiarate prima in questo
+ * foglio e `.am-topbar-in` di globals.css, e a parità di specificità vince
+ * l'ultima dichiarata.
+ *
+ * ANCHE /tools E /world-cup (SiteTopbar). Hanno la stessa `.am-topbar-in`
+ * e le stesse `.br-nav__item`, e a 390px avevano lo stesso difetto: nav
+ * schiacciata accanto al logo in 255px per 413 di voci, «Track record»
+ * tagliato netto contro il bordo. Lì però la barra in basso NON c'è — è il
+ * desk che la disegna — quindi le cinque voci servono tutte e restano tutte:
+ * prendono una riga INTERA (358px invece di 255) e continuano a scorrere,
+ * con la sfumatura sul bordo che dice che la riga prosegue. Quello che
+ * cambia per entrambe le testate è il respiro: icona e parola non si
+ * toccano più, e due voci diverse non si toccano fra loro.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* ── 1. Le due righe ──────────────────────────────────────────────────── */
+  /* `:has(.am-topright)` non è un filtro — entrambe le testate ce l'hanno —
+     ma PESO. Il round 17 qui sopra scrive `.am-topbar-in, .am-topbar-in:has
+     (.br-upgrade) { row-gap: 10px }`, e il compilatore CSS la riscrive come
+     `:is(.am-topbar-in, .am-topbar-in:has(.br-upgrade))`: `:is()` prende la
+     specificità del suo argomento PIÙ specifico, quindi quella regola pesa
+     0,2,0 anche quando a matchare è il primo pezzo. Un semplice
+     `.am-topbar-in` (0,1,0) perdeva pur venendo dopo — misurato: row-gap
+     restava 10 e la testata 125px invece di 115. */
+  .am-topbar-in:has(.am-topright) {
+    justify-content: flex-start;   /* era space-between: con più elementi in
+                                      riga 1 li avrebbe sparpagliati tutti */
+    align-items: center;
+    column-gap: 6px;
+    /* 5 e non 10: l'interruzione di riga qui sotto è un elemento flex vero,
+       alto 0, quindi forma una RIGA sua e il row-gap si conta due volte.
+       5 + 5 = i 10px che si vedono davvero fra le due righe. */
+    row-gap: 5px;
+  }
+  /* I figli della zona destra diventano elementi della testata: solo così
+     ricerca e nav possono stare sulla STESSA riga pur essendo in due
+     contenitori diversi nel markup. */
+  .am-topbar-in:has(.br-navright) .br-navright { display: contents; }
+
+  /* Lo spaziatore che spinge i comandi account a destra nella riga 1. Non
+     è `margin-left: auto` su un elemento preciso perché il primo elemento
+     del gruppo cambia con lo stato (pill loggato / Accedi anonimo). */
+  .am-topbar-in::after {
+    content: "";
+    order: 11;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  /* L'interruzione di riga fra il gruppo 1 (ordini < 20) e il gruppo 2.
+     Solo dove c'è una nav da mandare a capo: su /world-cup la testata non
+     ne ha una, e una riga vuota costerebbe 5px di niente. */
+  .am-topbar-in:has(.br-nav)::before {
+    content: "";
+    order: 20;
+    flex: 1 0 100%;
+    height: 0;
+  }
+
+  .am-topbar-in > .am-brandmark { order: 10; }
+  .am-topbar-in > .am-topright,
+  .am-topbar-in .acct-menu-wrap,
+  .am-topbar-in .am-auth-secondary { order: 12; }
+  .am-topbar-in .am-auth-primary { order: 13; }
+  .am-topbar-in .br-upgrade { order: 14; }
+  .am-topbar-in .lang-dd { order: 15; }
+  .am-topbar-in > .br-nav { order: 25; }
+  .am-topbar-in .br-search { order: 26; }
+
+  /* SiteTopbar: la nav si prende la riga intera (358px invece dei 255 che
+     le restavano accanto al logo) e continua a scorrere — lì le cinque voci
+     servono tutte, perché quelle pagine non hanno la barra in basso. */
+  .am-topbar-in:not(:has(.br-navright)) > .br-nav {
+    flex: 1 1 100%;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  /* ── 2. La nav: due voci, scritte, con aria ──────────────────────────────
+   * Via lo scorrimento e la sfumatura sul bordo (#MOBILE-0923): con due
+   * voci non c'è più niente da scorrere, e una sfumatura su una riga che
+   * non scorre è solo una voce che sembra sbiadita.
+   * L'icona resta, ma con il suo spazio: `gap: 3px` era il difetto che si
+   * vede nello screenshot di Andrea — lo spazio fra l'icona e la SUA parola
+   * era più stretto di quello fra due voci diverse, e l'occhio leggeva
+   * «⚽Football🎾Tennis» come una parola sola. 7px, come nel resto della
+   * barra. Le due voci diventano due chip con lo stesso bordo, raggio e
+   * altezza del campo di ricerca che le segue: una riga sola di controlli,
+   * non tre oggetti diversi appiccicati. */
+  .am-topbar-in:has(.br-navright) > .br-nav {
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: 6px;
+    padding-right: 0;
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .am-topbar-in:has(.br-navright) .br-nav__item[data-bottombar] { display: none; }
+  /* Il respiro e la forma valgono per TUTTE e due le testate. */
+  .am-topbar-in .br-nav__item {
+    gap: 7px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 13.5px;
+    border: 1px solid var(--am-line);
+    border-radius: var(--am-r-ctl);
+    background: var(--am-inset);
+  }
+  .am-topbar-in .br-nav__item[aria-current="page"] {
+    border-color: var(--am-royal-b);
+  }
+  /* SiteTopbar continua a scorrere: le voci non si schiacciano per entrare. */
+  .am-topbar-in:not(:has(.br-navright)) .br-nav__item { flex: 0 0 auto; }
+
+  /* ── 3. La ricerca prende il resto della riga ────────────────────────────
+   * `flex: 1 1 0` invece del `flex: 1 1 100%` del giro precedente: lì si
+   * prendeva una riga INTERA tutta per sé (la terza), qui divide la
+   * seconda con le due voci sport. Misurato @390/IT — il caso peggiore
+   * delle cinque lingue: 208px di campo per un placeholder («Cerca squadra,
+   * giocatore…») che ne chiede 159 più icona, spazi e bordi. Sale a 44px
+   * come tutto il resto della riga: a 34 era sotto il pavimento di 44 di
+   * app/mobile.css §2, e nessuno se n'era accorto perché il campo non è
+   * nella lista dei bersagli controllati di quel foglio.
+   *
+   * IL TESTO DIGITATO A 16px, IL PLACEHOLDER A 13. Sotto i 16px Safari su
+   * iPhone ZOOMA la pagina appena si tocca un campo, e da lì non torna
+   * indietro da sola: è il salto che fa sembrare rotto un sito. Ma a 16px
+   * il placeholder italiano non ci starebbe (196px di testo per 168 di
+   * spazio) e tornerebbe il taglio a metà parola che il giro precedente
+   * aveva appena riparato. Il placeholder ha una dimensione sua: Safari
+   * guarda quella del CAMPO per decidere se zoomare, non quella del
+   * suggerimento. */
+  .am-topbar-in:has(.br-navright) .br-search {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 44px;
+    gap: 6px;
+    padding: 0 9px;
+  }
+  .am-topbar-in:has(.br-navright) .br-search input { width: 100%; font-size: 16px; }
+  .am-topbar-in:has(.br-navright) .br-search input::placeholder { font-size: 13px; }
+
+  /* ── 4. Il pill account si stringe invece di buttare a capo ──────────── */
+  .am-topbar-in:has(.br-navright) .am-acct {
+    min-width: 0;
+    max-width: 100%;
+    height: 44px;
+  }
+  .am-topbar-in:has(.br-navright) .am-acct__n {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .am-topbar-in:has(.br-navright) .am-acct .plan { flex: 0 0 auto; }
+
+  /* ── 5. Un solo selettore di lingua ─────────────────────────────────────
+   * Chi è loggato ha già la lingua come preferenza dentro il menu account
+   * (riga «Lingua» con le cinque voci per esteso, non la sigla): il
+   * dropdown «EN» accanto al pill era la seconda copia dello stesso
+   * comando, e uno dei due oggetti che formavano la riga sospesa dello
+   * screenshot. Chi NON è loggato non ha quel menu — e nel piede non c'è un
+   * selettore lingua — quindi lì il dropdown resta. */
+  .am-topbar-in:has(.acct-menu-wrap) .lang-dd { display: none; }
+
+  /* ── 6. «Passa a Pro» non si vende a chi non ha un account ───────────────
+   * Round 6 aveva deciso «non si nasconde mai», e per chi è loggato senza
+   * Pro resta esattamente dov'era: è il suo pubblico. Per l'ANONIMO su
+   * telefono no: la prima azione è «Registrati», che sta lì accanto, e i
+   * 81px del tasto sono ciò che faceva sbordare la riga 1 (391px di
+   * contenuto su 358). Pro resta a un tocco dalla scheda Profilo della
+   * barra in basso. */
+  .am-topbar-in:has(.br-navright):has(.am-auth-primary) .br-upgrade { display: none; }
+
+  /* ── 7. Il logo non spinge ──────────────────────────────────────────── */
+  .am-topbar-in:has(.br-navright) > .am-brandmark { flex: 0 0 auto; min-width: 0; }
+}

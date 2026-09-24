@@ -7498,7 +7498,11 @@ function AccountMenu({
     <div className="acct-menu-wrap" ref={wrapRef}>
       <button className="am-acct" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <MenuIcon name="account" size={18} />
-        {profile.name}
+        {/* #MOBILE-NAV-0924 — il nome era un nodo di testo nudo: non poteva
+            stringersi, quindi su telefono il pill valeva 160px fissi e buttava
+            a capo tutta la zona destra. In uno span cede spazio quando serve e
+            tronca con l'ellissi (il nome per esteso resta nel menu aperto). */}
+        <span className="am-acct__n">{profile.name}</span>
         <span className="plan">{planLabel}</span>
       </button>
       {open && (
@@ -10550,16 +10554,25 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             {/* Round 3: icona 18px prima della label. Il Live si dice con il
                 suo segno (IconLive), non con un puntino giallo — un secondo
                 colore nella nav era il primo «tutto evidenziato» della pagina. */}
+            {/* #MOBILE-NAV-0924 — `data-bottombar` marca le voci che su telefono
+                sono GIÀ nella barra in basso (.am-bottomnav: Home · Live ·
+                Watchlist · Tools · Profilo). Sotto i 640px quelle si nascondono
+                e qui restano solo Calcio e Tennis, cioè le due destinazioni che
+                la barra in basso NON ha: cinque voci a 390px non entrano con
+                un'aria decente in nessuna lingua (misurato: 440px di etichette
+                per 358 di riga), e finivano accavallate e tagliate a metà
+                parola. Il markup resta completo per il desktop e per i crawler. */}
             {([
-              { view: "home" as DeskView, icon: "home" as NavName, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
-              { view: "live" as DeskView, icon: "live" as NavName, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }) },
-              { view: "football" as DeskView, icon: "football" as NavName, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
-              { view: "tennis" as DeskView, icon: "tennis" as NavName, label: "Tennis" },
+              { view: "home" as DeskView, icon: "home" as NavName, dupe: true, label: pick5(uiLanguage, { it: "Home", en: "Home", es: "Inicio", fr: "Accueil", ru: "Главная" }) },
+              { view: "live" as DeskView, icon: "live" as NavName, dupe: true, label: pick5(uiLanguage, { it: "Live", en: "Live", es: "En vivo", fr: "Live", ru: "Лайв" }) },
+              { view: "football" as DeskView, icon: "football" as NavName, dupe: false, label: pick5(uiLanguage, { it: "Calcio", en: "Football", es: "Fútbol", fr: "Football", ru: "Футбол" }) },
+              { view: "tennis" as DeskView, icon: "tennis" as NavName, dupe: false, label: "Tennis" },
             ]).map((item) => (
               <button
                 key={item.view}
                 type="button"
                 className="br-nav__item"
+                data-bottombar={item.dupe ? "1" : undefined}
                 data-live={item.view === "live" && liveOnBoardCount > 0 ? "true" : undefined}
                 aria-current={tab === "bets" && deskView === item.view ? "page" : undefined}
                 onClick={() => {
@@ -10573,7 +10586,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 {item.label}
               </button>
             ))}
-            <Link className="br-nav__item" href="/tools">
+            <Link className="br-nav__item" data-bottombar="1" href="/tools">
               <NavIcon name="tools" size={18} />
               {pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}
             </Link>
@@ -10599,7 +10612,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     setDeskView("home");
                   }
                 }}
-                placeholder={pick5(uiLanguage, { it: "Cerca squadra, giocatore…", en: "Search team, player…", es: "Buscar equipo, jugador…", fr: "Chercher équipe, joueur…", ru: "Поиск команды, игрока…" })}
+                /* #MOBILE-NAV-0924 — il suggerimento si accorcia. Era una frase
+                   da 20-25 caratteri, e per starci intera su telefono si era
+                   presa una RIGA tutta sua nella testata (la terza). Ora la
+                   riga è condivisa con le due voci sport e il campo vale
+                   ~178px @390: in quello spazio la frase lunga tornerebbe
+                   tagliata a metà parola in quattro lingue su cinque — il bug
+                   che #MOBILE-0923 aveva appena chiuso. Meglio una frase corta
+                   e INTERA, uguale in tutte e cinque. Su desktop il campo è
+                   largo 8ch da sempre: lì non cambia niente di visibile. */
+                placeholder={pick5(uiLanguage, { it: "Cerca una partita", en: "Search a match", es: "Buscar un partido", fr: "Chercher un match", ru: "Найти матч" })}
                 aria-label={pick5(uiLanguage, { it: "Cerca una partita", en: "Search a match", es: "Buscar un partido", fr: "Chercher un match", ru: "Найти матч" })}
               />
             </label>

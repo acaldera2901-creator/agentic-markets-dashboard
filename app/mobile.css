@@ -88,11 +88,46 @@
   .bottom-nav {
     z-index: 40;
   }
-  /* Tawk.to inietta il proprio contenitore: si sposta lui, non la nav. */
+  /* Tawk.to inietta il proprio contenitore: si sposta lui, non la nav.
+   *
+   * #MOBILE-NAV-0924 — Andrea, da iPhone: «la chat copre la foto dell'hero».
+   * Una bolla `fixed` sta per forza sopra qualcosa, e sulla lobby quel
+   * qualcosa è l'hero, che occupa quasi tutto lo schermo. Quello che si può
+   * fare è tenerla il più in basso possibile senza mangiarsi la barra di
+   * navigazione, e smettere di litigare con sé stessi:
+   *
+   *   · 68px era un numero SCRITTO DUE VOLTE e diverso. Qui 68, e in
+   *     components/LiveChat.tsx `customStyle.visibility.mobile.yOffset: 88`.
+   *     Vinceva questo (`!important`), quindi la configurazione ufficiale di
+   *     Tawk non faceva niente e il numero vero non era quello che si legge
+   *     nel componente. Ora sono lo stesso numero, e viene da una misura:
+   *     la barra in basso è alta 57,5px (misurata @390 e @428), più la
+   *     safe-area del telefono, più 8px d'aria.
+   *   · la tacca in basso degli iPhone recenti NON era contata: con
+   *     `env(safe-area-inset-bottom)` a 34px la bolla finiva DENTRO la barra.
+   *
+   * `100%` di larghezza/altezza no: si sposta solo il fondo, la dimensione
+   * la decide Tawk. */
   #tawkchat-container,
   .widget-visible iframe[title*="chat" i],
   iframe[title*="chat" i] {
-    bottom: 68px !important;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  /* E pesa un po' meno sulla foto. 60px di disco verde pieno su una riga di
+   * 390 sono il 15% della larghezza dello schermo: ridotto a ~49 resta un
+   * bersaglio sopra il pavimento di 44px ma smette di essere la cosa più
+   * accesa dell'hero. Si tocca SOLO il launcher richiuso — mai
+   * `#tawkchat-container`, che quando la chat è aperta è la FINESTRA: una
+   * scala lì rimpicciolirebbe la conversazione. L'ancoraggio in basso a
+   * destra non si muove (`transform-origin`), quindi il numero del `bottom`
+   * qui sopra resta valido.
+   * NON VERIFICABILE in locale: Tawk si carica solo col consenso cookie in
+   * produzione. Se gli id cambiassero, la regola non fa nulla — il widget
+   * resta com'è oggi, non si rompe. */
+  #tawkchat-minified-container,
+  #tawkchat-minified-wrapper {
+    transform: scale(0.82);
+    transform-origin: 100% 100%;
   }
 
   /* ── 4. Il footer, che sta su OGNI pagina ────────────────────────────────
