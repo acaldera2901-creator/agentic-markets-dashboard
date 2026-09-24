@@ -9000,6 +9000,10 @@ function HomeLobby({
           away: i.data.away,
           league: i.data.league ?? "",
           modelPct: i.data.modelPct,
+          // #UPCOMING-GATE-0924 — lo stesso `locked` che chiude la card: la
+          // vetrina del piano la decide il server (showcaseAllowance), qui si
+          // trasporta e basta. Senza, la riga chiusa era identica a una aperta.
+          locked: i.data.locked === true,
           href: TAB_PATHS.bets,
           onClick: (ev: React.MouseEvent<HTMLAnchorElement>) => {
             ev.preventDefault();
@@ -9027,6 +9031,10 @@ function HomeLobby({
           rows={rows}
           vsLabel="vs"
           modelLabel={pick5(lang, { it: "modello", en: "model", es: "modelo", fr: "modèle", ru: "модель" })}
+          // La card scrive «Pro pick» in ogni lingua (PredictionCard): la riga
+          // chiusa deve leggersi come la card chiusa, non come una traduzione
+          // diversa della stessa cosa.
+          lockedLabel="Pro pick"
         />
       </LobbySection>
     );

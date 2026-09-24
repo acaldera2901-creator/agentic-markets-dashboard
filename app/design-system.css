@@ -3058,6 +3058,20 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
 .br-row__prob-empty { color: var(--am-muted-2); }
 .br-row__go { font-size: 15px; color: var(--am-muted); }
 
+/* #UPCOMING-GATE-0924 — la riga chiusa. Stesso trattamento della card: il
+   lucchetto sta sulla PICK (qui è l'etichetta sotto il numero, perché la lista
+   non ha una colonna pick) e sull'affordance di apertura, mai sul numero — la
+   percentuale è il valore che la vetrina gratuita deve dimostrare, e il server
+   la manda apposta anche sulle righe chiuse. I valori sono quelli di
+   `.br-card__pick-v[data-locked="true"]`: inline-flex, --am-muted. */
+.br-row__prob small[data-locked="true"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--am-muted);
+}
+.br-row[data-locked="true"] .br-row__go { color: var(--am-muted-2); }
+
 /* Il blocco vive più in basso, DOPO il `@media (max-width: 780px)` che
    ridefinisce `.br-row`: stessa specificità, quindi conta l'ordine nel file.
    Vedi la nota lì. */
