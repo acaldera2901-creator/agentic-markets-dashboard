@@ -55,19 +55,20 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // #DB-INTERPOLATE-NOTE: `dbQuery` sostituisce $N con una stringa quotata,
-  // non un vero parametro preparato (vedi `interpolate` in lib/db.ts) — un
-  // array JS diventerebbe `'PL,SA,...'` (una sola stringa), non una lista SQL.
-  // Le leghe sono una costante interna (non input utente): l'IN-list si
-  // costruisce qui, letterale, senza passare da $N.
-  const leagueList = Object.keys(WATCHED_LEAGUES).map((code) => `'${code}'`).join(", ");
+  // #SQL-GUARD: niente ${...} coi valori — placeholder list `$2, $3, …` fatta
+  // di soli $N (stesso idioma già in lib/weekly-pick-server.ts::placeholders,
+  // vedi lib/sql-guard.test.ts), i valori veri (leghe + orizzonte) viaggiano
+  // nell'array params e passano da interpolate() in lib/db.ts.
+  const codes = Object.keys(WATCHED_LEAGUES);
+  const codePlaceholders = codes.map((_, i) => `$${i + 2}`).join(", ");
   const rows = await dbQuery<LeagueRow>(
     `SELECT league,
-            count(*) FILTER (WHERE starts_at > now() AND starts_at < now() + interval '${HORIZON_DAYS} days') AS upcoming,
+            count(*) FILTER (WHERE starts_at > now() AND starts_at < now() + interval '$1 days') AS upcoming,
             max(updated_at) AS last_updated
        FROM unified_predictions
-      WHERE sport = 'football' AND league IN (${leagueList})
-      GROUP BY league`
+      WHERE sport = 'football' AND league IN (${codePlaceholders})
+      GROUP BY league`,
+    [HORIZON_DAYS, ...codes]
   );
 
   const byLeague = new Map((rows ?? []).map((r) => [r.league, r]));
