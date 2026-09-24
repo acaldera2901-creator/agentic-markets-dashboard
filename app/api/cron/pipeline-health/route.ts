@@ -1,13 +1,24 @@
 // app/api/cron/pipeline-health/route.ts — #PIPELINE-HEALTH-0924
 //
-// Nato da un guasto vero, trovato a occhio da Andrea il 24/09 e non da questo
+// Nato da un allarme trovato a occhio da Andrea il 24/09 e non da questo
 // sistema: le big-5 europee (PL/SA/PD/BL1/FL1) erano ferme da 4 giorni — zero
-// righe con `starts_at` futuro in `unified_predictions` — e Champions/World
-// Cup da 13. Nessun allarme era partito. `lib/football-data.ts` (vedi
-// #FIXTURES-SILENT-SKIP-0910) già logga un `console.warn` quando una lega
-// torna HTTP non-200, ma un log su Vercel che nessuno legge non è un allarme.
-// Uso `opsAlert` (già in `lib/ops-alert.ts`, già consumato da altri cron
-// come shopify-reconcile): niente canale nuovo, quello che c'è già.
+// righe con `starts_at` futuro in `unified_predictions`. Nessun allarme era
+// partito. `lib/football-data.ts` (vedi #FIXTURES-SILENT-SKIP-0910) già logga
+// un `console.warn` quando una lega torna HTTP non-200, ma un log su Vercel
+// che nessuno legge non è un allarme. Uso `opsAlert` (già in
+// `lib/ops-alert.ts`, già consumato da altri cron come shopify-reconcile):
+// niente canale nuovo, quello che c'è già.
+//
+// #HORIZON-25-0924 — VERIFICATO IL 24/09 CHE NON ERA UN GUASTO: chiamata
+// diretta all'API di football-data.org (chiave di Andrea, letta dal suo
+// pannello) per tutte e 5 le leghe → HTTP 200, nessuna quota/chiave rotta,
+// stagione 2026-27 regolarmente attiva (matchday 6 giocato). La PROSSIMA
+// partita per TUTTE e 5 è il 9-10/10 — una sosta nazionali reale e
+// sincronizzata, confermata alla fonte, non un problema nostro. Con
+// `HORIZON_DAYS=14` questo stesso cron avrebbe suonato un falso allarme
+// durante una sosta perfettamente normale (dura 15-16 giorni). Portato a 25
+// per starci dentro con margine — vedi anche la nota sotto sul perché una
+// sosta non azzera mai le 5 insieme SALVO che sia una sosta vera.
 //
 // ATTENZIONE — verificato il 24/09: `ALERT_WEBHOOK_URL` NON è configurata su
 // Vercel production (né `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, se qualcuno
@@ -24,8 +35,9 @@
 // non necessariamente tocca `updated_at` delle righe esistenti, quindi quella
 // soglia avrebbe falsi positivi ogni volta che il calendario è già stabile.
 // "Nessuna partita futura" invece è inequivocabile per queste 5 leghe: hanno
-// sempre un turno entro due settimane salvo una sosta internazionale, e
-// un'unica sosta non azzera TUTTE e 5 insieme.
+// sempre un turno entro 25 giorni anche contando una sosta nazionali (15-16
+// giorni, misurato il 24/09), e una sosta non azzera TUTTE e 5 insieme — solo
+// un problema condiviso (chiave/quota/pipeline) lo fa.
 import { NextResponse } from "next/server";
 import { verifyBearer } from "@/lib/admin-auth";
 import { dbQuery } from "@/lib/db";
@@ -46,7 +58,7 @@ const WATCHED_LEAGUES: Record<string, string> = {
   FL1: "Ligue 1",
 };
 
-const HORIZON_DAYS = 14;
+const HORIZON_DAYS = 25;
 
 type LeagueRow = { league: string; upcoming: number; last_updated: string | null };
 
