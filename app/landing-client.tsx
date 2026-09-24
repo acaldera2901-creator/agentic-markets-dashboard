@@ -18,6 +18,7 @@ import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
 import { IconSignIn, IconRegister } from "@/components/ui/icons";
 import { SiteFooter } from "@/components/SiteFooter";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { LiveChat } from "@/components/LiveChat";
 import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
 import { writeRefCode } from "@/lib/referral-code";
@@ -1157,6 +1158,10 @@ export default function LandingPage() {
 
       {/* ── Footer (#UI-FOOTER-UNIFIED-0623: footer condiviso del sito) ── */}
       <SiteFooter lang={lang} />
+      {/* #TOOLS-BOTTOMNAV-0924: mancava anche qui — da /how-it-works su
+          telefono non c'era modo di tornare al prodotto in un tocco.
+          Nessuna voce attiva: questa pagina non corrisponde a nessuna delle 5. */}
+      <MobileBottomNav lang={lang} />
 
       {/* #UI-LIVECHAT-0623: widget live chat (talk.to) dietro env flag, inerte
           finché NEXT_PUBLIC_TALKTO_ID non è settato. */}

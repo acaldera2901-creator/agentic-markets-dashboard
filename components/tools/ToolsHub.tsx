@@ -7,6 +7,7 @@
 import Link from "next/link";
 import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { SiteFooter } from "@/components/SiteFooter";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { getToolsCopy } from "@/lib/tools/copy";
 import { TOOL_SLUGS, chromeLang, chromeNav, toolPath, type ToolLocale } from "@/lib/tools/registry";
 import { hubJsonLd } from "@/lib/tools/seo";
@@ -100,6 +101,7 @@ export function ToolsHub({ locale }: { locale: ToolLocale }) {
         />
       </main>
       <SiteFooter lang={chromeLang(locale)} />
+      <MobileBottomNav lang={chromeLang(locale)} active="tools" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(hubJsonLd(locale)) }}
