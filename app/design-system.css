@@ -686,6 +686,50 @@
 .br-sec__link:hover { text-decoration: underline; }
 .br-sec__link:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 
+/* #LOBBY-FILTERS-0924 — filtri Calcio/Tennis (competizione/superficie/ordina).
+   Stessi token del resto della lobby (`.br-sec__link` per i colori, `.acct-lang-select`
+   per la forma della select): NON le classi `.sports-filter-bar`/`.am-mini-field`
+   del vecchio board, riconosciute da Andrea come "il sito vecchio" al round 11. */
+.br-lobby-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--am-s-4);
+  margin: calc(-1 * var(--am-s-2)) 0 var(--am-s-2);
+}
+.br-lobby-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--am-font-ui);
+}
+.br-lobby-filter > span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.br-lobby-filter > select {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 9px;
+  border-radius: var(--am-r-ctl);
+  border: 1px solid var(--am-line-2);
+  background: var(--am-inset);
+  color: var(--am-text);
+  cursor: pointer;
+  min-width: 132px;
+}
+.br-lobby-filter > select:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+@media (max-width: 640px) {
+  /* Su un telefono tre select da 132px non ci stanno in riga leggibili:
+     ognuna prende la metà, la terza va sotto piena larghezza. */
+  .br-lobby-filters { gap: var(--am-s-3); }
+  .br-lobby-filter { flex: 1 1 calc(50% - var(--am-s-3)); min-width: 0; }
+  .br-lobby-filter > select { width: 100%; min-width: 0; }
+}
+
 /* Round 5: 302 → 248px di colonna minima. Su 1280 la lobby passa da 3 a 4
    card per riga, e nella colonna accanto all'hero da 2 a 3 — la richiesta di
    Andrea era esattamente «nella prima schermata se ne devono vedere di più».
