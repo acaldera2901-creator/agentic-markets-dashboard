@@ -91,4 +91,13 @@ describe("PredictionCard", () => {
     fireEvent.click(screen.getByRole("link", { name: /view analysis/i }));
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
+  // #I18N-CTA-0924 — unico testo della card rimasto fisso in inglese su tutte
+  // le lingue del desk: nessun chiamante passava `lang`.
+  it("CTA tradotta quando lang è passato, inglese di default", () => {
+    const { unmount } = render(<PredictionCard data={data} href="/p/1" lang="it" />);
+    expect(screen.getByRole("link", { name: /vedi l.analisi/i })).toBeInTheDocument();
+    unmount();
+    render(<PredictionCard data={data} variant="premiumLocked" href="/plans" lang="it" />);
+    expect(screen.getByRole("link", { name: /sblocca l.analisi completa/i })).toBeInTheDocument();
+  });
 });

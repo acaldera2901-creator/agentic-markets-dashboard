@@ -36,6 +36,11 @@ import { LiveBadge } from "@/components/ui/LiveBadge";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
 import { IconArrow, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
 import { EDGE_HIGH_PP, formatPct, type PredictionCardData } from "@/lib/ui/prediction-card";
+import type { Lang } from "@/lib/house-banners";
+
+function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T {
+  return v[lang];
+}
 
 export type PredictionCardVariant = "compact" | "featured" | "live" | "premiumLocked";
 export type PredictionCardBadgeKind = "high-edge" | "starting-soon" | "featured";
@@ -63,6 +68,11 @@ export type PredictionCardProps = {
    *  chiamante passa un <img> (o nulla: la card resta quella del round 1). */
   media?: ReactNode;
   className?: string;
+  /** #I18N-CTA-0924 — la CTA («View analysis»/«Unlock full analysis») era
+   *  fissa in inglese: unico testo non tradotto della card, su tutte le
+   *  lingue del desk. `en` di default per i chiamanti che non lo passano
+   *  ancora (nessuna regressione). */
+  lang?: Lang;
 };
 
 const BADGE_LABEL: Record<PredictionCardBadgeKind, string> = {
@@ -90,7 +100,7 @@ function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): 
   return null;
 }
 
-export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className }: PredictionCardProps) {
+export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className, lang = "en" }: PredictionCardProps) {
   const locked = variant === "premiumLocked" || data.locked === true;
   const live = variant === "live" || data.isLive;
   const resolvedBadge = badge === undefined ? deriveBadge(data, variant) : badge;
@@ -100,7 +110,9 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
   // un puntino accanto al nome.
   const crestSize = featured ? 36 : 22;
   const ctaTone = locked ? "unlock" : variant === "featured" ? "primary" : "link";
-  const ctaText = locked ? "Unlock full analysis" : "View analysis";
+  const ctaText = locked
+    ? pick5(lang, { it: "Sblocca l'analisi completa", en: "Unlock full analysis", es: "Desbloquea el análisis completo", fr: "Débloquer l'analyse complète", ru: "Открыть полный анализ" })
+    : pick5(lang, { it: "Vedi l'analisi", en: "View analysis", es: "Ver análisis", fr: "Voir l'analyse", ru: "Смотреть анализ" });
   const showWhy = variant === "featured" && !!data.explanation && !locked;
 
   return (
