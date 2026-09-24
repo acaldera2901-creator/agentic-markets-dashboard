@@ -116,3 +116,57 @@ export function NavIcon({
     />
   );
 }
+
+// #NAV-ICONS-ELECTRIC-0924 — la BOTTOM BAR mobile (.am-bottomnav, 5 voci:
+// home/live/watchlist/tools/profile). Fin qui usava le SVG flat del round 3
+// (components/ui/icons.tsx, `<Icon name={...} />`), l'unico posto rimasto
+// fuori dallo stile "electric" introdotto round 14 sulle tool icons e
+// round 5 sulla nav primaria — la lamentela di Andrea del 24/09 ("icone
+// stilizzate non nel nostro stile") era su QUESTA barra.
+//
+// Le chiavi ricalcano `IconName` di components/ui/icons.tsx usate da
+// BOTTOM_TABS in app/app/page.tsx ("bookmark" = watchlist) così il chiamante
+// non cambia forma, cambia solo il componente che rende l'icona.
+type BottomNavName = "home" | "live" | "bookmark" | "tools" | "profile";
+
+const BOTTOMNAV_SRC: Record<BottomNavName, string> = {
+  home: "/icons/bottomnav-home.png",
+  live: "/icons/bottomnav-live.png",
+  bookmark: "/icons/bottomnav-watchlist.png",
+  tools: "/icons/bottomnav-tools.png",
+  profile: "/icons/bottomnav-profile.png",
+};
+const BOTTOMNAV_SRC_SM: Record<BottomNavName, string> = {
+  home: "/icons/bottomnav-home-sm.png",
+  live: "/icons/bottomnav-live-sm.png",
+  bookmark: "/icons/bottomnav-watchlist-sm.png",
+  tools: "/icons/bottomnav-tools-sm.png",
+  profile: "/icons/bottomnav-profile-sm.png",
+};
+
+export type { BottomNavName };
+
+export function BottomNavIcon({
+  name,
+  size = 22,
+  className,
+}: {
+  name: BottomNavName;
+  size?: number;
+  className?: string;
+}) {
+  // Stessa soglia di NavIcon/MenuIcon: il master 320px sotto i 24px impasta.
+  // La bottom bar renderizza a 22px → prende sempre la -sm.
+  const src = size <= 24 ? BOTTOMNAV_SRC_SM[name] : BOTTOMNAV_SRC[name];
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      width={size}
+      height={size}
+      className={className}
+      style={{ width: size, height: size, objectFit: "contain", display: "block", flex: "0 0 auto" }}
+    />
+  );
+}
