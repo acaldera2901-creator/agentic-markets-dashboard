@@ -55,19 +55,50 @@ describe("PredictionCard", () => {
   // #LIVE-SCORE-CARD-0925 — Andrea, 25/09: «i risultati devono vedersi e
   // devono essere live come prima del restyle». Il dato (liveScoreLabel)
   // c'era già in HomeLobby (dal ticker orfano), non arrivava mai alla card.
-  it("live con punteggio noto: il risultato sostituisce il \"vs\"", () => {
+  // #CARD-LAYOUT-0925 — Andrea ha bocciato il punteggio al posto del «vs»
+  // (appeso al nome di casa). Ora sta in colonna: un valore per riga, accanto
+  // alla squadra a cui appartiene, come su un tabellone.
+  it("live con punteggio noto: un valore per riga squadra, e la frase intera per chi ascolta", () => {
     render(<PredictionCard data={{ ...data, isLive: true, liveMinute: 58, liveScoreLabel: "2-1" }} variant="live" href="/p/1" />);
-    expect(screen.getByText("2-1")).toHaveAttribute("data-live", "true");
-    expect(screen.queryByText("vs")).toBeNull();
+    const home = screen.getByTestId("score-home");
+    const away = screen.getByTestId("score-away");
+    expect(home).toHaveTextContent("2");
+    expect(away).toHaveTextContent("1");
+    expect(home).toHaveAttribute("data-live", "true");
+    expect(home.closest(".br-card__team")).toHaveTextContent("Arsenal");
+    expect(away.closest(".br-card__team")).toHaveTextContent("Chelsea");
+    // Le cifre sono aria-hidden: per chi ascolta il punteggio è una frase.
+    expect(screen.getByRole("heading", { level: 3 })).toHaveAccessibleName(/vs Chelsea.*Live score 2-1$/);
   });
-  it("live ma punteggio non ancora noto: resta \"vs\", non un trattino a caso", () => {
+  it("tennis live: un set per colonna, nell'ordine in cui si giocano", () => {
+    render(<PredictionCard data={{ ...data, sport: "tennis", home: "Alcaraz", away: "Sinner", isLive: true, liveScoreLabel: "6-4 3-6 2-1" }} variant="live" href="/p/1" />);
+    expect([...screen.getByTestId("score-home").children].map((c) => c.textContent)).toEqual(["6", "3", "2"]);
+    expect([...screen.getByTestId("score-away").children].map((c) => c.textContent)).toEqual(["4", "6", "1"]);
+  });
+  it("punteggio in una forma sconosciuta: si mostra intero accanto a LIVE, non in una colonna sbagliata", () => {
+    render(<PredictionCard data={{ ...data, isLive: true, liveScoreLabel: "HT" }} variant="live" href="/p/1" />);
+    expect(screen.queryByTestId("score-home")).toBeNull();
+    expect(screen.getByText("HT")).toHaveClass("br-card__scoreraw");
+  });
+  it("live ma punteggio non ancora noto: nessuna colonna, nessun trattino a caso", () => {
     render(<PredictionCard data={{ ...data, isLive: true, liveMinute: 3 }} variant="live" href="/p/1" />);
-    expect(screen.getByText("vs")).toBeInTheDocument();
+    expect(screen.queryByTestId("score-home")).toBeNull();
+    expect(screen.queryByText(/live score/i)).toBeNull();
   });
   it("non live: il punteggio non si mostra anche se per qualche motivo è valorizzato", () => {
     render(<PredictionCard data={{ ...data, isLive: false, liveScoreLabel: "2-1" }} href="/p/1" />);
-    expect(screen.getByText("vs")).toBeInTheDocument();
+    expect(screen.queryByTestId("score-home")).toBeNull();
     expect(screen.queryByText("2-1")).toBeNull();
+    expect(screen.queryByText(/live score/i)).toBeNull();
+  });
+  // #CARD-LAYOUT-0925 — l'header è due righe assegnate; la watchlist sta nel
+  // piede accanto alla CTA, non più fra i chip.
+  it("la watchlist vive nel piede, accanto alla CTA; l'header ha solo informazione", () => {
+    render(<PredictionCard data={data} href="/p/1" saved={false} onToggleWatchlist={() => {}} />);
+    const watch = screen.getByRole("button", { name: /watchlist/i });
+    expect(watch.closest("footer")).not.toBeNull();
+    expect(watch.closest("header")).toBeNull();
+    expect(screen.getByText("High edge").closest(".br-card__status")).not.toBeNull();
   });
   // #RESTYLING-0921 round 2 — il free tier vede il NUMERO, paga per il LATO.
   // Il lucchetto sta sulla pick: nascondere anche la probabilità toglierebbe

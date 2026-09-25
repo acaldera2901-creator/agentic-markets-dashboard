@@ -51,6 +51,27 @@ export function edgePointsFrom(modelPct: number | null, marketPct: number | null
   return Math.round((modelPct - marketPct) * 100) / 100;
 }
 
+/** #CARD-LAYOUT-0925 — il punteggio in corso si legge come su un tabellone:
+ *  un valore per riga, accanto alla squadra a cui appartiene, non una stringa
+ *  appesa al nome di casa. Il chiamante continua a passare la stringa
+ *  ("2-1", "6-4 3-6 2-1"); qui la si scompone in colonne — un set per colonna
+ *  nel tennis. Se la forma non è «a-b [a-b …]» torna null e la card mostra
+ *  la stringa così com'è, invece di una colonna sbagliata. */
+export function splitLiveScore(label: string | null | undefined): { home: string[]; away: string[] } | null {
+  if (!label) return null;
+  const tokens = label.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+  const home: string[] = [];
+  const away: string[] = [];
+  for (const t of tokens) {
+    const parts = t.split(/[-–−]/);
+    if (parts.length !== 2) return null;
+    home.push(parts[0]);
+    away.push(parts[1]);
+  }
+  return { home, away };
+}
+
 export type PredictionCardData = {
   id: string;
   sport: string;

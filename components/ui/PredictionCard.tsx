@@ -35,7 +35,7 @@ import { LeagueChip } from "@/components/ui/LeagueChip";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
 import { IconArrow, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
-import { EDGE_HIGH_PP, formatPct, type PredictionCardData } from "@/lib/ui/prediction-card";
+import { EDGE_HIGH_PP, formatPct, splitLiveScore, type PredictionCardData } from "@/lib/ui/prediction-card";
 import type { Lang } from "@/lib/house-banners";
 
 function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T {
@@ -89,6 +89,17 @@ function BadgeIcon({ kind }: { kind: PredictionCardBadgeKind }) {
   return <IconStar size={12} stroke={2} />;
 }
 
+// #CARD-LAYOUT-0925 — le celle del punteggio di una riga squadra: nel calcio
+// una, nel tennis una per set. `aria-hidden`: il valore per chi ascolta è la
+// frase «Live score 2-1» nell'h3, non due cifre sparse.
+function ScoreCells({ cells, testId }: { cells: string[]; testId: string }) {
+  return (
+    <span className="br-card__score" data-live="true" data-testid={testId} aria-hidden="true">
+      {cells.map((c, i) => <span key={i}>{c === "" ? "–" : c}</span>)}
+    </span>
+  );
+}
+
 function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): { kind: PredictionCardBadgeKind; label?: string } | null {
   if (variant === "featured") return { kind: "featured" };
   // Round 4: il badge resta una PAROLA, non un numero — «High edge» dice che
@@ -114,37 +125,61 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
     ? pick5(lang, { it: "Sblocca l'analisi completa", en: "Unlock full analysis", es: "Desbloquea el análisis completo", fr: "Débloquer l'analyse complète", ru: "Открыть полный анализ" })
     : pick5(lang, { it: "Vedi l'analisi", en: "View analysis", es: "Ver análisis", fr: "Voir l'analyse", ru: "Смотреть анализ" });
   const showWhy = variant === "featured" && !!data.explanation && !locked;
+  const score = live ? splitLiveScore(data.liveScoreLabel) : null;
 
   return (
     <article className={["br-card", className].filter(Boolean).join(" ")} data-variant={variant} data-id={data.id} data-live={live || undefined}>
       {featured && media ? <div className="br-card__media" data-testid="card-media">{media}</div> : null}
+      {/* #CARD-LAYOUT-0925 — l'header è due righe ASSEGNATE, non un flusso che
+          va a capo dove capita. Sulle larghezze vere della lobby (275px a 1280,
+          310 a 390) il vecchio `flex-wrap` produceva tre righe — sport+lega /
+          orario / badge+watch — con il gruppo `margin-left:auto` da solo su
+          una riga vuota: quasi metà card di meta-informazione. Ora: riga 1 =
+          cos'è (sport, lega); riga 2 = quando (orario o LIVE) e il badge. La
+          watchlist scende nel piede, accanto alla CTA: le due azioni insieme,
+          l'informazione sopra. */}
       <header className="br-card__kicker">
-        <SportChip sport={data.sport} />
-        <LeagueChip league={data.league} />
-        {live ? <LiveBadge minute={data.liveMinute} /> : data.kickoffLabel ? <span className="br-card__when">{data.kickoffLabel}</span> : null}
-        {(resolvedBadge || onToggleWatchlist) && (
-          <span className="br-card__side">
+        <span className="br-card__meta">
+          <SportChip sport={data.sport} />
+          <LeagueChip league={data.league} />
+        </span>
+        {(live || data.kickoffLabel || resolvedBadge) && (
+          <span className="br-card__status">
+            {live ? <LiveBadge minute={data.liveMinute} /> : data.kickoffLabel ? <span className="br-card__when">{data.kickoffLabel}</span> : null}
+            {/* Punteggio in una forma che non è «a-b»: si mostra intero, qui,
+                piuttosto che in una colonna sbagliata. */}
+            {live && data.liveScoreLabel && !score && <span className="br-card__scoreraw">{data.liveScoreLabel}</span>}
             {resolvedBadge && (
               <span className="br-badge" data-kind={resolvedBadge.kind}><BadgeIcon kind={resolvedBadge.kind} />{resolvedBadge.label ?? BADGE_LABEL[resolvedBadge.kind]}</span>
             )}
-            {onToggleWatchlist && <WatchlistButton saved={!!saved} onToggle={onToggleWatchlist} />}
           </span>
         )}
       </header>
 
+      {/* #CARD-LAYOUT-0925 — le squadre sono SEMPRE due righe impilate, come
+          già fa MatchHeader al livello 2. Prima andavano a capo solo quando i
+          nomi non entravano (la maggioranza dei casi reali), e la stessa
+          griglia mescolava card inline con «vs» e card impilate con il «vs»
+          appeso in fondo al primo nome: altezze da 249 a 297px.
+          Il punteggio live (#LIVE-SCORE-CARD-0925 lo metteva al posto del
+          «vs», bocciato da Andrea il 25/09) sta ora in COLONNA a destra, un
+          valore per riga accanto alla squadra a cui appartiene — il tabellone
+          che chi guarda una partita legge da sempre; nel tennis un set per
+          colonna. Il «vs» resta solo per chi ascolta la pagina. */}
       <div className="br-card__match">
-        <h3 className="br-card__teams">
-          <span className="br-card__team"><Crest team={data.home} sport={data.sport} size={crestSize} role="home" /><span>{data.home}</span></span>
-          {/* #LIVE-SCORE-CARD-0925 — il risultato in corso al posto del "vs"
-              quando la partita è live e il punteggio è noto. Andrea, 25/09:
-              «i risultati devono vedersi e devono essere live come prima del
-              restyle» — la card non lo mostrava mai, era un dato disponibile
-              (live/data.isLive) mai arrivato qui. `data-live` riusa il token
-              già acceso dal resto della card (nessun colore nuovo). */}
-          <span className="br-card__vs" data-live={live && data.liveScoreLabel ? "true" : undefined}>
-            {live && data.liveScoreLabel ? data.liveScoreLabel : "vs"}
+        <h3 className="br-card__teams" data-score={score ? "true" : undefined}>
+          <span className="br-card__team" data-role="home">
+            <Crest team={data.home} sport={data.sport} size={crestSize} role="home" />
+            <span className="br-card__name" title={data.home}>{data.home}</span>
+            {score && <ScoreCells cells={score.home} testId="score-home" />}
           </span>
-          <span className="br-card__team"><Crest team={data.away} sport={data.sport} size={crestSize} role="away" /><span>{data.away}</span></span>
+          <span className="br-card__vs">vs</span>
+          <span className="br-card__team" data-role="away">
+            <Crest team={data.away} sport={data.sport} size={crestSize} role="away" />
+            <span className="br-card__name" title={data.away}>{data.away}</span>
+            {score && <ScoreCells cells={score.away} testId="score-away" />}
+          </span>
+          {score && <span className="br-card__vs">Live score {data.liveScoreLabel}</span>}
         </h3>
       </div>
 
@@ -171,9 +206,10 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
       {extra}
 
       <footer className="br-card__foot">
-        {showWhy ? (
-          <p className="br-card__why"><strong>Why the model disagrees.</strong> {data.explanation}</p>
-        ) : <span />}
+        {showWhy && <p className="br-card__why"><strong>Why the model disagrees.</strong> {data.explanation}</p>}
+        <span className="br-card__foot-l">
+          {onToggleWatchlist && <WatchlistButton saved={!!saved} onToggle={onToggleWatchlist} />}
+        </span>
         <Link href={href} className="br-cta" data-tone={ctaTone} onClick={onOpen} aria-label={`${ctaText}: ${data.home} vs ${data.away}`}>
           {locked && <IconLock size={14} />}
           {ctaText}
