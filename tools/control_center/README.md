@@ -28,6 +28,23 @@ raggio ∝ √grado, colore per tipo, opacita' che cala con l'eta' dell'ultimo
 tocco). Se l'endpoint manca o risponde `{"assente":true}` mostra «cervello in
 sincronizzazione», mai una pagina rotta.
 
+Il settore **Progetti** (lettera L, si apre dal Ponte — i tasti `1-9 0` erano
+finiti) legge `/api/progetti` e apre una card intera con
+`/api/progetto?id=<registro>/<nome del file>`. Dal grafo del Cervello il nodo
+di un progetto porta alla stessa scheda («apri la scheda del progetto»
+nell'ispettore), e `#scheda=sistema/side-hustle-etsy` e' l'indirizzo che si
+incolla in chat. **E' una vista, non un registro**: legge i file `.md` dei tre
+posti dove le card vivono gia' (`~/.claude/.../memory`,
+`~/.claude-personal/.../memory`, `sistema-andrea/docs/progetti`) a ogni
+richiesta — non il riversamento nel cervello, che e' vecchio fino a 5 minuti —
+e non esiste un endpoint che ne scriva una: #UNIONE-0907, la card resta
+l'unica fonte. Il markdown lo rende `markdown_min.py`, scritto a mano e senza
+dipendenze, perche' il server gira sul python di Homebrew e il collector sul
+venv del repo: una libreria installata in uno solo dei due si scopre con un
+500 in pagina. La striscia «ci lavorano adesso» incrocia la Sala al volo e
+dichiara sempre *perche'* ha agganciato una sessione; se la Sala tace, la
+scheda esce lo stesso senza quella striscia.
+
 **Misurare a mano senza scrivere niente:**
 
     venv/bin/python -m tools.control_center.collector --dry-run
