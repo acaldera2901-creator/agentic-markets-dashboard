@@ -1749,12 +1749,14 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
   letter-spacing: -0.005em;
   color: var(--am-text);
 }
+/* #FAQ-WHITE-0925 (Andrea, 25/09): «il testo bianco, non quel grigino» —
+   da --am-muted a --am-text, come la domanda sopra. */
 .br-faq__a {
   margin: 6px 0 0;
   font-family: var(--am-font-ui);
   font-size: 13.5px;
   line-height: 1.55;
-  color: var(--am-muted);
+  color: var(--am-text);
   max-width: 68ch;
 }
 
