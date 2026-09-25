@@ -4269,7 +4269,14 @@ function PlansTab({
         <article className="plan-card">
           <div className="plan-card-head">
             <div>
-              <p className="eyebrow">{pick5(lang, { it: "Più popolare", en: "Most popular", es: "Más popular", fr: "Le plus populaire", ru: "Самый популярный" })}</p>
+              {/* #PLANS-HONEST-COPY-0925 — "Most popular"/"Più popolare" era
+                  una scritta fissa nel codice, non un dato di vendita vero
+                  (il prodotto non ha ancora pagamenti reali in produzione).
+                  Riprova sociale inventata, trovata da un'analisi commissionata
+                  da Andrea. Stesso pattern dell'eyebrow di Free ("Free") e
+                  Pro ("Everything"/"Tutto incluso") qui sopra e sotto: il nome
+                  del piano, non un claim. */}
+              <p className="eyebrow">Base</p>
               <h4>{planLabel("base", lang)}</h4>
             </div>
             <span>{planPriceCopy("base", lang)}</span>
@@ -9069,8 +9076,16 @@ function HomeLobby({
   // partite invece di sei non deve scrollare sei schermate di card.
   // Non sostituisce le fasce: è una vista in più, e sta in fondo.
   const upcoming = view !== "home" ? null : (() => {
+    // #UPCOMING-PAST-0925 — trovato da un'analisi commissionata da Andrea: la
+    // fascia mostrava partite già finite (es. calcio delle 07:00 letta ancora
+    // qui alle 11:40). `!isLive` esclude solo la partita IN CORSO ORA, non
+    // quella che è cominciata e finita senza che il feed live la riprendesse
+    // mai (ESPN/football-data possono perdere una partita dal loro live
+    // tracking prima ancora che finisca). «Prossimi match» deve escludere
+    // anche chi è nel passato, non solo chi è live in questo momento.
+    const now = Date.now();
     const rows: UpcomingRow[] = [...footballItems, ...tennisItems]
-      .filter((i) => !i.data.isLive)
+      .filter((i) => !i.data.isLive && new Date(i.data.startsAt).getTime() > now)
       .sort((a, b) => new Date(a.data.startsAt).getTime() - new Date(b.data.startsAt).getTime())
       .slice(0, 10)
       .map((i) => {
