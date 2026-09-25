@@ -34,7 +34,7 @@ import { SportChip } from "@/components/ui/SportChip";
 import { LeagueChip } from "@/components/ui/LeagueChip";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
-import { IconArrow, IconClock, IconConfidence, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
+import { IconArrow, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
 import { EDGE_HIGH_PP, formatPct, type PredictionCardData } from "@/lib/ui/prediction-card";
 import type { Lang } from "@/lib/house-banners";
 
@@ -43,14 +43,7 @@ function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T {
 }
 
 export type PredictionCardVariant = "compact" | "featured" | "live" | "premiumLocked";
-// #TRE-LIVELLI-0925 — «model-read» e' il TERZO stato visivo del calcio: la
-// direzione si vede, ma la riga sta sotto il floor della sua lega e non entra
-// ne' nei Best Bets ne' nel track record pubblico. Non porta un linguaggio
-// visivo nuovo: e' lo stesso badge outline monocromo degli altri tre (una
-// parola + un segno, nessun colore in piu' — vedi `.br-badge` in
-// design-system.css), e la parola e' quella che il prodotto usa gia'
-// nell'occhiello della scheda aperta.
-export type PredictionCardBadgeKind = "high-edge" | "starting-soon" | "featured" | "model-read";
+export type PredictionCardBadgeKind = "high-edge" | "starting-soon" | "featured";
 
 export type PredictionCardProps = {
   data: PredictionCardData;
@@ -86,7 +79,6 @@ const BADGE_LABEL: Record<PredictionCardBadgeKind, string> = {
   "high-edge": "High edge",
   "starting-soon": "Starting soon",
   featured: "Featured",
-  "model-read": "Model read",
 };
 
 // Round 3: il badge è outline monocromo — il significato lo danno la parola e
@@ -94,18 +86,10 @@ const BADGE_LABEL: Record<PredictionCardBadgeKind, string> = {
 function BadgeIcon({ kind }: { kind: PredictionCardBadgeKind }) {
   if (kind === "high-edge") return <IconEdge size={12} stroke={2} />;
   if (kind === "starting-soon") return <IconClock size={12} stroke={2} />;
-  // #TRE-LIVELLI-0925: il segno della confidenza, lo stesso glifo che il desk
-  // usa per le tacche — nessuna icona nuova da disegnare.
-  if (kind === "model-read") return <IconConfidence size={12} stroke={2} />;
   return <IconStar size={12} stroke={2} />;
 }
 
 function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): { kind: PredictionCardBadgeKind; label?: string } | null {
-  // #TRE-LIVELLI-0925 — PRIMA DI TUTTO IL RESTO, anche di «Featured». Una riga
-  // sotto il floor della sua lega non deve poter indossare un badge che la
-  // raccomanda: «High edge» su una riga che il track record non conta sarebbe
-  // la contraddizione di #FLOOR-VALUE-0821 spostata sul badge.
-  if (data.tier === "reading") return { kind: "model-read" };
   if (variant === "featured") return { kind: "featured" };
   // Round 4: il badge resta una PAROLA, non un numero — «High edge» dice che
   // c'è uno scarto dal mercato e invita ad aprire l'analisi, dove lo scarto è

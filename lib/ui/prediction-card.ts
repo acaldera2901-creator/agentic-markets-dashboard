@@ -17,7 +17,6 @@
 
 import { impliedProbability } from "@/lib/betting-math";
 import type { UnifiedPrediction } from "@/lib/unified-adapter";
-import type { FootballTier } from "@/lib/surfacing-gate";
 
 /** Da qui in su la card si merita il badge «High edge». Allineato a
  *  computeRisk() dell'adapter, dove edge > 4% = rischio basso. */
@@ -73,12 +72,6 @@ export type PredictionCardData = {
   explanation?: string | null;
   /** Pick riservato a Pro: la card mostra Model/Market, blocca Pick ed Edge. */
   locked?: boolean;
-  /** #TRE-LIVELLI-0925 — solo calcio. "pick" = pick piena; "reading" = la
-   *  direzione si mostra ma la riga sta sotto il floor della sua lega (badge
-   *  «Model read», fuori da Best Bets / Pick of the Day / track record
-   *  pubblico); "readonly" = nessuna direzione. Assente = "pick", cosi' il
-   *  tennis e i chiamanti che non lo passano non cambiano comportamento. */
-  tier?: FootballTier;
 };
 
 function toPct(prob: number | null): number | null {

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
-import { edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE } from "@/lib/track-record";
-import { footballTierFor, READING_BAND } from "@/lib/surfacing-gate";
+import {
+  edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE,
+  FOOTBALL_FLOOR_CUTOVER_AT, isBeforeFootballFloorCutover,
+} from "@/lib/track-record";
+import { footballSurfaceDecisionFor } from "@/lib/surfacing-gate";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
@@ -183,44 +186,33 @@ export async function GET(req: Request) {
   // qui, e la pagina si fermerebbe al giorno del backfill.
   const rows = surfaced.filter((r) => r.verification_state === "verified");
 
-  // ── #TRE-LIVELLI-0925 — CHE COSA ENTRA NEL NUMERO PUBBLICO ─────────────────
+  // ── #TRE-LIVELLI-0925-CUTOVER — CHE COSA ENTRA NEL NUMERO PUBBLICO ─────────
   //
   // Il track record in testa a questa pagina (e alla Home, via
-  // app/landing-client.tsx) e' l'unica cifra che un cliente ricorda. Da qui in
-  // avanti quella cifra misura SOLO il tier "pick" del calcio: confidenza >= al
-  // floor della sua lega. Il tennis e gli altri sport non sono toccati —
-  // footballTierFor risponde "pick" per tutto cio' che non e' calcio.
+  // app/landing-client.tsx) e' l'unica cifra che un cliente ricorda. Andrea ha
+  // deciso: NESSUN salto, nessuna retroattivita' (25/09). Il floor di lega
+  // torna a decidere per il calcio, ma SOLO per le righe con `starts_at` da
+  // FOOTBALL_FLOOR_CUTOVER_AT in poi — vedi il commento su quella costante in
+  // lib/track-record.ts. Le righe precedenti contano esattamente come
+  // contavano oggi (58,1%, n=3.069): ogni pick mostrata e' pick, senza gate.
+  // Il tennis e gli altri sport non sono toccati in nessuno dei due rami —
+  // footballSurfaceDecisionFor risponde sempre "pick" per tutto cio' che non
+  // e' calcio.
   //
-  // Le tre popolazioni, misurate il 25/09 su questa stessa pipeline (calcio,
-  // righe verificate con esito): pick 75,1% (n=257) · reading 60,0% (n=100) ·
-  // readonly 44,8% (n=1.244).
-  //
-  // ⚠️ QUESTO E' RETROATTIVO, E DEVE RESTARE VISIBILE. Il tier si ri-risolve
-  // dalla riga (competition + confidence_score) a ogni lettura, quindi cambia
-  // anche il giudizio su righe gia' pubblicate: 1.344 pick di calcio che il
-  // board HA mostrato con una direzione escono dall'headline, e l'headline
-  // multi-sport passa da 58,1% (n=3.069) a 67,5% (n=1.725).
-  //
-  // Alzare una percentuale pubblicata togliendo dal conto delle pick perdenti
-  // che erano state pubblicate e' survivorship, ed e' precisamente il difetto
-  // contro cui mettono in guardia i commenti di isSurfacedRow e di
-  // #MINORS-TIGHTEN. Qui e' accettabile a UNA condizione, che il codice deve
-  // garantire e non solo promettere: la popolazione esclusa resta PUBBLICATA
-  // accanto al numero, con il suo n e la sua percentuale. E' per questo che
-  // `stats.tiers` sotto non e' un extra diagnostico ma parte del contratto —
-  // e la UI che rende l'headline deve renderla. Stessa forma additiva gia'
-  // scelta per #EDGE-SELETTIVITA-0917 (lib/track-record.ts).
-  //
-  // La LISTA delle partite non si tocca: `history` continua a mostrarle tutte,
-  // con il proprio `tier` accanto. Nessuna riga sparisce dal listino, ne' qui
-  // ne' sul board — cambia solo che cosa si conta.
-  const byTier = {
-    pick: [] as typeof rows,
-    reading: [] as typeof rows,
-    readonly: [] as typeof rows,
-  };
-  for (const r of rows) byTier[footballTierFor(r)].push(r);
-  const headlineRows = byTier.pick;
+  // La LISTA delle partite non si tocca: `history` continua a mostrarle tutte.
+  // Nessuna riga sparisce dal listino, ne' qui ne' sul board — cambia solo
+  // che cosa si conta nell'headline.
+  const beforeCutover: typeof rows = [];
+  const afterCutover: typeof rows = [];
+  for (const r of rows) (isBeforeFootballFloorCutover(r.starts_at) ? beforeCutover : afterCutover).push(r);
+  const headlineRows = [
+    ...beforeCutover,
+    ...afterCutover.filter((r) => footballSurfaceDecisionFor(r).isPick),
+  ];
+  // La popolazione post-cutover che il floor esclude dall'headline — pubblicata
+  // sotto (stats.post_cutover_excluded) per non rendere silenziosa
+  // l'esclusione, stessa logica di #EDGE-SELETTIVITA-0917.
+  const excludedByFloor = afterCutover.filter((r) => !footballSurfaceDecisionFor(r).isPick);
 
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
@@ -243,10 +235,7 @@ export async function GET(req: Request) {
       const parsed = JSON.parse(row.notes ?? "");
       if (typeof parsed?.final_score === "string") finalScore = parsed.final_score;
     } catch { /* rows without notes simply show no score */ }
-    // #TRE-LIVELLI-0925: il tier viaggia con la riga, cosi' la UI puo'
-    // etichettare una "lettura del modello" invece di presentarla come una pick
-    // che ha contribuito al numero in testa alla pagina.
-    return { ...projected, final_score: finalScore, tier: footballTierFor(row) };
+    return { ...projected, final_score: finalScore };
   });
 
   const total    = headlineRows.length;
@@ -261,8 +250,9 @@ export async function GET(req: Request) {
   const verified = headlineRows.filter((r) => r.is_verified).length;
 
   // Aggregati opzionali (solo se richiesti) — sulla STESSA popolazione
-  // dell'headline (#TRE-LIVELLI-0925): un segmento calcolato su un insieme piu'
-  // largo del titolo contraddirebbe il titolo nella stessa schermata.
+  // dell'headline (#TRE-LIVELLI-0925-CUTOVER): un segmento calcolato su un
+  // insieme piu' largo del titolo contraddirebbe il titolo nella stessa
+  // schermata.
   const extra: Record<string, unknown> = {};
   const aggRows = headlineRows.map((r) => ({
     sport: r.sport, competition: r.competition, result: r.result, starts_at: String(r.starts_at),
@@ -300,22 +290,13 @@ export async function GET(req: Request) {
         : null,
       surfaced_total: surfaced.length,
       unverified_excluded: surfaced.length - rows.length,
-      // #TRE-LIVELLI-0925 — LE DUE POPOLAZIONI CHE L'HEADLINE NON CONTA.
-      // Non sono diagnostica: sono la condizione che rende l'esclusione onesta
-      // invece che survivorship. Chi rende l'headline deve rendere anche
-      // questo. `reading` = direzione mostrata sul board ma sotto il floor di
-      // lega; `model_only` = nessuna direzione mostrata (probabilita' e basta).
-      // `band` dice di quanti punti sotto il floor arriva la banda intermedia.
-      tiers: {
-        band: READING_BAND,
-        pick: outcomeTally(headlineRows),
-        reading: outcomeTally(byTier.reading),
-        model_only: outcomeTally(byTier.readonly),
-        // Le pick di calcio che il board ha mostrato con una direzione e che
-        // l'headline NON conta. E' il numero da guardare per capire quanto
-        // l'headline e' selettivo rispetto a cio' che e' stato pubblicato.
-        excluded_from_headline: byTier.reading.length + byTier.readonly.length,
-      },
+      // #TRE-LIVELLI-0925-CUTOVER — la popolazione POST-cutover che il floor di
+      // lega esclude dall'headline. Non e' diagnostica: e' la condizione che
+      // rende l'esclusione onesta invece che survivorship (stessa forma
+      // additiva di #EDGE-SELETTIVITA-0917). Le righe PRIMA del cutover non
+      // hanno un'esclusione da riportare qui: contano tutte, come sempre.
+      cutover_at: FOOTBALL_FLOOR_CUTOVER_AT,
+      post_cutover_excluded: outcomeTally(excludedByFloor),
       interval_95: sufficiente && w
         ? { low: Number(w.low.toFixed(4)), high: Number(w.high.toFixed(4)) }
         : null,

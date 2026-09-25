@@ -100,46 +100,4 @@ describe("PredictionCard", () => {
     render(<PredictionCard data={data} variant="premiumLocked" href="/plans" lang="it" />);
     expect(screen.getByRole("link", { name: /sblocca l.analisi completa/i })).toBeInTheDocument();
   });
-
-  // #TRE-LIVELLI-0925 — il terzo stato visivo del calcio.
-  describe("tier «reading»: la direzione si vede, ma non e' una pick", () => {
-    const reading: PredictionCardData = { ...data, tier: "reading" };
-
-    it("porta il badge «Model read» al posto di «High edge»", () => {
-      render(<PredictionCard data={reading} href="/p/1" />);
-      expect(screen.getByText("Model read")).toHaveAttribute("data-kind", "model-read");
-      // ESSENZIALE: una riga sotto il floor della sua lega non puo' indossare
-      // un badge che la raccomanda, anche se il suo edge di mercato e' alto.
-      expect(screen.queryByText("High edge")).toBeNull();
-    });
-
-    it("«Model read» batte anche «Featured»", () => {
-      render(<PredictionCard data={reading} variant="featured" href="/p/1" />);
-      expect(screen.getByText("Model read")).toBeInTheDocument();
-      expect(screen.queryByText("Featured")).toBeNull();
-    });
-
-    it("la card resta completa: squadre, pick e la nostra percentuale", () => {
-      // Nessuna riga sparisce e nessun dato viene tolto: cambia il badge, non
-      // il contenuto.
-      render(<PredictionCard data={reading} href="/p/1" />);
-      expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Arsenal");
-      expect(screen.getByText("Arsenal to win")).toBeInTheDocument();
-      expect(screen.getByText("64")).toBeInTheDocument();
-    });
-
-    it("un badge esplicito del chiamante ha comunque la precedenza", () => {
-      render(<PredictionCard data={reading} href="/p/1" badge={{ kind: "starting-soon", label: "Starts in 40 min" }} />);
-      expect(screen.getByText("Starts in 40 min")).toBeInTheDocument();
-      expect(screen.queryByText("Model read")).toBeNull();
-    });
-
-    it("tier «pick» e tier assente non cambiano nulla rispetto a prima", () => {
-      const { unmount } = render(<PredictionCard data={{ ...data, tier: "pick" }} href="/p/1" />);
-      expect(screen.getByText("High edge")).toBeInTheDocument();
-      unmount();
-      render(<PredictionCard data={data} href="/p/1" />);
-      expect(screen.getByText("High edge")).toBeInTheDocument();
-    });
-  });
 });

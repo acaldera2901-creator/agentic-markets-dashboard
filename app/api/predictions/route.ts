@@ -22,7 +22,7 @@ import { applyTemperature } from "@/lib/calibration";
 import { pronosticoDaCongelare } from "@/lib/kickoff-freeze";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
-import { footballTier, surfaceFloorFor, type FootballTier } from "@/lib/surfacing-gate";
+import { footballSurfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
 import { favouritePick } from "@/lib/pick-selection";
 import {
   SUMMER_LEAGUES,
@@ -355,10 +355,7 @@ interface EnrichmentPayload {
   // national path's notes.surface. below_floor=true -> the frontend shows the
   // row without a pick direction/edge ("no clear favourite"). Probability-
   // neutral: p_home/p_draw/p_away and confidence_score are never altered.
-  // #TRE-LIVELLI-0925: `tier` e' additivo e OPZIONALE — la national path Python
-  // scrive ancora solo `below_floor`, e un payload in cache senza `tier` deve
-  // continuare a leggersi come prima.
-  surface?: { below_floor: boolean; floor: number; tier?: FootballTier };
+  surface?: { below_floor: boolean; floor: number };
 }
 
 async function computeAndStore(): Promise<{ stored: number; leagues: string[] }> {
@@ -623,21 +620,13 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // competition name so Allsvenskan/League of Ireland get their stricter
       // lab floor; every current league resolves to the standard 56.
       const clubFloor = surfaceFloorFor("football", LEAGUES[code]);
-      // #TRE-LIVELLI-0925: tre stati, non due. `below_floor` resta nel payload
-      // con il SIGNIFICATO CHE AVEVA (nessuna direzione asserita = "readonly"),
-      // cosi' ogni lettore gia' scritto — la card, il modale, il match builder,
-      // lib/ui/desk-card.ts, components/world-cup/WcBoard.tsx — continua a
-      // comportarsi esattamente come prima senza sapere dei tier. `tier` e'
-      // additivo e serve a chi deve distinguere "reading" da "pick".
-      // Ora l'oggetto si scrive SEMPRE (prima solo sotto floor): senza, il
-      // frontend non potrebbe dire "pick" da "reading", e l'assenza di
-      // `surface` resta comunque leggibile come pick dai payload in cache.
-      const tier = footballTier(confidenceScore, clubFloor);
-      enrichment.surface = {
-        below_floor: tier === "readonly",
-        floor: clubFloor,
-        tier,
-      };
+      // #TRE-LIVELLI-0925 (Andrea, 25/09): il flag torna binario. Il floor
+      // decide di nuovo per il calcio, indipendente da PICK_SEMPRE_FAVORITO —
+      // vedi il commento su `footballSurfaceDecision` in surfacing-gate.ts.
+      const surface = footballSurfaceDecision(confidenceScore, clubFloor);
+      if (surface.belowFloor) {
+        enrichment.surface = { below_floor: true, floor: clubFloor };
+      }
 
       // Pi Rating
       const piH = piRatings[homeName];
@@ -1071,28 +1060,19 @@ export async function GET(req: Request) {
   // (#SHOWCASE-EDGE-0801: il vecchio ordine per edge desc sbloccava righe senza
   // pick e lasciava bloccati i pick, motivazione completa in access-projection).
   //
-  // `surfaced` si legge dal flag che il gate ha già scritto qui sopra, e non
-  // ri-deriva la soglia in un secondo posto — è la stessa lettura che fa il
-  // frontend.
-  // #TRE-LIVELLI-0925 — QUI SERVE IL TIER, NON `below_floor`. La vetrina
-  // gratuita (Pick of the Day) è un claim pubblico: ci entra solo il tier
-  // "pick". Il tier "reading" mostra la direzione sul board ma NON si candida a
-  // pick del giorno, e con `below_floor` da solo ci sarebbe entrato — perché
-  // `below_floor` per lui è false. `surface` ora c'è sempre; un payload vecchio
-  // senza `tier` ricade su `below_floor`, cioè sul comportamento di prima.
+  // `surfaced` si legge dal flag che il gate ha già scritto qui sopra:
+  // enrichment.surface esiste SOLO quando la riga è sotto floor, quindi la sua
+  // assenza significa "pick direzionale" — è la stessa lettura che fa il
+  // frontend, e non ri-deriva la soglia in un secondo posto.
   const rankById = showcaseRanking(
-    hydratedRows.map((p) => {
-      const surface = (p.enrichment as EnrichmentPayload | undefined)?.surface;
-      return {
+    hydratedRows.map((p) => ({
       id: p.match_id,
-      surfaced: surface?.tier != null
-        ? surface.tier === "pick"
-        : surface?.below_floor !== true,
+      surfaced:
+        (p.enrichment as EnrichmentPayload | undefined)?.surface?.below_floor !== true,
       conf: Math.max(p.p_home, p.p_draw, p.p_away),
       edge: typeof p.edge === "number" ? p.edge : null,
       startsAt: p.kickoff,
-      };
-    }),
+    })),
     { scopeDay: currentShowcaseDay() }
   );
 
