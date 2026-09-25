@@ -19,7 +19,7 @@ export default function TermsPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Terms of Service</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: June 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: September 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -32,7 +32,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">2. What BetRedge Is — and Is Not</h2>
           <p className="text-xs leading-relaxed">
-            BetRedge is a sports prediction and data platform. We provide statistical models, probabilities, and informational content about sporting events. BetRedge <strong className="text-[var(--am-text)]">does not accept wagers, does not hold or manage funds placed on outcomes, and does not operate as a bookmaker, casino, or financial intermediary</strong>. Our content is for informational purposes only and does not constitute betting, investment, financial, or legal advice. Any decision to place a bet with a third party is made solely by you, at your own risk.
+            BetRedge is a sports prediction and data platform. We provide statistical models, probabilities, and informational content about sporting events. BetRedge <strong className="text-[var(--am-text)]">does not accept wagers, does not hold or manage funds placed on outcomes, does not operate as a bookmaker, casino, or financial intermediary, does not place, transmit, or execute bets on your behalf, and does not connect to or operate any account you hold with a third party (including any sportsbook or exchange)</strong>. Our content is for informational purposes only and does not constitute betting, investment, financial, or legal advice. Any decision to place a bet with a third party is made solely by you, at your own risk.
           </p>
         </section>
 
