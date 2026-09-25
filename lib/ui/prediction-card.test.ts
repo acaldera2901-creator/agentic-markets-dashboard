@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPct, fromUnifiedPrediction } from "./prediction-card";
+import { formatPct, fromUnifiedPrediction, splitLiveScore } from "./prediction-card";
 import type { UnifiedPrediction } from "@/lib/unified-adapter";
 
 // Round 14: `edgeTone`/`formatEdge` non esistono più — l'edge non si scrive in
@@ -10,6 +10,26 @@ describe("formatPct", () => {
     expect(formatPct(64.4)).toBe("64");
     expect(formatPct(120)).toBe("100");
     expect(formatPct(null)).toBe("—");
+  });
+});
+
+// #CARD-LAYOUT-0925 — il punteggio arriva come stringa già formattata dal
+// desk e la card lo legge in colonne: un valore per riga squadra.
+describe("splitLiveScore", () => {
+  it("calcio: una colonna", () => {
+    expect(splitLiveScore("2-1")).toEqual({ home: ["2"], away: ["1"] });
+  });
+  it("tennis: un set per colonna, nell'ordine in cui si giocano", () => {
+    expect(splitLiveScore("6-4 3-6 2-1")).toEqual({ home: ["6", "3", "2"], away: ["4", "6", "1"] });
+  });
+  it("set senza il secondo valore (sets_p2 corto): cella vuota, non un crash", () => {
+    expect(splitLiveScore("6-4 3-")).toEqual({ home: ["6", "3"], away: ["4", ""] });
+  });
+  it("forma sconosciuta o vuota: null, così la card mostra la stringa intera", () => {
+    expect(splitLiveScore("HT")).toBeNull();
+    expect(splitLiveScore("2:1")).toBeNull();
+    expect(splitLiveScore("")).toBeNull();
+    expect(splitLiveScore(null)).toBeNull();
   });
 });
 
