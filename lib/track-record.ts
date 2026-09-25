@@ -87,6 +87,33 @@ export type EdgeTally = {
  * Funzione pura. Una riga senza confidenza NON e' Edge: l'assenza del dato non
  * si legge come se fosse sopra soglia — fail-closed, come il resto del gate.
  */
+/**
+ * #TRE-LIVELLI-0925 — il conteggio di una popolazione qualsiasi di righe chiuse.
+ *
+ * Serve a pubblicare, accanto al numero in testa alla pagina, le popolazioni che
+ * dal numero sono state ESCLUSE (la «lettura del modello» e la «sola lettura»
+ * del calcio). Senza questo, l'esclusione sarebbe silenziosa: una percentuale
+ * che sale perche' qualcuno ha ristretto il denominatore, e nessun modo per chi
+ * legge di accorgersene.
+ *
+ * Funzione pura. `win_rate` resta null sotto MIN_DECIDED_FOR_RATE, per la stessa
+ * ragione di edgeTally: una percentuale su pochi esiti non e' un dato.
+ */
+export function outcomeTally(
+  rows: { result?: string | null }[]
+): { n: number; won: number; lost: number; win_rate: number | null } {
+  const decise = rows.filter((r) => r.result === "won" || r.result === "lost");
+  const won = decise.filter((r) => r.result === "won").length;
+  return {
+    n: decise.length,
+    won,
+    lost: decise.length - won,
+    win_rate: isRateMeaningful(decise.length)
+      ? Number(((won / decise.length) * 100).toFixed(1))
+      : null,
+  };
+}
+
 export function edgeTally(
   rows: { result?: string | null; confidence_score?: number | null }[]
 ): EdgeTally {

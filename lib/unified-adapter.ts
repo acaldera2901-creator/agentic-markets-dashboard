@@ -6,7 +6,7 @@ import {
   type SyncReport,
 } from "@/lib/publication-gate";
 import { isWorldCupSignalReady } from "@/lib/world-cup-readiness";
-import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
+import { footballTier, surfaceFloorFor } from "@/lib/surfacing-gate";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -229,10 +229,21 @@ function matchPredictionToUnifiedInsert(rowGrezza: MatchPredictionRow) {
   // favorito": la riga unified NON porta pick direzionale (né prosa), così v2/
   // history/weekly-pick/match-builder concordano col board e wasShownAsPick non
   // conta pick mai mostrate. Probability-neutral: confidence_score/prob invariati.
-  const favBelowFloor = surfaceDecision(
+  //
+  // #TRE-LIVELLI-0925 — tre stati invece di due. `pick` (la colonna che il
+  // settlement grada e che wasShownAsPick legge) si scrive per "pick" E per
+  // "reading": il board mostra la direzione in entrambi i casi, e una riga
+  // unified senza pick sarebbe un disallineamento col board, esattamente il
+  // difetto che questo blocco esiste per evitare. Chi deve tenere il "reading"
+  // FUORI dal numero pubblico lo fa ri-risolvendo il tier dalla riga
+  // (footballTierFor in app/api/v2/history/route.ts), non azzerando la pick:
+  // cancellarla qui renderebbe la riga indistinguibile da "nessuna direzione
+  // mostrata" e cancellerebbe l'informazione, invece di etichettarla.
+  const favTier = footballTier(
     Math.round(Math.max(row.p_home, row.p_draw, row.p_away) * 100),
     surfaceFloorFor("football", competition)
-  ).belowFloor;
+  );
+  const favBelowFloor = favTier === "readonly";
 
   const teamNews =
     (row.enrichment?.injuries_home?.length ?? 0) > 0 ||

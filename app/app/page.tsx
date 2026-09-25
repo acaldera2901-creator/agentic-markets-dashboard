@@ -27,7 +27,7 @@ import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
-import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
+import { surfaceFloorFor, PICK_SEMPRE_FAVORITO, type FootballTier } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
@@ -1601,7 +1601,12 @@ interface PredictionEnrichment {
   // the pick direction + edge/value badge but keeps the probabilities and why.
   // (#FLOOR-LABEL-0830: the literal label is gone from the card; the eyebrow
   // "Model read" and the suppressed edge/value carry the gate.)
-  surface?: { below_floor: boolean; floor: number };
+  // #TRE-LIVELLI-0925: `tier` e' additivo. "pick" = direzione + eleggibilita'
+  // Best Bets/Pick of the Day; "reading" = direzione MOSTRATA ma fuori da ogni
+  // claim; "readonly" = il vecchio below_floor (nessuna direzione). Opzionale:
+  // la national path Python e i payload in cache non lo portano, e senza di lui
+  // si ricade su `below_floor`, cioe' sul comportamento precedente.
+  surface?: { below_floor: boolean; floor: number; tier?: FootballTier };
   // Server-side kickoff provenance (not premium-stripped): true when the time
   // comes from a real source, so fmtKickoff can show a genuine 00:00 UTC slot.
   time_confirmed?: boolean;
@@ -2139,8 +2144,28 @@ function selectedTennisProbability(m: TennisMatch) {
 // "allsvenskan"/"world cup") e leggeva confidence_score (non servito per il
 // football → sempre null → floor bypassato): pick sotto-floor risalivano nei Best
 // Bets e le pick WC (floor 26) venivano escluse. #BESTBET-FLOOR-1.
+// #TRE-LIVELLI-0925 — QUESTA FUNZIONE RISPONDE «E' UNA PICK?», NON «SI VEDE LA
+// DIREZIONE?». Le due domande coincidevano finche' gli stati erano due; ora no.
+// Un tier "reading" MOSTRA la direzione sulla card ma non e' una pick: fuori da
+// Best Bets, fuori dal match builder come «Pick:», fuori dalla vetrina. Il
+// verdetto resta quello PERSISTITO dal server (enrichment.surface), mai
+// ri-derivato qui — e' la lezione di #BESTBET-FLOOR-1.
+// Senza `tier` (payload in cache, national path) si ricade su `below_floor`.
+function footballTierOf(p: Prediction): FootballTier {
+  const surface = p.enrichment?.surface;
+  if (surface?.tier != null) return surface.tier;
+  return surface?.below_floor === true ? "readonly" : "pick";
+}
+
 function isFootballSurfaced(p: Prediction): boolean {
-  return p.enrichment?.surface?.below_floor !== true;
+  return footballTierOf(p) === "pick";
+}
+
+// «La direzione si mostra?» — vero per "pick" e per "reading". E' il predicato
+// della CARD, dove la novita' di #TRE-LIVELLI-0925 e' proprio che la banda
+// intermedia una direzione ce l'ha.
+function showsFootballDirection(p: Prediction): boolean {
+  return footballTierOf(p) !== "readonly";
 }
 
 function isFootballBestBet(p: Prediction) {
@@ -5329,7 +5354,17 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
   // favourite — drop the pick direction, the +EV/value styling and the edge
   // badge, but keep the probability bars and the why. The match stays on the
   // board. Probability-neutral (server never alters p_* or confidence).
-  const belowFloor = e.surface?.below_floor === true;
+  // #TRE-LIVELLI-0925 — `belowFloor` qui dentro conserva il SUO significato di
+  // sempre: «nessuna direzione asserita», cioe' il tier "readonly". Tutto il
+  // corpo di questo componente (hero, verdict, pickKey, schedina, modale) resta
+  // percio' invariato. La novita' e' `isReading`: il tier intermedio, che la
+  // direzione la mostra ma non e' una pick — niente value, niente Best Bets,
+  // badge dedicato sulla card.
+  const belowFloor = !showsFootballDirection(p);
+  const isReading = footballTierOf(p) === "reading";
+  // isFootballBestBet passa gia' da isFootballSurfaced (= tier "pick"), quindi
+  // un "reading" non puo' diventare value bet. Il `!belowFloor` resta perche'
+  // era la forma precedente e non costa nulla.
   const isValueBet = !belowFloor && isFootballBestBet(p);
 
   const handleSelect = () => {
@@ -5615,7 +5650,12 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       // favourite» e il modale, a un clic di distanza, «Our prediction · Ried to
       // win» con due badge «pick». L'onestà moriva appena si apriva la scheda.
       hero: {
-        flag: belowFloor
+        // #TRE-LIVELLI-0925 — anche la banda intermedia e' una «lettura del
+        // modello», non «la nostra prediction»: la direzione si vede (sotto,
+        // `pick` la nomina col verbo), ma l'occhiello dice che non stiamo
+        // consigliando una scommessa. Stesso vocabolario del tier senza
+        // direzione, cosi' non nasce una terza parola per un terzo stato.
+        flag: belowFloor || isReading
           ? pick5(lang, { it: "Lettura del modello", en: "Model read", es: "Lectura del modelo", fr: "Lecture du modèle", ru: "Чтение модели" })
           : pick5(lang, { it: "La nostra prediction", en: "Our prediction", es: "Nuestro pronóstico", fr: "Notre pronostic", ru: "Наш прогноз" }),
         // sotto il floor l'esito piu' probabile si NOMINA, ma non si dice
@@ -5630,7 +5670,15 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         // confidenza la dicono le tacche.
         prob: shownProb != null ? pct(shownProb) : null,
         probLabel: pick5(lang, { it: "probabilit\u00e0 modello", en: "model probability", es: "probabilidad del modelo", fr: "probabilit\u00e9 du mod\u00e8le", ru: "\u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043c\u043e\u0434\u0435\u043b\u0438" }),
-        read: `${belowFloor ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" }) : ""}`,
+        // #TRE-LIVELLI-0925 — la banda intermedia ha un caveat SUO. «nessun
+        // favorito netto» qui sarebbe falso: un favorito c'e', sta sotto la
+        // soglia oltre la quale lo chiamiamo pick. La parola «low» resta
+        // bandita: si dice il fatto, non un giudizio.
+        read: belowFloor
+          ? pick5(lang, { it: "nessun favorito netto", en: "no clear favourite", es: "sin favorito claro", fr: "pas de favori net", ru: "\u043d\u0435\u0442 \u044f\u0432\u043d\u043e\u0433\u043e \u0444\u0430\u0432\u043e\u0440\u0438\u0442\u0430" })
+          : isReading
+          ? pick5(lang, { it: "sotto la nostra soglia di pick", en: "below our pick threshold", es: "por debajo de nuestro umbral", fr: "sous notre seuil de pronostic", ru: "\u043d\u0438\u0436\u0435 \u043d\u0430\u0448\u0435\u0433\u043e \u043f\u043e\u0440\u043e\u0433\u0430" })
+          : "",
         confDots,
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
         quota: shownOdds != null ? shownOdds.toFixed(2) : null,
@@ -5640,7 +5688,11 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         // regola standing e' esplicita: sotto il floor il pick non deve MAI
         // riemergere come value, perche' l'edge di mercato da solo non basta
         // quando il modello non ha un favorito.
-        value: !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+        // #TRE-LIVELLI-0925 — `isReading` si aggiunge alla stessa regola: la
+        // banda intermedia mostra una direzione ma NON dichiara un vantaggio.
+        // Un «value 27,6%» accanto a una riga che il track record non conta
+        // sarebbe la stessa contraddizione di #FLOOR-VALUE-0821, un tier piu' su.
+        value: !belowFloor && !isReading && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,

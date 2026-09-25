@@ -16,6 +16,7 @@
 
 import type { PredictionCardData } from "@/lib/ui/prediction-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
+import type { FootballTier } from "@/lib/surfacing-gate";
 
 /** Il sottoinsieme di `Prediction` (calcio) che serve alla card.
  *
@@ -45,7 +46,7 @@ export type DeskFootballRow = {
   locked?: boolean;
   confidence_score?: number | null;
   explanation?: string | null;
-  enrichment?: { surface?: { below_floor: boolean } | null } | null;
+  enrichment?: { surface?: { below_floor: boolean; tier?: FootballTier } | null } | null;
 };
 
 /** Il sottoinsieme di `TennisMatch` che serve alla card. Vedi la nota sopra
@@ -114,14 +115,27 @@ function impliedPct(odds: number | null | undefined): number | null {
   return o != null && o > 1 ? (1 / o) * 100 : null;
 }
 
-/** Sotto il floor non c'è un favorito netto: si NOMINA l'esito più probabile,
- *  ma non si dichiara una pick («X vince»). Stessa regola del board. */
+/** #TRE-LIVELLI-0925 — il tier della riga, dal verdetto PERSISTITO dal server
+ *  (`enrichment.surface`), mai ri-derivato qui dai floor. Un payload senza
+ *  `tier` (cache, national path Python) ricade su `below_floor`: stesso
+ *  comportamento di prima. */
+function footballTierOf(row: DeskFootballRow): FootballTier {
+  const surface = row.enrichment?.surface;
+  if (surface?.tier != null) return surface.tier;
+  return surface?.below_floor === true ? "readonly" : "pick";
+}
+
+/** Senza direzione asserita («readonly») si NOMINA l'esito più probabile, ma
+ *  non si dichiara una pick («X vince»). Stessa regola del board.
+ *  La banda intermedia («reading») la direzione ce l'ha: dice «X vince» come
+ *  una pick piena, e si distingue per il badge «Model read». */
 function footballBelowFloor(row: DeskFootballRow): boolean {
-  return row.enrichment?.surface?.below_floor === true;
+  return footballTierOf(row) === "readonly";
 }
 
 export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {}): PredictionCardData {
-  const belowFloor = footballBelowFloor(row);
+  const tier = footballTierOf(row);
+  const belowFloor = tier === "readonly";
   // Riga chiusa: la tripla non c'è. I numeri arrivano già scelti dal server
   // (l'esito di punta), e la pick NON si nomina — non perché sia sfocata, ma
   // perché il nome dell'esito è esattamente ciò che il piano Pro vende.
@@ -164,6 +178,7 @@ export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {
     confidence: row.confidence_score ?? null,
     explanation: row.explanation ?? null,
     locked: opts.locked ?? row.locked ?? false,
+    tier,
   };
 }
 

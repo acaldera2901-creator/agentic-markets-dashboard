@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
-import { edgeTally, EDGE_MIN_CONFIDENCE } from "@/lib/track-record";
+import { edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE } from "@/lib/track-record";
+import { footballTierFor, READING_BAND } from "@/lib/surfacing-gate";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
@@ -182,6 +183,45 @@ export async function GET(req: Request) {
   // qui, e la pagina si fermerebbe al giorno del backfill.
   const rows = surfaced.filter((r) => r.verification_state === "verified");
 
+  // ── #TRE-LIVELLI-0925 — CHE COSA ENTRA NEL NUMERO PUBBLICO ─────────────────
+  //
+  // Il track record in testa a questa pagina (e alla Home, via
+  // app/landing-client.tsx) e' l'unica cifra che un cliente ricorda. Da qui in
+  // avanti quella cifra misura SOLO il tier "pick" del calcio: confidenza >= al
+  // floor della sua lega. Il tennis e gli altri sport non sono toccati —
+  // footballTierFor risponde "pick" per tutto cio' che non e' calcio.
+  //
+  // Le tre popolazioni, misurate il 25/09 su questa stessa pipeline (calcio,
+  // righe verificate con esito): pick 75,1% (n=257) · reading 60,0% (n=100) ·
+  // readonly 44,8% (n=1.244).
+  //
+  // ⚠️ QUESTO E' RETROATTIVO, E DEVE RESTARE VISIBILE. Il tier si ri-risolve
+  // dalla riga (competition + confidence_score) a ogni lettura, quindi cambia
+  // anche il giudizio su righe gia' pubblicate: 1.344 pick di calcio che il
+  // board HA mostrato con una direzione escono dall'headline, e l'headline
+  // multi-sport passa da 58,1% (n=3.069) a 67,5% (n=1.725).
+  //
+  // Alzare una percentuale pubblicata togliendo dal conto delle pick perdenti
+  // che erano state pubblicate e' survivorship, ed e' precisamente il difetto
+  // contro cui mettono in guardia i commenti di isSurfacedRow e di
+  // #MINORS-TIGHTEN. Qui e' accettabile a UNA condizione, che il codice deve
+  // garantire e non solo promettere: la popolazione esclusa resta PUBBLICATA
+  // accanto al numero, con il suo n e la sua percentuale. E' per questo che
+  // `stats.tiers` sotto non e' un extra diagnostico ma parte del contratto —
+  // e la UI che rende l'headline deve renderla. Stessa forma additiva gia'
+  // scelta per #EDGE-SELETTIVITA-0917 (lib/track-record.ts).
+  //
+  // La LISTA delle partite non si tocca: `history` continua a mostrarle tutte,
+  // con il proprio `tier` accanto. Nessuna riga sparisce dal listino, ne' qui
+  // ne' sul board — cambia solo che cosa si conta.
+  const byTier = {
+    pick: [] as typeof rows,
+    reading: [] as typeof rows,
+    readonly: [] as typeof rows,
+  };
+  for (const r of rows) byTier[footballTierFor(r)].push(r);
+  const headlineRows = byTier.pick;
+
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
   // (won/lost/accuracy) are aggregate hit-rate stats — no money is exposed.
@@ -203,23 +243,28 @@ export async function GET(req: Request) {
       const parsed = JSON.parse(row.notes ?? "");
       if (typeof parsed?.final_score === "string") finalScore = parsed.final_score;
     } catch { /* rows without notes simply show no score */ }
-    return { ...projected, final_score: finalScore };
+    // #TRE-LIVELLI-0925: il tier viaggia con la riga, cosi' la UI puo'
+    // etichettare una "lettura del modello" invece di presentarla come una pick
+    // che ha contribuito al numero in testa alla pagina.
+    return { ...projected, final_score: finalScore, tier: footballTierFor(row) };
   });
 
-  const total    = rows.length;
-  const won      = rows.filter((r) => r.result === "won").length;
-  const lost     = rows.filter((r) => r.result === "lost").length;
-  const paper    = rows.filter((r) => r.is_paper).length;
+  const total    = headlineRows.length;
+  const won      = headlineRows.filter((r) => r.result === "won").length;
+  const lost     = headlineRows.filter((r) => r.result === "lost").length;
+  const paper    = headlineRows.filter((r) => r.is_paper).length;
   // #EDGE-SELETTIVITA-0917 — additivo: l'headline NON cambia. Qui si affianca
   // la sola parte su cui dichiariamo un vantaggio (confidenza >= 62), con il
   // suo n e la sua quota di volume. Quale dei due numeri vada in testa alla
   // pagina e' una decisione di prodotto, non una che si prende in una route.
-  const edge     = edgeTally(rows);
-  const verified = rows.filter((r) => r.is_verified).length;
+  const edge     = edgeTally(headlineRows);
+  const verified = headlineRows.filter((r) => r.is_verified).length;
 
-  // Aggregati opzionali (solo se richiesti) — calcolati sulle stesse righe surfaced.
+  // Aggregati opzionali (solo se richiesti) — sulla STESSA popolazione
+  // dell'headline (#TRE-LIVELLI-0925): un segmento calcolato su un insieme piu'
+  // largo del titolo contraddirebbe il titolo nella stessa schermata.
   const extra: Record<string, unknown> = {};
-  const aggRows = rows.map((r) => ({
+  const aggRows = headlineRows.map((r) => ({
     sport: r.sport, competition: r.competition, result: r.result, starts_at: String(r.starts_at),
   }));
   if (aggregate.includes("segments")) extra.segments = bySegment(aggRows);
@@ -255,6 +300,22 @@ export async function GET(req: Request) {
         : null,
       surfaced_total: surfaced.length,
       unverified_excluded: surfaced.length - rows.length,
+      // #TRE-LIVELLI-0925 — LE DUE POPOLAZIONI CHE L'HEADLINE NON CONTA.
+      // Non sono diagnostica: sono la condizione che rende l'esclusione onesta
+      // invece che survivorship. Chi rende l'headline deve rendere anche
+      // questo. `reading` = direzione mostrata sul board ma sotto il floor di
+      // lega; `model_only` = nessuna direzione mostrata (probabilita' e basta).
+      // `band` dice di quanti punti sotto il floor arriva la banda intermedia.
+      tiers: {
+        band: READING_BAND,
+        pick: outcomeTally(headlineRows),
+        reading: outcomeTally(byTier.reading),
+        model_only: outcomeTally(byTier.readonly),
+        // Le pick di calcio che il board ha mostrato con una direzione e che
+        // l'headline NON conta. E' il numero da guardare per capire quanto
+        // l'headline e' selettivo rispetto a cio' che e' stato pubblicato.
+        excluded_from_headline: byTier.reading.length + byTier.readonly.length,
+      },
       interval_95: sufficiente && w
         ? { low: Number(w.low.toFixed(4)), high: Number(w.high.toFixed(4)) }
         : null,
