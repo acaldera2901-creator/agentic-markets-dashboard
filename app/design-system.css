@@ -313,11 +313,14 @@
   min-width: 0;
 }
 .br-card__status > .br-badge { margin-left: auto; }
+/* #CARD-SCORE-COLOR-0925: stesso --am-pct di .br-card__score sopra — è lo
+   stesso dato (il punteggio), solo la forma non nota (es. "HT") che ricade
+   qui invece che nella colonna. */
 .br-card__scoreraw {
   font-family: var(--am-font-num);
   font-size: 12px;
   font-weight: 700;
-  color: var(--am-live);
+  color: var(--am-pct);
   white-space: nowrap;
 }
 .br-card__when {
@@ -379,10 +382,15 @@
   border: 0;
 }
 /* Il punteggio live in COLONNA, a destra del nome, un valore per riga; nel
-   tennis una cella per set. Stesso giallo di .br-live (l'unico accento vivo
-   della card), mono tabulare così le colonne delle due righe si allineano.
-   15px: quanto il nome accanto — durante la partita è un dato alla pari, e
-   resta sotto il 30px del numero del modello. Nessun token nuovo. */
+   tennis una cella per set. Mono tabulare così le colonne delle due righe si
+   allineano. 15px: quanto il nome accanto — durante la partita è un dato alla
+   pari, e resta sotto il 30px del numero del modello. Nessun token nuovo.
+   #CARD-SCORE-COLOR-0925 (Andrea, 25/09): non il giallo di .br-live — quello
+   sul sito significa «in corso/attenzione», non un dato. Il punteggio è un
+   NUMERO come la percentuale del modello, quindi lo stesso --am-pct (lo
+   swatch neon lime/verde caratteristico), non un secondo significato preso
+   in prestito dal giallo. Stessa lezione del round 11 su .br-card__model-n,
+   applicata qui: un colore, un significato. */
 .br-card__score {
   display: inline-flex;
   gap: 6px;
@@ -393,7 +401,7 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--am-live);
+  color: var(--am-pct);
 }
 .br-card__score > span { min-width: 1.2ch; text-align: right; }
 
