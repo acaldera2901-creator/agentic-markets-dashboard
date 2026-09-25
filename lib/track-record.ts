@@ -87,6 +87,35 @@ export type EdgeTally = {
  * Funzione pura. Una riga senza confidenza NON e' Edge: l'assenza del dato non
  * si legge come se fosse sopra soglia — fail-closed, come il resto del gate.
  */
+/**
+ * #TRE-LIVELLI-0925-CUTOVER — il conteggio di una popolazione qualsiasi di righe
+ * chiuse.
+ *
+ * Serve a pubblicare, accanto al numero in testa alla pagina, la popolazione
+ * POST-CUTOVER che il floor di lega esclude dall'headline (righe con
+ * `starts_at` da `FOOTBALL_FLOOR_CUTOVER_AT` in poi, sotto il floor della loro
+ * lega). Senza questo, l'esclusione sarebbe silenziosa: una percentuale che
+ * sale perche' qualcuno ha ristretto il denominatore, e nessun modo per chi
+ * legge di accorgersene. Stessa forma additiva di #EDGE-SELETTIVITA-0917.
+ *
+ * Funzione pura. `win_rate` resta null sotto MIN_DECIDED_FOR_RATE, per la stessa
+ * ragione di edgeTally: una percentuale su pochi esiti non e' un dato.
+ */
+export function outcomeTally(
+  rows: { result?: string | null }[]
+): { n: number; won: number; lost: number; win_rate: number | null } {
+  const decise = rows.filter((r) => r.result === "won" || r.result === "lost");
+  const won = decise.filter((r) => r.result === "won").length;
+  return {
+    n: decise.length,
+    won,
+    lost: decise.length - won,
+    win_rate: isRateMeaningful(decise.length)
+      ? Number(((won / decise.length) * 100).toFixed(1))
+      : null,
+  };
+}
+
 export function edgeTally(
   rows: { result?: string | null; confidence_score?: number | null }[]
 ): EdgeTally {
@@ -103,4 +132,48 @@ export function edgeTally(
       ? Number(((won / edge.length) * 100).toFixed(1))
       : null,
   };
+}
+
+// ─── #TRE-LIVELLI-0925-CUTOVER (Andrea, 25/09: «nessun salto, nessuna
+// retroattivita'») ────────────────────────────────────────────────────────────
+//
+// Il calcio torna ad avere un floor che decide (footballSurfaceDecisionFor in
+// lib/surfacing-gate.ts, PICK_SEMPRE_FAVORITO che non lo bypassa piu' per il
+// calcio). Applicarlo al numero pubblico di /api/v2/history SENZA un cutover
+// sarebbe retroattivo: quel numero si ri-deriva dalla riga a ogni lettura
+// (competition + confidence_score), quindi cambierebbe anche il giudizio su
+// righe GIA' PUBBLICATE — la stessa survivorship contro cui avvertono i
+// commenti di isSurfacedRow e di #MINORS-TIGHTEN.
+//
+// La regola: le righe con `starts_at` PRIMA di questo istante contano come
+// contavano il 25/09 — ogni pick mostrata e' pick, il comportamento
+// PICK_SEMPRE_FAVORITO di sempre, invariato. Solo le righe con `starts_at` DA
+// questo istante IN POI passano dal nuovo gate a floor. Nessuna riga gia'
+// pubblicata sparisce o cambia esito nel conteggio principale.
+//
+// PERCHE' `starts_at` e non `settled_at`: e' lo stesso campo che
+// /api/v2/history usa gia' per ordinare e filtrare la history
+// (#HISTORY-ORDINE-0911 — «la cronologia delle nostre previsioni, l'ordine che
+// ci si aspetta e' quello degli eventi»). Introdurne uno nuovo per il cutover
+// avrebbe reso la stessa riga ordinata su un campo e tagliata su un altro.
+//
+// Il valore E' la decisione stessa (APPROVE Andrea, 25/09/2026 — via il livello
+// intermedio, il floor decide di nuovo per il calcio): non e' una soglia da
+// ricalibrare, e non si sposta per far tornare un numero.
+export const FOOTBALL_FLOOR_CUTOVER_AT = "2026-09-25T00:00:00Z";
+
+/**
+ * Vero se la riga e' PRIMA del cutover (conta con la regola vecchia: ogni
+ * pick mostrata e' pick, nessun gate di floor). Fail-safe: `starts_at`
+ * assente o non parsabile ricade su "prima del cutover" — una riga di cui non
+ * si puo' leggere la data non deve poter essere retroattivamente esclusa da un
+ * gate nuovo.
+ */
+export function isBeforeFootballFloorCutover(
+  startsAt: string | Date | null | undefined
+): boolean {
+  if (startsAt == null) return true;
+  const t = startsAt instanceof Date ? startsAt.getTime() : new Date(startsAt).getTime();
+  if (!Number.isFinite(t)) return true;
+  return t < new Date(FOOTBALL_FLOOR_CUTOVER_AT).getTime();
 }

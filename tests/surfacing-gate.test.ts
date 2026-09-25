@@ -15,6 +15,8 @@ import {
   tennisFloorFor,
   isSurfacedRow,
   PICK_SEMPRE_FAVORITO,
+  footballSurfaceDecision,
+  footballSurfaceDecisionFor,
 } from "../lib/surfacing-gate";
 
 // ── Single source of truth ──────────────────────────────────────────────────
@@ -180,6 +182,51 @@ assert.equal(PICK_SEMPRE_FAVORITO, true, "l'interruttore deve essere acceso");
   // Uno sport DAVVERO sconosciuto continua a cadere sul floor del calcio: e' il
   // caso "non lo conosciamo", non "lo trattiamo come baseball".
   assert.equal(surfaceFloorFor("cricket", null), SURFACE_FLOOR_FOOTBALL);
+}
+
+// ── #TRE-LIVELLI-0925 → binario: il calcio ha un floor che decide, e ────────
+// PICK_SEMPRE_FAVORITO NON lo bypassa piu' (a differenza di surfaceDecision,
+// usato da tennis/newsports, che resta sopra e bypassa sempre).
+{
+  assert.equal(footballSurfaceDecision(55).isPick, false, "55 < 56: sotto floor, niente pick");
+  assert.equal(footballSurfaceDecision(55).belowFloor, true);
+  assert.equal(footballSurfaceDecision(56).isPick, true, "il floor e' inclusivo");
+  assert.equal(footballSurfaceDecision(56).belowFloor, false);
+  assert.equal(footballSurfaceDecision(70).isPick, true);
+
+  // Floor esplicito per lega (stesso secondo argomento di surfaceDecision).
+  assert.equal(footballSurfaceDecision(64, 65).isPick, false);
+  assert.equal(footballSurfaceDecision(65, 65).isPick, true);
+
+  // Fail-closed: confidenza assente/non finita non si puo' dimostrare sopra
+  // il floor.
+  assert.equal(footballSurfaceDecision(null).belowFloor, true);
+  assert.equal(footballSurfaceDecision(undefined).belowFloor, true);
+  assert.equal(footballSurfaceDecision(NaN).belowFloor, true);
+
+  // isPick/belowFloor restano complementari, come per surfaceDecision.
+  for (const c of [10, 55, 56, 70, 99]) {
+    const d = footballSurfaceDecision(c);
+    assert.equal(d.isPick, !d.belowFloor, `complement broken at ${c}`);
+  }
+}
+
+// ── footballSurfaceDecisionFor: risolve il floor dalla riga, e non tocca ────
+// tennis/newsports (che restano su surfaceDecision + PICK_SEMPRE_FAVORITO).
+{
+  assert.equal(footballSurfaceDecisionFor({ sport: "football", competition: "Serie A", confidence_score: 55 }).isPick, false);
+  assert.equal(footballSurfaceDecisionFor({ sport: "football", competition: "Serie A", confidence_score: 56 }).isPick, true);
+  // Floor per-lega (MLS = 65).
+  assert.equal(footballSurfaceDecisionFor({ sport: "football", competition: "MLS", confidence_score: 60 }).isPick, false);
+  assert.equal(footballSurfaceDecisionFor({ sport: "football", competition: "MLS", confidence_score: 65 }).isPick, true);
+  // Tennis e sport nuovi non passano da qui: sempre pick, qualunque la confidenza.
+  assert.equal(footballSurfaceDecisionFor({ sport: "tennis", competition: "Wimbledon", confidence_score: 10 }).isPick, true);
+  assert.equal(footballSurfaceDecisionFor({ sport: "baseball", competition: "MLB", confidence_score: 10 }).isPick, true);
+  assert.equal(footballSurfaceDecisionFor({ sport: "mma", competition: "UFC 300", confidence_score: 10 }).isPick, true);
+  // Sport assente -> non declassato (solo il calcio dichiarato viene giudicato).
+  assert.equal(footballSurfaceDecisionFor({ sport: null, competition: "Serie A", confidence_score: 10 }).isPick, true);
+  // Il calcio si riconosce senza badare alle maiuscole.
+  assert.equal(footballSurfaceDecisionFor({ sport: "Football", competition: "Serie A", confidence_score: 10 }).isPick, false);
 }
 
 console.log("surfacing gate ok");

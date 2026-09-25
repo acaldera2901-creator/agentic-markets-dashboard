@@ -22,7 +22,7 @@ import { applyTemperature } from "@/lib/calibration";
 import { pronosticoDaCongelare } from "@/lib/kickoff-freeze";
 import { logPredictionSnapshot } from "@/lib/prediction-log";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
-import { surfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
+import { footballSurfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
 import { favouritePick } from "@/lib/pick-selection";
 import {
   SUMMER_LEAGUES,
@@ -620,7 +620,10 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // competition name so Allsvenskan/League of Ireland get their stricter
       // lab floor; every current league resolves to the standard 56.
       const clubFloor = surfaceFloorFor("football", LEAGUES[code]);
-      const surface = surfaceDecision(confidenceScore, clubFloor);
+      // #TRE-LIVELLI-0925 (Andrea, 25/09): il flag torna binario. Il floor
+      // decide di nuovo per il calcio, indipendente da PICK_SEMPRE_FAVORITO —
+      // vedi il commento su `footballSurfaceDecision` in surfacing-gate.ts.
+      const surface = footballSurfaceDecision(confidenceScore, clubFloor);
       if (surface.belowFloor) {
         enrichment.surface = { below_floor: true, floor: clubFloor };
       }

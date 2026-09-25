@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
-import { edgeTally, EDGE_MIN_CONFIDENCE } from "@/lib/track-record";
+import {
+  edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE,
+  FOOTBALL_FLOOR_CUTOVER_AT, isBeforeFootballFloorCutover,
+} from "@/lib/track-record";
+import { footballSurfaceDecisionFor } from "@/lib/surfacing-gate";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
@@ -182,6 +186,34 @@ export async function GET(req: Request) {
   // qui, e la pagina si fermerebbe al giorno del backfill.
   const rows = surfaced.filter((r) => r.verification_state === "verified");
 
+  // ── #TRE-LIVELLI-0925-CUTOVER — CHE COSA ENTRA NEL NUMERO PUBBLICO ─────────
+  //
+  // Il track record in testa a questa pagina (e alla Home, via
+  // app/landing-client.tsx) e' l'unica cifra che un cliente ricorda. Andrea ha
+  // deciso: NESSUN salto, nessuna retroattivita' (25/09). Il floor di lega
+  // torna a decidere per il calcio, ma SOLO per le righe con `starts_at` da
+  // FOOTBALL_FLOOR_CUTOVER_AT in poi — vedi il commento su quella costante in
+  // lib/track-record.ts. Le righe precedenti contano esattamente come
+  // contavano oggi (58,1%, n=3.069): ogni pick mostrata e' pick, senza gate.
+  // Il tennis e gli altri sport non sono toccati in nessuno dei due rami —
+  // footballSurfaceDecisionFor risponde sempre "pick" per tutto cio' che non
+  // e' calcio.
+  //
+  // La LISTA delle partite non si tocca: `history` continua a mostrarle tutte.
+  // Nessuna riga sparisce dal listino, ne' qui ne' sul board — cambia solo
+  // che cosa si conta nell'headline.
+  const beforeCutover: typeof rows = [];
+  const afterCutover: typeof rows = [];
+  for (const r of rows) (isBeforeFootballFloorCutover(r.starts_at) ? beforeCutover : afterCutover).push(r);
+  const headlineRows = [
+    ...beforeCutover,
+    ...afterCutover.filter((r) => footballSurfaceDecisionFor(r).isPick),
+  ];
+  // La popolazione post-cutover che il floor esclude dall'headline — pubblicata
+  // sotto (stats.post_cutover_excluded) per non rendere silenziosa
+  // l'esclusione, stessa logica di #EDGE-SELETTIVITA-0917.
+  const excludedByFloor = afterCutover.filter((r) => !footballSurfaceDecisionFor(r).isPick);
+
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
   // (won/lost/accuracy) are aggregate hit-rate stats — no money is exposed.
@@ -206,20 +238,23 @@ export async function GET(req: Request) {
     return { ...projected, final_score: finalScore };
   });
 
-  const total    = rows.length;
-  const won      = rows.filter((r) => r.result === "won").length;
-  const lost     = rows.filter((r) => r.result === "lost").length;
-  const paper    = rows.filter((r) => r.is_paper).length;
+  const total    = headlineRows.length;
+  const won      = headlineRows.filter((r) => r.result === "won").length;
+  const lost     = headlineRows.filter((r) => r.result === "lost").length;
+  const paper    = headlineRows.filter((r) => r.is_paper).length;
   // #EDGE-SELETTIVITA-0917 — additivo: l'headline NON cambia. Qui si affianca
   // la sola parte su cui dichiariamo un vantaggio (confidenza >= 62), con il
   // suo n e la sua quota di volume. Quale dei due numeri vada in testa alla
   // pagina e' una decisione di prodotto, non una che si prende in una route.
-  const edge     = edgeTally(rows);
-  const verified = rows.filter((r) => r.is_verified).length;
+  const edge     = edgeTally(headlineRows);
+  const verified = headlineRows.filter((r) => r.is_verified).length;
 
-  // Aggregati opzionali (solo se richiesti) — calcolati sulle stesse righe surfaced.
+  // Aggregati opzionali (solo se richiesti) — sulla STESSA popolazione
+  // dell'headline (#TRE-LIVELLI-0925-CUTOVER): un segmento calcolato su un
+  // insieme piu' largo del titolo contraddirebbe il titolo nella stessa
+  // schermata.
   const extra: Record<string, unknown> = {};
-  const aggRows = rows.map((r) => ({
+  const aggRows = headlineRows.map((r) => ({
     sport: r.sport, competition: r.competition, result: r.result, starts_at: String(r.starts_at),
   }));
   if (aggregate.includes("segments")) extra.segments = bySegment(aggRows);
@@ -255,6 +290,13 @@ export async function GET(req: Request) {
         : null,
       surfaced_total: surfaced.length,
       unverified_excluded: surfaced.length - rows.length,
+      // #TRE-LIVELLI-0925-CUTOVER — la popolazione POST-cutover che il floor di
+      // lega esclude dall'headline. Non e' diagnostica: e' la condizione che
+      // rende l'esclusione onesta invece che survivorship (stessa forma
+      // additiva di #EDGE-SELETTIVITA-0917). Le righe PRIMA del cutover non
+      // hanno un'esclusione da riportare qui: contano tutte, come sempre.
+      cutover_at: FOOTBALL_FLOOR_CUTOVER_AT,
+      post_cutover_excluded: outcomeTally(excludedByFloor),
       interval_95: sufficiente && w
         ? { low: Number(w.low.toFixed(4)), high: Number(w.high.toFixed(4)) }
         : null,

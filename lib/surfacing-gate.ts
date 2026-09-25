@@ -24,6 +24,14 @@
 // vince il 38,8%. Nel tennis le righe senza quota stanno al 53-60% contro il
 // 65-81% di quelle con quota. E' una scelta di prodotto («ogni partita ha una
 // risposta»), presa conoscendo questi numeri. Spegnere = rimettere `false`.
+//
+// #TRE-LIVELLI-0925 (Andrea, 25/09) — IL CALCIO NON PASSA PIU' DI QUI. Questo
+// interruttore governa ormai solo il tennis (tennisSurfaceDecision) e gli
+// sport nuovi (app/api/newsports/route.ts, che chiama surfaceDecision): il
+// club football ha il suo gate indipendente, `footballSurfaceDecision` piu' in
+// basso, che questo flag NON bypassa piu'. Resta `true` perche' quelle due
+// strade non cambiano; non lo si legga come «anche il calcio mostra sempre
+// una pick» — dal 25/09 non e' piu' vero.
 export const PICK_SEMPRE_FAVORITO = true;
 
 export const SURFACE_FLOOR_FOOTBALL = 56;
@@ -226,6 +234,61 @@ export type SurfaceDecision = {
   isPick: boolean;
   belowFloor: boolean;
 };
+
+// ── #TRE-LIVELLI-0925 → binario (Andrea, 25/09: «via il livello intermedio») ─
+//
+// Un giro precedente aveva introdotto un terzo stato ("reading", la banda
+// floor-6..floor-1): il 60,4% misurato su quella banda era troppo vicino al
+// 44-45% della sola lettura per giustificare la complessita' in UI di un terzo
+// stato. Andrea ha deciso: si torna a DUE stati. Questa funzione e' l'UNICO
+// resto di quel giro — sostituisce `footballTier`/`footballTierFor` a tre
+// stati con lo stesso binomio isPick/belowFloor che il file ha sempre avuto
+// per tennis e sport nuovi (`SurfaceDecision`).
+//
+// PERCHE' NON SI RIUSA `surfaceDecision` DIRETTAMENTE: quella rispetta
+// PICK_SEMPRE_FAVORITO (bypassa sempre a "e' pick"), ed e' giusto cosi' per
+// tennis/newsports — l'analisi del 24/09 ha misurato che li' il floor non e'
+// la leva (il gate che conta e' TENNIS_REQUIRE_MARKET). Il calcio invece torna
+// ad avere un floor che DECIDE: stessa logica binaria che `surfaceDecision`
+// aveva PRIMA di #PICK-SEMPRE-0911 (commit 685926e6, 11/09), ristretta al
+// calcio e indipendente da questo interruttore.
+//
+// NESSUNA RIGA SPARISCE MAI DAL LISTINO: questo gate decide cosa si MOSTRA
+// come direzione e cosa si CONTA nel track record, mai cosa si serve.
+// PROBABILITY-NEUTRAL come il resto del file: p_home/p_draw/p_away e
+// confidence_score non vengono toccati.
+//
+// `confidence` e' la probabilita' dell'esito favorito in percento intero
+// (max-prob). Fail-closed: confidenza assente non si puo' dimostrare sopra il
+// floor, quindi e' sotto floor — la stessa scelta gia' fatta da isSurfacedRow.
+export function footballSurfaceDecision(
+  confidence: number | null | undefined,
+  floor: number = SURFACE_FLOOR_FOOTBALL
+): SurfaceDecision {
+  if (typeof confidence !== "number" || !Number.isFinite(confidence)) {
+    return { isPick: false, belowFloor: true };
+  }
+  const isPick = confidence >= floor;
+  return { isPick, belowFloor: !isPick };
+}
+
+// La decisione per una riga servita/storica, risolta dal suo stesso nome di
+// competizione — lo stesso ingresso che usa surfaceFloorFor, cosi' il board, il
+// sync unified e il track record non possono mai essere in disaccordo su una
+// riga (e' la lezione di #TENNIS-SEG-FLOOR-1 e di #BESTBET-FLOOR-1).
+//
+// Sport diverso dal calcio → sempre pick: questa funzione non ha voce in
+// capitolo sul tennis e sugli sport nuovi, che hanno i loro gate (governati da
+// PICK_SEMPRE_FAVORITO). Chiamarla su una riga di tennis non deve poterla
+// declassare.
+export function footballSurfaceDecisionFor(row: {
+  sport?: string | null;
+  competition?: string | null;
+  confidence_score?: number | null;
+}): SurfaceDecision {
+  if ((row.sport ?? "").toLowerCase() !== "football") return { isPick: true, belowFloor: false };
+  return footballSurfaceDecision(row.confidence_score, surfaceFloorFor("football", row.competition));
+}
 
 // Resolve the surfacing floor for a row from its sport + competition. Mirrors
 // core/surfacing_gate.py: tennis → segment-aware tennis floor (competition is
