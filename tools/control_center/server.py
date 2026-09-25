@@ -21,7 +21,7 @@ from .actions import (
     start_daemon,
     stop_daemon,
 )
-from . import council, sala
+from . import council, progetti, sala
 from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 
 HOST = "127.0.0.1"
@@ -216,6 +216,26 @@ class Handler(BaseHTTPRequestHandler):
             f = STATE_FILE.parent / "cervello.json"
             corpo = f.read_bytes() if f.exists() else b'{"assente":true}'
             self._send(200, corpo, "application/json; charset=utf-8")
+        elif path == "/api/progetti":
+            # Dal vivo come la Sala, non dallo snapshot: la card e' la fonte, e
+            # una scheda vecchia di cinque minuti mentre Andrea l'ha appena
+            # scritta e' la vista che comincia a mentire. Costa 29 ms misurati
+            # su 192 card (25/09) — legge solo l'intestazione di ognuna.
+            corpo = progetti.elenco()
+            corpo["nodi"] = progetti.indice_cervello()
+            self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+        elif path == "/api/progetto":
+            # Sola lettura. L'id non diventa mai un percorso: si serve solo se
+            # compare nell'indice, quindi non esiste traversal per costruzione.
+            ident = parse_qs(urlparse(self.path).query).get("id", [""])[0]
+            scheda = progetti.scheda(ident)
+            if scheda is None:
+                self._send(404, b'{"error":"scheda non trovata"}',
+                           "application/json; charset=utf-8")
+            else:
+                self._send(200, json.dumps(scheda, ensure_ascii=False).encode(),
+                           "application/json; charset=utf-8")
         elif path == "/api/state":
             body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")

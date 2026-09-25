@@ -469,6 +469,84 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
   font-family:var(--mono);font-size:11px;padding:3px 8px}
 #ispettore .chiudi:hover{color:var(--ink);border-color:var(--cy)}
 
+/* ─── L · progetti: l'elenco delle card, e il lettore della singola card ─── */
+.pr-cerca{background:var(--inset);border:1px solid var(--line);color:var(--ink);
+  font-family:var(--mono);font-size:11.5px;padding:4px 9px;width:260px}
+.pr-cerca:focus{outline:none;border-color:var(--cy)}
+/* Tre colonne, non una lista che scorre: dentro il piano la rotella e' lo
+   zoom, quindi un contenitore con `overflow:auto` qui sarebbe scroll morto. */
+.pr-elenco{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
+.pr-r{display:grid;grid-template-columns:10px 1fr;gap:11px;align-items:start;width:100%;
+  padding:11px 14px;border:0;background:var(--panel);text-align:left;color:inherit;font:inherit;cursor:pointer}
+.pr-r:hover{background:var(--panel-2)}
+.pr-r:focus-visible{outline:1px solid var(--cy);outline-offset:-2px}
+.pr-r .led{transform:translateY(4px)}
+.pr-r .tit{min-width:0;font-size:13px;line-height:1.35;color:var(--ink);overflow-wrap:anywhere}
+.pr-r .tit small{display:block;color:var(--mid);font-size:11px;line-height:1.5;margin-top:3px;font-weight:400}
+.pr-r .coda{grid-column:2;font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--dim);margin-top:5px}
+.pr-r.f-ATTIVO .coda b{color:var(--green)}.pr-r.f-BLOCCATO .coda b{color:var(--red)}
+.pr-r.f-OPERATIVO .coda b{color:var(--cy-2)}.pr-r.f-ARCHIVIATO .coda b{color:var(--dim)}
+.pr-r .coda b{font-weight:600}
+.pr-ancora{grid-column:1/-1;background:var(--panel);border:0;color:var(--mid);font-family:var(--mono);
+  font-size:11.5px;padding:10px;cursor:pointer;letter-spacing:.04em}
+.pr-ancora:hover{color:var(--cy-2)}
+
+/* il lettore: la card intera, resa. Sola lettura — il file resta la fonte. */
+#scheda{position:fixed;z-index:70;left:50%;transform:translateX(-50%);top:78px;bottom:48px;
+  width:min(1140px,94vw);overflow:auto;background:rgba(7,12,24,.985);border:1px solid var(--line-3);
+  padding:0 0 40px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+#scheda .capo{position:sticky;top:0;z-index:2;background:var(--panel);border-bottom:1px solid var(--line-2);
+  padding:16px 28px 14px;display:flex;align-items:flex-start;gap:18px}
+#scheda .capo h3{margin:4px 0 0;font-size:22px;font-weight:600;line-height:1.2;color:var(--ink)}
+#scheda .capo .occhiello{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--cy)}
+#scheda .capo .via{margin:8px 0 0;font-family:var(--mono);font-size:11px;color:var(--dim);overflow-wrap:anywhere}
+#scheda .chiudi{margin-left:auto;flex:none;background:none;border:1px solid var(--line-2);color:var(--mid);
+  font-family:var(--mono);font-size:11px;padding:4px 9px}
+#scheda .chiudi:hover{color:var(--ink);border-color:var(--cy)}
+/* Chi ci sta lavorando adesso: non è un campo della card, è la Sala
+   incrociata al volo. Perciò dice sempre *perché* ha agganciato. */
+#scheda .agenti{margin:0;padding:12px 28px;border-bottom:1px solid var(--line);background:var(--inset);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#scheda .agenti .eti{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+#scheda .agenti .ag{display:flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--panel);
+  padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--ink)}
+#scheda .agenti .ag small{color:var(--dim)}
+#scheda .md{padding:6px 28px;font-size:14px;line-height:1.65;color:var(--ink)}
+#scheda .md h1{font-size:24px;margin:26px 0 10px;font-weight:600}
+#scheda .md h2{font-size:17px;margin:30px 0 8px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--cy-2);border-bottom:1px solid var(--line);padding-bottom:6px}
+#scheda .md h3{font-size:15px;margin:20px 0 6px;font-weight:600;color:var(--ink)}
+#scheda .md h4,#scheda .md h5,#scheda .md h6{font-size:13px;margin:16px 0 4px;color:var(--mid)}
+#scheda .md p{margin:9px 0}
+#scheda .md ul,#scheda .md ol{margin:9px 0;padding-left:22px}
+#scheda .md li{margin:4px 0}
+/* La spunta sta nel flusso del testo, non in una griglia: un `<strong>` a
+   metà riga sarebbe una cella a sé e incolonnerebbe le parole. E si chiama
+   `spunta` perché `.task` nella torre è già la scheda del settore "Da fare". */
+#scheda .md li.spunta{list-style:none;margin-left:-22px;padding-left:24px;text-indent:-24px}
+#scheda .md li.spunta .segno{display:inline-block;width:18px;text-indent:0;color:var(--amber);font-size:13px}
+#scheda .md li.spunta.fatta{color:var(--dim)}
+#scheda .md li.spunta.fatta .segno{color:var(--green)}
+#scheda .md a{color:var(--cy-2)}
+#scheda .md del{color:var(--dim)}
+#scheda .md code{font-family:var(--mono);font-size:12px;background:var(--inset);border:1px solid var(--line);
+  padding:0 4px;color:var(--cy-2)}
+#scheda .md pre{background:var(--inset);border:1px solid var(--line);padding:12px 14px;overflow:auto;margin:12px 0}
+#scheda .md pre code{border:0;background:none;padding:0;color:var(--mid)}
+#scheda .md hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+#scheda .md .wiki{font-family:var(--mono);font-size:12px;color:var(--violet)}
+#scheda .md blockquote.stato{margin:16px 0;padding:14px 18px;background:var(--panel);
+  border:1px solid var(--line-2);border-left:3px solid var(--cy)}
+#scheda .md blockquote.stato p{margin:6px 0;font-size:13px;line-height:1.6}
+#scheda .md .tabella{overflow:auto;margin:14px 0;border:1px solid var(--line)}
+#scheda .md table{border-collapse:collapse;width:100%;font-size:12.5px}
+#scheda .md th,#scheda .md td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+#scheda .md th{background:var(--panel-2);font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--mid);font-weight:600;white-space:nowrap}
+#scheda .md td{color:var(--ink)}
+#scheda .md tbody tr:nth-child(even) td{background:rgba(13,23,40,.5)}
+
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
   .flusso{stroke-dasharray:none;opacity:.35}
@@ -493,6 +571,7 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
   <span><kbd>1–9 0</kbd>un settore</span><span><kbd>P</kbd>il ponte</span><span><kbd>Esc</kbd>tutto</span>
 </div>
 <aside id="ispettore" hidden></aside>
+<aside id="scheda" hidden aria-label="Scheda del progetto"></aside>
 
 <!-- ═══ IL MONDO ═══ -->
 <div id="stage">
@@ -643,6 +722,22 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
         </div>
       </div>
       <div class="copertina"><b class="lettera-g">I</b><h3>Cervello</h3><div class="grande" id="c-cervello-n">—</div><div class="stato" id="c-cervello-s"></div></div>
+    </section>
+
+    <section class="settore" id="s-progetti" data-l="L" data-nome="Progetti">
+      <header class="targa"><b class="lettera">L</b><h2>Progetti</h2>
+        <div class="filtri" id="pr-filtri" style="margin-left:20px"></div>
+        <input class="pr-cerca" id="pr-cerca" type="search" placeholder="cerca una card…" aria-label="Cerca una card">
+        <span class="meta" id="m-progetti">—</span></header>
+      <div class="corpo">
+        <div class="pannello"><h4>Le card dei tre registri <small id="m-pr-reg"></small></h4>
+          <div class="righe pr-elenco" id="pr-elenco"></div>
+          <p class="nota">Questa è una <b>vista</b>: ogni riga apre il file `.md` così com'è su disco, blocco
+            STATO compreso. Non si scrive niente da qui — la card resta l'unica fonte. Clic su una riga per
+            leggerla intera; <kbd>Esc</kbd> chiude.</p>
+        </div>
+      </div>
+      <div class="copertina"><b class="lettera-g">L</b><h3>Progetti</h3><div class="grande" id="c-progetti-n">—</div><div class="stato" id="c-progetti-s"></div></div>
     </section>
   </div>
 
@@ -847,7 +942,8 @@ stage.addEventListener("dblclick",e=>{
 });
 document.addEventListener("keydown",e=>{
   if(e.target.matches("input,textarea")) return;
-  if(e.key==="Escape"){ if(!$("ispettore").hidden){ chiudiIspettore(); return; } tutto(); return; }
+  if(e.key==="Escape"){ if(!$("scheda").hidden){ chiudiScheda(); return; }
+    if(!$("ispettore").hidden){ chiudiIspettore(); return; } tutto(); return; }
   if(e.key==="p"||e.key==="P"){ vai("ponte"); return; }
   const b=document.querySelector(`.settore[data-k="${e.key}"]`); if(b) vai(b.id.slice(2));
   const passo=60; if(e.key==="ArrowLeft"){T.x+=passo;anima();} if(e.key==="ArrowRight"){T.x-=passo;anima();}
@@ -868,14 +964,20 @@ function costruisciIndice(){
   });
   const t=el("button","tutto"); t.append(el("b","","⌂"), el("span","","Esc")); t.title="Tutto il piano"; t.addEventListener("click",tutto); hud.append(t);
   const pm=el("button"); pm.append(el("span","l","J"), el("span","t","Macchina"), el("span","kk","·")); pm.addEventListener("click",()=>vai("macchina")); pon.append(pm);
+  const pp=el("button"); pp.append(el("span","l","L"), el("span","t","Progetti"), el("span","kk","·")); pp.addEventListener("click",()=>vai("progetti")); pon.append(pp);
 }
 
 /* ═══════════════════════════ ispettore ═══════════════════════════ */
-function ispettore(occhiello,titolo,sub,blocchi,metriche){
+function ispettore(occhiello,titolo,sub,blocchi,metriche,azione){
   const a=$("ispettore"); a.textContent=""; a.hidden=false;
   const x=el("button","chiudi","Esc chiudi"); x.addEventListener("click",chiudiIspettore); a.append(x);
   a.append(el("p","occhiello",occhiello), el("h3","",titolo));
   if(sub) a.append(el("p","sub",sub));
+  if(azione){
+    const b=el("button","","→ "+azione.eti);
+    b.style.cssText="width:100%;margin:0 0 14px;background:var(--inset);border:1px solid var(--cy);color:var(--cy-2);font-family:var(--mono);font-size:11.5px;padding:7px 9px;letter-spacing:.04em";
+    b.addEventListener("click",azione.fn); a.append(b);
+  }
   if(metriche&&Object.keys(metriche).length){
     const g=el("div","mgrid");
     Object.entries(metriche).forEach(([k,v])=>{ const c=el("div","mcell"); c.append(el("label","",k.replace(/_/g," ")), el("b","",String(v))); g.append(c); });
@@ -1487,8 +1589,10 @@ async function renderCervello(){
       const lab=sv("text",{x:p.x+r+4,y:p.y+4,class:"etichetta"}); lab.textContent=n.etichetta||n.id; s.append(lab);
       const vicini=(d.edges||[]).filter(e=>e.da===n.id||e.a===n.id).map(e=>{ const altro=e.da===n.id?e.a:e.da; const m=d.nodes.find(z=>z.id===altro);
         return [e.rel||"—",(m&&m.etichetta)||altro]; });
+      const card=schedaDelNodo(n.id);
       ispettore("cervello · "+(n.tipo||"—"),n.etichetta||n.id,`Fase ${n.fase||"—"} · toccato ${n.toccato?eta(n.toccato):"—"}`,
-        [["Collegamenti ("+vicini.length+")",vicini.slice(0,40)]],{grado:n.grado??"—",peso:n.peso??"—",id:n.id,origine:(d.edges||[]).find(e=>e.a===n.id)?.origine||"—"}); };
+        [["Collegamenti ("+vicini.length+")",vicini.slice(0,40)]],{grado:n.grado??"—",peso:n.peso??"—",id:n.id,origine:(d.edges||[]).find(e=>e.a===n.id)?.origine||"—"},
+        card?{eti:"apri la scheda del progetto",fn:()=>apriScheda(card)}:null); };
     cc.addEventListener("click",apri); cc.addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ev.preventDefault();apri();} });
     gn.append(cc); });
   s.append(gn); g.append(s);
@@ -1496,6 +1600,126 @@ async function renderCervello(){
   $("m-cervello").textContent=`${d.nodes.length} nodi · ${(d.edges||[]).length} archi · generato ${eta(d.generato)}`;
   copertina("cervello",String(d.nodes.length),"",`nodi · ${(d.edges||[]).length} archi`+(c.mancanti?` · ${c.mancanti} mancanti`:"")+(c.orfani?` · ${c.orfani} orfani`:""));
 }
+
+/* ═══════════════════════════ L · progetti ═══════════════════════════ */
+/* Una vista, non un registro: `/api/progetti` legge le card dei tre registri
+   dal disco a ogni richiesta, e `/api/progetto` rende una card intera. Da qui
+   non si scrive niente — non esiste un endpoint che lo permetta. */
+const FASI_PR=["ATTIVO","BLOCCATO","OPERATIVO","ARCHIVIATO"];
+let PROG=null, progFase="", progQ="";
+
+function filtraProgetti(){
+  if(!PROG) return [];
+  const q=progQ.trim().toLowerCase();
+  return PROG.schede.filter(s=>{
+    if(progFase && (s.fase||"")!==progFase) return false;
+    if(!q) return true;
+    return (s.titolo+" "+s.file+" "+s.registro_nome+" "+(s.done_quando||"")+" "+(s.prossima_azione||""))
+      .toLowerCase().includes(q);
+  });
+}
+
+// Quante righe prima del "mostra tutte": 10 per colonna. Non è estetica —
+// il piano nasconde il corpo di un settore sotto zoom 0.5, e un settore alto
+// 2.300 px si apre già sotto quella soglia: si vedrebbe solo la copertina.
+const PR_TETTO=30;
+let progTutte=false;
+function disegnaElencoProgetti(){
+  const box=$("pr-elenco"); box.textContent="";
+  const righe=filtraProgetti();
+  if(!righe.length){ box.append(el("div","vuoto", PROG?"Nessuna card con questo filtro.":
+    "L'elenco delle card non è ancora arrivato. Quando /api/progetti risponde, qui compaiono le card dei tre registri.")); return; }
+  const mostrate=progTutte?righe:righe.slice(0,PR_TETTO);
+  mostrate.forEach(s=>{
+    const b=el("button","pr-r f-"+(s.fase||"SENZA"));
+    b.type="button"; b.dataset.id=s.id; b.title=s.file;
+    const led=el("i","led "+(s.fase==="ATTIVO"?"green":s.fase==="BLOCCATO"?"red":s.fase==="OPERATIVO"?"cy":"unknown"));
+    const t=el("div","tit",s.titolo);
+    const sotto=s.done_quando?("Done quando: "+s.done_quando):(s.prossima_azione||(s.ha_stato?"":"nessun blocco STATO"));
+    if(sotto) t.append(el("small","",sotto.length>110?sotto.slice(0,110)+"…":sotto));
+    const coda=el("div","coda"); coda.append(el("b","",s.fase||"—"),
+      document.createTextNode(" · "+(s.stato_data||"senza data")+" · "+s.registro_nome));
+    b.append(led,t,coda);
+    b.addEventListener("click",()=>apriScheda(s.id));
+    box.append(b);
+  });
+  if(righe.length>PR_TETTO){
+    const a=el("button","pr-ancora", progTutte?`mostra solo le prime ${PR_TETTO} di ${righe.length}`
+      :`mostra tutte e ${righe.length} (ora ne vedi ${PR_TETTO}) — oppure filtra e cerca`);
+    a.type="button";
+    a.addEventListener("click",()=>{ progTutte=!progTutte; disegnaElencoProgetti(); misuraMondo(); });
+    box.append(a);
+  }
+}
+
+function disegnaFiltriProgetti(){
+  const f=$("pr-filtri"); f.textContent="";
+  const voci=[["","tutte"]].concat(FASI_PR.map(x=>[x,x.toLowerCase()]));
+  voci.forEach(([val,eti])=>{
+    const n=val?(PROG&&PROG.conteggi[val])||0:(PROG?PROG.schede.length:0);
+    const b=el("button","",eti+" "+n);
+    if(progFase===val) b.classList.add("on");
+    b.addEventListener("click",()=>{ progFase=val; disegnaFiltriProgetti(); disegnaElencoProgetti(); });
+    f.append(b);
+  });
+}
+
+async function renderProgetti(){
+  const d=await json("/api/progetti",null);
+  PROG=(d&&Array.isArray(d.schede))?d:null;
+  disegnaFiltriProgetti(); disegnaElencoProgetti();
+  if(!PROG){ $("m-progetti").textContent="elenco non disponibile"; copertina("progetti","—","dim","elenco non disponibile"); return; }
+  const c=PROG.conteggi||{};
+  $("m-progetti").textContent=`${PROG.schede.length} card · ${c.ATTIVO||0} attive · ${c.BLOCCATO||0} bloccate`;
+  $("m-pr-reg").textContent=(PROG.registri||[]).map(r=>r.nome).join(" · ");
+  copertina("progetti",String(c.ATTIVO||0),"green",`card attive su ${PROG.schede.length}`);
+}
+
+function chiudiScheda(){ const a=$("scheda"); a.hidden=true; a.textContent="";
+  if(location.hash.startsWith("#scheda=")) history.replaceState(null,"","#progetti"); }
+
+async function apriScheda(id){
+  const a=$("scheda"); a.hidden=false; a.textContent="";
+  const capo=el("div","capo"); const col=el("div");
+  col.append(el("p","occhiello","scheda · in caricamento"), el("h3","",id));
+  const x=el("button","chiudi","Esc chiudi"); x.addEventListener("click",chiudiScheda);
+  capo.append(col,x); a.append(capo); a.scrollTop=0;
+  history.replaceState(null,"","#scheda="+encodeURIComponent(id));
+
+  const d=await json("/api/progetto?id="+encodeURIComponent(id),null);
+  a.textContent="";
+  const capo2=el("div","capo"); const col2=el("div");
+  if(!d){
+    col2.append(el("p","occhiello","scheda"), el("h3","","Card non trovata"),
+      el("p","via","Nessuna card con id "+id+" nei tre registri."));
+  }else{
+    col2.append(el("p","occhiello",`${d.registro_nome} · ${d.fase||"senza blocco STATO"}`+(d.stato_data?" · "+d.stato_data:"")),
+      el("h3","",d.titolo), el("p","via",d.percorso+"  ·  letto adesso, "+eta(new Date(d.modificato*1000).toISOString())+" l'ultima scrittura"));
+  }
+  const x2=el("button","chiudi","Esc chiudi"); x2.addEventListener("click",chiudiScheda);
+  capo2.append(col2,x2); a.append(capo2);
+  if(d&&(d.agenti||[]).length){
+    const b=el("div","agenti"); b.append(el("span","eti","ci lavorano adesso"));
+    d.agenti.forEach(ag=>{
+      const c=el("div","ag"); c.append(el("i","led "+(ag.stato==="busy"?"green vivo":"unknown")),
+        el("span","",ag.nome||ag.agente||"—"), el("small","","· "+ag.perche+" in "+ag.dove));
+      c.title=(ag.task||"").slice(0,240); b.append(c);
+    });
+    a.append(b);
+  }
+  if(d){
+    const md=el("div","md");
+    /* L'HTML arriva dal renderer del server, che escapa il file prima di
+       qualunque altra cosa: gli unici tag che possono uscire di lì sono i suoi. */
+    md.innerHTML=d.html;
+    a.append(md);
+  }
+  a.scrollTop=0; a.focus?.();
+}
+
+/* Dal grafo del Cervello alla card: il nodo di un progetto è la copia
+   riversata, la scheda apre l'originale. */
+function schedaDelNodo(idNodo){ return (PROG&&PROG.nodi&&PROG.nodi[idNodo])||null; }
 
 /* ═══════════════════════════ K · architettura ═══════════════════════════ */
 /* I dati sono quelli della mappa del 30/08, intatti. Cambia la disposizione:
@@ -1650,11 +1874,16 @@ function selezionaMappa(id,apri){
 costruisciIndice(); costruisciMappa();
 async function avvio(){
   applica();
-  await Promise.all([renderSistema(),renderAzienda(),renderSala(),renderCert(),renderCervello(),renderTerminali()]);
+  await Promise.all([renderSistema(),renderAzienda(),renderSala(),renderCert(),renderProgetti(),renderCervello(),renderTerminali()]);
   renderCouncil();
   misuraMondo();
   let salvata=null; try{ salvata=JSON.parse(localStorage.getItem("cc2-vista")||"null"); }catch(e){}
-  const hash=location.hash.replace("#","");
+  let hash=location.hash.replace("#","");
+  // `#scheda=<registro>/<file>` apre direttamente la card: e' l'indirizzo che
+  // si incolla in chat quando si parla di un progetto.
+  let cardDaAprire=null;
+  if(hash.startsWith("scheda=")){ cardDaAprire=decodeURIComponent(hash.slice(7)); hash="progetti"; }
+  if(cardDaAprire) apriScheda(cardDaAprire);
   if(hash&&$("s-"+hash)){ vai(hash); V.s=T.s*0.92; V.x=T.x+(innerWidth/2)*(1-0.92); V.y=T.y+(innerHeight/2)*(1-0.92); }
   else if(salvata&&salvata.vw===innerWidth&&salvata.vh===innerHeight){ T.x=salvata.x;T.y=salvata.y;T.s=salvata.s; V.x=T.x;V.y=T.y;V.s=T.s; minS=Math.min((innerWidth-40)/mondoW,(innerHeight-100)/mondoH)*0.7; applica(); }
   else { tutto(); /* l'unico momento di motion: il piano si avvicina da poco piu' lontano */ V.s=T.s*0.88; V.x=T.x+(innerWidth/2)*(1-0.88); V.y=T.y+(innerHeight/2)*(1-0.88); anima(); }
@@ -1666,7 +1895,9 @@ setInterval(renderAzienda,120000);
 setInterval(renderCouncil,60000);
 setInterval(renderCert,120000);
 setInterval(renderCervello,60000);
+setInterval(renderProgetti,60000);
 setInterval(renderSala,5000);
+$("pr-cerca").addEventListener("input",e=>{ progQ=e.target.value; disegnaElencoProgetti(); });
 </script>
 </body>
 </html>
