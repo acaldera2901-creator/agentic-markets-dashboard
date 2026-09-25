@@ -341,6 +341,16 @@
   font-size: 12px;
   font-weight: 400;
   color: var(--am-muted-2);
+  white-space: nowrap;
+}
+/* #LIVE-SCORE-CARD-0925 — il punteggio in corso al posto di "vs": stesso
+   giallo di .br-live (LiveBadge), l'unico accento vivo della card, così il
+   numero che cambia mentre si guarda è leggibile quanto la scritta LIVE
+   accanto. Nessun token nuovo. */
+.br-card__vs[data-live="true"] {
+  font-weight: 700;
+  color: var(--am-live);
+  font-family: var(--am-font-num);
 }
 
 .br-card__pick {

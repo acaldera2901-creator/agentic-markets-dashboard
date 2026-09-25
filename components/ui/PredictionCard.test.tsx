@@ -52,6 +52,23 @@ describe("PredictionCard", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Live");
     expect(screen.queryByText("Today · 20:45")).toBeNull();
   });
+  // #LIVE-SCORE-CARD-0925 — Andrea, 25/09: «i risultati devono vedersi e
+  // devono essere live come prima del restyle». Il dato (liveScoreLabel)
+  // c'era già in HomeLobby (dal ticker orfano), non arrivava mai alla card.
+  it("live con punteggio noto: il risultato sostituisce il \"vs\"", () => {
+    render(<PredictionCard data={{ ...data, isLive: true, liveMinute: 58, liveScoreLabel: "2-1" }} variant="live" href="/p/1" />);
+    expect(screen.getByText("2-1")).toHaveAttribute("data-live", "true");
+    expect(screen.queryByText("vs")).toBeNull();
+  });
+  it("live ma punteggio non ancora noto: resta \"vs\", non un trattino a caso", () => {
+    render(<PredictionCard data={{ ...data, isLive: true, liveMinute: 3 }} variant="live" href="/p/1" />);
+    expect(screen.getByText("vs")).toBeInTheDocument();
+  });
+  it("non live: il punteggio non si mostra anche se per qualche motivo è valorizzato", () => {
+    render(<PredictionCard data={{ ...data, isLive: false, liveScoreLabel: "2-1" }} href="/p/1" />);
+    expect(screen.getByText("vs")).toBeInTheDocument();
+    expect(screen.queryByText("2-1")).toBeNull();
+  });
   // #RESTYLING-0921 round 2 — il free tier vede il NUMERO, paga per il LATO.
   // Il lucchetto sta sulla pick: nascondere anche la probabilità toglierebbe
   // alla Home di un anonimo l'unica cosa che spiega il prodotto, e il badge
