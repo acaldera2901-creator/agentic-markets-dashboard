@@ -182,22 +182,14 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     image: { src: "/banners/card-model.jpg", overlay: "l" },
   },
 
-  {
-    id: "top-base",
-    slot: "desk-top",
-    format: "leaderboard",
-    audiences: ["base"],
-    glyphs: ["#g-rank", "#g-pick"],
-    copy: {
-      it: { eyebrow: "BetRedge Pro", headline: "Aggiungi gli agenti", accent: "automatici", sub: "Execution live, stake sizing e stop loss. Sali a Pro." },
-      en: { eyebrow: "BetRedge Pro", headline: "Add the automatic", accent: "agents", sub: "Live execution, stake sizing and stop loss. Go Pro." },
-      es: { eyebrow: "BetRedge Pro", headline: "Añade los agentes", accent: "automáticos", sub: "Ejecución en directo, stake sizing y stop loss. Sube a Pro." },
-      fr: { eyebrow: "BetRedge Pro", headline: "Ajoute les agents", accent: "automatiques", sub: "Exécution en direct, stake sizing et stop loss. Passe à Pro." },
-      ru: { eyebrow: "BetRedge Pro", headline: "Добавь автоматических", accent: "агентов", sub: "Исполнение в реальном времени, расчёт ставки и стоп-лосс. Перейди на Pro." },
-    },
-    cta: { href: "/plans", it: "Sali a Pro →", en: "Upgrade to Pro →", es: "Subir a Pro →", fr: "Passer à Pro →", ru: "Повысить до Pro →" },
-    image: { src: "/banners/football-pitch.jpg", overlay: "l" },
-  },
+  // #LEGAL-NO-EXECUTION-0925 — campagna "top-base" rimossa (non riscritta:
+  // era interamente costruita sulla promessa di esecuzione automatica).
+  // Andrea, 25/09, per iscritto: «il sistema non è collegato ai conti e non
+  // piazza scommesse». Review legale (legale-compliance) su un'analisi
+  // psicologica commissionata da Andrea: la campagna prometteva agli utenti
+  // Base, in 5 lingue, "agenti automatici" che fanno "execution live, stake
+  // sizing e stop loss" — una funzione che non esiste. Verificato viva
+  // (audiences:["base"], mostrata a chi ha già pagato), non codice morto.
 
   // ── DESK TOPBAR (billboard sopra la board, al posto del banner partner) — Creator Picks per tutti ──
   {
@@ -476,22 +468,10 @@ export const HOUSE_CAMPAIGNS: HouseCampaign[] = [
     image: { src: "/banners/card-plans.jpg", overlay: "l" },
   },
 
-  {
-    id: "bottom-base",
-    slot: "desk-bottom",
-    format: "billboard",
-    audiences: ["base"],
-    glyphs: ["#g-rank", "#g-pick", "#g-trophy"],
-    copy: {
-      it: { eyebrow: "BetRedge Pro", headline: "Dal segnale all'", accent: "execution", sub: "Con Pro gli agenti piazzano per te: stake sizing, stop loss, portfolio live." },
-      en: { eyebrow: "BetRedge Pro", headline: "From signal to", accent: "execution", sub: "With Pro the agents place for you: stake sizing, stop loss, live portfolio." },
-      es: { eyebrow: "BetRedge Pro", headline: "De la señal a la", accent: "ejecución", sub: "Con Pro los agentes apuestan por ti: stake sizing, stop loss, portfolio en directo." },
-      fr: { eyebrow: "BetRedge Pro", headline: "Du signal à l'", accent: "exécution", sub: "Avec Pro les agents misent pour toi : stake sizing, stop loss, portfolio en direct." },
-      ru: { eyebrow: "BetRedge Pro", headline: "От сигнала к", accent: "исполнению", sub: "С Pro агенты ставят за тебя: расчёт ставки, стоп-лосс, портфель в реальном времени." },
-    },
-    cta: { href: "/plans", it: "Sali a Pro →", en: "Upgrade to Pro →", es: "Subir a Pro →", fr: "Passer à Pro →", ru: "Повысить до Pro →" },
-    image: { src: "/banners/stadium-crowd.jpg", overlay: "l" },
-  },
+  // #LEGAL-NO-EXECUTION-0925 — campagna "bottom-base" rimossa, stesso motivo
+  // di "top-base" sopra: "gli agenti piazzano per te" era la formulazione più
+  // esplicita di tutta la copy — non riscritta apposta, era interamente
+  // costruita su quella promessa.
 
   // ── DESK INTERSTITIAL (billboard) — solo Pro (foto): per anon il board è offuscato ──
   {

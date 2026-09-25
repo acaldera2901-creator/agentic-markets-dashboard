@@ -9553,7 +9553,13 @@ function UnifiedBetsTab({
           in entrambi i temi. */}
       {!isLoggedIn && (
         <div className="reg-nudge flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 mx-4 mt-3 mb-0 px-4 py-2.5 rounded-lg border border-[var(--am-line)] bg-[var(--am-panel-2)] text-xs font-mono text-[var(--am-muted)]">
-          <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare l'execution automatica.", en: "Register to save selections, get alerts and unlock auto-execution.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear la ejecución automática.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer l'exécution automatique.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть авто-исполнение." })}</span>
+          {/* #LEGAL-NO-EXECUTION-0925 — «unlock auto-execution» promettava una
+              funzione che non esiste (Andrea, 25/09: «il sistema non è
+              collegato ai conti e non piazza scommesse»). Sostituito col
+              beneficio vero della registrazione: le 3 letture/sport al
+              giorno di showcaseAllowance (lib/access-projection.ts), la
+              stessa cifra che la FAQ home dichiara già. */}
+          <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare tre letture per sport al giorno.", en: "Register to save selections, get alerts, and unlock three readings per sport a day.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear tres lecturas por deporte al día.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer trois lectures par sport par jour.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть три прогноза на вид спорта в день." })}</span>
           <div className="flex gap-2 shrink-0">
             {/* #AUTH-ICONS-0924 — è la coppia che Andrea ha visto nello
                 screenshot: sotto l'hero, senza segno, mentre le tile sport
