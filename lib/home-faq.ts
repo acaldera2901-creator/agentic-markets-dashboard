@@ -33,60 +33,103 @@
 // `free` e **0** ad `anonymous`. Da sloggato erano zero, e la Home è la pagina
 // che legge chi non ha ancora un account. Ora la riga dice «con un account
 // gratuito», che è la cosa vera.
+//
+// #FAQ-UMANA-0925 — SECONDA riscrittura di voce (Andrea, 25/09: «deve essere
+// molto più umana come scrittura»). Il giro del 23/09 aveva tolto l'antitesi
+// «X, non Y», ma ne lasciava in piedi altri quattro, più subdoli perché non
+// sono una formula da cercare col grep: sono un RITMO.
+//
+//   1. La chiusa a effetto, SEI volte su sei. Ogni risposta atterrava su una
+//      frasetta da manifesto: «o ricompri o no», «e per ora finisce lì», «stai
+//      leggendo uno schermo», «sulla prossima non dice niente», «nessuno qui
+//      lo decide al posto tuo». Una persona che risponde a una domanda la
+//      battuta la fa una volta su sei, non sei su sei. Ora quattro risposte
+//      su sei finiscono su una frase piatta e informativa.
+//   2. Il periodo unico, tutto in un fiato. Ogni risposta era una o due frasi
+//      lunghe con lo stesso respiro (virgola, virgola, trattino lungo,
+//      chiusa), e sei risposte lunghe uguali sono una macchina. Ora la
+//      lunghezza varia DENTRO la singola risposta: frasi da quattro parole
+//      accanto a frasi da trenta.
+//   3. Il trattino lungo come punteggiatura di default (tre in EN, tre in IT).
+//      Zero adesso: due punti, punto fermo, parentesi.
+//   4. La bravura da copywriter. «No, no and no.», «Your choice.», «the layer
+//      underneath that reasoning», «all stamped before kick-off», «so you can
+//      read twenty matches in a glance», «an estimate, never a verdict» — e le
+//      domande scritte da un SEO invece che da un utente («How am I meant to
+//      use it?», «What does “live” actually mean here?», più una domanda a tre
+//      canne che impacchettava scommesse + conto bookmaker + rendimento).
+//
+// I FATTI sono di nuovo identici, uno per uno, in EN e in IT: carta
+// mensile/annuale con rinnovo automatico, disdetta dall'account in qualsiasi
+// momento e zero addebiti da lì in poi; crypto pagamento singolo da 30 giorni
+// senza rinnovo; le quattro cose dentro una lettura (quota→percentuale,
+// probabilità calibrata, distanza fra le due, ragionamento in parole)
+// registrate prima del fischio; deep analysis solo Pro coi suoi sette fattori;
+// calcio 1X2 e tennis vincente match e nient'altro, per ora; live = il numero
+// che si muove, mai un'azione eseguita, solo Pro; nessuna scommessa piazzata,
+// nessun conto bookmaker necessario, nessun rendimento promesso, il 71% come
+// frequenza attesa su molte situazioni simili e mai una certezza sulla singola
+// partita, il registro pubblico che parla solo del passato; account gratuito
+// REGISTRATO = 3 letture per sport al giorno, Base/Pro aprono tutto il board.
+//
+// NOTA PER CHI RISCRIVE DOPO DI ME: la risposta è resa in un unico nodo di
+// testo (`<dd>{a}</dd>`, sia in components/lobby/HomeFaq.tsx sia in
+// app/landing-client.tsx). Un `\n\n` qui dentro NON diventa un paragrafo: si
+// appiattisce in uno spazio. La prosa deve reggere come blocco unico.
 
 export type FaqItem = readonly [question: string, answer: string];
 
 export const HOME_FAQ = {
   en: [
     [
-      "Monthly or annual, and what happens if I cancel?",
-      "Your choice. Base and Pro are card subscriptions, monthly or annual, and they renew on their own until you stop them. You cancel from your account whenever you like, and from that moment we charge you nothing. Crypto works differently: you pay once, you get 30 days, nothing renews. When the 30 days run out, you buy again or you don’t.",
+      "How does billing work, and can I cancel?",
+      "Base and Pro are ordinary card subscriptions. You pick monthly or annual, and it renews by itself until you stop it. You stop it from your account, any day you want, and from that moment we charge you nothing further. Crypto is the odd one out: one payment, 30 days of access, no renewal of any kind. On day 31 nothing happens unless you decide to pay again.",
     ],
     [
-      "What’s actually in a reading, and what does Pro’s deep analysis add?",
-      "Four things, all stamped before kick-off: what the market thinks (the odds turned into a percentage), what our model thinks (its calibrated probability), the gap between the two, and the reasoning written out in plain words. Deep analysis is the layer underneath that reasoning, and it comes with Pro: on any match card you can open the factors the model actually weighed — form, expected goals, injuries, Elo, serve and return numbers, head-to-head, surface.",
+      "What’s in a reading, and what is the deep analysis?",
+      "Four things, all of them logged before kick-off. What the market thinks, which is the odds turned into a percentage. What our model thinks, which is its calibrated probability. The distance between those two numbers. And the reasoning behind it, written out in normal words. The deep analysis is what sits under that reasoning, and it comes with Pro. Open it on any match and you get the factors the model actually weighed: form, expected goals, injuries, Elo, serve and return numbers, head-to-head, surface.",
     ],
     [
-      "Which sports and markets do you cover?",
-      "Football and tennis, and for now that’s where it stops. In football we read the match result: home, draw, away. In tennis, the winner of the match. Which competitions are in depends on the day, and the board tells you which ones are there.",
+      "Which sports do you cover?",
+      "Football and tennis. That’s all, for now. In football we read the match result, so home, draw or away; in tennis, who wins the match. Which competitions show up changes from one day to the next, and the board tells you what’s there.",
     ],
     [
-      "What does “live” actually mean here?",
-      "It means the number moves while the match does. On the Live Probability Board the model re-reads a game as the score, the clock and the momentum change, so you watch the same probability shift in real time. At no point is anything placed or executed for you — you are reading a screen. Live comes with Pro.",
+      "What happens on the live board?",
+      "The number moves while the match does. The score changes, the clock runs, the momentum turns, and the model reads the game again, so you see the probability shift while it’s shifting. Nothing is ever placed or executed for you at any point: you’re reading a screen. Live is Pro only.",
     ],
     [
-      "Does BetRedge place bets, need a bookmaker account, or promise a return?",
-      "No, no and no. We are a probability engine. We don’t take bets, we never touch your money, and you don’t need an account anywhere else to use us. And a probability is an estimate, never a verdict: when the model says 71%, it means that across many situations resembling this one it would expect that outcome around 71 times in 100 — about this particular match it does not know. We promise no return of any kind. The public record shows how past readings settled; it says nothing about the next one.",
+      "Do you place bets, or promise I’ll make money?",
+      "No. We don’t place bets, we’re not a bookmaker, and your money is something we never touch. You don’t need an account anywhere else either, because BetRedge runs on its own. And we don’t promise a return of any kind. A probability is an estimate: when the model says 71%, it’s saying that across a lot of situations that resemble this one it would expect that outcome about 71 times in 100. What happens in this particular match, tonight, it does not know. The public record shows how past readings settled, and about the next one it says nothing.",
     ],
     [
-      "How am I meant to use it?",
-      "Open the board and scan the cards: each one shows the model’s probability for that match, and nothing else — one number, so you can read twenty matches in a glance. When one is worth a closer look, open it: inside is the full reading, the reasoning written out in plain words. Then look at the public record to see how earlier readings settled, so you know what kind of thing you are reading. What you do after that is yours, and nobody here decides it for you. A free account opens three readings per sport a day; Base and Pro open the rest of the board.",
+      "How do I use it day to day?",
+      "Open the board. Every card carries one number, the model’s probability for that match, and nothing else, which is what lets you run your eye down twenty matches without reading twenty paragraphs. When one makes you stop, open it: the full reading is inside, reasoning included. Then go and look at the public record, because seeing how earlier readings settled is what tells you how much weight a number like that deserves. What you do with it after that is your call. We don’t make that one for you. Register a free account and you get three readings per sport a day; Base and Pro open the whole board.",
     ],
   ],
   it: [
     [
-      "Mensile o annuale, e cosa succede se disdico?",
-      "Come preferisci. Base e Pro sono abbonamenti con carta, mensili o annuali, e si rinnovano da soli finché non li fermi. La disdetta la fai dal tuo account quando vuoi, e da quel momento non ti addebitiamo più niente. Le crypto funzionano in un altro modo: paghi una volta, hai 30 giorni, non si rinnova nulla. Quando scadono, o ricompri o no.",
+      "Come funziona il pagamento, e posso disdire?",
+      "Base e Pro sono normali abbonamenti con carta. Scegli tu se mensile o annuale, e si rinnova da solo finché non lo fermi. Lo fermi dal tuo account, in qualsiasi giorno, e da quel momento non ti addebitiamo più niente. Le crypto vanno per conto loro: pagamento singolo, 30 giorni di accesso, nessun rinnovo. Il giorno 31 non succede niente, a meno che tu non decida di ripagare.",
     ],
     [
-      "Cosa c’è davvero dentro una lettura, e cosa aggiunge la deep analysis di Pro?",
-      "Quattro cose, tutte registrate prima del fischio: cosa pensa il mercato (la quota convertita in percentuale), cosa pensa il nostro modello (la sua probabilità calibrata), la distanza fra le due, e il ragionamento scritto in parole normali. La deep analysis è lo strato sotto quel ragionamento, e arriva con Pro: da qualsiasi scheda apri i fattori che il modello ha davvero pesato — forma, gol attesi, infortuni, Elo, numeri di servizio e risposta, scontri diretti, superficie.",
+      "Cosa c’è dentro una lettura, e cos’è la deep analysis?",
+      "Quattro cose, tutte registrate prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale. Cosa pensa il nostro modello, cioè la sua probabilità calibrata. La distanza fra questi due numeri. E il ragionamento che c’è dietro, scritto in parole normali. La deep analysis è quello che sta sotto quel ragionamento, e arriva con Pro. La apri su qualsiasi partita e vedi i fattori che il modello ha davvero pesato: forma, gol attesi, infortuni, Elo, numeri di servizio e risposta, scontri diretti, superficie.",
     ],
     [
-      "Quali sport e mercati coprite?",
-      "Calcio e tennis, e per ora finisce lì. Nel calcio leggiamo l’esito della partita: 1, X, 2. Nel tennis, chi vince il match. Quali competizioni ci siano dipende dal giorno, e te lo dice il board.",
+      "Quali sport coprite?",
+      "Calcio e tennis. Per ora basta così. Nel calcio leggiamo il risultato della partita, quindi 1, X o 2; nel tennis, chi vince il match. Quali competizioni ci siano cambia da un giorno all’altro, e te lo dice il board.",
     ],
     [
-      "Cosa vuol dire «live», in concreto?",
-      "Vuol dire che il numero si muove mentre si muove la partita. Sul board di probabilità live il modello rilegge il match mentre cambiano punteggio, minuto e inerzia, e tu vedi la stessa probabilità spostarsi in tempo reale. In nessun momento viene piazzato o eseguito qualcosa per te: stai leggendo uno schermo. Il live arriva con Pro.",
+      "Cosa succede sul board live?",
+      "Il numero si muove insieme alla partita. Cambia il punteggio, passano i minuti, gira l’inerzia, e il modello rilegge il match, così vedi la probabilità spostarsi mentre si sta spostando. In nessun momento viene piazzato o eseguito qualcosa per te: stai guardando uno schermo. Il live è solo Pro.",
     ],
     [
-      "BetRedge piazza scommesse, richiede un conto bookmaker o promette un rendimento?",
-      "No, no e no. Siamo un motore di probabilità. Non accettiamo scommesse, non tocchiamo mai i tuoi soldi, e per usarci non ti serve un conto da nessun’altra parte. E una probabilità è una stima, mai una sentenza: quando il modello dice 71%, sta dicendo che su molte situazioni simili a questa si aspetterebbe quell’esito circa 71 volte su 100 — su questa partita qui non lo sa. Non promettiamo nessun rendimento. Il registro pubblico mostra come si sono chiuse le letture passate, e sulla prossima non dice niente.",
+      "Piazzate scommesse? Mi promettete un guadagno?",
+      "No. Non piazziamo scommesse, non siamo un bookmaker, e i tuoi soldi non li tocchiamo mai. E non ti serve un conto da nessun’altra parte, perché BetRedge funziona per conto suo. Un rendimento non te lo promettiamo, di nessun tipo. Una probabilità è una stima: quando il modello dice 71%, sta dicendo che su tante situazioni simili a questa si aspetterebbe quell’esito circa 71 volte su 100. Cosa succede in questa partita qui, stasera, non lo sa. Il registro pubblico mostra come si sono chiuse le letture passate, e sulla prossima non dice nulla.",
     ],
     [
-      "Come dovrei usarlo?",
-      "Apri il board e scorri le card: ognuna mostra la probabilità del modello per quella partita, e nient’altro — un numero solo, così ne leggi venti in un colpo d’occhio. Quando una merita attenzione, aprila: dentro c’è la lettura completa, col ragionamento scritto in parole normali. Poi guarda il registro pubblico per vedere come si sono chiuse le letture precedenti, così sai che cosa stai leggendo. Cosa fai dopo lo decidi tu, e nessuno qui lo decide al posto tuo. Con un account gratuito apri tre letture per sport al giorno; Base e Pro aprono il resto del board.",
+      "Come lo uso, in pratica?",
+      "Apri il board. Ogni card porta un numero solo, la probabilità del modello per quella partita, e nient’altro: è quello che ti permette di scorrere venti partite senza leggerne venti paragrafi. Quando una ti fa fermare, aprila: dentro c’è la lettura completa, ragionamento compreso. Poi vai a vedere il registro pubblico, perché è guardando come si sono chiuse le letture precedenti che capisci quanto peso dare a un numero del genere. Quello che ne fai dopo lo decidi tu. Quella cosa lì non la decidiamo noi al posto tuo. Registrando un account gratuito hai tre letture per sport al giorno; Base e Pro aprono tutto il board.",
     ],
   ],
 } as const satisfies Record<string, readonly FaqItem[]>;

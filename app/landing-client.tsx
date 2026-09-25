@@ -456,7 +456,7 @@ const V3_EN: V3Copy = {
   // (PlansTab: rinnovo automatico, disdetta dall'account; crypto = 30 giorni
   // senza rinnovo) — non è una promessa nuova.
   pcNote: "Monthly or annual billing · Cancel anytime from your account · No bookmaker account required · No bets placed for you · No guaranteed returns · 18+",
-  faqEyebrow: "FAQ", faqHead: "Before your first reading.", faqSub: "Billing, what a reading contains, what “live” means, and what BetRedge does not do — answered before you sign up, not after.",
+  faqEyebrow: "FAQ", faqHead: "Before your first reading.", faqSub: "The things worth knowing before you sign up: how billing works, what a reading contains, what “live” does, and what BetRedge stays out of.",
   // #FREE-BASE-DAILY-QUOTA-0831 — i tre elenchi dicono ora quello che il gate
   // consegna davvero. Base NON aveva "Deep Analysis su ogni scheda" (è Pro-only,
   // la proiezione gliela toglie) né "tutto il feed" (è a quota): due claim che il
@@ -517,7 +517,7 @@ const V3_IT: V3Copy = {
   pcFreeTag: "Per imparare come funziona il board.", pcBaseTag: "Per il quadro pre-partita completo.", pcProTag: "Per l’accesso completo al board di probabilità.",
   pcCtaFree: "Leggi una partita gratis", pcCtaBase: "Inizia con Base", pcCtaPro: "Sblocca Pro",
   pcNote: "Mensile o annuale · Disdici quando vuoi dal tuo account · Nessun conto bookmaker richiesto · Nessuna scommessa piazzata per te · Nessun rendimento garantito · 18+",
-  faqEyebrow: "FAQ", faqHead: "Prima della tua prima lettura.", faqSub: "Fatturazione, cosa contiene una lettura, cosa vuol dire «live» e cosa BetRedge non fa — risposte prima dell’iscrizione, non dopo.",
+  faqEyebrow: "FAQ", faqHead: "Prima della tua prima lettura.", faqSub: "Le cose che conviene sapere prima di iscriversi: come funziona il pagamento, cosa contiene una lettura, cosa fa il «live», e da cosa BetRedge sta fuori.",
   pcFreeList: ["3 letture del modello per sport, ogni giorno", "Registro pubblico prima del fischio", "Probabilità, quota di mercato e un’anteprima dell’edge", "Senza carta"],
   pcBaseList: ["7 letture del modello per sport, ogni giorno", "Edge % completo e contesto di stake", "Weekly Model Case", "Registro pubblico completo"],
   pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep analysis su ogni scheda", "Board di probabilità live", "Costruisci una vista di probabilità"],
