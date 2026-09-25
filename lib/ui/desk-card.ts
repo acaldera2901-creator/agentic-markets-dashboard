@@ -76,6 +76,10 @@ export type DeskCardOptions = {
   winLabel?: string;
   isLive?: boolean;
   liveMinute?: string | number | null;
+  /** #LIVE-SCORE-CARD-0925 — vedi la nota in prediction-card.ts. Già
+   *  formattato dal chiamante (il desk conosce la forma del punteggio del suo
+   *  sport, la card no). */
+  liveScoreLabel?: string | null;
   locked?: boolean;
 };
 
@@ -156,6 +160,7 @@ export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {
     kickoffLabel: opts.kickoffLabel ?? null,
     isLive: opts.isLive ?? false,
     liveMinute: opts.liveMinute ?? null,
+    liveScoreLabel: opts.liveScoreLabel ?? null,
     pick,
     market: "1X2",
     modelPct,
@@ -189,6 +194,7 @@ export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): 
     kickoffLabel: opts.kickoffLabel ?? null,
     isLive: opts.isLive ?? false,
     liveMinute: opts.liveMinute ?? null,
+    liveScoreLabel: opts.liveScoreLabel ?? null,
     pick: !hasPair ? null : opts.winLabel ? `${name} ${opts.winLabel}` : name,
     market: "Match winner",
     modelPct,

@@ -8598,11 +8598,16 @@ function HomeLobby({
     .map((p) => {
       const live = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
       const inPlay = live?.match_status === "IN_PLAY" || live?.match_status === "PAUSED";
+      // #LIVE-SCORE-CARD-0925 — il dato c'era già (live.home_score/away_score,
+      // usato dal ticker orfano LiveNowStrip), non arrivava mai alla card.
+      const liveScoreLabel = live?.home_score != null && live?.away_score != null
+        ? `${live.home_score}-${live.away_score}` : null;
       const data = fromDeskFootball(p, {
         winLabel, drawLabel,
         kickoffLabel: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
         isLive: inPlay,
         liveMinute: live?.minute ?? null,
+        liveScoreLabel,
       });
       return { data, key: lobbyKey(data) };
     }), [footballSource, liveMap, lang, tz, q, winLabel, drawLabel]);
@@ -8613,10 +8618,15 @@ function HomeLobby({
     .map((m) => {
       const lm = liveTennisMap[tennisPairKey(m.player1, m.player2)];
       const inPlay = !!lm && !/final|complete|ended|retir|walkover|w\/o/i.test(lm.status_detail || "");
+      // #LIVE-SCORE-CARD-0925 — un set per elemento ("6-4 3-6 2-1"), stessa
+      // forma di `setsLabel` in LiveNowStrip (il ticker che passava questo
+      // stesso dato ma non arrivava mai a schermo).
+      const liveScoreLabel = lm ? lm.sets_p1.map((v, i) => `${v}-${lm.sets_p2[i] ?? ""}`).join(" ") : null;
       const data = fromDeskTennis(m, {
         winLabel,
         kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
         isLive: inPlay,
+        liveScoreLabel,
       });
       return { data, key: lobbyKey(data) };
     }), [tennisSource, liveTennisMap, lang, tz, q, winLabel]);

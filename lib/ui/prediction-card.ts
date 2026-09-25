@@ -63,6 +63,12 @@ export type PredictionCardData = {
   kickoffLabel?: string | null;
   isLive: boolean;
   liveMinute?: string | number | null;
+  /** #LIVE-SCORE-CARD-0925 — il risultato in corso, già formattato dal
+   *  chiamante ("2-1" calcio, "6-4 3-6 2-1" tennis: un set per elemento,
+   *  stessa forma di `setsLabel` in app/app/page.tsx). La card non lo deriva
+   *  da soli — football e tennis lo calcolano diversamente (due interi contro
+   *  un array di set) — mostra solo la stringa quando `isLive` è vero. */
+  liveScoreLabel?: string | null;
   pick: string | null;
   market?: string | null;
   modelPct: number | null;

@@ -135,7 +135,15 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
       <div className="br-card__match">
         <h3 className="br-card__teams">
           <span className="br-card__team"><Crest team={data.home} sport={data.sport} size={crestSize} role="home" /><span>{data.home}</span></span>
-          <span className="br-card__vs">vs</span>
+          {/* #LIVE-SCORE-CARD-0925 — il risultato in corso al posto del "vs"
+              quando la partita è live e il punteggio è noto. Andrea, 25/09:
+              «i risultati devono vedersi e devono essere live come prima del
+              restyle» — la card non lo mostrava mai, era un dato disponibile
+              (live/data.isLive) mai arrivato qui. `data-live` riusa il token
+              già acceso dal resto della card (nessun colore nuovo). */}
+          <span className="br-card__vs" data-live={live && data.liveScoreLabel ? "true" : undefined}>
+            {live && data.liveScoreLabel ? data.liveScoreLabel : "vs"}
+          </span>
           <span className="br-card__team"><Crest team={data.away} sport={data.sport} size={crestSize} role="away" /><span>{data.away}</span></span>
         </h3>
       </div>
