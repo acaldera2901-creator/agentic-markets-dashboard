@@ -4275,12 +4275,16 @@ function PlansTab({
             <span>{planPriceCopy("base", lang)}</span>
           </div>
           <p className="plan-description">
+            {/* #EDGE-COPY-0928 — via «edge»: dal round 14 del restyling nessuna
+                scheda mostra un numero di edge, per nessun piano (vedi
+                components/MatchDetailSheet.tsx, nota su MdsHead). La promessa
+                resta su ciò che Base vede davvero: le spiegazioni. */}
             {pick5(lang, {
-              it: "Fino a 7 prediction per sport al giorno, con edge e spiegazioni complete.",
-              en: "Up to 7 predictions per sport a day, with full edge and explanations.",
-              es: "Hasta 7 predicciones por deporte al día, con edge y explicaciones completas.",
-              fr: "Jusqu'à 7 prédictions par sport par jour, avec edge et explications complètes.",
-              ru: "До 7 прогнозов на вид спорта в день, с edge и полными пояснениями.",
+              it: "Fino a 7 prediction per sport al giorno, con spiegazioni complete.",
+              en: "Up to 7 predictions per sport a day, with full explanations.",
+              es: "Hasta 7 predicciones por deporte al día, con explicaciones completas.",
+              fr: "Jusqu'à 7 prédictions par sport par jour, avec explications complètes.",
+              ru: "До 7 прогнозов на вид спорта в день, с полными пояснениями.",
             })}
           </p>
           <div className="price-line">
