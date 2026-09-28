@@ -63,9 +63,17 @@ describe("hero della pagina piani", () => {
       // «calibrate» è un claim che entra solo con la firma di ml-engineer-agentic
       expect(l).not.toMatch(/calibrat|калибров/i);
     }
-    const flowEnd = plansTab.indexOf('className="plan-flow"');
+    // dopo la griglia delle card (l'ultimo CryptoPaymentBox è quello di Pro)
+    const gridEnd = plansTab.lastIndexOf("<CryptoPaymentBox");
     const footnoteAt = plansTab.indexOf("plans-footnote");
-    expect(footnoteAt).toBeGreaterThan(flowEnd);
+    expect(gridEnd).toBeGreaterThan(0);
+    expect(footnoteAt).toBeGreaterThan(gridEnd);
+  });
+
+  // #PLANS-FLOW-OFF-0928 — Andrea, 28/09: via la strip 01–04 sotto le card.
+  it("la strip 01/02/03/04 (Signal/Explain/Decide/Track) non è più resa", () => {
+    expect(plansTab).not.toMatch(/plan-flow/);
+    expect(plansTab).not.toMatch(/t\.plans_flow\d/);
   });
 });
 

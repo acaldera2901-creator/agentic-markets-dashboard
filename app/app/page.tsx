@@ -140,6 +140,8 @@ const BASE_TRANSLATIONS = {
     plans_base_f5: "Storico e track record",
     plans_base_f6: "Execution automatica reale",
     plans_base_f7: "Nessuna promessa di profitto garantito",
+    // #PLANS-FLOW-OFF-0928: plans_flow1..4 non sono più rese (strip tolta da
+    // /plans). Restano finché #463 non è mergiata — vedi nota in PlansTab.
     plans_flow1_title: "Signal", plans_flow1_desc: "Il modello stima la probabilità di ogni esito.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Il cliente vede quota, edge e perché.",
     plans_flow3_title: "Decide", plans_flow3_desc: "Il cliente decide se entrare: niente execution automatica nel go-live.",
@@ -4382,15 +4384,13 @@ function PlansTab({
 
       {/* TODO track-record strip: pending ml-engineer-agentic sign-off sul significato
           del dato (dedup, model_version, righe ricalcolate post-kickoff, dato tennis),
-          vedi project_conversion_hooks.md. Andrebbe qui, tra le card e il flusso.
+          vedi project_conversion_hooks.md. Andrebbe qui, tra le card e la nota.
           Mai hit rate, mai «vs mercato». */}
 
-      <section className="plan-flow">
-        <div><span>01</span><strong>{t.plans_flow1_title}</strong><em>{t.plans_flow1_desc}</em></div>
-        <div><span>02</span><strong>{t.plans_flow2_title}</strong><em>{t.plans_flow2_desc}</em></div>
-        <div><span>03</span><strong>{t.plans_flow3_title}</strong><em>{t.plans_flow3_desc}</em></div>
-        <div><span>04</span><strong>{t.plans_flow4_title}</strong><em>{t.plans_flow4_desc}</em></div>
-      </section>
+      {/* #PLANS-FLOW-OFF-0928 — Andrea, 28/09: la strip 01–04 (Signal / Explain /
+          Decide / Track) sotto le card è tolta. Le chiavi plans_flow* restano nei
+          blocchi di traduzione finché #463 (che le tocca e le conta nel suo test)
+          non è mergiata; poi via chiavi e CSS .plan-flow in un commit di pulizia. */}
 
       {/* #PLANS-HOOK-C-0928: il disclaimer che faceva da headline («nessuna promessa
           aggressiva di battere il mercato») resta, ma in coda: una riga di testo
