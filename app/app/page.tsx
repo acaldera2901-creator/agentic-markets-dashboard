@@ -124,9 +124,13 @@ const BASE_TRANSLATIONS = {
     auth_hint_consent: "Conferma di essere maggiorenne e accetta i Termini per continuare.",
     // Plans
     plans_eyebrow: "Client plans",
-    plans_title: "Un piano pagante, promessa chiara",
-    plans_subtitle: "Free resta preview. BetRedge Pro sblocca tennis live, football research, Model Edges, spiegazioni e track record. Nessuna promessa aggressiva di battere il mercato.",
-    plans_cta: "View live edges",
+    // #PLANS-HOOK-C-0928: l'hero dice cosa distingue i tre piani (quanto del board
+    // leggi), non «un piano pagante» sopra tre card. Il disclaimer sul mercato
+    // scende in coda alla pagina (plans_footnote): resta, non fa più da titolo.
+    plans_title: "Scegli quanto a fondo leggere il board",
+    plans_subtitle: "Free apre ogni giorno le 3 migliori del modello per sport. Base arriva alle top 7. Pro apre tutto, con l'analisi completa.",
+    plans_cta: "Guarda il board di oggi",
+    plans_footnote: "Probabilità del modello, non promesse di battere il mercato. 18+ · Non è consulenza · Non gestiamo scommesse né denaro.",
     plans_base_desc: "Fino a 7 prediction per sport al giorno, con spiegazioni complete.",
     plans_base_core: "Segnali e ricerca, non autopilot", plans_base_sub: "Decisione finale al cliente",
     plans_base_f1: "Model Edges +EV quando odds ed edge sono disponibili",
@@ -283,9 +287,10 @@ const BASE_TRANSLATIONS = {
     portfolio_starting_capital: "Capitale Iniziale",
     portfolio_trend: "Andamento portafoglio",
     price_month: "mese",
-    crypto_profile_required: "Crea un profilo o accedi per selezionare il piano.",
+    // #PLANS-HOOK-C-0928: il prerequisito (account) è una nota sotto il prezzo,
+    // non più l'etichetta del bottone; crypto_create_first non serve più.
+    crypto_profile_required: "Account e pagamento al passaggio successivo.",
     crypto_activate: "Attiva",
-    crypto_create_first: "Crea profilo prima",
     checkout_copy: "Copia",
     checkout_copied: "✓ Copiato",
     checkout_amount: "Importo",
@@ -383,9 +388,10 @@ const BASE_TRANSLATIONS = {
     auth_hint_consent: "Confirm you are of legal age and accept the Terms to continue.",
     // Plans
     plans_eyebrow: "Client plans",
-    plans_title: "One paid plan, clear promise",
-    plans_subtitle: "Free stays as preview. BetRedge Pro unlocks tennis live, football research, Model Edges, explanations and track record. No aggressive market-beating promise.",
-    plans_cta: "View live edges",
+    plans_title: "Choose how deep you read the board",
+    plans_subtitle: "Free opens the model's top 3 per sport every day. Base goes to the top 7. Pro opens everything, with full analysis.",
+    plans_cta: "See today's board",
+    plans_footnote: "Model probabilities, not a promise to beat the market. 18+ · Not advice · We don't place bets or handle money.",
     plans_base_desc: "Up to 7 predictions per sport a day, with full explanations.",
     plans_base_core: "Signals and research, not autopilot", plans_base_sub: "Final decision stays with the client",
     plans_base_f1: "Model Edges +EV when odds and edge are available",
@@ -542,9 +548,8 @@ const BASE_TRANSLATIONS = {
     portfolio_starting_capital: "Starting Capital",
     portfolio_trend: "Portfolio trend",
     price_month: "month",
-    crypto_profile_required: "Create a profile or sign in to select this plan.",
+    crypto_profile_required: "Account and payment at the next step.",
     crypto_activate: "Activate",
-    crypto_create_first: "Create profile first",
     checkout_copy: "Copy",
     checkout_copied: "✓ Copied",
     checkout_amount: "Amount",
@@ -646,9 +651,10 @@ const EXTRA_TRANSLATIONS = {
     auth_hint_consent: "Confirma que eres mayor de edad y acepta los Términos para continuar.",
     // Plans
     plans_eyebrow: "Planes cliente",
-    plans_title: "Un plan de pago, promesa clara",
-    plans_subtitle: "Free se mantiene como vista previa. BetRedge Pro desbloquea tenis en vivo, investigación de fútbol, Model Edges, explicaciones y track record. Sin promesas agresivas de batir el mercado.",
-    plans_cta: "Ver edges en vivo",
+    plans_title: "Elige hasta dónde leer el board",
+    plans_subtitle: "Free abre cada día las 3 mejores del modelo por deporte. Base llega a las top 7. Pro abre todo, con el análisis completo.",
+    plans_cta: "Ver el board de hoy",
+    plans_footnote: "Probabilidades del modelo, no promesas de batir al mercado. 18+ · No es asesoramiento · No gestionamos apuestas ni dinero.",
     plans_base_desc: "Hasta 7 predicciones por deporte al día, con explicaciones completas.",
     plans_base_core: "Señales e investigación, no piloto automático", plans_base_sub: "La decisión final es del cliente",
     plans_base_f1: "Model Edges +EV cuando hay cuotas y edge disponibles",
@@ -805,9 +811,8 @@ const EXTRA_TRANSLATIONS = {
     portfolio_starting_capital: "Capital Inicial",
     portfolio_trend: "Tendencia del portfolio",
     price_month: "mes",
-    crypto_profile_required: "Crea un perfil o inicia sesión para elegir este plan.",
+    crypto_profile_required: "Cuenta y pago en el siguiente paso.",
     crypto_activate: "Activar",
-    crypto_create_first: "Crea primero un perfil",
     checkout_copy: "Copiar",
     checkout_copied: "✓ Copiado",
     checkout_amount: "Importe",
@@ -905,9 +910,10 @@ const EXTRA_TRANSLATIONS = {
     auth_hint_consent: "Confirme que tu es majeur et accepte les Conditions pour continuer.",
     // Plans
     plans_eyebrow: "Plans client",
-    plans_title: "Un seul plan payant, promesse claire",
-    plans_subtitle: "Free reste un aperçu. BetRedge Pro débloque le tennis en direct, la recherche football, les Model Edges, les explications et le track record. Aucune promesse agressive de battre le marché.",
-    plans_cta: "Voir les edges en direct",
+    plans_title: "Choisissez jusqu'où lire le board",
+    plans_subtitle: "Free ouvre chaque jour les 3 meilleures du modèle par sport. Base va jusqu'au top 7. Pro ouvre tout, avec l'analyse complète.",
+    plans_cta: "Voir le board du jour",
+    plans_footnote: "Des probabilités du modèle, pas une promesse de battre le marché. 18+ · Pas un conseil · Nous ne gérons ni paris ni argent.",
     plans_base_desc: "Jusqu'à 7 prédictions par sport par jour, avec explications complètes.",
     plans_base_core: "Signaux et recherche, pas un pilote automatique", plans_base_sub: "La décision finale reste au client",
     plans_base_f1: "Model Edges +EV quand cotes et edge sont disponibles",
@@ -1064,9 +1070,8 @@ const EXTRA_TRANSLATIONS = {
     portfolio_starting_capital: "Capital de Départ",
     portfolio_trend: "Tendance du portfolio",
     price_month: "mois",
-    crypto_profile_required: "Crée un profil ou connecte-toi pour choisir ce plan.",
+    crypto_profile_required: "Compte et paiement à l'étape suivante.",
     crypto_activate: "Activer",
-    crypto_create_first: "Crée d'abord un profil",
     checkout_copy: "Copier",
     checkout_copied: "✓ Copié",
     checkout_amount: "Montant",
@@ -1164,9 +1169,10 @@ const EXTRA_TRANSLATIONS = {
     auth_hint_consent: "Подтверди совершеннолетие и прими Условия, чтобы продолжить.",
     // Plans
     plans_eyebrow: "Планы клиента",
-    plans_title: "Один платный план, понятное обещание",
-    plans_subtitle: "Free остаётся превью. BetRedge Pro открывает теннис live, исследование футбола, Model Edges, объяснения и track record. Без агрессивных обещаний обыграть рынок.",
-    plans_cta: "Смотреть live edges",
+    plans_title: "Выберите, насколько глубоко читать борд",
+    plans_subtitle: "Free каждый день открывает 3 лучших прогноза модели по каждому виду спорта. Base — до топ-7. Pro открывает всё, с полным анализом.",
+    plans_cta: "Смотреть борд на сегодня",
+    plans_footnote: "Вероятности модели, а не обещание обыграть рынок. 18+ · Не является советом · Мы не принимаем ставки и не работаем с деньгами.",
     plans_base_desc: "До 7 прогнозов на вид спорта в день, с полными пояснениями.",
     plans_base_core: "Сигналы и исследования, не автопилот", plans_base_sub: "Финальное решение за клиентом",
     plans_base_f1: "Model Edges +EV, когда есть котировки и edge",
@@ -1323,9 +1329,8 @@ const EXTRA_TRANSLATIONS = {
     portfolio_starting_capital: "Начальный капитал",
     portfolio_trend: "Динамика портфеля",
     price_month: "месяц",
-    crypto_profile_required: "Создай профиль или войди, чтобы выбрать этот план.",
+    crypto_profile_required: "Аккаунт и оплата на следующем шаге.",
     crypto_activate: "Активировать",
-    crypto_create_first: "Сначала создай профиль",
     checkout_copy: "Копировать",
     checkout_copied: "✓ Скопировано",
     checkout_amount: "Сумма",
@@ -3470,6 +3475,9 @@ function CryptoPaymentBox({
           e il ramo anonimo di submitCryptoPayment era codice morto. Ora il clic
           parte: l'intento viene messo da parte, si autentica, e il checkout si
           riapre sul piano scelto. */}
+      {/* #PLANS-HOOK-C-0928: da anonimo il bottone diceva «Crea profilo prima» su
+          tutti i piani — un prerequisito, non un'offerta. Ora vende il piano; la
+          sequenza (account → pagamento) sta nella nota sotto il prezzo. */}
       <button disabled={isCurrentPlan || isDowngrade} onClick={() => onSubmit(plan)}>
         {isCurrentPlan
           ? pick5(lang, { it: "Piano attuale", en: "Current plan", es: "Plan actual", fr: "Plan actuel", ru: "Текущий план" })
@@ -3477,7 +3485,9 @@ function CryptoPaymentBox({
             ? pick5(lang, { it: "Già su Pro", en: "Already on Pro", es: "Ya en Pro", fr: "Déjà sur Pro", ru: "Уже на Pro" })
             : profile
               ? `${t.crypto_activate} ${planLabel(plan, lang)}`
-              : t.crypto_create_first}
+              : plan === "base"
+                ? pick5(lang, { it: "Inizia con Base", en: "Start with Base", es: "Empieza con Base", fr: "Commencer avec Base", ru: "Начать с Base" })
+                : pick5(lang, { it: "Inizia con Pro", en: "Start with Pro", es: "Empieza con Pro", fr: "Commencer avec Pro", ru: "Начать с Pro" })}
       </button>
     </div>
   );
@@ -4258,12 +4268,15 @@ function PlansTab({
             <PlanFeature>{pick5(lang, { it: "Fino a 3 calcio + 3 tennis, tra le partite del giorno", en: "Up to 3 football + 3 tennis, from the day's matches", es: "Hasta 3 de fútbol + 3 de tenis, entre los partidos del día", fr: "Jusqu'à 3 football + 3 tennis, parmi les matchs du jour", ru: "До 3 по футболу + 3 по теннису из матчей дня" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione su quelle", en: "Pick, probabilities and explanation on those", es: "Selección, probabilidades y explicación sobre ellas", fr: "Choix, probabilités et explication sur ceux-ci", ru: "Выбор, вероятности и пояснение по ним" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Profilo e lingua salvati · storico pubblico", en: "Profile and language saved · public history", es: "Perfil e idioma guardados · historial público", fr: "Profil et langue enregistrés · historique public", ru: "Профиль и язык сохранены · публичная история" })}</PlanFeature>
-            <PlanFeature locked>{pick5(lang, { it: "Resto del board, edge e Deep Analysis", en: "Rest of the board, edge and Deep Analysis", es: "Resto del panel, edge y Deep Analysis", fr: "Reste du tableau, edge et Deep Analysis", ru: "Остальная часть доски, edge и Deep Analysis" })}</PlanFeature>
+            {/* #PLANS-HOOK-C-0928: «edge» tolto anche dalla riga chiusa del Free —
+                nessuna scheda mostra un numero di edge (#EDGE-COPY-0928); si nomina
+                ciò che i piani pagati aprono davvero: il resto del board e l'analisi. */}
+            <PlanFeature locked>{pick5(lang, { it: "Il resto del board e l'analisi completa (→ Base / Pro)", en: "The rest of the board and full analysis (→ Base / Pro)", es: "El resto del board y el análisis completo (→ Base / Pro)", fr: "Le reste du board et l'analyse complète (→ Base / Pro)", ru: "Остальной борд и полный анализ (→ Base / Pro)" })}</PlanFeature>
           </ul>
           {/* #FUNNEL-INTENT-0908: idem qui — da anonimo il CTA del Free era spento,
               quindi dopo la registrazione l'utente non otteneva nemmeno il piano free. */}
           <button className="plan-action" disabled={profile?.plan === "free"} onClick={onActivateFree}>
-            {!profile ? t.crypto_create_first : profile.plan === "free" ? pick5(lang, { it: "Free attivo", en: "Free active", es: "Free activo", fr: "Free actif", ru: "Free активен" }) : pick5(lang, { it: "Attiva Free", en: "Activate Free", es: "Activar Free", fr: "Activer Free", ru: "Активировать Free" })}
+            {!profile ? pick5(lang, { it: "Inizia gratis", en: "Start free", es: "Empieza gratis", fr: "Commencer gratuitement", ru: "Начать бесплатно" }) : profile.plan === "free" ? pick5(lang, { it: "Free attivo", en: "Free active", es: "Free activo", fr: "Free actif", ru: "Free активен" }) : pick5(lang, { it: "Attiva Free", en: "Activate Free", es: "Activar Free", fr: "Activer Free", ru: "Активировать Free" })}
           </button>
         </article>
 
@@ -4294,6 +4307,10 @@ function PlansTab({
           </p>
           <div className="price-line">
             <strong>{planPriceCopy("base", lang)}</strong>
+            {/* #PLANS-HOOK-C-0928: prezzo anche in unità d'uso, ACCANTO al mensile,
+                mai al suo posto (14.99/30 ≈ 0,50; 7 calcio + 7 tennis = fino a 14).
+                «Fino a» perché nei giorni con poche partite le top 7 non sono 7. */}
+            <small className="price-unit">{pick5(lang, { it: "≈ $0,50 al giorno · fino a 14 letture", en: "≈ $0.50 a day · up to 14 readings", es: "≈ $0,50 al día · hasta 14 lecturas", fr: "≈ 0,50 $ par jour · jusqu'à 14 lectures", ru: "≈ $0,50 в день · до 14 прогнозов" })}</small>
             {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
                 Shopify). Il crypto resta disponibile come alternativa. */}
             <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
@@ -4310,7 +4327,7 @@ function PlansTab({
             {/* #CLAIMS-FIX-0928: riga «Edge % e contesto di stake» tolta — «stake» è
                 linguaggio da scommessa, fuori dalla pricing page. */}
             <PlanFeature>{pick5(lang, { it: "Registro pubblico completo", en: "Full public record", es: "Registro público completo", fr: "Registre public complet", ru: "Полный публичный реестр" })}</PlanFeature>
-            <PlanFeature locked>{pick5(lang, { it: "Prediction illimitate e Deep Analysis (→ Pro)", en: "Unlimited predictions and Deep Analysis (→ Pro)", es: "Predicciones ilimitadas y Deep Analysis (→ Pro)", fr: "Prédictions illimitées et Deep Analysis (→ Pro)", ru: "Безлимитные прогнозы и Deep Analysis (→ Pro)" })}</PlanFeature>
+            <PlanFeature locked>{pick5(lang, { it: "Tutto il board e l'analisi completa (→ Pro)", en: "The whole board and full analysis (→ Pro)", es: "Todo el board y el análisis completo (→ Pro)", fr: "Tout le board et l'analyse complète (→ Pro)", ru: "Весь борд и полный анализ (→ Pro)" })}</PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="base" onSubmit={onPaymentSubmit} />
         </article>
@@ -4335,6 +4352,8 @@ function PlansTab({
           </p>
           <div className="price-line">
             <strong>{planPriceCopy("premium", lang)}</strong>
+            {/* #PLANS-HOOK-C-0928: 29.99/30 ≈ 1 al giorno. */}
+            <small className="price-unit">{pick5(lang, { it: "≈ $1 al giorno · tutto il board", en: "≈ $1 a day · the whole board", es: "≈ $1 al día · todo el board", fr: "≈ 1 $ par jour · tout le board", ru: "≈ $1 в день · весь борд" })}</small>
             {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
                 Shopify). Il crypto resta disponibile come alternativa. */}
             <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
@@ -4345,9 +4364,15 @@ function PlansTab({
           </div>
           <ul className="plan-feature-list">
             <PlanFeature>{pick5(lang, { it: "TUTTE le prediction, illimitate", en: "ALL predictions, unlimited", es: "TODAS las predicciones, ilimitadas", fr: "TOUTES les prédictions, illimitées", ru: "ВСЕ прогнозы, без лимита" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Deep Analysis: forma, infortuni, venue", en: "Deep Analysis: form, injuries, venue", es: "Deep Analysis: forma, lesiones, estadio", fr: "Deep Analysis : forme, blessures, stade", ru: "Deep Analysis: форма, травмы, арена" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Tennis Live V4 e Football Live V4 research", en: "Tennis Live V4 and Football Live V4 research", es: "Tennis Live V4 y Football Live V4 research", fr: "Tennis Live V4 et Football Live V4 research", ru: "Tennis Live V4 и Football Live V4 research" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Build a Probability View e Model Edges +EV", en: "Build a Probability View and Model Edges +EV", es: "Build a Probability View y Model Edges +EV", fr: "Build a Probability View et Model Edges +EV", ru: "Build a Probability View и Model Edges +EV" })}</PlanFeature>
+            {/* #PLANS-HOOK-C-0928: feature in linguaggio di esito, non di gergo
+                interno («Live V4», «Model Edges +EV», «Deep Analysis»). Ogni riga
+                nomina ciò che l'utente vede: il perché, l'aggiornamento live, il
+                confronto modello-mercato (probabilità e quota, già sulla card) e
+                la vista combinata (/probability-view, #MB-1). Nessuna promessa di
+                numero di edge: non lo mostra nessuna scheda (#EDGE-COPY-0928). */}
+            <PlanFeature>{pick5(lang, { it: "Perché il modello la vede così: forma, infortuni, campo", en: "Why the model sees it this way: form, injuries, venue", es: "Por qué el modelo lo ve así: forma, lesiones, estadio", fr: "Pourquoi le modèle le voit ainsi : forme, blessures, stade", ru: "Почему модель видит это так: форма, травмы, арена" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Probabilità che si aggiornano durante la partita", en: "Probabilities that update during the match", es: "Probabilidades que se actualizan durante el partido", fr: "Des probabilités mises à jour pendant le match", ru: "Вероятности, обновляющиеся по ходу матча" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Combina più mercati sulla stessa partita e confronta il modello col mercato", en: "Combine markets on one match and compare the model with the market", es: "Combina varios mercados del mismo partido y compara el modelo con el mercado", fr: "Combinez plusieurs marchés d'un même match et comparez le modèle au marché", ru: "Комбинируйте рынки одного матча и сравнивайте модель с рынком" })}</PlanFeature>
             {/* #CLAIMS-FIX-0928: riga «Edge e stake su tutto» tolta, stesso motivo. */}
             <PlanFeature><Link href="/weekly-model-case" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Model Case inclusa (il modello combinato della settimana)", en: "Weekly Model Case included (the weekly combination model)", es: "Weekly Model Case incluida (el modelo combinado de la semana)", fr: "Weekly Model Case inclus (le modèle combiné de la semaine)", ru: "Weekly Model Case включён (недельная комбинированная модель)" })}</Link></PlanFeature>
           </ul>
@@ -4355,12 +4380,22 @@ function PlansTab({
         </article>
       </section>
 
+      {/* TODO track-record strip: pending ml-engineer-agentic sign-off sul significato
+          del dato (dedup, model_version, righe ricalcolate post-kickoff, dato tennis),
+          vedi project_conversion_hooks.md. Andrebbe qui, tra le card e il flusso.
+          Mai hit rate, mai «vs mercato». */}
+
       <section className="plan-flow">
         <div><span>01</span><strong>{t.plans_flow1_title}</strong><em>{t.plans_flow1_desc}</em></div>
         <div><span>02</span><strong>{t.plans_flow2_title}</strong><em>{t.plans_flow2_desc}</em></div>
         <div><span>03</span><strong>{t.plans_flow3_title}</strong><em>{t.plans_flow3_desc}</em></div>
         <div><span>04</span><strong>{t.plans_flow4_title}</strong><em>{t.plans_flow4_desc}</em></div>
       </section>
+
+      {/* #PLANS-HOOK-C-0928: il disclaimer che faceva da headline («nessuna promessa
+          aggressiva di battere il mercato») resta, ma in coda: una riga di testo
+          nudo, non un altro pannello — l'unica cosa in pagina senza cornice. */}
+      <p className="plans-footnote">{t.plans_footnote}</p>
     </div>
   );
 }
@@ -11017,9 +11052,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               {tab !== "bets" && (
               <p className="am-sub">
                 {tab === "plans" ? (
+                  /* #PLANS-HOOK-C-0928: coerente con l'hero dei piani («quanto a fondo
+                     leggere il board»); «edge e Deep Analysis» tolti — gergo, e nessuna
+                     scheda mostra un numero di edge (#EDGE-COPY-0928). */
                   uiLanguage === "it"
-                    ? <>Scegli il piano giusto per te. Sblocca prediction, edge e Deep Analysis.</>
-                    : <>Choose the plan that fits you. Unlock predictions, edge and Deep Analysis.</>
+                    ? <>Free, Base o Pro: cambia solo quanto del board di oggi leggi.</>
+                    : <>Free, Base or Pro: the only difference is how much of today&rsquo;s board you read.</>
                 /* #QW3: sottotitolo specifico per pagina — non più la stessa riga
                    "opinioni da bar" ovunque. Ogni destinazione spiega sé stessa. */
                 /* #SETTLE-0909 — «senza filtri» / «unfiltered» era una promessa
