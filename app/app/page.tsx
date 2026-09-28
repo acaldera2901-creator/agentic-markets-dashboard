@@ -38,7 +38,7 @@ import { MenuIcon, NavIcon, BottomNavIcon, type NavName, type BottomNavName } fr
 import { IconSearch, IconArrow, IconCheck, IconSignIn, IconRegister } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
-import { getSessionId, trackEvent } from "@/lib/track-event";
+import { getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { abbinaQuotaPartner, indicizzaPerGiorno } from "@/lib/fp-odds-join";
@@ -126,7 +126,7 @@ const BASE_TRANSLATIONS = {
     plans_title: "Un piano pagante, promessa chiara",
     plans_subtitle: "Free resta preview. BetRedge Pro sblocca tennis live, football research, Model Edges, spiegazioni e track record. Nessuna promessa aggressiva di battere il mercato.",
     plans_cta: "View live edges",
-    plans_base_desc: "Per chi vuole un desk AI operativo ma controllato: segnali, probabilità, spiegazioni, qualità dati e storico live/paper.",
+    plans_base_desc: "Fino a 7 prediction per sport al giorno, con spiegazioni complete.",
     plans_base_core: "Segnali e ricerca, non autopilot", plans_base_sub: "Decisione finale al cliente",
     plans_base_f1: "Model Edges +EV quando odds ed edge sono disponibili",
     plans_base_f2: "Top Model Signals quando il mercato live è vuoto",
@@ -135,7 +135,7 @@ const BASE_TRANSLATIONS = {
     plans_base_f5: "Storico e track record",
     plans_base_f6: "Execution automatica reale",
     plans_base_f7: "Nessuna promessa di profitto garantito",
-    plans_flow1_title: "Signal", plans_flow1_desc: "Gli agenti trovano il value bet.",
+    plans_flow1_title: "Signal", plans_flow1_desc: "Il modello stima la probabilità di ogni esito.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Il cliente vede quota, edge e perché.",
     plans_flow3_title: "Decide", plans_flow3_desc: "Il cliente decide se entrare: niente execution automatica nel go-live.",
     plans_flow4_title: "Track", plans_flow4_desc: "Prediction salvate prima dell'evento e misurate nel track record.",
@@ -385,7 +385,7 @@ const BASE_TRANSLATIONS = {
     plans_title: "One paid plan, clear promise",
     plans_subtitle: "Free stays as preview. BetRedge Pro unlocks tennis live, football research, Model Edges, explanations and track record. No aggressive market-beating promise.",
     plans_cta: "View live edges",
-    plans_base_desc: "For clients who want an AI betting desk with controlled signals, probabilities, explanations, data quality and live/paper tracking.",
+    plans_base_desc: "Up to 7 predictions per sport a day, with full explanations.",
     plans_base_core: "Signals and research, not autopilot", plans_base_sub: "Final decision stays with the client",
     plans_base_f1: "Model Edges +EV when odds and edge are available",
     plans_base_f2: "Top Model Signals when live markets are quiet",
@@ -394,7 +394,7 @@ const BASE_TRANSLATIONS = {
     plans_base_f5: "History and track record",
     plans_base_f6: "Real automated execution",
     plans_base_f7: "No guaranteed profit promises",
-    plans_flow1_title: "Signal", plans_flow1_desc: "Agents find the value bet.",
+    plans_flow1_title: "Signal", plans_flow1_desc: "The model estimates the probability of each outcome.",
     plans_flow2_title: "Explain", plans_flow2_desc: "Client sees odds, edge and why.",
     plans_flow3_title: "Decide", plans_flow3_desc: "Client decides whether to enter: no automated execution in the go-live.",
     plans_flow4_title: "Track", plans_flow4_desc: "Predictions are saved before the event and measured in the track record.",
@@ -648,7 +648,7 @@ const EXTRA_TRANSLATIONS = {
     plans_title: "Un plan de pago, promesa clara",
     plans_subtitle: "Free se mantiene como vista previa. BetRedge Pro desbloquea tenis en vivo, investigación de fútbol, Model Edges, explicaciones y track record. Sin promesas agresivas de batir el mercado.",
     plans_cta: "Ver edges en vivo",
-    plans_base_desc: "Para clientes que quieren un desk de apuestas con IA con señales controladas, probabilidades, explicaciones, calidad de datos y seguimiento live/paper.",
+    plans_base_desc: "Hasta 7 predicciones por deporte al día, con explicaciones completas.",
     plans_base_core: "Señales e investigación, no piloto automático", plans_base_sub: "La decisión final es del cliente",
     plans_base_f1: "Model Edges +EV cuando hay cuotas y edge disponibles",
     plans_base_f2: "Top Model Signals cuando los mercados en vivo están tranquilos",
@@ -657,7 +657,7 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f5: "Historial y track record",
     plans_base_f6: "Ejecución automática real",
     plans_base_f7: "Sin promesas de beneficio garantizado",
-    plans_flow1_title: "Señal", plans_flow1_desc: "Los agentes encuentran el value bet.",
+    plans_flow1_title: "Señal", plans_flow1_desc: "El modelo estima la probabilidad de cada resultado.",
     plans_flow2_title: "Explicar", plans_flow2_desc: "El cliente ve cuota, edge y el porqué.",
     plans_flow3_title: "Decidir", plans_flow3_desc: "El cliente decide si entra: sin ejecución automática en el lanzamiento.",
     plans_flow4_title: "Seguir", plans_flow4_desc: "Las predicciones se guardan antes del evento y se miden en el track record.",
@@ -907,7 +907,7 @@ const EXTRA_TRANSLATIONS = {
     plans_title: "Un seul plan payant, promesse claire",
     plans_subtitle: "Free reste un aperçu. BetRedge Pro débloque le tennis en direct, la recherche football, les Model Edges, les explications et le track record. Aucune promesse agressive de battre le marché.",
     plans_cta: "Voir les edges en direct",
-    plans_base_desc: "Pour les clients qui veulent un desk de paris IA avec signaux contrôlés, probabilités, explications, qualité des données et suivi live/paper.",
+    plans_base_desc: "Jusqu'à 7 prédictions par sport par jour, avec explications complètes.",
     plans_base_core: "Signaux et recherche, pas un pilote automatique", plans_base_sub: "La décision finale reste au client",
     plans_base_f1: "Model Edges +EV quand cotes et edge sont disponibles",
     plans_base_f2: "Top Model Signals quand les marchés en direct sont calmes",
@@ -916,7 +916,7 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f5: "Historique et track record",
     plans_base_f6: "Exécution automatique réelle",
     plans_base_f7: "Aucune promesse de profit garanti",
-    plans_flow1_title: "Signal", plans_flow1_desc: "Les agents trouvent le value bet.",
+    plans_flow1_title: "Signal", plans_flow1_desc: "Le modèle estime la probabilité de chaque issue.",
     plans_flow2_title: "Expliquer", plans_flow2_desc: "Le client voit la cote, l'edge et le pourquoi.",
     plans_flow3_title: "Décider", plans_flow3_desc: "Le client décide d'entrer ou non : pas d'exécution automatique au lancement.",
     plans_flow4_title: "Suivre", plans_flow4_desc: "Les prédictions sont enregistrées avant l'événement et mesurées dans le track record.",
@@ -1166,7 +1166,7 @@ const EXTRA_TRANSLATIONS = {
     plans_title: "Один платный план, понятное обещание",
     plans_subtitle: "Free остаётся превью. BetRedge Pro открывает теннис live, исследование футбола, Model Edges, объяснения и track record. Без агрессивных обещаний обыграть рынок.",
     plans_cta: "Смотреть live edges",
-    plans_base_desc: "Для клиентов, которым нужен AI-desk для ставок с контролируемыми сигналами, вероятностями, объяснениями, качеством данных и трекингом live/paper.",
+    plans_base_desc: "До 7 прогнозов на вид спорта в день, с полными пояснениями.",
     plans_base_core: "Сигналы и исследования, не автопилот", plans_base_sub: "Финальное решение за клиентом",
     plans_base_f1: "Model Edges +EV, когда есть котировки и edge",
     plans_base_f2: "Top Model Signals, когда live-рынки пустые",
@@ -1175,7 +1175,7 @@ const EXTRA_TRANSLATIONS = {
     plans_base_f5: "История и track record",
     plans_base_f6: "Реальное автоматическое исполнение",
     plans_base_f7: "Без обещаний гарантированной прибыли",
-    plans_flow1_title: "Сигнал", plans_flow1_desc: "Агенты находят value bet.",
+    plans_flow1_title: "Сигнал", plans_flow1_desc: "Модель оценивает вероятность каждого исхода.",
     plans_flow2_title: "Объяснить", plans_flow2_desc: "Клиент видит котировку, edge и почему.",
     plans_flow3_title: "Решить", plans_flow3_desc: "Клиент решает, входить ли: без автоисполнения на старте.",
     plans_flow4_title: "Отслеживать", plans_flow4_desc: "Прогнозы сохраняются до события и измеряются в track record.",
@@ -4270,7 +4270,10 @@ function PlansTab({
         <article className="plan-card">
           <div className="plan-card-head">
             <div>
-              <p className="eyebrow">{pick5(lang, { it: "Più popolare", en: "Most popular", es: "Más popular", fr: "Le plus populaire", ru: "Самый популярный" })}</p>
+              {/* #CLAIMS-FIX-0928: «Most popular» tolto — nessun pagante reale su cui
+                  basarlo (e Pro batte Base anche sui piani assegnati). Eyebrow neutro
+                  come quello del Free, nessun superlativo al suo posto. */}
+              <p className="eyebrow">Base</p>
               <h4>{planLabel("base", lang)}</h4>
             </div>
             <span>{planPriceCopy("base", lang)}</span>
@@ -4301,11 +4304,10 @@ function PlansTab({
           <ul className="plan-feature-list">
             <PlanFeature>{pick5(lang, { it: "Fino a 7 calcio + 7 tennis, tra le partite del giorno", en: "Up to 7 football + 7 tennis, from the day's matches", es: "Hasta 7 de fútbol + 7 de tenis, entre los partidos del día", fr: "Jusqu'à 7 football + 7 tennis, parmi les matchs du jour", ru: "До 7 по футболу + 7 по теннису из матчей дня" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
-            {/* #CONVERSION-COPY-0916 (audit §3): «stake suggerito» suona da tipster
-                (un'istruzione); «contesto di stake» è quello che il prodotto dà. */}
             {/* #CLV-CLAIM-0831: «closing line value» tolto — stesso claim del chip
                 rimosso dalla landing il 31/08, misurato senza dato dietro. */}
-            <PlanFeature>{pick5(lang, { it: "Edge % e contesto di stake", en: "Edge % and stake context", es: "Edge % y contexto de stake", fr: "Edge % et contexte de mise", ru: "Edge % и контекст ставки" })}</PlanFeature>
+            {/* #CLAIMS-FIX-0928: riga «Edge % e contesto di stake» tolta — «stake» è
+                linguaggio da scommessa, fuori dalla pricing page. */}
             <PlanFeature>{pick5(lang, { it: "Registro pubblico completo", en: "Full public record", es: "Registro público completo", fr: "Registre public complet", ru: "Полный публичный реестр" })}</PlanFeature>
             <PlanFeature locked>{pick5(lang, { it: "Prediction illimitate e Deep Analysis (→ Pro)", en: "Unlimited predictions and Deep Analysis (→ Pro)", es: "Predicciones ilimitadas y Deep Analysis (→ Pro)", fr: "Prédictions illimitées et Deep Analysis (→ Pro)", ru: "Безлимитные прогнозы и Deep Analysis (→ Pro)" })}</PlanFeature>
           </ul>
@@ -4345,7 +4347,7 @@ function PlansTab({
             <PlanFeature>{pick5(lang, { it: "Deep Analysis: forma, infortuni, venue", en: "Deep Analysis: form, injuries, venue", es: "Deep Analysis: forma, lesiones, estadio", fr: "Deep Analysis : forme, blessures, stade", ru: "Deep Analysis: форма, травмы, арена" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Tennis Live V4 e Football Live V4 research", en: "Tennis Live V4 and Football Live V4 research", es: "Tennis Live V4 y Football Live V4 research", fr: "Tennis Live V4 et Football Live V4 research", ru: "Tennis Live V4 и Football Live V4 research" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Build a Probability View e Model Edges +EV", en: "Build a Probability View and Model Edges +EV", es: "Build a Probability View y Model Edges +EV", fr: "Build a Probability View et Model Edges +EV", ru: "Build a Probability View и Model Edges +EV" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Edge e stake su tutto", en: "Edge and stake on everything", es: "Edge y stake en todo", fr: "Edge et mise sur tout", ru: "Edge и ставка по всему" })}</PlanFeature>
+            {/* #CLAIMS-FIX-0928: riga «Edge e stake su tutto» tolta, stesso motivo. */}
             <PlanFeature><Link href="/weekly-model-case" style={{ textDecoration: "underline" }}>{pick5(lang, { it: "Weekly Model Case inclusa (il modello combinato della settimana)", en: "Weekly Model Case included (the weekly combination model)", es: "Weekly Model Case incluida (el modelo combinado de la semana)", fr: "Weekly Model Case inclus (le modèle combiné de la semaine)", ru: "Weekly Model Case включён (недельная комбинированная модель)" })}</Link></PlanFeature>
           </ul>
           <CryptoPaymentBox profile={profile} plan="premium" onSubmit={onPaymentSubmit} />
@@ -10044,9 +10046,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
   // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
   // nel root layout (con il path), per ogni rotta. Tenerlo qui lo raddoppiava su /app.
+  // #PLAN-VIEW-PLAN-0928: aspetta authChecked, così il piano letto è quello
+  // riconciliato col cookie e non il profilo in localStorage (o null) del primo
+  // render. clientProfile/hasSession fuori dalle deps apposta: un refresh del
+  // profilo non è una nuova visita alla pagina piani.
   useEffect(() => {
-    if (tab === "plans") trackEvent("plan_view");
-  }, [tab]);
+    if (tab === "plans" && authChecked) trackEvent("plan_view", { plan: viewerPlan(hasSession, clientProfile) });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, authChecked]);
 
   // #GEO-LANG-0821 — la lingua la dice il BROWSER, non un servizio di terzi.
   // Prima si chiamava ipapi.co dal browser: misurato in produzione un 429 (quota

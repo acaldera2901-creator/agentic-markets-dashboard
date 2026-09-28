@@ -61,3 +61,16 @@ export function trackEvent(
     body: JSON.stringify({ event_type, session_id: consented ? (getSessionId() ?? undefined) : undefined, language, ...extra }),
   }).catch(() => { /* ignore */ });
 }
+
+// #PLAN-VIEW-PLAN-0928 — il piano di chi GUARDA, per `plan_view`. Prima
+// l'evento partiva senza `plan`, quindi nel funnel un anonimo, un Free e un
+// Pro sulla pagina piani erano la stessa riga. Su `plan_cta_click`,
+// `checkout_opened` e `conversion` il campo `plan` resta il piano SCELTO;
+// su `plan_view` è il piano ATTUALE del visitatore (non ne ha scelto uno).
+// "anon" invece di null: null è anche lo storico prima di questo fix, e le due
+// cose devono potersi distinguere. Senza sessione server si è anonimi anche se
+// in localStorage resta un profilo: è il cookie che decide, non lo storage.
+export function viewerPlan(hasSession: boolean, profile: { plan: string } | null): string {
+  if (!hasSession) return "anon";
+  return profile?.plan ?? "unknown";
+}

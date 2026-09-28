@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { trackEvent, getSessionId } from "./track-event";
+import { trackEvent, getSessionId, viewerPlan } from "./track-event";
 
 // #STORAGE-CRASH-0813 — il bug che questi test chiudono.
 // `trackEvent` leggeva `localStorage` FUORI da un try (la riga sotto, per il
@@ -101,5 +101,32 @@ describe("trackEvent col browser normale (nessuna regressione)", () => {
     expect(typeof first).toBe("string");
     trackEvent("page_view");
     expect(sent().session_id).toBe(first);
+  });
+});
+
+// #PLAN-VIEW-PLAN-0928 — `plan_view` arrivava sempre con plan null: nel funnel
+// un anonimo e un Pro sulla pagina piani erano indistinguibili.
+describe("viewerPlan per plan_view", () => {
+  it("senza sessione è anon, anche con un profilo rimasto in storage", () => {
+    expect(viewerPlan(false, null)).toBe("anon");
+    expect(viewerPlan(false, { plan: "premium" })).toBe("anon");
+  });
+
+  it("con sessione è il piano del profilo", () => {
+    expect(viewerPlan(true, { plan: "free" })).toBe("free");
+    expect(viewerPlan(true, { plan: "base" })).toBe("base");
+    expect(viewerPlan(true, { plan: "premium" })).toBe("premium");
+  });
+
+  it("con sessione ma senza profilo non torna null", () => {
+    expect(viewerPlan(true, null)).toBe("unknown");
+  });
+
+  it("il beacon plan_view porta il campo plan valorizzato", () => {
+    trackEvent("plan_view", { plan: viewerPlan(true, { plan: "base" }) });
+    expect(sent().event_type).toBe("plan_view");
+    expect(sent().plan).toBe("base");
+    trackEvent("plan_view", { plan: viewerPlan(false, null) });
+    expect(sent().plan).toBe("anon");
   });
 });
