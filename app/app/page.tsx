@@ -47,6 +47,8 @@ import { normName } from "@/lib/odds-api";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
 import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { HouseBanner } from "@/components/HouseBanner";
+import { SignupPopup } from "@/components/SignupPopup"; // #SIGNUP-POPUP-D-0928
+import { noteSignupPopupBlocker, signupPopupAudience } from "@/lib/signup-popup";
 import { SiteFooter } from "@/components/SiteFooter";
 import { campaignsFor, campaignSport, copyFor, ctaLabelFor } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
@@ -10077,9 +10079,17 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // render. clientProfile/hasSession fuori dalle deps apposta: un refresh del
   // profilo non è una nuova visita alla pagina piani.
   useEffect(() => {
-    if (tab === "plans" && authChecked) trackEvent("plan_view", { plan: viewerPlan(hasSession, clientProfile) });
+    if (tab === "plans" && authChecked) {
+      trackEvent("plan_view", { plan: viewerPlan(hasSession, clientProfile) });
+      noteSignupPopupBlocker("plans"); // #SIGNUP-POPUP-D-0928: chi ha visto i piani non riceve il pop-up
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, authChecked]);
+  // #SIGNUP-POPUP-D-0928: idem per chi ha già aperto la modale di registrazione/
+  // login (da qualunque punto: ?auth=, CTA, muro): il pop-up non si somma.
+  useEffect(() => {
+    if (authOpen) noteSignupPopupBlocker("auth");
+  }, [authOpen]);
 
   // #GEO-LANG-0821 — la lingua la dice il BROWSER, non un servizio di terzi.
   // Prima si chiamava ipapi.co dal browser: misurato in produzione un 429 (quota
@@ -10327,6 +10337,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
   const submitCryptoPayment = (plan: PublicPlanKey) => {
     trackEvent("plan_cta_click", { plan });
+    noteSignupPopupBlocker("plan_cta"); // #SIGNUP-POPUP-D-0928
     if (!clientProfile) {
       setPendingIntent({ kind: "plan", plan });
       openAuth("create");
@@ -10337,6 +10348,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
   const activateFreePlan = () => {
     trackEvent("plan_cta_click", { plan: "free" });
+    noteSignupPopupBlocker("plan_cta"); // #SIGNUP-POPUP-D-0928
     if (!clientProfile) {
       setPendingIntent({ kind: "free" });
       openAuth("create");
@@ -11272,6 +11284,30 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           tabIndex={-1}
         >·</button>
       </div>
+      {/* #SIGNUP-POPUP-D-0928 — gancio D: pop-up d'iscrizione differito, solo
+          sulla Home/board (tab bets) e solo per anonimo e Free. Trigger, cadenza
+          e copy in components/SignupPopup.tsx + lib/signup-popup.ts (design di
+          psicologia-persuasione). `cardOpen` = una scheda partita aperta dalla
+          lobby: vale come engagement e, finché è aperta, come «non adesso».
+          `overlayOpen` = le modali del desk: il pop-up non si somma a nulla.
+          La CTA anonima riprende il flusso di activateFreePlan (intento «free»
+          + registrazione) senza il suo plan_cta_click: l'evento del pop-up è
+          il suo (signup_popup_cta_click). */}
+      {tab === "bets" && (
+        <SignupPopup
+          lang={uiLanguage}
+          audience={signupPopupAudience({ authChecked, hasSession, plan: clientProfile?.plan })}
+          cardOpen={autoOpenKey !== null}
+          overlayOpen={authOpen || mustAuth || checkoutOpen || founderOpen}
+          lockedToday={
+            predictions.filter((p) => p.locked === true).length
+            + tennisMatches.filter((m) => m.locked === true).length
+          }
+          settledCount={historyV2Stats ? historyV2Stats.won + historyV2Stats.lost : null}
+          onCreateProfile={() => { setPendingIntent({ kind: "free" }); openAuth("create"); }}
+          onComparePlans={focusClientPlans}
+        />
+      )}
       {(authOpen || mustAuth) && (
         <ClientAuthModal
           intent={authIntent}

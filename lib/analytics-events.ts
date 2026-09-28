@@ -59,6 +59,14 @@ export const BROWSER_ANALYTICS_EVENTS = [
   // meritano un posto nella nav primaria o se è solo la Home a lavorare.
   // Nessun dato personale: solo il nome della fascia e dello sport.
   "card_open", "nav_click",
+  // #SIGNUP-POPUP-D-0928 — il pop-up d'iscrizione differito (gancio D).
+  // `meta.audience` (anon|free) dice a chi è comparso; `meta.reason` della
+  // chiusura (x|not_now|esc|never) e `meta.cta` (primary|plans) dicono come è
+  // finita. Senza i tre insieme non si può dire se il pop-up converte o
+  // infastidisce, e il criterio di morte del design (nessun aumento della
+  // conversione in profilo dopo 2 settimane, o bounce in salita) resta
+  // senza numeri.
+  "signup_popup_shown", "signup_popup_dismissed", "signup_popup_cta_click",
 ] as const;
 
 // Eventi che il client NON emette piu' ma che restano nello storico con un
