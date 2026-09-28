@@ -34,7 +34,7 @@ import { SportChip } from "@/components/ui/SportChip";
 import { LeagueChip } from "@/components/ui/LeagueChip";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
-import { IconArrow, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
+import { IconArrow, IconCheck, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
 import { EDGE_HIGH_PP, formatPct, splitLiveScore, type PredictionCardData } from "@/lib/ui/prediction-card";
 import type { Lang } from "@/lib/house-banners";
 
@@ -73,6 +73,16 @@ export type PredictionCardProps = {
    *  lingue del desk. `en` di default per i chiamanti che non lo passano
    *  ancora (nessuna regressione). */
   lang?: Lang;
+  /** #INCLUDED-TODAY-0928 — la card che la quota GIORNALIERA del piano ha già
+   *  aperto (free 3, base 7 per sport: lib/access-projection.ts). Fino a oggi
+   *  «aperta» si vedeva solo per sottrazione — niente lucchetto, CTA come
+   *  link — e la card chiusa, con la sua CTA lime in outline, era la più
+   *  vistosa delle due: l'occhio andava su ciò che manca. Con `included` la
+   *  card porta una linguetta sul filo del bordo («Inclusa oggi») e il bordo
+   *  prende il lime: è la cosa che l'utente HA, e si deve vedere per prima.
+   *  Lo decide il chiamante (la lobby sa il piano): mai per il Pro, che non
+   *  ha quota — per lui ogni card è inclusa e la linguetta non direbbe nulla. */
+  included?: boolean;
 };
 
 const BADGE_LABEL: Record<PredictionCardBadgeKind, string> = {
@@ -111,8 +121,10 @@ function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): 
   return null;
 }
 
-export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className, lang = "en" }: PredictionCardProps) {
+export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className, lang = "en", included }: PredictionCardProps) {
   const locked = variant === "premiumLocked" || data.locked === true;
+  // Una card chiusa non è mai «inclusa», qualunque cosa dica il chiamante.
+  const inc = !!included && !locked;
   const live = variant === "live" || data.isLive;
   const resolvedBadge = badge === undefined ? deriveBadge(data, variant) : badge;
   const featured = variant === "featured";
@@ -128,7 +140,16 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
   const score = live ? splitLiveScore(data.liveScoreLabel) : null;
 
   return (
-    <article className={["br-card", className].filter(Boolean).join(" ")} data-variant={variant} data-id={data.id} data-live={live || undefined}>
+    <article className={["br-card", className].filter(Boolean).join(" ")} data-variant={variant} data-id={data.id} data-live={live || undefined} data-included={inc || undefined}>
+      {/* #INCLUDED-TODAY-0928 — la linguetta sta SUL bordo, come la legend di
+          un fieldset: il filo passa dietro la parola. Primo figlio, così chi
+          ascolta la pagina sente «Inclusa oggi» prima della partita. */}
+      {inc && (
+        <span className="br-card__inc" data-testid="card-included">
+          <IconCheck size={10} stroke={2.5} />
+          {pick5(lang, { it: "Inclusa oggi", en: "Included today", es: "Incluida hoy", fr: "Incluse aujourd'hui", ru: "Доступно сегодня" })}
+        </span>
+      )}
       {featured && media ? <div className="br-card__media" data-testid="card-media">{media}</div> : null}
       {/* #CARD-LAYOUT-0925 — l'header è due righe ASSEGNATE, non un flusso che
           va a capo dove capita. Sulle larghezze vere della lobby (275px a 1280,

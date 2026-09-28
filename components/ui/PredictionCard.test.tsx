@@ -139,6 +139,32 @@ describe("PredictionCard", () => {
     fireEvent.click(screen.getByRole("link", { name: /view analysis/i }));
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
+  // #INCLUDED-TODAY-0928 — Andrea, 28/09: le card che la quota del giorno ha
+  // già aperto (free 3, base 7) devono VEDERSI, non solo «non essere chiuse».
+  it("included: linguetta «Included today» e data-included sull'article; assente di default", () => {
+    const { unmount } = render(<PredictionCard data={data} href="/p/1" included />);
+    expect(screen.getByRole("article")).toHaveAttribute("data-included", "true");
+    expect(screen.getByTestId("card-included")).toHaveTextContent("Included today");
+    // Tutto il resto della card aperta è intatto: pick, numero, CTA come link.
+    expect(screen.getByText("Arsenal to win")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view analysis/i })).toHaveAttribute("data-tone", "link");
+    unmount();
+    render(<PredictionCard data={data} href="/p/1" />);
+    expect(screen.getByRole("article")).not.toHaveAttribute("data-included");
+    expect(screen.queryByTestId("card-included")).toBeNull();
+  });
+  it("included su una card chiusa: ignorato — una card coperta non è mai «inclusa»", () => {
+    const { unmount } = render(<PredictionCard data={data} variant="premiumLocked" href="/plans" included />);
+    expect(screen.getByRole("article")).not.toHaveAttribute("data-included");
+    expect(screen.queryByTestId("card-included")).toBeNull();
+    unmount();
+    render(<PredictionCard data={{ ...data, locked: true }} href="/plans" included />);
+    expect(screen.queryByTestId("card-included")).toBeNull();
+  });
+  it("included: la linguetta parla la lingua della card", () => {
+    render(<PredictionCard data={data} href="/p/1" included lang="it" />);
+    expect(screen.getByTestId("card-included")).toHaveTextContent("Inclusa oggi");
+  });
   // #I18N-CTA-0924 — unico testo della card rimasto fisso in inglese su tutte
   // le lingue del desk: nessun chiamante passava `lang`.
   it("CTA tradotta quando lang è passato, inglese di default", () => {

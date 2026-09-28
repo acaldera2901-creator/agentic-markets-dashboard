@@ -35,7 +35,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
 import { MenuIcon, NavIcon, BottomNavIcon, type NavName, type BottomNavName } from "@/app/components/menu-icon";
 // #RESTYLING-0921 round 3: il set di icone della casa (nav, bottom-nav, search).
-import { IconSearch, IconArrow, IconSignIn, IconRegister } from "@/components/ui/icons";
+import { IconSearch, IconArrow, IconCheck, IconSignIn, IconRegister } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
 import { getSessionId, trackEvent } from "@/lib/track-event";
@@ -70,6 +70,7 @@ import { SportHero } from "@/components/lobby/SportHero";
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
+import { quotaRuleCopy } from "@/lib/ui/quota-rule"; // #INCLUDED-TODAY-0928
 import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -8677,6 +8678,10 @@ function HomeLobby({
         href={`${TAB_PATHS.bets}?match=${encodeURIComponent(item.key)}`}
         saved={watchSaved.has(item.key)}
         lang={lang}
+        // #INCLUDED-TODAY-0928 — la card aperta dalla quota del giorno porta il
+        // suo segno solo per chi UNA quota ce l'ha (free, base). Il Pro non
+        // ha confine, l'anonimo non ha righe aperte: per loro non cambia nulla.
+        included={!isPro && !locked}
         onToggleWatchlist={() => onToggleWatch(item.key)}
         onOpen={(ev) => {
           // La scheda è già in pagina: si apre, non si naviga. L'href resta
@@ -9243,8 +9248,27 @@ function HomeLobby({
           const pool = isSport ? gridFeed : [];
           const cap2 = Math.min(pool.length, GRID_TILES_MAX);
           let placed = 0;
+          // #INCLUDED-TODAY-0928 — la riga della quota: solo sull'elenco intero
+          // (Calcio/Tennis come vista), dove #UNLOCKED-FIRST-0831 garantisce
+          // che le aperte stiano davanti e quindi il confine è UNO. Sulle
+          // fasce curate della Home l'ordine è un altro e la riga mentirebbe.
+          // Conta ciò che si vede (dopo i filtri): numeri veri, non la quota
+          // nominale del piano. Anonimo (zero aperte) e Pro (zero coperte)
+          // non hanno confine e non vedono la riga.
+          const nIncluded = showFilters && !isPro ? items.filter((it) => it.data.locked !== true).length : 0;
+          const quota = nIncluded > 0 && nIncluded < items.length ? quotaRuleCopy(lang, nIncluded, items.length - nIncluded) : null;
           return items.flatMap((item, i) => {
-            const out: React.ReactNode[] = [renderCard(item, sec.id)];
+            const out: React.ReactNode[] = [];
+            if (quota && item.data.locked === true && i > 0 && items[i - 1].data.locked !== true) {
+              out.push(
+                <div key={`quota-${sec.id}`} className="br-quota" role="separator" aria-label={`${quota.yours}. ${quota.more}.`} data-testid="quota-rule">
+                  <span className="br-quota__yours"><IconCheck size={11} stroke={2.5} />{quota.yours}</span>
+                  <i className="br-quota__rule" aria-hidden="true" />
+                  <button type="button" className="br-quota__more" onClick={onGoPro}>{quota.more}<IconArrow size={12} /></button>
+                </div>,
+              );
+            }
+            out.push(renderCard(item, sec.id));
             // `i < items.length - 1`: mai come ultimo elemento della fascia —
             // là sotto c'è già la fine della griglia, e un banner in coda
             // sembrerebbe il piè di pagina della sezione.
