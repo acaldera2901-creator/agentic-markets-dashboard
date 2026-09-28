@@ -176,6 +176,14 @@ describe("copy: cinque lingue, niente pressione", () => {
       }
     }
   });
+  it("nessuna promessa di «edge» (#EDGE-COPY-0928): nessuna card lo mostra", () => {
+    for (const l of langs) {
+      const c = SIGNUP_POPUP_COPY[l];
+      expect(c.bodyAnon, l).not.toMatch(/edge|эдж/i);
+      expect(c.bodyFree(5, 7), l).not.toMatch(/edge|эдж/i);
+      expect(c.titleAnon + c.titleFree, l).not.toMatch(/edge|эдж/i);
+    }
+  });
   it("nessun countdown, «solo oggi», «più scelto» o confirmshaming", () => {
     const all = langs.flatMap((l) => Object.values(SIGNUP_POPUP_COPY[l]).map((v) => (typeof v === "function" ? v(3, 7) : v)));
     const banned = /solo oggi|only today|scade|expires|più scelto|most popular|preferisco perdere|rather lose|ultimi posti|hurry|affrettati/i;

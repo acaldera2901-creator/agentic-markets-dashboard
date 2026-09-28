@@ -264,6 +264,8 @@ export function signupPopupPlanRows(lang: Lang): SignupPopupPlanRow[] {
 }
 
 // ── Copy (sez. 3 del design) ────────────────────────────────────────────
+// #EDGE-COPY-0928: niente «edge» nel corpo — nessuna card mostra un numero di
+// edge per nessun piano; si promette ciò che si vede (probabilità + perché).
 
 export type SignupPopupCopy = {
   eyebrowAnon: string;
@@ -290,7 +292,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Profilo gratuito",
     eyebrowFree: "Il tuo piano",
     titleAnon: "3 letture complete al giorno, gratis",
-    bodyAnon: "Con un profilo gratuito ogni giorno si aprono le 3 analisi migliori per sport: probabilità, edge e il perché. Se ne vuoi di più ci sono Base e Pro.",
+    bodyAnon: "Con un profilo gratuito ogni giorno si aprono le 3 analisi migliori per sport: la probabilità del modello e il perché. Se ne vuoi di più ci sono Base e Pro.",
     titleFree: "Le tue 3 letture di oggi sono aperte",
     bodyFree: (n, b) => n && n > 0
       ? `Il board ne ha altre ${n} oggi. Base ne apre ${b} per sport, Pro tutto il board.`
@@ -309,7 +311,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Free profile",
     eyebrowFree: "Your plan",
     titleAnon: "3 full readings a day, free",
-    bodyAnon: "With a free profile, the model's 3 best analyses per sport open every day: probability, edge and the why. Want more? There are Base and Pro.",
+    bodyAnon: "With a free profile, the model's 3 best analyses per sport open every day: the model's probability and the why. Want more? There are Base and Pro.",
     titleFree: "Your 3 readings for today are open",
     bodyFree: (n, b) => n && n > 0
       ? `The board has ${n} more today. Base opens ${b} per sport, Pro the whole board.`
@@ -328,7 +330,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Perfil gratuito",
     eyebrowFree: "Tu plan",
     titleAnon: "3 lecturas completas al día, gratis",
-    bodyAnon: "Con un perfil gratuito cada día se abren los 3 mejores análisis por deporte: probabilidad, edge y el porqué. Si quieres más, están Base y Pro.",
+    bodyAnon: "Con un perfil gratuito cada día se abren los 3 mejores análisis por deporte: la probabilidad del modelo y el porqué. Si quieres más, están Base y Pro.",
     titleFree: "Tus 3 lecturas de hoy están abiertas",
     bodyFree: (n, b) => n && n > 0
       ? `El board tiene ${n} más hoy. Base abre ${b} por deporte, Pro todo el board.`
@@ -347,7 +349,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Profil gratuit",
     eyebrowFree: "Votre offre",
     titleAnon: "3 lectures complètes par jour, gratuites",
-    bodyAnon: "Avec un profil gratuit, les 3 meilleures analyses par sport s'ouvrent chaque jour : probabilité, edge et le pourquoi. Pour aller plus loin, il y a Base et Pro.",
+    bodyAnon: "Avec un profil gratuit, les 3 meilleures analyses par sport s'ouvrent chaque jour : la probabilité du modèle et le pourquoi. Pour aller plus loin, il y a Base et Pro.",
     titleFree: "Vos 3 lectures du jour sont ouvertes",
     bodyFree: (n, b) => n && n > 0
       ? `Le board en a ${n} de plus aujourd'hui. Base en ouvre ${b} par sport, Pro tout le board.`
@@ -366,7 +368,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Бесплатный профиль",
     eyebrowFree: "Ваш тариф",
     titleAnon: "3 полных прогноза в день, бесплатно",
-    bodyAnon: "С бесплатным профилем каждый день открываются 3 лучших анализа на вид спорта: вероятность, эдж и почему. Нужно больше — есть Base и Pro.",
+    bodyAnon: "С бесплатным профилем каждый день открываются 3 лучших анализа на вид спорта: вероятность модели и почему. Нужно больше — есть Base и Pro.",
     titleFree: "Ваши 3 прогноза на сегодня открыты",
     bodyFree: (n, b) => n && n > 0
       ? `На борде сегодня ещё ${n}. Base открывает ${b} на вид спорта, Pro — весь борд.`
