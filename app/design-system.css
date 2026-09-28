@@ -272,6 +272,105 @@
   box-shadow: var(--am-shadow-card);
 }
 
+/* ── #INCLUDED-TODAY-0928 — la card che il piano ha già aperto OGGI ───────
+   Andrea, 28/09: per Free e Base «le prediction che l'utente PUÒ vedere oggi
+   devono essere evidenziate». Prima si distinguevano per sottrazione (niente
+   lucchetto, CTA come link), e la card chiusa — con la CTA lime in outline —
+   era la più vistosa delle due: l'occhio cadeva su ciò che manca.
+   Il segno è una LINGUETTA sul filo del bordo, come la legend di un fieldset:
+   ha lo sfondo della pagina, così il bordo sembra passarle dietro; e il bordo
+   stesso prende il lime. Niente alone, niente fill, nessun colore nuovo — il
+   lime è già «ciò che vale» (la percentuale, il Pro). Vince sul filo blu della
+   card high-edge: lo stato dell'utente conta più della classifica interna, e
+   il badge «High edge» resta comunque a dirlo. */
+.br-card[data-included="true"] {
+  border-color: var(--am-edge-b);
+}
+.br-card[data-included="true"]:hover {
+  border-color: color-mix(in srgb, var(--am-edge) 70%, transparent);
+}
+.br-card[data-included="true"]:has(.br-badge[data-kind="high-edge"]) {
+  border-color: var(--am-edge-b);
+  box-shadow: var(--am-shadow-card);
+}
+.br-card__inc {
+  position: absolute;
+  top: 0;
+  left: var(--am-s-3);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  font-family: var(--am-font-num);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--am-edge);
+  background: var(--am-bg);
+  border-radius: var(--am-r-chip);
+}
+.br-card__inc svg { flex: none; }
+
+/* La riga che, nell'elenco intero di Calcio/Tennis, separa le card aperte
+   oggi da quelle coperte: due numeri veri contati sulla lista (lib/ui/
+   quota-rule.ts) e un filo. È la quota del piano resa visibile nel punto in
+   cui la si attraversa, non un banner. */
+.br-quota {
+  grid-column: 1 / -1;
+  display: flex;
+  /* A 390px i due estremi (≈235 + ≈150px) non stanno in 310: il link va a
+     capo, a destra, e il filo resta sulla prima riga accanto al conteggio.
+     Verificato a video il 28/09 — senza wrap «ALTRE 50 CON PRO» era tagliato. */
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--am-s-1) var(--am-s-3);
+  margin: var(--am-s-2) 0 calc(-1 * var(--am-s-1));
+  min-width: 0;
+}
+.br-quota__yours {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-edge);
+}
+.br-quota__rule {
+  flex: 1 1 40px;
+  height: 1px;
+  background: var(--am-line);
+}
+.br-quota__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  margin-left: auto;   /* quando va a capo, resta allineato a destra */
+  padding: 6px 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-royal-t);
+  border-radius: var(--am-r-ctl);
+}
+.br-quota__more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.br-quota__more:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+
 /* #CARD-LAYOUT-0925 — l'header è DUE righe assegnate (cos'è / quando), non
    un flex-wrap che sulle larghezze vere della lobby (275px a 1280, 310 a
    390) andava a capo tre volte, con badge+watch da soli su una riga. Nessuna
