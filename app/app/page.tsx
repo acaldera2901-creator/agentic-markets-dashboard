@@ -4275,12 +4275,16 @@ function PlansTab({
             <span>{planPriceCopy("base", lang)}</span>
           </div>
           <p className="plan-description">
+            {/* #EDGE-COPY-0928 — via «edge»: dal round 14 del restyling nessuna
+                scheda mostra un numero di edge, per nessun piano (vedi
+                components/MatchDetailSheet.tsx, nota su MdsHead). La promessa
+                resta su ciò che Base vede davvero: le spiegazioni. */}
             {pick5(lang, {
-              it: "Fino a 7 prediction per sport al giorno, con edge e spiegazioni complete.",
-              en: "Up to 7 predictions per sport a day, with full edge and explanations.",
-              es: "Hasta 7 predicciones por deporte al día, con edge y explicaciones completas.",
-              fr: "Jusqu'à 7 prédictions par sport par jour, avec edge et explications complètes.",
-              ru: "До 7 прогнозов на вид спорта в день, с edge и полными пояснениями.",
+              it: "Fino a 7 prediction per sport al giorno, con spiegazioni complete.",
+              en: "Up to 7 predictions per sport a day, with full explanations.",
+              es: "Hasta 7 predicciones por deporte al día, con explicaciones completas.",
+              fr: "Jusqu'à 7 prédictions par sport par jour, avec explications complètes.",
+              ru: "До 7 прогнозов на вид спорта в день, с полными пояснениями.",
             })}
           </p>
           <div className="price-line">
@@ -5457,6 +5461,17 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
     ? (headline!.odds ?? null)
     : fpPickOdds;
 
+  // I dati della card del design system (vedi il round 5 più sotto). Calcolati
+  // QUI, prima della scheda, perché la testa della scheda li legge: la card e
+  // la scheda aperta da «View analysis» devono dire la stessa cosa.
+  const cardData = fromDeskFootball(p, {
+    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
+    drawLabel: pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" }),
+    kickoffLabel: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
+    isLive: isLive || isPaused,
+    liveMinute: live?.minute ?? null,
+  });
+
   // #CARD-REDESIGN-V2: dati risolti per la scheda info (MatchDetailSheet). Il modal
   // si apre solo per card sbloccate (modalEnabled) → qui i dati sono sempre completi.
   const mdsData: MdsData = (() => {
@@ -5561,13 +5576,23 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       ? { home: { name: p.home_team, items: injHome ?? [] }, away: { name: p.away_team, items: injAway ?? [] } }
       : null;
 
-    // #RESTYLING-0921 — la testa nuova + la progressive disclosure. I numeri
-    // vengono dagli stessi campi dell'hero: `shownProb` è la probabilità che
-    // la scheda già dichiara, il mercato è 1/quota dello stesso esito, e
-    // l'edge è la loro DIFFERENZA (mai `p.edge`, che è il value — la nota in
-    // lib/ui/prediction-card.ts spiega perché non sono la stessa cosa).
-    const headModelPct = shownProb != null ? shownProb * 100 : null;
-    const headMarketPct = shownOdds != null && shownOdds > 1 ? (1 / shownOdds) * 100 : null;
+    // #RESTYLING-0921 — la testa nuova + la progressive disclosure.
+    //
+    // #PICK-COERENTE-0928 — pick, percentuale, confidenza e prezzo di mercato
+    // della testa vengono da `cardData`, la STESSA derivazione della card in
+    // griglia (lib/ui/desk-card.ts). Prima la testa ricalcolava da sé, dai
+    // campi dell'hero, e per la stessa riga diceva tre cose diverse dalla card
+    // (misurato da qa-andrea su Leganés–Castellón, piano Base):
+    //  - pick: `belowFloor ? null` → «No pick», dove la card nomina l'esito
+    //    più probabile (senza «vince», come vuole la regola del floor);
+    //  - numero: `shownProb` segue la testata a doppia chance
+    //    (#HEADLINE-MARKET-0830), quindi 71% = X2, accanto a un pick assente;
+    //  - mercato: 1/`shownOdds`, cioè la quota di quella doppia chance (che il
+    //    book non espone) o solo FortunePlay — mai le quote 1X2 reali della
+    //    riga. Da qui «no market price» su una partita quotata 3.35/3.5/2.34;
+    //  - confidenza: il fallback `confidenceFromEdge` (27%) dove la card, che
+    //    legge solo `confidence_score`, non ne mostra nessuna.
+    // L'hero sotto (flag/quota/value) resta dov'è: la testa lo sostituisce.
     const whyLang: WhyLang = lang === "it" ? "it" : "en";
     return {
       league: p.league_name || p.league,
@@ -5583,10 +5608,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         score: hasScore && live && live.home_score != null && live.away_score != null
           ? { home: live.home_score, away: live.away_score }
           : null,
-        // Sotto il floor niente pick direzionale, esattamente come l'hero.
-        pick: belowFloor ? null : (shownName ?? null),
-        modelPct: headModelPct,
-        confidence: confScore,
+        pick: cardData.pick,
+        modelPct: cardData.modelPct,
+        confidence: cardData.confidence,
       },
       why: footballWhyReasons({
         home: p.home_team, away: p.away_team,
@@ -5599,7 +5623,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         matchesAway: e.matches?.away ?? e.team_matches ?? null,
         reliability: e.reliability ?? null,
         topScorer: (e.goalscorer_markets ?? []).slice().sort((a, b) => b.pScores - a.pScores)[0] ?? null,
-        modelPct: headModelPct, marketPct: headMarketPct,
+        modelPct: cardData.modelPct, marketPct: cardData.marketPct,
       }, whyLang),
       form: formRow,
       // Gli infortuni sono in PREMIUM_ENRICHMENT_KEYS: per un piano non-Pro il
@@ -5702,13 +5726,6 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
   // scommessa», mercati extra) NON è sparito: vive nella scheda-dettaglio che
   // questo componente continua a possedere — il livello 2 del brief, dove c'è
   // il tempo di leggerlo. «View analysis» la apre.
-  const cardData = fromDeskFootball(p, {
-    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
-    drawLabel: pick5(lang, { it: "Pareggio", en: "Draw", es: "Empate", fr: "Match nul", ru: "Ничья" }),
-    kickoffLabel: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
-    isLive: isLive || isPaused,
-    liveMinute: live?.minute ?? null,
-  });
   const matchKey = `football:${p.match_id}`;
 
   return (
@@ -5890,6 +5907,15 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   })();
   const fpValue = pickProb != null ? fpEdge(pickProb, fpPickOdds) : null;
 
+  // Dati della card del design system, calcolati prima della scheda: la testa
+  // della scheda li legge (#PICK-COERENTE-0928, vedi la card calcio).
+  const cardData = fromDeskTennis(m, {
+    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
+    kickoffLabel: scheduledDate,
+    isLive: liveIsOn,
+    liveMinute: liveIsOn && liveSetsLabel ? liveSetsLabel : null,
+  });
+
   // #CARD-REDESIGN-V2: dati scheda info tennis (match-winner 2 vie, niente draw/gol/soft).
   const mdsData: MdsData = (() => {
     const fpq = (player: "P1" | "P2"): number | null => {
@@ -5914,10 +5940,11 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         return { id: `esito-${o.key}`, mkt: pick5(lang, { it: "Vincente", en: "Winner", es: "Ganador", fr: "Vainqueur", ru: "Победитель" }), sel: o.sel, prob: o.prob != null ? pct(o.prob) : null, q, value: q != null ? pv(fpEdge(o.prob, q)) : null, rec: !belowFloor && pickPlayer === o.key };
       }),
     }];
-    // #RESTYLING-0921 — testa nuova + «perché». Vedi la card calcio: l'edge
-    // è la differenza fra i due numeri mostrati, non `m.edge` (che è il value).
-    const headModelPct = pickProb != null ? pickProb * 100 : null;
-    const headMarketPct = fpPickOdds != null && fpPickOdds > 1 ? (1 / fpPickOdds) * 100 : null;
+    // #RESTYLING-0921 — testa nuova + «perché».
+    // #PICK-COERENTE-0928 — come nel calcio, la testa legge `cardData`: stesso
+    // giocatore, stessa percentuale e stesso prezzo della card. Prima il
+    // mercato era 1/quota FortunePlay e basta, quindi una riga quotata ma
+    // assente da FortunePlay diceva «No market price on this side».
     return {
       league: m.tournament,
       when: fmtKickoff(m.scheduled, lang, tz),
@@ -5926,9 +5953,9 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         sport: "tennis",
         league: m.tournament,
         kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
-        pick: belowFloor ? null : (pickName ?? null),
-        modelPct: headModelPct,
-        confidence: m.confidence_score ?? null,
+        pick: cardData.pick,
+        modelPct: cardData.modelPct,
+        confidence: cardData.confidence,
       },
       why: tennisWhyReasons({
         p1: m.player1, p2: m.player2,
@@ -5939,7 +5966,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         returnFormP1: m.return_form_p1, returnFormP2: m.return_form_p2,
         h2hP1: m.h2h_p1_wins, h2hP2: m.h2h_p2_wins,
         restDaysP1: m.p1_rest_days, restDaysP2: m.p2_rest_days,
-        modelPct: headModelPct, marketPct: headMarketPct,
+        modelPct: cardData.modelPct, marketPct: cardData.marketPct,
       }, lang === "it" ? "it" : "en"),
       // Il tennis non porta né forma W/D/L né liste infortuni nel payload:
       // le due sezioni semplicemente non esistono qui. Le sue motivazioni
@@ -6016,12 +6043,6 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   // ~220 righe di `.pred.hud.tennis`) erano l'altra metà del sito vecchio.
   // Quote, set e mercati restano nella scheda-dettaglio, che apre «View
   // analysis».
-  const cardData = fromDeskTennis(m, {
-    winLabel: pick5(lang, { it: "vince", en: "to win", es: "gana", fr: "gagne", ru: "победа" }),
-    kickoffLabel: scheduledDate,
-    isLive: liveIsOn,
-    liveMinute: liveIsOn && liveSetsLabel ? liveSetsLabel : null,
-  });
   const matchKey = `tennis:${m.id}`;
 
   return (
