@@ -70,7 +70,8 @@
 // nessun conto bookmaker necessario, nessun rendimento promesso, il 71% come
 // frequenza attesa su molte situazioni simili e mai una certezza sulla singola
 // partita, il registro pubblico che parla solo del passato; account gratuito
-// REGISTRATO = 3 letture per sport al giorno, Base/Pro aprono tutto il board.
+// REGISTRATO = fino a 3 letture per sport al giorno, Base fino a 7, solo Pro
+// apre tutto il board (#BUG-001-0928: quota giornaliera, non un numero fisso).
 //
 // NOTA PER CHI RISCRIVE DOPO DI ME: la risposta è resa in un unico nodo di
 // testo (`<dd>{a}</dd>`, sia in components/lobby/HomeFaq.tsx sia in
@@ -103,7 +104,7 @@ export const HOME_FAQ = {
     ],
     [
       "How do I use it day to day?",
-      "Open the board. Every card carries one number, the model’s probability for that match, and nothing else, which is what lets you run your eye down twenty matches without reading twenty paragraphs. When one makes you stop, open it: the full reading is inside, reasoning included. Then go and look at the public record, because seeing how earlier readings settled is what tells you how much weight a number like that deserves. What you do with it after that is your call. We don’t make that one for you. Register a free account and you get three readings per sport a day; Base and Pro open the whole board.",
+      "Open the board. Every card carries one number, the model’s probability for that match, and nothing else, which is what lets you run your eye down twenty matches without reading twenty paragraphs. When one makes you stop, open it: the full reading is inside, reasoning included. Then go and look at the public record, because seeing how earlier readings settled is what tells you how much weight a number like that deserves. What you do with it after that is your call. We don’t make that one for you. Register a free account and you get up to three readings per sport a day; Base goes up to seven, and Pro opens the whole board.",
     ],
   ],
   it: [
@@ -129,7 +130,7 @@ export const HOME_FAQ = {
     ],
     [
       "Come lo uso, in pratica?",
-      "Apri il board. Ogni card porta un numero solo, la probabilità del modello per quella partita, e nient’altro: è quello che ti permette di scorrere venti partite senza leggerne venti paragrafi. Quando una ti fa fermare, aprila: dentro c’è la lettura completa, ragionamento compreso. Poi vai a vedere il registro pubblico, perché è guardando come si sono chiuse le letture precedenti che capisci quanto peso dare a un numero del genere. Quello che ne fai dopo lo decidi tu. Quella cosa lì non la decidiamo noi al posto tuo. Registrando un account gratuito hai tre letture per sport al giorno; Base e Pro aprono tutto il board.",
+      "Apri il board. Ogni card porta un numero solo, la probabilità del modello per quella partita, e nient’altro: è quello che ti permette di scorrere venti partite senza leggerne venti paragrafi. Quando una ti fa fermare, aprila: dentro c’è la lettura completa, ragionamento compreso. Poi vai a vedere il registro pubblico, perché è guardando come si sono chiuse le letture precedenti che capisci quanto peso dare a un numero del genere. Quello che ne fai dopo lo decidi tu. Quella cosa lì non la decidiamo noi al posto tuo. Registrando un account gratuito hai fino a tre letture per sport al giorno; Base arriva fino a sette, Pro apre tutto il board.",
     ],
   ],
 } as const satisfies Record<string, readonly FaqItem[]>;

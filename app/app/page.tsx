@@ -4237,11 +4237,11 @@ function PlansTab({
           </div>
           <p className="plan-description">
             {pick5(lang, {
-              it: "Tre prediction per sport ogni giorno, sbloccate del tutto. Profilo e storico pubblico.",
-              en: "Three predictions per sport every day, fully unlocked. Profile and public history.",
-              es: "Tres predicciones por deporte cada día, totalmente desbloqueadas. Perfil e historial público.",
-              fr: "Trois prédictions par sport chaque jour, entièrement débloquées. Profil et historique public.",
-              ru: "Три прогноза на вид спорта каждый день, полностью открыты. Профиль и публичная история.",
+              it: "Fino a tre prediction per sport al giorno, sbloccate del tutto. Profilo e storico pubblico.",
+              en: "Up to three predictions per sport a day, fully unlocked. Profile and public history.",
+              es: "Hasta tres predicciones por deporte al día, totalmente desbloqueadas. Perfil e historial público.",
+              fr: "Jusqu'à trois prédictions par sport par jour, entièrement débloquées. Profil et historique public.",
+              ru: "До трёх прогнозов на вид спорта в день, полностью открыты. Профиль и публичная история.",
             })}
           </p>
           <div className="price-line">
@@ -4249,11 +4249,11 @@ function PlansTab({
             <span>{pick5(lang, { it: "Per sempre", en: "Forever", es: "Para siempre", fr: "Pour toujours", ru: "Навсегда" })}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{pick5(lang, { it: "3 per sport / giorno", en: "3 per sport / day", es: "3 por deporte / día", fr: "3 par sport / jour", ru: "3 на вид спорта / день" })}</strong>
+            <strong>{pick5(lang, { it: "Fino a 3 per sport / giorno", en: "Up to 3 per sport / day", es: "Hasta 3 por deporte / día", fr: "Jusqu'à 3 par sport / jour", ru: "До 3 на вид спорта / день" })}</strong>
             <em>{pick5(lang, { it: "Le migliori del modello di oggi, calcio e tennis.", en: "The model's best of today, football and tennis.", es: "Las mejores del modelo de hoy, fútbol y tenis.", fr: "Les meilleures du modèle du jour, football et tennis.", ru: "Лучшее от модели на сегодня — футбол и теннис." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{pick5(lang, { it: "3 top prediction calcio + 3 tennis, ogni giorno", en: "3 top football + 3 tennis predictions, every day", es: "3 predicciones top de fútbol + 3 de tenis, cada día", fr: "3 prédictions top football + 3 tennis, chaque jour", ru: "3 топ-прогноза по футболу + 3 по теннису, каждый день" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Fino a 3 calcio + 3 tennis, tra le partite del giorno", en: "Up to 3 football + 3 tennis, from the day's matches", es: "Hasta 3 de fútbol + 3 de tenis, entre los partidos del día", fr: "Jusqu'à 3 football + 3 tennis, parmi les matchs du jour", ru: "До 3 по футболу + 3 по теннису из матчей дня" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione su quelle", en: "Pick, probabilities and explanation on those", es: "Selección, probabilidades y explicación sobre ellas", fr: "Choix, probabilités et explication sur ceux-ci", ru: "Выбор, вероятности и пояснение по ним" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Profilo e lingua salvati · storico pubblico", en: "Profile and language saved · public history", es: "Perfil e idioma guardados · historial público", fr: "Profil et langue enregistrés · historique public", ru: "Профиль и язык сохранены · публичная история" })}</PlanFeature>
             <PlanFeature locked>{pick5(lang, { it: "Resto del board, edge e Deep Analysis", en: "Rest of the board, edge and Deep Analysis", es: "Resto del panel, edge y Deep Analysis", fr: "Reste du tableau, edge et Deep Analysis", ru: "Остальная часть доски, edge и Deep Analysis" })}</PlanFeature>
@@ -4276,11 +4276,11 @@ function PlansTab({
           </div>
           <p className="plan-description">
             {pick5(lang, {
-              it: "Le top 7 prediction per sport ogni giorno, con edge e spiegazioni complete.",
-              en: "The top 7 predictions per sport every day, with full edge and explanations.",
-              es: "Las 7 mejores predicciones por deporte cada día, con edge y explicaciones completas.",
-              fr: "Les 7 meilleures prédictions par sport chaque jour, avec edge et explications complètes.",
-              ru: "Топ-7 прогнозов на вид спорта каждый день, с edge и полными пояснениями.",
+              it: "Fino a 7 prediction per sport al giorno, con edge e spiegazioni complete.",
+              en: "Up to 7 predictions per sport a day, with full edge and explanations.",
+              es: "Hasta 7 predicciones por deporte al día, con edge y explicaciones completas.",
+              fr: "Jusqu'à 7 prédictions par sport par jour, avec edge et explications complètes.",
+              ru: "До 7 прогнозов на вид спорта в день, с edge и полными пояснениями.",
             })}
           </p>
           <div className="price-line">
@@ -4290,11 +4290,11 @@ function PlansTab({
             <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
           </div>
           <div className="plan-core-line">
-            <strong>{pick5(lang, { it: "7 per sport / giorno", en: "7 per sport / day", es: "7 por deporte / día", fr: "7 par sport / jour", ru: "7 на вид спорта / день" })}</strong>
-            <em>{pick5(lang, { it: "14 prediction al giorno, le migliori del modello.", en: "14 predictions a day, the model's best.", es: "14 predicciones al día, las mejores del modelo.", fr: "14 prédictions par jour, les meilleures du modèle.", ru: "14 прогнозов в день — лучшее от модели." })}</em>
+            <strong>{pick5(lang, { it: "Fino a 7 per sport / giorno", en: "Up to 7 per sport / day", es: "Hasta 7 por deporte / día", fr: "Jusqu'à 7 par sport / jour", ru: "До 7 на вид спорта / день" })}</strong>
+            <em>{pick5(lang, { it: "Fino a 4 in più per sport rispetto al Free, le migliori del modello.", en: "Up to 4 more per sport than Free, the model's best.", es: "Hasta 4 más por deporte que en Free, las mejores del modelo.", fr: "Jusqu'à 4 de plus par sport qu'en Free, les meilleures du modèle.", ru: "До 4 прогнозов больше на вид спорта, чем во Free, — лучшее от модели." })}</em>
           </div>
           <ul className="plan-feature-list">
-            <PlanFeature>{pick5(lang, { it: "Top 7 calcio + 7 tennis, ogni giorno (14 al giorno)", en: "Top 7 football + 7 tennis, every day (14 a day)", es: "Top 7 fútbol + 7 tenis, cada día (14 al día)", fr: "Top 7 football + 7 tennis, chaque jour (14 par jour)", ru: "Топ-7 футбол + 7 теннис, каждый день (14 в день)" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Fino a 7 calcio + 7 tennis, tra le partite del giorno", en: "Up to 7 football + 7 tennis, from the day's matches", es: "Hasta 7 de fútbol + 7 de tenis, entre los partidos del día", fr: "Jusqu'à 7 football + 7 tennis, parmi les matchs du jour", ru: "До 7 по футболу + 7 по теннису из матчей дня" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
             {/* #CONVERSION-COPY-0916 (audit §3): «stake suggerito» suona da tipster
                 (un'istruzione); «contesto di stake» è quello che il prodotto dà. */}
@@ -9559,7 +9559,7 @@ function UnifiedBetsTab({
               beneficio vero della registrazione: le 3 letture/sport al
               giorno di showcaseAllowance (lib/access-projection.ts), la
               stessa cifra che la FAQ home dichiara già. */}
-          <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare tre letture per sport al giorno.", en: "Register to save selections, get alerts, and unlock three readings per sport a day.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear tres lecturas por deporte al día.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer trois lectures par sport par jour.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть три прогноза на вид спорта в день." })}</span>
+          <span>{pick5(lang, { it: "Registrati per salvare le selezioni, ricevere alert e sbloccare fino a tre letture per sport al giorno.", en: "Register to save selections, get alerts, and unlock up to three readings per sport a day.", es: "Regístrate para guardar selecciones, recibir alertas y desbloquear hasta tres lecturas por deporte al día.", fr: "Inscrivez-vous pour enregistrer vos sélections, recevoir des alertes et débloquer jusqu'à trois lectures par sport par jour.", ru: "Зарегистрируйтесь, чтобы сохранять выборы, получать оповещения и открыть до трёх прогнозов на вид спорта в день." })}</span>
           <div className="flex gap-2 shrink-0">
             {/* #AUTH-ICONS-0924 — è la coppia che Andrea ha visto nello
                 screenshot: sotto l'hero, senza segno, mentre le tile sport

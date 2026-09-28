@@ -461,10 +461,10 @@ const V3_EN: V3Copy = {
   // consegna davvero. Base NON aveva "Deep Analysis su ogni scheda" (è Pro-only,
   // la proiezione gliela toglie) né "tutto il feed" (è a quota): due claim che il
   // prodotto non manteneva.
-  pcFreeList: ["3 model readings per sport, every day", "Public pre-kick-off record", "Probability, market price and a preview of the edge", "No card required"],
+  pcFreeList: ["Up to 3 model readings per sport, every day", "Public pre-kick-off record", "Probability, market price and a preview of the edge", "No card required"],
   // #CLV-CLAIM-0831: «closing line value» tolto anche dalla lista Base — è lo
   // stesso claim del chip rimosso il 31/08, misurato senza dato dietro.
-  pcBaseList: ["7 model readings per sport, every day", "Full edge % and stake context", "Weekly Model Case", "Full public record"],
+  pcBaseList: ["Up to 7 model readings per sport, every day", "Full edge % and stake context", "Weekly Model Case", "Full public record"],
   pcProList: ["Everything in Base, with no daily cap", "Deep analysis on every match card", "Live Probability Board", "Build a Probability View"],
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a calibrated probability, its edge, and the reasoning — then make your own call. No card required to start.",
   fnNote: "No tips. No black box. No guaranteed returns. You make the call.",
@@ -518,8 +518,8 @@ const V3_IT: V3Copy = {
   pcCtaFree: "Leggi una partita gratis", pcCtaBase: "Inizia con Base", pcCtaPro: "Sblocca Pro",
   pcNote: "Mensile o annuale · Disdici quando vuoi dal tuo account · Nessun conto bookmaker richiesto · Nessuna scommessa piazzata per te · Nessun rendimento garantito · 18+",
   faqEyebrow: "FAQ", faqHead: "Prima della tua prima lettura.", faqSub: "Le cose che conviene sapere prima di iscriversi: come funziona il pagamento, cosa contiene una lettura, cosa fa il «live», e da cosa BetRedge sta fuori.",
-  pcFreeList: ["3 letture del modello per sport, ogni giorno", "Registro pubblico prima del fischio", "Probabilità, quota di mercato e un’anteprima dell’edge", "Senza carta"],
-  pcBaseList: ["7 letture del modello per sport, ogni giorno", "Edge % completo e contesto di stake", "Weekly Model Case", "Registro pubblico completo"],
+  pcFreeList: ["Fino a 3 letture del modello per sport, ogni giorno", "Registro pubblico prima del fischio", "Probabilità, quota di mercato e un’anteprima dell’edge", "Senza carta"],
+  pcBaseList: ["Fino a 7 letture del modello per sport, ogni giorno", "Edge % completo e contesto di stake", "Weekly Model Case", "Registro pubblico completo"],
   pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep analysis su ogni scheda", "Board di probabilità live", "Costruisci una vista di probabilità"],
   fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una probabilità calibrata, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
   fnNote: "Niente dritte. Niente scatola nera. Nessun rendimento garantito. Decidi tu.",
