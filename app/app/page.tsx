@@ -60,6 +60,7 @@ import {
 } from "@/components/ui";
 import { LobbySection } from "@/components/lobby/LobbySection";
 import { HomeFaq } from "@/components/lobby/HomeFaq";
+import { YesterdayRead } from "@/components/lobby/YesterdayRead"; // #HOOK-A-LITE-0928
 import { HeroPortrait, RailDeep } from "@/components/lobby/HeroPortrait";
 import { FieldTile, FieldTileGrid } from "@/components/lobby/FieldTile";
 import { DeepDiveCard, DeepDiveGrid } from "@/components/lobby/DeepDiveCard";
@@ -8504,11 +8505,18 @@ function HomeLobby({
   onSeeAll,
   onGoHome,
   onGoPro,
+  isLoggedIn,
+  onRegister,
 }: {
   view: DeskView;
   /** #RESTYLING-0921 round 7 — chi ha già il Pro non vede la pubblicità del
    *  Pro. Era il debito dichiarato del round 6. */
   isPro: boolean;
+  /** #HOOK-A-LITE-0928 — il riquadro «la lettura di ieri» è per chi NON ha un
+   *  account: chi ce l'ha ha già le sue letture aperte oggi (free 3, base 7). */
+  isLoggedIn: boolean;
+  /** Apre la registrazione in-place (la CTA del riquadro di ieri). */
+  onRegister: () => void;
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   query: string;
@@ -8845,6 +8853,20 @@ function HomeLobby({
         onGoPro();
       }}
     />
+  );
+
+  // ── #HOOK-A-LITE-0928: «Ecco come ha letto il modello», solo Home anonima ─
+  //
+  // DOVE STA. Subito sotto il rail hero+card e PRIMA della fascia Pro: per chi
+  // non ha un account la prima domanda non è «Pro?», è «ma queste letture
+  // valgono qualcosa?» — e la risposta onesta è una lettura intera, già
+  // conclusa, con l'esito accanto. Non sopra il rail: la prima schermata
+  // deve mostrare le card di oggi (round 5, «deve vederne di più»), e questo
+  // blocco è la prova, non il prodotto. Il componente fa il suo fetch e non
+  // rende nulla finché non ha una lettura: la Home di chi è loggato, e la
+  // Home senza letture concluse, restano identiche a prima.
+  const yesterdayRead = view !== "home" || isLoggedIn ? null : (
+    <YesterdayRead lang={lang} tz={tz} onRegister={onRegister} />
   );
 
   // ── #RESTYLING-0921 round 6: hero di sezione e fascia Pro ───────────────
@@ -9408,6 +9430,7 @@ function HomeLobby({
             {emptyNote}
           </div>
         ) : emptyNote}
+        {yesterdayRead}
         {hero && !isPro && proBand}
         {/* Anche a board vuota: la riga di tile è navigazione, non un dato, e
             su una giornata senza partite è l'unica cosa che resta da fare
@@ -9436,6 +9459,7 @@ function HomeLobby({
           {renderSection(sideSection, HERO_SIDE_CAP)}
         </div>
       ) : hero}
+      {yesterdayRead}
       {/* Round 6: la fascia Pro subito sotto l'hero della Home.
           Round 7: non a chi il Pro ce l'ha già — era il debito dichiarato. */}
       {hero && !isPro && proBand}
@@ -9667,6 +9691,8 @@ function UnifiedBetsTab({
           onSeeAll={onSeeAll}
           onGoHome={onGoHome}
           onGoPro={onGoPro}
+          isLoggedIn={isLoggedIn}
+          onRegister={onRegister}
         />
         {autoOpenKey && (
           <MatchDetailHost

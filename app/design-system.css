@@ -371,6 +371,86 @@
 .br-quota__more:hover { text-decoration: underline; text-underline-offset: 3px; }
 .br-quota__more:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 
+/* ── #HOOK-A-LITE-0928 — «Ecco come ha letto il modello» (Home anonima) ───
+   Il riquadro con la lettura di ieri, intera, e l'esito. È lo stesso segno di
+   «Inclusa oggi» — filo lime, linguetta sul bordo — applicato a un blocco:
+   il lime sul sito vuol dire «ciò che l'utente HA», e questa è l'unica cosa
+   che l'anonimo ha per intero. Nessun fondo: il filo basta a farne un
+   riquadro, e le card dentro restano le card (blu) del board. Testo a
+   sinistra come il rail dell'hero (stessa proporzione 26/74 del riferimento),
+   le card a destra nella griglia di sempre. */
+.br-yr {
+  display: grid;
+  grid-template-columns: minmax(240px, 26%) minmax(0, 1fr);
+  gap: var(--am-s-5);
+  align-items: start;
+  padding: var(--am-s-5);
+  border: 1px solid var(--am-edge-b);
+  border-radius: var(--am-r-card);
+}
+.br-yr__text { min-width: 0; }
+.br-yr__eyebrow {
+  margin: 0 0 var(--am-s-2);
+  font-family: var(--am-font-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-edge);
+}
+.br-yr__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-size: 26px;
+  font-weight: 400;  /* Anton: un peso solo, come .br-sec__title */
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--am-text);
+  max-width: 14ch;
+}
+.br-yr__body {
+  margin: var(--am-s-3) 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--am-muted);
+  max-width: 40ch;
+}
+.br-yr__actions { margin-top: var(--am-s-4); }
+.br-yr__note {
+  margin: var(--am-s-3) 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--am-muted-2);
+  max-width: 40ch;
+}
+.br-yr__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: var(--am-s-3);
+  align-items: stretch;
+}
+/* La card aperta di ieri porta il filo lime di «Inclusa oggi». Il piede è
+   solo il «perché», a tutta larghezza e senza CTA (la partita è finita, non
+   c'è una scheda da aprire) e SENZA il taglio a due righe della card del
+   board: lì il perché è un teaser della scheda, qui è il contenuto — «la
+   lettura intera» promessa dal titolo non può finire in un'ellissi. */
+.br-yr .br-card { border-color: var(--am-edge-b); }
+.br-yr .br-card__foot { display: block; }
+.br-yr .br-card__why { max-width: none; display: block; -webkit-line-clamp: unset; }
+/* L'esito resta un badge monocromo (la parola e il segno lo dicono, come per
+   ogni badge della card): sul blu della card i verdi/rossi semantici non
+   reggono il 4,5:1 a 11px, e un colore in più sarebbe un significato in più. */
+.br-badge[data-kind="result"] { color: var(--am-muted); }
+.br-badge[data-kind="result"] svg { flex: none; }
+@media (max-width: 900px) {
+  .br-yr { grid-template-columns: 1fr; gap: var(--am-s-4); padding: var(--am-s-4); }
+  .br-yr__title { max-width: none; }
+}
+
 /* #CARD-LAYOUT-0925 — l'header è DUE righe assegnate (cos'è / quando), non
    un flex-wrap che sulle larghezze vere della lobby (275px a 1280, 310 a
    390) andava a capo tre volte, con badge+watch da soli su una riga. Nessuna
