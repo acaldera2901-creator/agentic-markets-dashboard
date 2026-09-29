@@ -3933,36 +3933,53 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   .am-topbar-in .brand-logo-dark { height: 26px !important; }
 }
 
-/* ── Pop-up d'iscrizione differito (#SIGNUP-POPUP-D-0928) ─────────────────
-   components/SignupPopup.tsx. NON modale: un pannello fisso in basso a destra
-   (~400px) che lascia il board sotto usabile; sotto i 640px è un bottom sheet
-   sopra la bottom bar, mai oltre il 60% dello schermo. Un solo colore oltre
-   al testo: il lime della CTA primaria. I prezzi sono numeri → JetBrains
-   Mono 700, come ogni numero del design system; il mensile domina per
-   dimensione e peso, l'equivalente al giorno gli sta sotto, più piccolo e
-   muted — mai al suo posto. «Non ora» condivide riga, altezza e peso con la
-   CTA: la griglia 1fr 1fr è la garanzia strutturale, non un'intenzione.
+/* ── Pop-up d'iscrizione differito (#SIGNUP-POPUP-D-0928 · centro: #SIGNUP-POPUP-CENTER-0929)
+   components/SignupPopup.tsx. Al centro della porzione visibile (richiesta di
+   Andrea sull'anteprima), ma NON modale: l'host che serve a centrare ha
+   pointer-events none — nessun velo, nessun blocco dello scroll, il board
+   sotto resta cliccabile; un click fuori chiude la card e arriva al board.
+   Senza velo la separazione la fa la card stessa: bordo un passo più chiaro
+   e un'ombra lunga, non un oscuramento della pagina. Card ~420px; su telefono
+   16px di gutter e mai oltre l'80% dell'area visibile (scrolla dentro).
+   Un solo colore oltre al testo: il lime della CTA primaria. I prezzi sono
+   numeri → JetBrains Mono 700, come ogni numero del design system; il mensile
+   domina per dimensione e peso, l'equivalente al giorno gli sta sotto, più
+   piccolo e muted — mai al suo posto. «Non ora» condivide riga, altezza e peso
+   con la CTA: la griglia 1fr 1fr è la garanzia strutturale, non un'intenzione.
    z-index 70: sopra la bottom bar (60), sotto le modali (auth 80). */
-.br-nudge {
+.br-nudge-host {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  inset: 0;
   z-index: 70;
-  width: min(400px, calc(100vw - 32px));
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  pointer-events: none; /* è un centratore, non un velo */
+}
+.br-nudge {
+  position: relative;
+  pointer-events: auto;
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
   padding: var(--am-s-5) var(--am-s-5) var(--am-s-4);
   background: var(--am-panel);
   border: 1px solid var(--am-line-2);
   border-radius: var(--am-r-card);
-  box-shadow: var(--am-shadow-card), 0 28px 56px -28px rgba(0, 0, 0, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    var(--am-shadow-card),
+    0 40px 80px -24px rgba(0, 0, 0, 0.85);
   color: var(--am-text);
   font-family: var(--am-font-ui);
 }
-/* Un solo momento di motion: entra da 12px sotto, 220 ms, e poi sta fermo.
-   Niente pulse, niente loop. Chi chiede meno movimento lo vede comparire. */
+/* Un solo momento di motion: si posa al centro (scala 0.98 → 1, 220 ms) e poi
+   sta fermo. Niente pulse, niente loop. Chi chiede meno movimento lo vede
+   comparire. */
 @media (prefers-reduced-motion: no-preference) {
   .br-nudge { animation: br-nudge-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
   @keyframes br-nudge-in {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: scale(0.98) translateY(6px); }
     to { opacity: 1; transform: none; }
   }
 }
@@ -4122,24 +4139,17 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
 }
 .br-nudge__legal a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .br-nudge__legal-tail { white-space: nowrap; }
-/* Fra 641 e 900px la bottom bar c'è (globals.css): il pannello le sta sopra. */
+/* Fino a 900px la bottom bar c'è (globals.css): l'host finisce dove comincia
+   lei, così il centro è quello della porzione davvero visibile. */
 @media (max-width: 900px) {
-  .br-nudge { bottom: calc(66px + 12px + env(safe-area-inset-bottom, 0px)); }
+  .br-nudge-host { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
 }
-/* Telefono: bottom sheet a tutta larghezza, incollato alla bottom bar. */
+/* Telefono: card centrata con 16px di gutter, mai oltre l'80% dell'area
+   visibile — sotto e sopra resta board, non è uno schermo intero. */
 @media (max-width: 640px) {
   .br-nudge {
-    left: 0;
-    right: 0;
-    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
-    width: auto;
-    max-height: 60vh;
-    overflow-y: auto;
+    max-height: 80%;
     padding: var(--am-s-4) var(--am-s-4) var(--am-s-3);
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 0;
-    border-radius: var(--am-r-card) var(--am-r-card) 0 0;
   }
   .br-nudge__title { font-size: 18px; }
   .br-nudge__plan { padding: 9px 8px 10px; }

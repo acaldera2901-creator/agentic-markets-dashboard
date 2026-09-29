@@ -61,7 +61,7 @@ export const BROWSER_ANALYTICS_EVENTS = [
   "card_open", "nav_click",
   // #SIGNUP-POPUP-D-0928 — il pop-up d'iscrizione differito (gancio D).
   // `meta.audience` (anon|free) dice a chi è comparso; `meta.reason` della
-  // chiusura (x|not_now|esc|never) e `meta.cta` (primary|plans) dicono come è
+  // chiusura (x|not_now|esc|never|outside) e `meta.cta` (primary|plans) dicono come è
   // finita. Senza i tre insieme non si può dire se il pop-up converte o
   // infastidisce, e il criterio di morte del design (nessun aumento della
   // conversione in profilo dopo 2 settimane, o bounce in salita) resta

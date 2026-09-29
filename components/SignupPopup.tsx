@@ -9,9 +9,14 @@
 // non si è ancora visto niente; dopo un minuto e mezzo di lucchetti esiste già
 // e il prompt la incontra, non la crea. Regole e copy in lib/signup-popup.ts.
 //
-// NON è una modale. Nessun velo, nessun blocco dello scroll, nessuna trappola
-// del focus: un <aside> in basso a destra (bottom sheet su telefono) e il board
-// resta usabile sotto. Focus sul titolo all'apertura, restituito alla chiusura,
+// NON è una modale, anche se sta al centro (#SIGNUP-POPUP-CENTER-0929, richiesta
+// di Andrea sull'anteprima: «al centro della pagina, non nell'angolo»). Il
+// compromesso: la card è centrata nella porzione visibile, ma il contenitore
+// (`.br-nudge-host`) ha pointer-events: none — nessun velo, nessun blocco dello
+// scroll, nessuna trappola del focus; il board sotto resta cliccabile e
+// scrollabile. Un click fuori dalla card la chiude E arriva al board: il gesto
+// dell'utente non va perso. Focus sul titolo all'apertura, restituito alla
+// chiusura (non dopo un click fuori: lì il focus è dove l'utente ha cliccato),
 // Esc chiude. «Non ora» ha la stessa geometria della CTA (griglia 1fr 1fr):
 // la simmetria è nella struttura, non nella disciplina di chi edita — lo stesso
 // principio della CookieBanner (EDPB). Divergono solo per tinta.
@@ -69,6 +74,7 @@ export function SignupPopup({ lang, audience, cardOpen, overlayOpen, lockedToday
   const overlayRef = useRef(overlayOpen);
   const lastInteractionRef = useRef(0);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -168,11 +174,14 @@ export function SignupPopup({ lang, audience, cardOpen, overlayOpen, lockedToday
     titleRef.current?.focus({ preventScroll: true });
   }, [phase]);
 
-  const close = useCallback((reason: "x" | "not_now" | "esc" | "never" | "cta") => {
+  const close = useCallback((reason: "x" | "not_now" | "esc" | "never" | "cta" | "outside") => {
     if (reason === "never") recordSignupPopupNever();
     else recordSignupPopupDismissal();
     if (reason !== "cta") trackEvent("signup_popup_dismissed", { meta: { audience, reason } });
     setPhase("closed");
+    // Dopo un click fuori il focus è già dove l'utente ha cliccato: non glielo
+    // si toglie per riportarlo indietro.
+    if (reason === "outside") return;
     const back = restoreFocusRef.current;
     if (back && document.contains(back)) back.focus({ preventScroll: true });
   }, [audience]);
@@ -180,8 +189,20 @@ export function SignupPopup({ lang, audience, cardOpen, overlayOpen, lockedToday
   useEffect(() => {
     if (phase !== "visible") return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close("esc"); };
+    // Click/tocco fuori dalla card: chiude. Non si ferma l'evento (nessun
+    // preventDefault/stopPropagation): il board riceve il gesto come se la card
+    // non ci fosse — è la differenza fra questo e un velo modale.
+    const onPointerDown = (e: PointerEvent) => {
+      const card = cardRef.current;
+      if (!card || !(e.target instanceof Node) || card.contains(e.target)) return;
+      close("outside");
+    };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, { passive: true });
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [phase, close]);
 
   if (phase !== "visible" || !audience) return null;
@@ -197,7 +218,10 @@ export function SignupPopup({ lang, audience, cardOpen, overlayOpen, lockedToday
   };
 
   return (
-    <aside className="br-nudge" role="region" aria-labelledby="br-nudge-title" data-audience={audience} data-testid="signup-popup">
+    // L'host copre la porzione visibile solo per centrare: pointer-events none,
+    // quindi non è un velo e non intercetta niente (test «non blocca il board»).
+    <div className="br-nudge-host" data-testid="signup-popup-host">
+    <aside ref={cardRef} className="br-nudge" role="region" aria-labelledby="br-nudge-title" data-audience={audience} data-testid="signup-popup">
       <button type="button" className="br-nudge__x" onClick={() => close("x")} aria-label={c.close}>×</button>
       <p className="br-label br-nudge__eyebrow">{free ? c.eyebrowFree : c.eyebrowAnon}</p>
       <h2 id="br-nudge-title" ref={titleRef} tabIndex={-1} className="br-nudge__title">{free ? c.titleFree : c.titleAnon}</h2>
@@ -233,5 +257,6 @@ export function SignupPopup({ lang, audience, cardOpen, overlayOpen, lockedToday
         <span className="br-nudge__legal-tail">18+ · <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer">{c.legalLink}</a></span>
       </p>
     </aside>
+    </div>
   );
 }

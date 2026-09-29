@@ -330,11 +330,39 @@ describe("contenuto: prezzi veri, prova sociale solo se vera, niente pressione",
     expect(screen.queryByText(/letture chiuse/)).toBeNull();
   });
 
-  it("non è una modale: nessun aria-modal, nessun dialog", () => {
+  it("non è una modale: nessun aria-modal, nessun dialog, scroll della pagina intatto", () => {
     show();
     expect(popup()!.getAttribute("aria-modal")).toBeNull();
     expect(popup()!.getAttribute("role")).toBe("region");
     expect(document.querySelector('[role="dialog"]')).toBeNull();
+    // #SIGNUP-POPUP-CENTER-0929: sta al centro, ma nessuno tocca lo scroll del
+    // documento e l'host che centra non è un velo (pointer-events none in CSS).
+    expect(document.body.style.overflow).toBe("");
+    expect(document.documentElement.style.overflow).toBe("");
+    expect(screen.getByTestId("signup-popup-host").className).toBe("br-nudge-host");
+  });
+
+  // #SIGNUP-POPUP-CENTER-0929: centrato senza velo → un click fuori chiude, ma
+  // il gesto arriva comunque al board (niente preventDefault/stopPropagation).
+  it("un click fuori dalla card la chiude, conta come chiusura, e il board riceve il click", () => {
+    const onBoard = vi.fn();
+    render(<button type="button" onClick={onBoard}>una card del board</button>);
+    show();
+    const target = screen.getByText("una card del board");
+    fireEvent.pointerDown(target);
+    fireEvent.click(target);
+    expect(popup()).toBeNull();
+    expect(onBoard).toHaveBeenCalledTimes(1);
+    expect(readSignupPopupMemory().dismissals).toBe(1);
+    expect(tracked("signup_popup_dismissed")[0].body.meta).toEqual({ audience: "anon", reason: "outside" });
+  });
+
+  it("un click dentro la card non la chiude", () => {
+    show();
+    fireEvent.pointerDown(screen.getByRole("heading", { level: 2 }));
+    fireEvent.pointerDown(screen.getByText(/Tutto il board/));
+    expect(popup()).not.toBeNull();
+    expect(tracked("signup_popup_dismissed")).toHaveLength(0);
   });
 
   it("«Non ora» e la CTA hanno la stessa classe e la stessa geometria di riga", () => {
