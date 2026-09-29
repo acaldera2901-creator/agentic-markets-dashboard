@@ -11324,30 +11324,30 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           tabIndex={-1}
         >·</button>
       </div>
-      {/* #SIGNUP-POPUP-D-0928 — gancio D: pop-up d'iscrizione differito, solo
-          sulla Home/board (tab bets) e solo per anonimo e Free. Trigger, cadenza
-          e copy in components/SignupPopup.tsx + lib/signup-popup.ts (design di
-          psicologia-persuasione). `cardOpen` = una scheda partita aperta dalla
-          lobby: vale come engagement e, finché è aperta, come «non adesso».
-          `overlayOpen` = le modali del desk: il pop-up non si somma a nulla.
+      {/* #SIGNUP-POPUP-D-0928 — gancio D. #SESSION-POPUP-0929 (direttiva
+          Andrea): montato su QUALUNQUE tab del desk, non più solo su bets;
+          compare al primo caricamento della sessione, una volta per sessione,
+          chiudibile e non modale (il board sotto resta usabile). Anonimo →
+          profilo gratuito, Free → Base, Base → Pro; Pro mai. Trigger, cadenza
+          e copy in components/SignupPopup.tsx + lib/signup-popup.ts.
+          `cardOpen` = una scheda partita aperta: «non adesso». `overlayOpen` =
+          le modali del desk (muro auth compreso): il pop-up non si somma.
           La CTA anonima riprende il flusso di activateFreePlan (intento «free»
           + registrazione) senza il suo plan_cta_click: l'evento del pop-up è
           il suo (signup_popup_cta_click). */}
-      {tab === "bets" && (
-        <SignupPopup
-          lang={uiLanguage}
-          audience={signupPopupAudience({ authChecked, hasSession, plan: clientProfile?.plan })}
-          cardOpen={autoOpenKey !== null}
-          overlayOpen={authOpen || mustAuth || checkoutOpen || founderOpen}
-          lockedToday={
-            predictions.filter((p) => p.locked === true).length
-            + tennisMatches.filter((m) => m.locked === true).length
-          }
-          settledCount={historyV2Stats ? historyV2Stats.won + historyV2Stats.lost : null}
-          onCreateProfile={() => { setPendingIntent({ kind: "free" }); openAuth("create"); }}
-          onComparePlans={focusClientPlans}
-        />
-      )}
+      <SignupPopup
+        lang={uiLanguage}
+        audience={signupPopupAudience({ authChecked, hasSession, plan: clientProfile?.plan })}
+        cardOpen={autoOpenKey !== null}
+        overlayOpen={authOpen || mustAuth || checkoutOpen || founderOpen}
+        lockedToday={
+          predictions.filter((p) => p.locked === true).length
+          + tennisMatches.filter((m) => m.locked === true).length
+        }
+        settledCount={historyV2Stats ? historyV2Stats.won + historyV2Stats.lost : null}
+        onCreateProfile={() => { setPendingIntent({ kind: "free" }); openAuth("create"); }}
+        onComparePlans={focusClientPlans}
+      />
       {(authOpen || mustAuth) && (
         <ClientAuthModal
           intent={authIntent}

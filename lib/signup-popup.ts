@@ -5,8 +5,13 @@
 // (scratchpad `popup-design.md`, sez. 2 e 4), qui resi in numeri e in una
 // funzione di eleggibilità che si può testare senza aspettare 90 secondi.
 //
-// Perché sta fuori dal componente: la regola «una volta per sessione, 14
-// giorni dopo una chiusura, mai più dopo due» è la parte che DSA art. 25(3)(b)
+// #SESSION-POPUP-0929 (direttiva Andrea, 29/09): compare al primo caricamento
+// della sessione su qualunque tab del desk, anche a Base (invito verso Pro), e
+// torna a ogni sessione nuova. Sostituisce il trigger differito (90 s attivi +
+// engagement + pausa) e il cooldown «14 giorni / mai dopo due» del 28/09.
+//
+// Perché sta fuori dal componente: la regola «una volta per sessione, mai
+// dopo «Non mostrarlo più»» è la parte che DSA art. 25(3)(b)
 // guarda (richiedere ripetutamente una scelta già fatta). Se vive dentro un
 // useEffect nessuno la rilegge; qui è una tabella di verità con i suoi test.
 //
@@ -19,24 +24,14 @@ import type { Lang } from "@/lib/house-banners";
 import { PUBLIC_PAID_PLANS } from "@/lib/commercial-plan";
 import { showcaseAllowance } from "@/lib/access-projection";
 
-// ── Trigger (sez. 2 del design) ─────────────────────────────────────────
-/** Tempo ATTIVO sulla scheda prima di armare il pop-up. 60 è troppo poco
- *  per aver visto dei lucchetti, 120 perde chi resta 1–2 minuti e va via.
- *  Punto di partenza: si tara sui dati. */
-export const SIGNUP_POPUP_ACTIVE_MS = 90_000;
-/** Pausa senza scroll/tasti/tocco dopo l'ultima azione: il pop-up arriva in
- *  un momento morto, non in mezzo a un gesto. */
-export const SIGNUP_POPUP_PAUSE_MS = 3_000;
-/** «Oltre la prima schermata»: almeno un viewport di scroll. */
-export const SIGNUP_POPUP_SCROLL_RATIO = 1;
-/** Quanto spesso, una volta armato, si verifica la pausa. */
+// ── Trigger ─────────────────────────────────────────────────────────────
+/** Ogni quanto, dal caricamento, si ricontrolla se può comparire (overlay
+ *  chiuso, banner cookie risposto, scheda visibile). Il primo controllo è a
+ *  un tick, non sincrono: così i blocker scritti dagli effetti della pagina
+ *  nello stesso render (es. atterraggio su /plans) arrivano prima. */
 export const SIGNUP_POPUP_POLL_MS = 500;
 
-// ── Cadenza (sez. 2 e 4) ────────────────────────────────────────────────
-export const SIGNUP_POPUP_COOLDOWN_MS = 14 * 86_400_000;
-export const SIGNUP_POPUP_MAX_DISMISSALS = 2;
-
-export type SignupPopupAudience = "anon" | "free";
+export type SignupPopupAudience = "anon" | "free" | "base";
 
 /** Memoria per-browser (localStorage). Una convenienza: va in try/catch e
  *  se manca il pop-up si comporta come alla prima visita. */
@@ -132,8 +127,9 @@ export function markSignupPopupShown() {
 
 // ── Eleggibilità ────────────────────────────────────────────────────────
 
-/** A chi si rivolge: anonimo (nessuna sessione, nessun profilo) o Free.
- *  Base, Pro, pending_payment, unpaid, admin: mai. Finché la sessione non è
+/** A chi si rivolge: anonimo (nessuna sessione, nessun profilo), Free o Base
+ *  (#SESSION-POPUP-0929: invito all'upgrade). Pro, pending_payment, unpaid,
+ *  admin: mai. Finché la sessione non è
  *  stata verificata (`authChecked` false) non si decide: null. */
 export function signupPopupAudience(input: {
   authChecked: boolean;
@@ -143,51 +139,25 @@ export function signupPopupAudience(input: {
   if (!input.authChecked) return null;
   if (!input.hasSession && !input.plan) return "anon";
   if (input.plan === "free") return "free";
+  if (input.plan === "base") return "base";
   return null;
 }
 
-/** Il cooldown della memoria: mai dopo «Non mostrarlo più», mai dopo due
- *  chiusure, e non prima di 14 giorni dall'ultima. */
-export function signupPopupCooldownOk(m: SignupPopupMemory, now = Date.now()): boolean {
-  if (m.never) return false;
-  if (m.dismissals >= SIGNUP_POPUP_MAX_DISMISSALS) return false;
-  if (m.lastDismissedAt != null && now - m.lastDismissedAt < SIGNUP_POPUP_COOLDOWN_MS) return false;
-  return true;
-}
-
-/** La tabella di verità completa, senza il tempo attivo (che è del trigger). */
+/** La tabella di verità completa. Fra una sessione e l'altra conta solo
+ *  «Non mostrarlo più» (#SESSION-POPUP-0929): le chiusure semplici restano
+ *  scritte in memoria ma non spengono la sessione successiva. */
 export function signupPopupEligible(input: {
   audience: SignupPopupAudience | null;
   memory: SignupPopupMemory;
   session: SignupPopupSession;
   /** Il banner cookie ha avuto una risposta: non si sommano due strisce. */
   consentDecided: boolean;
-  now?: number;
 }): boolean {
   if (!input.audience) return false;
   if (!input.consentDecided) return false;
   if (input.session.shown) return false;
   if (input.session.blockers.length > 0) return false;
-  return signupPopupCooldownOk(input.memory, input.now ?? Date.now());
-}
-
-/** La pausa naturale: niente gesti da 3 s, nessun overlay, nessun campo in
- *  focus, scheda visibile. */
-export function signupPopupPauseOk(input: {
-  now: number;
-  lastInteractionAt: number;
-  overlayOpen: boolean;
-  fieldFocused: boolean;
-  visible: boolean;
-}): boolean {
-  if (!input.visible || input.overlayOpen || input.fieldFocused) return false;
-  return input.now - input.lastInteractionAt >= SIGNUP_POPUP_PAUSE_MS;
-}
-
-/** L'engagement reale che il trigger richiede prima di partire. */
-export function signupPopupEngaged(input: { scrollY: number; viewportH: number; cardOpened: boolean }): boolean {
-  if (input.cardOpened) return true;
-  return input.viewportH > 0 && input.scrollY >= input.viewportH * SIGNUP_POPUP_SCROLL_RATIO;
+  return !input.memory.never;
 }
 
 /** Il consenso cookie ha una risposta (accettato o rifiutato). Senza, il
@@ -270,15 +240,20 @@ export function signupPopupPlanRows(lang: Lang): SignupPopupPlanRow[] {
 export type SignupPopupCopy = {
   eyebrowAnon: string;
   eyebrowFree: string;
+  eyebrowBase: string;
   titleAnon: string;
   bodyAnon: string;
   titleFree: string;
   /** Con N = righe coperte reali; senza N la frase resta vera. */
   bodyFree: (lockedToday: number | null, baseAllowance: number) => string;
+  /** #SESSION-POPUP-0929: Base → Pro. Con N = righe coperte reali. */
+  titleBase: string;
+  bodyBase: (lockedToday: number | null) => string;
   /** Solo con un numero vero dal DB. */
   proof: (settled: number) => string;
   ctaAnon: string;
   ctaFree: string;
+  ctaBase: string;
   notNow: string;
   compare: string;
   never: string;
@@ -300,6 +275,12 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     proof: (n) => `${n.toLocaleString("it-IT")} letture chiuse, ognuna registrata prima del fischio`,
     ctaAnon: "Crea il profilo gratuito",
     ctaFree: "Vedi Base",
+    ctaBase: "Vedi Pro",
+    eyebrowBase: "Il tuo piano",
+    titleBase: "Le tue 7 letture per sport di oggi sono aperte",
+    bodyBase: (n) => n && n > 0
+      ? `Il board ne ha altre ${n} oggi. Pro apre tutto il board, ogni giorno.`
+      : `Domani si ricaricano. Pro apre tutto il board, ogni giorno.`,
     notNow: "Non ora",
     compare: "Confronta i piani",
     never: "Non mostrarlo più",
@@ -319,6 +300,12 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     proof: (n) => `${n.toLocaleString("en-US")} settled readings, each logged before kick-off`,
     ctaAnon: "Create a free profile",
     ctaFree: "See Base",
+    ctaBase: "See Pro",
+    eyebrowBase: "Your plan",
+    titleBase: "Your 7 readings per sport for today are open",
+    bodyBase: (n) => n && n > 0
+      ? `The board has ${n} more today. Pro opens the whole board, every day.`
+      : `They reload tomorrow. Pro opens the whole board, every day.`,
     notNow: "Not now",
     compare: "Compare plans",
     never: "Don't show this again",
@@ -338,6 +325,12 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     proof: (n) => `${n.toLocaleString("es-ES")} lecturas cerradas, cada una registrada antes del inicio`,
     ctaAnon: "Crea el perfil gratuito",
     ctaFree: "Ver Base",
+    ctaBase: "Ver Pro",
+    eyebrowBase: "Tu plan",
+    titleBase: "Tus 7 lecturas por deporte de hoy están abiertas",
+    bodyBase: (n) => n && n > 0
+      ? `El board tiene ${n} más hoy. Pro abre todo el board, cada día.`
+      : `Mañana se recargan. Pro abre todo el board, cada día.`,
     notNow: "Ahora no",
     compare: "Comparar planes",
     never: "No volver a mostrar",
@@ -357,6 +350,12 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     proof: (n) => `${n.toLocaleString("fr-FR")} lectures réglées, chacune enregistrée avant le coup d'envoi`,
     ctaAnon: "Créer le profil gratuit",
     ctaFree: "Voir Base",
+    ctaBase: "Voir Pro",
+    eyebrowBase: "Votre offre",
+    titleBase: "Vos 7 lectures par sport du jour sont ouvertes",
+    bodyBase: (n) => n && n > 0
+      ? `Le board en a ${n} de plus aujourd'hui. Pro ouvre tout le board, chaque jour.`
+      : `Elles se rechargent demain. Pro ouvre tout le board, chaque jour.`,
     notNow: "Pas maintenant",
     compare: "Comparer les offres",
     never: "Ne plus afficher",
@@ -376,6 +375,12 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     proof: (n) => `${n.toLocaleString("ru-RU")} закрытых прогнозов, каждый записан до начала матча`,
     ctaAnon: "Создать бесплатный профиль",
     ctaFree: "Смотреть Base",
+    ctaBase: "Смотреть Pro",
+    eyebrowBase: "Ваш тариф",
+    titleBase: "Ваши 7 прогнозов на вид спорта на сегодня открыты",
+    bodyBase: (n) => n && n > 0
+      ? `На борде сегодня ещё ${n}. Pro открывает весь борд, каждый день.`
+      : `Завтра они обновятся. Pro открывает весь борд, каждый день.`,
     notNow: "Не сейчас",
     compare: "Сравнить тарифы",
     never: "Больше не показывать",
