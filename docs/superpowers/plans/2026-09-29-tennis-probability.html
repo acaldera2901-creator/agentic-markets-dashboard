@@ -1,0 +1,34 @@
+<!doctype html><html lang="it"><meta charset="utf-8"><title>Piano coerenza probabilità tennis</title><style>body{font:16px/1.6 system-ui;max-width:960px;margin:40px auto;padding:20px}code,pre{background:#f0f3f6}pre{padding:14px;white-space:pre-wrap}</style>
+<h1>Coerenza probabilità tennis — piano approvato</h1>
+<p>29/09/2026 · Michele ha approvato la prima tranche descritta in studio-predictions.html. Base ebde69a3; worktree C:/codex-wt/betredge-tennis-probability-20260929, branch codex/betredge-tennis-probability-20260929. Esecuzione secondo subagent-driven-development e TDD; revisione specifica e qualitativa prima della consegna.</p>
+<p><b>Obiettivo:</b> una previsione tennis abbia origine identificabile e gli stessi numeri, lato e quota in API e adattatore. Non si modifica il modello Elo, il valore della temperatura, la politica delle soglie né lo storico già congelato. Nessun accesso mutativo a sistemi esterni.</p>
+<h2>Contratto</h2>
+<p>La sorgente del dato viene registrata nel JSON feature_snapshot già presente. Schema suggerito:</p>
+<pre>feature_snapshot.probability = {
+  version: "tennis-probability-v1",
+  source: "model" | "market",
+  raw_p1: p1_persisted,
+  raw_p2: p2_persisted
+}</pre>
+<p>Il produttore marca market solo nel ramo che ha effettivamente adottato il mercato; model negli altri rami, inclusi flag disabilitato e quote parziali. Anche il produttore legacy, se produce payload Redis, deve dichiarare model. Non basta edge nullo né la presenza di una quota per inferire l'origine.</p>
+<p>Resolver TypeScript unico, in lib/tennis-probability.ts, legge il contratto versione nota e i p1/p2 persistiti: fonte assente o non valida = unknown, nessuna temperatura applicata. Fonte model = identità. Fonte market verificabile = temperatura 1.68 applicata simmetricamente alla coppia. Probabilità invalide non generano una pick. Se viene dichiarato un mercato ma mancano quote finite >1 su entrambi i lati, gestire esplicitamente come origine incoerente/unknown senza inventare dati. Non ricalcolare la probabilità da quote eventualmente più recenti.</p>
+<p>Risultato include raw probabilities, published probabilities, source, calibration version, selection, probability/confidence del lato scelto e quota valida del lato. Conservare selezioni P1/P2 valide del produttore, altrimenti scegliere il favorito con regola di parità deterministica. Il gate usa la probabilità grezza del medesimo lato. Nessun bypass nuovo di piani/accessi: metadati che rivelano direzione o valori grezzi non vanno nello spread delle risposte locked/base se non autorizzati.</p>
+<h2>Task unico — contratto dalla produzione alla pubblicazione</h2>
+<ol>
+<li>Baseline mirata: Vitest tennis calibrazione/adapter/ledger/gate; pytest modelli tennis e ancoraggio. Installazioni solo nel worktree. Gli errori per dipendenze mancanti si risolvono nella venv locale e poi si ripete la baseline.</li>
+<li>TDD produttore: test dell'origine esplicita per mercato, no quote, quota parziale, flag off; verificare che p1/p2, edge e pick originali siano invariati. Implementazione in agents/tennis_model_agent.py; test in tests/test_tennis_probability_source.py.</li>
+<li>TDD funzione pura: test separati per model, market, unknown, edge zero, metadati corrotti, probabilità non finite/estreme, quote invalide e favorito P2. Test di normalizzazione della coppia e di calibrazione esattamente una volta. Correggere probabilitaMostrata affinché richieda una fonte esplicita invece di un booleano ambiguo, oppure sostituirla nel percorso attivo con il resolver e rimuovere il vecchio contratto ambiguo.</li>
+<li>TDD integrazione: invocare la vera GET /api/tennis con DB/Redis sostituiti e confrontare con il vero adattatore, per premium e locked; controllare che feature_snapshot sia letto da DB, trasportato internamente e non esposto integralmente. Aggiornare lib/tennis-adapter.ts per usare lo stesso calcolo, leggere la provenienza dal JSON e conservarne versione e valori nelle notes unificate già disponibili, rispettando il freeze al kickoff. Usare il medesimo lato nella UI tennis se il contratto attuale della scheda diverge; modifica minima, nessun restyling.</li>
+<li>Conservare il comportamento dello storico congelato e l'idempotenza del ledger: niente UPDATE di backfill, né nuova versione del modello grezzo che duplicherà vecchie pick nel ledger. Le fixture dei vecchi test anchored devono dichiarare la provenienza, i test unknown devono dimostrare che non la si inventa.</li>
+<li>Replay offline riutilizzabile, lib/tennis-probability-audit.ts più scripts/audit-tennis-probability.ts: legge un export JSON locale e stampa JSON senza DB/rete. Accetta snapshot con match_id, snapshot_at, kickoff, p1/p2, quote, edge, best_selection, feature_snapshot, eventuale probabilità precedentemente pubblicata e risultato P1/P2. Seleziona al massimo un ultimo snapshot strettamente pre-kickoff per evento; rifiuta timestamp invalidi, probabilità invalide e duplicati temporalmente ambigui. Distingue esclusi/unknown/answered e source. Riporta numero di probabilità cambiate e scarto; Brier, log loss e calibrazione per fascia/sorgente solo quando esistono probabilità prima/dopo e risultati indipendenti. Nessuna cifra viene chiamata risultato live se deriva da fixture sintetiche. Test su snapshot post-kickoff, duplicati, input mancanti, source e metriche note.</li>
+<li>Verifica: suite Vitest, typecheck, build Next senza .env di produzione; pytest tennis pertinente. Il vecchio promotion gate è un controllo di regressione dei componenti, non prova di accuratezza del nuovo serving. Eseguire i gate locali praticabili, riportare esplicitamente dati mancanti/piattaforma. Revisione indipendente di specifica e qualità.</li>
+<li>Commit locale della tranche verificata e report HTML di esito con rollout: worker prima per scrivere provenienza, poi web; le righe legacy restano unknown e il dato storico non viene riscritto. Gate di rilascio attuale da Michele/Andrea. Nessun push, deploy, migration o messaggio.</li>
+</ol>
+<h2>Comandi di verifica</h2>
+<pre>npm test -- lib/tennis-probability.test.ts app/api/tennis/route.test.ts lib/tennis-adapter.market-anchor.test.ts lib/tennis-adapter.ledger.test.ts lib/tennis-calibration.test.ts
+.venv/Scripts/python.exe -X utf8 -m pytest tests/test_tennis_probability_source.py tests/test_tennis_market_anchor.py tests/test_tennis_model_agent_v4.py -q -p no:cacheprovider
+npx tsc --noEmit
+npm run build
+npx tsx scripts/audit-tennis-probability.ts path/to/export.json</pre>
+<p>Accettazione: test nuovi dimostrati rossi sulla baseline e verdi dopo; API/adattatore coerenti sui casi contrattuali; nessuna provenienza inferita dal solo edge; metadati persistiti senza migrazioni; raw e calibrato non confusi; storico immutato; condizioni di rollout e limiti statistici documentati. Questo lavoro corregge la coerenza, non dimostra un vantaggio predittivo.</p>
+</html>
