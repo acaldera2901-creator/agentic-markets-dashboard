@@ -2,7 +2,7 @@
 TennisSettlementAgent — resolves tennis match outcomes and settles paper bets.
 
 Resolution order per cycle:
-  1. On first run, bulk-expires all predictions older than EXPIRE_AFTER_DAYS
+  1. Every cycle, bulk-expires all predictions older than EXPIRE_AFTER_DAYS
      (old Betfair market IDs are gone — no way to resolve them).
   2. For recent predictions (< EXPIRE_AFTER_DAYS, played > MIN_ELAPSED_HOURS
      ago): Matchbook settled markets when configured, plus the ESPN day
@@ -51,7 +51,7 @@ class TennisSettlementAgent(BaseAgent):
     def __init__(self):
         super().__init__("TennisSettlementAgent")
         self._elo = EloSurfaceModel()
-        self._stale_expired = False  # run bulk-expire once per process lifetime
+        self._reconcile_cursor: str | None = None
 
     async def _main_loop(self):
         while self._running:
@@ -59,9 +59,7 @@ class TennisSettlementAgent(BaseAgent):
             await asyncio.sleep(POLL_INTERVAL)
 
     async def _settlement_cycle(self):
-        if not self._stale_expired:
-            await self._bulk_expire_stale()
-            self._stale_expired = True
+        await self._bulk_expire_stale()
 
         await self._settle_recent()
         # #SETTLE-0909 — DOPO il settlement, sempre: la riconciliazione del
@@ -136,37 +134,57 @@ class TennisSettlementAgent(BaseAgent):
         ripassare non fa danni.
         """
         try:
-            aperte = await unified_tennis_ancora_aperte()
+            page = await unified_tennis_ancora_aperte(after_id=self._reconcile_cursor)
         except Exception as e:
             self.logger.warning(f"[SETTLEMENT] riconciliazione non avviata: {e}")
             return
+        if page is None:
+            return  # read failure: retry this same cursor next cycle
+        aperte, next_cursor = page
         if not aperte:
+            self._reconcile_cursor = next_cursor
             return
 
-        async with AsyncSessionLocal() as session:
-            righe = (await session.execute(
-                select(TennisPrediction).where(TennisPrediction.match_id.in_(aperte))
-            )).scalars().all()
+        try:
+            async with AsyncSessionLocal() as session:
+                righe = (await session.execute(
+                    select(TennisPrediction).where(TennisPrediction.match_id.in_(aperte))
+                )).scalars().all()
+        except Exception as exc:
+            self.logger.warning("[SETTLEMENT] lettura fonte ponte fallita: %s", exc)
+            return
         per_match = {r.match_id: r for r in righe}
 
         chiuse = dichiarate = 0
         for match_id in aperte:
             pred = per_match.get(match_id)
-            if pred is None or pred.outcome is None:
+            if pred is None:
+                self.logger.warning("[SETTLEMENT] ponte senza fonte locale: %s", match_id)
+                continue
+            if pred.outcome is None:
                 # A monte non e' ancora chiusa: la chiudera' il ciclo normale.
                 continue
-            if pred.winner:
-                if await settle_unified_tennis(
-                    match_id, pred.winner,
-                    verification_source="espn-archive",
-                    verification_note="riconciliazione-ponte",
-                ):
-                    chiuse += 1
-            else:
-                # `expired` senza vincitore: la fonte non ha mai dato un esito.
-                # Si dichiara come buco, che e' meglio di restare invisibile.
-                if await settle_unified_tennis(match_id, None, unresolved=True):
-                    dichiarate += 1
+            try:
+                if pred.winner:
+                    if await settle_unified_tennis(
+                        match_id, pred.winner,
+                        verification_source="espn-archive",
+                        verification_note="riconciliazione-ponte",
+                    ):
+                        chiuse += 1
+                else:
+                    # `expired` senza vincitore: la fonte non ha mai dato un esito.
+                    # Si dichiara come buco, che e' meglio di restare invisibile.
+                    if await settle_unified_tennis(match_id, None, unresolved=True):
+                        dichiarate += 1
+            except Exception as exc:
+                # A bad row cannot starve later pages. It remains open and is
+                # retried when the bounded scan wraps to the beginning.
+                self.logger.warning("[SETTLEMENT] ponte fallito per %s: %s", match_id, exc)
+
+        # Cursor uses the public UUID, not source_id: missing sources and still
+        # pending upstream rows must not monopolize the first page forever.
+        self._reconcile_cursor = next_cursor
 
         if chiuse or dichiarate:
             self.logger.info(
