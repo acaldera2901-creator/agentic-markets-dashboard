@@ -5,7 +5,7 @@
 // are HIDDEN by the card — we never show a market-derived number dressed up as ours.
 // Soft markets (corners/cards/fouls) come from the soft-markets model upstream; markets with
 // no model at all are simply not shown.
-import type { ExtraMarket } from "./poisson-model";
+import { pushEdge, pushFairOdds, type ExtraMarket } from "./poisson-model";
 import type { FpFullMarket } from "./fortuneplay-match";
 
 export interface JoinedOutcome {
@@ -145,9 +145,10 @@ export function joinFpWithModel(
     const outcomes: JoinedOutcome[] = mkt.outcomes.map((o) => {
       const key = keyForOutcome(mkt.name, mkt.line, o.label, homeTeam, awayTeam);
       let modelP: number | null = null;
+      let push = 0;
       if (key) {
         const em = byKey.get(key);
-        if (em) modelP = em.p;
+        if (em) { modelP = em.p; push = em.push ?? 0; }
       }
       // derive Under for team totals when only Over is modeled
       if (modelP == null && norm(o.label).includes("under")) {
@@ -162,6 +163,10 @@ export function joinFpWithModel(
         return { label: o.label, fpOdds: o.odds, p: null, fairOdds: null, edge: null };
       }
       modeled = true;
+      // #AH-PUSH-0930: sulle linee intere il rimborso non e' una perdita.
+      if (push > 0) {
+        return { label: o.label, fpOdds: o.odds, p: round(modelP), fairOdds: pushFairOdds(modelP, push), edge: pushEdge(modelP, push, o.odds) };
+      }
       return { label: o.label, fpOdds: o.odds, p: round(modelP), fairOdds: fair(modelP), edge: round(modelP * o.odds - 1) };
     });
     return { name: mkt.name, line: mkt.line, modeled, outcomes };
