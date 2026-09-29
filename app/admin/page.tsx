@@ -373,6 +373,12 @@ export default function AdminPage() {
         >
           Segmenti
         </Link>
+        <Link
+          href="/admin/blog"
+          className="py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          Blog
+        </Link>
       </nav>
 
       <main className="px-6 py-6 max-w-7xl mx-auto space-y-6">
