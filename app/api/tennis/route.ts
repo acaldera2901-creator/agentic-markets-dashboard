@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { resolveAccessState } from "@/lib/auth";
-import { isUnlocked, showcaseRanking, currentShowcaseDay } from "@/lib/access-projection";
+import { isUnlocked, showcaseDailyRanking, showcaseAllowance, currentShowcaseDay, type ShowcaseFill } from "@/lib/access-projection";
 import type { AccessState } from "@/lib/auth";
 import { withAffiliate } from "@/lib/affiliate";
 import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
@@ -27,7 +27,7 @@ function pickedTennisOdds(m: {
 function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null; odds_p1?: number | null; odds_p2?: number | null }>(
   matches: T[],
   state: AccessState
-): Array<T & { locked: boolean; pick_of_day: boolean }> {
+): { matches: Array<T & { locked: boolean; pick_of_day: boolean }>; fill: ShowcaseFill | null } {
   // Vetrina GIORNALIERA (#FREE-BASE-DAILY-QUOTA-0831): free 3 per sport, base 7,
   // premium tutto — contate SOLO sulle partite di oggi (`scopeDay`), la stessa
   // regola della board calcio. L'ORDINE è showcaseRanking — pick sopra floor prima, poi
@@ -38,7 +38,10 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
   // Qui il floor è quello segment-aware del torneo, la stessa risoluzione usata
   // sotto per decidere se mostrare la direzione: si calcola una volta e la si
   // riusa, così ordine e contenuto della card non possono divergere.
-  const rankById = showcaseRanking(
+  //
+  // #QUOTA-NEXTDAY-0929: se oggi le partite sono meno della quota del piano, la
+  // quota si completa con le giornate successive più vicine (showcaseDailyRanking).
+  const { rank: rankById, fill } = showcaseDailyRanking(
     matches.map((m) => {
       const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
       return {
@@ -56,11 +59,13 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
         startsAt: m.scheduled,
       };
     }),
-    { scopeDay: currentShowcaseDay() }
+    currentShowcaseDay(),
+    showcaseAllowance(state)
   );
-  return matches.map((m) => {
+  const projected = matches.map((m) => {
     const rank = rankById.get(m.id) ?? Infinity;
-    const isPotD = rank === 0;
+    // Una riga presa in prestito da un giorno futuro non è il "Pick of the Day".
+    const isPotD = rank === 0 && !fill?.borrowed.has(m.id);
     const unlocked = isUnlocked(state, rank);
     if (unlocked) {
       // Confidence-surfacing gate (10y lab 2026-06-08; segment-aware floors
@@ -135,6 +140,12 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       elo_raw_p1: null, elo_raw_p2: null,
     } as unknown as T & { locked: boolean; pick_of_day: boolean };
   });
+  return { matches: projected, fill };
+}
+
+// #QUOTA-NEXTDAY-0929 — stessa forma della board calcio.
+function fillPayload(fill: ShowcaseFill | null) {
+  return fill ? { today: fill.today, borrowed: fill.borrowed.size, resumes_on: fill.resumesOn } : null;
 }
 
 type TennisPredictionInput = {
@@ -457,7 +468,8 @@ export async function GET(req: Request) {
       source: "live",
     };
     return NextResponse.json({
-      matches: projected,
+      matches: projected.matches,
+      showcase_fill: fillPayload(projected.fill),
       summary,
       status: "paper",
       computed_at: redisData.computed_at || now,
@@ -478,7 +490,8 @@ export async function GET(req: Request) {
       source: "database",
     };
     return NextResponse.json({
-      matches: projected,
+      matches: projected.matches,
+      showcase_fill: fillPayload(projected.fill),
       summary,
       status: "signal",
       computed_at: dbData.computed_at || now,

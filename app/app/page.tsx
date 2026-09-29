@@ -71,6 +71,7 @@ import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
 import { quotaRuleCopy } from "@/lib/ui/quota-rule"; // #INCLUDED-TODAY-0928
+import { quotaFillCopy, type ShowcaseFillPayload } from "@/lib/ui/quota-fill"; // #QUOTA-NEXTDAY-0929
 import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -10038,6 +10039,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [tennisLoading, setTennisLoading] = useState(true);
   const [predStale, setPredStale] = useState(false);
   const [predFallback, setPredFallback] = useState(false);
+  // #QUOTA-NEXTDAY-0929 — quota di oggi completata con giornate future (sosta).
+  const [footballFill, setFootballFill] = useState<ShowcaseFillPayload | null>(null);
+  const [tennisFill, setTennisFill] = useState<ShowcaseFillPayload | null>(null);
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [liveTennis, setLiveTennis] = useState<LiveTennisMatch[]>([]);
   const [lastUpdate, setLastUpdate] = useState("");
@@ -10436,6 +10440,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         setPredFallback(isOffSeason);
         setComputedAt(data.computed_at ?? null);
         setPredStale(data.is_stale ?? false);
+        setFootballFill(data.showcase_fill ?? null);
       } else if (resp.status === 401 || resp.status === 403) {
         setPredictions([]);
       }
@@ -10469,6 +10474,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         // di riserva (nessun live/upcoming), mostra le card bypassando la
         // finestra di trading, così non resta mai vuoto.
         setTennisIsPlaceholder(data.is_placeholder ?? false);
+        setTennisFill(data.showcase_fill ?? null);
         setTennisSummary(data.summary ?? null);
         setTennisComputedAt(data.computed_at ?? null);
       } else if (resp.status === 401 || resp.status === 403) {
@@ -11118,6 +11124,18 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             <div className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
               <span><svg width="12" height="12" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.1em" }}><use href="#g-ball" /></svg> {tNav.season_pause}</span>
             </div>
+          )}
+          {/* #QUOTA-NEXTDAY-0929 — oggi meno partite della quota (sosta): la quota
+              è stata completata con le giornate successive, e il board lo dice
+              invece di mostrare card aperte non di oggi senza spiegazione. Stesso
+              pattern del banner di pausa stagionale qui sopra: informazione, non
+              errore. */}
+          {tab === "bets" && ([["football", footballFill], ["tennis", tennisFill]] as const).map(([sport, fill]) =>
+            fill && !(sport === "football" && predFallback) ? (
+              <div key={`quota-fill-${sport}`} data-testid={`quota-fill-${sport}`} role="status" className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
+                <span>{quotaFillCopy(uiLanguage, sport, fill)}</span>
+              </div>
+            ) : null
           )}
           {/* #LIVE-STRIP-GIU-0910 — Andrea, 10/09: «la riga con i match in corso
               sono ancora in alto, spostali sotto». Non si rende piu' qui sopra:
