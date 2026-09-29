@@ -53,6 +53,7 @@ import { fetchGoalscorerByMatch } from "@/lib/goalscorer-fetch";
 import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 import { buildSoftLookup } from "@/lib/soft-lookup";
 import { dedupeByFixture } from "@/lib/dedupe-fixtures"; // #DUP-FIXTURES-0821
+import { splitUnifiedFallback } from "@/lib/board-merge"; // #NATIONS-BOARD-0929
 
 // #DUP-FIXTURES-0821 — si PRENDONO più righe di quante se ne servano.
 // Il cap era applicato PRIMA della deduplica: i 22 doppioni fra fonti
@@ -957,11 +958,9 @@ export async function GET(req: Request) {
   // niente card vuote). Il fallback resta copertura off-season per il non-WC.
   const primaryNonWc = primary_raw.filter((p) => p.league !== "WC");
   const fallback_raw = await fetchUnifiedFallback();
-  const fallbackWc = fallback_raw.filter((p) => p.league === "WC");
-  const fallbackNonWc = primaryNonWc.length === 0
-    ? fallback_raw.filter((p) => p.league !== "WC")
-    : [];
-  const usingFallback = primaryNonWc.length === 0;
+  // #NATIONS-BOARD-0929: UNL/CNL servite sempre, fuori dal cap club (lib/board-merge.ts).
+  const { fallbackWc, fallbackNations, fallbackNonWc, usingFallback } =
+    splitUnifiedFallback(primaryNonWc, fallback_raw);
   // #DUP-FIXTURES-0821 — una partita, una scheda. La deduplica precedente
   // filtrava per `match_id`, cioè la chiave che fra due fonti non collide MAI:
   // l'ingestione scrive una riga per fonte (`espn:401873989`,
@@ -976,13 +975,19 @@ export async function GET(req: Request) {
   // Lavallois" da Odds API: stessa Ligue 2, stesso calcio d'inizio al secondo,
   // stesso avversario). `competizione` attiva la regola dello slot, che le
   // fonde senza una lista di alias — solo qui, dove le due fonti convivono.
-  const predictions_raw = dedupeByFixture(
+  const clubRows = dedupeByFixture(
     [...primaryNonWc, ...fallbackNonWc, ...fallbackWc],
     { competizione: (r) => r.league },
   ).slice(0, BOARD_ROWS);
+  const predictions_raw = [
+    ...clubRows,
+    ...dedupeByFixture(fallbackNations, { competizione: (r) => r.league }),
+  ];
 
-  const computedAt = predictions_raw.length
-    ? predictions_raw.reduce<string | null>(
+  // Freshness from the same rows as before: the Python Nations rows are
+  // rewritten every cycle and would mask a stale match_predictions.
+  const computedAt = clubRows.length
+    ? clubRows.reduce<string | null>(
         (max, row) => (max === null || row.computed_at > max ? row.computed_at : max),
         null
       )
