@@ -9632,6 +9632,33 @@ button:disabled {
   box-shadow: 0 6px 22px -8px var(--am-glow);
 }
 
+/* -- #PLANS-HOOK-C-0928: prezzo in unità d'uso + nota legale in coda --
+   .price-unit sta sotto il mensile (che resta il focal: coral, 1.35rem) nello
+   stesso mono, in colore testo e non muted: è la lettura del prezzo, non un
+   meta-dato come la riga «carta o crypto» che segue. Nessun bordo, nessun
+   badge: una riga in più, non un elemento in più. */
+.price-line .price-unit {
+  display: block;
+  margin-top: 7px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.3;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+/* Il disclaimer è l'unico testo della pagina senza cornice: a sinistra, misura
+   corta, muted. Chiude la pagina senza chiedere attenzione. */
+.plans-footnote {
+  margin: 2px 0 0;
+  padding: 0 4px;
+  max-width: 64ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    HOME REDESIGN v3  ·  #HOME-V3  ·  "Live Terminal + Proof Spine" (editorial)
    Tutto scoped sotto .hv3 (root della home) per evitare collisioni nel monolite.
