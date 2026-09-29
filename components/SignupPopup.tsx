@@ -29,6 +29,18 @@
 //
 // Il trigger: un polling a 500 ms dal mount, finché compare o la sessione lo
 // esclude; poi si ferma. Nessun listener di scroll/tasti.
+//
+// #POPUP-BANNER-0929 (Andrea: «rendilo più accattivante, le scritte in bianco,
+// usa uno dei banner»). In testa alla card c'è la metà fotografica del banner
+// Codex «MODEL EDGES» (pallone fra i due pannelli MODEL / MARKET, luce lime):
+// è l'unica delle dieci grafiche la cui immagine È la promessa del pop-up —
+// modello contro mercato, l'edge che sblocchi — e il suo lime è lo stesso della
+// CTA. Ritagliata senza headline, CTA, logo e 18+ baked-in: due CTA nello
+// stesso box sarebbero un doppio messaggio. Il pallone resta intero, il testo
+// NON gli passa sopra (bianco su bianco non regge): sta sotto, su fondo scuro,
+// e l'immagine vi si spegne con un gradiente. La card è sempre scura, in
+// entrambi i temi, come la CookieBanner: i colori sono letterali nel CSS.
+// La logica qui sotto è invariata: stessa card non-modale, stessi eventi.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "@/lib/house-banners";
@@ -149,6 +161,19 @@ export function SignupPopup({ lang, audience, cardOpen, overlayOpen, lockedToday
     // quindi non è un velo e non intercetta niente (test «non blocca il board»).
     <div className="br-nudge-host" data-testid="signup-popup-host">
     <aside ref={cardRef} className="br-nudge" role="region" aria-labelledby="br-nudge-title" data-audience={audience} data-testid="signup-popup">
+      {/* Decorativa (alt vuoto, aria-hidden): il messaggio è tutto nel testo.
+          Il 2x serve ai retina, dove il pop-up vive quasi sempre; 20 KB + 60 KB. */}
+      <div className="br-nudge__art" aria-hidden="true">
+        <img
+          src="/images/hero/nudge-model-edges-420.webp"
+          srcSet="/images/hero/nudge-model-edges-420.webp 420w, /images/hero/nudge-model-edges.webp 840w"
+          sizes="420px"
+          width={840}
+          height={525}
+          alt=""
+          decoding="async"
+        />
+      </div>
       <button type="button" className="br-nudge__x" onClick={() => close("x")} aria-label={c.close}>×</button>
       <p className="br-label br-nudge__eyebrow">{base ? c.eyebrowBase : free ? c.eyebrowFree : c.eyebrowAnon}</p>
       <h2 id="br-nudge-title" ref={titleRef} tabIndex={-1} className="br-nudge__title">{base ? c.titleBase : free ? c.titleFree : c.titleAnon}</h2>
