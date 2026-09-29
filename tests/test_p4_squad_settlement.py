@@ -180,21 +180,26 @@ def test_outcome_mapping_for_unified_picks():
 # ─── ESPN league fixtures fallback (AM-API-001 'altra via') ────────────────────
 
 async def test_espn_league_fixtures_normalized_shape():
+    # Dated today: the client keeps only events inside the fixture window
+    # (#ESPN-MONTH-DATES-0929 — ESPN is now queried by whole month).
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     payload = {"events": [
-        {"id": "760415", "date": "2026-06-11T19:00Z",
+        {"id": "760415", "date": f"{today}T19:00Z",
          "status": {"type": {"state": "pre"}},
          "competitions": [{"competitors": [
              {"homeAway": "home", "team": {"displayName": "Mexico"}},
              {"homeAway": "away", "team": {"displayName": "South Africa"}},
          ]}]},
-        {"id": "760400", "date": "2026-06-01T19:00Z",
+        {"id": "760400", "date": f"{today}T12:00Z",
          "status": {"type": {"state": "post"}},  # finished -> excluded
          "competitions": [{"competitors": [
              {"homeAway": "home", "team": {"displayName": "A"}},
              {"homeAway": "away", "team": {"displayName": "B"}},
          ]}]},
     ]}
-    with patch.object(espn_soccer_client.httpx, "AsyncClient", return_value=_client_with([payload])):
+    # One payload per queried month (the window may straddle two).
+    with patch.object(espn_soccer_client.httpx, "AsyncClient", return_value=_client_with([payload, {"events": []}])):
         fx = await espn_soccer_client.get_league_fixtures("WC")
     assert len(fx) == 1
     f = fx[0]

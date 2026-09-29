@@ -198,6 +198,41 @@ async def get_squad_coverage() -> dict[str, dict]:
     return coverage
 
 
+def _months_between(start, end) -> list[str]:
+    """YYYYMM for every calendar month touched by [start, end] (dates)."""
+    months: list[str] = []
+    y, m = start.year, start.month
+    while (y, m) <= (end.year, end.month):
+        months.append(f"{y:04d}{m:02d}")
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return months
+
+
+async def _scoreboard_window(client: httpx.AsyncClient, slug: str, start, end) -> tuple[list[dict] | None, int]:
+    """(events dated within [start, end], 200) — or (None, status) on a non-200.
+
+    ESPN stopped accepting `dates=YYYYMMDD-YYYYMMDD` ranges on 2026-09-15
+    (every range -> 400 "Failed to get events endpoint."); single days and
+    whole months (`dates=YYYYMM`) still work. A 10-day window spans at most
+    two months, so this costs 1-2 requests per league — same order as before.
+    Events outside the window are dropped: we never fetch past the horizon.
+    """
+    lo, hi = start.isoformat(), end.isoformat()
+    events: list[dict] = []
+    for month in _months_between(start, end):
+        resp = await client.get(
+            f"{_SOCCER_BASE}/{slug}/scoreboard",
+            params={"dates": month},
+            headers=ESPN_HEADERS,
+        )
+        if resp.status_code != 200:
+            return None, resp.status_code
+        for ev in resp.json().get("events", []):
+            if lo <= (ev.get("date") or "")[:10] <= hi:
+                events.append(ev)
+    return events, 200
+
+
 async def get_league_fixtures(league_code: str, days_ahead: int = 14) -> list[dict]:
     """
     Upcoming fixtures for one league from the ESPN scoreboard, normalized to
@@ -214,24 +249,18 @@ async def get_league_fixtures(league_code: str, days_ahead: int = 14) -> list[di
     from datetime import datetime, timedelta, timezone
 
     today = datetime.now(timezone.utc).date()
-    date_range = f"{today.strftime('%Y%m%d')}-{(today + timedelta(days=days_ahead)).strftime('%Y%m%d')}"
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(
-                f"{_SOCCER_BASE}/{slug}/scoreboard",
-                params={"dates": date_range},
-                headers=ESPN_HEADERS,
-            )
-            if resp.status_code != 200:
-                logger.warning("ESPN soccer scoreboard %s: %s", league_code, resp.status_code)
+            events, status = await _scoreboard_window(c, slug, today, today + timedelta(days=days_ahead))
+            if events is None:
+                logger.warning("ESPN soccer scoreboard %s: %s", league_code, status)
                 return []
-            data = resp.json()
     except Exception as exc:
         logger.debug("ESPN soccer scoreboard %s error (non-fatal): %s", league_code, exc)
         return []
 
     fixtures: list[dict] = []
-    for ev in data.get("events", []):
+    for ev in events:
         state = (((ev.get("status") or {}).get("type")) or {}).get("state")
         if state != "pre":
             continue  # only future matches are fixtures
@@ -293,24 +322,18 @@ async def get_wc_venue_map(days_ahead: int = 45) -> dict[tuple[str, str], dict]:
 
     from datetime import datetime, timedelta, timezone
     today = datetime.now(timezone.utc).date()
-    date_range = f"{today.strftime('%Y%m%d')}-{(today + timedelta(days=days_ahead)).strftime('%Y%m%d')}"
     out: dict[tuple[str, str], dict] = {}
     try:
         async with httpx.AsyncClient(timeout=12.0) as c:
-            resp = await c.get(
-                f"{_SOCCER_BASE}/fifa.world/scoreboard",
-                params={"dates": date_range},
-                headers=ESPN_HEADERS,
-            )
-            if resp.status_code != 200:
-                logger.warning("ESPN WC venue map: %s", resp.status_code)
+            events, status = await _scoreboard_window(c, "fifa.world", today, today + timedelta(days=days_ahead))
+            if events is None:
+                logger.warning("ESPN WC venue map: %s", status)
                 return out
-            data = resp.json()
     except Exception as exc:
         logger.debug("ESPN WC venue map error (non-fatal): %s", exc)
         return out
 
-    for ev in data.get("events", []):
+    for ev in events:
         competition = (ev.get("competitions") or [{}])[0]
         comps = competition.get("competitors", [])
         home = next((c for c in comps if c.get("homeAway") == "home"), None)
