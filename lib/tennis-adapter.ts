@@ -7,7 +7,7 @@ import {
 } from "@/lib/publication-gate";
 import { buildTennisExplanation } from "@/lib/tennis-explanation";
 import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
-import { probabilitaMostrata } from "@/lib/tennis-calibration";
+import { resolveTennisProbability } from "@/lib/tennis-probability";
 
 // Mirror of lib/unified-adapter.ts (football) for tennis: maps the Python-fed
 // tennis_predictions table into the served unified_predictions table (sport=tennis).
@@ -34,6 +34,8 @@ type TennisPredictionRow = {
   return_form_p1: number | null;
   return_form_p2: number | null;
   feature_quality: number | null;
+  feature_snapshot?: unknown;
+  existing_notes?: string | null;
 };
 
 function computeStatus(scheduledAt: string | null): string {
@@ -47,31 +49,12 @@ function computeStatus(scheduledAt: string | null): string {
 }
 
 export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
-  const p1 = row.p1 ?? 0;
-  const p2 = row.p2 ?? 0;
-  // best_selection è il codice "P1"/"P2" (non il nome del giocatore) — il
-  // vecchio confronto col nome era sempre false e avrebbe invertito il pick
-  // una volta valorizzato il campo (#TENNIS-BS-1).
-  const pickP1 = row.best_selection ? row.best_selection === "P1" : p1 >= p2;
-  const pick = pickP1 ? row.player1 : row.player2;
-  const odds = pickP1 ? row.odds_p1 : row.odds_p2;
-
-  // #CURSE-ANCHORED-0911 — due probabilita', e servono davvero entrambe.
-  //
-  // `probGrezza` e' cio' che arriva dalla sorgente. `prob` e' cio' che l'utente
-  // legge, e per le righe MARKET-ANCHORED (`edge = null`, dove pubblichiamo il
-  // mercato devigato e non il nostro Elo) passa dalla temperatura 1.68 che cura
-  // un bias di SELEZIONE: misurato -5,9pt con z=-3,94, risanato a +1,5pt con
-  // z=+0,70 sul holdout. Le righe col nostro edge non si toccano: sono gia'
-  // calibrate, e una correzione uniforme le romperebbe (+3,5 -> +6,5pt,
-  // z=+2,33 — misurato). Il perche' sta in lib/tennis-calibration.ts.
-  //
-  // Il GREZZO resta perche' il floor di surfacing (62/64/66) e' tarato su
-  // 19.790 partite in quella scala: passargli il numero corretto cambierebbe
-  // calibrazione E selezione insieme, e nessuna delle due resterebbe
-  // misurabile. Il gate decide come prima, la scheda dice il vero.
-  const probGrezza = pickP1 ? p1 : p2;
-  const prob = probabilitaMostrata(probGrezza, row.edge != null);
+  const probability = resolveTennisProbability(row);
+  const pickP1 = probability.selection === "P1";
+  const pick = probability.selection ? (pickP1 ? row.player1 : row.player2) : null;
+  const odds = probability.selectedOdds;
+  const probGrezza = probability.selectedRawProbability ?? 0;
+  const prob = probability.selectedProbability;
 
   const hasRealMarket = odds != null && row.edge != null;
   // #TENNIS-MARKET-ANCHOR-0821: a market-anchored tennis pick serves the devigged
@@ -81,8 +64,8 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   // no-edge prose and the paper/signal label stay gated on a real computed edge
   // (the publication gate correctly forces such rows to honest 'paper').
   const hasMarketOdds = odds != null;
-  const fairOdds = prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
-  const confidence = prob > 0 ? Math.round(prob * 100) : null;
+  const fairOdds = prob != null && prob > 0 ? Math.round((1 / prob) * 100) / 100 : null;
+  const confidence = probability.confidence;
   // Confidence-surfacing floor (#FLOOR-UNIFORM-1, APPROVE Andrea 2026-06-09;
   // segment-aware #TENNIS-SEG-FLOOR-1 2026-06-11): mirror the board route —
   // below the tournament's floor there is no clear favourite, so the unified
@@ -111,7 +94,7 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
   // favourite's direction. TEXT ONLY — probabilities/pick/confidence untouched.
   // No pick → no directional prose (the why names a favourite). Covers both
   // reasons: below floor and #TENNIS-MARKET-GATE-0805 no-market.
-  const explanation = belowFloor || noMarket
+  const explanation = !pick || belowFloor || noMarket
     ? null
     : buildTennisExplanation({
         pick,
@@ -161,7 +144,27 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
     world_cup_stage: null,
     source_table: "tennis_predictions",
     source_id: row.match_id,
+    notes: probabilityNotes(row.existing_notes, probability),
   };
+}
+
+// Preserve arbitrary legacy TEXT and unrelated JSON keys. The SQL upsert
+// guards the read value, so concurrent notes changes retry on the next refresh.
+function probabilityNotes(existing: string | null | undefined, p: ReturnType<typeof resolveTennisProbability>): string {
+  let notes: Record<string, unknown> = {};
+  if (existing != null) {
+    try {
+      const parsed = JSON.parse(existing);
+      notes = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed : { legacy_text: existing };
+    } catch { notes = { legacy_text: existing }; }
+  }
+  return JSON.stringify({ ...notes, probability: {
+    version: "tennis-probability-v1", source: p.source,
+    calibration_version: p.calibrationVersion,
+    raw_p1: p.raw?.p1 ?? null, raw_p2: p.raw?.p2 ?? null,
+    published_p1: p.published?.p1 ?? null, published_p2: p.published?.p2 ?? null,
+  } });
 }
 
 // Called from the refresh cron, right after the football refresh, so a single
@@ -169,13 +172,16 @@ export function tennisPredictionToUnifiedInsert(row: TennisPredictionRow) {
 // Every candidate passes through the Safe Publication Gate v1 (same as football).
 export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
   const rows = await dbQuery<TennisPredictionRow>(
-    `SELECT match_id, tournament, surface, player1, player2, scheduled_at,
-            p1, p2, odds_p1, odds_p2, edge, best_selection, model_version,
-            serve_form_p1, serve_form_p2, return_form_p1, return_form_p2, feature_quality
-     FROM tennis_predictions
-     WHERE scheduled_at > NOW() - INTERVAL '3 hours'
-       AND winner IS NULL
-     ORDER BY scheduled_at ASC
+    `SELECT tp.match_id, tp.tournament, tp.surface, tp.player1, tp.player2, tp.scheduled_at,
+            tp.p1, tp.p2, tp.odds_p1, tp.odds_p2, tp.edge, tp.best_selection, tp.model_version,
+            tp.serve_form_p1, tp.serve_form_p2, tp.return_form_p1, tp.return_form_p2,
+            tp.feature_quality, tp.feature_snapshot, up.notes AS existing_notes
+     FROM tennis_predictions tp
+     LEFT JOIN unified_predictions up
+       ON up.source_table = 'tennis_predictions' AND up.source_id = tp.match_id
+     WHERE tp.scheduled_at > NOW() - INTERVAL '3 hours'
+       AND tp.winner IS NULL
+     ORDER BY tp.scheduled_at ASC
      LIMIT 200`
   );
 
@@ -207,11 +213,11 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
         status, signal_type, source, model_version, plan_access,
         is_historical, is_live, is_paper, is_verified, is_demo,
         published_at, starts_at, expires_at, explanation,
-        neutral_venue, team_news_summary, world_cup_stage, source_table, source_id
+        neutral_venue, team_news_summary, world_cup_stage, source_table, source_id, notes
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
         $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
-        $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34
+        $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35
       )
       ON CONFLICT (source_table, source_id) WHERE source_table IS NOT NULL DO UPDATE SET
         -- #TENNIS-BOOKMAKER-STALE-0805: bookmaker was missing from this list,
@@ -255,6 +261,8 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
                                  THEN unified_predictions.edge_percent ELSE EXCLUDED.edge_percent END,
         confidence_score  = CASE WHEN unified_predictions.starts_at <= NOW()
                                  THEN unified_predictions.confidence_score ELSE EXCLUDED.confidence_score END,
+        notes             = CASE WHEN unified_predictions.starts_at <= NOW()
+                                 THEN unified_predictions.notes ELSE EXCLUDED.notes END,
         risk_level        = CASE WHEN unified_predictions.starts_at <= NOW()
                                  THEN unified_predictions.risk_level ELSE EXCLUDED.risk_level END,
         signal_type       = CASE WHEN unified_predictions.starts_at <= NOW()
@@ -266,7 +274,8 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
         starts_at         = EXCLUDED.starts_at,
         expires_at        = EXCLUDED.expires_at,
         updated_at        = NOW()
-      WHERE unified_predictions.settled_at IS NULL`,
+      WHERE unified_predictions.settled_at IS NULL
+        AND unified_predictions.notes IS NOT DISTINCT FROM $36`,
       [
         d.external_event_id, d.sport, d.competition, d.league, d.event_name,
         d.home_team, d.away_team, d.market, d.pick, d.bookmaker,
@@ -275,6 +284,7 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
         d.is_historical, d.is_live, d.is_paper, d.is_verified, d.is_demo,
         d.published_at, d.starts_at, d.expires_at, d.explanation,
         d.neutral_venue, d.team_news_summary, d.world_cup_stage, d.source_table, d.source_id,
+        d.notes, row.existing_notes ?? null,
       ]
     );
 

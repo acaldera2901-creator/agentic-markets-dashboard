@@ -56,7 +56,9 @@ describe("tennis market-anchor served row", () => {
     row.best_selection = mkt.p1 >= mkt.p2 ? "P1" : "P2";
     row.edge = null;
 
-    const d = tennisPredictionToUnifiedInsert(row);
+    const d = tennisPredictionToUnifiedInsert({ ...row, feature_snapshot: { probability: {
+      version: "tennis-probability-v1", source: "market", raw_p1: row.p1, raw_p2: row.p2,
+    } } });
 
     const pickedProb = row.best_selection === "P1" ? row.p1 : row.p2;
 
@@ -108,7 +110,9 @@ describe("tennis market-anchor served row", () => {
     row.best_selection = "P1";
     row.edge = null;
 
-    const d = tennisPredictionToUnifiedInsert(row);
+    const d = tennisPredictionToUnifiedInsert({ ...row, feature_snapshot: { probability: {
+      version: "tennis-probability-v1", source: "market", raw_p1: row.p1, raw_p2: row.p2,
+    } } });
 
     // #CURSE-ANCHORED-0911 — il test decisivo sulla SEPARAZIONE fra il numero
     // mostrato e il numero che seleziona.

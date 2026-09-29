@@ -5,6 +5,7 @@ import { isUnlocked, showcaseDailyRanking, showcaseAllowance, currentShowcaseDay
 import type { AccessState } from "@/lib/auth";
 import { withAffiliate } from "@/lib/affiliate";
 import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
+import { resolveTennisProbability, validTennisPair, validTennisOdds, publishedTennisOdds, type TennisProbabilityInput } from "@/lib/tennis-probability";
 
 export const dynamic = "force-dynamic";
 
@@ -12,19 +13,7 @@ export const dynamic = "force-dynamic";
 // (player1/player2/surface/p1/p2/...). When locked, the sensitive numbers are
 // nulled (frontend blurs on `locked`); the matchup + tournament stay visible so
 // the public board is populated. Distinct from the football projection on purpose.
-// The price on the side this route would show as the pick (same p1>=p2 rule used
-// below), so the market gate and the displayed pick can never look at different
-// sides of the market. #TENNIS-MARKET-GATE-0805.
-function pickedTennisOdds(m: {
-  p1: number;
-  p2: number;
-  odds_p1?: number | null;
-  odds_p2?: number | null;
-}): number | null {
-  return (m.p1 >= m.p2 ? m.odds_p1 : m.odds_p2) ?? null;
-}
-
-function projectTennisMatches<T extends { id: string; p1: number; p2: number; scheduled: string; edge?: number | null; odds_p1?: number | null; odds_p2?: number | null }>(
+function projectTennisMatches<T extends TennisProbabilityInput & { id: string; p1: number; p2: number; scheduled: string; edge?: number | null; odds_p1?: number | null; odds_p2?: number | null }>(
   matches: T[],
   state: AccessState
 ): { matches: Array<T & { locked: boolean; pick_of_day: boolean }>; fill: ShowcaseFill | null } {
@@ -43,7 +32,8 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
   // quota si completa con le giornate successive più vicine (showcaseDailyRanking).
   const { rank: rankById, fill } = showcaseDailyRanking(
     matches.map((m) => {
-      const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
+      const probability = resolveTennisProbability(m);
+      const confidence = Math.round((probability.selectedRawProbability ?? 0) * 100);
       return {
         id: m.id,
         // #TENNIS-MARKET-GATE-0805: the showcase order must rank by the SAME
@@ -52,7 +42,7 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
         surfaced: tennisSurfaceDecision(
           confidence,
           (m as { tournament?: string }).tournament,
-          pickedTennisOdds(m)
+          probability.selectedOdds
         ).isPick,
         conf: Math.max(m.p1, m.p2),
         edge: typeof m.edge === "number" ? m.edge : null,
@@ -63,6 +53,11 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
     showcaseAllowance(state)
   );
   const projected = matches.map((m) => {
+    const probability = resolveTennisProbability(m);
+    // This explicit boundary strips the private snapshot before ANY spread,
+    // including locked clients. NormalizePrediction allowlists every other field.
+    const { feature_snapshot: _privateSnapshot, ...safe } = m;
+    void _privateSnapshot;
     const rank = rankById.get(m.id) ?? Infinity;
     // Una riga presa in prestito da un giorno futuro non è il "Pick of the Day".
     const isPotD = rank === 0 && !fill?.borrowed.has(m.id);
@@ -72,26 +67,31 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       // #TENNIS-SEG-FLOOR-1 2026-06-11): below the tournament's floor there is
       // no clear favourite — drop the directional pick (the card shows none).
       // Probability-neutral: p1/p2/confidence are unchanged.
-      const confidence = Math.round(Math.max(m.p1, m.p2) * 100);
+      const confidence = probability.confidence;
       // #TENNIS-MARKET-GATE-0805: no price on the picked side → no directional
       // pick. `no_market` stays distinct from `below_floor`: below floor means
       // the model has no clear favourite, no-market means we have one but no
       // price to check it against — the copy must not conflate the two.
       const { isPick, belowFloor, noMarket } = tennisSurfaceDecision(
-        confidence,
+        Math.round((probability.selectedRawProbability ?? 0) * 100),
         (m as { tournament?: string }).tournament,
-        pickedTennisOdds(m)
+        probability.selectedOdds
       );
       const isPro = state === "premium" || state === "admin_full";
       const out: Record<string, unknown> = {
-        ...m,
+        ...safe,
+        p1: probability.published?.p1 ?? null,
+        p2: probability.published?.p2 ?? null,
+        odds_p1: publishedTennisOdds(m.odds_p1),
+        odds_p2: publishedTennisOdds(m.odds_p2),
+        best_selection: isPick ? probability.selection : null,
         locked: false,
         pick_of_day: isPotD,
         confidence_score: confidence,
         below_floor: belowFloor,
         no_market: noMarket,
-        pick: isPick
-          ? (m.p1 >= m.p2 ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2)
+        pick: isPick && probability.selection
+          ? (probability.selection === "P1" ? (m as { player1?: string }).player1 : (m as { player2?: string }).player2)
           : null,
       };
       // Deep Analysis tennis (elo, serve/return form, reliability) è PRO-only
@@ -119,10 +119,10 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
     // #RESTYLING-0921: motivazione completa nella nota `lockedHeadline` in
     // app/api/predictions/route.ts. Prima qui usciva solo `p1: null`, e la card
     // scriveva «MODEL 0%»: in JS `null * 100` fa 0, non null.
-    const headProb = Math.max(m.p1, m.p2);
-    const headOdds = (m.p1 >= m.p2 ? m.odds_p1 : m.odds_p2) ?? null;
+    const headProb = probability.selectedProbability;
+    const headOdds = probability.selectedOdds;
     return {
-      ...m,
+      ...safe,
       locked: true,
       pick_of_day: isPotD,
       model_prob: Number.isFinite(headProb) ? headProb : null,
@@ -168,6 +168,7 @@ type TennisPredictionInput = {
   odds_p2?: number | null;
   edge?: number | null;
   best_selection?: string | null;
+  feature_snapshot?: unknown;
   model_version?: string;
   model?: string;
   // Elo analysis fields
@@ -231,6 +232,7 @@ type DbTennisPrediction = {
   p2_recent_matches_14d: number | null;
   h2h_p1_wins: number | null;
   h2h_p2_wins: number | null;
+  feature_snapshot?: unknown;
   model_version: string | null;
   computed_at: string | null;
 };
@@ -270,7 +272,7 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
              tp.surface_reliability_p1, tp.surface_reliability_p2, tp.feature_quality,
              tp.p1_rest_days, tp.p2_rest_days, tp.p1_recent_matches_14d, tp.p2_recent_matches_14d,
              tp.h2h_p1_wins, tp.h2h_p2_wins,
-             tp.model_version, tp.computed_at`;
+             tp.model_version, tp.computed_at, tp.feature_snapshot`;
   // Fail-closed (#020 audit): mai righe senza probabilità reali (niente 0.5
   // fabbricato); mai slot 'TBD' con tabellone non ancora fatto.
   const BASE_FILTERS = `AND tp.p1 IS NOT NULL
@@ -357,6 +359,7 @@ async function getFromDb(): Promise<{ predictions: TennisPredictionInput[]; comp
       odds_p2: row.odds_p2 == null ? null : Number(row.odds_p2),
       edge: row.edge == null ? null : Number(row.edge),
       best_selection: row.best_selection,
+      feature_snapshot: row.feature_snapshot,
       elo_p1: row.elo_p1 == null ? null : Number(row.elo_p1),
       elo_p2: row.elo_p2 == null ? null : Number(row.elo_p2),
       surface_matches_p1: row.surface_matches_p1 == null ? null : Number(row.surface_matches_p1),
@@ -398,7 +401,7 @@ function ensureUtc(s: string): string {
 // and are dropped by the callers — the old `?? 0.5` default would have shown a
 // fabricated-looking 50/50 to the customer.
 function normalizePrediction(p: TennisPredictionInput) {
-  if (p.p1 == null || p.p2 == null) return null;
+  if (p.p1 == null || p.p2 == null || !validTennisPair(p.p1, p.p2)) return null;
   return {
     id: p.match_id || p.id || "",
     player1: p.player1 || "",
@@ -411,8 +414,9 @@ function normalizePrediction(p: TennisPredictionInput) {
     scheduled: ensureUtc(p.scheduled_at || p.scheduled || ""),
     p1: p.p1,
     p2: p.p2,
-    odds_p1: p.odds_p1 ?? null,
-    odds_p2: p.odds_p2 ?? null,
+    odds_p1: validTennisOdds(p.odds_p1) ? p.odds_p1 : null,
+    odds_p2: validTennisOdds(p.odds_p2) ? p.odds_p2 : null,
+    feature_snapshot: p.feature_snapshot,
     edge: p.edge ?? null,
     best_selection: p.best_selection ?? null,
     model: p.model_version || p.model || "elo_surface_v2",

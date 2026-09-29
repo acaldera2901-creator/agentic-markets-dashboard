@@ -25,7 +25,7 @@ describe("TENNIS_ANCHORED_TAU", () => {
 describe("probabilitaMostrata: la correzione va SOLO dove serve", () => {
   it("riga market-anchored (senza edge): la probabilita' SCENDE", () => {
     const p = 0.726; // il dichiarato medio misurato sul holdout
-    const out = probabilitaMostrata(p, false);
+    const out = probabilitaMostrata(p, "market");
     expect(out).toBeLessThan(p);
     // l'ordine di grandezza e' quello misurato: -6,30pt in media
     expect(100 * (out - p)).toBeLessThan(-3);
@@ -36,13 +36,13 @@ describe("probabilitaMostrata: la correzione va SOLO dove serve", () => {
     // E' l'asserzione piu' importante del file. Il gruppo col nostro modello e'
     // calibrato (+3,5pt, entro il rumore): toccarlo lo peggiorerebbe.
     for (const p of [0.55, 0.62, 0.726, 0.81, 0.93]) {
-      expect(probabilitaMostrata(p, true)).toBe(p);
+      expect(probabilitaMostrata(p, "model")).toBe(p);
     }
   });
 
   it("i due percorsi divergono davvero (non e' un ramo morto)", () => {
     const p = 0.75;
-    expect(probabilitaMostrata(p, false)).not.toBe(probabilitaMostrata(p, true));
+    expect(probabilitaMostrata(p, "market")).not.toBe(probabilitaMostrata(p, "model"));
   });
 });
 
