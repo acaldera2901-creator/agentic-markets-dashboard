@@ -45,6 +45,12 @@ function row(
     p1, p2, odds_p1: ODDS_P1, odds_p2: ODDS_P2, edge: null, best_selection: best,
     model_version: "test", serve_form_p1: null, serve_form_p2: null,
     return_form_p1: null, return_form_p2: null, feature_quality: null,
+    // #TENNIS-PROB-0929 — dal resolver unico la temperatura non si deduce piu'
+    // da `edge: null`: serve la provenienza dichiarata dal worker. Queste righe
+    // rappresentano il caso market-anchored, quindi la dichiarano.
+    feature_snapshot: { probability: {
+      version: "tennis-probability-v1", source: "market", raw_p1: p1, raw_p2: p2,
+    } },
   };
 }
 
@@ -76,6 +82,16 @@ assert.ok(
 
   const at = tennisPredictionToUnifiedInsert(row(0.62, 0.38, "P1", "Wimbledon"));
   assert.equal(at.pick, "Alice", "hi-tier at-floor pick must be the picked player");
+}
+
+// #TENNIS-PROB-0929 — senza provenienza la riga e' `unknown` e resta sulla scala
+// grezza: e' il contratto nuovo, ed e' il motivo per cui worker e web escono in
+// due PR separate.
+{
+  const { feature_snapshot: _omit, ...legacy } = row(0.61, 0.39, "P1", "Wimbledon");
+  const d = tennisPredictionToUnifiedInsert(legacy);
+  assert.equal(d.pick, "Alice", "unknown: la pick si pubblica comunque");
+  assert.equal(d.confidence_score, 61, "unknown: nessuna temperatura, confidence = grezzo");
 }
 
 // ── LOWER tier (unknown name fails closed here): floor 64 ─────────────────────
