@@ -1,18 +1,18 @@
-// lib/signup-popup.test.ts — #SIGNUP-POPUP-D-0928
+// lib/signup-popup.test.ts — #SIGNUP-POPUP-D-0928 · #SESSION-POPUP-0929
 //
 // La cadenza del pop-up è la parte che DSA art. 25(3)(b) guarda («richiedere
 // ripetutamente una scelta già fatta»). Qui è una tabella di verità: una volta
-// per sessione, 14 giorni dopo una chiusura, mai dopo due, mai dopo «Non
-// mostrarlo più». E i numeri dei piani vengono dal codice, non dal brief.
+// per sessione (sessionStorage), di nuovo alla sessione dopo anche se chiuso,
+// mai dopo «Non mostrarlo più». E i numeri dei piani vengono dal codice.
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   EMPTY_MEMORY, EMPTY_SESSION,
-  SIGNUP_POPUP_COOLDOWN_MS, SIGNUP_POPUP_COPY, SIGNUP_POPUP_PAUSE_MS,
+  SIGNUP_POPUP_COPY,
   noteSignupPopupBlocker, markSignupPopupShown,
   perDayAmount, readSignupPopupMemory, readSignupPopupSession,
   recordSignupPopupDismissal, recordSignupPopupNever,
-  signupPopupAudience, signupPopupCooldownOk, signupPopupEligible, signupPopupEngaged,
-  signupPopupPauseOk, signupPopupPlanRows, usdLabel,
+  signupPopupAudience, signupPopupEligible,
+  signupPopupPlanRows, usdLabel,
 } from "./signup-popup";
 import { PUBLIC_PAID_PLANS } from "./commercial-plan";
 import { showcaseAllowance } from "./access-projection";
@@ -33,9 +33,11 @@ describe("a chi si rivolge", () => {
     expect(signupPopupAudience({ authChecked: true, hasSession: false, plan: undefined })).toBe("anon");
     expect(signupPopupAudience({ authChecked: true, hasSession: false, plan: null })).toBe("anon");
   });
-  it("Free sì; Base, Pro, pending_payment, unpaid, admin mai", () => {
+  // #SESSION-POPUP-0929: Base riceve l'invito all'upgrade (verso Pro).
+  it("Free e Base sì; Pro, pending_payment, unpaid, admin mai", () => {
     expect(signupPopupAudience({ authChecked: true, hasSession: true, plan: "free" })).toBe("free");
-    for (const plan of ["base", "premium", "pending_payment", "unpaid", "admin_full"]) {
+    expect(signupPopupAudience({ authChecked: true, hasSession: true, plan: "base" })).toBe("base");
+    for (const plan of ["premium", "pending_payment", "unpaid", "admin_full"]) {
       expect(signupPopupAudience({ authChecked: true, hasSession: true, plan }), plan).toBeNull();
     }
   });
@@ -44,23 +46,7 @@ describe("a chi si rivolge", () => {
   });
 });
 
-describe("cadenza (memoria per-browser)", () => {
-  it("prima visita: ok", () => {
-    expect(signupPopupCooldownOk(EMPTY_MEMORY, NOW)).toBe(true);
-  });
-  it("dopo una chiusura tace per 14 giorni, poi torna", () => {
-    const m = { dismissals: 1, lastDismissedAt: NOW, never: false };
-    expect(signupPopupCooldownOk(m, NOW + 13 * DAY)).toBe(false);
-    expect(signupPopupCooldownOk(m, NOW + SIGNUP_POPUP_COOLDOWN_MS - 1)).toBe(false);
-    expect(signupPopupCooldownOk(m, NOW + SIGNUP_POPUP_COOLDOWN_MS)).toBe(true);
-  });
-  it("dopo due chiusure non torna più, nemmeno fra un anno", () => {
-    const m = { dismissals: 2, lastDismissedAt: NOW, never: false };
-    expect(signupPopupCooldownOk(m, NOW + 365 * DAY)).toBe(false);
-  });
-  it("«Non mostrarlo più» vince su tutto, anche a zero chiusure", () => {
-    expect(signupPopupCooldownOk({ dismissals: 0, lastDismissedAt: null, never: true }, NOW)).toBe(false);
-  });
+describe("memoria per-browser: solo «Non mostrarlo più» spegne le sessioni future", () => {
   it("le chiusure si contano davvero nello storage", () => {
     expect(readSignupPopupMemory()).toEqual(EMPTY_MEMORY);
     recordSignupPopupDismissal(NOW);
@@ -87,6 +73,14 @@ describe("una volta per sessione, e mai sopra una scelta già fatta", () => {
     markSignupPopupShown();
     expect(signupPopupEligible({ ...base, session: readSignupPopupSession() })).toBe(false);
   });
+  // #SESSION-POPUP-0929: niente cooldown di 14 giorni né tetto di due chiusure.
+  it("chiuso ieri, e già due volte: una sessione nuova lo rivede", () => {
+    const memory = { dismissals: 2, lastDismissedAt: NOW - DAY, never: false };
+    expect(signupPopupEligible({ ...base, memory })).toBe(true);
+  });
+  it("«Non mostrarlo più» vince su tutto, anche a zero chiusure e in sessione nuova", () => {
+    expect(signupPopupEligible({ ...base, memory: { dismissals: 0, lastDismissedAt: null, never: true } })).toBe(false);
+  });
   it("ha visto i piani / cliccato una CTA / aperto la registrazione / visto il pannello B: no", () => {
     for (const b of ["plans", "plan_cta", "auth", "panel_b"] as const) {
       sessionStorage.clear();
@@ -102,25 +96,8 @@ describe("una volta per sessione, e mai sopra una scelta già fatta", () => {
   it("banner cookie ancora aperto: aspetta (niente due strisce insieme)", () => {
     expect(signupPopupEligible({ ...base, consentDecided: false })).toBe(false);
   });
-  it("Base/Pro (audience null): mai", () => {
+  it("Pro (audience null): mai", () => {
     expect(signupPopupEligible({ ...base, audience: null })).toBe(false);
-  });
-});
-
-describe("engagement e pausa", () => {
-  it("serve uno scroll oltre la prima schermata o una card aperta", () => {
-    expect(signupPopupEngaged({ scrollY: 0, viewportH: 800, cardOpened: false })).toBe(false);
-    expect(signupPopupEngaged({ scrollY: 799, viewportH: 800, cardOpened: false })).toBe(false);
-    expect(signupPopupEngaged({ scrollY: 800, viewportH: 800, cardOpened: false })).toBe(true);
-    expect(signupPopupEngaged({ scrollY: 0, viewportH: 800, cardOpened: true })).toBe(true);
-  });
-  it("la pausa: 3 s senza gesti, niente overlay, niente campo in focus, scheda visibile", () => {
-    const ok = { now: NOW, lastInteractionAt: NOW - SIGNUP_POPUP_PAUSE_MS, overlayOpen: false, fieldFocused: false, visible: true };
-    expect(signupPopupPauseOk(ok)).toBe(true);
-    expect(signupPopupPauseOk({ ...ok, lastInteractionAt: NOW - SIGNUP_POPUP_PAUSE_MS + 1 })).toBe(false);
-    expect(signupPopupPauseOk({ ...ok, overlayOpen: true })).toBe(false);
-    expect(signupPopupPauseOk({ ...ok, fieldFocused: true })).toBe(false);
-    expect(signupPopupPauseOk({ ...ok, visible: false })).toBe(false);
   });
 });
 
@@ -171,7 +148,11 @@ describe("copy: cinque lingue, niente pressione", () => {
       // Il separatore delle migliaia è della lingua (it/es: nessuno sotto le
       // cinque cifre; fr/ru: spazio stretto U+202F): conta che il numero ci sia.
       expect(c.proof(1234)).toMatch(/1[\s.,  ]?234/);
-      for (const k of ["ctaAnon", "ctaFree", "notNow", "compare", "never", "close", "legal", "legalLink"] as const) {
+      // #SESSION-POPUP-0929: la variante Base cita la sua quota vera e non inventa numeri.
+      expect(c.titleBase).toMatch(new RegExp(`\\b${showcaseAllowance("base")}\\b`));
+      expect(c.bodyBase(5)).toMatch(/5/);
+      expect(c.bodyBase(null)).not.toMatch(/null|undefined/);
+      for (const k of ["ctaAnon", "ctaFree", "ctaBase", "eyebrowBase", "notNow", "compare", "never", "close", "legal", "legalLink"] as const) {
         expect(c[k].length, `${l}.${k}`).toBeGreaterThan(0);
       }
     }
@@ -181,7 +162,7 @@ describe("copy: cinque lingue, niente pressione", () => {
       const c = SIGNUP_POPUP_COPY[l];
       expect(c.bodyAnon, l).not.toMatch(/edge|эдж/i);
       expect(c.bodyFree(5, 7), l).not.toMatch(/edge|эдж/i);
-      expect(c.titleAnon + c.titleFree, l).not.toMatch(/edge|эдж/i);
+      expect(c.titleAnon + c.titleFree + c.titleBase + c.bodyBase(5), l).not.toMatch(/edge|эдж/i);
     }
   });
   it("nessun countdown, «solo oggi», «più scelto» o confirmshaming", () => {

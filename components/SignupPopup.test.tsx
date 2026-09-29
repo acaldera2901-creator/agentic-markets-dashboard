@@ -1,22 +1,17 @@
-// components/SignupPopup.test.tsx — #SIGNUP-POPUP-D-0928
+// components/SignupPopup.test.tsx — #SIGNUP-POPUP-D-0928 · #SESSION-POPUP-0929
 //
-// Il trigger senza aspettare 90 secondi veri: timer finti su Date/setTimeout.
-// Si verifica ciò che il design di psicologia-persuasione fissa: 90 s di
-// tempo ATTIVO (la scheda nascosta non conta), engagement reale (uno scroll
-// oltre la prima schermata o una card aperta), una pausa di 3 s, nessun
-// overlay sopra; e che ogni chiusura scriva la memoria e il suo evento.
+// #SESSION-POPUP-0929 (direttiva Andrea, 29/09): il pop-up compare al PRIMO
+// caricamento della sessione, su qualunque tab, una volta per sessione
+// (sessionStorage), chiudibile. Resta ciò che non si somma: un overlay aperto
+// (muro auth, checkout) e il banner cookie senza risposta lo fanno aspettare.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { SignupPopup, type SignupPopupProps } from "./SignupPopup";
-import { SIGNUP_POPUP_ACTIVE_MS, SIGNUP_POPUP_PAUSE_MS, SIGNUP_POPUP_POLL_MS, readSignupPopupMemory, readSignupPopupSession, noteSignupPopupBlocker } from "@/lib/signup-popup";
+import { SIGNUP_POPUP_POLL_MS, readSignupPopupMemory, readSignupPopupSession, noteSignupPopupBlocker } from "@/lib/signup-popup";
 
 let calls: { url: string; body: Record<string, unknown> }[] = [];
 let visibility: DocumentVisibilityState = "visible";
 
-const setScroll = (y: number) => {
-  Object.defineProperty(window, "scrollY", { configurable: true, value: y });
-  window.dispatchEvent(new Event("scroll"));
-};
 const setVisibility = (v: DocumentVisibilityState) => {
   visibility = v;
   document.dispatchEvent(new Event("visibilitychange"));
@@ -26,8 +21,7 @@ const popup = () => screen.queryByTestId("signup-popup");
 
 // Avanza il tempo con l'orologio finto e lascia scattare il polling.
 const advance = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
-const ARM = SIGNUP_POPUP_ACTIVE_MS;
-const PAUSE = SIGNUP_POPUP_PAUSE_MS + SIGNUP_POPUP_POLL_MS;
+const TICK = SIGNUP_POPUP_POLL_MS;
 
 const baseProps: SignupPopupProps = {
   lang: "it", audience: "anon", cardOpen: false, overlayOpen: false,
@@ -58,32 +52,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("trigger: 90 s attivi + engagement + pausa", () => {
-  it("non compare prima dei 90 secondi, anche con engagement e pausa", () => {
+describe("trigger: primo caricamento della sessione", () => {
+  it("compare subito al caricamento, senza scroll né attesa — e lo traccia", () => {
     render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(ARM - 5_000); // engagement e pausa ci sono da un pezzo: manca solo il tempo
-    expect(popup()).toBeNull();
-    advance(5_000 + SIGNUP_POPUP_POLL_MS);
-    expect(popup()).not.toBeNull();
-  });
-
-  it("senza scroll oltre la prima schermata né card aperta non compare mai", () => {
-    render(<SignupPopup {...baseProps} />);
-    setScroll(300);
-    advance(ARM + 60_000);
-    expect(popup()).toBeNull();
-    expect(tracked("signup_popup_shown")).toHaveLength(0);
-  });
-
-  it("compare dopo 90 s attivi, uno scroll oltre la schermata e 3 s di pausa — e lo traccia", () => {
-    render(<SignupPopup {...baseProps} />);
-    advance(ARM);
-    expect(popup()).toBeNull(); // armato, ma non ancora ingaggiato
-    setScroll(900);
-    advance(1_000);
-    expect(popup()).toBeNull(); // pausa non ancora compiuta
-    advance(PAUSE);
+    advance(TICK);
     expect(popup()).not.toBeNull();
     const ev = tracked("signup_popup_shown");
     expect(ev).toHaveLength(1);
@@ -91,136 +63,79 @@ describe("trigger: 90 s attivi + engagement + pausa", () => {
     expect(readSignupPopupSession().shown).toBe(true);
   });
 
-  it("una card aperta vale come engagement; finché resta aperta, aspetta", () => {
-    const { rerender } = render(<SignupPopup {...baseProps} />);
-    advance(ARM);
-    rerender(<SignupPopup {...baseProps} cardOpen />);
-    advance(PAUSE + 5_000);
-    expect(popup()).toBeNull();
-    rerender(<SignupPopup {...baseProps} cardOpen={false} />);
-    advance(PAUSE);
-    expect(popup()).not.toBeNull();
-  });
-
-  it("la scheda nascosta ferma l'orologio: il tempo passato altrove non conta", () => {
-    render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(30_000);
-    setVisibility("hidden");
-    advance(10 * 60_000); // dieci minuti su un'altra scheda
-    setVisibility("visible");
-    advance(30_000);
-    advance(PAUSE);
-    expect(popup()).toBeNull(); // solo 60 s attivi
-    advance(30_000 + PAUSE);
-    expect(popup()).not.toBeNull(); // 90 s attivi compiuti
-  });
-
-  it("un gesto (scroll, tasto, tocco) riporta la pausa a zero", () => {
-    render(<SignupPopup {...baseProps} />);
-    advance(ARM - 1_000);
-    setScroll(900); // a 89 s: da qui parte la pausa
-    advance(2_000); // 91 s: armato, ma la pausa ha solo 2 s
-    expect(popup()).toBeNull();
-    fireEvent.keyDown(window, { key: "ArrowDown" }); // pausa da capo
-    advance(2_000);
-    expect(popup()).toBeNull();
-    advance(PAUSE);
-    expect(popup()).not.toBeNull();
-  });
-
-  it("con un overlay aperto (auth, checkout) non si somma", () => {
+  it("con un overlay aperto (muro auth, checkout) non si somma; chiuso quello, compare", () => {
     const { rerender } = render(<SignupPopup {...baseProps} overlayOpen />);
-    setScroll(900);
-    advance(ARM + PAUSE + 5_000);
+    advance(TICK * 10);
     expect(popup()).toBeNull();
     rerender(<SignupPopup {...baseProps} overlayOpen={false} />);
-    advance(PAUSE);
-    expect(popup()).not.toBeNull();
-  });
-
-  it("con un campo in focus aspetta che lo lasci", () => {
-    render(
-      <>
-        <input aria-label="cerca" />
-        <SignupPopup {...baseProps} />
-      </>,
-    );
-    setScroll(900);
-    screen.getByLabelText("cerca").focus();
-    advance(ARM + PAUSE + 2_000);
-    expect(popup()).toBeNull();
-    (document.activeElement as HTMLElement).blur();
-    advance(PAUSE);
+    advance(TICK);
     expect(popup()).not.toBeNull();
   });
 
   it("finché il banner cookie non ha risposta, aspetta; quando arriva, compare", () => {
     localStorage.removeItem("gdpr_consent");
     render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(ARM + PAUSE + 2_000);
+    advance(TICK * 10);
     expect(popup()).toBeNull();
     localStorage.setItem("gdpr_consent", "accepted");
-    advance(PAUSE);
+    advance(TICK);
+    expect(popup()).not.toBeNull();
+  });
+
+  it("aperta in una scheda nascosta: compare quando la scheda torna visibile", () => {
+    visibility = "hidden";
+    render(<SignupPopup {...baseProps} />);
+    advance(TICK * 10);
+    expect(popup()).toBeNull();
+    setVisibility("visible");
+    advance(TICK);
     expect(popup()).not.toBeNull();
   });
 });
 
-describe("a chi non compare", () => {
-  it("audience null (Base/Pro, sessione non verificata): nessun timer, niente", () => {
+describe("a chi non compare, e quando non ricompare", () => {
+  it("audience null (Pro, sessione non verificata): niente", () => {
     render(<SignupPopup {...baseProps} audience={null} />);
-    setScroll(900);
-    advance(ARM + PAUSE + 60_000);
+    advance(TICK * 10);
     expect(popup()).toBeNull();
   });
 
   it("se in sessione ha già visto i piani (o cliccato una CTA, o aperto la registrazione): no", () => {
     noteSignupPopupBlocker("plans");
     render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(ARM + PAUSE + 5_000);
+    advance(TICK * 10);
     expect(popup()).toBeNull();
   });
 
-  it("un blocker arrivato DURANTE l'attesa vale lo stesso", () => {
+  it("già mostrato in questa sessione: cambiare tab (nuovo mount) non lo ripropone", () => {
+    const first = render(<SignupPopup {...baseProps} />);
+    advance(TICK);
+    fireEvent.click(screen.getByRole("button", { name: "Non ora" }));
+    first.unmount();
     render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(ARM - 5_000);
-    noteSignupPopupBlocker("auth");
-    advance(5_000 + PAUSE + 5_000);
+    advance(TICK * 10);
     expect(popup()).toBeNull();
+    expect(tracked("signup_popup_shown")).toHaveLength(1);
   });
 
-  it("già chiuso 3 giorni fa: tace (14 giorni di cooldown)", () => {
-    localStorage.setItem("br_signup_popup", JSON.stringify({ dismissals: 1, lastDismissedAt: Date.now() - 3 * 86_400_000, never: false }));
+  it("sessione nuova (sessionStorage vuoto): torna anche se chiuso due volte ieri", () => {
+    localStorage.setItem("br_signup_popup", JSON.stringify({ dismissals: 2, lastDismissedAt: Date.now() - 86_400_000, never: false }));
     render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(ARM + PAUSE + 5_000);
-    expect(popup()).toBeNull();
-  });
-
-  it("chiuso 15 giorni fa: torna, una volta", () => {
-    localStorage.setItem("br_signup_popup", JSON.stringify({ dismissals: 1, lastDismissedAt: Date.now() - 15 * 86_400_000, never: false }));
-    render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(ARM + PAUSE);
+    advance(TICK);
     expect(popup()).not.toBeNull();
   });
 
-  it("chiuso due volte: mai più", () => {
-    localStorage.setItem("br_signup_popup", JSON.stringify({ dismissals: 2, lastDismissedAt: Date.now() - 400 * 86_400_000, never: false }));
+  it("«Non mostrarlo più» in passato: non torna nemmeno in una sessione nuova", () => {
+    localStorage.setItem("br_signup_popup", JSON.stringify({ dismissals: 0, lastDismissedAt: null, never: true }));
     render(<SignupPopup {...baseProps} />);
-    setScroll(900);
-    advance(ARM + PAUSE + 5_000);
+    advance(TICK * 10);
     expect(popup()).toBeNull();
   });
 });
 
 const show = (props: Partial<SignupPopupProps> = {}) => {
   const r = render(<SignupPopup {...baseProps} {...props} />);
-  setScroll(900);
-  advance(ARM + PAUSE);
+  advance(TICK);
   expect(popup()).not.toBeNull();
   return r;
 };
@@ -269,8 +184,7 @@ describe("chiusura: memoria, evento, focus", () => {
   it("non riappare nella stessa sessione dopo una chiusura", () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Non ora" }));
-    setScroll(1200);
-    advance(ARM + PAUSE + 60_000);
+    advance(TICK * 20);
     expect(popup()).toBeNull();
     expect(tracked("signup_popup_shown")).toHaveLength(1);
   });
@@ -304,6 +218,20 @@ describe("le CTA", () => {
     fireEvent.click(screen.getByRole("button", { name: "Vedi Base" }));
     expect(onComparePlans).toHaveBeenCalledTimes(1);
     expect(tracked("signup_popup_shown")[0].body.meta).toEqual({ audience: "free" });
+  });
+
+  // #SESSION-POPUP-0929: Base riceve l'invito all'upgrade verso Pro.
+  it("Base: invito all'upgrade, la primaria è «Vedi Pro» e porta ai piani", () => {
+    const onComparePlans = vi.fn();
+    const onCreateProfile = vi.fn();
+    show({ audience: "base", onComparePlans, onCreateProfile, lockedToday: 9 });
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Le tue 7 letture per sport di oggi sono aperte");
+    expect(screen.getByText(/Il board ne ha altre 9 oggi/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Vedi Pro" }));
+    expect(onComparePlans).toHaveBeenCalledTimes(1);
+    expect(onCreateProfile).not.toHaveBeenCalled();
+    expect(tracked("signup_popup_shown")[0].body.meta).toEqual({ audience: "base" });
+    expect(tracked("signup_popup_cta_click")[0].body.meta).toEqual({ audience: "base", cta: "primary" });
   });
 });
 
