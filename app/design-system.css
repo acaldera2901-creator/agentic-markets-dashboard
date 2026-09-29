@@ -3932,3 +3932,226 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   }
   .am-topbar-in .brand-logo-dark { height: 26px !important; }
 }
+
+/* ── Pop-up d'iscrizione differito (#SIGNUP-POPUP-D-0928 · centro: #SIGNUP-POPUP-CENTER-0929)
+   components/SignupPopup.tsx. Al centro della porzione visibile (richiesta di
+   Andrea sull'anteprima), ma NON modale: l'host che serve a centrare ha
+   pointer-events none — nessun velo, nessun blocco dello scroll, il board
+   sotto resta cliccabile; un click fuori chiude la card e arriva al board.
+   Senza velo la separazione la fa la card stessa: bordo un passo più chiaro
+   e un'ombra lunga, non un oscuramento della pagina. Card ~420px; su telefono
+   16px di gutter e mai oltre l'80% dell'area visibile (scrolla dentro).
+   Un solo colore oltre al testo: il lime della CTA primaria. I prezzi sono
+   numeri → JetBrains Mono 700, come ogni numero del design system; il mensile
+   domina per dimensione e peso, l'equivalente al giorno gli sta sotto, più
+   piccolo e muted — mai al suo posto. «Non ora» condivide riga, altezza e peso
+   con la CTA: la griglia 1fr 1fr è la garanzia strutturale, non un'intenzione.
+   z-index 70: sopra la bottom bar (60), sotto le modali (auth 80). */
+.br-nudge-host {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  pointer-events: none; /* è un centratore, non un velo */
+}
+.br-nudge {
+  position: relative;
+  pointer-events: auto;
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--am-s-5) var(--am-s-5) var(--am-s-4);
+  background: var(--am-panel);
+  border: 1px solid var(--am-line-2);
+  border-radius: var(--am-r-card);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    var(--am-shadow-card),
+    0 40px 80px -24px rgba(0, 0, 0, 0.85);
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+}
+/* Un solo momento di motion: si posa al centro (scala 0.98 → 1, 220 ms) e poi
+   sta fermo. Niente pulse, niente loop. Chi chiede meno movimento lo vede
+   comparire. */
+@media (prefers-reduced-motion: no-preference) {
+  .br-nudge { animation: br-nudge-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  @keyframes br-nudge-in {
+    from { opacity: 0; transform: scale(0.98) translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+.br-nudge__x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: var(--am-r-ctl);
+  color: var(--am-muted);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.br-nudge__x:hover { color: var(--am-text); background: var(--am-hi); }
+.br-nudge__x:focus-visible,
+.br-nudge__links button:focus-visible,
+.br-nudge__legal a:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.br-nudge__eyebrow { margin: 0; padding-right: 44px; }
+.br-nudge__title {
+  margin: 6px 0 0;
+  padding-right: 36px;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.012em;
+  line-height: 1.15;
+  color: var(--am-text);
+}
+.br-nudge__title:focus { outline: none; }
+.br-nudge__body {
+  margin: 8px 0 0;
+  max-width: 44ch;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--am-muted);
+}
+/* La mini tabella dei tre piani: celle su fondo recessed separate da 1px di
+   linea (gap sul colore di bordo), nessun bordo colorato, nessun badge. */
+.br-nudge__plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: var(--am-s-4) 0 0;
+  padding: 0;
+  background: var(--am-line);
+  border: 1px solid var(--am-line);
+  border-radius: var(--am-r-ctl);
+  overflow: hidden;
+}
+.br-nudge__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 9px 11px;
+  background: var(--am-inset);
+}
+.br-nudge__plan dt,
+.br-nudge__plan dd { margin: 0; }
+.br-nudge__plan-k {
+  font-family: var(--am-font-ui);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.br-nudge__plan-p {
+  font-family: var(--am-font-num);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--am-text);
+}
+.br-nudge__plan-p small {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--am-muted-2);
+}
+.br-nudge__plan-u {
+  font-family: var(--am-font-num);
+  font-size: 10.5px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--am-muted-2);
+}
+.br-nudge__plan-a {
+  margin-top: 2px !important;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--am-muted);
+}
+/* Il Pro non ha tetto: la sua riga è in colore testo, le altre muted. Valore,
+   non tinta: regge in scala di grigi. */
+.br-nudge__plan[data-plan="pro"] .br-nudge__plan-a { color: var(--am-text); }
+.br-nudge__proof {
+  margin: 10px 0 0;
+  font-family: var(--am-font-num);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--am-muted-2);
+}
+.br-nudge__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--am-s-2);
+  margin-top: var(--am-s-4);
+}
+.br-nudge__actions .br-cta {
+  justify-content: center;
+  min-height: 40px;
+  font-size: 13.5px;
+  white-space: normal;
+  text-align: center;
+}
+.br-nudge__actions .br-cta[data-tone="quiet"] {
+  color: var(--am-text);
+  background: transparent;
+  border-color: var(--am-line-2);
+  font-weight: 700;
+}
+.br-nudge__actions .br-cta[data-tone="quiet"]:hover { background: var(--am-hi); }
+.br-nudge__links {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--am-s-3);
+  margin-top: var(--am-s-3);
+  font-size: 12.5px;
+}
+.br-nudge__links button {
+  padding: 4px 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: var(--am-royal-t);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.br-nudge__links button[data-kind="never"] { color: var(--am-muted); }
+.br-nudge__links button:hover { color: var(--am-text); }
+.br-nudge__legal {
+  margin: var(--am-s-3) 0 0;
+  font-family: var(--am-font-num);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--am-muted-2);
+}
+.br-nudge__legal a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.br-nudge__legal-tail { white-space: nowrap; }
+/* Fino a 900px la bottom bar c'è (globals.css): l'host finisce dove comincia
+   lei, così il centro è quello della porzione davvero visibile. */
+@media (max-width: 900px) {
+  .br-nudge-host { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+}
+/* Telefono: card centrata con 16px di gutter, mai oltre l'80% dell'area
+   visibile — sotto e sopra resta board, non è uno schermo intero. */
+@media (max-width: 640px) {
+  .br-nudge {
+    max-height: 80%;
+    padding: var(--am-s-4) var(--am-s-4) var(--am-s-3);
+  }
+  .br-nudge__title { font-size: 18px; }
+  .br-nudge__plan { padding: 9px 8px 10px; }
+  .br-nudge__plan-p { font-size: 16px; }
+}
