@@ -396,7 +396,14 @@ export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
     // kickoff, so a re-sync of a row whose match already started is dropped by
     // Postgres — that is the integrity guarantee, not an error. Fully fail-soft:
     // a ledger failure must NEVER block serving unified_predictions.
-    try {
+    // #LEDGER-PRIMA-PICK-0930 (audit agentic_codex 29/09): la fixture entra qui
+    // appena e' in calendario, di solito PRIMA delle quote, quindi con pick NULL;
+    // e ON CONFLICT DO NOTHING congelava per sempre quel primo record, anche quando
+    // due giri dopo usciva la pick vera. Misurato: 1.350 righe club su 1.976 con
+    // pick NULL, 1.206 delle quali hanno la pick valorizzata in unified. Il record
+    // immutabile ora nasce alla PRIMA PICK PUBBLICATA (resta pre-kickoff per il
+    // CHECK), e le righe gia' scritte non si toccano.
+    if (d.pick != null) try {
       await dbQuery(
         `INSERT INTO pick_ledger (
           source_table, source_id, model_version, sport, league, competition,

@@ -27,22 +27,84 @@ function unescape(str: string): string {
     .replace(/\\'/g, "'");
 }
 
-function avg(arr: Record<string, string>[], key: string): number {
+function num(v: unknown): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? "0"));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function avg(arr: Record<string, unknown>[], key: string): number {
   if (!arr.length) return 0;
-  const sum = arr.reduce((s, m) => s + parseFloat(m[key] ?? "0"), 0);
+  const sum = arr.reduce((s, m) => s + num(m[key]), 0);
   return Math.round((sum / arr.length) * 100) / 100;
 }
 
 function ppda(arr: Record<string, unknown>[]): number {
   if (!arr.length) return 0;
   const total = arr.reduce((s, m) => {
-    const p = m.ppda as Record<string, string> | null;
+    const p = m.ppda as Record<string, unknown> | null;
     if (!p) return s;
-    const att = parseFloat(p.att ?? "0");
-    const def = parseFloat(p.def ?? "1");
+    const att = num(p.att);
+    const def = p.def == null ? 1 : num(p.def);
     return s + (def > 0 ? att / def : 0);
   }, 0);
   return Math.round((total / arr.length) * 100) / 100;
+}
+
+type UnderstatTeams = Record<
+  string,
+  { id: string; title: string; history: Record<string, unknown>[] }
+>;
+
+// #XG-PARSER-0930 (audit agentic_codex 29/09): due guasti sovrapposti.
+// 1) Understat non incorpora piu' `var teamsData = JSON.parse('...')` nella
+//    pagina: la carica via XHR da `getLeagueData/<lega>/<stagione>` (visto in
+//    js/league.min.js). La regex non trovava niente ⇒ `{}` ⇒ cache xG vuota
+//    (count 0 in prod al 29/09).
+// 2) Lo storico squadra dice casa/trasferta con `h_a: "h"|"a"`, non con
+//    `isHome`. Il filtro su `isHome === "1"` restava vuoto anche quando i dati
+//    arrivavano: xg_home/xg_away = 0 ⇒ leagueXGAverages = null ⇒ il blend xG del
+//    modello (Football V4) non e' mai partito sul servito.
+function isHomeRow(h: Record<string, unknown>): boolean | null {
+  if (h.h_a === "h") return true;
+  if (h.h_a === "a") return false;
+  if (h.isHome === "1" || h.isHome === true) return true;
+  if (h.isHome === "0" || h.isHome === false) return false;
+  return null;
+}
+
+/** Dai dati squadra di Understat alle cifre xG per squadra. Pura: testabile sui payload. */
+export function parseUnderstatTeams(teams: UnderstatTeams): Record<string, TeamXG> {
+  const result: Record<string, TeamXG> = {};
+  for (const team of Object.values(teams)) {
+    const history = team.history ?? [];
+    const home = history.filter((h) => isHomeRow(h) === true);
+    const away = history.filter((h) => isHomeRow(h) === false);
+    const recent10 = history.slice(-10);
+
+    result[team.title] = {
+      name: team.title,
+      xg_home: avg(home.slice(-10), "xG"),
+      xga_home: avg(home.slice(-10), "xGA"),
+      xg_away: avg(away.slice(-10), "xG"),
+      xga_away: avg(away.slice(-10), "xGA"),
+      npxg_home: avg(home.slice(-10), "npxG"),
+      npxg_away: avg(away.slice(-10), "npxG"),
+      ppda: ppda(recent10),
+      form: history
+        .slice(-5)
+        .map((h) => (h.result === "w" ? "W" : h.result === "d" ? "D" : "L"))
+        .join(""),
+      xpts: avg(history.slice(-10), "xpts"),
+    };
+  }
+  return result;
+}
+
+/** Vecchio formato: dati incorporati nella pagina. Tenuto come ripiego. */
+export function extractTeamsFromHtml(html: string): UnderstatTeams | null {
+  const match = html.match(/var teamsData\s*=\s*JSON\.parse\('([^']+)'\)/);
+  if (!match) return null;
+  return JSON.parse(unescape(match[1])) as UnderstatTeams;
 }
 
 export async function fetchLeagueXG(
@@ -57,47 +119,39 @@ export async function fetchLeagueXG(
         ? new Date().getFullYear() - 1
         : new Date().getFullYear();
 
-    const url = `https://understat.com/league/${leagueName}/${year}`;
-    const html = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    }).then((r) => r.text());
-
-    const match = html.match(/var teamsData\s*=\s*JSON\.parse\('([^']+)'\)/);
-    if (!match) return {};
-
-    const teams = JSON.parse(unescape(match[1])) as Record<
-      string,
-      { id: string; title: string; history: Record<string, string>[] }
-    >;
-
-    const result: Record<string, TeamXG> = {};
-
-    for (const team of Object.values(teams)) {
-      const history = team.history ?? [];
-      const home = history.filter((h) => h.isHome === "1");
-      const away = history.filter((h) => h.isHome === "0");
-      const recent10 = history.slice(-10) as Record<string, unknown>[];
-
-      result[team.title] = {
-        name: team.title,
-        xg_home: avg(home.slice(-10), "xG"),
-        xga_home: avg(home.slice(-10), "xGA"),
-        xg_away: avg(away.slice(-10), "xG"),
-        xga_away: avg(away.slice(-10), "xGA"),
-        npxg_home: avg(home.slice(-10), "npxG"),
-        npxg_away: avg(away.slice(-10), "npxG"),
-        ppda: ppda(recent10),
-        form: history
-          .slice(-5)
-          .map((h) => (h.result === "w" ? "W" : h.result === "d" ? "D" : "L"))
-          .join(""),
-        xpts: avg(history.slice(-10), "xpts"),
-      };
+    const page = `https://understat.com/league/${leagueName}/${year}`;
+    let teams: UnderstatTeams | null = null;
+    try {
+      const r = await fetch(`https://understat.com/getLeagueData/${leagueName}/${year}`, {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "X-Requested-With": "XMLHttpRequest",
+          Referer: page,
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (r.ok) {
+        const data = (await r.json()) as { teams?: UnderstatTeams };
+        if (data?.teams && Object.keys(data.teams).length) teams = data.teams;
+      }
+    } catch (e) {
+      console.warn(`[understat] ${league} getLeagueData:`, e);
     }
-
-    return result;
+    if (!teams) {
+      const html = await fetch(page, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000),
+      }).then((r) => r.text());
+      teams = extractTeamsFromHtml(html);
+    }
+    if (!teams) {
+      // Non e' "nessun dato": e' la fonte che non risponde nel formato atteso.
+      console.warn(`[understat] ${league}: nessun blocco squadre (formato cambiato?)`);
+      return {};
+    }
+    return parseUnderstatTeams(teams);
   } catch (e) {
     console.warn(`[understat] ${league}:`, e);
     return {};

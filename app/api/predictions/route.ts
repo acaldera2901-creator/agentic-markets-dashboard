@@ -311,6 +311,9 @@ async function getXGForLeague(league: string): Promise<XGMap> {
   return await refreshXGCache(league);
 }
 
+// #XG-PARSER-0930: spento finche' non validato (vedi il commento su xgBaseline).
+const FOOTBALL_XG_MODEL_BLEND = false;
+
 // ─── Main computation ────────────────────────────────────────────────────────
 
 interface EnrichmentPayload {
@@ -467,7 +470,13 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
     const leagueXG = xgMap[code] ?? {};
     // Football V4: xG enters the model, not just the enrichment display. Teams
     // or leagues without Understat coverage fall back to pure-goals ratings.
-    const xgBaseline = leagueXGAverages(leagueXG);
+    // #XG-PARSER-0930: il parser non ha mai consegnato xG casa/trasferta al
+    // servito (vedi lib/understat.ts), quindi il modello che gira da giugno e'
+    // SOLO gol. Riparato il parser, il blend resta spento finche' un walk-forward
+    // sulla pipeline intera non lo valida contro il servito di oggi: accenderlo
+    // cambierebbe le probabilita' pubblicate (w=0,5 sui rating). L'xG torna
+    // subito nell'enrichment (display), non nel numero.
+    const xgBaseline = FOOTBALL_XG_MODEL_BLEND ? leagueXGAverages(leagueXG) : null;
     const apiFixtures = apifixMap[code] ?? [];
 
     const fixtures = fixtureResults.find((f) => f.code === code)?.fixtures ?? [];
@@ -728,11 +737,27 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
          ON CONFLICT (match_id) DO UPDATE SET
            p_home=EXCLUDED.p_home, p_draw=EXCLUDED.p_draw, p_away=EXCLUDED.p_away,
            lambda_home=EXCLUDED.lambda_home, lambda_away=EXCLUDED.lambda_away,
-           odds_home=COALESCE(EXCLUDED.odds_home, match_predictions.odds_home),
-           odds_draw=COALESCE(EXCLUDED.odds_draw, match_predictions.odds_draw),
-           odds_away=COALESCE(EXCLUDED.odds_away, match_predictions.odds_away),
-           edge=COALESCE(EXCLUDED.edge, match_predictions.edge),
-           best_selection=COALESCE(EXCLUDED.best_selection, match_predictions.best_selection),
+           -- #RECORD-ATOMICO-0930 (audit agentic_codex 29/09): quote, edge e pick
+           -- si scrivono INSIEME alla tripla, dello stesso giro. Prima un COALESCE
+           -- teneva quelli del giro precedente quando il nuovo non aveva prezzo:
+           -- ma senza prezzo la tripla NON e' blendata (blendWithMarket = identita'),
+           -- quindi la riga univa probabilita' del solo modello con pick, quota ed
+           -- edge calcolati su un'altra distribuzione — riprodotto in SQL: tripla
+           -- con AWAY al 50% e pick HOME @1,50 +4% rimasto dal giro prima, mentre
+           -- prediction_log dello stesso giro registra quote nulle. Stesso caso per
+           -- una riga tornata non affidabile: best_selection null veniva ignorato.
+           odds_home=EXCLUDED.odds_home,
+           odds_draw=EXCLUDED.odds_draw,
+           odds_away=EXCLUDED.odds_away,
+           edge=EXCLUDED.edge,
+           best_selection=EXCLUDED.best_selection,
+           -- #KICKOFF-UPDATE-0930: finalKickoff entrava nell'INSERT e nel log ma
+           -- non qui, quindi un anticipo/rinvio restava al primo orario visto — e
+           -- l'adapter lo copia in unified.starts_at (freeze, scadenza, settlement).
+           -- Misurato 29/09: Argentinos–Tigre e Huracan–Aldosivi con orari diversi
+           -- fra match_predictions e prediction_log. Non si sovrascrive un orario
+           -- con il segnaposto di mezzanotte non confermato ($19 = time_confirmed).
+           kickoff=CASE WHEN $19::boolean THEN EXCLUDED.kickoff ELSE match_predictions.kickoff END,
            model_matches=EXCLUDED.model_matches, enrichment=EXCLUDED.enrichment,
            computed_at=NOW()`,
         [
@@ -741,6 +766,7 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
           odds?.oddsHome ?? null, odds?.oddsDraw ?? null, odds?.oddsAway ?? null,
           edge, bestSel, model.matchCount,
           JSON.stringify(enrichment),
+          enrichment.time_confirmed === true,
         ]
       );
       stored.push(code);
@@ -999,6 +1025,20 @@ export async function GET(req: Request) {
   // serves real upcoming fixtures (e.g. World Cup), so the banner would lie.
   const isOffSeason = predictions_raw.length === 0;
   const isStale = !isOffSeason && !usingFallback && ageMinutes > 60;
+  // #FRESHNESS-ROWS-0930 (audit agentic_codex 29/09): `computed_at` e' il MAX,
+  // quindi una sola lega appena ricalcolata copre tutte le altre (misurato 29/09:
+  // 38 righe su 78 piu' vecchie di 2h con il board "fresco"). Il banner resta
+  // com'e' — con il MIN diventerebbe rosso a ogni lega fuori giro — ma la
+  // risposta dice ora anche la riga piu' vecchia e quante superano le 2h.
+  const oldestComputedAt = clubRows.length
+    ? clubRows.reduce<string | null>(
+        (min, row) => (min === null || row.computed_at < min ? row.computed_at : min),
+        null
+      )
+    : null;
+  const staleRows = clubRows.filter(
+    (row) => Date.now() - new Date(row.computed_at).getTime() > 2 * 3_600_000
+  ).length;
 
   // Mercati marcatore (B-serve): mappa match_id -> mercati. Fail-soft (vedi
   // fetchGoalscorerMarkets): vuota finche` i dati player non sono live.
@@ -1098,6 +1138,8 @@ export async function GET(req: Request) {
     {
       predictions,
       computed_at: computedAt,
+      oldest_computed_at: oldestComputedAt,
+      stale_rows: staleRows,
       count: predictions.length,
       is_stale: isStale,
       is_off_season: isOffSeason,
