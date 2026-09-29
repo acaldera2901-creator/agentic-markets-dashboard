@@ -153,6 +153,26 @@ describe("PredictionCard", () => {
     expect(screen.getByRole("article")).not.toHaveAttribute("data-included");
     expect(screen.queryByTestId("card-included")).toBeNull();
   });
+  // #QUOTA-TZ-FIX-0929 — la card presa in prestito da una giornata futura
+  // (#QUOTA-NEXTDAY-0929) è nella quota di oggi ma non si gioca oggi.
+  it("included + quotaBorrowed: «In your daily quota», non «Included today», in 5 lingue", () => {
+    const { unmount } = render(<PredictionCard data={{ ...data, quotaBorrowed: true }} href="/p/1" included />);
+    expect(screen.getByRole("article")).toHaveAttribute("data-included", "true");
+    expect(screen.getByTestId("card-included")).toHaveTextContent("In your daily quota");
+    expect(screen.getByTestId("card-included")).toHaveAttribute("data-borrowed", "true");
+    expect(screen.getByTestId("card-included").textContent).not.toMatch(/today/i);
+    unmount();
+    const labels = { it: "Nella quota di oggi", es: "En tu cuota de hoy", fr: "Dans votre quota du jour", ru: "В квоте на сегодня" } as const;
+    for (const [lang, label] of Object.entries(labels)) {
+      const r = render(<PredictionCard data={{ ...data, quotaBorrowed: true }} href="/p/1" included lang={lang as "it"} />);
+      expect(screen.getByTestId("card-included")).toHaveTextContent(label);
+      r.unmount();
+    }
+    // La card davvero di oggi resta com'era.
+    render(<PredictionCard data={{ ...data, quotaBorrowed: false }} href="/p/1" included />);
+    expect(screen.getByTestId("card-included")).toHaveTextContent("Included today");
+    expect(screen.getByTestId("card-included")).not.toHaveAttribute("data-borrowed");
+  });
   it("included su una card chiusa: ignorato — una card coperta non è mai «inclusa»", () => {
     const { unmount } = render(<PredictionCard data={data} variant="premiumLocked" href="/plans" included />);
     expect(screen.getByRole("article")).not.toHaveAttribute("data-included");

@@ -125,6 +125,10 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
   const locked = variant === "premiumLocked" || data.locked === true;
   // Una card chiusa non è mai «inclusa», qualunque cosa dica il chiamante.
   const inc = !!included && !locked;
+  // #QUOTA-TZ-FIX-0929 — una card presa in prestito da una giornata futura
+  // (#QUOTA-NEXTDAY-0929) fa parte della quota di oggi, ma non si gioca oggi:
+  // «Included today» su una partita di sabato è falso. Stesso segno, altra parola.
+  const borrowed = inc && data.quotaBorrowed === true;
   const live = variant === "live" || data.isLive;
   const resolvedBadge = badge === undefined ? deriveBadge(data, variant) : badge;
   const featured = variant === "featured";
@@ -145,9 +149,11 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
           un fieldset: il filo passa dietro la parola. Primo figlio, così chi
           ascolta la pagina sente «Inclusa oggi» prima della partita. */}
       {inc && (
-        <span className="br-card__inc" data-testid="card-included">
+        <span className="br-card__inc" data-testid="card-included" data-borrowed={borrowed || undefined}>
           <IconCheck size={10} stroke={2.5} />
-          {pick5(lang, { it: "Inclusa oggi", en: "Included today", es: "Incluida hoy", fr: "Incluse aujourd'hui", ru: "Доступно сегодня" })}
+          {borrowed
+            ? pick5(lang, { it: "Nella quota di oggi", en: "In your daily quota", es: "En tu cuota de hoy", fr: "Dans votre quota du jour", ru: "В квоте на сегодня" })
+            : pick5(lang, { it: "Inclusa oggi", en: "Included today", es: "Incluida hoy", fr: "Incluse aujourd'hui", ru: "Доступно сегодня" })}
         </span>
       )}
       {featured && media ? <div className="br-card__media" data-testid="card-media">{media}</div> : null}

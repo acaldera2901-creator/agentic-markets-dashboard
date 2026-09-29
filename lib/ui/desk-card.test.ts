@@ -72,6 +72,10 @@ describe("fromDeskFootball", () => {
     expect(Math.round(d.modelPct!)).toBe(50);
   });
 
+  it("#QUOTA-TZ-FIX-0929: propaga quota_borrowed, false di default", () => {
+    expect(fromDeskFootball({ ...football, quota_borrowed: true }).quotaBorrowed).toBe(true);
+    expect(fromDeskFootball(football).quotaBorrowed).toBe(false);
+  });
   it("propaga locked", () => {
     expect(fromDeskFootball({ ...football, locked: true }).locked).toBe(true);
     expect(fromDeskFootball(football, { locked: true }).locked).toBe(true);

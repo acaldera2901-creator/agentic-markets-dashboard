@@ -71,7 +71,7 @@ describe("sosta: la quota si completa con le giornate successive", () => {
     // La giornata più vicina vince sulla confidenza: lun-1 (0.99) arriva per ultima.
     expect(rank.get("lun-1")).toBe(6);
     expect(rank.get("lun-2")).toBe(Number.POSITIVE_INFINITY);
-    expect(fill).toEqual({ today: 0, borrowed: expect.any(Set), resumesOn: "2026-10-03" });
+    expect(fill).toEqual({ today: 0, borrowed: expect.any(Set), resumesOn: "2026-10-03", resumesAt: expect.any(String) });
     expect(fill!.borrowed.size).toBe(7);
   });
 
@@ -141,5 +141,26 @@ describe("board con meno righe della quota", () => {
     const rows = [c("b", 0.5, "2026-10-04T18:00:00Z"), c("a", 0.6, "2026-10-03T18:00:00Z")];
     showcaseDailyRanking(rows, OGGI, 7);
     expect(rows.map((r) => r.id)).toEqual(["b", "a"]);
+  });
+});
+
+// #QUOTA-TZ-FIX-0929 — Andrea, 29/09, prod: banner «resumes Wednesday 30
+// September», prima card «Thu 1 Oct, 01:30». La partita (NY Red Bulls–St. Louis)
+// è alle 23:30Z del 30/09: il giorno UTC è il 30, a Roma è già il 1° ottobre.
+// Il server deve consegnare l'ISTANTE, non solo il giorno UTC.
+describe("resumesAt: il calcio d'inizio più vicino fra le righe prese in prestito", () => {
+  it("è l'istante più vicino, non quello della riga col rank più alto", () => {
+    const rows = [
+      c("rbny", 0.40, "2026-09-30T23:30:00Z"),
+      c("gio-1", 0.90, "2026-10-01T18:00:00Z"),
+      c("ven-1", 0.80, "2026-10-02T19:00:00Z"),
+    ];
+    const { fill } = showcaseDailyRanking(rows, OGGI, 7);
+    expect(fill).toMatchObject({ today: 0, resumesOn: "2026-09-30", resumesAt: "2026-09-30T23:30:00.000Z" });
+  });
+  it("dentro la stessa giornata vince l'orario, non la confidenza", () => {
+    const rows = [c("tardi", 0.99, "2026-09-30T21:00:00Z"), c("presto", 0.10, "2026-09-30T15:00:00Z")];
+    expect(showcaseDailyRanking(rows, OGGI, 1).fill!.resumesAt).toBe("2026-09-30T21:00:00.000Z");
+    expect(showcaseDailyRanking(rows, OGGI, 2).fill!.resumesAt).toBe("2026-09-30T15:00:00.000Z");
   });
 });

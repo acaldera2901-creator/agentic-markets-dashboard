@@ -162,6 +162,12 @@ export type ShowcaseFill = {
   borrowed: ReadonlySet<string>;
   /** primo giorno UTC ("YYYY-MM-DD") da cui si è preso in prestito. */
   resumesOn: string;
+  /** #QUOTA-TZ-FIX-0929 — ISO del calcio d'inizio più vicino fra le righe
+   *  prese in prestito. È l'istante, non il giorno: il giorno lo decide il
+   *  client nel fuso dell'utente, lo stesso con cui formatta le card. Col solo
+   *  `resumesOn` (UTC) una partita alle 23:30Z del 30/09 finiva nel banner come
+   *  «mercoledì 30» e sulla card come «gio 1 ott, 01:30» a Roma. */
+  resumesAt: string;
 };
 
 export function showcaseDailyRanking(
@@ -183,9 +189,13 @@ export function showcaseDailyRanking(
   if (future.length === 0) return { rank, fill: null };
 
   future.forEach((x, i) => rank.set(x.r.id, today + i));
+  const resumesAt = future
+    .map((x) => new Date(x.r.startsAt as string))
+    .reduce((a, b) => (b.getTime() < a.getTime() ? b : a))
+    .toISOString();
   return {
     rank,
-    fill: { today, borrowed: new Set(future.map((x) => x.r.id)), resumesOn: future[0].d },
+    fill: { today, borrowed: new Set(future.map((x) => x.r.id)), resumesOn: future[0].d, resumesAt },
   };
 }
 

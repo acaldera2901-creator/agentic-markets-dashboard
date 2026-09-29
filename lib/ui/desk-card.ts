@@ -43,6 +43,8 @@ export type DeskFootballRow = {
   market_odds?: number | null;
   best_selection?: string | null;
   locked?: boolean;
+  /** #QUOTA-TZ-FIX-0929 — riga aperta dalla quota di oggi, presa da un giorno futuro. */
+  quota_borrowed?: boolean;
   confidence_score?: number | null;
   explanation?: string | null;
   enrichment?: { surface?: { below_floor: boolean } | null } | null;
@@ -64,6 +66,7 @@ export type DeskTennisRow = {
   market_odds?: number | null;
   best_selection?: "P1" | "P2" | null;
   locked?: boolean;
+  quota_borrowed?: boolean;
   confidence_score?: number | null;
   explanation?: string | null;
 };
@@ -169,6 +172,7 @@ export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {
     confidence: row.confidence_score ?? null,
     explanation: row.explanation ?? null,
     locked: opts.locked ?? row.locked ?? false,
+    quotaBorrowed: row.quota_borrowed === true,
   };
 }
 
@@ -203,5 +207,6 @@ export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): 
     confidence: row.confidence_score ?? null,
     explanation: row.explanation ?? null,
     locked: opts.locked ?? row.locked ?? false,
+    quotaBorrowed: row.quota_borrowed === true,
   };
 }
