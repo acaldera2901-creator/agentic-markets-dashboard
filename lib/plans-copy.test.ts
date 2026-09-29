@@ -30,3 +30,31 @@ describe("descrizione del piano Base", () => {
     expect(block).toMatch(/full explanations/);
   });
 });
+
+// #CLAIMS-FIX-0928 — claim tolti dalla pagina piani: «Most popular» su Base
+// (nessun pagante reale su cui basarlo) e il lessico da tipster «value bet» /
+// «stake» / «betting desk». La guardia legge il sorgente di PlansTab senza i
+// commenti (che citano le frasi tolte per spiegare perché) e le chiavi
+// plans_flow1_desc / plans_base_desc nelle cinque lingue.
+describe("pagina piani senza claim non sostenuti", () => {
+  const start = src.indexOf("function PlansTab(");
+  const end = src.indexOf("function SettingsTab(", start);
+  const plansTab = start >= 0 && end > start
+    ? src.slice(start, end).replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "")
+    : "";
+  const keyLines = src.split("\n").filter((l) => /plans_flow1_desc:|plans_base_desc:/.test(l));
+
+  it("la guardia non è vuota", () => {
+    expect(plansTab).toMatch(/plans-grid/);
+    expect(keyLines.length).toBe(10); // 2 chiavi × 5 lingue
+  });
+
+  it("nessun superlativo di popolarità su nessun piano", () => {
+    expect(plansTab).not.toMatch(/popular|popolare|populaire|популярный/i);
+  });
+
+  it("niente «stake» né «value bet» nel copy dei piani", () => {
+    expect(plansTab).not.toMatch(/stake|value bet/i);
+    for (const l of keyLines) expect(l).not.toMatch(/value bet|desk/i);
+  });
+});
