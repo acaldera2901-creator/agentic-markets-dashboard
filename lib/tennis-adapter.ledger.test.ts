@@ -5,6 +5,18 @@ import { syncTennisPredictionsToUnified } from "./tennis-adapter";
 const fixture = { match_id: "tennis:test", tournament: "Test Open", surface: "hard", player1: "A", player2: "B", scheduled_at: "2099-09-21T16:00:00Z", p1: .6, p2: .4, odds_p1: 1.7, odds_p2: 2.4, edge: null, best_selection: "P1", model_version: "test-v1" };
 beforeEach(() => { vi.clearAllMocks(); mock.query.mockImplementation(async (sql: string) => sql.includes("FROM tennis_predictions") ? [fixture] : []); });
 describe("tennis prospective ledger capture", () => {
+  it.each(['{"unrelated":"keep"}', 'old human note'])("persists probability metadata preserving notes %s with freeze and optimistic guard", async notes => {
+    mock.query.mockImplementation(async (sql: string) => sql.includes("FROM tennis_predictions") ? [{ ...fixture, existing_notes: notes }] : []);
+    await syncTennisPredictionsToUnified();
+    expect(mock.query.mock.calls[0][0]).toContain("feature_snapshot");
+    const [sql, params] = mock.query.mock.calls.find(([sql]) => sql.includes("INSERT INTO unified_predictions"))!;
+    const metadata = JSON.parse(params[34]);
+    expect(metadata.probability).toMatchObject({ source: "unknown", version: "tennis-probability-v1", calibration_version: "identity-v1", raw_p1: .6, raw_p2: .4, published_p1: .6, published_p2: .4 });
+    expect(notes.startsWith('{') ? metadata.unrelated : metadata.legacy_text).toBe(notes.startsWith('{') ? 'keep' : notes);
+    expect(sql).toMatch(/notes\s*= CASE WHEN unified_predictions.starts_at <= NOW\(\)\s+THEN unified_predictions.notes ELSE EXCLUDED.notes END/);
+    expect(sql).toContain("unified_predictions.notes IS NOT DISTINCT FROM $36");
+    expect(params[35]).toBe(notes);
+  });
   it("captures the persisted published prediction with database time and immutable conflict handling", async () => {
     await syncTennisPredictionsToUnified();
     const calls = mock.query.mock.calls;

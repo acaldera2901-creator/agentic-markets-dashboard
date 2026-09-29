@@ -220,6 +220,17 @@ export function projectPrediction(
   const unlocked = isUnlocked(state, rankInSport);
   if (unlocked) {
     for (const f of REVEAL_FIELDS) if (f in row) out[f] = row[f];
+    // Tennis serving audit data is private, including for unlocked plans.
+    // Other notes (and non-JSON legacy text) keep their existing contract.
+    if (row.sport === "tennis" && typeof out.notes === "string") {
+      try {
+        const notes = JSON.parse(out.notes);
+        if (notes && typeof notes === "object" && !Array.isArray(notes) && "probability" in notes) {
+          delete notes.probability;
+          out.notes = JSON.stringify(notes);
+        }
+      } catch { /* legacy text */ }
+    }
     if (state === "base" || state === "premium" || state === "admin_full") {
       for (const f of PREMIUM_FIELDS) if (f in row) out[f] = row[f];
     }
