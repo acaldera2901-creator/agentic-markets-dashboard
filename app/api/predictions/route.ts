@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAccessState, type AccessState } from "@/lib/auth";
-import { isUnlocked, showcaseRanking, currentShowcaseDay } from "@/lib/access-projection";
+import { isUnlocked, showcaseDailyRanking, showcaseAllowance, currentShowcaseDay } from "@/lib/access-projection";
 import { verifyBearer } from "@/lib/admin-auth";
 // #PRELAUNCH-AUDIT: chiavi premium in lib/enrichment-gate (single source, condivise
 // con /api/data che prima leakava l'enrichment grezzo al tier Base).
@@ -1064,7 +1064,12 @@ export async function GET(req: Request) {
   // enrichment.surface esiste SOLO quando la riga è sotto floor, quindi la sua
   // assenza significa "pick direzionale" — è la stessa lettura che fa il
   // frontend, e non ri-deriva la soglia in un secondo posto.
-  const rankById = showcaseRanking(
+  //
+  // #QUOTA-NEXTDAY-0929: se oggi si giocano meno partite della quota del piano
+  // (sosta nazionali), la quota si completa con le giornate successive più
+  // vicine — vedi showcaseDailyRanking. Le righe prese in prestito non sono il
+  // "Pick of the Day": non si giocano oggi.
+  const { rank: rankById, fill } = showcaseDailyRanking(
     hydratedRows.map((p) => ({
       id: p.match_id,
       surfaced:
@@ -1073,12 +1078,14 @@ export async function GET(req: Request) {
       edge: typeof p.edge === "number" ? p.edge : null,
       startsAt: p.kickoff,
     })),
-    { scopeDay: currentShowcaseDay() }
+    currentShowcaseDay(),
+    showcaseAllowance(state)
   );
 
-  const predictions = hydratedRows.map((p) =>
-    projectPredictionRow(p, state, rankById.get(p.match_id) ?? Infinity)
-  );
+  const predictions = hydratedRows.map((p) => {
+    const row = projectPredictionRow(p, state, rankById.get(p.match_id) ?? Infinity);
+    return fill?.borrowed.has(p.match_id) ? { ...row, pick_of_day: false } : row;
+  });
 
   return NextResponse.json(
     {
@@ -1088,6 +1095,11 @@ export async function GET(req: Request) {
       is_stale: isStale,
       is_off_season: isOffSeason,
       source: usingFallback ? "unified_fallback" : "database",
+      // #QUOTA-NEXTDAY-0929 — il board lo dice quando la quota di oggi è stata
+      // completata con giornate future (null nei giorni normali).
+      showcase_fill: fill
+        ? { today: fill.today, borrowed: fill.borrowed.size, resumes_on: fill.resumesOn }
+        : null,
     },
     { headers: { "Cache-Control": "private, no-store" } }
   );

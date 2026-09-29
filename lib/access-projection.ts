@@ -143,6 +143,52 @@ export function showcaseRanking(
   return rank;
 }
 
+// ── Quota sulla prossima giornata (#QUOTA-NEXTDAY-0929) ──────────────────────
+// Durante una pausa del calendario (sosta nazionali: Champions ferma dal 10/09
+// al 13/10, Serie A dal 20/09 al 10/10) la regola giornaliera pura contava zero
+// partite oggi e quindi zero sbloccabili, con 59+ partite future sul board: il
+// Base pagava 7 al giorno e ne vedeva 0. Andrea, 29/09: «per le previsioni diamo
+// sempre quello che diciamo ai piani paganti».
+//
+// Il fallback: se oggi le righe sono MENO della quota, si completa con le righe
+// dei giorni successivi più vicini (giorno per giorno, dentro il giorno
+// l'ordine di sempre, compareShowcase) fino alla quota o fino a esaurimento del
+// board. Quando oggi la quota è già piena il rank è quello di showcaseRanking,
+// identico — è un fallback, non un secondo ordinamento.
+export type ShowcaseFill = {
+  /** righe di oggi che hanno preso un rank. */
+  today: number;
+  /** id delle righe future prese in prestito per completare la quota. */
+  borrowed: ReadonlySet<string>;
+  /** primo giorno UTC ("YYYY-MM-DD") da cui si è preso in prestito. */
+  resumesOn: string;
+};
+
+export function showcaseDailyRanking(
+  rows: readonly ShowcaseCandidate[],
+  day: string,
+  quota: number
+): { rank: Map<string, number>; fill: ShowcaseFill | null } {
+  const rank = showcaseRanking(rows, { scopeDay: day });
+  let today = 0;
+  for (const r of rank.values()) if (Number.isFinite(r)) today++;
+  // Pro (quota infinita) apre già tutto; anonimo (0) non apre niente.
+  if (!Number.isFinite(quota) || quota <= 0 || today >= quota) return { rank, fill: null };
+
+  const future = rows
+    .map((r) => ({ r, d: utcDay(r.startsAt) }))
+    .filter((x): x is { r: ShowcaseCandidate; d: string } => x.d !== null && x.d > day)
+    .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : compareShowcase(a.r, b.r)))
+    .slice(0, quota - today);
+  if (future.length === 0) return { rank, fill: null };
+
+  future.forEach((x, i) => rank.set(x.r.id, today + i));
+  return {
+    rank,
+    fill: { today, borrowed: new Set(future.map((x) => x.r.id)), resumesOn: future[0].d },
+  };
+}
+
 /** Il giorno su cui si conta la vetrina adesso (UTC). Un solo posto, così board
  *  calcio e board tennis non possono finire su due "oggi" diversi. */
 export function currentShowcaseDay(now: Date = new Date()): string {
