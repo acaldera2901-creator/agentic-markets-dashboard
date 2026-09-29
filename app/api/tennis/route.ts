@@ -140,12 +140,16 @@ function projectTennisMatches<T extends { id: string; p1: number; p2: number; sc
       elo_raw_p1: null, elo_raw_p2: null,
     } as unknown as T & { locked: boolean; pick_of_day: boolean };
   });
-  return { matches: projected, fill };
+  // #QUOTA-TZ-FIX-0929 — vedi /api/predictions: la riga in prestito lo dichiara.
+  return {
+    matches: projected.map((m) => (fill?.borrowed.has(m.id) ? { ...m, quota_borrowed: true } : m)),
+    fill,
+  };
 }
 
 // #QUOTA-NEXTDAY-0929 — stessa forma della board calcio.
 function fillPayload(fill: ShowcaseFill | null) {
-  return fill ? { today: fill.today, borrowed: fill.borrowed.size, resumes_on: fill.resumesOn } : null;
+  return fill ? { today: fill.today, borrowed: fill.borrowed.size, resumes_on: fill.resumesOn, resumes_at: fill.resumesAt } : null;
 }
 
 type TennisPredictionInput = {

@@ -1656,6 +1656,7 @@ interface Prediction {
   // Reveal-gating fields (Task 7)
   locked?: boolean;
   pick_of_day?: boolean;
+  quota_borrowed?: boolean; // #QUOTA-TZ-FIX-0929
   pick?: string | null;
   confidence_score?: number | null;
   explanation?: string | null;
@@ -1829,6 +1830,7 @@ export interface TennisMatch { // #HOME-V3: riusato 1:1 nella sezione Anatomy de
   // Reveal-gating fields (Task 7)
   locked?: boolean;
   pick_of_day?: boolean;
+  quota_borrowed?: boolean; // #QUOTA-TZ-FIX-0929
   pick?: string | null;
   confidence_score?: number | null;
   // #TENNIS-MARKET-GATE-0805: server verdict — no market price on the picked
@@ -11216,7 +11218,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           {tab === "bets" && ([["football", footballFill], ["tennis", tennisFill]] as const).map(([sport, fill]) =>
             fill && !(sport === "football" && predFallback) ? (
               <div key={`quota-fill-${sport}`} data-testid={`quota-fill-${sport}`} role="status" className="flex items-center gap-3 mx-4 mt-2 mb-0 px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-xs font-mono text-amber-400">
-                <span>{quotaFillCopy(uiLanguage, sport, fill)}</span>
+                <span>{quotaFillCopy(uiLanguage, sport, fill, userTz)}</span>
               </div>
             ) : null
           )}

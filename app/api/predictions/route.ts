@@ -1084,7 +1084,9 @@ export async function GET(req: Request) {
 
   const predictions = hydratedRows.map((p) => {
     const row = projectPredictionRow(p, state, rankById.get(p.match_id) ?? Infinity);
-    return fill?.borrowed.has(p.match_id) ? { ...row, pick_of_day: false } : row;
+    // #QUOTA-TZ-FIX-0929 — `quota_borrowed` dice alla card che è aperta dalla
+    // quota di oggi ma NON si gioca oggi: la linguetta non può dire «Included today».
+    return fill?.borrowed.has(p.match_id) ? { ...row, pick_of_day: false, quota_borrowed: true } : row;
   });
 
   return NextResponse.json(
@@ -1098,7 +1100,7 @@ export async function GET(req: Request) {
       // #QUOTA-NEXTDAY-0929 — il board lo dice quando la quota di oggi è stata
       // completata con giornate future (null nei giorni normali).
       showcase_fill: fill
-        ? { today: fill.today, borrowed: fill.borrowed.size, resumes_on: fill.resumesOn }
+        ? { today: fill.today, borrowed: fill.borrowed.size, resumes_on: fill.resumesOn, resumes_at: fill.resumesAt }
         : null,
     },
     { headers: { "Cache-Control": "private, no-store" } }

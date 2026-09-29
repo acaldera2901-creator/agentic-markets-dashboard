@@ -12,8 +12,11 @@ import type { Lang } from "@/lib/house-banners";
 
 export type Sport = "football" | "tennis";
 
-/** Forma di `showcase_fill` nelle risposte di /api/predictions e /api/tennis. */
-export type ShowcaseFillPayload = { today: number; borrowed: number; resumes_on: string };
+/** Forma di `showcase_fill` nelle risposte di /api/predictions e /api/tennis.
+ *  `resumes_at` (#QUOTA-TZ-FIX-0929) è l'ISO del calcio d'inizio più vicino fra
+ *  le righe prese in prestito; opzionale solo per una risposta di un server
+ *  precedente durante il rollout. */
+export type ShowcaseFillPayload = { today: number; borrowed: number; resumes_on: string; resumes_at?: string | null };
 
 const LOCALE: Record<Lang, string> = { it: "it-IT", en: "en-GB", es: "es-ES", fr: "fr-FR", ru: "ru-RU" };
 
@@ -25,17 +28,32 @@ const SPORT: Record<Lang, Record<Sport, string>> = {
   ru: { football: "футбол", tennis: "теннис" },
 };
 
-/** "YYYY-MM-DD" → "sabato 3 ottobre" nella lingua dell'utente. Giorno UTC,
- *  lo stesso su cui il server conta la quota. */
-export function fillDay(lang: Lang, day: string): string {
-  const d = new Date(`${day}T12:00:00Z`);
-  if (Number.isNaN(d.getTime())) return day;
-  return d.toLocaleDateString(LOCALE[lang], { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+/** Il giorno in cui si riprende a giocare → "sabato 3 ottobre", nella lingua
+ *  e nel FUSO dell'utente.
+ *
+ *  #QUOTA-TZ-FIX-0929 — prima era il giorno UTC `resumes_on` formattato in UTC,
+ *  mentre le card sotto formattano l'orario nel fuso del browser (fmtKickoff,
+ *  TzCtx). Andrea, 29/09, Base, calcio: banner «resumes Wednesday 30
+ *  September», prima card «Thu 1 Oct, 01:30» — la stessa partita, 23:30Z del
+ *  30/09. Ora si formatta l'istante `resumes_at` nello stesso `tz` delle card;
+ *  `resumes_on` resta solo come ripiego (mezzogiorno UTC: non scavalca il
+ *  giorno in nessun fuso abitato). */
+export function fillDay(lang: Lang, fill: Pick<ShowcaseFillPayload, "resumes_on" | "resumes_at">, tz?: string): string {
+  const at = fill.resumes_at ? new Date(fill.resumes_at) : null;
+  const d = at && !Number.isNaN(at.getTime()) ? at : new Date(`${fill.resumes_on}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return fill.resumes_on;
+  const opts: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "long" };
+  try {
+    return d.toLocaleDateString(LOCALE[lang], { ...opts, timeZone: tz || undefined });
+  } catch {
+    // Fuso non valido (RangeError): quello del runtime, come fa il resto del desk.
+    return d.toLocaleDateString(LOCALE[lang], opts);
+  }
 }
 
-export function quotaFillCopy(lang: Lang, sport: Sport, fill: ShowcaseFillPayload): string {
+export function quotaFillCopy(lang: Lang, sport: Sport, fill: ShowcaseFillPayload, tz?: string): string {
   const s = SPORT[lang][sport];
-  const date = fillDay(lang, fill.resumes_on);
+  const date = fillDay(lang, fill, tz);
   const n = Math.max(0, Math.floor(fill.today));
   if (n === 0) {
     switch (lang) {

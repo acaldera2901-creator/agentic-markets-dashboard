@@ -99,6 +99,9 @@ export type PredictionCardData = {
   explanation?: string | null;
   /** Pick riservato a Pro: la card mostra Model/Market, blocca Pick ed Edge. */
   locked?: boolean;
+  /** #QUOTA-TZ-FIX-0929 — aperta dalla quota di oggi ma presa in prestito da
+   *  una giornata futura (#QUOTA-NEXTDAY-0929): la linguetta non dice «oggi». */
+  quotaBorrowed?: boolean;
 };
 
 function toPct(prob: number | null): number | null {
