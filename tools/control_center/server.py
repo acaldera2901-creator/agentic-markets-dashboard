@@ -27,13 +27,14 @@ from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 HOST = "127.0.0.1"
 PORT = 8790
 STATIC = Path(__file__).resolve().parent / "static"
-PAGE = STATIC / "index.html"          # la home: un piano unico, tutti i settori
+COCKPIT = STATIC / "cockpit.html"     # la home: verdetto, richiedono te, progetti
+PAGE = STATIC / "index.html"          # /canvas: il piano zoomabile, tutti i settori
 # Le vecchie pagine sono diventate settori del piano: chi arriva dai vecchi
-# indirizzi viene portato al settore giusto, non su un 404.
+# indirizzi viene portato al settore giusto del canvas, non su un 404.
 REDIRECT = {
-    "/betredge": "/#sistema", "/betredge.html": "/#sistema",
-    "/sala": "/#sala",
-    "/architettura.html": "/#architettura",
+    "/betredge": "/canvas#sistema", "/betredge.html": "/canvas#sistema",
+    "/sala": "/canvas#sala",
+    "/architettura.html": "/canvas#architettura",
 }
 # Font vendorizzati: la torre e' locale e deve aprirsi anche senza rete.
 # Lista chiusa di nomi, nessuna mappatura path->file: niente traversal.
@@ -167,10 +168,12 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         # Whitelist esplicita: nessuna mappatura path->file, quindi nessun
         # traversal possibile per costruzione.
-        if path in ("/", "/index.html"):
-            # Il token viene iniettato nella pagina servita: cosi' vive solo
-            # qui e nel file di stato, mai in un file versionato.
-            html = PAGE.read_text(encoding="utf-8").replace(
+        if path in ("/", "/cockpit", "/canvas", "/index.html"):
+            # Due pagine, stesso token iniettato: cosi' vive solo qui e nel
+            # file di stato, mai in un file versionato. `/index.html` resta
+            # il nome del file del canvas, quindi porta li'.
+            pagina = COCKPIT if path in ("/", "/cockpit") else PAGE
+            html = pagina.read_text(encoding="utf-8").replace(
                 "__CC_TOKEN__", ensure_token()
             )
             self._send(200, html.encode(), "text/html; charset=utf-8")

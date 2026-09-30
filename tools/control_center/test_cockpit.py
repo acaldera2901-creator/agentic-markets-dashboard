@@ -187,6 +187,10 @@ def test_progresso_e_salute(registri):
     assert p["ultima_verifica"] == "2026-09-29"
     ig = next(t for t in p["tasks"] if t["testo"] == "rigenerare il token IG")
     assert ig["stato"] == "verificato dal check"
+    # i numeri della banda: derivati qui, la pagina non li ricalcola
+    assert d["numeri"] == {"progetti_attivi": 2, "bloccati": 1,
+                           "daemon_vivi": 0, "daemon_totali": 1,
+                           "ultima_spunta": "2026-09-28"}
 
 
 def test_area_diversa_non_prende_i_check_di_betredge(registri):

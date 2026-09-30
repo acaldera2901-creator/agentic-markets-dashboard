@@ -316,9 +316,21 @@ def costruisci(area: str, stato: dict, card: list[tuple[dict, str]],
     ordine_fase = {"BLOCCATO": 0, "ATTIVO": 1, "OPERATIVO": 2}
     progetti_.sort(key=lambda p: (ordine_fase.get(p["fase"] or "", 9), p["giorni_fermo"] or 0))
     archivio.sort(key=lambda p: p["giorni_fermo"] if p["giorni_fermo"] is not None else 10**6)
+    # I quattro numeri della banda del verdetto, derivati qui e non in pagina:
+    # cosi' la pagina non ha una seconda regola di conteggio da tenere allineata.
+    daemon = [c for cid, c in nostri_check.items() if cid.startswith("launchd_")]
+    numeri = {
+        "progetti_attivi": len(progetti_),
+        "bloccati": sum(1 for p in progetti_ if p["fase"] == "BLOCCATO"),
+        "daemon_vivi": sum(1 for c in daemon if c.get("level") == "green"),
+        "daemon_totali": len(daemon),
+        "ultima_spunta": max((t["fatto_il"] for p in progetti_ for t in p["tasks"]
+                              if t["fatto_il"]), default=None),
+    }
     return {
         "area": area, "oggi": oggi.isoformat(),
         "snapshot": stato.get("generated_at"),
+        "numeri": numeri,
         "richiedono_te": richiedono,
         "progetti": progetti_,
         "in_carico": in_carico,

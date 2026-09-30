@@ -4,20 +4,42 @@ Torre di controllo locale. Spec: `docs/superpowers/specs/2026-08-20-betredge-con
 
 **Aprire:** http://127.0.0.1:8790 (il server gira sotto launchd, KeepAlive)
 
-## La pagina: un piano, non quattro schede
+## La home: il cockpit (`/`), e il piano intero su `/canvas`
 
-Dal 04/09 c'e' una pagina sola, `static/index.html`. Non scorre: la rotella
-zooma (attorno al puntatore), il trascinamento sposta, i tasti `1-9 0` portano
-a un settore, `P` al Ponte, `Esc` a tutto il piano. Da lontano ogni settore e'
-una targa (lettera, numero chiave, stato); da vicino compare il contenuto.
-Il Ponte e' l'unico settore leggibile a ogni distanza: e' l'ancora.
+Dal 30/09 la radice e' `static/cockpit.html`: una schermata sola che risponde
+a una domanda — *devo agire?* Legge **solo** `/api/cockpit?area=<area>` (ogni
+60 s) e non ha un dato che non venga da li'. In cima la **banda del verdetto**:
+rossa se almeno un ticket e' rosso, ambra se sono tutti ambra, verde («Tutto
+ok») se non c'e' niente; `N cose richiedono te` e' il conteggio dei ticket e la
+cifra N e' l'unico rosso della banda. Accanto i quattro numeri (`numeri` nella
+risposta: progetti attivi, bloccati, daemon vivi/totali, eta' dello snapshot).
+Sotto, due colonne: a sinistra **Richiedono te** come ticket numerati (cosa,
+perche', da quando, azione, fonte) con lo stato vuoto disegnato; a destra i
+**Progetti** (nome, fase, goal, barra a tacche dei task, prossimo task) con la
+salute in **una sola** codifica — la barretta a inizio riga — e la riga
+espandibile coi task: la spunta fa `POST /api/task/fatto` dopo una conferma
+inline (mai `window.confirm`); `riaperto dal check` e `verificato dal check`
+si vedono sulla casella. In fondo, collassati, «In carico / da osservare» e
+«Archivio». Se l'endpoint non risponde la banda si spegne e lo dice, i dati
+vecchi restano marcati nel piede: mai una pagina rotta. Tasti: `R` aggiorna,
+`E` apre/chiude i progetti, `C` va al canvas. Il selettore di area in testa ha
+oggi solo BetRedge (l'unica con card `Area:` e check nello snapshot); la lista
+`AREE` in cima allo script e' il posto dove entrano le altre.
+
+Il piano zoomabile di prima e' intero su **`/canvas`** (`static/index.html`),
+raggiungibile da «Vista completa» nel cockpit: non scorre, la rotella zooma
+(attorno al puntatore), il trascinamento sposta, i tasti `1-9 0` portano a un
+settore, `P` al Ponte, `Esc` a tutto il piano. Da lontano ogni settore e' una
+targa (lettera, numero chiave, stato); da vicino compare il contenuto. Il
+Ponte e' l'unico settore leggibile a ogni distanza: e' l'ancora.
 
 Dodici settori, una sola componentistica (targa, pannello, KPI, riga, scheda,
-tile, LED quadrato, pulsante a tre ruoli, conferma inline). Le vecchie rotte
+tile, LED quadrato, pulsante a tre ruoli, conferma inline) — il cockpit la
+riusa (stessi token, stessa conferma, stesso LED). Le vecchie rotte
 `/betredge`, `/sala`, `/architettura.html` reindirizzano al settore
-corrispondente. I font (Saira, JetBrains Mono — variabili, OFL) stanno in
-`static/vendor/fonts/`: la torre deve aprirsi anche senza rete, quindi nessun
-CDN.
+corrispondente di `/canvas`. I font (Saira, JetBrains Mono — variabili, OFL)
+stanno in `static/vendor/fonts/`: la torre deve aprirsi anche senza rete,
+quindi nessun CDN.
 
 Le conferme (spegni, APPROVE, archivia) non sono piu' `window.confirm`: sono
 un riquadro dentro la scheda, con Esc/Invio. Finche' una conferma e' aperta il
@@ -66,6 +88,9 @@ dal check` anche senza `[x]`; `[x]` con un check rosso -> `riaperto dal check`.
 
 `GET /api/cockpit?area=betredge` restituisce:
 
+- `numeri` — i quattro numeri della banda, derivati qui e non in pagina:
+  `progetti_attivi`, `bloccati`, `daemon_vivi`/`daemon_totali` (i check
+  `launchd_*` dell'area), `ultima_spunta` (la data `fatto:` piu' recente).
 - `richiedono_te` — solo azioni di Andrea: task aperti di Andrea con un check
   non verde o scaduti (su card non ferme), card `BLOCCATO` non ferme con
   `owner: Andrea` / «in attesa di Andrea» nella Prossima azione, e i check
