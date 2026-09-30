@@ -311,8 +311,10 @@ async function getXGForLeague(league: string): Promise<XGMap> {
   return await refreshXGCache(league);
 }
 
-// #XG-PARSER-0930: spento finche' non validato (vedi il commento su xgBaseline).
-const FOOTBALL_XG_MODEL_BLEND = false;
+// #XG-PARSER-0930 / #XG-W02-0930: acceso dopo il walk-forward sulla pipeline
+// servita (w=XG_BLEND_WEIGHT=0,2, vedi lib/poisson-model.ts). Rimettere false
+// riporta il servito al solo-gol senza toccare altro.
+const FOOTBALL_XG_MODEL_BLEND = true;
 
 // ─── Main computation ────────────────────────────────────────────────────────
 
@@ -472,10 +474,10 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
     // or leagues without Understat coverage fall back to pure-goals ratings.
     // #XG-PARSER-0930: il parser non ha mai consegnato xG casa/trasferta al
     // servito (vedi lib/understat.ts), quindi il modello che gira da giugno e'
-    // SOLO gol. Riparato il parser, il blend resta spento finche' un walk-forward
-    // sulla pipeline intera non lo valida contro il servito di oggi: accenderlo
-    // cambierebbe le probabilita' pubblicate (w=0,5 sui rating). L'xG torna
-    // subito nell'enrichment (display), non nel numero.
+    // SOLO gol. Il flag FOOTBALL_XG_MODEL_BLEND decide se l'xG entra anche nel
+    // numero (oltre che nell'enrichment): acceso a w=0,2 dopo il walk-forward
+    // sulla pipeline servita (#XG-W02-0930). Squadre o leghe senza Understat
+    // restano sul solo-gol, come prima.
     const xgBaseline = FOOTBALL_XG_MODEL_BLEND ? leagueXGAverages(leagueXG) : null;
     const apiFixtures = apifixMap[code] ?? [];
 
