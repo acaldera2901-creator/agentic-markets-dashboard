@@ -958,7 +958,7 @@ export async function GET(req: Request) {
   // niente card vuote). Il fallback resta copertura off-season per il non-WC.
   const primaryNonWc = primary_raw.filter((p) => p.league !== "WC");
   const fallback_raw = await fetchUnifiedFallback();
-  // #NATIONS-BOARD-0929: UNL/CNL servite sempre, fuori dal cap club (lib/board-merge.ts).
+  // #NATIONS-BOARD-0929 + #FRIENDLY-BOARD-0930: UNL/CNL/FRIENDLY servite sempre, fuori dal cap club (lib/board-merge.ts).
   const { fallbackWc, fallbackNations, fallbackNonWc, usingFallback } =
     splitUnifiedFallback(primaryNonWc, fallback_raw);
   // #DUP-FIXTURES-0821 — una partita, una scheda. La deduplica precedente
