@@ -1484,9 +1484,10 @@ async function apriTerminale(b, nome, azione, extra, dove){
   if(dove) esito(dove,msg,ok);
 }
 async function disegnaDock(){
-  const pers=await json("/api/personali",[]);
+  /* Trader non sta nella barra (Andrea, 1/10): vive fra le chat di prodotto. */
+  const pers=(await json("/api/personali",[])).filter(x=>x.chiave!=="trader");
   const box=$("dock-personali"); box.replaceChildren();
-  if(!pers.length){ box.append(el("span","k","nessun agente personale dichiarato")); return; }
+  if(!pers.length){ box.append(el("span","k","nessun agente aziendale dichiarato")); return; }
   pers.forEach((x,i)=>{
     const b=el("button","ag"+(i===0?" primo":""),x.nome); b.type="button"; b.title=`${x.remit} · claude --agent ${x.agente}`;
     b.append(el("small","","--agent "+x.agente));
@@ -1503,16 +1504,18 @@ function vocePannello(titolo, sub, cmd, nome, azione, extra){
 async function disegnaAgenti(){
   const p=$("agenti"); p.replaceChildren();
   const capo=el("div","chiudi"); capo.append(el("b","","Tutti gli agenti"), el("span","","ogni tasto apre una finestra del Terminale · Esc o A per chiudere")); p.append(capo);
-  const [ali,az,pers]=await Promise.all([json("/api/ali",[]),json("/api/azienda",{assente:true}),json("/api/personali",[])]);
+  const [ali,az,persTutti]=await Promise.all([json("/api/ali",[]),json("/api/azienda",{assente:true}),json("/api/personali",[])]);
+  const pers=persTutti.filter(x=>x.chiave!=="trader"), extraProd=persTutti.filter(x=>x.chiave==="trader");
   const g1=el("div","gruppo"); g1.append(el("h4","","Le ali del lab")); g1.firstChild.append(el("small","",`${ali.length} · lab <ala>`));
   if(!ali.length) g1.append(el("div","nulla","Nessuna ala dichiarata: manca lab/ali.tsv."));
   for(const x of ali) g1.append(vocePannello(x.sessione, x.remit, "lab "+x.chiave+(x.agente?" · --agent "+x.agente:""), x.sessione, "apri", {ala:x.chiave}));
   const prod=(az&&!az.assente&&az.prodotti)||[];
-  const g2=el("div","gruppo"); g2.append(el("h4","","Le chat di prodotto")); g2.firstChild.append(el("small","",`${prod.length} · lab prodotto <chiave>`));
+  const g2=el("div","gruppo"); g2.append(el("h4","","Le chat di prodotto")); g2.firstChild.append(el("small","",`${prod.length+extraProd.length} · lab prodotto <chiave>`));
   if(!prod.length) g2.append(el("div","nulla",az&&az.assente?"Il portafoglio non e' ancora stato scritto (`lab azienda --json`).":"Nessun prodotto in prodotti.tsv."));
   for(const x of prod){ const c=x.conta||{}, vivi=(c.ATTIVO||0)+(c.BLOCCATO||0);
     g2.append(vocePannello(x.nome, vivi?`${c.ATTIVO||0} attivi · ${c.BLOCCATO||0} bloccati`:(c.OPERATIVO?"gira da solo":"nessun progetto vivo"), "lab prodotto "+x.chiave+(x.agente?" · --agent "+x.agente:""), x.nome, "apri_prodotto", {chiave:x.chiave})); }
-  const g3=el("div","gruppo"); g3.append(el("h4","","Le chat personali")); g3.firstChild.append(el("small","",`${pers.length} · claude --agent`));
+  for(const x of extraProd) g2.append(vocePannello(x.nome, x.remit, "--agent "+x.agente, x.nome, "apri_personale", {chiave:x.chiave}));
+  const g3=el("div","gruppo"); g3.append(el("h4","","Le chat aziendali")); g3.firstChild.append(el("small","",`${pers.length} · claude --agent`));
   for(const x of pers) g3.append(vocePannello(x.nome, x.remit, "--agent "+x.agente, x.nome, "apri_personale", {chiave:x.chiave}));
   p.append(g1,g2,g3);
 }
