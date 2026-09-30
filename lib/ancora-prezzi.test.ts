@@ -46,9 +46,10 @@ beforeEach(() => {
 });
 
 /** dbQuery serve sia per la SELECT delle partite sia per gli INSERT. */
-function conPartite(partite: unknown[]) {
+function conPartite(partite: unknown[], tabella: string | null = "anchor_price_history") {
   let primo = true;
-  dbFinto.mockImplementation(async () => {
+  dbFinto.mockImplementation(async (sql: string) => {
+    if (sql.includes("to_regclass")) return [{ t: tabella }];
     if (primo) { primo = false; return partite; }
     return [];
   });
@@ -72,6 +73,16 @@ describe("disciplina di costo", () => {
     const esito = await registraPrezzoAncora(ADESSO);
     expect(quoteFinte).toHaveBeenCalledTimes(1);
     expect(esito.legheInterrogate).toBe(1);
+  });
+
+  it("#ANCORA-GUARDIA-0930: tabella assente ⇒ nessuna chiamata Odds API", async () => {
+    conPartite([partita()], null);
+    quoteFinte.mockResolvedValue([quota()]);
+    const esito = await registraPrezzoAncora(ADESSO);
+    expect(quoteFinte).not.toHaveBeenCalled();
+    expect(esito.chiamateOddsApi).toBe(0);
+    expect(esito.tabellaAssente).toBe(true);
+    expect(esito.partiteImminenti).toBe(1);
   });
 
   it("una lega senza chiave Odds API non viene interrogata", async () => {
@@ -100,7 +111,7 @@ describe("abbinamento e riga scritta", () => {
     expect(esito.abbinate).toBe(1);
     expect(esito.scritte).toBe(1);
     const insert = dbFinto.mock.calls.find(([sql]) =>
-      String(sql).includes("anchor_price_history")
+      String(sql).includes("INSERT INTO anchor_price_history")
     );
     expect(insert).toBeTruthy();
     const p = insert![1] as unknown[];
@@ -130,7 +141,8 @@ describe("abbinamento e riga scritta", () => {
 
   it("un INSERT che fallisce e' contato, non nascosto", async () => {
     let chiamata = 0;
-    dbFinto.mockImplementation(async () => {
+    dbFinto.mockImplementation(async (sql: string) => {
+      if (sql.includes("to_regclass")) return [{ t: "anchor_price_history" }];
       chiamata += 1;
       if (chiamata === 1) return [partita()];
       throw new Error("DB giu'");

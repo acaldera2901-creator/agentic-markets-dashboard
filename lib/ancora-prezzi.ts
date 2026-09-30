@@ -31,7 +31,23 @@ export type EsitoAncora = {
   scritte: number;
   fallite: number;
   chiamateOddsApi: number;
+  /** true quando la tabella di destinazione non esiste: giro saltato senza crediti. */
+  tabellaAssente?: boolean;
 };
+
+/**
+ * #ANCORA-GUARDIA-0930: la migration della #425 non e' mai stata applicata in
+ * prod (404 su anchor_price_history dal 24/09 al 30/09) e il cron, ogni 10',
+ * pagava una chiamata Odds API per lega in finestra per poi fallire l'INSERT in
+ * silenzio. Si controlla PRIMA di spendere; quando la tabella arriva, riparte da
+ * solo, senza toccare vercel.json.
+ */
+async function tabellaPresente(): Promise<boolean> {
+  const r = await dbQuery<{ t: string | null }>(
+    `SELECT to_regclass('public.anchor_price_history')::text AS t`
+  );
+  return r[0]?.t != null;
+}
 
 type PartitaImminente = {
   league: string;
@@ -79,6 +95,16 @@ export async function registraPrezzoAncora(
   }
   esito.partiteImminenti = partite.length;
   if (partite.length === 0) return esito; // giro vuoto: nessun credito speso
+
+  try {
+    if (!(await tabellaPresente())) {
+      esito.tabellaAssente = true;
+      console.warn("[ancora] anchor_price_history assente: giro saltato, nessuna chiamata Odds API");
+      return esito;
+    }
+  } catch {
+    return esito;
+  }
 
   // Una chiamata per lega, non per partita: due partite della stessa lega
   // costerebbero due crediti per lo stesso payload.
