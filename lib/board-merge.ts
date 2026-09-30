@@ -11,10 +11,13 @@
 // UNL/CNL si servono sempre, come la WC (#WC-DEDUP-1). Restano FUORI dal cap
 // delle righe club: in una finestra internazionale 58 club + 93 Nations
 // supererebbero BOARD_ROWS e il taglio (in ordine di concatenazione) le
-// eliminerebbe di nuovo. FRIENDLY resta sul contratto off-season di prima
-// (decisione separata, non inclusa qui).
+// eliminerebbe di nuovo.
+//
+// #FRIENDLY-BOARD-0930 (decisione Andrea, 30/09): anche le amichevoli FRIENDLY,
+// stesso contratto (nazionali, tier paper, solo in unified) e stesso buco.
+// Il set ora copre le competizioni per nazionali, non solo le Nations League.
 
-export const ALWAYS_SERVED_NATIONS = new Set(["UNL", "CNL"]);
+export const ALWAYS_SERVED_NATIONAL = new Set(["UNL", "CNL", "FRIENDLY"]);
 
 type Row = { league: string };
 
@@ -25,9 +28,9 @@ export function splitUnifiedFallback<T extends Row>(
   const usingFallback = primaryNonWc.length === 0;
   return {
     fallbackWc: fallbackRaw.filter((p) => p.league === "WC"),
-    fallbackNations: fallbackRaw.filter((p) => ALWAYS_SERVED_NATIONS.has(p.league)),
+    fallbackNations: fallbackRaw.filter((p) => ALWAYS_SERVED_NATIONAL.has(p.league)),
     fallbackNonWc: usingFallback
-      ? fallbackRaw.filter((p) => p.league !== "WC" && !ALWAYS_SERVED_NATIONS.has(p.league))
+      ? fallbackRaw.filter((p) => p.league !== "WC" && !ALWAYS_SERVED_NATIONAL.has(p.league))
       : [],
     usingFallback,
   };
