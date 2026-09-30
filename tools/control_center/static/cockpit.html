@@ -106,12 +106,58 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .lato>*{flex:1 1 0;min-height:0;max-height:236px}
 .lato.fitto{gap:var(--u)}
 .centro{position:relative;display:flex;flex-direction:column;min-height:0;min-width:0}
-.grafo-hub{position:relative;flex:1;min-height:0}
+/* il grafo si muove e si zooma come il piano di /canvas: rotella attorno al
+   puntatore, trascinamento, doppio clic o `0` per ricentrare, pinch */
+.grafo-hub{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;cursor:grab;user-select:none}
+.grafo-hub.trascino{cursor:grabbing}
 .grafo-hub svg{display:block;width:100%;height:100%;overflow:visible}
 .didascalia{flex:none;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--dim);padding:6px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .didascalia b{color:var(--mid);font-weight:500}
 .didascalia .sel{color:var(--cy-2);text-transform:none;letter-spacing:0}
+.didascalia .zoom{color:var(--cy-2);margin-left:10px}
+.didascalia .zoom kbd{font-family:inherit;color:var(--dim);border:1px solid var(--line-2);padding:0 4px;margin-left:6px;letter-spacing:0;text-transform:none}
+
+/* ─── il dock degli agenti: sempre a un clic, in ogni vista ─── */
+.dock{flex:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;
+  border:1px solid var(--line);background:var(--panel);position:sticky;bottom:0;z-index:30}
+.dock .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-right:4px}
+.dock .ag{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.04em;padding:7px 12px;border:1px solid var(--line-2);
+  color:var(--mid);background:var(--inset);display:inline-flex;align-items:center;gap:8px;transition:.12s;white-space:nowrap;margin-right:6px}
+.dock .ag small{font-weight:400;color:var(--dim);letter-spacing:0}
+.dock .ag:hover:not(:disabled){border-color:var(--line-3);color:var(--ink)}
+.dock .ag:disabled{opacity:.6;cursor:progress}
+/* Segretaria in evidenza: e' il primo terminale della giornata */
+.dock .ag.primo{border-color:var(--cy);color:var(--cy-2);padding:7px 14px;font-size:12.5px;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%)}
+.dock .ag.primo:hover:not(:disabled){background:rgba(56,189,248,.1);color:var(--cy-2)}
+.dock .tutti{border-style:dashed}
+.dock .tutti[aria-expanded="true"]{border-style:solid;border-color:var(--cy);color:var(--cy-2)}
+.dock .esito{margin:0 0 0 auto;font-size:11px;max-width:52ch;text-align:right}
+.dock .esito b{font-weight:500;color:var(--mid)}
+.dock kbd{font-family:var(--mono);font-size:10px;color:var(--dim);border:1px solid var(--line-2);padding:0 4px}
+
+/* l'elenco completo: un pannello sopra il dock, chiuso con Esc o col tasto A */
+.agenti{position:fixed;left:50%;transform:translateX(-50%);bottom:64px;width:min(1180px,calc(100vw - 32px));max-height:min(72vh,720px);
+  overflow:auto;z-index:40;border:1px solid var(--line-3);background:var(--panel);
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.agenti .gruppo{border-right:1px solid var(--line);min-width:0}
+.agenti .gruppo:last-child{border-right:0}
+.agenti h4{margin:0;padding:12px 16px 10px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+  border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline;position:sticky;top:0;background:var(--panel)}
+.agenti h4 small{font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--dim)}
+.agenti .v{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--line)}
+.agenti .v:last-child{border-bottom:0}
+.agenti .v b{font-size:13.5px;font-weight:600;display:block;line-height:1.3}
+.agenti .v small{display:block;font-size:11.5px;color:var(--dim);line-height:1.4;overflow-wrap:anywhere}
+.agenti .v code{font-family:var(--mono);font-size:10.5px;color:var(--cy-2);opacity:.85}
+.agenti .v>div{grid-column:1;grid-row:1;min-width:0}
+.agenti .v .btn{grid-column:2;grid-row:1;align-self:center}
+.agenti .v .esito{grid-column:1/-1;grid-row:2;margin-top:4px}
+.agenti .nulla{padding:14px 16px;color:var(--dim);font-size:12.5px;line-height:1.55}
+.agenti .chiudi{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;
+  border-bottom:1px solid var(--line-2);background:var(--panel-2);font-family:var(--mono);font-size:11px;color:var(--dim)}
+.agenti .chiudi b{color:var(--ink);font-family:var(--sans);font-size:13px;letter-spacing:.14em;text-transform:uppercase}
 
 /* il grafo: identico per logica al settore Cervello del canvas (raggio ∝ √grado,
    colore per tipo, opacita' per eta'); qui e' il centro della pagina, non un pannello */
@@ -476,6 +522,9 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   .ticket .n{font-size:26px}
   .piega .corpo{grid-template-columns:1fr}
   .piega .blocco+.blocco{border-left:0;border-top:1px solid var(--line)}
+  .dock .esito{flex:1 1 100%;text-align:left;max-width:none}
+  .agenti{grid-template-columns:1fr;bottom:0;max-height:80vh}
+  .agenti .gruppo{border-right:0;border-bottom:1px solid var(--line)}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
@@ -563,11 +612,21 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   </details>
 </main>
 
+<!-- ═══ il dock degli agenti: i quattro di ogni giorno, e l'elenco completo ═══ -->
+<nav class="dock" id="dock" aria-label="Agenti: apri un terminale">
+  <span class="k">Agenti</span>
+  <span id="dock-personali"></span>
+  <button class="ag tutti" id="dock-tutti" type="button" aria-expanded="false" aria-controls="agenti">tutti gli agenti <kbd>A</kbd></button>
+  <span class="esito" id="dock-esito" aria-live="polite"></span>
+</nav>
+<div class="agenti" id="agenti" role="dialog" aria-label="Tutti gli agenti" hidden></div>
+
 <footer class="piede">
   <span class="legenda solo-hub"><i style="background:var(--red)"></i>rosso = agisci · <i style="background:var(--amber)"></i>ambra = osserva · <i style="background:var(--green)"></i>verde = ok</span>
   <span class="solo-hub"><kbd>←→↑↓</kbd>fra le schede · <kbd>Invio</kbd>apri</span>
   <span class="solo-dett"><kbd>Esc</kbd>torna al cervello</span>
   <span class="solo-dett"><kbd>E</kbd>apri / chiudi i workstream</span>
+  <span class="solo-hub"><kbd>0</kbd>ricentra il cervello</span>
   <span><kbd>R</kbd>aggiorna</span>
   <span><kbd>C</kbd>vista completa</span>
   <span class="stamp" id="stamp">—</span>
@@ -711,11 +770,74 @@ function costruisciGrafo(d){
     const cc=sv("circle",{class:"nodo",cx:p.x.toFixed(1),cy:p.y.toFixed(1),r:r.toFixed(2),fill:col,"fill-opacity":op});
     cc.dataset.id=n.id;
     const t=sv("title"); t.textContent=`${n.etichetta||n.id} · ${n.tipo||"—"} · grado ${n.grado??"—"}`+(n.toccato?` · toccato ${fmtData(n.toccato)}`:""); cc.append(t);
-    cc.addEventListener("click",ev=>{ ev.stopPropagation(); selezionaNodo(cervSel===n.id?null:n.id); });
+    cc.addEventListener("click",ev=>{ ev.stopPropagation(); if(Z.mosso) return; selezionaNodo(cervSel===n.id?null:n.id); });
     gn.append(cc); });
   mondo.append(gl,ga,gn); s.append(mondo);
-  s.addEventListener("click",()=>selezionaNodo(null));
+  s.addEventListener("click",()=>{ if(!Z.mosso) selezionaNodo(null); });
   return {svg:s, pos, mondo, byId:Object.fromEntries(d.nodes.map(n=>[n.id,n]))};
+}
+
+/* ─── zoom e pan del cervello: la stessa meccanica del piano (/canvas) ───
+   V e' la vista disegnata, T quella voluta; `passo` facilita a tempo (tau
+   110 ms), non a frame. Tutto in unita' del viewBox, sul gruppo `.mondo`:
+   i fili leggono il CTM del gruppo e seguono da soli. */
+const Z={V:{x:0,y:0,s:1}, T:{x:0,y:0,s:1}, min:.6, max:8, animando:false, ultimo:0, drag:null, mosso:false, dita:new Map()};
+function applicaZoom(){
+  if(!GRAFO) return;
+  const {x,y,s}=Z.V;
+  GRAFO.mondo.setAttribute("transform",`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${s.toFixed(4)})`);
+  const z=$("didascalia-zoom"); if(z){ z.hidden=Math.abs(s-1)<.01&&Math.abs(x)<.5&&Math.abs(y)<.5; z.firstChild.textContent="×"+s.toFixed(2); }
+  if(VISTA==="hub") disegnaFili();
+}
+function passoZoom(ts){
+  const {V,T}=Z; const dt=Math.min(64,ts-(Z.ultimo||ts)); Z.ultimo=ts;
+  const k=RIDOTTO?1:1-Math.exp(-dt/110);
+  V.x+=(T.x-V.x)*k; V.y+=(T.y-V.y)*k; V.s+=(T.s-V.s)*k;
+  const fermo=Math.abs(T.x-V.x)<.05&&Math.abs(T.y-V.y)<.05&&Math.abs(T.s-V.s)<.0005;
+  if(fermo){ V.x=T.x;V.y=T.y;V.s=T.s; Z.animando=false; Z.ultimo=0; }
+  applicaZoom();
+  if(Z.animando) requestAnimationFrame(passoZoom);
+}
+function animaZoom(){ if(!Z.animando){ Z.animando=true; requestAnimationFrame(passoZoom); } }
+const clampZ=s=>Math.min(Z.max,Math.max(Z.min,s));
+/* da coordinate schermo a unita' del viewBox (prima del transform del mondo) */
+function puntoSvg(cx,cy){ const m=GRAFO&&GRAFO.svg.getScreenCTM(); if(!m) return null; const p=GRAFO.svg.createSVGPoint(); p.x=cx; p.y=cy; return p.matrixTransform(m.inverse()); }
+function zoomSu(cx,cy,f){
+  const p=puntoSvg(cx,cy); if(!p) return; const T=Z.T;
+  const k=clampZ(T.s*f), r=k/T.s;
+  T.x=p.x-(p.x-T.x)*r; T.y=p.y-(p.y-T.y)*r; T.s=k; animaZoom();
+}
+function ricentra(subito){ Z.T={x:0,y:0,s:1}; if(subito||RIDOTTO){ Z.V={x:0,y:0,s:1}; Z.animando=false; applicaZoom(); } else animaZoom(); }
+{
+  const box=$("grafo-hub");
+  box.addEventListener("wheel",e=>{
+    if(!GRAFO||VISTA!=="hub") return; e.preventDefault();
+    const f=Math.min(1.5,Math.max(.66,Math.exp(-e.deltaY*(e.ctrlKey?.01:.0022))));
+    zoomSu(e.clientX,e.clientY,f);
+  },{passive:false});
+  box.addEventListener("pointerdown",e=>{
+    if(!GRAFO||VISTA!=="hub"||(e.pointerType==="mouse"&&e.button!==0)) return;
+    Z.dita.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    box.setPointerCapture(e.pointerId);
+    if(Z.dita.size===1){ Z.drag={x:e.clientX,y:e.clientY,tx:Z.T.x,ty:Z.T.y}; Z.mosso=false; }
+    else if(Z.dita.size===2){ Z.drag=null; const [a,b]=[...Z.dita.values()]; Z.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:Z.T.s}; }
+  });
+  box.addEventListener("pointermove",e=>{
+    if(!Z.dita.has(e.pointerId)) return;
+    Z.dita.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(Z.dita.size===2&&Z.pinch){
+      const [a,b]=[...Z.dita.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(!d) return;
+      const f=clampZ(Z.pinch.s*d/Z.pinch.d)/Z.T.s; zoomSu((a.x+b.x)/2,(a.y+b.y)/2,f); Z.mosso=true; return;
+    }
+    if(!Z.drag) return;
+    const dx=e.clientX-Z.drag.x, dy=e.clientY-Z.drag.y;
+    if(Math.abs(dx)+Math.abs(dy)>4){ Z.mosso=true; box.classList.add("trascino"); }
+    const m=GRAFO.svg.getScreenCTM(); const k=m?m.a:1;   /* px dello schermo -> unita' del viewBox */
+    Z.T.x=Z.drag.tx+dx/k; Z.T.y=Z.drag.ty+dy/k; Z.V.x=Z.T.x; Z.V.y=Z.T.y; applicaZoom();
+  });
+  const fine=e=>{ Z.dita.delete(e.pointerId); if(Z.dita.size<2) Z.pinch=null; if(!Z.dita.size){ Z.drag=null; box.classList.remove("trascino"); setTimeout(()=>{ Z.mosso=false; },0); } };
+  box.addEventListener("pointerup",fine); box.addEventListener("pointercancel",fine);
+  box.addEventListener("dblclick",e=>{ if(GRAFO&&VISTA==="hub"){ e.preventDefault(); ricentra(); } });
 }
 function selezionaNodo(id){
   if(!GRAFO) return;
@@ -730,7 +852,7 @@ function selezionaNodo(id){
   g.querySelectorAll("line").forEach(l=>{ if(l.dataset.da===id||l.dataset.a===id) l.classList.add("hi"); });
   g.querySelectorAll("circle.nodo").forEach(c=>{ if(vicini.has(c.dataset.id)) c.classList.add("vicino"); });
   const n=GRAFO.byId[id], p=GRAFO.pos[id];
-  const lab=sv("text",{x:p.x+8,y:p.y+4,class:"etichetta"}); lab.textContent=n.etichetta||id; g.append(lab);
+  const lab=sv("text",{x:p.x+8,y:p.y+4,class:"etichetta"}); lab.textContent=n.etichetta||id; GRAFO.mondo.append(lab);
   did.replaceChildren(); did.append(el("span","sel",n.etichetta||id), ` · ${n.tipo||"—"} · ${vicini.size} collegamenti`+(n.toccato?` · toccato ${fmtData(n.toccato)}`:""));
 }
 function didascaliaCervello(){
@@ -739,6 +861,7 @@ function didascaliaCervello(){
   const c=CERV.conteggi||{}; const e=daQuando(CERV.generato);
   did.append("Cervello · "); did.append(el("b","",String(c.nodi??CERV.nodes.length)+" nodi"));
   did.append(` · ${c.archi??(CERV.edges||[]).length} archi`+(c.mancanti?` · ${c.mancanti} mancanti`:"")+(e!=null?` · generato ${etaS(e)} fa`:""));
+  const z=el("span","zoom"); z.id="didascalia-zoom"; z.append(el("span","","×"+Z.V.s.toFixed(2)), el("kbd","","0 ricentra")); z.hidden=Math.abs(Z.V.s-1)<.01&&Math.abs(Z.V.x)<.5&&Math.abs(Z.V.y)<.5; did.append(z);
   $("mm-n").textContent=`${c.nodi??CERV.nodes.length} nodi`;
 }
 function placeholderCervello(box, motivo){
@@ -759,7 +882,8 @@ async function caricaCervello(){
   GRAFO=costruisciGrafo(CERV);
   $("grafo-hub").replaceChildren(); $("mm-grafo").replaceChildren();
   casa.append(GRAFO.svg);
-  if(GRAFO.mondo.classList.contains("nasce")) requestAnimationFrame(()=>requestAnimationFrame(()=>GRAFO.mondo.classList.remove("nasce")));
+  if(GRAFO.mondo.classList.contains("nasce")){ const m=GRAFO.mondo, via=()=>m.classList.remove("nasce"); requestAnimationFrame(()=>requestAnimationFrame(via)); setTimeout(via,80); }
+  applicaZoom();   /* un indice nuovo non azzera la vista che Andrea ha messo */
   didascaliaCervello();
   if(sel&&GRAFO.byId[sel]) selezionaNodo(sel);
   disegnaAncore(); disegnaFili();
@@ -787,7 +911,7 @@ function disegnaAncore(){
     const a=sv("circle",{class:"ancora"+(p.n_richiedono_te>0?" rosso":""),cx:q.x,cy:q.y,r:(r+5).toFixed(1)});
     a.dataset.progetto=p.id;
     const t=sv("title"); t.textContent=`${p.nome} ↔ ${n.etichetta||n.id}`; a.append(t);
-    GRAFO.svg.append(a);
+    GRAFO.mondo.append(a);
   }
 }
 
@@ -857,8 +981,9 @@ function disegnaFili(){
   const pr=palco.getBoundingClientRect();
   svg.setAttribute("viewBox",`0 0 ${pr.width} ${pr.height}`); svg.replaceChildren();
   const gh=$("grafo-hub").getBoundingClientRect();
+  /* il CTM del gruppo `.mondo` porta anche zoom e pan: il filo segue il nodo */
   const puntoNodo=id=>{ if(!GRAFO||!GRAFO.pos[id]||!GRAFO.svg.isConnected||GRAFO.svg.closest("#grafo-hub")==null) return null;
-    const pt=GRAFO.svg.createSVGPoint(); pt.x=GRAFO.pos[id].x; pt.y=GRAFO.pos[id].y; const m=GRAFO.svg.getScreenCTM(); if(!m) return null;
+    const pt=GRAFO.svg.createSVGPoint(); pt.x=GRAFO.pos[id].x; pt.y=GRAFO.pos[id].y; const m=GRAFO.mondo.getScreenCTM(); if(!m) return null;
     const q=pt.matrixTransform(m); return {x:q.x-pr.left,y:q.y-pr.top}; };
   const cx=gh.left-pr.left+gh.width/2, cy=gh.top-pr.top+gh.height/2;
   for(const lato of ["sx","dx"]){
@@ -1123,7 +1248,18 @@ function disegnaGoal(d){
     v.append(" nella card del progetto: "); v.append(el("code","","- testo · attuale:v · obiettivo:v · check:id")); v.append(". Niente qui e' inventato.");
     box.append(v); return;
   }
+  /* Due goal che citano lo stesso check misurano lo stesso dato: una tile
+     sola, col goal che ha un obiettivo vero in testa e l'altro in calce.
+     La card resta com'e' (il doppione va tolto li', non qui). */
+  const fusi=[], perCheck={};
   for(const x of g){
+    const chiave=(x.checks||[]).slice().sort().join(",");
+    const capo=chiave&&perCheck[chiave];
+    if(capo){ if(MANCA(capo.obiettivo)&&!MANCA(x.obiettivo)){ x.anche=[capo,...(capo.anche||[])]; fusi[fusi.indexOf(capo)]=x; perCheck[chiave]=x; } else (capo.anche=capo.anche||[]).push(x); continue; }
+    if(chiave) perCheck[chiave]=x;
+    fusi.push(x);
+  }
+  for(const x of fusi){
     const t=el("div","goal-t");
     const e=el("div","eti"); e.append(el("i","led "+(x.salute||"nessuno")), el("span","",x.testo)); e.title=x.testo+(x.checks&&x.checks.length?" · check: "+x.checks.join(", "):" · nessun check"); t.append(e);
     const att=String(x.attuale||"non misurato");
@@ -1133,7 +1269,9 @@ function disegnaGoal(d){
     const raggiunto=x.numerico&&parseFloat(att)===parseFloat(o);
     ob.append(el("span",MANCA(o)?"manca":raggiunto?"ok":"",o+(raggiunto?" ✓":"")));
     if(x.checks&&x.checks.length) ob.append(el("em",""," · "+(x.checks.length===1?x.checks[0]:x.checks.length+" check")));
-    t.append(ob); box.append(t);
+    t.append(ob);
+    for(const y of x.anche||[]){ const a=el("div","ob"); a.append(el("em","","anche: "), y.testo+" · obiettivo: "); a.append(el("span",MANCA(y.obiettivo)?"manca":"",String(y.obiettivo||"da decidere"))); a.title="stesso check ("+(x.checks||[]).join(", ")+"): stesso dato, una tile sola"; t.append(a); }
+    box.append(t);
   }
 }
 function disegnaSalute(d){
@@ -1241,14 +1379,15 @@ function mostra(vista, area){
   const prima=VISTA; VISTA=vista; AREA=vista==="progetto"?area:null;
   $("pagina").dataset.vista=vista;
   $("hub").hidden=vista!=="hub"; $("progetto").hidden=vista!=="progetto"; $("banda").hidden=vista!=="hub";
-  selezionaNodo(null);
+  selezionaNodo(null); if(prima!==vista) ricentra(true); chiudiAgenti();
   const casa=vista==="hub"?$("grafo-hub"):$("mm-grafo");
   if(svg&&svg.parentElement!==casa){ casa.replaceChildren(); casa.append(svg); }
   else if(!svg){ placeholderCervello(casa,"assente"); }
   if(vista==="progetto"){
     if(prima!=="progetto"||!DATI||(DATI.area!==area)){ DATI=null; APERTE.clear(); PRIMA_VOLTA=true; }
     $("fili").classList.remove("pronti");
-    const m=$("progetto"); if(prima!=="progetto"&&!RIDOTTO){ m.classList.add("entra"); requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.remove("entra"))); }
+    /* il rAF puo' essere sospeso (finestra coperta): il timeout garantisce che la vista compaia comunque */
+    const m=$("progetto"); if(prima!=="progetto"&&!RIDOTTO){ m.classList.add("entra"); const via=()=>m.classList.remove("entra"); requestAnimationFrame(()=>requestAnimationFrame(via)); setTimeout(via,80); }
     if(prima!==vista) volo(svg,da);
     caricaDettaglio();
     if(prima!=="progetto") requestAnimationFrame(()=>$("torna").focus({preventScroll:true}));
@@ -1289,9 +1428,12 @@ document.addEventListener("keydown",e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   const t=e.target; if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA")) return;
   const k=e.key.toLowerCase();
-  if(k==="escape"){ if(document.querySelector(".conferma")) return; if(VISTA==="progetto"){ e.preventDefault(); location.hash=""; } else selezionaNodo(null); return; }
+  if(k==="escape"){ if(document.querySelector(".conferma")) return; if(!$("agenti").hidden){ chiudiAgenti(); return; }
+    if(VISTA==="progetto"){ e.preventDefault(); location.hash=""; } else if(cervSel) selezionaNodo(null); else ricentra(); return; }
   if(k==="r"){ e.preventDefault(); VISTA==="hub"?caricaHub():caricaDettaglio(); caricaCervello(); return; }
   if(k==="c"){ e.preventDefault(); location.href="/canvas"; return; }
+  if(k==="a"){ e.preventDefault(); toggleAgenti(); return; }
+  if(k==="0"&&VISTA==="hub"){ e.preventDefault(); ricentra(); return; }
   if(VISTA==="progetto"&&k==="e"){ e.preventDefault();
     const righe=[...document.querySelectorAll("#righe .riga")]; if(!righe.length) return;
     const tutteAperte=righe.every(r=>r.classList.contains("aperta"));
@@ -1312,6 +1454,81 @@ document.addEventListener("keydown",e=>{
     prossima&&prossima.focus();
   }
 });
+/* ═══════════════════════════════ il dock degli agenti ═══════════════════════════════ */
+/* Gli stessi lanciatori del settore H «Terminali» di /canvas: la pagina manda
+   una chiave, il server costruisce il comando (actions.py, invariato). La
+   POST e' la stessa del cockpit: token nell'header, Origin controllato. */
+async function chiedi(azione, extra={}){
+  try{
+    const r=await fetch("/api/action",{method:"POST",
+      headers:{"Content-Type":"application/json","X-CC-Token":TOKEN},
+      body:JSON.stringify(Object.assign({azione},extra))});
+    const j=await r.json().catch(()=>({}));
+    return {status:r.status, ...j};
+  }catch(e){ return {ok:false,errore:String(e)}; }
+}
+async function json(url, altrimenti){
+  try{ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) return altrimenti; return await r.json(); }
+  catch(e){ return altrimenti; }
+}
+/* un solo modo di aprire: il tasto dice «apro…», poi l'esito — verde se
+   aperto, rosso e specifico se no. Niente finestra di conferma: aprire un
+   terminale non scrive nulla. */
+async function apriTerminale(b, nome, azione, extra, dove){
+  const figli=[...b.childNodes]; b.disabled=true; b.replaceChildren("apro…");
+  const r=await chiedi(azione,extra);
+  const ok=!!r.ok, msg=ok?`${nome}: aperto — cerca la finestra del Terminale`+(r.prova?" (prova)":"")
+                       :`${nome}: non aperto — ${r.errore||r.stderr||(r.status===403?"token rifiutato":r.status?"HTTP "+r.status:"errore")}`;
+  b.replaceChildren(...figli); b.disabled=false;
+  const e=$("dock-esito"); e.className="esito "+(ok?"ok":"ko"); e.replaceChildren(); e.append(el("b","",hm(new Date())+" · "), msg);
+  if(dove) esito(dove,msg,ok);
+}
+async function disegnaDock(){
+  const pers=await json("/api/personali",[]);
+  const box=$("dock-personali"); box.replaceChildren();
+  if(!pers.length){ box.append(el("span","k","nessun agente personale dichiarato")); return; }
+  pers.forEach((x,i)=>{
+    const b=el("button","ag"+(i===0?" primo":""),x.nome); b.type="button"; b.title=`${x.remit} · claude --agent ${x.agente}`;
+    b.append(el("small","","--agent "+x.agente));
+    b.addEventListener("click",()=>apriTerminale(b,x.nome,"apri_personale",{chiave:x.chiave}));
+    box.append(b);
+  });
+}
+function vocePannello(titolo, sub, cmd, nome, azione, extra){
+  const v=el("div","v");
+  const t=el("div"); t.append(el("b","",titolo)); if(sub) t.append(el("small","",sub)); if(cmd) t.append(el("code","",cmd)); v.append(t);
+  const b=el("button","btn piccolo","apri"); b.type="button"; b.addEventListener("click",()=>apriTerminale(b,nome,azione,extra,v)); v.append(b);
+  return v;
+}
+async function disegnaAgenti(){
+  const p=$("agenti"); p.replaceChildren();
+  const capo=el("div","chiudi"); capo.append(el("b","","Tutti gli agenti"), el("span","","ogni tasto apre una finestra del Terminale · Esc o A per chiudere")); p.append(capo);
+  const [ali,az,pers]=await Promise.all([json("/api/ali",[]),json("/api/azienda",{assente:true}),json("/api/personali",[])]);
+  const g1=el("div","gruppo"); g1.append(el("h4","","Le ali del lab")); g1.firstChild.append(el("small","",`${ali.length} · lab <ala>`));
+  if(!ali.length) g1.append(el("div","nulla","Nessuna ala dichiarata: manca lab/ali.tsv."));
+  for(const x of ali) g1.append(vocePannello(x.sessione, x.remit, "lab "+x.chiave+(x.agente?" · --agent "+x.agente:""), x.sessione, "apri", {ala:x.chiave}));
+  const prod=(az&&!az.assente&&az.prodotti)||[];
+  const g2=el("div","gruppo"); g2.append(el("h4","","Le chat di prodotto")); g2.firstChild.append(el("small","",`${prod.length} · lab prodotto <chiave>`));
+  if(!prod.length) g2.append(el("div","nulla",az&&az.assente?"Il portafoglio non e' ancora stato scritto (`lab azienda --json`).":"Nessun prodotto in prodotti.tsv."));
+  for(const x of prod){ const c=x.conta||{}, vivi=(c.ATTIVO||0)+(c.BLOCCATO||0);
+    g2.append(vocePannello(x.nome, vivi?`${c.ATTIVO||0} attivi · ${c.BLOCCATO||0} bloccati`:(c.OPERATIVO?"gira da solo":"nessun progetto vivo"), "lab prodotto "+x.chiave+(x.agente?" · --agent "+x.agente:""), x.nome, "apri_prodotto", {chiave:x.chiave})); }
+  const g3=el("div","gruppo"); g3.append(el("h4","","Le chat personali")); g3.firstChild.append(el("small","",`${pers.length} · claude --agent`));
+  for(const x of pers) g3.append(vocePannello(x.nome, x.remit, "--agent "+x.agente, x.nome, "apri_personale", {chiave:x.chiave}));
+  p.append(g1,g2,g3);
+}
+function chiudiAgenti(){ const p=$("agenti"); if(p.hidden) return; p.hidden=true; $("dock-tutti").setAttribute("aria-expanded","false"); $("dock-tutti").focus({preventScroll:true}); }
+async function toggleAgenti(){
+  const p=$("agenti"); if(!p.hidden){ chiudiAgenti(); return; }
+  p.hidden=false; $("dock-tutti").setAttribute("aria-expanded","true");
+  /* il pannello poggia sul dock, ovunque il dock sia (in flusso nell'hub, sticky nel dettaglio) */
+  const d=$("dock").getBoundingClientRect(); if(innerWidth>720) p.style.bottom=Math.max(8,innerHeight-d.top+8)+"px";
+  await disegnaAgenti();
+  const primo=p.querySelector(".btn"); primo&&primo.focus({preventScroll:true});
+}
+$("dock-tutti").addEventListener("click",toggleAgenti);
+document.addEventListener("click",e=>{ const p=$("agenti"); if(!p.hidden&&!p.contains(e.target)&&!$("dock").contains(e.target)) chiudiAgenti(); });
+disegnaDock();
+
 /* i fili seguono il layout: resize, font caricati, schede che cambiano altezza */
 new ResizeObserver(()=>{ if(VISTA==="hub") disegnaFili(); }).observe($("palco"));
 document.fonts&&document.fonts.ready.then(()=>{ if(VISTA==="hub") disegnaFili(); });
