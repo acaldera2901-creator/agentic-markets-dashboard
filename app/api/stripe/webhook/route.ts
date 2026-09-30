@@ -5,6 +5,8 @@ import { activateStripePlan } from "@/lib/plan-grant";
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
 import { receiptEmail, cancellationEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
+import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
+import { stripeInvoiceAmounts } from "@/lib/affiliate/net";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -139,7 +141,7 @@ export async function POST(req: Request) {
         }
         if (identifier && plan) {
           // Persist the sub id in the same update (set even if checkout.session.completed is late).
-          await activateStripePlan(identifier, plan, subId, periodEndToIso(periodEnd));
+          const activated = await activateStripePlan(identifier, plan, subId, periodEndToIso(periodEnd));
           // Receipt with the real amount. The event-id guard above ensures one
           // send per payment event (no duplicates on Stripe redelivery).
           if (identifier.includes("@")) {
@@ -164,6 +166,19 @@ export async function POST(req: Request) {
               html: mail.html,
               text: mail.text,
               meta: { invoice: inv.id, plan },
+            });
+          }
+          // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant (non lancia mai;
+          // off = no-op). Ref = invoice.id: ogni rinnovo è un'invoice nuova.
+          if (activated && inv.id) {
+            const amounts = stripeInvoiceAmounts(inv);
+            await recordAffiliateCommissionSafe({
+              identifier: activated.identifier,
+              rail: "stripe",
+              paymentRef: inv.id,
+              grossUsd: amounts.grossUsd,
+              paidAt: new Date(),
+              meta: { taxUsd: amounts.taxUsd },
             });
           }
         } else {

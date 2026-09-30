@@ -1,5 +1,31 @@
 import { describe, it, expect } from "vitest";
-import { netAmount, commissionAmount, round2 } from "./net";
+import { netAmount, commissionAmount, round2, shopifyOrderAmounts, stripeInvoiceAmounts } from "./net";
+
+describe("importi dai payload dei rail (#AFFILIATE-V2-0930 PR-2)", () => {
+  it("Shopify: lordo = total_price, tasse = total_tax", () => {
+    expect(shopifyOrderAmounts({ total_tax: "3.30", currency: "USD" }, 18.29)).toEqual({ grossUsd: 18.29, taxUsd: 3.3 });
+  });
+
+  it("Shopify: senza total_tax le tasse sono ignote (null)", () => {
+    expect(shopifyOrderAmounts({}, 14.99)).toEqual({ grossUsd: 14.99, taxUsd: null });
+  });
+
+  it("Shopify: valuta non USD → lordo null (niente conversioni inventate)", () => {
+    expect(shopifyOrderAmounts({ currency: "EUR", total_tax: "0" }, 14.99)).toEqual({ grossUsd: null, taxUsd: null });
+  });
+
+  it("Stripe: centesimi → dollari, tasse sommate da total_taxes", () => {
+    expect(stripeInvoiceAmounts({ amount_paid: 1829, currency: "usd", total_taxes: [{ amount: 200 }, { amount: 130 }] })).toEqual({
+      grossUsd: 18.29,
+      taxUsd: 3.3,
+    });
+  });
+
+  it("Stripe: valuta non USD o amount_paid assente → lordo null", () => {
+    expect(stripeInvoiceAmounts({ amount_paid: 1499, currency: "eur" }).grossUsd).toBeNull();
+    expect(stripeInvoiceAmounts({ amount_paid: null, currency: "usd" }).grossUsd).toBeNull();
+  });
+});
 
 describe("netAmount (#AFFILIATE-V2-0930)", () => {
   it("senza tasse/rimborsi/fee il netto è il lordo", () => {

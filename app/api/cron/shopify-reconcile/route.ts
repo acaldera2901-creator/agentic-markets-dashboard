@@ -4,6 +4,7 @@ import { verifyBearer } from "@/lib/admin-auth";
 import { activateShopifyPlan } from "@/lib/plan-grant";
 import { resolveOrderFromVariant } from "@/lib/shopify";
 import { opsAlert } from "@/lib/ops-alert";
+import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const events = await dbQuery<{ event_id: string; identifier: string | null; variant_id: string | null }>(
-    `SELECT event_id, identifier, variant_id
+  const events = await dbQuery<{
+    event_id: string; identifier: string | null; variant_id: string | null; amount: string | number | null;
+  }>(
+    `SELECT event_id, identifier, variant_id, amount
        FROM shopify_events
       WHERE status = 'unresolved'
         AND event_type = 'orders/paid'
@@ -52,6 +55,16 @@ export async function GET(req: Request) {
         );
         granted++;
         console.log(`[shopify/reconcile] GRANT order=${ev.event_id} plan=${g.plan} period=${resolved.period}`);
+        // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op).
+        // `amount` NULL (righe storiche) → nessuna commissione, solo un log.
+        // shopify_events non conserva le tasse: qui il lordo non ne è depurato.
+        await recordAffiliateCommissionSafe({
+          identifier: ev.identifier,
+          rail: "shopify",
+          paymentRef: ev.event_id,
+          grossUsd: ev.amount == null ? null : Number(ev.amount),
+          paidAt: new Date(),
+        });
       } else {
         // Profilo ancora inesistente o grandfather: si ritenta al prossimo giro.
         stillUnresolved++;
