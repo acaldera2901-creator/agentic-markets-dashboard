@@ -1,28 +1,55 @@
 // #AFFILIATE-V2-0930 PR-2 — guardie di regressione sui rail di pagamento.
 //
 // Il ledger è agganciato nei CHIAMANTI delle activate*Plan (5 rail, 9 punti).
-// Qui si verifica, per ognuno, con il ledger VERO (non mockato):
-//  1. AFFILIATE_MODE=off → il ledger non emette nemmeno una query;
-//  2. shadow + DB del ledger che lancia → il rail si comporta ESATTAMENTE come
-//     con off: stessa risposta, stesse query non-affiliate nello stesso ordine
-//     (in particolare nessun rollback dell'idempotenza Shopify/Stripe, che
-//     farebbe ritentare il webhook e raddoppiare il grant);
-//  3. shadow + DB sano → una riga in affiliate_commissions con rail, ref e
+// Qui si verifica, per ognuno, con il ledger VERO (non mockato) e con `after()`
+// di next/server catturato: il lavoro del ledger gira solo quando il test
+// «chiude la risposta» (flush), esattamente come in produzione.
+//  1. AFFILIATE_MODE=off → nessun after(), nessuna query del ledger;
+//  2. la risposta del rail esce SENZA che il ledger abbia fatto una sola query
+//     (i webhook non aspettano i suoi roundtrip);
+//  3. shadow + DB del ledger che lancia → il rail si comporta ESATTAMENTE come
+//     con off: stessa risposta, stesse query del rail nello stesso ordine (in
+//     particolare nessun rollback dell'idempotenza Shopify/Stripe, che farebbe
+//     ritentare il webhook e raddoppiare il grant);
+//  4. shadow + DB sano → una riga in affiliate_commissions con rail, ref e
 //     importi giusti.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import crypto from "node:crypto";
 
 type Call = { sql: string; params: unknown[] };
-const calls: Call[] = [];
-const AFF_RE = /\baffiliate|referred_by/;
+/** Query emesse mentre il rail serve la richiesta. */
+const railPhase: Call[] = [];
+/** Query emesse dentro i callback di after(), cioè dal ledger. */
+const ledgerPhase: Call[] = [];
+let inLedger = false;
 let affDown = false;
 let railResponder: (sql: string, params: unknown[]) => unknown[] = () => [];
 let attributionWritten = false;
 const commissions: unknown[][] = [];
+const pendingAfter: Array<() => unknown> = [];
+
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: (fn: () => unknown) => {
+    pendingAfter.push(fn);
+  },
+}));
+
+async function flushAfter() {
+  inLedger = true;
+  try {
+    while (pendingAfter.length) await pendingAfter.shift()!();
+  } finally {
+    inLedger = false;
+  }
+}
 
 function affiliateResponder(sql: string, params: unknown[]): unknown[] {
-  if (/FROM affiliate_attributions/.test(sql)) return attributionWritten ? [{ affiliate_id: 7, status: "valid" }] : [];
-  if (/FROM profiles/.test(sql)) return [{ referred_by: "AFF1" }];
+  if (/FROM affiliate_attributions/.test(sql)) {
+    return attributionWritten ? [{ affiliate_id: 7, status: "valid", attributed_at: "2026-10-01T00:00:00Z" }] : [];
+  }
+  if (/FROM paygate_orders[\s\S]*h\.ts/.test(sql)) return [{ n: 0 }]; // nessun pagamento storico
+  if (/FROM profiles/.test(sql)) return [{ referred_by: "AFF1", created_at: new Date().toISOString() }];
   if (/FROM affiliates/.test(sql)) return [{ id: 7, identifier: "aff@x.com" }];
   if (/FROM affiliate_payer_fingerprints/.test(sql)) return [];
   if (/INSERT INTO affiliate_attributions/.test(sql)) {
@@ -34,7 +61,7 @@ function affiliateResponder(sql: string, params: unknown[]): unknown[] {
   }
   if (/WHERE referred_identifier = \$1/.test(sql)) return [{ n: commissions.length }];
   if (/INSERT INTO affiliate_commissions/.test(sql)) {
-    commissions.push(params);
+    if (!commissions.some((c) => c[2] === params[2] && c[3] === params[3])) commissions.push(params);
     return [];
   }
   throw new Error(`query affiliate inattesa: ${sql}`);
@@ -42,11 +69,12 @@ function affiliateResponder(sql: string, params: unknown[]): unknown[] {
 
 function dbFn() {
   return vi.fn(async (sql: string, params: unknown[] = []) => {
-    calls.push({ sql, params });
-    if (AFF_RE.test(sql)) {
+    if (inLedger) {
+      ledgerPhase.push({ sql, params });
       if (affDown) throw new Error("affiliate db down");
       return affiliateResponder(sql, params);
     }
+    railPhase.push({ sql, params });
     return railResponder(sql, params);
   });
 }
@@ -114,7 +142,9 @@ const savedEnv = { ...process.env };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  calls.length = 0;
+  railPhase.length = 0;
+  ledgerPhase.length = 0;
+  pendingAfter.length = 0;
   commissions.length = 0;
   affDown = false;
   attributionWritten = false;
@@ -148,22 +178,26 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-type Outcome = { result: unknown; railCalls: Call[] };
+type Outcome = { result: unknown; railCalls: Call[]; affCalls: Call[]; scheduled: number };
 
-/** Esegue il rail una volta e separa le query del rail da quelle del ledger. */
-async function run(mode: "off" | "shadow", down: boolean, fn: () => Promise<unknown>): Promise<Outcome & { affCalls: Call[] }> {
-  calls.length = 0;
+/** Esegue il rail una volta: prima la richiesta (query del rail), poi il flush
+ *  di after() (query del ledger). `scheduled` = callback registrati in after(). */
+async function run(mode: "off" | "shadow", down: boolean, fn: () => Promise<unknown>): Promise<Outcome> {
+  railPhase.length = 0;
+  ledgerPhase.length = 0;
+  pendingAfter.length = 0;
   commissions.length = 0;
   attributionWritten = false;
   affDown = down;
   if (mode === "off") delete process.env.AFFILIATE_MODE;
   else process.env.AFFILIATE_MODE = mode;
   const result = await fn();
-  return {
-    result,
-    railCalls: calls.filter((c) => !AFF_RE.test(c.sql)),
-    affCalls: calls.filter((c) => AFF_RE.test(c.sql)),
-  };
+  const scheduled = pendingAfter.length;
+  // La risposta è pronta e il ledger non ha ancora fatto nemmeno una query.
+  expect(ledgerPhase).toHaveLength(0);
+  const railCalls = [...railPhase];
+  await flushAfter();
+  return { result, railCalls, affCalls: [...ledgerPhase], scheduled };
 }
 
 async function body(r: unknown): Promise<unknown> {
@@ -174,9 +208,11 @@ async function body(r: unknown): Promise<unknown> {
 /** Le tre verifiche, per un rail. `expectRow` = [rail, ref, gross, net]. */
 async function guard(fn: () => Promise<unknown>, expectRow: [string, string, number, number] | null) {
   const off = await run("off", false, async () => body(await fn()));
+  expect(off.scheduled).toBe(0);
   expect(off.affCalls).toHaveLength(0);
 
   const broken = await run("shadow", true, async () => body(await fn()));
+  expect(broken.scheduled).toBeGreaterThan(0);
   expect(broken.result).toEqual(off.result);
   expect(broken.railCalls).toEqual(off.railCalls);
   expect(broken.affCalls.length).toBeGreaterThan(0); // il ledger ci ha provato davvero
@@ -270,6 +306,10 @@ describe("rail PayPal", () => {
     await cap.POST(new Request("https://x/c", { method: "POST", body: JSON.stringify({ paypal_order_id: "PP1" }) }));
     const evt = { event_type: "PAYMENT.CAPTURE.COMPLETED", resource: { custom_id: "pp-1", amount: { value: "14.99", currency_code: "USD" } } };
     await wh.POST(new Request("https://x/w", { method: "POST", body: JSON.stringify(evt) }));
+    // i due callback after() girano insieme, come due richieste parallele
+    inLedger = true;
+    await Promise.all(pendingAfter.splice(0).map((fn) => fn()));
+    inLedger = false;
     expect(commissions).toHaveLength(1);
   });
 });
@@ -307,6 +347,38 @@ describe("rail Shopify", () => {
       /WHERE status = 'unresolved'/.test(sql) ? [{ event_id: "905", identifier: "u@t.com", variant_id: "111", amount: "14.99" }] : [];
     const { GET } = await import("@/app/api/cron/shopify-reconcile/route");
     await guard(() => GET(new Request("https://x/api/cron/shopify-reconcile", { headers: { authorization: "Bearer c" } })), ["shopify", "905", 14.99, 14.99]);
+  });
+
+  it("carrello misto rimasto 'unresolved' (grant null): il webhook lo marca in last_error", async () => {
+    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    activateShopifyPlan.mockResolvedValue(null);
+    const { POST } = await import("@/app/api/shopify/webhook/route");
+    const payload = { id: 907, email: "u@t.com", line_items: [{ variant_id: 111 }, { variant_id: 333 }], total_price: "27.98" };
+    // grant fallito → nessun aggancio al ledger; conta solo cosa scrive il webhook
+    const off = await run("shadow", false, async () => body(await POST(shopReq(payload))));
+    expect(off.scheduled).toBe(0);
+    const mark = off.railCalls.find((c) => /UPDATE shopify_events SET status/.test(c.sql));
+    expect(mark?.params).toEqual(["907", "unresolved", "grant null: profilo inesistente o grandfather [affiliate:non-monopiano]"]);
+  });
+
+  it("ordine monopiano 'unresolved': last_error invariato (nessun marcatore)", async () => {
+    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    activateShopifyPlan.mockResolvedValue(null);
+    const { POST } = await import("@/app/api/shopify/webhook/route");
+    const payload = { id: 908, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "14.99" };
+    const off = await run("shadow", false, async () => body(await POST(shopReq(payload))));
+    const mark = off.railCalls.find((c) => /UPDATE shopify_events SET status/.test(c.sql));
+    expect(mark?.params).toEqual(["908", "unresolved", "grant null: profilo inesistente o grandfather"]);
+  });
+
+  it("reconcile di un carrello misto marcato: piano concesso, nessuna commissione sul totale con Weekly Pick", async () => {
+    railResponder = (sql) =>
+      /WHERE status = 'unresolved'/.test(sql)
+        ? [{ event_id: "907", identifier: "u@t.com", variant_id: "111", amount: "27.98", last_error: "grant null: profilo inesistente o grandfather [affiliate:non-monopiano]" }]
+        : [];
+    const { GET } = await import("@/app/api/cron/shopify-reconcile/route");
+    await guard(() => GET(new Request("https://x/api/cron/shopify-reconcile", { headers: { authorization: "Bearer c" } })), null);
+    expect(activateShopifyPlan).toHaveBeenCalled();
   });
 
   it("reconcile con amount NULL (righe storiche): nessuna commissione", async () => {

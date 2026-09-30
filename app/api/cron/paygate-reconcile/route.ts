@@ -11,7 +11,7 @@ import {
 } from "@/lib/crypto-settle";
 import { grantWeeklyPick, notifyWeeklyPickGranted } from "@/lib/weekly-pick-server";
 import { opsAlert } from "@/lib/ops-alert";
-import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
         console.log(`[paygate/reconcile] GRANT order=${o.id} plan=${g.plan}`);
         // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op).
         // `coin` valorizzato = ordine del rail crypto diretto, come in crypto-settle.
-        await recordAffiliateCommissionSafe({
+        scheduleAffiliateCommission({
           identifier: o.identifier,
           rail: o.coin ? "crypto" : "paygate",
           paymentRef: o.id,

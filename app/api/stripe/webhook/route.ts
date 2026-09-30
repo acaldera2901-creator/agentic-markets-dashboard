@@ -5,7 +5,7 @@ import { activateStripePlan } from "@/lib/plan-grant";
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
 import { receiptEmail, cancellationEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
-import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 import { stripeInvoiceAmounts } from "@/lib/affiliate/net";
 
 export const dynamic = "force-dynamic";
@@ -172,7 +172,7 @@ export async function POST(req: Request) {
           // off = no-op). Ref = invoice.id: ogni rinnovo è un'invoice nuova.
           if (activated && inv.id) {
             const amounts = stripeInvoiceAmounts(inv);
-            await recordAffiliateCommissionSafe({
+            scheduleAffiliateCommission({
               identifier: activated.identifier,
               rail: "stripe",
               paymentRef: inv.id,
