@@ -267,6 +267,12 @@ class Handler(BaseHTTPRequestHandler):
             corpo = cockpit.cockpit(area, read_state(STATE_FILE))
             self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
+        elif path == "/api/hub":
+            # I progetti di primo livello (card `Tipo: progetto`) e il
+            # verdetto di tutte le aree. Nessun parametro: niente da validare.
+            corpo = cockpit.hub(read_state(STATE_FILE))
+            self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
         elif path == "/api/state":
             body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")

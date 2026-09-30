@@ -280,3 +280,112 @@ def test_endpoint_task_fatto_token_e_origin(servito, registri):
     codice, esito = _post(url, corpo, {"X-CC-Token": ensure_token()})
     assert (codice, esito["errore"]) == (409, "gia' fatto")
     assert _post(url, {**corpo, "indice": "x"}, {"X-CC-Token": ensure_token()})[0] == 400
+
+
+# ------------------------------------------------- progetto, workstream, hub
+
+CARD_PROGETTO = """---
+description: "BetRedge — il progetto"
+---
+<!-- STATO:start -->
+> 🟢 **STATO 2026-09-30 · `ATTIVO`**
+> **Tipo:** progetto
+> **Nome:** BetRedge
+> **Area:** betredge
+> **Done quando:** track record pubblico coerente col DB
+> **Goal:**
+>   - track record pubblico · attuale:58.2% su 3090 · obiettivo:da decidere · check:history_coerente
+>   - arretrato settle · attuale:1930 · obiettivo:0 · check:cron_settle
+>   - ricavi mensili
+> **Task:**
+>   - [x] creare la card progetto · Claude · fatto:2026-09-30
+<!-- STATO:end -->
+"""
+
+CARD_CATTIVA = """<!-- STATO:start -->
+> **STATO 2026-09-29 · `ATTIVO`**
+> **Area:** ../../etc, BETREDGE
+> **Task:**
+>   - [ ] niente · Claude
+<!-- STATO:end -->
+"""
+
+
+@pytest.fixture
+def con_progetto(registri):
+    (registri / "project_betredge.md").write_text(CARD_PROGETTO, encoding="utf-8")
+    (registri / "project_cattiva.md").write_text(CARD_CATTIVA, encoding="utf-8")
+    return registri
+
+
+def test_goal_parser_non_inventa_numeri():
+    g = cockpit.goals(CARD_PROGETTO)
+    assert [x["testo"] for x in g] == ["track record pubblico", "arretrato settle",
+                                      "ricavi mensili"]
+    assert g[0]["attuale"] == "58.2% su 3090" and g[0]["obiettivo"] == "da decidere"
+    assert g[0]["checks"] == ["history_coerente"] and not g[0]["numerico"]
+    assert (g[1]["attuale"], g[1]["obiettivo"], g[1]["numerico"]) == ("1930", "0", True)
+    assert (g[2]["attuale"], g[2]["obiettivo"]) == ("non misurato", "da decidere")
+    # i task non sono goal e i goal non sono task
+    assert [t["testo"] for t in cockpit.tasks(CARD_PROGETTO)] == ["creare la card progetto"]
+
+
+def test_card_progetto_non_e_un_workstream(con_progetto):
+    d = cockpit.cockpit("betredge", STATO, OGGI)
+    p = d["progetto"]
+    assert (p["id"], p["nome"], p["fase"]) == ("azienda/project_betredge", "BetRedge", "ATTIVO")
+    assert "azienda/project_betredge" not in [w["id"] for w in d["workstream"]]
+    assert d["progetti"] is d["workstream"]              # alias per cockpit.html
+    # settle + cattiva (vive) + stale (archivio) + bloccata ("BetRedge, maven")
+    assert p["n_workstream"] == 4 and p["n_workstream_attivi"] == 3
+    assert p["salute"]["livello"] == "red"
+    assert p["goal"][1]["salute"] == "red" and p["goal"][2]["salute"] is None
+    assert p["avanzamento"]["task_totali"] == 1 + 5 + 1 + 1   # anche la card in archivio
+    assert d["verdetto"] == {"livello": "red", "n_richiedono_te": len(d["richiedono_te"])}
+
+
+def test_nome_breve_con_ripiego():
+    assert cockpit.nome_breve({"nome": "Settle"}, "project_x") == "Settle"
+    assert cockpit.nome_breve({}, "project_settlement_recovery") == "Settlement recovery"
+
+
+def test_area_senza_card_progetto_non_rompe(registri):
+    d = cockpit.cockpit("betredge", STATO, OGGI)
+    assert d["progetto"] is None and d["workstream"]
+
+
+def test_hub_aggrega_e_deduplica(con_progetto):
+    h = cockpit.hub(STATO, OGGI)
+    # aree dalle card; `../../etc` si spezza sui `/` come ogni Area, e i
+    # pezzi `..` non sono slug validi: nessuna area esce dalla forma a-z0-9_-
+    assert h["aree"] == ["betredge", "etc", "maven"]
+    assert all(cockpit.area_valida(a) for a in h["aree"])
+    assert [p["nome"] for p in h["progetti"]] == ["BetRedge"]   # maven non ha card progetto
+    b = cockpit.cockpit("betredge", STATO, OGGI)
+    m = cockpit.cockpit("maven", STATO, OGGI)
+    assert m["verdetto"]["n_richiedono_te"] == 1           # la card bloccata, anche qui
+    # la bloccata sta in due aree: nel verdetto globale conta una volta
+    assert h["verdetto"] == {"livello": "red",
+                             "n_richiedono_te": b["verdetto"]["n_richiedono_te"]}
+    p = h["progetti"][0]
+    assert p["n_richiedono_te"] == b["verdetto"]["n_richiedono_te"]
+    assert p["n_workstream"] == 4 and p["salute"] == "red" and h["slot_liberi"] is True
+    assert p["goal_sintesi"] == "track record pubblico coerente col DB"
+
+
+def test_verdetto_verde_senza_richieste():
+    assert cockpit.livello_verdetto([]) == "green"
+    assert cockpit.livello_verdetto([{"tipo": "task", "evidenza": []}]) == "amber"
+    assert cockpit.livello_verdetto([{"tipo": "check"}]) == "red"
+
+
+def test_endpoint_hub_e_cockpit_senza_traversal(servito, con_progetto):
+    with urllib.request.urlopen(servito + "/api/hub") as r:
+        h = json.loads(r.read())
+    assert [p["id"] for p in h["progetti"]] == ["azienda/project_betredge"]
+    with urllib.request.urlopen(servito + "/api/cockpit?area=betredge") as r:
+        assert json.loads(r.read())["progetto"]["nome"] == "BetRedge"
+    for cattivo in ("../etc", "..%2F..%2Fetc", "%2e%2e", "BetRedge/../x", ""):
+        with pytest.raises(urllib.error.HTTPError) as e:
+            urllib.request.urlopen(servito + "/api/cockpit?area=" + cattivo)
+        assert e.value.code == 400

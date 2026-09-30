@@ -105,6 +105,39 @@ dal check` anche senza `[x]`; `[x]` con un check rosso -> `riaperto dal check`.
 - `archivio` — card dell'area ferme da >14 giorni o `ARCHIVIATO`: contate,
   non mostrate in principale.
 
+### Progetti e workstream (`/api/hub`)
+
+Un **progetto** e' di primo livello (BetRedge; poi swr7, Machina, …). Un
+**workstream** e' il lavoro interno di un progetto (warmup email, piani,
+settlement…). Nessun registro nuovo: sono tutte card `project_*.md`, cambia
+solo cosa dichiara il blocco STATO.
+
+    > **Tipo:** progetto                 (solo la card-progetto)
+    > **Nome:** BetRedge                 (breve; senza, il nome del file ripulito)
+    > **Area:** betredge                 (lo slug che lega progetto e workstream)
+    > **Goal:**
+    >   - track record pubblico · attuale:58.2% su 3090 · obiettivo:da decidere · check:history_coerente
+    >   - pick senza settlement · attuale:1933 · obiettivo:0 · check:cron_settle
+
+Una card con `**Area:**` e senza `**Tipo:** progetto` e' un workstream. Un
+`attuale` o `obiettivo` assente vale `non misurato` / `da decidere`: il cockpit
+non inventa numeri. `check:` (facoltativo) da' la salute del singolo goal.
+Una seconda card `Tipo: progetto` nella stessa area finisce in `avvisi`, vale
+la prima.
+
+- `GET /api/cockpit?area=<slug>` aggiunge `verdetto` {livello, n_richiedono_te},
+  `progetto` (la card-progetto con goal, salute peggiore fra la sua e quella dei
+  workstream vivi, `avanzamento` sui task di tutte le card dell'area,
+  `n_workstream`) e `workstream`; `progetti` resta come alias di `workstream`
+  per `cockpit.html`. Ogni workstream porta `nome`.
+- `GET /api/hub` → `{verdetto, progetti:[{id, area, nome, fase, goal_sintesi,
+  goal, salute, n_richiedono_te, avanzamento, n_workstream, ultimo_tocco}],
+  aree, slot_liberi}`. Le aree vengono dalle `**Area:**` presenti (solo slug
+  `a-z0-9_-`), non da una lista nel codice; il verdetto aggrega tutte le aree,
+  anche quelle senza card-progetto, e un ticket di una card con due aree conta
+  una volta. Il livello (rosso/ambra/verde) e' la stessa regola di
+  `livelloTicket` in pagina, ora derivata nel server.
+
 I check dello snapshot appartengono all'area `betredge` (e' lo snapshot di
 BetRedge). `POST /api/task/fatto` `{id, indice, testo}` (token + Origin come
 `/api/action`) e' l'unica scrittura su una card: spunta **solo** quella riga

@@ -573,7 +573,7 @@ function ticket(t, i){
   const s=daQuando(t.da_quando);
   const da=el("span"); da.append(el("b","",s==null?"—":"da "+etaS(s)));
   if(t.da_quando) da.append(el("span","mono"," · "+fmtDataOra(t.da_quando)));
-  if(t.progetto){ const p=(DATI.progetti||[]).find(p=>p.id===t.progetto); da.append(" · "+(p?p.titolo:t.progetto)); }
+  if(t.progetto){ const p=(DATI.progetti||[]).find(p=>p.id===t.progetto); da.append(" · "+(p?(p.nome||p.titolo):t.progetto)); }
   riga("Da", da);
   if(t.azione&&t.azione!==t.titolo) riga("Azione", t.azione);
   corpo.append(dl);
@@ -698,7 +698,7 @@ function rigaProgetto(p, d){
   r.dataset.salute=(p.salute||{}).livello||"nessuno";
   r.append(el("i","salute"));
   const capo=el("button","capo"); capo.setAttribute("aria-expanded",APERTE.has(p.id)?"true":"false");
-  const nome=el("div","nome",p.titolo||p.id);
+  const nome=el("div","nome",p.nome||p.titolo||p.id); nome.title=p.titolo||"";
   nome.append(el("small","",p.id));
   const fase=el("span","fase "+(p.fase||""),p.fase||"senza fase");
   const goal=el("div","goal",p.goal||""); goal.title=p.goal||"";

@@ -43,6 +43,12 @@ RUN_SECONDI = 300  # il collector gira ogni 5 minuti: `red_runs` * 5 min = da qu
 
 _TASK = re.compile(r"^\s*[-*]\s+\[([ xX])\]\s+(.*?)\s*$")
 _INTESTA_TASK = re.compile(r"^\*\*Task:?\*\*:?\s*$", re.I)
+# Un goal e' una voce di lista senza casella: `- testo · attuale:v · obiettivo:v`.
+_GOAL = re.compile(r"^\s*[-*]\s+(?!\[[ xX]\])(.*?)\s*$")
+_INTESTA_GOAL = re.compile(r"^\*\*Goal:?\*\*:?\s*$", re.I)
+_ATTRIBUTO_GOAL = re.compile(r"^(attuale|obiettivo|check):\s*(\S.*)$", re.I)
+NON_MISURATO = "non misurato"
+DA_DECIDERE = "da decidere"
 _CAMPO = re.compile(r"^\*\*[^*]+\*\*")
 _ATTRIBUTO = re.compile(r"^(scad|check|fatto):\s*(\S.*)$", re.I)
 _DATA = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -90,11 +96,11 @@ def _parse_task(corpo: str) -> dict:
             "fatto_il": fatto_il, "checks": checks}
 
 
-def _righe_task(testo: str):
+def _righe_task(testo: str, intesta=_INTESTA_TASK, voce=_TASK):
     """(numero di riga nel file, riga senza `>`, match) per ogni task del
     blocco STATO. Un generatore solo, usato sia per leggere sia per scrivere:
     se le due strade contassero diversamente, `indice` punterebbe a un altro
-    task."""
+    task. Con `intesta`/`voce` di goal legge la lista `**Goal:**`."""
     dentro_stato = dentro_task = False
     for n, riga in enumerate(testo.splitlines()):
         if "<!-- STATO:start -->" in riga:
@@ -105,7 +111,7 @@ def _righe_task(testo: str):
         if not dentro_stato:
             continue
         pulita = _riga_pulita(riga).strip()
-        if _INTESTA_TASK.match(pulita):
+        if intesta.match(pulita):
             dentro_task = True
             continue
         if not dentro_task:
@@ -113,7 +119,7 @@ def _righe_task(testo: str):
         if _CAMPO.match(pulita):   # il campo successivo chiude la lista
             dentro_task = False
             continue
-        m = _TASK.match(_riga_pulita(riga))
+        m = voce.match(_riga_pulita(riga))
         if m:
             yield n, riga, m
 
@@ -127,6 +133,73 @@ def tasks(testo: str) -> list[dict]:
         t.update({"indice": i, "riga": n + 1, "spuntato": m.group(1).lower() == "x"})
         fuori.append(t)
     return fuori
+
+
+def goals(testo: str) -> list[dict]:
+    """La lista `**Goal:**` di una card-progetto. Un valore assente vale
+    `non misurato` / `da decidere`: il cockpit non inventa numeri. `numerico`
+    dice se attuale e obiettivo sono entrambi cifre confrontabili."""
+    fuori = []
+    for _n, _riga, m in _righe_task(testo, _INTESTA_GOAL, _GOAL):
+        pezzi = [p.strip() for p in m.group(1).split(" · ")]
+        g = {"testo": pezzi[0], "attuale": NON_MISURATO, "obiettivo": DA_DECIDERE,
+             "checks": []}
+        resto = []
+        for p in pezzi[1:]:
+            a = _ATTRIBUTO_GOAL.match(p)
+            if not a:
+                resto.append(p)
+            elif a.group(1).lower() == "check":
+                g["checks"] += [c.strip() for c in a.group(2).split(",") if c.strip()]
+            else:
+                g[a.group(1).lower()] = a.group(2).strip()
+        if resto:
+            g["testo"] = " · ".join([g["testo"], *resto])
+        g["numerico"] = all(_numero(g[k]) is not None for k in ("attuale", "obiettivo"))
+        fuori.append(g)
+    return fuori
+
+
+def _numero(valore: str) -> float | None:
+    m = re.match(r"^\s*(-?\d+(?:[.,]\d+)?)", valore or "")
+    return float(m.group(1).replace(",", ".")) if m else None
+
+
+def e_progetto(campi: dict) -> bool:
+    """`**Tipo:** progetto` fa della card un progetto di primo livello; senza,
+    una card con `**Area:**` e' un workstream di quell'area."""
+    return (campi.get("tipo") or "").strip().lower().startswith("progetto")
+
+
+def nome_breve(campi: dict, stem: str) -> str:
+    """`**Nome:**` se c'e', altrimenti il nome del file ripulito: il titolo e'
+    la `description`, una frase intera, troppo lunga per una riga."""
+    if campi.get("nome"):
+        return campi["nome"]
+    n = stem.removeprefix("project_").replace("_", " ").replace("-", " ").strip()
+    return n[:1].upper() + n[1:]
+
+
+def livello_ticket(t: dict) -> str:
+    """Rosso se c'e' un check rosso misurato o e' un rosso senza owner
+    (triage); il resto — scaduto, non misurato, BLOCCATO in attesa — ambra.
+    La stessa regola di `livelloTicket` in cockpit.html."""
+    if t.get("tipo") == "check" or any(e.get("level") == "red" for e in t.get("evidenza") or []):
+        return "red"
+    return "amber"
+
+
+def livello_verdetto(richiedono: list[dict]) -> str:
+    livelli = [livello_ticket(t) for t in richiedono]
+    return "red" if "red" in livelli else "amber" if livelli else "green"
+
+
+_ORDINE_LIVELLO = {"red": 0, "amber": 1, "unknown": 2, "sconosciuto": 2, "green": 3}
+
+
+def _peggiore(livelli) -> str | None:
+    return min((lv for lv in livelli if lv), key=lambda lv: _ORDINE_LIVELLO.get(lv, 4),
+               default=None)
 
 
 # --------------------------------------------------------------------------
@@ -203,13 +276,15 @@ def costruisci(area: str, stato: dict, card: list[tuple[dict, str]],
     nostri_check = checks if area == AREA_DEI_CHECK else {}
 
     richiedono, progetti_, archivio, in_carico = [], [], [], []
+    progetto = None                      # la card `Tipo: progetto` dell'area
+    avvisi: list[str] = []
     citati_da_andrea: set[str] = set()   # check coperti da un task di Andrea
     citati_da_altri: set[str] = set()    # check presi in carico da altri
 
     for scheda, testo in card:
-        if area not in _aree(progetti._campi(progetti._blocco_stato(testo)).get("area")):
-            continue
         campi = progetti._campi(progetti._blocco_stato(testo))
+        if area not in _aree(campi.get("area")):
+            continue
         lista = tasks(testo)
         for t in lista:
             t["stato"] = stato_task(t, nostri_check)
@@ -267,16 +342,34 @@ def costruisci(area: str, stato: dict, card: list[tuple[dict, str]],
                 "progetto": scheda["id"],
             })
 
-        collegati = sorted({c for t in lista for c in t["checks"]})
+        lista_goal = goals(testo) if e_progetto(campi) else []
+        collegati = sorted({c for t in lista for c in t["checks"]}
+                           | {c for g in lista_goal for c in g["checks"]})
         sal = [_ev_check(c, stato) for c in collegati]
-        peggiore = min((c["level"] for c in sal),
-                       key=lambda lv: {"red": 0, "amber": 1, "unknown": 2, "sconosciuto": 2,
-                                       "green": 3}.get(lv, 4), default=None)
+        peggiore = _peggiore(c["level"] for c in sal)
         aperti = [t for t in lista if not _chiuso(t["stato"])]
         aperti.sort(key=lambda t: (t["scad"] or "9999", t["indice"]))
         verifica = _DATA.findall(campi.get("verifica") or "")
+        if e_progetto(campi):
+            if progetto is not None:
+                avvisi.append(f"{scheda['id']}: seconda card Tipo progetto per l'area "
+                              f"{area}, vale la prima ({progetto['id']})")
+                continue
+            for g in lista_goal:
+                g["salute"] = _peggiore(_ev_check(c, stato)["level"] for c in g["checks"])
+            progetto = {
+                "id": scheda["id"], "nome": nome_breve(campi, scheda["file"][:-3]),
+                "titolo": scheda["titolo"], "fase": scheda.get("fase"),
+                "done_quando": campi.get("done quando"),
+                "prossima_azione": campi.get("prossima azione"),
+                "goal": lista_goal, "salute": {"livello": peggiore, "checks": sal},
+                "task_chiusi": len(lista) - len(aperti), "task_totali": len(lista),
+                "ultimo_tocco": tocco, "giorni_fermo": eta,
+            }
+            continue
         voce = {
-            "id": scheda["id"], "titolo": scheda["titolo"], "fase": scheda.get("fase"),
+            "id": scheda["id"], "nome": nome_breve(campi, scheda["file"][:-3]),
+            "titolo": scheda["titolo"], "fase": scheda.get("fase"),
             "goal": campi.get("goal") or campi.get("done quando"),
             "task_chiusi": len(lista) - len(aperti), "task_totali": len(lista),
             "prossimo_task": aperti[0]["testo"] if aperti else None,
@@ -287,8 +380,9 @@ def costruisci(area: str, stato: dict, card: list[tuple[dict, str]],
             "tasks": lista,
         }
         if stale or scheda.get("fase") == "ARCHIVIATO":
-            archivio.append({"id": voce["id"], "titolo": voce["titolo"], "fase": voce["fase"],
-                             "ultimo_tocco": tocco, "giorni_fermo": eta,
+            archivio.append({"id": voce["id"], "nome": voce["nome"], "titolo": voce["titolo"],
+                             "fase": voce["fase"], "ultimo_tocco": tocco, "giorni_fermo": eta,
+                             "task_chiusi": voce["task_chiusi"], "task_totali": voce["task_totali"],
                              "motivo": "archiviato" if scheda.get("fase") == "ARCHIVIATO"
                              else f"fermo da {eta} giorni (> {STALE_GIORNI})"})
         else:
@@ -327,12 +421,28 @@ def costruisci(area: str, stato: dict, card: list[tuple[dict, str]],
         "ultima_spunta": max((t["fatto_il"] for p in progetti_ for t in p["tasks"]
                               if t["fatto_il"]), default=None),
     }
+    if progetto is not None:
+        # Il progetto somma i suoi workstream: la salute e' la peggiore fra la
+        # sua e quella dei workstream vivi; l'avanzamento conta anche i task
+        # delle card in archivio, perche' un loro task rosso sale comunque in
+        # `richiedono_te` e i due numeri devono parlare degli stessi task.
+        progetto["salute"]["livello"] = _peggiore(
+            [progetto["salute"]["livello"], *(w["salute"]["livello"] for w in progetti_)])
+        tutte = [progetto, *progetti_, *archivio]
+        progetto["avanzamento"] = {"task_chiusi": sum(w["task_chiusi"] for w in tutte),
+                                   "task_totali": sum(w["task_totali"] for w in tutte)}
+        progetto["n_workstream"] = len(progetti_) + len(archivio)
+        progetto["n_workstream_attivi"] = len(progetti_)
     return {
         "area": area, "oggi": oggi.isoformat(),
         "snapshot": stato.get("generated_at"),
+        "verdetto": {"livello": livello_verdetto(richiedono), "n_richiedono_te": len(richiedono)},
         "numeri": numeri,
+        "progetto": progetto,
         "richiedono_te": richiedono,
-        "progetti": progetti_,
+        "workstream": progetti_,
+        "progetti": progetti_,   # alias storico di `workstream`: lo legge cockpit.html
+        "avvisi": avvisi,
         "in_carico": in_carico,
         "da_osservare": da_osservare,
         "archivio": {"conteggio": len(archivio), "elenco": archivio},
@@ -343,15 +453,75 @@ def area_valida(area: str) -> bool:
     return bool(_AREA_OK.match(area or ""))
 
 
-def cockpit(area: str, stato: dict, oggi: date | None = None) -> dict:
-    """Dal disco: le card dei tre registri e lo snapshot passato dal server."""
+def _card_dal_disco() -> list[tuple[dict, str]]:
     card = []
     for chiave, etichetta, f in progetti._percorsi():
         testo = progetti._testo_per_elenco(f)
         if testo is None:
             continue
         card.append((progetti._scheda(f, chiave, etichetta, testo), testo))
-    return costruisci(area, stato, card, oggi)
+    return card
+
+
+def cockpit(area: str, stato: dict, oggi: date | None = None) -> dict:
+    """Dal disco: le card dei tre registri e lo snapshot passato dal server."""
+    return costruisci(area, stato, _card_dal_disco(), oggi)
+
+
+def aree(card: list[tuple[dict, str]]) -> list[str]:
+    """Le aree dichiarate dalle card (`**Area:**`), non una lista scritta qui.
+    Un valore che non e' uno slug valido non diventa un'area."""
+    trovate: set[str] = set()
+    for _scheda, testo in card:
+        trovate |= _aree(progetti._campi(progetti._blocco_stato(testo)).get("area"))
+    return sorted(a for a in trovate if area_valida(a))
+
+
+def costruisci_hub(stato: dict, card: list[tuple[dict, str]],
+                   oggi: date | None = None) -> dict:
+    """Funzione pura: i progetti di primo livello e il verdetto di tutte le aree.
+
+    Il verdetto aggrega ogni area, anche quelle che non hanno ancora una card
+    progetto: un rosso di un workstream orfano chiede Andrea lo stesso. Un
+    ticket di una card con due aree compare in entrambe: si conta una volta.
+    """
+    visti: dict[tuple, dict] = {}
+    elenco = []
+    for area in aree(card):
+        c = costruisci(area, stato, card, oggi)
+        for t in c["richiedono_te"]:
+            visti.setdefault((t.get("fonte"), t.get("titolo")), t)
+        p = c["progetto"]
+        if p is None:
+            continue
+        g = p["goal"]
+        elenco.append({
+            "id": p["id"], "area": area, "nome": p["nome"], "fase": p["fase"],
+            "goal_sintesi": p["done_quando"] or (g[0]["testo"] if g else None),
+            "goal": g,
+            "salute": p["salute"]["livello"],
+            "verdetto": c["verdetto"],
+            "n_richiedono_te": c["verdetto"]["n_richiedono_te"],
+            "avanzamento": p["avanzamento"],
+            "n_workstream": p["n_workstream"],
+            "ultimo_tocco": max([d for d in [p["ultimo_tocco"],
+                                             *(w["ultimo_tocco"] for w in c["workstream"])] if d],
+                                default=None),
+        })
+    richiedono = list(visti.values())
+    elenco.sort(key=lambda p: (-p["n_richiedono_te"], p["nome"].lower()))
+    return {
+        "oggi": (oggi or date.today()).isoformat(), "snapshot": stato.get("generated_at"),
+        "verdetto": {"livello": livello_verdetto(richiedono), "n_richiedono_te": len(richiedono)},
+        "progetti": elenco,
+        "aree": aree(card),
+        "slot_liberi": True,
+    }
+
+
+def hub(stato: dict, oggi: date | None = None) -> dict:
+    """Le card si leggono una volta sola per tutte le aree."""
+    return costruisci_hub(stato, _card_dal_disco(), oggi)
 
 
 # --------------------------------------------------------------------------
