@@ -13,6 +13,8 @@ import { activateShopifyPlan, revokeShopifyPlan } from "@/lib/plan-grant";
 import { grantWeeklyPick } from "@/lib/weekly-pick-server";
 import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
+import { shopifyOrderAmounts, withNotSinglePlanMark } from "@/lib/affiliate/net";
 import { opsAlert } from "@/lib/ops-alert";
 // #SUB-LIFECYCLE-0828: i topic fuori whitelist non si buttano piu, si osservano.
 import {
@@ -271,8 +273,16 @@ export async function POST(req: Request) {
       weeklyItems.length > 1 ||
       planItems.some((li) => li.quantity > 1) ||
       weeklyItems.some((li) => li.quantity > 1);
+    // #AFFILIATE-V2-0930 — il totale è il prezzo di UN piano solo se l'ordine ha
+    // una sola riga di piano e nient'altro. Sulle righe 'unresolved' lo si scrive
+    // in last_error, perché la reconcile (che vede solo variant e amount) non
+    // paghi una commissione su un totale che include Weekly Pick o altro.
+    const notSinglePlan = doubled || weeklyItems.length > 0 || unknownItems.length > 0;
     if (doubled) {
-      const why = `ordine con quantità multiple (piani=${planItems.length} weekly=${weeklyItems.length}): grant manuale`;
+      const why = withNotSinglePlanMark(
+        `ordine con quantità multiple (piani=${planItems.length} weekly=${weeklyItems.length}): grant manuale`,
+        true
+      );
       console.error(`[shopify/webhook] ${why}`, { order });
       await markEvent(order.orderId, "unresolved", why);
       await opsAlert("shopify-multiline", [`ordine ${order.orderId}: ${why}`]);
@@ -308,7 +318,11 @@ export async function POST(req: Request) {
       // Non mappabile: NON scartare in silenzio → resta 'unresolved' e la
       // reconcile lo ri-tenta (es. l'utente si registra DOPO aver pagato).
       console.error("[shopify/webhook] unresolved order", { order });
-      await markEvent(order.orderId, "unresolved", "identifier o variant non risolvibili");
+      await markEvent(
+        order.orderId,
+        "unresolved",
+        withNotSinglePlanMark("identifier o variant non risolvibili", notSinglePlan)
+      );
       return NextResponse.json({ received: true, unresolved: true });
     }
     // #SHOPIFY-CRYPTO-2 — chi concede il piano. Un ordine crypto è PAGATO da
@@ -335,7 +349,11 @@ export async function POST(req: Request) {
       console.error("[shopify/webhook] grant null (utente inesistente o grandfather)", {
         identifier: order.identifier,
       });
-      await markEvent(order.orderId, "unresolved", "grant null: profilo inesistente o grandfather");
+      await markEvent(
+        order.orderId,
+        "unresolved",
+        withNotSinglePlanMark("grant null: profilo inesistente o grandfather", notSinglePlan)
+      );
     } else {
       // #SHOPIFY-MULTILINE-0804 — carrello misto piano + Weekly Pick: vanno
       // concesse ENTRAMBE, sono due prodotti pagati. Il piano non include la
@@ -351,6 +369,21 @@ export async function POST(req: Request) {
         order.orderId,
         weeklyToo ? "granted+weekly" : unknownItems.length > 0 ? "granted-partial" : "granted"
       );
+      // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant (non lancia mai;
+      // off = no-op). Commissione solo sull'abbonamento: se l'ordine contiene
+      // altre righe il totale non è il prezzo del piano, quindi lordo ignoto →
+      // nessuna commissione, solo un log.
+      const amounts = notSinglePlan
+        ? { grossUsd: null, taxUsd: null }
+        : shopifyOrderAmounts(payload, order.totalPrice);
+      scheduleAffiliateCommission({
+        identifier: order.identifier,
+        rail: "shopify",
+        paymentRef: order.orderId,
+        grossUsd: amounts.grossUsd,
+        paidAt: new Date(),
+        meta: { taxUsd: amounts.taxUsd },
+      });
       if (weeklyToo) return NextResponse.json({ received: true, weeklyPick: true });
     }
   } catch (e) {

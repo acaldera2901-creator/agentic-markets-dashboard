@@ -11,6 +11,7 @@ import {
 } from "@/lib/crypto-settle";
 import { grantWeeklyPick, notifyWeeklyPickGranted } from "@/lib/weekly-pick-server";
 import { opsAlert } from "@/lib/ops-alert";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +28,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const orders = await dbQuery<{ id: string; identifier: string; plan: "base" | "premium"; period: "monthly" | "annual" }>(
-    `SELECT id::text AS id, identifier, plan, period
+  const orders = await dbQuery<{
+    id: string; identifier: string; plan: "base" | "premium"; period: "monthly" | "annual";
+    amount_usd: number; coin: string | null;
+  }>(
+    `SELECT id::text AS id, identifier, plan, period, amount_usd::float8 AS amount_usd, coin
        FROM paygate_orders
       WHERE status = 'paid' AND granted_at IS NULL
         AND created_at > NOW() - INTERVAL '7 days'
@@ -46,6 +50,15 @@ export async function GET(req: Request) {
         await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [o.id]);
         granted++;
         console.log(`[paygate/reconcile] GRANT order=${o.id} plan=${g.plan}`);
+        // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op).
+        // `coin` valorizzato = ordine del rail crypto diretto, come in crypto-settle.
+        scheduleAffiliateCommission({
+          identifier: o.identifier,
+          rail: o.coin ? "crypto" : "paygate",
+          paymentRef: o.id,
+          grossUsd: o.amount_usd,
+          paidAt: new Date(),
+        });
       }
       // g === null → profilo non ancora esistente o read fallita: si ritenta al prossimo giro.
     } catch (e) {
