@@ -45,6 +45,48 @@ venv del repo: una libreria installata in uno solo dei due si scopre con un
 dichiara sempre *perche'* ha agganciato una sessione; se la Sala tace, la
 scheda esce lo stesso senza quella striscia.
 
+## Il cockpit (`/api/cockpit?area=<area>`) e i task nelle card
+
+I task vivono nel blocco STATO della card (#UNIONE-0907, nessun registro
+nuovo). Campi nuovi, tutti facoltativi — una card senza resta valida com'e':
+
+    > **Area:** betredge                (una o piu', separate da virgola)
+    > **Goal:** frase verificabile       (se manca vale il `Done quando`)
+    > **Task:**
+    >   - [ ] testo · owner · scad:AAAA-MM-GG · check:<id_check>[,<id>]
+    >   - [x] testo · owner · fatto:AAAA-MM-GG
+
+Il primo pezzo e' il testo, il primo pezzo senza chiave l'owner; `scad`,
+`check`, `fatto` sono attributi. La lista finisce al campo `**...:**`
+successivo; le caselle fuori da `**Task:**` (p.es. nei Pending) non sono task.
+`check:` e' l'id di un check dello snapshot (`/api/state`).
+
+**Il check chiude il task, non la spunta:** check tutti verdi -> `verificato
+dal check` anche senza `[x]`; `[x]` con un check rosso -> `riaperto dal check`.
+
+`GET /api/cockpit?area=betredge` restituisce:
+
+- `richiedono_te` — solo azioni di Andrea: task aperti di Andrea con un check
+  non verde o scaduti (su card non ferme), card `BLOCCATO` non ferme con
+  `owner: Andrea` / «in attesa di Andrea» nella Prossima azione, e i check
+  **rossi che nessun task cita** (triage). Un rosso citato da un task di un
+  altro owner e' gia' preso in carico: va in `in_carico`, non qui. Ambra e
+  non-misurati entrano solo se un task di Andrea li cita, altrimenti
+  `da_osservare` («ambra non notifica mai»).
+- `progetti` — card dell'area toccate negli ultimi 14 giorni: fase, goal,
+  task chiusi/totali, prossimo task, salute dei check collegati, ultimo tocco
+  (data dello STATO o dell'ultima spunta; l'mtime solo se manca: un ritocco in
+  blocco lo sposta), ultima verifica.
+- `archivio` — card dell'area ferme da >14 giorni o `ARCHIVIATO`: contate,
+  non mostrate in principale.
+
+I check dello snapshot appartengono all'area `betredge` (e' lo snapshot di
+BetRedge). `POST /api/task/fatto` `{id, indice, testo}` (token + Origin come
+`/api/action`) e' l'unica scrittura su una card: spunta **solo** quella riga
+(`[x]` + `· fatto:data`), pretende che il testo combaci (altrimenti 409:
+la card e' cambiata sotto la pagina), lascia `<card>.md.bak`, scrive su
+temporaneo + rename. Il percorso viene dall'indice delle card, mai dal corpo.
+
 **Misurare a mano senza scrivere niente:**
 
     venv/bin/python -m tools.control_center.collector --dry-run

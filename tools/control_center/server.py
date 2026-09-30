@@ -21,7 +21,7 @@ from .actions import (
     start_daemon,
     stop_daemon,
 )
-from . import council, progetti, sala
+from . import cockpit, council, progetti, sala
 from .snapshot import HISTORY_FILE, STATE_FILE, read_state
 
 HOST = "127.0.0.1"
@@ -72,7 +72,8 @@ class Handler(BaseHTTPRequestHandler):
         return {f"http://127.0.0.1:{porta}", f"http://localhost:{porta}"}
 
     def do_POST(self) -> None:  # noqa: N802 - firma imposta da BaseHTTPRequestHandler
-        if self.path.split("?", 1)[0] != "/api/action":
+        rotta = self.path.split("?", 1)[0]
+        if rotta not in ("/api/action", "/api/task/fatto"):
             self._send(404, b'{"error":"not found"}', "application/json; charset=utf-8")
             return
         if not self._autorizzato():
@@ -84,6 +85,22 @@ class Handler(BaseHTTPRequestHandler):
             corpo = json.loads(self.rfile.read(lunghezza) or b"{}")
         except (ValueError, json.JSONDecodeError):
             self._send(400, b'{"error":"corpo non valido"}', "application/json; charset=utf-8")
+            return
+
+        if rotta == "/api/task/fatto":
+            # L'unica scrittura su una card: la spunta di un task. Il percorso
+            # viene dall'indice delle card, mai dal corpo della richiesta.
+            try:
+                indice = int(corpo.get("indice"))
+            except (TypeError, ValueError):
+                self._send(400, b'{"error":"indice non valido"}',
+                           "application/json; charset=utf-8")
+                return
+            esito = cockpit.segna_fatto(str(corpo.get("id", "")), indice,
+                                        str(corpo.get("testo", "")))
+            self._send(200 if esito.get("ok") else 409,
+                       json.dumps(esito, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
             return
 
         check_id = str(corpo.get("check_id", ""))
@@ -236,6 +253,17 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._send(200, json.dumps(scheda, ensure_ascii=False).encode(),
                            "application/json; charset=utf-8")
+        elif path == "/api/cockpit":
+            # Dal vivo come /api/progetti: legge le card e lo snapshot. Il
+            # server non calcola check, li legge dallo snapshot del collector.
+            area = parse_qs(urlparse(self.path).query).get("area", [""])[0].lower()
+            if not cockpit.area_valida(area):
+                self._send(400, b'{"error":"area mancante o non valida"}',
+                           "application/json; charset=utf-8")
+                return
+            corpo = cockpit.cockpit(area, read_state(STATE_FILE))
+            self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
         elif path == "/api/state":
             body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")
