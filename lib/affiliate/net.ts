@@ -73,6 +73,20 @@ export function shopifyOrderAmounts(
   return { grossUsd: totalPrice, taxUsd: money(o.total_tax) };
 }
 
+/** Marcatore su `shopify_events.last_error` di un ordine 'unresolved' che NON è
+ *  un solo piano (Weekly Pick, righe sconosciute, quantità multiple): il suo
+ *  `amount` non è il prezzo del piano. Lo scrive il webhook, lo legge la
+ *  reconcile — stesso idioma del `lapse-alerted` già su quella colonna. */
+export const SHOPIFY_NOT_SINGLE_PLAN_MARK = "[affiliate:non-monopiano]";
+
+export function withNotSinglePlanMark(why: string, notSinglePlan: boolean): string {
+  return notSinglePlan ? `${why} ${SHOPIFY_NOT_SINGLE_PLAN_MARK}` : why;
+}
+
+export function isNotSinglePlanMarked(lastError: string | null | undefined): boolean {
+  return (lastError ?? "").includes(SHOPIFY_NOT_SINGLE_PLAN_MARK);
+}
+
 /** Lordo e tasse di un'invoice Stripe `invoice.paid` (importi in centesimi).
  *  Una valuta diversa da USD → lordo null. */
 export function stripeInvoiceAmounts(inv: {

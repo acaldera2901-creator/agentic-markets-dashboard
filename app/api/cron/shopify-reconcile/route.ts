@@ -4,7 +4,8 @@ import { verifyBearer } from "@/lib/admin-auth";
 import { activateShopifyPlan } from "@/lib/plan-grant";
 import { resolveOrderFromVariant } from "@/lib/shopify";
 import { opsAlert } from "@/lib/ops-alert";
-import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
+import { isNotSinglePlanMarked } from "@/lib/affiliate/net";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,9 @@ export async function GET(req: Request) {
 
   const events = await dbQuery<{
     event_id: string; identifier: string | null; variant_id: string | null; amount: string | number | null;
+    last_error: string | null;
   }>(
-    `SELECT event_id, identifier, variant_id, amount
+    `SELECT event_id, identifier, variant_id, amount, last_error
        FROM shopify_events
       WHERE status = 'unresolved'
         AND event_type = 'orders/paid'
@@ -58,11 +60,14 @@ export async function GET(req: Request) {
         // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op).
         // `amount` NULL (righe storiche) → nessuna commissione, solo un log.
         // shopify_events non conserva le tasse: qui il lordo non ne è depurato.
-        await recordAffiliateCommissionSafe({
+        // Ordine marcato dal webhook come non-monopiano (Weekly Pick, righe
+        // sconosciute, quantità multiple): il totale non è il prezzo del piano →
+        // lordo ignoto, nessuna commissione. `last_error` letto PRIMA dell'UPDATE.
+        scheduleAffiliateCommission({
           identifier: ev.identifier,
           rail: "shopify",
           paymentRef: ev.event_id,
-          grossUsd: ev.amount == null ? null : Number(ev.amount),
+          grossUsd: ev.amount == null || isNotSinglePlanMarked(ev.last_error) ? null : Number(ev.amount),
           paidAt: new Date(),
         });
       } else {

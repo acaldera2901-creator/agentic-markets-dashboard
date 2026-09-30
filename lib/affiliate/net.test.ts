@@ -1,5 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { netAmount, commissionAmount, round2, shopifyOrderAmounts, stripeInvoiceAmounts } from "./net";
+import {
+  netAmount,
+  commissionAmount,
+  round2,
+  shopifyOrderAmounts,
+  stripeInvoiceAmounts,
+  withNotSinglePlanMark,
+  isNotSinglePlanMarked,
+} from "./net";
+
+describe("marcatore Shopify non-monopiano", () => {
+  it("si aggiunge solo quando serve e si riconosce", () => {
+    expect(withNotSinglePlanMark("grant null", false)).toBe("grant null");
+    const marked = withNotSinglePlanMark("grant null", true);
+    expect(isNotSinglePlanMarked(marked)).toBe(true);
+    expect(isNotSinglePlanMarked("grant null")).toBe(false);
+    expect(isNotSinglePlanMarked(null)).toBe(false);
+  });
+});
 
 describe("importi dai payload dei rail (#AFFILIATE-V2-0930 PR-2)", () => {
   it("Shopify: lordo = total_price, tasse = total_tax", () => {

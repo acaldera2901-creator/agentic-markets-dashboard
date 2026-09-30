@@ -3,7 +3,7 @@ import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
 import { activatePaygatePlan, sendPlanReceipt } from "@/lib/plan-grant";
 import { createMirroredPaidOrder } from "@/lib/shopify-admin";
-import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -150,7 +150,7 @@ export async function GET(req: Request) {
 
       // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant. Non lancia mai;
       // con AFFILIATE_MODE=off non fa nulla.
-      await recordAffiliateCommissionSafe({
+      scheduleAffiliateCommission({
         identifier: order.identifier,
         rail: "paygate",
         paymentRef: order.id,

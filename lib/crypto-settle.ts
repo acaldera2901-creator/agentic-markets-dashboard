@@ -20,7 +20,7 @@ import { grantWeeklyPick, notifyWeeklyPickGranted } from "@/lib/weekly-pick-serv
 import { createMirroredPaidOrder } from "@/lib/shopify-admin";
 import { findCoin } from "@/lib/crypto-coins";
 import { checkIncoming, isPaidEnough } from "@/lib/crypto-verify";
-import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 
 export type CryptoOrder = {
   id: string;
@@ -148,7 +148,7 @@ export async function settleCryptoOrder(order: CryptoOrder): Promise<CryptoSettl
 
   // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant (non lancia mai; off = no-op).
   // Solo l'abbonamento: la Weekly Pick qui sotto non genera commissione.
-  await recordAffiliateCommissionSafe({
+  scheduleAffiliateCommission({
     identifier: order.identifier,
     rail: "crypto",
     paymentRef: order.id,
