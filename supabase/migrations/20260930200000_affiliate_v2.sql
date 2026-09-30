@@ -23,8 +23,11 @@ CREATE TABLE IF NOT EXISTS public.affiliates (
   identifier          text         NOT NULL UNIQUE
                         CHECK (identifier = LOWER(TRIM(identifier))),
   -- Riusa profiles.referral_code (immutabile): i link /r/CODE già in giro
-  -- continuano a funzionare.
-  code                text         NOT NULL UNIQUE,
+  -- continuano a funzionare. Salvato MAIUSCOLO (come normalizeRefCode e
+  -- referred_by): la lookup è `code = $1` sul valore già maiuscolo, e usa
+  -- l'indice dello UNIQUE.
+  code                text         NOT NULL UNIQUE
+                        CHECK (code = UPPER(code)),
   status              text         NOT NULL DEFAULT 'active'
                         CHECK (status IN ('active','suspended','terminated')),
   terms_version       text         NOT NULL,
@@ -91,7 +94,13 @@ CREATE TABLE IF NOT EXISTS public.affiliate_commissions (
   rail                 text           NOT NULL
                          CHECK (rail IN ('paygate','crypto','paypal','shopify','stripe','admin')),
   rail_payment_ref     text           NOT NULL,
-  kind                 text           NOT NULL
+  -- Id dell'EVENTO sul rail che ha generato la riga, oltre al pagamento: per
+  -- reversal/clawback è l'id del rimborso/dispute, così un pagamento può avere
+  -- più rimborsi parziali. '' per first/renewal (l'evento è il pagamento
+  -- stesso). NOT NULL con default perché è parte dello UNIQUE: un NULL lo
+  -- renderebbe inefficace.
+  rail_event_ref       text           NOT NULL DEFAULT '',
+  kind              text           NOT NULL
                          CHECK (kind IN ('first','renewal','reversal','clawback')),
   gross_usd            numeric(12,2)  NOT NULL,
   net_usd              numeric(12,2)  NOT NULL,
@@ -109,18 +118,32 @@ CREATE TABLE IF NOT EXISTS public.affiliate_commissions (
   payout_id            bigint,
   created_at           timestamptz    NOT NULL DEFAULT now(),
   -- La redelivery di un webhook o un reconcile cron non scrivono mai due volte.
-  UNIQUE (rail, rail_payment_ref, kind),
+  -- `rail_event_ref` nella chiave: la redelivery dello STESSO rimborso è un
+  -- duplicato, un secondo rimborso parziale dello stesso pagamento no.
+  UNIQUE (rail, rail_payment_ref, kind, rail_event_ref),
+  -- Una riga positiva non ha un evento distinto dal pagamento.
+  CHECK (kind NOT IN ('first','renewal') OR rail_event_ref = ''),
   CHECK ((kind IN ('first','renewal')) = (amount_usd >= 0))
 );
 
--- Lo UNIQUE a tre colonne qui sopra NON basta a deduplicare un incasso: il ledger
--- sceglie `kind` contando le righe già presenti, quindi la seconda consegna dello
--- stesso pagamento arriverebbe come 'renewal' dove la prima era 'first' — kind
--- diverso, nessun conflitto, commissione doppia. Un incasso produce al massimo
--- UNA riga positiva, qualunque kind abbia.
+-- Lo UNIQUE qui sopra NON basta a deduplicare un incasso: il ledger sceglie
+-- `kind` contando le righe già presenti, quindi la seconda consegna dello stesso
+-- pagamento arriverebbe come 'renewal' dove la prima era 'first' — kind diverso,
+-- nessun conflitto, commissione doppia. Un incasso produce al massimo UNA riga
+-- positiva, qualunque kind abbia.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_affiliate_commissions_one_positive_per_payment
   ON public.affiliate_commissions (rail, rail_payment_ref)
   WHERE kind IN ('first','renewal');
+
+-- Due pagamenti CONCORRENTI dello stesso referito contano le stesse righe e
+-- calcolerebbero lo stesso renewal_index (due 'first' al 20%). Il vincolo fa
+-- perdere la corsa a uno dei due, che ricalcola l'indice e riprova.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_affiliate_commissions_referred_index
+  ON public.affiliate_commissions (referred_identifier, renewal_index)
+  WHERE kind IN ('first','renewal');
+
+CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_referred
+  ON public.affiliate_commissions (referred_identifier);
 
 CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_affiliate_status
   ON public.affiliate_commissions (affiliate_id, status);
