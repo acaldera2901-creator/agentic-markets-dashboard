@@ -509,9 +509,9 @@ def test_dal_vecchio_indirizzo_si_arriva_al_settore_sala(in_piedi):
     with pytest.raises(urllib.error.HTTPError) as e:
         urllib.request.build_opener(SenzaSeguire).open(in_piedi + "/sala", timeout=5)
     assert e.value.code == 302
-    assert e.value.headers["Location"] == "/#sala"
+    assert e.value.headers["Location"] == "/canvas#sala"
 
-    with urllib.request.urlopen(in_piedi + "/", timeout=5) as r:
+    with urllib.request.urlopen(in_piedi + "/canvas", timeout=5) as r:
         html = r.read().decode()
     assert "<title>" in html
     assert 'id="s-sala"' in html and 'data-nome="Sala"' in html
@@ -520,7 +520,7 @@ def test_dal_vecchio_indirizzo_si_arriva_al_settore_sala(in_piedi):
 def test_il_piano_disegna_la_sala_dalla_stessa_api(in_piedi):
     """Un settore, non una seconda sorgente: l'anello e le schede leggono
     `/api/sala`, la stessa API."""
-    with urllib.request.urlopen(in_piedi + "/", timeout=5) as r:
+    with urllib.request.urlopen(in_piedi + "/canvas", timeout=5) as r:
         html = r.read().decode()
     assert "/api/sala" in html
     assert "function anello(" in html and 'id="s-sala"' in html

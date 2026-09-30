@@ -4,20 +4,42 @@ Torre di controllo locale. Spec: `docs/superpowers/specs/2026-08-20-betredge-con
 
 **Aprire:** http://127.0.0.1:8790 (il server gira sotto launchd, KeepAlive)
 
-## La pagina: un piano, non quattro schede
+## La home: il cockpit (`/`), e il piano intero su `/canvas`
 
-Dal 04/09 c'e' una pagina sola, `static/index.html`. Non scorre: la rotella
-zooma (attorno al puntatore), il trascinamento sposta, i tasti `1-9 0` portano
-a un settore, `P` al Ponte, `Esc` a tutto il piano. Da lontano ogni settore e'
-una targa (lettera, numero chiave, stato); da vicino compare il contenuto.
-Il Ponte e' l'unico settore leggibile a ogni distanza: e' l'ancora.
+Dal 30/09 la radice e' `static/cockpit.html`: una schermata sola che risponde
+a una domanda — *devo agire?* Legge **solo** `/api/cockpit?area=<area>` (ogni
+60 s) e non ha un dato che non venga da li'. In cima la **banda del verdetto**:
+rossa se almeno un ticket e' rosso, ambra se sono tutti ambra, verde («Tutto
+ok») se non c'e' niente; `N cose richiedono te` e' il conteggio dei ticket e la
+cifra N e' l'unico rosso della banda. Accanto i quattro numeri (`numeri` nella
+risposta: progetti attivi, bloccati, daemon vivi/totali, eta' dello snapshot).
+Sotto, due colonne: a sinistra **Richiedono te** come ticket numerati (cosa,
+perche', da quando, azione, fonte) con lo stato vuoto disegnato; a destra i
+**Progetti** (nome, fase, goal, barra a tacche dei task, prossimo task) con la
+salute in **una sola** codifica — la barretta a inizio riga — e la riga
+espandibile coi task: la spunta fa `POST /api/task/fatto` dopo una conferma
+inline (mai `window.confirm`); `riaperto dal check` e `verificato dal check`
+si vedono sulla casella. In fondo, collassati, «In carico / da osservare» e
+«Archivio». Se l'endpoint non risponde la banda si spegne e lo dice, i dati
+vecchi restano marcati nel piede: mai una pagina rotta. Tasti: `R` aggiorna,
+`E` apre/chiude i progetti, `C` va al canvas. Il selettore di area in testa ha
+oggi solo BetRedge (l'unica con card `Area:` e check nello snapshot); la lista
+`AREE` in cima allo script e' il posto dove entrano le altre.
+
+Il piano zoomabile di prima e' intero su **`/canvas`** (`static/index.html`),
+raggiungibile da «Vista completa» nel cockpit: non scorre, la rotella zooma
+(attorno al puntatore), il trascinamento sposta, i tasti `1-9 0` portano a un
+settore, `P` al Ponte, `Esc` a tutto il piano. Da lontano ogni settore e' una
+targa (lettera, numero chiave, stato); da vicino compare il contenuto. Il
+Ponte e' l'unico settore leggibile a ogni distanza: e' l'ancora.
 
 Dodici settori, una sola componentistica (targa, pannello, KPI, riga, scheda,
-tile, LED quadrato, pulsante a tre ruoli, conferma inline). Le vecchie rotte
+tile, LED quadrato, pulsante a tre ruoli, conferma inline) — il cockpit la
+riusa (stessi token, stessa conferma, stesso LED). Le vecchie rotte
 `/betredge`, `/sala`, `/architettura.html` reindirizzano al settore
-corrispondente. I font (Saira, JetBrains Mono — variabili, OFL) stanno in
-`static/vendor/fonts/`: la torre deve aprirsi anche senza rete, quindi nessun
-CDN.
+corrispondente di `/canvas`. I font (Saira, JetBrains Mono — variabili, OFL)
+stanno in `static/vendor/fonts/`: la torre deve aprirsi anche senza rete,
+quindi nessun CDN.
 
 Le conferme (spegni, APPROVE, archivia) non sono piu' `window.confirm`: sono
 un riquadro dentro la scheda, con Esc/Invio. Finche' una conferma e' aperta il
@@ -44,6 +66,84 @@ venv del repo: una libreria installata in uno solo dei due si scopre con un
 500 in pagina. La striscia «ci lavorano adesso» incrocia la Sala al volo e
 dichiara sempre *perche'* ha agganciato una sessione; se la Sala tace, la
 scheda esce lo stesso senza quella striscia.
+
+## Il cockpit (`/api/cockpit?area=<area>`) e i task nelle card
+
+I task vivono nel blocco STATO della card (#UNIONE-0907, nessun registro
+nuovo). Campi nuovi, tutti facoltativi — una card senza resta valida com'e':
+
+    > **Area:** betredge                (una o piu', separate da virgola)
+    > **Goal:** frase verificabile       (se manca vale il `Done quando`)
+    > **Task:**
+    >   - [ ] testo · owner · scad:AAAA-MM-GG · check:<id_check>[,<id>]
+    >   - [x] testo · owner · fatto:AAAA-MM-GG
+
+Il primo pezzo e' il testo, il primo pezzo senza chiave l'owner; `scad`,
+`check`, `fatto` sono attributi. La lista finisce al campo `**...:**`
+successivo; le caselle fuori da `**Task:**` (p.es. nei Pending) non sono task.
+`check:` e' l'id di un check dello snapshot (`/api/state`).
+
+**Il check chiude il task, non la spunta:** check tutti verdi -> `verificato
+dal check` anche senza `[x]`; `[x]` con un check rosso -> `riaperto dal check`.
+
+`GET /api/cockpit?area=betredge` restituisce:
+
+- `numeri` — i quattro numeri della banda, derivati qui e non in pagina:
+  `progetti_attivi`, `bloccati`, `daemon_vivi`/`daemon_totali` (i check
+  `launchd_*` dell'area), `ultima_spunta` (la data `fatto:` piu' recente).
+- `richiedono_te` — solo azioni di Andrea: task aperti di Andrea con un check
+  non verde o scaduti (su card non ferme), card `BLOCCATO` non ferme con
+  `owner: Andrea` / «in attesa di Andrea» nella Prossima azione, e i check
+  **rossi che nessun task cita** (triage). Un rosso citato da un task di un
+  altro owner e' gia' preso in carico: va in `in_carico`, non qui. Ambra e
+  non-misurati entrano solo se un task di Andrea li cita, altrimenti
+  `da_osservare` («ambra non notifica mai»).
+- `progetti` — card dell'area toccate negli ultimi 14 giorni: fase, goal,
+  task chiusi/totali, prossimo task, salute dei check collegati, ultimo tocco
+  (data dello STATO o dell'ultima spunta; l'mtime solo se manca: un ritocco in
+  blocco lo sposta), ultima verifica.
+- `archivio` — card dell'area ferme da >14 giorni o `ARCHIVIATO`: contate,
+  non mostrate in principale.
+
+### Progetti e workstream (`/api/hub`)
+
+Un **progetto** e' di primo livello (BetRedge; poi swr7, Machina, …). Un
+**workstream** e' il lavoro interno di un progetto (warmup email, piani,
+settlement…). Nessun registro nuovo: sono tutte card `project_*.md`, cambia
+solo cosa dichiara il blocco STATO.
+
+    > **Tipo:** progetto                 (solo la card-progetto)
+    > **Nome:** BetRedge                 (breve; senza, il nome del file ripulito)
+    > **Area:** betredge                 (lo slug che lega progetto e workstream)
+    > **Goal:**
+    >   - track record pubblico · attuale:58.2% su 3090 · obiettivo:da decidere · check:history_coerente
+    >   - pick senza settlement · attuale:1933 · obiettivo:0 · check:cron_settle
+
+Una card con `**Area:**` e senza `**Tipo:** progetto` e' un workstream. Un
+`attuale` o `obiettivo` assente vale `non misurato` / `da decidere`: il cockpit
+non inventa numeri. `check:` (facoltativo) da' la salute del singolo goal.
+Una seconda card `Tipo: progetto` nella stessa area finisce in `avvisi`, vale
+la prima.
+
+- `GET /api/cockpit?area=<slug>` aggiunge `verdetto` {livello, n_richiedono_te},
+  `progetto` (la card-progetto con goal, salute peggiore fra la sua e quella dei
+  workstream vivi, `avanzamento` sui task di tutte le card dell'area,
+  `n_workstream`) e `workstream`; `progetti` resta come alias di `workstream`
+  per `cockpit.html`. Ogni workstream porta `nome`.
+- `GET /api/hub` → `{verdetto, progetti:[{id, area, nome, fase, goal_sintesi,
+  goal, salute, n_richiedono_te, avanzamento, n_workstream, ultimo_tocco}],
+  aree, slot_liberi}`. Le aree vengono dalle `**Area:**` presenti (solo slug
+  `a-z0-9_-`), non da una lista nel codice; il verdetto aggrega tutte le aree,
+  anche quelle senza card-progetto, e un ticket di una card con due aree conta
+  una volta. Il livello (rosso/ambra/verde) e' la stessa regola di
+  `livelloTicket` in pagina, ora derivata nel server.
+
+I check dello snapshot appartengono all'area `betredge` (e' lo snapshot di
+BetRedge). `POST /api/task/fatto` `{id, indice, testo}` (token + Origin come
+`/api/action`) e' l'unica scrittura su una card: spunta **solo** quella riga
+(`[x]` + `· fatto:data`), pretende che il testo combaci (altrimenti 409:
+la card e' cambiata sotto la pagina), lascia `<card>.md.bak`, scrive su
+temporaneo + rename. Il percorso viene dall'indice delle card, mai dal corpo.
 
 **Misurare a mano senza scrivere niente:**
 
