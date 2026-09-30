@@ -7,6 +7,7 @@
 import { dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
 import { activatePaygatePlan } from "@/lib/plan-grant";
+import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
 
 export type PendingOrder = {
   id: string;
@@ -96,5 +97,13 @@ export async function settlePendingOrder(order: PendingOrder): Promise<SettleRes
   const granted = await activatePaygatePlan(order.identifier, order.plan, order.period);
   if (!granted) return { granted: false, reason: "paid but grant failed (identifier not found?)" };
   await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
+  // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant (non lancia mai; off = no-op).
+  await recordAffiliateCommissionSafe({
+    identifier: order.identifier,
+    rail: "paygate",
+    paymentRef: order.id,
+    grossUsd: order.amount_usd,
+    paidAt: new Date(),
+  });
   return { granted: true, reason: "ok" };
 }

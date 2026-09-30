@@ -13,6 +13,8 @@ import { activateShopifyPlan, revokeShopifyPlan } from "@/lib/plan-grant";
 import { grantWeeklyPick } from "@/lib/weekly-pick-server";
 import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
+import { recordAffiliateCommissionSafe } from "@/lib/affiliate/ledger";
+import { shopifyOrderAmounts } from "@/lib/affiliate/net";
 import { opsAlert } from "@/lib/ops-alert";
 // #SUB-LIFECYCLE-0828: i topic fuori whitelist non si buttano piu, si osservano.
 import {
@@ -351,6 +353,21 @@ export async function POST(req: Request) {
         order.orderId,
         weeklyToo ? "granted+weekly" : unknownItems.length > 0 ? "granted-partial" : "granted"
       );
+      // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant (non lancia mai;
+      // off = no-op). Commissione solo sull'abbonamento: se l'ordine contiene
+      // altre righe il totale non è il prezzo del piano, quindi lordo ignoto →
+      // nessuna commissione, solo un log.
+      const amounts = weeklyItems.length > 0 || unknownItems.length > 0
+        ? { grossUsd: null, taxUsd: null }
+        : shopifyOrderAmounts(payload, order.totalPrice);
+      await recordAffiliateCommissionSafe({
+        identifier: order.identifier,
+        rail: "shopify",
+        paymentRef: order.orderId,
+        grossUsd: amounts.grossUsd,
+        paidAt: new Date(),
+        meta: { taxUsd: amounts.taxUsd },
+      });
       if (weeklyToo) return NextResponse.json({ received: true, weeklyPick: true });
     }
   } catch (e) {
