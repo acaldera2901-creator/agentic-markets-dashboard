@@ -500,6 +500,10 @@ def costruisci_hub(stato: dict, card: list[tuple[dict, str]],
             "goal_sintesi": p["done_quando"] or (g[0]["testo"] if g else None),
             "goal": g,
             "salute": p["salute"]["livello"],
+            # I check collegati ai goal e ai task del progetto, uno per LED sulla
+            # scheda dell'hub: LED misurati, non una fila di verdi decorativa.
+            "salute_checks": [{"check": s["check"], "level": s["level"]}
+                              for s in p["salute"]["checks"]],
             "verdetto": c["verdetto"],
             "n_richiedono_te": c["verdetto"]["n_richiedono_te"],
             "avanzamento": p["avanzamento"],
