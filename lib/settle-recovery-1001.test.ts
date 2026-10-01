@@ -7,12 +7,12 @@
 // them 'unresolved' at 48h. Single days and whole months still answer 200.
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { fetchSummerResults } from "@/lib/summer-leagues";
-import { abbinaFinaleCerto, espnSlugForLeague, pianoRecuperoEspn } from "@/lib/espn-results";
+import { abbinaFinaleCerto, espnSlugForLeague, parseEspnFinals, pianoRecuperoEspn } from "@/lib/espn-results";
 import { mesiEspn, ESPN_RECOVERY_DAYS } from "@/lib/espn";
 
 const espnEvent = (id: string, date: string, hs: string, as: string) => ({
   id, date,
-  status: { type: { completed: true, state: "post" } },
+  status: { type: { completed: true, state: "post", name: "STATUS_FULL_TIME" } },
   competitions: [{ competitors: [
     { homeAway: "home", score: hs, team: { displayName: "Club Brugge" } },
     { homeAway: "away", score: as, team: { displayName: "Anderlecht" } },
@@ -87,5 +87,28 @@ describe("A4 matcher — one shared token is not an identity (#CALCIO-1001 revie
     const f = [{ home: "Ajax", away: "Feyenoord", homeGoals: 3, awayGoals: 1, kickoff: K }];
     expect(abbinaFinaleCerto(row("Ajax Amsterdam", "Feyenoord Rotterdam"), f)?.homeGoals).toBe(3);
     expect(abbinaFinaleCerto(row("Feyenoord Rotterdam", "Ajax Amsterdam"), f)).toBeNull();
+  });
+});
+
+describe("90 minutes (#CALCIO-1001 review B)", () => {
+  const evAt = (name: string) => ({
+    id: "9", date: "2026-09-20T14:00Z",
+    status: { type: { completed: true, name } },
+    competitions: [{ competitors: [
+      { homeAway: "home", score: "2", team: { displayName: "Club Brugge" } },
+      { homeAway: "away", score: "1", team: { displayName: "Anderlecht" } },
+    ] }],
+  });
+  it("parseEspnFinals keeps only full-time finals: AET/PEN scores include extra time", () => {
+    expect(parseEspnFinals({ events: [evAt("STATUS_FULL_TIME")] })).toHaveLength(1);
+    expect(parseEspnFinals({ events: [evAt("STATUS_FINAL_AET"), evAt("STATUS_FINAL_PEN")] })).toEqual([]);
+  });
+  it("fetchSummerResults skips AET/PEN finals", async () => {
+    const recent = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      /dates=\d{6}/.test(url)
+        ? new Response(JSON.stringify({ events: [{ ...evAt("STATUS_FINAL_PEN"), date: recent }] }), { status: 200 })
+        : new Response("[]", { status: 200 })));
+    expect(await fetchSummerResults("BEL")).toEqual([]);
   });
 });

@@ -29,7 +29,7 @@ import historySnapshot from "@/data/summer_leagues/history.json";
 import type { MatchResult } from "@/lib/poisson-model";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import type { FDMatch } from "@/lib/football-data";
-import { ESPN_HEADERS, ESPN_RECOVERY_DAYS, ESPN_SITE_API, mesiEspn } from "@/lib/espn";
+import { ESPN_HEADERS, ESPN_RECOVERY_DAYS, ESPN_SITE_API, isFullTimeFinal, mesiEspn } from "@/lib/espn";
 import { snapshotReadiness } from "@/lib/data-readiness";
 
 // Display names drive the per-league surfacing floor (lib/surfacing-gate.ts
@@ -425,14 +425,14 @@ async function fetchEspnResults(code: string): Promise<FinishedMatch[]> {
         events?: Array<{
           id: string;
           date?: string;
-          status?: { type?: { completed?: boolean; state?: string } };
+          status?: { type?: { completed?: boolean; state?: string; name?: string } };
           competitions?: Array<{
             competitors?: Array<{ homeAway: string; score?: string }>;
           }>;
         }>;
       };
       for (const ev of data.events ?? []) {
-        if (!ev.status?.type?.completed) continue;
+        if (!isFullTimeFinal(ev.status?.type)) continue; // AET/PEN: not a 90' score
         if (!ev.date || Date.parse(ev.date) < from.getTime()) continue;
         const comp = ev.competitions?.[0];
         const h = comp?.competitors?.find((c) => c.homeAway === "home")?.score;

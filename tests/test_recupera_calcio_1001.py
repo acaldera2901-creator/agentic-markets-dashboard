@@ -159,3 +159,24 @@ def test_weak_name_match_is_reported_not_used():
 def test_full_containment_is_a_strong_match():
     c = [{"key": "x", "home": "Ajax", "away": "Feyenoord", "kickoff": T0}]
     assert match_by_name("Ajax Amsterdam", "Feyenoord Rotterdam", T0, c)[0] == "certo"
+
+
+# ── #CALCIO-1001 review B: a 1X2 pick is graded on 90 minutes ───────────────
+
+def test_extra_time_and_penalties_are_not_a_90_minute_final():
+    for name in ("STATUS_FINAL_AET", "STATUS_FINAL_PEN"):
+        p = parse_espn_event(ev("5", "A", "B", "2", "1", name=name))
+        assert p["kind"] == "supplementari" and p["status"] == name
+    d = decide("HOME", "1X2", [Evidence("espn-id", "supplementari", status="STATUS_FINAL_PEN")])
+    assert d["result"] is None and "supplementari" in d["motivo"]
+
+
+def test_unknown_completed_status_is_not_a_final():
+    assert parse_espn_event(ev("6", "A", "B", "1", "0", name="STATUS_SOMETHING"))["kind"] == "pending"
+
+
+def test_extra_time_at_one_source_blocks_a_score_from_another():
+    # the twin's score of an AET match includes extra time too
+    d = decide("HOME", "1X2", [Evidence("gemello", "final", (2, 1)),
+                               Evidence("espn-id", "supplementari", status="STATUS_FINAL_AET")])
+    assert d["result"] is None and "supplementari" in d["motivo"]

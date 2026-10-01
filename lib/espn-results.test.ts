@@ -6,7 +6,7 @@ import { parseEspnFinals, abbinaFinale, yyyymmddUtc, ESPN_SLUG_BY_FD_LEAGUE, typ
 
 const ev = (h: string, a: string, hs: string | null, as: string | null, completed: boolean, date = "2026-08-30T18:45Z") => ({
   date,
-  status: { type: { completed } },
+  status: { type: { completed, name: completed ? "STATUS_FULL_TIME" : "STATUS_SCHEDULED" } },
   competitions: [{ competitors: [
     { homeAway: "home", score: hs, team: { displayName: h } },
     { homeAway: "away", score: as, team: { displayName: a } },

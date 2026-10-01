@@ -47,3 +47,10 @@ export function mesiEspn(from: Date, to: Date): string[] {
   }
   return out;
 }
+
+/** #CALCIO-1001 review B — a 1X2 pick is graded on 90 minutes. ESPN marks
+ *  extra-time finals STATUS_FINAL_AET / STATUS_FINAL_PEN and their score
+ *  includes extra time: only STATUS_FULL_TIME is a 90' final. */
+export function isFullTimeFinal(type: { completed?: boolean; name?: string } | undefined): boolean {
+  return Boolean(type?.completed) && type?.name === "STATUS_FULL_TIME";
+}

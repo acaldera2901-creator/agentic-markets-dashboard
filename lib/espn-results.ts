@@ -27,7 +27,7 @@ import { tokenSquadra } from "@/lib/dedupe-fixtures";
 // scritto a mano, e il guard `tests/test_espn_host_no_residues.py` l'ha
 // bocciato: la mia verifica locale passava solo perche' girava da una rete
 // residenziale, dove il WAF non filtra.
-import { ESPN_HEADERS, ESPN_SITE_API, mesiEspn } from "@/lib/espn";
+import { ESPN_HEADERS, ESPN_SITE_API, isFullTimeFinal, mesiEspn } from "@/lib/espn";
 import { ESPN_SLUGS } from "@/lib/summer-leagues";
 
 /** Codice lega football-data → slug ESPN. SONDATI il 31/08/2026 sulla data
@@ -65,10 +65,10 @@ export function parseEspnFinals(data: unknown): EspnFinal[] {
   for (const raw of events) {
     const ev = raw as {
       date?: string;
-      status?: { type?: { completed?: boolean } };
+      status?: { type?: { completed?: boolean; name?: string } };
       competitions?: Array<{ competitors?: Array<{ homeAway?: string; score?: string; team?: { displayName?: string } }> }>;
     };
-    if (!ev?.status?.type?.completed) continue;
+    if (!isFullTimeFinal(ev?.status?.type)) continue; // AET/PEN: not a 90' score
     const cs = ev.competitions?.[0]?.competitors;
     if (!Array.isArray(cs) || !ev.date) continue;
     const h = cs.find((c) => c.homeAway === "home");

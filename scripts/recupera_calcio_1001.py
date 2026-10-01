@@ -27,8 +27,11 @@ agents/result_settlement.py: 1X2 + home/draw/away -> won/lost; no sealed pick
 -> void (#VOID-SENZA-PICK-0907, the #SETTLE-0909 precedent "nessuna pick
 mostrata"). Void for a match not played only on the source's own status:
 ESPN STATUS_POSTPONED/STATUS_CANCELED, football-data POSTPONED/CANCELLED.
-Played on another day (>24h from the sealed kickoff), abandoned, still
-scheduled, nothing found: NOT written, reported with the reason.
+A 1X2 pick is graded on 90 minutes: only ESPN STATUS_FULL_TIME (or
+football-data FINISHED with duration REGULAR) is a final; AET/PEN finals are
+NOT graded ("supplementari: serve regola"). Played on another day (>24h from
+the sealed kickoff), abandoned, still scheduled, nothing found: NOT written,
+reported with the reason.
 
 SAFETY: INSERT only, ON CONFLICT (pick_settlement_pick_rev_key) DO NOTHING,
 one transaction. A pick already closed `unresolved` gets revision current+1
@@ -65,6 +68,10 @@ TOLERANCE = timedelta(minutes=20)       # lib/espn-results.ts TOLLERANZA_MS
 OTHER_DAY = timedelta(hours=24)         # same event id, kickoff moved this far = rescheduled
 MIN_TOKEN = 4                           # lib/espn-results.ts MIN_TOKEN
 ESPN_VOID = {"STATUS_POSTPONED", "STATUS_CANCELED"}
+# A 1X2 pick is graded on 90 minutes. ESPN's score of an AET/PEN final
+# includes extra time: not a 90' result, no rule yet -> never graded here.
+ESPN_FULL_TIME = {"STATUS_FULL_TIME"}
+ESPN_EXTRA_TIME = {"STATUS_FINAL_AET", "STATUS_FINAL_PEN"}
 FD_VOID = {"POSTPONED", "CANCELLED"}
 REPO = Path(__file__).resolve().parents[1]
 
@@ -179,7 +186,9 @@ def parse_espn_event(ev: dict) -> dict:
             "away": (a.get("team") or {}).get("displayName", ""),
             "status": str(st.get("name") or "")}
     hg, ag = _goals(h.get("score")), _goals(a.get("score"))
-    if st.get("completed") and hg is not None and ag is not None:
+    if base["status"] in ESPN_EXTRA_TIME:
+        return {**base, "kind": "supplementari"}
+    if st.get("completed") and base["status"] in ESPN_FULL_TIME and hg is not None and ag is not None:
         return {**base, "kind": "final", "score": (hg, ag)}
     if base["status"] in ESPN_VOID:
         return {**base, "kind": "void"}
@@ -238,6 +247,8 @@ def fd_match(client, mid: str) -> dict | None:
     m = r.json()
     ft = ((m.get("score") or {}).get("fullTime") or {})
     base = {"kickoff": _dt(m.get("utcDate")), "status": str(m.get("status") or "")}
+    if base["status"] == "FINISHED" and (m.get("score") or {}).get("duration") not in (None, "REGULAR"):
+        return {**base, "kind": "supplementari"}  # fullTime includes extra time
     if base["status"] == "FINISHED" and isinstance(ft.get("home"), int) and isinstance(ft.get("away"), int):
         return {**base, "kind": "final", "score": (ft["home"], ft["away"])}
     if base["status"] in FD_VOID:
@@ -250,7 +261,7 @@ def fd_match(client, mid: str) -> dict | None:
 @dataclass
 class Evidence:
     source: str
-    kind: str                       # final | void | pending | altra-data | ambigua | debole
+    kind: str                       # final | void | pending | supplementari | altra-data | ambigua | debole
     score: tuple[int, int] | None = None
     status: str | None = None
     detail: str | None = None       # the source's own names + kickoff (name matches)
@@ -269,6 +280,9 @@ def decide(sealed_pick, market, evs: list[Evidence]) -> dict:
            "conferme": [], "prova": None, "motivo": None}
     finals = [e for e in evs if e.kind == "final"]
     voids = [e for e in evs if e.kind == "void"]
+    extra = sorted({e.status or "?" for e in evs if e.kind == "supplementari"})
+    if extra:  # any score of that match may include extra time
+        return {**out, "motivo": f"supplementari: serve regola ({', '.join(extra)})"}
     if finals:
         if len({e.score for e in finals}) > 1 or voids:
             seen = ", ".join(f"{e.source}={e.score or e.status}" for e in finals + voids)
