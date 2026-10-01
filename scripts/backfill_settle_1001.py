@@ -9,7 +9,8 @@ WHAT IT CLOSES (measured 01/10)
       closed AND verified, without a mirror row — the 10-13/09 mirror gap.
   b2  tennis: sealed picks (tennis_predictions, register born 21/09) whose
       served row is already closed. Until a2 nothing ever wrote them.
-      Graded on the SEALED pick vs tennis_predictions.winner with the same
+      Graded on the SEALED pick vs tennis_predictions.winner (VERIFIED served
+      rows only — pre-#SETTLE-0909 winners may be partial-score) with the same
       rule as the live path (core.supabase_client.tennis_pick_result);
       no winner + expired/unresolved -> 'unresolved' (terminal).
   Sealed picks whose served row is still open are NOT touched: after a1/a2
@@ -49,7 +50,7 @@ where s.id is null and l.source_table = 'match_predictions'
 
 _TENNIS_SQL = f"""
 select l.source_table, l.source_id, l.model_version, l.pick, u.result, u.notes,
-       t.winner, t.outcome
+       t.winner, t.outcome, u.verification_state
 from pick_ledger l
 left join pick_settlement s using (source_table, source_id, model_version)
 join unified_predictions u on u.source_table = l.source_table and u.source_id = l.source_id
@@ -75,9 +76,15 @@ def football_row(st, sid, mv, result, verification_state, notes) -> dict | None:
     return _row(st, sid, mv, result, outcome_from_score(score), score)
 
 
-def tennis_row(st, sid, mv, sealed_pick, served_result, notes, winner, pred_outcome) -> dict | None:
-    """b2: graded on the SEALED pick. Never a result we cannot back."""
-    if winner:
+def tennis_row(st, sid, mv, sealed_pick, served_result, notes, winner, pred_outcome,
+               verification_state=None) -> dict | None:
+    """b2: graded on the SEALED pick. Never a result we cannot back.
+
+    The winner counts only on a VERIFIED served row: tennis_predictions.winner
+    still holds ~289 rows graded on partial scores before #SETTLE-0909, and
+    the register is first-write-wins — a wrong winner would be permanent.
+    """
+    if winner and verification_state == "verified":
         result = tennis_pick_result(sealed_pick, winner)
         if result in ("won", "lost"):
             return _row(st, sid, mv, result, winner, _final_score_from_notes(notes))
