@@ -38,11 +38,12 @@ def result_source_for(sport: str, league: str | None, table: dict | None = None)
     """Comma-joined sources, RESULT_SOURCE_DEBT, or None = nobody can close the
     row: do not publish it (reject, never paper). Mirror of resultSourceFor."""
     t = table if table is not None else load_result_sources()
+    code = (league or "").strip().upper()  # same normalisation as the classifiers
     by_sport = t["sources"].get(sport) or {}
-    sources = by_sport.get(league or "") or by_sport.get("*")
+    sources = by_sport.get(code) or by_sport.get("*")
     if sources:
         return ",".join(sources)
-    if f"{sport}:{league}" in t["debt"]["leagues"]:
+    if f"{sport}:{code}" in t["debt"]["leagues"]:
         return RESULT_SOURCE_DEBT
     return None
 

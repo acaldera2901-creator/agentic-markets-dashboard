@@ -357,6 +357,8 @@ _CON_DEBITO = {"sources": {"football": {"PL": ["football-data"]}},
     ("tennis", "Partner feed", "espn-tennis,betconstruct"),
     ("football", "POL", RESULT_SOURCE_DEBT),   # solo Odds API /scores a 3 giorni
     ("football", "VEI", RESULT_SOURCE_DEBT),
+    ("football", " unl ", "espn"),             # normalizzato come i classificatori (.upper())
+    ("football", "pol", RESULT_SOURCE_DEBT),
 ])
 def test_result_source_for(sport, lega, atteso):
     assert result_source_for(sport, lega) == atteso

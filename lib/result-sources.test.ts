@@ -17,6 +17,10 @@ const conDebito: ResultSourceTable = {
 
 describe("resultSourceFor", () => {
   it("lega con fonte → la fonte", () => expect(resultSourceFor("football", "PL")).toBe("football-data,espn"));
+  it("codice lega normalizzato (spazi, minuscole)", () => {
+    expect(resultSourceFor("football", " pl ")).toBe("football-data,espn");
+    expect(resultSourceFor("football", "pol")).toBe(RESULT_SOURCE_DEBT);
+  });
   it("lega nuova senza fonte → null", () => expect(resultSourceFor("football", "JPN")).toBeNull());
   it("sport nuovo senza fonte → null", () => expect(resultSourceFor("baseball", "MLB")).toBeNull());
   it("lega nel debito dichiarato → debito", () =>

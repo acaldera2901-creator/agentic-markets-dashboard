@@ -22,9 +22,11 @@ export function resultSourceFor(
   league: string | null,
   t: ResultSourceTable = RESULT_SOURCES,
 ): string | null {
+  // Codes are matched like the Python classifiers do (.upper()).
+  const code = (league ?? "").trim().toUpperCase();
   const bySport = t.sources[sport];
-  const sources = bySport?.[league ?? ""] ?? bySport?.["*"];
+  const sources = bySport?.[code] ?? bySport?.["*"];
   if (sources && sources.length > 0) return sources.join(",");
-  if (t.debt.leagues.includes(`${sport}:${league}`)) return RESULT_SOURCE_DEBT;
+  if (t.debt.leagues.includes(`${sport}:${code}`)) return RESULT_SOURCE_DEBT;
   return null;
 }
