@@ -202,3 +202,34 @@ def test_partner_asks_the_days_of_the_wider_window():
     days = TennisSettlementAgent._giorni_di([_Pred(1)], margine=PARTNER_MATCH_DATE_TOLERANCE)
     assert min(days).isoformat() == "2026-09-25" and max(days).isoformat() == "2026-09-29"
     assert {d.isoformat() for d in TennisSettlementAgent._giorni_di([_Pred(1)])} == {"2026-09-27", "2026-09-28"}
+
+
+# ── regola 2: finita senza set dal partner -> mai un esito dal feed ─────────
+
+def test_finished_without_sets_with_espn_score_is_graded_by_espn_only():
+    a = _agent()
+    seen = {}
+
+    async def _mb(p): return []
+    async def _espn(p): return [(p[0], "P2", "6-2 6-2")]  # ESPN has the real score
+    async def _partner(p):
+        seen["partner"] = list(p)
+        return []
+
+    a._resolve_via_matchbook, a._resolve_via_espn, a._resolve_via_partner = _mb, _espn, _partner
+    out = asyncio.run(a._resolve_all([_Pred(1)]))
+    assert [(e[1], e[2], e[3]) for e in out] == [("P2", "6-2 6-2", "espn")]
+    assert seen == {}  # partner not even asked
+
+
+def test_finished_without_sets_and_no_second_source_stays_open():
+    a = _agent()
+    no_sets = _m([], (0, 0))
+    assert result_from_partner_match(no_sets) is None
+    assert a._risolvi_con([_Pred(1)], [], tolleranza=PARTNER_MATCH_DATE_TOLERANCE) == []
+
+
+def test_espn_walkover_alone_is_not_a_result():
+    # #SETTLE-0909: walkover -> not settled (stays open, ages to 'unresolved')
+    assert settlement_allowed(None, status_name="STATUS_WALKOVER", source_completed=True) == (
+        False, "nessuna-partita:status_walkover")
