@@ -78,3 +78,28 @@ describe("history e yesterday-read contano la stessa popolazione", () => {
     });
   }
 });
+
+// #COERENZA-1001 — la Torre (tools/control_center/checks/history_replay.ts)
+// ricalcola il numero pubblico sulle stesse righe: deve dire ESATTAMENTE quello
+// che dice la route, headline e copertura comprese.
+describe("il replay della Torre ripete la route", () => {
+  for (const [nome, rows] of Object.entries(SCENARI)) {
+    it(nome, async () => {
+      const { replay } = await import("@/tools/control_center/checks/history_replay");
+      const { h } = await both(rows);
+      const r = replay(rows as Parameters<typeof replay>[0]);
+      expect(r.headline).toEqual({ n: h.stats.n, won: h.stats.won, lost: h.stats.lost });
+      expect(r.honest.coverage).toBe(h.stats.coverage);
+      expect(r.honest.finished_shown).toBe(h.stats.surfaced_total);
+      expect(r.dedup_dropped).toBe(h.stats.dedup_dropped);
+    });
+  }
+  it("tutti gli scenari insieme", async () => {
+    const all = Object.values(SCENARI).flat();
+    const { replay } = await import("@/tools/control_center/checks/history_replay");
+    const { h } = await both(all);
+    const r = replay(all as Parameters<typeof replay>[0]);
+    expect(r.headline).toEqual({ n: h.stats.n, won: h.stats.won, lost: h.stats.lost });
+    expect(r.honest.coverage).toBe(h.stats.coverage);
+  });
+});

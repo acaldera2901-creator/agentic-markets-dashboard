@@ -68,38 +68,40 @@ def test_il_vecchio_check_sql_non_e_piu_registrato_due_volte():
         assert nuovo in ids
 
 
-def _corpo(testo: str) -> list[str]:
-    m = re.search(r"if \(!row\.pick\) return false;(.*?)return row\.competition === \"World Cup\";",
-                  testo, re.S)
-    assert m, "wasShownAsPick non trovato"
-    return [r.strip() for r in m.group(1).splitlines()
-            if r.strip() and not r.strip().startswith("//")]
-
-
-def test_la_copia_di_wasShownAsPick_e_identica_alla_route():
-    # #COERENZA-1001: wasShownAsPick e' diventata isShownPick in lib/track-record.ts
-    # (la usano la route e yesterday-read); la copia del replay va confrontata li'.
-    route = (REPO / "lib/track-record.ts").read_text()
-    copia = (REPO / "tools/control_center/checks/history_replay.ts").read_text()
-    assert _corpo(route) == _corpo(copia)
+def test_il_replay_importa_la_pipeline_canonica_e_non_ne_ha_una_copia():
+    # #COERENZA-1001: la route calcola tutto con trackRecordPopulation
+    # (lib/track-record.ts). Il replay deve chiamare QUELLA, non riscriverla:
+    # una copia locale e' esattamente cio' che diverge al prossimo cambio.
+    replay = (REPO / "tools/control_center/checks/history_replay.ts").read_text()
+    route = (REPO / "app/api/v2/history/route.ts").read_text()
+    importa = re.compile(r'import \{[^}]*\btrackRecordPopulation\b[^}]*\} from "[./]*lib/track-record"')
+    assert importa.search(replay) and re.search(r"trackRecordPopulation\(", replay)
+    assert re.search(r"\btrackRecordPopulation\(", route), "la route non usa piu' la funzione canonica"
+    for copia in ("function wasShownAsPick", "function isShownPick", "dedupeByFixture("):
+        assert copia not in replay, f"copia locale nel replay: {copia}"
 
 
 def test_il_replay_esegue_il_codice_vero_dedup_compreso():
-    """Integrazione: due righe gemelle (stessa partita, id diversi) contano una."""
+    """Integrazione (tsx): gemelle a pick opposte + gemella senza esito."""
     if not coerenza._node() or not (coerenza.REPO_ROOT / "node_modules/tsx/dist/cli.mjs").exists():
         pytest.skip("tsx non disponibile")
     base = {"sport": "football", "competition": "Premier League", "market": "1X2",
             "home_team": "Arsenal", "away_team": "Chelsea", "pick": "HOME", "notes": None,
-            "result": "won", "starts_at": "2026-08-10T15:00:00+00:00",
-            "settled_at": "2026-08-10T18:00:00+00:00", "confidence_score": 70,
-            "verification_state": "verified", "is_historical": True}
-    gemella = {**base, "settled_at": "2026-08-11T18:00:00+00:00", "result": "lost"}
-    altra = {**base, "home_team": "Leeds", "away_team": "Everton"}
-    out = coerenza._replay([base, gemella, altra], [base, gemella, altra, {**altra, "home_team": "Fulham", "result": "unresolved", "verification_state": None}])
-    # vince la gemella settlata dopo (lost), come in route.ts
+            "result": "lost", "starts_at": "2026-08-10T15:00:00+00:00",
+            "settled_at": "2026-08-10T18:00:00+00:00", "published_at": "2026-08-09T08:00:00+00:00",
+            "confidence_score": 70, "verification_state": "verified", "is_historical": True}
+    # stessa partita, pick opposta, pubblicata DOPO e settlata dopo: non vince
+    gemella = {**base, "pick": "AWAY", "result": "won", "published_at": "2026-08-09T20:00:00+00:00",
+               "settled_at": "2026-08-11T18:00:00+00:00"}
+    altra = {**base, "home_team": "Leeds", "away_team": "Everton", "result": "won"}
+    senza_esito = {**base, "home_team": "Fulham", "away_team": "Brentford", "result": "unresolved",
+                   "verification_state": None}
+    out = coerenza._replay([base, gemella, altra, senza_esito])
+    # vince la pubblicata per prima (lost), come in route.ts
     assert out["headline"] == {"n": 2, "won": 1, "lost": 1}
     assert out["dedup_dropped"] == 1
     assert out["honest"]["finished_shown"] == 3 and out["honest"]["counted"] == 2
+    assert out["honest"]["unresolved"] == 1 and out["honest"]["coverage"] == 0.667
 
 
 # ── 3 · copertura ───────────────────────────────────────────────────────────
@@ -284,7 +286,17 @@ def test_senza_database_url_messaggio_chiaro_e_exit_1(monkeypatch, capsys):
 
 
 def test_popolazione_finita_limitata_e_troncamento_non_verde():
-    assert "limit 20000" in coerenza._FINITE_SQL
+    # #COERENZA-1001: la popolazione e' quella della route, con il suo tetto.
+    route = (REPO / "app/api/v2/history/route.ts").read_text()
+    assert f"STATS_CAP = {coerenza.FINITE_MAX};" in route
+    assert f"limit {coerenza.FINITE_MAX}" in coerenza._ROUTE_SQL
+    # e le stesse condizioni WHERE di TRACK_RECORD_BASE_CONDITIONS
+    tr = (REPO / "lib/track-record.ts").read_text()
+    blocco = tr[tr.index("TRACK_RECORD_BASE_CONDITIONS"):]
+    blocco = blocco[:blocco.index("];")]
+    sql = " ".join(coerenza._ROUTE_SQL.lower().split())
+    for cond in re.findall(r'"([^"]+)"', blocco):
+        assert " ".join(cond.lower().split()) in sql, cond
     stats = {"n": 1, "won": 1, "lost": 0, "coverage": 0.56}
     rep = _replay(1, 1, 0, cov_honest=0.563)
     rep["finished_rows"] = coerenza.FINITE_MAX
