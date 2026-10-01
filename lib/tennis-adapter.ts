@@ -5,6 +5,7 @@ import {
   emptySyncReport,
   type SyncReport,
 } from "@/lib/publication-gate";
+import { resultSourceFor } from "@/lib/result-sources";
 import { buildTennisExplanation } from "@/lib/tennis-explanation";
 import { tennisSurfaceDecision } from "@/lib/surfacing-gate";
 import { probabilitaMostrata } from "@/lib/tennis-calibration";
@@ -190,6 +191,7 @@ export async function syncTennisPredictionsToUnified(): Promise<SyncReport> {
         odds: d.odds,
         edge: row.edge,
         isWorldCup: false,
+        resultSource: resultSourceFor("tennis", row.tournament),
       },
       { worldCupSignalReady: false }
     );

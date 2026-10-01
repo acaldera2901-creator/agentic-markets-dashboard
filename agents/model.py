@@ -25,7 +25,7 @@ from core.world_cup_probability import national_match_probabilities
 from core.world_cup_elo_model import predict_wc_match as predict_wc_elo_v2
 from core.wc_calibration import calibrate_wc_probabilities
 from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
-from core.surfacing_gate import nations_floor_for, surface_decision
+from core.surfacing_gate import nations_floor_for, result_source_for, surface_decision
 from core.supabase_client import (
     DCPrediction,
     log_prediction_snapshot,
@@ -331,6 +331,10 @@ class ModelAgent(BaseAgent):
             if nm_quality < settings.FRIENDLY_MIN_NATIONAL_QUALITY:
                 return
         elif tier == "monitor_only":
+            return
+        # #GATE-1001: no declared result source -> not published, not sealed.
+        if result_source_for("football", payload.get("league")) is None:
+            self.logger.warning("national row skipped: no result source for %s", payload.get("league"))
             return
         try:
             probs = json.loads(wc_result.get("world_cup_probabilities") or "{}")
