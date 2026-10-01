@@ -59,6 +59,12 @@ interface SettleReport {
    *  those still without a certain match (they retry until step E). */
   served_recovered: number;
   served_unmatched: number;
+  /** #CALCIO-1001 review F — ESPN calls that failed (non-200 or network) and
+   *  the first few as "slug:date:status". They used to come back as an empty
+   *  list, so a 403 from Vercel looked exactly like "no results yet". */
+  espn_calls: number;
+  espn_failed: number;
+  espn_failed_sample: string[];
   unified_football_settled: number;
   unified_tennis_settled: number;
   voided_stale: number;
@@ -129,6 +135,9 @@ export async function GET(req: NextRequest) {
     recovery_unmatched: 0,
     served_recovered: 0,
     served_unmatched: 0,
+    espn_calls: 0,
+    espn_failed: 0,
+    espn_failed_sample: [],
     unified_football_settled: 0,
     unified_tennis_settled: 0,
     voided_stale: 0,
@@ -140,6 +149,12 @@ export async function GET(req: NextRequest) {
   };
   const sb = getSupabaseAdminClient();
   const nowIso = () => new Date().toISOString();
+  const espnCall = (fail: string | null) => {
+    report.espn_calls += 1;
+    if (fail === null) return;
+    report.espn_failed += 1;
+    if (report.espn_failed_sample.length < 5) report.espn_failed_sample.push(fail);
+  };
 
   // ── A+B. Live scores + prediction_log ─────────────────────────────────────
   const finished = new Map<string, { homeGoals: number; awayGoals: number }>();
@@ -179,7 +194,7 @@ export async function GET(req: NextRequest) {
   // UPDATE + settlement semantics as step A.
   for (const code of Object.keys(SUMMER_LEAGUES)) {
     try {
-      const results = await fetchSummerResults(code);
+      const results = await fetchSummerResults(code, espnCall);
       for (const m of results) {
         await dbQuery(
           `UPDATE match_predictions
@@ -238,7 +253,7 @@ export async function GET(req: NextRequest) {
     }
     for (const [k, righe] of gruppi) {
       const [slug, giorno] = k.split("|");
-      const finals = await fetchEspnFinalsByDate(slug, giorno);
+      const finals = await fetchEspnFinalsByDate(slug, giorno, espnCall);
       for (const r of righe) {
         const f = abbinaFinale(r, finals);
         if (!f) { report.recovery_unmatched += 1; continue; }
@@ -287,7 +302,7 @@ export async function GET(req: NextRequest) {
         (r) => r.external_event_id && r.home_team && r.away_team && !finished.has(String(r.external_event_id))
       );
       for (const [slug, g] of pianoRecuperoEspn(pending, espnSlugForLeague)) {
-        const finals = (await Promise.all(g.mesi.map((m) => fetchEspnFinalsByDate(slug, m)))).flat();
+        const finals = (await Promise.all(g.mesi.map((m) => fetchEspnFinalsByDate(slug, m, espnCall)))).flat();
         for (const r of g.righe) {
           const f = abbinaFinaleCerto(
             { match_id: String(r.external_event_id), home_team: String(r.home_team), away_team: String(r.away_team), kickoff: String(r.starts_at) },
@@ -572,6 +587,13 @@ export async function GET(req: NextRequest) {
     report.sealed_orphans = Number(rows[0]?.n ?? 0);
   } catch (e) {
     report.errors.push(`sealed_orphans:${String(e)}`);
+  }
+
+  // #CALCIO-1001 review F — every ESPN call failed (e.g. 403 from Vercel):
+  // the minor leagues cannot close at all. A single failed month is only
+  // counted; a total outage fails the run loud.
+  if (report.espn_calls > 0 && report.espn_failed >= report.espn_calls) {
+    report.errors.push(`espn: all ${report.espn_failed} calls failed (${report.espn_failed_sample.join(", ")})`);
   }
 
   // ── F. Tennis pipeline staleness watchdog (serverless) ────────────────────

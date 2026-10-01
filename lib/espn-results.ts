@@ -85,13 +85,25 @@ export function parseEspnFinals(data: unknown): EspnFinal[] {
   return out;
 }
 
-export async function fetchEspnFinalsByDate(slug: string, giorno: string): Promise<EspnFinal[]> {
+/** `giorno` is YYYYMMDD or a whole month YYYYMM. limit=200 does not truncate:
+ *  measured 01/10 on 202609, month = sum of the 30 days for eng.1 (30), eng.3
+ *  (55), usa.1 (74, the busiest served league). `onCall` (#CALCIO-1001) gets null on a 200
+ *  and "slug:giorno:<status|error>" otherwise — an empty list alone hides a
+ *  403 from Vercel. */
+export async function fetchEspnFinalsByDate(
+  slug: string,
+  giorno: string,
+  onCall?: (fail: string | null) => void,
+): Promise<EspnFinal[]> {
   const url = `${ESPN_SITE_API}/soccer/${slug}/scoreboard?dates=${giorno}&limit=200`;
   try {
     const r = await fetch(url, { headers: ESPN_HEADERS, cache: "no-store" });
-    if (!r.ok) return [];
-    return parseEspnFinals(await r.json());
-  } catch {
+    if (!r.ok) { onCall?.(`${slug}:${giorno}:${r.status}`); return []; }
+    const finals = parseEspnFinals(await r.json());
+    onCall?.(null);
+    return finals;
+  } catch (e) {
+    onCall?.(`${slug}:${giorno}:${String(e)}`);
     return [];
   }
 }

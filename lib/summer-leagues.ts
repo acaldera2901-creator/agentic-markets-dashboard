@@ -408,7 +408,7 @@ export async function fetchSummerFixtures(code: string): Promise<FDMatch[]> {
 
 export type FinishedMatch = { id: string; homeGoals: number; awayGoals: number };
 
-async function fetchEspnResults(code: string): Promise<FinishedMatch[]> {
+async function fetchEspnResults(code: string, onCall?: (fail: string | null) => void): Promise<FinishedMatch[]> {
   const slug = ESPN_SLUGS[code];
   if (!slug) return [];
   const to = new Date();
@@ -420,7 +420,7 @@ async function fetchEspnResults(code: string): Promise<FinishedMatch[]> {
     const url = `${ESPN_SITE_API}/soccer/${slug}/scoreboard?dates=${month}&limit=200`;
     try {
       const r = await fetch(url, { headers: ESPN_HEADERS, cache: "no-store" });
-      if (!r.ok) continue;
+      if (!r.ok) { onCall?.(`${slug}:${month}:${r.status}`); continue; }
       const data = (await r.json()) as {
         events?: Array<{
           id: string;
@@ -431,6 +431,7 @@ async function fetchEspnResults(code: string): Promise<FinishedMatch[]> {
           }>;
         }>;
       };
+      onCall?.(null);
       for (const ev of data.events ?? []) {
         if (!isFullTimeFinal(ev.status?.type)) continue; // AET/PEN: not a 90' score
         if (!ev.date || Date.parse(ev.date) < from.getTime()) continue;
@@ -444,7 +445,8 @@ async function fetchEspnResults(code: string): Promise<FinishedMatch[]> {
         if (out.some((m) => m.id === `espn:${ev.id}`)) continue;
         out.push({ id: `espn:${ev.id}`, homeGoals: hg, awayGoals: ag });
       }
-    } catch {
+    } catch (e) {
+      onCall?.(`${slug}:${month}:${String(e)}`);
       continue;
     }
   }
@@ -484,9 +486,12 @@ async function fetchOddsApiScores(code: string): Promise<FinishedMatch[]> {
   }
 }
 
-export async function fetchSummerResults(code: string): Promise<FinishedMatch[]> {
+export async function fetchSummerResults(
+  code: string,
+  onEspnCall?: (fail: string | null) => void,
+): Promise<FinishedMatch[]> {
   const [espn, oddsapi] = await Promise.all([
-    fetchEspnResults(code),
+    fetchEspnResults(code, onEspnCall),
     fetchOddsApiScores(code),
   ]);
   return [...espn, ...oddsapi];

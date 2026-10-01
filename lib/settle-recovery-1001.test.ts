@@ -7,7 +7,7 @@
 // them 'unresolved' at 48h. Single days and whole months still answer 200.
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { fetchSummerResults } from "@/lib/summer-leagues";
-import { abbinaFinaleCerto, espnSlugForLeague, parseEspnFinals, pianoRecuperoEspn } from "@/lib/espn-results";
+import { abbinaFinaleCerto, espnSlugForLeague, fetchEspnFinalsByDate, parseEspnFinals, pianoRecuperoEspn } from "@/lib/espn-results";
 import { mesiEspn } from "@/lib/espn";
 
 const espnEvent = (id: string, date: string, hs: string, as: string) => ({
@@ -107,5 +107,33 @@ describe("90 minutes (#CALCIO-1001 review B)", () => {
         ? new Response(JSON.stringify({ events: [{ ...evAt("STATUS_FINAL_PEN"), date: recent }] }), { status: 200 })
         : new Response("[]", { status: 200 })));
     expect(await fetchSummerResults("BEL")).toEqual([]);
+  });
+});
+
+describe("ESPN failures are counted, not swallowed (#CALCIO-1001 review F)", () => {
+  it("fetchEspnFinalsByDate reports a 403 and a network error", async () => {
+    const fails: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("blocked", { status: 403 })));
+    expect(await fetchEspnFinalsByDate("bel.1", "202609", (w) => { if (w) fails.push(w); })).toEqual([]);
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("timeout"); }));
+    await fetchEspnFinalsByDate("bel.1", "202609", (w) => { if (w) fails.push(w); });
+    expect(fails).toEqual(["bel.1:202609:403", "bel.1:202609:Error: timeout"]);
+  });
+  it("fetchSummerResults reports each failed ESPN month", async () => {
+    const fails: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      url.includes("espn") ? new Response("", { status: 400 }) : new Response("[]", { status: 200 })));
+    await fetchSummerResults("BEL", (w) => { if (w) fails.push(w); });
+    expect(fails.length).toBeGreaterThan(0);
+    expect(fails[0]).toMatch(/^bel\.1:\d{6}:400$/);
+  });
+});
+
+describe("ESPN successes are reported too, so 'all failed' is measurable", () => {
+  it("a 200 reports null", async () => {
+    const seen: Array<string | null> = [];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ events: [] }), { status: 200 })));
+    await fetchEspnFinalsByDate("bel.1", "202609", (w) => seen.push(w));
+    expect(seen).toEqual([null]);
   });
 });
