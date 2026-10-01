@@ -164,7 +164,12 @@ from unified_predictions
 where is_demo = false and published_at is not null and pick is not null
   and starts_at < now() - interval '48 hours'
 order by starts_at desc nulls last, settled_at desc nulls last, id desc
+limit 20000
 """
+# Tetto difensivo, non una finestra: la copertura e' all-time come l'headline.
+# L'01/10 le righe erano ~1/3 del tetto. Se lo si tocca, la popolazione e'
+# troncata e copertura_onesta diventa '?' invece di misurare una parte.
+FINITE_MAX = 20000
 
 # Stessa serializzazione dell'RPC exec_sql che usa la route (lib/db.ts): i
 # timestamp arrivano come le stesse stringhe, e il dedup li confronta come tali.
@@ -288,6 +293,9 @@ def check_copertura_onesta() -> Verdict:
     prova = {**replay["honest"], "dichiarata": dichiarata, "soglia": soglia,
              "riparo": "la copertura conta solo le righe gia' chiuse: il denominatore "
                        "deve includere unresolved e senza esito (route.ts, WHERE)"}
+    if replay.get("finished_rows", 0) >= FINITE_MAX:
+        return unknown(f"popolazione troncata a {FINITE_MAX} righe: alza il tetto", fonte,
+                       evidence=prova)
     if dichiarata is None or onesta is None:
         return unknown("l'API non espone la copertura, o non ci sono pick finite",
                        fonte, evidence=prova)

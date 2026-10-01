@@ -271,3 +271,19 @@ def test_history_dichiara_cosa_prova():
     with patch.object(coerenza, "misura_history", return_value=(_replay(2, 1, 1), stats)):
         v = coerenza.check_history_coerente()
     assert "non la correttezza" in v.evidence["cosa_prova"]
+
+
+def test_senza_database_url_messaggio_chiaro_e_exit_1(monkeypatch, capsys):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with patch("tools.control_center.db.load_env", return_value={}):
+        assert cp.main([]) == 1
+    assert "DATABASE_URL assente" in capsys.readouterr().err
+
+
+def test_popolazione_finita_limitata_e_troncamento_non_verde():
+    assert "limit 20000" in coerenza._FINITE_SQL
+    stats = {"n": 1, "won": 1, "lost": 0, "coverage": 0.56}
+    rep = _replay(1, 1, 0, cov_honest=0.563)
+    rep["finished_rows"] = coerenza.FINITE_MAX
+    with patch.object(coerenza, "misura_history", return_value=(rep, stats)):
+        assert coerenza.check_copertura_onesta().level == "unknown"

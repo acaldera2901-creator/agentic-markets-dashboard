@@ -84,6 +84,7 @@ async function main() {
       coverage: finished.length ? Number((counted / finished.length).toFixed(3)) : null,
     },
     route_rows: input.route_rows.length,
+    finished_rows: input.finished_rows.length,
   }));
 }
 

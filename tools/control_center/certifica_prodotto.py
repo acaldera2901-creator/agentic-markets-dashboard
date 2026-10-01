@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from .checks import all_checks
-from .db import REPO_ROOT
+from .db import REPO_ROOT, _dsn
 from .runner import run_checks
 from .snapshot import STATE_DIR
 
@@ -130,6 +130,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--test", action="store_true", help="esegue anche pytest e vitest")
     args = parser.parse_args(argv)  # argomento sconosciuto -> exit 2
 
+    try:
+        _dsn()
+    except ValueError as exc:
+        # Senza DB i check del registro esplodono gia' alla costruzione della
+        # lista (pipeline._providers): un traceback non dice cosa fare.
+        print(f"lab certifica prodotto: {exc}: lancia dalla vetrina "
+              "(~/Desktop/agentic-markets) o passala nell'ambiente", file=sys.stderr)
+        return 1
     lista = all_checks()
     voci, info = voci_da_verdetti(lista, run_checks(lista))
     if args.test:
