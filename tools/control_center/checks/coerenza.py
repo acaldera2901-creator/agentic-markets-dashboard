@@ -138,7 +138,12 @@ def check_freschezza_leghe() -> Verdict:
 # Il gate di pubblicazione (lib/publication-gate.ts, core/surfacing_gate.py)
 # rifiuta le leghe senza fonte; questo controllo guarda cio' che e' stato
 # servito davvero negli ultimi 14 giorni, per accorgersi di uno scrittore che
-# il gate non copre. Stessa regola di resultSourceFor, sullo stesso file.
+# il gate non copre. La regola e' una sola: result_source_for di
+# core/surfacing_gate, sul file letto qui a ogni giro (la torre vive a lungo,
+# una cache vedrebbe il file vecchio).
+# LIMITE: le righe nazionali che agents/model.py SALTA per fonte mancante non
+# arrivano al DB, quindi qui non si vedono: lasciano solo il contatore
+# skipped_total nel warning "reason=no_result_source" del log dell'agente.
 FONTI_FILE = REPO_ROOT / "data" / "result_sources.json"
 
 
@@ -150,30 +155,35 @@ def leggi_fonti() -> dict:
 def check_fonti_risultato() -> Verdict:
     fonte = "db:unified_predictions+data/result_sources.json"
     try:
+        from core.surfacing_gate import RESULT_SOURCE_DEBT, result_source_for  # noqa: PLC0415
+        tabella = leggi_fonti()
+        debito = list(tabella["debt"]["leagues"])
+    except (ImportError, OSError, ValueError, KeyError, TypeError) as exc:
+        return unknown(f"fonti di risultato non leggibili: {exc}", fonte)
+    try:
         righe = fetch_all(
             "select sport, league, count(*) from unified_predictions "
             "where published_at > now() - interval '14 days' group by 1, 2"
         )
     except DbUnavailable as exc:
         return unknown(f"database non raggiungibile: {exc}", fonte)
-    tabella = leggi_fonti()
-    debito = list(tabella["debt"]["leagues"])
-    senza = []
-    for sport, lega, _n in righe:
-        per_sport = tabella["sources"].get(sport) or {}
-        chiave = f"{sport}:{lega}"
-        if not (per_sport.get(lega or "") or per_sport.get("*")) and chiave not in debito:
-            senza.append(chiave)
-    prova = {"servite": len(righe), "senza_fonte": sorted(senza), "debito": debito,
-             "scadenza_debito": tabella["debt"]["due"], "owner_debito": tabella["debt"]["owner"],
+    if not righe:
+        return unknown("nessuna riga servita negli ultimi 14 giorni: niente da verificare", fonte)
+    senza = sorted(f"{sport}:{lega}" for sport, lega, _n in righe
+                   if result_source_for(sport, lega, tabella) is None)
+    in_debito = sorted(f"{sport}:{lega}" for sport, lega, _n in righe
+                       if result_source_for(sport, lega, tabella) == RESULT_SOURCE_DEBT)
+    prova = {"servite": len(righe), "senza_fonte": senza, "debito": debito,
+             "debito_servito": in_debito,
+             "scadenza_debito": tabella["debt"].get("due"), "owner_debito": tabella["debt"].get("owner"),
              "soglia": "0 leghe servite senza fonte, debito vuoto",
              "riparo": "dichiara la fonte della lega in data/result_sources.json, "
                        "o togli lo scrittore che la pubblica senza passare dal gate"}
     if senza:
-        return red(f"{len(senza)} leghe servite senza fonte di risultato: {', '.join(sorted(senza)[:6])}",
+        return red(f"{len(senza)} leghe servite senza fonte di risultato: {', '.join(senza[:6])}",
                    fonte, value=len(senza), evidence=prova)
     if debito:
-        return amber(f"{len(debito)} leghe in debito dichiarato (scade {tabella['debt']['due']})",
+        return amber(f"{len(debito)} leghe in debito dichiarato (scade {tabella['debt'].get('due')})",
                      fonte, value=len(debito), evidence=prova)
     return green(f"{len(righe)} leghe servite, tutte con una fonte di risultato",
                  fonte, value=0, evidence=prova)

@@ -333,8 +333,18 @@ class ModelAgent(BaseAgent):
         elif tier == "monitor_only":
             return
         # #GATE-1001: no declared result source -> not published, not sealed.
+        # The skip never reaches the DB, so the tower check cannot see it:
+        # this counter and the warning line are the only trace (by design).
         if result_source_for("football", payload.get("league")) is None:
-            self.logger.warning("national row skipped: no result source for %s", payload.get("league"))
+            league = str(payload.get("league"))
+            skipped = getattr(self, "_no_result_source_skipped", None)
+            if skipped is None:
+                skipped = self._no_result_source_skipped = {}
+            skipped[league] = skipped.get(league, 0) + 1
+            self.logger.warning(
+                "national row skipped reason=no_result_source league=%s skipped_total=%d",
+                league, skipped[league],
+            )
             return
         try:
             probs = json.loads(wc_result.get("world_cup_probabilities") or "{}")

@@ -348,3 +348,25 @@ def test_fonti_registrato_e_file_reale_leggibile():
     with patch("tools.control_center.checks.pipeline._providers", return_value=[]):
         assert "fonti_risultato" in [c.id for c in all_checks()]
     assert "football" in coerenza.leggi_fonti()["sources"]
+
+
+def test_fonti_nessuna_riga_servita_e_unknown_non_verde():
+    assert _fonti([]).level == "unknown"
+
+
+def test_fonti_json_mancante_o_corrotto_e_unknown(tmp_path):
+    rotto = tmp_path / "result_sources.json"
+    rotto.write_text("{non json", encoding="utf-8")
+    with patch.object(coerenza, "fetch_all", return_value=[("football", "PL", 9)]), \
+            patch.object(coerenza, "FONTI_FILE", rotto):
+        assert coerenza.check_fonti_risultato().level == "unknown"
+    with patch.object(coerenza, "fetch_all", return_value=[("football", "PL", 9)]), \
+            patch.object(coerenza, "FONTI_FILE", tmp_path / "assente.json"):
+        assert coerenza.check_fonti_risultato().level == "unknown"
+
+
+def test_fonti_usa_la_regola_unica_del_gate():
+    # una regola sola: il codice normalizzato come in core/surfacing_gate
+    assert _fonti([("football", " pl ", 9)]).level == "green"
+    testo = Path(coerenza.__file__).read_text(encoding="utf-8")
+    assert "result_source_for" in testo and 'per_sport.get("*")' not in testo

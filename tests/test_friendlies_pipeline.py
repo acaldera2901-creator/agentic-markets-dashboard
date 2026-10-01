@@ -171,6 +171,25 @@ async def test_wc_monitor_only_still_blocked():
         assert up.await_count == 0  # WC keeps the tier gate: monitor_only writes nothing
 
 
+@pytest.mark.asyncio
+async def test_national_row_without_result_source_skipped_and_counted(caplog):
+    # #GATE-1001: no declared result source -> no row, and the skip is counted
+    from agents.model import ModelAgent
+    agent = ModelAgent.__new__(ModelAgent)
+    agent._history = {"WC": []}
+    agent._wc_snapshot_state = {}
+    import logging
+    agent.logger = logging.getLogger("test")
+    with patch("agents.model.upsert_unified_rows", new=AsyncMock(return_value=1)) as up, \
+         patch("agents.model.result_source_for", return_value=None), \
+         caplog.at_level(logging.WARNING, logger="test"):
+        await agent._persist_world_cup_paper(_payload(), _wc_result(0.9, _PROBS))
+        await agent._persist_world_cup_paper(_payload(), _wc_result(0.9, _PROBS))
+    assert up.await_count == 0
+    assert agent._no_result_source_skipped == {FRIENDLIES_CODE: 2}
+    assert "no_result_source" in caplog.text and "skipped_total=2" in caplog.text
+
+
 # ── #WC-DEDUP-1: provider-agnostic dedup key ─────────────────────────────────
 
 def test_national_dedup_key_stable_across_providers():
