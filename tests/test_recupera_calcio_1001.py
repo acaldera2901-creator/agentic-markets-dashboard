@@ -265,3 +265,39 @@ def test_b1_football_is_superseded_by_this_script():
     n = json.dumps({"final_score": "2-1"})
     rows, stats = build([("match_predictions", "e1", "v", "won", "verified", n)], [])
     assert rows == [] and stats == {"b1:superseded": 1}
+
+
+# ── REGOLA 3: same match played on another date (symmetric to tennis) ───────
+
+def _moved(hours, kind="final", status="STATUS_FULL_TIME", home="Puebla", away="Toluca"):
+    return {"kind": kind, "score": (1, 0) if kind == "final" else None, "status": status,
+            "kickoff": T0 + timedelta(hours=hours), "home": home, "away": away}
+
+
+def test_rule3_played_within_48h_is_graded_on_the_played_match():
+    from scripts.recupera_calcio_1001 import id_evidence
+    e = id_evidence("espn-id", _moved(30), "Puebla", "Toluca", T0)
+    assert (e.kind, e.score, e.rule) == ("final", (1, 0), "regola3-entro-48h")
+
+
+def test_rule3_beyond_48h_is_void_with_the_date_as_proof():
+    from scripts.recupera_calcio_1001 import id_evidence
+    e = id_evidence("espn-id", _moved(24 * 20), "Puebla", "Toluca", T0)
+    assert e.kind == "void" and e.status == f"rinviata-oltre-48h:{(T0 + timedelta(days=20)).date()}"
+    assert e.rule == "regola3-oltre-48h"
+    d = decide("HOME", "1X2", [e])
+    row = settlement_row("espn:1", 1, d)
+    assert row["result"] == "void" and "rinviata-oltre-48h:" in row["correction_reason"]
+
+
+def test_rule3_within_48h_but_extra_time_is_not_graded():
+    from scripts.recupera_calcio_1001 import id_evidence
+    e = id_evidence("espn-id", _moved(30, kind="supplementari", status="STATUS_FINAL_AET"), "Puebla", "Toluca", T0)
+    assert decide("HOME", "1X2", [e])["result"] is None
+
+
+def test_rule3_moved_event_needs_a_strong_identity():
+    from scripts.recupera_calcio_1001 import id_evidence
+    e = id_evidence("espn-id", _moved(30, home="Puebla", away="Toluca B"), "Puebla", "Club Leon", T0)
+    assert e.kind == "debole"
+

@@ -31,9 +31,11 @@ dry-run counts the divergences. Void for a match not played only on the source's
 ESPN STATUS_POSTPONED/STATUS_CANCELED, football-data POSTPONED/CANCELLED.
 A 1X2 pick is graded on 90 minutes: only ESPN STATUS_FULL_TIME (or
 football-data FINISHED with duration REGULAR) is a final; AET/PEN finals are
-NOT graded ("supplementari: serve regola"). Played on another day (>24h from
-the sealed kickoff), abandoned, still scheduled, nothing found: NOT written,
-reported with the reason.
+NOT graded ("supplementari: serve regola"). REGOLA 3 — same match (by id,
+strong identity on both teams) played on another date: within 48h of the
+sealed kickoff -> graded on it (90' rule); beyond 48h -> void, proof
+"rinviata-oltre-48h:<date>" in correction_reason. Abandoned, still scheduled,
+nothing found: NOT written, reported with the reason.
 
 ORDER vs scripts/backfill_settle_1001.py: its b1 (football) is a no-op,
 superseded by this script. If anything wrote the same (pick, revision) first,
@@ -71,7 +73,7 @@ from scripts.backfill_sealed_orphans import _final_score_from_notes, outcome_fro
 BATCH = "recupero:CALCIO-1001"
 GRACE = "6 hours"
 TOLERANCE = timedelta(minutes=20)       # lib/espn-results.ts TOLLERANZA_MS
-OTHER_DAY = timedelta(hours=24)         # same event id, kickoff moved this far = rescheduled
+PLAYED_WITHIN = timedelta(hours=48)     # REGOLA 3: same match, moved up to 48h = graded on it
 MIN_TOKEN = 4                           # lib/espn-results.ts MIN_TOKEN
 ESPN_VOID = {"STATUS_POSTPONED", "STATUS_CANCELED"}
 # A 1X2 pick is graded on 90 minutes. ESPN's score of an AET/PEN final
@@ -252,7 +254,9 @@ def fd_match(client, mid: str) -> dict | None:
         return None
     m = r.json()
     ft = ((m.get("score") or {}).get("fullTime") or {})
-    base = {"kickoff": _dt(m.get("utcDate")), "status": str(m.get("status") or "")}
+    base = {"kickoff": _dt(m.get("utcDate")), "status": str(m.get("status") or ""),
+            "home": (m.get("homeTeam") or {}).get("name", ""),
+            "away": (m.get("awayTeam") or {}).get("name", "")}
     if base["status"] == "FINISHED" and (m.get("score") or {}).get("duration") not in (None, "REGULAR"):
         return {**base, "kind": "supplementari"}  # fullTime includes extra time
     if base["status"] == "FINISHED" and isinstance(ft.get("home"), int) and isinstance(ft.get("away"), int):
@@ -267,10 +271,12 @@ def fd_match(client, mid: str) -> dict | None:
 @dataclass
 class Evidence:
     source: str
-    kind: str                       # final | void | pending | supplementari | altra-data | ambigua | debole
+    kind: str                       # final | void | pending | supplementari | ambigua | debole
     score: tuple[int, int] | None = None
     status: str | None = None
     detail: str | None = None       # the source's own names + kickoff (name matches)
+    rule: str | None = None         # regola3-entro-48h | regola3-oltre-48h
+    played: str | None = None       # REGOLA 3: the source's (new) kickoff
 
 
 def grade(sealed_pick: str | None, market: str | None, hg: int, ag: int) -> str:
@@ -313,9 +319,7 @@ def decide(sealed_pick, market, evs: list[Evidence], shown_pick=_SAME) -> dict:
     if voids:
         return {**out, "result": "void", "fonte": voids[0].source, "prova": voids[0].status,
                 "conferme": [e.source for e in voids[1:]]}
-    if any(e.kind == "altra-data" for e in evs):
-        motivo = "giocata in altra data (rinvio): regola di chiusura da decidere"
-    elif any(e.kind == "pending" for e in evs):
+    if any(e.kind == "pending" for e in evs):
         st = sorted({e.status or "?" for e in evs if e.kind == "pending"})
         motivo = f"non conclusa secondo la fonte ({', '.join(st)})"
     elif any(e.kind == "ambigua" for e in evs):
@@ -366,6 +370,24 @@ def _score(fs: str | None) -> tuple[int, int] | None:
     return (int(m[1]), int(m[2])) if m else None
 
 
+def id_evidence(source: str, e: dict, home: str, away: str, ko: datetime) -> Evidence:
+    """Evidence from a source found BY ID. REGOLA 3 (symmetric to tennis): if
+    the match was moved, it must be the same match by strong identity on both
+    teams; played within 48h of the sealed kickoff -> graded on it (90' rule
+    unchanged); beyond 48h -> void, the played/new date is the proof."""
+    moved = e.get("kickoff") is not None and abs(e["kickoff"] - ko) > TOLERANCE
+    if not moved:
+        return Evidence(source, e["kind"], e.get("score"), e["status"])
+    if e.get("home") and e.get("away") and not (
+            _strong_identity(e["home"], home) and _strong_identity(e["away"], away)):
+        return Evidence(source, "debole", detail=_detail(e))
+    if abs(e["kickoff"] - ko) > PLAYED_WITHIN:
+        return Evidence(source, "void", status=f"rinviata-oltre-48h:{e['kickoff'].date()}",
+                        rule="regola3-oltre-48h", played=e["kickoff"].isoformat()[:16])
+    return Evidence(source, e["kind"], e.get("score"), e["status"], rule="regola3-entro-48h",
+                    played=e["kickoff"].isoformat()[:16])
+
+
 def _detail(c: dict) -> str:
     return f"{c['home']} - {c['away']} @ {c['kickoff'].isoformat()[:16]}"
 
@@ -394,10 +416,8 @@ def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
             if sid.startswith("espn:"):
                 eid = sid.removeprefix("espn:")
                 e = next((x for x in month_evs if x["id"] == eid), None) or espn.summary(slug, eid)
-                if e and e["kickoff"] and abs(e["kickoff"] - ko) > OTHER_DAY:
-                    evs.append(Evidence("espn-id", "altra-data", status=e["status"]))
-                elif e:
-                    evs.append(Evidence("espn-id", e["kind"], e.get("score"), e["status"]))
+                if e:
+                    evs.append(id_evidence("espn-id", e, home, away, ko))
             else:
                 kind, m = match_by_name(home, away, ko, month_evs)
                 if m:
@@ -407,14 +427,15 @@ def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
                     evs.append(Evidence("espn-data-nomi", kind))
         if fd_client and sid.isdigit() and sres == "unresolved":
             f = fd_match(fd_client, sid)
-            if f and f["kickoff"] and abs(f["kickoff"] - ko) > OTHER_DAY:
-                evs.append(Evidence("football-data", "altra-data", status=f["status"]))
-            elif f:
-                evs.append(Evidence("football-data", f["kind"], f.get("score"), f["status"]))
+            if f:
+                evs.append(id_evidence("football-data", f, home, away, ko))
         d = decide(pick, market, evs, shown_pick=upick)
         out.append({"source_id": sid, "league": league, "match": f"{home} - {away}",
                     "kickoff": ko.isoformat(), "pick": pick, "pick_mostrato": upick, "stato_prima": sres or "NOSET",
                     "rev": srev, "decisione": d,
+                    "regola3": [{"fonte": e.source, "regola": e.rule, "giocata": e.played,
+                                 "esito_fonte": e.score or e.status}
+                                for e in evs if e.rule],
                     "per_nome": [{"fonte": e.source, "fonte_nomi": e.detail,
                                   "punteggio": e.score, "stato": e.status}
                                  for e in evs if e.detail], "row": settlement_row(sid, srev, d),
@@ -463,6 +484,12 @@ def report(out: list[dict]) -> None:
             used = "USATO" if o["decisione"]["fonte"] == m["fonte"] else "conferma"
             print(f"  {o['kickoff'][:16]} {o['league']:5s} {o['match']}  <=>  {m['fonte_nomi']}"
                   f"  [{m['fonte']}, {m['punteggio'] or m['stato']}, {used}]")
+    print("REGOLA 3 (partita spostata di data): sigillata | giocata/nuova | regola | fonte -> esito")
+    for o in out:
+        for r in o["regola3"]:
+            print(f"  {o['kickoff'][:16]} {o['league']:5s} {o['match']} | {r['giocata']} {r['esito_fonte']}"
+                  f" | {r['regola']}"
+                  f" | {r['fonte']} -> {o['decisione']['result'] or o['decisione']['motivo']}")
     conf = Counter(c for o in out for c in o["decisione"]["conferme"])
     print(f"irrisolti sigillati letti: {len(out)}")
     div = Counter(("sigillato" if o["pick"] else "-") + "/" + ("mostrato" if o["pick_mostrato"] else "-")
