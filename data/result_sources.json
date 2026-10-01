@@ -1,0 +1,63 @@
+{
+  "_what": "#GATE-1001 — where the RESULT of every served league comes from. A league/sport not declared here is not published nor sealed (reason no_result_source). To add a sport or league: declare its source here, in the same commit. Read by lib/result-sources.ts (publication gate), core/surfacing_gate.py (Python national writer) and the tower check coerenza.fonti_risultato.",
+  "_sources": {
+    "football-data": "football-data.org matches (cron settle step A/C, Python fd.org by names+date)",
+    "espn": "ESPN soccer scoreboard by month / summary by id (cron step A2/A4, Python _fetch_unified_result)",
+    "oddsapi": "The Odds API /scores, 3-day window (cron step A2/C)",
+    "espn-tennis": "ESPN atp+wta daily archive (agents/tennis_settlement.py _resolve_via_espn)",
+    "betconstruct": "partner feed finished matches, match_status=3 (core/partner_tennis_results.py, #RISULTATI-PARTNER-1001)"
+  },
+  "sources": {
+    "football": {
+      "PL": ["football-data", "espn"],
+      "SA": ["football-data", "espn"],
+      "PD": ["football-data", "espn"],
+      "BL1": ["football-data", "espn"],
+      "FL1": ["football-data", "espn"],
+      "CL": ["football-data", "espn"],
+      "EL": ["football-data", "espn"],
+      "WC": ["football-data", "espn"],
+      "FRIENDLY": ["espn"],
+      "UNL": ["espn"],
+      "CNL": ["espn"],
+      "ELI": ["espn", "oddsapi"],
+      "ALL": ["espn", "oddsapi"],
+      "LOI": ["espn", "oddsapi"],
+      "CSL": ["espn", "oddsapi"],
+      "SB": ["espn", "oddsapi"],
+      "AUT": ["espn", "oddsapi"],
+      "DNK": ["espn", "oddsapi"],
+      "SWZ": ["espn", "oddsapi"],
+      "BEL": ["espn", "oddsapi"],
+      "EFLC": ["espn", "oddsapi"],
+      "EL1": ["espn", "oddsapi"],
+      "EL2": ["espn", "oddsapi"],
+      "SCO": ["espn", "oddsapi"],
+      "BL2": ["espn", "oddsapi"],
+      "FL2": ["espn", "oddsapi"],
+      "PD2": ["espn", "oddsapi"],
+      "NED": ["espn", "oddsapi"],
+      "POR": ["espn", "oddsapi"],
+      "TUR": ["espn", "oddsapi"],
+      "GRE": ["espn", "oddsapi"],
+      "ARG": ["espn", "oddsapi"],
+      "BRA": ["espn", "oddsapi"],
+      "MEX": ["espn", "oddsapi"],
+      "MLS": ["espn", "oddsapi"]
+    },
+    "tennis": {
+      "*": ["espn-tennis", "betconstruct"]
+    }
+  },
+  "_notes": {
+    "VEI": "in debt: only The Odds API /scores (3-day window), no ESPN source (fin.1 payload is empty). A pick not closed within 3 days stays unresolved.",
+    "POL": "in debt: only The Odds API /scores (3-day window), no ESPN source (no ESPN league). A pick not closed within 3 days stays unresolved.",
+    "tennis": "every tennis row goes through ESPN then the partner feed (agents/tennis_settlement.py _resolve_all), whatever the tournament: Challenger/ITF/WTA125 and doubles included."
+  },
+  "debt": {
+    "owner": "Andrea",
+    "due": "2026-10-08",
+    "_what": "Served leagues without a source, published on purpose until the due date so they do not vanish from the board. Format 'sport:LEAGUE'. Odds API /scores alone (3 days) is not a full source. Anything NEW without a source is rejected; nothing new enters this list.",
+    "leagues": ["football:POL", "football:VEI"]
+  }
+}

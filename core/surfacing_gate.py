@@ -17,7 +17,35 @@ keyword lists live in lib/surfacing-gate.ts (tennisFloorFor); keep in sync.
 """
 from __future__ import annotations
 
+import json
+from functools import lru_cache
+from pathlib import Path
+
 from config.settings import settings
+
+# #GATE-1001 — the declared result source of every sport/league. Same file the
+# TS publication gate reads (lib/result-sources.ts): data/result_sources.json.
+RESULT_SOURCES_PATH = Path(__file__).resolve().parents[1] / "data" / "result_sources.json"
+RESULT_SOURCE_DEBT = "declared_debt"
+
+
+@lru_cache(maxsize=1)
+def load_result_sources() -> dict:
+    return json.loads(RESULT_SOURCES_PATH.read_text(encoding="utf-8"))
+
+
+def result_source_for(sport: str, league: str | None, table: dict | None = None) -> str | None:
+    """Comma-joined sources, RESULT_SOURCE_DEBT, or None = nobody can close the
+    row: do not publish it (reject, never paper). Mirror of resultSourceFor."""
+    t = table if table is not None else load_result_sources()
+    code = (league or "").strip().upper()  # same normalisation as the classifiers
+    by_sport = t["sources"].get(sport) or {}
+    sources = by_sport.get(code) or by_sport.get("*")
+    if sources:
+        return ",".join(sources)
+    if f"{sport}:{code}" in t["debt"]["leagues"]:
+        return RESULT_SOURCE_DEBT
+    return None
 
 # High-tier tournament keywords (case-insensitive substring). Conservative on
 # purpose: only unambiguous names — anything unmatched falls to the LOWER tier,

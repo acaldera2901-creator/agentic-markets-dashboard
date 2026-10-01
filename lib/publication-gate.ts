@@ -12,12 +12,16 @@
 //                 edge and an explicit pick — and never for World Cup rows while
 //                 the WC readiness status is monitor_only.
 
+import { RESULT_SOURCE_DEBT } from "./result-sources";
+
 export type GateCandidate = {
   startsAt: string | null;
   pick: string | null;
   odds: number | null;
   edge: number | null;
   isWorldCup: boolean;
+  /** #GATE-1001 — from resultSourceFor(): null = nobody can close this row. */
+  resultSource: string | null;
 };
 
 export type GateContext = {
@@ -27,9 +31,9 @@ export type GateContext = {
 
 export type GateVerdict =
   | { publish: false; reason: RejectReason }
-  | { publish: true; signalType: "signal" | "paper"; isPaper: boolean; reasons: PaperReason[] };
+  | { publish: true; signalType: "signal" | "paper"; isPaper: boolean; reasons: PaperReason[]; sourceDebt: boolean };
 
-export type RejectReason = "missing_start_time" | "invalid_start_time" | "stale_event";
+export type RejectReason = "missing_start_time" | "invalid_start_time" | "stale_event" | "no_result_source";
 export type PaperReason = "no_market_odds" | "no_computed_edge" | "missing_pick" | "wc_monitor_only";
 
 // A row whose event started more than this long ago is stale: it must never be
@@ -43,6 +47,10 @@ export function gateCandidate(candidate: GateCandidate, ctx: GateContext): GateV
   const startMs = new Date(candidate.startsAt).getTime();
   if (Number.isNaN(startMs)) return { publish: false, reason: "invalid_start_time" };
   if (startMs < now.getTime() - STALE_AFTER_MS) return { publish: false, reason: "stale_event" };
+  // #GATE-1001 — REJECT, not paper: a paper row is sealed too and ends up in
+  // /history as 'unresolved'. Declared debt passes, flagged.
+  if (candidate.resultSource == null) return { publish: false, reason: "no_result_source" };
+  const sourceDebt = candidate.resultSource === RESULT_SOURCE_DEBT;
 
   const reasons: PaperReason[] = [];
   if (candidate.odds == null) reasons.push("no_market_odds");
@@ -51,9 +59,9 @@ export function gateCandidate(candidate: GateCandidate, ctx: GateContext): GateV
   if (candidate.isWorldCup && !ctx.worldCupSignalReady) reasons.push("wc_monitor_only");
 
   if (reasons.length > 0) {
-    return { publish: true, signalType: "paper", isPaper: true, reasons };
+    return { publish: true, signalType: "paper", isPaper: true, reasons, sourceDebt };
   }
-  return { publish: true, signalType: "signal", isPaper: false, reasons: [] };
+  return { publish: true, signalType: "signal", isPaper: false, reasons: [], sourceDebt };
 }
 
 // ─── Sync report (returned by the unified/tennis sync functions) ──────────────
@@ -65,10 +73,12 @@ export type SyncReport = {
   rejected: number;
   paper_reasons: Record<string, number>;
   rejected_reasons: Record<string, number>;
+  /** published rows whose league is in the declared result-source debt */
+  source_debt: number;
 };
 
 export function emptySyncReport(): SyncReport {
-  return { synced: 0, as_signal: 0, as_paper: 0, rejected: 0, paper_reasons: {}, rejected_reasons: {} };
+  return { synced: 0, as_signal: 0, as_paper: 0, rejected: 0, paper_reasons: {}, rejected_reasons: {}, source_debt: 0 };
 }
 
 export function recordVerdict(report: SyncReport, verdict: GateVerdict): void {
@@ -78,6 +88,7 @@ export function recordVerdict(report: SyncReport, verdict: GateVerdict): void {
     return;
   }
   report.synced += 1;
+  if (verdict.sourceDebt) report.source_debt += 1;
   if (verdict.isPaper) {
     report.as_paper += 1;
     for (const reason of verdict.reasons) {

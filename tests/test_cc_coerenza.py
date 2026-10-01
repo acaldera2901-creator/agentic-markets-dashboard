@@ -315,3 +315,58 @@ def test_headline_distingue_i_rotti_attesi_dai_peggiorati():
          patch.object(coerenza, "fetch_all", return_value=[(0,)]):
         solo_noti = coerenza.check_claims().headline
     assert solo_noti != v.headline and "0 peggiorati" in solo_noti
+
+
+# ── #GATE-1001 · ogni lega servita ha una fonte di risultato ────────────────
+_FONTI = {"sources": {"football": {"PL": ["football-data"]}, "tennis": {"*": ["espn-tennis"]}},
+          "debt": {"owner": "Andrea", "due": "2026-10-08", "leagues": []}}
+
+
+def _fonti(righe, debito=()):
+    tabella = {**_FONTI, "debt": {**_FONTI["debt"], "leagues": list(debito)}}
+    with patch.object(coerenza, "fetch_all", return_value=righe), \
+            patch.object(coerenza, "leggi_fonti", return_value=tabella):
+        return coerenza.check_fonti_risultato()
+
+
+def test_fonti_tutte_dichiarate_verde():
+    assert _fonti([("football", "PL", 9), ("tennis", "Partner feed", 2520)]).level == "green"
+
+
+def test_fonti_lega_servita_senza_fonte_rosso():
+    v = _fonti([("football", "PL", 9), ("football", "JPN", 3)])
+    assert v.level == "red" and v.evidence["senza_fonte"] == ["football:JPN"]
+
+
+def test_fonti_debito_non_vuoto_ambra():
+    assert _fonti([("football", "XYZ", 4)], debito=["football:XYZ"]).level == "amber"
+    # anche se la lega in debito oggi non e' servita: il debito va chiuso
+    assert _fonti([("football", "PL", 9)], debito=["football:XYZ"]).level == "amber"
+
+
+def test_fonti_registrato_e_file_reale_leggibile():
+    with patch("tools.control_center.checks.pipeline._providers", return_value=[]):
+        assert "fonti_risultato" in [c.id for c in all_checks()]
+    assert "football" in coerenza.leggi_fonti()["sources"]
+
+
+def test_fonti_nessuna_riga_servita_e_unknown_non_verde():
+    assert _fonti([]).level == "unknown"
+
+
+def test_fonti_json_mancante_o_corrotto_e_unknown(tmp_path):
+    rotto = tmp_path / "result_sources.json"
+    rotto.write_text("{non json", encoding="utf-8")
+    with patch.object(coerenza, "fetch_all", return_value=[("football", "PL", 9)]), \
+            patch.object(coerenza, "FONTI_FILE", rotto):
+        assert coerenza.check_fonti_risultato().level == "unknown"
+    with patch.object(coerenza, "fetch_all", return_value=[("football", "PL", 9)]), \
+            patch.object(coerenza, "FONTI_FILE", tmp_path / "assente.json"):
+        assert coerenza.check_fonti_risultato().level == "unknown"
+
+
+def test_fonti_usa_la_regola_unica_del_gate():
+    # una regola sola: il codice normalizzato come in core/surfacing_gate
+    assert _fonti([("football", " pl ", 9)]).level == "green"
+    testo = Path(coerenza.__file__).read_text(encoding="utf-8")
+    assert "result_source_for" in testo and 'per_sport.get("*")' not in testo

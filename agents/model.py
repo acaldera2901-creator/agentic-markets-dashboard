@@ -25,7 +25,7 @@ from core.world_cup_probability import national_match_probabilities
 from core.world_cup_elo_model import predict_wc_match as predict_wc_elo_v2
 from core.wc_calibration import calibrate_wc_probabilities
 from core.world_cup_explanation import build_wc_enrichment, build_wc_explanation
-from core.surfacing_gate import nations_floor_for, surface_decision
+from core.surfacing_gate import nations_floor_for, result_source_for, surface_decision
 from core.supabase_client import (
     DCPrediction,
     log_prediction_snapshot,
@@ -331,6 +331,20 @@ class ModelAgent(BaseAgent):
             if nm_quality < settings.FRIENDLY_MIN_NATIONAL_QUALITY:
                 return
         elif tier == "monitor_only":
+            return
+        # #GATE-1001: no declared result source -> not published, not sealed.
+        # The skip never reaches the DB, so the tower check cannot see it:
+        # this counter and the warning line are the only trace (by design).
+        if result_source_for("football", payload.get("league")) is None:
+            league = str(payload.get("league"))
+            skipped = getattr(self, "_no_result_source_skipped", None)
+            if skipped is None:
+                skipped = self._no_result_source_skipped = {}
+            skipped[league] = skipped.get(league, 0) + 1
+            self.logger.warning(
+                "national row skipped reason=no_result_source league=%s skipped_total=%d",
+                league, skipped[league],
+            )
             return
         try:
             probs = json.loads(wc_result.get("world_cup_probabilities") or "{}")

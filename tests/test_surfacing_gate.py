@@ -339,3 +339,37 @@ def test_nations_league_registry_routing():
     assert nations_league_name("UNL") == "UEFA Nations League"
     assert nations_league_name("CNL") == "Concacaf Nations League"
     assert nations_league_name("XNL") == "Nations League"  # fail-closed label
+
+
+# ── #GATE-1001: niente pubblicazione senza fonte di risultato dichiarata ─────
+from core.espn_soccer_client import ESPN_LEAGUE_CODES  # noqa: E402
+from core.surfacing_gate import RESULT_SOURCE_DEBT, load_result_sources, result_source_for  # noqa: E402
+
+_CON_DEBITO = {"sources": {"football": {"PL": ["football-data"]}},
+               "debt": {"owner": "Andrea", "due": "2026-10-08", "leagues": ["football:XYZ"]}}
+
+
+@pytest.mark.parametrize("sport,lega,atteso", [
+    ("football", "UNL", "espn"),
+    ("football", "FRIENDLY", "espn"),
+    ("football", "JPN", None),             # lega nuova senza fonte
+    ("baseball", "MLB", None),             # sport nuovo senza fonte
+    ("tennis", "Partner feed", "espn-tennis,betconstruct"),
+    ("football", "POL", RESULT_SOURCE_DEBT),   # solo Odds API /scores a 3 giorni
+    ("football", "VEI", RESULT_SOURCE_DEBT),
+    ("football", " unl ", "espn"),             # normalizzato come i classificatori (.upper())
+    ("football", "pol", RESULT_SOURCE_DEBT),
+])
+def test_result_source_for(sport, lega, atteso):
+    assert result_source_for(sport, lega) == atteso
+
+
+def test_result_source_debito_dichiarato():
+    assert result_source_for("football", "XYZ", _CON_DEBITO) == RESULT_SOURCE_DEBT
+    assert result_source_for("football", "ABC", _CON_DEBITO) is None
+
+
+def test_le_leghe_nazionali_dichiarate_espn_hanno_uno_slug_espn():
+    for code in ("FRIENDLY", "UNL", "CNL", "WC"):
+        assert "espn" in load_result_sources()["sources"]["football"][code]
+        assert ESPN_LEAGUE_CODES.get(code), code

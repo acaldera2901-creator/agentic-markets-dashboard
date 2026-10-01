@@ -5,6 +5,7 @@ import {
   emptySyncReport,
   type SyncReport,
 } from "@/lib/publication-gate";
+import { resultSourceFor } from "@/lib/result-sources";
 import { isWorldCupSignalReady } from "@/lib/world-cup-readiness";
 import { footballSurfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
 
@@ -313,6 +314,7 @@ export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
         odds: pickOdds(row),
         edge: row.edge,
         isWorldCup: d.competition === "World Cup" || d.world_cup_stage != null,
+        resultSource: resultSourceFor("football", row.league),
       },
       { worldCupSignalReady: wcSignalReady }
     );
