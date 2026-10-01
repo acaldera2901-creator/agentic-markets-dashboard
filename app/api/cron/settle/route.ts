@@ -517,6 +517,10 @@ export async function GET(req: NextRequest) {
       // #CALCIO-1001 — was 48h, terminal, with nothing retrying after: a
       // two-day source outage lost the result for good. Now E seals only
       // what step A4 could not find in ESPN_RECOVERY_DAYS of retries.
+      // VISIBLE CHANGE: an unresolved match now keeps result NULL for 5 more
+      // days (7 instead of 2) — off the live board (kickoff past) and out of
+      // /history meanwhile; its sealed-register closure and the coverage
+      // checks see it 5 days later than before.
       const cutoff = new Date(Date.now() - ESPN_RECOVERY_DAYS * 24 * 60 * 60 * 1000).toISOString();
       const { data: rows, error } = await sb
         .from("unified_predictions")
