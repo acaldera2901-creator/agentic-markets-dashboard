@@ -32,9 +32,10 @@ pick graded differently from the register, notes that are not a JSON object
 (live would clobber them).
 
 BATCH MARK: verification_note = BATCH (won/lost), notes.settlement_batch = BATCH
-on every written row, notes.sigillo = 'non-sigillata' for the 53 football rows
-graded on a pick the register never sealed (#CALCIO-1001 regola 4a): they are
-NOT part of the "logged before kick-off" claim.
+on every written row, notes.sigillo = 'non-sigillata' for a football row graded
+on a pick the register never sealed (#CALCIO-1001 regola 4a): NOT part of the
+"logged before kick-off" claim. (On 01/10 all such rows were fonte=servita,
+i.e. served row already closed: skipped as 'gia-chiusa'.)
 
 SAFETY: before the UPDATE every original value of the touched columns is
 written to BACKUP_DIR/unified_pre_allinea_1001_<UTC>.jsonl (one file per run,
@@ -46,9 +47,17 @@ updated count differs from the planned one, everything is rolled back. Idempoten
 won/lost/void and is skipped as 'gia-chiusa' on the next run.
 ROLLBACK:  venv/bin/python scripts/allinea_unified_1001.py --restore <backup path printed by --apply>
 
+RELEASE ORDER — FIRST the 'coerenza' PR, THEN --apply. With the CURRENT
+/api/v2/history (dedupeByFixture, freshness = most recent settled_at) a row
+written here (settled_at = now) beats its already-verified twin: the twin
+leaves the counted population and the football net gain is roughly halved
+(review of 01/10, not re-measured here: ~66 verified rows out — 64 football,
+2 tennis — football net +67 instead of +131). The 'coerenza' PR (route keeps
+the oldest published_at, `oldest: true`) removes the effect.
+
 USAGE (from the repo root)
   venv/bin/python scripts/allinea_unified_1001.py            # dry-run
-  venv/bin/python scripts/allinea_unified_1001.py --apply    # gated
+  venv/bin/python scripts/allinea_unified_1001.py --apply    # gated, AFTER the coerenza PR
 """
 from __future__ import annotations
 
