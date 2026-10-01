@@ -10,9 +10,11 @@ Tre scelte che non si leggono dal codice:
 1. **Rosso = Andrea deve agire.** Un check rosso entra in `richiedono_te`
    solo se nessuno lo ha gia' preso in carico: se una card ha un task aperto
    con `check:<id>` e owner diverso da Andrea, e' "gia' discusso e assegnato"
-   e sta nella salute del progetto, non in cima alla pagina. Un rosso che
-   nessun task cita invece entra sempre: e' misurato, e il primo gesto
-   (triage) tocca a lui.
+   e sta nella salute del progetto, non in cima alla pagina — ma solo su una
+   card viva: un task senza owner o su una card ferma non zittisce niente.
+   Un rosso che nessun task cita invece entra sempre: e' misurato, e il primo
+   gesto (triage) tocca a lui. Le azioni di Andrea senza urgenza misurata
+   (niente check, niente scadenza passata) vanno in `in_coda_per_te`.
 2. **L'ambra non chiede niente da sola.** Come nelle notifiche ("ambra non
    notifica mai"), un ambra o un non-misurato entra in `richiedono_te` solo
    se un task aperto di Andrea lo cita; altrimenti va in `da_osservare`.
