@@ -149,7 +149,8 @@ export async function fetchPrediction(
 }
 
 export async function fetchInjuries(
-  fixtureId: number
+  fixtureId: number,
+  teams?: { home: string; away: string }
 ): Promise<ApiFootballInjuries> {
   const key = process.env.API_FOOTBALL_KEY;
   if (!key) return { home: [], away: [] };
@@ -168,24 +169,32 @@ export async function fetchInjuries(
     const data = await r.json() as {
       response: Array<{
         player: { name: string; type: string };
-        team: { id: number };
+        team: { id: number; name?: string };
       }>;
     };
 
-    // Determine home/away team ID by checking fixture
     const response = data.response ?? [];
     if (!response.length) return { home: [], away: [] };
 
-    const teamIds = [...new Set(response.map((p) => p.team.id))];
-    const homeTeamId = teamIds[0];
+    // #XG-1001: nothing guarantees the response lists the home side first, so the side comes from
+    // the fixture's team names; an entry matching neither side is dropped.
+    const same = (a: string, b: string) => a !== "" && b !== "" && (a === b || a.includes(b) || b.includes(a));
+    const firstId = response[0].team.id;
+    const sideOf = (p: (typeof response)[number]): "home" | "away" | null => {
+      if (!teams) return p.team.id === firstId ? "home" : "away";
+      const tn = normTeam(p.team.name ?? "");
+      if (same(tn, normTeam(teams.home))) return "home";
+      if (same(tn, normTeam(teams.away))) return "away";
+      return null;
+    };
 
     const home: string[] = [];
     const away: string[] = [];
 
     for (const p of response) {
-      const entry = `${p.player.name} (${p.player.type})`;
-      if (p.team.id === homeTeamId) home.push(entry);
-      else away.push(entry);
+      const side = sideOf(p);
+      if (!side) continue;
+      (side === "home" ? home : away).push(`${p.player.name} (${p.player.type})`);
     }
 
     return { home, away };

@@ -19,14 +19,6 @@ const UNDERSTAT_LEAGUES: Record<string, string> = {
   FL1: "Ligue_1",
 };
 
-function unescape(str: string): string {
-  return str
-    .replace(/\\x([0-9a-fA-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
-    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
-    .replace(/\\\\/g, "\\")
-    .replace(/\\'/g, "'");
-}
-
 function avg(arr: Record<string, string>[], key: string): number {
   if (!arr.length) return 0;
   const sum = arr.reduce((s, m) => s + parseFloat(m[key] ?? "0"), 0);
@@ -45,6 +37,50 @@ function ppda(arr: Record<string, unknown>[]): number {
   return Math.round((total / arr.length) * 100) / 100;
 }
 
+type UnderstatMatch = Record<string, unknown>;
+type UnderstatTeams = Record<string, { id: string; title: string; history?: UnderstatMatch[] }>;
+
+// Understat seasons are keyed by their starting year (2026 = 2026/27).
+export function understatSeason(now: Date = new Date()): number {
+  return now.getUTCMonth() < 6 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
+}
+
+// #XG-1001: the `teamsData` blob is no longer inlined in the league HTML; the
+// same data now comes from getLeagueData as JSON with numeric values and the
+// side in `h_a`. `isHome` is kept only for the legacy string shape.
+function isHomeMatch(m: UnderstatMatch): boolean | null {
+  if (m.h_a === "h" || m.isHome === "1" || m.isHome === true) return true;
+  if (m.h_a === "a" || m.isHome === "0" || m.isHome === false) return false;
+  return null;
+}
+
+export function parseUnderstatTeams(teams: UnderstatTeams | undefined | null): Record<string, TeamXG> {
+  const result: Record<string, TeamXG> = {};
+  for (const team of Object.values(teams ?? {})) {
+    const history = (team.history ?? []) as Record<string, string>[];
+    const home = history.filter((h) => isHomeMatch(h) === true);
+    const away = history.filter((h) => isHomeMatch(h) === false);
+    const recent10 = history.slice(-10) as Record<string, unknown>[];
+
+    result[team.title] = {
+      name: team.title,
+      xg_home: avg(home.slice(-10), "xG"),
+      xga_home: avg(home.slice(-10), "xGA"),
+      xg_away: avg(away.slice(-10), "xG"),
+      xga_away: avg(away.slice(-10), "xGA"),
+      npxg_home: avg(home.slice(-10), "npxG"),
+      npxg_away: avg(away.slice(-10), "npxG"),
+      ppda: ppda(recent10),
+      form: history
+        .slice(-5)
+        .map((h) => (h.result === "w" ? "W" : h.result === "d" ? "D" : "L"))
+        .join(""),
+      xpts: avg(history.slice(-10), "xpts"),
+    };
+  }
+  return result;
+}
+
 export async function fetchLeagueXG(
   league: string
 ): Promise<Record<string, TeamXG>> {
@@ -52,56 +88,31 @@ export async function fetchLeagueXG(
   if (!leagueName) return {};
 
   try {
-    const year =
-      new Date().getMonth() < 6
-        ? new Date().getFullYear() - 1
-        : new Date().getFullYear();
-
-    const url = `https://understat.com/league/${leagueName}/${year}`;
-    const html = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+    const url = `https://understat.com/getLeagueData/${leagueName}/${understatSeason()}`;
+    const r = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest" },
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
-    }).then((r) => r.text());
-
-    const match = html.match(/var teamsData\s*=\s*JSON\.parse\('([^']+)'\)/);
-    if (!match) return {};
-
-    const teams = JSON.parse(unescape(match[1])) as Record<
-      string,
-      { id: string; title: string; history: Record<string, string>[] }
-    >;
-
-    const result: Record<string, TeamXG> = {};
-
-    for (const team of Object.values(teams)) {
-      const history = team.history ?? [];
-      const home = history.filter((h) => h.isHome === "1");
-      const away = history.filter((h) => h.isHome === "0");
-      const recent10 = history.slice(-10) as Record<string, unknown>[];
-
-      result[team.title] = {
-        name: team.title,
-        xg_home: avg(home.slice(-10), "xG"),
-        xga_home: avg(home.slice(-10), "xGA"),
-        xg_away: avg(away.slice(-10), "xG"),
-        xga_away: avg(away.slice(-10), "xGA"),
-        npxg_home: avg(home.slice(-10), "npxG"),
-        npxg_away: avg(away.slice(-10), "npxG"),
-        ppda: ppda(recent10),
-        form: history
-          .slice(-5)
-          .map((h) => (h.result === "w" ? "W" : h.result === "d" ? "D" : "L"))
-          .join(""),
-        xpts: avg(history.slice(-10), "xpts"),
-      };
-    }
-
-    return result;
+    });
+    if (!r.ok) return {};
+    const body = (await r.json()) as { teams?: UnderstatTeams };
+    return parseUnderstatTeams(body.teams);
   } catch (e) {
     console.warn(`[understat] ${league}:`, e);
     return {};
   }
+}
+
+/**
+ * Shadow gate (#XG-1001): xG is fetched, cached and shown in the enrichment,
+ * but enters the served probabilities only with XG_BLEND_ENABLED=1 (Andrea's
+ * call). Off → predict() gets no baseline → today's served numbers, unchanged.
+ */
+export function xgBlendBaseline(
+  xgMap: Record<string, TeamXG>,
+  env: Record<string, string | undefined> = process.env
+): { home: number; away: number } | null {
+  return env.XG_BLEND_ENABLED === "1" ? leagueXGAverages(xgMap) : null;
 }
 
 /**
@@ -121,26 +132,48 @@ export function leagueXGAverages(
   return { home, away };
 }
 
-/** Normalize team name for fuzzy matching (strip suffixes, lowercase). */
+/** Normalize team name for fuzzy matching (strip suffixes, accents, lowercase). */
 export function normTeam(name: string): string {
   return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/-/g, " ")
     .replace(/\b(FC|AC|AS|SS|US|SSC|AFC|SC|SV|CF|Calcio|1\.\s*FC)\b/gi, "")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }
 
-/** Find best matching team in the xG map by normalized name. */
+// football-data name (normalized) → Understat title (normalized), for names no
+// substring rule can join. Measured on the 2026-10-01 board (#XG-1001).
+const TEAM_ALIASES: Record<string, string> = {
+  "koln": "cologne",
+  "bayer 04 leverkusen": "bayer leverkusen",
+  "borussia monchengladbach": "borussia m.gladbach",
+  "bayern munchen": "bayern munich",
+  "rb leipzig": "rasenballsport leipzig",
+  "stade rennais 1901": "rennes",
+  "club atletico de madrid": "atletico madrid",
+  "rc celta de vigo": "celta vigo",
+  "real racing club de santander": "racing santander",
+  "internazionale milano": "inter",
+  "rcd espanyol de barcelona": "espanyol",
+};
+
+/**
+ * Find the matching team in the xG map: exact normalized name, then alias,
+ * then a substring match only if it is unique. The old first-substring-wins
+ * rule gave Paris FC's xG to PSG and vice versa (measured 2026-10-01).
+ */
 export function matchTeam(
   name: string,
   xgMap: Record<string, TeamXG>
 ): TeamXG | null {
   const norm = normTeam(name);
-  for (const [key, data] of Object.entries(xgMap)) {
-    const keyNorm = normTeam(key);
-    if (keyNorm === norm || keyNorm.includes(norm) || norm.includes(keyNorm)) {
-      return data;
-    }
-  }
-  return null;
+  const entries = Object.entries(xgMap).map(([key, data]) => [normTeam(key), data] as const);
+  const target = TEAM_ALIASES[norm] ?? norm;
+  const exact = entries.find(([k]) => k === target);
+  if (exact) return exact[1];
+  const fuzzy = entries.filter(([k]) => k !== "" && (k.includes(target) || target.includes(k)));
+  return fuzzy.length === 1 ? fuzzy[0][1] : null;
 }
