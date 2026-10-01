@@ -265,7 +265,9 @@ class Handler(BaseHTTPRequestHandler):
                            "application/json; charset=utf-8")
                 return
             corpo = cockpit.cockpit(area, read_state(STATE_FILE))
-            self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
+            # Area valida ma che nessuna card dichiara: 404 con JSON
+            # `{"assente": true, "aree": [...], "messaggio"}`, non un cockpit vuoto.
+            self._send(404 if corpo.get("assente") else 200, json.dumps(corpo, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
         elif path == "/api/hub":
             # I progetti di primo livello (card `Tipo: progetto`) e il

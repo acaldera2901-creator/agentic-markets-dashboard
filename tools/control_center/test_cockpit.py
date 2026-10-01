@@ -11,7 +11,7 @@ from datetime import date
 
 import pytest
 
-from . import cockpit, progetti, server
+from . import cockpit, progetti, server, snapshot
 from .actions import ensure_token
 
 OGGI = date(2026, 9, 30)
@@ -96,6 +96,8 @@ def registri(tmp_path, monkeypatch):
     fuori = tmp_path / "segreto.md"
     fuori.write_text("non toccare", encoding="utf-8")
     monkeypatch.setattr(progetti, "REGISTRI", (("azienda", "Azienda", cartella, "project_"),))
+    # mai lo storico vero di questa macchina: senza file vale la stima red_runs
+    monkeypatch.setattr(snapshot, "HISTORY_FILE", tmp_path / "history.jsonl")
     return cartella
 
 
@@ -141,7 +143,8 @@ def test_card_vecchia_senza_area_ne_task_non_rompe_niente(registri):
     (True, ["green"], "fatto"),
     (True, [], "fatto"),
     (False, [], "aperto"),
-    (True, ["unknown"], "fatto"),
+    (True, ["unknown"], cockpit.SPUNTATO_NON_VERDE),   # audit 0101 #3: non e' fatto
+    (True, ["amber"], cockpit.SPUNTATO_NON_VERDE),
 ])
 def test_stato_derivato_dal_check(spuntato, livelli, atteso):
     ids = [f"c{i}" for i in range(len(livelli))]
@@ -158,8 +161,9 @@ def test_richiedono_te_solo_azioni_umane_vere(registri):
         "rigenerare il token IG",         # non misurato, ma citato da un task di Andrea
         "scrivere il post-mortem",        # scaduto, card viva
         "launchd_daemon-health: 7 check rossi",   # rosso che nessuno ha preso
-        "bloccata",                       # BLOCCATO fresco in attesa di Andrea
     ])
+    # BLOCCATO fresco in attesa di Andrea: in coda, non un rosso (audit 0101 #7)
+    assert [(x["tipo"], x["nome_card"]) for x in d["in_coda_per_te"]] == [("bloccato", "Bloccata")]
     settle = next(r for r in d["richiedono_te"] if r["titolo"] == "sbloccare il settle")
     assert {e["check"] for e in settle["evidenza"]} == {"cron_settle", "history_orfane"}
     assert settle["da_quando"] == "2026-09-30T19:00Z"   # 13 run rossi da 5 minuti
@@ -262,7 +266,7 @@ def _post(url, corpo, headers):
 def test_endpoint_cockpit(servito):
     with urllib.request.urlopen(servito + "/api/cockpit?area=betredge") as r:
         d = json.loads(r.read())
-    assert len(d["richiedono_te"]) == 5
+    assert len(d["richiedono_te"]) == 4
     with pytest.raises(urllib.error.HTTPError) as e:
         urllib.request.urlopen(servito + "/api/cockpit?area=../x")
     assert e.value.code == 400
@@ -363,7 +367,8 @@ def test_hub_aggrega_e_deduplica(con_progetto):
     assert [p["nome"] for p in h["progetti"]] == ["BetRedge"]   # maven non ha card progetto
     b = cockpit.cockpit("betredge", STATO, OGGI)
     m = cockpit.cockpit("maven", STATO, OGGI)
-    assert m["verdetto"]["n_richiedono_te"] == 1           # la card bloccata, anche qui
+    assert m["verdetto"]["n_richiedono_te"] == 0           # la card bloccata e' in coda
+    assert m["n_in_coda"] == 1 and h["n_in_coda"] == 1     # due aree, contata una volta
     # la bloccata sta in due aree: nel verdetto globale conta una volta
     assert h["verdetto"] == {"livello": "red",
                              "n_richiedono_te": b["verdetto"]["n_richiedono_te"]}
@@ -389,3 +394,163 @@ def test_endpoint_hub_e_cockpit_senza_traversal(servito, con_progetto):
         with pytest.raises(urllib.error.HTTPError) as e:
             urllib.request.urlopen(servito + "/api/cockpit?area=" + cattivo)
         assert e.value.code == 400
+
+
+# ------------------------------------------------------------ audit 0101
+
+def _card(nome, corpo, data="2026-09-30", fase="ATTIVO"):
+    return (f"---\ndescription: \"{nome}\"\n---\n<!-- STATO:start -->\n"
+            f"> 🟢 **STATO {data} · `{fase}`**\n> **Area:** betredge\n{corpo}<!-- STATO:end -->\n")
+
+
+def _scheda(nome, testo, tmp_path):
+    f = tmp_path / f"{nome}.md"
+    f.write_text(testo, encoding="utf-8")
+    return (progetti._scheda(f, "azienda", "Azienda", testo), testo)
+
+
+SOLO_SETTLE = {"generated_at": "2026-09-30T20:00:00Z",
+               "checks": {"cron_settle": STATO["checks"]["cron_settle"],
+                          "cron_crm": STATO["checks"]["cron_crm"]},
+               "alerts": {"cron_settle": {"red_runs": 13}}}
+
+
+def test_owner_riconosciuto_dalla_forma_non_dalla_sottostringa():
+    t = cockpit._parse_task("sistemare la riga «toccato … · done quando» tagliata · Claude")
+    assert (t["testo"], t["owner"]) == ("sistemare la riga «toccato … · done quando» tagliata",
+                                        "Claude")
+    t = cockpit._parse_task("rimuovere worktree · Claude → dopo OK Andrea · scad:2026-09-01")
+    assert t["owner"] == "Claude → dopo OK Andrea" and cockpit.attore(t["owner"]) == "claude"
+    assert not cockpit._e_andrea(t["owner"]) and not cockpit._e_andrea("ui-andrea")
+    assert cockpit._e_andrea("Andrea → Claude")
+    assert cockpit._parse_task("x · Fredrik → Andrea")["owner"] == "Fredrik → Andrea"
+
+
+def test_task_senza_owner_non_zittisce_il_rosso(tmp_path):
+    c = [_scheda("project_a", _card("a", ">   **Task:**\n>   - [ ] fix settle · check:cron_settle\n"),
+                 tmp_path)]
+    d = cockpit.costruisci("betredge", SOLO_SETTLE, c, OGGI)
+    triage = [r for r in d["richiedono_te"] if r["tipo"] == "check"]
+    assert [r["evidenza"][0]["check"] for r in triage] == ["cron_settle"]
+    assert "senza owner" in triage[0]["perche"] and d["in_carico"] == []
+
+
+def test_altri_su_card_ferma_non_silenziano_per_sempre(tmp_path):
+    c = [_scheda("project_arch", _card("arch", ">   **Task:**\n"
+                                       ">   - [ ] settle · collaboratrice · check:cron_settle\n",
+                                       data="2026-06-01", fase="ARCHIVIATO"), tmp_path)]
+    d = cockpit.costruisci("betredge", SOLO_SETTLE, c, OGGI)
+    assert d["in_carico"][0]["card_ferma"] is True and d["in_carico"][0]["giorni_fermo"] > 14
+    oss = [o for o in d["da_osservare"] if o["check"] == "cron_settle"]
+    assert oss and oss[0]["in_carico_a"] == "collaboratrice"
+    # su card viva invece e' davvero preso in carico: sparisce da tutto tranne in_carico
+    c = [_scheda("project_m", _card("m", ">   **Task:**\n>   - [ ] settle · Michele · check:cron_settle\n"),
+                 tmp_path)]
+    d = cockpit.costruisci("betredge", SOLO_SETTLE, c, OGGI)
+    assert not [o for o in d["da_osservare"] if o["check"] == "cron_settle"]
+    assert not d["richiedono_te"] and d["in_carico"][0]["card_ferma"] is False
+
+
+def test_spunta_a_mano_con_check_ambra_non_e_fatto(tmp_path):
+    c = [_scheda("project_crm", _card("crm", ">   **Task:**\n"
+                                      ">   - [x] crm · Andrea · check:cron_crm · fatto:2026-09-30\n"),
+                 tmp_path)]
+    d = cockpit.costruisci("betredge", SOLO_SETTLE, c, OGGI)
+    assert d["workstream"][0]["tasks"][0]["stato"] == "spuntato ma il check non è verde"
+    assert d["workstream"][0]["task_chiusi"] == 0
+    r = next(r for r in d["richiedono_te"] if r["tipo"] == "task")
+    assert "non e' fatto" in r["perche"] and cockpit.livello_ticket(r) == "amber"
+
+
+def test_card_ferma_con_rosso_aperto_resta_in_principale(tmp_path):
+    c = [_scheda("project_settlement_recovery", _card("s", ">   **Task:**\n"
+                 ">   - [ ] sbloccare il settle: 1930 pick finite · Andrea · check:cron_settle\n",
+                 data="2026-08-31"), tmp_path)]
+    d = cockpit.costruisci("betredge", SOLO_SETTLE, c, OGGI)
+    assert d["archivio"]["conteggio"] == 0
+    w = d["workstream"][0]
+    assert w["ferma"] is True and "cron_settle" in w["perche_qui"]
+    # #5: il titolo non porta il numero fisso della card, il perche' quello vivo
+    r = d["richiedono_te"][0]
+    assert r["titolo"] == "sbloccare il settle" and "1930 pick in attesa" in r["perche"]
+    assert r["testo"] == "sbloccare il settle: 1930 pick finite"
+
+
+def test_segna_fatto_accetta_il_titolo_senza_numeri(registri):
+    f = registri / "project_num.md"
+    f.write_text(_card("n", ">   **Task:**\n>   - [ ] riallineare /history (58.2% su 3090) · Andrea\n"),
+                 encoding="utf-8")
+    assert cockpit.segna_fatto("azienda/project_num", 0, "riallineare /history", OGGI)["ok"]
+
+
+def test_goal_col_valore_vivo_e_divergenza():
+    from datetime import datetime, timezone
+    adesso = datetime(2026, 9, 30, 20, 30, tzinfo=timezone.utc)
+    g = {"attuale": "1933", "checks": ["cron_settle"]}
+    v = cockpit.goal_live(g, STATO["checks"], adesso)
+    assert v["attuale_live"].startswith("1930 pick") and v["valore_live"] is None
+    assert v["misurato_alle"] == "2026-09-30T20:00:00Z" and v["eta_live_min"] == 30
+    assert v["diverge"] is True
+    assert cockpit.goal_live({"attuale": "1930", "checks": ["cron_settle"]},
+                             STATO["checks"], adesso)["diverge"] is False
+    v = cockpit.goal_live({"attuale": "1/2", "checks": ["web_pages", "cron_crm"]},
+                          STATO["checks"], adesso)
+    assert (v["attuale_live"], v["diverge"]) == ("1/2 verdi", False)
+    assert cockpit.goal_live({"attuale": "x", "checks": ["nessuno"]}, {}, adesso)["attuale_live"] is None
+
+
+def test_in_coda_per_te_non_e_rosso(tmp_path):
+    c = [_scheda("project_q", _card("q", ">   **Pending:** Andrea: firmare il DPA · scelta di Andrea 29/09\n"
+                                     ">   **Task:**\n>   - [ ] scegliere il secondo progetto · Andrea\n"
+                                     ">   - [ ] decidere il prezzo · Andrea · scad:2026-10-09\n"), tmp_path),
+         _scheda("project_hk", "<!-- STATO:start -->\n**Fase:** 🔴 BLOCCATO — attende Andrea\n"
+                 "**Prossima azione:** Andrea guarda il video. Owner: Andrea.\n> **Area:** betredge\n"
+                 "<!-- STATO:end -->\n", tmp_path)]
+    d = cockpit.costruisci("betredge", {"checks": {}}, c, OGGI)
+    assert d["richiedono_te"] == [] and d["verdetto"] == {"livello": "green", "n_richiedono_te": 0}
+    coda = {(x["tipo"], x["titolo"]) for x in d["in_coda_per_te"]}
+    assert coda == {("task", "scegliere il secondo progetto"), ("task", "decidere il prezzo"),
+                    ("pending", "Andrea: firmare il DPA"),
+                    ("bloccato", "Andrea guarda il video. Owner: Andrea.")}
+    assert d["n_in_coda"] == 4
+    x = next(x for x in d["in_coda_per_te"] if x["titolo"] == "decidere il prezzo")
+    assert x["scad"] == "2026-10-09" and x["nome_card"] == "Q" and x["eta_giorni"] == 0
+
+
+def test_progetto_espone_tutti_i_task_e_i_workstream(con_progetto):
+    d = cockpit.cockpit("betredge", STATO, OGGI)
+    p = d["progetto"]
+    assert len(p["task"]) == p["avanzamento"]["task_totali"] == 8
+    t = next(t for t in p["task"] if t["testo"] == "cosa dimenticata")
+    assert (t["card"], t["nome_card"], t["owner"], t["stato"]) == (
+        "azienda/project_stale", "Stale", "Andrea", "aperto")
+    assert set(t) >= {"testo", "owner", "stato", "scad", "check", "card", "nome_card", "fatto"}
+    assert p["n_workstream_vivi"] + p["n_workstream_archivio"] == p["n_workstream"]
+    h = cockpit.hub(STATO, OGGI)["progetti"][0]
+    assert (h["n_workstream_vivi"], h["n_workstream_archivio"]) == (
+        p["n_workstream_vivi"], p["n_workstream_archivio"])
+
+
+def test_area_inesistente_e_distinguibile(servito):
+    with pytest.raises(urllib.error.HTTPError) as e:
+        urllib.request.urlopen(servito + "/api/cockpit?area=inesistente")
+    assert e.value.code == 404
+    corpo = json.loads(e.value.read())
+    assert corpo["assente"] is True and "betredge" in corpo["aree"] and corpo["messaggio"]
+    with urllib.request.urlopen(servito + "/api/cockpit?area=betredge") as r:
+        assert json.loads(r.read())["assente"] is False
+
+
+def test_da_quando_dal_primo_rosso_dello_storico(tmp_path):
+    f = tmp_path / "history.jsonl"
+    righe = [("2026-09-30T10:00:00Z", "green"), ("2026-09-30T10:05:00Z", "red"),
+             ("2026-09-30T10:10:00Z", None), ("2026-09-30T11:00:00Z", "red"),
+             ("2026-09-30T20:00:00Z", "red")]   # 3 giri rossi, ma con un buco di 50 minuti
+    f.write_text("".join(json.dumps({"at": at, "checks": ({"cron_settle": {"level": lv}} if lv else {})})
+                         + "\n" for at, lv in righe), encoding="utf-8")
+    inizi = cockpit.inizi_rosso(["cron_settle"], f)
+    assert inizi == {"cron_settle": "2026-09-30T10:05:00Z"}
+    stato = {"checks": SOLO_SETTLE["checks"], "alerts": {"cron_settle": {"red_runs": 3}}}
+    assert cockpit._da_quando_check("cron_settle", stato, inizi) == "2026-09-30T10:05Z"
+    assert cockpit._da_quando_check("cron_settle", stato) == "2026-09-30T19:50Z"   # la stima
+    assert cockpit.inizi_rosso(["cron_settle"], tmp_path / "manca.jsonl") == {}
