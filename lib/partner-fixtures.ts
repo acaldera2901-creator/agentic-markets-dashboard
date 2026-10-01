@@ -48,7 +48,27 @@ export type FixturePartner = {
   p2: number;
   oddsP1: number;
   oddsP2: number;
+  // #RISULTATI-PARTNER-1001 — l'identita' della partita presso il partner,
+  // finora scartata. Vive SOLO in feature_snapshot: le colonne tournament e
+  // surface restano 'Partner feed'/'hard' perche' dedup (prediction-dedup) e
+  // floor (tennisFloorFor) leggono il nome torneo; cambiarle e' un passo a parte.
+  partner: {
+    id: number | null;
+    urn_id: string | null;
+    tournament: string | null;
+    surface: string;
+    category: string | null;
+  };
 };
+
+const SUPERFICIE = /-\s*(hard|clay|grass|carpet)\b/i;
+
+/** La superficie dal nome del torneo («ATP Challenger Bari - Clay»), oppure
+ * 'hard', il default storico del parser, se il nome non la dichiara. */
+export function superficieDaTorneo(nome: string | null | undefined): string {
+  const m = SUPERFICIE.exec(nome ?? "");
+  return m ? m[1].toLowerCase() : "hard";
+}
 
 /**
  * De-vig a due vie: toglie il margine del bookmaker normalizzando le due
@@ -116,6 +136,13 @@ export function fixtureDaPartner(m: FpMatch, adesso = Date.now()): FixturePartne
     p2: p.p2,
     oddsP1: m.oddsHome,
     oddsP2: m.oddsAway,
+    partner: {
+      id: Number.isFinite(m.id) ? m.id : null,
+      urn_id: m.urnId || null,
+      tournament: m.tournamentName ?? null,
+      surface: superficieDaTorneo(m.tournamentName),
+      category: m.categoryName ?? null,
+    },
   };
 }
 
@@ -184,10 +211,11 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
     const r = await dbQuery(
       `INSERT INTO tennis_predictions
          (match_id, tournament, surface, player1, player2, scheduled_at,
-          p1, p2, odds_p1, odds_p2, edge, best_selection, model_version, computed_at)
+          p1, p2, odds_p1, odds_p2, edge, best_selection, model_version, computed_at,
+          feature_snapshot)
        SELECT ($1)::text,($2)::text,($3)::text,($4)::text,($5)::text,($6)::timestamptz,
               ($7)::double precision,($8)::double precision,($9)::double precision,
-              ($10)::double precision,NULL,($11)::text,($12)::text,NOW()
+              ($10)::double precision,NULL,($11)::text,($12)::text,NOW(),($13)::jsonb
        -- I cast sono espliciti perche' lo stesso parametro serve due usi con
        -- tipi diversi: la colonna varchar dell'INSERT e il confronto text qui
        -- sotto. Senza, Postgres rifiuta con «inconsistent types deduced for
@@ -219,6 +247,7 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
         f.oddsP2,
         f.p1 >= f.p2 ? "P1" : "P2",
         "partner-market-v1",
+        JSON.stringify({ partner: f.partner }),
       ],
     ).catch((e: unknown) => {
       console.error("[partner-ingest] errore su", f.matchId, String(e));

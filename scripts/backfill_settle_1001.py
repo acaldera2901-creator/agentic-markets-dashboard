@@ -34,8 +34,14 @@ DEBITO DICHIARATO (owner Andrea/Claude, rivedere entro 2026-10-08)
      where outcome is null and scheduled_at > computed_at + interval '7 days';
   Se > 0: spostare la scadenza su `scheduled_at`.
 
+ORDER / OVERLAP (#RISULTATI-PARTNER-1001)
+  b2 (tennis) is SUPERSEDED by scripts/backfill_risultati_partner_1001.py:
+  same sealed tennis rows, but closed with the partner's real result instead
+  of a terminal 'unresolved'. So b2 is OFF by default (--include-tennis-b2 to
+  force it). Order: first this script (b1 football), then the partner one.
+
 USAGE
-  venv/bin/python -m scripts.backfill_settle_1001            # dry-run
+  venv/bin/python -m scripts.backfill_settle_1001            # dry-run (b1 only)
   venv/bin/python -m scripts.backfill_settle_1001 --apply    # gated
 """
 from __future__ import annotations
@@ -141,11 +147,14 @@ def _apply(rows: list[dict]) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="#SETTLE-1001 b (gated)")
     ap.add_argument("--apply", action="store_true", help="WRITE to prod (needs APPROVE)")
+    ap.add_argument("--include-tennis-b2", action="store_true",
+                    help="also b2 tennis (superseded by backfill_risultati_partner_1001)")
     a = ap.parse_args(argv)
 
     from tools.control_center.db import fetch_all  # read-only transaction
 
-    rows, stats = build(fetch_all(_FOOTBALL_SQL), fetch_all(_TENNIS_SQL))
+    tennis = fetch_all(_TENNIS_SQL) if a.include_tennis_b2 else []
+    rows, stats = build(fetch_all(_FOOTBALL_SQL), tennis)
     for k in sorted(stats):
         print(f"{k:24s} {stats[k]}")
     print(f"TOTAL to write: {len(rows)}  (batch marker {BATCH!r})")

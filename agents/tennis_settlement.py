@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, timezone
 from agents.base import BaseAgent
 from core.db import AsyncSessionLocal, TennisPrediction, TennisBet
 from core.espn_tennis_client import get_completed_results_for_days
+from core.partner_tennis_results import get_partner_results_for_days
 from core.supabase_client import settle_unified_tennis, unified_tennis_ancora_aperte
 from core.tennis_names import canonical_player_key
 from core.tennis_set_validation import settlement_allowed
@@ -43,6 +44,11 @@ POLL_INTERVAL = 300
 # #SETTLE-0909 B3 — un risultato si lega alla pick di QUELLA partita: stessa
 # coppia E stessa data entro un giorno. Era +-3 giorni, e non si applicava mai.
 MATCH_DATE_TOLERANCE = timedelta(days=1)
+# #RISULTATI-PARTNER-1001 regola 1 (decisione Andrea, delegata): SOLO per il
+# feed partner la finestra e' +-2 giorni. Copre i rinvii osservati (27-31h)
+# con margine; candidato unico e stessa coppia restano obbligatori, quindi due
+# incontri della coppia nella finestra sono ambigui e non si chiudono.
+PARTNER_MATCH_DATE_TOLERANCE = timedelta(days=2)
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +285,10 @@ class TennisSettlementAgent(BaseAgent):
                     canonical_player_key(loser_name),
                 )),
             )
-            if match_identity not in elo_applied:
+            # #RISULTATI-PARTNER-1001: i risultati partner chiudono le pick ma
+            # NON alimentano l'Elo (ITF/doppi fuori dal perimetro del modello:
+            # cambiarne gli input e' una decisione ML, non di settlement).
+            if fonte != "betconstruct" and match_identity not in elo_applied:
                 self._elo.update(winner_name, loser_name, surface)
                 elo_applied.add(match_identity)
             await self._update_prediction(pred.id, outcome, winner_name)
@@ -371,10 +380,13 @@ class TennisSettlementAgent(BaseAgent):
         remaining = self._unresolved(pending, resolved)
         if remaining:
             resolved += [_con_fonte(t, "espn") for t in await self._resolve_via_espn(remaining)]
+        remaining = self._unresolved(pending, resolved)
+        if remaining:
+            resolved += [_con_fonte(t, "betconstruct") for t in await self._resolve_via_partner(remaining)]
         return resolved
 
     @staticmethod
-    def _giorni_di(pending: list) -> set:
+    def _giorni_di(pending: list, margine: timedelta | None = None) -> set:
         """
         I giorni (UTC) delle pick pendenti: e' l'insieme minimo di date da
         chiedere all'archivio. Chiedere una finestra fissa costerebbe richieste
@@ -391,6 +403,10 @@ class TennisSettlementAgent(BaseAgent):
         for pred in pending:
             quando = TennisSettlementAgent._quando_si_gioca(pred)
             if quando is None:
+                continue
+            if margine is not None:  # finestra partner: tutti i giorni +-margine
+                for d in range(-margine.days, margine.days + 1):
+                    giorni.add((quando + timedelta(days=d)).date())
                 continue
             giorni.add(quando.date())
             giorni.add((quando + timedelta(days=1)).date())
@@ -447,6 +463,26 @@ class TennisSettlementAgent(BaseAgent):
         except Exception as e:
             self.logger.warning(f"espn archivio fallito: {e}")
             return []
+        return self._risolvi_con(pending, results)
+
+    async def _resolve_via_partner(self, pending: list) -> list[tuple]:
+        """#RISULTATI-PARTNER-1001 — esiti dal feed partner (BetConstruct) per
+        cio' che l'archivio ESPN non copre: Challenger, ITF/WTT, WTA125, doppi.
+        Stesso cancello di ESPN: coppia + data entro un giorno, candidato unico,
+        coerenza dei set."""
+        giorni = self._giorni_di(pending, margine=PARTNER_MATCH_DATE_TOLERANCE)
+        if not giorni:
+            return []
+        try:
+            results = await get_partner_results_for_days(giorni)
+        except Exception as e:
+            self.logger.warning(f"partner risultati falliti: {e}")
+            return []
+        return self._risolvi_con(pending, results, tolleranza=PARTNER_MATCH_DATE_TOLERANCE)
+
+    def _risolvi_con(self, pending: list, results: list[dict], tolleranza: timedelta = MATCH_DATE_TOLERANCE) -> list[tuple]:
+        """Abbina i risultati (forma ESPN) alle righe pendenti e li fa passare
+        dai due cancelli. Condiviso da ESPN e partner (#RISULTATI-PARTNER-1001)."""
         if not results:
             return []
 
@@ -469,7 +505,7 @@ class TennisSettlementAgent(BaseAgent):
             candidati = per_coppia.get(frozenset((k1, k2))) or []
             if not candidati:
                 continue
-            candidati = self._candidati_per_data(pred, candidati)
+            candidati = self._candidati_per_data(pred, candidati, tolleranza)
             if not candidati:
                 continue
             if len(candidati) > 1:
@@ -493,6 +529,7 @@ class TennisSettlementAgent(BaseAgent):
                 gender=res.get("gender"),
                 status_name=res.get("status_name"),
                 source_completed=bool(res.get("source_completed")),
+                match_tiebreak=bool(res.get("match_tiebreak")),
             )
             if not ok:
                 rifiutate[motivo] = rifiutate.get(motivo, 0) + 1
@@ -518,7 +555,7 @@ class TennisSettlementAgent(BaseAgent):
             )
         return resolved
 
-    def _candidati_per_data(self, pred, candidati: list[dict]) -> list[dict]:
+    def _candidati_per_data(self, pred, candidati: list[dict], tolleranza: timedelta = MATCH_DATE_TOLERANCE) -> list[dict]:
         """
         I candidati compatibili con la data della partita (#SETTLE-0909 B).
 
@@ -543,7 +580,7 @@ class TennisSettlementAgent(BaseAgent):
             try:
                 if data_evento.tzinfo is None:
                     data_evento = data_evento.replace(tzinfo=timezone.utc)
-                if abs(data_evento - quando) <= MATCH_DATE_TOLERANCE:
+                if abs(data_evento - quando) <= tolleranza:
                     vicini.append(r)
             except (TypeError, ValueError, AttributeError) as e:
                 # #SETTLE-0909 B2 — qui c'era `except Exception: pass`, cioe' la

@@ -47,6 +47,11 @@ export type FpMatch = {
   awayName: string;
   /** ISO come lo manda il book, oppure null se assente. */
   startTime: string | null;
+  // #RISULTATI-PARTNER-1001: torneo e categoria veri (prima scartati), per
+  // salvarli sulla riga invece di 'Partner feed'. Opzionali: i consumatori
+  // esistenti non li leggono.
+  tournamentName?: string | null;
+  categoryName?: string | null;
 };
 
 // #NEWSPORTS: baseball/mma inclusi dopo la verifica live di Andrea (2026-07-05,
@@ -63,7 +68,7 @@ const SPORTS = new Set(["soccer", "tennis", "baseball", "mma"]);
 type RawOutcome = { odds?: unknown };
 type RawMarket = { outcomes?: RawOutcome[]; specifier?: string };
 type RawFpMatch = {
-  tournament?: { sport?: { key?: string } };
+  tournament?: { sport?: { key?: string }; name?: string; category?: { name?: string } };
   competitors?: { home?: { name?: string }; away?: { name?: string } };
   main_market?: RawMarket;
   secondary_market?: RawMarket;
@@ -135,6 +140,8 @@ export function parseFortuneplayMatches(payload: unknown): FpMatch[] {
       homeName: home,
       awayName: away,
       startTime: m?.start_time ?? null,
+      tournamentName: m?.tournament?.name ?? null,
+      categoryName: m?.tournament?.category?.name ?? null,
     });
   }
   return out;
