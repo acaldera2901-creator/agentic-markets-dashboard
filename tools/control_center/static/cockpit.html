@@ -102,8 +102,10 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .palco{position:relative;flex:1;min-height:0;display:grid;grid-template-columns:var(--lato) minmax(0,1fr) var(--lato);
   gap:calc(var(--u)*3);align-items:stretch}
 .lato{display:flex;flex-direction:column;gap:calc(var(--u)*2);min-height:0;justify-content:space-evenly}
-/* scheda e slot fantasma hanno la stessa altezza: lo slot e' un posto, non una riga */
-.lato>*{flex:1 1 0;min-height:0;max-height:236px}
+/* la scheda ha l'altezza del suo contenuto (mai una riga tagliata); lo slot
+   fantasma e' un posto, non una riga: prende lo spazio che resta */
+.lato>.scheda{flex:0 0 auto}
+.lato>.slot{flex:1 1 0;min-height:56px;max-height:236px}
 .lato.fitto{gap:var(--u)}
 .centro{position:relative;display:flex;flex-direction:column;min-height:0;min-width:0}
 /* il grafo si muove e si zooma come il piano di /canvas: rotella attorno al
@@ -121,6 +123,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 /* ─── il dock degli agenti: sempre a un clic, in ogni vista ─── */
 .dock{flex:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;
   border:1px solid var(--line);background:var(--panel);position:sticky;bottom:0;z-index:30}
+.dock #dock-personali{display:contents}   /* i tasti sono figli diretti del dock: una riga sola, anche stretta */
 .dock .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-right:4px}
 .dock .ag{font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.04em;padding:7px 12px;border:1px solid var(--line-2);
   color:var(--mid);background:var(--inset);display:inline-flex;align-items:center;gap:8px;transition:.12s;white-space:nowrap;margin-right:6px}
@@ -158,6 +161,8 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .agenti .chiudi{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;
   border-bottom:1px solid var(--line-2);background:var(--panel-2);font-family:var(--mono);font-size:11px;color:var(--dim)}
 .agenti .chiudi b{color:var(--ink);font-family:var(--sans);font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.agenti .chiudi .btn{margin-left:auto}
+.agenti .chiudi span{flex:1 1 auto}
 
 /* il grafo: identico per logica al settore Cervello del canvas (raggio ∝ √grado,
    colore per tipo, opacita' per eta'); qui e' il centro della pagina, non un pannello */
@@ -209,9 +214,9 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   border:2px solid var(--cy);border-left:0;border-bottom:0;pointer-events:none;opacity:.85}
 .scheda:hover{background:var(--panel-2);border-color:var(--cy)}
 .scheda:focus-visible{outline:1px solid var(--cy);outline-offset:3px;border-color:var(--cy)}
-.scheda h3{margin:0;font-size:22px;font-weight:600;line-height:1.15;letter-spacing:-.01em;overflow-wrap:anywhere;
-  display:flex;align-items:baseline;gap:10px}
-.scheda h3 small{font-family:var(--mono);font-size:10.5px;font-weight:400;color:var(--dim);letter-spacing:.04em}
+.scheda h3{margin:0;font-size:22px;font-weight:600;line-height:1.15;letter-spacing:-.01em;overflow-wrap:anywhere}
+/* «N vivi · M in archivio» sotto il nome, non accanto: il nome non va mai a capo per far posto a un conteggio */
+.scheda h3 small{display:block;font-family:var(--mono);font-size:10.5px;font-weight:400;color:var(--dim);letter-spacing:.04em;margin-top:3px;line-height:1.4}
 .scheda .r{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--mid);min-width:0}
 .scheda .r .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);width:52px;flex:none}
 .fase{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
@@ -233,7 +238,18 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   border:1px solid var(--line-2);color:var(--dim);margin-top:2px;white-space:nowrap}
 .badge.rosso{border-color:var(--red);color:var(--red)}
 .badge.ambra{border-color:var(--amber);color:var(--amber)}
-.scheda .pie{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scheda .pie{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.5;min-width:0}
+.scheda .pie .dq{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scheda .pie .dq b{color:var(--mid);font-weight:500}
+/* l'indicatore della coda: neutro, non un badge — e' lavoro di Andrea, non un allarme */
+.scheda .coda{font-family:var(--mono);font-size:10.5px;color:var(--dim);white-space:nowrap}
+.scheda .coda b{color:var(--mid);font-weight:500}
+.scheda .r.fondo{justify-content:space-between;gap:12px}
+/* schede con dati vecchi (la torre non risponde): si vede, non si finge */
+.palco.vecchio .scheda{border-color:var(--line-2)}
+.palco.vecchio .scheda::after{border-color:var(--amber)}
+.scheda .eta-dati{display:none;font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.06em;text-transform:uppercase}
+.palco.vecchio .scheda .eta-dati{display:block}
 /* la scheda-fantasma: nessun nome, nessun fill, nessun colore */
 .slot{position:relative;display:grid;place-items:center;min-height:0;border:1px dashed var(--line-2);color:var(--dim);
   font-family:var(--mono);font-size:13px;letter-spacing:.04em;
@@ -245,7 +261,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 /* colonna fitta (5+ schede per lato): la scheda si compatta */
 .lato.fitto .scheda{padding:9px 12px 9px;gap:4px}
 .lato.fitto .scheda h3{font-size:16px}
-.lato.fitto .scheda .r.salute,.lato.fitto .scheda .pie{display:none}
+.lato.fitto .scheda .r.salute,.lato.fitto .scheda .pie .dq{display:none}
 .lato.fitto .slot{font-size:11.5px}
 
 /* il palco senza nessun progetto: la nota, non un vuoto */
@@ -265,10 +281,17 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .testata .avanz b{font-size:22px;font-weight:600;color:var(--cy-2);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .testata .avanz .barra{width:220px;max-width:220px}
 .testata .avanz small{letter-spacing:0;text-transform:none;color:var(--mid);font-size:11.5px}
-.testata .riga2{flex:1 1 100%;font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.6;overflow-wrap:anywhere;margin:0}
-.testata .riga2 b{color:var(--mid);font-weight:500}
+/* done quando e prossima azione: per intero, una riga ciascuno — sono le due
+   frasi che decidono il progetto, non si tagliano a 120 caratteri */
+.testata .riga2{flex:1 1 100%;font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.6;overflow-wrap:anywhere;margin:0;
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;max-width:120ch}
+.testata .riga2 b{color:var(--mid);font-weight:500;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;font-size:10.5px;padding-top:1px}
 .testata .riga2 .stantio{color:var(--amber)}
 .testata .riga2 .btn{margin-left:8px}
+.testata .riga2 .sn{grid-column:1/-1;color:var(--dim)}
+.testata .riga2 code,.dett .fondo code,.riga .prossimo code,.task .t code,.incoda .t code{font-family:inherit;font-size:inherit;color:var(--cy-2);background:var(--inset);border:1px solid var(--line);padding:0 3px}
+.testata .riga2 em,.dett .fondo em{font-style:normal;color:var(--mid)}
+.testata h1 .fase.manca{border-style:dashed;color:var(--amber);border-color:var(--amber)}
 
 /* i goal: tile con attuale/obiettivo; quello che manca si legge come manca */
 .goal-griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:calc(var(--u)*2)}
@@ -276,7 +299,13 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%)}
 .goal-t .eti{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);
   min-width:0}
-.goal-t .eti span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal-t .eti span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
+/* il valore vivo del check: eta' della misura e, se la card scrive un altro numero, la nota — discreta, non un allarme */
+.goal-t .live{font-family:var(--mono);font-size:10.5px;color:var(--dim);line-height:1.5;overflow-wrap:anywhere}
+.goal-t .live .q{color:var(--mid)}
+.goal-t .live .q.stantio{color:var(--amber)}
+.goal-t .live .card-dice{display:block;color:var(--dim);border-top:1px dashed var(--line);margin-top:4px;padding-top:4px}
+.goal-t .live .card-dice em{font-style:normal;color:var(--mid)}
 .goal-t .att{font-size:26px;font-weight:600;line-height:1.1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:var(--ink)}
 .goal-t .att.lungo{font-size:15px;font-weight:500;line-height:1.35;color:var(--mid)}
 .goal-t .att.manca{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--dim);font-style:italic}
@@ -290,7 +319,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 /* ─── le due colonne del dettaglio ─── */
 .colonne{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:calc(var(--u)*2);align-items:start}
 .dx{display:flex;flex-direction:column;gap:calc(var(--u)*2);min-width:0}
-.pannello{border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+.pannello{border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-width:0;position:relative}
 .pannello>h2{margin:0;display:flex;align-items:baseline;gap:12px;padding:14px 18px 12px;
   font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
   border-bottom:1px solid var(--line)}
@@ -351,7 +380,8 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .vuoto code{font-family:var(--mono);font-size:11px;color:var(--cy-2);background:var(--inset);border:1px solid var(--line);padding:0 4px}
 
 /* ─── workstream: intestazione + righe (dal cockpit) ─── */
-.griglia-p{--cols:minmax(150px,1.1fr) auto 168px minmax(140px,1.1fr) 28px}
+/* la colonna della fase ha una larghezza fissa: BLOCCATO o ATTIVO, le tacche stanno sempre allo stesso posto */
+.griglia-p{--cols:minmax(150px,1.1fr) 96px 168px minmax(140px,1.1fr) 28px}
 .intesta{display:grid;grid-template-columns:var(--cols);gap:16px;align-items:center;padding:10px 18px 8px 22px;
   font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
   border-bottom:1px solid var(--line)}
@@ -388,18 +418,28 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .riga.aperta .chev{transform:rotate(180deg);color:var(--cy)}
 .riga .capo:hover .chev{color:var(--cy-2)}
 
-/* ─── la riga espansa: i task ─── */
+/* ─── la riga di task: nella riga espansa del workstream e nell'elenco piatto ─── */
 .dett{margin:0 18px 14px 22px;border:1px solid var(--line);background:var(--inset)}
-.dett .task{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:start;padding:9px 14px;
+.task{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:start;padding:9px 14px;
   border-bottom:1px solid var(--line)}
-.dett .task:last-child{border-bottom:0}
-.dett .task .t{font-size:13px;line-height:1.45;overflow-wrap:anywhere}
-.dett .task .t small{display:flex;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px;
+.task:last-child{border-bottom:0}
+.task .t{font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.task .t small{display:flex;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px;
   flex-wrap:wrap;gap:4px 10px;align-items:center}
-.dett .task .t small .led{width:7px;height:7px}
-.dett .task.chiuso .t{color:var(--mid)}
-.dett .task .st{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap;text-align:right;padding-top:3px}
-.dett .task .st.green{color:var(--green)}.dett .task .st.red{color:var(--red)}.dett .task .st.amber{color:var(--amber)}
+.task .t small .led{width:7px;height:7px}
+.task .t small a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line-2)}
+.task .t small a:hover{color:var(--cy-2);border-color:var(--cy)}
+.task.chiuso .t{color:var(--mid)}
+.task.chiuso .t small{opacity:.7}
+.task .st{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap;text-align:right;padding-top:3px}
+.task .st.green{color:var(--green)}.task .st.red{color:var(--red)}.task .st.amber{color:var(--amber)}
+/* l'elenco piatto: tutti i task del progetto, gli aperti prima, i chiusi in coda e piu' quieti */
+.tk-list{display:flex;flex-direction:column;padding:4px 4px 6px}
+.tk-list .task{padding:9px 14px 9px 10px}
+.tk-list .divisore{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);
+  padding:10px 14px 4px 10px;border-bottom:1px solid var(--line)}
+.tk-list .nulla{padding:14px 18px;color:var(--dim);font-size:12.5px;line-height:1.55}
+.tk-list .nulla code{font-family:var(--mono);font-size:11px;color:var(--cy-2);background:var(--inset);border:1px solid var(--line);padding:0 4px}
 .spunta{width:18px;height:18px;border:1px solid var(--line-3);background:transparent;display:grid;place-items:center;
   margin-top:1px;transition:.12s;color:var(--void);font-family:var(--mono);font-size:12px;font-weight:700;line-height:1}
 .spunta[aria-checked="true"]{background:var(--mid);border-color:var(--mid)}
@@ -410,7 +450,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .spunta.riaperto::after{content:"!"}
 .spunta.verificato{border-color:var(--green);background:transparent;color:var(--green)}
 .spunta.verificato::after{content:"✓"}
-.dett .task .conferma,.dett .task .esito{grid-column:2/-1}
+.task .conferma,.task .esito{grid-column:2/-1}
 .dett .fondo{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:9px 14px;border-top:1px solid var(--line);
   font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6}
 .dett .fondo b{color:var(--mid);font-weight:500}
@@ -420,7 +460,12 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 
 /* ─── salute dei check ─── */
 /* i rossi in cima; i verdi scorrono sotto, cosi' la minimappa resta nell'angolo */
-.check-list{display:flex;flex-direction:column;max-height:300px;overflow:auto;scrollbar-width:thin}
+.check-list{display:flex;flex-direction:column;max-height:300px;overflow:auto;scrollbar-width:thin;scrollbar-gutter:stable}
+/* la lista scorre: lo dice una sfumatura sul fondo e il conto delle righe nascoste, non una riga mozzata */
+.pannello .scorri{display:none;position:absolute;left:1px;right:1px;bottom:1px;height:44px;pointer-events:none;
+  background:linear-gradient(transparent,var(--panel) 70%);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim);align-items:flex-end;justify-content:center;padding-bottom:5px}
+.pannello.scorrevole .scorri{display:flex}
 .check-list .c{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:8px 18px;
   border-bottom:1px solid var(--line);font-size:12.5px}
 .check-list .c:last-child{border-bottom:0}
@@ -443,8 +488,32 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .mm-grafo .grafo-svg .etichetta{display:none}
 .mm-grafo .sincro .cerchio{width:80px;height:80px;margin-bottom:8px}
 .mm-grafo .sincro h5{font-size:14px}.mm-grafo .sincro p{display:none}
-/* il volo del grafo fra palco e minimappa (FLIP): un solo transform */
+/* il volo del grafo fra palco e minimappa (FLIP): un'animazione WAAPI, non
+   uno style inline — finita o annullata, non lascia un transform appeso */
 .grafo-svg.vola{position:relative;z-index:20;transform-origin:0 0;will-change:transform}
+
+/* ─── in coda per te: lavoro di Andrea senza scadenza ne' check. Neutro: non
+   conta nel verdetto, non e' rosso, e' la lista delle cose sue ─── */
+.incoda .v{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:start;padding:10px 18px;border-bottom:1px solid var(--line)}
+.incoda .v:last-child{border-bottom:0}
+.incoda .v .tipo{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line-2);padding:1px 6px;margin-top:2px;white-space:nowrap}
+.incoda .v .t{font-size:13px;line-height:1.45;overflow-wrap:anywhere;color:var(--ink)}
+.incoda .v .t small{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:3px}
+.incoda .v .t small a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line-2)}
+.incoda .v .t small a:hover{color:var(--cy-2);border-color:var(--cy)}
+.incoda .nulla{padding:14px 18px;color:var(--dim);font-size:12.5px;line-height:1.55}
+
+/* ─── progetto non trovato: uno stato detto, non un verde che rassicura ─── */
+.non-trovato{border:1px dashed var(--line-3);background:var(--panel);padding:28px 32px;display:flex;flex-direction:column;gap:10px;max-width:72ch}
+.non-trovato h2{margin:0;font-size:20px;font-weight:600}
+.non-trovato p{margin:0;color:var(--mid);line-height:1.6;font-size:13.5px}
+.non-trovato code{font-family:var(--mono);font-size:11.5px;color:var(--cy-2);background:var(--inset);border:1px solid var(--line);padding:0 4px}
+.non-trovato .btn{align-self:flex-start;margin-top:6px}
+.progetto[data-stato="non-trovato"] #goal,.progetto[data-stato="non-trovato"] #workstream,.progetto[data-stato="non-trovato"] #tasks,
+.progetto[data-stato="non-trovato"] #richiedono,.progetto[data-stato="non-trovato"] #incoda,.progetto[data-stato="non-trovato"] #salute,
+.progetto[data-stato="non-trovato"] #osserva,.progetto[data-stato="non-trovato"] #archivio{display:none}
+.progetto[data-stato="non-trovato"] .colonne{grid-template-columns:minmax(0,1fr) 440px}
+.progetto:not([data-stato="non-trovato"]) #non-trovato{display:none}
 
 /* ─── le pieghe: in carico / da osservare, archivio ─── */
 .piega{border:1px solid var(--line);background:var(--panel)}
@@ -483,7 +552,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .progetto.entra{opacity:0}
 
 /* ─── responsive ─── */
-@media (max-width:1280px){ :root{--lato:250px} .colonne{grid-template-columns:minmax(0,1fr) 380px} }
+@media (max-width:1280px){ :root{--lato:250px} .colonne,.progetto[data-stato="non-trovato"] .colonne{grid-template-columns:minmax(0,1fr) 380px} }
 @media (max-width:1100px){
   .pagina[data-vista="hub"]{height:auto;overflow:visible}
   /* stretto: le schede si impilano SOPRA il grafo; i fili non hanno piu' geometria e spariscono */
@@ -522,8 +591,21 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   .ticket .n{font-size:26px}
   .piega .corpo{grid-template-columns:1fr}
   .piega .blocco+.blocco{border-left:0;border-top:1px solid var(--line)}
-  .dock .esito{flex:1 1 100%;text-align:left;max-width:none}
+  /* stretto: il dock e' una riga sola che scorre di lato, non un quarto dello schermo */
+  .dock{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:6px 10px;scrollbar-width:none}
+  .dock::-webkit-scrollbar{display:none}
+  .dock .k{display:none}
+  .dock .ag{padding:6px 9px;margin-right:0;font-size:11px}
+  .dock .ag small{display:none}
+  .dock .ag.primo{padding:6px 10px;font-size:11.5px}
+  .dock .esito{position:fixed;left:16px;right:16px;bottom:52px;margin:0;max-width:none;text-align:left;background:var(--panel);
+    border:1px solid var(--line-2);padding:6px 10px;z-index:31}
+  .dock .esito:empty{display:none}
+  .piede{gap:4px 12px}
+  .piede .stamp{margin-left:0;flex:1 1 100%}
   .agenti{grid-template-columns:1fr;bottom:0;max-height:80vh}
+  .testata .riga2{max-width:none}
+  .progetto[data-stato="non-trovato"] .colonne{grid-template-columns:1fr}
   .agenti .gruppo{border-right:0;border-bottom:1px solid var(--line)}
 }
 @media (prefers-reduced-motion:reduce){
@@ -564,7 +646,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 </main>
 
 <!-- ═══ DETTAGLIO ═══ -->
-<main class="progetto" id="progetto" hidden aria-label="Dettaglio del progetto">
+<main class="progetto" id="progetto" hidden aria-label="Dettaglio del progetto" data-stato="">
   <section class="testata ang">
     <a class="torna" href="#" id="torna" title="Esc — torna al cervello">← Cervello</a>
     <h1 id="p-nome">—</h1>
@@ -575,6 +657,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   <section class="goal-griglia" id="goal" aria-label="Goal del progetto"></section>
 
   <div class="colonne">
+    <div class="dx sx-col">
     <section class="pannello ang griglia-p" id="workstream" aria-labelledby="h-workstream">
       <h2 id="h-workstream">Workstream <small id="workstream-n"></small><span class="fine" id="workstream-nota"></span></h2>
       <div class="intesta" aria-hidden="true">
@@ -582,15 +665,27 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
       </div>
       <div class="righe" id="righe"></div>
     </section>
+    <!-- tutti i task del progetto, piatti: e' il numero «N/M task» della testata, riga per riga -->
+    <section class="pannello ang" id="tasks" aria-labelledby="h-tasks">
+      <h2 id="h-tasks">Task <span class="conta" id="tasks-n"></span><span class="fine" id="tasks-nota"></span></h2>
+      <div class="tk-list" id="tk-list"></div>
+    </section>
+    <section class="non-trovato" id="non-trovato" hidden></section>
+    </div>
 
     <div class="dx">
       <section class="pannello ang" id="richiedono" aria-labelledby="h-richiedono">
         <h2 id="h-richiedono">Richiedono te <span class="conta" id="richiedono-n">0</span></h2>
         <div id="ticket"></div>
       </section>
+      <section class="pannello ang incoda" id="incoda" aria-labelledby="h-incoda">
+        <h2 id="h-incoda">In coda per te <span class="conta" id="incoda-n">0</span><span class="fine" title="azioni tue senza scadenza ne' check: non entrano nel verdetto">non conta nel verdetto</span></h2>
+        <div id="incoda-list"></div>
+      </section>
       <section class="pannello ang" id="salute" aria-labelledby="h-salute">
         <h2 id="h-salute">Salute check <small id="salute-n"></small></h2>
         <div class="check-list" id="check-list"></div>
+        <span class="scorri" id="salute-scorri" aria-hidden="true"></span>
       </section>
       <button class="minimappa ang" id="minimappa" type="button" title="Torna all'hub (Esc)">
         <span class="eti">Cervello <small id="mm-n"></small><span class="torna-mm">← torna all'hub</span></span>
@@ -685,6 +780,20 @@ function daQuando(iso){
   return Math.max(0,(Date.now()-d.getTime())/1000);
 }
 const taglia = (s,n) => { s=(s||"").trim(); return s.length>n ? s.slice(0,n-1)+"…" : s; };
+/* Il markdown minimo delle card (`codice`, *enfasi*, **forte**) reso come nodi,
+   mai come HTML: un backtick grezzo in pagina e' un refuso, non una scelta. */
+function inlineMd(s){
+  const f=document.createDocumentFragment(); s=String(s==null?"":s);
+  const re=/`([^`]+)`|\*\*([^*]+)\*\*|\*([^*]+)\*/g; let i=0, m;
+  while((m=re.exec(s))){
+    if(m.index>i) f.append(s.slice(i,m.index));
+    if(m[1]!=null) f.append(el("code","",m[1])); else if(m[2]!=null) f.append(el("b","",m[2])); else f.append(el("em","",m[3]));
+    i=m.index+m[0].length;
+  }
+  if(i<s.length) f.append(s.slice(i));
+  return f;
+}
+const piatto = s => String(s==null?"":s).replace(/`([^`]+)`/g,"$1").replace(/\*\*([^*]+)\*\*/g,"$1").replace(/\*([^*]+)\*/g,"$1");
 const chev = () => { const s=el("span","chev"); s.innerHTML='<svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 1.5l5 5 5-5"/></svg>'; return s; };
 const hm = d => String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
 
@@ -812,6 +921,9 @@ function ricentra(subito){ Z.T={x:0,y:0,s:1}; if(subito||RIDOTTO){ Z.V={x:0,y:0,
   const box=$("grafo-hub");
   box.addEventListener("wheel",e=>{
     if(!GRAFO||VISTA!=="hub") return; e.preventDefault();
+    /* dopo `0` o un doppio clic il trackpad manda ancora l'inerzia: per 400 ms
+       si ignora, cosi' ×1.00 resta ×1.00 invece di salire a ×1.03 da solo */
+    if(Z.sordo&&performance.now()<Z.sordo) return;
     const f=Math.min(1.5,Math.max(.66,Math.exp(-e.deltaY*(e.ctrlKey?.01:.0022))));
     zoomSu(e.clientX,e.clientY,f);
   },{passive:false});
@@ -837,7 +949,7 @@ function ricentra(subito){ Z.T={x:0,y:0,s:1}; if(subito||RIDOTTO){ Z.V={x:0,y:0,
   });
   const fine=e=>{ Z.dita.delete(e.pointerId); if(Z.dita.size<2) Z.pinch=null; if(!Z.dita.size){ Z.drag=null; box.classList.remove("trascino"); setTimeout(()=>{ Z.mosso=false; },0); } };
   box.addEventListener("pointerup",fine); box.addEventListener("pointercancel",fine);
-  box.addEventListener("dblclick",e=>{ if(GRAFO&&VISTA==="hub"){ e.preventDefault(); ricentra(); } });
+  box.addEventListener("dblclick",e=>{ if(GRAFO&&VISTA==="hub"){ e.preventDefault(); ricentra(); Z.sordo=performance.now()+400; } });
 }
 function selezionaNodo(id){
   if(!GRAFO) return;
@@ -857,22 +969,39 @@ function selezionaNodo(id){
 }
 function didascaliaCervello(){
   const did=$("didascalia"); did.replaceChildren();
-  if(!CERV){ did.append("Cervello · in sincronizzazione"); return; }
+  if(!CERV){ did.append(CERV_ERR?"Cervello · non raggiungibile ("+CERV_ERR+") · riprovo fra 5 min":"Cervello · in sincronizzazione"); return; }
   const c=CERV.conteggi||{}; const e=daQuando(CERV.generato);
   did.append("Cervello · "); did.append(el("b","",String(c.nodi??CERV.nodes.length)+" nodi"));
   did.append(` · ${c.archi??(CERV.edges||[]).length} archi`+(c.mancanti?` · ${c.mancanti} mancanti`:"")+(e!=null?` · generato ${etaS(e)} fa`:""));
+  if(CERV_ERR){ const k=el("span","sel"," · ultimo aggiornamento fallito ("+CERV_ERR+"): indice di "+(e!=null?etaS(e):"—")+" fa"); k.style.color="var(--amber)"; did.append(k); }
   const z=el("span","zoom"); z.id="didascalia-zoom"; z.append(el("span","","×"+Z.V.s.toFixed(2)), el("kbd","","0 ricentra")); z.hidden=Math.abs(Z.V.s-1)<.01&&Math.abs(Z.V.x)<.5&&Math.abs(Z.V.y)<.5; did.append(z);
   $("mm-n").textContent=`${c.nodi??CERV.nodes.length} nodi`;
 }
-function placeholderCervello(box, motivo){
+/* Tre stati diversi, tre frasi diverse: l'indice non c'e' ancora (sincronizzazione),
+   c'e' ma e' vuoto, oppure la torre ha risposto con un errore — che non e' una
+   sincronizzazione e non va travestita da tale. */
+function placeholderCervello(box, motivo, dett){
   box.replaceChildren();
-  const s=el("div","sincro"); const w=el("div"); w.append(el("div","cerchio"), el("h5","","Cervello in sincronizzazione"));
-  const p=el("p"); p.append(motivo==="vuoto"?"L'indice esiste ma non contiene nodi.":"L'indice della memoria non e' ancora stato scritto: quando "); if(motivo!=="vuoto"){ p.append(el("code","","/api/cervello")); p.append(" risponde, qui compare il grafo."); }
+  const s=el("div","sincro"); const w=el("div");
+  const errore=motivo==="errore";
+  w.append(el("div","cerchio"), el("h5","",errore?"Cervello non raggiungibile":"Cervello in sincronizzazione"));
+  const p=el("p");
+  if(errore){ p.append(el("code","","GET /api/cervello → "+(dett||"errore"))); p.append(" · non e' una sincronizzazione: la torre ha risposto male. Riprovo fra 5 min, o "); p.append(el("code","","R")); p.append(" adesso."); }
+  else if(motivo==="vuoto") p.append("L'indice esiste ma non contiene nodi.");
+  else { p.append("L'indice della memoria non e' ancora stato scritto: quando "); p.append(el("code","","/api/cervello")); p.append(" risponde, qui compare il grafo."); }
   w.append(p); s.append(w); box.append(s);
 }
+let CERV_ERR=null;   /* l'ultimo errore di /api/cervello, se c'e' (la didascalia lo dice) */
 async function caricaCervello(){
-  let d=null;
-  try{ const r=await fetch("/api/cervello",{cache:"no-store"}); d=r.ok?await r.json():null; }catch(e){ d=null; }
+  let d=null, err=null;
+  try{ const r=await fetch("/api/cervello",{cache:"no-store"}); if(r.ok){ try{ d=await r.json(); }catch(e){ err="risposta non JSON"; } } else err=String(r.status); }
+  catch(e){ err="rete: "+String(e.message||e); }
+  CERV_ERR=err;
+  if(err){
+    /* con un grafo gia' in pagina lo si tiene (con la sua eta' in didascalia); senza, lo stato di errore */
+    if(CERV&&GRAFO){ didascaliaCervello(); return; }
+    GRAFO=null; placeholderCervello($("grafo-hub"),"errore",err); placeholderCervello($("mm-grafo"),"errore",err); didascaliaCervello(); disegnaFili(); return;
+  }
   const nuovo=d&&!d.assente&&Array.isArray(d.nodes)&&d.nodes.length?d:null;
   if(nuovo&&CERV&&nuovo.impronta&&nuovo.impronta===CERV.impronta){ didascaliaCervello(); return; }   /* stesso indice: niente da ridisegnare */
   CERV=nuovo;
@@ -919,7 +1048,7 @@ function disegnaAncore(){
 function schedaProgetto(p){
   const a=el("a","scheda"); a.href="#progetto="+encodeURIComponent(p.area); a.dataset.id=p.id; a.setAttribute("role","listitem");
   a.dataset.lv=p.n_richiedono_te>0?"rosso":"";
-  const h=el("h3","",p.nome||p.id); if(p.n_workstream!=null) h.append(el("small","",`${p.n_workstream} workstream`)); a.append(h);
+  const h=el("h3","",p.nome||p.id); h.append(el("small","",workstreamVivi(p))); a.append(h);
   const r1=el("div","r"); r1.append(el("span","k","fase"), el("span","fase "+(p.fase||""),p.fase||"senza fase")); a.append(r1);
   const av=p.avanzamento||{}; const tot=av.task_totali||0, ch=av.task_chiusi||0;
   const r2=el("div","r"); r2.append(el("span","k","task"));
@@ -932,12 +1061,30 @@ function schedaProgetto(p){
         if(sc.length>8) leds.append(el("span","piu",`+${sc.length-8}`)); }
   r3.append(leds); a.append(r3);
   const n=p.n_richiedono_te||0; const lv=(p.verdetto||{}).livello;
-  a.append(el("span","badge"+(n>0?(lv==="red"?" rosso":" ambra"):""), `${n} ${n===1?"richiede":"richiedono"} te`));
-  const pie=el("div","pie"); pie.append(p.ultimo_tocco?`toccato ${fmtData(p.ultimo_tocco)}`:"mai toccato");
-  if(p.goal_sintesi){ pie.append(" · done quando: "+(MANCA(p.goal_sintesi)?"da decidere":taglia(p.goal_sintesi,48))); pie.title=p.goal_sintesi; }
+  const r4=el("div","r fondo");
+  r4.append(el("span","badge"+(n>0?(lv==="red"?" rosso":" ambra"):""), `${n} ${n===1?"richiede":"richiedono"} te`));
+  /* la coda: un numero quieto accanto al badge, mai un secondo badge */
+  const nc=p.n_in_coda_per_te??p.n_in_coda??(p.verdetto||{}).n_in_coda??(Array.isArray(p.in_coda_per_te)?p.in_coda_per_te.length:null);
+  if(nc!=null&&nc>0){ const c=el("span","coda"); c.append(el("b","",String(nc)), nc===1?" in coda per te":" in coda per te"); c.title="azioni tue senza scadenza ne' check: non contano nel verdetto"; r4.append(c); }
+  a.append(r4);
+  const pie=el("div","pie");
+  pie.append(el("span","eta-dati","dati vecchi"));
+  pie.append(p.ultimo_tocco?`toccato ${fmtData(p.ultimo_tocco)}`:"mai toccato");
+  if(p.goal_sintesi){ const dq=el("span","dq"); dq.append(el("b","","done quando: "), MANCA(p.goal_sintesi)?"da decidere":piatto(p.goal_sintesi)); dq.title=piatto(p.goal_sintesi); pie.append(dq); }
   a.append(pie);
-  a.setAttribute("aria-label",`${p.nome}: fase ${p.fase||"—"}, ${tot?ch+" su "+tot+" task":"nessun task"}, ${n} ${n===1?"cosa richiede":"cose richiedono"} te. Invio per aprire.`);
+  a.setAttribute("aria-label",`${p.nome}: fase ${p.fase||"—"}, ${tot?ch+" su "+tot+" task":"nessun task"}, ${n} ${n===1?"cosa richiede":"cose richiedono"} te`+(nc?`, ${nc} in coda`:"")+`. Invio per aprire.`);
   return a;
+}
+/* «N vivi · M in archivio»: i due numeri che l'hub e il dettaglio devono dire uguali */
+function workstreamVivi(p){
+  const tot=p.n_workstream, vivi=p.n_workstream_vivi??p.n_workstream_attivi, arch=p.n_workstream_archivio??(tot!=null&&vivi!=null?tot-vivi:null);
+  if(vivi==null) return tot!=null?`${tot} workstream`:"";
+  return `${vivi} ${vivi===1?"workstream vivo":"workstream vivi"}`+(arch?` · ${arch} in archivio`:"");
+}
+/* le schede restano, ma dicono quanto sono vecchie: una vista che invecchia in silenzio mente */
+function marcaVecchie(eta){
+  $("palco").classList.toggle("vecchio", eta!=null);
+  document.querySelectorAll(".scheda .eta-dati").forEach(e=>{ e.textContent=eta!=null?`dati di ${etaS(eta)} fa · torre muta`:""; });
 }
 function slotFantasma(){
   const s=el("div","slot"); s.setAttribute("role","listitem");
@@ -948,8 +1095,9 @@ function disegnaHub(d){
   const lista=d.progetti||[];
   const N=lista.length; let tot=Math.max(6,N+1); if(tot%2) tot++;
   const sx=$("lato-sx"), dx=$("lato-dx"); sx.replaceChildren(); dx.replaceChildren();
-  const perLato=tot/2; sx.classList.toggle("fitto",perLato>=5); dx.classList.toggle("fitto",perLato>=5);
+  const perLato=tot/2; for(const l of [sx,dx]){ l.classList.toggle("fitto",perLato>=5); l.dataset.fitto=perLato>=5?"forza":"auto"; }
   for(let i=0;i<tot;i++){ const e=i<N?schedaProgetto(lista[i]):slotFantasma(); (i%2?dx:sx).append(e); }
+  compattaColonne();
   const nota=$("nota-palco");
   if(!N){ nota.hidden=false; nota.replaceChildren(); nota.append("Nessuna card di primo livello: un progetto entra qui quando il suo blocco STATO dichiara "); nota.append(el("code","","**Tipo:** progetto")); nota.append(" e "); nota.append(el("code","","**Area:** <slug>")); nota.append("."); }
   else nota.hidden=true;
@@ -978,6 +1126,8 @@ function disegnaBanda(d){
 function disegnaFili(){
   const svg=$("fili"), palco=$("palco");
   if(VISTA!=="hub"||!palco.offsetParent||getComputedStyle(svg).display==="none"){ svg.classList.remove("pronti"); return; }
+  /* durante il volo il CTM del grafo e' quello di mezz'aria: si aspetta la fine, che richiama qui */
+  if(GRAFO&&GRAFO.svg.classList.contains("vola")){ svg.classList.remove("pronti"); return; }
   const pr=palco.getBoundingClientRect();
   svg.setAttribute("viewBox",`0 0 ${pr.width} ${pr.height}`); svg.replaceChildren();
   const gh=$("grafo-hub").getBoundingClientRect();
@@ -1019,7 +1169,7 @@ async function caricaHub(){
   if(!r.ok){ erroreHub(String(r.status)); return; }
   let d; try{ d=await r.json(); }catch(e){ erroreHub("risposta non JSON"); return; }
   HUB=d; RICEVUTO=new Date();
-  disegnaBanda(d); disegnaHub(d); PRIMA_VOLTA=false; stamp();
+  disegnaBanda(d); disegnaHub(d); marcaVecchie(null); PRIMA_VOLTA=false; stamp();
 }
 function erroreHub(msg){
   const banda=$("banda"), h1=$("titolo"), sotto=$("sotto");
@@ -1028,6 +1178,7 @@ function erroreHub(msg){
   sotto.replaceChildren(); sotto.append(el("span","mono",`GET /api/hub → ${msg}`)); sotto.append(" · riprovo fra 60 s");
   const b=el("button","btn piccolo","riprova"); b.addEventListener("click",caricaHub); sotto.append(b);
   if(!HUB){ disegnaHub({progetti:[]}); const n=$("nota-palco"); n.hidden=false; n.replaceChildren("Nessun dato ricevuto: il server della torre e' vivo su questa porta?"); }
+  else { const eta=(Date.now()-RICEVUTO)/1000; sotto.append(` · le schede sono di ${etaS(eta)} fa`); marcaVecchie(eta); }
   stamp(HUB&&RICEVUTO?`dati di ${etaS((Date.now()-RICEVUTO)/1000)} fa · ultimo tentativo fallito`:"nessun dato", true);
 }
 
@@ -1118,14 +1269,54 @@ function tacche(chiusi, totali){
   w.append(b, el("span","n",`${chiusi}/${totali}`));
   return w;
 }
+const CHIUSO = s => s==="fatto"||s==="verificato dal check";
 function statoTask(t, oggi){
-  const s=t.stato||"aperto";
-  if(s==="fatto") return {cls:"", testo:"fatto"+(t.fatto_il?" · "+fmtData(t.fatto_il):"")};
+  const s=t.stato||"aperto", fatto=t.fatto_il||t.fatto;
+  if(s==="fatto") return {cls:"", testo:"fatto"+(fatto?" · "+fmtData(fatto):"")};
   if(s==="verificato dal check") return {cls:"green", testo:"verificato dal check"};
   if(s==="riaperto dal check") return {cls:"red", testo:"riaperto dal check"};
+  if(/^spuntato/.test(s)) return {cls:"amber", testo:s};
   if(t.scad&&oggi&&t.scad<oggi) return {cls:"amber", testo:"scaduto il "+fmtData(t.scad)};
   if(t.scad) return {cls:"", testo:"scad "+fmtData(t.scad)};
   return {cls:"", testo:"aperto"};
+}
+/* Una riga di task, la stessa nella riga espansa del workstream e nell'elenco
+   piatto. `card` e' l'id della card che la contiene (la spunta scrive li');
+   `checks` lo snapshot dei check per i LED. I due formati dell'API (`checks`/
+   `fatto_il` nei workstream, `check`/`fatto` nell'elenco piatto) si leggono entrambi. */
+function rigaTask(t, d, card, checks, opz={}){
+  const st=statoTask(t, d.oggi);
+  const chiuso=CHIUSO(t.stato);
+  const r=el("div","task"+(chiuso?" chiuso":""));
+  const sp=el("button","spunta"+(t.stato==="riaperto dal check"?" riaperto":t.stato==="verificato dal check"?" verificato":""));
+  sp.setAttribute("role","checkbox"); sp.setAttribute("aria-checked", t.spuntato?"true":"false");
+  sp.setAttribute("aria-label",(t.spuntato?"fatto: ":"segna fatto: ")+t.testo);
+  if(t.stato==="riaperto dal check"){ sp.setAttribute("aria-checked","mixed"); sp.title="spuntato, ma il check e' tornato rosso"; }
+  if(t.stato==="verificato dal check") sp.title="il check e' verde: chiuso anche senza spunta";
+  const puo=(t.stato||"aperto")==="aperto"&&card&&t.indice!=null;
+  sp.disabled=!puo;
+  if(puo) sp.addEventListener("click",()=>{
+    const q=document.createDocumentFragment();
+    q.append("Segnare fatto «"+t.testo+"»? Scrive ");
+    q.append(el("code","","[x] · fatto:"+(d.oggi||"oggi")));
+    q.append(" nella card "+card+(t.riga?" (riga "+t.riga+")":"")+".");
+    conferma(r,q,async()=>{
+      sp.disabled=true;
+      const e=await segnaFatto(card,t.indice,t.testo);
+      esito(r, e.ok?`scritto · riga ${e.riga} · fatto:${e.fatto}`:`non scritto: ${e.errore||e.status}`, !!e.ok);
+      if(!e.ok) sp.disabled=false; else sp.setAttribute("aria-checked","true");
+      setTimeout(caricaDettaglio, e.ok?400:1500);
+    },{si:"segna fatto",ritorno:sp});
+  });
+  r.append(sp);
+  const tx=el("div","t"); tx.append(inlineMd(t.testo));
+  const sm=el("small");
+  if(t.owner) sm.append(el("span","",t.owner));
+  for(const c of t.checks||t.check||[]){ const s=el("span"); s.append(el("i","led "+((checks[c]||{}).level||"sconosciuto")), " check:"+c); s.title=(checks[c]||{}).headline||"check assente dallo snapshot"; sm.append(s); }
+  if(opz.cardNome&&card){ const a=el("a","",opz.cardNome+" ↗"); a.href=`/canvas#scheda=${encodeURIComponent(card)}`; a.title=card; sm.append(a); }
+  if(sm.childNodes.length) tx.append(sm);
+  r.append(tx, el("span","st "+st.cls, st.testo));
+  return r;
 }
 function dettaglio(p, d){
   const box=el("div","dett");
@@ -1135,41 +1326,9 @@ function dettaglio(p, d){
     const s=el("div","senza"); s.append("Questa card non ha ancora un elenco "); s.append(el("code","","**Task:**"));
     s.append(" nel blocco STATO: qui compare la prossima azione dichiarata."); box.append(s);
   }
-  for(const t of lista){
-    const st=statoTask(t, d.oggi);
-    const chiuso=t.stato==="fatto"||t.stato==="verificato dal check";
-    const r=el("div","task"+(chiuso?" chiuso":""));
-    const sp=el("button","spunta"+(t.stato==="riaperto dal check"?" riaperto":t.stato==="verificato dal check"?" verificato":""));
-    sp.setAttribute("role","checkbox"); sp.setAttribute("aria-checked", t.spuntato?"true":"false");
-    sp.setAttribute("aria-label",(t.spuntato?"fatto: ":"segna fatto: ")+t.testo);
-    if(t.stato==="riaperto dal check"){ sp.setAttribute("aria-checked","mixed"); sp.title="spuntato, ma il check e' tornato rosso"; }
-    if(t.stato==="verificato dal check") sp.title="il check e' verde: chiuso anche senza spunta";
-    const puo=t.stato==="aperto";
-    sp.disabled=!puo;
-    if(puo) sp.addEventListener("click",()=>{
-      const q=document.createDocumentFragment();
-      q.append("Segnare fatto «"+t.testo+"»? Scrive ");
-      q.append(el("code","","[x] · fatto:"+(d.oggi||"oggi")));
-      q.append(" nella card "+p.id+" (riga "+t.riga+").");
-      conferma(r,q,async()=>{
-        sp.disabled=true;
-        const e=await segnaFatto(p.id,t.indice,t.testo);
-        esito(r, e.ok?`scritto · riga ${e.riga} · fatto:${e.fatto}`:`non scritto: ${e.errore||e.status}`, !!e.ok);
-        if(!e.ok) sp.disabled=false; else sp.setAttribute("aria-checked","true");
-        setTimeout(caricaDettaglio, e.ok?400:1500);
-      },{si:"segna fatto",ritorno:sp});
-    });
-    r.append(sp);
-    const tx=el("div","t",t.testo);
-    const sm=el("small");
-    if(t.owner) sm.append(el("span","",t.owner));
-    for(const c of t.checks||[]){ const s=el("span"); s.append(el("i","led "+((checks[c]||{}).level||"sconosciuto")), " check:"+c); s.title=(checks[c]||{}).headline||"check assente dallo snapshot"; sm.append(s); }
-    if(sm.childNodes.length) tx.append(sm);
-    r.append(tx, el("span","st "+st.cls, st.testo));
-    box.append(r);
-  }
+  for(const t of lista) box.append(rigaTask(t,d,p.id,checks));
   const f=el("div","fondo");
-  if(p.prossima_azione){ const s=el("span"); s.append(el("b","","prossima azione (STATO): "), taglia(p.prossima_azione,140)); f.append(s); }
+  if(p.prossima_azione){ const s=el("span"); s.append(el("b","","prossima azione (STATO): "), inlineMd(p.prossima_azione)); f.append(s); }
   const t1=el("span"); t1.append(el("b","","ultimo tocco: "), p.ultimo_tocco?fmtData(p.ultimo_tocco)+(p.giorni_fermo!=null?` (${p.giorni_fermo} g)`:""):"—"); f.append(t1);
   const t2=el("span"); t2.append(el("b","","verifica: "), p.ultima_verifica?fmtData(p.ultima_verifica):"mai dichiarata"); f.append(t2);
   const a=el("a","btn quieto piccolo","apri la card ↗"); a.href=`/canvas#scheda=${encodeURIComponent(p.id)}`; f.append(a);
@@ -1185,8 +1344,8 @@ function rigaProgetto(p, d){
   nome.append(el("small","",p.id));
   const fase=el("span","fase "+(p.fase||""),p.fase||"senza fase");
   const tk=tacche(p.task_chiusi||0,p.task_totali||0);
-  const pros=el("div","prossimo"+(p.prossimo_task?"":" nessuno"), p.prossimo_task||(p.task_totali?"tutti chiusi":"—"));
-  pros.title=p.prossimo_task||"";
+  const pros=el("div","prossimo"+(p.prossimo_task?"":" nessuno")); pros.append(p.prossimo_task?inlineMd(p.prossimo_task):(p.task_totali?"tutti chiusi":"—"));
+  pros.title=piatto(p.prossimo_task||"");
   capo.append(nome,fase,tk,pros,chev());
   nome.append(el("span","vis-nascosto"," — apri i task"));
   capo.addEventListener("click",()=>{
@@ -1216,6 +1375,55 @@ function disegnaWorkstream(d){
   const accendi=()=>box.querySelectorAll(".tacche i[data-on]").forEach(i=>i.classList.add("on"));
   if(PRIMA_VOLTA&&!RIDOTTO) requestAnimationFrame(()=>requestAnimationFrame(accendi)); else accendi();
 }
+/* Tutti i task del progetto, piatti: la card del progetto, i workstream vivi
+   e quelli in archivio — gli stessi task che la testata conta in «N/M». Il
+   dato e' `progetto.task` dell'API; se manca, si ricompone dai workstream. */
+function tuttiITask(d){
+  const p=d.progetto||{};
+  if(Array.isArray(p.task)) return p.task.map(t=>({...t, card:t.card||t.progetto||p.id, nome_card:t.nome_card||t.card_nome||null}));
+  const out=[]; for(const t of p.tasks||[]) out.push({...t, card:p.id, nome_card:p.nome});
+  for(const w of d.workstream||[]) for(const t of w.tasks||[]) out.push({...t, card:w.id, nome_card:w.nome});
+  return out;
+}
+function disegnaTask(d){
+  const box=$("tk-list"); box.replaceChildren();
+  const lista=tuttiITask(d), p=d.progetto||{};
+  const checks={}; for(const w of [p,...(d.workstream||[])]) for(const c of (w.salute||{}).checks||[]) checks[c.check]=c;
+  const aperti=lista.filter(t=>!CHIUSO(t.stato)), chiusi=lista.filter(t=>CHIUSO(t.stato));
+  const conta=$("tasks-n"); conta.textContent=lista.length?`${chiusi.length}/${lista.length}`:"0";
+  conta.className="conta";
+  $("tasks-nota").textContent=lista.length?`${aperti.length} ${aperti.length===1?"aperto":"aperti"} · su ${new Set(lista.map(t=>t.card)).size} card`:"";
+  if(!lista.length){
+    const n=el("div","nulla"); n.append("Nessun task in quest'area. Un task e' una riga "); n.append(el("code","","- [ ] testo · owner · scad:AAAA-MM-GG · check:id"));
+    n.append(" sotto "); n.append(el("code","","**Task:**")); n.append(" nel blocco STATO della card del progetto o di un workstream."); box.append(n); return;
+  }
+  /* gli aperti prima (scadenza piu' vicina in testa, poi l'ordine della card), i chiusi dopo */
+  aperti.sort((a,b)=>String(a.scad||"9999").localeCompare(String(b.scad||"9999")));
+  for(const t of aperti) box.append(rigaTask(t,d,t.card,checks,{cardNome:t.nome_card||t.card}));
+  if(chiusi.length){
+    box.append(el("div","divisore",`${chiusi.length} ${chiusi.length===1?"chiuso":"chiusi"}`));
+    for(const t of chiusi) box.append(rigaTask(t,d,t.card,checks,{cardNome:t.nome_card||t.card}));
+  }
+}
+/* In coda per te: azioni di Andrea senza scadenza ne' check. Non e' un
+   allarme (non entra nel verdetto): e' la sua lista, con la card da cui viene. */
+function disegnaInCoda(d){
+  const box=$("incoda-list"); box.replaceChildren();
+  const lista=d.in_coda_per_te||[];
+  $("incoda-n").textContent=String(lista.length);
+  if(!lista.length){ box.append(el("div","nulla","Niente in coda: ogni tua azione aperta ha una scadenza o un check che la misura.")); return; }
+  const TIPO={task:"task",bloccato:"bloccato",pending:"pending"};
+  for(const x of lista){
+    const v=el("div","v");
+    const tipo=el("span","tipo",TIPO[x.tipo]||x.tipo||"voce"); tipo.title=x.perche||""; v.append(tipo);
+    const t=el("div","t"); t.append(inlineMd(x.titolo||x.testo||"—"));
+    const sm=el("small");
+    if(x.nome_card||x.card){ const a=el("a","",(x.nome_card||x.card)+" ↗"); a.href=`/canvas#scheda=${encodeURIComponent(x.card||"")}`; a.title=x.fonte||x.card||""; sm.append(a); }
+    if(x.eta_giorni!=null&&x.eta_giorni>0) sm.append(` · nella card da ${x.eta_giorni} g`);
+    if(x.scad) sm.append(" · scad "+fmtData(x.scad));
+    t.append(sm); v.append(t); box.append(v);
+  }
+}
 function disegnaTestata(d){
   const p=d.progetto;
   const h=$("p-nome"); h.replaceChildren();
@@ -1223,9 +1431,17 @@ function disegnaTestata(d){
   const r2=$("p-riga2"); r2.replaceChildren();
   const eta=d.snapshot?daQuando(d.snapshot):null, stantio=eta==null||eta>STANTIO_S;
   const sn=el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
+  const snr=el("span","sn"); snr.append(sn);
+  if(d.assente){
+    /* nessuna card dichiara quest'area: lo si dice, non si mostra un verde */
+    h.append(el("span","",AREA), el("span","fase manca","non trovato"));
+    const s=el("span","sn"); s.append("Nessuna card dichiara "); s.append(el("code","","**Area:** "+AREA)); if(d.snapshot){ s.append(" · "); s.append(sn); } r2.append(s);
+    document.title=`${AREA} non trovato · Torre di controllo`;
+    return;
+  }
   if(!p){
     h.append(el("span","",AREA), el("span","fase","senza card progetto"));
-    r2.append("Quest'area non ha una card con "); r2.append(el("code","mono","**Tipo:** progetto")); r2.append(": qui sotto i suoi workstream e i ticket. · "); r2.append(sn);
+    const s=el("span","sn"); s.append("Quest'area non ha una card con "); s.append(el("code","","**Tipo:** progetto")); s.append(": qui sotto i suoi workstream e i ticket. · "); s.append(sn); r2.append(s);
     document.title=`${AREA} · Torre di controllo`;
     return;
   }
@@ -1233,12 +1449,19 @@ function disegnaTestata(d){
   h.append(el("span","",p.nome||p.id), el("span","fase "+(p.fase||""),p.fase||"senza fase"));
   const A=p.avanzamento||{}, tot=A.task_totali||0, ch=A.task_chiusi||0;
   av.append(el("span","","avanzamento"));
-  if(tot){ av.append(el("b","",Math.round(ch/tot*100)+"%")); const b=el("div","barra"); const i=el("i"); i.style.setProperty("--p",(ch/tot).toFixed(3)); b.append(i); av.append(b); av.append(el("small","",`${ch}/${tot} task · ${p.n_workstream_attivi??"—"} workstream vivi`)); }
-  else av.append(el("b","","—"), el("small","","nessun task nelle card"));
-  const piano=s=>taglia(String(s).replace(/\*([^*]+)\*/g,"$1"),120);   /* via l'enfasi markdown della card */
-  if(p.done_quando){ r2.append(el("b","","done quando: ")); r2.append(piano(p.done_quando)+" · "); }
-  if(p.prossima_azione){ r2.append(el("b","","prossima azione: ")); r2.append(piano(p.prossima_azione)+" · "); }
-  r2.append(sn);
+  if(tot){ av.append(el("b","",Math.round(ch/tot*100)+"%")); const b=el("div","barra"); const i=el("i"); i.style.setProperty("--p",(ch/tot).toFixed(3)); b.append(i); av.append(b); av.append(el("small","",`${ch}/${tot} task · ${workstreamVivi(p)||"— workstream"}`)); }
+  else av.append(el("b","","—"), el("small","","nessun task nelle card · "+(workstreamVivi(p)||"")));
+  /* per intero, una riga ciascuno; il markdown della card diventa codice/enfasi, non backtick in pagina */
+  if(p.done_quando){ r2.append(el("b","","done quando")); const v=el("span"); v.append(inlineMd(p.done_quando)); r2.append(v); }
+  if(p.prossima_azione){ r2.append(el("b","","prossima azione")); const v=el("span"); v.append(inlineMd(p.prossima_azione)); r2.append(v); }
+  r2.append(snr);
+}
+function disegnaNonTrovato(d){
+  const box=$("non-trovato"); box.hidden=false; box.replaceChildren();
+  box.append(el("h2","","Progetto non trovato"));
+  const p1=el("p"); p1.append("Nell'indice delle card nessuna dichiara "); p1.append(el("code","","**Area:** "+AREA)); p1.append(" nel suo blocco STATO: ne' una card progetto, ne' un workstream, ne' una card in archivio."); box.append(p1);
+  const p2=el("p"); p2.append("Se il progetto esiste con un altro nome, "); p2.append(el("code","","lab dove "+AREA)); p2.append(" lo trova. Un progetto nuovo entra con "); p2.append(el("code","","**Tipo:** progetto")); p2.append(" e "); p2.append(el("code","","**Area:** <slug>")); p2.append("."); box.append(p2);
+  const b=el("a","btn","← torna al cervello"); b.href="#"; b.addEventListener("click",e=>{ e.preventDefault(); location.hash=""; }); box.append(b);
 }
 function disegnaGoal(d){
   const box=$("goal"); box.replaceChildren();
@@ -1262,8 +1485,27 @@ function disegnaGoal(d){
   for(const x of fusi){
     const t=el("div","goal-t");
     const e=el("div","eti"); e.append(el("i","led "+(x.salute||"nessuno")), el("span","",x.testo)); e.title=x.testo+(x.checks&&x.checks.length?" · check: "+x.checks.join(", "):" · nessun check"); t.append(e);
-    const att=String(x.attuale||"non misurato");
-    const a=el("div","att"+(MANCA(att)?" manca":att.length>12?" lungo":""), att); a.title="attuale"; t.append(a);
+    /* il numero grande e' quello vivo del check, se c'e'; la card resta la fonte del goal, non del numero */
+    /* il numero grande e' quello vivo del check se e' un numero (o una frase
+       corta); una headline lunga resta la riga piccola sotto, e il grande
+       torna al valore della card — con la nota se i due non coincidono */
+    const live=x.attuale_live!=null&&String(x.attuale_live).trim()!=="";
+    const vl=x.valore_live!=null&&String(x.valore_live).trim()!==""?String(x.valore_live):null;
+    const corto=live&&String(x.attuale_live).length<=40;
+    const grande=corto?String(x.attuale_live):(vl&&vl.length<=40?vl:String(x.attuale||(live?x.attuale_live:"non misurato")));
+    const att=grande;
+    const a=el("div","att"+(MANCA(grande)?" manca":grande.length>12?" lungo":""), grande); a.title=live&&(corto||vl)?"valore vivo del check":"attuale (scritto nella card)"; t.append(a);
+    if(live){
+      const l=el("div","live");
+      const e=x.misurato_alle?daQuando(x.misurato_alle):(x.eta_live_min!=null?x.eta_live_min*60:null);
+      const q=el("span","q"+(e!=null&&e>STANTIO_S?" stantio":""), e==null?"misura senza data":`misurato ${etaS(e)} fa`);
+      if(e!=null&&e>STANTIO_S) q.title="il collector gira ogni 5 minuti: questa misura e' vecchia";
+      l.append(q);
+      if(!corto){ l.append(" · "); const h=el("span","",taglia(String(x.attuale_live),110)); h.title=String(x.attuale_live); l.append(h); }
+      if(x.diverge===true&&x.attuale&&grande!==String(x.attuale)){ const c=el("span","card-dice"); c.append(el("em","","la card scrive: "), piatto(x.attuale)); c.title="il numero nella card non coincide con quello del check: aggiorna la card"; l.append(c); }
+      else if(x.diverge===true){ const c=el("span","card-dice"); c.append(el("em","","nota: "),"il numero della card non coincide col check"); l.append(c); }
+      t.append(l);
+    }
     const ob=el("div","ob"); ob.append(el("em","","obiettivo: "));
     const o=String(x.obiettivo||"da decidere");
     const raggiunto=x.numerico&&parseFloat(att)===parseFloat(o);
@@ -1280,7 +1522,7 @@ function disegnaSalute(d){
   const ordine={red:0,amber:1,unknown:2,sconosciuto:2,info:3,green:4};
   const lista=sal.slice().sort((a,b)=>(ordine[a.level]??5)-(ordine[b.level]??5));
   $("salute-n").textContent=lista.length?`${lista.length} check collegati ai goal e ai task`:"";
-  if(!lista.length){ box.append(el("div","nulla","Nessun check collegato: i goal e i task della card non citano `check:<id>`. Non misurato ≠ sano.")); return; }
+  if(!lista.length){ const n=el("div","nulla"); n.append("Nessun check collegato: i goal e i task della card non citano "); n.append(el("code","","check:<id>")); n.append(". Non misurato ≠ sano."); box.append(n); cueScorri(); return; }
   for(const c of lista){
     const r=el("div","c"); r.append(el("i","led "+(c.level||"sconosciuto")));
     const t=el("div"); t.append(el("span","id",c.check)); if(c.headline) t.append(el("span","h",taglia(c.headline,90))); r.append(t);
@@ -1288,7 +1530,17 @@ function disegnaSalute(d){
     r.title=(c.evidence||c.headline||"")+(c.source?" · "+c.source:"");
     box.append(r);
   }
+  cueScorri();
 }
+/* la lista dei check scorre: finche' c'e' altro sotto, lo dice; in fondo, sparisce */
+function cueScorri(){
+  const box=$("check-list"), pan=$("salute"), cue=$("salute-scorri");
+  const resto=box.scrollHeight-box.clientHeight-box.scrollTop;
+  const righe=[...box.children].filter(c=>c.getBoundingClientRect().top>=box.getBoundingClientRect().bottom-4).length;
+  pan.classList.toggle("scorrevole",resto>6);
+  cue.textContent=righe?`scorri · ${righe} ${righe===1?"altro check":"altri check"}`:"scorri";
+}
+$("check-list").addEventListener("scroll",cueScorri,{passive:true});
 function rigaPiega(k, t, sotto, p){
   const r=el("div","r");
   const k1=el("span","k1"); if(typeof k==="string") k1.textContent=k; else k1.append(k); r.append(k1);
@@ -1331,18 +1583,24 @@ function disegnaPieghe(d){
   a.append(b3);
 }
 function disegnaDettaglio(d){
-  disegnaTestata(d); disegnaGoal(d); disegnaRichiedono(d); disegnaWorkstream(d); disegnaSalute(d); disegnaPieghe(d);
+  const assente=Boolean(d.assente);
+  $("progetto").dataset.stato=assente?"non-trovato":"";
+  $("non-trovato").hidden=!assente;
+  disegnaTestata(d);
+  if(assente){ disegnaNonTrovato(d); PRIMA_VOLTA=false; stamp(); return; }
+  disegnaGoal(d); disegnaRichiedono(d); disegnaInCoda(d); disegnaWorkstream(d); disegnaTask(d); disegnaSalute(d); disegnaPieghe(d);
   PRIMA_VOLTA=false; stamp();
 }
 function erroreDettaglio(msg){
   const h=$("p-nome"); h.replaceChildren(el("span","","Il cockpit non risponde"));
-  const r2=$("p-riga2"); r2.replaceChildren(); r2.append(el("span","mono",`GET /api/cockpit?area=${AREA} → ${msg}`)); r2.append(" · riprovo fra 60 s");
-  const b=el("button","btn piccolo","riprova"); b.addEventListener("click",caricaDettaglio); r2.append(b);
+  const r2=$("p-riga2"); r2.replaceChildren(); const s=el("span","sn"); s.append(el("span","mono",`GET /api/cockpit?area=${AREA} → ${msg}`)); s.append(" · riprovo fra 60 s");
+  if(DATI&&RICEVUTO) s.append(` · quello che vedi e' di ${etaS((Date.now()-RICEVUTO)/1000)} fa`);
+  const b=el("button","btn piccolo","riprova"); b.addEventListener("click",caricaDettaglio); s.append(" ", b); r2.append(s);
   if(!DATI){
     $("p-avanz").replaceChildren(); $("goal").replaceChildren();
     const v=el("div","vuoto"); const q=el("div","quadro grigio"); q.append(el("i")); v.append(q);
     const p=el("p"); p.append(el("b","","Nessun dato ricevuto.")); p.append(el("small","","il server della torre non ha risposto: e' vivo su questa porta?"));
-    v.append(p); $("ticket").replaceChildren(v); $("righe").replaceChildren(); $("check-list").replaceChildren();
+    v.append(p); $("ticket").replaceChildren(v); $("righe").replaceChildren(); $("check-list").replaceChildren(); $("tk-list").replaceChildren(); $("incoda-list").replaceChildren();
   }
   stamp(DATI&&RICEVUTO?`dati di ${etaS((Date.now()-RICEVUTO)/1000)} fa · ultimo tentativo fallito`:"nessun dato", true);
 }
@@ -1353,6 +1611,8 @@ async function caricaDettaglio(){
   try{ r=await fetch(`/api/cockpit?area=${encodeURIComponent(area)}`,{cache:"no-store"}); }
   catch(e){ erroreDettaglio(String(e)); return; }
   if(area!==AREA) return;
+  /* 404 (area sconosciuta) e 400 (slug non valido) non sono «il cockpit non risponde»: sono «questo progetto non c'e'» */
+  if(r.status===404||r.status===400){ DATI={area,assente:true,snapshot:null}; RICEVUTO=new Date(); disegnaDettaglio(DATI); return; }
   if(!r.ok){ let m=String(r.status); try{ m+=" "+((await r.json()).error||""); }catch(e){} erroreDettaglio(m.trim()); return; }
   let d; try{ d=await r.json(); }catch(e){ erroreDettaglio("risposta non JSON"); return; }
   DATI=d; RICEVUTO=new Date();
@@ -1363,40 +1623,53 @@ async function caricaDettaglio(){
 /* Il grafo e' UN solo SVG: nell'hub sta al centro del palco, nel dettaglio
    nella minimappa. Al cambio di vista si sposta e vola da dove era a dove
    va (FLIP: un transform, nessun secondo disegno). */
+/* Web Animations, non uno style inline: l'animazione finisce (o viene
+   annullata) e il grafo e' esattamente dove il layout lo mette. Il vecchio
+   FLIP via `style.transform` + rAF restava appeso se il rAF non scattava
+   (tab coperta, finestra ridotta): grafo a mezz'aria, fili verso il nulla. */
+let VOLO=null;
+function fineVolo(svg){ svg.classList.remove("vola"); VOLO=null; if(VISTA==="hub") disegnaFili(); }
 function volo(svg, da){
-  if(!svg||!da||RIDOTTO) return;
-  const a=svg.getBoundingClientRect(); if(!a.width||!a.height) return;
+  if(!svg||!da) return;
+  if(VOLO){ VOLO.cancel(); }
+  const a=svg.getBoundingClientRect(); if(!a.width||!a.height||RIDOTTO||!svg.animate){ if(VISTA==="hub") disegnaFili(); return; }
   const dx=da.left-a.left, dy=da.top-a.top, sx=da.width/a.width, sy=da.height/a.height;
-  svg.classList.add("vola"); svg.style.transition="none";
-  svg.style.transform=`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${sx.toFixed(4)},${sy.toFixed(4)})`;
-  svg.getBoundingClientRect();
-  requestAnimationFrame(()=>{ svg.style.transition="transform .48s cubic-bezier(.2,.7,.2,1)"; svg.style.transform=""; });
-  setTimeout(()=>{ svg.style.transition=""; svg.classList.remove("vola"); if(VISTA==="hub") disegnaFili(); },520);
+  svg.classList.add("vola");
+  VOLO=svg.animate([{transform:`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${sx.toFixed(4)},${sy.toFixed(4)})`},{transform:"none"}],
+    {duration:480,easing:"cubic-bezier(.2,.7,.2,1)"});
+  VOLO.onfinish=VOLO.oncancel=()=>fineVolo(svg);
+  /* se il browser non consegna ne' finish ne' cancel (tab in fondo), si chiude lo stesso */
+  setTimeout(()=>{ if(svg.classList.contains("vola")) fineVolo(svg); },700);
 }
 function mostra(vista, area){
   const svg=GRAFO?GRAFO.svg:null;
   const da=svg?svg.getBoundingClientRect():null;
-  const prima=VISTA; VISTA=vista; AREA=vista==="progetto"?area:null;
+  const prima=VISTA, areaPrima=AREA; VISTA=vista; AREA=vista==="progetto"?area:null;
   $("pagina").dataset.vista=vista;
   $("hub").hidden=vista!=="hub"; $("progetto").hidden=vista!=="progetto"; $("banda").hidden=vista!=="hub";
+  /* ogni vista parte dall'alto: il dettaglio scorre, l'hub no, e un'altezza di
+     scroll ereditata lasciava la minimappa (e il grafo) fuori dalla finestra */
+  if(prima!==vista) scrollTo({top:0,left:0,behavior:"instant"});
   selezionaNodo(null); if(prima!==vista) ricentra(true); chiudiAgenti();
   const casa=vista==="hub"?$("grafo-hub"):$("mm-grafo");
   if(svg&&svg.parentElement!==casa){ casa.replaceChildren(); casa.append(svg); }
-  else if(!svg){ placeholderCervello(casa,"assente"); }
+  else if(!svg){ placeholderCervello(casa,CERV_ERR?"errore":"assente",CERV_ERR); }
   if(vista==="progetto"){
-    if(prima!=="progetto"||!DATI||(DATI.area!==area)){ DATI=null; APERTE.clear(); PRIMA_VOLTA=true; }
+    if(prima!=="progetto"||!DATI||(DATI.area!==area)){ DATI=null; APERTE.clear(); PRIMA_VOLTA=true; $("progetto").dataset.stato=""; $("non-trovato").hidden=true; }
     $("fili").classList.remove("pronti");
     /* il rAF puo' essere sospeso (finestra coperta): il timeout garantisce che la vista compaia comunque */
     const m=$("progetto"); if(prima!=="progetto"&&!RIDOTTO){ m.classList.add("entra"); const via=()=>m.classList.remove("entra"); requestAnimationFrame(()=>requestAnimationFrame(via)); setTimeout(via,80); }
     if(prima!==vista) volo(svg,da);
     caricaDettaglio();
-    if(prima!=="progetto") requestAnimationFrame(()=>$("torna").focus({preventScroll:true}));
+    if(prima!=="progetto") setTimeout(()=>$("torna").focus({preventScroll:true}),0);   /* non rAF: con la tab coperta il rAF non scatta e il fuoco resta sul body */
   }else{
     document.title="Torre di controllo · Maven";
-    if(prima!==vista) volo(svg,da); else disegnaFili();
     if(HUB){ disegnaBanda(HUB); disegnaHub(HUB); }
+    /* i fili subito, con la geometria definitiva (il grafo e' gia' nella sua casa); poi il volo */
+    if(prima!==vista){ disegnaFili(); volo(svg,da); } else disegnaFili();
     caricaHub();
-    if(prima==="progetto") requestAnimationFrame(()=>{ const s=document.querySelector(".scheda[href]"); s&&s.focus({preventScroll:true}); });
+    /* il fuoco torna sulla scheda del progetto appena lasciato, non sulla prima */
+    if(prima==="progetto") setTimeout(()=>{ const s=document.querySelector(`.scheda[href="#progetto=${CSS.escape(encodeURIComponent(areaPrima||""))}"]`)||document.querySelector(".scheda[href]"); s&&s.focus({preventScroll:true}); },0);
   }
   stamp();
 }
@@ -1433,7 +1706,7 @@ document.addEventListener("keydown",e=>{
   if(k==="r"){ e.preventDefault(); VISTA==="hub"?caricaHub():caricaDettaglio(); caricaCervello(); return; }
   if(k==="c"){ e.preventDefault(); location.href="/canvas"; return; }
   if(k==="a"){ e.preventDefault(); toggleAgenti(); return; }
-  if(k==="0"&&VISTA==="hub"){ e.preventDefault(); ricentra(); return; }
+  if(k==="0"&&VISTA==="hub"){ e.preventDefault(); ricentra(); Z.sordo=performance.now()+400; return; }
   if(VISTA==="progetto"&&k==="e"){ e.preventDefault();
     const righe=[...document.querySelectorAll("#righe .riga")]; if(!righe.length) return;
     const tutteAperte=righe.every(r=>r.classList.contains("aperta"));
@@ -1503,7 +1776,10 @@ function vocePannello(titolo, sub, cmd, nome, azione, extra){
 }
 async function disegnaAgenti(){
   const p=$("agenti"); p.replaceChildren();
-  const capo=el("div","chiudi"); capo.append(el("b","","Tutti gli agenti"), el("span","","ogni tasto apre una finestra del Terminale · Esc o A per chiudere")); p.append(capo);
+  const capo=el("div","chiudi"); capo.append(el("b","","Tutti gli agenti"), el("span","","ogni tasto apre una finestra del Terminale"));
+  /* il fuoco entra qui, su «chiudi»: aprire un pannello non deve mettere il dito su «apri un terminale» */
+  const x=el("button","btn piccolo quieto","chiudi"); x.type="button"; x.id="agenti-chiudi"; x.append(" ", el("kbd","","Esc")); x.addEventListener("click",chiudiAgenti); capo.append(x);
+  p.append(capo);
   const [ali,az,persTutti]=await Promise.all([json("/api/ali",[]),json("/api/azienda",{assente:true}),json("/api/personali",[])]);
   const pers=persTutti.filter(x=>x.chiave!=="trader"), extraProd=persTutti.filter(x=>x.chiave==="trader");
   const g1=el("div","gruppo"); g1.append(el("h4","","Le ali del lab")); g1.firstChild.append(el("small","",`${ali.length} · lab <ala>`));
@@ -1519,21 +1795,40 @@ async function disegnaAgenti(){
   for(const x of pers) g3.append(vocePannello(x.nome, x.remit, "--agent "+x.agente, x.nome, "apri_personale", {chiave:x.chiave}));
   p.append(g1,g2,g3);
 }
-function chiudiAgenti(){ const p=$("agenti"); if(p.hidden) return; p.hidden=true; $("dock-tutti").setAttribute("aria-expanded","false"); $("dock-tutti").focus({preventScroll:true}); }
+/* Il fuoco: entra sul tasto «chiudi» del pannello, e alla chiusura (Esc, A,
+   clic fuori) torna dov'era prima dell'apertura — il tasto del dock se e' da
+   li' che si e' partiti, la scheda o la riga se si e' premuto A da tastiera. */
+let FOCUS_PRIMA=null;
+function chiudiAgenti(){
+  const p=$("agenti"); if(p.hidden) return; p.hidden=true; $("dock-tutti").setAttribute("aria-expanded","false");
+  const t=FOCUS_PRIMA&&FOCUS_PRIMA.isConnected&&!p.contains(FOCUS_PRIMA)?FOCUS_PRIMA:$("dock-tutti");
+  FOCUS_PRIMA=null; t.focus({preventScroll:true});
+}
 async function toggleAgenti(){
   const p=$("agenti"); if(!p.hidden){ chiudiAgenti(); return; }
+  FOCUS_PRIMA=document.activeElement&&document.activeElement!==document.body?document.activeElement:$("dock-tutti");
   p.hidden=false; $("dock-tutti").setAttribute("aria-expanded","true");
   /* il pannello poggia sul dock, ovunque il dock sia (in flusso nell'hub, sticky nel dettaglio) */
   const d=$("dock").getBoundingClientRect(); if(innerWidth>720) p.style.bottom=Math.max(8,innerHeight-d.top+8)+"px";
   await disegnaAgenti();
-  const primo=p.querySelector(".btn"); primo&&primo.focus({preventScroll:true});
+  if(p.hidden) return;   /* chiuso mentre caricava */
+  const x=$("agenti-chiudi"); x&&x.focus({preventScroll:true});
 }
 $("dock-tutti").addEventListener("click",toggleAgenti);
 document.addEventListener("click",e=>{ const p=$("agenti"); if(!p.hidden&&!p.contains(e.target)&&!$("dock").contains(e.target)) chiudiAgenti(); });
 disegnaDock();
 
-/* i fili seguono il layout: resize, font caricati, schede che cambiano altezza */
-new ResizeObserver(()=>{ if(VISTA==="hub") disegnaFili(); }).observe($("palco"));
+/* i fili seguono il layout: resize, font caricati, schede che cambiano altezza.
+   E se una colonna di schede non ci sta in altezza, la colonna si compatta
+   (`fitto`) invece di lasciare una riga tagliata. */
+function compattaColonne(){
+  if(innerWidth<=1100) return;   /* stretto: le colonne sono griglie sopra il grafo, niente da compattare */
+  for(const id of ["lato-sx","lato-dx"]){ const l=$(id); if(!l.offsetParent||l.dataset.fitto==="forza") continue;
+    l.classList.remove("fitto");                       /* si prova per esteso... */
+    if(l.scrollHeight>l.clientHeight+2) l.classList.add("fitto");   /* ...e se non ci sta, compatto */
+  }
+}
+new ResizeObserver(()=>{ if(VISTA==="hub"){ compattaColonne(); disegnaFili(); } }).observe($("palco"));
 document.fonts&&document.fonts.ready.then(()=>{ if(VISTA==="hub") disegnaFili(); });
 
 orologio(); setInterval(orologio,20000);
