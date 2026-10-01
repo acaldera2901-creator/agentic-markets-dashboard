@@ -12,6 +12,60 @@ export const maxDuration = 300;
 // essere uccisa dalla piattaforma.
 const MARGINE_S = 30;
 
+// #REFRESH2-1001 — budget per fase. Misurato sul giro delle 16:00 del 01/10
+// (timestamp delle righe scritte): calcio ~133 s di calcolo + ~70 s di sync
+// (200 righe una per una), ingest partner ~37 s, sync tennis ~60 s e ancora in
+// corso a 300 s. In serie non ci stanno; il ramo tennis non dipende dal calcio
+// (tabelle diverse), quindi gira IN PARALLELO e non aspetta piu' il suo tempo.
+const INGEST_S = 90;
+
+type Fase = { ms: number; stato: "ok" | "errore" | "saltata" };
+const SALTATA = Symbol("saltata");
+
+// Race `fn` against `scadenza`: past it the phase is logged as skipped and the
+// route moves on (the promise is left running, not cancelled) instead of being
+// killed by the platform at maxDuration with a silent 504.
+async function conScadenza<T>(
+  nome: string,
+  scadenza: number,
+  fasi: Record<string, Fase>,
+  fn: () => Promise<T>,
+): Promise<T | typeof SALTATA> {
+  const t0 = Date.now();
+  // Already past the deadline: do not start the phase at all.
+  if (t0 >= scadenza) {
+    fasi[nome] = { ms: 0, stato: "saltata" };
+    console.error(`[refresh] ${nome} SALTATA per scadenza: non avviata`);
+    return SALTATA;
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const scaduta = new Promise<typeof SALTATA>((r) => {
+    timer = setTimeout(() => r(SALTATA), Math.max(0, scadenza - t0));
+  });
+  try {
+    const lavoro = fn();
+    // A late rejection after a skip must not become an unhandled rejection.
+    lavoro.catch(() => {});
+    const esito = await Promise.race([lavoro, scaduta]);
+    fasi[nome] = { ms: Date.now() - t0, stato: esito === SALTATA ? "saltata" : "ok" };
+    if (esito === SALTATA) {
+      console.error(`[refresh] ${nome} SALTATA per scadenza dopo ${Date.now() - t0} ms`);
+      // The skipped work keeps running: log how it really ended, if it does.
+      lavoro.then(
+        () => console.log(`[refresh] ${nome} completata in ritardo dopo ${Date.now() - t0} ms`),
+        (e: unknown) => console.error(`[refresh] ${nome} errore tardivo dopo ${Date.now() - t0} ms: ${String(e)}`),
+      );
+    }
+    return esito;
+  } catch (e) {
+    fasi[nome] = { ms: Date.now() - t0, stato: "errore" };
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    console.log(`[refresh] ${nome} ${fasi[nome]?.stato} in ${fasi[nome]?.ms} ms`);
+  }
+}
+
 // Vercel Cron calls GET with Authorization: Bearer <CRON_SECRET>.
 // One scheduled job keeps unified_predictions populated for every sport:
 //   1. football: recompute the model + sync (POST /api/predictions)
@@ -24,21 +78,26 @@ export async function GET(req: NextRequest) {
   if (!verifyBearer(req, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  const scadenza = avvio + (maxDuration - MARGINE_S) * 1000;
+  const fasi: Record<string, Fase> = {};
 
   // ── 1. Football ──────────────────────────────────────────────────────────
+  // Runs in its own function (POST /api/predictions, own maxDuration): a skip
+  // here only stops waiting for it, it does not stop it.
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? `https://${req.headers.get("host")}`;
   let football: unknown = null;
   let footballError: unknown = null;
-  try {
+  const calcio = conScadenza("football", scadenza, fasi, async () => {
     const resp = await fetch(`${base}/api/predictions`, {
       method: "POST",
       headers: auth ? { Authorization: auth } : {},
     });
     football = await resp.json();
     if (!resp.ok) footballError = { status: resp.status, detail: football };
-  } catch (e) {
-    footballError = String(e);
-  }
+  }).then(
+    (esito) => { if (esito === SALTATA) footballError = "SALTATA per scadenza"; },
+    (e) => { footballError = String(e); },
+  );
 
   // ── 2. Tennis ────────────────────────────────────────────────────────────
   // Independent of football: even when club football is between seasons, tennis
@@ -50,6 +109,7 @@ export async function GET(req: NextRequest) {
   let prezzi: unknown = null;
   let prezziError: unknown = null;
 
+  const ramoTennis = (async () => {
   // #PARTNER-INGEST-0911 — le partite dei partner PRIMA del sync, cosi' quelle
   // nuove entrano nello stesso giro invece di aspettare il successivo.
   //
@@ -62,14 +122,21 @@ export async function GET(req: NextRequest) {
   // In un try suo: un partner che non risponde non deve impedire il sync delle
   // partite che abbiamo gia'. E' la stessa regola per cui il tennis ha un try
   // separato dal calcio — un guasto resta dove nasce.
+  // #REFRESH2-1001 — l'ingest ha un budget suo: se lo sfora il sync tennis
+  // parte lo stesso, con le partite che ci sono gia'.
   try {
-    partner = await ingestPartnerTennis();
+    const fineIngest = Math.min(avvio + INGEST_S * 1000, scadenza);
+    const esito = await conScadenza("ingest", fineIngest, fasi, () => ingestPartnerTennis(Date.now(), fineIngest));
+    if (esito === SALTATA) partnerError = "SALTATA per scadenza";
+    else partner = esito;
   } catch (e) {
     partnerError = String(e);
   }
 
   try {
-    tennisReport = await syncTennisPredictionsToUnified();
+    const esito = await conScadenza("tennis", scadenza, fasi, () => syncTennisPredictionsToUnified());
+    if (esito === SALTATA) tennisError = "SALTATA per scadenza";
+    else tennisReport = esito;
   } catch (e) {
     tennisError = String(e);
   }
@@ -92,10 +159,15 @@ export async function GET(req: NextRequest) {
   // tennis future in unified_predictions). Il board non deve dipendere dal
   // tempo che avanza a una misura.
   try {
-    prezzi = await registraPrezziPartner(Date.now(), avvio + (maxDuration - MARGINE_S) * 1000);
+    const esito = await conScadenza("prezzi", scadenza, fasi, () => registraPrezziPartner(Date.now(), scadenza));
+    if (esito === SALTATA) prezziError = "SALTATA per scadenza";
+    else prezzi = esito;
   } catch (e) {
     prezziError = String(e);
   }
+  })();
+
+  await Promise.all([calcio, ramoTennis]);
 
   return NextResponse.json({
     ok: !footballError || tennisReport.synced > 0,
@@ -103,5 +175,7 @@ export async function GET(req: NextRequest) {
     tennis: { ...tennisReport, ...(tennisError ? { error: tennisError } : {}) },
     partner: partnerError ? { error: partnerError } : partner,
     prezzi: prezziError ? { error: prezziError } : prezzi,
+    fasi,
+    ms: Date.now() - avvio,
   });
 }

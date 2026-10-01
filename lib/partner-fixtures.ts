@@ -152,13 +152,15 @@ export type EsitoIngest = {
   candidati: number;
   scritti: number;
   scartati: number;
+  /** #REFRESH2-1001 — candidates not written because the deadline passed. */
+  saltati?: number;
 };
 
 /**
  * Legge i book partner e deposita le partite di tennis mancanti in
  * `tennis_predictions`. Da li' in poi la pipeline esistente fa il resto.
  */
-export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIngest> {
+export async function ingestPartnerTennis(adesso = Date.now(), scadenza = Infinity): Promise<EsitoIngest> {
   const esito: EsitoIngest = { vistiDalPartner: 0, candidati: 0, scritti: 0, scartati: 0 };
 
   // `fetchAllBooks` torna un array di { book, map }, dove `map` e' indicizzata
@@ -181,7 +183,16 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
   }
   esito.candidati = unici.size;
 
+  let fatti = 0;
   for (const f of unici.values()) {
+    // #REFRESH2-1001 — past the deadline stop cleanly instead of writing on
+    // in the background after the cron has given up on this phase.
+    if (Date.now() >= scadenza) {
+      esito.saltati = unici.size - fatti;
+      console.error(`[partner-ingest] scadenza: ${esito.saltati} candidati NON scritti`);
+      break;
+    }
+    fatti += 1;
     // ON CONFLICT DO NOTHING e' deliberato, non pigrizia: se la partita esiste
     // gia' — perche' il modello l'ha prodotta con un Elo vero, o per un giro
     // precedente — le sue probabilita' valgono piu' di una copia del mercato,
