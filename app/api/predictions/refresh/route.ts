@@ -125,7 +125,8 @@ export async function GET(req: NextRequest) {
   // #REFRESH2-1001 — l'ingest ha un budget suo: se lo sfora il sync tennis
   // parte lo stesso, con le partite che ci sono gia'.
   try {
-    const esito = await conScadenza("ingest", Math.min(avvio + INGEST_S * 1000, scadenza), fasi, () => ingestPartnerTennis());
+    const fineIngest = Math.min(avvio + INGEST_S * 1000, scadenza);
+    const esito = await conScadenza("ingest", fineIngest, fasi, () => ingestPartnerTennis(Date.now(), fineIngest));
     if (esito === SALTATA) partnerError = "SALTATA per scadenza";
     else partner = esito;
   } catch (e) {

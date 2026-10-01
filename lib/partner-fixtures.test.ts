@@ -1,8 +1,14 @@
 // #PARTNER-INGEST-0911 — ogni scarto qui e' una riga che NON finisce sul board,
 // quindi ogni condizione va provata: una svista in piu' pubblica una partita
 // falsa, una in meno la nasconde.
-import { describe, it, expect } from "vitest";
-import { devig2vie, fixtureDaPartner, superficieDaTorneo } from "./partner-fixtures";
+import { describe, it, expect, vi } from "vitest";
+import { devig2vie, fixtureDaPartner, ingestPartnerTennis, superficieDaTorneo } from "./partner-fixtures";
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- la firma serve a leggere mock.calls
+const dbQuery = vi.fn(async (..._a: unknown[]) => [] as unknown[]);
+const fetchAllBooks = vi.fn(async () => [] as { book: string; map: Map<string, FpMatch> }[]);
+vi.mock("./db", () => ({ dbQuery: (...a: unknown[]) => dbQuery(...a) }));
+vi.mock("./betconstruct-feed", () => ({ fetchAllBooks: () => fetchAllBooks() }));
 import type { FpMatch } from "./fortuneplay-live";
 
 const ORA = Date.parse("2026-09-11T12:00:00Z");
@@ -173,5 +179,27 @@ describe("fixtureDaPartner: torneo, superficie e id partner veri", () => {
     expect(superficieDaTorneo("Wimbledon - Grass")).toBe("grass");
     expect(superficieDaTorneo("UTR Pro Series Chicago - Women")).toBe("hard");
     expect(superficieDaTorneo(null)).toBe("hard");
+  });
+});
+
+describe("ingestPartnerTennis: scadenza (#REFRESH2-1001)", () => {
+  it("oltre la scadenza non scrive altre righe e conta le saltate", async () => {
+    const partite = [
+      m(),
+      m({ teamPairKey: "2026-09-12:fritz|ruud", homeKey: "fritz", awayKey: "ruud", homeName: "Taylor Fritz", awayName: "Casper Ruud", id: 2, urnId: "urn:2" }),
+    ];
+    fetchAllBooks.mockResolvedValueOnce([{ book: "x", map: new Map(partite.map((p) => [p.teamPairKey, p])) }]);
+    dbQuery.mockClear();
+    const esito = await ingestPartnerTennis(ORA, 0);
+    expect(esito.candidati).toBe(2);
+    expect(esito.saltati).toBe(2);
+    const insert = dbQuery.mock.calls.filter(([sql]) => String(sql).includes("INSERT INTO tennis_predictions"));
+    expect(insert).toHaveLength(0);
+
+    fetchAllBooks.mockResolvedValueOnce([{ book: "x", map: new Map(partite.map((p) => [p.teamPairKey, p])) }]);
+    dbQuery.mockClear();
+    const senza = await ingestPartnerTennis(ORA);
+    expect(senza.saltati).toBeUndefined();
+    expect(dbQuery.mock.calls.filter(([sql]) => String(sql).includes("INSERT INTO tennis_predictions"))).toHaveLength(2);
   });
 });
