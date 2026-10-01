@@ -87,7 +87,14 @@ export function modelPoolIsCoherent(leagueCode: string): boolean {
 // optimum w=0.5, Brier 0.6095→0.6014 on 6373 predictions, concave sweep);
 // w=0 (xG missing for that figure) reproduces the pure-goals model exactly —
 // safe fallback for CL/EL/WC where Understat has no coverage.
-export const XG_BLEND_WEIGHT = 0.5;
+// #XG-W02-0930: quel w=0,5 non e' MAI arrivato al servito (il parser non
+// consegnava xG casa/trasferta, vedi lib/understat.ts). Rimisurato sulla
+// PIPELINE SERVITA intera (temperatura + blend α=0,3, training 365gg, xG della
+// stagione in corso), w scelto sul 2022 e letto sul 2023-24 intatto: w=0,2 →
+// Brier servito −0,0008, IC95 [−0,0012; −0,0002], n=3.477 (w=0,5: −0,0014 ma
+// IC che tocca lo zero). scripts/lab-xg-servito-walkforward.ts. Il peso conta
+// solo con XG_BLEND_ENABLED=1 (lib/understat.ts, #XG-1001): spento = solo gol.
+export const XG_BLEND_WEIGHT = 0.2;
 
 // ─── Market blend (Reliability upgrade PROPOSAL B) ───────────────────────────
 // The closing line is the single strongest 1X2 predictor: in the walk-forward
