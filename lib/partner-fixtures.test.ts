@@ -2,7 +2,7 @@
 // quindi ogni condizione va provata: una svista in piu' pubblica una partita
 // falsa, una in meno la nasconde.
 import { describe, it, expect } from "vitest";
-import { devig2vie, fixtureDaPartner } from "./partner-fixtures";
+import { devig2vie, fixtureDaPartner, superficieDaTorneo } from "./partner-fixtures";
 import type { FpMatch } from "./fortuneplay-live";
 
 const ORA = Date.parse("2026-09-11T12:00:00Z");
@@ -141,5 +141,33 @@ describe("fixtureDaPartner: cosa entra e cosa viene scartato", () => {
   it("l'orario esce normalizzato in ISO", () => {
     const f = fixtureDaPartner(m({ startTime: "2026-09-12T14:00:00+00:00" }), ORA)!;
     expect(f.scheduledAt).toBe("2026-09-12T14:00:00.000Z");
+  });
+});
+
+// #RISULTATI-PARTNER-1001 — l'identita' presso il partner si salva, non si scarta:
+// senza, il settlement puo' solo indovinare per nomi.
+describe("fixtureDaPartner: torneo, superficie e id partner veri", () => {
+  it("porta torneo, categoria, id e urn del partner", () => {
+    const f = fixtureDaPartner(
+      m({ id: 70395717, urnId: "bc:match:30142329", tournamentName: "ATP Challenger Bari - Clay", categoryName: "Italy" }),
+      ORA,
+    )!;
+    expect(f.tournament).toBe("ATP Challenger Bari - Clay");
+    expect(f.surface).toBe("clay");
+    expect(f.partner).toEqual({ id: 70395717, urn_id: "bc:match:30142329", category: "Italy" });
+  });
+
+  it("senza torneo dichiarato resta 'Partner feed' su 'hard', come prima", () => {
+    const f = fixtureDaPartner(m(), ORA)!;
+    expect(f.tournament).toBe("Partner feed");
+    expect(f.surface).toBe("hard");
+  });
+
+  it("la superficie si legge solo se il nome la dichiara", () => {
+    expect(superficieDaTorneo("WTT Men - Telavi - Clay")).toBe("clay");
+    expect(superficieDaTorneo("ATP Challenger Plovdiv - Clay (Doubles)")).toBe("clay");
+    expect(superficieDaTorneo("Wimbledon - Grass")).toBe("grass");
+    expect(superficieDaTorneo("UTR Pro Series Chicago - Women")).toBe("hard");
+    expect(superficieDaTorneo(null)).toBe("hard");
   });
 });

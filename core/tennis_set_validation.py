@@ -120,6 +120,7 @@ def settlement_allowed(
     gender: str | None = None,
     status_name: str | None = None,
     source_completed: bool = False,
+    match_tiebreak: bool = False,
 ) -> tuple[bool, str]:
     """
     (si_puo_settlare, motivo). Il motivo si logga: serve a contare quante righe
@@ -128,9 +129,22 @@ def settlement_allowed(
     Test format-free dove possibile: le due regole che bocciano le 289 righe
     difettose (`set vincitore <= 1`, `perdente >= vincitore`) non hanno bisogno
     di sapere se si gioca al meglio dei 3 o dei 5.
+
+    `match_tiebreak` (#RISULTATI-PARTNER-1001): la fonte dichiara che il terzo
+    set e' il super tie-break dei doppi, scritto `1-0`. Si accetta SOLO cosi':
+    due set regolari divisi 1-1 e il tie-break vinto dal vincitore.
     """
     if not source_completed:
         return False, "fonte-non-conclusa"
+
+    if match_tiebreak:
+        sets = _SET.findall(score_text or "")
+        if len(sets) != 3 or (int(sets[2][0]), int(sets[2][1])) != (1, 0):
+            return False, "super-tiebreak-malformato"
+        regolari = " ".join(f"{a}-{b}" for a, b in sets[:2])
+        if sets_incompleti(regolari) or sets_won(regolari) != (1, 1):
+            return False, "super-tiebreak-malformato"
+        return True, "bo3-super-tiebreak-concluso"
 
     stato = (status_name or "").upper()
 
