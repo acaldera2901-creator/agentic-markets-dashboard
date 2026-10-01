@@ -77,7 +77,9 @@ def _corpo(testo: str) -> list[str]:
 
 
 def test_la_copia_di_wasShownAsPick_e_identica_alla_route():
-    route = (REPO / "app/api/v2/history/route.ts").read_text()
+    # #COERENZA-1001: wasShownAsPick e' diventata isShownPick in lib/track-record.ts
+    # (la usano la route e yesterday-read); la copia del replay va confrontata li'.
+    route = (REPO / "lib/track-record.ts").read_text()
     copia = (REPO / "tools/control_center/checks/history_replay.ts").read_text()
     assert _corpo(route) == _corpo(copia)
 

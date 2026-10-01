@@ -215,7 +215,7 @@ export function isShownPick(row: ShownRow): boolean {
   try {
     const surface = (JSON.parse(row.notes ?? "{}") as { surface?: { below_floor?: boolean } }).surface;
     belowFloor = surface?.below_floor === true;
-  } catch { /* notes illeggibili/assenti → sopra il floor → conta */ }
+  } catch { /* unparseable/absent notes → treat as above floor → count it */ }
   if (!belowFloor) return true;
   return row.competition === "World Cup";
 }
