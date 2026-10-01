@@ -317,3 +317,29 @@ def test_rule4c_opposite_picks_are_never_written():
     for score in ((0, 1), (1, 1)):  # even when both picks would grade alike
         d = decide("HOME", "1X2", [Evidence("espn-id", "final", score)], shown_pick="AWAY")
         assert d["result"] is None and d["motivo"].startswith("conflitto-sigillato-mostrato")
+
+
+# ── football-data rate limit: retried, and a failure is declared ────────────
+
+class _FdClient:
+    def __init__(self, codes):
+        self.codes = list(codes)
+
+    def get(self, *_a, **_k):
+        import types
+        code = self.codes.pop(0)
+        body = {"utcDate": "2026-08-27T18:30:00Z", "status": "FINISHED",
+                "homeTeam": {"name": "Celta"}, "awayTeam": {"name": "Osasuna"},
+                "score": {"fullTime": {"home": 1, "away": 2}, "duration": "REGULAR"}}
+        return types.SimpleNamespace(status_code=code, json=lambda: body)
+
+
+def test_fd_429_is_retried_and_a_lasting_failure_is_declared(monkeypatch):
+    from scripts import recupera_calcio_1001 as rc
+    monkeypatch.setattr(rc.time, "sleep", lambda *_: None)
+    monkeypatch.setenv("FOOTBALL_DATA_ORG_API_KEY", "k")
+    assert rc.fd_match(_FdClient([429, 200]), "1")["kind"] == "final"
+    f = rc.fd_match(_FdClient([429, 429]), "1")
+    assert f["kind"] == "errore-fonte" and f["status"] == "fd-http-429"
+    d = decide("HOME", "1X2", [Evidence("football-data", "errore-fonte", status="fd-http-429")])
+    assert d["result"] is None and "non raggiungibile" in d["motivo"]

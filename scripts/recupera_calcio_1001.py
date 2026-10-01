@@ -250,10 +250,16 @@ def fd_match(client, mid: str) -> dict | None:
         key = load_env().get("FOOTBALL_DATA_ORG_API_KEY")
     if not key:
         return None
-    r = client.get(f"https://api.football-data.org/v4/matches/{mid}", headers={"X-Auth-Token": key})
-    time.sleep(6.5)  # free tier: 10 requests/minute
+    for attempt in range(2):
+        r = client.get(f"https://api.football-data.org/v4/matches/{mid}", headers={"X-Auth-Token": key})
+        time.sleep(6.5)  # free tier: 10 requests/minute
+        if r.status_code != 429:
+            break
+        if attempt == 0:
+            time.sleep(61)  # rate-limit window
     if r.status_code != 200:
-        return None
+        # declared, never read as "nothing found"
+        return {"kickoff": None, "status": f"fd-http-{r.status_code}", "kind": "errore-fonte"}
     m = r.json()
     ft = ((m.get("score") or {}).get("fullTime") or {})
     base = {"kickoff": _dt(m.get("utcDate")), "status": str(m.get("status") or ""),
@@ -273,7 +279,7 @@ def fd_match(client, mid: str) -> dict | None:
 @dataclass
 class Evidence:
     source: str
-    kind: str                       # final | void | pending | supplementari | ambigua | debole
+    kind: str                       # final | void | pending | supplementari | ambigua | debole | errore-fonte
     score: tuple[int, int] | None = None
     status: str | None = None
     detail: str | None = None       # the source's own names + kickoff (name matches)
@@ -340,7 +346,10 @@ def decide(sealed_pick, market, evs: list[Evidence], shown_pick=_SAME) -> dict:
     if voids:
         return {**out, "result": "void", "fonte": voids[0].source, "prova": voids[0].status,
                 "conferme": [e.source for e in voids[1:]]}
-    if any(e.kind == "pending" for e in evs):
+    if any(e.kind == "errore-fonte" for e in evs):
+        st = sorted({e.status or "?" for e in evs if e.kind == "errore-fonte"})
+        motivo = f"fonte non raggiungibile ({', '.join(st)}): rilanciare"
+    elif any(e.kind == "pending" for e in evs):
         st = sorted({e.status or "?" for e in evs if e.kind == "pending"})
         motivo = f"non conclusa secondo la fonte ({', '.join(st)})"
     elif any(e.kind == "ambigua" for e in evs):
