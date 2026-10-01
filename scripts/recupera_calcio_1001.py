@@ -22,10 +22,12 @@ WHERE EACH RESULT COMES FROM (every row declares it, in this order)
   All sources are read for every row; two scores that disagree, or a score
   against a postponement, leave the row unresolved ("conflitto").
 
-GRADING: on the SEALED pick (pick_ledger.pick), parity with
-agents/result_settlement.py: 1X2 + home/draw/away -> won/lost; no sealed pick
--> void (#VOID-SENZA-PICK-0907, the #SETTLE-0909 precedent "nessuna pick
-mostrata"). Void for a match not played only on the source's own status:
+GRADING: live (agents/result_settlement.py, core/supabase_client.py) grades
+the SHOWN pick, unified_predictions.pick: 1X2 + home/draw/away -> won/lost; no
+pick shown = under the floor -> void (#VOID-SENZA-PICK-0907). The register
+sealed pick_ledger.pick, which can differ. Both are graded: written only when
+they give the same result; otherwise NOT written ("serve decisione"), and the
+dry-run counts the divergences. Void for a match not played only on the source's own status:
 ESPN STATUS_POSTPONED/STATUS_CANCELED, football-data POSTPONED/CANCELLED.
 A 1X2 pick is graded on 90 minutes: only ESPN STATUS_FULL_TIME (or
 football-data FINISHED with duration REGULAR) is a final; AET/PEN finals are
@@ -275,7 +277,14 @@ def grade(sealed_pick: str | None, market: str | None, hg: int, ag: int) -> str:
     return "won" if pick == actual else "lost"
 
 
-def decide(sealed_pick, market, evs: list[Evidence]) -> dict:
+_SAME = object()
+
+
+def decide(sealed_pick, market, evs: list[Evidence], shown_pick=_SAME) -> dict:
+    """shown_pick = unified_predictions.pick, what live grades on
+    (agents/result_settlement.py); default: same as the sealed one."""
+    if shown_pick is _SAME:
+        shown_pick = sealed_pick
     out = {"result": None, "outcome": None, "final_score": None, "fonte": None,
            "conferme": [], "prova": None, "motivo": None}
     finals = [e for e in evs if e.kind == "final"]
@@ -289,7 +298,12 @@ def decide(sealed_pick, market, evs: list[Evidence]) -> dict:
             return {**out, "motivo": f"conflitto fra fonti ({seen})"}
         hg, ag = finals[0].score
         fs = f"{hg}-{ag}"
-        return {**out, "result": grade(sealed_pick, market, hg, ag), "final_score": fs,
+        sealed, shown = grade(sealed_pick, market, hg, ag), grade(shown_pick, market, hg, ag)
+        if sealed != shown:
+            return {**out, "final_score": fs, "motivo": (
+                f"pick sigillato ({sealed_pick}) e pick mostrato ({shown_pick}) danno esiti "
+                f"diversi ({sealed}/{shown}): serve decisione")}
+        return {**out, "result": sealed, "final_score": fs,
                 "outcome": outcome_from_score(fs), "fonte": finals[0].source,
                 "conferme": [e.source for e in finals[1:]]}
     if voids:
@@ -325,7 +339,7 @@ def settlement_row(source_id: str, current_rev: int | None, d: dict) -> dict | N
 
 _IRR_SQL = f"""
 select l.source_id, l.league, l.home_team, l.away_team, l.commence_time, l.pick, l.market,
-       s.result, s.settlement_revision, u.result, u.verification_state, u.notes
+       s.result, s.settlement_revision, u.result, u.verification_state, u.notes, u.pick
 from pick_ledger l
 left join pick_settlement_current s using (source_table, source_id, model_version)
 left join unified_predictions u on u.sport = 'football' and u.external_event_id = l.source_id
@@ -357,7 +371,7 @@ def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
                "score": _score(_final_score_from_notes(t[6]))} for t in twins]
     twin_c = [t for t in twin_c if t["score"]]
     out = []
-    for (sid, league, home, away, ko, pick, market, sres, srev, ures, uver, unotes) in rows:
+    for (sid, league, home, away, ko, pick, market, sres, srev, ures, uver, unotes, upick) in rows:
         evs: list[Evidence] = []
         # servita
         sc = _score(_final_score_from_notes(unotes))
@@ -393,9 +407,9 @@ def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
                 evs.append(Evidence("football-data", "altra-data", status=f["status"]))
             elif f:
                 evs.append(Evidence("football-data", f["kind"], f.get("score"), f["status"]))
-        d = decide(pick, market, evs)
+        d = decide(pick, market, evs, shown_pick=upick)
         out.append({"source_id": sid, "league": league, "match": f"{home} - {away}",
-                    "kickoff": ko.isoformat(), "pick": pick, "stato_prima": sres or "NOSET",
+                    "kickoff": ko.isoformat(), "pick": pick, "pick_mostrato": upick, "stato_prima": sres or "NOSET",
                     "rev": srev, "decisione": d,
                     "per_nome": [{"fonte": e.source, "fonte_nomi": e.detail,
                                   "punteggio": e.score, "stato": e.status}
@@ -441,6 +455,11 @@ def report(out: list[dict]) -> None:
                   f"  [{m['fonte']}, {m['punteggio'] or m['stato']}, {used}]")
     conf = Counter(c for o in out for c in o["decisione"]["conferme"])
     print(f"irrisolti sigillati letti: {len(out)}")
+    div = Counter(("sigillato" if o["pick"] else "-") + "/" + ("mostrato" if o["pick_mostrato"] else "-")
+                  + ("" if (o["pick"] or "").upper() == (o["pick_mostrato"] or "").upper()
+                     or not (o["pick"] and o["pick_mostrato"]) else " DIVERSI")
+                  for o in out)
+    print("pick sigillato/mostrato (valorizzato o null):", dict(div.most_common()))
     print("per fonte:", dict(by_src.most_common()))
     print("confermati anche da:", dict(conf.most_common()))
     print("per esito:", dict(sorted(by_res.items())))

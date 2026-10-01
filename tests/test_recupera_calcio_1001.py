@@ -180,3 +180,21 @@ def test_extra_time_at_one_source_blocks_a_score_from_another():
     d = decide("HOME", "1X2", [Evidence("gemello", "final", (2, 1)),
                                Evidence("espn-id", "supplementari", status="STATUS_FINAL_AET")])
     assert d["result"] is None and "supplementari" in d["motivo"]
+
+
+# ── #CALCIO-1001 review C: sealed pick vs shown pick ─────────────────────────
+
+def test_sealed_and_shown_pick_that_grade_alike_are_written():
+    d = decide(None, "1X2", [Evidence("espn-id", "final", (2, 0))], shown_pick=None)
+    assert d["result"] == "void"  # no pick shown = under the floor (#VOID-SENZA-PICK-0907)
+    d = decide("HOME", "1X2", [Evidence("espn-id", "final", (2, 0))], shown_pick="HOME")
+    assert d["result"] == "won"
+
+
+def test_sealed_and_shown_pick_that_grade_differently_are_not_written():
+    # live grades the SHOWN pick (agents/result_settlement.py), the register
+    # sealed another one: no silent choice between the two.
+    d = decide(None, "1X2", [Evidence("servita", "final", (2, 0))], shown_pick="HOME")
+    assert d["result"] is None and "pick sigillato" in d["motivo"]
+    d = decide("HOME", "1X2", [Evidence("espn-id", "final", (0, 1))], shown_pick="AWAY")
+    assert d["result"] is None
