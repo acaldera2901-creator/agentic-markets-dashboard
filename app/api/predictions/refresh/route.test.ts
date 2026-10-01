@@ -90,3 +90,17 @@ it("#REFRESH2-1001: fasi oltre budget -> SALTATE, il tennis parte e la route ris
   expect(body.fasi.tennis.stato).toBe("ok");
   expect(body.ok).toBe(true);
 });
+
+it("#REFRESH2-1001: una fase con la scadenza gia' passata non viene avviata", async () => {
+  vi.useFakeTimers();
+  syncTennisPredictionsToUnified.mockImplementationOnce(maiFinito);
+  const { GET, maxDuration } = await import("./route");
+  let risposta: Response | null = null;
+  void GET(req()).then((r) => { risposta = r; });
+  await vi.advanceTimersByTimeAsync((maxDuration - 1) * 1000);
+  expect(risposta).not.toBeNull();
+  const body = await risposta!.json();
+  expect(body.fasi.tennis.stato).toBe("saltata");
+  expect(body.fasi.prezzi.stato).toBe("saltata");
+  expect(registraPrezziPartner).not.toHaveBeenCalled();
+});

@@ -32,6 +32,12 @@ async function conScadenza<T>(
   fn: () => Promise<T>,
 ): Promise<T | typeof SALTATA> {
   const t0 = Date.now();
+  // Already past the deadline: do not start the phase at all.
+  if (t0 >= scadenza) {
+    fasi[nome] = { ms: 0, stato: "saltata" };
+    console.error(`[refresh] ${nome} SALTATA per scadenza: non avviata`);
+    return SALTATA;
+  }
   let timer: ReturnType<typeof setTimeout> | undefined;
   const scaduta = new Promise<typeof SALTATA>((r) => {
     timer = setTimeout(() => r(SALTATA), Math.max(0, scadenza - t0));
