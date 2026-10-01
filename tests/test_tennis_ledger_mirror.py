@@ -95,3 +95,18 @@ async def test_un_errore_del_registro_non_blocca_la_riga_servita():
         mk.return_value.__aenter__.return_value = client
         assert await sc.settle_unified_tennis("tennis:espn:e1:k", "Anna Kalinskaya") is True
     settle.assert_awaited_once()
+
+
+async def test_una_scrittura_sigillata_fallita_e_un_warning_col_match_id(caplog):
+    # Visibile subito nel log, non solo 8 giorni dopo dall'invariante.
+    record = AsyncMock(return_value=False)
+    with patch.object(sc.httpx, "AsyncClient") as mk, \
+         patch.object(sc, "record_pick_settlement", new=record), \
+         patch.object(sc, "settle_unified_prediction", new=AsyncMock(return_value=True)), \
+         patch.object(sc.settings, "SUPABASE_URL", "https://x.supabase.co"), \
+         patch.object(sc.settings, "SUPABASE_SERVICE_ROLE_KEY", "k"), \
+         caplog.at_level("WARNING", logger=sc.logger.name):
+        mk.return_value.__aenter__.return_value = _client(SEALED, [])
+        await sc.settle_unified_tennis("tennis:espn:e1:k", "Anna Kalinskaya")
+    assert any("tennis:espn:e1:k" in r.getMessage() and r.levelname == "WARNING"
+               for r in caplog.records)

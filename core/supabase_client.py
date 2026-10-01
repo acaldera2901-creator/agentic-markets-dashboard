@@ -976,7 +976,7 @@ async def _record_tennis_ledger_settlement(
             row.get("pick"), winner_name, void=void, unresolved=unresolved
         )
         real = result in ("won", "lost")
-        await record_pick_settlement(
+        ok = await record_pick_settlement(
             source_table="tennis_predictions",
             source_id=match_id,
             model_version=model_version,
@@ -985,6 +985,13 @@ async def _record_tennis_ledger_settlement(
             outcome=winner_name if real else None,
             final_score=final_score if real else None,
         )
+        if not ok:
+            # Visible now, not 8 days later via the cron_settle invariant. No
+            # retry here (YAGNI): scripts/backfill_settle_1001.py heals residues.
+            logger.warning(
+                "tennis sealed settlement NOT written for %s (%s, %s)",
+                match_id, model_version, result,
+            )
 
 
 async def settle_unified_tennis(
