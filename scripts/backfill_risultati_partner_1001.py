@@ -29,6 +29,10 @@ SAFETY
       DELETE FROM pick_settlement WHERE correction_reason = 'backfill:RISULTATI-PARTNER-1001';
   The view pick_settlement_current falls back to the previous revision.
 
+ORDER: run AFTER the existing settle backfills (scripts/backfill_settle_1001.py
+b1, football). This script SUPERSEDES b2 (tennis) of that script — same sealed
+rows — which is therefore off by default there: do not run b2.
+
 USAGE
   venv/bin/python -m scripts.backfill_risultati_partner_1001            # dry-run
   venv/bin/python -m scripts.backfill_risultati_partner_1001 --apply    # gated
