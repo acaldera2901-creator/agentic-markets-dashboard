@@ -36,7 +36,7 @@ def test_freschezza_per_lega_vede_la_lega_ferma_anche_se_le_altre_girano():
 # ── 2 · /history = DB ricalcolato col codice vero ───────────────────────────
 def _replay(n, won, lost, cov_honest=0.98, dropped=0):
     return {"headline": {"n": n, "won": won, "lost": lost},
-            "declared": {"dedup_dropped": dropped}, "route_rows": n,
+            "dedup_dropped": dropped, "route_rows": n,
             "honest": {"coverage": cov_honest, "finished_shown": 100, "counted": 98}}
 
 
@@ -96,7 +96,7 @@ def test_il_replay_esegue_il_codice_vero_dedup_compreso():
     out = coerenza._replay([base, gemella, altra], [base, gemella, altra, {**altra, "home_team": "Fulham", "result": "unresolved", "verification_state": None}])
     # vince la gemella settlata dopo (lost), come in route.ts
     assert out["headline"] == {"n": 2, "won": 1, "lost": 1}
-    assert out["declared"]["dedup_dropped"] == 1
+    assert out["dedup_dropped"] == 1
     assert out["honest"]["finished_shown"] == 3 and out["honest"]["counted"] == 2
 
 
@@ -183,9 +183,10 @@ def test_referto_mappa_i_livelli_ed_espande_i_claim():
     assert cp.codice_uscita([]) == 1                  # nessun controllo non e' un passaggio
 
 
-def test_argomento_sconosciuto_fallisce():
+@pytest.mark.parametrize("arg", ["--boh", "--test"])  # --test tolto: i test girano in CI
+def test_argomento_sconosciuto_fallisce(arg):
     with pytest.raises(SystemExit) as e:
-        cp.main(["--boh"])
+        cp.main([arg])
     assert e.value.code == 2
 
 

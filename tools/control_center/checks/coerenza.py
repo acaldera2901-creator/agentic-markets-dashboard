@@ -257,7 +257,7 @@ def check_history_coerente() -> Verdict:
         # Due zeri uguali non sono coerenza: e' una popolazione non misurata.
         return unknown("DB e API entrambi a 0 pick: popolazione vuota", fonte,
                        evidence={"soglia": soglia})
-    prova = {"api": api, "ricalcolato": db, "gemelle_tolte": replay["declared"]["dedup_dropped"],
+    prova = {"api": api, "ricalcolato": db, "gemelle_tolte": replay["dedup_dropped"],
              "righe_route": replay["route_rows"], "soglia": soglia,
              "cosa_prova": "la coerenza fra la route in produzione e il suo codice "
                            "eseguito sul DB, non la correttezza del codice condiviso. "

@@ -13,7 +13,6 @@ I KPI senza giudizio (livello `info`) non sono controlli: si contano e basta.
 import argparse
 import datetime
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -65,36 +64,6 @@ def voci_da_verdetti(lista, verdetti) -> tuple[list[dict], int]:
     return voci, info
 
 
-def _ultima_riga(testo: str) -> str:
-    righe = [r for r in testo.strip().splitlines() if r.strip()]
-    return righe[-1][:90] if righe else ""
-
-
-def voci_test() -> list[dict]:
-    """pytest e vitest del repo: ✔ se passano, ✘ se falliscono, ? se non girano."""
-    from .checks.coerenza import _node  # noqa: PLC0415 - stessa risoluzione di node
-
-    comandi = [("pytest", [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"])]
-    node = _node()
-    vitest = REPO_ROOT / "node_modules" / "vitest" / "vitest.mjs"
-    comandi.append(("vitest", [node, str(vitest), "run"] if node and vitest.exists() else None))
-    voci = []
-    for nome, cmd in comandi:
-        voce = {"area": "test", "id": f"test:{nome}", "nome": nome, "soglia": "exit 0",
-                "riparo": f"cd {REPO_ROOT} && " + (" ".join(cmd[1:]) if cmd else nome)}
-        if cmd is None:
-            voci.append({**voce, "misura": "-", "esito": None, "nota": "non eseguibile qui"})
-            continue
-        try:
-            esito = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True, timeout=900)
-        except subprocess.TimeoutExpired:
-            voci.append({**voce, "misura": "timeout", "esito": None, "nota": "oltre 900s"})
-            continue
-        voci.append({**voce, "misura": f"exit {esito.returncode}", "esito": esito.returncode == 0,
-                     "nota": _ultima_riga(esito.stdout or esito.stderr)})
-    return voci
-
-
 def stampa(voci: list[dict], info: int) -> None:
     ok = sum(v["esito"] is True for v in voci)
     ko = sum(v["esito"] is False for v in voci)
@@ -127,7 +96,6 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="lab certifica prodotto",
                                      description="coerenza del prodotto: gli stessi check della torre")
     parser.add_argument("--json", action="store_true", help=f"scrive {DEST_JSON}")
-    parser.add_argument("--test", action="store_true", help="esegue anche pytest e vitest")
     args = parser.parse_args(argv)  # argomento sconosciuto -> exit 2
 
     try:
@@ -140,8 +108,6 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     lista = all_checks()
     voci, info = voci_da_verdetti(lista, run_checks(lista))
-    if args.test:
-        voci += voci_test()
 
     if args.json:
         ok = sum(v["esito"] is True for v in voci)

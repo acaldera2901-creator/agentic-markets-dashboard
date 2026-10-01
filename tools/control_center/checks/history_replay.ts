@@ -7,7 +7,7 @@
 // (jsonb_agg(row_to_json(t))), so string comparisons on timestamps behave the same.
 //
 // stdin:  { "route_rows": [...], "finished_rows": [...] }
-// stdout: { "headline": {n, won, lost}, "declared": {...}, "honest": {...} }
+// stdout: { "headline": {n, won, lost}, "dedup_dropped": n, "honest": {...} }
 import { dedupeByFixture } from "../../../lib/dedupe-fixtures";
 import { isBeforeFootballFloorCutover } from "../../../lib/track-record";
 import { footballSurfaceDecisionFor } from "../../../lib/surfacing-gate";
@@ -70,12 +70,7 @@ async function main() {
 
   process.stdout.write(JSON.stringify({
     headline: { n: won + lost, won, lost },
-    declared: {
-      surfaced: surfaced.length,
-      verified: rows.length,
-      coverage: surfaced.length ? Number((rows.length / surfaced.length).toFixed(3)) : null,
-      dedup_dropped: shown.length - surfaced.length,
-    },
+    dedup_dropped: shown.length - surfaced.length,
     honest: {
       finished_shown: finished.length,
       counted,
