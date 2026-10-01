@@ -36,18 +36,27 @@ HISTORY_URL = "https://www.betredge.com/api/v2/history?limit=1"
 # vede piu' la maggior parte di quello che il board mostra. Fra le due soglie
 # sta il ritardo legittimo: le righe nuove entrano in unified al giro dopo del
 # cron (2h), e un lotto del partner feed puo' arrivare tutto insieme.
+# PARITA_AMBER (90%) e' motivata dalla baseline 97-100% del 25-29/09.
+# PARITA_RED (70%) e' un valore TONDO, non misurato: nessun dato dice dove
+# finisce il ritardo legittimo. Da ritarare dopo un mese di storico.
 PARITA_RED = 0.70
+# Si contano partite DISTINTE su entrambi i lati: una join su unified con
+# righe duplicate per source_id moltiplicherebbe le abbinate (150% = verde).
+# I duplicati si misurano a parte, e oltre il 110% la quota e' un'anomalia.
+PARITA_ANOMALIA = 1.10
 PARITA_AMBER = 0.90
 
 _PARITA = {
     "tennis": (
-        "select count(*), count(u.id) from tennis_predictions s "
+        "select count(distinct s.match_id), count(distinct u.source_id), count(u.id) "
+        "from tennis_predictions s "
         "left join unified_predictions u on u.source_table = 'tennis_predictions' "
         "and u.source_id = s.match_id where s.scheduled_at > now()",
         "tennis_predictions",
     ),
     "calcio": (
-        "select count(*), count(u.id) from match_predictions s "
+        "select count(distinct s.match_id), count(distinct u.source_id), count(u.id) "
+        "from match_predictions s "
         "left join unified_predictions u on u.source_table = 'match_predictions' "
         "and u.source_id = s.match_id where s.kickoff > now()",
         "match_predictions",
@@ -64,7 +73,9 @@ def check_parita(sport: str) -> Verdict:
     except DbUnavailable as exc:
         return unknown(f"database non raggiungibile: {exc}", fonte)
     sorgente, unificate = int(righe[0][0] or 0), int(righe[0][1] or 0)
-    prova = {"sorgente": sorgente, "unified": unificate, "soglia": soglia,
+    righe_unified = int(righe[0][2] or 0)
+    prova = {"sorgente": sorgente, "unified": unificate, "righe_unified": righe_unified,
+             "soglia": soglia,
              "riparo": f"il sync {tabella} -> unified_predictions non sta girando: "
                        "guarda lo step dello sport in /api/predictions/refresh"}
     if sorgente == 0:
@@ -72,11 +83,17 @@ def check_parita(sport: str) -> Verdict:
                        fonte, evidence=prova)
     quota = unificate / sorgente
     testo = f"{unificate}/{sorgente}"
+    if quota > PARITA_ANOMALIA:
+        return red(f"{sport}: {testo} partite abbinate, piu' della sorgente: misura anomala",
+                   fonte, value=testo, evidence=prova)
     if unificate == 0 or quota < PARITA_RED:
         return red(f"{sport}: {testo} partite future arrivano in unified_predictions",
                    fonte, value=testo, evidence=prova)
     if quota < PARITA_AMBER:
         return amber(f"{sport}: {testo} partite future in unified_predictions",
+                     fonte, value=testo, evidence=prova)
+    if righe_unified > unificate * PARITA_ANOMALIA:
+        return amber(f"{sport}: {righe_unified} righe unified per {unificate} partite: duplicati",
                      fonte, value=testo, evidence=prova)
     return green(f"{sport}: {testo} partite future in unified_predictions",
                  fonte, value=testo, evidence=prova)

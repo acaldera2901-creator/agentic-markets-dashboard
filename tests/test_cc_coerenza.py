@@ -14,11 +14,11 @@ REPO = Path(__file__).resolve().parents[1]
 
 # ── 1 · parita' sorgente / unified ──────────────────────────────────────────
 @pytest.mark.parametrize("riga,livello", [
-    ((142, 0), "red"),      # il 30/09: il tennis sparito da unified
-    ((100, 60), "red"),     # sotto il 70%
-    ((100, 80), "amber"),
-    ((214, 212), "green"),
-    ((0, 0), "unknown"),    # niente da confrontare non e' un verde
+    ((142, 0, 0), "red"),        # il 30/09: il tennis sparito da unified
+    ((100, 60, 60), "red"),      # sotto il 70%
+    ((100, 80, 80), "amber"),
+    ((214, 212, 212), "green"),
+    ((0, 0, 0), "unknown"),      # niente da confrontare non e' un verde
 ])
 def test_parita(riga, livello):
     with patch.object(coerenza, "fetch_all", return_value=[riga]):
@@ -246,3 +246,14 @@ def test_i_claim_uguale_zero_del_registro_dichiarano_la_popolazione():
     for c in coerenza.leggi_claims():
         if c["operatore"] == "==" and c["misura"] != "-":
             assert c["misura"].count(" as popolazione") == 1, c["id"]
+
+
+def test_parita_conta_partite_distinte_e_segnala_i_duplicati():
+    sql, _ = coerenza._PARITA["tennis"]
+    assert "count(distinct s.match_id)" in sql and "count(distinct u.source_id)" in sql
+    # 100 partite, 100 abbinate ma 150 righe unified: duplicati -> non verde
+    with patch.object(coerenza, "fetch_all", return_value=[(100, 100, 150)]):
+        assert coerenza.check_parita("tennis").level == "amber"
+    # quota impossibile (>110%): anomalia, rosso
+    with patch.object(coerenza, "fetch_all", return_value=[(100, 150, 150)]):
+        assert coerenza.check_parita("tennis").level == "red"
