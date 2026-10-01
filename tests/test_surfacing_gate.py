@@ -31,10 +31,20 @@ def _floor_attivi(monkeypatch):
 
 def test_pick_sempre_e_acceso_in_produzione(monkeypatch):
     monkeypatch.setattr(settings, "PICK_SEMPRE_FAVORITO", True)
-    assert surface_decision(sport="football", friendly=False, confidence=10) == (True, False)
-    assert surface_decision(sport="football", friendly=True, confidence=10) == (True, False)
     assert surface_decision(sport="tennis", friendly=False, confidence=10, tournament="Mystery Cup") == (True, False)
     assert tennis_surface_decision(confidence=10, tournament=None, picked_odds=None) == (True, False, False)
+
+
+def test_cutover_il_calcio_non_e_bypassato_dal_flag(monkeypatch):
+    # #COERENZA-1001 (c) — #TRE-LIVELLI-0925-CUTOVER anche nel writer delle
+    # nazionali: dal 25/09 il floor del calcio DECIDE, col flag acceso. Prima il
+    # writer persisteva below_floor=false (es. UNL a confidenza 37, floor 62) e
+    # il board la mostrava come pick mentre l'headline la escludeva.
+    monkeypatch.setattr(settings, "PICK_SEMPRE_FAVORITO", True)
+    assert surface_decision(sport="football", friendly=False, confidence=37, nations_league_code="UNL") == (False, True)
+    assert surface_decision(sport="football", friendly=False, confidence=62, nations_league_code="UNL") == (True, False)
+    assert surface_decision(sport="football", friendly=True, confidence=37) == (False, True)
+    assert surface_decision(sport="football", friendly=False, confidence=30, world_cup=True) == (True, False)
 
 
 def test_il_default_di_settings_e_acceso():
