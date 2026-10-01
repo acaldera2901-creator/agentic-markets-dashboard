@@ -7,7 +7,7 @@
 // them 'unresolved' at 48h. Single days and whole months still answer 200.
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { fetchSummerResults } from "@/lib/summer-leagues";
-import { espnSlugForLeague, pianoRecuperoEspn } from "@/lib/espn-results";
+import { abbinaFinaleCerto, espnSlugForLeague, pianoRecuperoEspn } from "@/lib/espn-results";
 import { mesiEspn, ESPN_RECOVERY_DAYS } from "@/lib/espn";
 
 const espnEvent = (id: string, date: string, hs: string, as: string) => ({
@@ -69,5 +69,23 @@ describe("recovery of open served rows by date + names", () => {
 
   it("the retry horizon is a week, not 48h", () => {
     expect(ESPN_RECOVERY_DAYS).toBe(7);
+  });
+});
+
+describe("A4 matcher — one shared token is not an identity (#CALCIO-1001 review A)", () => {
+  const K = "2026-09-20T14:00Z";
+  const row = (h: string, a: string) => ({ match_id: "x", home_team: h, away_team: a, kickoff: K });
+  it("Real Madrid–Real Valladolid is not Real Betis–Real Sociedad", () => {
+    const f = [{ home: "Real Betis", away: "Real Sociedad", homeGoals: 1, awayGoals: 0, kickoff: K }];
+    expect(abbinaFinaleCerto(row("Real Madrid", "Real Valladolid"), f)).toBeNull();
+  });
+  it("Manchester United–Newcastle United is not Manchester City–Leeds United", () => {
+    const f = [{ home: "Manchester City", away: "Leeds United", homeGoals: 2, awayGoals: 2, kickoff: K }];
+    expect(abbinaFinaleCerto(row("Manchester United", "Newcastle United"), f)).toBeNull();
+  });
+  it("full containment, home with home, still matches", () => {
+    const f = [{ home: "Ajax", away: "Feyenoord", homeGoals: 3, awayGoals: 1, kickoff: K }];
+    expect(abbinaFinaleCerto(row("Ajax Amsterdam", "Feyenoord Rotterdam"), f)?.homeGoals).toBe(3);
+    expect(abbinaFinaleCerto(row("Feyenoord Rotterdam", "Ajax Amsterdam"), f)).toBeNull();
   });
 });

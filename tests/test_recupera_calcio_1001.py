@@ -6,6 +6,7 @@ real final score, and nothing is voided without the source saying so.
 from datetime import datetime, timedelta, timezone
 
 from scripts.recupera_calcio_1001 import (
+    match_by_name,
     BATCH,
     Evidence,
     abbina,
@@ -136,3 +137,25 @@ def test_settlement_row_revision_follows_the_ledger():
 
 def test_settlement_row_none_when_undecided():
     assert settlement_row("espn:9", 1, decide("HOME", "1X2", [])) is None
+
+
+# ── #CALCIO-1001 review A: one shared token is not an identity ──────────────
+
+def test_one_shared_token_never_matches_another_match():
+    betis = [{"key": "x", "home": "Real Betis", "away": "Real Sociedad", "kickoff": T0}]
+    assert abbina("Real Madrid", "Real Valladolid", T0, betis) is None
+    city = [{"key": "x", "home": "Manchester City", "away": "Leeds United", "kickoff": T0}]
+    assert abbina("Manchester United", "Newcastle United", T0, city) is None
+
+
+def test_weak_name_match_is_reported_not_used():
+    city = [{"key": "x", "home": "Manchester City", "away": "Leeds United", "kickoff": T0}]
+    kind, hit = match_by_name("Manchester United", "Leeds United", T0, city)
+    assert (kind, hit) == ("debole", None)
+    d = decide("HOME", "1X2", [Evidence("gemello", "debole")])
+    assert d["result"] is None and "debole" in d["motivo"]
+
+
+def test_full_containment_is_a_strong_match():
+    c = [{"key": "x", "home": "Ajax", "away": "Feyenoord", "kickoff": T0}]
+    assert match_by_name("Ajax Amsterdam", "Feyenoord Rotterdam", T0, c)[0] == "certo"

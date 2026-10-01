@@ -4,6 +4,7 @@ import { SUMMER_LEAGUES, fetchSummerResults } from "@/lib/summer-leagues";
 import {
   ESPN_SLUG_BY_FD_LEAGUE,
   abbinaFinale,
+  abbinaFinaleCerto,
   espnSlugForLeague,
   fetchEspnFinalsByDate,
   pianoRecuperoEspn,
@@ -265,8 +266,8 @@ export async function GET(req: NextRequest) {
   // `oddsapi:` whose 3 days ran out, or whose source was down, had no other
   // way to close: step E sealed it 'unresolved' (217 sealed picks to 26/09).
   // Here every open served row of the last ESPN_RECOVERY_DAYS is looked up on
-  // the ESPN scoreboard of its month, with the abbinaFinale rule (kickoff
-  // ±20', one long name token per side, exactly one candidate). The finals
+  // the ESPN scoreboard of its month with abbinaFinaleCerto (kickoff ±20',
+  // full name containment per side home with home, exactly one candidate). The finals
   // join the `finished` map, so step C settles them like any other.
   if (sb) {
     try {
@@ -288,7 +289,7 @@ export async function GET(req: NextRequest) {
       for (const [slug, g] of pianoRecuperoEspn(pending, espnSlugForLeague)) {
         const finals = (await Promise.all(g.mesi.map((m) => fetchEspnFinalsByDate(slug, m)))).flat();
         for (const r of g.righe) {
-          const f = abbinaFinale(
+          const f = abbinaFinaleCerto(
             { match_id: String(r.external_event_id), home_team: String(r.home_team), away_team: String(r.away_team), kickoff: String(r.starts_at) },
             finals
           );

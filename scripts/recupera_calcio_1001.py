@@ -94,22 +94,45 @@ def token_squadra(name: str) -> list[str]:
     return core or raw
 
 
-def _same_identity(a: str, b: str) -> bool:
+def _weak_identity(a: str, b: str) -> bool:
+    """One long token in common (the abbinaFinale rule). NOT an identity:
+    "Real Madrid"/"Real Betis" share "real". Used only to REPORT a doubt."""
     x = {t for t in token_squadra(a) if len(t) >= MIN_TOKEN}
     y = {t for t in token_squadra(b) if len(t) >= MIN_TOKEN}
     return bool(x & y)
 
 
-def _candidates(home: str, away: str, kickoff: datetime, cands: list[dict]) -> list[dict]:
+def _strong_identity(a: str, b: str) -> bool:
+    """Same team: one name's tokens fully contained in the other's ("Ajax" in
+    "Ajax Amsterdam"), and the contained side carries a long token."""
+    x, y = set(token_squadra(a)), set(token_squadra(b))
+    small, big = (x, y) if len(x) <= len(y) else (y, x)
+    return bool(small) and small <= big and any(len(t) >= MIN_TOKEN for t in small)
+
+
+def _candidates(home: str, away: str, kickoff: datetime, cands: list[dict],
+                same=_strong_identity) -> list[dict]:
     return [c for c in cands
             if c.get("kickoff") and abs(c["kickoff"] - kickoff) <= TOLERANCE
-            and _same_identity(c["home"], home) and _same_identity(c["away"], away)]
+            and same(c["home"], home) and same(c["away"], away)]
+
+
+def match_by_name(home: str, away: str, kickoff: datetime, cands: list[dict]) -> tuple[str, dict | None]:
+    """('certo', hit) only for exactly one STRONG candidate, home with home.
+    'ambigua' = several strong; 'debole' = only a shared-token look-alike."""
+    hit = _candidates(home, away, kickoff, cands)
+    if len(hit) == 1:
+        return "certo", hit[0]
+    if hit:
+        return "ambigua", None
+    if _candidates(home, away, kickoff, cands, same=_weak_identity):
+        return "debole", None
+    return "nessuno", None
 
 
 def abbina(home: str, away: str, kickoff: datetime, cands: list[dict]) -> dict | None:
-    """Exactly one candidate on kickoff (±20') + home/home, away/away tokens."""
-    hit = _candidates(home, away, kickoff, cands)
-    return hit[0] if len(hit) == 1 else None
+    """Exactly one candidate on kickoff (±20') with a strong identity per side."""
+    return match_by_name(home, away, kickoff, cands)[1]
 
 
 # ── sources ──────────────────────────────────────────────────────────────────
@@ -227,9 +250,10 @@ def fd_match(client, mid: str) -> dict | None:
 @dataclass
 class Evidence:
     source: str
-    kind: str                       # final | void | pending | altra-data | ambigua
+    kind: str                       # final | void | pending | altra-data | ambigua | debole
     score: tuple[int, int] | None = None
     status: str | None = None
+    detail: str | None = None       # the source's own names + kickoff (name matches)
 
 
 def grade(sealed_pick: str | None, market: str | None, hg: int, ag: int) -> str:
@@ -264,6 +288,8 @@ def decide(sealed_pick, market, evs: list[Evidence]) -> dict:
         motivo = f"non conclusa secondo la fonte ({', '.join(st)})"
     elif any(e.kind == "ambigua" for e in evs):
         motivo = "abbinamento ambiguo"
+    elif any(e.kind == "debole" for e in evs):
+        motivo = "abbinamento per nome debole (un solo token in comune)"
     else:
         motivo = "nessuna fonte"
     return {**out, "motivo": motivo}
@@ -308,6 +334,10 @@ def _score(fs: str | None) -> tuple[int, int] | None:
     return (int(m[1]), int(m[2])) if m else None
 
 
+def _detail(c: dict) -> str:
+    return f"{c['home']} - {c['away']} @ {c['kickoff'].isoformat()[:16]}"
+
+
 def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
     twin_c = [{"key": t[0], "league": t[1], "home": t[2], "away": t[3], "kickoff": t[4],
                "score": _score(_final_score_from_notes(t[6]))} for t in twins]
@@ -321,11 +351,11 @@ def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
             evs.append(Evidence("servita", "final", sc))
         # gemello
         cands = [t for t in twin_c if t["key"] != sid and t["league"] == league]
-        hits = _candidates(home, away, ko, cands)
-        if len(hits) == 1:
-            evs.append(Evidence("gemello", "final", hits[0]["score"]))
-        elif len(hits) > 1:
-            evs.append(Evidence("gemello", "ambigua"))
+        kind, hit = match_by_name(home, away, ko, cands)
+        if hit:
+            evs.append(Evidence("gemello", "final", hit["score"], detail=_detail(hit)))
+        elif kind != "nessuno":
+            evs.append(Evidence("gemello", kind))
         slug = slugs.get(league)
         if espn and slug:
             month_evs = espn.around(slug, ko) or []
@@ -337,12 +367,12 @@ def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
                 elif e:
                     evs.append(Evidence("espn-id", e["kind"], e.get("score"), e["status"]))
             else:
-                hits = _candidates(home, away, ko, month_evs)
-                if len(hits) == 1:
-                    m = hits[0]
-                    evs.append(Evidence("espn-data-nomi", m["kind"], m.get("score"), m["status"]))
-                elif len(hits) > 1:
-                    evs.append(Evidence("espn-data-nomi", "ambigua"))
+                kind, m = match_by_name(home, away, ko, month_evs)
+                if m:
+                    evs.append(Evidence("espn-data-nomi", m["kind"], m.get("score"), m["status"],
+                                        detail=_detail(m)))
+                elif kind != "nessuno":
+                    evs.append(Evidence("espn-data-nomi", kind))
         if fd_client and sid.isdigit() and sres == "unresolved":
             f = fd_match(fd_client, sid)
             if f and f["kickoff"] and abs(f["kickoff"] - ko) > OTHER_DAY:
@@ -352,7 +382,10 @@ def gather(rows, twins, espn: Espn | None, fd_client, slugs) -> list[dict]:
         d = decide(pick, market, evs)
         out.append({"source_id": sid, "league": league, "match": f"{home} - {away}",
                     "kickoff": ko.isoformat(), "pick": pick, "stato_prima": sres or "NOSET",
-                    "rev": srev, "decisione": d, "row": settlement_row(sid, srev, d),
+                    "rev": srev, "decisione": d,
+                    "per_nome": [{"fonte": e.source, "fonte_nomi": e.detail,
+                                  "punteggio": e.score, "stato": e.status}
+                                 for e in evs if e.detail], "row": settlement_row(sid, srev, d),
                     "no_slug": slug is None})
     return out
 
@@ -386,6 +419,12 @@ def report(out: list[dict]) -> None:
             by_res[f"{o['stato_prima']}->{d['result']}"] += 1
         else:
             left[d["motivo"] + (" [lega senza slug ESPN]" if o["no_slug"] else "")] += 1
+    print("ABBINAMENTI PER NOME (pick vs fonte) — da guardare:")
+    for o in out:
+        for m in o["per_nome"]:
+            used = "USATO" if o["decisione"]["fonte"] == m["fonte"] else "conferma"
+            print(f"  {o['kickoff'][:16]} {o['league']:5s} {o['match']}  <=>  {m['fonte_nomi']}"
+                  f"  [{m['fonte']}, {m['punteggio'] or m['stato']}, {used}]")
     conf = Counter(c for o in out for c in o["decisione"]["conferme"])
     print(f"irrisolti sigillati letti: {len(out)}")
     print("per fonte:", dict(by_src.most_common()))

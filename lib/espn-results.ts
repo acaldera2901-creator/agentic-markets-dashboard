@@ -168,3 +168,31 @@ export function abbinaFinale(row: StuckRow, finals: readonly EspnFinal[]): EspnF
   });
   return cand.length === 1 ? cand[0] : null;
 }
+
+/** #CALCIO-1001 review A — strong identity: one name's tokens fully contained
+ *  in the other's ("Ajax" in "Ajax Amsterdam"), with a long token on the
+ *  contained side. One shared token is NOT enough: "Real Madrid" and "Real
+ *  Betis" share "real", "Manchester United" and "Leeds United" share "united". */
+function stessaIdentitaForte(a: string, b: string): boolean {
+  const x = new Set(tokenSquadra(a));
+  const y = new Set(tokenSquadra(b));
+  const [small, big] = x.size <= y.size ? [x, y] : [y, x];
+  if (!small.size) return false;
+  for (const t of small) if (!big.has(t)) return false;
+  return [...small].some((t) => t.length >= MIN_TOKEN);
+}
+
+/** abbinaFinale with the strong identity, for step A4 (rows served under
+ *  another id, where the names are the only link). Exactly one candidate on
+ *  kickoff ±20', home with home — anything else is no match. abbinaFinale
+ *  (step A3) keeps the shared-token rule: known debt, see #CALCIO-1001. */
+export function abbinaFinaleCerto(row: StuckRow, finals: readonly EspnFinal[]): EspnFinal | null {
+  const t = new Date(row.kickoff).getTime();
+  if (!Number.isFinite(t)) return null;
+  const cand = finals.filter((f) => {
+    const tf = new Date(f.kickoff).getTime();
+    if (!Number.isFinite(tf) || Math.abs(tf - t) > TOLLERANZA_MS) return false;
+    return stessaIdentitaForte(f.home, row.home_team) && stessaIdentitaForte(f.away, row.away_team);
+  });
+  return cand.length === 1 ? cand[0] : null;
+}
