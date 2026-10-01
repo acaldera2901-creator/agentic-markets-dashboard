@@ -1,10 +1,33 @@
 "use client";
 
-import { useYearData } from "./useYearData";
+import { useYearData, type YearStats } from "./useYearData";
 
 // #HISTORY-TRIM-0626: sintesi del track record LIVE (tutte le pick reali, nessun
 // filtro anno). Mostra hit-rate / pick decise / vinte; ROI·CLV ancora in arrivo.
 // Empty-state neutro finché non si conclude nessuna pick. Niente "—" in pubblico.
+type CoverageStats = NonNullable<YearStats>;
+
+/** La riga della copertura: solo le esclusioni che ci sono davvero. */
+export function coverageLine(s: CoverageStats, it: boolean): string {
+  const pct = `${((s.coverage ?? 0) * 100).toFixed(1)}%`;
+  const parts: string[] = [];
+  if (s.unresolved_excluded) parts.push(it
+    ? `${s.unresolved_excluded} senza un esito confermato`
+    : `${s.unresolved_excluded} without a confirmed result`);
+  if (s.unverified_excluded) parts.push(it
+    ? `${s.unverified_excluded} con un esito che nessuna fonte conferma`
+    : `${s.unverified_excluded} with a result no source confirms`);
+  const floor = s.post_cutover_excluded?.n ?? 0;
+  if (floor) parts.push(it
+    ? `${floor} sotto il floor di lega (dal 25/09), fuori dal numero`
+    : `${floor} below the league floor (since 25/09), left out of the number`);
+  const n = s.surfaced_total ? `${s.surfaced_total} ` : "";
+  const head = it
+    ? `Verificate ${pct} delle ${n}pick mostrate e concluse`
+    : `${pct} of the ${n}shown, finished picks verified`;
+  return `${head}${parts.length ? ` · ${parts.join(" · ")}` : ""}.`;
+}
+
 export function EdgeCard({ lang }: { lang: "it" | "en" }) {
   const it = lang === "it";
   const d = useYearData("");
@@ -44,11 +67,12 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
               che dice «65,2%» senza dire su quante delle pick mostrate è
               calcolato lascia credere che sia su tutte. Qui si dichiara anche
               quante restano fuori e perché. */}
+          {/* #COERENZA-1001 — il denominatore è TUTTE le pick mostrate e
+              finite, e ogni esclusione dal numero si dichiara qui: senza
+              esito, esito non confermato, sotto il floor dal cutover. */}
           {typeof s.coverage === "number" && (
             <p className="tr-lab" style={{ marginTop: 10 }}>
-              {it
-                ? `Verificate ${(s.coverage * 100).toFixed(1)}% delle pick mostrate${s.unverified_excluded ? ` · ${s.unverified_excluded} fuori perché nessuna fonte le conferma` : ""}.`
-                : `${(s.coverage * 100).toFixed(1)}% of shown picks verified${s.unverified_excluded ? ` · ${s.unverified_excluded} left out because no source confirms them` : ""}.`}
+              {coverageLine(s, it)}
             </p>
           )}
           <p className="tr-lab" style={{ marginTop: 12 }}>

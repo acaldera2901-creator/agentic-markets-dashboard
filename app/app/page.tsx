@@ -1721,6 +1721,7 @@ interface V2HistoryStats {
   coverage?: number | null;
   surfaced_total?: number;
   unverified_excluded?: number;
+  unresolved_excluded?: number; // #COERENZA-1001
   interval_95?: { low: number; high: number } | null;
   win_rate_display?: string | null;
   insufficient_sample_reason?: string | null;

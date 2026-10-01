@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import {
   edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE,
-  FOOTBALL_FLOOR_CUTOVER_AT, trackRecordPopulation,
+  FOOTBALL_FLOOR_CUTOVER_AT, trackRecordPopulation, TRACK_RECORD_BASE_CONDITIONS,
 } from "@/lib/track-record";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
@@ -48,7 +48,8 @@ export async function GET(req: Request) {
   // #TENNIS-VOID-FIX-1: 'unresolved' = the settlement source never returned a
   // result (e.g. a tennis pick that aged out of the window). It is settled only
   // to clear the live board — it is NOT a confirmed outcome, so it must stay out
-  // of the track record entirely (list + win-rate + void count alike).
+  // of the track record entirely (list + win-rate + void count alike) — it is
+  // counted ONLY in the coverage denominator (#COERENZA-1001), never as an outcome.
   // #TRACKREC-REAL-0626 → rivisto #TRACKREC-SURFACED-0715: il track record conta
   // le pick che abbiamo EFFETTIVAMENTE MOSTRATO all'utente. Il gate autorevole di
   // "mostrata" è isShownPick() (pick != null + sopra il floor di confidenza,
@@ -65,12 +66,12 @@ export async function GET(req: Request) {
   // `verification_state` NON sta qui ma sotto, in JS: serve contare anche le
   // righe non verificate per poter dichiarare la COPERTURA — un numero senza
   // il suo denominatore è la meta' di un'informazione.
-  const conditions: string[] = [
-    "is_historical = TRUE",
-    "is_demo = FALSE",
-    "result IS DISTINCT FROM 'unresolved'",
-    "published_at IS NOT NULL",
-  ];
+  // #COERENZA-1001 (a) — la query porta TUTTE le pick pubblicate e finite,
+  // comprese quelle senza esito (unresolved, NULL): servono al denominatore
+  // della copertura. Che cosa entra nel numero lo decide trackRecordPopulation
+  // (lib/track-record.ts), non questo WHERE. Prima `unresolved` restava fuori
+  // dalla query e la copertura dichiarata (98,4%) ignorava ~2.300 partite.
+  const conditions: string[] = [...TRACK_RECORD_BASE_CONDITIONS];
   const values: unknown[] = [];
 
   if (sport && sport !== "all") {
@@ -92,7 +93,8 @@ export async function GET(req: Request) {
   // STATS_CAP rows for the aggregates and slice the list afterwards. Cap is a
   // defensive backstop (real surfaced signals ~75 today); raise it (or move the
   // aggregates into SQL COUNTs) if real settled signals ever approach it.
-  const STATS_CAP = 5000;
+  // #COERENZA-1001: con le righe senza esito la popolazione e' ~7.000 (01/10).
+  const STATS_CAP = 15000;
   const fetched = await dbQuery<HistoryRow>(
     `SELECT id, sport, competition, event_name, home_team, away_team,
             player_one, player_two, market, pick, status,
@@ -143,7 +145,10 @@ export async function GET(req: Request) {
   // board (lib/dedupe-fixtures.ts): nessun dato toccato, e due MERCATI diversi
   // sulla stessa partita restano due righe (il mercato entra nella chiave).
   // #COERENZA-1001 — vince la gemella pubblicata PER PRIMA (dedupeShownPicks).
-  const { surfaced, rows, headlineRows, excludedByFloor } = trackRecordPopulation(fetched);
+  const {
+    surfaced, rows, headlineRows, excludedByFloor,
+    dedupDropped, dedupDroppedDecided, unresolvedExcluded, unverifiedExcluded,
+  } = trackRecordPopulation(fetched);
 
   // #SETTLE-0909 D2 — IL CANCELLO. Si pubblica solo cio' che una fonte con un
   // flag di completamento esplicito ha confermato. Il resto resta contato nel
@@ -250,11 +255,20 @@ export async function GET(req: Request) {
       // totale delle righe: void e pending non hanno un esito da misurare.
       n: decisi,
       sample_sufficient: sufficiente,
+      // #COERENZA-1001 (a) — copertura = pick con esito VERIFICATO / TUTTE le
+      // pick mostrate e finite (deduplicate), comprese quelle senza esito
+      // (unresolved, NULL) e quelle non verificate. Somma esatta:
+      //   surfaced_total = total + post_cutover_excluded(righe) + unverified_excluded + unresolved_excluded
       coverage: surfaced.length > 0
         ? Number((rows.length / surfaced.length).toFixed(3))
         : null,
       surfaced_total: surfaced.length,
-      unverified_excluded: surfaced.length - rows.length,
+      unverified_excluded: unverifiedExcluded,
+      unresolved_excluded: unresolvedExcluded,
+      // Gemelle (stessa partita, stesso mercato) tolte dal dedup; `_decided` =
+      // quelle verificate won/lost, per riconciliare una SQL senza dedup con `n`.
+      dedup_dropped: dedupDropped,
+      dedup_dropped_decided: dedupDroppedDecided,
       // #TRE-LIVELLI-0925-CUTOVER — la popolazione POST-cutover che il floor di
       // lega esclude dall'headline. Non e' diagnostica: e' la condizione che
       // rende l'esclusione onesta invece che survivorship (stessa forma

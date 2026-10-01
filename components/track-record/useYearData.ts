@@ -20,6 +20,9 @@ export type YearStats = {
   coverage?: number | null;
   surfaced_total?: number;
   unverified_excluded?: number;
+  // #COERENZA-1001 — le altre esclusioni dal numero, dichiarate accanto.
+  unresolved_excluded?: number;
+  post_cutover_excluded?: { n: number; won: number; lost: number; win_rate: number | null };
   interval_95?: { low: number; high: number } | null;
 } | null;
 
