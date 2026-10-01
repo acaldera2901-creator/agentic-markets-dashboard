@@ -38,8 +38,10 @@ NOT part of the "logged before kick-off" claim.
 
 SAFETY: before the UPDATE every original value of the touched columns is
 written to BACKUP (JSONL, one row per id). One transaction; every UPDATE keeps
-`AND (result IS NULL OR result = 'unresolved')`; if the updated count differs
-from the planned one, everything is rolled back. Idempotent: a written row is
+`AND (result IS NULL OR result = 'unresolved')` and `AND notes IS NOT DISTINCT
+FROM <the notes read>` (notes is rewritten from that snapshot: a concurrent
+change, e.g. surface/below_floor from the sync, must not be lost); if the
+updated count differs from the planned one, everything is rolled back. Idempotent: a written row is
 won/lost/void and is skipped as 'gia-chiusa' on the next run.
 ROLLBACK:  venv/bin/python scripts/allinea_unified_1001.py --restore <BACKUP>
 
@@ -99,6 +101,7 @@ update unified_predictions set
   verification_state = %(verification_state)s, verification_source = %(verification_source)s,
   verification_at = %(verification_at)s, verification_note = %(verification_note)s
 where id = %(id)s and (result is null or result = 'unresolved')
+  and notes is not distinct from %(old_notes)s
 """
 
 
@@ -164,6 +167,7 @@ def plan_row(rec: dict, ts: str) -> tuple[dict | None, str]:
     new = {
         "id": rec["id"], "result": expected, "status": "settled", "is_historical": True,
         "settled_at": ts, "updated_at": ts, "notes": json.dumps(notes),
+        "old_notes": raw,  # concurrency guard: notes rewritten from this snapshot
         "verification_state": rec["verification_state"],
         "verification_source": rec["verification_source"],
         "verification_at": rec["verification_at"],

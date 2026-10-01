@@ -101,3 +101,89 @@ def test_idempotent_second_run_changes_nothing():
     applied = [{**r, **new} for r, new in first]  # the DB after --apply
     second, stats = plan(applied, TS)
     assert second == [] and stats[("tennis", "salta:gia-chiusa")] == 2
+
+
+# ── _apply / _restore on a fake DB (no psycopg2 connection) ─────────────────
+import pytest  # noqa: E402
+
+import scripts.allinea_unified_1001 as mod  # noqa: E402
+
+
+class FakeDB:
+    """Applies the script's UPDATEs to a dict of rows, honouring its WHERE."""
+
+    def __init__(self, rows):
+        self.rows = {r["id"]: dict(r) for r in rows}
+        self.committed = None
+
+    def connect(self, *_a, **_k):
+        self._work = {k: dict(v) for k, v in self.rows.items()}
+        return self
+
+    # connection API
+    def cursor(self):
+        return self
+
+    def commit(self):
+        self.rows = self._work
+        self.committed = True
+
+    def rollback(self):
+        self.committed = False
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, *_):
+        if self is not None and exc_type is None and self.committed is None:
+            self.commit()
+        return False
+
+    # cursor API
+    def execute(self, sql, p):
+        row = self._work.get(p["id"])
+        self.rowcount = 0
+        if row is None:
+            return
+        if "result is null or result = 'unresolved'" in sql:
+            if row["result"] not in (None, "unresolved") or row["notes"] != p["old_notes"]:
+                return
+        else:  # restore
+            if json.loads(row["notes"] or "{}").get("settlement_batch") != BATCH:
+                return
+        for k in mod.TOUCHED:
+            row[k] = p[k]
+        self.rowcount = 1
+
+
+@pytest.fixture
+def fake(monkeypatch):
+    import psycopg2
+
+    import tools.control_center.db as db
+
+    def make(rows):
+        f = FakeDB(rows)
+        monkeypatch.setattr(psycopg2, "connect", f.connect)
+        monkeypatch.setattr(db, "_dsn", lambda: "fake")
+        return f
+    return make
+
+
+def test_apply_rolls_back_when_notes_changed_concurrently(fake):
+    r = rec()
+    pairs, _ = plan([r], TS)
+    db = fake([{**r, "notes": '{"surface": {"below_floor": true}}'}])  # sync changed it
+    with pytest.raises(SystemExit, match="ABORT"):
+        mod._apply(pairs)
+    assert db.committed is False and db.rows["u1"]["result"] == "unresolved"
+
+
+def test_apply_writes_when_snapshot_matches(fake):
+    r = rec()
+    pairs, _ = plan([r], TS)
+    db = fake([r])
+    assert mod._apply(pairs) == 1 and db.rows["u1"]["result"] == "won"
