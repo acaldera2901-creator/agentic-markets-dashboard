@@ -1,0 +1,103 @@
+"""#UNIFIED-1001 — the served row takes the live closure, only on a proved,
+agreeing register result, never over an existing outcome."""
+import json
+
+from scripts.allinea_unified_1001 import BATCH, plan, plan_row
+
+TS = "2026-10-01T12:00:00+00:00"
+
+
+def rec(**kw):
+    base = {
+        "id": "u1", "sport": "tennis", "source_table": "tennis_predictions",
+        "source_id": "tennis:p:1", "model_version": "partner-market-v1",
+        "pick": "Jannik Sinner", "market": None, "notes": '{"surface": {"below_floor": false}}',
+        "result": "unresolved", "status": "settled", "is_historical": True,
+        "settled_at": None, "updated_at": None, "verification_state": "unverified",
+        "verification_source": None, "verification_at": None, "verification_note": None,
+        "published_at": "2026-09-20", "is_demo": False, "starts_at": "2026-09-20",
+        "competition": "ATP", "n_key": 1, "s_result": "won", "s_outcome": "Jannik Sinner",
+        "s_final_score": "6-4 6-3", "s_reason": "backfill:RISULTATI-PARTNER-1001",
+    }
+    base.update(kw)
+    return base
+
+
+def test_tennis_won_takes_live_closure_with_stamp():
+    new, why = plan_row(rec(), TS)
+    assert why == "won"
+    assert new["result"] == "won" and new["status"] == "settled" and new["is_historical"] is True
+    assert new["settled_at"] == TS and new["verification_state"] == "verified"
+    assert new["verification_source"] == "betconstruct" and new["verification_note"] == BATCH
+    notes = json.loads(new["notes"])
+    assert notes["final_score"] == "6-4 6-3" and notes["surface"] == {"below_floor": False}
+    assert notes["settlement_batch"] == BATCH
+
+
+def test_never_overwrites_an_existing_outcome():
+    for r in ("won", "lost", "void"):
+        assert plan_row(rec(result=r), TS) == (None, "gia-chiusa")
+
+
+def test_null_result_is_aligned_too():
+    new, _ = plan_row(rec(result=None, is_historical=False), TS)
+    assert new["result"] == "won" and new["is_historical"] is True
+
+
+def test_non_unique_key_is_skipped():
+    assert plan_row(rec(n_key=2), TS) == (None, "chiave-non-univoca")
+
+
+def test_shown_pick_differs_from_sealed_grading_is_skipped():
+    # register graded the SEALED pick as won; the SHOWN pick lost -> not written
+    new, why = plan_row(rec(pick="Carlos Alcaraz"), TS)
+    assert new is None and why == "pick-mostrata-diversa:won->lost"
+    # no pick shown: live would write void, the register says won -> not written
+    assert plan_row(rec(pick=None), TS)[0] is None
+
+
+def test_no_proved_result_is_skipped():
+    assert plan_row(rec(s_result="unresolved"), TS) == (None, "esito-non-provato")
+    assert plan_row(rec(s_outcome=None), TS) == (None, "esito-non-provato")
+    foot = rec(sport="football", pick="home", market="1X2", s_final_score=None,
+               s_result="won", s_reason="recupero:CALCIO-1001 fonte=espn-id")
+    assert plan_row(foot, TS) == (None, "esito-non-provato")
+
+
+def test_football_graded_on_score_and_source_from_reason():
+    foot = rec(sport="football", pick="away", market="1X2", s_final_score="0-2",
+               s_result="won", s_outcome="away",
+               s_reason="recupero:CALCIO-1001 fonte=espn-data-nomi")
+    new, why = plan_row(foot, TS)
+    assert why == "won" and new["verification_source"] == "espn-data-nomi"
+    assert json.loads(new["notes"])["final_score"] == "0-2"
+
+
+def test_non_sigillata_written_but_recognizable():
+    foot = rec(sport="football", pick="home", market="1X2", s_final_score="1-0",
+               s_result="won", s_reason="recupero:CALCIO-1001 fonte=football-data non-sigillata")
+    new, why = plan_row(foot, TS)
+    assert why == "won non-sigillata"
+    assert new["verification_note"] == BATCH + " non-sigillata"
+    assert json.loads(new["notes"])["sigillo"] == "non-sigillata"
+
+
+def test_postponed_void_stays_unstamped_like_live():
+    foot = rec(sport="football", pick="home", market="1X2", s_final_score=None, s_result="void",
+               s_reason="recupero:CALCIO-1001 fonte=espn-id prova=STATUS_POSTPONED")
+    new, why = plan_row(foot, TS)
+    assert why == "void" and new["result"] == "void"
+    assert new["verification_state"] == "unverified" and new["verification_note"] is None
+
+
+def test_non_json_notes_are_not_clobbered():
+    assert plan_row(rec(notes="free text"), TS) == (None, "notes-non-json")
+
+
+def test_idempotent_second_run_changes_nothing():
+    rows = [rec(), rec(id="u2", result=None)]
+    first, _ = plan(rows, TS)
+    assert len(first) == 2
+    applied = [{**r, **new} for r, new in first]  # the DB after --apply
+    second, stats = plan(applied, TS)
+    assert second == [] and stats[("tennis", "salta:gia-chiusa")] == 2
