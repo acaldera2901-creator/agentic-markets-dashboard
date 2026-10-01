@@ -27,7 +27,8 @@ import { tokenSquadra } from "@/lib/dedupe-fixtures";
 // scritto a mano, e il guard `tests/test_espn_host_no_residues.py` l'ha
 // bocciato: la mia verifica locale passava solo perche' girava da una rete
 // residenziale, dove il WAF non filtra.
-import { ESPN_HEADERS, ESPN_SITE_API } from "@/lib/espn";
+import { ESPN_HEADERS, ESPN_SITE_API, mesiEspn } from "@/lib/espn";
+import { ESPN_SLUGS } from "@/lib/summer-leagues";
 
 /** Codice lega football-data → slug ESPN. SONDATI il 31/08/2026 sulla data
  *  20260830, eventi completati: eng.1 4/4, ita.1 3/3, esp.1 3/3, ger.1 2/2,
@@ -93,6 +94,32 @@ export async function fetchEspnFinalsByDate(slug: string, giorno: string): Promi
   } catch {
     return [];
   }
+}
+
+// #CALCIO-1001 — the slug of every served league, top (football-data codes)
+// and minor (lib/summer-leagues.ts). Step A3 knew only the first eight.
+export function espnSlugForLeague(code: string): string | undefined {
+  return ESPN_SLUG_BY_FD_LEAGUE[code] ?? ESPN_SLUGS[code];
+}
+
+/** Open served rows grouped by ESPN slug, with the months to read. Rows of a
+ *  league without an ESPN slug are left out (nothing to ask). */
+export function pianoRecuperoEspn<T extends { league: string | null; starts_at: string }>(
+  rows: readonly T[],
+  slugFor: (league: string) => string | undefined,
+): Map<string, { mesi: string[]; righe: T[] }> {
+  const plan = new Map<string, { mesi: string[]; righe: T[] }>();
+  for (const r of rows) {
+    const slug = slugFor(String(r.league ?? ""));
+    const t = new Date(r.starts_at);
+    if (!slug || !Number.isFinite(t.getTime())) continue;
+    const g = plan.get(slug) ?? { mesi: [], righe: [] };
+    for (const m of mesiEspn(t, t)) if (!g.mesi.includes(m)) g.mesi.push(m);
+    g.righe.push(r);
+    plan.set(slug, g);
+  }
+  for (const g of plan.values()) g.mesi.sort();
+  return plan;
 }
 
 export type StuckRow = { match_id: string; home_team: string; away_team: string; kickoff: string };

@@ -29,7 +29,7 @@ import historySnapshot from "@/data/summer_leagues/history.json";
 import type { MatchResult } from "@/lib/poisson-model";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import type { FDMatch } from "@/lib/football-data";
-import { ESPN_HEADERS, ESPN_SITE_API } from "@/lib/espn";
+import { ESPN_HEADERS, ESPN_RECOVERY_DAYS, ESPN_SITE_API, mesiEspn } from "@/lib/espn";
 import { snapshotReadiness } from "@/lib/data-readiness";
 
 // Display names drive the per-league surfacing floor (lib/surfacing-gate.ts
@@ -412,39 +412,43 @@ async function fetchEspnResults(code: string): Promise<FinishedMatch[]> {
   const slug = ESPN_SLUGS[code];
   if (!slug) return [];
   const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - 3);
-  const url =
-    `${ESPN_SITE_API}/soccer/${slug}/scoreboard` +
-    `?dates=${yyyymmdd(from)}-${yyyymmdd(to)}&limit=200`;
-  try {
-    const r = await fetch(url, { headers: ESPN_HEADERS, cache: "no-store" });
-    if (!r.ok) return [];
-    const data = (await r.json()) as {
-      events?: Array<{
-        id: string;
-        status?: { type?: { completed?: boolean; state?: string } };
-        competitions?: Array<{
-          competitors?: Array<{ homeAway: string; score?: string }>;
+  const from = new Date(to.getTime() - ESPN_RECOVERY_DAYS * 24 * 60 * 60 * 1000);
+  // #CALCIO-1001 — whole months, never a `dates=A-B` range: ESPN answers 400
+  // to every range since 15/09, and this returned [] on every run.
+  const out: FinishedMatch[] = [];
+  for (const month of mesiEspn(from, to)) {
+    const url = `${ESPN_SITE_API}/soccer/${slug}/scoreboard?dates=${month}&limit=200`;
+    try {
+      const r = await fetch(url, { headers: ESPN_HEADERS, cache: "no-store" });
+      if (!r.ok) continue;
+      const data = (await r.json()) as {
+        events?: Array<{
+          id: string;
+          date?: string;
+          status?: { type?: { completed?: boolean; state?: string } };
+          competitions?: Array<{
+            competitors?: Array<{ homeAway: string; score?: string }>;
+          }>;
         }>;
-      }>;
-    };
-    const out: FinishedMatch[] = [];
-    for (const ev of data.events ?? []) {
-      if (!ev.status?.type?.completed) continue;
-      const comp = ev.competitions?.[0];
-      const h = comp?.competitors?.find((c) => c.homeAway === "home")?.score;
-      const a = comp?.competitors?.find((c) => c.homeAway === "away")?.score;
-      if (h == null || a == null) continue;
-      const hg = Number(h);
-      const ag = Number(a);
-      if (!Number.isFinite(hg) || !Number.isFinite(ag)) continue;
-      out.push({ id: `espn:${ev.id}`, homeGoals: hg, awayGoals: ag });
+      };
+      for (const ev of data.events ?? []) {
+        if (!ev.status?.type?.completed) continue;
+        if (!ev.date || Date.parse(ev.date) < from.getTime()) continue;
+        const comp = ev.competitions?.[0];
+        const h = comp?.competitors?.find((c) => c.homeAway === "home")?.score;
+        const a = comp?.competitors?.find((c) => c.homeAway === "away")?.score;
+        if (h == null || a == null) continue;
+        const hg = Number(h);
+        const ag = Number(a);
+        if (!Number.isFinite(hg) || !Number.isFinite(ag)) continue;
+        if (out.some((m) => m.id === `espn:${ev.id}`)) continue;
+        out.push({ id: `espn:${ev.id}`, homeGoals: hg, awayGoals: ag });
+      }
+    } catch {
+      continue;
     }
-    return out;
-  } catch {
-    return [];
   }
+  return out;
 }
 
 async function fetchOddsApiScores(code: string): Promise<FinishedMatch[]> {

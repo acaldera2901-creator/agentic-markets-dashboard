@@ -1,0 +1,138 @@
+"""#CALCIO-1001 — recovery of the sealed football picks left without a result.
+
+Every case states where the result comes from; nothing is graded without a
+real final score, and nothing is voided without the source saying so.
+"""
+from datetime import datetime, timedelta, timezone
+
+from scripts.recupera_calcio_1001 import (
+    BATCH,
+    Evidence,
+    abbina,
+    decide,
+    espn_slugs,
+    grade,
+    parse_espn_event,
+    settlement_row,
+    token_squadra,
+)
+
+T0 = datetime(2026, 9, 20, 14, 30, tzinfo=timezone.utc)
+
+
+def ev(eid, home, away, hs, as_, *, completed=True, name="STATUS_FULL_TIME", date=T0):
+    return {
+        "id": eid,
+        "date": date.strftime("%Y-%m-%dT%H:%MZ"),
+        "status": {"type": {"completed": completed, "name": name}},
+        "competitions": [{"competitors": [
+            {"homeAway": "home", "score": hs, "team": {"displayName": home}},
+            {"homeAway": "away", "score": as_, "team": {"displayName": away}},
+        ]}],
+    }
+
+
+# ── identity: parity with lib/dedupe-fixtures.ts::tokenSquadra ──────────────
+
+def test_token_squadra_folds_diacritics_and_generic_acronyms():
+    assert token_squadra("Vitória SC") == ["vitoria"]
+    assert token_squadra("Bodø/Glimt") == ["bodo", "glimt"]
+    # same outputs as lib/dedupe-fixtures.ts::tokenSquadra (measured with vitest)
+    assert token_squadra("Club Brugge KV") == ["club", "brugge"]
+    assert token_squadra("FC") == []
+
+
+def test_abbina_matches_name_variants_of_the_same_match():
+    cands = [{"key": "a", "home": "Ajax", "away": "Feyenoord", "kickoff": T0}]
+    assert abbina("Ajax Amsterdam", "Feyenoord Rotterdam", T0, cands)["key"] == "a"
+    # a 3-letter token is not an identity (abbinaFinale MIN_TOKEN): no match
+    psv = [{"key": "a", "home": "Ajax", "away": "PSV", "kickoff": T0}]
+    assert abbina("Ajax Amsterdam", "PSV Eindhoven", T0, psv) is None
+
+
+def test_abbina_ambiguous_or_far_in_time_is_no_match():
+    two = [{"key": k, "home": "Ajax", "away": "Feyenoord", "kickoff": T0} for k in "ab"]
+    assert abbina("Ajax", "Feyenoord", T0, two) is None
+    late = [{"key": "a", "home": "Ajax", "away": "Feyenoord", "kickoff": T0 + timedelta(minutes=45)}]
+    assert abbina("Ajax", "Feyenoord", T0, late) is None
+
+
+def test_abbina_requires_home_with_home():
+    swapped = [{"key": "a", "home": "Feyenoord", "away": "Ajax", "kickoff": T0}]
+    assert abbina("Ajax", "Feyenoord", T0, swapped) is None
+
+
+# ── ESPN event parsing ───────────────────────────────────────────────────────
+
+def test_parse_espn_final_postponed_and_scoreless_completed():
+    assert parse_espn_event(ev("1", "A", "B", "2", "1"))["kind"] == "final"
+    p = parse_espn_event(ev("2", "A", "B", "0", "0", completed=False, name="STATUS_POSTPONED"))
+    assert (p["kind"], p["status"]) == ("void", "STATUS_POSTPONED")
+    # completed but without a numeric score: never a 0-0
+    assert parse_espn_event(ev("3", "A", "B", None, "1"))["kind"] == "pending"
+    # abandoned is NOT postponed/cancelled: not voided by this script
+    assert parse_espn_event(ev("4", "A", "B", "1", "0", completed=False,
+                                name="STATUS_ABANDONED"))["kind"] == "pending"
+
+
+def test_espn_slugs_read_from_the_ts_single_source():
+    s = espn_slugs()
+    assert s["BEL"] == "bel.1" and s["MLS"] == "usa.1" and s["PL"] == "eng.1"
+    assert "POL" not in s  # POL has no ESPN league
+
+
+# ── grading on the SEALED pick ───────────────────────────────────────────────
+
+def test_grade_on_sealed_pick_and_no_pick_is_void():
+    assert grade("HOME", "1X2", 2, 1) == "won"
+    assert grade("AWAY", "1X2", 2, 1) == "lost"
+    assert grade("DRAW", "1X2", 1, 1) == "won"
+    assert grade(None, "1X2", 2, 1) == "void"  # #VOID-SENZA-PICK-0907
+
+
+# ── decision ─────────────────────────────────────────────────────────────────
+
+def test_decide_final_from_first_source_with_confirmation():
+    d = decide("HOME", "1X2", [Evidence("gemello", "final", (2, 0)),
+                               Evidence("espn-id", "final", (2, 0))])
+    assert (d["result"], d["final_score"], d["outcome"], d["fonte"]) == ("won", "2-0", "HOME", "gemello")
+    assert d["conferme"] == ["espn-id"]
+
+
+def test_decide_conflicting_scores_stay_unresolved():
+    d = decide("HOME", "1X2", [Evidence("gemello", "final", (2, 0)),
+                               Evidence("espn-id", "final", (1, 1))])
+    assert d["result"] is None and "conflitto" in d["motivo"]
+
+
+def test_decide_postponed_is_void_with_proof_but_not_against_a_score():
+    d = decide("HOME", "1X2", [Evidence("espn-id", "void", status="STATUS_POSTPONED")])
+    assert (d["result"], d["final_score"], d["prova"]) == ("void", None, "STATUS_POSTPONED")
+    d2 = decide("HOME", "1X2", [Evidence("gemello", "final", (1, 0)),
+                                Evidence("espn-id", "void", status="STATUS_POSTPONED")])
+    assert d2["result"] is None
+
+
+def test_decide_nothing_found_never_invents():
+    d = decide("HOME", "1X2", [])
+    assert d["result"] is None and d["motivo"] == "nessuna fonte"
+    d2 = decide("HOME", "1X2", [Evidence("espn-id", "pending", status="STATUS_SCHEDULED")])
+    assert d2["result"] is None and "STATUS_SCHEDULED" in d2["motivo"]
+    d3 = decide("HOME", "1X2", [Evidence("espn-data-nomi", "ambigua")])
+    assert d3["result"] is None and "ambiguo" in d3["motivo"]
+
+
+# ── the row written: append-only revision, batch marker ─────────────────────
+
+def test_settlement_row_revision_follows_the_ledger():
+    d = decide("AWAY", "1X2", [Evidence("espn-id", "final", (0, 3))])
+    noset = settlement_row("espn:9", None, d)
+    assert noset["settlement_revision"] == 1
+    corr = settlement_row("espn:9", 1, d)  # current revision 1 = 'unresolved'
+    assert corr["settlement_revision"] == 2
+    assert corr["result"] == "won" and corr["correction_reason"].startswith(BATCH)
+    assert "fonte=espn-id" in corr["correction_reason"]
+
+
+def test_settlement_row_none_when_undecided():
+    assert settlement_row("espn:9", 1, decide("HOME", "1X2", [])) is None
