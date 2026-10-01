@@ -914,6 +914,86 @@ async def unified_tennis_ancora_aperte(
         return None
 
 
+def tennis_pick_result(
+    pick: str | None, winner_name: str | None, *, void: bool = False, unresolved: bool = False
+) -> str:
+    """won/lost/void/unresolved for a tennis pick (a player name) — one rule for
+    the served row, the sealed register and the backfill (#SETTLE-1001)."""
+    if unresolved:
+        return "unresolved"
+    pick = (pick or "").strip()
+    if void or not winner_name or not pick:
+        return "void"
+    from core.tennis_names import canonical_player_key
+    return "won" if canonical_player_key(pick) == canonical_player_key(winner_name) else "lost"
+
+
+async def _record_tennis_ledger_settlement(
+    base: str,
+    match_id: str,
+    winner_name: str | None,
+    *,
+    void: bool,
+    unresolved: bool,
+    final_score: str | None,
+) -> None:
+    """#SETTLE-1001 a2 — terminal pick_settlement row for a SEALED tennis pick.
+
+    Until 30/09 only football called record_pick_settlement: the tennis register
+    (pick_ledger source_table='tennis_predictions', sealed by
+    lib/tennis-adapter.ts since 21/09) never got a single closing row.
+
+    Graded against the SEALED pick (pick_ledger.pick), not the served one: the
+    served pick may still change until the match starts (20/2137 diverged on
+    01/10), and the seal exists precisely to pin the first declaration.
+    'unresolved' (aged out at EXPIRE_AFTER_DAYS) is a terminal state, so no
+    sealed pick is ever left without an outcome. Fully fail-soft: the register
+    must never block the served-row settlement.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/pick_ledger",
+                params={
+                    "select": "model_version,pick",
+                    "source_table": "eq.tennis_predictions",
+                    "source_id": f"eq.{match_id}",
+                },
+                headers=_service_headers(),
+            )
+        if resp.status_code != 200:
+            logger.warning("tennis ledger lookup failed for %s: %s", match_id, resp.status_code)
+            return
+        sealed = resp.json()
+    except Exception as exc:
+        logger.warning("tennis ledger lookup error for %s: %s", match_id, exc)
+        return
+    for row in sealed if isinstance(sealed, list) else []:  # normally 0 or 1
+        model_version = row.get("model_version") if isinstance(row, dict) else None
+        if not model_version:
+            continue  # malformed row: never guess the FK key
+        result = tennis_pick_result(
+            row.get("pick"), winner_name, void=void, unresolved=unresolved
+        )
+        real = result in ("won", "lost")
+        ok = await record_pick_settlement(
+            source_table="tennis_predictions",
+            source_id=match_id,
+            model_version=model_version,
+            result=result,
+            # Existing tennis rows use the winner's name as outcome.
+            outcome=winner_name if real else None,
+            final_score=final_score if real else None,
+        )
+        if not ok:
+            # Visible now, not 8 days later via the cron_settle invariant. No
+            # retry here (YAGNI): scripts/backfill_settle_1001.py heals residues.
+            logger.warning(
+                "tennis sealed settlement NOT written for %s (%s, %s)",
+                match_id, model_version, result,
+            )
+
+
 async def settle_unified_tennis(
     match_id: str,
     winner_name: str | None,
@@ -945,6 +1025,13 @@ async def settle_unified_tennis(
     base = _rest_base()
     if not base:
         return False
+    # #SETTLE-1001 a2 — the sealed register first, and independently of the
+    # served row: if that row was already closed elsewhere (TS backstop) or its
+    # write fails, the sealed pick must still get its terminal row.
+    await _record_tennis_ledger_settlement(
+        base, match_id, winner_name,
+        void=void, unresolved=unresolved, final_score=final_score,
+    )
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
@@ -978,25 +1065,13 @@ async def settle_unified_tennis(
         # il modello non ha un favorito netto e il prodotto non mostra nessun
         # pronostico. Recuperare `best_selection` a chiusura avvenuta significa
         # graduare una scelta che al pubblico non e' mai stata presentata.
-        pick = (row.get("pick") or "").strip()
-        if unresolved:
-            # #TENNIS-VOID-FIX-1: aged out without ever resolving the match.
-            # Not a confirmed void — flagged so /api/v2/history excludes it from
-            # both the win-rate sample AND the void count (a settlement-source
-            # gap must never masquerade as a real no-result).
-            result = "unresolved"
-        elif void or not winner_name or not pick:
-            # No declared direction (rows below the surfacing floor carry
-            # pick=null, e.g. "no clear favourite") must NOT count as a loss in
-            # the public track record — settle them as void.
-            result = "void"
-        else:
-            from core.tennis_names import canonical_player_key
-            result = (
-                "won"
-                if canonical_player_key(pick) == canonical_player_key(winner_name)
-                else "lost"
-            )
+        # #TENNIS-VOID-FIX-1: aged out -> 'unresolved', never a confirmed void
+        # (/api/v2/history excludes it from both the win-rate and the void
+        # count). No declared direction (pick=null below the floor) -> 'void',
+        # never a loss.
+        result = tennis_pick_result(
+            row.get("pick"), winner_name, void=void, unresolved=unresolved
+        )
         return await settle_unified_prediction(
             str(row["id"]), result, final_score=final_score,
             # #SETTLE-0909 — il vincitore arriva da tennis_predictions, che si

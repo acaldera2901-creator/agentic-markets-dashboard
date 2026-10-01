@@ -486,6 +486,9 @@ def _completed_from_scoreboard(data: dict, gender: str | None = None) -> list[di
             if not vincitore or not perdente:
                 continue
             out.append({
+                # #SETTLE-1001 a1 — l'id della COMPETIZIONE (la partita), non
+                # dell'evento (il torneo): e' la chiave del dedup fra giorni.
+                "event_id": comp.get("id"),
                 "winner_key": canonical_player_key(vincitore),
                 "loser_key": canonical_player_key(perdente),
                 "winner_name": vincitore,
@@ -542,16 +545,32 @@ async def get_completed_results_for_days(days) -> list[dict]:
 
     Costo: 2 richieste per giorno (atp + wta). I giorni passati si mettono in
     cache per la vita del processo — non cambiano piu'. Il giorno corrente no.
+
+    #SETTLE-1001 a1 — dedup per `event_id`: `?dates=` restituisce l'intero
+    torneo della settimana a ogni data, quindi senza dedup ogni partita arriva
+    N volte e il cancello B3 la scarta come ambigua. Una riga senza id non si
+    deduplica (resta al cancello B3, che in dubbio non settla).
     """
     oggi = datetime.now(timezone.utc).date()
     out: list[dict] = []
+    visti: set[str] = set()
+
+    def _aggiungi(righe: list[dict]) -> None:
+        for r in righe:
+            eid = r.get("event_id")
+            if eid:
+                if eid in visti:
+                    continue
+                visti.add(eid)
+            out.append(r)
+
     async with httpx.AsyncClient(timeout=15.0) as c:
         for giorno in sorted(set(days)):
             stamp = giorno.strftime("%Y%m%d")
             for league in _SCOREBOARD_LEAGUES:
                 chiave = (league, stamp)
                 if giorno < oggi and chiave in _archive_cache:
-                    out.extend(_archive_cache[chiave])
+                    _aggiungi(_archive_cache[chiave])
                     continue
                 try:
                     resp = await c.get(
@@ -572,6 +591,6 @@ async def get_completed_results_for_days(days) -> list[dict]:
                     continue
                 if giorno < oggi:
                     _archive_cache[chiave] = righe
-                out.extend(righe)
+                _aggiungi(righe)
     logger.info("ESPN archivio: %d risultati completati su %d giorno/i", len(out), len(set(days)))
     return out

@@ -51,15 +51,24 @@ BACKLOGS = (
     BacklogSpec(
         "cron_settle",
         "Cron settle",
+        # #SETTLE-1001 — INVARIANTE: ogni pick sigillato ha uno stato terminale
+        # (won/lost/void/unresolved) entro la sua finestra. Il tennis puo'
+        # restare aperto fino alla scadenza a EXPIRE_AFTER_DAYS (7) ->
+        # 'unresolved', quindi la sua finestra e' 8 giorni (legata al valore
+        # da tests/test_cc_sealed_terminal_invariant.py); il resto 4h.
+        # Join sulle TRE colonne della FK.
         """
         select count(*) from pick_ledger l
         left join pick_settlement s
           on s.source_table = l.source_table and s.source_id = l.source_id
-        where l.commence_time < now() - interval '4 hours'
+         and s.model_version = l.model_version
+        where l.commence_time < now() - case
+                when l.source_table = 'tennis_predictions' then interval '8 days'
+                else interval '4 hours' end
           and s.id is null and l.is_backfill = false
         """,
         "pick",
-        "partite finite da oltre 4h senza settlement",
+        "pick sigillati senza stato terminale oltre la finestra (tennis 8g, resto 4h)",
     ),
     BacklogSpec(
         "cron_paygate",
