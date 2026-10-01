@@ -72,6 +72,10 @@ const ALLOWLIST = new Set<string>([
   // #REFRESH-1001 — tuple VALUES della INSERT multi-riga, fatte solo di `$N`
   // tipizzati e NOW(); i valori del feed viaggiano nell'array params.
   'lib/partner-prezzi.ts::righe.join(",")',
+  // #COERENZA-1001 — condizioni SQL COSTANTI della popolazione del track record
+  // (lib/track-record.ts::TRACK_RECORD_BASE_CONDITIONS), nessun dato utente:
+  // la finestra di date viaggia nei params ($1, $2).
+  'app/api/v2/yesterday-read/route.ts::TRACK_RECORD_BASE_CONDITIONS.join(" AND ")',
 ]);
 
 function walk(dir: string, acc: string[]): void {

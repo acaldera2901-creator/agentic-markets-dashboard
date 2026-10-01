@@ -63,13 +63,22 @@ describe("pickYesterdayReads", () => {
 
   it("esclude ciò che il track record esclude: senza pick, sotto floor, non verificata, pending", () => {
     const reads = pickYesterdayReads([
-      row({ id: "nopick", pick: null, confidence_score: 99 }),
-      row({ id: "floor", confidence_score: 99, notes: JSON.stringify({ surface: { below_floor: true } }) }),
-      row({ id: "unverified", confidence_score: 99, verification_state: "unverified" }),
-      row({ id: "pending", confidence_score: 99, result: "pending" }),
+      row({ id: "nopick", pick: null, confidence_score: 99, home_team: "Leeds" }),
+      row({ id: "floor", confidence_score: 99, home_team: "Fulham", notes: JSON.stringify({ surface: { below_floor: true } }) }),
+      row({ id: "unverified", confidence_score: 99, home_team: "Wolves", verification_state: "unverified" }),
+      row({ id: "nullstate", confidence_score: 99, home_team: "Everton", verification_state: null }),
+      row({ id: "pending", confidence_score: 99, home_team: "Burnley", result: "pending" }),
       row({ id: "ok", confidence_score: 60 }),
     ], { today: TODAY });
     expect(reads.map((r) => r.id)).toEqual(["ok"]);
+  });
+
+  it("#COERENZA-1001: deduplica le gemelle come lo storico — vince la pubblicata per prima", () => {
+    const reads = pickYesterdayReads([
+      row({ id: "later", pick: "AWAY", result: "won", confidence_score: 80, published_at: "2026-09-27T10:00:00Z" }),
+      row({ id: "first", pick: "HOME", result: "lost", confidence_score: 62, published_at: "2026-09-26T10:00:00Z" }),
+    ], { today: TODAY });
+    expect(reads.map((r) => r.id)).toEqual(["first"]);
   });
 
   it("void è un esito settlato e resta candidabile", () => {

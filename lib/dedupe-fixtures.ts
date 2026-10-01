@@ -144,9 +144,24 @@ export function tokenSquadra(nome: string): string[] {
   return nucleo.length ? nucleo : grezzi;
 }
 
+// #COERENZA-1001 — i token di un nome si calcolano una volta: il passaggio
+// lasco confronta ogni coppia di righe dello stesso giorno, e sullo storico
+// intero la normalizzazione ripetuta costava quasi un secondo a richiesta.
+// tokenSquadra è pura; il tetto evita che la cache cresca senza limite.
+const TOKEN_CACHE = new Map<string, Set<string>>();
+function tokenSet(nome: string): Set<string> {
+  let t = TOKEN_CACHE.get(nome);
+  if (!t) {
+    if (TOKEN_CACHE.size > 20000) TOKEN_CACHE.clear();
+    t = new Set(tokenSquadra(nome));
+    TOKEN_CACHE.set(nome, t);
+  }
+  return t;
+}
+
 function stessaSquadra(a: string, b: string): boolean {
-  const x = new Set(tokenSquadra(a));
-  const y = new Set(tokenSquadra(b));
+  const x = tokenSet(a);
+  const y = tokenSet(b);
   if (!x.size || !y.size) return false;
   const [piccolo, grande] = x.size <= y.size ? [x, y] : [y, x];
   for (const t of piccolo) if (!grande.has(t)) return false; // non è sottoinsieme
@@ -180,6 +195,10 @@ type DedupeOpts<T> = {
   when?: (r: T) => string | null | undefined;
   /** chi vince fra due copie: il valore più ALTO — default `computed_at` */
   freshness?: (r: T) => string | null | undefined;
+  /** #COERENZA-1001 — vince il valore più BASSO di `freshness` (es. lo storico:
+   *  la pick con `published_at` più vecchio, quella che il cliente ha visto per
+   *  prima). Un valore assente perde sempre. */
+  oldest?: boolean;
   /** parte extra della chiave: mercato, sport… — default nessuna */
   extra?: (r: T) => string;
   /** #DUP-SAMESLOT-0916 — la competizione della riga (es. "FL2"). Se c'è,
@@ -229,6 +248,17 @@ function stessoSlot(a: string | null | undefined, b: string | null | undefined):
   return Number.isFinite(ta) && ta === tb;
 }
 
+/** Vero se `a` vince su `b` (strettamente): a parità resta la prima vista. */
+function beats<T>(opts: DedupeOpts<T>, a: T, b: T): boolean {
+  const fresh = (r: T) =>
+    (opts.freshness ? opts.freshness(r) : (r as { computed_at?: string | null }).computed_at) ?? "";
+  const x = fresh(a);
+  const y = fresh(b);
+  if (!opts.oldest) return x > y;
+  if (!x) return false; // senza data non si vince
+  return !y || x < y;
+}
+
 export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpts<T> = {}): T[] {
   const winner = new Map<string, number>();
   const keep = rows.map(() => true);
@@ -244,11 +274,7 @@ export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpt
       winner.set(key, i);
       return;
     }
-    const fresh = (r: T) =>
-      (opts.freshness ? opts.freshness(r) : (r as { computed_at?: string | null }).computed_at) ?? "";
-    const prevAt = fresh(rows[prev]);
-    const thisAt = fresh(row);
-    if (thisAt > prevAt) {
+    if (beats(opts, row, rows[prev])) {
       keep[prev] = false;
       winner.set(key, i);
     } else {
@@ -259,21 +285,28 @@ export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpt
   // Secondo giro, LASCO: fra le righe sopravvissute, la stessa data e due nomi
   // compatibili sono la stessa partita. O(n²) sulle righe di una giornata: su
   // 120-200 righe sono confronti fra insiemi di 2-3 token, non pesa.
-  const fresh = (r: T) =>
-    (opts.freshness ? opts.freshness(r) : (r as { computed_at?: string | null }).computed_at) ?? "";
   const giorno = (r: T) =>
     ((opts.when ? opts.when(r) : (r as { kickoff?: string | null }).kickoff) ?? "").slice(0, 10);
   const suffisso = (r: T) => (opts.extra ? opts.extra(r) : "");
 
-  const vivi = rows.map((_, i) => i).filter((i) => keep[i]);
-  for (let a = 0; a < vivi.length; a++) {
+  // #COERENZA-1001 — si confrontano solo righe dello stesso giorno (le altre
+  // coppie erano comunque scartate dal controllo sul giorno): stesso esito,
+  // stesso ordine, ma lo storico intero (~7.000 righe) non costa più O(n²).
+  const perGiorno = new Map<string, number[]>();
+  for (let i = 0; i < rows.length; i++) {
+    if (!keep[i]) continue;
+    const g = giorno(rows[i]);
+    if (g.length !== 10) continue; // fail-open
+    const lista = perGiorno.get(g);
+    if (lista) lista.push(i);
+    else perGiorno.set(g, [i]);
+  }
+  for (const vivi of perGiorno.values()) for (let a = 0; a < vivi.length; a++) {
     const i = vivi[a];
     if (!keep[i]) continue;
     for (let b = a + 1; b < vivi.length; b++) {
       const j = vivi[b];
       if (!keep[j]) continue;
-      const g = giorno(rows[i]);
-      if (g.length !== 10 || g !== giorno(rows[j])) continue; // fail-open
       if (suffisso(rows[i]) !== suffisso(rows[j])) continue; // mercati diversi restano
       const ci = rows[i];
       const cj = rows[j];
@@ -296,7 +329,7 @@ export function dedupeByFixture<T extends FixtureRow>(rows: T[], opts: DedupeOpt
           stessoClub(ci.away_team ?? "", cj.home_team ?? ""));
       if (!diritto && !rovescio && !slot) continue;
       // vince la più fresca; a parità la prima, così l'ordine è stabile
-      if (fresh(cj) > fresh(ci)) keep[i] = false;
+      if (beats(opts, cj, ci)) keep[i] = false;
       else keep[j] = false;
     }
   }
