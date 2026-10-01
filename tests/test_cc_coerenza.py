@@ -200,3 +200,31 @@ def test_history_senza_popolazione_non_e_verde(db_n, stats, livello):
     rep = _replay(db_n, db_n, 0)
     with patch.object(coerenza, "misura_history", return_value=(rep, stats)):
         assert coerenza.check_history_coerente().level == livello
+
+
+def test_registro_vuoto_o_tutto_ritirato_non_e_verde():
+    with patch.object(coerenza, "leggi_claims", return_value=[]):
+        assert coerenza.check_claims().level == "unknown"
+    ritirati = [_claim(stato="ritirato 2026-10-02"), _claim(id="y", stato="ritirato 2026-10-03")]
+    with patch.object(coerenza, "leggi_claims", return_value=ritirati):
+        v = coerenza.check_claims()
+    assert v.level == "unknown" and "2 ritirati" in v.headline
+
+
+def test_ritirato_senza_data_valida_non_si_salta():
+    for stato in ("ritirato", "ritirato ieri", "ritirato 2026-13-40"):
+        assert coerenza.valuta_claim(_claim(misura="-", stato=stato))["esito"] is None
+    assert coerenza.valuta_claim(_claim(stato="boh"))["esito"] is None
+
+
+def test_registro_con_header_monco_o_troncato_e_illeggibile(tmp_path):
+    monco = tmp_path / "a.tsv"
+    monco.write_text("id\tdove\ttesto\nx\td\tt\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        coerenza.leggi_claims(monco)
+    troncato = tmp_path / "b.tsv"
+    troncato.write_text("\t".join(coerenza.CAMPI) + "\nx\td\tt\tsql:select 1\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        coerenza.leggi_claims(troncato)
+    with patch.object(coerenza, "CLAIMS_FILE", monco):
+        assert coerenza.check_claims().level == "unknown"

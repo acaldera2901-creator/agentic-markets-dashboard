@@ -11,6 +11,7 @@ prodotto` li stampa cosi' come sono, e la torre mostra lo stesso verdetto.
 """
 
 import csv
+import datetime
 import glob
 import json
 import os
@@ -287,7 +288,10 @@ _OPERATORI = {
 
 def leggi_claims(path: Path | None = None) -> list[dict]:
     with open(path or CLAIMS_FILE, encoding="utf-8", newline="") as fh:
-        righe = [r for r in csv.DictReader(fh, delimiter="\t") if (r.get("id") or "").strip()
+        lettore = csv.DictReader(fh, delimiter="\t")
+        if tuple(lettore.fieldnames or ()) != CAMPI:
+            raise ValueError(f"intestazione diversa da {CAMPI}: {lettore.fieldnames}")
+        righe = [r for r in lettore if (r.get("id") or "").strip()
                  and not r["id"].startswith("#")]
     for r in righe:
         mancanti = [c for c in CAMPI if r.get(c) is None]
@@ -333,8 +337,17 @@ def valuta_claim(riga: dict) -> dict:
             "soglia": f"{riga['operatore']} {riga['soglia']}", "atteso": riga["atteso"],
             "misura": "-", "esito": None}
     stato = riga["stato"].strip()
-    if stato.startswith("ritirato"):
-        return {**voce, "esito": "ritirato", "nota": stato}
+    if stato != "attivo":
+        # Saltare un claim e' un'affermazione: «non e' piu' nel copy da quel
+        # giorno». Senza una data valida non si salta, resta un '?'.
+        parti = stato.split()
+        if len(parti) == 2 and parti[0] == "ritirato":
+            try:
+                datetime.date.fromisoformat(parti[1])
+                return {**voce, "esito": "ritirato", "nota": stato}
+            except ValueError:
+                pass
+        return {**voce, "nota": f"stato non valido {stato!r}: attivo | ritirato AAAA-MM-GG"}
     if riga["misura"].strip() in ("", "-"):
         return {**voce, "nota": "non misurabile da qui"}
     op = _OPERATORI.get(riga["operatore"].strip())
@@ -361,7 +374,11 @@ def check_claims() -> Verdict:
     prova = {"claims": voci, "soglia": "0 claim rotti",
              "riparo": "togli il claim dal copy (e segnalo 'ritirato AAAA-MM-GG') "
                        "o consegna il dato che lo regge"}
-    testo = f"{len(rotti)} rotti, {len(ignoti)} non misurati su {len(attivi)} claim attivi"
+    testo = (f"{len(rotti)} rotti, {len(ignoti)} non misurati su {len(attivi)} claim attivi"
+             f" ({len(voci) - len(attivi)} ritirati)")
+    if not attivi:
+        # Un registro vuoto o tutto ritirato non ha misurato niente.
+        return unknown(f"nessun claim attivo da misurare: {testo}", fonte, evidence=prova)
     if rotti:
         nomi = ", ".join(v["id"] for v in rotti[:8])
         return red(f"{testo}: {nomi}", fonte, value=len(rotti), evidence=prova)
