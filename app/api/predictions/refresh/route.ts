@@ -7,6 +7,11 @@ import { verifyBearer } from "@/lib/admin-auth";
 
 export const maxDuration = 300;
 
+// #REFRESH-1001 — margine lasciato a fine giro: oltre `maxDuration - MARGINE`
+// lo step prezzi non apre blocchi nuovi, cosi' la route risponde invece di
+// essere uccisa dalla piattaforma.
+const MARGINE_S = 30;
+
 // Vercel Cron calls GET with Authorization: Bearer <CRON_SECRET>.
 // One scheduled job keeps unified_predictions populated for every sport:
 //   1. football: recompute the model + sync (POST /api/predictions)
@@ -14,6 +19,7 @@ export const maxDuration = 300;
 export async function GET(req: NextRequest) {
   // Default-deny + constant-time: a missing CRON_SECRET must never leave the
   // trigger open. `auth` is reused below to forward the bearer to /api/predictions.
+  const avvio = Date.now();
   const auth = req.headers.get("authorization");
   if (!verifyBearer(req, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -62,6 +68,12 @@ export async function GET(req: NextRequest) {
     partnerError = String(e);
   }
 
+  try {
+    tennisReport = await syncTennisPredictionsToUnified();
+  } catch (e) {
+    tennisError = String(e);
+  }
+
   // #PREZZI-STORIA-0911 — un'istantanea dei prezzi partner a ogni giro.
   //
   // E' l'impianto che rende misurabile l'edge, e oggi non c'era: sei test sui
@@ -73,16 +85,16 @@ export async function GET(req: NextRequest) {
   // In un try suo, come gli altri: una misura che non riesce non deve impedire
   // al board di aggiornarsi. Un impianto di misura che rompe cio' che misura
   // e' peggio di nessun impianto.
+  //
+  // #REFRESH-1001 — DOPO il sync tennis, e con una scadenza. Misurato il 30/09:
+  // da 12:00 UTC le scritture di questo step finivano sempre a :05:32, cioe'
+  // al maxDuration, e il sync tennis che veniva dopo non partiva piu' (0 righe
+  // tennis future in unified_predictions). Il board non deve dipendere dal
+  // tempo che avanza a una misura.
   try {
-    prezzi = await registraPrezziPartner();
+    prezzi = await registraPrezziPartner(Date.now(), avvio + (maxDuration - MARGINE_S) * 1000);
   } catch (e) {
     prezziError = String(e);
-  }
-
-  try {
-    tennisReport = await syncTennisPredictionsToUnified();
-  } catch (e) {
-    tennisError = String(e);
   }
 
   return NextResponse.json({
