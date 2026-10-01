@@ -15,6 +15,7 @@
 // `EDGE_HIGH_PP` vivono; `edgeTone`/`formatEdge`, che servivano solo a
 // dipingerlo e a scriverlo col segno, sono stati rimossi con l'EdgeBadge.
 
+import { displayTournament, probabilitySourceOf, type ProbabilitySource } from "@/lib/partner-market";
 import { impliedProbability } from "@/lib/betting-math";
 import type { UnifiedPrediction } from "@/lib/unified-adapter";
 
@@ -102,6 +103,9 @@ export type PredictionCardData = {
   /** #QUOTA-TZ-FIX-0929 — aperta dalla quota di oggi ma presa in prestito da
    *  una giornata futura (#QUOTA-NEXTDAY-0929): la linguetta non dice «oggi». */
   quotaBorrowed?: boolean;
+  /** #COERENZA-1001 — «market» quando la probabilità è la quota de-viggata
+   *  del partner e non il nostro modello: la card la etichetta per quello che è. */
+  probabilitySource?: ProbabilitySource;
 };
 
 function toPct(prob: number | null): number | null {
@@ -123,7 +127,7 @@ export function fromUnifiedPrediction(
   return {
     id: p.id,
     sport: p.sport,
-    league: p.league ?? p.competition ?? null,
+    league: isTennis ? displayTournament(p.league ?? p.competition) : p.league ?? p.competition ?? null,
     home,
     away,
     startsAt: p.starts_at,
@@ -138,5 +142,6 @@ export function fromUnifiedPrediction(
     confidence: p.confidence_score,
     explanation: p.explanation,
     locked: extra.locked ?? false,
+    probabilitySource: probabilitySourceOf(p.model_version),
   };
 }

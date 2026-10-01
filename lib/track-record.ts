@@ -1,3 +1,6 @@
+import { dedupeByFixture } from "@/lib/dedupe-fixtures";
+import { footballSurfaceDecisionFor } from "@/lib/surfacing-gate";
+
 // #HITRATE-GUARD-1 (copy audit 2026-06-11, Andrea: anchor comms to sustainable
 // rates, never small-sample spikes like the 93.8% football day-one figure).
 //
@@ -176,4 +179,124 @@ export function isBeforeFootballFloorCutover(
   const t = startsAt instanceof Date ? startsAt.getTime() : new Date(startsAt).getTime();
   if (!Number.isFinite(t)) return true;
   return t < new Date(FOOTBALL_FLOOR_CUTOVER_AT).getTime();
+}
+
+// ─── #COERENZA-1001 — UNA SOLA DEFINIZIONE DI «PICK CHE CONTA» ───────────────
+//
+// Prima la stessa domanda aveva due risposte scritte a mano: wasShownAsPick in
+// app/api/v2/history/route.ts e countsAsShownPick in lib/yesterday-read.ts. La
+// seconda lasciava passare `verification_state` NULL e non deduplicava le
+// gemelle: due superfici, due numeri. Ora la popolazione si calcola qui, una
+// volta, e la usano entrambe (il test di coerenza è lib/track-record-coherence.test.ts).
+
+/** Le condizioni SQL della popolazione del track record: pubblicata, non demo,
+ *  e FINITA — chiusa (is_historical) o iniziata da più di 48 ore. Include di
+ *  proposito le righe senza esito (unresolved, NULL) e le non verificate: sono
+ *  il denominatore della copertura, non della percentuale. */
+export const TRACK_RECORD_BASE_CONDITIONS: readonly string[] = [
+  "is_demo = FALSE",
+  "published_at IS NOT NULL",
+  "(is_historical = TRUE OR starts_at < NOW() - INTERVAL '48 hours')",
+];
+
+type ShownRow = { pick?: string | null; notes?: string | null; competition?: string | null };
+
+/**
+ * #TRACKREC-REAL-0626 + #WC-FLOOR-0707 — la riga è stata MOSTRATA come pick.
+ * Si legge il verdetto PERSISTITO dal board, non si ri-deriva il floor:
+ *   - `pick` null → nessuna pick direzionale mostrata;
+ *   - notes.surface.below_floor === true → «nessun chiaro favorito», esclusa,
+ *     TRANNE la World Cup (floor WC abbassato lato lab: quelle pick si mostrano);
+ *   - nessun flag (righe legacy) → il board mostra la pick, quindi conta.
+ */
+export function isShownPick(row: ShownRow): boolean {
+  if (!row.pick) return false;
+  let belowFloor = false;
+  try {
+    const surface = (JSON.parse(row.notes ?? "{}") as { surface?: { below_floor?: boolean } }).surface;
+    belowFloor = surface?.below_floor === true;
+  } catch { /* unparseable/absent notes → treat as above floor → count it */ }
+  if (!belowFloor) return true;
+  return row.competition === "World Cup";
+}
+
+type TrackRecordRow = ShownRow & {
+  sport?: string | null;
+  market?: string | null;
+  home_team?: string | null;
+  away_team?: string | null;
+  result?: string | null;
+  verification_state?: string | null;
+  starts_at?: string | null;
+  published_at?: string | null;
+  confidence_score?: number | null;
+};
+
+/** #DUP-FIXTURES-0821 + #COERENZA-1001 — la stessa partita (e lo stesso
+ *  mercato) conta una volta. Vince la riga con `published_at` più VECCHIO: la
+ *  pick che il cliente ha visto per prima, non quella aggiornata per ultima
+ *  dal settlement (prima vinceva `settled_at` più recente, una scelta
+ *  amministrativa che nelle gemelle con pick opposte decideva l'esito). */
+export function dedupeShownPicks<T extends TrackRecordRow>(rows: T[]): T[] {
+  return dedupeByFixture(rows, {
+    when: (r) => r.starts_at,
+    freshness: (r) => r.published_at,
+    oldest: true,
+    extra: (r) => `${r.sport ?? ""}|${r.market ?? ""}`,
+  });
+}
+
+const RESOLVED = new Set(["won", "lost", "void"]);
+
+/**
+ * La popolazione del track record, scomposta. L'ordine delle righe in
+ * ingresso si conserva in ogni insieme.
+ *
+ *   surfaced     mostrate (isShownPick), deduplicate, finite → il DENOMINATORE
+ *                della copertura: comprende anche le righe senza esito
+ *   rows         mostrate CON esito (won/lost/void), deduplicate fra loro, e
+ *                verificate → la lista dello storico
+ *   headlineRows rows meno il floor calcio post-cutover → il NUMERO pubblico
+ *
+ * Perché due dedup e non uno: le gemelle nascono da un cambio di id del
+ * provider, e spesso la riga vecchia resta senza esito mentre la nuova si
+ * chiude. Deduplicando tutto insieme, la vecchia (pubblicata prima) vincerebbe
+ * e un esito NOTO sparirebbe dal numero (misurato il 01/10: −101 righe). Quindi
+ * l'esito si sceglie fra le gemelle che ce l'hanno — la pubblicata per prima —
+ * e il denominatore conta le partite, con o senza esito.
+ *
+ * Le esclusioni sommano al denominatore: surfaced = headline + unverified +
+ * floor + unresolved (quest'ultimo per differenza: partite mostrate e finite
+ * che non hanno un esito su nessuna gemella).
+ */
+export function trackRecordPopulation<T extends TrackRecordRow>(fetched: T[]) {
+  const shown = fetched.filter(isShownPick);
+  const surfaced = dedupeShownPicks(shown);
+  const shownResolved = shown.filter((r) => RESOLVED.has(r.result ?? ""));
+  const resolved = dedupeShownPicks(shownResolved);
+  const rows = resolved.filter((r) => r.verification_state === "verified");
+  const isHeadline = (r: T) =>
+    isBeforeFootballFloorCutover(r.starts_at) || footballSurfaceDecisionFor(r).isPick;
+  const headlineRows = rows.filter(isHeadline);
+  const excludedByFloor = rows.filter((r) => !isHeadline(r));
+  const kept = new Set(resolved);
+  const dropped = shownResolved.filter((r) => !kept.has(r));
+  const unverifiedExcluded = resolved.length - rows.length;
+  return {
+    surfaced,
+    rows,
+    headlineRows,
+    excludedByFloor,
+    /** Gemelle CON esito scartate dal dedup (la lista e il numero non le contano). */
+    dedupDropped: dropped.length,
+    /** Di queste, quelle che da sole sarebbero entrate nella percentuale
+     *  (verificate, won/lost): serve a riconciliare una SQL senza dedup con `n`. */
+    dedupDroppedDecided: dropped.filter(
+      (r) => r.verification_state === "verified" && (r.result === "won" || r.result === "lost"),
+    ).length,
+    unverifiedExcluded,
+    unresolvedExcluded: Math.max(
+      0, surfaced.length - headlineRows.length - excludedByFloor.length - unverifiedExcluded,
+    ),
+  };
 }

@@ -149,9 +149,14 @@ def surface_decision(
     """
     # #PICK-SEMPRE-0911 (APPROVE Andrea 11/09): la pick c'e' sempre, e' l'esito
     # piu' probabile. I floor sotto restano come misura, non decidono piu'.
-    if settings.PICK_SEMPRE_FAVORITO:
-        return True, False
+    # #TRE-LIVELLI-0925-CUTOVER → #COERENZA-1001 (c): TRANNE il calcio, dove dal
+    # 25/09 il floor decide di nuovo (specchio di footballSurfaceDecision in
+    # lib/surfacing-gate.ts). Senza questo il writer delle nazionali persisteva
+    # below_floor=false sotto il floor: il board la mostrava come pick e
+    # l'headline di /api/v2/history la escludeva.
     s = sport.lower()
+    if settings.PICK_SEMPRE_FAVORITO and s != "football":
+        return True, False
     if s == "tennis":
         # 10y lab 2026-06-08: tennis confidence IS monotone (the prior "no floor"
         # was a 60-match artifact). Segment-aware floors #TENNIS-SEG-FLOOR-1.

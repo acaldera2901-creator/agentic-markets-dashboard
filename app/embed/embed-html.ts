@@ -21,15 +21,15 @@ const esc = (v: string): string =>
 // sul widget come sulle card. E nessun edge: l'ancoraggio al mercato lo porta a
 // zero per costruzione, stamparlo sarebbe stampare rumore (#TG-EDGE-ZERO).
 const COPY: Record<EmbedLang, Record<string, string>> = {
-  it: { kicker: "Pronostici del modello", model: "modello", unlock: "Sblocca", cta: "Vedi tutti i pronostici",
+  it: { kicker: "Pronostici del modello", model: "modello", market: "mercato", unlock: "Sblocca", cta: "Vedi tutti i pronostici",
         empty: "Nessuna partita in programma adesso.", off: "Questo widget non è attivo.", disclaimer: "Solo a scopo informativo. Gioco riservato ai maggiorenni.", top: "Top pick" },
-  en: { kicker: "Model predictions", model: "model", unlock: "Unlock", cta: "See all predictions",
+  en: { kicker: "Model predictions", model: "model", market: "market", unlock: "Unlock", cta: "See all predictions",
         empty: "No matches scheduled right now.", off: "This widget is not active.", disclaimer: "For informational purposes only. Adults only.", top: "Top pick" },
-  es: { kicker: "Pronósticos del modelo", model: "modelo", unlock: "Desbloquear", cta: "Ver todos los pronósticos",
+  es: { kicker: "Pronósticos del modelo", model: "modelo", market: "mercado", unlock: "Desbloquear", cta: "Ver todos los pronósticos",
         empty: "No hay partidos programados ahora.", off: "Este widget no está activo.", disclaimer: "Solo con fines informativos. Solo para mayores de edad.", top: "Top pick" },
-  fr: { kicker: "Pronostics du modèle", model: "modèle", unlock: "Débloquer", cta: "Voir tous les pronostics",
+  fr: { kicker: "Pronostics du modèle", model: "modèle", market: "marché", unlock: "Débloquer", cta: "Voir tous les pronostics",
         empty: "Aucun match programmé pour le moment.", off: "Ce widget n'est pas actif.", disclaimer: "À titre informatif uniquement. Réservé aux majeurs.", top: "Top pick" },
-  ru: { kicker: "Прогнозы модели", model: "модель", unlock: "Открыть", cta: "Все прогнозы",
+  ru: { kicker: "Прогнозы модели", model: "модель", market: "рынок", unlock: "Открыть", cta: "Все прогнозы",
         empty: "Сейчас нет запланированных матчей.", off: "Этот виджет не активен.", disclaimer: "Только в информационных целях. Только для совершеннолетних.", top: "Top pick" },
 };
 
@@ -107,7 +107,8 @@ function card(r: EmbedRow, t: Record<string, string>, href: string): string {
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a></div>
     </article>`;
   }
-  const conf = r.confidence !== null ? `<span class="br-conf"><b>${r.confidence}%</b> ${t.model}</span>` : "";
+  // #COERENZA-1001 — riga partner: il numero è la quota de-viggata, non il modello.
+  const conf = r.confidence !== null ? `<span class="br-conf"><b>${r.confidence}%</b> ${r.probabilitySource === "market" ? t.market : t.model}</span>` : "";
   const decision = r.decision ? `<span class="br-pick">${esc(r.decision)}</span>` : `<span class="br-pick br-none">—</span>`;
   return `<article class="br-card${r.topPick ? " br-top" : ""}">${head}${names}
     <div class="br-row">${decision}${conf}</div>

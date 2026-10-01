@@ -14,6 +14,7 @@
 // punti percentuali. È l'unica definizione compatibile con una card che mostra
 // i due numeri UNO ACCANTO ALL'ALTRO — vedi la nota in prediction-card.ts.
 
+import { displayTournament, probabilitySourceOf } from "@/lib/partner-market";
 import type { PredictionCardData } from "@/lib/ui/prediction-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
 
@@ -69,6 +70,8 @@ export type DeskTennisRow = {
   quota_borrowed?: boolean;
   confidence_score?: number | null;
   explanation?: string | null;
+  /** model_version della riga (#COERENZA-1001: partner-market-v1 = mercato). */
+  model?: string | null;
 };
 
 export type DeskCardOptions = {
@@ -191,7 +194,7 @@ export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): 
   return {
     id: row.id,
     sport: "tennis",
-    league: row.tournament || null,
+    league: displayTournament(row.tournament),
     home: row.player1,
     away: row.player2,
     startsAt: row.scheduled,
@@ -208,5 +211,6 @@ export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): 
     explanation: row.explanation ?? null,
     locked: opts.locked ?? row.locked ?? false,
     quotaBorrowed: row.quota_borrowed === true,
+    probabilitySource: probabilitySourceOf(row.model),
   };
 }

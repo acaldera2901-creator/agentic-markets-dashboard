@@ -2,39 +2,18 @@ import { NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import {
   edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE,
-  FOOTBALL_FLOOR_CUTOVER_AT, isBeforeFootballFloorCutover,
+  FOOTBALL_FLOOR_CUTOVER_AT, trackRecordPopulation, TRACK_RECORD_BASE_CONDITIONS,
 } from "@/lib/track-record";
-import { footballSurfaceDecisionFor } from "@/lib/surfacing-gate";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { bySegment } from "@/lib/track-record-history";
-import { dedupeByFixture } from "@/lib/dedupe-fixtures"; // #DUP-FIXTURES-0821
 import { wilson95, formatWilson } from "@/lib/wilson"; // #SETTLE-0909
 
-// #TRACKREC-REAL-0626 + #WC-FLOOR-0707: a row counts in the track record iff the
-// board ACTUALLY showed it as a directional pick. We read the board's own
-// persisted verdict instead of re-deriving the floor (which would drift from
-// what was shown when floors change, and mis-handle legacy rows):
-//   - `pick` null  → no directional pick was shown (e.g. tennis below floor).
-//   - notes.surface.below_floor === true → shown as "no clear favourite", not a
-//     pick → excluded, EXCEPT World Cup: the WC surfacing floor was lowered
-//     lab-side so WC (knockout) picks are surfaced and must count. Non-WC (club)
-//     below-floor rows stay hidden, exactly as shown on the board.
-// No surface flag (legacy rows) → the board defaults to showing the pick, so we count it.
-function wasShownAsPick(
-  row: { pick?: string | null; notes?: string | null; competition?: string | null }
-): boolean {
-  if (!row.pick) return false;
-  let belowFloor = false;
-  try {
-    const surface = (JSON.parse(row.notes ?? "{}") as { surface?: { below_floor?: boolean } }).surface;
-    belowFloor = surface?.below_floor === true;
-  } catch { /* unparseable/absent notes → treat as above floor → count it */ }
-  if (!belowFloor) return true;
-  // Below floor: only World Cup rows are surfaced as picks (lowered WC floor).
-  return row.competition === "World Cup";
-}
+// #TRACKREC-REAL-0626 + #WC-FLOOR-0707 → #COERENZA-1001: «mostrata come pick»,
+// il dedup e il floor post-cutover vivono in lib/track-record.ts
+// (isShownPick, dedupeShownPicks, trackRecordPopulation), condivisi con
+// /api/v2/yesterday-read. Non riscriverli qui.
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +24,7 @@ type HistoryRow = Pick<
   | "result" | "signal_type" | "is_paper" | "is_verified" | "is_demo"
   | "starts_at" | "settled_at" | "notes" | "world_cup_stage" | "group_name"
   | "confidence_score"
-> & { verification_state?: string | null };
+> & { verification_state?: string | null; published_at?: string | null };
 
 export async function GET(req: Request) {
   const { state } = await resolveAccessState(req); // never denies (read)
@@ -69,16 +48,17 @@ export async function GET(req: Request) {
   // #TENNIS-VOID-FIX-1: 'unresolved' = the settlement source never returned a
   // result (e.g. a tennis pick that aged out of the window). It is settled only
   // to clear the live board — it is NOT a confirmed outcome, so it must stay out
-  // of the track record entirely (list + win-rate + void count alike).
+  // of the track record entirely (list + win-rate + void count alike) — it is
+  // counted ONLY in the coverage denominator (#COERENZA-1001), never as an outcome.
   // #TRACKREC-REAL-0626 → rivisto #TRACKREC-SURFACED-0715: il track record conta
   // le pick che abbiamo EFFETTIVAMENTE MOSTRATO all'utente. Il gate autorevole di
-  // "mostrata" è wasShownAsPick() (pick != null + sopra il floor di confidenza,
+  // "mostrata" è isShownPick() (pick != null + sopra il floor di confidenza,
   // con l'eccezione WC), applicato sotto sul result-set. NON usiamo più is_paper
   // come pre-filtro: `is_paper` per il tennis significa "senza mercato/quote"
   // (lib/tennis-adapter.ts:114 `!hasRealMarket`), NON "mai pubblicata" — quindi
   // durante un blackout quote (#TENNIS-ODDS-BLACKOUT) escludeva pick che ERANO
   // mostrate sul board, congelando lo storico. Le shadow/below-floor mai mostrate
-  // restano fuori perché wasShownAsPick le respinge (pick null o below_floor).
+  // restano fuori perché isShownPick le respinge (pick null o below_floor).
   // La metrica è ACCURATEZZA delle pick mostrate (hit-rate), non "edge vs mercato".
   // #SETTLE-0909 D2 — `published_at IS NOT NULL` mancava, mentre il board che
   // serve i clienti lo applica (app/api/v2/predictions/route.ts:24-35): una
@@ -86,12 +66,12 @@ export async function GET(req: Request) {
   // `verification_state` NON sta qui ma sotto, in JS: serve contare anche le
   // righe non verificate per poter dichiarare la COPERTURA — un numero senza
   // il suo denominatore è la meta' di un'informazione.
-  const conditions: string[] = [
-    "is_historical = TRUE",
-    "is_demo = FALSE",
-    "result IS DISTINCT FROM 'unresolved'",
-    "published_at IS NOT NULL",
-  ];
+  // #COERENZA-1001 (a) — la query porta TUTTE le pick pubblicate e finite,
+  // comprese quelle senza esito (unresolved, NULL): servono al denominatore
+  // della copertura. Che cosa entra nel numero lo decide trackRecordPopulation
+  // (lib/track-record.ts), non questo WHERE. Prima `unresolved` restava fuori
+  // dalla query e la copertura dichiarata (98,4%) ignorava ~2.300 partite.
+  const conditions: string[] = [...TRACK_RECORD_BASE_CONDITIONS];
   const values: unknown[] = [];
 
   if (sport && sport !== "all") {
@@ -113,13 +93,14 @@ export async function GET(req: Request) {
   // STATS_CAP rows for the aggregates and slice the list afterwards. Cap is a
   // defensive backstop (real surfaced signals ~75 today); raise it (or move the
   // aggregates into SQL COUNTs) if real settled signals ever approach it.
-  const STATS_CAP = 5000;
+  // #COERENZA-1001: con le righe senza esito la popolazione e' ~7.000 (01/10).
+  const STATS_CAP = 15000;
   const fetched = await dbQuery<HistoryRow>(
     `SELECT id, sport, competition, event_name, home_team, away_team,
             player_one, player_two, market, pick, status,
             result, signal_type, is_paper, is_verified, is_demo,
             starts_at, settled_at, notes, world_cup_stage, group_name,
-            confidence_score, verification_state
+            confidence_score, verification_state, published_at
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      -- #HISTORY-ORDINE-0911 — si ordina per QUANDO SI E' GIOCATA la partita,
@@ -151,7 +132,7 @@ export async function GET(req: Request) {
   // board suppresses below-floor rows as "no clear favourite" (no directional
   // pick), so the public hit-rate must measure ONLY the picks we actually showed
   // — counting a match where we declined to pick as a "loss" understated it.
-  // We now read the board's PERSISTED verdict (wasShownAsPick) rather than
+  // We now read the board's PERSISTED verdict (isShownPick) rather than
   // re-deriving the floor, so the metric matches exactly what was displayed and
   // is stable across floor changes. Probability-neutral.
   // #DUP-FIXTURES-0821 (secondo giro) — la stessa partita non conta due volte.
@@ -163,11 +144,11 @@ export async function GET(req: Request) {
   // Si deduplica in LETTURA, con la stessa identita' e la stessa regola del
   // board (lib/dedupe-fixtures.ts): nessun dato toccato, e due MERCATI diversi
   // sulla stessa partita restano due righe (il mercato entra nella chiave).
-  const surfaced = dedupeByFixture(fetched.filter(wasShownAsPick), {
-    when: (r) => r.starts_at,
-    freshness: (r) => r.settled_at ?? r.starts_at,
-    extra: (r) => `${r.sport ?? ""}|${r.market ?? ""}`,
-  });
+  // #COERENZA-1001 — vince la gemella pubblicata PER PRIMA (dedupeShownPicks).
+  const {
+    surfaced, rows, headlineRows, excludedByFloor,
+    dedupDropped, dedupDroppedDecided, unresolvedExcluded, unverifiedExcluded,
+  } = trackRecordPopulation(fetched);
 
   // #SETTLE-0909 D2 — IL CANCELLO. Si pubblica solo cio' che una fonte con un
   // flag di completamento esplicito ha confermato. Il resto resta contato nel
@@ -184,7 +165,6 @@ export async function GET(req: Request) {
   // (core/supabase_client.py::settle_unified_prediction,
   // app/api/cron/settle/route.ts): senza il timbro una riga chiusa non entra
   // qui, e la pagina si fermerebbe al giorno del backfill.
-  const rows = surfaced.filter((r) => r.verification_state === "verified");
 
   // ── #TRE-LIVELLI-0925-CUTOVER — CHE COSA ENTRA NEL NUMERO PUBBLICO ─────────
   //
@@ -202,17 +182,7 @@ export async function GET(req: Request) {
   // La LISTA delle partite non si tocca: `history` continua a mostrarle tutte.
   // Nessuna riga sparisce dal listino, ne' qui ne' sul board — cambia solo
   // che cosa si conta nell'headline.
-  const beforeCutover: typeof rows = [];
-  const afterCutover: typeof rows = [];
-  for (const r of rows) (isBeforeFootballFloorCutover(r.starts_at) ? beforeCutover : afterCutover).push(r);
-  const headlineRows = [
-    ...beforeCutover,
-    ...afterCutover.filter((r) => footballSurfaceDecisionFor(r).isPick),
-  ];
-  // La popolazione post-cutover che il floor esclude dall'headline — pubblicata
-  // sotto (stats.post_cutover_excluded) per non rendere silenziosa
-  // l'esclusione, stessa logica di #EDGE-SELETTIVITA-0917.
-  const excludedByFloor = afterCutover.filter((r) => !footballSurfaceDecisionFor(r).isPick);
+  // (headlineRows / excludedByFloor: calcolati in trackRecordPopulation.)
 
   // Gate every row through the same per-tier projection as /api/v2/predictions so
   // the pick/insight is never leaked to anonymous/free visitors. Outcome counts
@@ -285,11 +255,20 @@ export async function GET(req: Request) {
       // totale delle righe: void e pending non hanno un esito da misurare.
       n: decisi,
       sample_sufficient: sufficiente,
+      // #COERENZA-1001 (a) — copertura = pick con esito VERIFICATO / TUTTE le
+      // pick mostrate e finite (deduplicate), comprese quelle senza esito
+      // (unresolved, NULL) e quelle non verificate. Somma esatta:
+      //   surfaced_total = total + post_cutover_excluded(righe) + unverified_excluded + unresolved_excluded
       coverage: surfaced.length > 0
         ? Number((rows.length / surfaced.length).toFixed(3))
         : null,
       surfaced_total: surfaced.length,
-      unverified_excluded: surfaced.length - rows.length,
+      unverified_excluded: unverifiedExcluded,
+      unresolved_excluded: unresolvedExcluded,
+      // Gemelle (stessa partita, stesso mercato) tolte dal dedup; `_decided` =
+      // quelle verificate won/lost, per riconciliare una SQL senza dedup con `n`.
+      dedup_dropped: dedupDropped,
+      dedup_dropped_decided: dedupDroppedDecided,
       // #TRE-LIVELLI-0925-CUTOVER — la popolazione POST-cutover che il floor di
       // lega esclude dall'headline. Non e' diagnostica: e' la condizione che
       // rende l'esclusione onesta invece che survivorship (stessa forma

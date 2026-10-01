@@ -6,6 +6,7 @@
 // decisioni di prodotto: ordine della vetrina e proiezione arrivano da
 // lib/access-projection, così widget e board non possono divergere su quale
 // riga è il pick né su cosa resta bloccato.
+import { displayTournament, probabilitySourceOf, type ProbabilitySource } from "@/lib/partner-market";
 import { dbQuery } from "@/lib/db";
 import { projectPrediction, showcaseRanking, type ShowcaseCandidate } from "@/lib/access-projection";
 import { humanizePick } from "@/features/feed/pick-view-model";
@@ -30,6 +31,8 @@ export type EmbedRow = {
   decision: string | null;
   /** Probabilità dell'esito, 0-100 interi. null quando bloccata. */
   confidence: number | null;
+  /** #COERENZA-1001 — «market» = probabilità de-viggata del partner, non modello. */
+  probabilitySource?: ProbabilitySource;
   locked: boolean;
   topPick: boolean;
 };
@@ -217,7 +220,7 @@ export function toEmbedRows(rawRows: RawRow[], mode: EmbedMode, limit: number, l
       row: {
         id: String(r.id),
         sport: str(r.sport),
-        competition: str(r.competition) || str(r.league),
+        competition: displayTournament(str(r.competition) || str(r.league)) ?? "",
         homeTeam: str(r.home_team) || null,
         awayTeam: str(r.away_team) || null,
         startsAt: str(r.starts_at),
@@ -233,6 +236,7 @@ export function toEmbedRows(rawRows: RawRow[], mode: EmbedMode, limit: number, l
               lang
             ),
         confidence: p.locked ? null : toPercent(conf),
+        probabilitySource: probabilitySourceOf(str(r.model_version) || null),
         locked: p.locked,
         topPick: rank === 0,
       } satisfies EmbedRow,
@@ -270,7 +274,7 @@ export async function fetchEmbedRows(opts: {
   // fa lo stesso lavoro senza costruire la WHERE a runtime.
   const rows = await dbQuery<RawRow>(
     `SELECT id, sport, competition, league, home_team, away_team, starts_at,
-            market, pick, confidence_score, edge_percent, updated_at
+            market, pick, confidence_score, edge_percent, updated_at, model_version
        FROM unified_predictions
       WHERE starts_at > NOW() - interval '150 minutes'
         AND starts_at < NOW() + ($1 || ' days')::interval

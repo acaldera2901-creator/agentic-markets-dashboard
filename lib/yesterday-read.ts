@@ -24,8 +24,7 @@
 // post-cutover solo ciò che il floor di lega promuove — così la lettura che
 // l'anonimo vede è una di quelle che contano nella percentuale pubblica.
 import { compareShowcase, utcDay, type ShowcaseCandidate } from "@/lib/access-projection";
-import { footballSurfaceDecisionFor } from "@/lib/surfacing-gate";
-import { isBeforeFootballFloorCutover } from "@/lib/track-record";
+import { trackRecordPopulation } from "@/lib/track-record";
 
 export const YESTERDAY_READ_SPORTS = ["football", "tennis"] as const;
 export type YesterdayReadSport = (typeof YESTERDAY_READ_SPORTS)[number];
@@ -51,6 +50,8 @@ export type YesterdayCandidateRow = {
   settled_at: string | null;
   notes: string | null;
   verification_state?: string | null;
+  /** Serve al dedup delle gemelle: vince la pubblicata per prima (#COERENZA-1001). */
+  published_at?: string | null;
 };
 
 export type YesterdayRead = {
@@ -92,15 +93,6 @@ export function shiftUtcDay(day: string, n: number): string {
   return t.toISOString().slice(0, 10);
 }
 
-function belowFloorFlag(notes: string | null): boolean {
-  try {
-    const surface = (JSON.parse(notes ?? "{}") as { surface?: { below_floor?: boolean } }).surface;
-    return surface?.below_floor === true;
-  } catch {
-    return false;
-  }
-}
-
 function finalScoreOf(notes: string | null): string | null {
   try {
     const parsed = JSON.parse(notes ?? "");
@@ -110,14 +102,11 @@ function finalScoreOf(notes: string | null): string | null {
   }
 }
 
-/** Stessa regola di «mostrata come pick» di /api/v2/history (wasShownAsPick)
- *  più il floor post-cutover dell'headline (#TRE-LIVELLI-0925-CUTOVER). */
-export function countsAsShownPick(row: YesterdayCandidateRow): boolean {
-  if (!row.pick) return false;
-  if (row.verification_state != null && row.verification_state !== "verified") return false;
-  if (belowFloorFlag(row.notes) && row.competition !== "World Cup") return false;
-  if (isBeforeFootballFloorCutover(row.starts_at)) return true;
-  return footballSurfaceDecisionFor(row).isPick;
+/** #COERENZA-1001 — la STESSA popolazione dell'headline di /api/v2/history
+ *  (lib/track-record.ts::trackRecordPopulation): mostrata come pick, gemelle
+ *  deduplicate, esito verificato (NULL non passa), floor calcio post-cutover. */
+export function headlineCandidates<T extends YesterdayCandidateRow>(rows: readonly T[]): T[] {
+  return trackRecordPopulation([...rows]).headlineRows;
 }
 
 function isSettledResult(r: string | null): r is "won" | "lost" | "void" {
@@ -162,9 +151,10 @@ export function pickYesterdayReads(rows: readonly YesterdayCandidateRow[], opts:
   const lookback = Math.max(1, opts.maxLookbackDays ?? 7);
   const out: YesterdayRead[] = [];
 
+  const headline = headlineCandidates(rows);
   for (const sport of YESTERDAY_READ_SPORTS) {
-    const eligible = rows.filter((r) =>
-      r.sport === sport && isSettledResult(r.result) && countsAsShownPick(r) && utcDay(r.starts_at) != null,
+    const eligible = headline.filter((r) =>
+      r.sport === sport && isSettledResult(r.result) && utcDay(r.starts_at) != null,
     );
     if (eligible.length === 0) continue;
 

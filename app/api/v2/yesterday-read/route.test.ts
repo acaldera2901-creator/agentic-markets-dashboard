@@ -3,8 +3,9 @@
 // riga settlata per sport. Il test la fissa come contratto esplicito, così un
 // cambio di idea passa da qui e non da un effetto collaterale.
 import { it, expect, vi, beforeEach, afterEach } from "vitest";
+import { TRACK_RECORD_BASE_CONDITIONS } from "@/lib/track-record";
 
-const dbQuery = vi.fn();
+const { dbQuery } = vi.hoisted(() => ({ dbQuery: vi.fn() }));
 vi.mock("@/lib/db", () => ({ dbQuery }));
 
 beforeEach(() => {
@@ -52,9 +53,7 @@ it("la finestra SQL è [oggi−7, oggi) e passa dai cancelli del track record", 
   const body = await (await GET()).json();
   expect(body.reads).toEqual([]);
   const [sql, params] = dbQuery.mock.calls[0];
-  expect(params).toEqual(["2026-09-21T00:00:00Z", "2026-09-28T00:00:00Z", 600]);
-  expect(sql).toMatch(/verification_state = 'verified'/);
-  expect(sql).toMatch(/published_at IS NOT NULL/);
-  expect(sql).toMatch(/is_demo = FALSE/);
-  expect(sql).toMatch(/result IN \('won', 'lost', 'void'\)/);
+  expect(params).toEqual(["2026-09-21T00:00:00Z", "2026-09-28T00:00:00Z", 3000]);
+  // #COERENZA-1001 — stessa base SQL dello storico; verificata/esito/dedup in JS.
+  for (const c of TRACK_RECORD_BASE_CONDITIONS) expect(sql).toContain(c);
 });

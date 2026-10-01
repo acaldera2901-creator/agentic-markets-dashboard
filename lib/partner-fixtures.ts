@@ -35,6 +35,7 @@
 import { fetchAllBooks } from "./betconstruct-feed";
 import type { FpMatch } from "./fortuneplay-live";
 import { dbQuery } from "./db";
+import { PARTNER_FEED_TOURNAMENT, PARTNER_MARKET_MODEL } from "./partner-market";
 
 /** Quanto lontano nel futuro accettiamo una partita del partner. */
 const ORIZZONTE_GIORNI = 10; // allineato a PREDICTION_WINDOW_DAYS
@@ -236,7 +237,7 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
        RETURNING match_id`,
       [
         f.matchId,
-        "Partner feed",
+        PARTNER_FEED_TOURNAMENT,
         "hard", // il feed non dichiara la superficie; 'hard' e' il default del parser
         f.player1,
         f.player2,
@@ -246,7 +247,7 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
         f.oddsP1,
         f.oddsP2,
         f.p1 >= f.p2 ? "P1" : "P2",
-        "partner-market-v1",
+        PARTNER_MARKET_MODEL,
         JSON.stringify({ partner: f.partner }),
       ],
     ).catch((e: unknown) => {

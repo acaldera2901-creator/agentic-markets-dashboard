@@ -140,36 +140,26 @@ class ReplayUnavailable(Exception):
 
 
 # Le stesse condizioni WHERE, lo stesso ORDER e lo stesso LIMIT di
-# app/api/v2/history/route.ts (STATS_CAP 5000). La LOGICA invece non si copia:
-# la esegue history_replay.ts importando le funzioni della route.
+# app/api/v2/history/route.ts (TRACK_RECORD_BASE_CONDITIONS, STATS_CAP 15000).
+# #COERENZA-1001: la route legge TUTTE le pick pubblicate e finite (anche
+# unresolved/NULL, denominatore della copertura) e published_at, che decide il
+# dedup. La LOGICA invece non si copia: history_replay.ts chiama
+# lib/track-record.ts::trackRecordPopulation, la stessa funzione della route.
 _ROUTE_SQL = """
 select id, sport, competition, event_name, home_team, away_team,
        player_one, player_two, market, pick, status,
        result, signal_type, is_paper, is_verified, is_demo,
        starts_at, settled_at, notes, world_cup_stage, group_name,
-       confidence_score, verification_state, is_historical
+       confidence_score, verification_state, published_at, is_historical
 from unified_predictions
-where is_historical = true and is_demo = false
-  and result is distinct from 'unresolved' and published_at is not null
+where is_demo = false and published_at is not null
+  and (is_historical = true or starts_at < now() - interval '48 hours')
 order by starts_at desc nulls last, settled_at desc nulls last, id desc
-limit 5000
+limit 15000
 """
-
-# Il denominatore onesto: ogni pick pubblicata la cui partita e' finita da
-# oltre 48h, qualunque sia il suo esito (unresolved e NULL compresi).
-_FINITE_SQL = """
-select sport, competition, market, home_team, away_team, pick, notes, result,
-       starts_at, settled_at, confidence_score, verification_state, is_historical
-from unified_predictions
-where is_demo = false and published_at is not null and pick is not null
-  and starts_at < now() - interval '48 hours'
-order by starts_at desc nulls last, settled_at desc nulls last, id desc
-limit 20000
-"""
-# Tetto difensivo, non una finestra: la copertura e' all-time come l'headline.
-# L'01/10 le righe erano ~1/3 del tetto. Se lo si tocca, la popolazione e'
-# troncata e copertura_onesta diventa '?' invece di misurare una parte.
-FINITE_MAX = 20000
+# Il tetto della route (STATS_CAP). Se le righe lo raggiungono la popolazione
+# e' troncata anche nella route, e copertura_onesta diventa '?'.
+FINITE_MAX = 15000
 
 # Stessa serializzazione dell'RPC exec_sql che usa la route (lib/db.ts): i
 # timestamp arrivano come le stesse stringhe, e il dedup li confronta come tali.
@@ -191,12 +181,12 @@ def _node() -> str | None:
     return next((c for c in reversed(candidati) if os.path.exists(c)), None)
 
 
-def _replay(route_rows: list, finished_rows: list) -> dict:
+def _replay(route_rows: list) -> dict:
     node = _node()
     cli = REPO_ROOT / "node_modules" / "tsx" / "dist" / "cli.mjs"
     if not node or not cli.exists():
         raise ReplayUnavailable(f"tsx non disponibile (node={node}, tsx={cli.exists()})")
-    entrata = json.dumps({"route_rows": route_rows, "finished_rows": finished_rows})
+    entrata = json.dumps({"route_rows": route_rows})
     try:
         esito = subprocess.run([node, str(cli), str(_SCRIPT)], input=entrata, cwd=REPO_ROOT,
                                capture_output=True, text=True, timeout=90)
@@ -221,9 +211,8 @@ def misura_history() -> tuple[dict, dict]:
         if _CACHE and time.monotonic() - _CACHE["at"] < _CACHE_S:
             return _CACHE["val"]
         route_rows = fetch_all(_AS_JSON.format(q=_ROUTE_SQL))[0][0]
-        finished_rows = fetch_all(_AS_JSON.format(q=_FINITE_SQL))[0][0]
         stats = _api_stats()
-        val = (_replay(route_rows, finished_rows), stats)
+        val = (_replay(route_rows), stats)
         _CACHE.update(at=time.monotonic(), val=val)
         return val
 
