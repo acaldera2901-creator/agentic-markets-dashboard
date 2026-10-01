@@ -34,10 +34,13 @@
 // Un impianto di misura che decide qualcosa smette di essere una misura.
 
 import { fetchAllBooks } from "./betconstruct-feed";
-import { dbQuery } from "./db";
+import { dbExecute } from "./db";
 
 /** Quanto in la' guardiamo: oltre, il prezzo non e' ancora informativo. */
 const ORIZZONTE_GIORNI = 10;
+
+/** Righe per INSERT: ~1.000 candidati diventano ~10 RPC invece di ~1.000. */
+const BLOCCO = 100;
 
 export type EsitoPrezzi = {
   vistiDalPartner: number;
@@ -45,6 +48,8 @@ export type EsitoPrezzi = {
   scartati: number;
   scritti: number;
   falliti: number;
+  /** Righe non tentate perche' la scadenza era passata (#REFRESH-1001). */
+  saltati: number;
 };
 
 /**
@@ -53,9 +58,12 @@ export type EsitoPrezzi = {
  * Ogni giro scrive una riga per partita e per book: e' la storia che permette
  * di ricostruire apertura, movimento e chiusura.
  */
-export async function registraPrezziPartner(adesso = Date.now()): Promise<EsitoPrezzi> {
+export async function registraPrezziPartner(
+  adesso = Date.now(),
+  scadenza = Number.POSITIVE_INFINITY,
+): Promise<EsitoPrezzi> {
   const esito: EsitoPrezzi = {
-    vistiDalPartner: 0, candidati: 0, scartati: 0, scritti: 0, falliti: 0,
+    vistiDalPartner: 0, candidati: 0, scartati: 0, scritti: 0, falliti: 0, saltati: 0,
   };
 
   const perBook = await fetchAllBooks();
@@ -71,7 +79,10 @@ export async function registraPrezziPartner(adesso = Date.now()): Promise<EsitoP
       esito.vistiDalPartner += 1;
       // Si registra solo cio' che ha senso misurare: una partita futura, con
       // entrambi i prezzi e una chiave per ritrovarla.
-      if (!m.teamPairKey || !m.startTime || m.oddsHome == null || m.oddsAway == null) {
+      // Number.isFinite e non `!= null`: a blocchi, un NaN renderebbe invalida
+      // l'INSERT intera e farebbe perdere tutte le righe del blocco.
+      if (!m.teamPairKey || !m.startTime
+          || !Number.isFinite(m.oddsHome) || !Number.isFinite(m.oddsAway)) {
         esito.scartati += 1;
         continue;
       }
@@ -88,9 +99,9 @@ export async function registraPrezziPartner(adesso = Date.now()): Promise<EsitoP
         casa: m.homeName,
         ospite: m.awayName,
         inizio: new Date(quando).toISOString(),
-        oddsHome: m.oddsHome,
-        oddsAway: m.oddsAway,
-        oddsDraw: m.oddsDraw ?? null,
+        oddsHome: m.oddsHome as number,
+        oddsAway: m.oddsAway as number,
+        oddsDraw: Number.isFinite(m.oddsDraw) ? (m.oddsDraw as number) : null,
         // Minuti al fischio: e' LA dimensione su cui si legge un movimento di
         // linea. Calcolarlo qui, dove l'istante di cattura e' noto con
         // certezza, evita di dedurlo dopo da due colonne.
@@ -100,22 +111,41 @@ export async function registraPrezziPartner(adesso = Date.now()): Promise<EsitoP
   }
   esito.candidati = daScrivere.length;
 
-  for (const p of daScrivere) {
+  // #REFRESH-1001 — a blocchi, una INSERT multi-riga per blocco. Prima era una
+  // INSERT per riga (~1.000 RPC seriali, ~2 minuti): dal 30/09 12:00 il giro
+  // finiva sempre a :05:32, cioe' al maxDuration del cron, e tutto cio' che
+  // veniva dopo non partiva. Un blocco che fallisce conta come fallito per
+  // intero; gli altri restano scritti.
+  //
+  // `scadenza`: oltre quell'istante non si apre un blocco nuovo. Si saltano le
+  // righe rimaste, contate e loggate, invece di morire al timeout della route.
+  for (let i = 0; i < daScrivere.length; i += BLOCCO) {
+    if (Date.now() >= scadenza) {
+      esito.saltati = daScrivere.length - i;
+      break;
+    }
+    const blocco = daScrivere.slice(i, i + BLOCCO);
     // Ogni giro e' una riga NUOVA: la storia serve proprio a vedere il prezzo
     // cambiare. `is_closing` resta false — chi chiude e' un altro processo, e
     // marcarlo qui significherebbe dichiarare finita una partita che non lo e'.
-    await dbQuery(
+    const params: unknown[] = [];
+    const righe = blocco.map((p) => {
+      const n = params.length;
+      params.push(p.chiave, p.book, p.sport, p.casa, p.ospite,
+        p.oddsHome, p.oddsDraw, p.oddsAway, p.inizio, p.minutiAlVia);
+      return `(($${n + 1})::text,($${n + 2})::text,($${n + 3})::text,($${n + 4})::text,($${n + 5})::text,` +
+        `($${n + 6})::double precision,($${n + 7})::double precision,($${n + 8})::double precision,` +
+        `($${n + 9})::timestamptz,($${n + 10})::integer, NOW())`;
+    });
+    await dbExecute(
       `INSERT INTO partner_price_history
          (team_pair_key, bookmaker, sport, home_name, away_name,
           odds_home, odds_draw, odds_away, commence_time, minuti_al_via, captured_at)
-       VALUES (($1)::text,($2)::text,($3)::text,($4)::text,($5)::text,
-               ($6)::double precision,($7)::double precision,($8)::double precision,
-               ($9)::timestamptz,($10)::integer, NOW())`,
-      [p.chiave, p.book, p.sport, p.casa, p.ospite,
-       p.oddsHome, p.oddsDraw, p.oddsAway, p.inizio, p.minutiAlVia],
+       VALUES ${righe.join(",")}`,
+      params,
     ).catch((e: unknown) => {
-      esito.falliti += 1;
-      console.error("[prezzi-partner] errore su", p.chiave, String(e));
+      esito.falliti += blocco.length;
+      console.error("[prezzi-partner] blocco fallito da", blocco[0].chiave, String(e));
     });
   }
 
@@ -130,12 +160,13 @@ export async function registraPrezziPartner(adesso = Date.now()): Promise<EsitoP
   //     statement timeout. Da li' la tabella dedicata — ma l'abitudine di non
   //     interrogare il database per contare cio' che si e' appena scritto resta
   //     giusta comunque.
-  esito.scritti = esito.candidati - esito.falliti;
+  esito.scritti = esito.candidati - esito.falliti - esito.saltati;
 
   console.log(
     `[prezzi-partner] visti ${esito.vistiDalPartner}, candidati ${esito.candidati}, ` +
       `scartati ${esito.scartati}, scritti ${esito.scritti}` +
-      (esito.falliti ? `, FALLITI ${esito.falliti}` : ""),
+      (esito.falliti ? `, FALLITI ${esito.falliti}` : "") +
+      (esito.saltati ? `, SALTATI ${esito.saltati} (scadenza del cron)` : ""),
   );
   return esito;
 }

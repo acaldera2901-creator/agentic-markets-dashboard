@@ -69,6 +69,9 @@ const ALLOWLIST = new Set<string>([
   // di soli $N per l'IN (…) delle 5 leghe watchlist; le leghe e l'orizzonte
   // giorni viaggiano nell'array params ($1 = HORIZON_DAYS, resto = i codici).
   "app/api/cron/pipeline-health/route.ts::codePlaceholders",
+  // #REFRESH-1001 — tuple VALUES della INSERT multi-riga, fatte solo di `$N`
+  // tipizzati e NOW(); i valori del feed viaggiano nell'array params.
+  'lib/partner-prezzi.ts::righe.join(",")',
 ]);
 
 function walk(dir: string, acc: string[]): void {
