@@ -914,6 +914,20 @@ async def unified_tennis_ancora_aperte(
         return None
 
 
+def tennis_pick_result(
+    pick: str | None, winner_name: str | None, *, void: bool = False, unresolved: bool = False
+) -> str:
+    """won/lost/void/unresolved for a tennis pick (a player name) — one rule for
+    the served row, the sealed register and the backfill (#SETTLE-1001)."""
+    if unresolved:
+        return "unresolved"
+    pick = (pick or "").strip()
+    if void or not winner_name or not pick:
+        return "void"
+    from core.tennis_names import canonical_player_key
+    return "won" if canonical_player_key(pick) == canonical_player_key(winner_name) else "lost"
+
+
 async def _record_tennis_ledger_settlement(
     base: str,
     match_id: str,
@@ -954,22 +968,13 @@ async def _record_tennis_ledger_settlement(
     except Exception as exc:
         logger.warning("tennis ledger lookup error for %s: %s", match_id, exc)
         return
-    from core.tennis_names import canonical_player_key
     for row in sealed if isinstance(sealed, list) else []:  # normally 0 or 1
         model_version = row.get("model_version") if isinstance(row, dict) else None
         if not model_version:
             continue  # malformed row: never guess the FK key
-        pick = (row.get("pick") or "").strip()
-        if unresolved:
-            result = "unresolved"
-        elif void or not winner_name or not pick:
-            result = "void"
-        else:
-            result = (
-                "won"
-                if canonical_player_key(pick) == canonical_player_key(winner_name)
-                else "lost"
-            )
+        result = tennis_pick_result(
+            row.get("pick"), winner_name, void=void, unresolved=unresolved
+        )
         real = result in ("won", "lost")
         await record_pick_settlement(
             source_table="tennis_predictions",
@@ -1053,25 +1058,13 @@ async def settle_unified_tennis(
         # il modello non ha un favorito netto e il prodotto non mostra nessun
         # pronostico. Recuperare `best_selection` a chiusura avvenuta significa
         # graduare una scelta che al pubblico non e' mai stata presentata.
-        pick = (row.get("pick") or "").strip()
-        if unresolved:
-            # #TENNIS-VOID-FIX-1: aged out without ever resolving the match.
-            # Not a confirmed void — flagged so /api/v2/history excludes it from
-            # both the win-rate sample AND the void count (a settlement-source
-            # gap must never masquerade as a real no-result).
-            result = "unresolved"
-        elif void or not winner_name or not pick:
-            # No declared direction (rows below the surfacing floor carry
-            # pick=null, e.g. "no clear favourite") must NOT count as a loss in
-            # the public track record — settle them as void.
-            result = "void"
-        else:
-            from core.tennis_names import canonical_player_key
-            result = (
-                "won"
-                if canonical_player_key(pick) == canonical_player_key(winner_name)
-                else "lost"
-            )
+        # #TENNIS-VOID-FIX-1: aged out -> 'unresolved', never a confirmed void
+        # (/api/v2/history excludes it from both the win-rate and the void
+        # count). No declared direction (pick=null below the floor) -> 'void',
+        # never a loss.
+        result = tennis_pick_result(
+            row.get("pick"), winner_name, void=void, unresolved=unresolved
+        )
         return await settle_unified_prediction(
             str(row["id"]), result, final_score=final_score,
             # #SETTLE-0909 — il vincitore arriva da tennis_predictions, che si
