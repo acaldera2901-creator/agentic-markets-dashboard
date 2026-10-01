@@ -98,6 +98,8 @@ export type MdsSectionLabels = {
   teamNews: string;
   teamNewsLocked: string;
   teamNewsNone: string;
+  /** #INFORTUNI-1001 — nessun dato di fonte per la partita (≠ zero assenti). */
+  teamNewsUnavailable: string;
   markets: string;
   unlock: string;
 };
@@ -531,7 +533,10 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                   ))}
                 </div>
               ) : (
-                <p className="br-md__none">{data.sections?.teamNewsNone ?? "No reported absences."}</p>
+                /* #INFORTUNI-1001 — nessun nome su nessun lato = la fonte non
+                   ha detto nulla (sulle nazionali arriva sempre `[]`). Non è
+                   «nessuna assenza»: è un dato che non abbiamo. */
+                <p className="br-md__none">{data.sections?.teamNewsUnavailable ?? "Absences not available for this match."}</p>
               )}
             </section>
           )}
