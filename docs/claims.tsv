@@ -1,0 +1,47 @@
+id	dove	testo	misura	operatore	soglia	stato	atteso
+# Registro dei claim pubblici (#CERTIFICA-1001). Una riga per claim. Lo valuta il check claim_registry (tools/control_center/checks/coerenza.py).							
+# misura: sql:<SELECT singolo, un numero> | api:<url>#<percorso.json> | - (non misurabile). stato: attivo | ritirato AAAA-MM-GG. atteso: esito dell'audit 01/10 (02-claim.md).							
+# soglie: c13 e c15 promettono «tutte/every» -> 0.99 (1% per righe legacy senza sigillo o spiegazione, non di piu'); c17 «edge on everything» -> 0.9 (l'edge esiste solo dove c'e' una quota: il 10% copre le partite senza mercato); c01/c05/c38 0.9 = «su ogni pick» con lo stesso margine; '== 0' porta sempre la popolazione come 2a colonna «as popolazione».							
+c01-clv-email	lib/crm-content.ts:113-128,275-279	closing line value su ogni pick (email CRM, 5 lingue)	sql:select count(*) filter (where closing_odds is not null)::float / nullif(count(*),0) from unified_predictions where published_at is not null and pick is not null and result in ('won','lost')	>=	0.9	attivo	rotto
+c01b-clv-email-inviata	crm_trigger_sends (wb_day14_offer, acq_day2_tested, acq_day5_picture)	email con il claim CLV inviate dopo la rimozione dal sito (31/08)	sql:select count(*) filter (where trigger_key in ('wb_day14_offer','acq_day2_tested','acq_day5_picture')), count(*) as popolazione from crm_trigger_sends where sent_at > '2026-08-31'	==	0	attivo	rotto
+c01c-clv-infra	supabase/migrations/20260917140000_anchor_price_history.sql	la quota di chiusura si raccoglie (anchor_price_history esiste)	sql:select count(*) from information_schema.tables where table_name = 'anchor_price_history'	>=	1	attivo	rotto
+c02-one-model-every-sport	lib/house-banners.ts landing-brand -> public/banners/creatives/ole-multisport-onemodel.jpg	ONE MODEL EVERY SPORT (creativo con hockey, baseball, MMA)	-			attivo	rotto
+c03-xg-faq	lib/home-faq.ts:91,117; app/landing-client.tsx:433,499	Deep analysis: form, xG / expected goals...	sql:select count(*) from understat_cache	>=	1	attivo	rotto
+c03b-injuries	lib/home-faq.ts:91,117; app/landing-client.tsx	...injuries (analisi con gli infortuni)	sql:select count(*) filter (where enrichment ? 'injuries_home' or enrichment ? 'injuries')::float / nullif(count(*),0) from match_predictions where kickoff > now()	>=	0.5	attivo	rotto
+c04-xg-ai-football	app/ai-football-predictions/page.tsx:22,75-80	Expected goals, not just results	sql:select count(*) from match_predictions where kickoff > now() and (enrichment ? 'xg_home' or enrichment ? 'xg_blend')	>=	1	attivo	rotto
+c05-tennis-modello	app/ai-tennis-predictions/page.tsx; app/landing-client.tsx:73,125	For every covered tennis match, the model outputs a probability	sql:select count(*) filter (where model_version <> 'partner-market-v1')::float / nullif(count(*),0) from tennis_predictions where scheduled_at > now()	>=	0.9	attivo	rotto
+c06-weekly-dal-modello	app/landing-client.tsx:447,511; app/weekly-model-case/layout.tsx:14	Weekly Model Case built by the model	sql:select count(u.id) filter (where u.model_version = 'partner-market-v1'), count(*) as popolazione from weekly_pick w cross join jsonb_array_elements(w.selections) s left join unified_predictions u on u.id::text = substring(s->>'id' from 4) where w.week_start = (select max(week_start) from weekly_pick)	==	0	attivo	rotto
+c07-weekly-in-base	app/landing-client.tsx:467,522	Weekly Model Case nella lista Base (il codice la da' solo a Pro)	-			attivo	rotto
+c08-modello-live	lib/home-faq.ts:99,125; app/landing-client.tsx:449,513	the model reads the game again (probabilita' in-play)	-			attivo	rotto
+c09-creator-picks	/community; app/llms.txt	Creator Picks: accumulators built by community creators	sql:select count(*) from community_slips	>=	1	attivo	rotto
+c10-ultime-100	app/app/page.tsx:2244	hit rate - last 100 settled picks (e' l'all-time)	-			attivo	rotto
+c11-proof	app/landing-client.tsx:435-437,501-503	The proof: settled hit-rate (pari all'implicita di mercato)	-			attivo	in parte
+c12-nothing-edited	app/landing-client.tsx:436-437,502-503	Nothing edited after the fact	-			attivo	in parte
+c13-logged-before-kickoff	app/landing-client.tsx; lib/home-faq.ts:91	Logged before kick-off (sigillo pick_ledger sulle pick contate)	sql:select count(l.source_id)::float / nullif(count(*),0) from unified_predictions u left join (select distinct source_table, source_id from pick_ledger where is_backfill = false) l on l.source_table = u.source_table and l.source_id = u.source_id where u.published_at is not null and u.pick is not null and u.result in ('won','lost') and u.is_demo = false	>=	0.99	attivo	in parte
+c14-calibrated	lib/layout SITE_DESCRIPTION; FAQ; landing	Calibrated, not hyped (tennis 70-80 sovra-confidente di 7 pt)	-			attivo	in parte
+c15-every-reading-reasoning	app/landing-client.tsx:423,489; app/app/page.tsx:4275,4330	Every reading shows the reasoning	sql:select count(*) filter (where length(coalesce(explanation,'')) > 20)::float / nullif(count(*),0) from unified_predictions where published_at is not null and pick is not null and result in ('won','lost') and is_demo = false	>=	0.99	attivo	in parte
+c16-ranked-by-edge	app/landing-client.tsx:446,510	Model Edges ranked by edge (la vetrina non ordina per edge)	-			attivo	in parte
+c17-edge-on-everything	home / ; app/app/page.tsx PlansTab Pro	edge on everything (tennis)	sql:select count(*) filter (where edge is not null)::float / nullif(count(*),0) from tennis_predictions where scheduled_at > now()	>=	0.9	attivo	in parte
+c18-annuale-rinnovo	lib/home-faq.ts:87,113; app/app/page.tsx:3974	Annual renews automatically every 12 months	-			attivo	rotto
+c19-cancel-anytime	landing pcNote; FAQ; PlansTab	Cancel anytime from your account	-			attivo	?
+c20-prezzi	lib/commercial-plan.ts:16,23; lib/paygate.ts:64-66	Base 14.99 / Pro 29.99, annuale = 11 mensilita'	-			attivo	regge
+c21-letture-per-sport	lib/access-projection.ts:44-49	Up to 3 readings per sport a day (free)	-			attivo	regge
+c22-3-pick-al-giorno	lib/email.ts:452-474; lib/crm-content.ts:124,212,275	Ogni giorno ricevi 3 pick per sport	-			attivo	in parte
+c23-unlock-predictions	app/app/page.tsx:2232	Unlock all {count} predictions today (86% below floor)	-			attivo	in parte
+c24-solo-1x2	lib/home-faq.ts:95,121	In football we read the match result (1X2)	-			attivo	in parte
+c25-basket-coming-soon	app/app/page.tsx:9074	BASKETBALL - Coming soon	-			attivo	in parte
+c26-entita-legale	app/llms.txt/route.ts; /terms	Terms: the legal entity behind the site	-			attivo	rotto
+c27-every-settled	app/history/page.tsx:9; app/llms.txt	Every settled prediction, graded and archived (vedi check copertura_onesta)	-			attivo	in parte
+c28-weekly-lunedi	app/weekly-model-case/layout.tsx:14	One accumulator every Monday	sql:select count(*) filter (where extract(isodow from week_start) = 1)::float / nullif(count(*),0) from weekly_pick where week_start > now() - interval '60 days'	>=	1	attivo	regge
+c29-telegram-settle	lib/tools/copy/en.ts	Telegram: we settle every pick we publish	-			attivo	?
+c30-scans-continuously	lib/tools/copy/en.ts common.ctaBody	BetRedge scans the market continuously (eta' ultima quota, secondi)	sql:select extract(epoch from now() - captured_at) from odds_snapshots order by id desc limit 1	<=	3600	attivo	in parte
+c31-11-calcolatori	lib/tools/registry.ts:6-18	11 free calculators in 11 languages	-			attivo	regge
+c32-widget-live	app/widget/page.tsx	real widget reading the live board	-			attivo	regge
+c33-widget-report	app/widget/page.tsx	you can see which of your pages sent them	-			attivo	in parte
+c34-not-a-bookmaker	ovunque	Probability engine, not a bookmaker, 18+	-			attivo	regge
+c35-no-card	landing; FAQ	No card required	-			attivo	regge
+c36-blog	blog_posts	5 guide pubblicate	sql:select count(*) from blog_posts where status = 'published'	>=	5	attivo	regge
+c37-best-bets-banner	public/banners/andrea-picks/*.jpg	Best Bets / Track record / Deep Analysis (creativo)	-			attivo	in parte
+c38-quote-top5	card Market % / Edge; Model Edges	Market % ed edge sulle partite dei top-5	sql:select count(*) filter (where odds_home is not null)::float / nullif(count(*),0) from match_predictions where kickoff > now() and league in ('PL','SA','PD','BL1','FL1')	>=	0.9	attivo	rotto
+c39-track-record-all-time	app/api/v2/history/route.ts STATS_CAP	il track record e' all-time (la route legge al massimo 5000 righe)	sql:select count(*) from unified_predictions where is_historical = true and is_demo = false and result is distinct from 'unresolved' and published_at is not null	<=	5000	attivo	regge
+c40-marcatori-freschi	blocco Marcatori sulle schede	Marcatori: profili giocatore aggiornati (giorni dall'ultimo)	sql:select extract(epoch from now() - max(coalesce(last_updated, updated_at::timestamptz))) / 86400 from player_profiles	<=	30	attivo	rotto
