@@ -36,7 +36,7 @@ import { fetchOdds, OddsResult } from "@/lib/odds-api";
 import { abbinaQuote } from "@/lib/odds-join";
 import { seedOddsRemaining, persistOddsRemaining } from "@/lib/odds-quota";
 import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
-import { fetchLeagueXG, matchTeam, leagueXGAverages } from "@/lib/understat";
+import { fetchLeagueXG, matchTeam, xgBlendBaseline } from "@/lib/understat";
 import { fetchMatchWeather } from "@/lib/weather";
 import {
   fetchApiFixtures,
@@ -467,7 +467,8 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
     const leagueXG = xgMap[code] ?? {};
     // Football V4: xG enters the model, not just the enrichment display. Teams
     // or leagues without Understat coverage fall back to pure-goals ratings.
-    const xgBaseline = leagueXGAverages(leagueXG);
+    // #XG-1001: shadow until XG_BLEND_ENABLED=1 — see xgBlendBaseline.
+    const xgBaseline = xgBlendBaseline(leagueXG);
     const apiFixtures = apifixMap[code] ?? [];
 
     const fixtures = fixtureResults.find((f) => f.code === code)?.fixtures ?? [];
@@ -702,7 +703,7 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
           try {
             const [pred, injuries] = await Promise.all([
               fetchPrediction(apifix.fixtureId),
-              fetchInjuries(apifix.fixtureId),
+              fetchInjuries(apifix.fixtureId, { home: apifix.homeTeam, away: apifix.awayTeam }),
             ]);
             if (pred) {
               enrichment.api_pct_home = pred.pct_home;
