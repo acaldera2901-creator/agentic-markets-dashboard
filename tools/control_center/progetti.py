@@ -41,8 +41,21 @@ FASI = ("ATTIVO", "BLOCCATO", "OPERATIVO", "ARCHIVIATO")
 # `` `ARCHIVIATO LATO NOSTRO — HANDOFF COMPLETO…` `` e il backtick chiude
 # venti parole dopo. Pretenderlo attaccato costava una card senza fase.
 _FASE = re.compile(r"`(" + "|".join(FASI) + r")\b")
+# Nel campo `**Fase:**` il backtick e' facoltativo: `project_betredge_heknew_video`
+# scrive `**Fase:** 🔴 BLOCCATO — attende Andrea` e pretenderlo dava un falso verde.
+_FASE_PAROLA = re.compile(r"\b(" + "|".join(FASI) + r")\b", re.I)
 _DATA = re.compile(r"STATO\s+(\d{4}-\d{2}-\d{2})")
+# La testata di uno STATO: la riga che *comincia* (dopo `>`, emoji e `**`)
+# con `STATO <data>`. Le card lunghe impilano decine di testate storiche, e
+# la fase vale solo da quella piu' recente: `project_email_warmup_news_subdomain`
+# prendeva il `BLOCCATO` di una voce del 15/09, quattordici testate piu' sotto.
+_TESTATA = re.compile(r"^\W*STATO\s+(\d{4}-\d{2}-\d{2})")
 _CAMPO = re.compile(r"\*\*([^*:]+):?\*\*:?\s*(.*)")
+_PUNTO = re.compile(r"^[-*]\s+(?=\*\*)")           # `- **Fase:** …` (affiliate_v2)
+_VOCE = re.compile(r"^(?:\d+[.)]|[-*])\s+(\S.*)$")  # voce di lista sotto un titolo
+# I campi che si scrivono anche come titolo con la lista sotto
+# (`**PROSSIMA AZIONE:**` e poi `1. …`): vale la prima voce.
+_CAMPI_A_LISTA = {"prossima azione"}
 _TITOLO_MD = re.compile(r"^#\s+(.*)$", re.M)
 _INIZIO = "<!-- STATO:start -->"
 _FINE = "<!-- STATO:end -->"
@@ -60,6 +73,8 @@ _TESTA = 8192
 _LEGACY = re.compile(r"\*\*Stato:\*\*\s*(.+)")
 _LEGACY_FASE = ((re.compile(r"archivi", re.I), "ARCHIVIATO"),
                 (re.compile(r"blocc", re.I), "BLOCCATO"),
+                # `IN PAUSA per scelta di Andrea`: attende una persona precisa
+                (re.compile(r"pausa|attende|in attesa", re.I), "BLOCCATO"),
                 (re.compile(r"operativ", re.I), "OPERATIVO"),
                 (re.compile(r"attiv|in corso", re.I), "ATTIVO"))
 
@@ -86,19 +101,87 @@ def _blocco_stato(testo: str) -> str:
     return testo[a + len(_INIZIO): b if b > 0 else len(testo)]
 
 
+def _righe_vive(blocco: str) -> list[str]:
+    """Le righe del blocco senza `>`, tolte quelle dentro `<details>`: la'
+    dentro ci sono gli STATO precedenti, che non dichiarano piu' niente."""
+    fuori, dentro = [], 0
+    for riga in blocco.splitlines():
+        riga = re.sub(r"^\s*>\s?", "", riga).strip()
+        if "<details" in riga:
+            dentro += 1
+        if not dentro:
+            fuori.append(riga)
+        if "</details>" in riga and dentro:
+            dentro -= 1
+    return fuori
+
+
 def _campi(blocco: str) -> dict:
     """I campi dello schema STATO, per quello che il file dichiara davvero."""
     fuori: dict[str, str] = {}
-    for riga in blocco.splitlines():
-        riga = re.sub(r"^\s*>\s?", "", riga).strip()
-        m = _CAMPO.match(riga)
+    righe = _righe_vive(blocco)
+    for i, riga in enumerate(righe):
+        m = _CAMPO.match(_PUNTO.sub("", riga))
         if not m:
             continue
-        chiave = m.group(1).strip().lower().split("(")[0].strip()
+        chiave = re.split(r"[(,]", m.group(1).strip().lower())[0].strip()
         valore = m.group(2).strip()
+        if not valore and chiave in _CAMPI_A_LISTA:
+            valore = _prima_voce(righe[i + 1:])
         if valore and chiave not in fuori:
             fuori[chiave] = valore
     return fuori
+
+
+def _prima_voce(dopo: list[str]) -> str:
+    for riga in dopo:
+        if not riga:
+            continue
+        m = _VOCE.match(riga)
+        return m.group(1).strip() if m and not _CAMPO.match(riga) else ""
+    return ""
+
+
+def _testata(blocco: str) -> tuple[str | None, str | None]:
+    """(data, riga) della testata STATO piu' recente; a parita', la prima."""
+    migliore: tuple[str | None, str | None] = (None, None)
+    for riga in _righe_vive(blocco):
+        m = _TESTATA.match(riga)
+        if m and (migliore[0] is None or m.group(1) > migliore[0]):
+            migliore = (m.group(1), riga)
+    return migliore
+
+
+def _fase_da_testo(valore: str) -> str | None:
+    m = _FASE_PAROLA.search(valore)
+    if m:
+        return m.group(1).upper()
+    for schema, fase in _LEGACY_FASE:
+        if schema.search(valore):
+            return fase
+    return None
+
+
+def _fase(blocco: str, campi: dict, testo: str) -> tuple[str | None, str | None]:
+    """(fase, da dove viene). In ordine: la testata piu' recente, il campo
+    `**Fase:**`, il blocco intero solo se non ha nessuna testata, la riga
+    `**Stato:**` delle card legacy. Una testata senza fase non eredita la fase
+    di una voce storica: meglio «senza fase» che una fase vecchia."""
+    _data, riga = _testata(blocco)
+    if riga:
+        m = _FASE.search(riga)
+        if m:
+            return m.group(1), "testata"
+    if campi.get("fase"):
+        f = _fase_da_testo(campi["fase"])
+        if f:
+            return f, "campo Fase"
+    if riga is None and blocco:
+        m = _FASE.search(blocco)
+        if m:
+            return m.group(1), "blocco"
+    f = _fase_legacy(testo)
+    return (f, "legacy") if f else (None, None)
 
 
 def _fase_legacy(testo: str) -> str | None:
@@ -113,9 +196,10 @@ def _fase_legacy(testo: str) -> str | None:
 
 def _scheda(percorso: Path, registro: str, etichetta: str, testo: str) -> dict:
     blocco = _blocco_stato(testo)
-    fase = _FASE.search(blocco)
-    data = _DATA.search(blocco)
     campi = _campi(blocco)
+    fase, fase_fonte = _fase(blocco, campi, testo)
+    data_testata, _riga = _testata(blocco)
+    data = _DATA.search(blocco)
     try:
         modificato = percorso.stat().st_mtime
     except OSError:
@@ -126,8 +210,9 @@ def _scheda(percorso: Path, registro: str, etichetta: str, testo: str) -> dict:
         "registro": registro,
         "registro_nome": etichetta,
         "file": percorso.name,
-        "fase": fase.group(1) if fase else _fase_legacy(testo),
-        "stato_data": data.group(1) if data else None,
+        "fase": fase,
+        "fase_fonte": fase_fonte,
+        "stato_data": data_testata or (data.group(1) if data else None),
         "done_quando": campi.get("done quando"),
         "prossima_azione": campi.get("prossima azione"),
         "pending": campi.get("pending"),

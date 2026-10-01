@@ -40,11 +40,87 @@ class Elenco(unittest.TestCase):
         self.assertEqual(s["fase"], "ARCHIVIATO")
 
     def test_fase_anche_nelle_card_senza_blocco_stato(self):
+        # La card vera cambia fase (era OPERATIVO, dal 30/09 «Bloccato»): il
+        # test guarda che la riga legacy venga letta, non quale fase dichiara.
         s = self.per_id.get("sistema/machina")
         if s is None:
             self.skipTest("card non presente")
-        self.assertEqual(s["fase"], "OPERATIVO")
+        self.assertIn(s["fase"], progetti.FASI)
+        self.assertEqual(s["fase_fonte"], "legacy")
         self.assertFalse(s["ha_stato"])
+
+    def test_le_card_vere_dell_audit_0101(self):
+        attese = {"azienda/project_betredge_heknew_video": "BLOCCATO",
+                  "azienda/project_affiliate_v2": "BLOCCATO"}
+        for ident, fase in attese.items():
+            if ident in self.per_id:
+                self.assertEqual(self.per_id[ident]["fase"], fase, ident)
+        s = self.per_id.get("azienda/project_email_warmup_news_subdomain")
+        if s is not None:
+            # la testata del 29/09 non dichiara una fase: il BLOCCATO del 15/09 non vale
+            self.assertNotEqual(s["fase_fonte"], "blocco")
+
+
+CARD_FASE_SENZA_BACKTICK = """<!-- STATO:start -->
+**Fase:** 🔴 BLOCCATO — attende Andrea (visione del file)
+**Prossima azione:** Andrea guarda il video. Owner: Andrea.
+<!-- STATO:end -->
+"""
+
+CARD_PAUSA = """<!-- STATO:start -->
+- **Fase:** 🟡 IN PAUSA per scelta di Andrea (2026-09-30)
+- **Prossima azione:** Andrea porta l'accesso. Owner: Andrea → Claude.
+<!-- STATO:end -->
+"""
+
+# La forma di project_email_warmup_news_subdomain: testata recente senza
+# fase, azione come titolo con la lista sotto, voci storiche BLOCCATO sotto.
+CARD_STORICA = """<!-- STATO:start -->
+> ✅ **DECISIONE ANDREA 2026-09-25:** teniamo il banner
+>
+> 🔴 **STATO 2026-09-29 · g28 CONFERMATO `sent` · g29 IN DRAFT**
+>
+> **PROSSIMA AZIONE:**
+> 1. **Andrea — sbloccare la quota** — *owner: Andrea*
+> 2. dopo lo sblocco: Send
+>
+> 🔴 **STATO 2026-09-15 · `BLOCCATO` — il template non passa il gate**
+> **PROSSIMA AZIONE (in quest'ordine):**
+> 1. vecchia azione
+> <details><summary>Stato precedente</summary>
+> 🟢 **STATO 2026-09-30 · `ATTIVO`** — dentro details: non conta
+> </details>
+<!-- STATO:end -->
+"""
+
+
+class Parser(unittest.TestCase):
+    def _s(self, testo):
+        return progetti._scheda(progetti.Path("/nonesiste/project_x.md"), "azienda", "Azienda", testo)
+
+    def test_fase_senza_backtick_nel_campo(self):
+        s = self._s(CARD_FASE_SENZA_BACKTICK)
+        self.assertEqual((s["fase"], s["fase_fonte"]), ("BLOCCATO", "campo Fase"))
+
+    def test_in_pausa_e_bloccato_e_il_punto_elenco_non_nasconde_il_campo(self):
+        s = self._s(CARD_PAUSA)
+        self.assertEqual(s["fase"], "BLOCCATO")
+        self.assertTrue(s["prossima_azione"].startswith("Andrea porta"))
+
+    def test_la_fase_viene_solo_dalla_testata_piu_recente(self):
+        s = self._s(CARD_STORICA)
+        self.assertIsNone(s["fase"])            # non il BLOCCATO del 15/09
+        self.assertEqual(s["stato_data"], "2026-09-29")   # non il 30/09 in <details>
+        self.assertEqual(s["prossima_azione"],
+                         "**Andrea — sbloccare la quota** — *owner: Andrea*")
+
+    def test_i_casi_esistenti_restano(self):
+        s = self._s("<!-- STATO:start -->\n> 🟢 **STATO 2026-09-29 · `ATTIVO`**\n"
+                    "> **Prossima azione:** fare x\n<!-- STATO:end -->")
+        self.assertEqual((s["fase"], s["fase_fonte"], s["prossima_azione"]),
+                         ("ATTIVO", "testata", "fare x"))
+        s = self._s("<!-- STATO:start -->\n> nota `OPERATIVO` senza testata\n<!-- STATO:end -->")
+        self.assertEqual((s["fase"], s["fase_fonte"]), ("OPERATIVO", "blocco"))
 
 
 class Scheda(unittest.TestCase):

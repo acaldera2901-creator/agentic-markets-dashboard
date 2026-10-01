@@ -78,32 +78,68 @@ nuovo). Campi nuovi, tutti facoltativi — una card senza resta valida com'e':
     >   - [ ] testo · owner · scad:AAAA-MM-GG · check:<id_check>[,<id>]
     >   - [x] testo · owner · fatto:AAAA-MM-GG
 
-Il primo pezzo e' il testo, il primo pezzo senza chiave l'owner; `scad`,
-`check`, `fatto` sono attributi. La lista finisce al campo `**...:**`
-successivo; le caselle fuori da `**Task:**` (p.es. nei Pending) non sono task.
-`check:` e' l'id di un check dello snapshot (`/api/state`).
+Il primo pezzo e' il testo; `scad`, `check`, `fatto` sono attributi;
+l'**owner** e' il primo pezzo che ne ha la *forma* — un nome di `NOMI_NOTI`
+in `cockpit.py` (Andrea, Michele, Claude, Tommy, Steve, Codex, gli agenti…) o
+`Nome → Nome`. Ogni altro pezzo torna nel testo, quindi un ` · ` dentro la
+frase non diventa l'owner. Chi agisce e' il **primo** nome (`attore`):
+`Claude → dopo OK Andrea` e' di Claude, `Andrea → Claude` di Andrea, e
+`ui-andrea` non e' Andrea. La lista finisce al campo `**...:**` successivo; le
+caselle fuori da `**Task:**` (p.es. nei Pending) non sono task. `check:` e'
+l'id di un check dello snapshot (`/api/state`).
 
 **Il check chiude il task, non la spunta:** check tutti verdi -> `verificato
-dal check` anche senza `[x]`; `[x]` con un check rosso -> `riaperto dal check`.
+dal check` anche senza `[x]`; `[x]` con un check rosso -> `riaperto dal check`;
+`[x]` con un check ambra/non misurato/assente -> `spuntato ma il check non è
+verde` (resta aperto).
+
+**Fase e Prossima azione** (`progetti._scheda`, campo `fase_fonte`). La fase
+si legge, in ordine: (1) dalla **testata piu' recente** — la riga che comincia
+con `STATO <data>`, con la fase fra backtick; le testate dentro `<details>` non
+contano; (2) dal campo `**Fase:**`, con o senza backtick ed emoji (`IN PAUSA`
+/ `attende` valgono `BLOCCATO`); (3) dal blocco intero solo se non ha nessuna
+testata; (4) dalla riga legacy `**Stato:**`. Una testata recente **senza**
+fase da' fase `null`: non eredita il `BLOCCATO` di una voce storica. Un campo
+scritto come voce di lista (`- **Fase:** …`) vale come gli altri; `**PROSSIMA
+AZIONE:**` usato come titolo vale la **prima voce** della lista sotto.
 
 `GET /api/cockpit?area=betredge` restituisce:
 
 - `numeri` — i quattro numeri della banda, derivati qui e non in pagina:
   `progetti_attivi`, `bloccati`, `daemon_vivi`/`daemon_totali` (i check
   `launchd_*` dell'area), `ultima_spunta` (la data `fatto:` piu' recente).
-- `richiedono_te` — solo azioni di Andrea: task aperti di Andrea con un check
-  non verde o scaduti (su card non ferme), card `BLOCCATO` non ferme con
-  `owner: Andrea` / «in attesa di Andrea» nella Prossima azione, e i check
-  **rossi che nessun task cita** (triage). Un rosso citato da un task di un
-  altro owner e' gia' preso in carico: va in `in_carico`, non qui. Ambra e
-  non-misurati entrano solo se un task di Andrea li cita, altrimenti
-  `da_osservare` («ambra non notifica mai»).
+- `richiedono_te` — solo i rossi/ambra veri che chiedono Andrea: task aperti
+  di Andrea con un check non verde o scaduti (su card non ferme), e i check
+  **rossi che nessun task prende in carico** (triage, `tipo: check`). Ogni
+  ticket `task` porta `titolo` (senza i numeri copiati nella card, se il task
+  ha un check vivo: il numero vero e' nel `perche`), `testo` (quello esatto
+  della card), `da_quando` (il **primo rosso** della serie corrente in
+  `history.jsonl`; senza storico la stima `red_runs` × 5 min). Un rosso citato
+  da un task di un altro owner **su card viva** e' preso in carico: va in
+  `in_carico`, non qui. Un task **senza owner** non prende in carico niente:
+  il rosso resta triage. Ambra e non-misurati entrano solo se un task di
+  Andrea li cita, altrimenti `da_osservare` («ambra non notifica mai»).
+- `in_coda_per_te` / `n_in_coda` — azioni vere di Andrea **senza urgenza
+  misurata**: task aperti di Andrea senza check e non scaduti, card `BLOCCATO`
+  in attesa di Andrea (`owner: Andrea` / «attende Andrea» nella Prossima
+  azione o nel campo Fase), voci dei Pending scritte come `Andrea: …` /
+  `owner: Andrea`. Solo da card non ferme. Voce: `{tipo: task|bloccato|pending,
+  titolo, card, nome_card, scad|null, eta_giorni, fonte, indice?}`. **Non**
+  entrano in `n_richiedono_te` ne' nel verdetto.
+- `in_carico` — `{titolo, owner, checks, fonte, card, nome_card, giorni_fermo,
+  card_ferma}`. Se la card e' ferma o `ARCHIVIATO` il check **non** si
+  silenzia: resta in `da_osservare` con `in_carico_a`, `card`, `giorni_fermo`.
 - `progetti` — card dell'area toccate negli ultimi 14 giorni: fase, goal,
   task chiusi/totali, prossimo task, salute dei check collegati, ultimo tocco
   (data dello STATO o dell'ultima spunta; l'mtime solo se manca: un ritocco in
-  blocco lo sposta), ultima verifica.
-- `archivio` — card dell'area ferme da >14 giorni o `ARCHIVIATO`: contate,
-  non mostrate in principale.
+  blocco lo sposta), ultima verifica, `ferma`, `perche_qui`. Una card ferma o
+  archiviata con un task aperto su un check **rosso** sta qui (in fondo,
+  `ferma: true`, `perche_qui` dice perche'), non in archivio.
+- `archivio` — card dell'area ferme da >14 giorni o `ARCHIVIATO` senza rossi
+  aperti: contate, non mostrate in principale.
+- `assente: false`. Un'area valida che nessuna card dichiara risponde **404**
+  `{"area", "assente": true, "aree": [...], "messaggio"}` (400 resta per uno
+  slug non valido).
 
 ### Progetti e workstream (`/api/hub`)
 
@@ -128,10 +164,19 @@ la prima.
 - `GET /api/cockpit?area=<slug>` aggiunge `verdetto` {livello, n_richiedono_te},
   `progetto` (la card-progetto con goal, salute peggiore fra la sua e quella dei
   workstream vivi, `avanzamento` sui task di tutte le card dell'area,
-  `n_workstream`) e `workstream`; `progetti` resta come alias di `workstream`
-  per `cockpit.html`. Ogni workstream porta `nome`.
+  `n_workstream` = `n_workstream_vivi` + `n_workstream_archivio`, `task` =
+  lista piatta di tutti i task contati in `avanzamento`: `{testo, owner,
+  attore, stato, scad, check, card, nome_card, fatto, spuntato, indice}`) e
+  `workstream`; `progetti` resta come alias di `workstream` per
+  `cockpit.html`. Ogni workstream porta `nome`. Ogni goal con `check:` porta
+  accanto ad `attuale` (testo della card) il valore vivo: `attuale_live` (la
+  headline del check; con piu' check `N/M verdi`), `valore_live`,
+  `misurato_alle` (il check piu' vecchio), `eta_live_min`, `diverge` (true se
+  un numero scritto nella card non compare nel valore vivo; null se non c'e'
+  niente da confrontare).
 - `GET /api/hub` → `{verdetto, progetti:[{id, area, nome, fase, goal_sintesi,
-  goal, salute, n_richiedono_te, avanzamento, n_workstream, ultimo_tocco}],
+  goal, salute, n_richiedono_te, avanzamento, n_workstream, n_workstream_vivi,
+  n_workstream_archivio, n_in_coda, ultimo_tocco}], in_coda_per_te, n_in_coda,
   aree, slot_liberi}`. Le aree vengono dalle `**Area:**` presenti (solo slug
   `a-z0-9_-`), non da una lista nel codice; il verdetto aggrega tutte le aree,
   anche quelle senza card-progetto, e un ticket di una card con due aree conta
@@ -142,7 +187,8 @@ I check dello snapshot appartengono all'area `betredge` (e' lo snapshot di
 BetRedge). `POST /api/task/fatto` `{id, indice, testo}` (token + Origin come
 `/api/action`) e' l'unica scrittura su una card: spunta **solo** quella riga
 (`[x]` + `· fatto:data`), pretende che il testo combaci (altrimenti 409:
-la card e' cambiata sotto la pagina), lascia `<card>.md.bak`, scrive su
+la card e' cambiata sotto la pagina; vale anche il `titolo` senza numeri
+fissi del ticket), lascia `<card>.md.bak`, scrive su
 temporaneo + rename. Il percorso viene dall'indice delle card, mai dal corpo.
 
 **Misurare a mano senza scrivere niente:**
