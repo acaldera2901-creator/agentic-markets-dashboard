@@ -21,6 +21,10 @@ describe("resultSourceFor", () => {
   it("sport nuovo senza fonte → null", () => expect(resultSourceFor("baseball", "MLB")).toBeNull());
   it("lega nel debito dichiarato → debito", () =>
     expect(resultSourceFor("football", "XYZ", conDebito)).toBe(RESULT_SOURCE_DEBT));
+  it("POL e VEI (solo Odds API /scores a 3 giorni) → debito dichiarato, non fonte piena", () => {
+    expect(resultSourceFor("football", "POL")).toBe(RESULT_SOURCE_DEBT);
+    expect(resultSourceFor("football", "VEI")).toBe(RESULT_SOURCE_DEBT);
+  });
   it("tennis partner (ITF/Challenger) → ha la fonte del feed", () =>
     expect(resultSourceFor("tennis", "Partner feed")).toBe("espn-tennis,betconstruct"));
   it("tennis ESPN, qualunque torneo → fonte", () =>
@@ -68,7 +72,8 @@ describe("data/result_sources.json combacia con le mappe di settle", () => {
     ...Object.keys(ODDS_SPORT_KEYS), ...Object.keys(SUMMER_LEAGUES),
   ]);
   for (const code of club) {
-    it(`${code} dichiarata`, () => expect(football[code]?.length ?? 0).toBeGreaterThan(0));
+    it(`${code} dichiarata o nel debito`, () =>
+      expect((football[code]?.length ?? 0) > 0 || RESULT_SOURCES.debt.leagues.includes(`football:${code}`)).toBe(true));
   }
   for (const [code, sources] of Object.entries(football)) {
     if (sources.includes("espn") && club.has(code))

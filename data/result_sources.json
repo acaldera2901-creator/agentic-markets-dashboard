@@ -22,13 +22,11 @@
       "CNL": ["espn"],
       "ELI": ["espn", "oddsapi"],
       "ALL": ["espn", "oddsapi"],
-      "VEI": ["oddsapi"],
       "LOI": ["espn", "oddsapi"],
       "CSL": ["espn", "oddsapi"],
       "SB": ["espn", "oddsapi"],
       "AUT": ["espn", "oddsapi"],
       "DNK": ["espn", "oddsapi"],
-      "POL": ["oddsapi"],
       "SWZ": ["espn", "oddsapi"],
       "BEL": ["espn", "oddsapi"],
       "EFLC": ["espn", "oddsapi"],
@@ -52,14 +50,14 @@
     }
   },
   "_notes": {
-    "VEI": "ESPN fin.1 exists but its payload is empty: only The Odds API /scores (3 days).",
-    "POL": "no ESPN league: only The Odds API /scores (3 days).",
+    "VEI": "in debt: only The Odds API /scores (3-day window), no ESPN source (fin.1 payload is empty). A pick not closed within 3 days stays unresolved.",
+    "POL": "in debt: only The Odds API /scores (3-day window), no ESPN source (no ESPN league). A pick not closed within 3 days stays unresolved.",
     "tennis": "every tennis row goes through ESPN then the partner feed (agents/tennis_settlement.py _resolve_all), whatever the tournament: Challenger/ITF/WTA125 and doubles included."
   },
   "debt": {
     "owner": "Andrea",
     "due": "2026-10-08",
-    "_what": "Served leagues without a source, published on purpose until the due date so they do not vanish from the board. Format 'sport:LEAGUE'. Measured 01/10 on unified_predictions (14 days): none. Must stay empty: anything NEW without a source is rejected.",
-    "leagues": []
+    "_what": "Served leagues without a source, published on purpose until the due date so they do not vanish from the board. Format 'sport:LEAGUE'. Odds API /scores alone (3 days) is not a full source. Anything NEW without a source is rejected; nothing new enters this list.",
+    "leagues": ["football:POL", "football:VEI"]
   }
 }

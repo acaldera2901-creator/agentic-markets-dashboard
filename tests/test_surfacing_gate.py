@@ -355,6 +355,8 @@ _CON_DEBITO = {"sources": {"football": {"PL": ["football-data"]}},
     ("football", "JPN", None),             # lega nuova senza fonte
     ("baseball", "MLB", None),             # sport nuovo senza fonte
     ("tennis", "Partner feed", "espn-tennis,betconstruct"),
+    ("football", "POL", RESULT_SOURCE_DEBT),   # solo Odds API /scores a 3 giorni
+    ("football", "VEI", RESULT_SOURCE_DEBT),
 ])
 def test_result_source_for(sport, lega, atteso):
     assert result_source_for(sport, lega) == atteso
