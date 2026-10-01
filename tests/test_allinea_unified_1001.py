@@ -216,3 +216,21 @@ def test_restore_only_rows_untouched_since_the_batch(fake, tmp_path):
     assert mod._restore(bk) == 1
     assert db2.rows["a"]["result"] == "unresolved" and db2.rows["a"]["notes"] == a["notes"]
     assert db2.rows["b"]["result"] == "won"  # manual/live change never overwritten
+
+
+def test_notes_array_skipped_null_starts_fresh_like_live():
+    assert plan_row(rec(notes="[1, 2]"), TS) == (None, "notes-non-json")
+    new, _ = plan_row(rec(notes=None), TS)  # nothing to lose: live writes a fresh object
+    assert json.loads(new["notes"]) == {"final_score": "6-4 6-3", "settlement_batch": BATCH}
+    assert new["old_notes"] is None
+
+
+def test_tennis_void_written_unstamped():
+    new, why = plan_row(rec(s_result="void", s_outcome=None, s_final_score=None), TS)
+    assert why == "void" and new["verification_state"] == "unverified"
+
+
+def test_non_sigillata_with_non_unique_key_is_skipped():
+    foot = rec(sport="football", pick="home", market="1X2", s_final_score="1-0", n_key=2,
+               s_result="won", s_reason="recupero:CALCIO-1001 fonte=football-data non-sigillata")
+    assert plan_row(foot, TS) == (None, "chiave-non-univoca")
