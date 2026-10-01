@@ -420,8 +420,15 @@ def check_claims() -> Verdict:
         # Un registro vuoto o tutto ritirato non ha misurato niente.
         return unknown(f"nessun claim attivo da misurare: {testo}", fonte, evidence=prova)
     if rotti:
-        nomi = ", ".join(v["id"] for v in rotti[:8])
-        return red(f"{testo}: {nomi}", fonte, value=len(rotti), evidence=prova)
+        # Il rosso resta finche' c'e' un rotto, ma un claim che si rompe DOPO
+        # l'audit 01/10 (atteso «regge» o «?») cambia la headline e si nomina
+        # per primo: altrimenti il 16esimo rotto sparirebbe nei 15 gia' noti.
+        peggiorati = [v for v in rotti if v["atteso"] not in ("rotto", "in parte")]
+        nomi = ", ".join(v["id"] for v in peggiorati[:6]) or "-"
+        return red(f"{testo} · {len(peggiorati)} peggiorati: {nomi} · "
+                   f"{len(rotti) - len(peggiorati)} attesi dall'audit 01/10",
+                   fonte, value=len(rotti), evidence={**prova, "peggiorati":
+                                                      [v["id"] for v in peggiorati]})
     if ignoti:
         return amber(testo, fonte, value=len(ignoti), evidence=prova)
     return green(testo, fonte, value=0, evidence=prova)

@@ -287,3 +287,16 @@ def test_popolazione_finita_limitata_e_troncamento_non_verde():
     rep["finished_rows"] = coerenza.FINITE_MAX
     with patch.object(coerenza, "misura_history", return_value=(rep, stats)):
         assert coerenza.check_copertura_onesta().level == "unknown"
+
+
+def test_headline_distingue_i_rotti_attesi_dai_peggiorati():
+    registro = [_claim(id="noto", atteso="rotto"), _claim(id="nuovo", atteso="regge")]
+    with patch.object(coerenza, "leggi_claims", return_value=registro), \
+         patch.object(coerenza, "fetch_all", return_value=[(0,)]):
+        v = coerenza.check_claims()
+    assert v.level == "red"
+    assert "1 peggiorati: nuovo" in v.headline and "1 attesi dall'audit" in v.headline
+    with patch.object(coerenza, "leggi_claims", return_value=registro[:1]), \
+         patch.object(coerenza, "fetch_all", return_value=[(0,)]):
+        solo_noti = coerenza.check_claims().headline
+    assert solo_noti != v.headline and "0 peggiorati" in solo_noti
