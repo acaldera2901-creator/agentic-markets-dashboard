@@ -1,8 +1,12 @@
 -- #SETTLE-0909 fase 2 — il settlement diventa correggibile per davvero.
 -- APPROVE Andrea 10/09/2026 ("chiudiamo quello che resta fuori").
 --
--- ⛔ STATO: NON ANCORA APPLICATA. Chi la applica aggiorna questo header con la
--- data e cosa ha verificato.
+-- ✅ STATO: APPLICATA (data di applicazione non registrata). Verificato in prod
+-- il 2026-10-01, sola lettura (#RISULTATI-PARTNER-1001): la vista
+-- pick_settlement_current esiste; su pick_settlement restano solo
+-- pick_settlement_pkey, pick_settlement_settled_idx e
+-- pick_settlement_pick_rev_key (il vecchio pick_settlement_pick_key a 3
+-- colonne non c'e' piu'); esistono gia' righe con settlement_revision > 1.
 --
 -- ⚠️ ORDINE OBBLIGATORIO, e non è una formalità:
 --   1. PRIMA il deploy del codice che sposta i due scrittori sul conflict
