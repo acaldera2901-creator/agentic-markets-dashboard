@@ -104,3 +104,19 @@ it("#REFRESH2-1001: una fase con la scadenza gia' passata non viene avviata", as
   expect(body.fasi.prezzi.stato).toBe("saltata");
   expect(registraPrezziPartner).not.toHaveBeenCalled();
 });
+
+it("#REFRESH2-1001: durata totale nel JSON e log dell'esito tardivo di una fase saltata", async () => {
+  vi.useFakeTimers();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  ingestPartnerTennis.mockImplementationOnce(() => new Promise((r) => setTimeout(() => r({}), 120_000)));
+  const { GET } = await import("./route");
+  let risposta: Response | null = null;
+  void GET(req()).then((r) => { risposta = r; });
+  await vi.advanceTimersByTimeAsync(130_000);
+  const body = await risposta!.json();
+  expect(body.fasi.ingest.stato).toBe("saltata");
+  expect(typeof body.ms).toBe("number");
+  expect(log.mock.calls.some(([m]) => String(m).startsWith("[refresh] ingest completata in ritardo dopo"))).toBe(true);
+  vi.restoreAllMocks();
+});

@@ -48,7 +48,14 @@ async function conScadenza<T>(
     lavoro.catch(() => {});
     const esito = await Promise.race([lavoro, scaduta]);
     fasi[nome] = { ms: Date.now() - t0, stato: esito === SALTATA ? "saltata" : "ok" };
-    if (esito === SALTATA) console.error(`[refresh] ${nome} SALTATA per scadenza dopo ${Date.now() - t0} ms`);
+    if (esito === SALTATA) {
+      console.error(`[refresh] ${nome} SALTATA per scadenza dopo ${Date.now() - t0} ms`);
+      // The skipped work keeps running: log how it really ended, if it does.
+      lavoro.then(
+        () => console.log(`[refresh] ${nome} completata in ritardo dopo ${Date.now() - t0} ms`),
+        (e: unknown) => console.error(`[refresh] ${nome} errore tardivo dopo ${Date.now() - t0} ms: ${String(e)}`),
+      );
+    }
     return esito;
   } catch (e) {
     fasi[nome] = { ms: Date.now() - t0, stato: "errore" };
@@ -168,5 +175,6 @@ export async function GET(req: NextRequest) {
     partner: partnerError ? { error: partnerError } : partner,
     prezzi: prezziError ? { error: prezziError } : prezzi,
     fasi,
+    ms: Date.now() - avvio,
   });
 }
