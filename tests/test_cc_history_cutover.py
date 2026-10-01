@@ -39,13 +39,9 @@ def test_senza_il_campo_il_confronto_resta_quello_di_prima():
     assert v.level == "green"
 
 
-def test_un_vero_scarto_resta_rosso_anche_al_netto():
-    v = _run((1200, 655), {**BASE, "post_cutover_excluded": {"n": 100, "won": 55, "lost": 45}})
-    assert v.level == "red"
-
-
-def test_un_campo_incoerente_non_si_sottrae():
+def test_il_netto_non_nasconde_un_vero_scarto_ne_si_fida_di_un_campo_incoerente():
+    escluse = {"n": 100, "won": 55, "lost": 45}
+    assert _run((1200, 655), {**BASE, "post_cutover_excluded": escluse}).level == "red"
     # Trust boundary: un'esclusione piu' grande del DB non si usa per «aggiustare».
     v = _run((1000, 600), {**BASE, "post_cutover_excluded": {"n": 5000, "won": 1, "lost": 1}})
-    assert v.level == "green"
-    assert v.evidence["escluse_post_cutover"] == 0
+    assert (v.level, v.evidence["escluse_post_cutover"]) == ("green", 0)
