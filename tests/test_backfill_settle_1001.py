@@ -37,8 +37,9 @@ def test_build_counts_written_and_skipped():
          ("match_predictions", "e2", "v", "won", "unverified", N)],
         [("tennis_predictions", "m1", "v", "A", "unresolved", None, None, "expired")],
     )
-    assert len(rows) == 2
-    assert stats == {"b1:won": 1, "b1:skipped": 1, "b2:unresolved": 1}
+    # b1 is superseded by scripts/recupera_calcio_1001.py (#CALCIO-1001 review D)
+    assert len(rows) == 1
+    assert stats == {"b1:superseded": 2, "b2:unresolved": 1}
 
 
 

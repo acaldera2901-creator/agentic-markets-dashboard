@@ -5,7 +5,9 @@ NOT TO BE RUN with --apply without APPROVE from Andrea (prod write on
 via tools/control_center/db.py), prints what it would write.
 
 WHAT IT CLOSES (measured 01/10)
-  b1  football: sealed picks (match_predictions) whose served row is already
+  b1  SUPERSEDED (no-op) by scripts/recupera_calcio_1001.py — run that one
+      for football. Original scope, kept for the record:
+      football: sealed picks (match_predictions) whose served row is already
       closed AND verified, without a mirror row — the 10-13/09 mirror gap.
   b2  tennis: sealed picks (tennis_predictions, register born 21/09) whose
       served row is already closed. Until a2 nothing ever wrote them.
@@ -108,7 +110,12 @@ def tennis_row(st, sid, mv, sealed_pick, served_result, notes, winner, pred_outc
 def build(football: list[tuple], tennis: list[tuple]) -> tuple[list[dict], dict]:
     rows: list[dict] = []
     stats: dict[str, int] = {}
-    for label, src, fn in (("b1", football, football_row), ("b2", tennis, tennis_row)):
+    # #CALCIO-1001 review D — b1 is superseded by scripts/recupera_calcio_1001.py,
+    # which grades sealed vs shown pick and declares a source per row. Writing
+    # football here too would race it on the same (pick, revision 1) key.
+    if football:
+        stats["b1:superseded"] = len(football)
+    for label, src, fn in (("b2", tennis, tennis_row),):
         for rec in src:
             r = fn(*rec)
             key = f"{label}:{r['result'] if r else 'skipped'}"

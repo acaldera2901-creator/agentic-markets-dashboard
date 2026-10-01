@@ -198,3 +198,70 @@ def test_sealed_and_shown_pick_that_grade_differently_are_not_written():
     assert d["result"] is None and "pick sigillato" in d["motivo"]
     d = decide("HOME", "1X2", [Evidence("espn-id", "final", (0, 1))], shown_pick="AWAY")
     assert d["result"] is None
+
+
+# ── #CALCIO-1001 review D: never a silent partial write, b1 superseded ──────
+
+class _FakeConn:
+    def __init__(self, rowcounts):
+        self.rowcounts, self.committed, self.rolled_back = list(rowcounts), False, False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, *_):
+        self.committed, self.rolled_back = exc_type is None, exc_type is not None
+        return False
+
+    def cursor(self):
+        conn = self
+
+        class _Cur:
+            rowcount = 0
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def execute(self, *_):
+                self.rowcount = conn.rowcounts.pop(0)
+        return _Cur()
+
+
+def _apply_with(monkeypatch, rowcounts):
+    import sys
+    import types
+
+    from scripts import recupera_calcio_1001 as rc
+    conn = _FakeConn(rowcounts)
+    monkeypatch.setitem(sys.modules, "psycopg2", types.SimpleNamespace(connect=lambda *a, **k: conn))
+    monkeypatch.setattr("tools.control_center.db._dsn", lambda: "postgresql://x")
+    rows = [settlement_row(f"espn:{i}", 1, decide("HOME", "1X2", [Evidence("espn-id", "final", (1, 0))]))
+            for i in range(len(rowcounts))]
+    return rc, conn, rows
+
+
+def test_apply_aborts_the_whole_batch_when_a_row_already_exists(monkeypatch):
+    # e.g. b1 of backfill_settle_1001 wrote the same (pick, revision) first
+    import pytest
+
+    rc, conn, rows = _apply_with(monkeypatch, [1, 0, 1])
+    with pytest.raises(RuntimeError, match="only 2 of 3"):
+        rc._apply(rows)
+    assert conn.rolled_back and not conn.committed
+
+
+def test_apply_commits_when_every_row_is_written(monkeypatch):
+    rc, conn, rows = _apply_with(monkeypatch, [1, 1])
+    assert rc._apply(rows) == 2 and conn.committed
+
+
+def test_b1_football_is_superseded_by_this_script():
+    import json
+
+    from scripts.backfill_settle_1001 import build
+    n = json.dumps({"final_score": "2-1"})
+    rows, stats = build([("match_predictions", "e1", "v", "won", "verified", n)], [])
+    assert rows == [] and stats == {"b1:superseded": 1}

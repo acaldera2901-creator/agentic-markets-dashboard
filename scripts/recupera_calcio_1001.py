@@ -35,6 +35,10 @@ NOT graded ("supplementari: serve regola"). Played on another day (>24h from
 the sealed kickoff), abandoned, still scheduled, nothing found: NOT written,
 reported with the reason.
 
+ORDER vs scripts/backfill_settle_1001.py: its b1 (football) is a no-op,
+superseded by this script. If anything wrote the same (pick, revision) first,
+--apply aborts and writes nothing.
+
 SAFETY: INSERT only, ON CONFLICT (pick_settlement_pick_rev_key) DO NOTHING,
 one transaction. A pick already closed `unresolved` gets revision current+1
 (append-only correction, read through pick_settlement_current); a pick with
@@ -435,6 +439,12 @@ def _apply(rows: list[dict]) -> int:
             for r in rows:
                 cur.execute(sql, r)
                 written += cur.rowcount
+            # A skipped row means someone wrote that (pick, revision) first —
+            # e.g. b1 of backfill_settle_1001. Never a silent partial batch:
+            # the exception rolls the whole transaction back.
+            if written != len(rows):
+                raise RuntimeError(f"aborted: only {written} of {len(rows)} rows would be written;"
+                                   " another writer holds the rest. Nothing written.")
     return written
 
 
@@ -494,7 +504,7 @@ def main(argv: list[str] | None = None) -> int:
         print("DRY-RUN: nulla scritto. --apply richiede APPROVE.")
         return 0
     n = _apply(to_write)
-    print(f"scritte {n} righe (duplicati ignorati: {len(to_write) - n})")
+    print(f"scritte {n} righe")
     return 0
 
 
