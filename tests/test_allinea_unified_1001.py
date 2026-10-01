@@ -187,3 +187,15 @@ def test_apply_writes_when_snapshot_matches(fake):
     pairs, _ = plan([r], TS)
     db = fake([r])
     assert mod._apply(pairs) == 1 and db.rows["u1"]["result"] == "won"
+
+
+def test_backup_is_per_run_and_never_overwritten(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "BACKUP_DIR", tmp_path)
+    p1 = mod.backup_path("2026-10-01T12:00:00+00:00")
+    assert p1.name == "unified_pre_allinea_1001_20261001T120000Z.jsonl"
+    assert mod.backup_path("2026-10-01T12:00:01+00:00") != p1
+    pairs, _ = plan([rec()], TS)
+    mod._backup(pairs, p1)
+    assert json.loads(p1.read_text())["result"] == "unresolved"
+    with pytest.raises(FileExistsError):
+        mod._backup(pairs, p1)

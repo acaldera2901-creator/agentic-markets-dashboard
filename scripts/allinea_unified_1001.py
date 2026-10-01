@@ -37,13 +37,14 @@ graded on a pick the register never sealed (#CALCIO-1001 regola 4a): they are
 NOT part of the "logged before kick-off" claim.
 
 SAFETY: before the UPDATE every original value of the touched columns is
-written to BACKUP (JSONL, one row per id). One transaction; every UPDATE keeps
+written to BACKUP_DIR/unified_pre_allinea_1001_<UTC>.jsonl (one file per run,
+never overwritten; the path is printed), JSONL, one row per id. One transaction; every UPDATE keeps
 `AND (result IS NULL OR result = 'unresolved')` and `AND notes IS NOT DISTINCT
 FROM <the notes read>` (notes is rewritten from that snapshot: a concurrent
 change, e.g. surface/below_floor from the sync, must not be lost); if the
 updated count differs from the planned one, everything is rolled back. Idempotent: a written row is
 won/lost/void and is skipped as 'gia-chiusa' on the next run.
-ROLLBACK:  venv/bin/python scripts/allinea_unified_1001.py --restore <BACKUP>
+ROLLBACK:  venv/bin/python scripts/allinea_unified_1001.py --restore <backup path printed by --apply>
 
 USAGE (from the repo root)
   venv/bin/python scripts/allinea_unified_1001.py            # dry-run
@@ -67,7 +68,14 @@ BATCH = "allinea:UNIFIED-1001"
 TENNIS_BATCH = "backfill:RISULTATI-PARTNER-1001"
 CALCIO_BATCH = "recupero:CALCIO-1001"
 TENNIS_SOURCE = "betconstruct"  # the partner feed: same label as the live cycle
-BACKUP = Path.home() / "Desktop/00-SISTEMA/backups/unified_pre_allinea_1001.jsonl"
+BACKUP_DIR = Path.home() / "Desktop/00-SISTEMA/backups"
+
+
+def backup_path(ts: str) -> Path:
+    """One file per --apply: a second run must never overwrite the first one's
+    backup (the only way back)."""
+    stamp = datetime.fromisoformat(ts).strftime("%Y%m%dT%H%M%SZ")
+    return BACKUP_DIR / f"unified_pre_allinea_1001_{stamp}.jsonl"
 TOUCHED = ("result", "status", "is_historical", "settled_at", "updated_at", "notes",
            "verification_state", "verification_source", "verification_at",
            "verification_note")
@@ -208,7 +216,7 @@ def history_effect(pairs: list[tuple[dict, dict]]) -> Counter:
 
 def _backup(pairs: list[tuple[dict, dict]], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as fh:
+    with path.open("x") as fh:  # refuses an existing file
         for rec, _ in pairs:
             fh.write(json.dumps({"id": rec["id"], "source_table": rec["source_table"],
                                  "source_id": rec["source_id"],
@@ -292,15 +300,16 @@ def main(argv: list[str] | None = None) -> int:
         plan_txt = _explain(pairs[0][1])
         print("EXPLAIN (read-only) of the UPDATE:", " | ".join(p.strip() for p in plan_txt))
     if not a.apply:
-        print(f"DRY-RUN: nothing written. --apply writes the backup to {BACKUP} first, needs APPROVE.")
+        print(f"DRY-RUN: nothing written. --apply writes the backup to {backup_path(ts)} first, needs APPROVE.")
         return 0
     if not pairs:
         print("nothing to update")
         return 0
-    _backup(pairs, BACKUP)
-    print(f"backup: {len(pairs)} rows -> {BACKUP}")
+    bk = backup_path(ts)
+    _backup(pairs, bk)
+    print(f"backup: {len(pairs)} rows -> {bk}")
     n = _apply(pairs)
-    print(f"updated {n} rows. ROLLBACK: venv/bin/python scripts/allinea_unified_1001.py --restore {BACKUP}")
+    print(f"updated {n} rows. ROLLBACK: venv/bin/python scripts/allinea_unified_1001.py --restore {bk}")
     return 0
 
 
