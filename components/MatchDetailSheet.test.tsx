@@ -79,6 +79,46 @@ describe("MatchDetailSheet — nessuna targhetta col nome del book", () => {
   });
 });
 
+// #INFORTUNI-1001 — un blocco infortuni senza nomi NON è «nessuna assenza»:
+// è la fonte che non ha detto nulla. Al Pro si dice che il dato non c'è, non
+// che gli assenti sono zero.
+describe("MatchDetailSheet — infortuni senza dato di fonte (#INFORTUNI-1001)", () => {
+  const HEAD: NonNullable<MdsData["head"]> = { sport: "football", league: "Nations League", pick: "Italia", modelPct: 0.5 };
+  const SECTIONS: NonNullable<MdsData["sections"]> = {
+    why: "Perché", form: "Forma", teamNews: "Infortuni", markets: "Mercati", unlock: "Sblocca",
+    teamNewsLocked: "fa parte di Pro",
+    teamNewsNone: "Nessuna assenza segnalata.",
+    teamNewsUnavailable: "Assenze non disponibili per questa partita.",
+  };
+
+  it("liste vuote su entrambi i lati → «non disponibili», mai «nessuna assenza»", () => {
+    render(<MatchDetailSheet data={makeData({
+      head: HEAD, sections: SECTIONS,
+      teamNews: { home: { name: "Italia", items: [] }, away: { name: "Francia", items: [] } },
+    })} />);
+    expect(screen.getByText("Assenze non disponibili per questa partita.")).toBeTruthy();
+    expect(screen.queryByText("Nessuna assenza segnalata.")).toBeNull();
+    expect(screen.queryByText("fa parte di Pro")).toBeNull();
+  });
+
+  it("con i nomi la lista resta come oggi", () => {
+    render(<MatchDetailSheet data={makeData({
+      head: HEAD, sections: SECTIONS,
+      teamNews: { home: { name: "Italia", items: ["Chiesa", "Bastoni"] }, away: { name: "Francia", items: ["Mbappé"] } },
+    })} />);
+    expect(screen.getByText("Chiesa")).toBeTruthy();
+    expect(screen.getByText("Bastoni")).toBeTruthy();
+    expect(screen.getByText("Mbappé")).toBeTruthy();
+    expect(screen.queryByText("Assenze non disponibili per questa partita.")).toBeNull();
+  });
+
+  it("non-Pro senza dato: resta il blocco Pro, non il testo «non disponibili»", () => {
+    render(<MatchDetailSheet data={makeData({ head: HEAD, sections: SECTIONS, teamNews: null, teamNewsLocked: true })} />);
+    expect(screen.getByText("fa parte di Pro")).toBeTruthy();
+    expect(screen.queryByText("Assenze non disponibili per questa partita.")).toBeNull();
+  });
+});
+
 describe("MatchDetailSheet — menu partner (#BET-DROPDOWN-1)", () => {
   it("mostra UNA sola CTA, non una per partner", () => {
     render(<MatchDetailSheet data={makeData()} />);

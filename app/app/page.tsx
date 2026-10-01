@@ -74,6 +74,7 @@ import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
 import { quotaRuleCopy } from "@/lib/ui/quota-rule"; // #INCLUDED-TODAY-0928
+import { buildTeamNews } from "@/lib/ui/team-news"; // #INFORTUNI-1001
 import { displayTournament, probabilityLabel, probabilitySourceOf } from "@/lib/partner-market"; // #COERENZA-1001
 import { useWatchlist } from "@/lib/watchlist";
 
@@ -5061,6 +5062,8 @@ function MDS_SECTION_LABELS(lang: Lang) {
     teamNews: pick5(lang, { it: "Infortuni e news squadra", en: "Injuries & team news", es: "Lesiones y noticias", fr: "Blessures et actualités", ru: "Травмы и новости" }),
     teamNewsLocked: pick5(lang, { it: "L'analisi completa di infortuni e formazioni per questa partita fa parte di Pro.", en: "The full injury and team-news read for this match is part of Pro.", es: "El análisis completo de lesiones y alineaciones de este partido es parte de Pro.", fr: "L'analyse complète des blessures et compositions de ce match fait partie de Pro.", ru: "Полный разбор травм и составов этого матча входит в Pro." }),
     teamNewsNone: pick5(lang, { it: "Nessuna assenza segnalata.", en: "No reported absences.", es: "Sin ausencias reportadas.", fr: "Aucune absence signalée.", ru: "Об отсутствиях не сообщается." }),
+    // #INFORTUNI-1001 — quando la fonte non dice nulla (non «dice zero»).
+    teamNewsUnavailable: pick5(lang, { it: "Assenze non disponibili per questa partita.", en: "Absences not available for this match.", es: "Ausencias no disponibles para este partido.", fr: "Absences non disponibles pour ce match.", ru: "Данные об отсутствиях для этого матча недоступны." }),
     markets: pick5(lang, { it: "Mercati", en: "Markets", es: "Mercados", fr: "Marchés", ru: "Рынки" }),
     unlock: pick5(lang, { it: "Sblocca l'analisi completa", en: "Unlock full analysis", es: "Desbloquear el análisis completo", fr: "Débloquer l'analyse complète", ru: "Открыть полный анализ" }),
   };
@@ -5620,11 +5623,13 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       if (!h || !a) return null;
       return { home: { name: p.home_team, results: h }, away: { name: p.away_team, results: a } };
     })();
-    const injHome = e.injuries_home ?? e.squad?.injuries_home ?? null;
-    const injAway = e.injuries_away ?? e.squad?.injuries_away ?? null;
-    const teamNewsBlock = injHome || injAway
-      ? { home: { name: p.home_team, items: injHome ?? [] }, away: { name: p.away_team, items: injAway ?? [] } }
-      : null;
+    // #INFORTUNI-1001 — `[]`, null e assente sono la stessa cosa: nessun dato
+    // di fonte. Solo un nome vero conta come dato (lib/ui/team-news.ts).
+    const teamNewsBlock = buildTeamNews({
+      injHome: e.injuries_home ?? e.squad?.injuries_home,
+      injAway: e.injuries_away ?? e.squad?.injuries_away,
+      homeName: p.home_team, awayName: p.away_team, isPremium,
+    });
 
     // #RESTYLING-0921 — la testa nuova + la progressive disclosure.
     //
@@ -5678,8 +5683,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       form: formRow,
       // Gli infortuni sono in PREMIUM_ENRICHMENT_KEYS: per un piano non-Pro il
       // server li toglie e qui NON arrivano. `teamNewsLocked` si accende solo
-      // quando il piano è il motivo dell'assenza — mai per dire «non ci sono
-      // infortuni», che è un'informazione diversa e la diamo quando la sappiamo.
+      // quando il piano è il motivo dell'assenza. Per il Pro il blocco c'è
+      // sempre: con i nomi li elenca, senza nomi dice che il dato non è
+      // disponibile (#INFORTUNI-1001) — mai «nessuna assenza», che non sappiamo.
       teamNews: teamNewsBlock,
       teamNewsLocked: teamNewsBlock == null && !isPremium,
       onUnlock: onGate,
