@@ -217,8 +217,9 @@ def history_effect(pairs: list[tuple[dict, dict]]) -> Counter:
 def _backup(pairs: list[tuple[dict, dict]], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x") as fh:  # refuses an existing file
-        for rec, _ in pairs:
-            fh.write(json.dumps({"id": rec["id"], "source_table": rec["source_table"],
+        for rec, new in pairs:
+            fh.write(json.dumps({"id": rec["id"], "batch_ts": new["updated_at"],
+                                 "source_table": rec["source_table"],
                                  "source_id": rec["source_id"],
                                  "model_version": rec["model_version"],
                                  **{k: rec[k] for k in TOUCHED}}) + "\n")
@@ -245,12 +246,19 @@ def _apply(pairs: list[tuple[dict, dict]]) -> int:
 
 
 def _restore(path: Path) -> int:
-    """Puts back the backed-up values, only on rows still carrying this batch."""
+    """Puts back the backed-up values ONLY on the backup's ids that are still
+    exactly as this batch left them: batch mark in notes AND updated_at equal to
+    the batch timestamp. A row touched afterwards (live, manual fix) is NOT
+    overwritten — it is counted as skipped and must be reviewed by hand."""
     import psycopg2  # noqa: PLC0415
     from tools.control_center.db import _dsn  # noqa: PLC0415
 
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-    sql = _UPDATE.split("where")[0] + "where id = %(id)s and notes like '%%" + BATCH + "%%'"
+    if not rows:
+        return 0
+    sql = (_UPDATE.split("where")[0] + "where id = %(id)s"
+           " and notes like '%%\"settlement_batch\": \"" + BATCH + "\"%%'"
+           " and updated_at = %(batch_ts)s::timestamptz")
     with psycopg2.connect(_dsn(), connect_timeout=8) as conn:  # one transaction
         with conn.cursor() as cur:
             n = 0
@@ -272,7 +280,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--restore", type=Path, help="roll back from a backup JSONL (gated)")
     a = ap.parse_args(argv)
     if a.restore:
-        print(f"restored {_restore(a.restore)} rows from {a.restore}")
+        total = sum(1 for line in a.restore.read_text().splitlines() if line.strip())
+        n = _restore(a.restore)
+        print(f"restored {n}/{total} rows from {a.restore} "
+              f"(skipped {total - n}: changed after the batch, review by hand)")
         return 0
 
     from tools.control_center.db import fetch_all  # read-only transaction  # noqa: PLC0415

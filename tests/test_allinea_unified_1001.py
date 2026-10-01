@@ -151,8 +151,9 @@ class FakeDB:
         if "result is null or result = 'unresolved'" in sql:
             if row["result"] not in (None, "unresolved") or row["notes"] != p["old_notes"]:
                 return
-        else:  # restore
-            if json.loads(row["notes"] or "{}").get("settlement_batch") != BATCH:
+        else:  # restore: still exactly as the batch left it
+            if f'"settlement_batch": "{BATCH}"' not in (row["notes"] or "") \
+                    or row["updated_at"] != p["batch_ts"]:
                 return
         for k in mod.TOUCHED:
             row[k] = p[k]
@@ -199,3 +200,19 @@ def test_backup_is_per_run_and_never_overwritten(tmp_path, monkeypatch):
     assert json.loads(p1.read_text())["result"] == "unresolved"
     with pytest.raises(FileExistsError):
         mod._backup(pairs, p1)
+
+
+def test_restore_only_rows_untouched_since_the_batch(fake, tmp_path):
+    a, b = rec(id="a"), rec(id="b")
+    pairs, _ = plan([a, b], TS)
+    db = fake([a, b])
+    assert mod._apply(pairs) == 2
+    db.rows["b"]["updated_at"] = "2026-10-02T08:00:00+00:00"  # live touched it later
+    bk = tmp_path / "bk.jsonl"
+    mod._backup(pairs, bk)
+    fake(list(db.rows.values()))
+    import psycopg2
+    db2 = psycopg2.connect.__self__
+    assert mod._restore(bk) == 1
+    assert db2.rows["a"]["result"] == "unresolved" and db2.rows["a"]["notes"] == a["notes"]
+    assert db2.rows["b"]["result"] == "won"  # manual/live change never overwritten
