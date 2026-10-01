@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from agents.tennis_settlement import TennisSettlementAgent
+from agents.tennis_settlement import PARTNER_MATCH_DATE_TOLERANCE, TennisSettlementAgent
 from core.partner_tennis_results import result_from_partner_match
 from core.tennis_set_validation import settlement_allowed
 
@@ -169,3 +169,36 @@ async def test_partner_closure_is_stamped_and_does_not_touch_elo(monkeypatch):
     assert calls[0][1] == "Pierluigi Basile"
     assert calls[0][2]["verification_source"] == "betconstruct"
     assert calls[0][2]["final_score"] == "6-1 6-1"
+
+
+# ── #RISULTATI-PARTNER-1001 regola 1: rinvii, solo per il partner ───────────
+
+def test_partner_closes_a_match_rescheduled_by_29_hours():
+    a = _agent()
+    moved = result_from_partner_match(_m([(7, 5), (6, 1)], (2, 0), start="2026-09-28T14:10:00Z"))
+    assert [(e[1], e[2]) for e in a._risolvi_con([_Pred(1)], [moved], tolleranza=PARTNER_MATCH_DATE_TOLERANCE)] == [("P1", "7-5 6-1")]
+
+
+def test_partner_two_meetings_of_the_pair_in_the_window_are_ambiguous():
+    a = _agent()
+    r1 = result_from_partner_match(_m([(6, 4), (6, 4)], (2, 0), start="2026-09-26T09:10:00Z"))
+    r2 = dict(result_from_partner_match(_m([(4, 6), (4, 6)], (0, 2), start="2026-09-28T20:00:00Z")), event_id="bc:2")
+    assert a._risolvi_con([_Pred(1)], [r1, r2], tolleranza=PARTNER_MATCH_DATE_TOLERANCE) == []
+
+
+def test_partner_window_stops_at_two_days():
+    a = _agent()
+    far = result_from_partner_match(_m([(6, 4), (6, 4)], (2, 0), start="2026-09-29T09:20:00Z"))
+    assert a._risolvi_con([_Pred(1)], [far], tolleranza=PARTNER_MATCH_DATE_TOLERANCE) == []
+
+
+def test_espn_tolerance_is_unchanged():
+    a = _agent()
+    moved = result_from_partner_match(_m([(7, 5), (6, 1)], (2, 0), start="2026-09-28T14:10:00Z"))
+    assert a._risolvi_con([_Pred(1)], [moved]) == []  # default = MATCH_DATE_TOLERANCE (1 day)
+
+
+def test_partner_asks_the_days_of_the_wider_window():
+    days = TennisSettlementAgent._giorni_di([_Pred(1)], margine=PARTNER_MATCH_DATE_TOLERANCE)
+    assert min(days).isoformat() == "2026-09-25" and max(days).isoformat() == "2026-09-29"
+    assert {d.isoformat() for d in TennisSettlementAgent._giorni_di([_Pred(1)])} == {"2026-09-27", "2026-09-28"}

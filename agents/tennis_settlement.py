@@ -44,6 +44,11 @@ POLL_INTERVAL = 300
 # #SETTLE-0909 B3 — un risultato si lega alla pick di QUELLA partita: stessa
 # coppia E stessa data entro un giorno. Era +-3 giorni, e non si applicava mai.
 MATCH_DATE_TOLERANCE = timedelta(days=1)
+# #RISULTATI-PARTNER-1001 regola 1 (decisione Andrea, delegata): SOLO per il
+# feed partner la finestra e' +-2 giorni. Copre i rinvii osservati (27-31h)
+# con margine; candidato unico e stessa coppia restano obbligatori, quindi due
+# incontri della coppia nella finestra sono ambigui e non si chiudono.
+PARTNER_MATCH_DATE_TOLERANCE = timedelta(days=2)
 
 logger = logging.getLogger(__name__)
 
@@ -381,7 +386,7 @@ class TennisSettlementAgent(BaseAgent):
         return resolved
 
     @staticmethod
-    def _giorni_di(pending: list) -> set:
+    def _giorni_di(pending: list, margine: timedelta | None = None) -> set:
         """
         I giorni (UTC) delle pick pendenti: e' l'insieme minimo di date da
         chiedere all'archivio. Chiedere una finestra fissa costerebbe richieste
@@ -398,6 +403,10 @@ class TennisSettlementAgent(BaseAgent):
         for pred in pending:
             quando = TennisSettlementAgent._quando_si_gioca(pred)
             if quando is None:
+                continue
+            if margine is not None:  # finestra partner: tutti i giorni +-margine
+                for d in range(-margine.days, margine.days + 1):
+                    giorni.add((quando + timedelta(days=d)).date())
                 continue
             giorni.add(quando.date())
             giorni.add((quando + timedelta(days=1)).date())
@@ -461,7 +470,7 @@ class TennisSettlementAgent(BaseAgent):
         cio' che l'archivio ESPN non copre: Challenger, ITF/WTT, WTA125, doppi.
         Stesso cancello di ESPN: coppia + data entro un giorno, candidato unico,
         coerenza dei set."""
-        giorni = self._giorni_di(pending)
+        giorni = self._giorni_di(pending, margine=PARTNER_MATCH_DATE_TOLERANCE)
         if not giorni:
             return []
         try:
@@ -469,9 +478,9 @@ class TennisSettlementAgent(BaseAgent):
         except Exception as e:
             self.logger.warning(f"partner risultati falliti: {e}")
             return []
-        return self._risolvi_con(pending, results)
+        return self._risolvi_con(pending, results, tolleranza=PARTNER_MATCH_DATE_TOLERANCE)
 
-    def _risolvi_con(self, pending: list, results: list[dict]) -> list[tuple]:
+    def _risolvi_con(self, pending: list, results: list[dict], tolleranza: timedelta = MATCH_DATE_TOLERANCE) -> list[tuple]:
         """Abbina i risultati (forma ESPN) alle righe pendenti e li fa passare
         dai due cancelli. Condiviso da ESPN e partner (#RISULTATI-PARTNER-1001)."""
         if not results:
@@ -496,7 +505,7 @@ class TennisSettlementAgent(BaseAgent):
             candidati = per_coppia.get(frozenset((k1, k2))) or []
             if not candidati:
                 continue
-            candidati = self._candidati_per_data(pred, candidati)
+            candidati = self._candidati_per_data(pred, candidati, tolleranza)
             if not candidati:
                 continue
             if len(candidati) > 1:
@@ -546,7 +555,7 @@ class TennisSettlementAgent(BaseAgent):
             )
         return resolved
 
-    def _candidati_per_data(self, pred, candidati: list[dict]) -> list[dict]:
+    def _candidati_per_data(self, pred, candidati: list[dict], tolleranza: timedelta = MATCH_DATE_TOLERANCE) -> list[dict]:
         """
         I candidati compatibili con la data della partita (#SETTLE-0909 B).
 
@@ -571,7 +580,7 @@ class TennisSettlementAgent(BaseAgent):
             try:
                 if data_evento.tzinfo is None:
                     data_evento = data_evento.replace(tzinfo=timezone.utc)
-                if abs(data_evento - quando) <= MATCH_DATE_TOLERANCE:
+                if abs(data_evento - quando) <= tolleranza:
                     vicini.append(r)
             except (TypeError, ValueError, AttributeError) as e:
                 # #SETTLE-0909 B2 — qui c'era `except Exception: pass`, cioe' la

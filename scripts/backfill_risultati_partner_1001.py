@@ -15,7 +15,7 @@ WHAT IT CLOSES
   Missing and still inside the live window: NOT written — the live cycle
   (agents/tennis_settlement.py, partner resolver) closes those; counted apart.
   Matching and gates are the live ones (TennisSettlementAgent._risolvi_con:
-  pair + date within 1 day, single candidate, set coherence); grading is
+  pair + date within PARTNER_MATCH_DATE_TOLERANCE (2 days), single candidate, set coherence); grading is
   core.supabase_client.tennis_pick_result on the SEALED pick. Not found,
   ambiguous or refused by the gate -> nothing written: stays as it is.
 
@@ -44,7 +44,11 @@ import asyncio
 import sys
 from collections import Counter
 
-from agents.tennis_settlement import EXPIRE_AFTER_DAYS, TennisSettlementAgent
+from agents.tennis_settlement import (
+    EXPIRE_AFTER_DAYS,
+    PARTNER_MATCH_DATE_TOLERANCE,
+    TennisSettlementAgent,
+)
 from core.partner_tennis_results import get_partner_results_for_days
 from core.supabase_client import tennis_pick_result
 from core.tennis_names import canonical_player_key
@@ -108,9 +112,9 @@ def classify(rows: list[_Row], results: list[dict]) -> tuple[list[dict], Counter
     stats: Counter = Counter()
     for row in rows:
         pair = frozenset((canonical_player_key(row.player1), canonical_player_key(row.player2)))
-        cands = agent._candidati_per_data(row, by_pair.get(pair) or [])
+        cands = agent._candidati_per_data(row, by_pair.get(pair) or [], PARTNER_MATCH_DATE_TOLERANCE)
         label = tier(cands[0]["tournament"] if cands else row.tournament, row.player1)
-        resolved = agent._risolvi_con([row], cands) if cands else []
+        resolved = agent._risolvi_con([row], cands, tolleranza=PARTNER_MATCH_DATE_TOLERANCE) if cands else []
         if not cands:
             why = "non-trovata"
         elif len(cands) > 1:
@@ -166,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
     from tools.control_center.db import fetch_all  # read-only transaction
 
     rows = [_Row(r) for r in fetch_all(_SQL)]
-    days = TennisSettlementAgent._giorni_di(rows)
+    days = TennisSettlementAgent._giorni_di(rows, margine=PARTNER_MATCH_DATE_TOLERANCE)
     results = asyncio.run(get_partner_results_for_days(days))
     out, stats = classify(rows, results)
 
