@@ -228,3 +228,21 @@ def test_registro_con_header_monco_o_troncato_e_illeggibile(tmp_path):
         coerenza.leggi_claims(troncato)
     with patch.object(coerenza, "CLAIMS_FILE", monco):
         assert coerenza.check_claims().level == "unknown"
+
+
+def test_claim_uguale_zero_su_popolazione_vuota_non_e_verde():
+    # weekly_pick vuota: 0 gambe partner su 0 gambe non e' «regge»
+    zero = _claim(operatore="==", soglia="0", misura="sql:select 0, 0")
+    with patch.object(coerenza, "fetch_all", return_value=[(0, 0)]):
+        assert coerenza.valuta_claim(zero)["esito"] is None
+    with patch.object(coerenza, "fetch_all", return_value=[(0, 3)]):
+        assert coerenza.valuta_claim(zero)["esito"] is True
+    # '== 0' senza la colonna della popolazione: non misurabile
+    with patch.object(coerenza, "fetch_all", return_value=[(0,)]):
+        assert coerenza.valuta_claim(_claim(operatore="==", soglia="0"))["esito"] is None
+
+
+def test_i_claim_uguale_zero_del_registro_dichiarano_la_popolazione():
+    for c in coerenza.leggi_claims():
+        if c["operatore"] == "==" and c["misura"] != "-":
+            assert c["misura"].count(" as popolazione") == 1, c["id"]

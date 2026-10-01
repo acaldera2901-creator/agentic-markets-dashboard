@@ -306,8 +306,8 @@ def _json_path(dato, percorso: str):
     return dato
 
 
-def misura_claim(misura: str):
-    """Il numero di un claim. Solleva ValueError se la misura non e' valida."""
+def misura_claim(misura: str) -> tuple[float, bool]:
+    """(numero, popolazione dichiarata?). ValueError se la misura non e' valida."""
     tipo, _, corpo = misura.partition(":")
     corpo = corpo.strip()
     if tipo == "sql":
@@ -315,7 +315,15 @@ def misura_claim(misura: str):
         # e fetch_all lo esegue comunque in una transazione READ ONLY.
         if not corpo.lower().startswith(("select", "with")) or ";" in corpo:
             raise ValueError("solo un SELECT singolo")
-        valore = fetch_all(corpo)[0][0]
+        riga = fetch_all(corpo)[0]
+        valore = riga[0]
+        # Seconda colonna facoltativa = la popolazione su cui il numero e'
+        # misurato. Obbligatoria per i claim '== 0' (vedi valuta_claim): uno
+        # zero su una tabella vuota non e' un claim che regge.
+        if len(riga) > 1 and not riga[1]:
+            raise ValueError("popolazione vuota: niente su cui misurare")
+        if len(riga) > 1:
+            return float(valore if valore is not None else 0), True
     elif tipo == "api":
         url, _, percorso = corpo.partition("#")
         if not url.startswith("https://www.betredge.com/"):
@@ -328,7 +336,7 @@ def misura_claim(misura: str):
         # Nessuna riga su cui misurare (es. top-5 in pausa): e' un '?', non
         # uno zero — uno zero renderebbe rosso un claim che oggi non si gioca.
         raise ValueError("nessun dato da misurare")
-    return float(valore)
+    return float(valore), False
 
 
 def valuta_claim(riga: dict) -> dict:
@@ -354,7 +362,9 @@ def valuta_claim(riga: dict) -> dict:
     if op is None:
         return {**voce, "nota": f"operatore non valido: {riga['operatore']!r}"}
     try:
-        valore = misura_claim(riga["misura"])
+        valore, con_popolazione = misura_claim(riga["misura"])
+        if riga["operatore"].strip() == "==" and not con_popolazione:
+            raise ValueError("un claim '==' deve dichiarare la popolazione (2a colonna)")
     except DbUnavailable as exc:
         return {**voce, "nota": f"database non raggiungibile: {exc}"}
     except Exception as exc:  # noqa: BLE001 - una misura rotta e' un '?', non un verde
