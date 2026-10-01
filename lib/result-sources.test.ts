@@ -4,6 +4,11 @@ import { gateCandidate, recordVerdict, emptySyncReport } from "./publication-gat
 import { resultSourceFor, RESULT_SOURCE_DEBT, RESULT_SOURCES, type ResultSourceTable } from "./result-sources";
 import { ESPN_SLUG_BY_FD_LEAGUE, espnSlugForLeague } from "./espn-results";
 import { ESPN_SLUGS, ODDS_SPORT_KEYS, SUMMER_LEAGUES } from "./summer-leagues";
+import rawTable from "@/data/result_sources.json";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const ROOT = join(__dirname, "..");
 
 const NOW = new Date("2026-10-01T12:00:00Z");
 const FUTURE = "2026-10-02T18:00:00Z";
@@ -68,25 +73,58 @@ describe("gateCandidate + resultSource", () => {
 });
 
 // The declarations must agree with the maps the settle code actually uses: a
-// league added to lib/summer-leagues.ts without a declared source fails here.
-describe("data/result_sources.json combacia con le mappe di settle", () => {
-  const football = RESULT_SOURCES.sources.football;
-  const club = new Set([
-    ...Object.keys(ESPN_SLUG_BY_FD_LEAGUE), ...Object.keys(ESPN_SLUGS),
-    ...Object.keys(ODDS_SPORT_KEYS), ...Object.keys(SUMMER_LEAGUES),
-  ]);
-  for (const code of club) {
-    it(`${code} dichiarata o nel debito`, () =>
-      expect((football[code]?.length ?? 0) > 0 || RESULT_SOURCES.debt.leagues.includes(`football:${code}`)).toBe(true));
+// league added to lib/summer-leagues.ts without a declared source fails here,
+// and so does one declared without a source it really has (the inverse).
+const CLUB = new Set([
+  ...Object.keys(ESPN_SLUG_BY_FD_LEAGUE), ...Object.keys(ESPN_SLUGS),
+  ...Object.keys(ODDS_SPORT_KEYS), ...Object.keys(SUMMER_LEAGUES),
+]);
+
+function oracleErrors(t: ResultSourceTable): string[] {
+  const football = t.sources.football ?? {};
+  const errs: string[] = [];
+  for (const code of CLUB) {
+    if (!(football[code]?.length) && !t.debt.leagues.includes(`football:${code}`)) errs.push(`${code}: undeclared`);
   }
   for (const [code, sources] of Object.entries(football)) {
-    if (sources.includes("espn") && club.has(code))
-      it(`${code}: espn ha uno slug`, () => expect(espnSlugForLeague(code)).toBeTruthy());
-    if (sources.includes("oddsapi"))
-      it(`${code}: oddsapi ha una sport key`, () => expect(ODDS_SPORT_KEYS[code]).toBeTruthy());
-    if (sources.includes("football-data"))
-      it(`${code}: football-data e' una lega fd`, () => expect(ESPN_SLUG_BY_FD_LEAGUE[code]).toBeTruthy());
+    if (!CLUB.has(code)) continue; // national codes: checked against the Python client below
+    const espn = sources.includes("espn");
+    if (espn && !espnSlugForLeague(code)) errs.push(`${code}: espn without slug`);
+    if (!espn && espnSlugForLeague(code)) errs.push(`${code}: has ESPN slug but espn not declared`);
+    if (sources.includes("oddsapi") && !ODDS_SPORT_KEYS[code]) errs.push(`${code}: oddsapi without key`);
+    if (sources.includes("football-data") && !ESPN_SLUG_BY_FD_LEAGUE[code]) errs.push(`${code}: not a football-data league`);
   }
+  return errs;
+}
+
+describe("data/result_sources.json combacia con le mappe di settle", () => {
+  it("la tabella vera non ha errori", () => expect(oracleErrors(RESULT_SOURCES)).toEqual([]));
+  it("oracolo: lega con slug ESPN dichiarata solo oddsapi → errore", () =>
+    expect(oracleErrors({ ...RESULT_SOURCES, sources: { football: { ...RESULT_SOURCES.sources.football, ELI: ["oddsapi"] } } }))
+      .toContain("ELI: has ESPN slug but espn not declared"));
+  it("oracolo: lega delle mappe non dichiarata e fuori dal debito → errore", () =>
+    expect(oracleErrors({ ...RESULT_SOURCES, debt: { ...RESULT_SOURCES.debt, leagues: [] } })).toContain("POL: undeclared"));
+
+  it("ogni fonte dichiarata e' una fonte descritta in _sources", () => {
+    const known = Object.keys(rawTable._sources);
+    for (const bySport of Object.values(RESULT_SOURCES.sources))
+      for (const sources of Object.values(bySport)) for (const s of sources) expect(known).toContain(s);
+  });
+  it("FRIENDLY/UNL/CNL: espn ha uno slug nel client Python", () => {
+    const client = readFileSync(join(ROOT, "core/espn_soccer_client.py"), "utf8");
+    for (const code of ["FRIENDLY", "UNL", "CNL"]) {
+      expect(RESULT_SOURCES.sources.football[code]).toContain("espn");
+      expect(client).toMatch(new RegExp(`"${code}": "[a-z.]+"`));
+    }
+  });
+  it("tennis '*': i due resolver esistono nel codice", () => {
+    expect(RESULT_SOURCES.sources.tennis["*"]).toEqual(["espn-tennis", "betconstruct"]);
+    const settle = readFileSync(join(ROOT, "agents/tennis_settlement.py"), "utf8");
+    expect(readFileSync(join(ROOT, "core/espn_tennis_client.py"), "utf8")).toContain("def get_completed_results_for_days");
+    expect(readFileSync(join(ROOT, "core/partner_tennis_results.py"), "utf8")).toContain("def get_partner_results_for_days");
+    expect(settle).toContain("_resolve_via_espn");
+    expect(settle).toContain("_resolve_via_partner");
+  });
   it("il debito ha owner e data", () => {
     expect(RESULT_SOURCES.debt.owner).toBeTruthy();
     expect(RESULT_SOURCES.debt.due).toMatch(/^\d{4}-\d{2}-\d{2}$/);
