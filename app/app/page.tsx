@@ -74,6 +74,7 @@ import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
 import { quotaRuleCopy } from "@/lib/ui/quota-rule"; // #INCLUDED-TODAY-0928
+import { displayTournament, probabilityLabel, probabilitySourceOf } from "@/lib/partner-market"; // #COERENZA-1001
 import { useWatchlist } from "@/lib/watchlist";
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -2242,7 +2243,11 @@ function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
       </ul>
       {hitRate && (
         <p className="fp-proof">
-          <strong>{hitRate}</strong> {pick5(lang, { it: "hit rate · ultime 100 pick concluse", en: "hit rate · last 100 settled picks", es: "hit rate · últimas 100 picks", fr: "hit rate · 100 derniers picks réglés", ru: "hit rate · последние 100 закрытых пиков" })}
+          {/* #COERENZA-1001 — `hitRate` è historyV2Stats.win_rate: all-time su
+              TUTTE le pick concluse e verificate (/api/v2/history), non le ultime
+              100. L'etichetta dice quello che il numero è (stesso errore che
+              #SETTLE-0909 aveva tolto dai KPI). */}
+          <strong>{hitRate}</strong> {pick5(lang, { it: "hit rate · tutte le pick concluse", en: "hit rate · all settled picks", es: "hit rate · todas las picks cerradas", fr: "hit rate · tous les picks réglés", ru: "hit rate · все закрытые пики" })}
         </p>
       )}
       <div className="fp-actions">
@@ -2408,7 +2413,8 @@ function SportsbookBoard({
 
   const competitionOptions = [
     ...Array.from(new Map(predictions.map((p) => [`football:${p.league}`, `${LEAGUE_FLAGS[p.league] ?? "FB"} ${p.league_name || p.league}`])).entries()),
-    ...Array.from(new Map(tennisMatches.map((m) => [`tennis:${m.tournament}`, `TN ${m.tournament}`])).entries()),
+    // #COERENZA-1001 — «Partner feed» non è un torneo: si dichiara la fonte del numero.
+    ...Array.from(new Map(tennisMatches.map((m) => [`tennis:${m.tournament}`, `TN ${displayTournament(m.tournament) ?? probabilityLabel("market", lang)}`])).entries()),
   ].sort((a, b) => a[1].localeCompare(b[1]));
 
   const surfaceOptions = Array.from(new Set(tennisMatches.map((m) => m.surface))).sort();
@@ -5990,15 +5996,17 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
     // mercato era 1/quota FortunePlay e basta, quindi una riga quotata ma
     // assente da FortunePlay diceva «No market price on this side».
     return {
-      league: m.tournament,
+      league: displayTournament(m.tournament) ?? "",
       when: fmtKickoff(m.scheduled, lang, tz),
       home: m.player1, away: m.player2,
       head: {
         sport: "tennis",
-        league: m.tournament,
+        league: displayTournament(m.tournament),
         kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
         pick: cardData.pick,
         modelPct: cardData.modelPct,
+        // #COERENZA-1001 — riga partner: il numero è la quota de-viggata, non il modello.
+        probabilityLabel: probabilityLabel(cardData.probabilitySource, lang),
         confidence: cardData.confidence,
       },
       why: tennisWhyReasons({
@@ -6119,7 +6127,10 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
           titleId={modalTitleId}
           lang={lang}
           title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
-          subtitle={<>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
+          subtitle={probabilitySourceOf(m.model) === "market"
+            // #COERENZA-1001 — riga partner: niente torneo inventato, niente superficie forzata.
+            ? <>{probabilityLabel("market", lang)}{m.round ? ` · ${m.round}` : ""}</>
+            : <>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
           hideHead
           hideExtraMarkets
         >
@@ -8286,7 +8297,10 @@ function FeaturedEdge({
     // e la template string lasciava un "·" sospeso in fondo: «US Open · hard · ».
     // Si compone dai pezzi che ESISTONO, cosi' il separatore non sopravvive al
     // pezzo che deve separare.
-    league = [m.tournament, surf, m.round].filter((x) => String(x ?? "").trim()).join(" · ");
+    // #COERENZA-1001 — riga partner: «Partner feed» non è un torneo e 'hard' è forzato.
+    const partner = probabilitySourceOf(m.model) === "market";
+    league = (partner ? [probabilityLabel("market", lang), m.round] : [m.tournament, surf, m.round])
+      .filter((x) => String(x ?? "").trim()).join(" · ");
     // Coherence (FTC): pick, probability, model-edge and buildTennisWhy (which
     // narrates the higher-probability player as the favourite) must all point
     // at the same selection — the model's top player, not best_selection.

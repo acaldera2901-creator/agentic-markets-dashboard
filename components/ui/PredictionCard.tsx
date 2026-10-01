@@ -27,6 +27,7 @@
 //
 // La card NON è un link intero (accessibilità: un solo target, testo
 // leggibile): il link è la CTA. `onOpen` è l'hook analytics del click.
+import { probabilityLabel } from "@/lib/partner-market";
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
 import { Crest } from "@/components/ui/Crest";
@@ -227,7 +228,7 @@ export function PredictionCard({ data, variant = "compact", href, badge, saved, 
           {formatPct(data.modelPct)}
           {data.modelPct != null && <span className="br-card__model-pc">%</span>}
         </span>
-        <span className="br-label">Our model</span>
+        <span className="br-label">{probabilityLabel(data.probabilitySource, lang)}</span>
       </p>
 
       {extra}

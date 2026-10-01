@@ -68,6 +68,8 @@ export type MdsHead = {
   score?: { home: number; away: number } | null;
   pick: string | null;
   modelPct: number | null;
+  /** #COERENZA-1001 — etichetta del numero, già localizzata; assente = «Our model». */
+  probabilityLabel?: string;
   confidence?: number | null;
   locked?: boolean;
   /** Slot a destra del kicker: watchlist, share… */
@@ -455,7 +457,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                 {formatPct(data.head.modelPct)}
                 {data.head.modelPct != null && <span className="br-card__model-pc">%</span>}
               </span>
-              <span className="br-label">Our model</span>
+              <span className="br-label">{data.head.probabilityLabel ?? "Our model"}</span>
             </p>
             {data.head.confidence != null && !data.head.locked && (
               <ConfidenceIndicator score={data.head.confidence} layout="stack" showPercent />
