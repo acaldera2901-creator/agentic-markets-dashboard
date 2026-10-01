@@ -49,10 +49,16 @@ export type FixturePartner = {
   oddsP1: number;
   oddsP2: number;
   // #RISULTATI-PARTNER-1001 — l'identita' della partita presso il partner,
-  // finora scartata: senza, il settlement poteva solo indovinare per nomi.
-  tournament: string;
-  surface: string;
-  partner: { id: number | null; urn_id: string | null; category: string | null };
+  // finora scartata. Vive SOLO in feature_snapshot: le colonne tournament e
+  // surface restano 'Partner feed'/'hard' perche' dedup (prediction-dedup) e
+  // floor (tennisFloorFor) leggono il nome torneo; cambiarle e' un passo a parte.
+  partner: {
+    id: number | null;
+    urn_id: string | null;
+    tournament: string | null;
+    surface: string;
+    category: string | null;
+  };
 };
 
 const SUPERFICIE = /-\s*(hard|clay|grass|carpet)\b/i;
@@ -130,11 +136,11 @@ export function fixtureDaPartner(m: FpMatch, adesso = Date.now()): FixturePartne
     p2: p.p2,
     oddsP1: m.oddsHome,
     oddsP2: m.oddsAway,
-    tournament: m.tournamentName || "Partner feed",
-    surface: superficieDaTorneo(m.tournamentName),
     partner: {
       id: Number.isFinite(m.id) ? m.id : null,
       urn_id: m.urnId || null,
+      tournament: m.tournamentName ?? null,
+      surface: superficieDaTorneo(m.tournamentName),
       category: m.categoryName ?? null,
     },
   };
@@ -230,8 +236,8 @@ export async function ingestPartnerTennis(adesso = Date.now()): Promise<EsitoIng
        RETURNING match_id`,
       [
         f.matchId,
-        f.tournament,
-        f.surface,
+        "Partner feed",
+        "hard", // il feed non dichiara la superficie; 'hard' e' il default del parser
         f.player1,
         f.player2,
         f.scheduledAt,

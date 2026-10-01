@@ -147,20 +147,24 @@ describe("fixtureDaPartner: cosa entra e cosa viene scartato", () => {
 // #RISULTATI-PARTNER-1001 — l'identita' presso il partner si salva, non si scarta:
 // senza, il settlement puo' solo indovinare per nomi.
 describe("fixtureDaPartner: torneo, superficie e id partner veri", () => {
-  it("porta torneo, categoria, id e urn del partner", () => {
+  it("porta torneo, superficie, categoria, id e urn del partner (solo per feature_snapshot)", () => {
     const f = fixtureDaPartner(
       m({ id: 70395717, urnId: "bc:match:30142329", tournamentName: "ATP Challenger Bari - Clay", categoryName: "Italy" }),
       ORA,
     )!;
-    expect(f.tournament).toBe("ATP Challenger Bari - Clay");
-    expect(f.surface).toBe("clay");
-    expect(f.partner).toEqual({ id: 70395717, urn_id: "bc:match:30142329", category: "Italy" });
+    expect(f.partner).toEqual({
+      id: 70395717, urn_id: "bc:match:30142329",
+      tournament: "ATP Challenger Bari - Clay", surface: "clay", category: "Italy",
+    });
+    // le colonne servite non cambiano: dedup e floor leggono il nome torneo
+    expect(f).not.toHaveProperty("tournament");
+    expect(f).not.toHaveProperty("surface");
   });
 
-  it("senza torneo dichiarato resta 'Partner feed' su 'hard', come prima", () => {
+  it("senza torneo dichiarato: torneo null e superficie 'hard'", () => {
     const f = fixtureDaPartner(m(), ORA)!;
-    expect(f.tournament).toBe("Partner feed");
-    expect(f.surface).toBe("hard");
+    expect(f.partner.tournament).toBeNull();
+    expect(f.partner.surface).toBe("hard");
   });
 
   it("la superficie si legge solo se il nome la dichiara", () => {
