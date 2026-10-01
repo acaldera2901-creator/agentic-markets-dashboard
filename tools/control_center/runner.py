@@ -38,7 +38,10 @@ def run_checks(
     try:
         for chk in checks:
             cached = prev.get(chk.id)
-            if chk.ttl_seconds and cached and _age_seconds(cached, moment) < chk.ttl_seconds:
+            # Un unknown non si riusa (#CERTIFICA-1001): «non ho potuto
+            # misurare» resterebbe in cache per tutto il TTL.
+            if (chk.ttl_seconds and cached and cached.get("level") != "unknown"
+                    and _age_seconds(cached, moment) < chk.ttl_seconds):
                 # Riuso: un check giornaliero non deve consumare 288 chiamate.
                 out[chk.id] = verdict_from_dict(cached)
                 continue

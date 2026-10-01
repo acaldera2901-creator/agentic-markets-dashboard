@@ -257,3 +257,17 @@ def test_parita_conta_partite_distinte_e_segnala_i_duplicati():
     # quota impossibile (>110%): anomalia, rosso
     with patch.object(coerenza, "fetch_all", return_value=[(100, 150, 150)]):
         assert coerenza.check_parita("tennis").level == "red"
+
+
+def test_history_e_copertura_si_rimisurano_a_ogni_giro():
+    # CONFIRM_RUNS=2 deve voler dire due misure, non una riusata due volte.
+    with patch("tools.control_center.checks.pipeline._providers", return_value=[]):
+        ttl = {c.id: c.ttl_seconds for c in all_checks()}
+    assert ttl["history_coerente"] == 0 and ttl["copertura_onesta"] == 0
+
+
+def test_history_dichiara_cosa_prova():
+    stats = {"n": 2, "won": 1, "lost": 1}
+    with patch.object(coerenza, "misura_history", return_value=(_replay(2, 1, 1), stats)):
+        v = coerenza.check_history_coerente()
+    assert "non la correttezza" in v.evidence["cosa_prova"]

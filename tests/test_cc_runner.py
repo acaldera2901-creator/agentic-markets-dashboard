@@ -76,3 +76,14 @@ def test_un_check_appeso_non_ritarda_lo_snapshot():
     trascorso = _t.monotonic() - inizio
     assert out["appeso"].level == "unknown"
     assert trascorso < 2.0, f"run_checks ha atteso {trascorso:.1f}s"
+
+
+def test_un_unknown_in_cache_non_si_riusa():
+    # #CERTIFICA-1001: «non ho potuto misurare» non e' una misura da tenere un'ora.
+    from tools.control_center.contract import unknown
+    previous = {"caro": unknown("db giu'", "api", now=FIXED - timedelta(minutes=1)).to_dict()}
+    out = run_checks(
+        [_chk("caro", lambda: green("fresco", "api", now=FIXED), ttl_seconds=3600)],
+        previous=previous, now=FIXED,
+    )
+    assert out["caro"].headline == "fresco"

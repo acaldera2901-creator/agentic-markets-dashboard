@@ -234,7 +234,8 @@ def check_history_coerente() -> Verdict:
     lib/track-record e lib/surfacing-gate sulle righe del DB, quindi la
     tolleranza e' ZERO: stesso codice, stessi dati, stesso numero. L'unica
     differenza possibile e' un settlement fra la lettura del DB e la GET, che
-    sparisce al giro dopo; l'alerting chiede due rossi consecutivi.
+    sparisce al giro dopo: l'alerting chiede due rossi consecutivi, e il check
+    non ha TTL, quindi sono due misure vere e non una riusata due volte.
     """
     fonte = "web:/api/v2/history+db:unified_predictions"
     soglia = "n, vinte e perse identiche"
@@ -253,6 +254,10 @@ def check_history_coerente() -> Verdict:
                        evidence={"soglia": soglia})
     prova = {"api": api, "ricalcolato": db, "gemelle_tolte": replay["declared"]["dedup_dropped"],
              "righe_route": replay["route_rows"], "soglia": soglia,
+             "cosa_prova": "la coerenza fra la route in produzione e il suo codice "
+                           "eseguito sul DB, non la correttezza del codice condiviso. "
+                           "Il codice e' quello di REPO_ROOT (la vetrina, origin/main): "
+                           "fra un merge e il deploy un rosso transitorio e' possibile",
              "riparo": "la route e il suo codice divergono: un filtro in route.ts non e' "
                        "piu' quello di history_replay.ts (o viceversa)"}
     if api != db:
@@ -424,9 +429,9 @@ def checks() -> list[Check]:
               check_freschezza_leghe, timeout_seconds=25),
         # Stesso id di prima: la torre conserva la storia del check.
         Check("history_coerente", "risultati", "History coerente col DB",
-              check_history_coerente, ttl_seconds=900, timeout_seconds=120),
+              check_history_coerente, timeout_seconds=120),
         Check("copertura_onesta", "coerenza", "Copertura dichiarata onesta",
-              check_copertura_onesta, ttl_seconds=900, timeout_seconds=120),
+              check_copertura_onesta, timeout_seconds=120),
         # Un solo check per il registro, non uno per claim: ogni rosso notifica,
         # e 15 claim rotti noti sarebbero 15 notifiche ogni 6 ore.
         Check("claim_registry", "coerenza", "Claim pubblici vs dato",
