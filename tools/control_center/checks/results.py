@@ -141,6 +141,11 @@ where is_historical = true
 # route fa in lettura (lib/dedupe-fixtures) e la SQL non puo' replicare in modo
 # leggibile. Misurata il 10/09: 4 righe su 1.610, cioe' 0,2 punti. Le soglie
 # stanno appena sopra quel rumore — non larghe abbastanza da coprire un difetto.
+# #SETTLE-1001 — rimisurata l'01/10: al netto del cutover lo scarto e' 156 righe
+# (DB 3248 vs API 3092, 0,5pt), e il dedup stretto da solo ne spiega ~124. Il
+# dedup non e' piu' rumore: le soglie NON si allargano per farlo stare dentro.
+# Upgrade: l'API pubblica le gemelle tolte (es. `stats.fixture_twins_excluded`)
+# e qui si sottraggono come `post_cutover_excluded`.
 _SCARTO_MAX_PUNTI = 0.6
 _SCARTO_MAX_RIGHE = 25
 
@@ -179,6 +184,21 @@ def check_history_coerente() -> Verdict:
             evidence={"n_api": 0, "n_db": n_db},
         )
 
+    # #SETTLE-1001 a3 — dal 25/09 l'API toglie dall'headline le righe calcio
+    # post-cutover sotto il floor di lega (#TRE-LIVELLI-0925-CUTOVER) e le
+    # pubblica in `post_cutover_excluded`. Si confronta al netto di QUEL numero
+    # invece di replicare il floor in SQL (sarebbe una terza copia della regola).
+    # Trust boundary: un valore incoerente non si usa per «aggiustare» il DB.
+    esc = stats.get("post_cutover_excluded") or {}
+    try:
+        esc_n, esc_won = int(esc.get("n") or 0), int(esc.get("won") or 0)
+    except (TypeError, ValueError, AttributeError):
+        esc_n = esc_won = 0
+    if not (0 <= esc_won <= esc_n < n_db and esc_won <= vinti_db):
+        esc_n = esc_won = 0
+    n_db -= esc_n
+    vinti_db -= esc_won
+
     hit_db = vinti_db / n_db * 100
     hit_api = float((stats.get("win_rate") or "0%").rstrip("%") or 0)
     scarto_punti = abs(hit_api - hit_db)
@@ -191,6 +211,7 @@ def check_history_coerente() -> Verdict:
         "n_ricalcolato": n_db,
         "copertura_pubblicata": stats.get("coverage"),
         "escluse_pubblicate": stats.get("unverified_excluded"),
+        "escluse_post_cutover": esc_n,
     }
 
     if scarto_punti > _SCARTO_MAX_PUNTI or scarto_righe > _SCARTO_MAX_RIGHE:
