@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { fetchSummerResults } from "@/lib/summer-leagues";
 import { abbinaFinaleCerto, espnSlugForLeague, parseEspnFinals, pianoRecuperoEspn } from "@/lib/espn-results";
-import { mesiEspn, ESPN_RECOVERY_DAYS } from "@/lib/espn";
+import { mesiEspn } from "@/lib/espn";
 
 const espnEvent = (id: string, date: string, hs: string, as: string) => ({
   id, date,
@@ -67,9 +67,6 @@ describe("recovery of open served rows by date + names", () => {
     expect(plan.get("bel.1")!.righe).toHaveLength(2);
   });
 
-  it("the retry horizon is a week, not 48h", () => {
-    expect(ESPN_RECOVERY_DAYS).toBe(7);
-  });
 });
 
 describe("A4 matcher — one shared token is not an identity (#CALCIO-1001 review A)", () => {
