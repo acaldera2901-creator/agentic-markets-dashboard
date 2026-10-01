@@ -187,3 +187,16 @@ def test_argomento_sconosciuto_fallisce():
     with pytest.raises(SystemExit) as e:
         cp.main(["--boh"])
     assert e.value.code == 2
+
+
+# ── revisione: niente verde senza popolazione misurata ──────────────────────
+@pytest.mark.parametrize("db_n,stats,livello", [
+    (0, {"n": 0, "won": 0, "lost": 0}, "unknown"),   # DB e API vuoti: non e' coerenza
+    (0, {}, "unknown"),                               # API senza campi
+    (5, {"won": 3, "lost": 2}, "unknown"),            # 'n' assente nelle stats
+    (5, {"n": 0, "won": 0, "lost": 0}, "red"),        # l'API dice 0, il DB no
+])
+def test_history_senza_popolazione_non_e_verde(db_n, stats, livello):
+    rep = _replay(db_n, db_n, 0)
+    with patch.object(coerenza, "misura_history", return_value=(rep, stats)):
+        assert coerenza.check_history_coerente().level == livello

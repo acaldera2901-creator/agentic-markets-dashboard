@@ -225,7 +225,14 @@ def check_history_coerente() -> Verdict:
     except (ReplayUnavailable, DbUnavailable) as exc:
         return unknown(f"non ricalcolabile: {exc}", fonte, evidence={"soglia": soglia})
     db = replay["headline"]
+    if any(k not in stats for k in ("n", "won", "lost")):
+        return unknown("l'API non espone n/won/lost: niente da confrontare", fonte,
+                       evidence={"soglia": soglia, "campi": sorted(stats)})
     api = {k: int(stats.get(k) or 0) for k in ("n", "won", "lost")}
+    if db["n"] == 0 and api["n"] == 0:
+        # Due zeri uguali non sono coerenza: e' una popolazione non misurata.
+        return unknown("DB e API entrambi a 0 pick: popolazione vuota", fonte,
+                       evidence={"soglia": soglia})
     prova = {"api": api, "ricalcolato": db, "gemelle_tolte": replay["declared"]["dedup_dropped"],
              "righe_route": replay["route_rows"], "soglia": soglia,
              "riparo": "la route e il suo codice divergono: un filtro in route.ts non e' "
