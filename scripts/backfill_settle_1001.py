@@ -23,6 +23,17 @@ SAFETY
       DELETE FROM pick_settlement WHERE correction_reason = 'backfill:SETTLE-1001';
   (UPDATE/DELETE are REVOKEd for the app roles: rollback runs as owner.)
 
+DEBITO DICHIARATO (owner Andrea/Claude, rivedere entro 2026-10-08)
+  agents/tennis_settlement.py::_bulk_expire_stale scade su `computed_at`,
+  mentre la selezione usa `scheduled_at`: una partita programmata >7 giorni
+  dopo il calcolo verrebbe chiusa 'unresolved' per sempre senza essere mai
+  stata giocata. Misurato 01/10: 0 righe aperte e 0 storiche in quel caso
+  (scarto massimo calcolo->gioco 3,2 giorni), quindi il codice resta com'e'.
+  Come si rileva (sola lettura):
+    select count(*) from tennis_predictions
+     where outcome is null and scheduled_at > computed_at + interval '7 days';
+  Se > 0: spostare la scadenza su `scheduled_at`.
+
 USAGE
   venv/bin/python -m scripts.backfill_settle_1001            # dry-run
   venv/bin/python -m scripts.backfill_settle_1001 --apply    # gated
