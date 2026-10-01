@@ -24,10 +24,12 @@ WHERE EACH RESULT COMES FROM (every row declares it, in this order)
 
 GRADING: live (agents/result_settlement.py, core/supabase_client.py) grades
 the SHOWN pick, unified_predictions.pick: 1X2 + home/draw/away -> won/lost; no
-pick shown = under the floor -> void (#VOID-SENZA-PICK-0907). The register
-sealed pick_ledger.pick, which can differ. Both are graded: written only when
-they give the same result; otherwise NOT written ("serve decisione"), and the
-dry-run counts the divergences. Void for a match not played only on the source's own status:
+pick shown = under the floor -> void (#VOID-SENZA-PICK-0907). REGOLA 4, when
+the register's sealed pick_ledger.pick differs: (4a) shown, not sealed ->
+graded on the shown pick, correction_reason tagged "non-sigillata" (outside
+the "sealed before kick-off" claim, countable); (4b) sealed, not shown ->
+void, tagged "nessuna-pick-mostrata"; (4c) both, different -> NOT written,
+"conflitto-sigillato-mostrato" (manual decision). Void for a match not played only on the source's own status:
 ESPN STATUS_POSTPONED/STATUS_CANCELED, football-data POSTPONED/CANCELLED.
 A 1X2 pick is graded on 90 minutes: only ESPN STATUS_FULL_TIME (or
 football-data FINISHED with duration REGULAR) is a final; AET/PEN finals are
@@ -290,13 +292,31 @@ def grade(sealed_pick: str | None, market: str | None, hg: int, ag: int) -> str:
 _SAME = object()
 
 
+def _pick(p) -> str | None:
+    p = str(p or "").strip().lower()
+    return p if p in ("home", "draw", "away") else None
+
+
+def pick_case(sealed_pick, shown_pick) -> str | None:
+    """REGOLA 4. 4a shown without sealed; 4b sealed without shown; 4c both,
+    different; None when they agree (or both empty)."""
+    a, b = _pick(sealed_pick), _pick(shown_pick)
+    if a == b:
+        return None
+    if a is None:
+        return "4a"
+    if b is None:
+        return "4b"
+    return "4c"
+
+
 def decide(sealed_pick, market, evs: list[Evidence], shown_pick=_SAME) -> dict:
     """shown_pick = unified_predictions.pick, what live grades on
     (agents/result_settlement.py); default: same as the sealed one."""
     if shown_pick is _SAME:
         shown_pick = sealed_pick
     out = {"result": None, "outcome": None, "final_score": None, "fonte": None,
-           "conferme": [], "prova": None, "motivo": None}
+           "conferme": [], "prova": None, "motivo": None, "pick_case": None}
     finals = [e for e in evs if e.kind == "final"]
     voids = [e for e in evs if e.kind == "void"]
     extra = sorted({e.status or "?" for e in evs if e.kind == "supplementari"})
@@ -308,12 +328,13 @@ def decide(sealed_pick, market, evs: list[Evidence], shown_pick=_SAME) -> dict:
             return {**out, "motivo": f"conflitto fra fonti ({seen})"}
         hg, ag = finals[0].score
         fs = f"{hg}-{ag}"
-        sealed, shown = grade(sealed_pick, market, hg, ag), grade(shown_pick, market, hg, ag)
-        if sealed != shown:
+        case = pick_case(sealed_pick, shown_pick)
+        if case == "4c":
             return {**out, "final_score": fs, "motivo": (
-                f"pick sigillato ({sealed_pick}) e pick mostrato ({shown_pick}) danno esiti "
-                f"diversi ({sealed}/{shown}): serve decisione")}
-        return {**out, "result": sealed, "final_score": fs,
+                f"conflitto-sigillato-mostrato: sigillato {sealed_pick}, mostrato {shown_pick}"
+                " (decisione manuale)")}
+        return {**out, "result": grade(shown_pick, market, hg, ag), "pick_case": case,
+                "final_score": fs,
                 "outcome": outcome_from_score(fs), "fonte": finals[0].source,
                 "conferme": [e.source for e in finals[1:]]}
     if voids:
@@ -337,6 +358,10 @@ def settlement_row(source_id: str, current_rev: int | None, d: dict) -> dict | N
     reason = f"{BATCH} fonte={d['fonte']}"
     if d["prova"]:
         reason += f" prova={d['prova']}"
+    if d.get("pick_case") == "4a":
+        reason += " non-sigillata"  # graded on a pick the register never sealed
+    elif d.get("pick_case") == "4b":
+        reason += " nessuna-pick-mostrata"
     return {"source_table": "match_predictions", "source_id": source_id,
             "model_version": "football-v4-xg-model", "result": d["result"],
             "outcome": d["outcome"], "final_score": d["final_score"],
@@ -484,6 +509,14 @@ def report(out: list[dict]) -> None:
             used = "USATO" if o["decisione"]["fonte"] == m["fonte"] else "conferma"
             print(f"  {o['kickoff'][:16]} {o['league']:5s} {o['match']}  <=>  {m['fonte_nomi']}"
                   f"  [{m['fonte']}, {m['punteggio'] or m['stato']}, {used}]")
+    print("REGOLA 4 per sotto-caso:", dict(Counter(
+        (o["decisione"]["pick_case"] or ("4c" if (o["decisione"]["motivo"] or "").startswith("conflitto-sigillato")
+                                         else "-")) + (":scritta" if o["row"] else ":non scritta")
+        for o in out).most_common()))
+    for o in out:
+        if (o["decisione"]["motivo"] or "").startswith("conflitto-sigillato"):
+            print(f"  4c {o['kickoff'][:16]} {o['league']:5s} {o['match']} sigillato={o['pick']}"
+                  f" mostrato={o['pick_mostrato']} punteggio={o['decisione']['final_score']}")
     print("REGOLA 3 (partita spostata di data): sigillata | giocata/nuova | regola | fonte -> esito")
     for o in out:
         for r in o["regola3"]:

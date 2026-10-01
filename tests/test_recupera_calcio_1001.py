@@ -191,14 +191,11 @@ def test_sealed_and_shown_pick_that_grade_alike_are_written():
     assert d["result"] == "won"
 
 
-def test_sealed_and_shown_pick_that_grade_differently_are_not_written():
-    # live grades the SHOWN pick (agents/result_settlement.py), the register
-    # sealed another one: no silent choice between the two.
-    d = decide(None, "1X2", [Evidence("servita", "final", (2, 0))], shown_pick="HOME")
-    assert d["result"] is None and "pick sigillato" in d["motivo"]
+def test_sealed_and_shown_pick_divergence_follows_rule_4():
+    # live grades the SHOWN pick (agents/result_settlement.py); see REGOLA 4
+    assert decide(None, "1X2", [Evidence("servita", "final", (2, 0))], shown_pick="HOME")["result"] == "won"
     d = decide("HOME", "1X2", [Evidence("espn-id", "final", (0, 1))], shown_pick="AWAY")
     assert d["result"] is None
-
 
 # ── #CALCIO-1001 review D: never a silent partial write, b1 superseded ──────
 
@@ -301,3 +298,22 @@ def test_rule3_moved_event_needs_a_strong_identity():
     e = id_evidence("espn-id", _moved(30, home="Puebla", away="Toluca B"), "Puebla", "Club Leon", T0)
     assert e.kind == "debole"
 
+
+# ── REGOLA 4: grade the SHOWN pick ───────────────────────────────────────────
+
+def test_rule4a_shown_without_sealed_is_graded_and_tagged_unsealed():
+    d = decide(None, "1X2", [Evidence("servita", "final", (2, 0))], shown_pick="HOME")
+    assert d["result"] == "won" and d["pick_case"] == "4a"
+    assert "non-sigillata" in settlement_row("x", None, d)["correction_reason"]
+
+
+def test_rule4b_sealed_without_shown_is_void():
+    d = decide("HOME", "1X2", [Evidence("espn-id", "final", (2, 0))], shown_pick=None)
+    assert d["result"] == "void" and d["pick_case"] == "4b"
+    assert "nessuna-pick-mostrata" in settlement_row("x", 1, d)["correction_reason"]
+
+
+def test_rule4c_opposite_picks_are_never_written():
+    for score in ((0, 1), (1, 1)):  # even when both picks would grade alike
+        d = decide("HOME", "1X2", [Evidence("espn-id", "final", score)], shown_pick="AWAY")
+        assert d["result"] is None and d["motivo"].startswith("conflitto-sigillato-mostrato")
