@@ -27,7 +27,8 @@ import { tokenSquadra } from "@/lib/dedupe-fixtures";
 // scritto a mano, e il guard `tests/test_espn_host_no_residues.py` l'ha
 // bocciato: la mia verifica locale passava solo perche' girava da una rete
 // residenziale, dove il WAF non filtra.
-import { ESPN_HEADERS, ESPN_SITE_API } from "@/lib/espn";
+import { ESPN_HEADERS, ESPN_SITE_API, isFullTimeFinal, mesiEspn } from "@/lib/espn";
+import { ESPN_SLUGS } from "@/lib/summer-leagues";
 
 /** Codice lega football-data → slug ESPN. SONDATI il 31/08/2026 sulla data
  *  20260830, eventi completati: eng.1 4/4, ita.1 3/3, esp.1 3/3, ger.1 2/2,
@@ -64,10 +65,10 @@ export function parseEspnFinals(data: unknown): EspnFinal[] {
   for (const raw of events) {
     const ev = raw as {
       date?: string;
-      status?: { type?: { completed?: boolean } };
+      status?: { type?: { completed?: boolean; name?: string } };
       competitions?: Array<{ competitors?: Array<{ homeAway?: string; score?: string; team?: { displayName?: string } }> }>;
     };
-    if (!ev?.status?.type?.completed) continue;
+    if (!isFullTimeFinal(ev?.status?.type)) continue; // AET/PEN: not a 90' score
     const cs = ev.competitions?.[0]?.competitors;
     if (!Array.isArray(cs) || !ev.date) continue;
     const h = cs.find((c) => c.homeAway === "home");
@@ -84,15 +85,53 @@ export function parseEspnFinals(data: unknown): EspnFinal[] {
   return out;
 }
 
-export async function fetchEspnFinalsByDate(slug: string, giorno: string): Promise<EspnFinal[]> {
+/** `giorno` is YYYYMMDD or a whole month YYYYMM. limit=200 does not truncate:
+ *  measured 01/10 on 202609, month = sum of the 30 days for eng.1 (30), eng.3
+ *  (55), usa.1 (74, the busiest served league). `onCall` (#CALCIO-1001) gets null on a 200
+ *  and "slug:giorno:<status|error>" otherwise — an empty list alone hides a
+ *  403 from Vercel. */
+export async function fetchEspnFinalsByDate(
+  slug: string,
+  giorno: string,
+  onCall?: (fail: string | null) => void,
+): Promise<EspnFinal[]> {
   const url = `${ESPN_SITE_API}/soccer/${slug}/scoreboard?dates=${giorno}&limit=200`;
   try {
     const r = await fetch(url, { headers: ESPN_HEADERS, cache: "no-store" });
-    if (!r.ok) return [];
-    return parseEspnFinals(await r.json());
-  } catch {
+    if (!r.ok) { onCall?.(`${slug}:${giorno}:${r.status}`); return []; }
+    const finals = parseEspnFinals(await r.json());
+    onCall?.(null);
+    return finals;
+  } catch (e) {
+    onCall?.(`${slug}:${giorno}:${String(e)}`);
     return [];
   }
+}
+
+// #CALCIO-1001 — the slug of every served league, top (football-data codes)
+// and minor (lib/summer-leagues.ts). Step A3 knew only the first eight.
+export function espnSlugForLeague(code: string): string | undefined {
+  return ESPN_SLUG_BY_FD_LEAGUE[code] ?? ESPN_SLUGS[code];
+}
+
+/** Open served rows grouped by ESPN slug, with the months to read. Rows of a
+ *  league without an ESPN slug are left out (nothing to ask). */
+export function pianoRecuperoEspn<T extends { league: string | null; starts_at: string }>(
+  rows: readonly T[],
+  slugFor: (league: string) => string | undefined,
+): Map<string, { mesi: string[]; righe: T[] }> {
+  const plan = new Map<string, { mesi: string[]; righe: T[] }>();
+  for (const r of rows) {
+    const slug = slugFor(String(r.league ?? ""));
+    const t = new Date(r.starts_at);
+    if (!slug || !Number.isFinite(t.getTime())) continue;
+    const g = plan.get(slug) ?? { mesi: [], righe: [] };
+    for (const m of mesiEspn(t, t)) if (!g.mesi.includes(m)) g.mesi.push(m);
+    g.righe.push(r);
+    plan.set(slug, g);
+  }
+  for (const g of plan.values()) g.mesi.sort();
+  return plan;
 }
 
 export type StuckRow = { match_id: string; home_team: string; away_team: string; kickoff: string };
@@ -138,6 +177,34 @@ export function abbinaFinale(row: StuckRow, finals: readonly EspnFinal[]): EspnF
     const tf = new Date(f.kickoff).getTime();
     if (!Number.isFinite(tf) || Math.abs(tf - t) > TOLLERANZA_MS) return false;
     return condivideIdentita(f.home, row.home_team) && condivideIdentita(f.away, row.away_team);
+  });
+  return cand.length === 1 ? cand[0] : null;
+}
+
+/** #CALCIO-1001 review A — strong identity: one name's tokens fully contained
+ *  in the other's ("Ajax" in "Ajax Amsterdam"), with a long token on the
+ *  contained side. One shared token is NOT enough: "Real Madrid" and "Real
+ *  Betis" share "real", "Manchester United" and "Leeds United" share "united". */
+function stessaIdentitaForte(a: string, b: string): boolean {
+  const x = new Set(tokenSquadra(a));
+  const y = new Set(tokenSquadra(b));
+  const [small, big] = x.size <= y.size ? [x, y] : [y, x];
+  if (!small.size) return false;
+  for (const t of small) if (!big.has(t)) return false;
+  return [...small].some((t) => t.length >= MIN_TOKEN);
+}
+
+/** abbinaFinale with the strong identity, for step A4 (rows served under
+ *  another id, where the names are the only link). Exactly one candidate on
+ *  kickoff ±20', home with home — anything else is no match. abbinaFinale
+ *  (step A3) keeps the shared-token rule: known debt, see #CALCIO-1001. */
+export function abbinaFinaleCerto(row: StuckRow, finals: readonly EspnFinal[]): EspnFinal | null {
+  const t = new Date(row.kickoff).getTime();
+  if (!Number.isFinite(t)) return null;
+  const cand = finals.filter((f) => {
+    const tf = new Date(f.kickoff).getTime();
+    if (!Number.isFinite(tf) || Math.abs(tf - t) > TOLLERANZA_MS) return false;
+    return stessaIdentitaForte(f.home, row.home_team) && stessaIdentitaForte(f.away, row.away_team);
   });
   return cand.length === 1 ? cand[0] : null;
 }

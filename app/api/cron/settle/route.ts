@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllTodayMatches } from "@/lib/football-data";
 import { SUMMER_LEAGUES, fetchSummerResults } from "@/lib/summer-leagues";
-import { ESPN_SLUG_BY_FD_LEAGUE, fetchEspnFinalsByDate, abbinaFinale, yyyymmddUtc } from "@/lib/espn-results";
+import {
+  ESPN_SLUG_BY_FD_LEAGUE,
+  abbinaFinale,
+  abbinaFinaleCerto,
+  espnSlugForLeague,
+  fetchEspnFinalsByDate,
+  pianoRecuperoEspn,
+  yyyymmddUtc,
+} from "@/lib/espn-results";
+import { ESPN_RECOVERY_DAYS } from "@/lib/espn";
 import { dbQuery, getSupabaseAdminClient } from "@/lib/db";
 import { settlePredictionLog, settlePredictionLogWinner } from "@/lib/prediction-log";
 import { gradeTennisPick, tennisWinnerSide } from "@/lib/tennis-settlement";
@@ -46,6 +55,16 @@ interface SettleReport {
   /** righe bloccate per cui ESPN non ha dato un abbinamento CERTO: restano
    *  ferme, e questo numero e' il modo di accorgersene. */
   recovery_unmatched: number;
+  /** #CALCIO-1001 — open served rows found on ESPN by date + names (A4), and
+   *  those still without a certain match (they retry until step E). */
+  served_recovered: number;
+  served_unmatched: number;
+  /** #CALCIO-1001 review F — ESPN calls that failed (non-200 or network) and
+   *  the first few as "slug:date:status". They used to come back as an empty
+   *  list, so a 403 from Vercel looked exactly like "no results yet". */
+  espn_calls: number;
+  espn_failed: number;
+  espn_failed_sample: string[];
   unified_football_settled: number;
   unified_tennis_settled: number;
   voided_stale: number;
@@ -114,6 +133,11 @@ export async function GET(req: NextRequest) {
     log_settled: 0,
     recovered: 0,
     recovery_unmatched: 0,
+    served_recovered: 0,
+    served_unmatched: 0,
+    espn_calls: 0,
+    espn_failed: 0,
+    espn_failed_sample: [],
     unified_football_settled: 0,
     unified_tennis_settled: 0,
     voided_stale: 0,
@@ -125,6 +149,12 @@ export async function GET(req: NextRequest) {
   };
   const sb = getSupabaseAdminClient();
   const nowIso = () => new Date().toISOString();
+  const espnCall = (fail: string | null) => {
+    report.espn_calls += 1;
+    if (fail === null) return;
+    report.espn_failed += 1;
+    if (report.espn_failed_sample.length < 5) report.espn_failed_sample.push(fail);
+  };
 
   // ── A+B. Live scores + prediction_log ─────────────────────────────────────
   const finished = new Map<string, { homeGoals: number; awayGoals: number }>();
@@ -164,7 +194,7 @@ export async function GET(req: NextRequest) {
   // UPDATE + settlement semantics as step A.
   for (const code of Object.keys(SUMMER_LEAGUES)) {
     try {
-      const results = await fetchSummerResults(code);
+      const results = await fetchSummerResults(code, espnCall);
       for (const m of results) {
         await dbQuery(
           `UPDATE match_predictions
@@ -223,7 +253,7 @@ export async function GET(req: NextRequest) {
     }
     for (const [k, righe] of gruppi) {
       const [slug, giorno] = k.split("|");
-      const finals = await fetchEspnFinalsByDate(slug, giorno);
+      const finals = await fetchEspnFinalsByDate(slug, giorno, espnCall);
       for (const r of righe) {
         const f = abbinaFinale(r, finals);
         if (!f) { report.recovery_unmatched += 1; continue; }
@@ -244,18 +274,69 @@ export async function GET(req: NextRequest) {
     report.errors.push(`recovery:${String(e)}`);
   }
 
-  // ── C. unified_predictions football ───────────────────────────────────────
-  if (sb && finished.size > 0) {
+  // ── A4. Open served rows, by date + names (#CALCIO-1001) ────────────────
+  // Steps A-A3 find a result only by the id the row was served under, and
+  // only inside the source's short window (fd "today", Odds API 3 days,
+  // match_predictions — which is pruned of past matches). A row served as
+  // `oddsapi:` whose 3 days ran out, or whose source was down, had no other
+  // way to close: step E sealed it 'unresolved' (217 sealed picks to 26/09).
+  // Here every open served row of the last ESPN_RECOVERY_DAYS is looked up on
+  // the ESPN scoreboard of its month with abbinaFinaleCerto (kickoff ±20',
+  // full name containment per side home with home, exactly one candidate). The finals
+  // join the `finished` map, so step C settles them like any other.
+  if (sb) {
     try {
-      const { data: rows, error } = await sb
+      const since = new Date(Date.now() - ESPN_RECOVERY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      const until = new Date(Date.now() - 150 * 60 * 1000).toISOString();
+      const { data: open, error } = await sb
         .from("unified_predictions")
-        .select("id, external_event_id, pick, market, notes")
+        .select("external_event_id, league, home_team, away_team, starts_at")
         .eq("sport", "football")
         .eq("is_historical", false)
         .is("result", null)
-        .in("external_event_id", [...finished.keys()]);
+        .gte("starts_at", since)
+        .lt("starts_at", until)
+        .limit(500);
       if (error) throw error;
-      for (const row of rows ?? []) {
+      const pending = (open ?? []).filter(
+        (r) => r.external_event_id && r.home_team && r.away_team && !finished.has(String(r.external_event_id))
+      );
+      for (const [slug, g] of pianoRecuperoEspn(pending, espnSlugForLeague)) {
+        const finals = (await Promise.all(g.mesi.map((m) => fetchEspnFinalsByDate(slug, m, espnCall)))).flat();
+        for (const r of g.righe) {
+          const f = abbinaFinaleCerto(
+            { match_id: String(r.external_event_id), home_team: String(r.home_team), away_team: String(r.away_team), kickoff: String(r.starts_at) },
+            finals
+          );
+          if (!f) { report.served_unmatched += 1; continue; }
+          finished.set(String(r.external_event_id), { homeGoals: f.homeGoals, awayGoals: f.awayGoals });
+          report.served_recovered += 1;
+        }
+      }
+    } catch (e) {
+      report.errors.push(`recovery_served:${String(e)}`);
+    }
+  }
+
+  // ── C. unified_predictions football ───────────────────────────────────────
+  if (sb && finished.size > 0) {
+    try {
+      // #CALCIO-1001 — in chunks: a week of results is too many ids for one
+      // `.in(...)` query string.
+      const ids = [...finished.keys()];
+      const rows: Array<{ id: string; external_event_id: string; pick: string | null; market: string | null; notes: unknown }> = [];
+      for (let i = 0; i < ids.length; i += 150) {
+        const { data, error } = await sb
+          .from("unified_predictions")
+          .select("id, external_event_id, pick, market, notes")
+          .eq("sport", "football")
+          .eq("is_historical", false)
+          .is("result", null)
+          .in("external_event_id", ids.slice(i, i + 150));
+        if (error) throw error;
+        rows.push(...(data ?? []));
+      }
+      for (const row of rows) {
         const m = finished.get(String(row.external_event_id));
         if (!m) continue;
         const outcome = footballOutcome(
@@ -424,7 +505,7 @@ export async function GET(req: NextRequest) {
   // Step C settles only football rows whose fixture actually FINISHED. A match
   // that is postponed / abandoned / never returns a score would otherwise keep
   // result NULL forever: it silently drops off the live board (kickoff long
-  // past) but never enters the public history — an orphan. Past a 48h grace we
+  // past) but never enters the public history — an orphan. Past ESPN_RECOVERY_DAYS we
   // flag it 'unresolved' + is_historical = TRUE, the exact value the tennis
   // backstop uses for "we never fetched a result" (settle_unified_tennis /
   // #TENNIS-VOID-FIX-1). 'unresolved' is deliberately NOT 'void': /api/v2/history
@@ -433,7 +514,14 @@ export async function GET(req: NextRequest) {
   // .is("result", null).
   if (sb) {
     try {
-      const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      // #CALCIO-1001 — was 48h, terminal, with nothing retrying after: a
+      // two-day source outage lost the result for good. Now E seals only
+      // what step A4 could not find in ESPN_RECOVERY_DAYS of retries.
+      // VISIBLE CHANGE: an unresolved match now keeps result NULL for 5 more
+      // days (7 instead of 2) — off the live board (kickoff past) and out of
+      // /history meanwhile; its sealed-register closure and the coverage
+      // checks see it 5 days later than before.
+      const cutoff = new Date(Date.now() - ESPN_RECOVERY_DAYS * 24 * 60 * 60 * 1000).toISOString();
       const { data: rows, error } = await sb
         .from("unified_predictions")
         // #LEDGER-MIRROR-0831: external_event_id serve per la chiave della riga
@@ -503,6 +591,13 @@ export async function GET(req: NextRequest) {
     report.sealed_orphans = Number(rows[0]?.n ?? 0);
   } catch (e) {
     report.errors.push(`sealed_orphans:${String(e)}`);
+  }
+
+  // #CALCIO-1001 review F — every ESPN call failed (e.g. 403 from Vercel):
+  // the minor leagues cannot close at all. A single failed month is only
+  // counted; a total outage fails the run loud.
+  if (report.espn_calls > 0 && report.espn_failed >= report.espn_calls) {
+    report.errors.push(`espn: all ${report.espn_failed} calls failed (${report.espn_failed_sample.join(", ")})`);
   }
 
   // ── F. Tennis pipeline staleness watchdog (serverless) ────────────────────

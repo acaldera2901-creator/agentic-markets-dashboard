@@ -1,0 +1,139 @@
+// #CALCIO-1001 — why 217 sealed football picks ended 'unresolved'.
+//
+// Measured 01/10: ESPN answers 400 to every `dates=YYYYMMDD-YYYYMMDD` range
+// (since 15/09, noted in core/espn_soccer_client.py::_scoreboard_window), so
+// lib/summer-leagues.ts::fetchEspnResults returned [] on EVERY run: no espn:*
+// row of the 28 minor leagues could close from the cron, and step E sealed
+// them 'unresolved' at 48h. Single days and whole months still answer 200.
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { fetchSummerResults } from "@/lib/summer-leagues";
+import { abbinaFinaleCerto, espnSlugForLeague, fetchEspnFinalsByDate, parseEspnFinals, pianoRecuperoEspn } from "@/lib/espn-results";
+import { mesiEspn } from "@/lib/espn";
+
+const espnEvent = (id: string, date: string, hs: string, as: string) => ({
+  id, date,
+  status: { type: { completed: true, state: "post", name: "STATUS_FULL_TIME" } },
+  competitions: [{ competitors: [
+    { homeAway: "home", score: hs, team: { displayName: "Club Brugge" } },
+    { homeAway: "away", score: as, team: { displayName: "Anderlecht" } },
+  ] }],
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("fetchSummerResults — ESPN rejects date ranges", () => {
+  it("reads finals through month queries, never a range", async () => {
+    const seen: string[] = [];
+    const recent = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const old = new Date(Date.now() - 40 * 24 * 3600 * 1000).toISOString();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      seen.push(url);
+      if (/dates=\d{8}-\d{8}/.test(url)) return new Response("Failed to get events endpoint.", { status: 400 });
+      if (/dates=\d{6}(&|$)/.test(url)) {
+        return new Response(JSON.stringify({ events: [espnEvent("1", recent, "2", "1"), espnEvent("2", old, "0", "0")] }), { status: 200 });
+      }
+      return new Response("[]", { status: 200 });
+    }));
+    const out = await fetchSummerResults("BEL");
+    expect(out).toEqual([{ id: "espn:1", homeGoals: 2, awayGoals: 1 }]); // the 40-day-old one is outside the window
+    expect(seen.some((u) => /dates=\d{8}-\d{8}/.test(u))).toBe(false);
+  });
+});
+
+describe("recovery of open served rows by date + names", () => {
+  it("every served league resolves to its ESPN slug, top and minor", () => {
+    expect(espnSlugForLeague("PL")).toBe("eng.1");
+    expect(espnSlugForLeague("BEL")).toBe("bel.1");
+    expect(espnSlugForLeague("MLS")).toBe("usa.1");
+    expect(espnSlugForLeague("POL")).toBeUndefined(); // no ESPN league
+  });
+
+  it("months follow ESPN's US day: a 02:30Z kickoff on the 1st is listed in the previous month", () => {
+    expect(mesiEspn(new Date("2026-10-01T02:30:00Z"), new Date("2026-10-01T02:30:00Z"))).toEqual(["202609", "202610"]);
+    expect(mesiEspn(new Date("2026-09-10T00:00:00Z"), new Date("2026-09-20T00:00:00Z"))).toEqual(["202609"]);
+  });
+
+  it("groups rows by slug with the months to read, skipping leagues without ESPN", () => {
+    const plan = pianoRecuperoEspn(
+      [
+        { league: "BEL", starts_at: "2026-09-20T16:00:00Z" },
+        { league: "BEL", starts_at: "2026-10-01T02:30:00Z" },
+        { league: "POL", starts_at: "2026-09-20T16:00:00Z" },
+      ],
+      espnSlugForLeague,
+    );
+    expect([...plan.keys()]).toEqual(["bel.1"]);
+    expect(plan.get("bel.1")!.mesi).toEqual(["202609", "202610"]);
+    expect(plan.get("bel.1")!.righe).toHaveLength(2);
+  });
+
+});
+
+describe("A4 matcher — one shared token is not an identity (#CALCIO-1001 review A)", () => {
+  const K = "2026-09-20T14:00Z";
+  const row = (h: string, a: string) => ({ match_id: "x", home_team: h, away_team: a, kickoff: K });
+  it("Real Madrid–Real Valladolid is not Real Betis–Real Sociedad", () => {
+    const f = [{ home: "Real Betis", away: "Real Sociedad", homeGoals: 1, awayGoals: 0, kickoff: K }];
+    expect(abbinaFinaleCerto(row("Real Madrid", "Real Valladolid"), f)).toBeNull();
+  });
+  it("Manchester United–Newcastle United is not Manchester City–Leeds United", () => {
+    const f = [{ home: "Manchester City", away: "Leeds United", homeGoals: 2, awayGoals: 2, kickoff: K }];
+    expect(abbinaFinaleCerto(row("Manchester United", "Newcastle United"), f)).toBeNull();
+  });
+  it("full containment, home with home, still matches", () => {
+    const f = [{ home: "Ajax", away: "Feyenoord", homeGoals: 3, awayGoals: 1, kickoff: K }];
+    expect(abbinaFinaleCerto(row("Ajax Amsterdam", "Feyenoord Rotterdam"), f)?.homeGoals).toBe(3);
+    expect(abbinaFinaleCerto(row("Feyenoord Rotterdam", "Ajax Amsterdam"), f)).toBeNull();
+  });
+});
+
+describe("90 minutes (#CALCIO-1001 review B)", () => {
+  const evAt = (name: string) => ({
+    id: "9", date: "2026-09-20T14:00Z",
+    status: { type: { completed: true, name } },
+    competitions: [{ competitors: [
+      { homeAway: "home", score: "2", team: { displayName: "Club Brugge" } },
+      { homeAway: "away", score: "1", team: { displayName: "Anderlecht" } },
+    ] }],
+  });
+  it("parseEspnFinals keeps only full-time finals: AET/PEN scores include extra time", () => {
+    expect(parseEspnFinals({ events: [evAt("STATUS_FULL_TIME")] })).toHaveLength(1);
+    expect(parseEspnFinals({ events: [evAt("STATUS_FINAL_AET"), evAt("STATUS_FINAL_PEN")] })).toEqual([]);
+  });
+  it("fetchSummerResults skips AET/PEN finals", async () => {
+    const recent = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      /dates=\d{6}/.test(url)
+        ? new Response(JSON.stringify({ events: [{ ...evAt("STATUS_FINAL_PEN"), date: recent }] }), { status: 200 })
+        : new Response("[]", { status: 200 })));
+    expect(await fetchSummerResults("BEL")).toEqual([]);
+  });
+});
+
+describe("ESPN failures are counted, not swallowed (#CALCIO-1001 review F)", () => {
+  it("fetchEspnFinalsByDate reports a 403 and a network error", async () => {
+    const fails: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("blocked", { status: 403 })));
+    expect(await fetchEspnFinalsByDate("bel.1", "202609", (w) => { if (w) fails.push(w); })).toEqual([]);
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("timeout"); }));
+    await fetchEspnFinalsByDate("bel.1", "202609", (w) => { if (w) fails.push(w); });
+    expect(fails).toEqual(["bel.1:202609:403", "bel.1:202609:Error: timeout"]);
+  });
+  it("fetchSummerResults reports each failed ESPN month", async () => {
+    const fails: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      url.includes("espn") ? new Response("", { status: 400 }) : new Response("[]", { status: 200 })));
+    await fetchSummerResults("BEL", (w) => { if (w) fails.push(w); });
+    expect(fails.length).toBeGreaterThan(0);
+    expect(fails[0]).toMatch(/^bel\.1:\d{6}:400$/);
+  });
+});
+
+describe("ESPN successes are reported too, so 'all failed' is measurable", () => {
+  it("a 200 reports null", async () => {
+    const seen: Array<string | null> = [];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ events: [] }), { status: 200 })));
+    await fetchEspnFinalsByDate("bel.1", "202609", (w) => seen.push(w));
+    expect(seen).toEqual([null]);
+  });
+});
