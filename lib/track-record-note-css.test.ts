@@ -1,4 +1,4 @@
-// #SPLIT-0201 — la riga del totale sotto la cifra del modello è una frase:
+// #SPLIT-0201 — la scomposizione per fonte sotto il totale è una frase:
 // minuscola, a capo consentito, larghezza cappata. Non deve ereditare lo stile
 // delle etichette (maiuscolo, 9,5px) che allargava il riquadro del KPI.
 import { readFileSync } from "node:fs";
