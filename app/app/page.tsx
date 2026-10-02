@@ -5564,7 +5564,13 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
     // Gol Over/Under (solo se FortunePlay quota i totali)
     if (fp && fp.totalLine != null && (fp.totalOver != null || fp.totalUnder != null)) {
       const line = fp.totalLine;
-      const findP = (side: string) => (e.extra_markets ?? []).find((x) => x.label && x.label.toLowerCase().includes(side) && x.label.includes(String(line)))?.p ?? null;
+      // #OU-KEY-0930 (audit agentic_codex 29/09): il modello etichetta "O2.5"/"U2.5",
+      // quindi cercare "over"/"under" nella label non trovava MAI niente e il gruppo
+      // Gol usciva senza probabilita'. Si cerca per chiave (over_2_5), come fa market-join.
+      const findP = (side: "over" | "under") => {
+        const key = `${side}_${String(line).replace(".", "_")}`;
+        return (e.extra_markets ?? []).find((x) => x.key === key)?.p ?? null;
+      };
       const overP = findP("over"), underP = findP("under");
       const overVal = fp.totalOver != null && overP != null ? fpEdge(overP, fp.totalOver) : null;
       const underVal = fp.totalUnder != null && underP != null ? fpEdge(underP, fp.totalUnder) : null;

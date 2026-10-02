@@ -196,6 +196,18 @@ export function poisson(k: number, lambda: number): number {
   return Math.exp(logP);
 }
 
+/** Quota equa di una scommessa con rimborso: p·(o−1) = pLoss ⇒ o = (1−push)/p. */
+export function pushFairOdds(pWin: number, push: number): number {
+  const pw = Math.max(0.03, Math.min(0.97, pWin));
+  return Math.round(((1 - push) / pw) * 100) / 100;
+}
+
+/** EV per unita' puntata con rimborso: vinci p·(o−1), perdi 1−p−push, il push rende 0. */
+export function pushEdge(pWin: number, push: number, odds: number | null): number | null {
+  if (odds == null) return null;
+  return Math.round((pWin * odds - (1 - push)) * 10000) / 10000;
+}
+
 export interface ExtraMarket {
   key: string;
   label: string;
@@ -203,6 +215,9 @@ export interface ExtraMarket {
   model_odds: number;
   market_odds: number | null;
   edge: number | null;
+  /** Probabilita' di RIMBORSO (solo linee intere di handicap). Presente ⇒ `p` e'
+   *  la probabilita' di vincere, la quota equa e' (1−push)/p e l'EV p·o − (1−push). */
+  push?: number;
 }
 
 // First-half share of a full-match goal expectation. Empirically first halves
@@ -294,6 +309,14 @@ export function computeExtraMarkets(
   const awayCover = (h: number) => {
     let s = 0; for (const [i, j, p] of csCells) if (i - j < h) s += p; return s;
   };
+  // #AH-PUSH-0930 (audit agentic_codex 29/09): sulle linee intere il pareggio
+  // "a handicap" rimborsa la puntata. Prima quel rimborso usciva dalle vittorie
+  // e poi veniva contato come PERDITA in quota equa ed edge: λ 1,5/1, casa −1 →
+  // quota equa 4,06 invece di ~3,08, e a quota 4 un EV −1,5% invece di +22,7%.
+  const pushAt = (h: number) => {
+    if (!Number.isInteger(h)) return 0;
+    let s = 0; for (const [i, j, p] of csCells) if (i - j === -h) s += p; return s;
+  };
 
   const mOdds = (p: number) =>
     Math.round((1 / Math.max(0.03, Math.min(0.97, p))) * 100) / 100;
@@ -313,7 +336,7 @@ export function computeExtraMarkets(
   let fhBTTS = 0;
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (i >= 1 && j >= 1) fhBTTS += poisson(i, fhH) * poisson(j, fhA);
 
-  const raw: [string, string, number][] = [
+  const raw: [string, string, number, number?][] = [
     // Over/Under goals (all lines the card shows)
     ["over_0_5", "O0.5", overAt(0.5)],
     ["over_1_5", "O1.5", overAt(1.5)],
@@ -354,19 +377,26 @@ export function computeExtraMarkets(
     ["fh_btts_yes", "1T GG", fhBTTS],
     ["fh_btts_no",  "1T NG", 1 - fhBTTS],
     // Goals handicap: keyed by each side's own handicap value h (matches FP labels).
-    ...[-2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5].flatMap((h): [string, string, number][] => {
+    ...[-2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5].flatMap((h): [string, string, number, number?][] => {
       const k = String(h).replace(".", "_");
       const sgn = h > 0 ? `+${h}` : `${h}`;
+      // home con h: push se D = −h · away con h: push se D = h, cioe' −(−h)
       return [
-        [`ah_home_${k}`, `H ${sgn}`, homeCover(h)],
-        [`ah_away_${k}`, `A ${sgn}`, awayCover(h)],
+        [`ah_home_${k}`, `H ${sgn}`, homeCover(h), pushAt(h)],
+        [`ah_away_${k}`, `A ${sgn}`, awayCover(h), pushAt(-h)],
       ];
     }),
   ];
 
-  const markets = raw.map(([key, label, p]) => {
+  const markets: ExtraMarket[] = raw.map(([key, label, p, push]) => {
     const mo = marketOdds[key] ?? null;
-    return { key, label, p: Math.round(p * 10000) / 10000, model_odds: mOdds(p), market_odds: mo, edge: edge(p, mo) };
+    const out: ExtraMarket = { key, label, p: Math.round(p * 10000) / 10000, model_odds: mOdds(p), market_odds: mo, edge: edge(p, mo) };
+    if (push != null && push > 0) {
+      out.push = Math.round(push * 10000) / 10000;
+      out.model_odds = pushFairOdds(p, push);
+      out.edge = pushEdge(p, push, mo);
+    }
+    return out;
   });
 
   // Correct score: top-7 exact scores by model probability (normalized)
