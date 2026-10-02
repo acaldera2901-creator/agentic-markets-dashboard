@@ -1,5 +1,7 @@
 import { dedupeByFixture } from "@/lib/dedupe-fixtures";
 import { footballSurfaceDecisionFor } from "@/lib/surfacing-gate";
+import { probabilitySourceOf } from "@/lib/partner-market";
+import { wilson95, formatWilson } from "@/lib/wilson";
 
 // #HITRATE-GUARD-1 (copy audit 2026-06-11, Andrea: anchor comms to sustainable
 // rates, never small-sample spikes like the 93.8% football day-one figure).
@@ -230,6 +232,7 @@ type TrackRecordRow = ShownRow & {
   starts_at?: string | null;
   published_at?: string | null;
   confidence_score?: number | null;
+  model_version?: string | null;
 };
 
 /** #DUP-FIXTURES-0821 + #COERENZA-1001 — la stessa partita (e lo stesso
@@ -298,5 +301,103 @@ export function trackRecordPopulation<T extends TrackRecordRow>(fetched: T[]) {
     unresolvedExcluded: Math.max(
       0, surfaced.length - headlineRows.length - excludedByFloor.length - unverifiedExcluded,
     ),
+  };
+}
+
+// ─── #SPLIT-0201 — DI CHI E' LA PREVISIONE ──────────────────────────────────
+//
+// Le righe tennis del feed partner (model_version partner-market-v1) portano
+// la quota di mercato senza margine, non una nostra previsione: il loro hit
+// rate misura il mercato, non il modello. `stats.n`/`win_rate` restano il
+// totale storico (invariati per widget, embed, social); qui la stessa
+// popolazione si spezza per fonte, e la UI sceglie quale cifra mettere in testa.
+// La partizione e' esatta: model.n + market_partner.n === stats.n.
+
+export type SourceBlock = {
+  n: number;
+  won: number;
+  lost: number;
+  sample_sufficient: boolean;
+  interval_95: { low: number; high: number } | null;
+  win_rate: string | null;
+  win_rate_display: string | null;
+  /** Righe con esito verificato / righe mostrate e finite, della sola fonte. */
+  coverage: number | null;
+};
+
+function sourceBlock(
+  headline: TrackRecordRow[], rows: TrackRecordRow[], surfaced: TrackRecordRow[], minSample: number,
+): SourceBlock {
+  const won = headline.filter((r) => r.result === "won").length;
+  const lost = headline.filter((r) => r.result === "lost").length;
+  const n = won + lost;
+  const w = n > 0 ? wilson95(won, n) : null;
+  const ok = n >= minSample;
+  return {
+    n, won, lost,
+    sample_sufficient: ok,
+    interval_95: ok && w ? { low: Number(w.low.toFixed(4)), high: Number(w.high.toFixed(4)) } : null,
+    win_rate: ok ? `${((won / n) * 100).toFixed(1)}%` : null,
+    win_rate_display: ok ? formatWilson(w) : null,
+    coverage: surfaced.length > 0 ? Number((rows.length / surfaced.length).toFixed(3)) : null,
+  };
+}
+
+/** Stessa definizione dell'headline di /api/v2/history, spezzata per fonte. */
+export function trackRecordBySource(
+  pop: { headlineRows: TrackRecordRow[]; rows: TrackRecordRow[]; surfaced: TrackRecordRow[] },
+  minSample: number,
+): { model: SourceBlock; market_partner: SourceBlock } {
+  const isMarket = (r: TrackRecordRow) => probabilitySourceOf(r.model_version) === "market";
+  const isModel = (r: TrackRecordRow) => !isMarket(r);
+  return {
+    model: sourceBlock(
+      pop.headlineRows.filter(isModel), pop.rows.filter(isModel), pop.surfaced.filter(isModel), minSample,
+    ),
+    market_partner: sourceBlock(
+      pop.headlineRows.filter(isMarket), pop.rows.filter(isMarket), pop.surfaced.filter(isMarket), minSample,
+    ),
+  };
+}
+
+type HeadlineStats = {
+  won?: number;
+  lost?: number;
+  n?: number;
+  win_rate?: string | null;
+  interval_95?: { low: number; high: number } | null;
+  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
+};
+
+/**
+ * La cifra da mettere in testa al track record (decisione di Andrea, 02/10:
+ * quella del MODELLO). `total` e' il numero storico con le quote del partner
+ * incluse, da dichiarare sotto — solo se il partner ha righe decise. Una
+ * risposta senza `by_source` (deploy precedente) ricade sul totale, come prima.
+ */
+export function headlineFigure(s: HeadlineStats | null | undefined): {
+  winRate: string | null;
+  n: number;
+  won: number;
+  lost: number;
+  interval95: { low: number; high: number } | null;
+  total: { winRate: string; n: number } | null;
+} {
+  const totalN = s?.n ?? (s?.won ?? 0) + (s?.lost ?? 0);
+  const model = s?.by_source?.model;
+  if (!model) {
+    return {
+      winRate: s?.win_rate ?? null, n: totalN, won: s?.won ?? 0, lost: s?.lost ?? 0,
+      interval95: s?.interval_95 ?? null, total: null,
+    };
+  }
+  const partnerN = s?.by_source?.market_partner?.n ?? 0;
+  return {
+    winRate: model.win_rate ?? null,
+    n: model.n ?? 0,
+    won: model.won ?? 0,
+    lost: model.lost ?? 0,
+    interval95: model.interval_95 ?? null,
+    total: partnerN > 0 && s?.win_rate ? { winRate: s.win_rate, n: totalN } : null,
   };
 }

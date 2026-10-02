@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Segment } from "@/lib/track-record-history";
+import type { SourceBlock } from "@/lib/track-record";
 
 export type YearStats = {
   won?: number;
@@ -24,6 +25,8 @@ export type YearStats = {
   unresolved_excluded?: number;
   post_cutover_excluded?: { n: number; won: number; lost: number; win_rate: number | null };
   interval_95?: { low: number; high: number } | null;
+  // #SPLIT-0201 — la stessa popolazione per fonte (modello / quote del partner).
+  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
 } | null;
 
 export type YearData = { stats: YearStats; segments?: Segment[] };

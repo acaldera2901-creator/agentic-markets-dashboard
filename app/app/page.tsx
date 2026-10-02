@@ -29,7 +29,7 @@ import { getAttribution } from "@/lib/attribution";
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
-import { isRateMeaningful } from "@/lib/track-record";
+import { isRateMeaningful, headlineFigure, type SourceBlock } from "@/lib/track-record";
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
@@ -1727,6 +1727,8 @@ interface V2HistoryStats {
   interval_95?: { low: number; high: number } | null;
   win_rate_display?: string | null;
   insufficient_sample_reason?: string | null;
+  // #SPLIT-0201 — la stessa popolazione per fonte (modello / quote del partner).
+  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
 }
 
 // #021: live tennis match from /api/tennis-live (real ESPN scores, curated
@@ -10695,6 +10697,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // #HITRATE-GUARD-1: niente percentuale promozionale sotto la soglia di campione.
   const v2RateMeaningful = historyV2Stats != null
     && isRateMeaningful(historyV2Stats.won + historyV2Stats.lost);
+  // #SPLIT-0201 — sul KPI dello storico la cifra in testa è quella del MODELLO
+  // (decisione di Andrea, 02/10); il totale con le quote del partner sta sotto.
+  const v2Head = headlineFigure(historyV2Stats);
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
   const handleProtectedUnlock = () => {
@@ -11193,17 +11198,28 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   (`n` picks), non è più la stringa fissa "Hit · 100g" — che
                   diceva «ultime 100 partite» mentre la percentuale era all-time
                   su 1.606. Un'etichetta che È il dato non può invecchiare. */}
-              {v2RateMeaningful && historyV2Stats?.win_rate && (
+              {historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate && (
                 <div className="am-kpi chamfer-sm" title={
-                  historyV2Stats.interval_95
-                    ? `95%: ${(historyV2Stats.interval_95.low * 100).toFixed(1)}–${(historyV2Stats.interval_95.high * 100).toFixed(1)}%`
+                  v2Head.interval95
+                    ? `95%: ${(v2Head.interval95.low * 100).toFixed(1)}–${(v2Head.interval95.high * 100).toFixed(1)}%`
                     : undefined
                 }>
-                  <span className="v">{historyV2Stats.win_rate}</span>
+                  <span className="v">{v2Head.winRate}</span>
                   <span className="l">
                     {tNav.kpi_hit}
-                    {typeof historyV2Stats.n === "number" ? ` · ${historyV2Stats.n}` : ""}
+                    {v2Head.n > 0 ? ` · ${v2Head.n}` : ""}
                   </span>
+                  {v2Head.total && (
+                    <span className="l">
+                      {pick5(uiLanguage, {
+                        it: `Incluse le quote di mercato del partner: ${v2Head.total.winRate} su ${v2Head.total.n} pick`,
+                        en: `Including the partner's market prices: ${v2Head.total.winRate} on ${v2Head.total.n} picks`,
+                        es: `Incluidas las cuotas de mercado del socio: ${v2Head.total.winRate} en ${v2Head.total.n} picks`,
+                        fr: `Cotes de marché du partenaire incluses : ${v2Head.total.winRate} sur ${v2Head.total.n} picks`,
+                        ru: `С учётом рыночных котировок партнёра: ${v2Head.total.winRate} на ${v2Head.total.n} пиков`,
+                      })}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
