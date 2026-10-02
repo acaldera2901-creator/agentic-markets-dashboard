@@ -342,6 +342,13 @@ class TennisModelAgent(BaseAgent):
             "fixture_date": fixture_date.isoformat() if fixture_date else None,
         }
         feature_snapshot.update(feature_context)
+        # This is the persisted serving pair, not the shadow Elo pair below.
+        feature_snapshot["probability"] = {
+            "version": "tennis-probability-v1",
+            "source": "market" if market_anchored else "model",
+            "raw_p1": round(p1_prob, 4),
+            "raw_p2": round(p2_prob, 4),
+        }
         # #PINNACLE-ANCHOR-1: persist the odds-at-pick provenance so CLV/coverage
         # is measurable per source. odds_p1/p2 already persist on the row; the
         # book + anchor tier ride in feature_snapshot (JSONB) — no new column.
@@ -527,6 +534,10 @@ class TennisModelAgent(BaseAgent):
             "scheduled_at": market.get("start_time", ""),
             "p1": p1,
             "p2": p2,
+            "feature_snapshot": {"probability": {
+                "version": "tennis-probability-v1", "source": "model",
+                "raw_p1": p1, "raw_p2": p2,
+            }},
             "odds_p1": odds_p1,
             "odds_p2": odds_p2,
             "edge": edge,
