@@ -4395,7 +4395,7 @@ function PlansTab({
                 confronto modello-mercato (probabilità e quota, già sulla card) e
                 la vista combinata (/probability-view, #MB-1). Nessuna promessa di
                 numero di edge: non lo mostra nessuna scheda (#EDGE-COPY-0928). */}
-            <PlanFeature>{pick5(lang, { it: "Perché il modello la vede così: forma, infortuni, campo", en: "Why the model sees it this way: form, injuries, venue", es: "Por qué el modelo lo ve así: forma, lesiones, estadio", fr: "Pourquoi le modèle le voit ainsi : forme, blessures, stade", ru: "Почему модель видит это так: форма, травмы, арена" })}</PlanFeature>
+            <PlanFeature>{pick5(lang, { it: "Perché il modello la vede così: forma e campo", en: "Why the model sees it this way: form and venue", es: "Por qué el modelo lo ve así: forma y estadio", fr: "Pourquoi le modèle le voit ainsi : forme et stade", ru: "Почему модель видит это так: форма и арена" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Probabilità che si aggiornano durante la partita", en: "Probabilities that update during the match", es: "Probabilidades que se actualizan durante el partido", fr: "Des probabilités mises à jour pendant le match", ru: "Вероятности, обновляющиеся по ходу матча" })}</PlanFeature>
             <PlanFeature>{pick5(lang, { it: "Combina più mercati sulla stessa partita e confronta il modello col mercato", en: "Combine markets on one match and compare the model with the market", es: "Combina varios mercados del mismo partido y compara el modelo con el mercado", fr: "Combinez plusieurs marchés d'un même match et comparez le modèle au marché", ru: "Комбинируйте рынки одного матча и сравнивайте модель с рынком" })}</PlanFeature>
             {/* #CLAIMS-FIX-0928: riga «Edge e stake su tutto» tolta, stesso motivo. */}
@@ -5070,8 +5070,8 @@ function MDS_SECTION_LABELS(lang: Lang) {
   return {
     why: pick5(lang, { it: "Perché il modello sceglie questo pick", en: "Why the model likes this pick", es: "Por qué el modelo elige este pronóstico", fr: "Pourquoi le modèle choisit ce pronostic", ru: "Почему модель выбирает этот прогноз" }),
     form: pick5(lang, { it: "Forma recente", en: "Recent form", es: "Forma reciente", fr: "Forme récente", ru: "Текущая форма" }),
-    teamNews: pick5(lang, { it: "Infortuni e news squadra", en: "Injuries & team news", es: "Lesiones y noticias", fr: "Blessures et actualités", ru: "Травмы и новости" }),
-    teamNewsLocked: pick5(lang, { it: "L'analisi completa di infortuni e formazioni per questa partita fa parte di Pro.", en: "The full injury and team-news read for this match is part of Pro.", es: "El análisis completo de lesiones y alineaciones de este partido es parte de Pro.", fr: "L'analyse complète des blessures et compositions de ce match fait partie de Pro.", ru: "Полный разбор травм и составов этого матча входит в Pro." }),
+    teamNews: pick5(lang, { it: "Assenze e news squadra", en: "Absences & team news", es: "Ausencias y noticias", fr: "Absences et actualités", ru: "Отсутствия и новости" }),
+    teamNewsLocked: pick5(lang, { it: "Formazioni e assenze, quando disponibili, fanno parte di Pro.", en: "Lineups and absences, when available, are part of Pro.", es: "Alineaciones y ausencias, cuando estén disponibles, son parte de Pro.", fr: "Compositions et absences, lorsqu'elles sont disponibles, font partie de Pro.", ru: "Составы и отсутствия, когда доступны, входят в Pro." }),
     teamNewsNone: pick5(lang, { it: "Nessuna assenza segnalata.", en: "No reported absences.", es: "Sin ausencias reportadas.", fr: "Aucune absence signalée.", ru: "Об отсутствиях не сообщается." }),
     // #INFORTUNI-1001 — quando la fonte non dice nulla (non «dice zero»).
     teamNewsUnavailable: pick5(lang, { it: "Assenze non disponibili per questa partita.", en: "Absences not available for this match.", es: "Ausencias no disponibles para este partido.", fr: "Absences non disponibles pour ce match.", ru: "Данные об отсутствиях для этого матча недоступны." }),
@@ -8956,7 +8956,7 @@ function HomeLobby({
   // IL TESTO DELLA FASCIA CAMBIA CON IL POSTO. Una sola frase buona per
   // tutte e tre sarebbe un banner, e un banner si impara a saltare. Ogni
   // riga nomina qualcosa che il piano Pro dà DAVVERO (la lista è quella di
-  // PlansTab: Deep Analysis con forma/infortuni/campo, Live V4 research,
+  // PlansTab: Deep Analysis con forma/campo, Live V4 research,
   // prediction illimitate, edge su tutto): nessuna promessa che non trovi
   // scritta anche nella pagina dei piani.
   const proBand = (
@@ -8981,9 +8981,9 @@ function HomeLobby({
           })}
       sub={view === "football"
         ? pick5(lang, {
-            it: "Forma, infortuni e campo nella Deep Analysis.", en: "Form, injuries and venue in Deep Analysis.",
-            es: "Forma, lesiones y estadio en el Deep Analysis.", fr: "Forme, blessures et stade dans la Deep Analysis.",
-            ru: "Форма, травмы и арена в Deep Analysis.",
+            it: "Forma e campo nella Deep Analysis.", en: "Form and venue in Deep Analysis.",
+            es: "Forma y estadio en el Deep Analysis.", fr: "Forme et stade dans la Deep Analysis.",
+            ru: "Форма и арена в Deep Analysis.",
           })
         : view === "tennis"
         ? pick5(lang, {
