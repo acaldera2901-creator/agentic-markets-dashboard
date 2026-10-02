@@ -23,6 +23,7 @@ const CSS = `
 }
 .tr-root .tr-eye{font-family:var(--m);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut2);font-weight:600}
 .tr-root .tr-lab{font-family:var(--m);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);margin-top:6px}
+.tr-root .tr-note{font-size:11.5px;line-height:1.4;text-transform:none;letter-spacing:0;color:var(--mut2);margin-top:6px;white-space:normal;overflow-wrap:anywhere}
 .tr-root .tr-win{color:var(--pos)}
 .tr-root .tr-big{font-family:var(--m);font-weight:600;letter-spacing:-.01em;font-size:22px}
 .tr-root .tr-card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;box-shadow:inset 0 1px 0 var(--hi)}

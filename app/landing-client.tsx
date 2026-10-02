@@ -26,6 +26,8 @@ import { PUBLIC_PAID_PLANS } from "@/lib/commercial-plan"; // #HOME-V3: prezzi r
 // #SEO-ORPHANS-0908: elenco unico guide/pillar, condiviso con footer, /tools e /blog.
 import { BLOG_INDEX, LEARN_GUIDES, LEARN_PILLARS, guideHref } from "@/lib/learn-links";
 import { homeFaq } from "@/lib/home-faq"; // #CONVERSION-FAQ-0916
+import { headlineFigure } from "@/lib/track-record"; // #SPLIT-0201
+import { partnerTotalLine } from "@/lib/track-record-copy";
 import type { TennisMatch } from "@/app/app/page"; // #HOME-V3: tipo del componente board reale
 // #HOME-V3 Anatomy: la scheda è il COMPONENTE REALE della board (TennisMatchCard),
 // non una versione marketing. Lazy-load (ssr:false) per non gonfiare il bundle
@@ -582,7 +584,8 @@ export default function LandingPage() {
   // #HOME-V3 proof: hit-rate REALE + ultime pick concluse da /api/v2/history.
   // null finché non popolato/fallito → sezione mostra il testo qualitativo (nessun
   // numero inventato). win_rate è già la stringa "64.0%"|null calcolata server-side.
-  const [proof, setProof] = useState<{ winRate: string; settled: number } | null>(null);
+  // #SPLIT-0201 — in testa la cifra del MODELLO; `total` = col partner, sotto.
+  const [proof, setProof] = useState<{ winRate: string; settled: number; total: { winRate: string; n: number } | null } | null>(null);
   const [proofRows, setProofRows] = useState<ProofRow[]>([]);
   // #HOME-V3 Anatomy: match REALE per il componente board. Parte dal fallback
   // rappresentativo; se /api/tennis offre un match sbloccato con edge lo sostituisce.
@@ -706,10 +709,9 @@ export default function LandingPage() {
           .filter((r) => r.name.length > 0)
           .slice(0, 6);
         if (cancelled) return;
-        const won = typeof stats.won === "number" ? stats.won : 0;
-        const lost = typeof stats.lost === "number" ? stats.lost : 0;
-        if (typeof stats.win_rate === "string" && won + lost > 0) {
-          setProof({ winRate: stats.win_rate, settled: won + lost });
+        const h = headlineFigure(stats);
+        if (typeof h.winRate === "string" && h.won + h.lost > 0) {
+          setProof({ winRate: h.winRate, settled: h.won + h.lost, total: h.total });
           setProofRows(settledRows);
         }
       } catch { /* fail-soft: sezione proof qualitativa */ }
@@ -979,7 +981,7 @@ export default function LandingPage() {
           <>
             <div className="v-proof-top">
               <div className="v-bignum">{proof.winRate}</div>
-              <div className="v-proof-meta"><div className="badge"><span className="v-pulse" />{v.prBadge}</div><p>{v.prMeta(proof.settled)}</p></div>
+              <div className="v-proof-meta"><div className="badge"><span className="v-pulse" />{v.prBadge}</div><p>{v.prMeta(proof.settled)}</p>{proof.total && <p>{partnerTotalLine(lang, proof.total)}.</p>}</div>
             </div>
             {proofRows.length > 0 ? (
               <>

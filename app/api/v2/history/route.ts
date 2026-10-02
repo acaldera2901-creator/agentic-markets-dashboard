@@ -3,6 +3,7 @@ import { dbQuery } from "@/lib/db";
 import {
   edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE,
   FOOTBALL_FLOOR_CUTOVER_AT, trackRecordPopulation, TRACK_RECORD_BASE_CONDITIONS,
+  trackRecordBySource,
 } from "@/lib/track-record";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
@@ -24,7 +25,7 @@ type HistoryRow = Pick<
   | "result" | "signal_type" | "is_paper" | "is_verified" | "is_demo"
   | "starts_at" | "settled_at" | "notes" | "world_cup_stage" | "group_name"
   | "confidence_score"
-> & { verification_state?: string | null; published_at?: string | null };
+> & { verification_state?: string | null; published_at?: string | null; model_version?: string | null };
 
 export async function GET(req: Request) {
   const { state } = await resolveAccessState(req); // never denies (read)
@@ -100,7 +101,7 @@ export async function GET(req: Request) {
             player_one, player_two, market, pick, status,
             result, signal_type, is_paper, is_verified, is_demo,
             starts_at, settled_at, notes, world_cup_stage, group_name,
-            confidence_score, verification_state, published_at
+            confidence_score, verification_state, published_at, model_version
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      -- #HISTORY-ORDINE-0911 — si ordina per QUANDO SI E' GIOCATA la partita,
@@ -283,6 +284,10 @@ export async function GET(req: Request) {
         ? `${((won / decisi) * 100).toFixed(1)}%`
         : null,
       win_rate_display: sufficiente ? formatWilson(w) : null,
+      // #SPLIT-0201 — la stessa popolazione spezzata per fonte: il nostro
+      // modello vs le quote di mercato del partner. Additivo: i campi sopra
+      // restano il totale. model.n + market_partner.n === n.
+      by_source: trackRecordBySource({ headlineRows, rows, surfaced }, MIN_SAMPLE),
       edge: {
         ...edge,
         min_confidence: EDGE_MIN_CONFIDENCE,

@@ -29,7 +29,8 @@ import { getAttribution } from "@/lib/attribution";
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
-import { isRateMeaningful } from "@/lib/track-record";
+import { isRateMeaningful, headlineFigure, type SourceBlock } from "@/lib/track-record";
+import { ourPredictionsLabel, partnerTotalLine } from "@/lib/track-record-copy"; // #SPLIT-0201
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
@@ -1727,6 +1728,8 @@ interface V2HistoryStats {
   interval_95?: { low: number; high: number } | null;
   win_rate_display?: string | null;
   insufficient_sample_reason?: string | null;
+  // #SPLIT-0201 — la stessa popolazione per fonte (modello / quote del partner).
+  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
 }
 
 // #021: live tennis match from /api/tennis-live (real ESPN scores, curated
@@ -2214,7 +2217,8 @@ function isTennisBestBet(m: TennisMatch) {
 // copia in griglia dopo la terza scheda (`inGrid`) e una a chiusura board.
 function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
   count: number;
-  hitRate?: string | null;
+  /** #SPLIT-0201 — la cifra del MODELLO (headlineFigure) con la sua n. */
+  hitRate?: { rate: string; n: number } | null;
   lang: Lang;
   onUpgrade?: () => void;
   /** #FREE-BOARD-FULL-0831: istanza dentro .am-grid → banda full-width, margini
@@ -2244,11 +2248,11 @@ function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
       </ul>
       {hitRate && (
         <p className="fp-proof">
-          {/* #COERENZA-1001 — `hitRate` è historyV2Stats.win_rate: all-time su
-              TUTTE le pick concluse e verificate (/api/v2/history), non le ultime
-              100. L'etichetta dice quello che il numero è (stesso errore che
-              #SETTLE-0909 aveva tolto dai KPI). */}
-          <strong>{hitRate}</strong> {pick5(lang, { it: "hit rate · tutte le pick concluse", en: "hit rate · all settled picks", es: "hit rate · todas las picks cerradas", fr: "hit rate · tous les picks réglés", ru: "hit rate · все закрытые пики" })}
+          {/* #COERENZA-1001 — all-time su TUTTE le pick concluse e verificate
+              (/api/v2/history), non le ultime 100. #SPLIT-0201 — ed è la cifra
+              del MODELLO, la stessa del KPI dello storico e della home, non il
+              totale con le quote del partner: l'etichetta dice quello che è. */}
+          <strong>{hitRate.rate}</strong> {ourPredictionsLabel(lang, hitRate.n)}
         </p>
       )}
       <div className="fp-actions">
@@ -2289,7 +2293,7 @@ function SportsbookBoard({
   isPremium?: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
-  hitRate?: string | null;
+  hitRate?: { rate: string; n: number } | null;
   liveStrip?: React.ReactNode;
   /** #RESTYLING-0921 — `sport:id` della partita da aprire subito (deep-link
    *  `?match=` o click da una card della lobby). */
@@ -9657,7 +9661,7 @@ function UnifiedBetsTab({
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
-  hitRate?: string | null;
+  hitRate?: { rate: string; n: number } | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
   liveStrip?: React.ReactNode;
   /** #RESTYLING-0921 — la vista scelta in nav: è sempre un taglio della lobby. */
@@ -10692,9 +10696,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const isClientUnlocked = profileHasAccess(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
   const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
-  // #HITRATE-GUARD-1: niente percentuale promozionale sotto la soglia di campione.
-  const v2RateMeaningful = historyV2Stats != null
-    && isRateMeaningful(historyV2Stats.won + historyV2Stats.lost);
+  // #SPLIT-0201 — sul KPI dello storico e sul paywall la cifra in testa è
+  // quella del MODELLO (decisione di Andrea, 02/10); il totale con le quote del
+  // partner sta sotto. #HITRATE-GUARD-1: niente percentuale promozionale sotto
+  // la soglia di campione (isRateMeaningful(v2Head.n) dove si mostra).
+  const v2Head = headlineFigure(historyV2Stats);
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
   const handleProtectedUnlock = () => {
@@ -11193,17 +11199,20 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   (`n` picks), non è più la stringa fissa "Hit · 100g" — che
                   diceva «ultime 100 partite» mentre la percentuale era all-time
                   su 1.606. Un'etichetta che È il dato non può invecchiare. */}
-              {v2RateMeaningful && historyV2Stats?.win_rate && (
+              {historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate && (
                 <div className="am-kpi chamfer-sm" title={
-                  historyV2Stats.interval_95
-                    ? `95%: ${(historyV2Stats.interval_95.low * 100).toFixed(1)}–${(historyV2Stats.interval_95.high * 100).toFixed(1)}%`
+                  v2Head.interval95
+                    ? `95%: ${(v2Head.interval95.low * 100).toFixed(1)}–${(v2Head.interval95.high * 100).toFixed(1)}%`
                     : undefined
                 }>
-                  <span className="v">{historyV2Stats.win_rate}</span>
+                  <span className="v">{v2Head.winRate}</span>
                   <span className="l">
                     {tNav.kpi_hit}
-                    {typeof historyV2Stats.n === "number" ? ` · ${historyV2Stats.n}` : ""}
+                    {v2Head.n > 0 ? ` · ${v2Head.n}` : ""}
                   </span>
+                  {v2Head.total && (
+                    <span className="note">{partnerTotalLine(uiLanguage, v2Head.total)}</span>
+                  )}
                 </div>
               )}
             </div>
@@ -11264,7 +11273,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isProClient={!!clientProfile && profileHasPremium(clientProfile)}
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
-              hitRate={v2RateMeaningful ? historyV2Stats?.win_rate ?? null : null}
+              hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
+                ? { rate: v2Head.winRate, n: v2Head.n } : null}
               view={deskView}
               query={lobbyQuery}
               watchSaved={watchlist.saved}
