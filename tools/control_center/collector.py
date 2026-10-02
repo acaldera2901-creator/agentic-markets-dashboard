@@ -2,7 +2,9 @@
 
 import argparse
 import json
+import os
 import sys
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,6 +16,12 @@ from .contract import now_iso
 from .notify import send
 from .runner import run_checks
 from .snapshot import ORDER, append_history, build_state, read_state, write_state
+
+# Il giro parte ogni 300 s e launchd non ne avvia un altro finche' il vecchio
+# vive: oltre il tetto il processo muore, cosi' il giro dopo riparte. I check
+# hanno un budget piu' corto, perche' lo snapshot deve uscire prima del tetto.
+TETTO_S = 240
+BUDGET_CHECK_S = 180
 
 
 def collect(
@@ -28,7 +36,8 @@ def collect(
     consegna = notifier if notifier is not None else send
 
     precedente = read_state(state_path)
-    verdicts = run_checks(lista, previous=precedente.get("checks"), now=moment)
+    verdicts = run_checks(lista, previous=precedente.get("checks"), now=moment,
+                          budget_seconds=BUDGET_CHECK_S)
     notifiche, alert_state = decide_alerts(precedente.get("alerts", {}), verdicts, moment)
 
     gruppi = {c.id: c.group for c in lista}
@@ -104,5 +113,28 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def _scadenza(tetto: float) -> None:
+    print(f"collector: tetto di tempo raggiunto ({tetto:g}s), esco", file=sys.stderr)
+    sys.stderr.flush()
+    sys.stdout.flush()
+    os._exit(3)
+
+
+def esegui(argv: list[str] | None = None, tetto: float = TETTO_S) -> None:
+    """main() con uscita garantita (#COLLECTOR-0201).
+
+    Il 02/10 il collector e' rimasto vivo 7 ore dopo aver scritto lo snapshot:
+    un thread di check appeso (non-daemon) e l'interprete che all'uscita lo
+    aspetta. os._exit non aspetta nessuno; il timer copre un'appesa altrove.
+    """
+    timer = threading.Timer(tetto, _scadenza, args=(tetto,))
+    timer.daemon = True
+    timer.start()
+    codice = main(argv)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(codice)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    esegui()

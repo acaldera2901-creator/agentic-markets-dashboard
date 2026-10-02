@@ -179,3 +179,12 @@ def test_la_pagina_riceve_il_token_iniettato(con_azioni):
         html = r.read().decode()
     assert token in html
     assert "__CC_TOKEN__" not in html
+
+
+def test_api_state_e_hub_dicono_che_la_torre_e_ferma(in_piedi):
+    # Lo calcola il server: un collector appeso non puo' dire di esserlo.
+    for rotta in ("/api/state", "/api/hub"):
+        with urllib.request.urlopen(in_piedi + rotta, timeout=5) as r:
+            body = json.loads(r.read())
+        assert body["stale"] is True, rotta
+        assert body["eta_min"] > 20, rotta

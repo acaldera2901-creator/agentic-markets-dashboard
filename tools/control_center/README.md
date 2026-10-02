@@ -364,6 +364,31 @@ modificarlo, il contratto è sbagliato ed è un segnale, non un dettaglio.
   stabili e una soglia sulla somma segnala la distanza da Dublino.
 - **Ambra non notifica mai.** Vive sulla pagina, non sul telefono.
 
+## La torre ferma: come si riconosce e come si ripara
+
+Il 02/10 il collector ha scritto lo snapshot delle 01:21Z e poi è rimasto
+vivo 6 h 58 min (stato `S`, 2,4 s di CPU): un SELECT partito sul socket morto
+del risveglio del Mac non ha mai avuto risposta, il thread del check è non-daemon
+e l'interprete all'uscita lo aspettava. launchd non avvia un giro finché il
+vecchio vive, quindi la torre ha mostrato letture di 7 ore prima come attuali.
+
+**Come si riconosce.** La banda dell'hub diventa rossa: «la torre non si
+aggiorna da N min: i dati sono vecchi» (oltre 20 min). Lo decide il server
+(`stale` ed `eta_min` in `/api/hub` e `/api/state`), non il collector, che da
+appeso non può dirlo. Il check `torre_fresca` (gruppo daemon) lo denuncia al
+primo giro dopo: rosso oltre 20 min, ambra oltre 12. Da terminale:
+`ps -o pid,etime,stat -p $(pgrep -f control_center.collector)` — un'età oltre i
+4 minuti è un'appesa.
+
+**Come si ripara.** `launchctl kickstart -k gui/$UID/com.betredge.control-center.collector`.
+
+**Perché non dovrebbe più servire.** `collector.esegui` esce con `os._exit`
+(non aspetta i thread appesi) e ha un tetto di 240 s (`TETTO_S`): oltre, scrive
+«collector: tetto di tempo raggiunto» in `collector.err.log` ed esce con 3. I
+check hanno un budget di giro di 180 s (`BUDGET_CHECK_S`): quelli non tornati
+diventano `unknown` e lo snapshot esce lo stesso. Le connessioni al DB hanno
+keepalive TCP (socket muto chiuso in ~25 s) e `statement_timeout` di 90 s.
+
 ## Cosa NON fa
 
 Non scrive sul DB (`SET TRANSACTION READ ONLY`, verificato: una `CREATE TABLE`

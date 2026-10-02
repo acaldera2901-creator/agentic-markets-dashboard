@@ -94,6 +94,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .banda[data-livello="none"] h1{font-weight:500;color:var(--mid)}
 .banda .sotto{margin:0;font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.5;overflow-wrap:anywhere}
 .banda .sotto .stantio{color:var(--amber)}
+.banda .sotto .ferma{color:var(--red);font-weight:600}
 .banda .sotto .btn{margin-left:8px}
 .banda .quando{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--mid);letter-spacing:.06em;white-space:nowrap}
 .banda .quando b{color:var(--ink);font-weight:500}
@@ -1116,8 +1117,12 @@ function disegnaBanda(d){
   const np=(d.progetti||[]).length, con=(d.progetti||[]).filter(p=>p.n_richiedono_te>0).length;
   sotto.append(np?`${np} ${np===1?"progetto":"progetti"}`+(con?` · ${con} con richieste`:"")+` · aree: ${(d.aree||[]).join(", ")||"—"}`:"nessun progetto di primo livello");
   sotto.append(" · ");
-  const sn=el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
-  if(stantio&&eta!=null) sn.title="il collector gira ogni 5 minuti: questo snapshot e' vecchio";
+  /* d.stale lo decide il server (oltre 20 min): la torre e' ferma, non solo in ritardo */
+  const ferma=d.stale&&d.eta_min!=null;
+  const sn=ferma?el("span","ferma",`la torre non si aggiorna da ${d.eta_min} min: i dati sono vecchi`)
+    :el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
+  if(ferma) sn.title="riparo: launchctl kickstart -k gui/$UID/com.betredge.control-center.collector";
+  else if(stantio&&eta!=null) sn.title="il collector gira ogni 5 minuti: questo snapshot e' vecchio";
   sotto.append(sn);
 }
 /* I fili: dalla scheda al nodo del progetto, in coordinate del palco. Un

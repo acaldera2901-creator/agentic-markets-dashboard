@@ -22,7 +22,7 @@ from .actions import (
     stop_daemon,
 )
 from . import cockpit, council, progetti, sala
-from .snapshot import HISTORY_FILE, STATE_FILE, read_state
+from .snapshot import HISTORY_FILE, STATE_FILE, freschezza, read_state
 
 HOST = "127.0.0.1"
 PORT = 8790
@@ -272,11 +272,15 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/hub":
             # I progetti di primo livello (card `Tipo: progetto`) e il
             # verdetto di tutte le aree. Nessun parametro: niente da validare.
-            corpo = cockpit.hub(read_state(STATE_FILE))
+            stato = read_state(STATE_FILE)
+            corpo = {**cockpit.hub(stato), **freschezza(stato)}
             self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
         elif path == "/api/state":
-            body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
+            # `stale` lo calcola il server, non il collector: se il collector
+            # e' appeso non puo' dire di esserlo (#COLLECTOR-0201).
+            stato = read_state(STATE_FILE)
+            body = json.dumps({**stato, **freschezza(stato)}, ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")
         elif path == "/api/history":
             self._send(200, self._history(), "application/json; charset=utf-8")

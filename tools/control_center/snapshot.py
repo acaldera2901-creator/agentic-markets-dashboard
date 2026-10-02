@@ -3,6 +3,7 @@
 import json
 import os
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .contract import Verdict
@@ -16,6 +17,23 @@ HISTORY_FILE = STATE_DIR / "history.jsonl"
 # il dry-run e' morto con KeyError appena e' arrivato il primo KPI.
 ORDER = {"red": 0, "amber": 1, "unknown": 2, "green": 3, "info": 4}
 _ORDER = ORDER
+
+# La torre e' ferma se il suo snapshot e' piu' vecchio di cosi' (#COLLECTOR-0201).
+# Il collector gira ogni 5 minuti: 12 = due giri persi, 20 = quattro. Il 02/10
+# la torre ha mostrato per 7 ore letture delle 01:21Z come attuali.
+FERMA_AMBRA_MIN = 12
+FERMA_ROSSO_MIN = 20
+
+
+def freschezza(state: dict, now: datetime | None = None) -> dict:
+    """Eta' in minuti dello snapshot e se e' da considerare fermo."""
+    try:
+        nato = datetime.strptime(state["generated_at"], "%Y-%m-%dT%H:%M:%SZ")
+    except (KeyError, TypeError, ValueError):
+        return {"eta_min": None, "stale": True}
+    adesso = now or datetime.now(timezone.utc)
+    eta = int((adesso - nato.replace(tzinfo=timezone.utc)).total_seconds() // 60)
+    return {"eta_min": eta, "stale": eta > FERMA_ROSSO_MIN}
 
 
 def read_state(path: Path | None = None) -> dict:

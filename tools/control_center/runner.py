@@ -1,5 +1,6 @@
 """Esecuzione dei check: isolata, con timeout, e con riuso a TTL."""
 
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from datetime import datetime, timezone
@@ -22,17 +23,23 @@ def run_checks(
     checks: list[Check],
     previous: dict | None = None,
     now: datetime | None = None,
+    budget_seconds: float | None = None,
 ) -> dict[str, Verdict]:
     """Esegue i check e restituisce un verdict per ognuno, sempre.
 
     Nessun check puo' impedire allo snapshot di uscire: un'eccezione o un
     timeout diventano unknown col motivo. Una dashboard che va in bianco
     perche' un provider e' giu' e' peggio di non averla.
+
+    `budget_seconds` e' il tetto dell'intero giro: le attese sono in serie,
+    quindi senza tetto N check lenti sommano i loro timeout. A tetto finito
+    i check non ancora tornati diventano unknown e lo snapshot esce lo stesso.
     """
     moment = now or datetime.now(timezone.utc)
     prev = previous or {}
     out: dict[str, Verdict] = {}
     pending: dict = {}
+    scadenza = None if budget_seconds is None else time.monotonic() + budget_seconds
 
     pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="cc")
     try:
@@ -48,14 +55,24 @@ def run_checks(
             pending[chk.id] = (pool.submit(chk.fn), chk)
 
         for check_id, (future, chk) in pending.items():
+            attesa = chk.timeout_seconds
+            if scadenza is not None:
+                attesa = max(0.0, min(attesa, scadenza - time.monotonic()))
             try:
-                result = future.result(timeout=chk.timeout_seconds)
+                result = future.result(timeout=attesa)
             except FutureTimeout:
+                if attesa < chk.timeout_seconds:
+                    out[check_id] = unknown(
+                        f"tetto del giro ({budget_seconds:g}s) raggiunto prima della risposta",
+                        f"check:{check_id}", now=moment,
+                    )
+                    continue
                 # Il thread resta appeso fino a che la sua I/O non scade, ma
                 # non trattiene lo snapshot: lo shutdown qui sotto e' senza
-                # attesa. Accettato: i check fanno HTTP e DB con timeout
-                # propri. Se un giorno un check bloccasse per sempre,
-                # servirebbe un processo separato, non un thread.
+                # attesa. Ma il thread e' non-daemon e all'uscita l'interprete
+                # lo aspetta: il 02/10 un SELECT su un socket morto (risveglio
+                # del Mac) ha tenuto vivo il collector 7 ore. Per questo il
+                # collector esce con os._exit e ha un tetto (collector.esegui).
                 out[check_id] = unknown(
                     f"timeout dopo {chk.timeout_seconds:g}s", f"check:{check_id}", now=moment
                 )
