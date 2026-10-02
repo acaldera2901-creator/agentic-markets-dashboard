@@ -80,33 +80,31 @@ describe("/api/v2/history stats.by_source", () => {
 });
 
 describe("headlineFigure — la cifra in testa alla UI", () => {
-  it("con by_source: il modello è la cifra principale, il totale si dichiara sotto", () => {
-    const f = headlineFigure({
-      won: 50, lost: 25, n: 75, win_rate: "66.7%",
-      by_source: {
-        model: { n: 40, won: 30, lost: 10, win_rate: "75.0%", interval_95: { low: 0.6, high: 0.86 } },
-        market_partner: { n: 35, won: 20, lost: 15, win_rate: "57.1%" },
-      },
-    });
-    expect(f).toEqual({
-      winRate: "75.0%", n: 40, won: 30, lost: 10, interval95: { low: 0.6, high: 0.86 },
-      total: { winRate: "66.7%", n: 75 },
+  const stats = {
+    won: 50, lost: 25, n: 75, win_rate: "66.7%", interval_95: { low: 0.5, high: 0.7 },
+    by_source: {
+      model: { n: 40, won: 30, lost: 10, win_rate: "75.0%", interval_95: { low: 0.6, high: 0.86 } },
+      market_partner: { n: 35, won: 20, lost: 15, win_rate: "57.1%" },
+    },
+  };
+
+  it("con by_source: la cifra principale resta il TOTALE, la scomposizione va sotto", () => {
+    expect(headlineFigure(stats)).toEqual({
+      winRate: "66.7%", n: 75, won: 50, lost: 25, interval95: { low: 0.5, high: 0.7 },
+      breakdown: { model: { winRate: "75.0%", n: 40 }, partner: { winRate: "57.1%", n: 35 } },
     });
   });
 
-  it("senza righe del partner non c'è riga sotto", () => {
-    const f = headlineFigure({
-      won: 30, lost: 10, n: 40, win_rate: "75.0%",
-      by_source: { model: { n: 40, won: 30, lost: 10, win_rate: "75.0%" }, market_partner: { n: 0 } },
-    });
-    expect(f.winRate).toBe("75.0%");
-    expect(f.total).toBeNull();
+  it("blocco sotto soglia: la scomposizione porta n ma nessuna percentuale", () => {
+    const f = headlineFigure({ ...stats, by_source: { model: stats.by_source.model, market_partner: { n: 3, win_rate: null } } });
+    expect(f.breakdown?.partner).toEqual({ winRate: null, n: 3 });
   });
 
-  it("risposta vecchia senza by_source: il totale, come oggi", () => {
-    const f = headlineFigure({ won: 50, lost: 25, n: 75, win_rate: "66.7%", interval_95: { low: 0.5, high: 0.7 } });
-    expect(f).toEqual({
-      winRate: "66.7%", n: 75, won: 50, lost: 25, interval95: { low: 0.5, high: 0.7 }, total: null,
+  it("risposta vecchia senza by_source: il totale, come oggi, nessuna scomposizione", () => {
+    const { by_source: _omit, ...old } = stats;
+    void _omit;
+    expect(headlineFigure(old)).toEqual({
+      winRate: "66.7%", n: 75, won: 50, lost: 25, interval95: { low: 0.5, high: 0.7 }, breakdown: null,
     });
   });
 });

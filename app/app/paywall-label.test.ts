@@ -9,14 +9,17 @@ import { join } from "node:path";
 it("il paywall non etichetta l'all-time come «ultime 100 pick»", () => {
   const src = readFileSync(join(__dirname, "page.tsx"), "utf8");
   expect(src).not.toMatch(/ultime 100 pick concluse|last 100 settled picks|100 derniers picks/);
-  expect(src).not.toContain("hit rate · tutte le pick concluse");
+  expect(src).toContain("hit rate · tutte le pick concluse");
 });
 
-// #SPLIT-0201 — il paywall mostra la STESSA cifra del KPI dello storico: quella
-// del modello (headlineFigure), con la sua n e l'etichetta che lo dice.
-it("il paywall usa la cifra del modello, non il totale", () => {
+// #SPLIT-0201 — il paywall mostra la STESSA cifra del KPI dello storico
+// (headlineFigure: il totale), con la sua n; nessuna etichetta «delle nostre
+// predizioni», che col totale sarebbe falsa.
+it("il paywall usa headlineFigure come il KPI, con la sua n", () => {
   const src = readFileSync(join(__dirname, "page.tsx"), "utf8");
   expect(src).not.toMatch(/hitRate=\{v2RateMeaningful \? historyV2Stats\?\.win_rate/);
   expect(src).toMatch(/hitRate=\{historyV2Stats && isRateMeaningful\(v2Head\.n\) && v2Head\.winRate\s*\?\s*\{ rate: v2Head\.winRate, n: v2Head\.n \}/);
-  expect(src).toContain("{ourPredictionsLabel(lang, hitRate.n)}");
+  expect(src).toContain("hit rate · tutte le pick concluse\", en: \"hit rate · all settled picks");
+  expect(src).toMatch(/ru: "hit rate · все закрытые пики" \}\)\} · \{hitRate\.n\}/);
+  expect(src).not.toMatch(/nostre predizioni|our predictions/);
 });

@@ -27,10 +27,3 @@ it(".tr-note (card del track record): minuscola, a capo", () => {
   expect(r).toMatch(/white-space:normal/);
   expect(r).not.toMatch(/nowrap|min-width/);
 });
-
-it("le due righe usano la classe della frase, non quella dell'etichetta", () => {
-  expect(readFileSync(join(ROOT, "app/app/page.tsx"), "utf8"))
-    .toContain('<span className="note">{partnerTotalLine(uiLanguage, v2Head.total)}</span>');
-  expect(readFileSync(join(ROOT, "components/track-record/EdgeCard.tsx"), "utf8"))
-    .toContain('<div className="tr-note">{partnerTotalLine(lang, h.total)}</div>');
-});
