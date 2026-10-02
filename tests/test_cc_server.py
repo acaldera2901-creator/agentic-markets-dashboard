@@ -179,3 +179,32 @@ def test_la_pagina_riceve_il_token_iniettato(con_azioni):
         html = r.read().decode()
     assert token in html
     assert "__CC_TOKEN__" not in html
+
+
+def test_api_state_e_hub_dicono_che_la_torre_e_ferma(in_piedi):
+    # Lo calcola il server: un collector appeso non puo' dire di esserlo.
+    for rotta in ("/api/state", "/api/hub"):
+        with urllib.request.urlopen(in_piedi + rotta, timeout=5) as r:
+            body = json.loads(r.read())
+        assert body["stale"] is True, rotta
+        assert body["eta_min"] > 20, rotta
+
+
+def test_una_torre_ferma_non_dice_tutto_ok():
+    # Il difetto vero del 02/10: snapshot di 7 ore prima, banda verde «Tutto ok».
+    stato = {"generated_at": "2026-10-02T01:21:24Z"}
+    corpo = {"verdetto": {"livello": "green", "n_richiedono_te": 0}}
+    adesso = __import__("datetime").datetime(2026, 10, 2, 8, 19, tzinfo=__import__("datetime").timezone.utc)
+    fermo = srv.con_freschezza(corpo, stato, adesso)
+    assert fermo["stale"] is True and fermo["eta_min"] == 417
+    assert fermo["verdetto"]["livello"] == "red" and fermo["verdetto"]["ferma"] is True
+    assert corpo["verdetto"]["livello"] == "green"  # l'originale non si tocca
+
+    fresco = srv.con_freschezza(corpo, {"generated_at": "2026-10-02T08:15:00Z"}, adesso)
+    assert fresco["stale"] is False and fresco["verdetto"]["livello"] == "green"
+    assert "ferma" not in fresco["verdetto"]
+
+
+def test_l_html_ha_la_dicitura_della_torre_ferma():
+    html = srv.COCKPIT.read_text(encoding="utf-8")
+    assert "Dati vecchi" in html and "ultima lettura di" in html

@@ -46,17 +46,33 @@ PARITA_RED = 0.70
 PARITA_ANOMALIA = 1.10
 PARITA_AMBER = 0.90
 
+# La finestra e' quella del sync, non «tutte le partite future» (#COLLECTOR-0201):
+# syncMatchPredictionsToUnified (lib/unified-adapter.ts) e
+# syncTennisPredictionsToUnified (lib/tennis-adapter.ts) leggono le prime
+# SYNC_LIMITE righe per orario d'inizio, con un margine nel passato (1h calcio,
+# 3h tennis, solo winner null). Non c'e' un orizzonte in giorni: il 02/10 le
+# 270 partite future arrivavano all'11-12/10, le prime 200 erano tutte in
+# unified (200/200) e il controllo dava 215/270 = ambra senza alcun guasto.
+# Un test legge i due .ts e fallisce se limite o margine cambiano la'.
+SYNC_LIMITE = 200
+
 _PARITA = {
     "tennis": (
+        "with s as (select match_id, scheduled_at from tennis_predictions "
+        "where scheduled_at > now() - interval '3 hours' and winner is null "
+        f"order by scheduled_at asc limit {SYNC_LIMITE}) "
         "select count(distinct s.match_id), count(distinct u.source_id), count(u.id) "
-        "from tennis_predictions s "
+        "from s "
         "left join unified_predictions u on u.source_table = 'tennis_predictions' "
         "and u.source_id = s.match_id where s.scheduled_at > now()",
         "tennis_predictions",
     ),
     "calcio": (
+        "with s as (select match_id, kickoff from match_predictions "
+        "where kickoff > now() - interval '1 hour' "
+        f"order by kickoff asc limit {SYNC_LIMITE}) "
         "select count(distinct s.match_id), count(distinct u.source_id), count(u.id) "
-        "from match_predictions s "
+        "from s "
         "left join unified_predictions u on u.source_table = 'match_predictions' "
         "and u.source_id = s.match_id where s.kickoff > now()",
         "match_predictions",

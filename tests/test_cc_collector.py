@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 
 from tools.control_center.collector import collect
@@ -70,3 +71,67 @@ def test_l_esito_della_consegna_finisce_nello_snapshot(tmp_path):
 
     from tools.control_center.snapshot import read_state
     assert read_state(sp)["notify"]["consegnato"] is False
+
+
+# --- #COLLECTOR-0201: il processo esce sempre -------------------------------
+# Il 02/10 il collector ha scritto lo snapshot delle 01:21Z e poi e' rimasto
+# vivo 7 ore: un thread di check appeso (non-daemon) e l'interprete che
+# all'uscita lo aspetta. launchd non avvia un giro finche' il vecchio vive.
+# Serve un processo vero: l'attesa sta nello spegnimento dell'interprete.
+
+import subprocess  # noqa: E402
+import sys  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+REPO = Path(__file__).resolve().parents[1]
+
+_PREAMBOLO = """
+import sys, threading
+from pathlib import Path
+from tools.control_center import collector, snapshot
+from tools.control_center.contract import Check
+tmp = Path(sys.argv[1])
+snapshot.STATE_FILE = tmp / "state.json"
+snapshot.HISTORY_FILE = tmp / "history.jsonl"
+collector.send = lambda n, env=None: []
+def spento():
+    raise RuntimeError("spento nel test")
+collector.sincronizza.aggiorna = spento
+collector.cervello.aggiorna = spento
+"""
+
+
+def _lancia(tmp_path, corpo, timeout=20):
+    return subprocess.run(
+        [sys.executable, "-c", _PREAMBOLO + corpo, str(tmp_path)],
+        cwd=REPO, capture_output=True, text=True, timeout=timeout,
+    )
+
+
+def test_un_check_appeso_per_sempre_non_trattiene_il_processo(tmp_path):
+    esito = _lancia(tmp_path, """
+collector.all_checks = lambda: [Check("appeso", "t", "appeso",
+                                      lambda: threading.Event().wait(), timeout_seconds=0.3)]
+collector.esegui([])
+""")
+    assert esito.returncode == 0, esito.stderr
+    stato = json.loads((tmp_path / "state.json").read_text())
+    assert stato["checks"]["appeso"]["level"] == "unknown"
+
+
+def test_oltre_il_tetto_il_processo_muore_e_lo_dice(tmp_path):
+    esito = _lancia(tmp_path, """
+collector.main = lambda argv=None: threading.Event().wait()
+collector.esegui([], tetto=0.5)
+""")
+    assert esito.returncode == 3
+    assert "tetto di tempo raggiunto" in esito.stderr
+
+
+def test_collect_passa_il_budget_del_giro(tmp_path, mocker):
+    from tools.control_center import collector
+
+    spia = mocker.patch.object(collector, "run_checks", return_value={})
+    collect([], now=T0, state_path=tmp_path / "s.json", history_path=tmp_path / "h.jsonl",
+            notifier=lambda n, env=None: [])
+    assert spia.call_args.kwargs["budget_seconds"] == collector.BUDGET_CHECK_S < collector.TETTO_S

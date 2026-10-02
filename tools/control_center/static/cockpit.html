@@ -94,6 +94,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .banda[data-livello="none"] h1{font-weight:500;color:var(--mid)}
 .banda .sotto{margin:0;font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.5;overflow-wrap:anywhere}
 .banda .sotto .stantio{color:var(--amber)}
+.banda .sotto .ferma{color:var(--red);font-weight:600}
 .banda .sotto .btn{margin-left:8px}
 .banda .quando{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--mid);letter-spacing:.06em;white-space:nowrap}
 .banda .quando b{color:var(--ink);font-weight:500}
@@ -287,6 +288,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;max-width:120ch}
 .testata .riga2 b{color:var(--mid);font-weight:500;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;font-size:10.5px;padding-top:1px}
 .testata .riga2 .stantio{color:var(--amber)}
+.testata .riga2 .ferma{grid-column:1/-1;color:var(--red);font-weight:600}
 .testata .riga2 .btn{margin-left:8px}
 .testata .riga2 .sn{grid-column:1/-1;color:var(--dim)}
 .testata .riga2 code,.dett .fondo code,.riga .prossimo code,.task .t code,.incoda .t code{font-family:inherit;font-size:inherit;color:var(--cy-2);background:var(--inset);border:1px solid var(--line);padding:0 3px}
@@ -1106,18 +1108,24 @@ function disegnaHub(d){
 }
 function disegnaBanda(d){
   const banda=$("banda"), h1=$("titolo"), sotto=$("sotto");
-  const v=d.verdetto||{}, lv=v.livello||"green", n=v.n_richiedono_te||0;
+  const v=d.verdetto||{}, lv=d.stale?"red":(v.livello||"green"), n=v.n_richiedono_te||0;
   banda.dataset.livello=lv; banda.style.setProperty("--stato", colStato(lv));
   h1.replaceChildren();
-  if(n===0) h1.append(el("i","led-g"), el("span","","Tutto ok · niente richiede te"));
+  /* una torre ferma non dice «tutto ok» ne' conta le richieste come attuali */
+  if(d.stale) h1.append(el("span","","Dati vecchi"));
+  else if(n===0) h1.append(el("i","led-g"), el("span","","Tutto ok · niente richiede te"));
   else h1.append(el("span","n",String(n)), el("span","",n===1?"cosa richiede te":"cose richiedono te"));
   const eta=d.snapshot?daQuando(d.snapshot):null, stantio=eta==null||eta>STANTIO_S;
   sotto.replaceChildren();
   const np=(d.progetti||[]).length, con=(d.progetti||[]).filter(p=>p.n_richiedono_te>0).length;
   sotto.append(np?`${np} ${np===1?"progetto":"progetti"}`+(con?` · ${con} con richieste`:"")+` · aree: ${(d.aree||[]).join(", ")||"—"}`:"nessun progetto di primo livello");
   sotto.append(" · ");
-  const sn=el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
-  if(stantio&&eta!=null) sn.title="il collector gira ogni 5 minuti: questo snapshot e' vecchio";
+  /* d.stale lo decide il server (oltre 20 min): la torre e' ferma, non solo in ritardo */
+  const ferma=d.stale&&d.eta_min!=null;
+  const sn=ferma?el("span","ferma",`ultima lettura di ${d.eta_min} min fa`+(n?` (allora ${n} ${n===1?"cosa richiedeva":"cose richiedevano"} te)`:"")+`: la torre non si aggiorna, i dati sono vecchi`)
+    :el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
+  if(ferma) sn.title="riparo: launchctl kickstart -k gui/$UID/com.betredge.control-center.collector";
+  else if(stantio&&eta!=null) sn.title="il collector gira ogni 5 minuti: questo snapshot e' vecchio";
   sotto.append(sn);
 }
 /* I fili: dalla scheda al nodo del progetto, in coordinate del palco. Un
@@ -1429,6 +1437,7 @@ function disegnaTestata(d){
   const h=$("p-nome"); h.replaceChildren();
   const av=$("p-avanz"); av.replaceChildren();
   const r2=$("p-riga2"); r2.replaceChildren();
+  if(d.stale&&d.eta_min!=null) r2.append(el("span","ferma",`Dati vecchi: ultima lettura di ${d.eta_min} min fa, la torre non si aggiorna`));
   const eta=d.snapshot?daQuando(d.snapshot):null, stantio=eta==null||eta>STANTIO_S;
   const sn=el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
   const snr=el("span","sn"); snr.append(sn);

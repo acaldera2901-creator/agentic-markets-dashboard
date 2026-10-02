@@ -118,3 +118,13 @@ def test_la_pagina_riceve_quali_check_sono_riavviabili():
     )
     assert st["checks"]["launchd_watchdog"]["riavviabile"] is True
     assert st["checks"]["launchd_daemon-health"]["riavviabile"] is False
+
+
+def test_freschezza_snapshot_vecchio_e_fermo():
+    from tools.control_center.snapshot import freschezza
+
+    adesso = datetime(2026, 10, 2, 8, 19, 0, tzinfo=timezone.utc)
+    assert freschezza({"generated_at": "2026-10-02T01:21:24Z"}, adesso) == {"eta_min": 417, "stale": True}
+    assert freschezza({"generated_at": "2026-10-02T08:00:00Z"}, adesso) == {"eta_min": 19, "stale": False}
+    assert freschezza({"generated_at": "2026-10-02T07:58:00Z"}, adesso)["stale"] is True
+    assert freschezza({}, adesso) == {"eta_min": None, "stale": True}

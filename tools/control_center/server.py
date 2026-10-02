@@ -22,7 +22,7 @@ from .actions import (
     stop_daemon,
 )
 from . import cockpit, council, progetti, sala
-from .snapshot import HISTORY_FILE, STATE_FILE, read_state
+from .snapshot import HISTORY_FILE, STATE_FILE, freschezza, read_state
 
 HOST = "127.0.0.1"
 PORT = 8790
@@ -43,6 +43,19 @@ FONTS = {
     "/vendor/fonts/jetbrains-mono.woff2": STATIC / "vendor/fonts/jetbrains-mono.woff2",
 }
 HISTORY_LIMIT = 500
+
+
+def con_freschezza(corpo: dict, stato: dict, now=None) -> dict:
+    """Aggiunge `stale`/`eta_min`; da ferma, il verdetto diventa rosso.
+
+    Una torre ferma non puo' dire «tutto ok» (#COLLECTOR-0201): il verdetto
+    letto da uno snapshot vecchio non e' il verdetto di adesso.
+    """
+    f = freschezza(stato, now)
+    out = {**corpo, **f}
+    if f["stale"] and isinstance(corpo.get("verdetto"), dict):
+        out["verdetto"] = {**corpo["verdetto"], "livello": "red", "ferma": True}
+    return out
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -264,7 +277,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(400, b'{"error":"area mancante o non valida"}',
                            "application/json; charset=utf-8")
                 return
-            corpo = cockpit.cockpit(area, read_state(STATE_FILE))
+            stato = read_state(STATE_FILE)
+            corpo = con_freschezza(cockpit.cockpit(area, stato), stato)
             # Area valida ma che nessuna card dichiara: 404 con JSON
             # `{"assente": true, "aree": [...], "messaggio"}`, non un cockpit vuoto.
             self._send(404 if corpo.get("assente") else 200, json.dumps(corpo, ensure_ascii=False).encode(),
@@ -272,11 +286,15 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/hub":
             # I progetti di primo livello (card `Tipo: progetto`) e il
             # verdetto di tutte le aree. Nessun parametro: niente da validare.
-            corpo = cockpit.hub(read_state(STATE_FILE))
+            stato = read_state(STATE_FILE)
+            corpo = con_freschezza(cockpit.hub(stato), stato)
             self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
         elif path == "/api/state":
-            body = json.dumps(read_state(STATE_FILE), ensure_ascii=False).encode()
+            # `stale` lo calcola il server, non il collector: se il collector
+            # e' appeso non puo' dire di esserlo (#COLLECTOR-0201).
+            stato = read_state(STATE_FILE)
+            body = json.dumps({**stato, **freschezza(stato)}, ensure_ascii=False).encode()
             self._send(200, body, "application/json; charset=utf-8")
         elif path == "/api/history":
             self._send(200, self._history(), "application/json; charset=utf-8")

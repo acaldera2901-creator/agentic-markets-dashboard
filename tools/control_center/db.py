@@ -87,6 +87,28 @@ def _dsn() -> str:
     return normalize_db_url(raw)
 
 
+# connect_timeout copre solo l'handshake. Un SELECT gia' partito su un socket
+# morto (Mac che si risveglia, NAT che ha dimenticato la connessione) non
+# riceve mai risposta e senza keepalive libpq aspetta per sempre: il 02/10 ha
+# tenuto vivo il collector 7 ore (#COLLECTOR-0201). Con questi valori un
+# socket muto si chiude in ~25 s; statement_timeout ferma una query lenta.
+_CONNECT = {"connect_timeout": 8, "keepalives": 1, "keepalives_idle": 10,
+            "keepalives_interval": 5, "keepalives_count": 3}
+STATEMENT_TIMEOUT_MS = 90_000
+
+
+def _connect():
+    import psycopg2  # noqa: PLC0415 - non e' in requirements-dev: vedi il perche' la'
+    return psycopg2.connect(_dsn(), **_CONNECT)
+
+
+def _inizio(cur) -> None:
+    cur.execute("SET TRANSACTION READ ONLY")
+    # LOCAL: vale solo per questa transazione, non resta sulla connessione
+    # del pooler che un altro client riusera'.
+    cur.execute(f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}")
+
+
 def fetch_all(sql: str, params: tuple = ()) -> list[tuple]:
     """Esegue una query in una transazione dichiarata di sola lettura.
 
@@ -96,9 +118,9 @@ def fetch_all(sql: str, params: tuple = ()) -> list[tuple]:
     """
     import psycopg2  # noqa: PLC0415 - non e' in requirements-dev: vedi il perche' la'
     try:
-        with psycopg2.connect(_dsn(), connect_timeout=8) as conn:
+        with _connect() as conn:
             with conn.cursor() as cur:
-                cur.execute("SET TRANSACTION READ ONLY")
+                _inizio(cur)
                 # Senza params NON si passa la tupla vuota: psycopg2 farebbe
                 # comunque l'interpolazione e ogni % letterale nel SQL
                 # (ilike '%x%') diventerebbe un segnaposto, con IndexError.
@@ -122,10 +144,10 @@ def measure_latency() -> tuple[float, float]:
     import psycopg2  # noqa: PLC0415 - non e' in requirements-dev: vedi il perche' la'
     inizio = time.monotonic()
     try:
-        with psycopg2.connect(_dsn(), connect_timeout=8) as conn:
+        with _connect() as conn:
             connesso = time.monotonic()
             with conn.cursor() as cur:
-                cur.execute("SET TRANSACTION READ ONLY")
+                _inizio(cur)
                 cur.execute("select 1")
                 cur.fetchall()
             return connesso - inizio, time.monotonic() - connesso

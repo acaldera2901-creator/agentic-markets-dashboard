@@ -87,3 +87,17 @@ def test_un_unknown_in_cache_non_si_riusa():
         previous=previous, now=FIXED,
     )
     assert out["caro"].headline == "fresco"
+
+
+def test_il_budget_del_giro_taglia_le_attese_in_serie():
+    # Le attese sono in serie: senza tetto due check appesi da 5 s sommano 10 s.
+    import time as _t
+
+    inizio = _t.monotonic()
+    out = run_checks(
+        [_chk(c, lambda: _t.sleep(6), timeout_seconds=5) for c in ("a", "b")],
+        now=FIXED, budget_seconds=0.5,
+    )
+    assert _t.monotonic() - inizio < 2.0
+    assert {v.level for v in out.values()} == {"unknown"}
+    assert "tetto del giro" in out["b"].headline

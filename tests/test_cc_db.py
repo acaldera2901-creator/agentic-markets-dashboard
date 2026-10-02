@@ -71,3 +71,32 @@ def test_una_query_con_percento_letterale_non_esplode(mocker):
     db.fetch_all("select 1 where a = %s", ("x",))
     con_params = [c for c in finto.execute.call_args_list if c[0][0].endswith("%s")]
     assert con_params[0][0][1] == ("x",)
+
+
+def test_la_connessione_ha_keepalive_e_statement_timeout(mocker):
+    # #COLLECTOR-0201: connect_timeout copre solo l'handshake. Un SELECT su un
+    # socket morto aspettava per sempre e tratteneva il collector 7 ore.
+    from tools.control_center import db
+
+    pytest.importorskip("psycopg2")
+    finto = mocker.Mock()
+    finto.fetchall.return_value = [(1,)]
+    cur = mocker.MagicMock()
+    cur.__enter__ = mocker.Mock(return_value=finto)
+    cur.__exit__ = mocker.Mock(return_value=False)
+    conn = mocker.MagicMock()
+    conn.__enter__ = mocker.Mock(return_value=conn)
+    conn.__exit__ = mocker.Mock(return_value=False)
+    conn.cursor.return_value = cur
+    connetti = mocker.patch("psycopg2.connect", return_value=conn)
+    mocker.patch.object(db, "_dsn", return_value="postgresql://x")
+
+    for funzione in (lambda: db.fetch_all("select 1"), db.measure_latency):
+        connetti.reset_mock()
+        finto.execute.reset_mock()
+        funzione()
+        kw = connetti.call_args.kwargs
+        assert kw["keepalives"] == 1 and kw["keepalives_idle"] <= 30 and kw["connect_timeout"]
+        eseguite = [c[0][0] for c in finto.execute.call_args_list]
+        assert eseguite[0] == "SET TRANSACTION READ ONLY"
+        assert eseguite[1].startswith("SET LOCAL statement_timeout")
