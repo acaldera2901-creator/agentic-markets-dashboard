@@ -5020,6 +5020,8 @@ button:disabled {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 .free-paywall .fp-proof strong { color: var(--am-positive); font-size: 15px; font-weight: 700; }
+/* #SPLIT-0201 — la scomposizione del totale per fonte, a capo sotto la cifra. */
+.free-paywall .fp-note { display: block; margin-top: 4px; font-size: 11.5px; text-transform: none; white-space: normal; overflow-wrap: anywhere; }
 .free-paywall .fp-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .free-paywall .fp-cta {
   display: inline-flex; align-items: center; justify-content: center;
@@ -6472,7 +6474,7 @@ button:disabled {
 .am-kpi .l {
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted-2);
 }
-/* #SPLIT-0201 — la riga del totale sotto la cifra del modello: una frase, non
+/* #SPLIT-0201 — la scomposizione per fonte sotto il totale: una frase, non
    un'etichetta. Minuscola e a capo, larghezza cappata: non allarga il riquadro. */
 .am-kpi .note {
   font-size: 11px; font-weight: 500; line-height: 1.35; text-transform: none; letter-spacing: 0;

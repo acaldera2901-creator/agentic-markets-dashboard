@@ -1,33 +1,27 @@
-// #SPLIT-0201 — le diciture accanto alla cifra del track record, in un posto
-// solo (KPI dello storico, paywall, card del track record, home). La cifra in
-// testa e' quella del MODELLO; il totale con le quote del partner si dichiara
-// sotto, e la riga comincia da «Totale» perche' non si legga come il dato del
-// partner da solo.
+// #SPLIT-0201 — la riga sotto la cifra del track record: il TOTALE scomposto
+// per fonte (il nostro modello / le quote di mercato del partner), in un posto
+// solo per KPI dello storico, paywall, card del track record e home.
 
-export type TrackRecordLang = "it" | "en" | "es" | "fr" | "ru";
+type Lang = "it" | "en" | "es" | "fr" | "ru";
+type Part = { winRate: string | null; n: number };
 
-const pickLang = <T,>(lang: string, v: Record<TrackRecordLang, T>): T =>
-  v[(lang in v ? lang : "en") as TrackRecordLang];
+const WORDS: Record<Lang, { model: string; partner: string; on: string; picks: string }> = {
+  it: { model: "Modello", partner: "Quote di mercato del partner", on: "su", picks: "pick" },
+  en: { model: "Model", partner: "Partner market prices", on: "on", picks: "picks" },
+  es: { model: "Modelo", partner: "Cuotas de mercado del socio", on: "en", picks: "picks" },
+  fr: { model: "Modèle", partner: "Cotes de marché du partenaire", on: "sur", picks: "picks" },
+  ru: { model: "Модель", partner: "Рыночные котировки партнёра", on: "на", picks: "пиков" },
+};
 
-/** «Totale con le quote di mercato del partner: X% su N pick». */
-export function partnerTotalLine(lang: string, total: { winRate: string; n: number }): string {
-  const { winRate: x, n } = total;
-  return pickLang(lang, {
-    it: `Totale con le quote di mercato del partner: ${x} su ${n} pick`,
-    en: `Total including the partner's market prices: ${x} on ${n} picks`,
-    es: `Total con las cuotas de mercado del socio: ${x} en ${n} picks`,
-    fr: `Total avec les cotes de marché du partenaire : ${x} sur ${n} picks`,
-    ru: `Итого с рыночными котировками партнёра: ${x} на ${n} пиков`,
-  });
-}
-
-/** L'etichetta della cifra del modello: che cosa misura e su quante pick. */
-export function ourPredictionsLabel(lang: string, n: number): string {
-  return pickLang(lang, {
-    it: `hit rate delle nostre predizioni · ${n} pick concluse`,
-    en: `hit rate of our predictions · ${n} settled picks`,
-    es: `hit rate de nuestras predicciones · ${n} picks cerradas`,
-    fr: `hit rate de nos prédictions · ${n} picks réglés`,
-    ru: `hit rate наших прогнозов · ${n} закрытых пиков`,
-  });
+/** «Modello: A% su n1 · Quote di mercato del partner: B% su n2». Un blocco
+ *  sotto il campione minimo dice solo quante pick ha (nessuna percentuale);
+ *  il partner senza pick decise non compare. */
+export function sourceBreakdownLine(lang: string, b: { model: Part; partner: Part }): string {
+  const w = WORDS[(lang in WORDS ? lang : "en") as Lang];
+  const sep = lang === "fr" ? " : " : ": ";
+  const part = (label: string, p: Part) =>
+    `${label}${sep}${p.winRate ? `${p.winRate} ${w.on} ${p.n}` : `${p.n} ${w.picks}`}`;
+  const parts = [part(w.model, b.model)];
+  if (b.partner.n > 0) parts.push(part(w.partner, b.partner));
+  return parts.join(" · ");
 }

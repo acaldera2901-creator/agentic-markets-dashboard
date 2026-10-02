@@ -30,7 +30,7 @@ import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful, headlineFigure, type SourceBlock } from "@/lib/track-record";
-import { ourPredictionsLabel, partnerTotalLine } from "@/lib/track-record-copy"; // #SPLIT-0201
+import { sourceBreakdownLine } from "@/lib/track-record-copy"; // #SPLIT-0201
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
@@ -2215,10 +2215,13 @@ function isTennisBestBet(m: TennisMatch) {
 // per sport, tutte le altre come schede mascherate), quindi il pannello non
 // "rappresenta" più il resto del catalogo: lo affianca. Va in DUE punti — una
 // copia in griglia dopo la terza scheda (`inGrid`) e una a chiusura board.
+type PaywallHitRate = { rate: string; n: number; breakdown: ReturnType<typeof headlineFigure>["breakdown"] };
+
 function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
   count: number;
-  /** #SPLIT-0201 — la cifra del MODELLO (headlineFigure) con la sua n. */
-  hitRate?: { rate: string; n: number } | null;
+  /** #SPLIT-0201 — la cifra principale (headlineFigure: il totale) con la sua n
+   *  e la scomposizione per fonte, la stessa del KPI dello storico. */
+  hitRate?: PaywallHitRate | null;
   lang: Lang;
   onUpgrade?: () => void;
   /** #FREE-BOARD-FULL-0831: istanza dentro .am-grid → banda full-width, margini
@@ -2248,11 +2251,15 @@ function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
       </ul>
       {hitRate && (
         <p className="fp-proof">
-          {/* #COERENZA-1001 — all-time su TUTTE le pick concluse e verificate
-              (/api/v2/history), non le ultime 100. #SPLIT-0201 — ed è la cifra
-              del MODELLO, la stessa del KPI dello storico e della home, non il
-              totale con le quote del partner: l'etichetta dice quello che è. */}
-          <strong>{hitRate.rate}</strong> {ourPredictionsLabel(lang, hitRate.n)}
+          {/* #COERENZA-1001 — `hitRate` è historyV2Stats.win_rate: all-time su
+              TUTTE le pick concluse e verificate (/api/v2/history), non le ultime
+              100. L'etichetta dice quello che il numero è (stesso errore che
+              #SETTLE-0909 aveva tolto dai KPI). #SPLIT-0201 — la stessa cifra
+              del KPI dello storico (headlineFigure), con la sua n. */}
+          <strong>{hitRate.rate}</strong> {pick5(lang, { it: "hit rate · tutte le pick concluse", en: "hit rate · all settled picks", es: "hit rate · todas las picks cerradas", fr: "hit rate · tous les picks réglés", ru: "hit rate · все закрытые пики" })} · {hitRate.n}
+          {hitRate.breakdown && (
+            <span className="fp-note">{sourceBreakdownLine(lang, hitRate.breakdown)}</span>
+          )}
         </p>
       )}
       <div className="fp-actions">
@@ -2293,7 +2300,7 @@ function SportsbookBoard({
   isPremium?: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
-  hitRate?: { rate: string; n: number } | null;
+  hitRate?: PaywallHitRate | null;
   liveStrip?: React.ReactNode;
   /** #RESTYLING-0921 — `sport:id` della partita da aprire subito (deep-link
    *  `?match=` o click da una card della lobby). */
@@ -9667,7 +9674,7 @@ function UnifiedBetsTab({
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
-  hitRate?: { rate: string; n: number } | null;
+  hitRate?: PaywallHitRate | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
   liveStrip?: React.ReactNode;
   /** #RESTYLING-0921 — la vista scelta in nav: è sempre un taglio della lobby. */
@@ -10702,10 +10709,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const isClientUnlocked = profileHasAccess(clientProfile);
   const isFreeClient = clientProfile?.plan === "free";
   const isSignalPreviewUnlocked = profileHasSignalPreview(clientProfile);
-  // #SPLIT-0201 — sul KPI dello storico e sul paywall la cifra in testa è
-  // quella del MODELLO (decisione di Andrea, 02/10); il totale con le quote del
-  // partner sta sotto. #HITRATE-GUARD-1: niente percentuale promozionale sotto
-  // la soglia di campione (isRateMeaningful(v2Head.n) dove si mostra).
+  // #SPLIT-0201 — sul KPI dello storico e sul paywall la cifra in testa è il
+  // TOTALE (decisione di Andrea, 02/10), la stessa ovunque nella pagina.
+  // #HITRATE-GUARD-1: niente percentuale promozionale sotto la soglia di
+  // campione (isRateMeaningful(v2Head.n) dove si mostra).
   const v2Head = headlineFigure(historyV2Stats);
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
@@ -11216,8 +11223,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     {tNav.kpi_hit}
                     {v2Head.n > 0 ? ` · ${v2Head.n}` : ""}
                   </span>
-                  {v2Head.total && (
-                    <span className="note">{partnerTotalLine(uiLanguage, v2Head.total)}</span>
+                  {v2Head.breakdown && (
+                    <span className="note">{sourceBreakdownLine(uiLanguage, v2Head.breakdown)}</span>
                   )}
                 </div>
               )}
@@ -11280,7 +11287,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
-                ? { rate: v2Head.winRate, n: v2Head.n } : null}
+                ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown } : null}
               view={deskView}
               query={lobbyQuery}
               watchSaved={watchlist.saved}

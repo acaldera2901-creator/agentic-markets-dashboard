@@ -1,4 +1,4 @@
-// #SPLIT-0201 — la riga del totale sotto la cifra del modello è una frase:
+// #SPLIT-0201 — la scomposizione per fonte sotto il totale è una frase:
 // minuscola, a capo consentito, larghezza cappata. Non deve ereditare lo stile
 // delle etichette (maiuscolo, 9,5px) che allargava il riquadro del KPI.
 import { readFileSync } from "node:fs";
@@ -28,9 +28,16 @@ it(".tr-note (card del track record): minuscola, a capo", () => {
   expect(r).not.toMatch(/nowrap|min-width/);
 });
 
-it("le due righe usano la classe della frase, non quella dell'etichetta", () => {
+it("la riga di scomposizione usa la classe della frase, non quella dell'etichetta", () => {
   expect(readFileSync(join(ROOT, "app/app/page.tsx"), "utf8"))
-    .toContain('<span className="note">{partnerTotalLine(uiLanguage, v2Head.total)}</span>');
+    .toContain('<span className="note">{sourceBreakdownLine(uiLanguage, v2Head.breakdown)}</span>');
   expect(readFileSync(join(ROOT, "components/track-record/EdgeCard.tsx"), "utf8"))
-    .toContain('<div className="tr-note">{partnerTotalLine(lang, h.total)}</div>');
+    .toContain('<div className="tr-note">{sourceBreakdownLine(lang, h.breakdown)}</div>');
+});
+
+it(".free-paywall .fp-note (paywall): a capo, sotto la cifra", () => {
+  const r = rule(readFileSync(join(ROOT, "app/globals.css"), "utf8"), ".free-paywall .fp-note");
+  expect(r).toMatch(/display:\s*block/);
+  expect(r).toMatch(/white-space:\s*normal/);
+  expect(r).toMatch(/text-transform:\s*none/);
 });

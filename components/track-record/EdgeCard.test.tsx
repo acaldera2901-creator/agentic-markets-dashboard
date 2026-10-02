@@ -13,7 +13,7 @@ it("elenca senza esito, non confermate e sotto floor; tace quelle a zero", () =>
   expect(coverageLine({ coverage: 1, surfaced_total: 10 }, false)).toBe("100.0% of the 10 shown, finished picks verified.");
 });
 
-// #SPLIT-0201 — in testa la cifra del modello; il totale col partner, sotto.
+// #SPLIT-0201 — in testa il TOTALE (decisione di Andrea, 02/10).
 import { render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 import { EdgeCard } from "./EdgeCard";
@@ -24,15 +24,15 @@ vi.mock("./useYearData", () => ({ useYearData: () => yearData.current }));
 
 const base = { won: 50, lost: 25, n: 75, win_rate: "66.7%" };
 
-it("con by_source: il modello è la cifra principale e c'è la riga del partner", () => {
+it("con by_source: la cifra principale resta il totale, con la sua n", () => {
   yearData.current = { stats: { ...base, by_source: {
     model: { n: 40, won: 30, lost: 10, win_rate: "75.0%", interval_95: null },
     market_partner: { n: 35, won: 20, lost: 15, win_rate: "57.1%" },
   } } };
   const { container } = render(<EdgeCard lang="it" />);
-  expect(container.querySelector(".tr-big")?.textContent).toBe("75.0%");
-  expect(screen.getByText("40")).toBeTruthy();
-  expect(screen.getByText("Totale con le quote di mercato del partner: 66.7% su 75 pick")).toBeTruthy();
+  expect(container.querySelector(".tr-big")?.textContent).toBe("66.7%");
+  expect(screen.getByText("75")).toBeTruthy();
+  expect(screen.getByText("Modello: 75.0% su 40 · Quote di mercato del partner: 57.1% su 35")).toBeTruthy();
 });
 
 it("senza by_source (risposta vecchia): il totale come oggi, nessuna riga del partner", () => {

@@ -370,10 +370,10 @@ type HeadlineStats = {
 };
 
 /**
- * La cifra da mettere in testa al track record (decisione di Andrea, 02/10:
- * quella del MODELLO). `total` e' il numero storico con le quote del partner
- * incluse, da dichiarare sotto — solo se il partner ha righe decise. Una
- * risposta senza `by_source` (deploy precedente) ricade sul totale, come prima.
+ * La cifra da mettere in testa al track record: il TOTALE storico
+ * (stats.win_rate / stats.n — decisione di Andrea, 02/10: si tiene quello).
+ * `breakdown` e' la sua scomposizione per fonte, da dichiarare sotto; null se
+ * la risposta non porta `by_source` (deploy precedente): solo il totale.
  */
 export function headlineFigure(s: HeadlineStats | null | undefined): {
   winRate: string | null;
@@ -381,23 +381,23 @@ export function headlineFigure(s: HeadlineStats | null | undefined): {
   won: number;
   lost: number;
   interval95: { low: number; high: number } | null;
-  total: { winRate: string; n: number } | null;
+  breakdown: {
+    model: { winRate: string | null; n: number };
+    partner: { winRate: string | null; n: number };
+  } | null;
 } {
-  const totalN = s?.n ?? (s?.won ?? 0) + (s?.lost ?? 0);
-  const model = s?.by_source?.model;
-  if (!model) {
-    return {
-      winRate: s?.win_rate ?? null, n: totalN, won: s?.won ?? 0, lost: s?.lost ?? 0,
-      interval95: s?.interval_95 ?? null, total: null,
-    };
-  }
-  const partnerN = s?.by_source?.market_partner?.n ?? 0;
+  const bs = s?.by_source;
   return {
-    winRate: model.win_rate ?? null,
-    n: model.n ?? 0,
-    won: model.won ?? 0,
-    lost: model.lost ?? 0,
-    interval95: model.interval_95 ?? null,
-    total: partnerN > 0 && s?.win_rate ? { winRate: s.win_rate, n: totalN } : null,
+    winRate: s?.win_rate ?? null,
+    n: s?.n ?? (s?.won ?? 0) + (s?.lost ?? 0),
+    won: s?.won ?? 0,
+    lost: s?.lost ?? 0,
+    interval95: s?.interval_95 ?? null,
+    breakdown: bs?.model
+      ? {
+        model: { winRate: bs.model.win_rate ?? null, n: bs.model.n ?? 0 },
+        partner: { winRate: bs.market_partner?.win_rate ?? null, n: bs.market_partner?.n ?? 0 },
+      }
+      : null,
   };
 }

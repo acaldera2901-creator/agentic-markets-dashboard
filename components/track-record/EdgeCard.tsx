@@ -2,7 +2,7 @@
 
 import { useYearData, type YearStats } from "./useYearData";
 import { headlineFigure } from "@/lib/track-record";
-import { partnerTotalLine } from "@/lib/track-record-copy";
+import { sourceBreakdownLine } from "@/lib/track-record-copy";
 
 // #HISTORY-TRIM-0626: sintesi del track record LIVE (tutte le pick reali, nessun
 // filtro anno). Mostra hit-rate / pick decise / vinte; ROI·CLV ancora in arrivo.
@@ -34,8 +34,8 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
   const it = lang === "it";
   const d = useYearData("");
   const s = d?.stats;
-  // #SPLIT-0201 — in testa la cifra del MODELLO (decisione di Andrea, 02/10);
-  // senza by_source (deploy precedente) resta il totale.
+  // #SPLIT-0201 — in testa il TOTALE (decisione di Andrea, 02/10), sotto la
+  // sua scomposizione per fonte quando l'API la manda.
   const h = headlineFigure(s);
   const decided = h.won + h.lost;
 
@@ -58,7 +58,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
                   ? ` · 95% ${(h.interval95.low * 100).toFixed(1)}–${(h.interval95.high * 100).toFixed(1)}%`
                   : ""}
               </div>
-              {h.total && <div className="tr-note">{partnerTotalLine(lang, h.total)}</div>}
+              {h.breakdown && <div className="tr-note">{sourceBreakdownLine(lang, h.breakdown)}</div>}
             </div>
             <div className="tr-card">
               <div className="tr-big">{decided}</div>
