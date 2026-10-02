@@ -370,3 +370,21 @@ def test_fonti_usa_la_regola_unica_del_gate():
     assert _fonti([("football", " pl ", 9)]).level == "green"
     testo = Path(coerenza.__file__).read_text(encoding="utf-8")
     assert "result_source_for" in testo and 'per_sport.get("*")' not in testo
+
+
+@pytest.mark.parametrize("sport,ts,funzione", [
+    ("calcio", "lib/unified-adapter.ts", "syncMatchPredictionsToUnified"),
+    ("tennis", "lib/tennis-adapter.ts", "syncTennisPredictionsToUnified"),
+])
+def test_parita_conta_solo_la_finestra_del_sync(sport, ts, funzione):
+    # Il 02/10 parita_calcio dava 215/270 = ambra: il sync pubblica le prime
+    # 200 partite per kickoff, non tutte. Dentro la finestra era 200/200.
+    # La finestra del controllo e' quella del sync, letta dal sorgente TS.
+    corpo = (REPO / ts).read_text(encoding="utf-8").split(f"function {funzione}", 1)[1][:800]
+    limite = re.search(r"LIMIT (\d+)", corpo).group(1)
+    margine = re.search(r"> NOW\(\) - INTERVAL '([^']+)'", corpo).group(1)
+    sql = coerenza._PARITA[sport][0].lower()
+    assert f"limit {limite}" in sql and f"interval '{margine}'" in sql
+    if "winner IS NULL" in corpo:
+        assert "winner is null" in sql
+    assert coerenza.SYNC_LIMITE == int(limite)
