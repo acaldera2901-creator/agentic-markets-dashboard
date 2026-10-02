@@ -10,7 +10,7 @@ falso dall'aria credibile:
   2. sotto un campione minimo il ROI e' rumore — su 3 pick chiusi dava -100%.
 """
 
-from ..contract import Check, Verdict, green, info, red, unknown
+from ..contract import Check, Verdict, amber, green, info, red, unknown
 from ..db import DbUnavailable, fetch_all
 
 CAMPIONE_MINIMO = 30
@@ -134,7 +134,8 @@ _ORFANE_SQL = """
 select count(*),
        min(starts_at)::date::text,
        count(*) filter (where sport = 'tennis'),
-       count(*) filter (where sport = 'football')
+       count(*) filter (where sport = 'football'),
+       count(*) filter (where starts_at < now() - interval '8 days')
 from unified_predictions
 where result is null
   and published_at is not null
@@ -159,10 +160,22 @@ def check_history_orfane() -> Verdict:
         )
 
     piu_vecchia = righe[0][1] or "?"
+    scadute = int(righe[0][4] or 0)
     prova = {
         "orfane": n, "piu_vecchia": piu_vecchia,
         "tennis": int(righe[0][2] or 0), "football": int(righe[0][3] or 0),
+        "oltre_finestra": scadute,
     }
+    # Dal #SETTLE-1001 una pick senza esito resta APERTA per la finestra di
+    # recupero (7 giorni, EXPIRE_AFTER_DAYS) e poi diventa `unresolved`
+    # dichiarato: dentro la finestra e' lavoro in corso, non un buco. Rosso
+    # solo oltre la finestra (+1 giorno di margine).
+    if scadute == 0:
+        return amber(
+            f"{n} pick mostrate in attesa del risultato, tutte dentro la finestra di "
+            f"recupero di 7 giorni (la piu' vecchia del {piu_vecchia})",
+            "db:unified_predictions", value=n, evidence=prova,
+        )
     # La soglia e' ZERO, di proposito: una pick mostrata di cui non sappiamo
     # l'esito e' un difetto anche se e' una sola. Il recupero e' possibile —
     # l'archivio ESPN arriva a gennaio — quindi non c'e' motivo di tollerarle.
