@@ -45,6 +45,19 @@ FONTS = {
 HISTORY_LIMIT = 500
 
 
+def con_freschezza(corpo: dict, stato: dict, now=None) -> dict:
+    """Aggiunge `stale`/`eta_min`; da ferma, il verdetto diventa rosso.
+
+    Una torre ferma non puo' dire «tutto ok» (#COLLECTOR-0201): il verdetto
+    letto da uno snapshot vecchio non e' il verdetto di adesso.
+    """
+    f = freschezza(stato, now)
+    out = {**corpo, **f}
+    if f["stale"] and isinstance(corpo.get("verdetto"), dict):
+        out["verdetto"] = {**corpo["verdetto"], "livello": "red", "ferma": True}
+    return out
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "betredge-cc"
 
@@ -264,7 +277,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(400, b'{"error":"area mancante o non valida"}',
                            "application/json; charset=utf-8")
                 return
-            corpo = cockpit.cockpit(area, read_state(STATE_FILE))
+            stato = read_state(STATE_FILE)
+            corpo = con_freschezza(cockpit.cockpit(area, stato), stato)
             # Area valida ma che nessuna card dichiara: 404 con JSON
             # `{"assente": true, "aree": [...], "messaggio"}`, non un cockpit vuoto.
             self._send(404 if corpo.get("assente") else 200, json.dumps(corpo, ensure_ascii=False).encode(),
@@ -273,7 +287,7 @@ class Handler(BaseHTTPRequestHandler):
             # I progetti di primo livello (card `Tipo: progetto`) e il
             # verdetto di tutte le aree. Nessun parametro: niente da validare.
             stato = read_state(STATE_FILE)
-            corpo = {**cockpit.hub(stato), **freschezza(stato)}
+            corpo = con_freschezza(cockpit.hub(stato), stato)
             self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
         elif path == "/api/state":

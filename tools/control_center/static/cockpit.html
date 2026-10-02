@@ -288,6 +288,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;max-width:120ch}
 .testata .riga2 b{color:var(--mid);font-weight:500;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;font-size:10.5px;padding-top:1px}
 .testata .riga2 .stantio{color:var(--amber)}
+.testata .riga2 .ferma{grid-column:1/-1;color:var(--red);font-weight:600}
 .testata .riga2 .btn{margin-left:8px}
 .testata .riga2 .sn{grid-column:1/-1;color:var(--dim)}
 .testata .riga2 code,.dett .fondo code,.riga .prossimo code,.task .t code,.incoda .t code{font-family:inherit;font-size:inherit;color:var(--cy-2);background:var(--inset);border:1px solid var(--line);padding:0 3px}
@@ -1107,10 +1108,12 @@ function disegnaHub(d){
 }
 function disegnaBanda(d){
   const banda=$("banda"), h1=$("titolo"), sotto=$("sotto");
-  const v=d.verdetto||{}, lv=v.livello||"green", n=v.n_richiedono_te||0;
+  const v=d.verdetto||{}, lv=d.stale?"red":(v.livello||"green"), n=v.n_richiedono_te||0;
   banda.dataset.livello=lv; banda.style.setProperty("--stato", colStato(lv));
   h1.replaceChildren();
-  if(n===0) h1.append(el("i","led-g"), el("span","","Tutto ok · niente richiede te"));
+  /* una torre ferma non dice «tutto ok» ne' conta le richieste come attuali */
+  if(d.stale) h1.append(el("span","","Dati vecchi"));
+  else if(n===0) h1.append(el("i","led-g"), el("span","","Tutto ok · niente richiede te"));
   else h1.append(el("span","n",String(n)), el("span","",n===1?"cosa richiede te":"cose richiedono te"));
   const eta=d.snapshot?daQuando(d.snapshot):null, stantio=eta==null||eta>STANTIO_S;
   sotto.replaceChildren();
@@ -1119,7 +1122,7 @@ function disegnaBanda(d){
   sotto.append(" · ");
   /* d.stale lo decide il server (oltre 20 min): la torre e' ferma, non solo in ritardo */
   const ferma=d.stale&&d.eta_min!=null;
-  const sn=ferma?el("span","ferma",`la torre non si aggiorna da ${d.eta_min} min: i dati sono vecchi`)
+  const sn=ferma?el("span","ferma",`ultima lettura di ${d.eta_min} min fa`+(n?` (allora ${n} ${n===1?"cosa richiedeva":"cose richiedevano"} te)`:"")+`: la torre non si aggiorna, i dati sono vecchi`)
     :el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
   if(ferma) sn.title="riparo: launchctl kickstart -k gui/$UID/com.betredge.control-center.collector";
   else if(stantio&&eta!=null) sn.title="il collector gira ogni 5 minuti: questo snapshot e' vecchio";
@@ -1434,6 +1437,7 @@ function disegnaTestata(d){
   const h=$("p-nome"); h.replaceChildren();
   const av=$("p-avanz"); av.replaceChildren();
   const r2=$("p-riga2"); r2.replaceChildren();
+  if(d.stale&&d.eta_min!=null) r2.append(el("span","ferma",`Dati vecchi: ultima lettura di ${d.eta_min} min fa, la torre non si aggiorna`));
   const eta=d.snapshot?daQuando(d.snapshot):null, stantio=eta==null||eta>STANTIO_S;
   const sn=el("span",stantio?"stantio":"", eta==null?"snapshot assente":`snapshot di ${etaS(eta)} fa`);
   const snr=el("span","sn"); snr.append(sn);
