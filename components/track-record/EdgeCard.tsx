@@ -2,6 +2,7 @@
 
 import { useYearData, type YearStats } from "./useYearData";
 import { headlineFigure } from "@/lib/track-record";
+import { partnerTotalLine } from "@/lib/track-record-copy";
 
 // #HISTORY-TRIM-0626: sintesi del track record LIVE (tutte le pick reali, nessun
 // filtro anno). Mostra hit-rate / pick decise / vinte; ROI·CLV ancora in arrivo.
@@ -27,13 +28,6 @@ export function coverageLine(s: CoverageStats, it: boolean): string {
     ? `Verificate ${pct} delle ${n}pick mostrate e concluse`
     : `${pct} of the ${n}shown, finished picks verified`;
   return `${head}${parts.length ? ` · ${parts.join(" · ")}` : ""}.`;
-}
-
-/** #SPLIT-0201 — il totale storico con le quote del partner, sotto la cifra del modello. */
-export function partnerLine(total: { winRate: string; n: number }, it: boolean): string {
-  return it
-    ? `Incluse le quote di mercato del partner: ${total.winRate} su ${total.n} pick`
-    : `Including the partner's market prices: ${total.winRate} on ${total.n} picks`;
 }
 
 export function EdgeCard({ lang }: { lang: "it" | "en" }) {
@@ -64,7 +58,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
                   ? ` · 95% ${(h.interval95.low * 100).toFixed(1)}–${(h.interval95.high * 100).toFixed(1)}%`
                   : ""}
               </div>
-              {h.total && <div className="tr-lab">{partnerLine(h.total, it)}</div>}
+              {h.total && <div className="tr-lab">{partnerTotalLine(lang, h.total)}</div>}
             </div>
             <div className="tr-card">
               <div className="tr-big">{decided}</div>

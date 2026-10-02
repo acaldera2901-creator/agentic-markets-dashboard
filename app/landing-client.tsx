@@ -27,6 +27,7 @@ import { PUBLIC_PAID_PLANS } from "@/lib/commercial-plan"; // #HOME-V3: prezzi r
 import { BLOG_INDEX, LEARN_GUIDES, LEARN_PILLARS, guideHref } from "@/lib/learn-links";
 import { homeFaq } from "@/lib/home-faq"; // #CONVERSION-FAQ-0916
 import { headlineFigure } from "@/lib/track-record"; // #SPLIT-0201
+import { partnerTotalLine } from "@/lib/track-record-copy";
 import type { TennisMatch } from "@/app/app/page"; // #HOME-V3: tipo del componente board reale
 // #HOME-V3 Anatomy: la scheda è il COMPONENTE REALE della board (TennisMatchCard),
 // non una versione marketing. Lazy-load (ssr:false) per non gonfiare il bundle
@@ -402,7 +403,7 @@ type V3Copy = {
   anCapLive: string; anCapRepr: string;
   anNotes: { lab: string; body: string; strong: string }[];
   prEyebrow: string; prHead: string; prBadge: string;
-  prMeta: (n: number) => string; prPartner: (rate: string, n: number) => string; prMetaQual: string; prWall: string; prQuote: string; prQuoteSub: string;
+  prMeta: (n: number) => string; prMetaQual: string; prWall: string; prQuote: string; prQuoteSub: string;
   prColMatch: string; prColRes: string;
   suEyebrow: string; suHead: string; suSub: string;
   suItems: { pk: string; pn: string; p: string; ps: string; psB: string }[];
@@ -435,7 +436,6 @@ const V3_EN: V3Copy = {
   ],
   prEyebrow: "The proof", prHead: "The receipts come first.", prBadge: "LOGGED PRE-KICK-OFF",
   prMeta: (n) => `${n} settled readings, each time-stamped before the whistle. This is the settled hit-rate — past performance, not a forecast. Nothing edited after the fact.`,
-  prPartner: (rate, n) => `Including the partner's market prices: ${rate} on ${n} picks.`,
   prMetaQual: "Every reading is time-stamped before the whistle and settled on the public record — past performance, not a forecast. Nothing edited after the fact.",
   prWall: "PUBLIC RECORD", prColMatch: "MATCH", prColRes: "RESULT",
   prCta: "View the full record",
@@ -502,7 +502,6 @@ const V3_IT: V3Copy = {
   ],
   prEyebrow: "La prova", prHead: "Prima vengono le ricevute.", prBadge: "REGISTRATA PRIMA DEL FISCHIO",
   prMeta: (n) => `${n} letture concluse, ciascuna con timestamp prima del fischio. Questo è l’hit-rate concluso — risultati passati, non una previsione. Nulla modificato a posteriori.`,
-  prPartner: (rate, n) => `Incluse le quote di mercato del partner: ${rate} su ${n} pick.`,
   prMetaQual: "Ogni lettura ha un timestamp prima del fischio ed è conclusa sul registro pubblico — risultati passati, non una previsione. Nulla modificato a posteriori.",
   prWall: "REGISTRO PUBBLICO", prColMatch: "MATCH", prColRes: "ESITO",
   prCta: "Vedi il registro completo",
@@ -982,7 +981,7 @@ export default function LandingPage() {
           <>
             <div className="v-proof-top">
               <div className="v-bignum">{proof.winRate}</div>
-              <div className="v-proof-meta"><div className="badge"><span className="v-pulse" />{v.prBadge}</div><p>{v.prMeta(proof.settled)}</p>{proof.total && <p>{v.prPartner(proof.total.winRate, proof.total.n)}</p>}</div>
+              <div className="v-proof-meta"><div className="badge"><span className="v-pulse" />{v.prBadge}</div><p>{v.prMeta(proof.settled)}</p>{proof.total && <p>{partnerTotalLine(lang, proof.total)}.</p>}</div>
             </div>
             {proofRows.length > 0 ? (
               <>

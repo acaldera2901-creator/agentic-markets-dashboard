@@ -30,7 +30,7 @@ import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful, headlineFigure, type SourceBlock } from "@/lib/track-record";
-import { ourPredictionsLabel } from "@/lib/track-record-copy"; // #SPLIT-0201
+import { ourPredictionsLabel, partnerTotalLine } from "@/lib/track-record-copy"; // #SPLIT-0201
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
@@ -11211,15 +11211,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     {v2Head.n > 0 ? ` · ${v2Head.n}` : ""}
                   </span>
                   {v2Head.total && (
-                    <span className="l">
-                      {pick5(uiLanguage, {
-                        it: `Incluse le quote di mercato del partner: ${v2Head.total.winRate} su ${v2Head.total.n} pick`,
-                        en: `Including the partner's market prices: ${v2Head.total.winRate} on ${v2Head.total.n} picks`,
-                        es: `Incluidas las cuotas de mercado del socio: ${v2Head.total.winRate} en ${v2Head.total.n} picks`,
-                        fr: `Cotes de marché du partenaire incluses : ${v2Head.total.winRate} sur ${v2Head.total.n} picks`,
-                        ru: `С учётом рыночных котировок партнёра: ${v2Head.total.winRate} на ${v2Head.total.n} пиков`,
-                      })}
-                    </span>
+                    <span className="l">{partnerTotalLine(uiLanguage, v2Head.total)}</span>
                   )}
                 </div>
               )}

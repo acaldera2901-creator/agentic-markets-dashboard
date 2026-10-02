@@ -32,7 +32,7 @@ it("con by_source: il modello è la cifra principale e c'è la riga del partner"
   const { container } = render(<EdgeCard lang="it" />);
   expect(container.querySelector(".tr-big")?.textContent).toBe("75.0%");
   expect(screen.getByText("40")).toBeTruthy();
-  expect(screen.getByText("Incluse le quote di mercato del partner: 66.7% su 75 pick")).toBeTruthy();
+  expect(screen.getByText("Totale con le quote di mercato del partner: 66.7% su 75 pick")).toBeTruthy();
 });
 
 it("senza by_source (risposta vecchia): il totale come oggi, nessuna riga del partner", () => {
