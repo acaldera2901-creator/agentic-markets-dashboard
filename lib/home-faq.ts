@@ -88,7 +88,7 @@ export const HOME_FAQ = {
     ],
     [
       "What’s in a reading, and what is the deep analysis?",
-      "Four things, all of them logged before kick-off. What the market thinks, which is the odds turned into a percentage. What our model thinks, which is its calibrated probability. The distance between those two numbers. And the reasoning behind it, written out in normal words. The deep analysis is what sits under that reasoning, and it comes with Pro. Open it on any match and you get the factors the model actually weighed: form, expected goals, injuries, Elo, serve and return numbers, head-to-head, surface.",
+      "Four things, all of them logged before kick-off. What the market thinks, which is the odds turned into a percentage. What our model thinks, which is its calibrated probability. The distance between those two numbers. And the reasoning behind it, written out in normal words. The deep analysis is what sits under that reasoning, and it comes with Pro. Open it on any match and you get the factors the model actually weighed: form, expected goals, Elo, serve and return numbers, head-to-head, surface.",
     ],
     [
       "Which sports do you cover?",
@@ -114,7 +114,7 @@ export const HOME_FAQ = {
     ],
     [
       "Cosa c’è dentro una lettura, e cos’è la deep analysis?",
-      "Quattro cose, tutte registrate prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale. Cosa pensa il nostro modello, cioè la sua probabilità calibrata. La distanza fra questi due numeri. E il ragionamento che c’è dietro, scritto in parole normali. La deep analysis è quello che sta sotto quel ragionamento, e arriva con Pro. La apri su qualsiasi partita e vedi i fattori che il modello ha davvero pesato: forma, gol attesi, infortuni, Elo, numeri di servizio e risposta, scontri diretti, superficie.",
+      "Quattro cose, tutte registrate prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale. Cosa pensa il nostro modello, cioè la sua probabilità calibrata. La distanza fra questi due numeri. E il ragionamento che c’è dietro, scritto in parole normali. La deep analysis è quello che sta sotto quel ragionamento, e arriva con Pro. La apri su qualsiasi partita e vedi i fattori che il modello ha davvero pesato: forma, gol attesi, Elo, numeri di servizio e risposta, scontri diretti, superficie.",
     ],
     [
       "Quali sport coprite?",

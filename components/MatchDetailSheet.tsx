@@ -502,7 +502,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
 
           {(data.teamNews || data.teamNewsLocked) && (
             <section className="br-md__sec">
-              <h3 className="br-md__h">{data.sections?.teamNews ?? "Injuries & team news"}</h3>
+              <h3 className="br-md__h">{data.sections?.teamNews ?? "Absences & team news"}</h3>
               {data.teamNewsLocked ? (
                 /* Contenuto Pro: si NOMINA ciò che c'è dietro, non si mostra
                    un blur di numeri finti. La CTA è contestuale, come chiede
@@ -511,7 +511,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                 <div className="br-md__locked">
                   <p>
                     <IconLock size={14} />
-                    {data.sections?.teamNewsLocked ?? "The full injury and team-news read for this match is part of Pro."}
+                    {data.sections?.teamNewsLocked ?? "Lineups and absences, when available, are part of Pro."}
                   </p>
                   {data.onUnlock && (
                     <button type="button" className="br-cta" data-tone="unlock" onClick={data.onUnlock}>

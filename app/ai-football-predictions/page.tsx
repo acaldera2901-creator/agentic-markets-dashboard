@@ -83,8 +83,8 @@ export default function AiFootballPredictionsPage() {
           in either direction.
         </p>
         <p className="mb-4">
-          <strong style={{ color: "var(--am-text)" }}>Availability and context.</strong> Squad
-          absences, congestion, and competition context move the number. A cup tie between sides
+          <strong style={{ color: "var(--am-text)" }}>Schedule and context.</strong> Fixture
+          congestion and competition context move the number. A cup tie between sides
           from different divisions behaves differently from a league match, and friendlies are
           treated with extra caution because teams rotate and experiment in them.
         </p>
