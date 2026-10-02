@@ -58,7 +58,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
                   ? ` · 95% ${(h.interval95.low * 100).toFixed(1)}–${(h.interval95.high * 100).toFixed(1)}%`
                   : ""}
               </div>
-              {h.total && <div className="tr-lab">{partnerTotalLine(lang, h.total)}</div>}
+              {h.total && <div className="tr-note">{partnerTotalLine(lang, h.total)}</div>}
             </div>
             <div className="tr-card">
               <div className="tr-big">{decided}</div>

@@ -6472,6 +6472,12 @@ button:disabled {
 .am-kpi .l {
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted-2);
 }
+/* #SPLIT-0201 — la riga del totale sotto la cifra del modello: una frase, non
+   un'etichetta. Minuscola e a capo, larghezza cappata: non allarga il riquadro. */
+.am-kpi .note {
+  font-size: 11px; font-weight: 500; line-height: 1.35; text-transform: none; letter-spacing: 0;
+  color: var(--am-muted-2); white-space: normal; overflow-wrap: anywhere; max-width: 24ch;
+}
 
 /* ── LEVEL-UP chamfer (firma pannelli) — 2026-07-12 ──────────────────────────
    Angolo obliquo su angoli opposti (alto-sx + basso-dx). Hairline pulito anche

@@ -11211,7 +11211,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     {v2Head.n > 0 ? ` · ${v2Head.n}` : ""}
                   </span>
                   {v2Head.total && (
-                    <span className="l">{partnerTotalLine(uiLanguage, v2Head.total)}</span>
+                    <span className="note">{partnerTotalLine(uiLanguage, v2Head.total)}</span>
                   )}
                 </div>
               )}
