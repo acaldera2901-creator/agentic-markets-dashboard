@@ -49,16 +49,10 @@ class Elenco(unittest.TestCase):
         self.assertEqual(s["fase_fonte"], "legacy")
         self.assertFalse(s["ha_stato"])
 
-    def test_le_card_vere_dell_audit_0101(self):
-        attese = {"azienda/project_betredge_heknew_video": "BLOCCATO",
-                  "azienda/project_affiliate_v2": "BLOCCATO"}
-        for ident, fase in attese.items():
-            if ident in self.per_id:
-                self.assertEqual(self.per_id[ident]["fase"], fase, ident)
-        s = self.per_id.get("azienda/project_email_warmup_news_subdomain")
-        if s is not None:
-            # la testata del 29/09 non dichiara una fase: il BLOCCATO del 15/09 non vale
-            self.assertNotEqual(s["fase_fonte"], "blocco")
+    # test_le_card_vere_dell_audit_0101 e' stato tolto il 02/10: fissava la
+    # fase di card vive (heknew_video e' passata legittimamente ad ARCHIVIATO
+    # l'01/10). Le tre forme che proteggeva sono copiate qui sotto in
+    # CARD_FASE_SENZA_BACKTICK, CARD_PAUSA e CARD_STORICA (classe Parser).
 
 
 CARD_FASE_SENZA_BACKTICK = """<!-- STATO:start -->
