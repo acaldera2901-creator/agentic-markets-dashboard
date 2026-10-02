@@ -30,6 +30,7 @@ import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful, headlineFigure, type SourceBlock } from "@/lib/track-record";
+import { sourceBreakdownLine } from "@/lib/track-record-copy"; // #SPLIT-0201
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
@@ -11210,6 +11211,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                     {tNav.kpi_hit}
                     {v2Head.n > 0 ? ` · ${v2Head.n}` : ""}
                   </span>
+                  {v2Head.breakdown && (
+                    <span className="note">{sourceBreakdownLine(uiLanguage, v2Head.breakdown)}</span>
+                  )}
                 </div>
               )}
             </div>

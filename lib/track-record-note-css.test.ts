@@ -27,3 +27,10 @@ it(".tr-note (card del track record): minuscola, a capo", () => {
   expect(r).toMatch(/white-space:normal/);
   expect(r).not.toMatch(/nowrap|min-width/);
 });
+
+it("la riga di scomposizione usa la classe della frase, non quella dell'etichetta", () => {
+  expect(readFileSync(join(ROOT, "app/app/page.tsx"), "utf8"))
+    .toContain('<span className="note">{sourceBreakdownLine(uiLanguage, v2Head.breakdown)}</span>');
+  expect(readFileSync(join(ROOT, "components/track-record/EdgeCard.tsx"), "utf8"))
+    .toContain('<div className="tr-note">{sourceBreakdownLine(lang, h.breakdown)}</div>');
+});
