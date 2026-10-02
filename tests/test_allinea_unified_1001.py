@@ -162,13 +162,16 @@ class FakeDB:
 
 @pytest.fixture
 def fake(monkeypatch):
-    import psycopg2
+    import sys
+    import types
 
     import tools.control_center.db as db
 
     def make(rows):
         f = FakeDB(rows)
-        monkeypatch.setattr(psycopg2, "connect", f.connect)
+        # psycopg2 is not in requirements-dev (see there): inject a fake module,
+        # as tests/test_recupera_calcio_1001.py does, so these run in CI too.
+        monkeypatch.setitem(sys.modules, "psycopg2", types.SimpleNamespace(connect=f.connect))
         monkeypatch.setattr(db, "_dsn", lambda: "fake")
         return f
     return make
