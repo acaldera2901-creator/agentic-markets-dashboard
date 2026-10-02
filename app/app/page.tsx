@@ -2215,10 +2215,13 @@ function isTennisBestBet(m: TennisMatch) {
 // per sport, tutte le altre come schede mascherate), quindi il pannello non
 // "rappresenta" più il resto del catalogo: lo affianca. Va in DUE punti — una
 // copia in griglia dopo la terza scheda (`inGrid`) e una a chiusura board.
+type PaywallHitRate = { rate: string; n: number; breakdown: ReturnType<typeof headlineFigure>["breakdown"] };
+
 function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
   count: number;
-  /** #SPLIT-0201 — la cifra principale (headlineFigure: il totale) con la sua n. */
-  hitRate?: { rate: string; n: number } | null;
+  /** #SPLIT-0201 — la cifra principale (headlineFigure: il totale) con la sua n
+   *  e la scomposizione per fonte, la stessa del KPI dello storico. */
+  hitRate?: PaywallHitRate | null;
   lang: Lang;
   onUpgrade?: () => void;
   /** #FREE-BOARD-FULL-0831: istanza dentro .am-grid → banda full-width, margini
@@ -2254,6 +2257,9 @@ function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
               #SETTLE-0909 aveva tolto dai KPI). #SPLIT-0201 — la stessa cifra
               del KPI dello storico (headlineFigure), con la sua n. */}
           <strong>{hitRate.rate}</strong> {pick5(lang, { it: "hit rate · tutte le pick concluse", en: "hit rate · all settled picks", es: "hit rate · todas las picks cerradas", fr: "hit rate · tous les picks réglés", ru: "hit rate · все закрытые пики" })} · {hitRate.n}
+          {hitRate.breakdown && (
+            <span className="fp-note">{sourceBreakdownLine(lang, hitRate.breakdown)}</span>
+          )}
         </p>
       )}
       <div className="fp-actions">
@@ -2294,7 +2300,7 @@ function SportsbookBoard({
   isPremium?: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
-  hitRate?: { rate: string; n: number } | null;
+  hitRate?: PaywallHitRate | null;
   liveStrip?: React.ReactNode;
   /** #RESTYLING-0921 — `sport:id` della partita da aprire subito (deep-link
    *  `?match=` o click da una card della lobby). */
@@ -9662,7 +9668,7 @@ function UnifiedBetsTab({
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
   onBannerCta?: (href: string) => boolean;
-  hitRate?: { rate: string; n: number } | null;
+  hitRate?: PaywallHitRate | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
   liveStrip?: React.ReactNode;
   /** #RESTYLING-0921 — la vista scelta in nav: è sempre un taglio della lobby. */
@@ -11275,7 +11281,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
-                ? { rate: v2Head.winRate, n: v2Head.n } : null}
+                ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown } : null}
               view={deskView}
               query={lobbyQuery}
               watchSaved={watchlist.saved}

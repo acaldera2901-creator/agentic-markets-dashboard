@@ -34,3 +34,10 @@ it("la riga di scomposizione usa la classe della frase, non quella dell'etichett
   expect(readFileSync(join(ROOT, "components/track-record/EdgeCard.tsx"), "utf8"))
     .toContain('<div className="tr-note">{sourceBreakdownLine(lang, h.breakdown)}</div>');
 });
+
+it(".free-paywall .fp-note (paywall): a capo, sotto la cifra", () => {
+  const r = rule(readFileSync(join(ROOT, "app/globals.css"), "utf8"), ".free-paywall .fp-note");
+  expect(r).toMatch(/display:\s*block/);
+  expect(r).toMatch(/white-space:\s*normal/);
+  expect(r).toMatch(/text-transform:\s*none/);
+});

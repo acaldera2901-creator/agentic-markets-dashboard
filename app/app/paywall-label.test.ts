@@ -18,8 +18,11 @@ it("il paywall non etichetta l'all-time come «ultime 100 pick»", () => {
 it("il paywall usa headlineFigure come il KPI, con la sua n", () => {
   const src = readFileSync(join(__dirname, "page.tsx"), "utf8");
   expect(src).not.toMatch(/hitRate=\{v2RateMeaningful \? historyV2Stats\?\.win_rate/);
-  expect(src).toMatch(/hitRate=\{historyV2Stats && isRateMeaningful\(v2Head\.n\) && v2Head\.winRate\s*\?\s*\{ rate: v2Head\.winRate, n: v2Head\.n \}/);
+  expect(src).toMatch(/hitRate=\{historyV2Stats && isRateMeaningful\(v2Head\.n\) && v2Head\.winRate\s*\?\s*\{ rate: v2Head\.winRate, n: v2Head\.n, breakdown: v2Head\.breakdown \}/);
   expect(src).toContain("hit rate · tutte le pick concluse\", en: \"hit rate · all settled picks");
   expect(src).toMatch(/ru: "hit rate · все закрытые пики" \}\)\} · \{hitRate\.n\}/);
   expect(src).not.toMatch(/nostre predizioni|our predictions/);
+  // stessa scomposizione del KPI, dallo stesso headlineFigure
+  expect(src).toContain("{ rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown }");
+  expect(src).toContain('<span className="fp-note">{sourceBreakdownLine(lang, hitRate.breakdown)}</span>');
 });
