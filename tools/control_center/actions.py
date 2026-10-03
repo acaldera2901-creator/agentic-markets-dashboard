@@ -181,6 +181,8 @@ PRODOTTI_TSV = Path.home() / "Desktop/01-BETREDGE/lab/prodotti.tsv"
 # Andrea (segretaria, ceo, cfo, trader) non compaiono: la torre e' aziendale
 # (#CERVELLO-MAVEN-0310). Quando gli agenti diventeranno aziendali si aggiungono qui.
 PERSONALI = [
+    {"chiave": "segretaria", "nome": "Segretaria", "agente": "segretaria",
+     "remit": "Giornata, priorita', progetti in parallelo"},
     {"chiave": "dev", "nome": "Programmatore", "agente": "programmatore-andrea",
      "remit": "Codice, debug, architettura, deploy"},
     {"chiave": "qa", "nome": "QA", "agente": "qa-andrea",

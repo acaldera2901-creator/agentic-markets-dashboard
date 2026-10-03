@@ -350,6 +350,9 @@ AGENTI_AZIENDALI = frozenset({
     "social-media-manager", "sports-news-curator",
     "legale-compliance", "legale-contratti", "legale-societario",
 })
+# Agenti che compaiono in sala ma di cui non si espone il testo: la segretaria si
+# apre dalla torre (decisione di Andrea, 2026-10-03), ma il suo prompt e' privato.
+AGENTI_SENZA_TESTO = frozenset({"segretaria"})
 
 def stato() -> dict:
     """Chi e' al lavoro adesso. Si legge sempre dal vivo."""
@@ -371,7 +374,8 @@ def stato() -> dict:
                              "visto": _iso(sess.get("updatedAt"))})
             continue
 
-        if sess.get("agent") not in AGENTI_AZIENDALI:
+        agente = sess.get("agent")
+        if agente not in AGENTI_AZIENDALI and agente not in AGENTI_SENZA_TESTO:
             nascoste += 1
             continue
 
@@ -416,6 +420,11 @@ def stato() -> dict:
             # cui sbagliare — meglio una delega non mostrata che una inventata.
             "deleghe_aperte": att.get("deleghe_aperte", 0),
         })
+
+    for a in agenti:
+        if a["agente"] in AGENTI_SENZA_TESTO:
+            a.update(task="", passo="", deleghe=[], deleghe_aperte=0,
+                     attivita_perche="dettagli non esposti")
 
     # Prima chi lavora, poi chi ha parlato piu' di recente.
     agenti.sort(key=lambda a: (a["stato"] != "busy",

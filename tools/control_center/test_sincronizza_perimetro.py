@@ -23,6 +23,7 @@ def test_la_torre_non_elenca_card_private_o_di_sistema():
 
 def test_la_sala_non_mostra_agenti_personali():
     from tools.control_center import actions, sala
-    assert {a["agente"] for a in actions.PERSONALI} <= sala.AGENTI_AZIENDALI
-    for privato in ("segretaria", "ceo-andrea", "cfo-andrea", "trader", "custode-mac"):
+    assert {a["agente"] for a in actions.PERSONALI} <= sala.AGENTI_AZIENDALI | sala.AGENTI_SENZA_TESTO
+    assert "segretaria" in sala.AGENTI_SENZA_TESTO
+    for privato in ("ceo-andrea", "cfo-andrea", "trader", "custode-mac"):
         assert privato not in sala.AGENTI_AZIENDALI
