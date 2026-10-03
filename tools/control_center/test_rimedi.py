@@ -46,18 +46,21 @@ def test_sigillo_non_certifica_senza_dati_ne_con_rossi():
     c = rimedi.arricchisci(_corpo(), {"checks": {"a": {"level": "green"}, "b": {"level": "red"}}})
     s = c["sigillo"]
     assert s["certificato"] is False and s["voto"] == 50 and "voto 50/100" in s["criteri"][1]["dettaglio"]
-    assert [k["ok"] for k in s["criteri"]] == [False, False, False, True]
+    assert [k["ok"] for k in s["criteri"]] == [False, False, False, False, True]
     vuoto = rimedi.arricchisci(_corpo(), {"checks": {}})["sigillo"]
     assert vuoto["criteri"][1]["dettaglio"] == "non misurato" and not vuoto["certificato"]
 
 
-def test_sigillo_certificato_solo_con_quattro_su_quattro():
+def test_sigillo_certificato_solo_con_cinque_su_cinque():
     c = _corpo()
     c["progetto"]["done_quando"] = "ogni goal ha il check verde"
     c["in_coda_per_te"][0]["scad"] = "2026-10-10"
     c["da_osservare"] = []
-    s = rimedi.arricchisci(c, {"checks": {"a": {"level": "green"}}})["sigillo"]
-    assert s["certificato"] is True and s["ok"] == 4
+    stato = {"a": {"level": "green"}, "percorso_board": {"level": "green"}}
+    s = rimedi.arricchisci(c, {"checks": stato})["sigillo"]
+    assert s["certificato"] is True and s["ok"] == 5
+    stato["percorso_mobile"] = {"level": "unknown"}
+    assert rimedi.arricchisci(_corpo(), {"checks": stato})["sigillo"]["criteri"][2]["ok"] is False
 
 
 def test_il_prompt_porta_problema_gate_e_criterio_senza_dati_dal_browser():

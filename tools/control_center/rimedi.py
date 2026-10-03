@@ -146,6 +146,16 @@ def sigillo(corpo: dict, checks: dict) -> dict:
     else:
         controlli = {"ok": False, "dettaglio": "non misurato"}
 
+    perc = [c for cid, c in checks.items() if cid.startswith("percorso_")]
+    if perc:
+        verdi_p = sum(1 for c in perc if c.get("level") == "green")
+        percorsi = {"ok": verdi_p == len(perc),
+                    "dettaglio": f"{verdi_p}/{len(perc)} verdi: board, scheda, piani, signup, track record, mobile"
+                                 if verdi_p == len(perc) else
+                                 f"{verdi_p}/{len(perc)} verdi · {len(perc) - verdi_p} da sistemare o non misurati"}
+    else:
+        percorsi = {"ok": False, "dettaglio": "non misurato"}
+
     senza_scad = sum(1 for x in corpo.get("in_coda_per_te", []) if not x.get("scad"))
     senza_owner = sum(1 for x in corpo.get("in_carico", []) if not x.get("owner"))
     pend = senza_scad + senza_owner
@@ -155,6 +165,7 @@ def sigillo(corpo: dict, checks: dict) -> dict:
         {"id": "done_quando", "titolo": "Done quando scritto", "ok": scritto,
          "dettaglio": "scritto" if scritto else "oggi: «da decidere»"},
         {"id": "controlli", "titolo": "Controlli del prodotto tutti verdi", **controlli},
+        {"id": "percorsi", "titolo": "Percorsi dell'utente funzionano", **percorsi},
         {"id": "pending", "titolo": "Pending con owner e scadenza", "ok": pend == 0,
          "dettaglio": "tutti assegnati" if pend == 0 else f"{pend} senza scadenza o owner"},
         {"id": "fresca", "titolo": "Misurato da meno di 7 giorni", "ok": bool(fresca),
