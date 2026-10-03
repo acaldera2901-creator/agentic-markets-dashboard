@@ -18,7 +18,7 @@ from tools.control_center.snapshot import write_state
 
 # ------------------------------------------------------------------ finto disco
 
-def _sessione(dir_sess, pid, nome, sid, agente="x", stato="idle", quando=1_788_000_000_000):
+def _sessione(dir_sess, pid, nome, sid, agente="programmatore-andrea", stato="idle", quando=1_788_000_000_000):
     (dir_sess / f"{pid}.json").write_text(json.dumps({
         "pid": pid, "sessionId": sid, "cwd": "/Users/calde/Desktop/agentic-markets",
         "startedAt": quando, "version": "2.1.259", "kind": "interactive",
@@ -180,7 +180,7 @@ def test_una_sessione_appena_nata_non_ha_status_e_lo_si_dice(disco, mocker):
     sess, _ = disco
     (sess / "4242.json").write_text(json.dumps({
         "pid": 4242, "sessionId": "88888888-1111-2222-3333-444444444444",
-        "cwd": "/repo", "name": "prova-sala", "agent": "ceo-andrea",
+        "cwd": "/repo", "name": "prova-sala", "agent": "qa-andrea",
         "entrypoint": "sdk-cli", "startedAt": 1_788_000_000_000,
     }))
     mocker.patch.object(sala, "_processi_claude", return_value={4242: "claude"})

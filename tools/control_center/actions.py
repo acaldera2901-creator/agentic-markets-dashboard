@@ -176,18 +176,25 @@ def apri_ala(chiave: str) -> dict:
 # ── aprire la chat di un prodotto ───────────────────────────────────────────
 PRODOTTI_TSV = Path.home() / "Desktop/01-BETREDGE/lab/prodotti.tsv"
 
-# Gli agenti trasversali: non appartengono a un prodotto, servono ad Andrea.
-# Vivono qui e non in un TSV perche' sono quattro e cambiano una volta all'anno;
-# i prodotti invece cambiano spesso, e infatti stanno in un file.
+# Gli agenti aziendali che si aprono dalla torre (pannello «Gli agenti»).
+# Vivono qui e non in un TSV perche' cambiano di rado. Gli agenti personali di
+# Andrea (segretaria, ceo, cfo, trader) non compaiono: la torre e' aziendale
+# (#CERVELLO-MAVEN-0310). Quando gli agenti diventeranno aziendali si aggiungono qui.
 PERSONALI = [
     {"chiave": "segretaria", "nome": "Segretaria", "agente": "segretaria",
-     "remit": "La giornata, le priorita', i progetti in parallelo"},
-    {"chiave": "ceo", "nome": "CEO", "agente": "ceo-andrea",
-     "remit": "Task multi-dominio, coordinamento, decisioni di sistema"},
-    {"chiave": "cfo", "nome": "CFO", "agente": "cfo-andrea",
-     "remit": "P&L, cashflow, allocazione del capitale"},
-    {"chiave": "trader", "nome": "Trader", "agente": "trader",
-     "remit": "EA MT5, segnali, performance, rischio"},
+     "remit": "Giornata, priorita', progetti in parallelo"},
+    {"chiave": "dev", "nome": "Programmatore", "agente": "programmatore-andrea",
+     "remit": "Codice, debug, architettura, deploy"},
+    {"chiave": "qa", "nome": "QA", "agente": "qa-andrea",
+     "remit": "Test, audit pre-deploy, regressioni"},
+    {"chiave": "ui", "nome": "UI", "agente": "ui-andrea",
+     "remit": "Interfaccia, responsive, review visiva"},
+    {"chiave": "grafica", "nome": "Art director", "agente": "art-director",
+     "remit": "Direzione visiva, grafiche e brand"},
+    {"chiave": "marketing", "nome": "Marketing", "agente": "marketing-betredge",
+     "remit": "Crescita, canali, funnel, claim"},
+    {"chiave": "ml", "nome": "ML", "agente": "ml-engineer-agentic",
+     "remit": "Modelli, predizioni, feature"},
 ]
 
 

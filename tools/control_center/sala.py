@@ -338,10 +338,27 @@ def _eta_s(ts) -> int | None:
 
 # ---------------------------------------------------------------- la sala
 
+# La torre e' visibile a tutti i dipendenti Maven (#CERVELLO-MAVEN-0310): in sala
+# compaiono SOLO gli agenti aziendali. Default-deny: una sessione con un agente
+# fuori da questo elenco (segretaria, ceo, cfo, trader, custode, maketelier-*,
+# sessioni senza agente) non e' mostrata, perche' `task` e' il testo grezzo del
+# prompt di Andrea. Un agente nuovo dell'azienda va aggiunto qui, a mano.
+AGENTI_AZIENDALI = frozenset({
+    "programmatore-andrea", "qa-andrea", "ui-andrea", "art-director",
+    "brand-visual-designer", "graphic-designer", "marketing-betredge",
+    "ml-engineer-agentic", "psicologia-persuasione", "reddit-betredge",
+    "social-media-manager", "sports-news-curator",
+    "legale-compliance", "legale-contratti", "legale-societario",
+})
+# Agenti che compaiono in sala ma di cui non si espone il testo: la segretaria si
+# apre dalla torre (decisione di Andrea, 2026-10-03), ma il suo prompt e' privato.
+AGENTI_SENZA_TESTO = frozenset({"segretaria"})
+
 def stato() -> dict:
     """Chi e' al lavoro adesso. Si legge sempre dal vivo."""
     vivi = _processi_claude()
     agenti, fantasmi = [], []
+    nascoste = 0
 
     file_sessione = sorted(SESSIONI.glob("*.json")) if SESSIONI.is_dir() else []
     for f in file_sessione:
@@ -355,6 +372,11 @@ def stato() -> dict:
         if pid not in vivi:
             fantasmi.append({"nome": sess.get("name") or "-", "pid": pid,
                              "visto": _iso(sess.get("updatedAt"))})
+            continue
+
+        agente = sess.get("agent")
+        if agente not in AGENTI_AZIENDALI and agente not in AGENTI_SENZA_TESTO:
+            nascoste += 1
             continue
 
         att = attivita(sess.get("sessionId", ""))
@@ -399,6 +421,11 @@ def stato() -> dict:
             "deleghe_aperte": att.get("deleghe_aperte", 0),
         })
 
+    for a in agenti:
+        if a["agente"] in AGENTI_SENZA_TESTO:
+            a.update(task="", passo="", deleghe=[], deleghe_aperte=0,
+                     attivita_perche="dettagli non esposti")
+
     # Prima chi lavora, poi chi ha parlato piu' di recente.
     agenti.sort(key=lambda a: (a["stato"] != "busy",
                                a.get("eta_evento_s") if a.get("eta_evento_s") is not None else 10**9))
@@ -407,6 +434,7 @@ def stato() -> dict:
         "generato": _iso(time.time() * 1000),
         "agenti": agenti,
         "fantasmi": fantasmi,
+        "nascoste": nascoste,
         "registro_presente": bool(file_sessione),
         "registro": str(SESSIONI),
     }
