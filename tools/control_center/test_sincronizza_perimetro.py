@@ -19,3 +19,10 @@ def test_la_torre_non_elenca_card_private_o_di_sistema():
     assert {k for k, *_ in progetti.REGISTRI} == {"azienda"}
     for s in progetti.elenco()["schede"]:
         assert s["id"].startswith("azienda/")
+
+
+def test_la_sala_non_mostra_agenti_personali():
+    from tools.control_center import actions, sala
+    assert actions.PERSONALI == []
+    for privato in ("segretaria", "ceo-andrea", "cfo-andrea", "trader", "custode-mac"):
+        assert privato not in sala.AGENTI_AZIENDALI

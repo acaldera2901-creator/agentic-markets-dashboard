@@ -179,16 +179,9 @@ PRODOTTI_TSV = Path.home() / "Desktop/01-BETREDGE/lab/prodotti.tsv"
 # Gli agenti trasversali: non appartengono a un prodotto, servono ad Andrea.
 # Vivono qui e non in un TSV perche' sono quattro e cambiano una volta all'anno;
 # i prodotti invece cambiano spesso, e infatti stanno in un file.
-PERSONALI = [
-    {"chiave": "segretaria", "nome": "Segretaria", "agente": "segretaria",
-     "remit": "La giornata, le priorita', i progetti in parallelo"},
-    {"chiave": "ceo", "nome": "CEO", "agente": "ceo-andrea",
-     "remit": "Task multi-dominio, coordinamento, decisioni di sistema"},
-    {"chiave": "cfo", "nome": "CFO", "agente": "cfo-andrea",
-     "remit": "P&L, cashflow, allocazione del capitale"},
-    {"chiave": "trader", "nome": "Trader", "agente": "trader",
-     "remit": "EA MT5, segnali, performance, rischio"},
-]
+# Vuoto dal 2026-10-03: la torre e' aziendale e visibile a tutti i dipendenti, gli
+# agenti personali di Andrea (segretaria, ceo, cfo, trader) non compaiono qui.
+PERSONALI: list[dict] = []
 
 
 def prodotti_disponibili() -> list[dict]:
