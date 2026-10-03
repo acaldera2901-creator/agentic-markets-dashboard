@@ -21,7 +21,7 @@ from .actions import (
     start_daemon,
     stop_daemon,
 )
-from . import cockpit, council, progetti, sala
+from . import cockpit, council, progetti, rimedi, sala
 from .snapshot import HISTORY_FILE, STATE_FILE, freschezza, read_state
 
 HOST = "127.0.0.1"
@@ -145,6 +145,15 @@ class Handler(BaseHTTPRequestHandler):
             chiave = str(corpo.get("chiave", ""))
             esito = (apri_prodotto(chiave) if azione == "apri_prodotto"
                      else apri_personale(chiave))
+            self._send(200, json.dumps(esito, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+            return
+
+        if azione == "agente":
+            # «Parla con l'agente corretto»: la pagina manda area + rid, il
+            # prompt lo costruisce il server dai suoi dati (rimedi.py).
+            esito = rimedi.apri(str(corpo.get("area", "")).lower(), str(corpo.get("rid", "")),
+                                read_state(STATE_FILE), cockpit.cockpit)
             self._send(200, json.dumps(esito, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
             return
@@ -278,7 +287,7 @@ class Handler(BaseHTTPRequestHandler):
                            "application/json; charset=utf-8")
                 return
             stato = read_state(STATE_FILE)
-            corpo = con_freschezza(cockpit.cockpit(area, stato), stato)
+            corpo = rimedi.arricchisci(con_freschezza(cockpit.cockpit(area, stato), stato), stato)
             # Area valida ma che nessuna card dichiara: 404 con JSON
             # `{"assente": true, "aree": [...], "messaggio"}`, non un cockpit vuoto.
             self._send(404 if corpo.get("assente") else 200, json.dumps(corpo, ensure_ascii=False).encode(),
