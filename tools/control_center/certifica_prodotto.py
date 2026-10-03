@@ -16,13 +16,13 @@ import json
 import sys
 from pathlib import Path
 
+from .certificazione import conteggi, voci_da_dizionari
 from .checks import all_checks
 from .db import REPO_ROOT, _dsn
 from .runner import run_checks
 from .snapshot import STATE_DIR
 
 DEST_JSON = STATE_DIR / "certificazione-prodotto.json"
-ESITO = {"green": True, "red": False, "amber": False, "unknown": None}
 
 
 def _colore(testo, codice):
@@ -30,45 +30,21 @@ def _colore(testo, codice):
 
 
 def voci_da_verdetti(lista, verdetti) -> tuple[list[dict], int]:
-    """(voci del referto, numero di KPI info esclusi)."""
-    voci, info = [], 0
+    """(voci del referto, numero di KPI info esclusi). Il calcolo e' di
+    certificazione.voci_da_dizionari, lo stesso che usa il sigillo della torre."""
+    righe = []
     for chk in lista:
         v = verdetti.get(chk.id)
         if v is None:
             continue
-        if v.level == "info":
-            info += 1
-            continue
-        prova = v.evidence or {}
-        claims = prova.get("claims") if chk.id == "claim_registry" else None
-        if claims:
-            # Il registro si espande: un claim per riga, come li legge chi ripara.
-            for c in claims:
-                if c["esito"] == "ritirato":
-                    continue
-                voci.append({
-                    "area": "claim", "id": f"claim:{c['id']}", "nome": c["id"],
-                    "misura": c["misura"], "soglia": c["soglia"] if c["misura"] != "-" else "misurabile",
-                    "esito": c["esito"], "riparo": f"{c['testo']} — {c['dove']}",
-                    "nota": c.get("nota") or f"audit 01/10: {c['atteso']}",
-                })
-            continue
-        voci.append({
-            "area": chk.group, "id": chk.id, "nome": chk.label,
-            "misura": v.value if v.value is not None else "-",
-            "soglia": prova.get("soglia", "verde"),
-            "esito": ESITO[v.level],
-            "riparo": prova.get("riparo", ""),
-            "nota": (f"ambra: {v.headline}" if v.level == "amber" else v.headline),
-        })
-    return voci, info
+        righe.append({"id": chk.id, "nome": chk.label, "group": chk.group, "level": v.level,
+                      "value": v.value, "headline": v.headline, "evidence": v.evidence})
+    return voci_da_dizionari(righe)
 
 
 def stampa(voci: list[dict], info: int) -> None:
-    ok = sum(v["esito"] is True for v in voci)
-    ko = sum(v["esito"] is False for v in voci)
-    ig = sum(v["esito"] is None for v in voci)
-    voto = round(ok / len(voci) * 100) if voci else 0
+    c = conteggi(voci)
+    ok, ko, ig, voto = c["ok"], c["ko"], c["non_misurati"], c["voto"]
     col = "32" if voto >= 85 else ("33" if voto >= 65 else "31")
     print(_colore(f"\n  CERTIFICAZIONE PRODOTTO — {voto}/100", f"1;{col}"))
     print(_colore(f"  {ok} a posto · {ko} da sistemare · {ig} non misurati "
@@ -110,14 +86,13 @@ def main(argv: list[str] | None = None) -> int:
     voci, info = voci_da_verdetti(lista, run_checks(lista))
 
     if args.json:
-        ok = sum(v["esito"] is True for v in voci)
+        c = conteggi(voci)
         DEST_JSON.parent.mkdir(parents=True, exist_ok=True)
         DEST_JSON.write_text(json.dumps({
             "generato": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
-            "voto": round(ok / len(voci) * 100) if voci else 0, "ok": ok,
-            "ko": sum(v["esito"] is False for v in voci),
-            "non_misurati": sum(v["esito"] is None for v in voci),
-            "totale": len(voci), "info_esclusi": info, "voci": voci,
+            "voto": c["voto"], "ok": c["ok"], "ko": c["ko"],
+            "non_misurati": c["non_misurati"],
+            "totale": c["totale"], "info_esclusi": info, "voci": voci,
         }, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
         print(DEST_JSON)
     else:

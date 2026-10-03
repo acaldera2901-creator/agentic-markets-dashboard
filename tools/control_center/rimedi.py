@@ -28,7 +28,7 @@ import re
 import time
 from pathlib import Path
 
-from . import actions, sala
+from . import actions, certificazione, sala
 from .snapshot import STATE_DIR
 
 PROMPTS_DIR = STATE_DIR / "prompts"
@@ -131,16 +131,18 @@ def sigillo(corpo: dict, checks: dict) -> dict:
     dq = (p.get("done_quando") or "").strip().lower()
     scritto = bool(dq) and not dq.startswith("da decidere")
 
-    giudicati = [c for c in checks.values() if c.get("level") != "info"]
-    verdi = sum(1 for c in giudicati if c.get("level") == "green")
-    rossi = sum(1 for c in giudicati if c.get("level") in ("red", "amber"))
-    nm = sum(1 for c in giudicati if c.get("level") not in ("green", "red", "amber"))
-    # Niente «voto»: `lab certifica prodotto` ne calcola uno suo (espande il registro
-    # dei claim in 80 voci) e due numeri per la stessa cosa e' il difetto che il
-    # registro unico esiste per non avere. Qui solo i conteggi dei check della torre.
-    if giudicati:
-        controlli = {"ok": rossi == 0 and nm == 0,
-                     "dettaglio": f"{verdi} verdi su {len(giudicati)} · {rossi} da sistemare · {nm} non misurati"}
+    # Un solo voto: lo stesso calcolo di `lab certifica prodotto` (certificazione.py),
+    # che espande il registro dei claim in una voce per claim.
+    righe = [{"id": cid, "nome": c.get("label"), "group": c.get("group"), "level": c.get("level"),
+              "value": c.get("value"), "headline": c.get("headline"), "evidence": c.get("evidence")}
+             for cid, c in checks.items()]
+    voci, _info = certificazione.voci_da_dizionari(righe)
+    voto = None
+    if voci:
+        k = certificazione.conteggi(voci)
+        voto = k["voto"]
+        controlli = {"ok": k["ko"] == 0 and k["non_misurati"] == 0,
+                     "dettaglio": f"voto {voto}/100 · {k['ko']} da sistemare · {k['non_misurati']} non misurati su {k['totale']}"}
     else:
         controlli = {"ok": False, "dettaglio": "non misurato"}
 
@@ -158,7 +160,7 @@ def sigillo(corpo: dict, checks: dict) -> dict:
         {"id": "fresca", "titolo": "Misurato da meno di 7 giorni", "ok": bool(fresca),
          "dettaglio": f"ultima misura {corpo.get('eta_min', '?')} min fa"},
     ]
-    return {"certificato": all(c["ok"] for c in criteri),
+    return {"certificato": all(c["ok"] for c in criteri), "voto": voto,
             "criteri": criteri, "ok": sum(c["ok"] for c in criteri), "totale": len(criteri)}
 
 

@@ -120,6 +120,7 @@ ISTRUZIONI = (
     (Path.home() / 'Desktop' / '01-BETREDGE' / 'lab' / 'standard.md',
      '3-procedural/lab-standard.md'),
     (_SA / 'docs' / 'operating_standard.md',         '3-procedural/operating_standard.md'),
+    (Path.home() / 'Desktop' / '01-BETREDGE' / 'lab' / 'roster.md', '2-semantic/agenti/roster.md'),
     # `andrea_mindset.md` e `andrea_data.md` NON sono qui: il cervello li tiene
     # già in `2-semantic/andrea/`, ed è lì che vanno aggiornati.
 )
