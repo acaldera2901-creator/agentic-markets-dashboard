@@ -53,10 +53,31 @@ from pathlib import Path
 # un progetto aziendale da uno privato.
 FONTI = {
     'azienda': Path.home() / '.claude' / 'projects' / '-Users-calde' / 'memory',
-    'privato': Path.home() / '.claude-personal' / 'projects',
+    # Il profilo privato NON entra piu': dal 2026-10-03 il cervello e' quello
+    # aziendale che la torre mostra a tutti i dipendenti Maven (#CERVELLO-MAVEN-0310).
 }
 
-CERVELLO = Path.home() / 'Desktop' / '00-SISTEMA' / 'cervello'
+CERVELLO = Path.home() / 'Desktop' / '00-SISTEMA' / 'cervello-maven'
+
+# Il perimetro: `perimetro.txt` nella radice del cervello, un glob per riga
+# (relativo al cervello, `#` per i commenti). Cio' che combacia NON entra, anche
+# se la fonte lo contiene. Vive nel cervello e non nel codice perche' cresce
+# con i progetti Maven: aggiungere un progetto privato o fuori scopo a
+# questa lista non richiede una PR.
+PERIMETRO = CERVELLO / 'perimetro.txt'
+
+
+def _esclusioni() -> list[str]:
+    try:
+        righe = PERIMETRO.read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return []
+    return [r.strip() for r in righe if r.strip() and not r.lstrip().startswith('#')]
+
+
+def _fuori_perimetro(rel: str, esclusioni: list[str]) -> bool:
+    from fnmatch import fnmatchcase
+    return any(fnmatchcase(rel, g) for g in esclusioni)
 
 # Le altre memorie vive, e dove il cervello le teneva già. La mappatura non è
 # inventata: è stata **misurata** confrontando i nomi dei file (il diario del
@@ -77,28 +98,8 @@ _MB = Path.home() / 'Desktop' / 'obsidian-brain' / 'Maven-Brain'
 # ricorsione è comoda finché due mappature non si sovrappongono, e poi è un
 # difetto silenzioso.
 CARTELLE = (
-    (_SA / 'docs' / 'diario',      '1-episodic/diario',            True),
-    (_SA / 'agenti-output',        '1-episodic/agenti',            True),
     (_MB / '13_LEARNING',          '1-episodic/learning',          True),
     (_MB / '11_LLM_COUNCIL',       '1-episodic/council',           True),
-    (_MB / '01_CALENDAR',          '1-episodic/calendar',          True),
-    (_SA / 'docs' / 'progetti',    '2-semantic/progetti-sistema',  True),
-    # La **terza** copia delle memorie di ruolo, trovata il 07/09 guardando un
-    # `git status` che mostrava due file modificati che non avevo toccato:
-    # `agentic-markets/docs/*_memory.md`, file distinti dagli altri due posti,
-    # con **18 righe non committate dal 5 settembre**. Non c'era niente che le
-    # proteggesse. Entrano qui perche' il riversamento le committa: metterle al
-    # sicuro non richiede di decidere quale delle tre copie muore, e quella
-    # decisione e' di Andrea.
-    (Path.home() / 'Desktop' / 'agentic-markets' / 'docs',
-                                   '1-episodic/agenti/memory-repo',  False),
-    # Il sapere procedurale: lo standard, le definizioni degli agenti e le
-    # istruzioni permanenti. Perderle costerebbe più di perdere un progetto —
-    # sono il modo in cui si lavora, non una cosa su cui si lavora — e non
-    # erano sotto alcun backup versionato. Nessuna contiene credenziali:
-    # `~/.claude` **intero** resta fuori, e deve restarci.
-
-
     (Path.home() / '.claude-agents-shared',           '3-procedural/agenti', True),
 )
 
@@ -116,14 +117,11 @@ CARTELLE = (
 ISTRUZIONI = (
     (Path.home() / 'CLAUDE.md',                      '3-procedural/istruzioni/CLAUDE-comune.md'),
     (Path.home() / '.claude' / 'CLAUDE.md',          '3-procedural/istruzioni/CLAUDE-azienda.md'),
-    (Path.home() / '.claude-personal' / 'CLAUDE.md', '3-procedural/istruzioni/CLAUDE-privato.md'),
     (Path.home() / 'Desktop' / '01-BETREDGE' / 'lab' / 'standard.md',
      '3-procedural/lab-standard.md'),
     (_SA / 'docs' / 'operating_standard.md',         '3-procedural/operating_standard.md'),
     # `andrea_mindset.md` e `andrea_data.md` NON sono qui: il cervello li tiene
     # già in `2-semantic/andrea/`, ed è lì che vanno aggiornati.
-    (_SA / 'docs' / 'andrea_mindset.md',             '2-semantic/andrea/andrea_mindset.md'),
-    (_SA / 'docs' / 'andrea_data.md',                '2-semantic/andrea/andrea_data.md'),
 )
 
 # `Group_Chat-ORIGINALE-INTERO.md` è 2,8 MB e contiene la stessa cosa dei
@@ -179,6 +177,8 @@ def aggiorna(prova: bool = False) -> dict:
 
     stampo = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
     visti: dict[str, str] = {}
+    esclusioni = _esclusioni()
+    esito['esclusi'] = 0
 
     for scope, radice in FONTI.items():
         if not radice.is_dir():
@@ -186,6 +186,9 @@ def aggiorna(prova: bool = False) -> dict:
             continue
         for src in sorted(radice.rglob('*.md')):
             nome = src.name
+            if _fuori_perimetro(f'2-semantic/progetti/{nome}', esclusioni):
+                esito['esclusi'] += 1
+                continue
             try:
                 testo = _con_scope(src.read_text(encoding='utf-8'), scope)
             except (OSError, UnicodeDecodeError) as e:
@@ -240,6 +243,9 @@ def aggiorna(prova: bool = False) -> dict:
         if not src.is_file():
             esito['mancanti'].append(f'istruzioni: {src}')
             continue
+        if _fuori_perimetro(rel, esclusioni):
+            esito['esclusi'] += 1
+            continue
         dst = CERVELLO / rel
         testo = src.read_text(encoding='utf-8')
         if dst.exists():
@@ -273,6 +279,9 @@ def aggiorna(prova: bool = False) -> dict:
             # resta sotto `social/`. Appiattire farebbe collidere nomi che
             # nella sorgente non collidono.
             dst = dest / src.relative_to(radice)
+            if _fuori_perimetro(f'{rel}/{src.relative_to(radice)}', esclusioni):
+                esito['esclusi'] += 1
+                continue
             try:
                 testo = src.read_text(encoding='utf-8')
             except (OSError, UnicodeDecodeError) as e:
@@ -389,6 +398,7 @@ if __name__ == '__main__':
     print('  nuovi        %4d  %s' % (len(e['nuovi']), e['nuovi'][:5]))
     print('  aggiornati   %4d  %s' % (len(e['aggiornati']), e['aggiornati'][:5]))
     print('  invariati    %4d' % e['invariati'])
+    print('  esclusi      %4d  (perimetro.txt)' % e['esclusi'])
     print('  parcheggiati %4d  (in 4-archivio/superati/)' % len(e['parcheggiati']))
     if e['collisioni']:
         print('  ⚠️ COLLISIONI %d: %s' % (len(e['collisioni']), e['collisioni']))

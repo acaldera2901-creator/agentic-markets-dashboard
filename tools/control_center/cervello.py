@@ -1,6 +1,6 @@
 """Il grafo del cervello: nodi, archi, e una posizione che non balla.
 
-La fonte e' `~/Desktop/00-SISTEMA/cervello/`, letta e mai scritta. Un file `.md`
+La fonte e' `~/Desktop/00-SISTEMA/cervello-maven/`, letta e mai scritta. Un file `.md`
 e' un nodo, un wikilink e' un arco. Il risultato finisce in
 `~/.betredge-cc/cervello.json`, che la pagina legge e basta: il grafo non si
 calcola dentro la richiesta, come non ci si calcola nessun altro tile.
@@ -49,7 +49,7 @@ import numpy as np
 
 from .snapshot import STATE_DIR
 
-RADICE = Path.home() / "Desktop" / "00-SISTEMA" / "cervello"
+RADICE = Path.home() / "Desktop" / "00-SISTEMA" / "cervello-maven"
 USCITA = STATE_DIR / "cervello.json"
 CACHE = STATE_DIR / "cervello-cache.json"
 
