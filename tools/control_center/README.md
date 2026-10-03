@@ -281,7 +281,7 @@ funziona comunque.
 
 ## Il grafo del cervello (`/api/cervello`)
 
-La memoria unificata (`~/Desktop/00-SISTEMA/cervello/`, 995 file `.md`) letta
+La memoria unificata (`~/Desktop/00-SISTEMA/cervello-maven/` (perimetro aziendale, vedi `perimetro.txt`)) letta
 come grafo: un file e' un nodo, un wikilink e' un arco. `cervello.py` la
 cammina **dentro il giro del collector**, non dentro la richiesta — a freddo
 costa 2,9 s, e nessuna pagina puo' aspettare tre secondi. Il JSON finisce in
