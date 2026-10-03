@@ -45,7 +45,7 @@ def test_owner_normalizzato():
 def test_sigillo_non_certifica_senza_dati_ne_con_rossi():
     c = rimedi.arricchisci(_corpo(), {"checks": {"a": {"level": "green"}, "b": {"level": "red"}}})
     s = c["sigillo"]
-    assert s["certificato"] is False and "1 verdi su 2" in s["criteri"][1]["dettaglio"]
+    assert s["certificato"] is False and s["voto"] == 50 and "voto 50/100" in s["criteri"][1]["dettaglio"]
     assert [k["ok"] for k in s["criteri"]] == [False, False, False, True]
     vuoto = rimedi.arricchisci(_corpo(), {"checks": {}})["sigillo"]
     assert vuoto["criteri"][1]["dettaglio"] == "non misurato" and not vuoto["certificato"]
@@ -87,3 +87,31 @@ def test_i_check_del_pannello_salute_hanno_rimedio_e_si_trovano():
     lista, x = rimedi.trova(c, "check:launchd_agents")
     assert lista in ("da_osservare", "salute") and x["rimedio"]["riavvia"] == "launchd_agents"
     assert c["progetto"]["salute"]["checks"][0]["rid"] == "check:launchd_agents"
+
+
+def test_il_voto_della_torre_e_quello_del_comando(tmp_path):
+    """Un solo calcolo: gli stessi check dicono lo stesso voto da `lab certifica
+    prodotto` (voci_da_verdetti) e dal sigillo (voci_da_dizionari su /api/state)."""
+    from tools.control_center import certifica_prodotto as cp
+    from tools.control_center.contract import amber, green, red, unknown
+
+    class Chk:
+        def __init__(self, id, label, group):
+            self.id, self.label, self.group = id, label, group
+
+    claims = [{"id": "c1", "dove": "x", "testo": "t", "soglia": ">= 1", "atteso": "rotto",
+               "misura": 0.0, "esito": False},
+              {"id": "c2", "dove": "x", "testo": "t", "soglia": "-", "atteso": "ok",
+               "misura": "-", "esito": None},
+              {"id": "c3", "dove": "x", "testo": "t", "soglia": "-", "atteso": "ok",
+               "misura": 1, "esito": "ritirato"}]
+    lista = [Chk("web", "Pagine", "piattaforma"), Chk("claim_registry", "Claim", "claim"),
+             Chk("cron", "Cron", "daemon"), Chk("db", "DB", "piattaforma")]
+    verdetti = {"web": green("ok", "t", value=4), "cron": amber("fermo", "t"), "db": unknown("no dato", "t"),
+                "claim_registry": red("rotti", "t", evidence={"claims": claims, "soglia": "x"})}
+    voci_cmd, _ = cp.voci_da_verdetti(lista, verdetti)
+    stato = {cid: {"level": v.level, "value": v.value, "headline": v.headline,
+                   "evidence": v.evidence, "group": next(c.group for c in lista if c.id == cid)}
+             for cid, v in verdetti.items()}
+    corpo = rimedi.arricchisci(_corpo(), {"checks": stato})
+    assert corpo["sigillo"]["voto"] == cp.conteggi(voci_cmd)["voto"]

@@ -1581,7 +1581,7 @@ function disegnaSigillo(d){
   const b=$("sigillo"), s=d.sigillo;
   if(!s||d.assente||!d.progetto){ b.hidden=true; return; }
   b.hidden=false; b.className="sigillo"+(s.certificato?" ok":"");
-  b.replaceChildren(s.certificato?"Certificato":"Non certificato", el("small","",`${s.ok}/${s.totale} criteri`));
+  b.replaceChildren(s.certificato?"Certificato":"Non certificato", el("small","",`${s.ok}/${s.totale} criteri`+(s.voto!=null?` · voto prodotto ${s.voto}/100`:"")));
   b.onclick=()=>{ vaiTab("pan"); $("certificazione").scrollIntoView({behavior:"smooth",block:"center"}); };
 }
 
