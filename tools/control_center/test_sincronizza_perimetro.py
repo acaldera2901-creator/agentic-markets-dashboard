@@ -12,3 +12,10 @@ def test_perimetro_esclude_per_glob():
 def test_il_profilo_privato_non_e_una_fonte():
     assert set(S.FONTI) == {"azienda"}
     assert S.CERVELLO.name == "cervello-maven"
+
+
+def test_la_torre_non_elenca_card_private_o_di_sistema():
+    from tools.control_center import progetti
+    assert {k for k, *_ in progetti.REGISTRI} == {"azienda"}
+    for s in progetti.elenco()["schede"]:
+        assert s["id"].startswith("azienda/")

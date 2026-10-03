@@ -24,16 +24,16 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from . import sincronizza
 from .markdown_min import rendi
 
 # (chiave, etichetta, cartella, prefisso richiesto del nome file)
 REGISTRI = (
     ("azienda", "Azienda",
      Path.home() / ".claude" / "projects" / "-Users-calde" / "memory", "project_"),
-    ("privato", "Privato",
-     Path.home() / ".claude-personal" / "projects" / "-Users-calde" / "memory", "project_"),
-    ("sistema", "Sistema",
-     Path.home() / "Desktop" / "00-SISTEMA" / "sistema-andrea" / "docs" / "progetti", ""),
+    # Privato e Sistema (sistema-andrea) tolti il 2026-10-03: la torre e' visibile
+    # a tutti i dipendenti Maven, le card private non devono comparire
+    # (#CERVELLO-MAVEN-0310). Il perimetro e' lo stesso del cervello.
 )
 
 FASI = ("ATTIVO", "BLOCCATO", "OPERATIVO", "ARCHIVIATO")
@@ -224,11 +224,14 @@ def _scheda(percorso: Path, registro: str, etichetta: str, testo: str) -> dict:
 
 def _percorsi() -> list[tuple[str, str, Path]]:
     fuori: list[tuple[str, str, Path]] = []
+    esclusioni = sincronizza._esclusioni()
     for chiave, etichetta, cartella, prefisso in REGISTRI:
         if not cartella.is_dir():
             continue
         for f in sorted(cartella.glob("*.md")):
             if prefisso and not f.name.startswith(prefisso):
+                continue
+            if sincronizza._fuori_perimetro(f"2-semantic/progetti/{f.name}", esclusioni):
                 continue
             fuori.append((chiave, etichetta, f))
     return fuori
