@@ -556,6 +556,70 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .cert-nota{padding:0 18px 14px;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
 .progetto[data-tab="todo"] .colonne,.progetto[data-tab="sal"] .colonne{grid-template-columns:minmax(0,1fr)}
 
+/* ─── il lettore della card, dentro la torre nuova (sola lettura: il file resta la fonte) ─── */
+#cassetto{position:fixed;z-index:70;right:0;top:0;bottom:0;
+  width:min(820px,100vw);overflow:auto;background:rgba(7,12,24,.985);border:1px solid var(--line-3);
+  padding:0 0 40px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+#cassetto .capo{position:sticky;top:0;z-index:2;background:var(--panel);border-bottom:1px solid var(--line-2);
+  padding:16px 28px 14px;display:flex;align-items:flex-start;gap:18px}
+#cassetto .capo h3{margin:4px 0 0;font-size:22px;font-weight:600;line-height:1.2;color:var(--ink)}
+#cassetto .capo .occhiello{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--cy)}
+#cassetto .capo .via{margin:8px 0 0;font-family:var(--mono);font-size:11px;color:var(--dim);overflow-wrap:anywhere}
+#cassetto .chiudi{margin-left:auto;flex:none;background:none;border:1px solid var(--line-2);color:var(--mid);
+  font-family:var(--mono);font-size:11px;padding:4px 9px}
+#cassetto .chiudi:hover{color:var(--ink);border-color:var(--cy)}
+/* Chi ci sta lavorando adesso: non è un campo della card, è la Sala
+   incrociata al volo. Perciò dice sempre *perché* ha agganciato. */
+#cassetto .agenti{margin:0;padding:12px 28px;border-bottom:1px solid var(--line);background:var(--inset);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#cassetto .agenti .eti{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+#cassetto .agenti .ag{display:flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--panel);
+  padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--ink)}
+#cassetto .agenti .ag small{color:var(--dim)}
+#cassetto .md{padding:6px 28px;font-size:14px;line-height:1.65;color:var(--ink)}
+#cassetto .md h1{font-size:24px;margin:26px 0 10px;font-weight:600}
+#cassetto .md h2{font-size:17px;margin:30px 0 8px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--cy-2);border-bottom:1px solid var(--line);padding-bottom:6px}
+#cassetto .md h3{font-size:15px;margin:20px 0 6px;font-weight:600;color:var(--ink)}
+#cassetto .md h4,#cassetto .md h5,#cassetto .md h6{font-size:13px;margin:16px 0 4px;color:var(--mid)}
+#cassetto .md p{margin:9px 0}
+#cassetto .md ul,#cassetto .md ol{margin:9px 0;padding-left:22px}
+#cassetto .md li{margin:4px 0}
+/* La spunta sta nel flusso del testo, non in una griglia: un `<strong>` a
+   metà riga sarebbe una cella a sé e incolonnerebbe le parole. E si chiama
+   `spunta` perché `.task` nella torre è già la scheda del settore "Da fare". */
+#cassetto .md li.spunta{list-style:none;margin-left:-22px;padding-left:24px;text-indent:-24px;
+  /* `.spunta` e' anche il bottone-checkbox dei task: qui si azzera */
+  width:auto;height:auto;border:0;background:none;display:list-item;place-items:normal;cursor:auto;font:inherit;color:var(--ink);margin-top:4px;transition:none}
+#cassetto .md li.spunta.fatta{color:var(--dim)}
+#cassetto .md li.spunta::after{content:none}
+#cassetto .md li.spunta .segno{display:inline-block;width:18px;text-indent:0;color:var(--amber);font-size:13px}
+#cassetto .md li.spunta.fatta{color:var(--dim)}
+#cassetto .md li.spunta.fatta .segno{color:var(--green)}
+#cassetto .md a{color:var(--cy-2)}
+#cassetto .md del{color:var(--dim)}
+#cassetto .md code{font-family:var(--mono);font-size:12px;background:var(--inset);border:1px solid var(--line);
+  padding:0 4px;color:var(--cy-2)}
+#cassetto .md pre{background:var(--inset);border:1px solid var(--line);padding:12px 14px;overflow:auto;margin:12px 0}
+#cassetto .md pre code{border:0;background:none;padding:0;color:var(--mid)}
+#cassetto .md hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+#cassetto .md .wiki{font-family:var(--mono);font-size:12px;color:var(--violet)}
+#cassetto .md blockquote.stato{margin:16px 0;padding:14px 18px;background:var(--panel);
+  border:1px solid var(--line-2);border-left:3px solid var(--cy)}
+#cassetto .md blockquote.stato p{margin:6px 0;font-size:13px;line-height:1.6}
+#cassetto .md .tabella{overflow:auto;margin:14px 0;border:1px solid var(--line)}
+#cassetto .md table{border-collapse:collapse;width:100%;font-size:12.5px}
+#cassetto .md th,#cassetto .md td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+#cassetto .md th{background:var(--panel-2);font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--mid);font-weight:600;white-space:nowrap}
+#cassetto .md td{color:var(--ink)}
+#cassetto .md tbody tr:nth-child(even) td{background:rgba(13,23,40,.5)}
+
+
+#cassetto .led{display:inline-block;width:8px;height:8px;background:var(--dim)}#cassetto .led.green{background:var(--green)}
+.velo{position:fixed;inset:0;z-index:69;background:rgba(4,7,14,.6)}
+
 /* ─── le pieghe: in carico / da osservare, archivio ─── */
 .piega{border:1px solid var(--line);background:var(--panel)}
 .piega summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 18px;
@@ -755,6 +819,9 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
     <div class="corpo uno" id="archivio-corpo"></div>
   </details>
 </main>
+
+<div class="velo" id="velo" hidden></div>
+<aside id="cassetto" hidden role="dialog" aria-modal="true" aria-label="Card del progetto" tabindex="-1"></aside>
 
 <!-- ═══ il dock degli agenti: i quattro di ogni giorno, e l'elenco completo ═══ -->
 <nav class="dock" id="dock" aria-label="Agenti: apri un terminale">
@@ -1274,7 +1341,7 @@ function rigaTask(t, d, card, checks, opz={}){
   const sm=el("small");
   if(t.owner) sm.append(el("span","",t.owner));
   for(const c of t.checks||t.check||[]){ const s=el("span"); s.append(el("i","led "+((checks[c]||{}).level||"sconosciuto")), " check:"+c); s.title=(checks[c]||{}).headline||"check assente dallo snapshot"; sm.append(s); }
-  if(opz.cardNome&&card){ const a=el("a","",opz.cardNome+" ↗"); a.href=`/canvas#scheda=${encodeURIComponent(card)}`; a.title=card; sm.append(a); }
+  if(opz.cardNome&&card){ const a=linkCard(el("a","",opz.cardNome+" ↗"),card); a.title=card; sm.append(a); }
   if(sm.childNodes.length) tx.append(sm);
   r.append(tx, el("span","st "+st.cls, st.testo));
   return r;
@@ -1292,7 +1359,7 @@ function dettaglio(p, d){
   if(p.prossima_azione){ const s=el("span"); s.append(el("b","","prossima azione (STATO): "), inlineMd(p.prossima_azione)); f.append(s); }
   const t1=el("span"); t1.append(el("b","","ultimo tocco: "), p.ultimo_tocco?fmtData(p.ultimo_tocco)+(p.giorni_fermo!=null?` (${p.giorni_fermo} g)`:""):"—"); f.append(t1);
   const t2=el("span"); t2.append(el("b","","verifica: "), p.ultima_verifica?fmtData(p.ultima_verifica):"mai dichiarata"); f.append(t2);
-  const a=el("a","btn quieto piccolo","apri la card ↗"); a.href=`/canvas#scheda=${encodeURIComponent(p.id)}`; f.append(a);
+  const a=linkCard(el("a","btn quieto piccolo","apri la card ↗"),p.id); f.append(a);
   box.append(f);
   return box;
 }
@@ -1368,6 +1435,40 @@ function disegnaTask(d){
 }
 /* In coda per te: azioni di Andrea senza scadenza ne' check. Non e' un
    allarme (non entra nel verdetto): e' la sua lista, con la card da cui viene. */
+/* ═══════════════════════════════ il lettore della card ═══════════════════════════════ */
+/* «card ↗» non esce piu' dalla torre: apre qui la card intera, resa dal server
+   (/api/progetto). Sola lettura. */
+function chiudiCard(){
+  const a=$("cassetto"); a.hidden=true; a.textContent=""; $("velo").hidden=true;
+  if(DAIL_FOCUS&&DAIL_FOCUS.focus) DAIL_FOCUS.focus({preventScroll:true}); DAIL_FOCUS=null;
+}
+let DAIL_FOCUS=null;
+async function apriCard(id){
+  DAIL_FOCUS=document.activeElement;
+  const a=$("cassetto"); a.hidden=false; $("velo").hidden=false; a.textContent="";
+  const testa=(occhiello,titolo,via)=>{
+    const capo=el("div","capo"), col=el("div");
+    col.append(el("p","occhiello",occhiello), el("h3","",titolo)); if(via) col.append(el("p","via",via));
+    const x=el("button","chiudi","Esc chiudi"); x.type="button"; x.addEventListener("click",chiudiCard);
+    capo.append(col,x); return capo;
+  };
+  a.append(testa("card · in caricamento",id)); a.scrollTop=0; a.focus();
+  const d=await json("/api/progetto?id="+encodeURIComponent(id),null);
+  a.textContent="";
+  if(!d){ a.append(testa("card","Card non trovata","Nessuna card con id "+id+" nel registro aziendale.")); return; }
+  a.append(testa(`${d.registro_nome} · ${d.fase||"senza blocco STATO"}`+(d.stato_data?" · "+d.stato_data:""),d.titolo,
+    d.file+"  ·  ultima scrittura "+etaS((Date.now()/1000-d.modificato))+" fa"));
+  if((d.agenti||[]).length){
+    const b=el("div","agenti"); b.append(el("span","eti","ci lavorano adesso"));
+    d.agenti.forEach(ag=>{ const c=el("div","ag"); c.append(el("i","led "+(ag.stato==="busy"?"green":"")), el("span","",ag.nome||ag.agente||"—")); b.append(c); });
+    a.append(b);
+  }
+  const md=el("div","md");
+  /* L'HTML arriva dal renderer del server, che escapa il file prima di ogni altra cosa. */
+  md.innerHTML=d.html; a.append(md); a.scrollTop=0;
+}
+function linkCard(a,id){ a.href="#card="+encodeURIComponent(id); a.addEventListener("click",e=>{ e.preventDefault(); apriCard(id); }); return a; }
+
 /* ═══════════════════════════════ scheda progetto: schede, Da fare, rimedi ═══════════════════════════════ */
 const PERSONE=["Andrea","Michele","Tommy","Claude","Collaboratrice"];
 let TAB="pan", CHI="Tutti";
@@ -1437,7 +1538,7 @@ function rigaDaFare(x){
     });
     az.append(b);
   }
-  if(x.card){ const a=el("a","btn quieto","card ↗"); a.href=`/canvas#scheda=${encodeURIComponent(x.card)}`; az.append(a); }
+  if(x.card){ const a=linkCard(el("a","btn quieto","card ↗"),x.card); az.append(a); }
   art.append(az);
   art.append(pulsantiRimedio(x.rim,x.rid,art,false));
   return art;
@@ -1667,7 +1768,7 @@ function disegnaPieghe(d){
   if(!ar.elenco||!ar.elenco.length) b3.append(el("div","nulla","Nessuna card ferma: tutte quelle dell'area sono in principale."));
   for(const x of ar.elenco||[]){
     const r=rigaPiega(x.fase||"—", x.nome||x.titolo, x.id, x.motivo||"");
-    const link=el("a","","apri ↗"); link.href=`/canvas#scheda=${encodeURIComponent(x.id)}`; link.style.marginLeft="10px"; link.style.fontSize="11px";
+    const link=linkCard(el("a","","apri ↗"),x.id); link.style.marginLeft="10px"; link.style.fontSize="11px";
     r.querySelector(".p1").append(link);
     b3.append(r);
   }
@@ -1772,6 +1873,7 @@ function instrada(){ const h=daHash(); if(h.vista!==VISTA||h.area!==AREA) mostra
 addEventListener("hashchange",instrada);
 $("torna").addEventListener("click",e=>{ e.preventDefault(); location.hash=""; });
 $("marchio").addEventListener("click",e=>{ e.preventDefault(); if(VISTA!=="hub") location.hash=""; else caricaHub(); });
+$("velo").addEventListener("click",chiudiCard);
 $("minimappa").addEventListener("click",()=>{ location.hash=""; });
 
 /* ═══════════════════════════════ tasti, orologio, piede ═══════════════════════════════ */
@@ -1792,7 +1894,7 @@ document.addEventListener("keydown",e=>{
   if(e.metaKey||e.ctrlKey||e.altKey) return;
   const t=e.target; if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA")) return;
   const k=e.key.toLowerCase();
-  if(k==="escape"){ if(document.querySelector(".conferma")) return; if(!$("agenti").hidden){ chiudiAgenti(); return; }
+  if(k==="escape"){ if(document.querySelector(".conferma")) return; if(!$("cassetto").hidden){ e.preventDefault(); chiudiCard(); return; } if(!$("agenti").hidden){ chiudiAgenti(); return; }
     if(VISTA==="progetto"){ e.preventDefault(); location.hash=""; } else if(cervSel) selezionaNodo(null); else ricentra(); return; }
   if(k==="r"){ e.preventDefault(); VISTA==="hub"?caricaHub():caricaDettaglio(); caricaCervello(); return; }
   if(k==="c"){ e.preventDefault(); location.href="/canvas"; return; }
