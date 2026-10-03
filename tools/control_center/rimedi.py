@@ -186,6 +186,36 @@ def trova(corpo: dict, rid: str) -> tuple[str, dict] | None:
     return None
 
 
+def _da_check(cid: str, stato: dict) -> tuple[str, dict] | None:
+    """Un check qualunque, anche verde o gia' preso in carico: dalla pagina Sistema
+    si parla con l'agente su un daemon, e il suo rid `check:<id>` deve valere sempre."""
+    c = ((stato or {}).get("checks") or {}).get(cid)
+    if c is None:
+        return None
+    x = {"check": cid, "level": c.get("level"), "headline": c.get("headline"),
+         "titolo": f"{cid}: {c.get('headline')}", "rid": "check:" + cid,
+         "evidenza": [{"check": cid, "level": c.get("level"), "headline": c.get("headline")}],
+         "rimedio": _rimedio(agente_per(f"{cid} {c.get('headline')}"),
+                             cid if cid in actions.RESTARTABLE else None)}
+    return "check", x
+
+
+def dafare_globale(stato: dict, cockpit_fn, aree_fn) -> dict:
+    """Tutte le azioni di tutti i progetti, per la pagina «Da fare».
+
+    Un corpo cockpit arricchito per area (stesse righe, stessi `rid`, stessi
+    rimedi della scheda del progetto): la pagina li unisce e filtra per progetto
+    e per persona. Nessuna seconda regola di priorita' o di owner."""
+    out = []
+    for area in aree_fn():
+        c = arricchisci(cockpit_fn(area, stato), stato)
+        if c.get("assente"):
+            continue
+        p = c.get("progetto") or {}
+        out.append({"area": area, "nome": p.get("nome") or area, "corpo": c})
+    return {"progetti": out}
+
+
 def prompt_per(corpo: dict, lista: str, x: dict) -> str:
     """Il prompt con cui parte l'agente. Solo dati del server."""
     prog = (corpo.get("progetto") or {}).get("nome") or corpo.get("area", "")
@@ -229,6 +259,8 @@ def apri(area: str, rid: str, stato: dict, cockpit_fn) -> dict:
     if corpo.get("assente"):
         return {"ok": False, "errore": "area sconosciuta"}
     trovato = trova(corpo, rid)
+    if trovato is None and rid.startswith("check:"):
+        trovato = _da_check(rid[6:], stato)
     if trovato is None:
         return {"ok": False, "errore": "riga non trovata (e' cambiata nel frattempo?)"}
     lista, x = trovato

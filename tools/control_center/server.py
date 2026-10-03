@@ -292,6 +292,14 @@ class Handler(BaseHTTPRequestHandler):
             # `{"assente": true, "aree": [...], "messaggio"}`, non un cockpit vuoto.
             self._send(404 if corpo.get("assente") else 200, json.dumps(corpo, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
+        elif path == "/api/dafare":
+            # Tutte le azioni di tutti i progetti: stesse righe della scheda, con
+            # `area` dentro ogni progetto per poter agire (rimedi.dafare_globale).
+            stato = read_state(STATE_FILE)
+            corpo = rimedi.dafare_globale(stato, cockpit.cockpit,
+                                          lambda: cockpit.aree(cockpit._card_dal_disco()))
+            self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
         elif path == "/api/hub":
             # I progetti di primo livello (card `Tipo: progetto`) e il
             # verdetto di tutte le aree. Nessun parametro: niente da validare.

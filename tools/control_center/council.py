@@ -39,6 +39,11 @@ GATE = "ch_deploy_gate"
 # non tocca il Council, non parla per Andrea, e ogni voce porta il perche'.
 ARCHIVIO = Path.home() / ".betredge-cc/council-archiviate.json"
 
+# Canali del perimetro BetRedge: la torre e' aziendale e mostra solo questi
+# (decisione di Andrea, 2026-10-03). Gli altri canali del Council (swr7, lumio,
+# demo, internal_maven...) esistono, ma non sono di questo prodotto.
+CANALI_BETREDGE = frozenset({"ch_council_main", "ch_deploy_gate", "ch_gambling"})
+
 _SLUG = re.compile(r"^ch_(.+)$")
 _MSGID = re.compile(r"^msg_[A-Za-z0-9_]{4,64}$")
 
@@ -175,7 +180,7 @@ def _calcola_stato() -> dict:
         msgs = messaggi()
     except CouncilNonRaggiungibile as exc:
         return {"raggiungibile": False, "errore": str(exc)[:200]}
-    ap = aperte(msgs, solo_nostre=True)
+    ap = [x for x in aperte(msgs, solo_nostre=True) if x.get("canale") in CANALI_BETREDGE]
     arch = archiviate()
     return {
         "raggiungibile": True,
