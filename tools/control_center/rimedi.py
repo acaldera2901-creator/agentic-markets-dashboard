@@ -111,6 +111,13 @@ def arricchisci(corpo: dict, stato: dict | None = None) -> dict:
         x["priorita"] = {"red": "P0", "amber": "P1"}.get(x.get("level"), "P2")
         x["rimedio"] = _rimedio(agente_per(f"{cid} {x.get('headline')}"),
                                 cid if cid in actions.RESTARTABLE else None)
+    # I check collegati ai goal e ai task (pannello Salute): stesso rimedio, stesso `rid`.
+    for c in ((corpo.get("progetto") or {}).get("salute") or {}).get("checks", []):
+        cid = c.get("check", "")
+        c["rid"] = "check:" + cid
+        c["headline"] = c.get("headline")
+        c["rimedio"] = _rimedio(agente_per(f"{cid} {c.get('headline')}"),
+                                cid if cid in actions.RESTARTABLE else None)
     corpo["sigillo"] = sigillo(corpo, checks)
     return corpo
 
@@ -128,10 +135,12 @@ def sigillo(corpo: dict, checks: dict) -> dict:
     verdi = sum(1 for c in giudicati if c.get("level") == "green")
     rossi = sum(1 for c in giudicati if c.get("level") in ("red", "amber"))
     nm = sum(1 for c in giudicati if c.get("level") not in ("green", "red", "amber"))
-    voto = round(100 * verdi / len(giudicati)) if giudicati else None
+    # Niente «voto»: `lab certifica prodotto` ne calcola uno suo (espande il registro
+    # dei claim in 80 voci) e due numeri per la stessa cosa e' il difetto che il
+    # registro unico esiste per non avere. Qui solo i conteggi dei check della torre.
     if giudicati:
         controlli = {"ok": rossi == 0 and nm == 0,
-                     "dettaglio": f"voto {voto}/100 · {rossi} da sistemare · {nm} non misurati"}
+                     "dettaglio": f"{verdi} verdi su {len(giudicati)} · {rossi} da sistemare · {nm} non misurati"}
     else:
         controlli = {"ok": False, "dettaglio": "non misurato"}
 
@@ -149,7 +158,7 @@ def sigillo(corpo: dict, checks: dict) -> dict:
         {"id": "fresca", "titolo": "Misurato da meno di 7 giorni", "ok": bool(fresca),
          "dettaglio": f"ultima misura {corpo.get('eta_min', '?')} min fa"},
     ]
-    return {"certificato": all(c["ok"] for c in criteri), "voto": voto,
+    return {"certificato": all(c["ok"] for c in criteri),
             "criteri": criteri, "ok": sum(c["ok"] for c in criteri), "totale": len(criteri)}
 
 
@@ -158,6 +167,9 @@ def trova(corpo: dict, rid: str) -> tuple[str, dict] | None:
         for x in corpo.get(lista, []):
             if x.get("rid") == rid:
                 return lista, x
+    for x in ((corpo.get("progetto") or {}).get("salute") or {}).get("checks", []):
+        if x.get("rid") == rid:
+            return "salute", x
     return None
 
 

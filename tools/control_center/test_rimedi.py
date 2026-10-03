@@ -45,7 +45,7 @@ def test_owner_normalizzato():
 def test_sigillo_non_certifica_senza_dati_ne_con_rossi():
     c = rimedi.arricchisci(_corpo(), {"checks": {"a": {"level": "green"}, "b": {"level": "red"}}})
     s = c["sigillo"]
-    assert s["certificato"] is False and s["voto"] == 50
+    assert s["certificato"] is False and "1 verdi su 2" in s["criteri"][1]["dettaglio"]
     assert [k["ok"] for k in s["criteri"]] == [False, False, False, True]
     vuoto = rimedi.arricchisci(_corpo(), {"checks": {}})["sigillo"]
     assert vuoto["criteri"][1]["dettaglio"] == "non misurato" and not vuoto["certificato"]
@@ -78,3 +78,12 @@ def test_apri_scrive_il_prompt_in_un_file_e_non_nella_riga_di_comando(tmp_path, 
     assert e["ok"] and list(tmp_path.glob("*.md"))
     assert "cat '" in visti[0][2] and "launchd_watchdog" not in visti[0][2]
     assert rimedi.apri("betredge", "t-inesistente", {}, lambda a, s: _corpo())["ok"] is False
+
+
+def test_i_check_del_pannello_salute_hanno_rimedio_e_si_trovano():
+    c = _corpo()
+    c["progetto"]["salute"] = {"checks": [{"check": "launchd_agents", "level": "red", "headline": "morto"}]}
+    c = rimedi.arricchisci(c, {"checks": {}})
+    lista, x = rimedi.trova(c, "check:launchd_agents")
+    assert lista in ("da_osservare", "salute") and x["rimedio"]["riavvia"] == "launchd_agents"
+    assert c["progetto"]["salute"]["checks"][0]["rid"] == "check:launchd_agents"

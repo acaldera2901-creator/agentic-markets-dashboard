@@ -512,10 +512,49 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 .non-trovato code{font-family:var(--mono);font-size:11.5px;color:var(--cy-2);background:var(--inset);border:1px solid var(--line);padding:0 4px}
 .non-trovato .btn{align-self:flex-start;margin-top:6px}
 .progetto[data-stato="non-trovato"] #goal,.progetto[data-stato="non-trovato"] #workstream,.progetto[data-stato="non-trovato"] #tasks,
-.progetto[data-stato="non-trovato"] #richiedono,.progetto[data-stato="non-trovato"] #incoda,.progetto[data-stato="non-trovato"] #salute,
+.progetto[data-stato="non-trovato"] #dafare,.progetto[data-stato="non-trovato"] #certificazione,.progetto[data-stato="non-trovato"] #fatto,.progetto[data-stato="non-trovato"] #schede,.progetto[data-stato="non-trovato"] #salute,
 .progetto[data-stato="non-trovato"] #osserva,.progetto[data-stato="non-trovato"] #archivio{display:none}
 .progetto[data-stato="non-trovato"] .colonne{grid-template-columns:minmax(0,1fr) 440px}
 .progetto:not([data-stato="non-trovato"]) #non-trovato{display:none}
+
+/* ─── scheda progetto: sigillo, schede, "Da fare" per persona, rimedi ─── */
+.sigillo{display:flex;align-items:center;gap:10px;border:1px solid var(--red);color:var(--red);padding:7px 12px;
+  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:rgba(240,82,91,.08)}
+.sigillo small{font-weight:400;letter-spacing:0;text-transform:none;color:var(--mid);font-size:11.5px}
+.sigillo.ok{border-color:var(--green);color:var(--green);background:rgba(40,199,111,.08)}
+.schede{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.schede button{padding:10px 14px;font-weight:600;font-size:13px;letter-spacing:.04em;color:var(--mid);border-bottom:2px solid transparent;display:flex;gap:8px;align-items:center}
+.schede button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--cy)}
+.schede button .n{font-family:var(--mono);font-size:11px;font-weight:500;padding:0 6px;border:1px solid var(--line-2);color:var(--mid)}
+.schede button .n.r{border-color:var(--red);color:var(--red)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 18px 12px}
+.chips button{font-family:var(--mono);font-size:12px;font-weight:500;border:1px solid var(--line-2);padding:4px 10px;color:var(--mid)}
+.chips button[aria-pressed="true"]{color:var(--ink);border-color:var(--cy);background:rgba(56,189,248,.1)}
+.chips button.zero{opacity:.55}
+.df-list{display:flex;flex-direction:column;gap:10px;padding:0 14px 14px}
+.df{border:1px solid var(--line);background:var(--inset);border-left:3px solid var(--line-2);padding:12px 14px;display:grid;gap:8px;position:relative}
+.df.P0{border-left-color:var(--red)}.df.P1{border-left-color:var(--amber)}
+.df .meta{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.df .pr{font-weight:600;font-size:10.5px;letter-spacing:.1em;padding:1px 7px;border:1px solid var(--line-2);color:var(--mid)}
+.df.P0 .pr{color:var(--red);border-color:var(--red)}.df.P1 .pr{color:var(--amber);border-color:var(--amber)}
+.df .own{border:1px solid var(--line-2);color:var(--ink);padding:1px 7px}
+.df .senza{color:var(--amber)}
+.df h3{margin:0;font-size:15px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.df .perche{font-size:13px;color:var(--mid);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.df .az,.rim{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn.agente{border-color:var(--cy);color:var(--cy-2)}
+.rim{grid-column:1/-1;padding-top:4px}
+.c .rim{padding-top:6px}
+.df-fatto{display:flex;flex-direction:column;padding:0 18px 14px}
+.df-fatto div{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;color:var(--mid)}
+.df-fatto div:first-child{border-top:0}
+.df-fatto .quando{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.cert{list-style:none;margin:0;padding:0 18px 14px;display:grid;gap:10px}
+.cert li{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:13.5px}
+.cert small{display:block;font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:2px}
+.cert .si{color:var(--green);font-family:var(--mono);font-weight:700}.cert .no{color:var(--red);font-family:var(--mono);font-weight:700}
+.cert-nota{padding:0 18px 14px;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.progetto[data-tab="todo"] .colonne,.progetto[data-tab="sal"] .colonne{grid-template-columns:minmax(0,1fr)}
 
 /* ─── le pieghe: in carico / da osservare, archivio ─── */
 .piega{border:1px solid var(--line);background:var(--panel)}
@@ -652,15 +691,27 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   <section class="testata ang">
     <a class="torna" href="#" id="torna" title="Esc — torna al cervello">← Cervello</a>
     <h1 id="p-nome">—</h1>
+    <button class="sigillo" id="sigillo" type="button" hidden></button>
     <div class="avanz" id="p-avanz"></div>
     <p class="riga2" id="p-riga2"></p>
   </section>
 
-  <section class="goal-griglia" id="goal" aria-label="Goal del progetto"></section>
+  <nav class="schede" id="schede" role="tablist" aria-label="Viste del progetto"></nav>
+
+  <section class="goal-griglia" id="goal" data-v="ob" aria-label="Goal del progetto"></section>
 
   <div class="colonne">
     <div class="dx sx-col">
-    <section class="pannello ang griglia-p" id="workstream" aria-labelledby="h-workstream">
+    <section class="pannello ang" id="dafare" data-v="pan todo" aria-labelledby="h-dafare">
+      <h2 id="h-dafare">Da fare <span class="conta" id="dafare-n">0</span><span class="fine" id="dafare-nota">ordinate per priorità</span></h2>
+      <div class="chips" id="dafare-chips" role="group" aria-label="Filtra per persona"></div>
+      <div class="df-list" id="dafare-list"></div>
+    </section>
+    <section class="pannello ang" id="fatto" data-v="pan" aria-labelledby="h-fatto">
+      <h2 id="h-fatto">Fatto di recente <span class="fine">task chiusi nelle card, con la data</span></h2>
+      <div class="df-fatto" id="fatto-list"></div>
+    </section>
+    <section class="pannello ang griglia-p" id="workstream" data-v="ws" aria-labelledby="h-workstream">
       <h2 id="h-workstream">Workstream <small id="workstream-n"></small><span class="fine" id="workstream-nota"></span></h2>
       <div class="intesta" aria-hidden="true">
         <span>Nome</span><span>Fase</span><span>Task</span><span>Prossimo task</span><span></span>
@@ -668,7 +719,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
       <div class="righe" id="righe"></div>
     </section>
     <!-- tutti i task del progetto, piatti: e' il numero «N/M task» della testata, riga per riga -->
-    <section class="pannello ang" id="tasks" aria-labelledby="h-tasks">
+    <section class="pannello ang" id="tasks" data-v="ws" aria-labelledby="h-tasks">
       <h2 id="h-tasks">Task <span class="conta" id="tasks-n"></span><span class="fine" id="tasks-nota"></span></h2>
       <div class="tk-list" id="tk-list"></div>
     </section>
@@ -676,15 +727,11 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
     </div>
 
     <div class="dx">
-      <section class="pannello ang" id="richiedono" aria-labelledby="h-richiedono">
-        <h2 id="h-richiedono">Richiedono te <span class="conta" id="richiedono-n">0</span></h2>
-        <div id="ticket"></div>
+      <section class="pannello ang" id="certificazione" data-v="pan" aria-labelledby="h-cert">
+        <h2 id="h-cert">Certificazione <span class="conta" id="cert-n"></span></h2>
+        <div id="cert-corpo"></div>
       </section>
-      <section class="pannello ang incoda" id="incoda" aria-labelledby="h-incoda">
-        <h2 id="h-incoda">In coda per te <span class="conta" id="incoda-n">0</span><span class="fine" title="azioni tue senza scadenza ne' check: non entrano nel verdetto">non conta nel verdetto</span></h2>
-        <div id="incoda-list"></div>
-      </section>
-      <section class="pannello ang" id="salute" aria-labelledby="h-salute">
+      <section class="pannello ang" id="salute" data-v="pan sal" aria-labelledby="h-salute">
         <h2 id="h-salute">Salute check <small id="salute-n"></small></h2>
         <div class="check-list" id="check-list"></div>
         <span class="scorri" id="salute-scorri" aria-hidden="true"></span>
@@ -696,13 +743,13 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
     </div>
   </div>
 
-  <details class="piega" id="osserva">
+  <details class="piega" id="osserva" data-v="sal">
     <summary><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 1.5l5 5 5-5"/></svg></span>
       In carico / da osservare <small id="osserva-n">—</small></summary>
     <div class="corpo" id="osserva-corpo"></div>
   </details>
 
-  <details class="piega" id="archivio">
+  <details class="piega" id="archivio" data-v="arc">
     <summary><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 1.5l5 5 5-5"/></svg></span>
       Archivio <small id="archivio-n">—</small></summary>
     <div class="corpo uno" id="archivio-corpo"></div>
@@ -833,23 +880,6 @@ async function segnaFatto(id, indice, testo){
 }
 
 /* ═══════════════════════════════ derivazioni ═══════════════════════════════ */
-/* Il livello di un ticket: rosso se c'e' un check rosso misurato o e' un
-   rosso senza owner (triage); tutto il resto — scaduto, non misurato,
-   BLOCCATO in attesa — e' ambra: Andrea deve agire, ma niente e' rotto.
-   Stessa regola di `livello_ticket` in cockpit.py. */
-function livelloTicket(t){
-  const lv=(t.evidenza||[]).map(e=>e.level);
-  if(t.tipo==="check"||lv.includes("red")) return "red";
-  return "amber";
-}
-function ordinaTicket(a,b){
-  const la=livelloTicket(a), lb=livelloTicket(b);
-  if(la!==lb) return la==="red"?-1:1;
-  const da=dataLocale(a.da_quando), db=dataLocale(b.da_quando);
-  if(da&&db) return da-db;         /* il piu' vecchio prima */
-  if(da) return -1; if(db) return 1;
-  return 0;
-}
 const colStato = lv => lv==="red"?"var(--red)":lv==="amber"?"var(--amber)":lv==="green"?"var(--green)":"var(--dim)";
 const MANCA = v => !v || /^(da decidere|non misurato)/i.test(String(v));
 
@@ -1191,83 +1221,6 @@ function erroreHub(msg){
 }
 
 /* ═══════════════════════════════ DETTAGLIO ═══════════════════════════════ */
-function bottone(testo, href){
-  if(href){ const a=el("a","btn largo",testo); a.href=href; return a; }
-  return el("button","btn largo",testo);
-}
-function ticket(t, i){
-  const lv=livelloTicket(t);
-  const art=el("article","ticket");
-  art.style.setProperty("--stato", lv==="red"?"var(--red)":"var(--amber)");
-  art.append(el("div","n",String(i+1)));
-  const corpo=el("div");
-  corpo.append(el("h3","",t.titolo||"—"));
-  const dl=el("dl");
-  const riga=(k,v)=>{ dl.append(el("dt","",k)); const dd=el("dd"); if(typeof v==="string") dd.textContent=v; else dd.append(v); dl.append(dd); };
-  const ev=(t.evidenza||[]).filter(e=>e.check);
-  const perche=el("span"); perche.textContent=ev.length?taglia(t.perche||"—",110):(t.perche||"—"); perche.title=t.perche||"";
-  riga("Perché", perche);
-  if(ev.length){
-    const box=el("div","evid");
-    for(const e of ev){ const s=el("span","tag"); s.append(el("i","led "+(e.level||"")), e.check+(e.headline?" · "+taglia(e.headline,40):"")); s.title=e.headline||""; box.append(s); }
-    riga("Check", box);
-  }
-  const s=daQuando(t.da_quando);
-  const da=el("span"); da.append(el("b","",s==null?"—":"da "+etaS(s)));
-  if(t.da_quando) da.append(el("span","mono"," · "+fmtDataOra(t.da_quando)));
-  if(t.progetto){ const p=[...(DATI.workstream||[]),DATI.progetto].filter(Boolean).find(p=>p.id===t.progetto); da.append(" · "+(p?(p.nome||p.titolo):t.progetto)); }
-  riga("Da", da);
-  if(t.azione&&t.azione!==t.titolo) riga("Azione", t.azione);
-  corpo.append(dl);
-  if(t.fonte){ const f=el("div","fonte",t.fonte); f.title="da dove viene questa voce"; corpo.append(f); }
-  art.append(corpo);
-
-  const az=el("div","azioni");
-  const card=t.progetto?`/canvas#scheda=${encodeURIComponent(t.progetto)}`:null;
-  if(t.tipo==="task"&&!(t.evidenza||[]).some(e=>e.check)){
-    const b=bottone("Segna fatto");
-    b.addEventListener("click",()=>{
-      const q=document.createDocumentFragment();
-      q.append("Segnare fatto «"+t.titolo+"»? Scrive ");
-      q.append(el("code","","[x] · fatto:"+(DATI.oggi||"oggi")));
-      q.append(" su "+(t.fonte||"la card")+".");
-      conferma(art,q,async()=>{
-        b.disabled=true;
-        const r=await segnaFatto(t.progetto,t.indice,t.titolo);
-        esito(art, r.ok?`fatto · riga ${r.riga} · ${r.fatto}`:`non scritto: ${r.errore||r.status}`, !!r.ok);
-        b.disabled=false;
-        setTimeout(caricaDettaglio, r.ok?400:1500);
-      },{si:"segna fatto",ritorno:b});
-    });
-    az.append(b);
-    if(card){ const a=el("a","btn quieto","card ↗"); a.href=card; az.append(a); }
-  }else if(t.tipo==="bloccato"){
-    az.append(bottone("Apri la card ↗", card));
-  }else{
-    az.append(bottone("Vedi il check ↗","/canvas#sistema"));
-    if(card){ const a=el("a","btn quieto","card ↗"); a.href=card; az.append(a); }
-  }
-  art.append(az);
-  return art;
-}
-function disegnaRichiedono(d){
-  const box=$("ticket"); box.replaceChildren();
-  const lista=(d.richiedono_te||[]).slice().sort(ordinaTicket);
-  const lv=(d.verdetto||{}).livello; const c=$("richiedono-n"); c.textContent=String(lista.length);
-  c.className="conta"+(lista.length?(lv==="red"?" rosso":" ambra"):"");
-  if(!lista.length){
-    const v=el("div","vuoto");
-    const q=el("div","quadro"); q.append(el("i")); v.append(q);
-    const p=el("p"); p.append(el("b","","Niente da fare."));
-    const u=(d.numeri||{}).ultima_spunta;
-    p.append(el("small","", u?`ultima spunta: ${fmtData(u)}`:"nessuna spunta registrata nelle card di quest'area"));
-    v.append(p); box.append(v);
-    return;
-  }
-  const l=el("div","ticket-list");
-  lista.forEach((t,i)=>l.append(ticket(t,i)));
-  box.append(l);
-}
 function tacche(chiusi, totali){
   const w=el("div","tacche");
   if(!totali){ w.append(el("span","n vuoto-t","nessun task")); return w; }
@@ -1415,23 +1368,149 @@ function disegnaTask(d){
 }
 /* In coda per te: azioni di Andrea senza scadenza ne' check. Non e' un
    allarme (non entra nel verdetto): e' la sua lista, con la card da cui viene. */
-function disegnaInCoda(d){
-  const box=$("incoda-list"); box.replaceChildren();
-  const lista=d.in_coda_per_te||[];
-  $("incoda-n").textContent=String(lista.length);
-  if(!lista.length){ box.append(el("div","nulla","Niente in coda: ogni tua azione aperta ha una scadenza o un check che la misura.")); return; }
-  const TIPO={task:"task",bloccato:"bloccato",pending:"pending"};
-  for(const x of lista){
-    const v=el("div","v");
-    const tipo=el("span","tipo",TIPO[x.tipo]||x.tipo||"voce"); tipo.title=x.perche||""; v.append(tipo);
-    const t=el("div","t"); t.append(inlineMd(x.titolo||x.testo||"—"));
-    const sm=el("small");
-    if(x.nome_card||x.card){ const a=el("a","",(x.nome_card||x.card)+" ↗"); a.href=`/canvas#scheda=${encodeURIComponent(x.card||"")}`; a.title=x.fonte||x.card||""; sm.append(a); }
-    if(x.eta_giorni!=null&&x.eta_giorni>0) sm.append(` · nella card da ${x.eta_giorni} g`);
-    if(x.scad) sm.append(" · scad "+fmtData(x.scad));
-    t.append(sm); v.append(t); box.append(v);
+/* ═══════════════════════════════ scheda progetto: schede, Da fare, rimedi ═══════════════════════════════ */
+const PERSONE=["Andrea","Michele","Tommy","Claude","Collaboratrice"];
+let TAB="pan", CHI="Tutti";
+const ORD_P={P0:0,P1:1,P2:2};
+
+/* Un elenco solo: richiedono te, in coda, in carico. Owner e priorità li
+   normalizza il server (rimedi.arricchisci): qui non c'e' una seconda regola. */
+function vociDaFare(d){
+  const v=[];
+  for(const t of d.richiedono_te||[]) v.push({tipo:"richiede",titolo:t.titolo,owner:t.owner_n||"Andrea",p:t.priorita||"P0",
+    perche:t.perche,da:t.da_quando,fonte:t.fonte,card:t.progetto,rid:t.rid,rim:t.rimedio,t});
+  for(const x of d.in_coda_per_te||[]) v.push({tipo:"coda",titolo:x.titolo||x.testo,owner:x.owner_n||"Andrea",p:x.priorita||"P1",
+    scad:x.scad,eta:x.eta_giorni,nomeCard:x.nome_card,card:x.card,fonte:x.fonte,rid:x.rid,rim:x.rimedio});
+  for(const x of d.in_carico||[]) v.push({tipo:"carico",titolo:x.titolo,owner:x.owner_n||"Andrea",p:x.priorita||"P1",
+    fermo:x.giorni_fermo,nomeCard:x.nome_card,card:x.card,fonte:x.fonte,rid:x.rid,rim:x.rimedio});
+  return v.sort((a,b)=>(ORD_P[a.p]??3)-(ORD_P[b.p]??3));
+}
+
+/* I due rimedi di una riga. Riavvia solo se il problema e' un daemon di
+   perimetro; «Parla con» apre l'agente giusto col prompt gia' pronto. */
+function pulsantiRimedio(rim, rid, dove, daVerde){
+  const box=el("div","rim"); if(!rim) return box;
+  if(rim.riavvia&&!daVerde){
+    const b=el("button","btn","Riavvia");
+    b.title="launchctl kickstart · reversibile";
+    b.addEventListener("click",async()=>{
+      b.disabled=true; const r=await chiedi("riavvia",{check_id:rim.riavvia}); b.disabled=false;
+      esito(dove, r.ok?`riavviato ${rim.riavvia} · si rimisura entro 5 min`:`non riavviato: ${r.errore||r.stderr||r.status}`, !!r.ok);
+      if(r.ok) setTimeout(caricaDettaglio,6000);
+    });
+    box.append(b);
+  }
+  const a=el("button","btn agente","Parla con "+(rim.agente_nome||rim.agente));
+  a.title="Apre "+rim.agente+" in un terminale, con il problema, la prova e il criterio di successo già nel prompt";
+  a.addEventListener("click",async()=>{
+    a.disabled=true; const r=await chiedi("agente",{area:AREA,rid}); a.disabled=false;
+    esito(dove, r.ok?`${rim.agente_nome||rim.agente} aperto con il prompt · cerca la finestra del Terminale`:`non aperto: ${r.errore||r.stderr||(r.status===403?"token rifiutato":r.status)}`, !!r.ok);
+  });
+  box.append(a);
+  return box;
+}
+
+function rigaDaFare(x){
+  const art=el("article","df "+x.p);
+  const m=el("div","meta");
+  m.append(el("span","pr",x.p), el("span","own",x.owner));
+  if(x.scad) m.append(el("span","","scade "+fmtData(x.scad)));
+  else if(x.tipo==="coda") m.append(el("span","senza","senza scadenza"));
+  if(x.fermo!=null) m.append(el("span","","fermo da "+x.fermo+" g"));
+  if(x.da){ const s=daQuando(x.da); if(s!=null) m.append(el("span","","da "+etaS(s))); }
+  if(x.nomeCard) m.append(el("span","",x.nomeCard));
+  art.append(m);
+  const h=el("h3"); h.append(inlineMd(taglia(x.titolo||"—",180))); h.title=x.titolo||""; art.append(h);
+  if(x.perche) art.append(el("div","perche",x.perche));
+  const az=el("div","az");
+  const t=x.t;
+  if(t&&t.tipo==="task"&&!(t.evidenza||[]).some(e=>e.check)){
+    const b=el("button","btn","Segna fatto");
+    b.addEventListener("click",()=>{
+      const q=document.createDocumentFragment();
+      q.append("Segnare fatto «"+t.titolo+"»? Scrive "); q.append(el("code","","[x] · fatto:"+(DATI.oggi||"oggi"))); q.append(" su "+(t.fonte||"la card")+".");
+      conferma(art,q,async()=>{
+        b.disabled=true; const r=await segnaFatto(t.progetto,t.indice,t.titolo);
+        esito(art, r.ok?`fatto · riga ${r.riga} · ${r.fatto}`:`non scritto: ${r.errore||r.status}`, !!r.ok);
+        b.disabled=false; setTimeout(caricaDettaglio, r.ok?400:1500);
+      },{si:"segna fatto",ritorno:b});
+    });
+    az.append(b);
+  }
+  if(x.card){ const a=el("a","btn quieto","card ↗"); a.href=`/canvas#scheda=${encodeURIComponent(x.card)}`; az.append(a); }
+  art.append(az);
+  art.append(pulsantiRimedio(x.rim,x.rid,art,false));
+  return art;
+}
+
+function disegnaDaFare(d){
+  const tutte=vociDaFare(d);
+  const cnt=p=>p==="Tutti"?tutte.length:tutte.filter(x=>x.owner===p).length;
+  const ch=$("dafare-chips"); ch.replaceChildren();
+  for(const p of ["Tutti",...PERSONE]){
+    const b=el("button",cnt(p)?"":"zero",`${p} ${cnt(p)}`); b.type="button"; b.setAttribute("aria-pressed",String(CHI===p));
+    b.addEventListener("click",()=>{ CHI=p; disegnaDaFare(d); }); ch.append(b);
+  }
+  const lista=tutte.filter(x=>CHI==="Tutti"||x.owner===CHI);
+  const c=$("dafare-n"); c.textContent=String(lista.length);
+  const rossi=tutte.some(x=>x.p==="P0"); c.className="conta"+(lista.length?(rossi?" rosso":" ambra"):"");
+  const box=$("dafare-list"); box.replaceChildren();
+  const max=TAB==="pan"?3:1e9;
+  if(!lista.length) box.append(el("div","nulla",CHI==="Tutti"?"Niente da fare: ogni azione aperta e' chiusa o ha un check che la misura.":"Niente in carico a "+CHI+"."));
+  lista.slice(0,max).forEach(x=>box.append(rigaDaFare(x)));
+  if(lista.length>max){
+    const b=el("button","btn",`Vedi tutte le ${lista.length}`); b.type="button"; b.addEventListener("click",()=>vaiTab("todo"));
+    const w=el("div","az"); w.style.padding="0 4px"; w.append(b); box.append(w);
   }
 }
+
+function disegnaCertificazione(d){
+  const s=d.sigillo, box=$("cert-corpo"); box.replaceChildren();
+  if(!s){ $("cert-n").textContent=""; return; }
+  $("cert-n").textContent=`${s.ok}/${s.totale}`; $("cert-n").className="conta"+(s.certificato?"":" rosso");
+  const ul=el("ul","cert");
+  for(const c of s.criteri){
+    const li=el("li"); li.append(el("span",c.ok?"si":"no",c.ok?"✓":"✕"));
+    const t=el("span","",c.titolo); t.append(el("small","",c.dettaglio||"")); li.append(t); ul.append(li);
+  }
+  box.append(ul, el("div","cert-nota","Certificato solo con tutti i criteri. Un criterio senza dati resta «non misurato» e non conta come verde."));
+}
+
+function disegnaSigillo(d){
+  const b=$("sigillo"), s=d.sigillo;
+  if(!s||d.assente||!d.progetto){ b.hidden=true; return; }
+  b.hidden=false; b.className="sigillo"+(s.certificato?" ok":"");
+  b.replaceChildren(s.certificato?"Certificato":"Non certificato", el("small","",`${s.ok}/${s.totale} criteri`));
+  b.onclick=()=>{ vaiTab("pan"); $("certificazione").scrollIntoView({behavior:"smooth",block:"center"}); };
+}
+
+function disegnaFatto(d){
+  const box=$("fatto-list"); box.replaceChildren();
+  const fatti=((d.progetto&&d.progetto.task)||[]).filter(t=>t.fatto_il).sort((a,b)=>String(b.fatto_il).localeCompare(String(a.fatto_il))).slice(0,6);
+  if(!fatti.length) box.append(el("div","nulla","Nessun task chiuso con data nelle card di quest'area."));
+  for(const t of fatti){ const r=el("div"); r.append(el("span","quando",fmtData(t.fatto_il)), el("span","",taglia(t.testo||t.titolo||"—",150))); box.append(r); }
+}
+
+function disegnaSchede(d){
+  const nav=$("schede"); nav.replaceChildren();
+  const n=vociDaFare(d).length, osserv=((d.progetto&&d.progetto.salute&&d.progetto.salute.checks)||[]).filter(c=>c.level!=="green"&&c.level!=="info").length;
+  const rossi=((d.progetto&&d.progetto.salute&&d.progetto.salute.checks)||[]).some(c=>c.level==="red");
+  const T=[["pan","Panoramica"],["todo","Da fare",n,vociDaFare(d).some(x=>x.p==="P0")],["sal","Salute",osserv,rossi],["ob","Obiettivi"],["ws","Workstream",(d.workstream||[]).length],["arc","Archivio",(d.archivio||{}).conteggio||0]];
+  for(const [k,nome,c,r] of T){
+    const b=el("button","",nome); b.type="button"; b.role="tab"; b.dataset.k=k; b.setAttribute("aria-selected",String(k===TAB));
+    if(c!=null) b.append(el("span","n"+(r?" r":""),String(c)));
+    b.addEventListener("click",()=>vaiTab(k)); nav.append(b);
+  }
+}
+function applicaTab(){
+  const p=$("progetto"); p.dataset.tab=TAB;
+  p.querySelectorAll("[data-v]").forEach(e=>{ e.hidden=!e.dataset.v.split(" ").includes(TAB); });
+  $("schede").querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.k===TAB)));
+  if(TAB==="sal") $("osserva").open=true;
+  if(TAB==="arc") $("archivio").open=true;
+}
+function vaiTab(k){ TAB=k; if(DATI&&!DATI.assente){ disegnaDaFare(DATI); } applicaTab(); }
+
 function disegnaTestata(d){
   const p=d.progetto;
   const h=$("p-nome"); h.replaceChildren();
@@ -1537,6 +1616,7 @@ function disegnaSalute(d){
     const t=el("div"); t.append(el("span","id",c.check)); if(c.headline) t.append(el("span","h",taglia(c.headline,90))); r.append(t);
     const e=daQuando(c.measured_at); r.append(el("span","q",e==null?"mai misurato":etaS(e)+" fa"));
     r.title=(c.evidence||c.headline||"")+(c.source?" · "+c.source:"");
+    if(c.rimedio&&c.level!=="green"&&c.level!=="info") r.append(pulsantiRimedio(c.rimedio,c.rid,r,false));
     box.append(r);
   }
   cueScorri();
@@ -1574,7 +1654,9 @@ function disegnaPieghe(d){
   if(!oss.length) b2.append(el("div","nulla","Niente in ambra e niente non misurato fuori dai task."));
   for(const x of oss){
     const k=document.createDocumentFragment(); k.append(el("i","led "+x.level), " "+x.check);
-    b2.append(rigaPiega(k, x.headline||"—", null, x.level));
+    const rg=rigaPiega(k, x.headline||"—", null, x.level);
+    if(x.rimedio&&x.level!=="green") rg.append(pulsantiRimedio(x.rimedio,x.rid,rg,false));
+    b2.append(rg);
   }
   c.append(b1,b2);
 
@@ -1597,7 +1679,7 @@ function disegnaDettaglio(d){
   $("non-trovato").hidden=!assente;
   disegnaTestata(d);
   if(assente){ disegnaNonTrovato(d); PRIMA_VOLTA=false; stamp(); return; }
-  disegnaGoal(d); disegnaRichiedono(d); disegnaInCoda(d); disegnaWorkstream(d); disegnaTask(d); disegnaSalute(d); disegnaPieghe(d);
+  disegnaGoal(d); disegnaSigillo(d); disegnaSchede(d); disegnaDaFare(d); disegnaCertificazione(d); disegnaFatto(d); disegnaWorkstream(d); disegnaTask(d); disegnaSalute(d); disegnaPieghe(d); applicaTab();
   PRIMA_VOLTA=false; stamp();
 }
 function erroreDettaglio(msg){
@@ -1609,7 +1691,7 @@ function erroreDettaglio(msg){
     $("p-avanz").replaceChildren(); $("goal").replaceChildren();
     const v=el("div","vuoto"); const q=el("div","quadro grigio"); q.append(el("i")); v.append(q);
     const p=el("p"); p.append(el("b","","Nessun dato ricevuto.")); p.append(el("small","","il server della torre non ha risposto: e' vivo su questa porta?"));
-    v.append(p); $("ticket").replaceChildren(v); $("righe").replaceChildren(); $("check-list").replaceChildren(); $("tk-list").replaceChildren(); $("incoda-list").replaceChildren();
+    v.append(p); $("dafare-list").replaceChildren(v); $("righe").replaceChildren(); $("check-list").replaceChildren(); $("tk-list").replaceChildren();
   }
   stamp(DATI&&RICEVUTO?`dati di ${etaS((Date.now()-RICEVUTO)/1000)} fa · ultimo tentativo fallito`:"nessun dato", true);
 }
