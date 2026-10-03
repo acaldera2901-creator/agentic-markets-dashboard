@@ -620,6 +620,33 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
 #cassetto .led{display:inline-block;width:8px;height:8px;background:var(--dim)}#cassetto .led.green{background:var(--green)}
 .velo{position:fixed;inset:0;z-index:69;background:rgba(4,7,14,.6)}
 
+/* ─── navigazione della torre e pagine «Da fare» / «Sistema» ─── */
+.navtorre{margin-left:auto;display:flex;gap:2px;align-items:stretch}
+.navtorre a{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);text-decoration:none;padding:9px 14px;border:1px solid transparent;display:flex;gap:8px;align-items:center}
+.navtorre a:hover{color:var(--cy-2);border-color:var(--line-2)}
+.navtorre a[aria-current="page"]{color:var(--ink);border-color:var(--cy);background:rgba(56,189,248,.08)}
+.navtorre .n{font-size:10.5px;padding:0 6px;border:1px solid var(--line-2);color:var(--mid)}.navtorre .n:empty{display:none}.navtorre .n.r{border-color:var(--red);color:var(--red)}
+.altra{display:flex;flex-direction:column;gap:calc(var(--u)*2)}
+.pagina[data-vista="dafare"] .solo-hub,.pagina[data-vista="dafare"] .solo-dett,.pagina[data-vista="sistema"] .solo-hub,.pagina[data-vista="sistema"] .solo-dett{display:none}
+.filtri-riga{display:flex;gap:12px;align-items:baseline;padding:0 18px 4px}.filtri-riga .eti{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);width:64px;flex:none}
+.filtri-riga .chips{padding:0 0 8px;flex:1}
+.df .prog{color:var(--cy-2)}
+.sis-kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.sis-k{border:1px solid var(--line);background:var(--panel);padding:14px 16px;display:grid;gap:4px}
+.sis-k b{font-size:28px;font-weight:600;line-height:1}.sis-k span{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.sis-k.r b{color:var(--red)}.sis-k.a b{color:var(--amber)}.sis-k.g b{color:var(--green)}
+.sis-due{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:calc(var(--u)*2);align-items:start}
+@media(max-width:980px){.sis-due{grid-template-columns:1fr}.navtorre{margin-left:0;flex:1 1 100%}}
+.sis-righe{padding:0 18px 14px;display:flex;flex-direction:column}
+.sis-r{display:grid;grid-template-columns:12px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.sis-r:first-child{border-top:0}
+.sis-r .c{font-family:var(--mono);font-size:12.5px}.sis-r .h{font-size:12.5px;color:var(--mid);overflow-wrap:anywhere}.sis-r .rim{grid-column:2}
+.sis-aree{padding:0 18px 14px;display:grid;gap:10px}
+.sis-ar{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;align-items:center;font-family:var(--mono);font-size:12px}
+.sis-ar .seg{display:flex;height:8px;background:var(--line)}.sis-ar .seg i{display:block}
+.sis-ar .g{background:var(--green)}.sis-ar .a{background:var(--amber)}.sis-ar .r{background:var(--red)}.sis-ar .u{background:var(--line-3)}
+.sis-led{display:inline-block;width:9px;height:9px;margin-top:6px;background:var(--dim)}.sis-led.green{background:var(--green)}.sis-led.amber{background:var(--amber)}.sis-led.red{background:var(--red)}
+
 /* ─── le pieghe: in carico / da osservare, archivio ─── */
 .piega{border:1px solid var(--line);background:var(--panel)}
 .piega summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 18px;
@@ -727,7 +754,12 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
     <div class="m">M</div><div><b>Torre di controllo</b><span>Maven · il cervello e i progetti</span></div>
   </a>
   <div class="ora"><span id="data">—</span> · <b id="orologio">—</b></div>
-  <a class="vista" href="/canvas" title="Il piano zoomabile: Sala, Cervello, Progetti, Daemon">Vista completa ↗</a>
+  <nav class="navtorre" id="navtorre" aria-label="Torre di controllo">
+    <a href="#" data-v="hub">Cervello</a>
+    <a href="#dafare" data-v="dafare">Da fare <span class="n" id="nav-dafare"></span></a>
+    <a href="#sistema" data-v="sistema">Sistema <span class="n" id="nav-sistema"></span></a>
+    <a href="/canvas#architettura" title="La mappa dell'architettura (ancora nella vista vecchia)">Architettura ↗</a>
+  </nav>
 </header>
 
 <section class="banda solo-hub" id="banda" data-livello="none" aria-live="polite">
@@ -820,6 +852,27 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   </details>
 </main>
 
+<main class="altra" id="vista-dafare" hidden aria-label="Da fare, tutti i progetti">
+  <section class="pannello ang" aria-labelledby="h-dfg">
+    <h2 id="h-dfg">Da fare <span class="conta" id="dfg-n">0</span><span class="fine">tutti i progetti · ordinate per priorità</span></h2>
+    <div class="filtri-riga"><span class="eti">Progetto</span><div class="chips" id="dfg-prog" role="group" aria-label="Filtra per progetto"></div></div>
+    <div class="filtri-riga"><span class="eti">Persona</span><div class="chips" id="dfg-chi" role="group" aria-label="Filtra per persona"></div></div>
+    <div class="df-list" id="dfg-list"></div>
+  </section>
+</main>
+
+<main class="altra" id="vista-sistema" hidden aria-label="Sistema">
+  <section class="sis-kpi" id="sis-kpi"></section>
+  <div class="sis-due">
+    <section class="pannello ang"><h2>Daemon <small id="sis-dm-n"></small></h2><div class="sis-righe" id="sis-daemon"></div></section>
+    <section class="pannello ang"><h2>Salute per area <small>tutti i controlli della torre</small></h2><div class="sis-aree" id="sis-aree"></div></section>
+  </div>
+  <div class="sis-due">
+    <section class="pannello ang"><h2>Council <small id="sis-co-n">solo BetRedge</small></h2><div class="sis-righe" id="sis-council"></div></section>
+    <section class="pannello ang"><h2>Sala <small>chi lavora adesso</small></h2><div class="sis-righe" id="sis-sala"></div></section>
+  </div>
+</main>
+
 <div class="velo" id="velo" hidden></div>
 <aside id="cassetto" hidden role="dialog" aria-modal="true" aria-label="Card del progetto" tabindex="-1"></aside>
 
@@ -839,8 +892,7 @@ main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0
   <span class="solo-dett"><kbd>E</kbd>apri / chiudi i workstream</span>
   <span class="solo-hub"><kbd>0</kbd>ricentra il cervello</span>
   <span><kbd>R</kbd>aggiorna</span>
-  <span><kbd>C</kbd>vista completa</span>
-  <span class="stamp" id="stamp">—</span>
+    <span class="stamp" id="stamp">—</span>
 </footer>
 
 </div>
@@ -1469,6 +1521,92 @@ async function apriCard(id){
 }
 function linkCard(a,id){ a.href="#card="+encodeURIComponent(id); a.addEventListener("click",e=>{ e.preventDefault(); apriCard(id); }); return a; }
 
+/* ═══════════════════════════════ Da fare globale e Sistema ═══════════════════════════════ */
+const ALTRE=["dafare","sistema"];
+let PROGF="Tutti", DAFARE=null;
+function ricarica(){ if(VISTA==="dafare") caricaDafare(); else if(VISTA==="sistema") caricaSistema(); else caricaDettaglio(); }
+
+async function caricaDafare(){
+  const d=await json("/api/dafare",null); if(VISTA!=="dafare") return;
+  if(!d){ $("dfg-list").replaceChildren(el("div","nulla","Il server non risponde: riprovo fra 60 s.")); return; }
+  DAFARE=d; disegnaDafare();
+}
+function vociGlobali(){
+  const v=[];
+  for(const p of DAFARE.progetti) for(const x of vociDaFare(p.corpo)) v.push(Object.assign(x,{area:p.area,nomeProg:p.nome}));
+  return v.sort((a,b)=>(ORD_P[a.p]??3)-(ORD_P[b.p]??3));
+}
+function disegnaDafare(){
+  if(!DAFARE) return;
+  const tutte=vociGlobali();
+  const perProg=tutte.filter(x=>PROGF==="Tutti"||x.nomeProg===PROGF);
+  const cntP=p=>p==="Tutti"?tutte.length:tutte.filter(x=>x.nomeProg===p).length;
+  const cntC=p=>p==="Tutti"?perProg.length:perProg.filter(x=>x.owner===p).length;
+  const chip=(box,nomi,cur,cnt,on)=>{ box.replaceChildren(); for(const n of nomi){ const b=el("button",cnt(n)?"":"zero",`${n} ${cnt(n)}`); b.type="button"; b.setAttribute("aria-pressed",String(cur===n)); b.addEventListener("click",()=>on(n)); box.append(b); } };
+  chip($("dfg-prog"),["Tutti",...DAFARE.progetti.map(p=>p.nome)],PROGF,cntP,n=>{ PROGF=n; disegnaDafare(); });
+  chip($("dfg-chi"),["Tutti",...PERSONE],CHI,cntC,n=>{ CHI=n; disegnaDafare(); });
+  const lista=perProg.filter(x=>CHI==="Tutti"||x.owner===CHI);
+  const c=$("dfg-n"); c.textContent=String(lista.length); c.className="conta"+(lista.length?(tutte.some(x=>x.p==="P0")?" rosso":" ambra"):"");
+  const box=$("dfg-list"); box.replaceChildren();
+  if(!lista.length) box.append(el("div","nulla","Niente da fare con questi filtri."));
+  lista.forEach(x=>box.append(rigaDaFare(x)));
+  navConteggi();
+}
+function navConteggi(){
+  const n=DAFARE?vociGlobali().length:0, e=$("nav-dafare"); e.textContent=n?String(n):""; e.className="n"+(DAFARE&&vociGlobali().some(x=>x.p==="P0")?" r":"");
+}
+
+const CANALI_ETI={ch_council_main:"council",ch_deploy_gate:"deploy gate",ch_gambling:"gambling"};
+async function caricaSistema(){
+  const [st,co,sa]=await Promise.all([json("/api/state",null),json("/api/council",null),json("/api/sala",null)]);
+  if(VISTA!=="sistema") return;
+  const checks=(st&&st.checks)||{};
+  const dm=Object.entries(checks).filter(([k])=>k.startsWith("launchd_")).sort();
+  const ko=dm.filter(([,c])=>c.level!=="green").length;
+  const k=$("sis-kpi"); k.replaceChildren();
+  const kpi=(cls,grande,sotto)=>{ const d=el("div","sis-k "+cls); d.append(el("b","",grande),el("span","",sotto)); k.append(d); };
+  kpi(ko?"r":"g",`${dm.length-ko}/${dm.length}`,"daemon del perimetro vivi");
+  kpi("",((checks.api_version||{}).headline||"—").replace("deployato ",""),"versione in produzione");
+  kpi(co&&co.aperte?"a":"",co&&co.raggiungibile?String(co.aperte):"—",co&&co.raggiungibile?`richieste aperte nel Council (${co.nel_gate} nel gate)`:"Council non raggiungibile");
+  kpi("",sa?String((sa.agenti||[]).length):"—","agenti al lavoro ora");
+  $("nav-sistema").textContent=ko?String(ko):""; $("nav-sistema").className="n"+(ko?" r":"");
+
+  $("sis-dm-n").textContent=`${dm.length} nel perimetro di BetRedge`;
+  const bd=$("sis-daemon"); bd.replaceChildren();
+  for(const [id,c] of dm){
+    const r=el("div","sis-r"); r.append(el("i","sis-led "+c.level));
+    const t=el("div"); t.append(el("div","c",id.replace("launchd_","")),el("div","h",c.headline||"")); r.append(t);
+    const rid="check:"+id;
+    r.append(pulsantiRimedio({agente:"programmatore-andrea",agente_nome:"Programmatore",riavvia:c.riavviabile?id:null},rid,r,false,"betredge"));
+    bd.append(r);
+  }
+  const ord=["g","a","r","u"], gr={};
+  for(const c of Object.values(checks)){ if(c.level==="info") continue; const g=gr[c.group||"—"]||(gr[c.group||"—"]={g:0,a:0,r:0,u:0}); g[{green:"g",amber:"a",red:"r"}[c.level]||"u"]++; }
+  const ar=$("sis-aree"); ar.replaceChildren();
+  for(const [n,x] of Object.entries(gr)){
+    const row=el("div","sis-ar"); row.append(el("span","",n)); const seg=el("span","seg"); seg.title=`${x.g} verdi · ${x.a} ambra · ${x.r} rossi · ${x.u} non misurati`;
+    for(const o of ord){ if(!x[o]) continue; const i=el("i",o); i.style.flex=String(x[o]); seg.append(i); } row.append(seg); ar.append(row);
+  }
+  const bc=$("sis-council"); bc.replaceChildren();
+  if(!co||!co.raggiungibile) bc.append(el("div","nulla","Il Council non risponde."));
+  else if(!(co.richieste||[]).length) bc.append(el("div","nulla","Nessuna richiesta aperta sui canali di BetRedge."));
+  for(const q of (co&&co.richieste)||[]){
+    const r=el("div","sis-r"); r.append(el("i","sis-led "+(q.gate?"amber":"")));
+    const t=el("div"); t.append(el("div","c",(CANALI_ETI[q.canale]||q.canale)+" · "+(q.da||"")),el("div","h",taglia(q.testo||"",200))); r.append(t);
+    if(q.gate){ const a=el("div","rim"); const b=el("button","btn agente","Approva"); b.type="button";
+      b.addEventListener("click",()=>conferma(r,"Postare l'APPROVE su questo messaggio? Lo firmi tu, dalla torre.",async()=>{ b.disabled=true; const res=await chiedi("approva",{msg_id:q.id,nota:""}); esito(r,res.ok?"APPROVE postato":"non postato: "+(res.errore||res.status),!!res.ok); b.disabled=false; if(res.ok) setTimeout(caricaSistema,900); },{si:"approva",ritorno:b}));
+      a.append(b); r.append(a); }
+    bc.append(r);
+  }
+  const bs=$("sis-sala"); bs.replaceChildren();
+  if(!sa||!(sa.agenti||[]).length) bs.append(el("div","nulla","Nessun agente aziendale al lavoro adesso."));
+  for(const a of (sa&&sa.agenti)||[]){
+    const r=el("div","sis-r"); r.append(el("i","sis-led "+(a.stato==="busy"?"green":"")));
+    const t=el("div"); t.append(el("div","c",a.nome+" · "+a.agente),el("div","h",(a.stato==="busy"?"al lavoro":"in ascolto")+(a.task?" · "+taglia(a.task,120):""))); r.append(t); bs.append(r);
+  }
+  stamp();
+}
+
 /* ═══════════════════════════════ scheda progetto: schede, Da fare, rimedi ═══════════════════════════════ */
 const PERSONE=["Andrea","Michele","Tommy","Claude","Collaboratrice"];
 let TAB="pan", CHI="Tutti";
@@ -1489,7 +1627,7 @@ function vociDaFare(d){
 
 /* I due rimedi di una riga. Riavvia solo se il problema e' un daemon di
    perimetro; «Parla con» apre l'agente giusto col prompt gia' pronto. */
-function pulsantiRimedio(rim, rid, dove, daVerde){
+function pulsantiRimedio(rim, rid, dove, daVerde, area){
   const box=el("div","rim"); if(!rim) return box;
   if(rim.riavvia&&!daVerde){
     const b=el("button","btn","Riavvia");
@@ -1497,14 +1635,14 @@ function pulsantiRimedio(rim, rid, dove, daVerde){
     b.addEventListener("click",async()=>{
       b.disabled=true; const r=await chiedi("riavvia",{check_id:rim.riavvia}); b.disabled=false;
       esito(dove, r.ok?`riavviato ${rim.riavvia} · si rimisura entro 5 min`:`non riavviato: ${r.errore||r.stderr||r.status}`, !!r.ok);
-      if(r.ok) setTimeout(caricaDettaglio,6000);
+      if(r.ok) setTimeout(ricarica,6000);
     });
     box.append(b);
   }
   const a=el("button","btn agente","Parla con "+(rim.agente_nome||rim.agente));
   a.title="Apre "+rim.agente+" in un terminale, con il problema, la prova e il criterio di successo già nel prompt";
   a.addEventListener("click",async()=>{
-    a.disabled=true; const r=await chiedi("agente",{area:AREA,rid}); a.disabled=false;
+    a.disabled=true; const r=await chiedi("agente",{area:area||AREA,rid}); a.disabled=false;
     esito(dove, r.ok?`${rim.agente_nome||rim.agente} aperto con il prompt · cerca la finestra del Terminale`:`non aperto: ${r.errore||r.stderr||(r.status===403?"token rifiutato":r.status)}`, !!r.ok);
   });
   box.append(a);
@@ -1519,6 +1657,7 @@ function rigaDaFare(x){
   else if(x.tipo==="coda") m.append(el("span","senza","senza scadenza"));
   if(x.fermo!=null) m.append(el("span","","fermo da "+x.fermo+" g"));
   if(x.da){ const s=daQuando(x.da); if(s!=null) m.append(el("span","","da "+etaS(s))); }
+  if(x.nomeProg) m.append(el("span","prog",x.nomeProg));
   if(x.nomeCard) m.append(el("span","",x.nomeCard));
   art.append(m);
   const h=el("h3"); h.append(inlineMd(taglia(x.titolo||"—",180))); h.title=x.titolo||""; art.append(h);
@@ -1533,14 +1672,14 @@ function rigaDaFare(x){
       conferma(art,q,async()=>{
         b.disabled=true; const r=await segnaFatto(t.progetto,t.indice,t.titolo);
         esito(art, r.ok?`fatto · riga ${r.riga} · ${r.fatto}`:`non scritto: ${r.errore||r.status}`, !!r.ok);
-        b.disabled=false; setTimeout(caricaDettaglio, r.ok?400:1500);
+        b.disabled=false; setTimeout(ricarica, r.ok?400:1500);
       },{si:"segna fatto",ritorno:b});
     });
     az.append(b);
   }
   if(x.card){ const a=linkCard(el("a","btn quieto","card ↗"),x.card); az.append(a); }
   art.append(az);
-  art.append(pulsantiRimedio(x.rim,x.rid,art,false));
+  art.append(pulsantiRimedio(x.rim,x.rid,art,false,x.area));
   return art;
 }
 
@@ -1833,10 +1972,22 @@ function volo(svg, da){
   /* se il browser non consegna ne' finish ne' cancel (tab in fondo), si chiude lo stesso */
   setTimeout(()=>{ if(svg.classList.contains("vola")) fineVolo(svg); },700);
 }
+function mostraAltra(vista){
+  const prima=VISTA; VISTA=vista; AREA=null;
+  $("pagina").dataset.vista=vista;
+  $("hub").hidden=true; $("progetto").hidden=true; $("banda").hidden=true;
+  $("vista-dafare").hidden=vista!=="dafare"; $("vista-sistema").hidden=vista!=="sistema";
+  chiudiAgenti(); chiudiCard(); if(prima!==vista) scrollTo({top:0,left:0,behavior:"instant"});
+  document.title=(vista==="dafare"?"Da fare":"Sistema")+" · Torre di controllo · Maven";
+  evidenziaNav(); ricarica(); stamp();
+}
+function evidenziaNav(){ document.querySelectorAll("#navtorre a[data-v]").forEach(a=>{ if(a.dataset.v===VISTA) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); }); }
 function mostra(vista, area){
+  if(ALTRE.includes(vista)){ mostraAltra(vista); return; }
+  $("vista-dafare").hidden=true; $("vista-sistema").hidden=true;
   const svg=GRAFO?GRAFO.svg:null;
   const da=svg?svg.getBoundingClientRect():null;
-  const prima=VISTA, areaPrima=AREA; VISTA=vista; AREA=vista==="progetto"?area:null;
+  const prima=VISTA, areaPrima=AREA; VISTA=vista; AREA=vista==="progetto"?area:null; const daAltra=ALTRE.includes(prima);
   $("pagina").dataset.vista=vista;
   $("hub").hidden=vista!=="hub"; $("progetto").hidden=vista!=="progetto"; $("banda").hidden=vista!=="hub";
   /* ogni vista parte dall'alto: il dettaglio scorre, l'hub no, e un'altezza di
@@ -1851,14 +2002,14 @@ function mostra(vista, area){
     $("fili").classList.remove("pronti");
     /* il rAF puo' essere sospeso (finestra coperta): il timeout garantisce che la vista compaia comunque */
     const m=$("progetto"); if(prima!=="progetto"&&!RIDOTTO){ m.classList.add("entra"); const via=()=>m.classList.remove("entra"); requestAnimationFrame(()=>requestAnimationFrame(via)); setTimeout(via,80); }
-    if(prima!==vista) volo(svg,da);
+    if(prima!==vista&&!daAltra) volo(svg,da);
     caricaDettaglio();
     if(prima!=="progetto") setTimeout(()=>$("torna").focus({preventScroll:true}),0);   /* non rAF: con la tab coperta il rAF non scatta e il fuoco resta sul body */
   }else{
     document.title="Torre di controllo · Maven";
     if(HUB){ disegnaBanda(HUB); disegnaHub(HUB); }
     /* i fili subito, con la geometria definitiva (il grafo e' gia' nella sua casa); poi il volo */
-    if(prima!==vista){ disegnaFili(); volo(svg,da); } else disegnaFili();
+    if(prima!==vista&&!daAltra){ disegnaFili(); volo(svg,da); } else disegnaFili();
     caricaHub();
     /* il fuoco torna sulla scheda del progetto appena lasciato, non sulla prima */
     if(prima==="progetto") setTimeout(()=>{ const s=document.querySelector(`.scheda[href="#progetto=${CSS.escape(encodeURIComponent(areaPrima||""))}"]`)||document.querySelector(".scheda[href]"); s&&s.focus({preventScroll:true}); },0);
@@ -1867,9 +2018,11 @@ function mostra(vista, area){
 }
 function daHash(){
   const m=location.hash.match(/(?:progetto|area)=([a-z0-9_-]+)/i);
-  return m?{vista:"progetto",area:m[1].toLowerCase()}:{vista:"hub"};
+  if(m) return {vista:"progetto",area:m[1].toLowerCase()};
+  const a=location.hash.match(/^#(dafare|sistema)$/);
+  return a?{vista:a[1]}:{vista:"hub"};
 }
-function instrada(){ const h=daHash(); if(h.vista!==VISTA||h.area!==AREA) mostra(h.vista,h.area); }
+function instrada(){ const h=daHash(); if(h.vista!==VISTA||(h.area||null)!==AREA) mostra(h.vista,h.area); evidenziaNav(); }
 addEventListener("hashchange",instrada);
 $("torna").addEventListener("click",e=>{ e.preventDefault(); location.hash=""; });
 $("marchio").addEventListener("click",e=>{ e.preventDefault(); if(VISTA!=="hub") location.hash=""; else caricaHub(); });
@@ -1895,9 +2048,8 @@ document.addEventListener("keydown",e=>{
   const t=e.target; if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA")) return;
   const k=e.key.toLowerCase();
   if(k==="escape"){ if(document.querySelector(".conferma")) return; if(!$("cassetto").hidden){ e.preventDefault(); chiudiCard(); return; } if(!$("agenti").hidden){ chiudiAgenti(); return; }
-    if(VISTA==="progetto"){ e.preventDefault(); location.hash=""; } else if(cervSel) selezionaNodo(null); else ricentra(); return; }
-  if(k==="r"){ e.preventDefault(); VISTA==="hub"?caricaHub():caricaDettaglio(); caricaCervello(); return; }
-  if(k==="c"){ e.preventDefault(); location.href="/canvas"; return; }
+    if(VISTA==="progetto"||ALTRE.includes(VISTA)){ e.preventDefault(); location.hash=""; } else if(cervSel) selezionaNodo(null); else ricentra(); return; }
+  if(k==="r"){ e.preventDefault(); VISTA==="hub"?caricaHub():ricarica(); caricaCervello(); return; }
   if(k==="a"){ e.preventDefault(); toggleAgenti(); return; }
   if(k==="0"&&VISTA==="hub"){ e.preventDefault(); ricentra(); Z.sordo=performance.now()+400; return; }
   if(VISTA==="progetto"&&k==="e"){ e.preventDefault();
@@ -2028,8 +2180,17 @@ orologio(); setInterval(orologio,20000);
 const h0=daHash(); VISTA=h0.vista; AREA=h0.area||null;
 $("pagina").dataset.vista=VISTA; $("hub").hidden=VISTA!=="hub"; $("progetto").hidden=VISTA!=="progetto"; $("banda").hidden=VISTA!=="hub";
 caricaCervello();
-if(VISTA==="hub") caricaHub(); else caricaDettaglio();
-setInterval(()=>{ VISTA==="hub"?caricaHub():caricaDettaglio(); },POLL_MS);
+if(VISTA==="hub") caricaHub(); else if(!ALTRE.includes(VISTA)) caricaDettaglio();
+if(ALTRE.includes(VISTA)) mostraAltra(VISTA); else evidenziaNav();
+/* i conteggi della barra (Da fare, Sistema) si tengono vivi anche quando non sei in quella pagina */
+async function aggiornaNav(){
+  const [d,st]=await Promise.all([json("/api/dafare",null),json("/api/state",null)]);
+  if(d){ DAFARE=d; navConteggi(); if(VISTA==="dafare") disegnaDafare(); }
+  if(st&&st.checks){ const ko=Object.entries(st.checks).filter(([k,c])=>k.startsWith("launchd_")&&c.level!=="green").length;
+    $("nav-sistema").textContent=ko?String(ko):""; $("nav-sistema").className="n"+(ko?" r":""); }
+}
+aggiornaNav();
+setInterval(()=>{ VISTA==="hub"?caricaHub():ricarica(); aggiornaNav(); },POLL_MS);
 setInterval(caricaCervello,POLL_CERVELLO_MS);
 </script>
 </body>

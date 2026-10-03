@@ -43,7 +43,10 @@ def test_la_radice_serve_il_cockpit(in_piedi):
         html = r.read().decode()
     assert "<title>" in html
     assert "/api/cockpit" in html and "/api/task/fatto" in html
-    assert 'href="/canvas"' in html          # la vista completa resta a un click
+    # La barra della torre porta a Da fare e Sistema dentro la stessa pagina; la
+    # sola uscita verso il piano vecchio e' l'Architettura (finche' non si porta qui).
+    assert 'href="#dafare"' in html and 'href="#sistema"' in html
+    assert 'href="/canvas#architettura"' in html and "/api/dafare" in html
 
 
 def test_canvas_serve_il_piano_intero(in_piedi):

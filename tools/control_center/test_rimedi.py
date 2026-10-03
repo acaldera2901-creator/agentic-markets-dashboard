@@ -118,3 +118,28 @@ def test_il_voto_della_torre_e_quello_del_comando(tmp_path):
              for cid, v in verdetti.items()}
     corpo = rimedi.arricchisci(_corpo(), {"checks": stato})
     assert corpo["sigillo"]["voto"] == cp.conteggi(voci_cmd)["voto"]
+
+
+def test_check_rid_vale_anche_per_un_check_verde_o_gia_preso_in_carico():
+    stato = {"checks": {"launchd_agents": {"level": "green", "headline": "in esecuzione"}}}
+    lista, x = rimedi._da_check("launchd_agents", stato)
+    assert x["rid"] == "check:launchd_agents" and x["rimedio"]["riavvia"] == "launchd_agents"
+    assert rimedi._da_check("non_esiste", stato) is None
+
+
+def test_da_fare_globale_ha_un_corpo_per_progetto_con_gli_stessi_rid():
+    corpi = {"betredge": _corpo(), "torre": {**_corpo(), "progetto": {"nome": "Torre", "done_quando": "x"}}}
+    g = rimedi.dafare_globale({"checks": {}}, lambda a, s: corpi[a], lambda: ["betredge", "torre"])
+    assert [p["nome"] for p in g["progetti"]] == ["BetRedge", "Torre"]
+    assert all(x["rid"] for p in g["progetti"] for x in p["corpo"]["richiedono_te"])
+
+
+def test_il_council_mostra_solo_i_canali_di_betredge(monkeypatch):
+    from tools.control_center import council
+    msgs = [{"id": "m1"}]
+    monkeypatch.setattr(council, "messaggi", lambda: msgs)
+    monkeypatch.setattr(council, "archiviate", lambda: {})
+    monkeypatch.setattr(council, "aperte", lambda m, solo_nostre=True: [
+        {"id": "a", "canale": "ch_swr7", "gate": False}, {"id": "b", "canale": "ch_deploy_gate", "gate": True}])
+    s = council._calcola_stato()
+    assert [x["id"] for x in s["richieste"]] == ["b"] and s["aperte"] == 1 and s["nel_gate"] == 1
