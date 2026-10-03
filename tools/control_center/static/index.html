@@ -631,7 +631,7 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
           <p class="nota">Ogni ala nasce con lo <b>stato vivo</b> del progetto e del Council nel prompt. Il tasto manda una <b>chiave</b>, non un comando: il server la valida contro <code>lab/ali.tsv</code>.</p></div>
         <div class="due" style="grid-template-columns:3fr 2fr">
           <div class="pannello"><h4>Le chat di prodotto</h4><div class="pad"><div class="tiles" id="chat-prodotti" style="grid-template-columns:1fr 1fr 1fr"></div></div></div>
-          <div class="pannello"><h4>Le chat personali</h4><div class="pad"><div class="tiles" id="chat-personali" style="grid-template-columns:1fr 1fr"></div></div></div>
+          <div class="pannello"><h4>Gli agenti</h4><div class="pad"><div class="tiles" id="chat-personali" style="grid-template-columns:1fr 1fr"></div></div></div>
         </div>
       </div>
       <div class="copertina"><b class="lettera-g">H</b><h3>Terminali</h3><div class="grande" id="c-terminali-n">—</div><div class="stato" id="c-terminali-s"></div></div>
@@ -662,15 +662,6 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
         <div class="pannello"><h4>Tutti i daemon del Mac <small id="m-dm"></small></h4><div class="righe" id="daemon-attenzione"></div></div>
       </div>
       <div class="copertina"><b class="lettera-g">B</b><h3>Daemon</h3><div class="grande" id="c-daemon-n">—</div><div class="stato" id="c-daemon-s"></div></div>
-    </section>
-
-    <section class="settore" id="s-macchina" data-l="J" data-nome="Macchina">
-      <header class="targa"><b class="lettera">J</b><h2>Macchina</h2><span class="meta" id="m-macchina">—</span></header>
-      <div class="corpo">
-        <div class="kpis" id="macchina-kpi" style="grid-template-columns:repeat(4,1fr)"></div>
-        <div class="pannello"><h4>Worktree e rami <small id="m-wt"></small></h4><div class="righe" id="worktree"></div></div>
-      </div>
-      <div class="copertina"><b class="lettera-g">J</b><h3>Macchina</h3><div class="grande" id="c-macchina-n">—</div><div class="stato" id="c-macchina-s"></div></div>
     </section>
   </div>
 
@@ -963,7 +954,6 @@ function costruisciIndice(){
     p.addEventListener("click",()=>vai(id)); pon.append(p);
   });
   const t=el("button","tutto"); t.append(el("b","","⌂"), el("span","","Esc")); t.title="Tutto il piano"; t.addEventListener("click",tutto); hud.append(t);
-  const pm=el("button"); pm.append(el("span","l","J"), el("span","t","Macchina"), el("span","kk","·")); pm.addEventListener("click",()=>vai("macchina")); pon.append(pm);
   const pp=el("button"); pp.append(el("span","l","L"), el("span","t","Progetti"), el("span","kk","·")); pp.addEventListener("click",()=>vai("progetti")); pon.append(pp);
 }
 
@@ -1093,7 +1083,7 @@ async function renderSistema(){
   copertina("sistema",rossi+ambra?String(rossi+ambra):"0",rossi?"red":ambra?"amber":"green",
     rossi+ambra?`da guardare: ${rossi} rossi, ${ambra} ambra · ${ign} non misurati`:`tutto sano · ${ign} non misurati`);
 
-  renderDaemon(voci,jobs,LAB); renderBusiness(c,STORIA); renderMacchina(LAB); renderPonte();
+  renderDaemon(voci,jobs,LAB); renderBusiness(c,STORIA); renderPonte();
 }
 
 /* ═══════════════════════════ B · daemon ═══════════════════════════ */
@@ -1128,24 +1118,6 @@ function renderBusiness(c,storia){
   if(lat.length>=3){ const s=spark(lat,COL.cy,1320,200); s.style.width="100%"; s.style.height="auto"; w.append(s); $("m-lat").textContent=`${lat.length} misure · ultima ${lat[lat.length-1]} ms`; }
   else { w.append(el("div","vuoto","Meno di tre misure: una linea fra due punti non è un andamento.")); $("m-lat").textContent="—"; }
   copertina("business",String(g("abbonati","value")??"—"),"",`abbonati · ROI 30 g ${g("roi_30g","value")??"—"} · traffico 7 g ${g("traffico_7g","value")??"—"}`);
-}
-
-/* ═══════════════════════════ J · macchina ═══════════════════════════ */
-function renderMacchina(lab){
-  const m=lab.macchina||{}; const k=$("macchina-kpi"); k.textContent="";
-  const swp=(()=>{const a=parseFloat(m.swap_usato||0),b=parseFloat(m.swap_tot||1); return b?Math.round(a/b*100):null;})();
-  k.append(kpi("swap",swp==null?"—":swp+"%",m.swap_usato?Math.round(m.swap_usato)+" MB usati":"",swp>70?"amber":""),
-           kpi("disco",String(m.disco||"—").split(" ")[0],m.disco?"liberi · "+m.disco.split(" su ")[1]:"","",true),
-           kpi("cartella .claude",String(m.claude_dir||"—"),`${lab.mcp??"—"} processi MCP`),
-           kpi("processi",String(m.processi||"—"),m.batteria||""));
-  const wt=$("worktree"); wt.textContent="";
-  (lab.worktree||[]).slice(0,10).forEach(w=>wt.append(riga(w.dirty!=="0"?"amber":"",w.vivo?"green":"",w.branch==="HEAD)"?"detached":w.branch,w.path,w.dirty!=="0"?`${w.dirty} file non committati`:"pulito",w.vivo?"vivo":"")));
-  (lab.transcript_grossi||[]).forEach(t=>wt.append(riga("amber","amber",t.mb+" MB","transcript "+t.id,"da archiviare","")));
-  const br=lab.branch||{};
-  $("m-wt").textContent=br.locali?`${br.locali} rami locali · ${br.mergiati} mergiati · vetrina ${br.vetrina}`:"";
-  const shell=lab.shell||[];
-  $("m-macchina").textContent=`${shell.length} shell · ${m.ram_gb||"—"} GB RAM`;
-  copertina("macchina",swp==null?"—":swp+"%",swp>70?"amber":"","swap · "+(m.disco||"disco —"));
 }
 
 /* ═══════════════════════════ ◎ · ponte ═══════════════════════════ */

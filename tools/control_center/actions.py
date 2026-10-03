@@ -176,12 +176,24 @@ def apri_ala(chiave: str) -> dict:
 # ── aprire la chat di un prodotto ───────────────────────────────────────────
 PRODOTTI_TSV = Path.home() / "Desktop/01-BETREDGE/lab/prodotti.tsv"
 
-# Gli agenti trasversali: non appartengono a un prodotto, servono ad Andrea.
-# Vivono qui e non in un TSV perche' sono quattro e cambiano una volta all'anno;
-# i prodotti invece cambiano spesso, e infatti stanno in un file.
-# Vuoto dal 2026-10-03: la torre e' aziendale e visibile a tutti i dipendenti, gli
-# agenti personali di Andrea (segretaria, ceo, cfo, trader) non compaiono qui.
-PERSONALI: list[dict] = []
+# Gli agenti aziendali che si aprono dalla torre (pannello «Gli agenti»).
+# Vivono qui e non in un TSV perche' cambiano di rado. Gli agenti personali di
+# Andrea (segretaria, ceo, cfo, trader) non compaiono: la torre e' aziendale
+# (#CERVELLO-MAVEN-0310). Quando gli agenti diventeranno aziendali si aggiungono qui.
+PERSONALI = [
+    {"chiave": "dev", "nome": "Programmatore", "agente": "programmatore-andrea",
+     "remit": "Codice, debug, architettura, deploy"},
+    {"chiave": "qa", "nome": "QA", "agente": "qa-andrea",
+     "remit": "Test, audit pre-deploy, regressioni"},
+    {"chiave": "ui", "nome": "UI", "agente": "ui-andrea",
+     "remit": "Interfaccia, responsive, review visiva"},
+    {"chiave": "grafica", "nome": "Art director", "agente": "art-director",
+     "remit": "Direzione visiva, grafiche e brand"},
+    {"chiave": "marketing", "nome": "Marketing", "agente": "marketing-betredge",
+     "remit": "Crescita, canali, funnel, claim"},
+    {"chiave": "ml", "nome": "ML", "agente": "ml-engineer-agentic",
+     "remit": "Modelli, predizioni, feature"},
+]
 
 
 def prodotti_disponibili() -> list[dict]:
