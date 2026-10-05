@@ -20,13 +20,15 @@ async function main() {
   const sql = connect(url);
   try {
     const t0 = Date.now();
-    const { dbNow, windows } = await readAllWindows(sql);
+    const { dbNow, windows, series, chain } = await readAllWindows(sql);
     const file: SnapshotFile = {
       schema: 1,
       generatedAt: new Date().toISOString(),
       dbNow,
       origin: "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
       windows,
+      series,
+      chain,
     };
     const out = join(__dirname, "..", "data", "snapshot.json");
     writeFileSync(out, JSON.stringify(file, null, 2) + "\n");

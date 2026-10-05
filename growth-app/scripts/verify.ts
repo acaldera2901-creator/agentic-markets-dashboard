@@ -6,8 +6,12 @@
 //
 // Prints a markdown table; exit code 1 on any mismatch.
 
+import { chainTotals, normalizeChain } from "../core/channels";
 import { PAID_CHANNELS, type GrowthWindow, splitPaying } from "../core/kpi";
 import { normalize } from "../core/model";
+import { coarsenLabel } from "../core/privacy";
+import { ANOMALY_BASELINE_DAYS, ANOMALY_SIGMA, SERIES_METRICS, type SeriesMetric, anomalies, compare, normalizeSeries } from "../core/series";
+import { SERIES_HISTORY_DAYS } from "../core/sql";
 import { connect } from "../data/live-source";
 import { assertSnapshot } from "../data/snapshot-source";
 import snapshotJson from "../data/snapshot.json";
@@ -69,13 +73,184 @@ function checks(): Check[] {
   return out;
 }
 
+// ─── Filone A: series, comparisons, anomalies, source chain ──────────────────
+// Independent formulation: day = date(timezone('Europe/Rome', ts)); day bounds
+// from integer date arithmetic on T's Rome date (core uses date_trunc − interval
+// and JS calendar math); anomalies via SQL window functions (core: TS loop).
+
+const ROME_T = `('${T}'::timestamptz AT TIME ZONE 'Europe/Rome')::date`;
+const romeMidnight = (dayOffset: number) => `timezone('Europe/Rome', (${ROME_T} - ${dayOffset})::timestamp)`;
+const dayRange = (col: string, fromAgo: number, toAgo: number) => `${col} >= ${romeMidnight(fromAgo)} AND ${col} < ${romeMidnight(toAgo)}`;
+const dayOf = (col: string) => `date(timezone('Europe/Rome', ${col}))`;
+
+/** Per Rome day (only days with data), over [fromAgo, toAgo) days before T's Rome day. */
+function dailySql(m: SeriesMetric, fromAgo = SERIES_HISTORY_DAYS, toAgo = 0): string {
+  const r = (col: string) => dayRange(col, fromAgo, toAgo);
+  const ev = (type: string) => `SELECT ${dayOf("created_at")} AS day, count(*) AS n FROM events WHERE event_type='${type}' AND ${r("created_at")} GROUP BY 1`;
+  switch (m) {
+    case "page_views": return ev("page_view");
+    case "signup_started": return ev("signup_started");
+    case "signup_completed": return ev("signup_completed");
+    case "partner_click": return ev("partner_click");
+    case "client_error": return ev("client_error");
+    case "sessions":
+      return `SELECT day, count(*) AS n FROM (SELECT DISTINCT ${dayOf("created_at")} AS day, session_id FROM events WHERE event_type='page_view' AND session_id IS NOT NULL AND ${r("created_at")}) x GROUP BY 1`;
+    case "new_profiles":
+      return `SELECT ${dayOf("created_at")} AS day, count(*) AS n FROM profiles WHERE ${r("created_at")} GROUP BY 1`;
+    case "paid_orders":
+      return `SELECT day, count(*) AS n FROM (
+        SELECT ${dayOf("paid_at")} AS day FROM paygate_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")}
+        UNION ALL SELECT ${dayOf("paid_at")} FROM paypal_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")}
+        UNION ALL SELECT ${dayOf("processed_at")} FROM shopify_events WHERE event_type='orders/paid' AND ${r("processed_at")}) o GROUP BY 1`;
+  }
+}
+
+/** Period total as one plain count with timestamp bounds (no per-day grouping, except sessions-per-day). */
+function periodSql(m: SeriesMetric, fromAgo: number, toAgo: number): string {
+  const r = (col: string) => dayRange(col, fromAgo, toAgo);
+  const ev = (type: string) => `SELECT count(*) FROM events WHERE event_type='${type}' AND ${r("created_at")}`;
+  switch (m) {
+    case "page_views": return ev("page_view");
+    case "signup_started": return ev("signup_started");
+    case "signup_completed": return ev("signup_completed");
+    case "partner_click": return ev("partner_click");
+    case "client_error": return ev("client_error");
+    case "sessions":
+      return `SELECT count(DISTINCT (${dayOf("created_at")}, session_id)) FROM events WHERE event_type='page_view' AND session_id IS NOT NULL AND ${r("created_at")}`;
+    case "new_profiles": return `SELECT count(*) FROM profiles WHERE ${r("created_at")}`;
+    case "paid_orders":
+      return `SELECT (SELECT count(*) FROM paygate_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")})
+        + (SELECT count(*) FROM paypal_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")})
+        + (SELECT count(*) FROM shopify_events WHERE event_type='orders/paid' AND ${r("processed_at")})`;
+  }
+}
+
+/** Anomaly count among the last n days, with window functions over a dense day grid. */
+function anomalySql(m: SeriesMetric, n: number): string {
+  return `WITH g AS (SELECT (${ROME_T} - k) AS day FROM generate_series(1, ${SERIES_HISTORY_DAYS}) k),
+      v AS (SELECT g.day, coalesce(x.n, 0)::float AS n FROM g LEFT JOIN (${dailySql(m)}) x ON x.day = g.day),
+      f AS (SELECT min(day) FILTER (WHERE n > 0) AS first FROM v),
+      z AS (SELECT day, n, avg(n) OVER w AS mu, stddev_samp(n) OVER w AS sd, count(*) OVER w AS c FROM v
+            WINDOW w AS (ORDER BY day ROWS BETWEEN ${ANOMALY_BASELINE_DAYS} PRECEDING AND 1 PRECEDING))
+    SELECT count(*) FROM z, f
+    WHERE z.c = ${ANOMALY_BASELINE_DAYS} AND z.day >= f.first + ${ANOMALY_BASELINE_DAYS} AND z.day >= ${ROME_T} - ${n}
+      AND z.sd > 0 AND abs(z.n - z.mu) > ${ANOMALY_SIGMA} * z.sd`;
+}
+
+const trends = snap.series ? normalizeSeries(snap.series, T) : null;
+
+function extraChecks(): Check[] {
+  const out: Check[] = [];
+  if (!trends) return out;
+  for (const n of [7, 30]) {
+    const w: GrowthWindow = n === 7 ? "7d" : "30d";
+    for (const m of SERIES_METRICS) {
+      const v = trends.values[m.key];
+      const c = v ? compare(v, n) : null;
+      out.push(
+        { metric: `${m.label} — periodo (${n}g interi)`, window: w, page: c?.current ?? null, sql: periodSql(m.key, n, 0) },
+        { metric: `${m.label} — periodo precedente`, window: w, page: c?.previous ?? null, sql: periodSql(m.key, 2 * n, n) },
+        { metric: `${m.label} — n. anomalie`, window: w, page: v ? anomalies(v, trends.days, n).length : null, sql: anomalySql(m.key, n) },
+      );
+    }
+  }
+  for (const w of ["today", "7d", "30d"] as GrowthWindow[]) {
+    const ch = snap.chain?.[w] ? normalizeChain(snap.chain[w]) : null;
+    const t = ch?.ok ? chainTotals(ch.data) : null;
+    out.push(
+      { metric: "Catena: Σ sessioni", window: w, page: t?.sessions ?? null, sql: `SELECT count(DISTINCT session_id) FROM events WHERE event_type='page_view' AND ${between("created_at", w)}` },
+      { metric: "Catena: Σ signup avviati", window: w, page: t?.signup_started ?? null, sql: `SELECT count(*) FROM events WHERE event_type='signup_started' AND ${between("created_at", w)}` },
+      { metric: "Catena: Σ signup completati", window: w, page: t?.signup_completed ?? null, sql: `SELECT count(*) FROM events WHERE event_type='signup_completed' AND ${between("created_at", w)}` },
+      { metric: "Catena: Σ profili", window: w, page: t?.profiles ?? null, sql: `SELECT count(*) FROM profiles WHERE ${between("created_at", w)}` },
+      { metric: "Catena: Σ paganti", window: w, page: t?.paying ?? null, sql: `SELECT count(*) FROM profiles WHERE ${between("created_at", w)} AND plan IN ('base','premium') AND plan_source = ANY(ARRAY[${PAID}]) AND NOT coalesce(plan_expires_at < '${T}'::timestamptz, false)` },
+      { metric: "Catena: profili senza attribuzione", window: w, page: t?.profilesUnattributed ?? null, sql: `SELECT count(*) FROM profiles WHERE acquisition IS NULL AND ${between("created_at", w)}` },
+    );
+  }
+  return out;
+}
+
+type Tx = Parameters<Parameters<ReturnType<typeof connect>["begin"]>[1]>[0];
+
+/** Every day of every series, and every cell of every chain row. Returns the number of mismatches. */
+async function bulkChecks(tx: Tx): Promise<number> {
+  let bad = 0;
+  console.log("\n| Controllo per cella | Finestra | Celle | Uguali | Divergenze |");
+  console.log("|---|---|---:|---:|---|");
+  if (!trends) {
+    console.log("| Serie giornaliere | — | 0 | 0 | SNAPSHOT SENZA SERIE |");
+    return 1;
+  }
+  for (const m of SERIES_METRICS) {
+    const rows = await tx.unsafe(`SELECT to_char(day, 'YYYY-MM-DD') AS d, n::int AS n FROM (${dailySql(m.key)}) x`);
+    const sqlByDay = new Map(rows.map((r) => [String(r.d), Number(r.n)]));
+    const v = trends.values[m.key];
+    const diffs = trends.days.filter((d, i) => v === null || v[i] !== (sqlByDay.get(d) ?? 0));
+    const extra = [...sqlByDay.keys()].filter((d) => !trends.days.includes(d));
+    bad += diffs.length + extra.length;
+    const list = [...diffs, ...extra.map((d) => `${d} (fuori lista)`)];
+    console.log(`| Serie «${m.label}», ogni giorno | ${trends.days[0]} → ${trends.days.at(-1)} | ${trends.days.length} | ${trends.days.length - diffs.length} | ${list.length ? list.slice(0, 5).join(", ") : "0"} |`);
+  }
+
+  // Chain, per source label: an independent row-level formulation, then the
+  // same privacy coarsening as the page (core/privacy.ts defines the label).
+  const COLS = ["sessions", "signup_started", "signup_completed", "profiles", "paying"] as const;
+  for (const w of ["today", "7d", "30d"] as GrowthWindow[]) {
+    const lbl = `CASE WHEN coalesce(meta->>'utm_source','') <> '' THEN meta->>'utm_source'
+      WHEN coalesce(meta->>'src','') <> '' THEN 'src:' || (meta->>'src')
+      WHEN coalesce(meta->>'crm','') <> '' THEN 'crm:' || (meta->>'crm')
+      WHEN coalesce(meta->>'ref','') <> '' THEN 'ref:' || (meta->>'ref')
+      WHEN coalesce(meta->>'ref_host','') <> '' THEN 'referrer:' || (meta->>'ref_host') END`;
+    const sess = `SELECT session_id, max(${lbl}) AS l FROM events WHERE event_type='page_view' AND session_id IS NOT NULL AND ${between("created_at", w)} GROUP BY session_id`;
+    const q1 = `SELECT coalesce(l, '(diretto / nessuna fonte)') AS source, count(*)::int AS sessions FROM (${sess}) s GROUP BY 1`;
+    const q2 = `SELECT CASE WHEN e.session_id IS NULL THEN '(signup senza sessione)'
+          WHEN s.session_id IS NULL THEN '(sessione senza page_view nella finestra)'
+          ELSE coalesce(s.l, '(diretto / nessuna fonte)') END AS source,
+        sum((e.event_type='signup_started')::int)::int AS signup_started,
+        sum((e.event_type='signup_completed')::int)::int AS signup_completed
+      FROM events e LEFT JOIN (${sess}) s ON s.session_id = e.session_id
+      WHERE e.event_type IN ('signup_started','signup_completed') AND ${between("e.created_at", w)} GROUP BY 1`;
+    const q3 = `SELECT CASE WHEN acquisition IS NULL THEN '(non registrata)'
+          WHEN coalesce(acquisition->>'utm_source','') <> '' THEN acquisition->>'utm_source'
+          WHEN substring(acquisition->>'referrer' from '://([^/]+)') IS NOT NULL THEN 'referrer:' || substring(acquisition->>'referrer' from '://([^/]+)')
+          ELSE '(diretto / nessuna fonte)' END AS source,
+        count(*)::int AS profiles,
+        sum((plan IN ('base','premium') AND plan_source = ANY(ARRAY[${PAID}]) AND NOT coalesce(plan_expires_at < '${T}'::timestamptz, false))::int)::int AS paying
+      FROM profiles WHERE ${between("created_at", w)} GROUP BY 1`;
+    const sqlRows = new Map<string, Record<string, number>>();
+    for (const q of [q1, q2, q3]) {
+      for (const r of await tx.unsafe(q)) {
+        const k = coarsenLabel(String(r.source));
+        const acc = sqlRows.get(k) ?? Object.fromEntries(COLS.map((c) => [c, 0]));
+        for (const c of COLS) if (r[c] !== undefined) acc[c] += Number(r[c]);
+        sqlRows.set(k, acc);
+      }
+    }
+    const ch = snap.chain?.[w] ? normalizeChain(snap.chain[w]) : null;
+    const page = new Map((ch?.ok ? ch.data : []).map((r) => [r.source, r]));
+    const labels = new Set([...sqlRows.keys(), ...page.keys()]);
+    const diffs: string[] = [];
+    for (const l of labels) {
+      for (const c of COLS) {
+        const a = page.get(l)?.[c] ?? 0;
+        const b = sqlRows.get(l)?.[c] ?? 0;
+        if (a !== b) diffs.push(`${l}.${c} ${a}≠${b}`);
+      }
+    }
+    if (!ch?.ok) diffs.unshift("catena assente nello snapshot");
+    bad += diffs.length;
+    const cells = labels.size * COLS.length;
+    console.log(`| Catena per fonte (${labels.size} fonti × ${COLS.length} colonne) | ${w} | ${cells} | ${cells - diffs.length} | ${diffs.length ? diffs.slice(0, 5).join(", ") : "0"} |`);
+  }
+  return bad;
+}
+
 async function main() {
   const url = readEnvKey("DATABASE_URL");
   if (!url) throw new Error("DATABASE_URL non trovata (env o --env-file)");
   const sql = connect(url);
   let bad = 0;
   try {
-    const list = checks();
+    const list = [...checks(), ...extraChecks()];
     const got = await sql.begin("read only", async (tx) => {
       const vals: number[] = [];
       for (const c of list) {
@@ -93,6 +268,9 @@ async function main() {
       console.log(`| ${c.metric} | ${c.window} | ${c.page ?? "n/d"} | ${got[i]} | ${ok ? "OK" : "DIVERSO"} |`);
     });
     console.log(`\n${list.length - bad}/${list.length} uguali`);
+    const bulkBad = await sql.begin("read only", (tx) => bulkChecks(tx));
+    console.log(`\nControlli per cella: ${bulkBad} divergenze`);
+    bad += bulkBad;
   } finally {
     await sql.end();
   }

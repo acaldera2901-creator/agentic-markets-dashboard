@@ -146,3 +146,111 @@ export function buildSql(w: GrowthWindow): Record<QueryKey, string> {
         ((SELECT sum(n * abs(pm - ym)) FROM b) / nullif((SELECT count(*) FROM r), 0) / 3)::float AS ece`,
   };
 }
+
+// ─── Filone A: daily series + source chain (additions) ───────────────────────
+
+/** Complete Europe/Rome days fetched for the series: 30 shown + 30 to compare against. */
+export const SERIES_HISTORY_DAYS = 60;
+
+/** Start of today in Europe/Rome — the series stop here: today is partial and excluded. */
+const ROME_TODAY0 = "(date_trunc('day', now() AT TIME ZONE 'Europe/Rome') AT TIME ZONE 'Europe/Rome')";
+const ROME_DAY0 = `((date_trunc('day', now() AT TIME ZONE 'Europe/Rome') - interval '${SERIES_HISTORY_DAYS} days') AT TIME ZONE 'Europe/Rome')`;
+const romeDay = (col: string) => `to_char((${col} AT TIME ZONE 'Europe/Rome')::date, 'YYYY-MM-DD')`;
+const seriesRange = (col: string) => `${col} >= ${ROME_DAY0} AND ${col} < ${ROME_TODAY0}`;
+
+export const SERIES_KEYS = ["seriesEvents", "seriesProfiles", "seriesOrders"] as const;
+export type SeriesQueryKey = (typeof SERIES_KEYS)[number];
+
+/**
+ * One row per Europe/Rome day that HAS data (sparse): core/series.ts fills the
+ * missing days with a real 0 — only when the query itself succeeded.
+ * "sessions" = distinct consented session_id per day (a session across
+ * midnight counts on both days).
+ */
+export function buildSeriesSql(): Record<SeriesQueryKey, string> {
+  return {
+    seriesEvents: `SELECT ${romeDay("created_at")} AS day,
+        count(*) FILTER (WHERE event_type = 'page_view')::int AS page_views,
+        count(DISTINCT session_id) FILTER (WHERE event_type = 'page_view')::int AS sessions,
+        count(*) FILTER (WHERE event_type = 'signup_started')::int AS signup_started,
+        count(*) FILTER (WHERE event_type = 'signup_completed')::int AS signup_completed,
+        count(*) FILTER (WHERE event_type = 'partner_click')::int AS partner_click,
+        count(*) FILTER (WHERE event_type = 'client_error')::int AS client_error
+      FROM events
+      WHERE event_type IN ('page_view','signup_started','signup_completed','partner_click','client_error')
+        AND ${seriesRange("created_at")}
+      GROUP BY 1 ORDER BY 1`,
+
+    seriesProfiles: `SELECT ${romeDay("created_at")} AS day, count(*)::int AS new_profiles
+      FROM profiles WHERE ${seriesRange("created_at")} GROUP BY 1 ORDER BY 1`,
+
+    // Same scope as the funnel's "Ordini pagati": Paygate + PayPal (paid_at) + Shopify orders/paid.
+    seriesOrders: `SELECT day, count(*)::int AS paid_orders FROM (
+        SELECT ${romeDay("paid_at")} AS day FROM paygate_orders WHERE paid_at IS NOT NULL AND ${seriesRange("paid_at")}
+        UNION ALL
+        SELECT ${romeDay("paid_at")} FROM paypal_orders WHERE paid_at IS NOT NULL AND ${seriesRange("paid_at")}
+        UNION ALL
+        SELECT ${romeDay("processed_at")} FROM shopify_events WHERE event_type = 'orders/paid' AND ${seriesRange("processed_at")}) o
+      GROUP BY 1 ORDER BY 1`,
+  };
+}
+
+/**
+ * Source chain for a window: source → sessions → signups → profiles → paying.
+ * Two attribution bases, joined on the source label:
+ *  - sessions / signup events: the landing page_view of a CONSENTED session
+ *    (same label rule as `sources` above); signups without session_id, or whose
+ *    session has no page_view in the window, get their own explicit rows.
+ *  - profiles / paying: profiles.acquisition (NULL for every pre-attribution
+ *    profile → "(non registrata)").
+ * Referrer labels carry the raw host: core/channels.ts coarsens them to the
+ * registrable domain (core/privacy.ts) and sums the rows that collapse.
+ */
+export function buildChainSql(w: GrowthWindow): string {
+  const W = windowStartSql(w);
+  return `WITH sess AS (
+        SELECT session_id, max(coalesce(
+          nullif(meta->>'utm_source', ''),
+          'src:' || nullif(meta->>'src', ''),
+          'crm:' || nullif(meta->>'crm', ''),
+          'ref:' || nullif(meta->>'ref', ''),
+          'referrer:' || nullif(meta->>'ref_host', ''))) AS src
+        FROM events
+        WHERE event_type = 'page_view' AND session_id IS NOT NULL AND created_at >= ${W}
+        GROUP BY session_id),
+      sig AS (
+        SELECT session_id,
+          count(*) FILTER (WHERE event_type = 'signup_started') AS st,
+          count(*) FILTER (WHERE event_type = 'signup_completed') AS co
+        FROM events
+        WHERE event_type IN ('signup_started','signup_completed') AND created_at >= ${W}
+        GROUP BY session_id),
+      ev AS (
+        SELECT CASE
+            WHEN s.session_id IS NULL AND g.session_id IS NULL THEN '(signup senza sessione)'
+            WHEN s.session_id IS NULL THEN '(sessione senza page_view nella finestra)'
+            ELSE coalesce(s.src, '(diretto / nessuna fonte)') END AS source,
+          count(s.session_id)::int AS sessions,
+          coalesce(sum(g.st), 0)::int AS signup_started,
+          coalesce(sum(g.co), 0)::int AS signup_completed
+        FROM sess s FULL JOIN sig g ON g.session_id = s.session_id
+        GROUP BY 1),
+      pr AS (
+        SELECT CASE WHEN acquisition IS NULL THEN '(non registrata)' ELSE coalesce(
+            nullif(acquisition->>'utm_source', ''),
+            'referrer:' || nullif(split_part(split_part(acquisition->>'referrer', '://', 2), '/', 1), ''),
+            '(diretto / nessuna fonte)') END AS source,
+          count(*)::int AS profiles,
+          count(*) FILTER (WHERE plan IN ('base','premium') AND plan_source IN (${PAID_SQL_LIST})
+            AND (plan_expires_at IS NULL OR plan_expires_at >= now()))::int AS paying
+        FROM profiles WHERE created_at >= ${W}
+        GROUP BY 1)
+      SELECT coalesce(ev.source, pr.source) AS source,
+        coalesce(ev.sessions, 0) AS sessions,
+        coalesce(ev.signup_started, 0) AS signup_started,
+        coalesce(ev.signup_completed, 0) AS signup_completed,
+        coalesce(pr.profiles, 0) AS profiles,
+        coalesce(pr.paying, 0) AS paying
+      FROM ev FULL JOIN pr ON pr.source = ev.source
+      ORDER BY 2 DESC, 5 DESC, 1`;
+}

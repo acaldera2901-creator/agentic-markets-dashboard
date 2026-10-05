@@ -38,6 +38,34 @@ describe("snapshot source", () => {
   });
 });
 
+describe("snapshot — Filone A extras", () => {
+  it("ships series and chain, read without failures, chain labels already coarsened", async () => {
+    const s = assertSnapshot(snapshotJson);
+    expect(s.series && Object.values(s.series).every((r) => r.ok)).toBe(true);
+    for (const { key } of WINDOWS) {
+      const c = s.chain?.[key];
+      expect(c?.ok, key).toBe(true);
+      for (const r of c?.ok ? c.data : []) {
+        const label = String(r.source);
+        if (label.startsWith("referrer:")) expect(label.split(".").length, label).toBeLessThanOrEqual(3);
+        if (label.startsWith("ref:")) expect(label).toBe("ref:(codice referral)");
+      }
+    }
+    const { data } = await snapshotSource().load("30d");
+    expect(data.trends?.days).toHaveLength(60);
+    expect(data.trends?.errors).toEqual({});
+  });
+
+  it("an older snapshot without extras still renders (extras undefined, not zeros)", async () => {
+    const { series: _s, chain: _c, ...old } = snapshotJson as Record<string, unknown>;
+    void _s;
+    void _c;
+    const { data } = await snapshotSource(old).load("7d");
+    expect(data.trends).toBeUndefined();
+    expect(data.chain).toBeUndefined();
+  });
+});
+
 describe("live source config", () => {
   it("accepts the repo's SQLAlchemy-style URL", () => {
     expect(normalizeDbUrl("postgresql+asyncpg://u:p@h:5432/db")).toBe("postgresql://u:p@h:5432/db");

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-05T21:47:24.006Z",
-  "dbNow": "2026-10-05T21:47:19.466Z",
+  "generatedAt": "2026-10-05T22:10:35.276Z",
+  "dbNow": "2026-10-05T22:10:32.438Z",
   "origin": "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
   "windows": {
     "today": {
@@ -9,11 +9,11 @@
         "ok": true,
         "data": [
           {
-            "page_views": 43,
-            "page_views_no_session": 31,
-            "sessions": 8,
+            "page_views": 5,
+            "page_views_no_session": 5,
+            "sessions": 0,
             "tools_sessions": 0,
-            "predictions_sessions": 2
+            "predictions_sessions": 0
           }
         ]
       },
@@ -30,8 +30,8 @@
             "plan_view": 0,
             "plan_cta_click": 0,
             "checkout_opened": 0,
-            "card_open": 1,
-            "card_open_sessions": 1,
+            "card_open": 0,
+            "card_open_sessions": 0,
             "partner_click": 0,
             "partner_menu_open": 0,
             "client_error": 0
@@ -85,9 +85,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 8.117399,
-            "football_age_s": 6274.068885,
-            "tennis_age_s": 6373.311298,
+            "odds_age_s": 172.511734,
+            "football_age_s": 482.594785,
+            "tennis_age_s": 568.304254,
             "error_patterns_24h": 0
           }
         ]
@@ -97,23 +97,14 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.598959283979383,
-            "ece": 0.0374676171094505
+            "brier": 0.600827957002256,
+            "ece": 0.0355557702970629
           }
         ]
       },
       "sources": {
         "ok": true,
-        "data": [
-          {
-            "source": "(nessuna fonte)",
-            "sessions": 7
-          },
-          {
-            "source": "coldmail",
-            "sessions": 1
-          }
-        ]
+        "data": []
       },
       "channels": {
         "ok": true,
@@ -178,13 +169,7 @@
       },
       "widget": {
         "ok": true,
-        "data": [
-          {
-            "host": "slotsbonus.bet",
-            "views": 5,
-            "clicks": 0
-          }
-        ]
+        "data": []
       }
     },
     "7d": {
@@ -192,8 +177,8 @@
         "ok": true,
         "data": [
           {
-            "page_views": 516,
-            "page_views_no_session": 331,
+            "page_views": 521,
+            "page_views_no_session": 336,
             "sessions": 50,
             "tools_sessions": 6,
             "predictions_sessions": 14
@@ -268,9 +253,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 8.117399,
-            "football_age_s": 6274.068885,
-            "tennis_age_s": 6373.311298,
+            "odds_age_s": 172.511734,
+            "football_age_s": 482.594785,
+            "tennis_age_s": 568.304254,
             "error_patterns_24h": 0
           }
         ]
@@ -280,8 +265,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.598959479493253,
-            "ece": 0.0374675495668894
+            "brier": 0.600826778063709,
+            "ece": 0.0355550249401867
           }
         ]
       },
@@ -397,8 +382,8 @@
         "ok": true,
         "data": [
           {
-            "page_views": 3094,
-            "page_views_no_session": 1351,
+            "page_views": 3099,
+            "page_views_no_session": 1356,
             "sessions": 400,
             "tools_sessions": 59,
             "predictions_sessions": 225
@@ -473,9 +458,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 8.117399,
-            "football_age_s": 6274.068885,
-            "tennis_age_s": 6373.311298,
+            "odds_age_s": 172.511734,
+            "football_age_s": 482.594785,
+            "tennis_age_s": 568.304254,
             "error_patterns_24h": 0
           }
         ]
@@ -485,8 +470,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.598964937553436,
-            "ece": 0.0374665636282288
+            "brier": 0.60082927872089,
+            "ece": 0.0355567218307511
           }
         ]
       },
@@ -628,6 +613,769 @@
           }
         ]
       }
+    }
+  },
+  "series": {
+    "seriesEvents": {
+      "ok": true,
+      "data": [
+        {
+          "day": "2026-08-07",
+          "page_views": 16,
+          "sessions": 4,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-08",
+          "page_views": 93,
+          "sessions": 3,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-09",
+          "page_views": 5,
+          "sessions": 2,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-10",
+          "page_views": 15,
+          "sessions": 4,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-12",
+          "page_views": 9,
+          "sessions": 3,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-13",
+          "page_views": 14,
+          "sessions": 4,
+          "signup_started": 2,
+          "signup_completed": 0,
+          "partner_click": 1,
+          "client_error": 15
+        },
+        {
+          "day": "2026-08-14",
+          "page_views": 18,
+          "sessions": 7,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 1
+        },
+        {
+          "day": "2026-08-15",
+          "page_views": 6,
+          "sessions": 1,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 1
+        },
+        {
+          "day": "2026-08-16",
+          "page_views": 7,
+          "sessions": 1,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-17",
+          "page_views": 55,
+          "sessions": 9,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-18",
+          "page_views": 33,
+          "sessions": 4,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 2,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-19",
+          "page_views": 22,
+          "sessions": 6,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-20",
+          "page_views": 876,
+          "sessions": 12,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 3
+        },
+        {
+          "day": "2026-08-21",
+          "page_views": 907,
+          "sessions": 2,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-22",
+          "page_views": 1235,
+          "sessions": 11,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 3,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-23",
+          "page_views": 26,
+          "sessions": 4,
+          "signup_started": 1,
+          "signup_completed": 1,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-24",
+          "page_views": 194,
+          "sessions": 14,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 5
+        },
+        {
+          "day": "2026-08-25",
+          "page_views": 104,
+          "sessions": 8,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-26",
+          "page_views": 61,
+          "sessions": 16,
+          "signup_started": 1,
+          "signup_completed": 1,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-27",
+          "page_views": 12,
+          "sessions": 4,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-28",
+          "page_views": 75,
+          "sessions": 14,
+          "signup_started": 3,
+          "signup_completed": 2,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-29",
+          "page_views": 63,
+          "sessions": 6,
+          "signup_started": 3,
+          "signup_completed": 2,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-30",
+          "page_views": 246,
+          "sessions": 13,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 1,
+          "client_error": 0
+        },
+        {
+          "day": "2026-08-31",
+          "page_views": 372,
+          "sessions": 21,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 5,
+          "client_error": 4
+        },
+        {
+          "day": "2026-09-01",
+          "page_views": 63,
+          "sessions": 8,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-02",
+          "page_views": 139,
+          "sessions": 19,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 1,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-03",
+          "page_views": 36,
+          "sessions": 5,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 1
+        },
+        {
+          "day": "2026-09-04",
+          "page_views": 53,
+          "sessions": 6,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-05",
+          "page_views": 23,
+          "sessions": 1,
+          "signup_started": 1,
+          "signup_completed": 1,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-06",
+          "page_views": 64,
+          "sessions": 7,
+          "signup_started": 3,
+          "signup_completed": 3,
+          "partner_click": 2,
+          "client_error": 4
+        },
+        {
+          "day": "2026-09-07",
+          "page_views": 77,
+          "sessions": 17,
+          "signup_started": 1,
+          "signup_completed": 1,
+          "partner_click": 2,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-08",
+          "page_views": 122,
+          "sessions": 12,
+          "signup_started": 2,
+          "signup_completed": 2,
+          "partner_click": 1,
+          "client_error": 14
+        },
+        {
+          "day": "2026-09-09",
+          "page_views": 39,
+          "sessions": 16,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 2,
+          "client_error": 1
+        },
+        {
+          "day": "2026-09-10",
+          "page_views": 214,
+          "sessions": 12,
+          "signup_started": 2,
+          "signup_completed": 1,
+          "partner_click": 2,
+          "client_error": 4
+        },
+        {
+          "day": "2026-09-11",
+          "page_views": 174,
+          "sessions": 12,
+          "signup_started": 6,
+          "signup_completed": 4,
+          "partner_click": 5,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-12",
+          "page_views": 65,
+          "sessions": 6,
+          "signup_started": 2,
+          "signup_completed": 1,
+          "partner_click": 1,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-13",
+          "page_views": 29,
+          "sessions": 4,
+          "signup_started": 2,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-14",
+          "page_views": 82,
+          "sessions": 11,
+          "signup_started": 4,
+          "signup_completed": 3,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-15",
+          "page_views": 92,
+          "sessions": 9,
+          "signup_started": 2,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 1
+        },
+        {
+          "day": "2026-09-16",
+          "page_views": 92,
+          "sessions": 10,
+          "signup_started": 1,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 4
+        },
+        {
+          "day": "2026-09-17",
+          "page_views": 68,
+          "sessions": 5,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-18",
+          "page_views": 51,
+          "sessions": 10,
+          "signup_started": 1,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-19",
+          "page_views": 6,
+          "sessions": 0,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-20",
+          "page_views": 14,
+          "sessions": 1,
+          "signup_started": 1,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-21",
+          "page_views": 121,
+          "sessions": 15,
+          "signup_started": 15,
+          "signup_completed": 3,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-22",
+          "page_views": 377,
+          "sessions": 53,
+          "signup_started": 2,
+          "signup_completed": 1,
+          "partner_click": 0,
+          "client_error": 20
+        },
+        {
+          "day": "2026-09-23",
+          "page_views": 378,
+          "sessions": 40,
+          "signup_started": 1,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 2
+        },
+        {
+          "day": "2026-09-24",
+          "page_views": 284,
+          "sessions": 114,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 1
+        },
+        {
+          "day": "2026-09-25",
+          "page_views": 102,
+          "sessions": 24,
+          "signup_started": 1,
+          "signup_completed": 0,
+          "partner_click": 1,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-26",
+          "page_views": 25,
+          "sessions": 5,
+          "signup_started": 3,
+          "signup_completed": 1,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-27",
+          "page_views": 9,
+          "sessions": 2,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-28",
+          "page_views": 93,
+          "sessions": 8,
+          "signup_started": 4,
+          "signup_completed": 2,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-29",
+          "page_views": 80,
+          "sessions": 18,
+          "signup_started": 3,
+          "signup_completed": 1,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-09-30",
+          "page_views": 52,
+          "sessions": 11,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-10-01",
+          "page_views": 83,
+          "sessions": 12,
+          "signup_started": 8,
+          "signup_completed": 1,
+          "partner_click": 2,
+          "client_error": 1
+        },
+        {
+          "day": "2026-10-02",
+          "page_views": 183,
+          "sessions": 7,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 3
+        },
+        {
+          "day": "2026-10-03",
+          "page_views": 59,
+          "sessions": 3,
+          "signup_started": 2,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-10-04",
+          "page_views": 16,
+          "sessions": 2,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        },
+        {
+          "day": "2026-10-05",
+          "page_views": 43,
+          "sessions": 8,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "partner_click": 0,
+          "client_error": 0
+        }
+      ]
+    },
+    "seriesProfiles": {
+      "ok": true,
+      "data": [
+        {
+          "day": "2026-08-07",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-08-12",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-08-13",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-08-23",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-08-24",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-08-26",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-08-28",
+          "new_profiles": 2
+        },
+        {
+          "day": "2026-08-29",
+          "new_profiles": 2
+        },
+        {
+          "day": "2026-09-05",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-09-06",
+          "new_profiles": 3
+        },
+        {
+          "day": "2026-09-07",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-09-08",
+          "new_profiles": 2
+        },
+        {
+          "day": "2026-09-10",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-09-11",
+          "new_profiles": 3
+        },
+        {
+          "day": "2026-09-12",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-09-14",
+          "new_profiles": 3
+        },
+        {
+          "day": "2026-09-21",
+          "new_profiles": 3
+        },
+        {
+          "day": "2026-09-22",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-09-26",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-09-28",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-09-29",
+          "new_profiles": 1
+        },
+        {
+          "day": "2026-10-01",
+          "new_profiles": 1
+        }
+      ]
+    },
+    "seriesOrders": {
+      "ok": true,
+      "data": []
+    }
+  },
+  "chain": {
+    "today": {
+      "ok": true,
+      "data": []
+    },
+    "7d": {
+      "ok": true,
+      "data": [
+        {
+          "source": "(diretto / nessuna fonte)",
+          "sessions": 46,
+          "signup_started": 2,
+          "signup_completed": 1,
+          "profiles": 0,
+          "paying": 0
+        },
+        {
+          "source": "coldmail",
+          "sessions": 3,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 0,
+          "paying": 0
+        },
+        {
+          "source": "chatgpt.com",
+          "sessions": 1,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 1,
+          "paying": 0
+        },
+        {
+          "source": "(non registrata)",
+          "sessions": 0,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 1,
+          "paying": 0
+        },
+        {
+          "source": "(signup senza sessione)",
+          "sessions": 0,
+          "signup_started": 11,
+          "signup_completed": 1,
+          "profiles": 0,
+          "paying": 0
+        }
+      ]
+    },
+    "30d": {
+      "ok": true,
+      "data": [
+        {
+          "source": "(diretto / nessuna fonte)",
+          "sessions": 387,
+          "signup_started": 23,
+          "signup_completed": 14,
+          "profiles": 4,
+          "paying": 0
+        },
+        {
+          "source": "coldmail",
+          "sessions": 4,
+          "signup_started": 1,
+          "signup_completed": 0,
+          "profiles": 0,
+          "paying": 0
+        },
+        {
+          "source": "referrer:chatgpt.site",
+          "sessions": 4,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 0,
+          "paying": 0
+        },
+        {
+          "source": "chatgpt.com",
+          "sessions": 2,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 5,
+          "paying": 0
+        },
+        {
+          "source": "referrer:google.com",
+          "sessions": 2,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 3,
+          "paying": 0
+        },
+        {
+          "source": "ig",
+          "sessions": 1,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 0,
+          "paying": 0
+        },
+        {
+          "source": "(non registrata)",
+          "sessions": 0,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 9,
+          "paying": 0
+        },
+        {
+          "source": "qa",
+          "sessions": 0,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 1,
+          "paying": 0
+        },
+        {
+          "source": "(signup senza sessione)",
+          "sessions": 0,
+          "signup_started": 42,
+          "signup_completed": 10,
+          "profiles": 0,
+          "paying": 0
+        }
+      ]
     }
   }
 }

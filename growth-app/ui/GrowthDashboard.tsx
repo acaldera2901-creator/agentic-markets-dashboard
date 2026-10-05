@@ -18,6 +18,8 @@ import {
   windowLabel,
 } from "@/core/kpi";
 import type { GrowthData, Result, SourceMeta } from "@/core/model";
+import { Channels } from "./sections/Channels";
+import { Trends } from "./sections/Trends";
 
 export interface GrowthDashboardProps {
   data: GrowthData;
@@ -515,6 +517,8 @@ export function GrowthDashboard({ data: d, meta, hrefFor }: GrowthDashboardProps
             />
           </div>
         </Section>
+
+        <Trends data={d} /><Channels data={d} />
 
         <Section title="Activation" hint="chi si iscrive e inizia a usarlo">
           <TileGrid tiles={activation} />

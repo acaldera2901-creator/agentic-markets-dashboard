@@ -7,8 +7,10 @@
 import postgres from "postgres";
 import { type GrowthWindow, WINDOWS } from "@/core/kpi";
 import { type RawResults, type Result, type Row, normalize } from "@/core/model";
+import { mergeChain, normalizeChain } from "@/core/channels";
 import { coarsenRows } from "@/core/privacy";
-import { LIST_KEYS, type QueryKey, SCALAR_KEYS, buildSql } from "@/core/sql";
+import { type RawSeries, normalizeSeries } from "@/core/series";
+import { LIST_KEYS, type QueryKey, SCALAR_KEYS, SERIES_KEYS, buildChainSql, buildSeriesSql, buildSql } from "@/core/sql";
 import type { GrowthSource } from "./source";
 
 const STATEMENT_TIMEOUT_MS = 60_000;
@@ -65,19 +67,38 @@ export async function readRaw(sql: Sql, w: GrowthWindow): Promise<RawResults> {
  * transaction — all numbers see the same data and the same now(). Any failure
  * aborts the whole snapshot (a snapshot with holes must not ship).
  */
-export async function readAllWindows(sql: Sql): Promise<{ dbNow: string; windows: Record<GrowthWindow, RawResults> }> {
+export async function readAllWindows(sql: Sql): Promise<{
+  dbNow: string;
+  windows: Record<GrowthWindow, RawResults>;
+  series: RawSeries;
+  chain: Record<GrowthWindow, Result<Row[]>>;
+}> {
   return sql.begin("isolation level repeatable read read only", async (tx) => {
     await tx.unsafe(`SET LOCAL statement_timeout = ${STATEMENT_TIMEOUT_MS}`);
     const [{ now }] = await tx.unsafe("SELECT now() AS now");
     const windows = {} as Record<GrowthWindow, RawResults>;
+    const chain = {} as Record<GrowthWindow, Result<Row[]>>;
     for (const { key } of WINDOWS) {
       const q = buildSql(key);
       const raw = {} as RawResults;
       for (const k of KEYS) raw[k] = { ok: true, data: (await tx.unsafe(q[k])).map((r) => ({ ...r })) };
       windows[key] = sanitize(raw);
+      // Labels coarsened BEFORE they reach the snapshot file.
+      chain[key] = { ok: true, data: mergeChain((await tx.unsafe(buildChainSql(key))).map((r) => ({ ...r }))) };
     }
-    return { dbNow: new Date(now as string | Date).toISOString(), windows };
+    const sq = buildSeriesSql();
+    const series = {} as RawSeries;
+    for (const k of SERIES_KEYS) series[k] = { ok: true, data: (await tx.unsafe(sq[k])).map((r) => ({ ...r })) };
+    return { dbNow: new Date(now as string | Date).toISOString(), windows, series, chain };
   });
+}
+
+/** Live page load of the Filone A extras, each query in its own read-only transaction. */
+export async function readExtras(sql: Sql, w: GrowthWindow, asOf: string) {
+  const sq = buildSeriesSql();
+  const [chainRaw, ...seriesRaw] = await Promise.all([readOnly(sql, buildChainSql(w)), ...SERIES_KEYS.map((k) => readOnly(sql, sq[k]))]);
+  const series = Object.fromEntries(SERIES_KEYS.map((k, i) => [k, seriesRaw[i]])) as RawSeries;
+  return { trends: normalizeSeries(series, asOf), chain: normalizeChain(chainRaw) };
 }
 
 /** The database clock, so a snapshot records the instant its windows refer to. */
@@ -91,7 +112,8 @@ export function liveSource(url: string): GrowthSource {
   return {
     async load(w) {
       const asOf = await dbNow(sql);
-      return { data: normalize(w, await readRaw(sql, w)), meta: { kind: "live", asOf, origin: "database di produzione, lettura diretta (sola lettura)" } };
+      const [raw, extras] = await Promise.all([readRaw(sql, w), readExtras(sql, w, asOf)]);
+      return { data: { ...normalize(w, raw), ...extras }, meta: { kind: "live", asOf, origin: "database di produzione, lettura diretta (sola lettura)" } };
     },
   };
 }
