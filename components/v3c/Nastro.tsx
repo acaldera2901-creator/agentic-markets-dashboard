@@ -1,0 +1,53 @@
+// components/v3c/Nastro.tsx (#REDESIGN-V3C F1)
+// Il nastro mercato–stima: due punti su una scala comune con la finestra
+// dichiarata (30–60%), etichette dirette sui punti, il gap in punti. Sky =
+// mercato, lime = stima, tratteggio inchiostro = il gap. Sostituisce il «Price
+// Temp»: non c'è un termometro, c'è una misura.
+import { describeScale, formatSigned, gapPp, isFlat, positionIn, scaleWindow } from "@/lib/v3c/scale";
+
+type Props = {
+  /** % di mercato, margine rimosso. */
+  market: number;
+  /** % della stima. */
+  estimate: number;
+  marketLabel?: string;
+  estimateLabel?: string;
+  className?: string;
+};
+
+export function Nastro({ market, estimate, marketLabel = "Market", estimateLabel = "Estimate", className }: Props) {
+  const w = scaleWindow(market, estimate);
+  const g = gapPp(market, estimate);
+  const lo = Math.min(market, estimate);
+  const hi = Math.max(market, estimate);
+  const pct = (v: number) => `${positionIn(v, w).toFixed(2)}%`;
+  return (
+    <div className={["v3c-gl", className].filter(Boolean).join(" ")} role="img" aria-label={describeScale(market, estimate)}>
+      <div className="v3c-gl-track">
+        {w.ticks.map((t) => (
+          <u key={t} style={{ left: pct(t) }} />
+        ))}
+        <b style={{ left: pct(lo), width: `${(((hi - lo) / (w.hi - w.lo)) * 100).toFixed(2)}%` }} />
+        <i className="v3c-tm" style={{ left: pct(market) }}>
+          <span>
+            {marketLabel}
+            <b>{market}%</b>
+          </span>
+        </i>
+        <i className="v3c-te" style={{ left: pct(estimate) }}>
+          <span>
+            {estimateLabel}
+            <b>{estimate}%</b>
+          </span>
+        </i>
+      </div>
+      <div className="v3c-gl-k" aria-hidden="true">
+        <span>{w.lo}%</span>
+        <span className={["v3c-gl-g", isFlat(g) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
+          {isFlat(g) ? "in line" : "gap"} <b>{formatSigned(g)} pp</b>
+        </span>
+        <span>{w.hi}%</span>
+      </div>
+    </div>
+  );
+}
