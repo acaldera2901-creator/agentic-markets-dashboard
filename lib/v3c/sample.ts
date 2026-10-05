@@ -5,8 +5,8 @@
 // (Genoa 2.15 → 44% / 48% / +4 pp) così la pagina di prova parla la lingua
 // della board. Chi la importa marca a schermo ciò che mostra come SAMPLE.
 import { TOOL_SLUGS, type ToolSlug } from "@/lib/tools/registry";
-import { bookmakerMargin, expectedValue, kelly, noVigProbabilities } from "@/lib/betting-math";
 import type { TeamIdentity } from "./monogram";
+import { TOOL_SIGLA, toolPreview } from "./tools";
 
 export const SAMPLE = "SAMPLE" as const;
 
@@ -15,9 +15,18 @@ export const SAMPLE_TEAMS = {
   fio: { name: "Fiorentina", code: "FIO", colours: ["#5B2C86", "#FFFFFF"], coloursVerified: false },
   ray: { name: "Rayo Vallecano", code: "RAY", colours: ["#FFFFFF", "#E63329"], coloursVerified: false },
   ath: { name: "Athletic Club", code: "ATH", colours: ["#EE2523", "#FFFFFF"], coloursVerified: false },
+  uni: { name: "Union Berlin", code: "UNB", colours: ["#D4021D", "#F8D000"], coloursVerified: false },
+  elv: { name: "Elversberg", code: "ELV", colours: ["#003C8F", "#FFFFFF"], coloursVerified: false },
+  bru: { name: "Club Brugge", code: "BRU", colours: ["#0A5CB4", "#111111"], coloursVerified: false },
+  and: { name: "Anderlecht", code: "AND", colours: ["#4A2A8A", "#FFFFFF"], coloursVerified: false },
+  tor: { name: "Torino", code: "TOR", colours: ["#8A1E22", "#FFFFFF"], coloursVerified: false },
+  udi: { name: "Udinese", code: "UDI", colours: ["#111111", "#FFFFFF"], coloursVerified: false },
+  lyo: { name: "Lyon", code: "LYO", colours: ["#1A4297", "#DA291C"], coloursVerified: false },
+  nic: { name: "Nice", code: "NIC", colours: ["#CE0E2D", "#111111"], coloursVerified: false },
   alc: { name: "Carlos Alcaraz", code: "CA", nation: "ESP" },
   run: { name: "Holger Rune", code: "HR", nation: "DEN" },
   sin: { name: "Jannik Sinner", code: "JS", nation: "ITA" },
+  she: { name: "Ben Shelton", code: "BS", nation: "USA" },
 } as const satisfies Record<string, TeamIdentity>;
 
 export type SampleBook = { code: string; name: string; colour: string; feed: boolean };
@@ -67,6 +76,117 @@ export const SAMPLE_TENNIS = {
   ] as readonly SampleOutcome[],
 } as const;
 
+export type SampleBoardMatch = {
+  id: string;
+  league: string;
+  day: string;
+  time: string;
+  home: TeamIdentity;
+  away: TeamIdentity;
+  outcomes: readonly SampleOutcome[];
+  /** Prezzo di apertura dell'esito guida (per «open → now»). */
+  openPrice?: number;
+};
+
+const o = (key: string, label: string, price: number, market: number, estimate: number, prices: Record<string, number>): SampleOutcome => ({
+  key,
+  label,
+  price,
+  market,
+  estimate,
+  prices,
+});
+
+/**
+ * La board SAMPLE di oggi: gli otto incontri del prototipo (F5), stessi numeri
+ * di proto-v3c/proto.js. Serve a «la stessa matematica sul board di oggi»
+ * finché F2 non consegna l'endpoint reale (vedi lib/v3c/board-source.ts).
+ */
+export const SAMPLE_BOARD: readonly SampleBoardMatch[] = [
+  { id: SAMPLE_MATCH.id, league: "Serie A", day: "Sat", time: "15:00", home: SAMPLE_TEAMS.gen, away: SAMPLE_TEAMS.fio, outcomes: SAMPLE_MATCH.outcomes, openPrice: 2.02 },
+  {
+    id: "rayo-athletic",
+    league: "LaLiga",
+    day: "Sat",
+    time: "14:00",
+    home: SAMPLE_TEAMS.ray,
+    away: SAMPLE_TEAMS.ath,
+    openPrice: 2.3,
+    outcomes: [
+      o("home", "Rayo Vallecano", 2.45, 38, 41, { NB: 2.4, PM: 2.45, KO: 2.42 }),
+      o("draw", "Draw", 3.3, 29, 29, { NB: 3.25, PM: 3.3, KO: 3.2 }),
+      o("away", "Athletic Club", 2.9, 33, 30, { NB: 2.9, PM: 2.85, KO: 2.88 }),
+    ],
+  },
+  {
+    id: "union-elversberg",
+    league: "Bundesliga",
+    day: "Sat",
+    time: "15:30",
+    home: SAMPLE_TEAMS.uni,
+    away: SAMPLE_TEAMS.elv,
+    openPrice: 2.1,
+    outcomes: [
+      o("home", "Union Berlin", 1.95, 49, 45, { NB: 1.95, PM: 1.9, KO: 1.92 }),
+      o("draw", "Draw", 3.4, 28, 29, { NB: 3.4, PM: 3.35, KO: 3.3 }),
+      o("away", "Elversberg", 4.1, 23, 26, { NB: 4.0, PM: 4.1, KO: 3.95 }),
+    ],
+  },
+  {
+    id: "brugge-anderlecht",
+    league: "Pro League",
+    day: "Sat",
+    time: "16:00",
+    home: SAMPLE_TEAMS.bru,
+    away: SAMPLE_TEAMS.and,
+    openPrice: 1.85,
+    outcomes: [
+      o("home", "Club Brugge", 1.8, 53, 53, { NB: 1.78, PM: 1.8, KO: 1.77 }),
+      o("draw", "Draw", 3.6, 26, 26, { NB: 3.6, PM: 3.5, KO: 3.55 }),
+      o("away", "Anderlecht", 4.5, 21, 21, { NB: 4.4, PM: 4.5, KO: 4.33 }),
+    ],
+  },
+  { id: SAMPLE_TENNIS.id, league: SAMPLE_TENNIS.league, day: "Sat", time: "18:00", home: SAMPLE_TEAMS.alc, away: SAMPLE_TEAMS.run, outcomes: SAMPLE_TENNIS.outcomes, openPrice: 1.45 },
+  {
+    id: "torino-udinese",
+    league: "Serie A",
+    day: "Sat",
+    time: "20:45",
+    home: SAMPLE_TEAMS.tor,
+    away: SAMPLE_TEAMS.udi,
+    openPrice: 2.3,
+    outcomes: [
+      o("home", "Torino", 2.3, 41, 40, { NB: 2.3, PM: 2.25, KO: 2.28 }),
+      o("draw", "Draw", 3.2, 30, 32, { NB: 3.2, PM: 3.15, KO: 3.1 }),
+      o("away", "Udinese", 3.3, 29, 28, { NB: 3.25, PM: 3.3, KO: 3.2 }),
+    ],
+  },
+  {
+    id: "lyon-nice",
+    league: "Ligue 1",
+    day: "Sat",
+    time: "21:00",
+    home: SAMPLE_TEAMS.lyo,
+    away: SAMPLE_TEAMS.nic,
+    openPrice: 2.15,
+    outcomes: [
+      o("home", "Lyon", 2.05, 47, 44, { NB: 2.05, PM: 2.0, KO: 2.02 }),
+      o("draw", "Draw", 3.5, 27, 28, { NB: 3.45, PM: 3.5, KO: 3.4 }),
+      o("away", "Nice", 3.7, 26, 28, { NB: 3.6, PM: 3.7, KO: 3.65 }),
+    ],
+  },
+  {
+    id: "sinner-shelton",
+    league: "ATP Shanghai · SF",
+    day: "Sun",
+    time: "12:30",
+    home: SAMPLE_TEAMS.sin,
+    away: SAMPLE_TEAMS.she,
+    openPrice: 1.28,
+    outcomes: [o("home", "Sinner", 1.25, 78, 75, { NB: 1.25, PM: 1.24, KO: 1.25 }), o("away", "Shelton", 4.2, 22, 25, { NB: 4.1, PM: 4.2, KO: 4.0 })],
+  },
+];
+
 /** L'esito con il gap più largo: la riga della board lo mostra per primo. */
 export function leadOutcome(outcomes: readonly SampleOutcome[]): SampleOutcome {
   return outcomes.reduce((best, o) => (Math.abs(o.estimate - o.market) > Math.abs(best.estimate - best.market) ? o : best));
@@ -87,18 +207,19 @@ export type SampleTool = {
   line: string; // la riga d'uso
 };
 
+// La sigla vive nel motore dei tool (lib/v3c/tools.ts, F5): qui si legge, non si ridichiara.
 export const SAMPLE_TOOLS: readonly SampleTool[] = [
-  { slug: "odds-converter", sigla: "1÷p", name: "Odds converter", line: "decimal, fractional, American and implied %" },
-  { slug: "probability-calculator", sigla: "p%", name: "Probability calculator", line: "three prices to probabilities, margin removed" },
-  { slug: "margin-calculator", sigla: "Σ%", name: "Margin calculator", line: "how much the book keeps on a market" },
-  { slug: "arbitrage-calculator", sigla: "ARB", name: "Arbitrage calculator", line: "best price per outcome, across books" },
-  { slug: "parlay-calculator", sigla: "×", name: "Parlay calculator", line: "combined price, true probability, compounded margin" },
-  { slug: "ev-calculator", sigla: "EV", name: "EV calculator", line: "is the price worth it at your probability?" },
-  { slug: "kelly-criterion", sigla: "f*", name: "Kelly criterion", line: "fraction of bankroll, with half and quarter Kelly" },
-  { slug: "stake-calculator", sigla: "STK", name: "Stake calculator", line: "the stake that returns the profit you want" },
-  { slug: "bankroll-calculator", sigla: "BNK", name: "Bankroll calculator", line: "unit size, losing streak, drawdown" },
-  { slug: "roi-calculator", sigla: "ROI", name: "ROI calculator", line: "profit against the capital you started with" },
-  { slug: "yield-calculator", sigla: "YLD", name: "Yield calculator", line: "profit against everything you staked" },
+  { slug: "odds-converter", sigla: TOOL_SIGLA["odds-converter"], name: "Odds converter", line: "decimal, fractional, American and implied %" },
+  { slug: "probability-calculator", sigla: TOOL_SIGLA["probability-calculator"], name: "Probability calculator", line: "three prices to probabilities, margin removed" },
+  { slug: "margin-calculator", sigla: TOOL_SIGLA["margin-calculator"], name: "Margin calculator", line: "how much the book keeps on a market" },
+  { slug: "arbitrage-calculator", sigla: TOOL_SIGLA["arbitrage-calculator"], name: "Arbitrage calculator", line: "best price per outcome, across books" },
+  { slug: "parlay-calculator", sigla: TOOL_SIGLA["parlay-calculator"], name: "Parlay calculator", line: "combined price, true probability, compounded margin" },
+  { slug: "ev-calculator", sigla: TOOL_SIGLA["ev-calculator"], name: "EV calculator", line: "is the price worth it at your probability?" },
+  { slug: "kelly-criterion", sigla: TOOL_SIGLA["kelly-criterion"], name: "Kelly criterion", line: "fraction of bankroll, with half and quarter Kelly" },
+  { slug: "stake-calculator", sigla: TOOL_SIGLA["stake-calculator"], name: "Stake calculator", line: "the stake that returns the profit you want" },
+  { slug: "bankroll-calculator", sigla: TOOL_SIGLA["bankroll-calculator"], name: "Bankroll calculator", line: "unit size, losing streak, drawdown" },
+  { slug: "roi-calculator", sigla: TOOL_SIGLA["roi-calculator"], name: "ROI calculator", line: "profit against the capital you started with" },
+  { slug: "yield-calculator", sigla: TOOL_SIGLA["yield-calculator"], name: "Yield calculator", line: "profit against everything you staked" },
 ];
 
 export function sampleTool(slug: ToolSlug): SampleTool {
@@ -115,45 +236,16 @@ export function sampleToolsCoverRegistry(): boolean {
 
 export type ToolExample = { input: string; output: string; flat?: boolean; market?: boolean };
 
-const pct = (x: number, d = 1) => `${x.toFixed(d)}%`;
-const signedPct = (x: number, d = 1) => `${x > 0 ? "+" : x < 0 ? "−" : "±"}${Math.abs(x).toFixed(d)}%`;
-
 /**
- * L'esempio «input → risultato» dei quattro tool del banco, calcolato con
- * lib/betting-math sui numeri della partita d'esempio: il tool parla la stessa
- * lingua della board.
+ * L'esempio «input → risultato» di un tool, calcolato dal motore dei tool
+ * (lib/v3c/tools.ts, con lib/betting-math) sui numeri della partita d'esempio:
+ * il tool parla la stessa lingua della board. Da F5 copre tutti e 11 gli slug.
  */
 export function benchExample(slug: ToolSlug, match: typeof SAMPLE_MATCH = SAMPLE_MATCH): ToolExample {
   const lead = leadOutcome(match.outcomes);
-  const prices = match.outcomes.map((o) => o.price);
-  const p = lead.estimate / 100;
-  switch (slug) {
-    case "ev-calculator": {
-      const r = expectedValue({ probability: p, decimal: lead.price, stake: 1 });
-      const ev = r?.evPercent ?? 0;
-      return { input: `${lead.price.toFixed(2)} at ${lead.estimate}%`, output: signedPct(ev), flat: Math.abs(ev) < 1 };
-    }
-    case "kelly-criterion": {
-      const r = kelly({ probability: p, decimal: lead.price, bankroll: 500, fraction: 1 });
-      const f = (r?.fullKelly ?? 0) * 100;
-      return f <= 0
-        ? { input: `${lead.price.toFixed(2)} at ${lead.estimate}%`, output: "no stake", flat: true }
-        : { input: `${lead.price.toFixed(2)} at ${lead.estimate}%`, output: `${pct(f)} · €${Math.round((500 * f) / 100)}` };
-    }
-    case "margin-calculator": {
-      const m = (bookmakerMargin(prices) ?? 0) * 100;
-      return { input: prices.map((x) => x.toFixed(2)).join(" · "), output: pct(m) };
-    }
-    case "probability-calculator": {
-      const probs = noVigProbabilities(prices) ?? [];
-      return { input: prices.map((x) => x.toFixed(2)).join(" · "), output: pct((probs[0] ?? 0) * 100, 0), market: true };
-    }
-    case "odds-converter":
-      return { input: lead.price.toFixed(2), output: pct(100 / lead.price) };
-    default:
-      return { input: "—", output: "—", flat: true };
-  }
+  const p = toolPreview(slug, { outcomes: match.outcomes, lead });
+  return { input: p.input, output: p.output, flat: p.flat, market: p.market };
 }
 
-/** I quattro tool del banco in home (v3c §3). */
-export const BENCH_SLUGS: readonly ToolSlug[] = ["ev-calculator", "probability-calculator", "kelly-criterion", "margin-calculator"];
+/** I quattro tool del banco in home (v3c §3): definiti nel motore, riesportati qui. */
+export { BENCH_SLUGS } from "./tools";
