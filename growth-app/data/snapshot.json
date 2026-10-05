@@ -1,0 +1,633 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-10-05T21:47:24.006Z",
+  "dbNow": "2026-10-05T21:47:19.466Z",
+  "origin": "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
+  "windows": {
+    "today": {
+      "traffic": {
+        "ok": true,
+        "data": [
+          {
+            "page_views": 43,
+            "page_views_no_session": 31,
+            "sessions": 8,
+            "tools_sessions": 0,
+            "predictions_sessions": 2
+          }
+        ]
+      },
+      "funnelEvents": {
+        "ok": true,
+        "data": [
+          {
+            "signup_started": 0,
+            "signup_completed": 0,
+            "signup_no_session": 0,
+            "popup_shown": 0,
+            "popup_cta": 0,
+            "popup_dismissed": 0,
+            "plan_view": 0,
+            "plan_cta_click": 0,
+            "checkout_opened": 0,
+            "card_open": 1,
+            "card_open_sessions": 1,
+            "partner_click": 0,
+            "partner_menu_open": 0,
+            "client_error": 0
+          }
+        ]
+      },
+      "newProfiles": {
+        "ok": true,
+        "data": [
+          {
+            "new_profiles": 0,
+            "activated": 0,
+            "referred": 0,
+            "no_acquisition": 0
+          }
+        ]
+      },
+      "revenue": {
+        "ok": true,
+        "data": [
+          {
+            "orders_all": 3,
+            "usd_all": 24.99,
+            "orders_w": 0,
+            "usd_w": 0,
+            "annual_all": 0,
+            "granted_unpaid": 1
+          }
+        ]
+      },
+      "shopify": {
+        "ok": true,
+        "data": [
+          {
+            "orders_all": 1,
+            "amount_all": 14.99,
+            "orders_w": 0,
+            "amount_w": 0
+          }
+        ]
+      },
+      "lapsed": {
+        "ok": true,
+        "data": [
+          {
+            "lapsed": 0
+          }
+        ]
+      },
+      "freshness": {
+        "ok": true,
+        "data": [
+          {
+            "odds_age_s": 8.117399,
+            "football_age_s": 6274.068885,
+            "tennis_age_s": 6373.311298,
+            "error_patterns_24h": 0
+          }
+        ]
+      },
+      "calibration": {
+        "ok": true,
+        "data": [
+          {
+            "n": 20000,
+            "brier": 0.598959283979383,
+            "ece": 0.0374676171094505
+          }
+        ]
+      },
+      "sources": {
+        "ok": true,
+        "data": [
+          {
+            "source": "(nessuna fonte)",
+            "sessions": 7
+          },
+          {
+            "source": "coldmail",
+            "sessions": 1
+          }
+        ]
+      },
+      "channels": {
+        "ok": true,
+        "data": []
+      },
+      "plans": {
+        "ok": true,
+        "data": [
+          {
+            "plan": "free",
+            "plan_source": null,
+            "expired": false,
+            "n": 36
+          },
+          {
+            "plan": "base",
+            "plan_source": "paygate",
+            "expired": false,
+            "n": 1
+          },
+          {
+            "plan": "free",
+            "plan_source": "referral",
+            "expired": true,
+            "n": 1
+          },
+          {
+            "plan": "admin_full",
+            "plan_source": null,
+            "expired": false,
+            "n": 2
+          },
+          {
+            "plan": "free",
+            "plan_source": "shopify",
+            "expired": true,
+            "n": 1
+          },
+          {
+            "plan": "premium",
+            "plan_source": "manual",
+            "expired": false,
+            "n": 4
+          },
+          {
+            "plan": "premium",
+            "plan_source": "paygate",
+            "expired": false,
+            "n": 3
+          },
+          {
+            "plan": "premium",
+            "plan_source": null,
+            "expired": false,
+            "n": 2
+          }
+        ]
+      },
+      "partners": {
+        "ok": true,
+        "data": []
+      },
+      "widget": {
+        "ok": true,
+        "data": [
+          {
+            "host": "slotsbonus.bet",
+            "views": 5,
+            "clicks": 0
+          }
+        ]
+      }
+    },
+    "7d": {
+      "traffic": {
+        "ok": true,
+        "data": [
+          {
+            "page_views": 516,
+            "page_views_no_session": 331,
+            "sessions": 50,
+            "tools_sessions": 6,
+            "predictions_sessions": 14
+          }
+        ]
+      },
+      "funnelEvents": {
+        "ok": true,
+        "data": [
+          {
+            "signup_started": 13,
+            "signup_completed": 2,
+            "signup_no_session": 12,
+            "popup_shown": 15,
+            "popup_cta": 0,
+            "popup_dismissed": 11,
+            "plan_view": 20,
+            "plan_cta_click": 2,
+            "checkout_opened": 1,
+            "card_open": 14,
+            "card_open_sessions": 5,
+            "partner_click": 2,
+            "partner_menu_open": 3,
+            "client_error": 4
+          }
+        ]
+      },
+      "newProfiles": {
+        "ok": true,
+        "data": [
+          {
+            "new_profiles": 2,
+            "activated": 1,
+            "referred": 0,
+            "no_acquisition": 1
+          }
+        ]
+      },
+      "revenue": {
+        "ok": true,
+        "data": [
+          {
+            "orders_all": 3,
+            "usd_all": 24.99,
+            "orders_w": 0,
+            "usd_w": 0,
+            "annual_all": 0,
+            "granted_unpaid": 1
+          }
+        ]
+      },
+      "shopify": {
+        "ok": true,
+        "data": [
+          {
+            "orders_all": 1,
+            "amount_all": 14.99,
+            "orders_w": 0,
+            "amount_w": 0
+          }
+        ]
+      },
+      "lapsed": {
+        "ok": true,
+        "data": [
+          {
+            "lapsed": 0
+          }
+        ]
+      },
+      "freshness": {
+        "ok": true,
+        "data": [
+          {
+            "odds_age_s": 8.117399,
+            "football_age_s": 6274.068885,
+            "tennis_age_s": 6373.311298,
+            "error_patterns_24h": 0
+          }
+        ]
+      },
+      "calibration": {
+        "ok": true,
+        "data": [
+          {
+            "n": 20000,
+            "brier": 0.598959479493253,
+            "ece": 0.0374675495668894
+          }
+        ]
+      },
+      "sources": {
+        "ok": true,
+        "data": [
+          {
+            "source": "(nessuna fonte)",
+            "sessions": 46
+          },
+          {
+            "source": "coldmail",
+            "sessions": 3
+          },
+          {
+            "source": "chatgpt.com",
+            "sessions": 1
+          }
+        ]
+      },
+      "channels": {
+        "ok": true,
+        "data": [
+          {
+            "channel": "(non registrata)",
+            "n": 1
+          },
+          {
+            "channel": "chatgpt.com",
+            "n": 1
+          }
+        ]
+      },
+      "plans": {
+        "ok": true,
+        "data": [
+          {
+            "plan": "free",
+            "plan_source": null,
+            "expired": false,
+            "n": 36
+          },
+          {
+            "plan": "base",
+            "plan_source": "paygate",
+            "expired": false,
+            "n": 1
+          },
+          {
+            "plan": "free",
+            "plan_source": "referral",
+            "expired": true,
+            "n": 1
+          },
+          {
+            "plan": "admin_full",
+            "plan_source": null,
+            "expired": false,
+            "n": 2
+          },
+          {
+            "plan": "free",
+            "plan_source": "shopify",
+            "expired": true,
+            "n": 1
+          },
+          {
+            "plan": "premium",
+            "plan_source": "manual",
+            "expired": false,
+            "n": 4
+          },
+          {
+            "plan": "premium",
+            "plan_source": "paygate",
+            "expired": false,
+            "n": 3
+          },
+          {
+            "plan": "premium",
+            "plan_source": null,
+            "expired": false,
+            "n": 2
+          }
+        ]
+      },
+      "partners": {
+        "ok": true,
+        "data": [
+          {
+            "partner_id": "BetScore",
+            "clicks": 1
+          },
+          {
+            "partner_id": "FortunePlay",
+            "clicks": 1
+          }
+        ]
+      },
+      "widget": {
+        "ok": true,
+        "data": [
+          {
+            "host": "slotsbonus.bet",
+            "views": 10,
+            "clicks": 0
+          }
+        ]
+      }
+    },
+    "30d": {
+      "traffic": {
+        "ok": true,
+        "data": [
+          {
+            "page_views": 3094,
+            "page_views_no_session": 1351,
+            "sessions": 400,
+            "tools_sessions": 59,
+            "predictions_sessions": 225
+          }
+        ]
+      },
+      "funnelEvents": {
+        "ok": true,
+        "data": [
+          {
+            "signup_started": 66,
+            "signup_completed": 24,
+            "signup_no_session": 52,
+            "popup_shown": 15,
+            "popup_cta": 0,
+            "popup_dismissed": 11,
+            "plan_view": 126,
+            "plan_cta_click": 4,
+            "checkout_opened": 3,
+            "card_open": 120,
+            "card_open_sessions": 30,
+            "partner_click": 18,
+            "partner_menu_open": 15,
+            "client_error": 55
+          }
+        ]
+      },
+      "newProfiles": {
+        "ok": true,
+        "data": [
+          {
+            "new_profiles": 22,
+            "activated": 15,
+            "referred": 0,
+            "no_acquisition": 9
+          }
+        ]
+      },
+      "revenue": {
+        "ok": true,
+        "data": [
+          {
+            "orders_all": 3,
+            "usd_all": 24.99,
+            "orders_w": 0,
+            "usd_w": 0,
+            "annual_all": 0,
+            "granted_unpaid": 1
+          }
+        ]
+      },
+      "shopify": {
+        "ok": true,
+        "data": [
+          {
+            "orders_all": 1,
+            "amount_all": 14.99,
+            "orders_w": 0,
+            "amount_w": 0
+          }
+        ]
+      },
+      "lapsed": {
+        "ok": true,
+        "data": [
+          {
+            "lapsed": 0
+          }
+        ]
+      },
+      "freshness": {
+        "ok": true,
+        "data": [
+          {
+            "odds_age_s": 8.117399,
+            "football_age_s": 6274.068885,
+            "tennis_age_s": 6373.311298,
+            "error_patterns_24h": 0
+          }
+        ]
+      },
+      "calibration": {
+        "ok": true,
+        "data": [
+          {
+            "n": 20000,
+            "brier": 0.598964937553436,
+            "ece": 0.0374665636282288
+          }
+        ]
+      },
+      "sources": {
+        "ok": true,
+        "data": [
+          {
+            "source": "(nessuna fonte)",
+            "sessions": 387
+          },
+          {
+            "source": "coldmail",
+            "sessions": 4
+          },
+          {
+            "source": "referrer:chatgpt.site",
+            "sessions": 4
+          },
+          {
+            "source": "chatgpt.com",
+            "sessions": 2
+          },
+          {
+            "source": "referrer:google.com",
+            "sessions": 2
+          },
+          {
+            "source": "ig",
+            "sessions": 1
+          }
+        ]
+      },
+      "channels": {
+        "ok": true,
+        "data": [
+          {
+            "channel": "(non registrata)",
+            "n": 9
+          },
+          {
+            "channel": "chatgpt.com",
+            "n": 5
+          },
+          {
+            "channel": "(diretto / nessuna fonte)",
+            "n": 4
+          },
+          {
+            "channel": "referrer:google.com",
+            "n": 3
+          },
+          {
+            "channel": "qa",
+            "n": 1
+          }
+        ]
+      },
+      "plans": {
+        "ok": true,
+        "data": [
+          {
+            "plan": "free",
+            "plan_source": null,
+            "expired": false,
+            "n": 36
+          },
+          {
+            "plan": "base",
+            "plan_source": "paygate",
+            "expired": false,
+            "n": 1
+          },
+          {
+            "plan": "free",
+            "plan_source": "referral",
+            "expired": true,
+            "n": 1
+          },
+          {
+            "plan": "admin_full",
+            "plan_source": null,
+            "expired": false,
+            "n": 2
+          },
+          {
+            "plan": "free",
+            "plan_source": "shopify",
+            "expired": true,
+            "n": 1
+          },
+          {
+            "plan": "premium",
+            "plan_source": "manual",
+            "expired": false,
+            "n": 4
+          },
+          {
+            "plan": "premium",
+            "plan_source": "paygate",
+            "expired": false,
+            "n": 3
+          },
+          {
+            "plan": "premium",
+            "plan_source": null,
+            "expired": false,
+            "n": 2
+          }
+        ]
+      },
+      "partners": {
+        "ok": true,
+        "data": [
+          {
+            "partner_id": "BetScore",
+            "clicks": 13
+          },
+          {
+            "partner_id": "Beazt",
+            "clicks": 2
+          },
+          {
+            "partner_id": "FortunePlay",
+            "clicks": 2
+          },
+          {
+            "partner_id": "GG.BET",
+            "clicks": 1
+          }
+        ]
+      },
+      "widget": {
+        "ok": true,
+        "data": [
+          {
+            "host": "slotsbonus.bet",
+            "views": 97,
+            "clicks": 0
+          }
+        ]
+      }
+    }
+  }
+}

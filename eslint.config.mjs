@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     "dashboard-web/**",
     "client-portal/**",
+    "growth-app/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

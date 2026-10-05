@@ -1,0 +1,121 @@
+// The contract between data sources and the UI. Pure: no DB, no fs, no auth.
+//
+// A source (snapshot, live SQL, a future CRM backend) produces RawResults —
+// the rows each query in sql.ts returned, or the failure — and normalize()
+// turns them into GrowthData. The UI only ever sees GrowthData + SourceMeta,
+// so it cannot know (or care) where the numbers came from.
+
+import type { GrowthWindow, PlanRow } from "./kpi";
+import { LIST_KEYS, type QueryKey, SCALAR_KEYS } from "./sql";
+
+export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
+
+export type Row = Record<string, unknown>;
+/** What a source hands over: per query, the raw rows or the failure. */
+export type RawResults = Record<QueryKey, Result<Row[]>>;
+
+export interface SourceMeta {
+  kind: "snapshot" | "live";
+  /** ISO timestamp the numbers refer to (snapshot time, or read time for live). */
+  asOf: string;
+  /** Human description of the origin, shown in the page. */
+  origin: string;
+}
+
+export interface Freshness {
+  odds_age_s: number | null;
+  football_age_s: number | null;
+  tennis_age_s: number | null;
+  error_patterns_24h: number;
+}
+
+export interface Calibration {
+  n: number;
+  brier: number | null;
+  ece: number | null;
+}
+
+export interface GrowthData {
+  window: GrowthWindow;
+  traffic: Result<Record<string, number>>;
+  sources: Result<{ source: string; sessions: number }[]>;
+  funnelEvents: Result<Record<string, number>>;
+  newProfiles: Result<Record<string, number>>;
+  channels: Result<{ channel: string; n: number }[]>;
+  plans: Result<PlanRow[]>;
+  revenue: Result<Record<string, number>>;
+  shopify: Result<Record<string, number>>;
+  partners: Result<{ partner_id: string; clicks: number }[]>;
+  widget: Result<{ host: string; views: number; clicks: number }[]>;
+  lapsed: Result<{ lapsed: number }>;
+  freshness: Result<Freshness>;
+  calibration: Result<Calibration>;
+}
+
+const num = (v: unknown): number => Number(v);
+const numOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+
+/** Scalar query: exactly one row, or it is a failure — never a silent 0. */
+function one(r: Result<Row[]>): Result<Row> {
+  if (!r.ok) return r;
+  if (r.data.length !== 1) return { ok: false, error: `lettura fallita (attesa 1 riga, ricevute ${r.data.length})` };
+  return { ok: true, data: r.data[0] };
+}
+
+function toNums(r: Result<Row>): Result<Record<string, number>> {
+  if (!r.ok) return r;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(r.data)) {
+    const n = num(v);
+    // A non-numeric value here means the source is broken: fail loud.
+    if (!Number.isFinite(n)) return { ok: false, error: `valore non numerico in ${k}` };
+    out[k] = n;
+  }
+  return { ok: true, data: out };
+}
+
+function mapRows<T>(r: Result<Row[]>, f: (row: Row) => T): Result<T[]> {
+  return r.ok ? { ok: true, data: r.data.map(f) } : r;
+}
+
+export function normalize(w: GrowthWindow, raw: RawResults): GrowthData {
+  for (const k of [...SCALAR_KEYS, ...LIST_KEYS]) {
+    if (!raw[k]) throw new Error(`RawResults senza la query ${k}`);
+  }
+  const freshness = one(raw.freshness);
+  const calibration = one(raw.calibration);
+  const lapsed = toNums(one(raw.lapsed));
+  return {
+    window: w,
+    traffic: toNums(one(raw.traffic)),
+    sources: mapRows(raw.sources, (r) => ({ source: String(r.source), sessions: num(r.sessions) })),
+    funnelEvents: toNums(one(raw.funnelEvents)),
+    newProfiles: toNums(one(raw.newProfiles)),
+    channels: mapRows(raw.channels, (r) => ({ channel: String(r.channel), n: num(r.n) })),
+    plans: mapRows(raw.plans, (r) => ({
+      plan: r.plan === null || r.plan === undefined ? null : String(r.plan),
+      plan_source: r.plan_source === null || r.plan_source === undefined ? null : String(r.plan_source),
+      expired: Boolean(r.expired),
+      n: num(r.n),
+    })),
+    revenue: toNums(one(raw.revenue)),
+    shopify: toNums(one(raw.shopify)),
+    partners: mapRows(raw.partners, (r) => ({ partner_id: String(r.partner_id), clicks: num(r.clicks) })),
+    widget: mapRows(raw.widget, (r) => ({ host: String(r.host), views: num(r.views), clicks: num(r.clicks) })),
+    lapsed: lapsed.ok ? { ok: true, data: { lapsed: lapsed.data.lapsed } } : lapsed,
+    freshness: freshness.ok
+      ? {
+          ok: true,
+          data: {
+            odds_age_s: numOrNull(freshness.data.odds_age_s),
+            football_age_s: numOrNull(freshness.data.football_age_s),
+            tennis_age_s: numOrNull(freshness.data.tennis_age_s),
+            error_patterns_24h: num(freshness.data.error_patterns_24h),
+          },
+        }
+      : freshness,
+    calibration: calibration.ok
+      ? { ok: true, data: { n: num(calibration.data.n), brier: numOrNull(calibration.data.brier), ece: numOrNull(calibration.data.ece) } }
+      : calibration,
+  };
+}
