@@ -4,7 +4,8 @@
 // (ignorata da git). Gli e2e stanno in e2e/, fuori dall'include di vitest.
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 3077;
+// PW_PORT: più worktree possono avere il loro dev server (F3 e F5 girano in parallelo).
+const PORT = Number(process.env.PW_PORT ?? 3077);
 
 export default defineConfig({
   testDir: "./e2e",
@@ -23,7 +24,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `npx next dev -p ${PORT}`,
-    url: `http://localhost:${PORT}/dev/ds`,
+    url: `http://localhost:${PORT}/${process.env.PW_READY_PATH ?? "dev/ds"}`,
     reuseExistingServer: true,
     timeout: 180_000,
   },
