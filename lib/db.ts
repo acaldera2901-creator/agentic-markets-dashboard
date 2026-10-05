@@ -60,7 +60,7 @@ export async function dbExecute<T = Record<string, unknown>>(
   return (data as T[]) ?? [];
 }
 
-function interpolate(sql: string, params: unknown[]): string {
+export function interpolate(sql: string, params: unknown[]): string {
   if (!params.length) return sql;
   return sql.replace(/\$(\d+)/g, (_, n) => {
     const val = params[Number(n) - 1];

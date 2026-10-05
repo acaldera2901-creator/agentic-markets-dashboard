@@ -54,6 +54,7 @@ import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 import { buildSoftLookup } from "@/lib/soft-lookup";
 import { dedupeByFixture } from "@/lib/dedupe-fixtures"; // #DUP-FIXTURES-0821
 import { splitUnifiedFallback } from "@/lib/board-merge"; // #NATIONS-BOARD-0929
+import { MATCH_PREDICTIONS_UPSERT_SQL } from "@/lib/match-predictions-upsert"; // #RECORD-ATOMICO-0930
 
 // #DUP-FIXTURES-0821 — si PRENDONO più righe di quante se ne servano.
 // Il cap era applicato PRIMA della deduplica: i 22 doppioni fra fonti
@@ -719,39 +720,10 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         }
       }
 
+      // Upsert e regole della riga (record atomico, giro senza quote, kickoff):
+      // lib/match-predictions-upsert.ts, coperto da un test su Postgres vero.
       await dbQuery(
-        `INSERT INTO match_predictions (
-           match_id, league, league_name, home_team, away_team, kickoff,
-           p_home, p_draw, p_away, lambda_home, lambda_away,
-           odds_home, odds_draw, odds_away, edge, best_selection, model_matches,
-           enrichment, computed_at
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,NOW())
-         ON CONFLICT (match_id) DO UPDATE SET
-           p_home=EXCLUDED.p_home, p_draw=EXCLUDED.p_draw, p_away=EXCLUDED.p_away,
-           lambda_home=EXCLUDED.lambda_home, lambda_away=EXCLUDED.lambda_away,
-           -- #RECORD-ATOMICO-0930 (audit agentic_codex 29/09): quote, edge e pick
-           -- si scrivono INSIEME alla tripla, dello stesso giro. Prima un COALESCE
-           -- teneva quelli del giro precedente quando il nuovo non aveva prezzo:
-           -- ma senza prezzo la tripla NON e' blendata (blendWithMarket = identita'),
-           -- quindi la riga univa probabilita' del solo modello con pick, quota ed
-           -- edge calcolati su un'altra distribuzione — riprodotto in SQL: tripla
-           -- con AWAY al 50% e pick HOME @1,50 +4% rimasto dal giro prima, mentre
-           -- prediction_log dello stesso giro registra quote nulle. Stesso caso per
-           -- una riga tornata non affidabile: best_selection null veniva ignorato.
-           odds_home=EXCLUDED.odds_home,
-           odds_draw=EXCLUDED.odds_draw,
-           odds_away=EXCLUDED.odds_away,
-           edge=EXCLUDED.edge,
-           best_selection=EXCLUDED.best_selection,
-           -- #KICKOFF-UPDATE-0930: finalKickoff entrava nell'INSERT e nel log ma
-           -- non qui, quindi un anticipo/rinvio restava al primo orario visto — e
-           -- l'adapter lo copia in unified.starts_at (freeze, scadenza, settlement).
-           -- Misurato 29/09: Argentinos–Tigre e Huracan–Aldosivi con orari diversi
-           -- fra match_predictions e prediction_log. Non si sovrascrive un orario
-           -- con il segnaposto di mezzanotte non confermato ($19 = time_confirmed).
-           kickoff=CASE WHEN $19::boolean THEN EXCLUDED.kickoff ELSE match_predictions.kickoff END,
-           model_matches=EXCLUDED.model_matches, enrichment=EXCLUDED.enrichment,
-           computed_at=NOW()`,
+        MATCH_PREDICTIONS_UPSERT_SQL,
         [
           fix.id, code, LEAGUES[code], fix.homeTeam, fix.awayTeam, finalKickoff,
           probs.pHome, probs.pDraw, probs.pAway, probs.lambdaHome, probs.lambdaAway,
