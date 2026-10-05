@@ -9,7 +9,7 @@ interface Metrics {
   overview: {
     total_events: number;
     total_conversions: number;
-    total_revenue_eur: number;
+    total_revenue_usd: number;
     leaderboard_users: number;
     partner_requests: number;
   };
@@ -32,8 +32,10 @@ interface Metrics {
   pending_activations: { identifier: string; requested_plan: string; tx_hash: string; created_at: string }[];
   finance: {
     monthly_burn_eur: number;
-    total_revenue_eur: number;
-    net_eur: number;
+    total_revenue_usd: number;
+    mrr_usd: number;
+    mrr_recurring_usd: number;
+    revenue_source_errors: string[];
     costs: { label: string; category: string; monthly_eur: number }[];
   };
   events_by_type: { type: string; count: number }[];
@@ -390,7 +392,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <StatBox label="Total Events" value={m.overview.total_events.toLocaleString()} />
               <StatBox label="Conversions" value={m.overview.total_conversions} />
-              <StatBox label="Revenue" value={`€${m.overview.total_revenue_eur.toFixed(2)}`} />
+              <StatBox label="Incassato" value={`$${m.overview.total_revenue_usd.toFixed(2)}`} />
               <StatBox label="Leaderboard Users" value={m.overview.leaderboard_users} />
               <StatBox label="Partner Requests" value={m.overview.partner_requests} />
             </div>
@@ -452,11 +454,15 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 grid grid-cols-3 gap-4">
                 <StatBox label="Burn mensile" value={`€${m.finance.monthly_burn_eur.toFixed(2)}`} sub="costi fissi" />
-                <StatBox label="Revenue" value={`€${m.finance.total_revenue_eur.toFixed(2)}`} />
                 <StatBox
-                  label="Net"
-                  value={`${m.finance.net_eur >= 0 ? "+" : ""}€${m.finance.net_eur.toFixed(2)}`}
-                  sub={m.finance.net_eur >= 0 ? "in attivo" : "in perdita"}
+                  label="Incassato"
+                  value={`$${m.finance.total_revenue_usd.toFixed(2)}`}
+                  sub={m.finance.revenue_source_errors.length > 0 ? "fonti incomplete" : "tutti i rail, USD"}
+                />
+                <StatBox
+                  label="MRR"
+                  value={`$${m.finance.mrr_usd.toFixed(2)}`}
+                  sub={`ricorrente $${m.finance.mrr_recurring_usd.toFixed(2)}`}
                 />
               </div>
               <Card>
