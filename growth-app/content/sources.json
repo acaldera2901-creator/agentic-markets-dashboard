@@ -1,0 +1,50 @@
+[
+  {
+    "tool": "Supabase (DB di produzione), sola lettura",
+    "reads": "Tabelle events, profiles e ordini: le stesse da cui nasce la dashboard. Accesso SOLO in lettura (ruolo growth_ro, vedi PROPOSAL #GROWTH-LIVE).",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  },
+  {
+    "tool": "Vercel Web Analytics",
+    "reads": "Visite e pagine viste misurate lato Vercel. Serve da controllo indipendente per gli events (G10).",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  },
+  {
+    "tool": "Google Search Console",
+    "reads": "Query organiche, impressioni, CTR e posizione per pagina. Base per il segmento «organico» (G05).",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  },
+  {
+    "tool": "Stripe",
+    "reads": "Abbonamenti, importi, rinnovi e cancellazioni (oggi gli importi non arrivano nel DB, G03).",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  },
+  {
+    "tool": "Paygate / PayPal / Shopify",
+    "reads": "Ordini e incassi degli altri canali di pagamento: serve per riconciliarli con la tile «Incassato».",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  },
+  {
+    "tool": "Reti affiliate (portali dei partner)",
+    "reads": "Conversioni e commissioni per partner: il DB registra solo i click (G07).",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  },
+  {
+    "tool": "Resend",
+    "reads": "Invii, aperture, click e bounce delle email lifecycle (CRM).",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  },
+  {
+    "tool": "Social: Instagram, TikTok, X, YouTube",
+    "reads": "Reach, follower, click sul link in bio per canale. Serve per le cohort notes per canale.",
+    "status": "accesso da verificare",
+    "owner": "Andrea"
+  }
+]

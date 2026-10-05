@@ -1,0 +1,110 @@
+[
+  {
+    "id": "G01",
+    "title": "Nessun id utente stabile negli events",
+    "problem": "events ha solo session_id, che cambia a ogni tab/sessione ed esiste solo con il consenso cookie. Non si può dire chi torna né cosa fa un utente nel tempo.",
+    "priority": "P0",
+    "unlocks": ["WAA (utenti attivi settimanali)", "Retention D7 / D30 / M3", "Utenti di ritorno", "3 analisi / settimana"],
+    "owner": "Calde",
+    "status": "aperto"
+  },
+  {
+    "id": "G02",
+    "title": "«Analisi» non definita né tracciata per utente",
+    "problem": "La North Star di attivazione parla di analisi, ma non c'è una definizione scritta. Oggi esiste solo card_open, anonimo (senza utente).",
+    "priority": "P0",
+    "unlocks": ["3 analisi / settimana", "Tasso di attivazione"],
+    "owner": "Steve (definizione) + Calde (evento)",
+    "status": "aperto"
+  },
+  {
+    "id": "G03",
+    "title": "Revenue senza importi utilizzabili",
+    "problem": "events.value è sempre 0. Stripe non salva importi nel DB. Shopify ha gli importi ma non normalizzati per periodo e valuta. MRR e ARPU oggi non esistono.",
+    "priority": "P0",
+    "unlocks": ["MRR", "ARPU", "Revenue per canale"],
+    "owner": "Andrea",
+    "status": "aperto"
+  },
+  {
+    "id": "G04",
+    "title": "Watchlist solo nel browser, alert utente inesistenti",
+    "problem": "La watchlist vive nel localStorage e non genera eventi. La funzione alert per l'utente non esiste.",
+    "priority": "P2",
+    "unlocks": ["Watchlist create", "Primo alert impostato", "Alert aperti"],
+    "owner": "Calde (evento watchlist) + Tommy (feature alert)",
+    "status": "aperto"
+  },
+  {
+    "id": "G05",
+    "title": "Tag ?src= non distribuiti sui canali",
+    "problem": "I link di IG, TikTok, X, Reddit, email e creator non portano un ?src= coerente. Non c'è un segmento «organico» pronto. Search Console non è integrata. Nello snapshot del 05/10 (30 giorni), 387 sessioni su 400 risultano «(nessuna fonte)».",
+    "priority": "P1",
+    "unlocks": ["Sessioni per canale", "Signup per canale", "Cohort notes per canale", "Traffico organico"],
+    "owner": "Steve (tag sui canali) + Calde (Search Console)",
+    "status": "aperto"
+  },
+  {
+    "id": "G06",
+    "title": "CAC: nessuna spesa marketing per canale",
+    "problem": "Non è registrato da nessuna parte quanto spendiamo per canale: ads, creator, affiliate.",
+    "priority": "P1",
+    "unlocks": ["CAC per canale", "Payback"],
+    "owner": "Andrea",
+    "status": "aperto"
+  },
+  {
+    "id": "G07",
+    "title": "Revenue affiliate: solo i click",
+    "problem": "Registriamo partner_click, ma conversioni e commissioni stanno sui portali delle reti affiliate e non arrivano nel DB.",
+    "priority": "P2",
+    "unlocks": ["Revenue affiliate per utente", "Revenue affiliate per partner"],
+    "owner": "Tommy",
+    "status": "aperto"
+  },
+  {
+    "id": "G08",
+    "title": "Churn senza storico",
+    "problem": "Il cron declassa gli abbonamenti scaduti ma non registra lo storico. Manca la base dei paganti a inizio periodo, quindi c'è solo il conteggio delle scadenze (PROXY).",
+    "priority": "P1",
+    "unlocks": ["Churn rate", "Retention paganti"],
+    "owner": "Calde",
+    "status": "aperto"
+  },
+  {
+    "id": "G09",
+    "title": "Uptime e latenza quote non misurati, alert operativi muti",
+    "problem": "Nessun monitor esterno registra lo storico della disponibilità. Abbiamo solo l'età dell'ultima quota, non il ritardo rispetto al bookmaker. Senza ALERT_WEBHOOK_URL gli alert operativi non arrivano a nessuno.",
+    "priority": "P2",
+    "unlocks": ["Uptime %", "Latenza quote", "Tempo di reazione agli incidenti"],
+    "owner": "Calde",
+    "status": "aperto"
+  },
+  {
+    "id": "G10",
+    "title": "Accuratezza del tracking non verificata",
+    "problem": "Nessun job confronta gli events con le fonti esterne. Si perdono dati senza che nessuno se ne accorga: rate limit, allowlist degli eventi, consenso. Tra il 36% e il 56% dei page_view non ha sessione.",
+    "priority": "P1",
+    "unlocks": ["Accuratezza del tracking", "Fiducia in tutti i KPI da events"],
+    "owner": "Calde",
+    "status": "aperto"
+  },
+  {
+    "id": "G11",
+    "title": "Nessun trial nel prodotto",
+    "problem": "Il prodotto non ha un trial, quindi la conversione trial→paid non entra nei KPI.",
+    "priority": "P2",
+    "unlocks": ["Trial → paid"],
+    "owner": "Andrea",
+    "status": "aperto"
+  },
+  {
+    "id": "G12",
+    "title": "Conteggio paganti inquinato da account comp/team",
+    "problem": "I profili con piano pagato includono account dati a mano (manual, referral) e del team (admin_full). La dashboard ora li separa usando plan_source. Restano ambigui i vecchi account con plan_source NULL.",
+    "priority": "P1",
+    "unlocks": ["Paganti verificati", "Conversione free → paid"],
+    "owner": "Calde",
+    "status": "mitigato"
+  }
+]

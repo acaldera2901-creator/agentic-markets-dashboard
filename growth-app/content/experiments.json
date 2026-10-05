@@ -1,0 +1,32 @@
+[
+  {
+    "id": "E01",
+    "hypothesis": "Se ogni link dei canali che controlliamo (bio IG/TikTok/X, post Reddit, email) porta un ?src= coerente, la quota di sessioni con una fonte nota sale abbastanza da leggere i canali.",
+    "kpiTarget": "Sessioni con fonte nota / sessioni totali: da 13/400 (3%, snapshot 05/10, 30 giorni) a ≥ 30%",
+    "dataSource": "Dashboard → «Fonti delle sessioni» (query sources, events page_view con session_id)",
+    "duration": "14 giorni da quando tutti i link sono taggati",
+    "decisionThreshold": "≥ 30% → scale: tag obbligatorio su ogni nuovo link. 10–30% → fix: trovare i link non taggati. < 10% → il problema è la perdita di sessioni (G10), non i tag",
+    "status": "proposto",
+    "note": "esempio da validare con Steve"
+  },
+  {
+    "id": "E02",
+    "hypothesis": "Se la pagina piani rende più chiaro cosa si ottiene, più visitatori cliccano la CTA di un piano.",
+    "kpiTarget": "plan_cta_click / plan_view: da 4/126 (3,2%, snapshot 05/10, 30 giorni) a ≥ 6%",
+    "dataSource": "Dashboard → funnel (eventi plan_view, plan_cta_click, checkout_opened)",
+    "duration": "Prima/dopo, 4 settimane per lato: con questi volumi un A/B test non ha potenza statistica. Minimo 120 plan_view per lato",
+    "decisionThreshold": "≥ 6% con almeno 120 plan_view → scale. 3–6% → fix (cambiare un altro elemento). ≤ 3% → kill della variante",
+    "status": "proposto",
+    "note": "esempio da validare con Steve"
+  },
+  {
+    "id": "E03",
+    "hypothesis": "Se si toglie attrito al form di registrazione (meno campi o un passaggio in meno), una quota maggiore di chi inizia completa la registrazione.",
+    "kpiTarget": "signup_completed / signup_started: da 24/66 (36%, snapshot 05/10, 30 giorni) a ≥ 50%",
+    "dataSource": "Dashboard → funnel (signup_started, signup_completed) e, come controllo, nuovi profili in profiles",
+    "duration": "Prima/dopo, 4 settimane per lato. Minimo 60 signup_started per lato",
+    "decisionThreshold": "≥ 50% e nuovi profili coerenti → scale. 36–50% → fix. Nessun miglioramento → kill. Attenzione: 52 dei 66 signup non hanno sessione, quindi il dato va confrontato con profiles",
+    "status": "proposto",
+    "note": "esempio da validare con Steve"
+  }
+]
