@@ -8,22 +8,19 @@
 -- Tables = exactly the ones read by core/sql.ts, data/live-source.ts and
 -- scripts/verify.ts (checked on feat/growth-standalone and feat/growth-a).
 --
--- OPEN DECISION (RLS): all 10 tables have RLS enabled and no policy targets this
--- role, so every SELECT returns 0 rows (measured 2026-10-06: profiles 0 vs 50,
--- events 0 vs 42288). The live source is unusable until Andrea picks one of:
---   (1) ALTER ROLE growth_ro BYPASSRLS;  -- same tables, all rows (blast radius
---       already assumed by the PROPOSAL: "profiles leggibile a livello DB")
---   (2) one `CREATE POLICY growth_ro_read ON <t> FOR SELECT TO growth_ro USING (true)`
---       per table (DDL on 10 prod tables)
---   (3) security_barrier views + GRANT only on the views (the stricter variant).
--- Not applied here: it was outside the approved change-spec.
+-- RLS: all 10 tables have RLS enabled and no policy targets this role, so
+-- without BYPASSRLS every SELECT returns 0 rows (measured 2026-10-06: profiles
+-- 0 vs 50, events 0 vs 42288). Andrea approved option (1) of #GROWTH-LIVE:
+-- BYPASSRLS (applied 2026-10-06). It widens nothing beyond the GRANTs below:
+-- tables not granted stay "permission denied", writes stay refused.
+-- Requires the executing admin to have BYPASSRLS itself (Supabase `postgres` does).
 
 -- NOSUPERUSER / NOREPLICATION only at CREATE: on Supabase `postgres` is not a
 -- superuser, and ALTER ROLE naming those attributes is refused even to unset them.
 SELECT format('CREATE ROLE growth_ro LOGIN NOSUPERUSER NOREPLICATION PASSWORD %L', :'growth_ro_password')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'growth_ro') \gexec
 
-ALTER ROLE growth_ro LOGIN NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS CONNECTION LIMIT 5;
+ALTER ROLE growth_ro LOGIN NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS CONNECTION LIMIT 5;
 SELECT format('ALTER ROLE growth_ro PASSWORD %L', :'growth_ro_password') \gexec
 ALTER ROLE growth_ro SET default_transaction_read_only = on;
 ALTER ROLE growth_ro SET statement_timeout = '60s';

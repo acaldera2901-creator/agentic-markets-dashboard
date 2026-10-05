@@ -9,7 +9,9 @@
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'growth_ro') THEN
-    -- close open sessions of the role, then drop everything granted to it
+    -- revoke the RLS bypass first, then close open sessions of the role
+    -- and drop everything granted to it
+    EXECUTE 'ALTER ROLE growth_ro NOBYPASSRLS';
     PERFORM pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename = 'growth_ro';
     EXECUTE 'REVOKE ALL ON ALL TABLES IN SCHEMA public FROM growth_ro';
     EXECUTE 'REVOKE USAGE ON SCHEMA public FROM growth_ro';
