@@ -13,6 +13,16 @@ ruolo DB **read-only dedicato**, dietro password, e i numeri chiave coincidono c
 
 ## Stato
 
+- **v4 (06/10, branch `feat/growth-v4`)**: «Ingressi con fonte» + tabella «Ingressi per fonte»
+  (page view d'ingresso con utm/src/crm/ref/ref_host, MISURATO, anche senza consenso; la quota
+  senza fonte è sui page view, limite superiore) · «Page view probabilmente umani» (PROXY,
+  badge STIMATO, criterio in `core/estimate.ts` dalla diagnosi #SESSIONI-1006, grezzo sempre
+  visibile) · banner «Lettura diretta del database alle …» in modalità live · postgres.js
+  `max: 2`. Snapshot rigenerato (`dbNow 2026-10-05T23:02:17Z`): `npm run verify` 125/125
+  uguali, 0 divergenze per cella. Live provato in locale (0 ERRORE, ~1,7–2,6 s).
+  **Deploy live NON eseguito**: il comando `vercel deploy --prod … -e GROWTH_PASSWORD=…` è
+  stato rifiutato dal controllo di isolamento del worktree; `GROWTH_DATA_SOURCE` rimossa di
+  nuovo dal progetto (resta solo `GROWTH_DATABASE_URL`, Production).
 - **Preview v3 su SNAPSHOT** reale (`data/snapshot.json`, `dbNow 2026-10-05T22:47:16.553Z`
   = 06/10 00:47 a Roma): aggregati letti dal DB di produzione in un'unica transazione
   `REPEATABLE READ READ ONLY`; `npm run verify` 116/116 uguali, 0 divergenze per cella.
