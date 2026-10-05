@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
-import { dbQuery } from "@/lib/db";
+import { dbQuery, dbQueryStrict } from "@/lib/db";
+import { computeRevenue } from "@/lib/revenue";
 import { OPERATING_COSTS, monthlyBurnEur } from "@/lib/operating-costs";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
     partnerRequests,
     clientStats,
     pendingActivations,
+    revenue,
   ] = await Promise.all([
     dbQuery<{ n: string }>("SELECT COUNT(*) as n FROM events"),
     dbQuery<{ event_type: string; n: string }>(
@@ -45,8 +47,11 @@ export async function GET(req: NextRequest) {
     dbQuery<{ partner_id: string; n: string }>(
       "SELECT partner_id, COUNT(*) as n FROM events WHERE event_type = 'partner_click' AND partner_id IS NOT NULL GROUP BY partner_id ORDER BY n DESC LIMIT 20"
     ),
-    dbQuery<{ n: string; revenue: string }>(
-      "SELECT COUNT(*) as n, COALESCE(SUM(value), 0) as revenue FROM events WHERE event_type = 'conversion'"
+    // Conversions are still counted from events; revenue is NOT: /api/track
+    // always writes value=0, so SUM(value) was 0 by construction
+    // (#GROWTH-TRACKING-1006.4). Revenue comes from the payment tables.
+    dbQuery<{ n: string }>(
+      "SELECT COUNT(*) as n FROM events WHERE event_type = 'conversion'"
     ),
     dbQuery<{ event_type: string; country: string; language: string; plan: string; created_at: string }>(
       "SELECT event_type, country, language, plan, created_at FROM events ORDER BY created_at DESC LIMIT 50"
@@ -77,13 +82,14 @@ export async function GET(req: NextRequest) {
     dbQuery<{ identifier: string; requested_plan: string; tx_hash: string; created_at: string }>(
       "SELECT identifier, requested_plan, tx_hash, created_at FROM profiles WHERE plan='pending_payment' ORDER BY updated_at DESC LIMIT 50"
     ),
+    computeRevenue((sql) => dbQueryStrict(sql)),
   ]);
 
   return NextResponse.json({
     overview: {
       total_events: Number(totalEvents[0]?.n ?? 0),
       total_conversions: Number(conversions[0]?.n ?? 0),
-      total_revenue_eur: Number(conversions[0]?.revenue ?? 0),
+      total_revenue_usd: revenue.cash.total_usd,
       leaderboard_users: Number(leaderboardStats[0]?.n ?? 0),
       partner_requests: Number(partnerRequests[0]?.n ?? 0),
     },
@@ -111,8 +117,12 @@ export async function GET(req: NextRequest) {
     })),
     finance: {
       monthly_burn_eur: monthlyBurnEur(),
-      total_revenue_eur: Number(conversions[0]?.revenue ?? 0),
-      net_eur: Number(conversions[0]?.revenue ?? 0) - monthlyBurnEur(),
+      // USD (payment rails) and EUR (costs) are kept apart: there is no FX
+      // source, so a "net" figure would mix currencies.
+      total_revenue_usd: revenue.cash.total_usd,
+      mrr_usd: revenue.mrr.total_usd,
+      mrr_recurring_usd: revenue.mrr.recurring_usd,
+      revenue_source_errors: revenue.source_errors,
       costs: OPERATING_COSTS.filter((c) => c.monthly_eur > 0).map((c) => ({
         label: c.label,
         category: c.category,

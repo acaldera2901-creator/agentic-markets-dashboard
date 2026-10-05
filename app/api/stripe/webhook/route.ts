@@ -5,6 +5,7 @@ import { activateStripePlan } from "@/lib/plan-grant";
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
 import { receiptEmail, cancellationEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
+import { periodFromSpan } from "@/lib/revenue";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -128,6 +129,28 @@ export async function POST(req: Request) {
             [String(inv.customer)]
           );
           identifier = rows[0]?.identifier ?? null;
+        }
+        // #GROWTH-TRACKING-1006.4 — keep the amount: it is the only place the
+        // Stripe cash exists. Recorded before the activation guard because the
+        // money was collected even when no plan is granted. Best-effort: a
+        // failure here (e.g. migration 20261006130000 not applied yet) must
+        // never block the grant nor roll back idempotency.
+        try {
+          await dbExecute(
+            `UPDATE stripe_events
+                SET amount = $2, currency = $3, identifier = $4, plan = $5, period = $6
+              WHERE event_id = $1`,
+            [
+              event.id,
+              inv.amount_paid != null ? inv.amount_paid / 100 : null,
+              inv.currency ?? null,
+              identifier,
+              plan,
+              periodFromSpan(line.period?.start, line.period?.end),
+            ]
+          );
+        } catch (e) {
+          console.error("[stripe/webhook] amount not recorded:", String(e));
         }
         if (!subActive) {
           // Stripe is the source of truth: sub not active/trialing -> no activation.
