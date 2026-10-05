@@ -13,9 +13,15 @@ ruolo DB **read-only dedicato**, dietro password, e i numeri chiave coincidono c
 
 ## Stato
 
-- **Preview v2 su SNAPSHOT** reale (`data/snapshot.json`, `dbNow 2026-10-05T22:28:17.915Z`
-  = 06/10 00:28 a Roma): aggregati letti dal DB di produzione in un'unica transazione
-  `REPEATABLE READ READ ONLY`; `npm run verify` 105/105 uguali, 0 divergenze per cella.
+- **Preview v3 su SNAPSHOT** reale (`data/snapshot.json`, `dbNow 2026-10-05T22:47:16.553Z`
+  = 06/10 00:47 a Roma): aggregati letti dal DB di produzione in un'unica transazione
+  `REPEATABLE READ READ ONLY`; `npm run verify` 116/116 uguali, 0 divergenze per cella.
+- **Audit PROXY (v3, 06/10)**: 9 tile PROXY → 3 diventano reali (Signup completati da
+  `profiles`, Paganti con comp come voce separata, Ordini Shopify con rimborsi a parte),
+  6 restano PROXY perché il dato vero non esiste in nessuna fonte letta. Per queste,
+  `PROXY_TILES` in `core/kpi.ts` dice il KPI del PDF approssimato e cosa le renderà reali;
+  i gap corrispondenti (campi `tiles`/`dependsOn` in `content/tracking-gaps.json`) sono
+  tenuti allineati da un test.
   In pagina: banner «Snapshot del … — non live».
 - **LIVE**: scritto e testato in locale (`data/live-source.ts`), **non attivo** in
   nessun deploy. Si accende solo con la PROPOSAL sotto, dopo APPROVE.

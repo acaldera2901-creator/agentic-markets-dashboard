@@ -83,7 +83,19 @@ function Section({ id, title, file, intro, children }: { id: string; title: stri
 }
 
 const gapColumns: Column<TrackingGap>[] = [
-  { label: "Gap", cell: (g) => <><span className="text-gray-500 text-xs mr-1.5">{g.id}</span><span className="font-medium text-white">{g.title}</span><p className="text-gray-400 text-xs mt-1">{g.problem}</p></>, className: "md:w-[38%]" },
+  {
+    label: "Gap",
+    cell: (g) => (
+      <>
+        <span className="text-gray-500 text-xs mr-1.5">{g.id}</span>
+        <span className="font-medium text-white">{g.title}</span>
+        <p className="text-gray-400 text-xs mt-1">{g.problem}</p>
+        {g.dependsOn && <p className="text-gray-300 text-xs mt-1"><span className="text-gray-500">Dipende da:</span> {g.dependsOn}</p>}
+        {g.tiles && <p className="text-amber-300 text-xs mt-1"><span className="text-gray-500">Rende reali le tile PROXY:</span> {g.tiles.join(" · ")}</p>}
+      </>
+    ),
+    className: "md:w-[38%]",
+  },
   { label: "Priorità", cell: (g) => <Pill className={PRIORITY_STYLE[g.priority]}>{g.priority}</Pill> },
   { label: "KPI sbloccati", cell: (g) => <ul className="flex flex-col gap-0.5">{g.unlocks.map((k) => <li key={k}>· {k}</li>)}</ul> },
   { label: "Owner suggerito", cell: (g) => g.owner },
@@ -99,12 +111,37 @@ const experimentColumns: Column<Experiment>[] = [
   { label: "Stato", cell: (e) => <Pill className={neutralPill}>{e.status}</Pill> },
 ];
 
-const sourceColumns: Column<AccessSource>[] = [
-  { label: "Strumento", cell: (s) => <span className="font-medium text-white">{s.tool}</span>, className: "md:w-[24%]" },
-  { label: "Cosa ci si legge", cell: (s) => s.reads },
-  { label: "Stato", cell: (s) => <Pill className="bg-amber-950 text-amber-300 border-amber-800">{s.status}</Pill> },
-  { label: "Owner", cell: (s) => s.owner },
-];
+const ACCESS_STYLE: Record<AccessSource["status"], string> = {
+  "da concedere": "bg-amber-950 text-amber-300 border-amber-800",
+  concesso: "bg-sky-950 text-sky-300 border-sky-800",
+  verificato: "bg-emerald-950 text-emerald-300 border-emerald-800",
+};
+
+// One operational block per source: what, which role, how to grant, who, how to check.
+function AccessCard({ s }: { s: AccessSource }) {
+  return (
+    <article id={`accesso-${s.id}`} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3 min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-semibold text-white leading-snug">{s.tool}</h3>
+        <Pill className={ACCESS_STYLE[s.status]}>{s.status}</Pill>
+      </div>
+      <dl className="flex flex-col gap-2.5 text-sm">
+        <div><dt className="text-gray-500 text-[11px] uppercase tracking-wider">Cosa si legge</dt><dd className="text-gray-300 leading-snug break-words">{s.reads}</dd></div>
+        <div><dt className="text-gray-500 text-[11px] uppercase tracking-wider">Ruolo minimo da chiedere</dt><dd className="text-gray-200 leading-snug break-words">{s.role}</dd></div>
+        <div>
+          <dt className="text-gray-500 text-[11px] uppercase tracking-wider">Passi per concederlo</dt>
+          <dd>
+            <ol className="list-decimal pl-5 flex flex-col gap-1 text-gray-300 leading-snug break-words">
+              {s.steps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+          </dd>
+        </div>
+        <div><dt className="text-gray-500 text-[11px] uppercase tracking-wider">Chi lo concede</dt><dd className="text-gray-200 break-words">{s.owner}</dd></div>
+        <div><dt className="text-gray-500 text-[11px] uppercase tracking-wider">Come si verifica</dt><dd className="text-gray-300 leading-snug break-words">{s.verify}</dd></div>
+      </dl>
+    </article>
+  );
+}
 
 const NAV = [
   { id: "gap", label: "Tracking gaps" },
@@ -116,6 +153,7 @@ const NAV = [
 export function WorkPage({ content, dashboardHref }: { content: WorkContent; /** Link back to the numbers; omitted → no link. */ dashboardHref?: string }) {
   const { gaps, experiments, sources, memos, memoTemplate } = content;
   const openGaps = gaps.filter((g) => g.status !== "chiuso").length;
+  const accessCount = (st: AccessSource["status"]) => sources.filter((s) => s.status === st).length;
   return (
     <main className="max-w-7xl mx-auto px-4 py-8 flex flex-col gap-10 min-w-0">
       <header className="flex flex-col gap-2">
@@ -168,8 +206,20 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
         </details>
       </Section>
 
-      <Section id="accessi" title="Accessi e fonti" file="content/sources.json" intro="Gli strumenti da cui Steve legge i dati. Nessun accesso è stato verificato: chi ha cosa lo conferma Andrea, riga per riga.">
-        <ResponsiveTable rows={sources} columns={sourceColumns} rowKey={(s) => s.tool} />
+      <Section
+        id="accessi"
+        title={`Accessi e fonti · ${accessCount("verificato")} verificati, ${accessCount("concesso")} concessi, ${accessCount("da concedere")} da concedere`}
+        file="content/sources.json"
+        intro="Per ogni fonte: cosa si legge, il ruolo minimo da chiedere, i passi per concederlo, chi lo concede e il numero che prova che funziona. Lo stato passa a «concesso» quando l'owner ha fatto i passi, a «verificato» quando il numero torna."
+      >
+        <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-4 text-sm text-gray-300 leading-snug">
+          <span className="font-semibold text-white">Privilegio minimo.</span> Sempre un invito nominativo a Steve con il ruolo più basso che basta per leggere.
+          Mai password condivise, mai account admin, mai il login principale di un servizio. Dove il nome del ruolo o il percorso non è certo, c&apos;è scritto
+          «da verificare nell&apos;interfaccia»: lo controlla chi concede, non si indovina. Un accesso che non serve più si revoca.
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {sources.map((s) => <AccessCard key={s.id} s={s} />)}
+        </div>
       </Section>
     </main>
   );

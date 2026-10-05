@@ -13,6 +13,7 @@ import {
   formatAge,
   formatPct,
   funnelLinks,
+  proxyTile,
   ratio,
   splitPaying,
   windowLabel,
@@ -170,6 +171,17 @@ function SmallTable<T>({
   );
 }
 
+/** PROXY tile: always says which KPI it approximates and what makes it real (core/kpi.ts PROXY_TILES). */
+function proxy<T>(label: string, window: string, r: Result<T>, build: (d: T) => Omit<TileProps, "label" | "window" | "status" | "needs" | "owner">): TileProps {
+  if (!r.ok) return errorTile(label, window);
+  const p = proxyTile(label);
+  const t = build(r.data);
+  return { label, window, status: "PROXY", ...t, caveat: `Approssima «${p.pdfKpi}». ${t.caveat}`, needs: `${p.needs} — ${p.gaps.join(", ")} in /lavoro`, owner: p.owner };
+}
+
+/** A field a query should return; absent (older snapshot) → the tile is ERRORE, never 0. */
+const has = (o: Record<string, number>, ...keys: string[]) => keys.every((k) => Number.isFinite(o[k]));
+
 function missingTiles(family: Family): TileProps[] {
   return MISSING_KPIS.filter((m) => m.family === family).map((m) => ({
     label: m.label,
@@ -221,14 +233,12 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: `${fmtInt(t.page_views_no_session)} senza session_id (${noSessShare ?? "n/d"})`,
       caveat: "Tutti i page_view registrati, con e senza consenso.",
     })),
-    fromResult(d.traffic, "Sessioni", W, (t) => ({ status: "PROXY", value: fmtInt(t.sessions), caveat: sessCaveat })),
-    fromResult(d.traffic, "Sessioni /tools", W, (t) => ({
-      status: "PROXY",
+    proxy("Sessioni", W, d.traffic, (t) => ({ value: fmtInt(t.sessions), caveat: `Tutte le fonti, non solo l'organico. ${sessCaveat}` })),
+    proxy("Sessioni /tools", W, d.traffic, (t) => ({
       value: fmtInt(t.tools_sessions),
       caveat: `Sessioni con almeno un page_view su /tools* (anche con prefisso lingua). ${sessCaveat}`,
     })),
-    fromResult(d.traffic, "Sessioni /predictions", W, (t) => ({
-      status: "PROXY",
+    proxy("Sessioni /predictions", W, d.traffic, (t) => ({
       value: fmtInt(t.predictions_sessions),
       caveat: `Sessioni con almeno un page_view su /predictions* (pagine partita incluse). ${sessCaveat}`,
     })),
@@ -254,12 +264,18 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: formatPct(ratio(p.activated, p.new_profiles), 0) ?? undefined,
       caveat: "Profili creati nella finestra con activated_at valorizzato (link di attivazione cliccato).",
     })),
-    fromResult(d.funnelEvents, "Signup completati (eventi)", W, (f) => ({
-      status: "PROXY",
-      value: fmtInt(f.signup_completed),
-      sub: `${fmtInt(f.signup_started)} avviati · ${formatPct(ratio(f.signup_completed, f.signup_started), 0) ?? "n/d"} completati`,
-      caveat: `Conteggio eventi client: può divergere dai profili creati (doppi invii, blocchi del beacon). ${fmtInt(f.signup_no_session)} eventi signup senza sessione.`,
-    })),
+    d.newProfiles.ok && has(d.newProfiles.data, "signups")
+      ? {
+          label: "Signup completati",
+          status: "LIVE",
+          value: fmtInt(d.newProfiles.data.signups),
+          window: W,
+          sub: d.funnelEvents.ok
+            ? `tracking client: ${fmtInt(d.funnelEvents.data.signup_completed)} eventi signup_completed, ${fmtInt(d.funnelEvents.data.signup_started)} signup_started (${fmtInt(d.funnelEvents.data.signup_no_session)} senza sessione)`
+            : "eventi di tracking: lettura fallita",
+          caveat: "Profili creati dal form di registrazione nella finestra (unico inserimento che registra l'accettazione dei termini; esclusi gli account creati a mano). Gli eventi client possono perdersi o duplicarsi: qui servono solo a misurare il tracking.",
+        }
+      : errorTile("Signup completati", W),
     fromResult(d.funnelEvents, "Pop-up iscrizione", W, (f) => ({
       status: "LIVE",
       value: `${fmtInt(f.popup_shown)} mostrati`,
@@ -272,11 +288,10 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: "plan_view → plan_cta_click → checkout_opened",
       caveat: "Conteggi di eventi, non di persone: una persona può generarne più d'uno.",
     })),
-    fromResult(d.funnelEvents, "Card aperte per sessione", W, (f) => ({
-      status: "PROXY",
+    proxy("Card aperte per sessione", W, d.funnelEvents, (f) => ({
       value: f.card_open_sessions > 0 ? (f.card_open / f.card_open_sessions).toFixed(1) : null,
       sub: `${fmtInt(f.card_open)} card_open in ${fmtInt(f.card_open_sessions)} sessioni`,
-      caveat: "Proxy di engagement, non di attivazione: card_open per sessione che ne ha aperta almeno una.",
+      caveat: "Engagement anonimo, non per utente: card_open per sessione che ne ha aperta almeno una.",
     })),
     ...missingTiles("activation"),
   ];
@@ -289,20 +304,11 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           label: "Paganti verificati",
           status: "LIVE",
           value: fmtInt(paying.verified),
+          sub: `a parte, non paganti: ${fmtInt(paying.comp)} omaggio/manuali/senza fonte · ${fmtInt(paying.expiredNotSwept)} scaduti non ancora declassati (base/premium in tutto: ${fmtInt(paying.inclComp)})`,
           window: NOW,
-          caveat: "Piano base/premium da un canale a pagamento (Paygate, PayPal, Shopify, Stripe) e non scaduto. Esclusi comp/team/regali.",
+          caveat: "Piano base/premium da un canale a pagamento (Paygate, PayPal, Shopify, Stripe) e non scaduto. Gli account omaggio e quelli scaduti sono contati a parte e non entrano nel numero.",
         }
       : errorTile("Paganti verificati", NOW),
-    paying
-      ? {
-          label: "Paganti (incl. comp)",
-          status: "PROXY",
-          value: fmtInt(paying.inclComp),
-          sub: `${fmtInt(paying.comp)} comp/manuali/senza fonte · ${fmtInt(paying.expiredNotSwept)} scaduti non ancora declassati`,
-          window: NOW,
-          caveat: "Tutti i base/premium. Gonfiato dagli account omaggio: usare «Paganti verificati» per decidere.",
-        }
-      : errorTile("Paganti (incl. comp)", NOW),
     paying
       ? {
           label: "Free",
@@ -325,12 +331,16 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: `${fmtInt(r.orders_all)} ordini pagati`,
       caveat: `Stessa regola della torre (paid_at valorizzato). ${fmtInt(r.granted_unpaid)} accessi concessi senza pagamento registrato: non sommati.`,
     })),
-    fromResult(d.shopify, "Ordini Shopify pagati", W, (s) => ({
-      status: "PROXY",
-      value: fmtInt(s.orders_w),
-      sub: `importo ${s.amount_w.toLocaleString("it-IT", { minimumFractionDigits: 2 })} (valuta negozio) · da sempre: ${fmtInt(s.orders_all)} ordini, ${s.amount_all.toLocaleString("it-IT", { minimumFractionDigits: 2 })}`,
-      caveat: "shopify_events orders/paid. Importo nella valuta del negozio, non convertito in USD; rimborsi non sottratti.",
-    })),
+    d.shopify.ok && has(d.shopify.data, "refunds_w", "refunds_all")
+      ? {
+          label: "Ordini Shopify pagati",
+          status: "LIVE",
+          value: fmtInt(d.shopify.data.orders_w),
+          window: W,
+          sub: `${fmtInt(d.shopify.data.refunds_w)} rimborsi nella finestra · da sempre: ${fmtInt(d.shopify.data.orders_all)} ordini, ${fmtInt(d.shopify.data.refunds_all)} rimborsi · importo ${d.shopify.data.amount_w.toLocaleString("it-IT", { minimumFractionDigits: 2 })} nella finestra (valuta del negozio)`,
+          caveat: "Un ordine orders/paid per order id (il webhook scarta le ripetizioni). Rimborsi = eventi refunds/create, contati a parte e non sottratti. L'importo è nella valuta del negozio, che il DB non registra: non si somma agli USD.",
+        }
+      : errorTile("Ordini Shopify pagati", W),
     fromResult(d.revenue, "Quota annuale", ALL, (r) => ({
       status: "LIVE",
       value: formatPct(ratio(r.annual_all, r.orders_all), 0),
@@ -348,8 +358,7 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
 
   // ── Retention ──
   const retention: TileProps[] = [
-    fromResult(d.lapsed, "Abbonamenti pagati scaduti", W, (l) => ({
-      status: "PROXY",
+    proxy("Abbonamenti pagati scaduti", W, d.lapsed, (l) => ({
       value: fmtInt(Number(l.lapsed)),
       caveat: "Profili da canale a pagamento con plan_expires_at nella finestra e non rinnovati. È un conteggio di scadenze, non un churn rate.",
     })),
@@ -370,8 +379,7 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: "errore di calibrazione medio, 10 bin",
       caveat: "Media su casa/pareggio/trasferta di |probabilità prevista − frequenza osservata|.",
     })),
-    fromResult(d.freshness, "Freschezza quote", NOW, (f) => ({
-      status: "PROXY",
+    proxy("Freschezza quote", NOW, d.freshness, (f) => ({
       value: formatAge(f.odds_age_s),
       sub: "età dell'ultima quota salvata",
       caveat: "Freschezza, non latenza: dice quando abbiamo salvato l'ultima quota, non quanto siamo in ritardo sul bookmaker.",

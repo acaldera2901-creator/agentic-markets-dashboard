@@ -28,7 +28,10 @@ si aggiorna. Dalla pagina non si salva nulla.
 - **memo/** — copia `memo/_template.md` in `memo/AAAA-Www.md` (anno e numero della settimana ISO, es. `2026-W41.md`).
   I memo compaiono dal più recente. Il template non compare come memo.
   Il memo si vede come testo semplice: la formattazione markdown non viene interpretata.
-- **sources.json** — `status` resta «accesso da verificare» finché Andrea non conferma l'accesso.
+- **sources.json** — un blocco per fonte: `reads`, `role` (il ruolo minimo, mai admin né password condivise),
+  `steps` (passi per concederlo), `owner` (chi lo concede), `verify` (il numero che prova che funziona), `status`:
+  `da concedere` → `concesso` (l'owner ha fatto i passi) → `verificato` (il numero torna). Si parte sempre da `da concedere`.
+- **tracking-gaps.json** — `tiles` (facoltativo) elenca le tile PROXY che il gap rende reali, `dependsOn` da cosa dipende.
 
 ## Controllo prima del commit (se lavori in locale)
 

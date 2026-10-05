@@ -63,7 +63,10 @@ export function buildSql(w: GrowthWindow): Record<QueryKey, string> {
         'signup_popup_dismissed','plan_view','plan_cta_click','checkout_opened','card_open',
         'partner_click','partner_menu_open','client_error')`,
 
+    // signups = rows inserted by the signup form (app/api/auth register): it is
+    // the only insert path that sets tos_accepted_at (founder grant does not).
     newProfiles: `SELECT count(*)::int AS new_profiles,
+        count(*) FILTER (WHERE tos_accepted_at IS NOT NULL)::int AS signups,
         count(*) FILTER (WHERE activated_at IS NOT NULL)::int AS activated,
         count(*) FILTER (WHERE referred_by IS NOT NULL)::int AS referred,
         count(*) FILTER (WHERE acquisition IS NULL)::int AS no_acquisition
@@ -98,11 +101,16 @@ export function buildSql(w: GrowthWindow): Record<QueryKey, string> {
           + (SELECT count(*) FROM paypal_orders WHERE granted_at IS NOT NULL AND paid_at IS NULL)::int AS granted_unpaid
       FROM o`,
 
-    shopify: `SELECT count(*)::int AS orders_all,
-        coalesce(sum(amount), 0)::float AS amount_all,
-        count(*) FILTER (WHERE processed_at >= ${W})::int AS orders_w,
-        coalesce(sum(amount) FILTER (WHERE processed_at >= ${W}), 0)::float AS amount_w
-      FROM shopify_events WHERE event_type = 'orders/paid'`,
+    // event_id is the Shopify order id (PRIMARY KEY): the webhook drops
+    // redeliveries, so one row = one paid order. Refunds are their own rows
+    // (refunds/create), counted apart and never subtracted.
+    shopify: `SELECT count(*) FILTER (WHERE event_type = 'orders/paid')::int AS orders_all,
+        coalesce(sum(amount) FILTER (WHERE event_type = 'orders/paid'), 0)::float AS amount_all,
+        count(*) FILTER (WHERE event_type = 'orders/paid' AND processed_at >= ${W})::int AS orders_w,
+        coalesce(sum(amount) FILTER (WHERE event_type = 'orders/paid' AND processed_at >= ${W}), 0)::float AS amount_w,
+        count(*) FILTER (WHERE event_type = 'refunds/create')::int AS refunds_all,
+        count(*) FILTER (WHERE event_type = 'refunds/create' AND processed_at >= ${W})::int AS refunds_w
+      FROM shopify_events WHERE event_type IN ('orders/paid', 'refunds/create')`,
 
     partners: `SELECT partner_id, count(*)::int AS clicks
       FROM events WHERE event_type = 'partner_click' AND partner_id IS NOT NULL AND created_at >= ${W}

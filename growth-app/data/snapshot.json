@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-05T22:28:21.847Z",
-  "dbNow": "2026-10-05T22:28:17.915Z",
+  "generatedAt": "2026-10-05T22:47:20.036Z",
+  "dbNow": "2026-10-05T22:47:16.553Z",
   "origin": "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
   "windows": {
     "today": {
@@ -9,8 +9,8 @@
         "ok": true,
         "data": [
           {
-            "page_views": 45,
-            "page_views_no_session": 45,
+            "page_views": 109,
+            "page_views_no_session": 109,
             "sessions": 0,
             "tools_sessions": 0,
             "predictions_sessions": 0
@@ -43,6 +43,7 @@
         "data": [
           {
             "new_profiles": 0,
+            "signups": 0,
             "activated": 0,
             "referred": 0,
             "no_acquisition": 0
@@ -69,7 +70,9 @@
             "orders_all": 1,
             "amount_all": 14.99,
             "orders_w": 0,
-            "amount_w": 0
+            "amount_w": 0,
+            "refunds_all": 0,
+            "refunds_w": 0
           }
         ]
       },
@@ -85,9 +88,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 12.467703,
-            "football_age_s": 1548.07206,
-            "tennis_age_s": 1633.781529,
+            "odds_age_s": 229.754202,
+            "football_age_s": 2686.710015,
+            "tennis_age_s": 2772.419484,
             "error_patterns_24h": 0
           }
         ]
@@ -97,8 +100,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600829689459388,
-            "ece": 0.0355569836445038
+            "brier": 0.60082924379493,
+            "ece": 0.035556745141068
           }
         ]
       },
@@ -177,8 +180,8 @@
         "ok": true,
         "data": [
           {
-            "page_views": 561,
-            "page_views_no_session": 376,
+            "page_views": 625,
+            "page_views_no_session": 440,
             "sessions": 50,
             "tools_sessions": 6,
             "predictions_sessions": 14
@@ -211,6 +214,7 @@
         "data": [
           {
             "new_profiles": 2,
+            "signups": 2,
             "activated": 1,
             "referred": 0,
             "no_acquisition": 1
@@ -237,7 +241,9 @@
             "orders_all": 1,
             "amount_all": 14.99,
             "orders_w": 0,
-            "amount_w": 0
+            "amount_w": 0,
+            "refunds_all": 0,
+            "refunds_w": 0
           }
         ]
       },
@@ -253,9 +259,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 12.467703,
-            "football_age_s": 1548.07206,
-            "tennis_age_s": 1633.781529,
+            "odds_age_s": 229.754202,
+            "football_age_s": 2686.710015,
+            "tennis_age_s": 2772.419484,
             "error_patterns_24h": 0
           }
         ]
@@ -265,8 +271,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600828201258578,
-            "ece": 0.0355560642602973
+            "brier": 0.600827448752728,
+            "ece": 0.0355555036608165
           }
         ]
       },
@@ -382,8 +388,8 @@
         "ok": true,
         "data": [
           {
-            "page_views": 3139,
-            "page_views_no_session": 1396,
+            "page_views": 3201,
+            "page_views_no_session": 1459,
             "sessions": 400,
             "tools_sessions": 59,
             "predictions_sessions": 225
@@ -405,7 +411,7 @@
             "checkout_opened": 3,
             "card_open": 120,
             "card_open_sessions": 30,
-            "partner_click": 18,
+            "partner_click": 17,
             "partner_menu_open": 15,
             "client_error": 55
           }
@@ -416,6 +422,7 @@
         "data": [
           {
             "new_profiles": 22,
+            "signups": 22,
             "activated": 15,
             "referred": 0,
             "no_acquisition": 9
@@ -442,7 +449,9 @@
             "orders_all": 1,
             "amount_all": 14.99,
             "orders_w": 0,
-            "amount_w": 0
+            "amount_w": 0,
+            "refunds_all": 0,
+            "refunds_w": 0
           }
         ]
       },
@@ -458,9 +467,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 12.467703,
-            "football_age_s": 1548.07206,
-            "tennis_age_s": 1633.781529,
+            "odds_age_s": 229.754202,
+            "football_age_s": 2686.710015,
+            "tennis_age_s": 2772.419484,
             "error_patterns_24h": 0
           }
         ]
@@ -470,8 +479,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600832598715043,
-            "ece": 0.0355589233721625
+            "brier": 0.600827611423106,
+            "ece": 0.0355556041913387
           }
         ]
       },
@@ -587,7 +596,7 @@
         "data": [
           {
             "partner_id": "BetScore",
-            "clicks": 13
+            "clicks": 12
           },
           {
             "partner_id": "Beazt",

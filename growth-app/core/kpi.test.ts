@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MISSING_KPIS, PAID_CHANNELS, formatAge, formatPct, funnelLinks, parseWindow, ratio, splitPaying, windowStartSql } from "./kpi";
+import { MISSING_KPIS, PAID_CHANNELS, PROXY_TILES, formatAge, formatPct, funnelLinks, parseWindow, proxyTile, ratio, splitPaying, windowStartSql } from "./kpi";
 import { buildSql } from "./sql";
 
 describe("windows", () => {
@@ -27,7 +27,8 @@ describe("windows", () => {
 
   it("queries are read-only and never select personal columns", () => {
     for (const s of Object.values(buildSql("7d"))) {
-      expect(s).not.toMatch(/\b(insert|update|delete|drop|alter|create|truncate)\b/i);
+      // Keywords inside string literals are data, not statements ('refunds/create' is a Shopify topic).
+      expect(s.replace(/'[^']*'/g, "''")).not.toMatch(/\b(insert|update|delete|drop|alter|create|truncate)\b/i);
       expect(s).not.toMatch(/\b(identifier|email|password_hash|name)\b/i);
       expect(s.trim().endsWith(";")).toBe(false); // exec_sql wraps the query in a subquery
     }
@@ -98,5 +99,37 @@ describe("missing KPIs", () => {
       expect(m.needs.length).toBeGreaterThan(5);
       expect(m.owner).toMatch(/^(Calde|Tommy|Andrea)$/);
     }
+  });
+});
+
+describe("proxy audit (06/10)", () => {
+  it("signups are profiles from the signup form, not client events", () => {
+    const q = buildSql("7d").newProfiles;
+    expect(q).toContain("FROM profiles");
+    expect(q).toMatch(/FILTER \(WHERE tos_accepted_at IS NOT NULL\)::int AS signups/);
+  });
+
+  it("Shopify counts paid orders and refunds apart, never netting them", () => {
+    const q = buildSql("30d").shopify;
+    expect(q).toMatch(/event_type = 'orders\/paid'\)::int AS orders_all/);
+    expect(q).toMatch(/event_type = 'refunds\/create' AND processed_at >= .*AS refunds_w/);
+    expect(q).toContain("interval '30 days'");
+  });
+
+  it("every PROXY tile names the PDF KPI it approximates, what unblocks it and its gaps", () => {
+    expect(new Set(PROXY_TILES.map((t) => t.label)).size).toBe(PROXY_TILES.length);
+    for (const t of PROXY_TILES) {
+      expect(t.pdfKpi.length, t.label).toBeGreaterThan(2);
+      expect(t.needs.length, t.label).toBeGreaterThan(10);
+      expect(t.gaps.length, t.label).toBeGreaterThan(0);
+      for (const g of t.gaps) expect(g).toMatch(/^G\d{2}$/);
+    }
+    expect(PROXY_TILES.map((t) => t.label).sort()).toEqual(
+      ["Abbonamenti pagati scaduti", "Card aperte per sessione", "Freschezza quote", "Sessioni", "Sessioni /predictions", "Sessioni /tools"],
+    );
+  });
+
+  it("an unknown PROXY label fails loud instead of rendering without its caveat", () => {
+    expect(() => proxyTile("Paganti (incl. comp)")).toThrow(/PROXY_TILES/);
   });
 });

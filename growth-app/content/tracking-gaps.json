@@ -6,7 +6,9 @@
     "priority": "P0",
     "unlocks": ["WAA (utenti attivi settimanali)", "Retention D7 / D30 / M3", "Utenti di ritorno", "3 analisi / settimana"],
     "owner": "Calde",
-    "status": "aperto"
+    "status": "aperto",
+    "tiles": ["Card aperte per sessione"],
+    "dependsOn": "id utente pseudonimo stabile negli events per gli utenti loggati (#1). Nessuna dipendenza esterna; tocca il beacon del prodotto, quindi passa da una PR."
   },
   {
     "id": "G02",
@@ -15,7 +17,9 @@
     "priority": "P0",
     "unlocks": ["3 analisi / settimana", "Tasso di attivazione"],
     "owner": "Steve (definizione) + Calde (evento)",
-    "status": "aperto"
+    "status": "aperto",
+    "tiles": ["Card aperte per sessione"],
+    "dependsOn": "G01 + definizione scritta di «analisi» (Steve) + evento analysis_viewed (#2) nell'allowlist degli eventi del prodotto (lib/analytics-events.ts)."
   },
   {
     "id": "G03",
@@ -24,7 +28,8 @@
     "priority": "P0",
     "unlocks": ["MRR", "ARPU", "Revenue per canale"],
     "owner": "Andrea",
-    "status": "aperto"
+    "status": "aperto",
+    "dependsOn": "revenue module (#4): importo, periodo e valuta per ogni abbonamento, da tutti i canali. Shopify oggi salva l'importo ma non la valuta del negozio."
   },
   {
     "id": "G04",
@@ -42,7 +47,9 @@
     "priority": "P1",
     "unlocks": ["Sessioni per canale", "Signup per canale", "Cohort notes per canale", "Traffico organico"],
     "owner": "Steve (tag sui canali) + Calde (Search Console)",
-    "status": "aperto"
+    "status": "aperto",
+    "tiles": ["Sessioni"],
+    "dependsOn": "tag ?src= sui link dei canali (Steve) + accesso a Search Console (vedi Accessi e fonti) per la parte organica."
   },
   {
     "id": "G06",
@@ -69,7 +76,9 @@
     "priority": "P1",
     "unlocks": ["Churn rate", "Retention paganti"],
     "owner": "Calde",
-    "status": "aperto"
+    "status": "aperto",
+    "tiles": ["Abbonamenti pagati scaduti"],
+    "dependsOn": "log di churn: tabella storica degli stati abbonamento (attivato, rinnovato, scaduto, rimborsato) scritta dal cron subscriptions e dai webhook di pagamento. È una migration sul DB di produzione: PROPOSAL + APPROVE di Andrea."
   },
   {
     "id": "G09",
@@ -78,7 +87,9 @@
     "priority": "P2",
     "unlocks": ["Uptime %", "Latenza quote", "Tempo di reazione agli incidenti"],
     "owner": "Calde",
-    "status": "aperto"
+    "status": "aperto",
+    "tiles": ["Freschezza quote"],
+    "dependsOn": "misura di latenza: il collettore delle quote deve salvare il timestamp della quota alla fonte (bookmaker/API) accanto a captured_at. Per l'uptime: un monitor esterno con storico."
   },
   {
     "id": "G10",
@@ -106,5 +117,16 @@
     "unlocks": ["Paganti verificati", "Conversione free → paid"],
     "owner": "Calde",
     "status": "mitigato"
+  },
+  {
+    "id": "G13",
+    "title": "Sessioni senza consenso non contate",
+    "problem": "Senza consenso cookie il beacon parte senza session_id, quindi quelle visite non diventano sessioni. Snapshot del 06/10: 440 page_view su 625 senza sessione negli ultimi 7 giorni (70%), 1.459 su 3.201 negli ultimi 30 (46%). Vercel Web Analytics non colma il buco: si carica anch'esso solo col consenso (components/VercelAnalytics.tsx).",
+    "priority": "P1",
+    "unlocks": ["Organic sessions", "Tool sessions", "Match page sessions", "Visitor → signup"],
+    "owner": "Calde (tecnico) + legale-compliance (base giuridica)",
+    "status": "aperto",
+    "tiles": ["Sessioni", "Sessioni /tools", "Sessioni /predictions"],
+    "dependsOn": "conteggio delle sessioni senza cookie lato server (es. hash giornaliero non persistente), solo dopo parere di legale-compliance su ePrivacy/GDPR. Per la sola parte organica, i clic di Search Console sono un controllo indipendente che non dipende dal consenso."
   }
 ]

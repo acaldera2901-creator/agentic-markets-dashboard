@@ -1,50 +1,244 @@
 [
   {
-    "tool": "Supabase (DB di produzione), sola lettura",
-    "reads": "Tabelle events, profiles e ordini: le stesse da cui nasce la dashboard. Accesso SOLO in lettura (ruolo growth_ro, vedi PROPOSAL #GROWTH-LIVE).",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "id": "supabase",
+    "tool": "Supabase — DB di produzione (letto dalla dashboard)",
+    "reads": "events, profiles e ordini: le tabelle da cui nascono i numeri di /. Steve non entra in Supabase: legge i numeri live in questa dashboard, che li interroga col ruolo growth_ro.",
+    "role": "Nessun utente Supabase per Steve. Ruolo Postgres growth_ro: solo SELECT sulle 10 tabelle lette, transazioni read-only forzate, massimo 5 connessioni. Mai SQL editor, mai service key, mai membro del progetto Supabase.",
+    "steps": [
+      "Andrea approva la PROPOSAL #GROWTH-LIVE (README della dashboard) con APPROVE.",
+      "Calde crea il ruolo growth_ro con lo SQL della PROPOSAL; la password (32+ caratteri) non passa da chat, ticket o commit.",
+      "Calde imposta GROWTH_DATA_SOURCE=live e GROWTH_DATABASE_URL (Sensitive) solo sul progetto Vercel betredge-growth, mai sul prodotto, e rifà il deploy.",
+      "Steve apre la dashboard: al posto del banner «Snapshot … non live» compare «Ultimo aggiornamento»."
+    ],
+    "owner": "Andrea (APPROVE) · Calde (esecuzione)",
+    "verify": "«Nuovi profili» a 7 giorni in pagina = riga «Nuovi profili | 7d» di npm run verify lanciato da Calde col ruolo growth_ro; una scrittura di prova col ruolo viene rifiutata (SQLSTATE 25006).",
+    "status": "da concedere"
   },
   {
-    "tool": "Vercel Web Analytics",
-    "reads": "Visite e pagine viste misurate lato Vercel. Serve da controllo indipendente per gli events (G10).",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "id": "vercel",
+    "tool": "Vercel — Web Analytics (progetto betredge)",
+    "reads": "Visitatori, pagine viste e referrer del sito prodotto (team betredge, progetto betredge): controllo indipendente degli events (G10). Lo script si carica solo col consenso cookie, come le sessioni della dashboard: non misura il traffico senza consenso (G13). Speed Insights non è installato nel prodotto (manca @vercel/speed-insights): finché non lo si attiva non c'è nulla da leggere.",
+    "role": "Membro del team betredge con ruolo Viewer: sola lettura, nessun deploy, nessuna variabile d'ambiente. Che il ruolo esista sul piano del team è da verificare nell'interfaccia. Se non esiste, non ripiegare su Member (fa deploy e legge le env): meglio un export settimanale dell'owner.",
+    "steps": [
+      "vercel.com → team betredge → Settings → Members.",
+      "Invite Member → email nominativa di Steve → ruolo Viewer → Invite.",
+      "Se il team consente l'accesso per singolo progetto (voce da verificare nell'interfaccia), limitarlo al progetto betredge.",
+      "Steve accetta l'invito con il proprio account Vercel."
+    ],
+    "owner": "Andrea (owner del team betredge)",
+    "verify": "Progetto betredge → Analytics → ultimi 7 giorni → Page Views: dello stesso ordine dei page_view CON sessione della dashboard a 7 giorni (page view meno quelli senza session_id), perché entrambi contano solo col consenso. Molto più alto, o zero, va segnalato a Calde.",
+    "status": "da concedere"
   },
   {
-    "tool": "Google Search Console",
-    "reads": "Query organiche, impressioni, CTR e posizione per pagina. Base per il segmento «organico» (G05).",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "id": "search-console",
+    "tool": "Google Search Console (www.betredge.com)",
+    "reads": "Clic, impressioni, CTR e posizione media per query e per pagina. È la fonte del traffico organico (G05) e non dipende dal consenso cookie (G13).",
+    "role": "Utente con autorizzazione «Limitato» (Restricted): vede i report, non cambia impostazioni né utenti.",
+    "steps": [
+      "search.google.com/search-console → proprietà di www.betredge.com (quella su cui Andrea risulta proprietario).",
+      "Impostazioni → Utenti e autorizzazioni → Aggiungi utente.",
+      "Email Google nominativa di Steve → autorizzazione «Limitato» → Aggiungi."
+    ],
+    "owner": "Andrea (proprietario della proprietà: da confermare nell'interfaccia)",
+    "verify": "Rendimento → Risultati di ricerca → ultimi 28 giorni → «Clic totali»: Steve legge lo stesso numero che vede Andrea nella stessa schermata.",
+    "status": "da concedere"
   },
   {
+    "id": "stripe",
     "tool": "Stripe",
-    "reads": "Abbonamenti, importi, rinnovi e cancellazioni (oggi gli importi non arrivano nel DB, G03).",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "reads": "Abbonamenti, importi, rinnovi e cancellazioni. Gli importi Stripe non arrivano nel DB (G03): oggi si leggono solo qui.",
+    "role": "Ruolo di sola lettura: «Analyst» se serve esportare, «View only» se basta guardare. Nessun ruolo che consenta rimborsi, modifiche o chiavi API. Nomi e permessi esatti dei ruoli: da verificare nell'interfaccia (descrizione dei ruoli nella pagina Team).",
+    "steps": [
+      "dashboard.stripe.com → Impostazioni → Team e sicurezza → Team.",
+      "Aggiungi membro → email nominativa di Steve → ruolo Analyst (o View only) → Invia invito.",
+      "Steve attiva l'autenticazione a due fattori al primo accesso."
+    ],
+    "owner": "Andrea",
+    "verify": "Billing → Subscriptions, stato Active: il numero deve essere uguale ai profili con plan_source stripe e non scaduti (oggi 0 nel DB). Se Stripe ne mostra di più, il DB non li vede: va segnalato a Calde.",
+    "status": "da concedere"
   },
   {
-    "tool": "Paygate / PayPal / Shopify",
-    "reads": "Ordini e incassi degli altri canali di pagamento: serve per riconciliarli con la tile «Incassato».",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "id": "paypal",
+    "tool": "PayPal (account business)",
+    "reads": "Pagamenti, rimborsi e contestazioni degli ordini PayPal, per riconciliare la tile «Incassato Paygate + PayPal».",
+    "role": "Utente secondario nominativo con i soli permessi di visualizzazione e download di report e transazioni: nessun invio di denaro, nessun rimborso, nessuna modifica del profilo. Nome esatto dei permessi: da verificare nell'interfaccia.",
+    "steps": [
+      "paypal.com, account business → Impostazioni account → gestione utenti (percorso da verificare nell'interfaccia).",
+      "Aggiungi utente → nome ed email di Steve.",
+      "Spuntare solo i permessi di lettura su report e attività; lasciare spenti pagamenti, rimborsi, prelievi e impostazioni.",
+      "Steve sceglie la propria password al primo accesso: l'utente è suo, il login principale non si condivide."
+    ],
+    "owner": "Andrea",
+    "verify": "Attività → pagamenti completati negli ultimi 30 giorni = ordini PayPal con paid_at negli ultimi 30 giorni (Calde li legge da paypal_orders).",
+    "status": "da concedere"
   },
   {
-    "tool": "Reti affiliate (portali dei partner)",
-    "reads": "Conversioni e commissioni per partner: il DB registra solo i click (G07).",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "id": "paygate",
+    "tool": "PayGate",
+    "reads": "Ordini e incassi del checkout PayGate. Sono già nel DB (paygate_orders, nella tile «Incassato»): l'accesso serve solo a riconciliare.",
+    "role": "Utente nominativo col ruolo più basso disponibile, senza prelievi né impostazioni. Non sappiamo se PayGate preveda utenti secondari: da verificare nell'interfaccia. Se non li prevede, nessun accesso: il login dell'account non si condivide.",
+    "steps": [
+      "Andrea controlla nel pannello PayGate se esiste una gestione utenti o ruoli (da verificare nell'interfaccia).",
+      "Se esiste: invito nominativo a Steve con il ruolo più basso, senza prelievi né impostazioni.",
+      "Se non esiste: Steve legge PayGate dalla dashboard (paygate_orders) e Calde riporta a richiesta il totale del pannello."
+    ],
+    "owner": "Andrea",
+    "verify": "Ordini pagati negli ultimi 30 giorni nel pannello PayGate = ordini paygate_orders con paid_at negli ultimi 30 giorni (Calde).",
+    "status": "da concedere"
   },
   {
-    "tool": "Resend",
-    "reads": "Invii, aperture, click e bounce delle email lifecycle (CRM).",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "id": "shopify",
+    "tool": "Shopify",
+    "reads": "Ordini, rimborsi e importi nella valuta del negozio. Il DB salva l'importo ma non la valuta (G03).",
+    "role": "Staff nominativo con i soli permessi di Analytics e Report, più la lettura degli Ordini se serve vedere il singolo ordine. Niente Impostazioni, Prodotti, Pagamenti, App né rimborsi. Nomi esatti dei permessi: da verificare nell'interfaccia. Ogni staff occupa un posto del piano.",
+    "steps": [
+      "Admin Shopify → Impostazioni → Utenti e autorizzazioni.",
+      "Aggiungi staff → nome ed email di Steve.",
+      "Spuntare solo Analytics e Report (e Ordini, controllando che non consenta rimborsi) → Invia invito."
+    ],
+    "owner": "Andrea",
+    "verify": "Ordini filtrati per «Pagato», da sempre = «Ordini Shopify pagati — da sempre» della dashboard (snapshot del 06/10: 1).",
+    "status": "da concedere"
   },
   {
-    "tool": "Social: Instagram, TikTok, X, YouTube",
-    "reads": "Reach, follower, click sul link in bio per canale. Serve per le cohort notes per canale.",
-    "status": "accesso da verificare",
-    "owner": "Andrea"
+    "id": "aff-ggbet",
+    "tool": "Affiliate — GG.BET",
+    "reads": "Click, registrazioni, FTD e commissioni di BetRedge sul programma GG.BET (link tracciato via ggbetbestoffer.com). Il DB registra solo i nostri click in uscita (partner_click, G07).",
+    "role": "Sub-utente di reporting sul portale affiliate: solo statistiche e report, niente dati di pagamento né modifica dei link. Che il portale preveda sub-utenti è da verificare nell'interfaccia; in alternativa, un report periodico dall'affiliate manager.",
+    "steps": [
+      "Chi detiene l'account affiliate apre il portale GG.BET → sezione utenti o sub-account (da verificare nell'interfaccia).",
+      "Crea un sub-utente di reporting per l'email di Steve.",
+      "Se il portale non lo prevede: chiedere all'affiliate manager (il contatto passa da Fredrik) un utente di sola lettura o un CSV settimanale."
+    ],
+    "owner": "Andrea (titolare dell'account affiliate: da confermare)",
+    "verify": "Click del portale negli ultimi 30 giorni vs «Click per partner → GG.BET» della dashboard a 30 giorni (snapshot del 06/10: 1). Devono essere dello stesso ordine.",
+    "status": "da concedere"
+  },
+  {
+    "id": "aff-wildz",
+    "tool": "Affiliate — Wildz (anche Beazt)",
+    "reads": "Click, registrazioni, FTD e commissioni sul programma Wildz Affiliates (link via go.wildzaffiliates.com, stesso account bta 1000385 per Wildz e Beazt). Il DB registra solo i click in uscita (G07).",
+    "role": "Sub-utente di reporting sul portale Wildz Affiliates: solo statistiche e report. Disponibilità da verificare nell'interfaccia; in alternativa, un report periodico dall'affiliate manager.",
+    "steps": [
+      "Chi detiene l'account apre il portale Wildz Affiliates → sezione utenti o sub-account (da verificare nell'interfaccia).",
+      "Crea un sub-utente di reporting per l'email di Steve.",
+      "Se il portale non lo prevede: chiedere all'affiliate manager (via Fredrik) un utente di sola lettura o un CSV settimanale."
+    ],
+    "owner": "Andrea (titolare dell'account affiliate: da confermare)",
+    "verify": "Click del portale negli ultimi 30 giorni vs «Click per partner» della dashboard a 30 giorni per Wildz + Beazt (snapshot del 06/10: Wildz 0, Beazt 2). Devono essere dello stesso ordine.",
+    "status": "da concedere"
+  },
+  {
+    "id": "aff-fortuneplay",
+    "tool": "Affiliate — FortunePlay",
+    "reads": "Click, registrazioni, FTD e commissioni sul programma FortunePlay (link via mediaroosters.com). Il DB registra solo i click in uscita (G07).",
+    "role": "Sub-utente di reporting sul portale del programma: solo statistiche e report. Disponibilità da verificare nell'interfaccia; in alternativa, un report periodico dall'affiliate manager.",
+    "steps": [
+      "Chi detiene l'account apre il portale del programma FortunePlay → sezione utenti o sub-account (da verificare nell'interfaccia).",
+      "Crea un sub-utente di reporting per l'email di Steve.",
+      "Se il portale non lo prevede: chiedere all'affiliate manager (via Fredrik) un utente di sola lettura o un CSV settimanale."
+    ],
+    "owner": "Andrea (titolare dell'account affiliate: da confermare)",
+    "verify": "Click del portale negli ultimi 30 giorni vs «Click per partner → FortunePlay» della dashboard a 30 giorni (snapshot del 06/10: 2). Devono essere dello stesso ordine.",
+    "status": "da concedere"
+  },
+  {
+    "id": "aff-betscore",
+    "tool": "Affiliate — BetScore",
+    "reads": "Click, registrazioni, FTD e commissioni sul programma BetScore (link via lynmonkel.com). Il DB registra solo i click in uscita (G07).",
+    "role": "Sub-utente di reporting sul portale del programma: solo statistiche e report. Disponibilità da verificare nell'interfaccia; in alternativa, un report periodico dall'affiliate manager.",
+    "steps": [
+      "Chi detiene l'account apre il portale del programma BetScore → sezione utenti o sub-account (da verificare nell'interfaccia).",
+      "Crea un sub-utente di reporting per l'email di Steve.",
+      "Se il portale non lo prevede: chiedere all'affiliate manager (via Fredrik) un utente di sola lettura o un CSV settimanale."
+    ],
+    "owner": "Andrea (titolare dell'account affiliate: da confermare)",
+    "verify": "Click del portale negli ultimi 30 giorni vs «Click per partner → BetScore» della dashboard a 30 giorni (snapshot del 06/10: 12). Devono essere dello stesso ordine.",
+    "status": "da concedere"
+  },
+  {
+    "id": "resend",
+    "tool": "Resend (email del CRM)",
+    "reads": "Invii, consegne, aperture, click, bounce e reclami delle email lifecycle del CRM.",
+    "role": "Membro del team con il ruolo più basso disponibile, mai Admin. Cosa può fare quel ruolo è da verificare nell'interfaccia: se può creare API key o inviare email, non concederlo e ripiegare su un export periodico.",
+    "steps": [
+      "resend.com → impostazioni del team → membri (percorso da verificare nell'interfaccia).",
+      "Invita → email di Steve → ruolo più basso disponibile.",
+      "Steve accetta l'invito con il proprio account."
+    ],
+    "owner": "Andrea",
+    "verify": "Emails → ultimi 7 giorni → numero di invii: dello stesso ordine degli invii del cron CRM che Calde legge per lo stesso periodo.",
+    "status": "da concedere"
+  },
+  {
+    "id": "meta",
+    "tool": "Instagram + Facebook (Meta Business Suite)",
+    "reads": "Copertura, impressioni, follower, interazioni e click al link di @betr.edge (e della pagina Facebook, se collegata).",
+    "role": "Persona del portfolio business con accesso parziale: solo gli asset Instagram/Pagina e solo il permesso di vedere gli Insights (analista). Mai «controllo completo» né amministratore del portfolio. Nomi esatti dei permessi: da verificare nell'interfaccia.",
+    "steps": [
+      "business.facebook.com → Impostazioni → Utenti → Persone → Aggiungi.",
+      "Email di Steve → accesso da dipendente, non da amministratore.",
+      "Assegna asset: account Instagram @betr.edge (e Pagina) → solo il permesso Insights (da verificare nell'interfaccia).",
+      "Steve accetta l'invito dal proprio account."
+    ],
+    "owner": "Andrea (titolare del portfolio business: da confermare)",
+    "verify": "Insights di @betr.edge → ultimi 28 giorni → «Account raggiunti»: Steve legge lo stesso numero che vede il titolare nella stessa schermata.",
+    "status": "da concedere"
+  },
+  {
+    "id": "tiktok",
+    "tool": "TikTok",
+    "reads": "Visualizzazioni, follower, interazioni e visite al profilo dell'account TikTok di BetRedge.",
+    "role": "Se l'account è collegato a un TikTok Business Center: membro con permesso di sola analisi sull'account (nome del ruolo da verificare nell'interfaccia). Se non è collegato, non esiste un accesso secondario: export settimanale del titolare. Le credenziali non si condividono.",
+    "steps": [
+      "Verificare se l'account TikTok di BetRedge è collegato a un Business Center (business.tiktok.com).",
+      "Se sì: Business Center → Utenti → Invita membro → email di Steve → ruolo più basso → assegna l'account con il solo permesso di analisi (da verificare nell'interfaccia).",
+      "Se no: il titolare scarica ogni lunedì l'export di Analytics degli ultimi 7 giorni e lo passa a Steve."
+    ],
+    "owner": "Andrea (titolare dell'account: da confermare)",
+    "verify": "Analytics → ultimi 7 giorni → «Visualizzazioni video»: lo stesso numero per Steve e per il titolare.",
+    "status": "da concedere"
+  },
+  {
+    "id": "youtube",
+    "tool": "YouTube (Studio)",
+    "reads": "Visualizzazioni, tempo di visualizzazione, iscritti e sorgenti di traffico del canale BetRedge.",
+    "role": "Autorizzazione di canale «Visualizzatore» (Viewer): vede Analytics e contenuti, non modifica nulla. «Visualizzatore (limitato)» nasconde i ricavi e va bene se i ricavi non servono.",
+    "steps": [
+      "studio.youtube.com → Impostazioni → Autorizzazioni.",
+      "Invita → email Google di Steve → ruolo Visualizzatore → Salva.",
+      "Se il pulsante Invita non c'è (canale gestito in altro modo), il percorso è da verificare nell'interfaccia."
+    ],
+    "owner": "Andrea (titolare del canale: da confermare)",
+    "verify": "Analytics → ultimi 28 giorni → «Visualizzazioni»: lo stesso numero per Steve e per il titolare.",
+    "status": "da concedere"
+  },
+  {
+    "id": "x",
+    "tool": "X (Twitter)",
+    "reads": "Impressioni, interazioni, follower e click ai link dell'account X di BetRedge.",
+    "role": "Nessun accesso all'account per Steve. Per i dati: accesso al pannello X Ads (ads.x.com) con un ruolo di sola analisi, se l'account pubblicitario esiste (nome del ruolo da verificare nell'interfaccia). La delega dell'account consente di pubblicare: non va usata.",
+    "steps": [
+      "ads.x.com con l'account BetRedge → impostazioni di accesso all'account (percorso da verificare nell'interfaccia).",
+      "Aggiungi l'handle personale di Steve → ruolo di sola analisi → Salva.",
+      "Se l'opzione non esiste: il titolare esporta ogni settimana i dati di Analytics e li passa a Steve."
+    ],
+    "owner": "Andrea (titolare dell'account: da confermare)",
+    "verify": "Analytics → ultimi 28 giorni → «Impressioni»: lo stesso numero per Steve e per il titolare.",
+    "status": "da concedere"
+  },
+  {
+    "id": "reddit",
+    "tool": "Reddit (u/Betredge)",
+    "reads": "Commenti pubblicati, commenti ancora vivi o rimossi, upvote, risposte, giorni di silenzio e click verso il sito.",
+    "role": "Nessun accesso. Le credenziali di u/Betredge non si condividono: l'account lo opera solo l'agente reddit-betredge. Steve riceve le metriche come report.",
+    "steps": [
+      "Steve chiede a marketing-betredge il report settimanale del canale Reddit.",
+      "reddit-betredge lo compila dal suo giro quotidiano: commenti mandati, vivi o rimossi, upvote, risposte, giorni di silenzio.",
+      "I link nei commenti devono portare ?src=reddit, così le visite compaiono in «Sessioni per fonte» (oggi quasi tutte le sessioni sono senza fonte, G05)."
+    ],
+    "owner": "marketing-betredge (report) · reddit-betredge (dati)",
+    "verify": "Dashboard → «Sessioni per fonte» a 30 giorni: se il report dichiara click, deve esserci una riga src:reddit o referrer reddit.com. Se manca, il tag ?src= non è applicato (G05).",
+    "status": "da concedere"
   }
 ]

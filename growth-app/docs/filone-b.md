@@ -10,10 +10,10 @@ Execution System» che la dashboard dei numeri non copre già:
 
 | Sezione | File sorgente | Output del PDF |
 |---|---|---|
-| Tracking gaps (12 gap noti: priorità, KPI sbloccati, owner suggerito, stato) | `content/tracking-gaps.json` | tracking gaps list |
+| Tracking gaps (13 gap noti dalla v3: priorità, KPI sbloccati, owner suggerito, stato) | `content/tracking-gaps.json` | tracking gaps list |
 | Backlog esperimenti (3 esempi E01–E03, «esempio da validare con Steve») | `content/experiments.json` | experiment proposal |
 | Memo settimanale scale/fix/kill (template + elenco dei memo) | `content/memo/_template.md`, `content/memo/AAAA-Www.md` | scale/fix/kill memo |
-| Accessi e fonti (8 strumenti, tutti «accesso da verificare», owner Andrea) | `content/sources.json` | prerequisito per tutto il resto |
+| Accessi e fonti (v3: 17 fonti, un blocco operativo ciascuna — ruolo minimo, passi, owner, verifica — tutte «da concedere») | `content/sources.json` | prerequisito per tutto il resto |
 
 La guida di una pagina per Steve sta in `content/README.md`.
 

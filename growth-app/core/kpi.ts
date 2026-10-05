@@ -126,6 +126,37 @@ export function funnelLinks(steps: FunnelStep[]): FunnelLink[] {
 
 export type Family = "acquisition" | "activation" | "revenue" | "retention" | "quality";
 
+export interface ProxyTile {
+  /** Tile label in the dashboard (unique). */
+  label: string;
+  /** The KPI of the "BetRedge Execution System" PDF this tile approximates. */
+  pdfKpi: string;
+  /** What has to exist for the tile to become LIVE. */
+  needs: string;
+  /** Tracking gaps (content/tracking-gaps.json) that close it. */
+  gaps: string[];
+  owner: string;
+}
+
+// Tiles that stay PROXY because the true number does not exist in any source
+// we read. Audited 06/10: everything that could be made LIVE from the DB was
+// (signup → profiles, paying → verified + comps apart, Shopify → order count).
+// A test keeps this list and content/tracking-gaps.json in sync.
+export const PROXY_TILES: ProxyTile[] = [
+  { label: "Sessioni", pdfKpi: "Organic sessions", needs: "conteggio delle sessioni anche senza consenso (G13) e fonte organica separata (Search Console, G05)", gaps: ["G13", "G05"], owner: "Calde" },
+  { label: "Sessioni /tools", pdfKpi: "Tool sessions", needs: "conteggio delle sessioni anche senza consenso (G13)", gaps: ["G13"], owner: "Calde" },
+  { label: "Sessioni /predictions", pdfKpi: "Match page sessions", needs: "conteggio delle sessioni anche senza consenso (G13)", gaps: ["G13"], owner: "Calde" },
+  { label: "Card aperte per sessione", pdfKpi: "Signup → 3 analyses/week", needs: "id utente stabile negli events (G01) + definizione di «analisi» ed evento analysis_viewed (G02)", gaps: ["G01", "G02"], owner: "Calde" },
+  { label: "Abbonamenti pagati scaduti", pdfKpi: "Monthly churn", needs: "log storico degli stati abbonamento, per avere i paganti a inizio periodo (G08)", gaps: ["G08"], owner: "Calde" },
+  { label: "Freschezza quote", pdfKpi: "Odds latency", needs: "timestamp della quota alla fonte accanto a captured_at (G09)", gaps: ["G09"], owner: "Calde" },
+];
+
+export function proxyTile(label: string): ProxyTile {
+  const t = PROXY_TILES.find((x) => x.label === label);
+  if (!t) throw new Error(`tile PROXY senza voce in PROXY_TILES: ${label}`);
+  return t;
+}
+
 export interface MissingKpi {
   family: Family;
   label: string;
@@ -145,7 +176,7 @@ export const MISSING_KPIS: MissingKpi[] = [
   { family: "retention", label: "Alert aperti", why: "la funzione alert non esiste", needs: "feature alert + evento alert_opened", owner: "Tommy" },
   { family: "retention", label: "Retention D7 / D30 / M3", why: "senza id utente negli events non si sa chi torna", needs: "id utente stabile negli events (vedi WAA)", owner: "Calde" },
   { family: "retention", label: "Utenti di ritorno", why: "session_id cambia a ogni sessione: un ritorno è indistinguibile da un nuovo visitatore", needs: "id visitatore persistente (con consenso) o id utente per i loggati", owner: "Calde" },
-  { family: "retention", label: "Churn rate", why: "esiste solo il conteggio delle scadenze (tile PROXY sopra), non il denominatore storico dei paganti", needs: "storico giornaliero dei paganti (snapshot) per calcolare la base di inizio periodo", owner: "Calde" },
+  { family: "retention", label: "Churn rate", why: "esiste solo il conteggio delle scadenze (tile PROXY «Abbonamenti pagati scaduti»), non il denominatore storico dei paganti", needs: "storico giornaliero dei paganti (snapshot) per calcolare la base di inizio periodo", owner: "Calde" },
   { family: "revenue", label: "MRR", why: "events.value è sempre 0; Stripe non salva importi nel DB; Shopify senza normalizzazione periodo/valuta", needs: "importo + periodo + valuta per ogni abbonamento attivo, da tutti i canali", owner: "Andrea" },
   { family: "revenue", label: "ARPU", why: "dipende dall'MRR, che manca", needs: "MRR (sopra)", owner: "Andrea" },
   { family: "revenue", label: "Trial → paid", why: "non esiste un trial", needs: "un trial nel prodotto + evento trial_started", owner: "Andrea" },
