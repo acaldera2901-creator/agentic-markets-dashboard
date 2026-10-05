@@ -3,7 +3,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildTennisMatch, type PartnerPriceRow, type TennisSourceRow } from "./board";
 import {
   applyFilters,
   countdown,
@@ -15,7 +14,7 @@ import {
   tennisRows,
   DEFAULT_FILTERS,
 } from "./board-view";
-import type { V3BoardMatch } from "./contracts";
+import type { V3BoardMatch, V3BoardTennisMatch, V3BoardTennisSide } from "./contracts";
 import { V3C_COPY, copyFor, copyKeys } from "./copy";
 import { buildYesterday, yesterdayUtc, type SealedDayRow } from "./yesterday";
 
@@ -50,48 +49,6 @@ function fb(id: string, kickoff: string, edges: [number | null, number | null, n
     ...opts,
   };
 }
-
-const tennisSrc: TennisSourceRow = {
-  id: "t1",
-  tournament: "Partner feed",
-  surface: "hard",
-  scheduled: "2026-10-10T15:00:00Z",
-  player1: "Jannik Sinner",
-  player2: "Ben Shelton",
-  p1: 0.71234,
-  p2: 0.28766,
-  odds_p1: 1.36,
-  odds_p2: 3.2,
-  model_version: "partner-market-v1",
-  computed_at: "2026-10-10T09:00:00Z",
-  sealed_at: "2026-10-10T09:02:00Z",
-};
-
-describe("tennis nel contratto della board (F3)", () => {
-  it("porta stima e prezzi dei book, MAI mercato o gap; il feed partner non è un torneo", () => {
-    const row: PartnerPriceRow = {
-      bookmaker: "fortuneplay",
-      team_pair_key: "x",
-      home_name: "Shelton B.",
-      away_name: "Sinner J.",
-      odds_home: 3.1,
-      odds_away: 1.4,
-      odds_draw: null,
-      captured_at: "2026-10-10T11:50:00Z",
-      source: "live_feed",
-      url: "https://example.test/m?stag=1",
-    } as unknown as PartnerPriceRow;
-    const m = buildTennisMatch(tennisSrc, [row], NOW);
-    expect(m.tournament).toBeNull();
-    expect(m.estimate_source).toBe("market");
-    expect(m.surface).toBe("HARD");
-    for (const o of m.outcomes) {
-      expect(o).not.toHaveProperty("market_p");
-      expect(o).not.toHaveProperty("edge_pp");
-    }
-    expect(m.outcomes[0].estimate_p).toBe(0.7123);
-  });
-});
 
 describe("Ieri: vinte e perse dal registro sigillato", () => {
   const base: Omit<SealedDayRow, "result" | "pick" | "confidence"> = {
@@ -142,7 +99,7 @@ describe("modello di vista della board", () => {
   });
 
   it("filtri: sport, giorno, campionato", () => {
-    const rows = [...footballRows([fb("a", "2026-10-10T15:00:00Z", [1, 0, -1]), fb("b", "2026-10-11T15:00:00Z", [1, 0, -1], { competition: "LaLiga" })]), ...tennisRows([buildTennisMatch(tennisSrc, [], NOW)])];
+    const rows = [...footballRows([fb("a", "2026-10-10T15:00:00Z", [1, 0, -1]), fb("b", "2026-10-11T15:00:00Z", [1, 0, -1], { competition: "LaLiga" })]), ...tennisRows([{ ...({} as V3BoardTennisMatch), id: "t", sport: "tennis", tournament: null, kickoff: "2026-10-10T16:00:00Z", player1: "A", player2: "B", focus: "p1", sides: [{ side: "p1", book_prices: [], best_price: null } as unknown as V3BoardTennisSide, { side: "p2", book_prices: [], best_price: null } as unknown as V3BoardTennisSide] } as V3BoardTennisMatch])];
     expect(applyFilters(rows, { ...DEFAULT_FILTERS, sport: "tennis" })).toHaveLength(1);
     expect(applyFilters(rows, { ...DEFAULT_FILTERS, day: "2026-10-11" }).map((r) => r.m.id)).toEqual(["b"]);
     expect(applyFilters(rows, { ...DEFAULT_FILTERS, league: "Serie A" }).map((r) => r.m.id)).toEqual(["a"]);

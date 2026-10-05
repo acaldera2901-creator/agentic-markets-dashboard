@@ -351,8 +351,9 @@
 .v3c-pn { grid-column: 1 / -1; display: grid; gap: 12px; padding: 14px 0 6px 76px; position: relative; z-index: 2; }
 .v3c-pn-o { display: grid; border-top: 1px solid var(--v3c-line-2); max-width: 640px; }
 .v3c-pn-o > div { display: grid; grid-template-columns: minmax(0, 1fr) 56px 216px 84px; gap: 0 16px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--v3c-line); }
-.v3c-pn-o-tn > div { grid-template-columns: minmax(0, 1fr) 56px 216px minmax(0, 1fr); max-width: none; }
-.v3c-pn-o-tn { max-width: 820px; }
+.v3c-pn-o-tn > div { grid-template-columns: minmax(0, 1fr) repeat(5, 72px); }
+.v3c-pn-o-tn { max-width: 720px; }
+.v3c-r-atseal { display: block; font-size: 10.5px; font-weight: 600; color: var(--v3c-ink-3); letter-spacing: .02em; margin-top: 2px; }
 .v3c-pn-o .v3c-num { font-size: 17px; }
 .v3c-pn-who { font-weight: 600; font-size: 14px; }
 .v3c-pn-lead .v3c-pn-who::after { content: " ●"; color: var(--v3c-ink-3); font-size: 9px; vertical-align: 2px; }
@@ -397,8 +398,9 @@
   .v3c-row-skel .v3c-r-price { display: none; }
   .v3c-pn { padding-left: 0; }
   .v3c-pn-o > div, .v3c-pn-o-tn > div { grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1.4fr) 60px; gap: 0 8px; }
-  .v3c-pn-o-tn > div { grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1.2fr); }
-  .v3c-pn-o-tn > div > :last-child { grid-column: 1 / -1; padding-bottom: 4px; }
+  .v3c-pn-o-tn > div { grid-template-columns: minmax(0, 1fr) 38px 44px 54px 46px 40px; gap: 0 4px; }
+  .v3c-pn-o-tn .v3c-num { font-size: 15px; }
+  .v3c-pn-o-tn .v3c-lab { font-size: 9px; letter-spacing: 0; white-space: normal; line-height: 1.15; }
   .v3c-pn-o .v3c-rs { padding: 18px 18px 2px; }
   .v3c-pn-cta .v3c-btn { white-space: normal; height: auto; min-height: 42px; padding-top: 8px; padding-bottom: 8px; }
   .v3c-select select { min-width: 0; width: 100%; }

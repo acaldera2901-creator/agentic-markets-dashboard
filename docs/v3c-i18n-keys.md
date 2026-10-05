@@ -102,14 +102,24 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `tennis.coming` | «market comparison coming» |
 | `tennis.comingLong` | «Tennis rows show our estimate and the connected books’ prices. The market comparison and the gap arrive once a market/model split is stored per match.» |
 | `tennis.marketOnly` | «market price only» |
-| `tennis.marketOnlyLong` | «This row comes from the partner feed: the probability is the book’s price with the margin removed, not a model estimate.» |
+| `tennis.marketOnlyLong` | «No model of ours on this match: the percentage is the book’s price with the margin removed (temperature 1.68). A gap against itself would be zero.» |
 | `tennis.winner` | «Winner» |
-| `tennis.surface` | «surface» |
-| `tennis.estimateOnly` | «estimate» |
 | `tennis.estimateModel` | «Estimate · model» |
-| `tennis.rowAria` | fn → «{a}: {b} percent from the book’s price, margin removed; no model estimate. Show both players» |
-| `tennis.scaleAriaModel` | fn → «Estimate {a} percent, model; no market comparison yet» |
+| `tennis.sealedCol` | «Sealed» |
+| `tennis.gapCol` | «Gap at seal» |
+| `tennis.atSeal` | «at seal» |
+| `tennis.kindModel` | «Elo v4, our model» |
+| `tennis.kindModelTempered` | «Elo v4 with temperature 1.68, our model (no market when served)» |
+| `tennis.kindMarket` | «Market price without margin, temperature 1.68: not a model of ours» |
+| `tennis.rawElo` | fn → «raw Elo {a}% (not sealed)» |
+| `tennis.gapVs` | fn → «Gap = our sealed estimate − the {a} price captured on {b}, before the seal, margin removed. A difference of probabilities, not a profit.» |
+| `tennis.reasonNotSealed` | «Not sealed yet: the gap appears once our estimate is in the ledger.» |
+| `tennis.reasonNoMarketAtSeal` | «No FortunePlay or YBets price was captured in the 150 minutes before the seal, so there is no gap to show.» |
+| `tennis.reasonAnchored` | «The sealed number is the market price itself (our Elo was anchored to it): a gap against itself would be zero.» |
+| `tennis.rowAria` | fn → «{a}: {b}. Show both players» |
+| `tennis.scaleAriaModel` | fn → «Estimate {a} percent, our model; no market comparison yet» |
 | `tennis.scaleAriaMarket` | fn → «Market {a} percent, margin removed; no model estimate» |
+| `tennis.scaleAriaSeal` | fn → «At the seal: market {a} percent, our estimate {b} percent, gap {c} points» |
 | `empty.filter` | «No match for this filter.» |
 | `empty.filterHint` | «Try another day or sport; the board covers the next ten days.» |
 | `empty.noLive` | «No match is live right now.» |

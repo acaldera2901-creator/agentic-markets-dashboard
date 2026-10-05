@@ -312,8 +312,13 @@ describe("calibration", () => {
     expect(c.football.n_pairs).toBe(6);
   });
 
+  const tRow = (p: number, result: string | null) => ({
+    source_id: "tennis:x", model_version: "elo", home_team: "A", away_team: "B", pick: "A",
+    p, result, odds: null, signal_type: "paper", captured_at: "2026-09-22T20:00:00Z", commence_time: "2026-09-23T10:00:00Z",
+  });
+
   it("tennis is declared insufficient below 3 solid buckets", () => {
-    const small = Array.from({ length: 40 }, (_, i) => ({ model_version: "elo", p: 0.65, result: i % 3 ? "won" : "lost" }));
+    const small = Array.from({ length: 40 }, (_, i) => tRow(0.65, i % 3 ? "won" : "lost"));
     const t = tennisCalibration(small);
     expect(t.status).toBe("insufficient");
     expect(t.models[0].n).toBe(40);
@@ -321,9 +326,9 @@ describe("calibration", () => {
 
   it("tennis sufficient with 3 buckets of n >= 30; void/unresolved ignored", () => {
     const rows = [0.55, 0.65, 0.75].flatMap((p) =>
-      Array.from({ length: 30 }, (_, i) => ({ model_version: "elo", p, result: i % 2 ? "won" : "lost" })),
+      Array.from({ length: 30 }, (_, i) => tRow(p, i % 2 ? "won" : "lost")),
     );
-    rows.push({ model_version: "elo", p: 0.9, result: "void" });
+    rows.push(tRow(0.9, "void"));
     const t = tennisCalibration(rows);
     expect(t.status).toBe("sufficient");
     expect(t.models[0].n).toBe(90);

@@ -20,12 +20,12 @@ import { Board } from "../board/Board";
 import { BoardError, BoardSkeleton } from "../board/BoardStates";
 import type { V3BoardResponse, V3DaySummary } from "@/lib/v3c/contracts";
 
-// F3 · gli stati della board con un payload SAMPLE nella forma del contratto v3.board.1
+// F3 · gli stati della board con un payload SAMPLE nella forma del contratto v3.board.2
 // (stessi numeri di SAMPLE_MATCH, link "#"): vuoto a cascata, errore, scheletro.
 const DS_NOW = "2026-10-10T12:00:00.000Z";
 const dsBook = (price: number) => ({ bookmaker: "fortuneplay", name: "NorthBet (sample)", price, captured_at: DS_NOW, source: "live_feed" as const, url: "#" });
 const DS_BOARD: V3BoardResponse = {
-  contract: "v3.board.1",
+  contract: "v3.board.2",
   generated_at: DS_NOW,
   window_days: 10,
   matches: [
@@ -56,7 +56,7 @@ const DS_BOARD: V3BoardResponse = {
     },
   ],
   tennis: [],
-  coverage: { tennis: { matches: 0, with_book_price: {}, from_model: 0, from_market: 0 }, matches: 1, with_market: 1, sealed: 1, with_book_price: {}, excluded: [], book_price_max_age_min: 150, books_from_history: [] },
+  coverage: { tennis: { matches: 0, by_kind: { model: 0, model_tempered: 0, market_tempered: 0 }, with_market: 0, with_model_p: 0, sealed: 0, with_gap: 0, with_book_price: {} }, matches: 1, with_market: 1, sealed: 1, with_book_price: {}, excluded: [], book_price_max_age_min: 150, books_from_history: [] },
   notes: [],
 };
 const DS_EMPTY: V3BoardResponse = { ...DS_BOARD, matches: [], tennis: [] };
@@ -408,7 +408,7 @@ export function DsShowcase({ initialMode, fontClass, flagOn }: Props) {
               </div>
             </Sec>
 
-            <Sec id="states" title="Board states · F3" note="SAMPLE payload in the v3.board.1 shape. Empty for a filter: the cascade (no live → biggest gap today → next up with countdown → yesterday’s review). Nothing on the board. Error with retry. Skeleton with the geometry of the real rows.">
+            <Sec id="states" title="Board states · F3" note="SAMPLE payload in the v3.board.2 shape. Empty for a filter: the cascade (no live → biggest gap today → next up with countdown → yesterday’s review). Nothing on the board. Error with retry. Skeleton with the geometry of the real rows.">
               <div className="v3c-ds-grid">
                 <Board board={DS_BOARD} surface="home" partners={false} nowIso={DS_NOW} yesterday={DS_YDAY} initialFilters={{ sport: "tennis" }} frozenNow />
                 <Board board={DS_EMPTY} surface="home" partners={false} nowIso={DS_NOW} yesterday={DS_YDAY} frozenNow />

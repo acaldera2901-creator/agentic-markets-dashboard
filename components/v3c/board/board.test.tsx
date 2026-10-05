@@ -2,7 +2,7 @@
 // da feed e solo con link veri, tennis onesto, un solo bottone primario.
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { V3BoardResponse, V3BookPrice } from "@/lib/v3c/contracts";
+import type { V3BoardResponse, V3BoardTennisMatch, V3BoardTennisSide, V3BookPrice } from "@/lib/v3c/contracts";
 import { Board } from "./Board";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
@@ -18,8 +18,50 @@ const book = (price: number, bookmaker = "fortuneplay", name = "FortunePlay"): V
   url: `https://www.${bookmaker}.example/m?stag=185731`,
 });
 
+function tennisMatch(over: { gap?: boolean; kind?: "model" | "model_tempered" | "market_tempered" } = {}): V3BoardTennisMatch {
+  const kind = over.kind ?? "model_tempered";
+  const side = (s: "p1" | "p2", player: string, est: number, mkt: number, sealed: number | null, atSeal: number | null): V3BoardTennisSide => ({
+    side: s,
+    player,
+    market_price: 1 / mkt,
+    market_p: mkt,
+    model_p: kind === "market_tempered" ? null : est + 0.02,
+    estimate_p: est,
+    sealed_p: sealed,
+    market_p_at_seal: atSeal,
+    gap_pp: sealed != null && atSeal != null ? Math.round((sealed - atSeal) * 10_000) / 100 : null,
+    book_prices: [],
+    best_price: null,
+  });
+  return {
+    id: "tennis:t1",
+    sport: "tennis",
+    tournament: "ATP Shanghai",
+    kickoff: "2026-10-10T16:00:00.000Z",
+    player1: "Jannik Sinner",
+    player2: "Ben Shelton",
+    market: "ML",
+    model_version: kind === "market_tempered" ? "partner-market-v1" : "elo_surface_v4",
+    probability_kind: kind,
+    is_our_model: kind !== "market_tempered",
+    temperature: 1.68,
+    margin_removed: 0.05,
+    market_source: { bookmaker: "fortuneplay", as_of: "2026-10-10T09:00:00.000Z" },
+    model_as_of: null,
+    estimate_as_of: "2026-10-10T09:00:00.000Z",
+    sealed_at: over.gap ? "2026-10-10T09:02:00.000Z" : null,
+    focus: "p1",
+    surfaced_pick: "p1",
+    gap_market: over.gap ? { bookmaker: "fortuneplay", captured_at: "2026-10-10T08:01:00.000Z" } : null,
+    gap_null_reason: over.gap ? null : "not sealed yet",
+    sides: over.gap
+      ? [side("p1", "Jannik Sinner", 0.71, 0.66, 0.71, 0.66), side("p2", "Ben Shelton", 0.29, 0.34, 0.29, 0.34)]
+      : [side("p1", "Jannik Sinner", 0.71, 0.66, null, null), side("p2", "Ben Shelton", 0.29, 0.34, null, null)],
+  };
+}
+
 const BOARD: V3BoardResponse = {
-  contract: "v3.board.1",
+  contract: "v3.board.2",
   generated_at: NOW,
   window_days: 10,
   matches: [
@@ -44,28 +86,8 @@ const BOARD: V3BoardResponse = {
       ],
     },
   ],
-  tennis: [
-    {
-      id: "t1",
-      sport: "tennis",
-      tournament: "ATP Shanghai",
-      surface: "HARD",
-      kickoff: "2026-10-10T16:00:00.000Z",
-      home: "Jannik Sinner",
-      away: "Ben Shelton",
-      market: "winner",
-      estimate_source: "model",
-      model_version: "tennis-elo-v4",
-      estimate_as_of: "2026-10-10T09:00:00.000Z",
-      sealed_at: null,
-      focus: "home",
-      outcomes: [
-        { outcome: "home", estimate_p: 0.71, market_price: null, book_prices: [], best_price: null },
-        { outcome: "away", estimate_p: 0.29, market_price: null, book_prices: [], best_price: null },
-      ],
-    },
-  ],
-  coverage: { tennis: { matches: 1, with_book_price: {}, from_model: 1, from_market: 0 }, matches: 1, with_market: 1, sealed: 1, with_book_price: {}, excluded: [], book_price_max_age_min: 150, books_from_history: [] },
+  tennis: [tennisMatch()],
+  coverage: { tennis: { matches: 1, by_kind: { model: 0, model_tempered: 1, market_tempered: 0 }, with_market: 1, with_model_p: 1, sealed: 0, with_gap: 0, with_book_price: {} }, matches: 1, with_market: 1, sealed: 1, with_book_price: {}, excluded: [], book_price_max_age_min: 150, books_from_history: [] },
   notes: [],
 };
 
@@ -100,24 +122,32 @@ describe("Board v3c (F3)", () => {
     expect(screen.getByRole("link", { name: /Best price on Genoa: 2\.15 at FortunePlay/ })).toHaveAttribute("href", "https://www.fortuneplay.example/m?stag=185731");
   });
 
-  it("tennis: stima del modello, nessun gap né mercato inventato, «market comparison coming»", () => {
+  it("tennis senza gap nel contratto: stima del modello, nessun punto mercato, «market comparison coming»", () => {
     const { container } = render(<Board {...props} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
     expect(row.querySelector(".v3c-r-gap")?.textContent).toBe("market comparison coming");
-    expect(row.querySelector(".v3c-rs-m")).toBeNull(); // nessun punto mercato
+    expect(row.querySelector(".v3c-rs-m")).toBeNull(); // nessun punto mercato: niente gap implicito
     expect(row.querySelector(".v3c-rs-e")?.textContent).toBe("71%");
-    expect(row.querySelector(".v3c-r-price")?.textContent).toBe("—");
+    fireEvent.click(screen.getByRole("button", { name: /Jannik Sinner – Ben Shelton/ }));
+    const pn = container.querySelector('.v3c-row[data-sport="tennis"] .v3c-pn') as HTMLElement;
+    expect(pn.textContent).toContain("66%"); // il mercato c'è, nel pannello, come dato
+    expect(pn.textContent).toContain("Not sealed yet");
+    expect(pn.textContent).toContain("raw Elo 73% (not sealed)");
   });
 
-  it("tennis: se il contratto porta mercato e gap (branch v3c-tennis), la riga li mostra come il calcio", () => {
-    const withSplit: V3BoardResponse = {
-      ...BOARD,
-      tennis: BOARD.tennis.map((m) => ({ ...m, outcomes: m.outcomes.map((o) => ({ ...o, market_p: o.outcome === "home" ? 0.66 : 0.34, edge_pp: o.outcome === "home" ? 5 : -5 })) })),
-    };
-    const { container } = render(<Board {...props} board={withSplit} />);
+  it("tennis con gap al sigillo: la scala mostra sigillata vs mercato al sigillo, il gap coincide", () => {
+    const { container } = render(<Board {...props} board={{ ...BOARD, tennis: [tennisMatch({ gap: true })] }} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
-    expect(row.querySelector(".v3c-r-gap")?.textContent).toBe("+5.0 pp");
+    expect(row.querySelector(".v3c-r-gap")?.textContent).toContain("+5.0 pp");
     expect(row.querySelector(".v3c-rs-m")?.textContent).toBe("66%");
+    expect(row.querySelector(".v3c-rs-e")?.textContent).toBe("71%");
+  });
+
+  it("tennis senza un nostro modello: solo prezzo di mercato", () => {
+    const { container } = render(<Board {...props} board={{ ...BOARD, tennis: [tennisMatch({ kind: "market_tempered" })] }} />);
+    const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
+    expect(row.querySelector(".v3c-r-gap")?.textContent).toBe("market price only");
+    expect(row.querySelector(".v3c-rs-e")).toBeNull();
   });
 
   it("paesi bloccati: nessun link ai book", () => {

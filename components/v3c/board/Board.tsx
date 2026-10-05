@@ -23,6 +23,7 @@ import {
   dayLong,
   leaguesOf,
   liveState,
+  matchTitle,
   outcomeLabel,
   tennisRows,
   type BoardFilters,
@@ -278,7 +279,7 @@ function EmptyCascade({
           <li>
             <span className="v3c-lab">{t.empty.nextUp}</span>
             <button type="button" className="v3c-linkbtn" onClick={() => onShow(c.next!.row.m.id)}>
-              {c.next.row.m.home} – {c.next.row.m.away}
+              {matchTitle(c.next.row.m)}
             </button>{" "}
             <span className="v3c-small">{t.empty.startsIn(countdown(c.next.inMs, t.empty))}</span>
           </li>

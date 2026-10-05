@@ -12,6 +12,8 @@ import {
 import { parseOutcome, roundP, topOutcome } from "./prob";
 import { brier3, mean, pairedDifference, reliability, triplePairs, weekStartUtc } from "./scoring";
 import { wilson95 } from "@/lib/wilson";
+import { tennisRecordGroups, type SealedTennisRow } from "./tennis";
+import type { PartnerPriceRow } from "./board";
 import { FOOTBALL_LEDGER_MODEL_VERSION, FOOTBALL_LEDGER_SOURCE_TABLE } from "@/lib/pick-ledger-mirror";
 
 /** A sealed row, its settlement (if any) and the market at seal time (if any). */
@@ -109,7 +111,12 @@ function weekly(scored: ScoredRow[]): V3WeekRow[] {
     });
 }
 
-export function buildRecord(rows: SealedFootballRow[], now: Date = new Date()): V3RecordResponse {
+export function buildRecord(
+  rows: SealedFootballRow[],
+  now: Date = new Date(),
+  tennis: SealedTennisRow[] = [],
+  tennisHistory: Map<string, PartnerPriceRow[]> = new Map(),
+): V3RecordResponse {
   const graceMs = ORPHAN_GRACE_HOURS * 3_600_000;
   let unresolved = 0;
   let voidNoOutcome = 0;
@@ -141,7 +148,7 @@ export function buildRecord(rows: SealedFootballRow[], now: Date = new Date()): 
   );
 
   return {
-    contract: "v3.record.1",
+    contract: "v3.record.2",
     generated_at: now.toISOString(),
     scope: {
       sport: "football",
@@ -171,6 +178,7 @@ export function buildRecord(rows: SealedFootballRow[], now: Date = new Date()): 
     },
     weekly: weekly(scored),
     reliability: estimateReliability(scored),
+    tennis: { source: "pick_ledger + pick_settlement_current", groups: tennisRecordGroups(tennis, tennisHistory) },
     notes: [
       "Source: pick_ledger (sealed before kickoff, append-only) joined to pick_settlement_current. unified_predictions is not read.",
       "Scored = settled with a HOME/DRAW/AWAY outcome, whether or not a directional pick was shown: the Brier score is on the full 1X2 estimate.",
@@ -178,6 +186,7 @@ export function buildRecord(rows: SealedFootballRow[], now: Date = new Date()): 
       "Brier estimate and market are both computed on the paired rows only. Lower is better; this is a calibration/accuracy measure, not a profit claim.",
       "Football estimate = 0.3 model + 0.7 de-vigged market: it is market-anchored by design.",
       "No ROI, CLV or hit-rate is published.",
+      "Tennis: one group per model_version and per what the sealed probability IS (kind). market_tempered groups are the market price, not a model of ours. Sealed tennis probabilities are whole percentages (±0.5 pp). Our-model groups are paired with the last FortunePlay/YBets capture (partner_price_history, ≤150 min) before each seal: brier_paired vs brier_market on those rows only. Market groups are never paired (they are the market).",
     ],
   };
 }

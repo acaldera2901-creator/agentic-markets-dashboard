@@ -44,7 +44,7 @@ function forSurface(board: V3BoardResponse, surface: Surface, now: Date): V3Boar
     notes: [],
     coverage: { ...board.coverage, excluded: [] },
     matches: board.matches.filter((m) => keep(m.kickoff, m.id)).map((m) => ({ ...m, outcomes: m.outcomes.map((o) => ({ ...o, model_p: null, best_price: null, book_prices: o.book_prices.map(book) })) })),
-    tennis: (board.tennis ?? []).filter((m) => keep(m.kickoff, `tn:${m.id}`)).map((m) => ({ ...m, outcomes: m.outcomes.map((o) => ({ ...o, best_price: null, book_prices: o.book_prices.map(book) })) })),
+    tennis: (board.tennis ?? []).filter((m) => keep(m.kickoff, `tn:${m.id}`)).map((m) => ({ ...m, sides: m.sides.map((x) => ({ ...x, best_price: null, book_prices: x.book_prices.map(book) })) as typeof m.sides })),
   };
 }
 

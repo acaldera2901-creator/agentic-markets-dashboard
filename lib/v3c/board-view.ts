@@ -4,7 +4,7 @@
 // come si raggruppa per giorno, cosa fa un filtro e quale stato vuoto tocca —
 // la cascata: nessuna partita live → il gap più ampio di oggi → la prossima
 // partita con il conto alla rovescia → la revisione di ieri.
-import type { Outcome, V3BoardMatch, V3BoardOutcome, V3BoardTennisMatch, V3BookPrice } from "./contracts";
+import type { Outcome, V3BoardMatch, V3BoardOutcome, V3BoardTennisMatch, V3BoardTennisSide, V3BookPrice } from "./contracts";
 import { FLAT_PP, formatSigned } from "./scale";
 
 export type SportFilter = "all" | "football" | "tennis";
@@ -102,10 +102,21 @@ export type BoardRowVM = {
 export type TennisRowVM = {
   kind: "tennis";
   m: V3BoardTennisMatch;
-  lead: V3BoardTennisMatch["outcomes"][number];
+  /** il giocatore con la stima servita più alta (focus del contratto) */
+  lead: V3BoardTennisSide;
   best: V3BookPrice | null;
   day: string;
 };
+
+/** I due nomi di una partita, calcio o tennis. */
+export function sidesOf(m: V3BoardMatch | V3BoardTennisMatch): [string, string] {
+  return m.sport === "tennis" ? [m.player1, m.player2] : [m.home, m.away];
+}
+
+export function matchTitle(m: V3BoardMatch | V3BoardTennisMatch): string {
+  const [a, b] = sidesOf(m);
+  return `${a} – ${b}`;
+}
 
 /** Il miglior prezzo: best_price se c'è, altrimenti il primo di book_prices (l'endpoint li ordina dal più alto; le pagine non spediscono il duplicato). */
 export function bestOf(o: { best_price: V3BookPrice | null; book_prices: V3BookPrice[] }): V3BookPrice | null {
@@ -121,7 +132,7 @@ export function footballRows(matches: V3BoardMatch[], timeZone?: string): BoardR
 
 export function tennisRows(matches: V3BoardTennisMatch[], timeZone?: string): TennisRowVM[] {
   return matches.map((m) => {
-    const lead = m.outcomes.find((o) => o.outcome === m.focus) ?? m.outcomes[0];
+    const lead = m.sides.find((x) => x.side === m.focus) ?? m.sides[0];
     return { kind: "tennis", m, lead, best: bestOf(lead), day: dayKey(m.kickoff, timeZone) };
   });
 }

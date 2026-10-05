@@ -40,6 +40,21 @@ export function market1x2(
   return { p: { home: p[0], draw: p[1], away: p[2] }, margin };
 }
 
+/**
+ * De-vigged 2-way market (tennis moneyline) + margin removed. Same proportional
+ * method as market1x2 and as the partner ingest (lib/partner-fixtures devig2vie).
+ */
+export function market2way(
+  p1: number | null | undefined,
+  p2: number | null | undefined,
+): { p1: number; p2: number; margin: number } | null {
+  if (!finitePos(p1) || !finitePos(p2)) return null;
+  const p = noVigProbabilities([p1, p2]);
+  const margin = bookmakerMargin([p1, p2]);
+  if (!p || margin == null) return null;
+  return { p1: p[0], p2: p[1], margin };
+}
+
 /** (estimate − market) in signed percentage points, 2 decimals. */
 export function edgePp(estimate: number, market: number | null): number | null {
   if (market == null || !Number.isFinite(market)) return null;

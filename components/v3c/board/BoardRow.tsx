@@ -217,48 +217,62 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
   );
 }
 
+/** Perché il tennis non ha un gap, nella lingua del visitatore (il motivo del contratto è inglese tecnico). */
+function tennisNoGap(m: TennisRowVM["m"], t: V3cCopy): string {
+  if (!m.is_our_model) return t.tennis.marketOnlyLong;
+  const r = m.gap_null_reason ?? "";
+  if (r.startsWith("not sealed")) return t.tennis.reasonNotSealed;
+  if (r.startsWith("no FortunePlay")) return t.tennis.reasonNoMarketAtSeal;
+  if (r) return t.tennis.reasonAnchored;
+  return t.tennis.comingLong;
+}
+
+const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctInt(p)}%`);
+
 export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, surface }: Common & { r: TennisRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
-  const match = `${m.home} – ${m.away}`;
-  const leadLabel = lead.outcome === "home" ? m.home : m.away;
-  const marketOnly = m.estimate_source === "market";
-  // il gap del tennis esiste SOLO se il contratto porta il mercato separato (campi opzionali, oggi assenti)
-  const hasSplit = !marketOnly && lead.market_p != null && lead.edge_pp != null;
-  const where = [m.tournament, m.surface ? `${m.surface.toLowerCase()}` : null].filter(Boolean).join(" · ") || t.tennis.title;
+  const match = `${m.player1} – ${m.player2}`;
+  const leadLabel = lead.player;
+  // Il gap del tennis esiste SOLO dove il contratto lo dà: stima sigillata del nostro Elo − prezzo di un
+  // book connesso catturato prima del sigillo. Allora la scala mostra QUEI due numeri, così distanza e gap coincidono.
+  const hasGap = lead.gap_pp != null && lead.sealed_p != null && lead.market_p_at_seal != null;
+  const marketOnly = !m.is_our_model;
+  const g = lead.gap_pp;
+  const kind = m.probability_kind === "model" ? t.tennis.kindModel : m.probability_kind === "model_tempered" ? t.tennis.kindModelTempered : t.tennis.kindMarket;
+  const scaleLabel = hasGap
+    ? t.tennis.scaleAriaSeal(pctInt(lead.market_p_at_seal), pctInt(lead.sealed_p), gapText(g))
+    : marketOnly
+      ? t.tennis.scaleAriaMarket(pctInt(lead.market_p ?? lead.estimate_p))
+      : t.tennis.scaleAriaModel(pctInt(lead.estimate_p));
   return (
     <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis">
       <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} />
       <span className="v3c-r-teams">
-        <Monogrammi home={{ name: m.home }} away={{ name: m.away }} />
+        <Monogrammi home={{ name: m.player1 }} away={{ name: m.player2 }} />
         <span className="v3c-r-name">
           <button type="button" className="v3c-rowlink v3c-t-row" aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
             {match}
-            <span className="v3c-sr">, {t.tennis.rowAria(leadLabel, pctInt(lead.estimate_p), marketOnly)}</span>
+            <span className="v3c-sr">, {t.tennis.rowAria(leadLabel, scaleLabel)}</span>
           </button>
           <small>
-            {where} · <b>{leadLabel}</b>
+            {m.tournament || t.tennis.title} · <b>{leadLabel}</b>
           </small>
         </span>
       </span>
       <span className="v3c-r-price v3c-num">{price2(lead.market_price)}</span>
-      <RowScale
-        className="v3c-r-scale"
-        market={hasSplit ? (lead.market_p as number) : null}
-        estimate={lead.estimate_p}
-        marketOnly={marketOnly}
-        label={
-          hasSplit
-            ? t.board.scaleAria(pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(lead.edge_pp))
-            : marketOnly
-              ? t.tennis.scaleAriaMarket(pctInt(lead.estimate_p))
-              : t.tennis.scaleAriaModel(pctInt(lead.estimate_p))
-        }
-      />
-      {hasSplit ? (
-        <span className={["v3c-r-gap", "v3c-num", isFlatGap(lead.edge_pp) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
-          {gapText(lead.edge_pp)}
-          <small> {isFlatGap(lead.edge_pp) ? t.board.inLine : "pp"}</small>
+      {hasGap ? (
+        <RowScale className="v3c-r-scale" market={lead.market_p_at_seal} estimate={lead.sealed_p} label={scaleLabel} />
+      ) : marketOnly ? (
+        <RowScale className="v3c-r-scale" market={null} estimate={lead.market_p ?? lead.estimate_p} marketOnly label={scaleLabel} />
+      ) : (
+        <RowScale className="v3c-r-scale" market={null} estimate={lead.estimate_p} label={scaleLabel} />
+      )}
+      {hasGap ? (
+        <span className={["v3c-r-gap", "v3c-num", isFlatGap(g) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
+          {gapText(g)}
+          <small> {isFlatGap(g) ? t.board.inLine : "pp"}</small>
+          <small className="v3c-r-atseal">{t.tennis.atSeal}</small>
         </span>
       ) : (
         <span className="v3c-r-gap v3c-g-none">
@@ -281,57 +295,73 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sur
               <span className="v3c-lab v3c-ra" role="columnheader">
                 {t.board.price}
               </span>
-              <span className="v3c-lab" role="columnheader">
-                {hasSplit ? t.board.scaleHead : marketOnly ? t.tennis.marketOnly : t.tennis.estimateModel}
+              <span className="v3c-lab v3c-ra" role="columnheader">
+                {t.board.market}
               </span>
-              <span className="v3c-lab" role="columnheader">
-                {t.board.bestSub}
+              <span className="v3c-lab v3c-ra" role="columnheader">
+                {t.board.estimate}
+              </span>
+              <span className="v3c-lab v3c-ra" role="columnheader">
+                {t.tennis.sealedCol}
+              </span>
+              <span className="v3c-lab v3c-ra" role="columnheader">
+                {t.tennis.gapCol}
               </span>
             </div>
-            {m.outcomes.map((o) => {
-              const lab = o.outcome === "home" ? m.home : m.away;
-              return (
-                <div key={o.outcome} role="row" className={o === lead ? "v3c-pn-lead" : undefined}>
-                  <span role="cell" className="v3c-pn-who">
-                    {lab}
-                  </span>
-                  <span role="cell" className="v3c-num v3c-ra">
-                    {price2(o.market_price)}
-                  </span>
-                  <span role="cell">
-                    <RowScale
-                      market={hasSplit && o.market_p != null ? o.market_p : null}
-                      estimate={o.estimate_p}
-                      marketOnly={marketOnly}
-                      label={
-                        hasSplit && o.market_p != null
-                          ? t.board.scaleAria(pctInt(o.market_p), pctInt(o.estimate_p), gapText(o.edge_pp))
-                          : marketOnly
-                            ? t.tennis.scaleAriaMarket(pctInt(o.estimate_p))
-                            : t.tennis.scaleAriaModel(pctInt(o.estimate_p))
-                      }
-                    />
-                  </span>
-                  <span role="cell" className="v3c-chips">
-                    {partners && o.book_prices.length ? o.book_prices.map((b) => <BookChip key={b.bookmaker} b={b} t={t} surface={surface} outcome={lab} />) : <small className="v3c-r-nobook">{partners ? t.board.noPrice : "—"}</small>}
-                  </span>
-                </div>
-              );
-            })}
+            {m.sides.map((x) => (
+              <div key={x.side} role="row" className={x === lead ? "v3c-pn-lead" : undefined}>
+                <span role="cell" className="v3c-pn-who">
+                  {x.player}
+                </span>
+                <span role="cell" className="v3c-num v3c-ra">
+                  {price2(x.market_price)}
+                </span>
+                <span role="cell" className="v3c-num v3c-ra v3c-m">
+                  {pctOrDash(x.market_p)}
+                </span>
+                <span role="cell" className="v3c-num v3c-ra">
+                  {marketOnly ? pctOrDash(x.estimate_p) : <mark>{pctOrDash(x.estimate_p)}</mark>}
+                </span>
+                <span role="cell" className="v3c-num v3c-ra">
+                  {pctOrDash(x.sealed_p)}
+                </span>
+                <span role="cell" className={["v3c-num", "v3c-ra", isFlatGap(x.gap_pp) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
+                  {x.gap_pp == null ? "—" : `${gapText(x.gap_pp)} pp`}
+                </span>
+              </div>
+            ))}
           </div>
-          {hasSplit ? null : <p className="v3c-small v3c-pn-note">{marketOnly ? t.tennis.marketOnlyLong : t.tennis.comingLong}</p>}
-          {m.estimate_as_of ? (
-            <p className="v3c-pn-facts v3c-small">
-              <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
-            </p>
-          ) : null}
+          <p className="v3c-pn-facts v3c-small">
+            <span>{kind}</span>
+            {lead.model_p != null ? <span>{t.tennis.rawElo(pctInt(lead.model_p))}</span> : null}
+            {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
+            <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
+          </p>
+          <p className="v3c-small v3c-pn-note">
+            {m.gap_market ? t.tennis.gapVs(m.gap_market.bookmaker === "ybets" ? "YBets" : m.gap_market.bookmaker === "fortuneplay" ? "FortunePlay" : m.gap_market.bookmaker, sealedStamp(m.gap_market.captured_at, locale)) : tennisNoGap(m, t)}
+          </p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
               <Sigillo sealedAt={m.sealed_at} label={t.fascia.sealed} title={t.board.sealedWhy(sealedStamp(m.sealed_at, locale))} />
               <span className="v3c-small">{t.board.sealedWhy(sealedStamp(m.sealed_at, locale))}</span>
             </p>
           ) : null}
-          {!partners ? <p className="v3c-fine">{t.board.partnerBlocked}</p> : null}
+          {partners ? (
+            m.sides.map((x) =>
+              x.book_prices.length ? (
+                <div key={x.side} className="v3c-pn-books">
+                  <span className="v3c-lab">{t.board.booksFor(x.player)}</span>
+                  <span className="v3c-chips">
+                    {x.book_prices.map((b) => (
+                      <BookChip key={b.bookmaker} b={b} t={t} surface={surface} outcome={x.player} />
+                    ))}
+                  </span>
+                </div>
+              ) : null,
+            )
+          ) : (
+            <p className="v3c-fine">{t.board.partnerBlocked}</p>
+          )}
           {partners && r.best ? <BestCta best={r.best} t={t} surface={surface} label={leadLabel} /> : null}
         </div>
       ) : null}
