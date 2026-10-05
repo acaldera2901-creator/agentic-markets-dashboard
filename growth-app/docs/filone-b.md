@@ -46,7 +46,7 @@ Da fare quando la dashboard si unirà al CRM. L'implementazione si sceglie in ba
 Gate: nuova tabella, ruolo e credenziali vogliono una PROPOSAL e l'APPROVE di Andrea.
 
 ## Per l'integratore
-- **Link di navigazione** fra `/` (dashboard) e `/lavoro`: non l'ho aggiunto, perché `ui/GrowthDashboard.tsx` è fuori dal mio perimetro. Va aggiunto un link in entrambe le pagine.
+- **Link di navigazione** fra `/` (dashboard) e `/lavoro`: aggiunto in v2 (prop opzionali `workHref` di `GrowthDashboard` e `dashboardHref` di `WorkPage`).
 - Non ho toccato `core/`, `data/`, `ui/GrowthDashboard.tsx`, `proxy.ts`, `app/page.tsx`.
 
 ## Verifica (06/10)

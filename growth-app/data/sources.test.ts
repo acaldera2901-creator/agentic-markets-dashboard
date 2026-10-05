@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WINDOWS } from "@/core/kpi";
+import { MISSING_READ } from "@/core/series";
 import snapshotJson from "./snapshot.json";
 import { normalizeDbUrl } from "./live-source";
 import { assertSnapshot, snapshotSource } from "./snapshot-source";
@@ -52,17 +53,18 @@ describe("snapshot — Filone A extras", () => {
       }
     }
     const { data } = await snapshotSource().load("30d");
-    expect(data.trends?.days).toHaveLength(60);
-    expect(data.trends?.errors).toEqual({});
+    expect(data.trends.days).toHaveLength(60);
+    expect(data.trends.errors).toEqual({});
+    expect(data.chain.ok).toBe(true);
   });
 
-  it("an older snapshot without extras still renders (extras undefined, not zeros)", async () => {
+  it("an older snapshot without series/chain still renders, as ERRORE (not zeros)", async () => {
     const { series: _s, chain: _c, ...old } = snapshotJson as Record<string, unknown>;
     void _s;
     void _c;
     const { data } = await snapshotSource(old).load("7d");
-    expect(data.trends).toBeUndefined();
-    expect(data.chain).toBeUndefined();
+    expect(Object.values(data.trends.values).every((v) => v === null)).toBe(true);
+    expect(data.chain).toEqual({ ok: false, error: MISSING_READ });
   });
 });
 

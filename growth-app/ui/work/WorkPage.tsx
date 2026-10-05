@@ -113,12 +113,17 @@ const NAV = [
   { id: "accessi", label: "Accessi e fonti" },
 ];
 
-export function WorkPage({ content }: { content: WorkContent }) {
+export function WorkPage({ content, dashboardHref }: { content: WorkContent; /** Link back to the numbers; omitted → no link. */ dashboardHref?: string }) {
   const { gaps, experiments, sources, memos, memoTemplate } = content;
   const openGaps = gaps.filter((g) => g.status !== "chiuso").length;
   return (
     <main className="max-w-7xl mx-auto px-4 py-8 flex flex-col gap-10 min-w-0">
       <header className="flex flex-col gap-2">
+        {dashboardHref && (
+          <a href={dashboardHref} className="self-start text-sm text-gray-400 hover:text-white underline underline-offset-4 decoration-gray-700">
+            ← Numeri
+          </a>
+        )}
         <h1 className="text-2xl font-bold text-white">Lavoro Growth</h1>
         <p className="text-gray-400 text-sm leading-snug max-w-3xl">
           Lo spazio di lavoro di Steve: cosa non si misura ancora, cosa testiamo, cosa decidiamo ogni settimana, dove si leggono i dati.

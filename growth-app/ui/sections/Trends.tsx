@@ -7,7 +7,6 @@ import {
   ANOMALY_BASELINE_DAYS,
   ANOMALY_SIGMA,
   type Anomaly,
-  type DailySeries,
   SERIES_METRICS,
   SMALL_SAMPLE_BASE,
   anomalies,
@@ -66,18 +65,9 @@ function Shell({ n, children }: { n: number; children: ReactNode }) {
   );
 }
 
-export function Trends({ data }: { data: GrowthData & { trends?: DailySeries } }) {
+export function Trends({ data }: { data: GrowthData }) {
   const n = windowDays(data.window);
   const s = data.trends;
-  if (!s) {
-    return (
-      <Shell n={n}>
-        <div className="bg-gray-900 border border-dashed border-gray-800 rounded-xl p-4 text-sm text-gray-400">
-          Serie giornaliere non presenti in questa sorgente dati: nessun valore mostrato (non è uno 0).
-        </div>
-      </Shell>
-    );
-  }
   const shown = s.days.slice(s.days.length - n);
   const rows = SERIES_METRICS.map((m) => {
     const v = s.values[m.key];

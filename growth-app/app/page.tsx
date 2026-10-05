@@ -7,5 +7,5 @@ import { GrowthDashboard } from "@/ui/GrowthDashboard";
 export default async function Page({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const w = parseWindow((await searchParams).w);
   const { data, meta } = await (await getSource()).load(w);
-  return <GrowthDashboard data={data} meta={meta} hrefFor={(x) => `/?w=${x}`} />;
+  return <GrowthDashboard data={data} meta={meta} hrefFor={(x) => `/?w=${x}`} workHref="/lavoro" />;
 }

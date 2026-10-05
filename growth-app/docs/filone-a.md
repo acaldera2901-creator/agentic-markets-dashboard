@@ -17,10 +17,10 @@ transazione `REPEATABLE READ READ ONLY`: `dbNow 2026-10-05T22:10:32.438Z`
 | Integrazione | `ui/GrowthDashboard.tsx` | **2 import + 1 riga** `<Trends data={d} /><Channels data={d} />` dopo «Acquisition» |
 | Verifica | `scripts/verify.ts` (estensione) | SQL indipendente per ogni numero nuovo |
 
-**Nota per l'integratore:** `GrowthExtras` vive in `data/source.ts` ed è opzionale perché non
-potevo toccare `core/model.ts`. Il posto giusto è dentro `GrowthData` (TODO lasciato nel file).
-Se una sorgente non fornisce gli extra, le sezioni dicono «non presente in questa sorgente»,
-mai 0.
+**Integrato in v2:** `trends` e `chain` sono campi obbligatori di `GrowthData` (`core/model.ts`),
+prodotti da `normalize(w, raw, extras)`. Se una sorgente non li legge (`extras.series`/`chain`
+`undefined`) o la lettura fallisce, diventano ERRORE («lettura mancante in questa sorgente» /
+«lettura fallita»), mai 0. `GrowthExtras` non esiste più.
 
 ## Definizioni (quelle che decidono i numeri)
 

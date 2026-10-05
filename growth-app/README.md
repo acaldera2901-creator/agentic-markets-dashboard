@@ -13,36 +13,105 @@ ruolo DB **read-only dedicato**, dietro password, e i numeri chiave coincidono c
 
 ## Stato
 
-- **Preview su SNAPSHOT** reale (`data/snapshot.json`): aggregati letti dal DB di
-  produzione in un'unica transazione `REPEATABLE READ READ ONLY`. In pagina: banner
-  «Snapshot del … — non live».
+- **Preview v2 su SNAPSHOT** reale (`data/snapshot.json`, `dbNow 2026-10-05T22:28:17.915Z`
+  = 06/10 00:28 a Roma): aggregati letti dal DB di produzione in un'unica transazione
+  `REPEATABLE READ READ ONLY`; `npm run verify` 105/105 uguali, 0 divergenze per cella.
+  In pagina: banner «Snapshot del … — non live».
 - **LIVE**: scritto e testato in locale (`data/live-source.ts`), **non attivo** in
   nessun deploy. Si accende solo con la PROPOSAL sotto, dopo APPROVE.
 
-## Struttura (pensata per essere incorporata)
+## Struttura (v2: dashboard + filone A + /lavoro del filone B)
+
+Due pagine, entrambe dietro la stessa password (`proxy.ts` copre tutte le rotte),
+con un link fra loro in testa a ciascuna:
+
+- `/` — **Numeri**: KPI per finestra (Oggi / 7 / 30 giorni), andamento giornaliero
+  con confronto e anomalie, catena per fonte. Dettagli del filone A in
+  [`docs/filone-a.md`](docs/filone-a.md).
+- `/lavoro` — **Lavoro**: tracking gaps, backlog esperimenti, memo settimanale,
+  accessi e fonti. Contenuto versionato in `content/` (si cambia con un commit).
+  Dettagli in [`docs/filone-b.md`](docs/filone-b.md) e `content/README.md`.
 
 ```
 core/            logica pura, zero I/O — si copia così com'è nel CRM
   kpi.ts         finestre, split paganti, rapporti (null, mai 0 finto), MISSING_KPIS
-  sql.ts         le query aggregate read-only (identiche alla PR #516)
-  model.ts       contratto sorgente→UI: RawResults → normalize() → GrowthData
+  sql.ts         le query aggregate read-only (+ serie giornaliere e catena per fonte)
+  model.ts       contratto sorgente→UI: RawResults + RawExtras → normalize() → GrowthData
+                 (GrowthData contiene anche trends e chain: lettura mancante/fallita = ERRORE, mai 0)
+  series.ts      giorni Europe/Rome, confronto col periodo precedente, anomalie
+  channels.ts    catena fonte → sessioni → signup → profili → paganti
   privacy.ts     referrer ridotti al dominio, codici referral mascherati
   auth.ts        controllo password condivisa (Basic auth), puro e testato
 data/            accesso ai dati — l'unica parte che cambia fra ambienti
-  source.ts      interfaccia GrowthSource { load(window) → { data, meta } }
+  source.ts      interfaccia GrowthSource { load(window) → { data, meta } } + formato snapshot
   snapshot-source.ts   (a) SNAPSHOT — attiva ora
   live-source.ts       (b) LIVE via SQL read-only — pronta, spenta
   index.ts       sceglie la sorgente (default snapshot)
-ui/GrowthDashboard.tsx  un componente React: riceve data + meta + hrefFor, non sa
-                        da dove arrivano i numeri, non fa auth né routing
-app/page.tsx     5 righe: sorgente → componente
+  snapshot.json  gli aggregati congelati (solo numeri e etichette ridotte)
+ui/              presentazione: nessuna auth, nessun I/O, nessuna conoscenza della sorgente
+  GrowthDashboard.tsx  riceve data + meta + hrefFor (+ workHref opzionale)
+  sections/            Trends.tsx · Channels.tsx (filone A)
+  work/                WorkPage.tsx + content.ts (validazione dei JSON di content/)
+content/         i dati di /lavoro: tracking-gaps.json, experiments.json, sources.json, memo/
+app/             page.tsx (/) e lavoro/page.tsx: poche righe, sorgente → componente
 proxy.ts         password condivisa su tutte le rotte (fail-closed)
 scripts/         snapshot.ts (genera il JSON) · verify.ts (SQL indipendente)
+docs/            filone-a.md · filone-b.md (definizioni, verifiche, limiti)
 ```
 
 Per aggiungere un KPI che oggi è MANCA: query in `core/sql.ts` → campo in
 `core/model.ts` → tile in `ui/GrowthDashboard.tsx` → togli la voce da
 `MISSING_KPIS`. Nessuna sorgente da riscrivere.
+
+## Aggiornare lo snapshot
+
+```bash
+cd growth-app
+npm run snapshot -- --env-file ~/Desktop/agentic-markets/.env   # una sola transazione REPEATABLE READ READ ONLY
+npm run verify   -- --env-file ~/Desktop/agentic-markets/.env   # deve dire «N/N uguali» e «0 divergenze»
+npm test                                                          # lo snapshot deve passare i test di privacy
+```
+
+`DATABASE_URL` si legge **solo in locale** da `~/Desktop/agentic-markets/.env`: non va
+mai su Vercel né nel repo. Lo script scrive `data/snapshot.json` solo se **tutte** le
+letture riescono; poi commit del JSON e nuovo deploy preview. Il banner in pagina
+mostra il `dbNow` della transazione in ora di Roma («Snapshot del … — non live»).
+
+## Attivare il LIVE
+
+Due variabili sul progetto Vercel `betredge-growth` (mai sul progetto prodotto):
+`GROWTH_DATA_SOURCE=live` e `GROWTH_DATABASE_URL=<connection string del ruolo read-only>`.
+Senza la prima resta lo snapshot; con la prima ma senza la seconda la pagina fallisce
+apertamente. Nessuna modifica al codice. Il ruolo DB dedicato e le env passano dalla
+PROPOSAL #GROWTH-LIVE qui sotto (serve APPROVE). Al posto del banner snapshot compare
+«Ultimo aggiornamento».
+
+## Ruotare la password
+
+La password è condivisa (Basic auth, utente qualsiasi, ≥12 caratteri) e vive solo
+nella env `GROWTH_PASSWORD`. Per ruotarla: generane una nuova (es. 32 caratteri
+alfanumerici casuali), salvala in un file locale `chmod 600` o nel password manager,
+**mai** in chat, commit o ticket, e rifai il deploy passandola alla singola deployment:
+
+```bash
+vercel deploy --scope betredge -e GROWTH_PASSWORD="$(cat <file-password>)"
+```
+
+Il deployment precedente continua ad accettare la vecchia: se la vecchia è
+compromessa, rimuovi quel deployment (`vercel rm <url> --scope betredge`) dopo aver
+verificato il nuovo. Se si passa a una env di progetto (`vercel env add GROWTH_PASSWORD`),
+ogni cambio richiede un redeploy.
+
+## Incorporare nel CRM
+
+1. Copia `core/` e `ui/` così come sono (nessuna dipendenza da `app/`, `data/`, `proxy.ts`).
+2. Scrivi una `GrowthSource` sopra l'accesso dati del CRM: deve produrre `RawResults`
+   (una `Result<Row[]>` per ogni query di `core/sql.ts`) e `RawExtras` (serie e catena,
+   o `undefined` se non le legge: diventano ERRORE, mai 0) e chiamare `normalize()`.
+   In alternativa riusa `data/live-source.ts` col ruolo `growth_ro`.
+3. Monta `<GrowthDashboard data meta hrefFor workHref />` e `<WorkPage content dashboardHref />`
+   in due rotte del CRM, dietro l'auth del CRM (la Basic auth di `proxy.ts` resta qui).
+4. Gira i test di `core/` e `ui/work/` nel CRM e `scripts/verify.ts` contro la sua sorgente.
 
 ## Uso locale
 

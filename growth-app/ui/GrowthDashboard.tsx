@@ -26,6 +26,8 @@ export interface GrowthDashboardProps {
   meta: SourceMeta;
   /** URL for the same dashboard on another window, e.g. (w) => `?w=${w}`. */
   hrefFor: (w: GrowthWindow) => string;
+  /** Optional link to the work page (/lavoro in the standalone app); omitted → no link. */
+  workHref?: string;
 }
 
 // ─── UI primitives (same palette as /admin) ──────────────────────────────────
@@ -184,7 +186,7 @@ const fmtUsd = (n: number) => `$${n.toLocaleString("it-IT", { minimumFractionDig
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export function GrowthDashboard({ data: d, meta, hrefFor }: GrowthDashboardProps) {
+export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDashboardProps) {
   const w = d.window;
   const W = windowLabel(w);
   const isSnapshot = meta.kind === "snapshot";
@@ -407,6 +409,11 @@ export function GrowthDashboard({ data: d, meta, hrefFor }: GrowthDashboardProps
           <span className="font-bold text-lg">BetRedge</span>
           <span className="bg-emerald-900 text-emerald-300 text-xs px-2 py-0.5 rounded-full font-medium">GROWTH</span>
           <span className="text-gray-500 text-xs">sola lettura</span>
+          {workHref && (
+            <a href={workHref} className="text-sm text-gray-400 hover:text-white underline underline-offset-4 decoration-gray-700">
+              Lavoro →
+            </a>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <nav className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1" aria-label="Finestra temporale">

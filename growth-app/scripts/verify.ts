@@ -39,7 +39,7 @@ interface Check {
 function checks(): Check[] {
   const out: Check[] = [];
   for (const w of ["today", "7d", "30d"] as GrowthWindow[]) {
-    const d = normalize(w, snap.windows[w]);
+    const d = normalize(w, snap.windows[w], { asOf: T, series: snap.series, chain: snap.chain?.[w] });
     const v = <U,>(r: { ok: true; data: U } | { ok: false }, f: (x: U) => number) => (r.ok ? f(r.data) : null);
     out.push(
       { metric: "Page view", window: w, page: v(d.traffic, (t) => t.page_views), sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)}` },
@@ -54,7 +54,7 @@ function checks(): Check[] {
       { metric: "Ordini pagati Paygate+PayPal", window: w, page: v(d.revenue, (r) => r.orders_w), sql: `SELECT (SELECT count(*) FROM paygate_orders WHERE ${between("paid_at", w)}) + (SELECT count(*) FROM paypal_orders WHERE ${between("paid_at", w)})` },
     );
   }
-  const d = normalize("7d", snap.windows["7d"]);
+  const d = normalize("7d", snap.windows["7d"], { asOf: T, series: snap.series, chain: snap.chain?.["7d"] });
   const pay = d.plans.ok ? splitPaying(d.plans.data) : null;
   const notExpired = `(plan_expires_at IS NULL OR plan_expires_at >= '${T}'::timestamptz)`;
   out.push(

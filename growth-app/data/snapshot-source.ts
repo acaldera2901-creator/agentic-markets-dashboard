@@ -1,7 +1,5 @@
 import { WINDOWS } from "@/core/kpi";
-import { normalizeChain } from "@/core/channels";
 import { normalize } from "@/core/model";
-import { normalizeSeries } from "@/core/series";
 import snapshotJson from "./snapshot.json";
 import type { GrowthSource, SnapshotFile } from "./source";
 
@@ -21,11 +19,8 @@ export function snapshotSource(file: unknown = snapshotJson): GrowthSource {
   return {
     async load(w) {
       return {
-        data: {
-          ...normalize(w, snap.windows[w]),
-          trends: snap.series ? normalizeSeries(snap.series, snap.dbNow) : undefined,
-          chain: snap.chain?.[w] ? normalizeChain(snap.chain[w]) : undefined,
-        },
+        // Older snapshots lack series/chain: normalize() turns that into ERRORE, never 0.
+        data: normalize(w, snap.windows[w], { asOf: snap.dbNow, series: snap.series, chain: snap.chain?.[w] }),
         meta: { kind: "snapshot", asOf: snap.dbNow, origin: snap.origin },
       };
     },

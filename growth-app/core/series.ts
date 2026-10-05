@@ -10,6 +10,9 @@ import { SERIES_HISTORY_DAYS, type SeriesQueryKey } from "./sql";
 
 export type RawSeries = Record<SeriesQueryKey, Result<Row[]>>;
 
+/** Error for a read the source never performed (distinct from a failed one). */
+export const MISSING_READ = "lettura mancante in questa sorgente";
+
 export const SERIES_METRICS = [
   { key: "page_views", label: "Page view", query: "seriesEvents" },
   { key: "sessions", label: "Sessioni con consenso", query: "seriesEvents" },
@@ -83,7 +86,7 @@ export function normalizeSeries(raw: RawSeries, asOf: string): DailySeries {
   const values = {} as DailySeries["values"];
   const errors: DailySeries["errors"] = {};
   for (const m of SERIES_METRICS) {
-    const r = raw[m.query] ? fill(raw[m.query], days, m.key) : ({ ok: false, error: `query ${m.query} assente` } as const);
+    const r = raw[m.query] ? fill(raw[m.query], days, m.key) : ({ ok: false, error: `${MISSING_READ} (${m.query})` } as const);
     values[m.key] = r.ok ? r.data : null;
     if (!r.ok) errors[m.key] = r.error;
   }

@@ -5,7 +5,9 @@
 // turns them into GrowthData. The UI only ever sees GrowthData + SourceMeta,
 // so it cannot know (or care) where the numbers came from.
 
+import { type ChainRow, normalizeChain } from "./channels";
 import type { GrowthWindow, PlanRow } from "./kpi";
+import { type DailySeries, MISSING_READ, type RawSeries, normalizeSeries } from "./series";
 import { LIST_KEYS, type QueryKey, SCALAR_KEYS } from "./sql";
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -13,6 +15,18 @@ export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 export type Row = Record<string, unknown>;
 /** What a source hands over: per query, the raw rows or the failure. */
 export type RawResults = Record<QueryKey, Result<Row[]>>;
+
+/**
+ * The reads that are not per-window scalars/lists: the daily series (relative
+ * to asOf) and the window's source chain. A source that did not read them
+ * passes undefined, and normalize() turns that into ERRORE — never into zeros.
+ */
+export interface RawExtras {
+  /** The instant "today" refers to (the DB's now() for the reads). */
+  asOf: string;
+  series: RawSeries | undefined;
+  chain: Result<Row[]> | undefined;
+}
 
 export interface SourceMeta {
   kind: "snapshot" | "live";
@@ -50,6 +64,10 @@ export interface GrowthData {
   lapsed: Result<{ lapsed: number }>;
   freshness: Result<Freshness>;
   calibration: Result<Calibration>;
+  /** Daily series: per metric one value per day, or null + error (never a fake 0). */
+  trends: DailySeries;
+  /** The window's source chain. */
+  chain: Result<ChainRow[]>;
 }
 
 const num = (v: unknown): number => Number(v);
@@ -78,7 +96,7 @@ function mapRows<T>(r: Result<Row[]>, f: (row: Row) => T): Result<T[]> {
   return r.ok ? { ok: true, data: r.data.map(f) } : r;
 }
 
-export function normalize(w: GrowthWindow, raw: RawResults): GrowthData {
+export function normalize(w: GrowthWindow, raw: RawResults, extras: RawExtras): GrowthData {
   for (const k of [...SCALAR_KEYS, ...LIST_KEYS]) {
     if (!raw[k]) throw new Error(`RawResults senza la query ${k}`);
   }
@@ -117,5 +135,8 @@ export function normalize(w: GrowthWindow, raw: RawResults): GrowthData {
     calibration: calibration.ok
       ? { ok: true, data: { n: num(calibration.data.n), brier: numOrNull(calibration.data.brier), ece: numOrNull(calibration.data.ece) } }
       : calibration,
+    // An absent series makes every metric fail with MISSING_READ (see normalizeSeries).
+    trends: normalizeSeries(extras.series ?? ({} as RawSeries), extras.asOf),
+    chain: extras.chain ? normalizeChain(extras.chain) : { ok: false, error: MISSING_READ },
   };
 }

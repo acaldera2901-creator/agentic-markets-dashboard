@@ -15,8 +15,8 @@ describe.skipIf(!url)("live source (integration, read-only)", () => {
     const failed = Object.entries(data).filter(([, v]) => typeof v === "object" && v !== null && "ok" in v && !v.ok);
     expect(failed.map(([k]) => k)).toEqual([]);
     // Filone A extras: every series read and the chain read succeeded.
-    expect(data.trends?.errors).toEqual({});
-    expect(data.chain?.ok).toBe(true);
+    expect(data.trends.errors).toEqual({});
+    expect(data.chain.ok).toBe(true);
   }, 60_000);
 
   it("a write inside its transaction is rejected by the server (25006)", async () => {

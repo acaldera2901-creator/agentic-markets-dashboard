@@ -2,9 +2,9 @@
 // Presentational only. The two attribution bases are shown as two column
 // groups, and the holes in the attribution are rows of their own.
 
-import { type ChainRow, MIN_SIGNUPS_FOR_PCT, UNATTRIBUTED, chainRates, chainTotals } from "@/core/channels";
+import { MIN_SIGNUPS_FOR_PCT, UNATTRIBUTED, chainRates, chainTotals } from "@/core/channels";
 import { formatPct, ratio, windowLabel } from "@/core/kpi";
-import type { GrowthData, Result } from "@/core/model";
+import type { GrowthData } from "@/core/model";
 
 const fmtInt = (n: number) => n.toLocaleString("it-IT");
 
@@ -17,15 +17,15 @@ function Header({ w }: { w: string }) {
   );
 }
 
-export function Channels({ data }: { data: GrowthData & { chain?: Result<ChainRow[]> } }) {
+export function Channels({ data }: { data: GrowthData }) {
   const W = windowLabel(data.window);
   const ch = data.chain;
-  if (!ch || !ch.ok) {
+  if (!ch.ok) {
     return (
       <section className="space-y-3">
         <Header w={W} />
-        <div className={`bg-gray-900 border rounded-xl p-4 text-sm ${ch ? "border-red-800 text-red-400" : "border-dashed border-gray-800 text-gray-400"}`}>
-          {ch ? "Lettura fallita — nessun valore mostrato." : "Catena per fonte non presente in questa sorgente dati: nessun valore mostrato (non è uno 0)."}
+        <div className="bg-gray-900 border border-red-800 rounded-xl p-4 text-sm text-red-400">
+          Lettura fallita ({ch.error}) — nessun valore mostrato, non sostituito con 0.
         </div>
       </section>
     );

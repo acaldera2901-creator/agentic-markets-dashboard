@@ -6,10 +6,10 @@
 
 import postgres from "postgres";
 import { type GrowthWindow, WINDOWS } from "@/core/kpi";
-import { type RawResults, type Result, type Row, normalize } from "@/core/model";
-import { mergeChain, normalizeChain } from "@/core/channels";
+import { type RawExtras, type RawResults, type Result, type Row, normalize } from "@/core/model";
+import { mergeChain } from "@/core/channels";
 import { coarsenRows } from "@/core/privacy";
-import { type RawSeries, normalizeSeries } from "@/core/series";
+import type { RawSeries } from "@/core/series";
 import { LIST_KEYS, type QueryKey, SCALAR_KEYS, SERIES_KEYS, buildChainSql, buildSeriesSql, buildSql } from "@/core/sql";
 import type { GrowthSource } from "./source";
 
@@ -93,12 +93,12 @@ export async function readAllWindows(sql: Sql): Promise<{
   });
 }
 
-/** Live page load of the Filone A extras, each query in its own read-only transaction. */
-export async function readExtras(sql: Sql, w: GrowthWindow, asOf: string) {
+/** Live page load of the daily series and the source chain, each query in its own read-only transaction. */
+export async function readExtras(sql: Sql, w: GrowthWindow, asOf: string): Promise<RawExtras> {
   const sq = buildSeriesSql();
-  const [chainRaw, ...seriesRaw] = await Promise.all([readOnly(sql, buildChainSql(w)), ...SERIES_KEYS.map((k) => readOnly(sql, sq[k]))]);
+  const [chain, ...seriesRaw] = await Promise.all([readOnly(sql, buildChainSql(w)), ...SERIES_KEYS.map((k) => readOnly(sql, sq[k]))]);
   const series = Object.fromEntries(SERIES_KEYS.map((k, i) => [k, seriesRaw[i]])) as RawSeries;
-  return { trends: normalizeSeries(series, asOf), chain: normalizeChain(chainRaw) };
+  return { asOf, series, chain };
 }
 
 /** The database clock, so a snapshot records the instant its windows refer to. */
@@ -113,7 +113,7 @@ export function liveSource(url: string): GrowthSource {
     async load(w) {
       const asOf = await dbNow(sql);
       const [raw, extras] = await Promise.all([readRaw(sql, w), readExtras(sql, w, asOf)]);
-      return { data: { ...normalize(w, raw), ...extras }, meta: { kind: "live", asOf, origin: "database di produzione, lettura diretta (sola lettura)" } };
+      return { data: normalize(w, raw, extras), meta: { kind: "live", asOf, origin: "database di produzione, lettura diretta (sola lettura)" } };
     },
   };
 }
