@@ -75,11 +75,90 @@ export type V3BoardMatch = {
   outcomes: V3BoardOutcome[];
 };
 
+// ─── tennis (shared by board, record, calibration) ──────────────────────────
+
+export type TennisSide = "p1" | "p2";
+
+/**
+ * What a tennis probability actually IS (measured on prod 05/10, see
+ * docs/v3c-data-api.md §5). The model_version alone does not say it: an
+ * `elo_surface_v4_features_odds` row with a market price serves — and seals —
+ * the de-vigged market, not the Elo.
+ *   model           — Elo v4 as computed (only when we computed an edge vs a market)
+ *   model_tempered  — Elo v4 with the τ=1.68 temperature (no market at serve time)
+ *   market_tempered — de-vigged market price with τ=1.68: NOT a model of ours
+ *                     (partner-market-v1, or an Elo row anchored to the market)
+ */
+export type TennisProbabilityKind = "model" | "model_tempered" | "market_tempered";
+
+export type V3BoardTennisSide = {
+  side: TennisSide;
+  player: string;
+  /** stored price the market% is derived from (tennis_predictions.odds_*) */
+  market_price: number | null;
+  /** de-vigged 2-way market probability (proportional) */
+  market_p: number | null;
+  /** raw Elo v4 from the latest prediction_log snapshot; null for partner-market rows (no model) */
+  model_p: number | null;
+  /** the served probability, unrounded (the published % is this rounded to an integer) */
+  estimate_p: number;
+  /** pick_ledger probability of this player (integer %, quantized); null = not sealed */
+  sealed_p: number | null;
+  /** de-vigged feed-book price at seal time (see V3BoardTennisMatch.gap_market) */
+  market_p_at_seal: number | null;
+  /** (sealed_p − market_p_at_seal) in signed pp; null unless our model was sealed AND a market was captured before the seal */
+  gap_pp: number | null;
+  book_prices: V3BookPrice[];
+  best_price: V3BookPrice | null;
+};
+
+export type V3BoardTennisMatch = {
+  /** tennis_predictions.match_id == pick_ledger.source_id */
+  id: string;
+  sport: "tennis";
+  /** null when the source has no real tournament («Partner feed») */
+  tournament: string | null;
+  kickoff: string;
+  player1: string;
+  player2: string;
+  market: "ML";
+  model_version: string;
+  probability_kind: TennisProbabilityKind;
+  /** false = the probability is the market's, not ours */
+  is_our_model: boolean;
+  /** temperature applied to the served probability (null = none) */
+  temperature: number | null;
+  /** overround of the stored price pair (0.05 = 5%) */
+  margin_removed: number | null;
+  /** where market_price comes from and when it was stored */
+  market_source: { bookmaker: string | null; as_of: string } | null;
+  /** prediction_log.computed_at of model_p (client clock of the Python agent) */
+  model_as_of: string | null;
+  /** tennis_predictions.computed_at */
+  estimate_as_of: string;
+  sealed_at: string | null;
+  /** side with the highest served estimate */
+  focus: TennisSide;
+  /** the published pick (null below the confidence floor or without a market) */
+  surfaced_pick: TennisSide | null;
+  /**
+   * The market the gap is measured against: the last FortunePlay/YBets capture
+   * in partner_price_history at or before sealed_at (≤ 150 min old). Both sides
+   * of the gap carry a database timestamp before kickoff and are independent:
+   * the sealed number is our Elo, the price is the book's. null = no gap.
+   */
+  gap_market: { bookmaker: string; captured_at: string } | null;
+  /** why sides[].gap_pp is null (null when the gap exists) */
+  gap_null_reason: string | null;
+  sides: [V3BoardTennisSide, V3BoardTennisSide];
+};
+
 export type V3BoardResponse = {
-  contract: "v3.board.1";
+  contract: "v3.board.2";
   generated_at: string;
   window_days: number;
   matches: V3BoardMatch[];
+  tennis: V3BoardTennisMatch[];
   coverage: {
     matches: number;
     with_market: number;
@@ -91,6 +170,16 @@ export type V3BoardResponse = {
     book_price_max_age_min: number;
     /** feed books whose live feed was down; their prices came from price_history */
     books_from_history: string[];
+    tennis: {
+      matches: number;
+      by_kind: Record<TennisProbabilityKind, number>;
+      with_market: number;
+      with_model_p: number;
+      sealed: number;
+      /** matches whose sides carry a gap_pp */
+      with_gap: number;
+      with_book_price: Record<string, number>;
+    };
   };
   notes: string[];
 };
@@ -120,7 +209,22 @@ export type V3SeriesCoverage = {
   max_gap_min: number | null;
 };
 
+/** Tennis moneyline point: p1/p2 oriented to OUR player1/player2. */
+export type V3LinePointMl = {
+  t: string;
+  price: { p1: number; p2: number };
+  market_p: { p1: number; p2: number } | null;
+  margin: number | null;
+};
+
 export type V3LineSeries =
+  | {
+      market: "ML";
+      source: string;
+      bookmaker: string;
+      points: V3LinePointMl[];
+      coverage: V3SeriesCoverage;
+    }
   | {
       market: "1X2";
       source: string;
@@ -137,9 +241,10 @@ export type V3LineSeries =
     };
 
 export type V3LineMovementResponse = {
-  contract: "v3.line_movement.1";
+  contract: "v3.line_movement.2";
   generated_at: string;
-  match: { id: string; home: string; away: string; kickoff: string; team_pair_key: string | null };
+  /** tennis: home = player1, away = player2 */
+  match: { id: string; sport: "football" | "tennis"; home: string; away: string; kickoff: string; team_pair_key: string | null };
   series: V3LineSeries[];
   notes: string[];
 };
@@ -176,8 +281,49 @@ export type V3WeekRow = {
   limited_sample: boolean;
 };
 
+/** One tennis group of the sealed ledger: one model_version × probability kind. */
+export type V3TennisRecordGroup = {
+  model_version: string;
+  kind: TennisProbabilityKind;
+  label: string;
+  is_our_model: boolean;
+  /** first sealed row of the group */
+  since: string | null;
+  sealed: number;
+  /** settled won/lost — the scored population */
+  scored: number;
+  /** settled with another result (void, retired, …) */
+  settled_other: number;
+  /** no settlement row yet */
+  unsettled: number;
+  /** Σ sealed probability of the picked player, on scored rows */
+  expected_wins: number | null;
+  observed_wins: number;
+  /** Wilson 95% on observed_wins / scored */
+  observed_ci95: V3Interval | null;
+  /** binary Brier of the sealed probability on scored rows (0 best, 1 worst) */
+  brier: number | null;
+  /**
+   * Scored rows with an independent market at seal time (last feed-book capture
+   * in partner_price_history ≤ 150 min before the seal). Only our model groups
+   * can be paired: a market group compared with the market is itself.
+   */
+  n_paired: number;
+  /** binary Brier of the sealed probability on the PAIRED rows */
+  brier_paired: number | null;
+  /** binary Brier of the de-vigged market on the same paired rows */
+  brier_market: number | null;
+  /** brier_paired − brier_market on paired rows, 95% normal CI (negative = sealed more accurate) */
+  difference: number | null;
+  difference_ci95: V3Interval | null;
+  brier_market_null_reason: string | null;
+  /** sealed probabilities are whole percentages: each is ±0.5 pp off the served one */
+  quantization_pp: number;
+  limited_sample: boolean;
+};
+
 export type V3RecordResponse = {
-  contract: "v3.record.1";
+  contract: "v3.record.2";
   generated_at: string;
   scope: {
     sport: "football";
@@ -214,6 +360,10 @@ export type V3RecordResponse = {
   };
   weekly: V3WeekRow[];
   reliability: V3ReliabilityBucket[];
+  tennis: {
+    source: "pick_ledger + pick_settlement_current";
+    groups: V3TennisRecordGroup[];
+  };
   notes: string[];
 };
 
@@ -221,13 +371,16 @@ export type V3RecordResponse = {
 
 export type V3TennisCalibration = {
   model_version: string;
+  kind: TennisProbabilityKind;
   label: string;
+  is_our_model: boolean;
   n: number;
+  limited_sample: boolean;
   buckets: V3ReliabilityBucket[];
 };
 
 export type V3CalibrationResponse = {
-  contract: "v3.calibration.1";
+  contract: "v3.calibration.2";
   generated_at: string;
   football: {
     /** same population as /api/v3/record (scored rows) */
@@ -240,6 +393,7 @@ export type V3CalibrationResponse = {
     n_matches_paired: number;
   };
   tennis: {
+    /** judged on OUR model groups only (is_our_model) — the market groups never make it sufficient */
     status: "sufficient" | "insufficient";
     reason: string;
     models: V3TennisCalibration[];

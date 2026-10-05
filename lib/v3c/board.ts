@@ -68,11 +68,12 @@ export function footballPairKey(r: { home: string; away: string; kickoff: string
 export function orientPartnerPrice(
   ours: { home: string; away: string },
   row: PartnerPriceRow,
+  norm: (name: string) => string = normName,
 ): { home: number | null; draw: number | null; away: number | null } | null {
-  const oh = normName(ours.home);
-  const oa = normName(ours.away);
-  const ph = normName(row.home_name);
-  const pa = normName(row.away_name);
+  const oh = norm(ours.home);
+  const oa = norm(ours.away);
+  const ph = norm(row.home_name);
+  const pa = norm(row.away_name);
   if (ph === oh || pa === oa) return { home: row.odds_home, draw: row.odds_draw, away: row.odds_away };
   if (ph === oa || pa === oh) return { home: row.odds_away, draw: row.odds_draw, away: row.odds_home };
   return null;
@@ -87,6 +88,7 @@ export function bookPricesFor(
   ours: { home: string; away: string },
   rows: PartnerPriceRow[],
   now: Date,
+  norm: (name: string) => string = normName,
 ): Record<Outcome, V3BookPrice[]> {
   const out: Record<Outcome, V3BookPrice[]> = { home: [], draw: [], away: [] };
   const maxAgeMs = BOOK_PRICE_MAX_AGE_MIN * 60_000;
@@ -94,7 +96,7 @@ export function bookPricesFor(
     const book = bookByKey(row.bookmaker);
     if (!book) continue; // not a feed book → never a price
     if (now.getTime() - Date.parse(row.captured_at) > maxAgeMs) continue;
-    const oriented = orientPartnerPrice(ours, row);
+    const oriented = orientPartnerPrice(ours, row, norm);
     if (!oriented) continue;
     for (const o of OUTCOMES) {
       const price = oriented[o];
