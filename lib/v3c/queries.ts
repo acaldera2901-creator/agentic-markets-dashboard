@@ -3,12 +3,106 @@
 import { dbQueryStrict } from "@/lib/db";
 import { FOOTBALL_LEDGER_MODEL_VERSION, FOOTBALL_LEDGER_SOURCE_TABLE } from "@/lib/pick-ledger-mirror";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
-import type { BoardSourceRow, PartnerPriceRow } from "./board";
+import type { BoardSourceRow, PartnerPriceRow, TennisSourceRow } from "./board";
 import type { AhHistoryRow } from "./line-movement";
 import type { SealedFootballRow } from "./record";
 import type { SealedTennisRow } from "./calibration";
+import type { SealedDayRow } from "./yesterday";
 
 const num = (v: unknown): number | null => (v == null || v === "" ? null : Number(v));
+
+/**
+ * Published tennis rows of the same window (F3). `tennis_predictions.scheduled_at`
+ * is a naive UTC timestamp (#TENNIS-TZ-FIX): it is marked as UTC here, once.
+ * Seal time: the first pick_ledger row of the match, any model version.
+ */
+export async function fetchBoardTennisSources(): Promise<TennisSourceRow[]> {
+  const rows = await dbQueryStrict<Record<string, unknown>>(
+    `WITH u AS (
+       SELECT source_id
+         FROM unified_predictions
+        WHERE starts_at > NOW() - interval '150 minutes'
+          AND starts_at < NOW() + ($1 || ' days')::interval
+          AND expires_at > NOW() - interval '150 minutes'
+          AND published_at IS NOT NULL
+          AND is_historical = FALSE
+          AND is_demo = FALSE
+          AND source_table = 'tennis_predictions'
+     )
+     SELECT DISTINCT ON (tp.match_id)
+            tp.match_id AS id, tp.tournament, tp.surface, tp.scheduled_at,
+            tp.player1, tp.player2, tp.p1, tp.p2, tp.odds_p1, tp.odds_p2,
+            tp.model_version, tp.computed_at,
+            (SELECT min(l.captured_at) FROM pick_ledger l
+              WHERE l.source_table = 'tennis_predictions' AND l.source_id = tp.match_id) AS sealed_at
+       FROM tennis_predictions tp
+       JOIN u ON u.source_id = tp.match_id
+      WHERE tp.p1 IS NOT NULL AND tp.p2 IS NOT NULL
+        AND upper(btrim(tp.player1)) NOT IN ('TBD', '')
+        AND upper(btrim(tp.player2)) NOT IN ('TBD', '')
+      ORDER BY tp.match_id, tp.computed_at DESC NULLS LAST`,
+    [PREDICTION_WINDOW_DAYS],
+  );
+  const utc = (s: string) => (/[zZ]$|[+-]\d\d:?\d\d$/.test(s) ? s : s + "Z");
+  return rows
+    .map((r) => ({
+      id: String(r.id),
+      tournament: (r.tournament as string) ?? null,
+      surface: (r.surface as string) ?? null,
+      scheduled: utc(String(r.scheduled_at)),
+      player1: String(r.player1),
+      player2: String(r.player2),
+      p1: Number(r.p1),
+      p2: Number(r.p2),
+      odds_p1: num(r.odds_p1),
+      odds_p2: num(r.odds_p2),
+      model_version: (r.model_version as string) ?? null,
+      computed_at: r.computed_at ? String(r.computed_at) : null,
+      sealed_at: (r.sealed_at as string) ?? null,
+    }))
+    .sort((a, b) => Date.parse(a.scheduled) - Date.parse(b.scheduled) || a.id.localeCompare(b.id));
+}
+
+/**
+ * Sealed picks (non-backfill) that kicked off in [from, to) with their current
+ * settlement, both sports. Football is restricted to the ledger model of the
+ * public record so «yesterday» and the record count the same population.
+ */
+export async function fetchSealedDay(fromIso: string, toIso: string): Promise<SealedDayRow[]> {
+  const rows = await dbQueryStrict<Record<string, unknown>>(
+    `SELECT l.sport, l.home_team, l.away_team, l.competition, l.league, l.pick, l.confidence,
+            l.p_home, l.p_draw, l.p_away, l.commence_time, l.captured_at, l.is_paper,
+            s.result, s.outcome, s.final_score
+       FROM pick_ledger l
+       JOIN pick_settlement_current s
+         ON s.source_table = l.source_table
+        AND s.source_id = l.source_id
+        AND s.model_version = l.model_version
+      WHERE l.is_backfill = FALSE
+        AND l.commence_time >= $1::timestamptz
+        AND l.commence_time <  $2::timestamptz
+        AND ((l.sport = 'football' AND l.source_table = $3 AND l.model_version = $4) OR l.sport = 'tennis')
+      ORDER BY l.commence_time, l.home_team`,
+    [fromIso, toIso, FOOTBALL_LEDGER_SOURCE_TABLE, FOOTBALL_LEDGER_MODEL_VERSION],
+  );
+  return rows.map((r) => ({
+    sport: String(r.sport) === "tennis" ? "tennis" : "football",
+    home: String(r.home_team ?? ""),
+    away: String(r.away_team ?? ""),
+    competition: (r.competition as string) ?? (r.league as string) ?? null,
+    pick: (r.pick as string) ?? null,
+    confidence: num(r.confidence),
+    p_home: num(r.p_home),
+    p_draw: num(r.p_draw),
+    p_away: num(r.p_away),
+    commence_time: String(r.commence_time),
+    captured_at: String(r.captured_at),
+    is_paper: r.is_paper === true,
+    result: String(r.result ?? ""),
+    outcome: (r.outcome as string) ?? null,
+    final_score: (r.final_score as string) ?? null,
+  }));
+}
 
 /**
  * Published football matches of the live board window (same conditions as

@@ -4,28 +4,46 @@
 // chiaro/scuro (data-mode) e le variabili dei font. Il modo iniziale arriva
 // dal server (query ?mode=), il toggle lo cambia qui e lo scrive nella URL
 // senza ricaricare, così uno scatto o un link lo riproducono.
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { V3cMode } from "@/lib/v3c/mode";
 
 export type { V3cMode };
 
 type Props = { initialMode: V3cMode; fontClass: string; children: (mode: V3cMode, toggle: () => void) => ReactNode };
 
+const MODE_KEY = "v3c-mode";
+
+// F3: sulle pagine di prodotto la scelta deve durare. Senza `?mode=` nella URL
+// si riprende quella salvata (il server non la conosce: un frame in carta per
+// chi ha scelto lo scuro è il costo noto, come la lingua). Letta come store
+// esterno, così il primo render client coincide con quello del server.
+function readSaved(): V3cMode | null {
+  try {
+    if (new URL(window.location.href).searchParams.has("mode")) return null;
+    const saved = localStorage.getItem(MODE_KEY);
+    return saved === "dark" || saved === "light" ? saved : null;
+  } catch {
+    return null; /* storage vietato: resta il modo iniziale */
+  }
+}
+const noSubscribe = () => () => {};
+
 export function V3cShell({ initialMode, fontClass, children }: Props) {
-  const [mode, setMode] = useState<V3cMode>(initialMode);
+  const saved = useSyncExternalStore(noSubscribe, readSaved, () => null);
+  const [chosen, setChosen] = useState<V3cMode | null>(null);
+  const mode: V3cMode = chosen ?? saved ?? initialMode;
   const toggle = useCallback(() => {
-    setMode((m) => {
-      const next: V3cMode = m === "dark" ? "light" : "dark";
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set("mode", next);
-        window.history.replaceState(null, "", url);
-      } catch {
-        /* la URL è una comodità, non un requisito */
-      }
-      return next;
-    });
-  }, []);
+    const next: V3cMode = mode === "dark" ? "light" : "dark";
+    setChosen(next);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("mode", next);
+      window.history.replaceState(null, "", url);
+      localStorage.setItem(MODE_KEY, next);
+    } catch {
+      /* la URL è una comodità, non un requisito */
+    }
+  }, [mode]);
   return (
     <div data-theme="v3c" data-mode={mode} className={`${fontClass} v3c-page`}>
       {children(mode, toggle)}

@@ -67,8 +67,11 @@ export const SAMPLE_TENNIS = {
   ] as readonly SampleOutcome[],
 } as const;
 
+/** La forma minima di un esito per gli esempi del banco: la board vera (F3) la soddisfa con i suoi numeri. */
+export type LeadShape = { price: number; market: number; estimate: number };
+
 /** L'esito con il gap più largo: la riga della board lo mostra per primo. */
-export function leadOutcome(outcomes: readonly SampleOutcome[]): SampleOutcome {
+export function leadOutcome<T extends LeadShape>(outcomes: readonly T[]): T {
   return outcomes.reduce((best, o) => (Math.abs(o.estimate - o.market) > Math.abs(best.estimate - best.market) ? o : best));
 }
 
@@ -123,7 +126,7 @@ const signedPct = (x: number, d = 1) => `${x > 0 ? "+" : x < 0 ? "−" : "±"}${
  * lib/betting-math sui numeri della partita d'esempio: il tool parla la stessa
  * lingua della board.
  */
-export function benchExample(slug: ToolSlug, match: typeof SAMPLE_MATCH = SAMPLE_MATCH): ToolExample {
+export function benchExample(slug: ToolSlug, match: { outcomes: readonly LeadShape[] } = SAMPLE_MATCH): ToolExample {
   const lead = leadOutcome(match.outcomes);
   const prices = match.outcomes.map((o) => o.price);
   const p = lead.estimate / 100;

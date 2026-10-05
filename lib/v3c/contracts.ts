@@ -75,12 +75,56 @@ export type V3BoardMatch = {
   outcomes: V3BoardOutcome[];
 };
 
+// ─── tennis rows (F3, additive) ─────────────────────────────────────────────
+// No model/market split is stored per tennis match, so a tennis row carries the
+// served estimate and the feed-book prices only: NO market_p, NO edge. The UI
+// says «market comparison coming» (Andrea, provisional, 2026-10-05).
+
+export type V3BoardTennisOutcome = {
+  outcome: "home" | "away";
+  /** the served probability of this player */
+  estimate_p: number;
+  /** price stored with the prediction (composite market), null when none */
+  market_price: number | null;
+  /** OPTIONAL, not served today: de-vigged market probability, once a market/model split is stored
+   *  per tennis match (branch betredge/v3c-tennis). The UI shows a gap ONLY when this is present. */
+  market_p?: number | null;
+  /** OPTIONAL, not served today: (estimate − market) in pp, signed — same rule as football. */
+  edge_pp?: number | null;
+  book_prices: V3BookPrice[];
+  best_price: V3BookPrice | null;
+};
+
+export type V3BoardTennisMatch = {
+  id: string;
+  sport: "tennis";
+  /** null when the row comes from the partner feed («Partner feed» is not a tournament) */
+  tournament: string | null;
+  surface: string | null;
+  kickoff: string;
+  /** player 1 / player 2 */
+  home: string;
+  away: string;
+  market: "winner";
+  /** `market` = the probability IS the de-vigged book price (partner-market-v1), not a model */
+  estimate_source: "model" | "market";
+  model_version: string | null;
+  estimate_as_of: string | null;
+  sealed_at: string | null;
+  focus: "home" | "away";
+  outcomes: V3BoardTennisOutcome[];
+};
+
 export type V3BoardResponse = {
   contract: "v3.board.1";
   generated_at: string;
   window_days: number;
   matches: V3BoardMatch[];
+  /** tennis rows of the same window (estimate + feed prices, no gap) — F3, additive */
+  tennis: V3BoardTennisMatch[];
   coverage: {
+    /** tennis rows served, how many carry a feed price, and where their probability comes from */
+    tennis: { matches: number; with_book_price: Record<string, number>; from_model: number; from_market: number };
     matches: number;
     with_market: number;
     sealed: number;
@@ -92,6 +136,54 @@ export type V3BoardResponse = {
     /** feed books whose live feed was down; their prices came from price_history */
     books_from_history: string[];
   };
+  notes: string[];
+};
+
+// ─── /api/v3/yesterday ──────────────────────────────────────────────────────
+// «Yesterday» on the home: the sealed picks that kicked off on a given UTC day
+// and how they settled. Read ONLY from pick_ledger + pick_settlement_current.
+// Counts, never a rate: won and lost are integers next to the sum of the sealed
+// probabilities (what the estimates expected), so a 3-of-5 day is read against
+// the 2.3 it was supposed to be.
+
+export type V3DayPick = {
+  sport: "football" | "tennis";
+  home: string;
+  away: string;
+  competition: string | null;
+  /** the sealed pick: HOME/DRAW/AWAY for football, the player's name for tennis; null = no declared direction */
+  pick: string | null;
+  /** sealed probability of the pick (0..1); null without a pick */
+  p: number | null;
+  result: "won" | "lost" | "void" | "unresolved";
+  /** realised outcome: HOME/DRAW/AWAY or the winner's name */
+  outcome: string | null;
+  final_score: string | null;
+  kickoff: string;
+  sealed_at: string;
+  is_paper: boolean;
+};
+
+export type V3DaySummary = {
+  /** rows with a settlement row */
+  settled: number;
+  won: number;
+  lost: number;
+  /** void + unresolved */
+  other: number;
+  /** Σ sealed probability over the won+lost rows: how many wins the estimates expected */
+  expected_wins: number | null;
+  limited_sample: boolean;
+};
+
+export type V3YesterdayResponse = {
+  contract: "v3.yesterday.1";
+  generated_at: string;
+  /** the UTC day, YYYY-MM-DD */
+  day: string;
+  football: V3DaySummary;
+  tennis: V3DaySummary;
+  picks: V3DayPick[];
   notes: string[];
 };
 

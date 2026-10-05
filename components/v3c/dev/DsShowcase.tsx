@@ -3,6 +3,7 @@
 // Il catalogo vivo del design system: ogni componente con i dati d'esempio
 // (SAMPLE, da lib/v3c/sample.ts — l'unica fonte). Serve a guardare, misurare
 // e rompere: non è una pagina di prodotto. Le pagine vere arrivano da F3.
+import Link from "next/link";
 import { toolPath } from "@/lib/tools/registry";
 import { BENCH_SLUGS, SAMPLE, SAMPLE_BOOKS, SAMPLE_MATCH, SAMPLE_TEAMS, SAMPLE_TENNIS, SAMPLE_TOOLS, benchExample, bestBook, leadOutcome, sampleTool } from "@/lib/v3c/sample";
 import { formatSigned, gapPp } from "@/lib/v3c/scale";
@@ -15,6 +16,52 @@ import { Nastro } from "../Nastro";
 import { Sigillo } from "../Sigillo";
 import { Tape } from "../Tape";
 import { ThemeToggle, V3cShell, type V3cMode } from "../V3cShell";
+import { Board } from "../board/Board";
+import { BoardError, BoardSkeleton } from "../board/BoardStates";
+import type { V3BoardResponse, V3DaySummary } from "@/lib/v3c/contracts";
+
+// F3 · gli stati della board con un payload SAMPLE nella forma del contratto v3.board.1
+// (stessi numeri di SAMPLE_MATCH, link "#"): vuoto a cascata, errore, scheletro.
+const DS_NOW = "2026-10-10T12:00:00.000Z";
+const dsBook = (price: number) => ({ bookmaker: "fortuneplay", name: "NorthBet (sample)", price, captured_at: DS_NOW, source: "live_feed" as const, url: "#" });
+const DS_BOARD: V3BoardResponse = {
+  contract: "v3.board.1",
+  generated_at: DS_NOW,
+  window_days: 10,
+  matches: [
+    {
+      id: "ds-gen-fio",
+      sport: "football",
+      league: "ITA",
+      competition: "Serie A",
+      kickoff: "2026-10-10T15:00:00.000Z",
+      home: "Genoa",
+      away: "Fiorentina",
+      market: "1X2",
+      margin_removed: 0.063,
+      blend: { model: 0.3, market: 0.7 },
+      estimate_as_of: "2026-10-10T11:40:00.000Z",
+      sealed_at: "2026-10-10T09:02:00.000Z",
+      focus: "home",
+      outcomes: SAMPLE_MATCH.outcomes.map((o) => ({
+        outcome: o.key as "home" | "draw" | "away",
+        market_price: o.price,
+        market_p: o.market / 100,
+        model_p: null,
+        estimate_p: o.estimate / 100,
+        edge_pp: o.estimate - o.market,
+        book_prices: [dsBook(o.prices.NB)],
+        best_price: dsBook(o.prices.NB),
+      })),
+    },
+  ],
+  tennis: [],
+  coverage: { tennis: { matches: 0, with_book_price: {}, from_model: 0, from_market: 0 }, matches: 1, with_market: 1, sealed: 1, with_book_price: {}, excluded: [], book_price_max_age_min: 150, books_from_history: [] },
+  notes: [],
+};
+const DS_EMPTY: V3BoardResponse = { ...DS_BOARD, matches: [], tennis: [] };
+const dsDay = (won: number, lost: number): V3DaySummary => ({ settled: won + lost, won, lost, other: 0, expected_wins: null, limited_sample: true });
+const DS_YDAY = { day: "2026-10-09", football: dsDay(3, 2), tennis: dsDay(0, 0) };
 
 type Props = { initialMode: V3cMode; fontClass: string; flagOn: boolean };
 
@@ -67,17 +114,17 @@ export function DsShowcase({ initialMode, fontClass, flagOn }: Props) {
         <>
           <header className="v3c-top">
             <div className="v3c-wrap">
-              <a className="v3c-t-row" href="/dev/ds" aria-label="BetRedge — design system">
+              <Link className="v3c-t-row" href="/dev/ds" aria-label="BetRedge — design system">
                 BetRedge
-              </a>
+              </Link>
               <nav className="v3c-nav" aria-label="Primary">
                 {V3C_NAV.map((n) => (
-                  <a key={n.key} href={n.href} aria-current={n.key === "board" ? "page" : undefined}>
+                  <Link key={n.key} href={n.href} aria-current={n.key === "board" ? "page" : undefined}>
                     {n.key === "price" ? "Price check" : n.label}
-                  </a>
+                  </Link>
                 ))}
-                <a href="/blog">News</a>
-                <a href="/plans">Pro</a>
+                <Link href="/blog">News</Link>
+                <Link href="/plans">Pro</Link>
               </nav>
               <div className="v3c-top-r">
                 <a className="v3c-ghost" href={`/dev/flag?set=${flagOn ? "off" : "on"}&to=/dev/ds`}>
@@ -292,12 +339,12 @@ export function DsShowcase({ initialMode, fontClass, flagOn }: Props) {
                     <span className="v3c-lab">The bench · 11 tools · free, no sign-in</span>
                     <h3 className="v3c-t-sec">Do the maths on any price</h3>
                   </div>
-                  <a className="v3c-ghost" href="/tools">
+                  <Link className="v3c-ghost" href="/tools">
                     All 11 tools →
-                  </a>
+                  </Link>
                 </div>
                 <div className="v3c-bench-g">
-                  <a className="v3c-bench-pc" href="/price-check">
+                  <Link className="v3c-bench-pc" href="/price-check">
                     <ToolMark sigla="3→1" name="Price check" />
                     <span className="v3c-tr-t">
                       <b className="v3c-t-row">Price check</b>
@@ -313,7 +360,7 @@ export function DsShowcase({ initialMode, fontClass, flagOn }: Props) {
                       </span>
                     </span>
                     <span className="v3c-btn v3c-btn-line v3c-btn-s">Check a price</span>
-                  </a>
+                  </Link>
                   {BENCH_SLUGS.map((slug) => {
                     const t = sampleTool(slug);
                     return <BenchTool key={slug} slug={slug} sigla={t.sigla} name={t.name} line={t.line} href={toolPath(slug, "en")} example={benchExample(slug)} />;
@@ -358,6 +405,15 @@ export function DsShowcase({ initialMode, fontClass, flagOn }: Props) {
                 <button type="button" className="v3c-chip" aria-pressed="false">
                   Tennis <small>2</small>
                 </button>
+              </div>
+            </Sec>
+
+            <Sec id="states" title="Board states · F3" note="SAMPLE payload in the v3.board.1 shape. Empty for a filter: the cascade (no live → biggest gap today → next up with countdown → yesterday’s review). Nothing on the board. Error with retry. Skeleton with the geometry of the real rows.">
+              <div className="v3c-ds-grid">
+                <Board board={DS_BOARD} surface="home" partners={false} nowIso={DS_NOW} yesterday={DS_YDAY} initialFilters={{ sport: "tennis" }} frozenNow />
+                <Board board={DS_EMPTY} surface="home" partners={false} nowIso={DS_NOW} yesterday={DS_YDAY} frozenNow />
+                <BoardError />
+                <BoardSkeleton rows={2} />
               </div>
             </Sec>
 

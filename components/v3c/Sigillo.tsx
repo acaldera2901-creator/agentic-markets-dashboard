@@ -8,21 +8,33 @@ import { sealTimeUtc, shortHash } from "@/lib/v3c/seal";
 type Props = {
   /** ISO dell'ora del sigillo, oppure l'ora già scritta («09:02 UTC»). */
   sealedAt: string;
-  hash: string;
+  /** L'hash della riga, se il registro lo espone; senza, il sigillo mostra solo l'ora. */
+  hash?: string | null;
   label?: string;
+  /** Il tooltip; senza, quello di default spiega cos'è il sigillo. */
+  title?: string;
   className?: string;
 };
 
-export function Sigillo({ sealedAt, hash, label = "sealed", className }: Props) {
-  const short = shortHash(hash);
-  if (!short) return null;
+export function Sigillo({ sealedAt, hash, label = "sealed", title, className }: Props) {
+  // F3: the ledger stores no row hash today. Without one the seal shows the
+  // time only — a fact (pick_ledger.captured_at) — and never a made-up code.
+  const short = hash == null ? "" : shortHash(hash);
+  if (hash != null && !short) return null;
   const time = /^\d{2}:\d{2}/.test(sealedAt) ? sealedAt : sealTimeUtc(sealedAt);
+  if (!time) return null;
   return (
     <span
       className={["v3c-seal", className].filter(Boolean).join(" ")}
-      title="Sealed to the public ledger; the hash is the first and last characters of the row at publication"
+      title={title ?? (short ? "Sealed to the public ledger; the hash is the first and last characters of the row at publication" : "Sealed to the public ledger at this time (UTC), before kick-off; the row cannot be edited afterwards")}
     >
-      <i>{label}</i> {time} <code>{short}</code>
+      <i>{label}</i> {time}
+      {short ? (
+        <>
+          {" "}
+          <code>{short}</code>
+        </>
+      ) : null}
     </span>
   );
 }

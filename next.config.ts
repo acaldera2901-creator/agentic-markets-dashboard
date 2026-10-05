@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { v3cRewrites } from "./lib/v3c/rewrites";
 
 // Security headers (#SEC-HARDENING michele-side, pending Andrea review/deploy).
 // Applied to every response. CSP shipped in Report-Only from #SEC-HARDENING
@@ -87,6 +88,12 @@ const nextConfig: NextConfig = {
       { source: "/weekly-pick", destination: "/weekly-model-case", permanent: true },
       { source: "/match-builder", destination: "/probability-view", permanent: true },
     ];
+  },
+  // #REDESIGN-V3C F3: con NEXT_PUBLIC_REDESIGN acceso "/" e "/predictions"
+  // servono la board v3c (app/v3c/*) senza cambiare URL; spento la lista è
+  // vuota e le due pagine restano quelle di sempre, statiche, byte per byte.
+  async rewrites() {
+    return v3cRewrites(process.env.NEXT_PUBLIC_REDESIGN);
   },
   async headers() {
     return [

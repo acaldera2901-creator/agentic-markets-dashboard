@@ -62,3 +62,19 @@ n 305 (SQL 305), bucket 0.6–0.7 observed 0.7576 (SQL 0.75758). Tennis status =
 (partner-market-v1 n 2,172; Elo v4 n 305 with buckets 0.5/0.6/0.7 at n 205/66/31).
 Not verified: whether `partner-market-v1` should be published as «our» tennis calibration — it
 is the market-anchored served probability, not an independent model (decision for F6).
+
+## 5. Tennis in `GET /api/v3/board` (F3, additive)
+`tennis[]`: published tennis rows of the same window (`tennis_predictions` joined to `unified_predictions`),
+`estimate_p` per player, `market_price` stored with the prediction, `book_prices`/`best_price` from the
+feed books (player keys, orientation-free). **No `market_p`, no `edge_pp`**: no model/market split is
+stored per tennis match. `estimate_source = market` when `model_version = partner-market-v1` (the
+probability IS the de-vigged book price). `coverage.tennis` counts rows, feed prices and sources.
+Measured 05/10 22:09 UTC: 222 tennis rows (55 model, 167 market), 196 with FortunePlay+YBets prices.
+
+## 6. `GET /api/v3/yesterday` — `v3.yesterday.1` (F3)
+The sealed picks (`pick_ledger`, non-backfill) that kicked off on the previous UTC day, joined to
+`pick_settlement_current`: `won`, `lost`, `other` (void/unresolved) and `expected_wins` = Σ sealed
+probability of the pick over won+lost — integers next to an expectation, never a rate. Football =
+the record population (`match_predictions`, ledger model); tennis = every non-backfill sealed pick.
+Measured for 2026-10-04: football 6 settled (0 won, 1 lost, 5 void), tennis 141 (101 won, 40 lost,
+expected 86.3). `is_paper` = no real market at seal (the UI says so).

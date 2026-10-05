@@ -4,8 +4,10 @@ import { BOOKS, bookByKey } from "@/lib/betconstruct-books";
 import type { BookBoard } from "@/lib/betconstruct-feed";
 import { buildFortuneplayMatchUrl } from "@/lib/fortuneplay-url";
 import { normName } from "@/lib/odds-api";
+import { PARTNER_FEED_TOURNAMENT, probabilitySourceOf } from "@/lib/partner-market";
 import { teamPairKey } from "@/lib/team-pair-key";
-import type { Outcome, Triple, V3BoardMatch, V3BoardOutcome, V3BookPrice } from "./contracts";
+import { canonicalPlayerKey } from "@/lib/tennis-names";
+import type { Outcome, Triple, V3BoardMatch, V3BoardOutcome, V3BoardTennisMatch, V3BoardTennisOutcome, V3BookPrice } from "./contracts";
 import { MARKET_WEIGHT, MODEL_WEIGHT, OUTCOMES, edgePp, market1x2, roundP, topOutcome } from "./prob";
 
 /** Latest prediction_log row of a published match (+ seal time from pick_ledger). */
@@ -195,3 +197,91 @@ export function liveFeedRows(
 
 /** Feed books, for the coverage block. */
 export const FEED_BOOK_KEYS = BOOKS.map((b) => b.key);
+
+// ─── Tennis (F3) ────────────────────────────────────────────────────────────
+// A published tennis row of the window: the served p1/p2, the stored prices,
+// the model version (partner-market-v1 = the probability is the market itself).
+
+export type TennisSourceRow = {
+  id: string;
+  tournament: string | null;
+  surface: string | null;
+  scheduled: string;
+  player1: string;
+  player2: string;
+  p1: number;
+  p2: number;
+  odds_p1: number | null;
+  odds_p2: number | null;
+  model_version: string | null;
+  computed_at: string | null;
+  sealed_at: string | null;
+};
+
+export function tennisPairKey(r: { player1: string; player2: string; scheduled: string }): string | null {
+  const d = new Date(r.scheduled);
+  if (Number.isNaN(d.getTime())) return null;
+  return teamPairKey("tennis", r.player1, r.player2, d.toISOString());
+}
+
+/** Same as orientPartnerPrice, on player keys (the pair key is orientation-free). */
+export function orientTennisPrice(
+  ours: { player1: string; player2: string },
+  row: PartnerPriceRow,
+): { home: number | null; away: number | null } | null {
+  const o1 = canonicalPlayerKey(ours.player1);
+  const o2 = canonicalPlayerKey(ours.player2);
+  const p1 = canonicalPlayerKey(row.home_name);
+  const p2 = canonicalPlayerKey(row.away_name);
+  if (!o1 || !o2 || !p1 || !p2) return null;
+  if (p1 === o1 || p2 === o2) return { home: row.odds_home, away: row.odds_away };
+  if (p1 === o2 || p2 === o1) return { home: row.odds_away, away: row.odds_home };
+  return null;
+}
+
+function tennisBookPrices(src: TennisSourceRow, rows: PartnerPriceRow[], now: Date): Record<"home" | "away", V3BookPrice[]> {
+  const out: Record<"home" | "away", V3BookPrice[]> = { home: [], away: [] };
+  const maxAgeMs = BOOK_PRICE_MAX_AGE_MIN * 60_000;
+  for (const row of rows) {
+    const book = bookByKey(row.bookmaker);
+    if (!book) continue;
+    if (now.getTime() - Date.parse(row.captured_at) > maxAgeMs) continue;
+    const oriented = orientTennisPrice(src, row);
+    if (!oriented) continue;
+    for (const o of ["home", "away"] as const) {
+      const price = oriented[o];
+      if (!validPrice(price)) continue;
+      out[o].push({ bookmaker: book.key, name: book.name, price, captured_at: row.captured_at, source: row.source ?? "price_history", url: row.url ?? book.landing });
+    }
+  }
+  for (const o of ["home", "away"] as const) out[o].sort((a, b) => b.price - a.price || a.bookmaker.localeCompare(b.bookmaker));
+  return out;
+}
+
+export function buildTennisMatch(src: TennisSourceRow, partner: PartnerPriceRow[], now: Date): V3BoardTennisMatch {
+  const prices = tennisBookPrices(src, partner, now);
+  const tournament = (src.tournament ?? "").trim();
+  const outcomes: V3BoardTennisOutcome[] = (["home", "away"] as const).map((o) => ({
+    outcome: o,
+    estimate_p: roundP(o === "home" ? src.p1 : src.p2),
+    market_price: o === "home" ? src.odds_p1 : src.odds_p2,
+    book_prices: prices[o],
+    best_price: prices[o][0] ?? null,
+  }));
+  return {
+    id: src.id,
+    sport: "tennis",
+    tournament: !tournament || tournament === PARTNER_FEED_TOURNAMENT ? null : tournament,
+    surface: src.surface ? src.surface.toUpperCase() : null,
+    kickoff: new Date(src.scheduled).toISOString(),
+    home: src.player1,
+    away: src.player2,
+    market: "winner",
+    estimate_source: probabilitySourceOf(src.model_version),
+    model_version: src.model_version,
+    estimate_as_of: src.computed_at ? new Date(src.computed_at).toISOString() : null,
+    sealed_at: src.sealed_at ? new Date(src.sealed_at).toISOString() : null,
+    focus: src.p1 >= src.p2 ? "home" : "away",
+    outcomes,
+  };
+}
