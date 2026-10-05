@@ -18,6 +18,7 @@ import {
   splitPaying,
   windowLabel,
 } from "@/core/kpi";
+import { HUMAN_FILTER_CRITERIA } from "@/core/estimate";
 import type { GrowthData, Result, SourceMeta } from "@/core/model";
 import { Channels } from "./sections/Channels";
 import { Trends } from "./sections/Trends";
@@ -44,13 +45,15 @@ const STATUS_STYLE: Record<KpiStatus, string> = {
 // snapshot page never carries a badge that reads like "live data".
 const STATUS_LABEL: Record<KpiStatus, string> = { LIVE: "MISURATO", PROXY: "PROXY", MANCA: "MANCA", ERRORE: "ERRORE" };
 
-function StatusBadge({ s }: { s: KpiStatus }) {
-  return <span className={`text-[10px] font-semibold tracking-wider px-1.5 py-0.5 rounded border ${STATUS_STYLE[s]}`}>{STATUS_LABEL[s]}</span>;
+function StatusBadge({ s, text }: { s: KpiStatus; text?: string }) {
+  return <span className={`text-[10px] font-semibold tracking-wider px-1.5 py-0.5 rounded border ${STATUS_STYLE[s]}`}>{text ?? STATUS_LABEL[s]}</span>;
 }
 
 interface TileProps {
   label: string;
   status: KpiStatus;
+  /** Badge text instead of the status name (e.g. STIMATO on a PROXY estimate). */
+  badge?: string;
   /** null for LIVE/PROXY means "not computable" (denominator 0, empty table) — rendered as n/d, never 0. */
   value?: string | null;
   sub?: string;
@@ -60,13 +63,13 @@ interface TileProps {
   owner?: string;
 }
 
-function Tile({ label, status, value, sub, window, caveat, needs, owner }: TileProps) {
+function Tile({ label, status, badge, value, sub, window, caveat, needs, owner }: TileProps) {
   const dashed = status === "MANCA" ? "border-dashed" : "";
   return (
     <div className={`bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-1.5 ${dashed}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="text-gray-400 text-xs uppercase tracking-wider">{label}</div>
-        <StatusBadge s={status} />
+        <StatusBadge s={status} text={status === "ERRORE" ? undefined : badge} />
       </div>
       {status === "MANCA" ? (
         <div className="text-sm font-semibold text-gray-500 italic">Non misurato</div>
@@ -194,6 +197,37 @@ function missingTiles(family: Family): TileProps[] {
 }
 
 const fmtInt = (n: number) => n.toLocaleString("it-IT");
+
+const ENTRY_ROWS_SHOWN = 20;
+
+function entriesTile(d: GrowthData, window: string): TileProps {
+  return fromResult(d.entries, "Ingressi con fonte", window, (rows) => {
+    const withSource = rows.reduce((s, r) => s + r.entries, 0);
+    const pv = d.traffic.ok ? d.traffic.data.page_views : null;
+    const noSource = pv === null ? null : pv - withSource;
+    return {
+      status: "LIVE",
+      value: fmtInt(withSource),
+      sub:
+        noSource === null
+          ? "page view senza fonte: n/d (lettura dei page view fallita)"
+          : `page view senza nessuna fonte: ${fmtInt(noSource)} su ${fmtInt(pv!)} (${formatPct(ratio(noSource, pv!), 0) ?? "n/d"})`,
+      caveat:
+        "Page view d'ingresso con utm_source, src, crm, ref o referrer esterno (ridotto al dominio), registrati anche senza consenso. Conta pagine d'ingresso, non persone: una ricarica conta due volte, crawler e test inclusi. La quota senza fonte è sui page view, non sugli ingressi: un ingresso diretto non si distingue da una pagina successiva (il tracker non marca l'ingresso), quindi è un limite superiore.",
+    };
+  });
+}
+
+/** Top rows, the rest summed in one explicit row (the total never changes). */
+function topEntries(r: Result<{ source: string; entries: number }[]>): Result<{ source: string; entries: number }[]> {
+  if (!r.ok || r.data.length <= ENTRY_ROWS_SHOWN) return r;
+  const rest = r.data.slice(ENTRY_ROWS_SHOWN - 1);
+  return {
+    ok: true,
+    data: [...r.data.slice(0, ENTRY_ROWS_SHOWN - 1), { source: `(altre ${rest.length} fonti)`, entries: rest.reduce((s, x) => s + x.entries, 0) }],
+  };
+}
+
 const fmtUsd = (n: number) => `$${n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -233,6 +267,16 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: `${fmtInt(t.page_views_no_session)} senza session_id (${noSessShare ?? "n/d"})`,
       caveat: "Tutti i page_view registrati, con e senza consenso.",
     })),
+    fromResult(d.humanTraffic, "Page view probabilmente umani", W, (h) => ({
+      status: "PROXY",
+      badge: "STIMATO",
+      value: fmtInt(h.probably_human),
+      sub: `su ${fmtInt(h.page_views)} grezzi · esclusi: ${fmtInt(h.excl_no_country)} senza paese, ${fmtInt(h.excl_country)} da paesi senza sessioni, ${fmtInt(h.excl_burst)} in raffica`,
+      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Il numero grezzo resta nel riquadro «Page view».`,
+      needs: "user-agent letto (senza salvarlo) e filtro bot in /api/track — leva 2 di #SESSIONI-1006",
+      owner: "Calde",
+    })),
+    entriesTile(d, W),
     proxy("Sessioni", W, d.traffic, (t) => ({ value: fmtInt(t.sessions), caveat: `Tutte le fonti, non solo l'organico. ${sessCaveat}` })),
     proxy("Sessioni /tools", W, d.traffic, (t) => ({
       value: fmtInt(t.tools_sessions),
@@ -456,6 +500,17 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
         </div>
       )}
 
+      {!isSnapshot && (
+        <div role="status" className="bg-emerald-950 border-b-2 border-emerald-700 px-4 sm:px-6 py-3">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-emerald-200 font-bold text-base">Lettura diretta del database alle {updated} (ora di Roma)</span>
+            <span className="text-emerald-300/80 text-xs">
+              I numeri sono letti a ogni caricamento della pagina, in sola lettura: ricarica per aggiornarli. Le finestre (Oggi / 7 / 30 giorni) contano all&apos;indietro da quell&apos;istante. Fonte: {meta.origin}.
+            </span>
+          </div>
+        </div>
+      )}
+
       <main className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-8">
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400">
           <span><StatusBadge s="LIVE" /> contato dal DB, significa quello che dice ({counts.LIVE})</span>
@@ -509,6 +564,14 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
               rows={d.sources}
               cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Sessioni", get: (r) => fmtInt(Number(r.sessions)), right: true }]}
               empty="Nessuna sessione con consenso nella finestra."
+            />
+            <SmallTable
+              title="Ingressi per fonte"
+              status="LIVE"
+              caveat="Page view d'ingresso per fonte (utm_source, poi src/crm/ref/referrer), con e senza consenso. Pagine d'ingresso, non persone; crawler e test inclusi. Referrer ridotti al dominio, codici referral mascherati."
+              rows={topEntries(d.entries)}
+              cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Ingressi", get: (r) => fmtInt(Number(r.entries)), right: true }]}
+              empty="Nessun page view d'ingresso con fonte nella finestra."
             />
             <SmallTable
               title="Nuovi signup per canale"

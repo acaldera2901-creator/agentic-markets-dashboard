@@ -7,6 +7,7 @@
 // Prints a markdown table; exit code 1 on any mismatch.
 
 import { chainTotals, normalizeChain } from "../core/channels";
+import { BURST_SLOT_SECONDS, type EntryMeta, type HumanEstimate, classifyBuckets, entryLabel } from "../core/estimate";
 import { PAID_CHANNELS, type GrowthWindow, splitPaying } from "../core/kpi";
 import { normalize } from "../core/model";
 import { coarsenLabel } from "../core/privacy";
@@ -28,6 +29,7 @@ function startExpr(w: GrowthWindow): string {
   return `(${t} - interval '${w === "7d" ? 7 : 30} days')`;
 }
 const between = (col: string, w: GrowthWindow) => `${col} >= ${startExpr(w)} AND ${col} <= '${T}'::timestamptz`;
+const HAS_SOURCE = ["utm_source", "src", "crm", "ref", "ref_host"].map((k) => `coalesce(meta->>'${k}', '') <> ''`).join(" OR ");
 
 interface Check {
   metric: string;
@@ -56,6 +58,11 @@ function checks(): Check[] {
       { metric: "Card aperte", window: w, page: v(d.funnelEvents, (f) => f.card_open), sql: `SELECT count(*) FROM events WHERE event_type='card_open' AND ${between("created_at", w)}` },
       { metric: "Errori client", window: w, page: v(d.funnelEvents, (f) => f.client_error), sql: `SELECT count(*) FROM events WHERE event_type='client_error' AND ${between("created_at", w)}` },
       { metric: "Ordini pagati Paygate+PayPal", window: w, page: v(d.revenue, (r) => r.orders_w), sql: `SELECT (SELECT count(*) FROM paygate_orders WHERE ${between("paid_at", w)}) + (SELECT count(*) FROM paypal_orders WHERE ${between("paid_at", w)})` },
+      // v4 — entries: a key-by-key OR instead of the coalesce chain of core/sql.ts.
+      { metric: "Ingressi con fonte (Σ)", window: w, page: v(d.entries, (rows) => rows.reduce((s, r) => s + r.entries, 0)), sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)} AND (${HAS_SOURCE})` },
+      { metric: "Page view senza fonte", window: w, page: d.entries.ok && d.traffic.ok ? d.traffic.data.page_views - d.entries.data.reduce((s, r) => s + r.entries, 0) : null, sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)} AND NOT (${HAS_SOURCE})` },
+      // v4 — the estimate's simplest class, as a plain count.
+      { metric: "Stima: esclusi senza paese", window: w, page: v(d.humanTraffic, (h) => h.excl_no_country), sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)} AND coalesce(country, '') = ''` },
     );
   }
   const d = normalize("7d", snap.windows["7d"], { asOf: T, series: snap.series, chain: snap.chain?.["7d"] });
@@ -246,6 +253,49 @@ async function bulkChecks(tx: Tx): Promise<number> {
     bad += diffs.length;
     const cells = labels.size * COLS.length;
     console.log(`| Catena per fonte (${labels.size} fonti × ${COLS.length} colonne) | ${w} | ${cells} | ${cells - diffs.length} | ${diffs.length ? diffs.slice(0, 5).join(", ") : "0"} |`);
+  }
+  bad += await v4Checks(tx);
+  return bad;
+}
+
+/**
+ * v4: the STIMATO filter recomputed in TypeScript (core/estimate.ts
+ * classifyBuckets) from page views grouped by country and date_bin slot — the
+ * page computes it with window functions in SQL. Entries per source: grouped
+ * by the raw meta keys, labelled with entryLabel() + the page's privacy rule.
+ */
+async function v4Checks(tx: Tx): Promise<number> {
+  let bad = 0;
+  for (const w of ["today", "7d", "30d"] as GrowthWindow[]) {
+    const d = normalize(w, snap.windows[w], { asOf: T, series: snap.series, chain: snap.chain?.[w] });
+    const buckets = await tx.unsafe(`SELECT country,
+        (extract(epoch FROM date_bin('${BURST_SLOT_SECONDS} seconds', created_at, timestamptz '1970-01-01 00:00:00+00')) / ${BURST_SLOT_SECONDS})::bigint AS slot,
+        sum((session_id IS NULL)::int)::int AS no_s, sum((session_id IS NOT NULL)::int)::int AS with_s
+      FROM events WHERE event_type='page_view' AND ${between("created_at", w)} GROUP BY 1, 2`);
+    const ref: HumanEstimate = classifyBuckets(
+      buckets.map((r) => ({ country: r.country === null ? null : String(r.country), slot: Number(r.slot), noSession: Number(r.no_s), withSession: Number(r.with_s) })),
+    );
+    const fields = Object.keys(ref) as (keyof HumanEstimate)[];
+    const got = d.humanTraffic.ok ? d.humanTraffic.data : null;
+    const diffs = got ? fields.filter((f) => got[f] !== ref[f]).map((f) => `${f} ${got[f]}≠${ref[f]}`) : fields.map((f) => `${f} assente`);
+    bad += diffs.length;
+    console.log(`| Stima «probabilmente umani»: ${fields.map((f) => `${f}=${ref[f]}`).join(" ")} | ${w} | ${fields.length} | ${fields.length - diffs.length} | ${diffs.length ? diffs.join(", ") : "0"} |`);
+
+    const keyRows = await tx.unsafe(`SELECT meta->>'utm_source' AS utm_source, meta->>'src' AS src, meta->>'crm' AS crm, meta->>'ref' AS ref, meta->>'ref_host' AS ref_host, count(*)::int AS n
+      FROM events WHERE event_type='page_view' AND ${between("created_at", w)} GROUP BY 1, 2, 3, 4, 5`);
+    const sqlBy = new Map<string, number>();
+    for (const r of keyRows) {
+      const l = entryLabel(r as EntryMeta);
+      if (l === null) continue;
+      const k = coarsenLabel(l);
+      sqlBy.set(k, (sqlBy.get(k) ?? 0) + Number(r.n));
+    }
+    const page = new Map((d.entries.ok ? d.entries.data : []).map((r) => [r.source, r.entries]));
+    const labels = new Set([...sqlBy.keys(), ...page.keys()]);
+    const ed = [...labels].filter((l) => (page.get(l) ?? 0) !== (sqlBy.get(l) ?? 0)).map((l) => `${l} ${page.get(l) ?? 0}≠${sqlBy.get(l) ?? 0}`);
+    if (!d.entries.ok) ed.unshift("ingressi assenti nello snapshot");
+    bad += ed.length;
+    console.log(`| Ingressi per fonte (${labels.size} fonti) | ${w} | ${labels.size} | ${labels.size - ed.length} | ${ed.length ? ed.slice(0, 5).join(", ") : "0"} |`);
   }
   return bad;
 }

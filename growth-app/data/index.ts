@@ -1,9 +1,9 @@
 import type { GrowthSource } from "./source";
 import { snapshotSource } from "./snapshot-source";
 
-// Default and only path in the preview: the frozen snapshot.
-// LIVE needs BOTH GROWTH_DATA_SOURCE=live and GROWTH_DATABASE_URL (a read-only
-// role, see the PROPOSAL in README.md). Neither exists in the preview env.
+// Default: the frozen snapshot (also the fallback if LIVE is switched off).
+// LIVE needs BOTH GROWTH_DATA_SOURCE=live and GROWTH_DATABASE_URL (the read-only
+// growth_ro role, #GROWTH-LIVE): set on the betredge-growth Production env only.
 let cached: GrowthSource | null = null; // one connection pool per server process
 
 export async function getSource(): Promise<GrowthSource> {

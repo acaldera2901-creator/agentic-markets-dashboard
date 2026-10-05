@@ -2,7 +2,7 @@
 // READ ONLY transaction. Even with a credential that could write, the server
 // rejects any write in these transactions (SQLSTATE 25006).
 //
-// Not enabled in the preview: see data/index.ts and the PROPOSAL in README.md.
+// Enabled by GROWTH_DATA_SOURCE=live + GROWTH_DATABASE_URL (data/index.ts, #GROWTH-LIVE).
 
 import postgres from "postgres";
 import { type GrowthWindow, WINDOWS } from "@/core/kpi";
@@ -29,8 +29,9 @@ export type Sql = ReturnType<typeof postgres>;
 
 export function connect(url: string): Sql {
   // prepare:false — Supabase's pooler (transaction mode) does not keep
-  // prepared statements across transactions.
-  return postgres(normalizeDbUrl(url), { max: 4, prepare: false, connect_timeout: 10, idle_timeout: 5 });
+  // prepared statements across transactions. max:2 — the growth_ro role allows
+  // 5 connections in all, shared by every serverless instance.
+  return postgres(normalizeDbUrl(url), { max: 2, prepare: false, connect_timeout: 10, idle_timeout: 5 });
 }
 
 async function readOnly(sql: Sql, query: string): Promise<Result<Row[]>> {
@@ -52,6 +53,7 @@ const KEYS: QueryKey[] = [...SCALAR_KEYS, ...LIST_KEYS];
 function sanitize(raw: RawResults): RawResults {
   if (raw.sources.ok) raw.sources = { ok: true, data: coarsenRows(raw.sources.data, "source", "sessions") };
   if (raw.channels.ok) raw.channels = { ok: true, data: coarsenRows(raw.channels.data, "channel", "n") };
+  if (raw.entries.ok) raw.entries = { ok: true, data: coarsenRows(raw.entries.data, "source", "entries") };
   return raw;
 }
 

@@ -6,17 +6,19 @@
 // email / profile id is selected). The window start comes from windowStartSql(),
 // a closed set of constants — nothing user-supplied is interpolated.
 
+import { BURST_MIN, BURST_SLOT_SECONDS, NO_SESSION_COUNTRIES } from "./estimate";
 import { PAID_CHANNELS, type GrowthWindow, windowStartSql } from "./kpi";
 
 const PAID_SQL_LIST = PAID_CHANNELS.map((c) => `'${c}'`).join(",");
+const NO_SESSION_COUNTRIES_SQL = NO_SESSION_COUNTRIES.map((c) => `'${c}'`).join(",");
 
 // Widget hosts that are our own previews/dev, not a partner site.
 const WIDGET_PREVIEW_HOST_RE = String.raw`(^$|^localhost$|^127\.|\.vercel\.app$)`;
 
 /** Queries that must return exactly one row (zero rows = read failure). */
-export const SCALAR_KEYS = ["traffic", "funnelEvents", "newProfiles", "revenue", "shopify", "lapsed", "freshness", "calibration"] as const;
+export const SCALAR_KEYS = ["traffic", "funnelEvents", "newProfiles", "revenue", "shopify", "lapsed", "freshness", "calibration", "humanTraffic"] as const;
 /** Queries that return a list (zero rows = genuinely nothing). */
-export const LIST_KEYS = ["sources", "channels", "plans", "partners", "widget"] as const;
+export const LIST_KEYS = ["sources", "channels", "plans", "partners", "widget", "entries"] as const;
 export type QueryKey = (typeof SCALAR_KEYS)[number] | (typeof LIST_KEYS)[number];
 
 export function buildSql(w: GrowthWindow): Record<QueryKey, string> {
@@ -42,6 +44,39 @@ export function buildSql(w: GrowthWindow): Record<QueryKey, string> {
         WHERE event_type = 'page_view' AND session_id IS NOT NULL AND created_at >= ${W}
         GROUP BY session_id) s
       GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 15`,
+
+    // Entry page views WITH a source: the tracker puts utm/src/crm/ref/ref_host
+    // only on the landing page_view, consent or not. Counts pages, not people.
+    // Page views with no source key are not here: a direct entry and a later
+    // page of the same visit are indistinguishable (no entry flag in meta).
+    entries: `SELECT src AS source, count(*)::int AS entries FROM (
+        SELECT coalesce(
+          nullif(meta->>'utm_source', ''),
+          'src:' || nullif(meta->>'src', ''),
+          'crm:' || nullif(meta->>'crm', ''),
+          'ref:' || nullif(meta->>'ref', ''),
+          'referrer:' || nullif(meta->>'ref_host', '')) AS src
+        FROM events WHERE event_type = 'page_view' AND created_at >= ${W}) e
+      WHERE src IS NOT NULL
+      GROUP BY 1 ORDER BY 2 DESC, 1`,
+
+    // ESTIMATE (core/estimate.ts): page views minus the non-human classes of
+    // #SESSIONI-1006, exclusive in this order — no country; no session and a
+    // listed country; no session inside a burst (same country, fixed slot).
+    humanTraffic: `WITH pv AS (
+        SELECT nullif(country, '') AS country, session_id IS NULL AS no_sid,
+          floor(extract(epoch FROM created_at) / ${BURST_SLOT_SECONDS})::bigint AS slot
+        FROM events WHERE event_type = 'page_view' AND created_at >= ${W}),
+      c AS (
+        SELECT country, no_sid, country IN (${NO_SESSION_COUNTRIES_SQL}) AS listed,
+          count(*) FILTER (WHERE no_sid) OVER (PARTITION BY country, slot) AS burst_n
+        FROM pv)
+      SELECT count(*)::int AS page_views,
+        count(*) FILTER (WHERE country IS NULL)::int AS excl_no_country,
+        count(*) FILTER (WHERE country IS NOT NULL AND no_sid AND listed)::int AS excl_country,
+        count(*) FILTER (WHERE country IS NOT NULL AND no_sid AND NOT listed AND burst_n >= ${BURST_MIN})::int AS excl_burst,
+        count(*) FILTER (WHERE country IS NOT NULL AND NOT (no_sid AND (listed OR burst_n >= ${BURST_MIN})))::int AS probably_human
+      FROM c`,
 
     funnelEvents: `SELECT
         count(*) FILTER (WHERE event_type = 'signup_started')::int AS signup_started,

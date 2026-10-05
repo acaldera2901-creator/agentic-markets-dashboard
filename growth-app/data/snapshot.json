@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-05T22:47:20.036Z",
-  "dbNow": "2026-10-05T22:47:16.553Z",
+  "generatedAt": "2026-10-05T23:02:22.445Z",
+  "dbNow": "2026-10-05T23:02:17.563Z",
   "origin": "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
   "windows": {
     "today": {
@@ -9,9 +9,9 @@
         "ok": true,
         "data": [
           {
-            "page_views": 109,
-            "page_views_no_session": 109,
-            "sessions": 0,
+            "page_views": 119,
+            "page_views_no_session": 113,
+            "sessions": 1,
             "tools_sessions": 0,
             "predictions_sessions": 0
           }
@@ -27,7 +27,7 @@
             "popup_shown": 0,
             "popup_cta": 0,
             "popup_dismissed": 0,
-            "plan_view": 0,
+            "plan_view": 1,
             "plan_cta_click": 0,
             "checkout_opened": 0,
             "card_open": 0,
@@ -88,9 +88,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 229.754202,
-            "football_age_s": 2686.710015,
-            "tennis_age_s": 2772.419484,
+            "odds_age_s": 45.884251,
+            "football_age_s": 3587.720108,
+            "tennis_age_s": 3673.429577,
             "error_patterns_24h": 0
           }
         ]
@@ -100,14 +100,31 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.60082924379493,
-            "ece": 0.035556745141068
+            "brier": 0.600832649231612,
+            "ece": 0.0355589505838199
+          }
+        ]
+      },
+      "humanTraffic": {
+        "ok": true,
+        "data": [
+          {
+            "page_views": 119,
+            "excl_no_country": 108,
+            "excl_country": 5,
+            "excl_burst": 0,
+            "probably_human": 6
           }
         ]
       },
       "sources": {
         "ok": true,
-        "data": []
+        "data": [
+          {
+            "source": "(nessuna fonte)",
+            "sessions": 1
+          }
+        ]
       },
       "channels": {
         "ok": true,
@@ -173,6 +190,10 @@
       "widget": {
         "ok": true,
         "data": []
+      },
+      "entries": {
+        "ok": true,
+        "data": []
       }
     },
     "7d": {
@@ -180,9 +201,9 @@
         "ok": true,
         "data": [
           {
-            "page_views": 625,
-            "page_views_no_session": 440,
-            "sessions": 50,
+            "page_views": 635,
+            "page_views_no_session": 444,
+            "sessions": 51,
             "tools_sessions": 6,
             "predictions_sessions": 14
           }
@@ -198,7 +219,7 @@
             "popup_shown": 15,
             "popup_cta": 0,
             "popup_dismissed": 11,
-            "plan_view": 20,
+            "plan_view": 21,
             "plan_cta_click": 2,
             "checkout_opened": 1,
             "card_open": 14,
@@ -259,9 +280,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 229.754202,
-            "football_age_s": 2686.710015,
-            "tennis_age_s": 2772.419484,
+            "odds_age_s": 45.884251,
+            "football_age_s": 3587.720108,
+            "tennis_age_s": 3673.429577,
             "error_patterns_24h": 0
           }
         ]
@@ -271,8 +292,20 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600827448752728,
-            "ece": 0.0355555036608165
+            "brier": 0.600828531862276,
+            "ece": 0.0355562379832244
+          }
+        ]
+      },
+      "humanTraffic": {
+        "ok": true,
+        "data": [
+          {
+            "page_views": 635,
+            "excl_no_country": 109,
+            "excl_country": 268,
+            "excl_burst": 0,
+            "probably_human": 258
           }
         ]
       },
@@ -281,7 +314,7 @@
         "data": [
           {
             "source": "(nessuna fonte)",
-            "sessions": 46
+            "sessions": 47
           },
           {
             "source": "coldmail",
@@ -381,6 +414,39 @@
             "clicks": 0
           }
         ]
+      },
+      "entries": {
+        "ok": true,
+        "data": [
+          {
+            "source": "chatgpt.com",
+            "entries": 5
+          },
+          {
+            "source": "referrer:bing.com",
+            "entries": 4
+          },
+          {
+            "source": "coldmail",
+            "entries": 3
+          },
+          {
+            "source": "3Dcoldmail",
+            "entries": 1
+          },
+          {
+            "source": "referrer:google.com",
+            "entries": 1
+          },
+          {
+            "source": "referrer:yahoo.com",
+            "entries": 1
+          },
+          {
+            "source": "referrer:yandex.com",
+            "entries": 1
+          }
+        ]
       }
     },
     "30d": {
@@ -388,9 +454,9 @@
         "ok": true,
         "data": [
           {
-            "page_views": 3201,
-            "page_views_no_session": 1459,
-            "sessions": 400,
+            "page_views": 3211,
+            "page_views_no_session": 1463,
+            "sessions": 401,
             "tools_sessions": 59,
             "predictions_sessions": 225
           }
@@ -406,7 +472,7 @@
             "popup_shown": 15,
             "popup_cta": 0,
             "popup_dismissed": 11,
-            "plan_view": 126,
+            "plan_view": 127,
             "plan_cta_click": 4,
             "checkout_opened": 3,
             "card_open": 120,
@@ -467,9 +533,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 229.754202,
-            "football_age_s": 2686.710015,
-            "tennis_age_s": 2772.419484,
+            "odds_age_s": 45.884251,
+            "football_age_s": 3587.720108,
+            "tennis_age_s": 3673.429577,
             "error_patterns_24h": 0
           }
         ]
@@ -479,8 +545,20 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600827611423106,
-            "ece": 0.0355556041913387
+            "brier": 0.600824142727742,
+            "ece": 0.0355532804430931
+          }
+        ]
+      },
+      "humanTraffic": {
+        "ok": true,
+        "data": [
+          {
+            "page_views": 3211,
+            "excl_no_country": 332,
+            "excl_country": 466,
+            "excl_burst": 308,
+            "probably_human": 2105
           }
         ]
       },
@@ -489,7 +567,7 @@
         "data": [
           {
             "source": "(nessuna fonte)",
-            "sessions": 387
+            "sessions": 388
           },
           {
             "source": "coldmail",
@@ -619,6 +697,87 @@
             "host": "slotsbonus.bet",
             "views": 97,
             "clicks": 0
+          }
+        ]
+      },
+      "entries": {
+        "ok": true,
+        "data": [
+          {
+            "source": "chatgpt.com",
+            "entries": 27
+          },
+          {
+            "source": "referrer:chatgpt.site",
+            "entries": 16
+          },
+          {
+            "source": "referrer:google.com",
+            "entries": 11
+          },
+          {
+            "source": "ig",
+            "entries": 8
+          },
+          {
+            "source": "referrer:bing.com",
+            "entries": 5
+          },
+          {
+            "source": "referrer:yandex.com.tr",
+            "entries": 5
+          },
+          {
+            "source": "src:pr-check",
+            "entries": 5
+          },
+          {
+            "source": "coldmail",
+            "entries": 4
+          },
+          {
+            "source": "test123",
+            "entries": 3
+          },
+          {
+            "source": "referrer:facebook.com",
+            "entries": 2
+          },
+          {
+            "source": "referrer:localhost",
+            "entries": 2
+          },
+          {
+            "source": "3Dcoldmail",
+            "entries": 1
+          },
+          {
+            "source": "qa",
+            "entries": 1
+          },
+          {
+            "source": "ref:(codice referral)",
+            "entries": 1
+          },
+          {
+            "source": "referrer:duckduckgo.com",
+            "entries": 1
+          },
+          {
+            "source": "referrer:yahoo.com",
+            "entries": 1
+          },
+          {
+            "source": "referrer:yandex.by",
+            "entries": 1
+          },
+          {
+            "source": "referrer:yandex.com",
+            "entries": 1
+          },
+          {
+            "source": "referrer:yandex.ru",
+            "entries": 1
           }
         ]
       }
@@ -1262,14 +1421,23 @@
   "chain": {
     "today": {
       "ok": true,
-      "data": []
+      "data": [
+        {
+          "source": "(diretto / nessuna fonte)",
+          "sessions": 1,
+          "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 0,
+          "paying": 0
+        }
+      ]
     },
     "7d": {
       "ok": true,
       "data": [
         {
           "source": "(diretto / nessuna fonte)",
-          "sessions": 46,
+          "sessions": 47,
           "signup_started": 2,
           "signup_completed": 1,
           "profiles": 0,
@@ -1314,7 +1482,7 @@
       "data": [
         {
           "source": "(diretto / nessuna fonte)",
-          "sessions": 387,
+          "sessions": 388,
           "signup_started": 23,
           "signup_completed": 14,
           "profiles": 4,

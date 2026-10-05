@@ -64,6 +64,10 @@ export interface GrowthData {
   lapsed: Result<{ lapsed: number }>;
   freshness: Result<Freshness>;
   calibration: Result<Calibration>;
+  /** Entry page views with a source, per source label (measured). */
+  entries: Result<{ source: string; entries: number }[]>;
+  /** Raw page views and the "probably human" ESTIMATE (core/estimate.ts). */
+  humanTraffic: Result<Record<string, number>>;
   /** Daily series: per metric one value per day, or null + error (never a fake 0). */
   trends: DailySeries;
   /** The window's source chain. */
@@ -120,6 +124,8 @@ export function normalize(w: GrowthWindow, raw: RawResults, extras: RawExtras): 
     shopify: toNums(one(raw.shopify)),
     partners: mapRows(raw.partners, (r) => ({ partner_id: String(r.partner_id), clicks: num(r.clicks) })),
     widget: mapRows(raw.widget, (r) => ({ host: String(r.host), views: num(r.views), clicks: num(r.clicks) })),
+    entries: mapRows(raw.entries, (r) => ({ source: String(r.source), entries: num(r.entries) })),
+    humanTraffic: toNums(one(raw.humanTraffic)),
     lapsed: lapsed.ok ? { ok: true, data: { lapsed: lapsed.data.lapsed } } : lapsed,
     freshness: freshness.ok
       ? {
