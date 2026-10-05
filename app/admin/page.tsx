@@ -368,6 +368,12 @@ export default function AdminPage() {
           </button>
         ))}
         <Link
+          href="/admin/growth"
+          className="py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          Growth
+        </Link>
+        <Link
           href="/admin/segments"
           className="py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-colors"
         >
