@@ -13,7 +13,7 @@ export const BURST_MIN = 8;
 export const BURST_SLOT_SECONDS = 600;
 
 export const HUMAN_FILTER_CRITERIA = [
-  "senza paese (nessun header geo di Vercel: probabili test locali che scrivono sul DB di produzione) — tutti, con o senza sessione",
+  "senza paese: test locali, job sintetici o crawler (causa non determinabile dai dati; nessun header geo di Vercel) — tutti, con o senza sessione",
   `senza sessione e da un paese che nella diagnosi del 06/10 non aveva nessuna sessione (${NO_SESSION_COUNTRIES.join(", ")}) — lista fissa, un umano da quei paesi senza consenso viene escluso anche lui`,
   `senza sessione e dentro una raffica: almeno ${BURST_MIN} page view senza sessione dallo stesso paese nella stessa fascia fissa di ${BURST_SLOT_SECONDS / 60} minuti`,
 ] as const;
@@ -57,6 +57,46 @@ export function classifyBuckets(buckets: PvBucket[]): HumanEstimate {
     else out.probably_human += b.noSession;
   }
   return out;
+}
+
+/** Above this share of page views without country, the totals of a window are flagged (#GROWTH-V5). */
+export const NO_COUNTRY_SPIKE_SHARE = 0.3;
+
+/**
+ * Share of page views without country and whether it is an anomalous spike
+ * (strictly above NO_COUNTRY_SPIKE_SHARE). null share when there are no page views.
+ */
+export function noCountrySpike(noCountry: number, pageViews: number): { share: number | null; spike: boolean } {
+  if (!(pageViews > 0)) return { share: null, spike: false };
+  const share = noCountry / pageViews;
+  return { share, spike: share > NO_COUNTRY_SPIKE_SHARE };
+}
+
+// Referrers that are our own previews/studios, not acquisition. Measured 06/10:
+// 16 entries from betredge-studio-0922.<personal-name>.chatgpt.site. Matched on
+// the RAW host, before core/privacy.ts cuts it to the domain.
+const INTERNAL_REFERRER_RES = [/^betredge-studio[^.]*\.(?:[^.]+\.)*chatgpt\.site$/, /^betredge[^.]*\.vercel\.app$/];
+export const INTERNAL_REFERRER_RULE =
+  "referrer interno = host betredge-studio*.….chatgpt.site (anteprime del nostro studio) o betredge*.vercel.app (deploy e preview dei progetti betredge); conta solo quando l'ingresso non ha utm/src/crm/ref";
+/** The single label every internal entry is folded into (no host, so no personal name). */
+export const INTERNAL_ENTRY_LABEL = "(interni, esclusi)";
+
+export function isInternalReferrer(host: string): boolean {
+  const h = host.trim().toLowerCase().replace(/\.$/, "");
+  return INTERNAL_REFERRER_RES.some((re) => re.test(h));
+}
+
+/** An entry label as stored: internal referrers folded into INTERNAL_ENTRY_LABEL, the rest unchanged. */
+export function foldInternal(label: string): string {
+  return label.startsWith("referrer:") && isInternalReferrer(label.slice("referrer:".length)) ? INTERNAL_ENTRY_LABEL : label;
+}
+
+export type EntryRow = { source: string; entries: number };
+
+/** Entries split into acquisition sources and our own previews/studios (folded by foldInternal). */
+export function splitEntries(rows: EntryRow[]): { external: EntryRow[]; internal: number } {
+  const internal = rows.filter((r) => r.source === INTERNAL_ENTRY_LABEL).reduce((s, r) => s + r.entries, 0);
+  return { external: rows.filter((r) => r.source !== INTERNAL_ENTRY_LABEL), internal };
 }
 
 export interface EntryMeta {

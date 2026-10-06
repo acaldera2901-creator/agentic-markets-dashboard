@@ -13,6 +13,16 @@ ruolo DB **read-only dedicato**, dietro password, e i numeri chiave coincidono c
 
 ## Stato
 
+- **v5 (06/10, branch `feat/growth-v5`)** — correzioni dell'audit QA: «Andamento» con la serie
+  «Page view probabilmente umani» (STIMATO, stesso criterio di `core/estimate.ts`) prima del grezzo
+  e la serie «senza paese»; etichetta «senza paese: test locali, job sintetici o crawler (causa non
+  determinabile dai dati)»; avviso «picco anomalo» quando i page view senza paese superano il 30%
+  della finestra; rapporti mai sopra 100% (`formatShare`); ingressi da referrer interni
+  (`betredge-studio*.….chatgpt.site`, `betredge*.vercel.app`) esclusi e mostrati in riga a parte;
+  Brier col riferimento 0,667. LIVE: cache server 120 s per finestra (`data/cache.ts`, mai una
+  lettura con ERRORE) e `max: 3`. Misurato in locale col ruolo `growth_ro`: lettura completa
+  ~1,7 s (max 2) → ~1,3 s (max 3), pagina in cache ~0,01 s. Snapshot rigenerato
+  (`dbNow 2026-10-06T11:09:54Z`) col ruolo `growth_ro`: `npm run verify` 149/149, 0 divergenze per cella.
 - **v4 (06/10, branch `feat/growth-v4`)**: «Ingressi con fonte» + tabella «Ingressi per fonte»
   (page view d'ingresso con utm/src/crm/ref/ref_host, MISURATO, anche senza consenso; la quota
   senza fonte è sui page view, limite superiore) · «Page view probabilmente umani» (PROXY,

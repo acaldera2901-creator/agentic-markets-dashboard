@@ -14,7 +14,9 @@ export type RawSeries = Record<SeriesQueryKey, Result<Row[]>>;
 export const MISSING_READ = "lettura mancante in questa sorgente";
 
 export const SERIES_METRICS = [
-  { key: "page_views", label: "Page view", query: "seriesEvents" },
+  { key: "probably_human", label: "Page view probabilmente umani", query: "seriesHuman" },
+  { key: "page_views", label: "Page view (grezzi)", query: "seriesEvents" },
+  { key: "page_views_no_country", label: "Page view senza paese", query: "seriesHuman" },
   { key: "sessions", label: "Sessioni con consenso", query: "seriesEvents" },
   { key: "signup_started", label: "Signup avviati", query: "seriesEvents" },
   { key: "signup_completed", label: "Signup completati", query: "seriesEvents" },

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-05T23:02:22.445Z",
-  "dbNow": "2026-10-05T23:02:17.563Z",
+  "generatedAt": "2026-10-06T11:10:00.170Z",
+  "dbNow": "2026-10-06T11:09:54.218Z",
   "origin": "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
   "windows": {
     "today": {
@@ -9,10 +9,10 @@
         "ok": true,
         "data": [
           {
-            "page_views": 119,
-            "page_views_no_session": 113,
-            "sessions": 1,
-            "tools_sessions": 0,
+            "page_views": 702,
+            "page_views_no_session": 678,
+            "sessions": 6,
+            "tools_sessions": 1,
             "predictions_sessions": 0
           }
         ]
@@ -21,17 +21,17 @@
         "ok": true,
         "data": [
           {
-            "signup_started": 0,
+            "signup_started": 8,
             "signup_completed": 0,
-            "signup_no_session": 0,
-            "popup_shown": 0,
+            "signup_no_session": 8,
+            "popup_shown": 2,
             "popup_cta": 0,
-            "popup_dismissed": 0,
-            "plan_view": 1,
-            "plan_cta_click": 0,
+            "popup_dismissed": 1,
+            "plan_view": 41,
+            "plan_cta_click": 4,
             "checkout_opened": 0,
-            "card_open": 0,
-            "card_open_sessions": 0,
+            "card_open": 2,
+            "card_open_sessions": 2,
             "partner_click": 0,
             "partner_menu_open": 0,
             "client_error": 0
@@ -88,9 +88,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 45.884251,
-            "football_age_s": 3587.720108,
-            "tennis_age_s": 3673.429577,
+            "odds_age_s": 26.036773,
+            "football_age_s": 4045.374961,
+            "tennis_age_s": 4135.789715,
             "error_patterns_24h": 0
           }
         ]
@@ -100,8 +100,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600832649231612,
-            "ece": 0.0355589505838199
+            "brier": 0.603275068111488,
+            "ece": 0.0352683114574453
           }
         ]
       },
@@ -109,11 +109,11 @@
         "ok": true,
         "data": [
           {
-            "page_views": 119,
-            "excl_no_country": 108,
-            "excl_country": 5,
+            "page_views": 702,
+            "excl_no_country": 649,
+            "excl_country": 22,
             "excl_burst": 0,
-            "probably_human": 6
+            "probably_human": 31
           }
         ]
       },
@@ -122,7 +122,7 @@
         "data": [
           {
             "source": "(nessuna fonte)",
-            "sessions": 1
+            "sessions": 6
           }
         ]
       },
@@ -189,11 +189,26 @@
       },
       "widget": {
         "ok": true,
-        "data": []
+        "data": [
+          {
+            "host": "slotsbonus.bet",
+            "views": 1,
+            "clicks": 0
+          }
+        ]
       },
       "entries": {
         "ok": true,
-        "data": []
+        "data": [
+          {
+            "source": "referrer:google.com",
+            "entries": 3
+          },
+          {
+            "source": "ig",
+            "entries": 1
+          }
+        ]
       }
     },
     "7d": {
@@ -201,11 +216,11 @@
         "ok": true,
         "data": [
           {
-            "page_views": 635,
-            "page_views_no_session": 444,
+            "page_views": 1170,
+            "page_views_no_session": 989,
             "sessions": 51,
-            "tools_sessions": 6,
-            "predictions_sessions": 14
+            "tools_sessions": 7,
+            "predictions_sessions": 13
           }
         ]
       },
@@ -213,17 +228,17 @@
         "ok": true,
         "data": [
           {
-            "signup_started": 13,
-            "signup_completed": 2,
-            "signup_no_session": 12,
-            "popup_shown": 15,
+            "signup_started": 18,
+            "signup_completed": 1,
+            "signup_no_session": 16,
+            "popup_shown": 17,
             "popup_cta": 0,
-            "popup_dismissed": 11,
-            "plan_view": 21,
-            "plan_cta_click": 2,
+            "popup_dismissed": 12,
+            "plan_view": 61,
+            "plan_cta_click": 6,
             "checkout_opened": 1,
-            "card_open": 14,
-            "card_open_sessions": 5,
+            "card_open": 16,
+            "card_open_sessions": 7,
             "partner_click": 2,
             "partner_menu_open": 3,
             "client_error": 4
@@ -234,11 +249,11 @@
         "ok": true,
         "data": [
           {
-            "new_profiles": 2,
-            "signups": 2,
-            "activated": 1,
+            "new_profiles": 1,
+            "signups": 1,
+            "activated": 0,
             "referred": 0,
-            "no_acquisition": 1
+            "no_acquisition": 0
           }
         ]
       },
@@ -280,9 +295,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 45.884251,
-            "football_age_s": 3587.720108,
-            "tennis_age_s": 3673.429577,
+            "odds_age_s": 26.036773,
+            "football_age_s": 4045.374961,
+            "tennis_age_s": 4135.789715,
             "error_patterns_24h": 0
           }
         ]
@@ -292,8 +307,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600828531862276,
-            "ece": 0.0355562379832244
+            "brier": 0.603277111615802,
+            "ece": 0.0352684396653702
           }
         ]
       },
@@ -301,11 +316,11 @@
         "ok": true,
         "data": [
           {
-            "page_views": 635,
-            "excl_no_country": 109,
-            "excl_country": 268,
+            "page_views": 1170,
+            "excl_no_country": 650,
+            "excl_country": 271,
             "excl_burst": 0,
-            "probably_human": 258
+            "probably_human": 249
           }
         ]
       },
@@ -329,10 +344,6 @@
       "channels": {
         "ok": true,
         "data": [
-          {
-            "channel": "(non registrata)",
-            "n": 1
-          },
           {
             "channel": "chatgpt.com",
             "n": 1
@@ -410,7 +421,7 @@
         "data": [
           {
             "host": "slotsbonus.bet",
-            "views": 10,
+            "views": 11,
             "clicks": 0
           }
         ]
@@ -431,11 +442,15 @@
             "entries": 3
           },
           {
+            "source": "referrer:google.com",
+            "entries": 3
+          },
+          {
             "source": "3Dcoldmail",
             "entries": 1
           },
           {
-            "source": "referrer:google.com",
+            "source": "ig",
             "entries": 1
           },
           {
@@ -454,10 +469,10 @@
         "ok": true,
         "data": [
           {
-            "page_views": 3211,
-            "page_views_no_session": 1463,
-            "sessions": 401,
-            "tools_sessions": 59,
+            "page_views": 3790,
+            "page_views_no_session": 2025,
+            "sessions": 405,
+            "tools_sessions": 60,
             "predictions_sessions": 225
           }
         ]
@@ -466,17 +481,17 @@
         "ok": true,
         "data": [
           {
-            "signup_started": 66,
+            "signup_started": 74,
             "signup_completed": 24,
-            "signup_no_session": 52,
-            "popup_shown": 15,
+            "signup_no_session": 60,
+            "popup_shown": 17,
             "popup_cta": 0,
-            "popup_dismissed": 11,
-            "plan_view": 127,
-            "plan_cta_click": 4,
+            "popup_dismissed": 12,
+            "plan_view": 167,
+            "plan_cta_click": 8,
             "checkout_opened": 3,
-            "card_open": 120,
-            "card_open_sessions": 30,
+            "card_open": 122,
+            "card_open_sessions": 32,
             "partner_click": 17,
             "partner_menu_open": 15,
             "client_error": 55
@@ -533,9 +548,9 @@
         "ok": true,
         "data": [
           {
-            "odds_age_s": 45.884251,
-            "football_age_s": 3587.720108,
-            "tennis_age_s": 3673.429577,
+            "odds_age_s": 26.036773,
+            "football_age_s": 4045.374961,
+            "tennis_age_s": 4135.789715,
             "error_patterns_24h": 0
           }
         ]
@@ -545,8 +560,8 @@
         "data": [
           {
             "n": 20000,
-            "brier": 0.600824142727742,
-            "ece": 0.0355532804430931
+            "brier": 0.603277295374153,
+            "ece": 0.0352664792910469
           }
         ]
       },
@@ -554,11 +569,11 @@
         "ok": true,
         "data": [
           {
-            "page_views": 3211,
-            "excl_no_country": 332,
-            "excl_country": 466,
+            "page_views": 3790,
+            "excl_no_country": 873,
+            "excl_country": 483,
             "excl_burst": 308,
-            "probably_human": 2105
+            "probably_human": 2126
           }
         ]
       },
@@ -567,7 +582,7 @@
         "data": [
           {
             "source": "(nessuna fonte)",
-            "sessions": 388
+            "sessions": 392
           },
           {
             "source": "coldmail",
@@ -695,7 +710,7 @@
         "data": [
           {
             "host": "slotsbonus.bet",
-            "views": 97,
+            "views": 96,
             "clicks": 0
           }
         ]
@@ -708,16 +723,16 @@
             "entries": 27
           },
           {
-            "source": "referrer:chatgpt.site",
+            "source": "(interni, esclusi)",
             "entries": 16
           },
           {
             "source": "referrer:google.com",
-            "entries": 11
+            "entries": 14
           },
           {
             "source": "ig",
-            "entries": 8
+            "entries": 9
           },
           {
             "source": "referrer:bing.com",
@@ -1416,6 +1431,306 @@
     "seriesOrders": {
       "ok": true,
       "data": []
+    },
+    "seriesHuman": {
+      "ok": true,
+      "data": [
+        {
+          "day": "2026-08-07",
+          "probably_human": 16,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-08",
+          "probably_human": 16,
+          "page_views_no_country": 77
+        },
+        {
+          "day": "2026-08-09",
+          "probably_human": 5,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-10",
+          "probably_human": 15,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-12",
+          "probably_human": 9,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-13",
+          "probably_human": 11,
+          "page_views_no_country": 2
+        },
+        {
+          "day": "2026-08-14",
+          "probably_human": 18,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-15",
+          "probably_human": 6,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-16",
+          "probably_human": 5,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-17",
+          "probably_human": 24,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-18",
+          "probably_human": 22,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-19",
+          "probably_human": 20,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-20",
+          "probably_human": 88,
+          "page_views_no_country": 740
+        },
+        {
+          "day": "2026-08-21",
+          "probably_human": 59,
+          "page_views_no_country": 780
+        },
+        {
+          "day": "2026-08-22",
+          "probably_human": 132,
+          "page_views_no_country": 636
+        },
+        {
+          "day": "2026-08-23",
+          "probably_human": 21,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-24",
+          "probably_human": 86,
+          "page_views_no_country": 86
+        },
+        {
+          "day": "2026-08-25",
+          "probably_human": 47,
+          "page_views_no_country": 55
+        },
+        {
+          "day": "2026-08-26",
+          "probably_human": 57,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-27",
+          "probably_human": 11,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-28",
+          "probably_human": 42,
+          "page_views_no_country": 14
+        },
+        {
+          "day": "2026-08-29",
+          "probably_human": 46,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-08-30",
+          "probably_human": 113,
+          "page_views_no_country": 127
+        },
+        {
+          "day": "2026-08-31",
+          "probably_human": 166,
+          "page_views_no_country": 169
+        },
+        {
+          "day": "2026-09-01",
+          "probably_human": 33,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-02",
+          "probably_human": 105,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-03",
+          "probably_human": 24,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-04",
+          "probably_human": 52,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-05",
+          "probably_human": 21,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-06",
+          "probably_human": 61,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-07",
+          "probably_human": 75,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-08",
+          "probably_human": 76,
+          "page_views_no_country": 45
+        },
+        {
+          "day": "2026-09-09",
+          "probably_human": 36,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-10",
+          "probably_human": 183,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-11",
+          "probably_human": 168,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-12",
+          "probably_human": 49,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-13",
+          "probably_human": 26,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-14",
+          "probably_human": 67,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-15",
+          "probably_human": 40,
+          "page_views_no_country": 11
+        },
+        {
+          "day": "2026-09-16",
+          "probably_human": 74,
+          "page_views_no_country": 10
+        },
+        {
+          "day": "2026-09-17",
+          "probably_human": 49,
+          "page_views_no_country": 3
+        },
+        {
+          "day": "2026-09-18",
+          "probably_human": 49,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-19",
+          "probably_human": 5,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-20",
+          "probably_human": 4,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-21",
+          "probably_human": 99,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-22",
+          "probably_human": 272,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-23",
+          "probably_human": 203,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-24",
+          "probably_human": 154,
+          "page_views_no_country": 123
+        },
+        {
+          "day": "2026-09-25",
+          "probably_human": 94,
+          "page_views_no_country": 6
+        },
+        {
+          "day": "2026-09-26",
+          "probably_human": 20,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-27",
+          "probably_human": 2,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-28",
+          "probably_human": 42,
+          "page_views_no_country": 25
+        },
+        {
+          "day": "2026-09-29",
+          "probably_human": 63,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-09-30",
+          "probably_human": 36,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-10-01",
+          "probably_human": 66,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-10-02",
+          "probably_human": 19,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-10-03",
+          "probably_human": 43,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-10-04",
+          "probably_human": 7,
+          "page_views_no_country": 0
+        },
+        {
+          "day": "2026-10-05",
+          "probably_human": 18,
+          "page_views_no_country": 1
+        }
+      ]
     }
   },
   "chain": {
@@ -1424,8 +1739,16 @@
       "data": [
         {
           "source": "(diretto / nessuna fonte)",
-          "sessions": 1,
+          "sessions": 6,
           "signup_started": 0,
+          "signup_completed": 0,
+          "profiles": 0,
+          "paying": 0
+        },
+        {
+          "source": "(signup senza sessione)",
+          "sessions": 0,
+          "signup_started": 8,
           "signup_completed": 0,
           "profiles": 0,
           "paying": 0
@@ -1460,18 +1783,10 @@
           "paying": 0
         },
         {
-          "source": "(non registrata)",
-          "sessions": 0,
-          "signup_started": 0,
-          "signup_completed": 0,
-          "profiles": 1,
-          "paying": 0
-        },
-        {
           "source": "(signup senza sessione)",
           "sessions": 0,
-          "signup_started": 11,
-          "signup_completed": 1,
+          "signup_started": 16,
+          "signup_completed": 0,
           "profiles": 0,
           "paying": 0
         }
@@ -1482,7 +1797,7 @@
       "data": [
         {
           "source": "(diretto / nessuna fonte)",
-          "sessions": 388,
+          "sessions": 392,
           "signup_started": 23,
           "signup_completed": 14,
           "profiles": 4,
@@ -1547,7 +1862,7 @@
         {
           "source": "(signup senza sessione)",
           "sessions": 0,
-          "signup_started": 42,
+          "signup_started": 50,
           "signup_completed": 10,
           "profiles": 0,
           "paying": 0

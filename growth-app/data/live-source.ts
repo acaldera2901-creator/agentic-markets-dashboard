@@ -6,14 +6,18 @@
 
 import postgres from "postgres";
 import { type GrowthWindow, WINDOWS } from "@/core/kpi";
-import { type RawExtras, type RawResults, type Result, type Row, normalize } from "@/core/model";
+import { type GrowthData, type RawExtras, type RawResults, type Result, type Row, normalize } from "@/core/model";
 import { mergeChain } from "@/core/channels";
+import { foldInternal } from "@/core/estimate";
 import { coarsenRows } from "@/core/privacy";
 import type { RawSeries } from "@/core/series";
 import { LIST_KEYS, type QueryKey, SCALAR_KEYS, SERIES_KEYS, buildChainSql, buildSeriesSql, buildSql } from "@/core/sql";
+import { ttlCache } from "./cache";
 import type { GrowthSource } from "./source";
 
 const STATEMENT_TIMEOUT_MS = 60_000;
+/** Server cache per window (data/cache.ts): 2 minutes, inside the 60–300 s agreed for #GROWTH-V5. */
+export const LIVE_CACHE_TTL_S = 120;
 
 /** The repo .env keeps DATABASE_URL in SQLAlchemy form; postgres.js needs plain libpq. */
 export function normalizeDbUrl(raw: string | undefined): string {
@@ -29,9 +33,10 @@ export type Sql = ReturnType<typeof postgres>;
 
 export function connect(url: string): Sql {
   // prepare:false — Supabase's pooler (transaction mode) does not keep
-  // prepared statements across transactions. max:2 — the growth_ro role allows
-  // 5 connections in all, shared by every serverless instance.
-  return postgres(normalizeDbUrl(url), { max: 2, prepare: false, connect_timeout: 10, idle_timeout: 5 });
+  // prepared statements across transactions. max:3 — the growth_ro role allows
+  // 5 connections in all, shared by every serverless instance: never more than
+  // 3 per instance (#GROWTH-V5; the cache keeps most loads off the DB).
+  return postgres(normalizeDbUrl(url), { max: 3, prepare: false, connect_timeout: 10, idle_timeout: 5 });
 }
 
 async function readOnly(sql: Sql, query: string): Promise<Result<Row[]>> {
@@ -53,7 +58,8 @@ const KEYS: QueryKey[] = [...SCALAR_KEYS, ...LIST_KEYS];
 function sanitize(raw: RawResults): RawResults {
   if (raw.sources.ok) raw.sources = { ok: true, data: coarsenRows(raw.sources.data, "source", "sessions") };
   if (raw.channels.ok) raw.channels = { ok: true, data: coarsenRows(raw.channels.data, "channel", "n") };
-  if (raw.entries.ok) raw.entries = { ok: true, data: coarsenRows(raw.entries.data, "source", "entries") };
+  // Internal referrers are folded on the RAW host, then everything is coarsened.
+  if (raw.entries.ok) raw.entries = { ok: true, data: coarsenRows(raw.entries.data.map((r): Row => ({ ...r, source: foldInternal(String(r.source)) })), "source", "entries") };
   return raw;
 }
 
@@ -109,13 +115,27 @@ export async function dbNow(sql: Sql): Promise<string> {
   return new Date(r.now as string | Date).toISOString();
 }
 
+/** True when any read of the page failed: such a load is shown but never cached. */
+export function hasFailedRead(d: GrowthData): boolean {
+  const results = Object.values(d).filter((v): v is Result<unknown> => typeof v === "object" && v !== null && "ok" in v);
+  return results.some((r) => !r.ok) || Object.keys(d.trends.errors).length > 0;
+}
+
+type Loaded = Awaited<ReturnType<GrowthSource["load"]>>;
+
 export function liveSource(url: string): GrowthSource {
   const sql = connect(url);
+  const cache = ttlCache<GrowthWindow, Loaded>(LIVE_CACHE_TTL_S * 1000, (v) => !hasFailedRead(v.data));
   return {
-    async load(w) {
-      const asOf = await dbNow(sql);
-      const [raw, extras] = await Promise.all([readRaw(sql, w), readExtras(sql, w, asOf)]);
-      return { data: normalize(w, raw, extras), meta: { kind: "live", asOf, origin: "database di produzione, lettura diretta (sola lettura)" } };
+    load(w) {
+      return cache.get(w, async () => {
+        const asOf = await dbNow(sql);
+        const [raw, extras] = await Promise.all([readRaw(sql, w), readExtras(sql, w, asOf)]);
+        return {
+          data: normalize(w, raw, extras),
+          meta: { kind: "live", asOf, origin: "database di produzione, lettura diretta (sola lettura)", cacheTtlS: LIVE_CACHE_TTL_S },
+        };
+      });
     },
   };
 }

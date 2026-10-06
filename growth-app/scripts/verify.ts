@@ -7,7 +7,19 @@
 // Prints a markdown table; exit code 1 on any mismatch.
 
 import { chainTotals, normalizeChain } from "../core/channels";
-import { BURST_SLOT_SECONDS, type EntryMeta, type HumanEstimate, classifyBuckets, entryLabel } from "../core/estimate";
+import {
+  BURST_MIN,
+  BURST_SLOT_SECONDS,
+  type EntryMeta,
+  type HumanEstimate,
+  NO_COUNTRY_SPIKE_SHARE,
+  NO_SESSION_COUNTRIES,
+  classifyBuckets,
+  entryLabel,
+  foldInternal,
+  noCountrySpike,
+  splitEntries,
+} from "../core/estimate";
 import { PAID_CHANNELS, type GrowthWindow, splitPaying } from "../core/kpi";
 import { normalize } from "../core/model";
 import { coarsenLabel } from "../core/privacy";
@@ -30,6 +42,8 @@ function startExpr(w: GrowthWindow): string {
 }
 const between = (col: string, w: GrowthWindow) => `${col} >= ${startExpr(w)} AND ${col} <= '${T}'::timestamptz`;
 const HAS_SOURCE = ["utm_source", "src", "crm", "ref", "ref_host"].map((k) => `coalesce(meta->>'${k}', '') <> ''`).join(" OR ");
+const HAS_KEY_NO_HOST = ["utm_source", "src", "crm", "ref"].map((k) => `coalesce(meta->>'${k}', '') <> ''`).join(" OR ");
+const LISTED_SQL = NO_SESSION_COUNTRIES.map((c) => `'${c}'`).join(",");
 
 interface Check {
   metric: string;
@@ -63,6 +77,17 @@ function checks(): Check[] {
       { metric: "Page view senza fonte", window: w, page: d.entries.ok && d.traffic.ok ? d.traffic.data.page_views - d.entries.data.reduce((s, r) => s + r.entries, 0) : null, sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)} AND NOT (${HAS_SOURCE})` },
       // v4 — the estimate's simplest class, as a plain count.
       { metric: "Stima: esclusi senza paese", window: w, page: v(d.humanTraffic, (h) => h.excl_no_country), sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)} AND coalesce(country, '') = ''` },
+      // v5 — spike flag (share without country > threshold), computed in SQL with integer arithmetic.
+      { metric: `Avviso picco senza paese (>${NO_COUNTRY_SPIKE_SHARE * 100}%) 1=sì`, window: w, page: v(d.humanTraffic, (h) => (noCountrySpike(h.excl_no_country, h.page_views).spike ? 1 : 0)),
+        sql: `SELECT (count(*) FILTER (WHERE coalesce(country, '') = '') * 10 > ${NO_COUNTRY_SPIKE_SHARE * 10} * count(*))::int FROM events WHERE event_type='page_view' AND ${between("created_at", w)}` },
+      // v5 — internal entries: a regex on the raw host, only when no utm/src/crm/ref (not foldInternal()).
+      { metric: "Ingressi interni (esclusi)", window: w, page: v(d.entries, (rows) => splitEntries(rows).internal),
+        sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)} AND NOT (${HAS_KEY_NO_HOST})
+          AND (lower(meta->>'ref_host') ~ '^betredge-studio[^.]*[.]([^.]+[.])*chatgpt[.]site$' OR lower(meta->>'ref_host') ~ '^betredge[^.]*[.]vercel[.]app$')` },
+      { metric: "Ingressi con fonte esterna (Σ, interni esclusi)", window: w, page: v(d.entries, (rows) => splitEntries(rows).external.reduce((s, r) => s + r.entries, 0)),
+        sql: `SELECT count(*) FROM events WHERE event_type='page_view' AND ${between("created_at", w)} AND (${HAS_SOURCE})
+          AND NOT (NOT (${HAS_KEY_NO_HOST}) AND (lower(meta->>'ref_host') ~ '^betredge-studio[^.]*[.]([^.]+[.])*chatgpt[.]site$' OR lower(meta->>'ref_host') ~ '^betredge[^.]*[.]vercel[.]app$'))` },
+      { metric: "Aperture menu partner", window: w, page: v(d.funnelEvents, (f) => f.partner_menu_open), sql: `SELECT count(*) FROM events WHERE event_type='partner_menu_open' AND ${between("created_at", w)}` },
     );
   }
   const d = normalize("7d", snap.windows["7d"], { asOf: T, series: snap.series, chain: snap.chain?.["7d"] });
@@ -115,6 +140,17 @@ function dailySql(m: SeriesMetric, fromAgo = SERIES_HISTORY_DAYS, toAgo = 0): st
         SELECT ${dayOf("paid_at")} AS day FROM paygate_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")}
         UNION ALL SELECT ${dayOf("paid_at")} FROM paypal_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")}
         UNION ALL SELECT ${dayOf("processed_at")} FROM shopify_events WHERE event_type='orders/paid' AND ${r("processed_at")}) o GROUP BY 1`;
+    case "page_views_no_country":
+      return `SELECT ${dayOf("created_at")} AS day, count(*) AS n FROM events WHERE event_type='page_view' AND coalesce(country, '') = '' AND ${r("created_at")} GROUP BY 1`;
+    case "probably_human":
+      // GROUP BY bucket (country, date_bin slot) instead of the window function of core/sql.ts;
+      // the day of a bucket is the day of its first row (a mismatch would show if a slot crossed midnight).
+      return `SELECT day, sum(h) AS n FROM (
+        SELECT ${dayOf("min(created_at)")} AS day,
+          sum((session_id IS NOT NULL)::int)
+          + CASE WHEN country IN (${LISTED_SQL}) OR sum((session_id IS NULL)::int) >= ${BURST_MIN} THEN 0 ELSE sum((session_id IS NULL)::int) END AS h
+        FROM events WHERE event_type='page_view' AND coalesce(country, '') <> '' AND ${r("created_at")}
+        GROUP BY country, date_bin('${BURST_SLOT_SECONDS} seconds', created_at, timestamptz '1970-01-01 00:00:00+00')) b GROUP BY 1`;
   }
 }
 
@@ -131,6 +167,10 @@ function periodSql(m: SeriesMetric, fromAgo: number, toAgo: number): string {
     case "sessions":
       return `SELECT count(DISTINCT (${dayOf("created_at")}, session_id)) FROM events WHERE event_type='page_view' AND session_id IS NOT NULL AND ${r("created_at")}`;
     case "new_profiles": return `SELECT count(*) FROM profiles WHERE ${r("created_at")}`;
+    case "page_views_no_country":
+      return `SELECT count(*) FROM events WHERE event_type='page_view' AND coalesce(country, '') = '' AND ${r("created_at")}`;
+    case "probably_human":
+      return `SELECT coalesce(sum(n), 0) FROM (${dailySql(m, fromAgo, toAgo)}) x`;
     case "paid_orders":
       return `SELECT (SELECT count(*) FROM paygate_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")})
         + (SELECT count(*) FROM paypal_orders WHERE paid_at IS NOT NULL AND ${r("paid_at")})
@@ -287,7 +327,7 @@ async function v4Checks(tx: Tx): Promise<number> {
     for (const r of keyRows) {
       const l = entryLabel(r as EntryMeta);
       if (l === null) continue;
-      const k = coarsenLabel(l);
+      const k = coarsenLabel(foldInternal(l));
       sqlBy.set(k, (sqlBy.get(k) ?? 0) + Number(r.n));
     }
     const page = new Map((d.entries.ok ? d.entries.data : []).map((r) => [r.source, r.entries]));

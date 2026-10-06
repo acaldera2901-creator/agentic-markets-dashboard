@@ -2,6 +2,7 @@
 // Presentational only: receives the normalized series (or nothing) and renders.
 
 import type { ReactNode } from "react";
+import { HUMAN_FILTER_CRITERIA, NO_COUNTRY_SPIKE_SHARE, noCountrySpike } from "@/core/estimate";
 import type { GrowthData } from "@/core/model";
 import {
   ANOMALY_BASELINE_DAYS,
@@ -53,12 +54,15 @@ function AnomalyNote({ a }: { a: Anomaly }) {
   );
 }
 
-function Shell({ n, children }: { n: number; children: ReactNode }) {
+const pct = (r: number) => `${(r * 100).toFixed(0)}%`;
+
+function Shell({ n, headline, children }: { n: number; headline: ReactNode; children: ReactNode }) {
   return (
     <section className="space-y-3">
-      <div className="flex items-baseline gap-3 border-b border-gray-800 pb-2">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-800 pb-2">
         <h2 className="text-white font-semibold">Andamento giornaliero</h2>
         <span className="text-gray-500 text-xs">ultimi {n} giorni interi vs i {n} precedenti</span>
+        {headline}
       </div>
       {children}
     </section>
@@ -74,10 +78,32 @@ export function Trends({ data }: { data: GrowthData }) {
     if (!v) return { m, v: null, c: null, an: [] as Anomaly[] };
     return { m, v, c: compare(v, n), an: anomalies(v, s.days, n) };
   });
+  const cur = (k: string) => rows.find((r) => r.m.key === k)?.c?.current ?? null;
+  const human = cur("probably_human");
+  const raw = cur("page_views");
+  const noCountry = cur("page_views_no_country");
+  const spike = raw !== null && noCountry !== null ? noCountrySpike(noCountry, raw) : null;
+
+  const headline = (
+    <span className="text-xs text-gray-300">
+      Page view ultimi {n}g: <span className="font-semibold text-white tabular-nums">{human === null ? "n/d" : fmtInt(human)}</span> probabilmente umani{" "}
+      <span className="text-[10px] font-semibold tracking-wider px-1 py-0.5 rounded border bg-amber-950 text-amber-300 border-amber-800">STIMATO</span>
+      <span className="text-gray-500"> · {raw === null ? "n/d" : fmtInt(raw)} grezzi </span>
+      <span className="text-[10px] font-semibold tracking-wider px-1 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800">MISURATO</span>
+    </span>
+  );
 
   return (
-    <Shell n={n}>
+    <Shell n={n} headline={headline}>
+      {spike?.spike && (
+        <div role="alert" className="bg-amber-950 border border-amber-600 rounded-xl px-4 py-2 text-sm text-amber-200">
+          Picco anomalo, controllare prima di leggere i totali: {pct(spike.share!)} dei page view degli ultimi {n} giorni è senza paese (soglia{" "}
+          {pct(NO_COUNTRY_SPIKE_SHARE)}).
+        </div>
+      )}
       <p className="text-gray-500 text-[11px] leading-snug">
+        I page view grezzi contengono anche crawler, job sintetici e traffico senza paese: per le persone leggi la riga «probabilmente umani»
+        (STIMATO, stesso criterio della tile in Acquisition: {HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}). Il grezzo resta accanto.{" "}
         Giorni di calendario nel fuso Europe/Rome, dal {fmtDay(shown[0])} al {fmtDay(shown[shown.length - 1])}; oggi è escluso perché
         parziale. Un giorno senza eventi vale 0 solo se la lettura è riuscita: se la query fallisce la riga resta vuota.
         Con un periodo precedente sotto {SMALL_SAMPLE_BASE} eventi c&apos;è solo il delta assoluto (campione piccolo). Anomalia = giorno oltre{" "}
@@ -102,6 +128,9 @@ export function Trends({ data }: { data: GrowthData }) {
                 <td className="py-2 pr-3 text-gray-300 whitespace-nowrap">
                   {m.label}
                   {m.key === "sessions" && <div className="text-[10px] text-gray-500">somma delle sessioni di ogni giorno</div>}
+                  {m.key === "probably_human" && <div className="text-[10px] text-amber-300">STIMATO · esclusi senza paese, paesi senza sessioni, raffiche</div>}
+                  {m.key === "page_views" && <div className="text-[10px] text-gray-500">MISURATO · crawler e senza paese inclusi</div>}
+                  {m.key === "page_views_no_country" && <div className="text-[10px] text-gray-500">test locali, job sintetici o crawler</div>}
                 </td>
                 {v && c ? (
                   <>

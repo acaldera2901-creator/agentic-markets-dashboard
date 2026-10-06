@@ -41,6 +41,7 @@ describe("days without data", () => {
         seriesEvents: ok([{ day: "2026-10-03", page_views: 12, sessions: 5, signup_started: 1, signup_completed: 0, partner_click: 0, client_error: 2 }]),
         seriesProfiles: ok([]),
         seriesOrders: ok([{ day: "2026-08-06", paid_orders: 1 }]),
+        seriesHuman: ok([{ day: "2026-10-03", probably_human: 4, page_views_no_country: 6 }]),
       },
       asOf,
     );
@@ -50,11 +51,13 @@ describe("days without data", () => {
     expect(pv[pv.length - 2]).toBe(12);
     expect(s.values.new_profiles!.every((x) => x === 0)).toBe(true);
     expect(s.values.paid_orders![0]).toBe(1);
+    expect(s.values.probably_human![pv.length - 2]).toBe(4);
+    expect(s.values.page_views_no_country![pv.length - 2]).toBe(6);
   });
 
   it("a failed query leaves its metrics empty (null), never 0", () => {
     const s = normalizeSeries(
-      { seriesEvents: { ok: false, error: "lettura fallita" }, seriesProfiles: ok([]), seriesOrders: ok([]) },
+      { seriesEvents: { ok: false, error: "lettura fallita" }, seriesProfiles: ok([]), seriesOrders: ok([]), seriesHuman: ok([]) },
       asOf,
     );
     expect(s.values.page_views).toBeNull();
@@ -64,7 +67,7 @@ describe("days without data", () => {
   });
 
   it("a day outside the expected range fails the metric instead of being dropped", () => {
-    const s = normalizeSeries({ seriesEvents: ok([]), seriesProfiles: ok([{ day: "2026-10-05", new_profiles: 3 }]), seriesOrders: ok([]) }, asOf);
+    const s = normalizeSeries({ seriesEvents: ok([]), seriesProfiles: ok([{ day: "2026-10-05", new_profiles: 3 }]), seriesOrders: ok([]), seriesHuman: ok([]) }, asOf);
     expect(s.values.new_profiles).toBeNull(); // 5 Oct is "today" for this asOf
     expect(s.errors.new_profiles).toMatch(/giorno inatteso/);
   });

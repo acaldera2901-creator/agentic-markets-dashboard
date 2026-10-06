@@ -95,6 +95,21 @@ export function formatPct(r: number | null, digits = 1): string | null {
   return r === null ? null : `${(r * 100).toFixed(digits)}%`;
 }
 
+/**
+ * A part-of-whole percentage that can never read above 100%: when num > den the
+ * two counters disagree (incomplete tracking), so the text says so instead of a
+ * number. Denominator 0 → "n/d".
+ */
+export function formatShare(num: number, den: number, overReason: string, digits = 0): string {
+  const r = ratio(num, den);
+  if (r === null) return "n/d";
+  if (r > 1) return `n/d (${overReason})`;
+  return formatPct(r, digits)!;
+}
+
+/** Uniform forecast (1/3 to each outcome): Brier summed over the 3 outcomes = (2/3)² + 2·(1/3)² = 0.667. */
+export const BRIER_UNIFORM_3WAY = 2 / 3;
+
 export function formatAge(seconds: number | null): string | null {
   if (seconds === null || !Number.isFinite(seconds)) return null;
   const s = Math.max(0, Math.floor(seconds));

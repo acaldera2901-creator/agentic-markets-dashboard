@@ -201,7 +201,7 @@ const ROME_DAY0 = `((date_trunc('day', now() AT TIME ZONE 'Europe/Rome') - inter
 const romeDay = (col: string) => `to_char((${col} AT TIME ZONE 'Europe/Rome')::date, 'YYYY-MM-DD')`;
 const seriesRange = (col: string) => `${col} >= ${ROME_DAY0} AND ${col} < ${ROME_TODAY0}`;
 
-export const SERIES_KEYS = ["seriesEvents", "seriesProfiles", "seriesOrders"] as const;
+export const SERIES_KEYS = ["seriesEvents", "seriesProfiles", "seriesOrders", "seriesHuman"] as const;
 export type SeriesQueryKey = (typeof SERIES_KEYS)[number];
 
 /**
@@ -235,6 +235,22 @@ export function buildSeriesSql(): Record<SeriesQueryKey, string> {
         UNION ALL
         SELECT ${romeDay("processed_at")} FROM shopify_events WHERE event_type = 'orders/paid' AND ${seriesRange("processed_at")}) o
       GROUP BY 1 ORDER BY 1`,
+
+    // ESTIMATE per day, same rule as humanTraffic (core/estimate.ts). A fixed
+    // 10-minute slot never crosses a Rome midnight (whole-hour UTC offset), so
+    // the burst of a slot belongs to one day.
+    seriesHuman: `WITH pv AS (
+        SELECT created_at, nullif(country, '') AS country, session_id IS NULL AS no_sid,
+          floor(extract(epoch FROM created_at) / ${BURST_SLOT_SECONDS})::bigint AS slot
+        FROM events WHERE event_type = 'page_view' AND ${seriesRange("created_at")}),
+      c AS (
+        SELECT created_at, country, no_sid, country IN (${NO_SESSION_COUNTRIES_SQL}) AS listed,
+          count(*) FILTER (WHERE no_sid) OVER (PARTITION BY country, slot) AS burst_n
+        FROM pv)
+      SELECT ${romeDay("created_at")} AS day,
+        count(*) FILTER (WHERE country IS NOT NULL AND NOT (no_sid AND (listed OR burst_n >= ${BURST_MIN})))::int AS probably_human,
+        count(*) FILTER (WHERE country IS NULL)::int AS page_views_no_country
+      FROM c GROUP BY 1 ORDER BY 1`,
   };
 }
 

@@ -5,6 +5,7 @@
 
 import type { ReactNode } from "react";
 import {
+  BRIER_UNIFORM_3WAY,
   type Family,
   type GrowthWindow,
   type KpiStatus,
@@ -12,13 +13,14 @@ import {
   WINDOWS,
   formatAge,
   formatPct,
+  formatShare,
   funnelLinks,
   proxyTile,
   ratio,
   splitPaying,
   windowLabel,
 } from "@/core/kpi";
-import { HUMAN_FILTER_CRITERIA } from "@/core/estimate";
+import { type EntryRow, HUMAN_FILTER_CRITERIA, INTERNAL_REFERRER_RULE, NO_COUNTRY_SPIKE_SHARE, noCountrySpike, splitEntries } from "@/core/estimate";
 import type { GrowthData, Result, SourceMeta } from "@/core/model";
 import { Channels } from "./sections/Channels";
 import { Trends } from "./sections/Trends";
@@ -131,6 +133,7 @@ function SmallTable<T>({
   rows,
   cols,
   empty,
+  footer,
 }: {
   title: string;
   status: KpiStatus;
@@ -138,6 +141,8 @@ function SmallTable<T>({
   rows: Result<T[]>;
   cols: { h: string; get: (r: T) => string | number; right?: boolean }[];
   empty: string;
+  /** Shown under the table when the read succeeded (e.g. rows excluded from it, with the rule). */
+  footer?: ReactNode;
 }) {
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
@@ -170,6 +175,7 @@ function SmallTable<T>({
           </tbody>
         </table>
       )}
+      {rows.ok && footer}
     </div>
   );
 }
@@ -202,24 +208,26 @@ const ENTRY_ROWS_SHOWN = 20;
 
 function entriesTile(d: GrowthData, window: string): TileProps {
   return fromResult(d.entries, "Ingressi con fonte", window, (rows) => {
-    const withSource = rows.reduce((s, r) => s + r.entries, 0);
+    const { external, internal } = splitEntries(rows);
+    const withSource = external.reduce((s, r) => s + r.entries, 0);
     const pv = d.traffic.ok ? d.traffic.data.page_views : null;
-    const noSource = pv === null ? null : pv - withSource;
+    const noSource = pv === null ? null : pv - withSource - internal;
     return {
       status: "LIVE",
       value: fmtInt(withSource),
       sub:
-        noSource === null
+        (noSource === null
           ? "page view senza fonte: n/d (lettura dei page view fallita)"
-          : `page view senza nessuna fonte: ${fmtInt(noSource)} su ${fmtInt(pv!)} (${formatPct(ratio(noSource, pv!), 0) ?? "n/d"})`,
-      caveat:
-        "Page view d'ingresso con utm_source, src, crm, ref o referrer esterno (ridotto al dominio), registrati anche senza consenso. Conta pagine d'ingresso, non persone: una ricarica conta due volte, crawler e test inclusi. La quota senza fonte è sui page view, non sugli ingressi: un ingresso diretto non si distingue da una pagina successiva (il tracker non marca l'ingresso), quindi è un limite superiore.",
+          : `page view senza nessuna fonte: ${fmtInt(noSource)} su ${fmtInt(pv!)} (${formatPct(ratio(noSource, pv!), 0) ?? "n/d"})`) +
+        ` · interni (esclusi): ${fmtInt(internal)}`,
+      caveat: `Page view d'ingresso con utm_source, src, crm, ref o referrer esterno (ridotto al dominio), registrati anche senza consenso. Conta pagine d'ingresso, non persone: una ricarica conta due volte, crawler e test inclusi. Esclusi gli ingressi da nostre anteprime: ${INTERNAL_REFERRER_RULE}. La quota senza fonte è sui page view, non sugli ingressi: un ingresso diretto non si distingue da una pagina successiva (il tracker non marca l'ingresso), quindi è un limite superiore.`,
     };
   });
 }
 
 /** Top rows, the rest summed in one explicit row (the total never changes). */
-function topEntries(r: Result<{ source: string; entries: number }[]>): Result<{ source: string; entries: number }[]> {
+function topEntries(all: Result<EntryRow[]>): Result<EntryRow[]> {
+  const r: Result<EntryRow[]> = all.ok ? { ok: true, data: splitEntries(all.data).external } : all;
   if (!r.ok || r.data.length <= ENTRY_ROWS_SHOWN) return r;
   const rest = r.data.slice(ENTRY_ROWS_SHOWN - 1);
   return {
@@ -243,6 +251,8 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
 
   // Share of page_views without session_id in THIS window (measured, not assumed).
   const noSessShare = d.traffic.ok ? formatPct(ratio(d.traffic.data.page_views_no_session, d.traffic.data.page_views), 0) : null;
+  // Page views without country in THIS window: above NO_COUNTRY_SPIKE_SHARE the totals are flagged.
+  const spike = d.humanTraffic.ok ? noCountrySpike(d.humanTraffic.data.excl_no_country, d.humanTraffic.data.page_views) : null;
   const sessCaveat = `Solo traffico con consenso GDPR: ${noSessShare ?? "una parte"} dei page_view nella finestra non ha session_id e non è contato qui.`;
 
   // ── Funnel ──
@@ -261,20 +271,20 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
 
   // ── Acquisition ──
   const acquisition: TileProps[] = [
-    fromResult(d.traffic, "Page view", W, (t) => ({
-      status: "LIVE",
-      value: fmtInt(t.page_views),
-      sub: `${fmtInt(t.page_views_no_session)} senza session_id (${noSessShare ?? "n/d"})`,
-      caveat: "Tutti i page_view registrati, con e senza consenso.",
-    })),
     fromResult(d.humanTraffic, "Page view probabilmente umani", W, (h) => ({
       status: "PROXY",
       badge: "STIMATO",
       value: fmtInt(h.probably_human),
       sub: `su ${fmtInt(h.page_views)} grezzi · esclusi: ${fmtInt(h.excl_no_country)} senza paese, ${fmtInt(h.excl_country)} da paesi senza sessioni, ${fmtInt(h.excl_burst)} in raffica`,
-      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Il numero grezzo resta nel riquadro «Page view».`,
+      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Il numero grezzo resta nel riquadro «Page view (grezzi)».`,
       needs: "user-agent letto (senza salvarlo) e filtro bot in /api/track — leva 2 di #SESSIONI-1006",
       owner: "Calde",
+    })),
+    fromResult(d.traffic, "Page view (grezzi)", W, (t) => ({
+      status: "LIVE",
+      value: fmtInt(t.page_views),
+      sub: `${fmtInt(t.page_views_no_session)} senza session_id (${noSessShare ?? "n/d"})${spike?.share != null ? ` · ${formatPct(spike.share, 0)} senza paese` : ""}`,
+      caveat: "Tutti i page_view registrati, con e senza consenso: crawler, job sintetici e traffico senza paese inclusi. Il numero da leggere per le persone è «Page view probabilmente umani» (STIMATO).",
     })),
     entriesTile(d, W),
     proxy("Sessioni", W, d.traffic, (t) => ({ value: fmtInt(t.sessions), caveat: `Tutte le fonti, non solo l'organico. ${sessCaveat}` })),
@@ -394,8 +404,8 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
     fromResult(d.funnelEvents, "Click partner (affiliate)", W, (f) => ({
       status: "LIVE",
       value: fmtInt(f.partner_click),
-      sub: `${fmtInt(f.partner_menu_open)} aperture menu · ${formatPct(ratio(f.partner_click, f.partner_menu_open), 0) ?? "n/d"} click/aperture`,
-      caveat: "Solo click in uscita: le conversioni del partner non tornano a noi. I click possono arrivare anche fuori dal menu.",
+      sub: `${fmtInt(f.partner_menu_open)} aperture menu · click/aperture: ${formatShare(f.partner_click, f.partner_menu_open, "click > aperture: tracking incompleto")}`,
+      caveat: "Solo click in uscita: le conversioni del partner non tornano a noi. I click possono arrivare anche fuori dal menu (o l'apertura non essere registrata), quindi il rapporto click/aperture non viene mai mostrato sopra il 100%: in quel caso è n/d.",
     })),
     ...missingTiles("revenue"),
   ];
@@ -414,8 +424,8 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
     fromResult(d.calibration, "Brier (servito)", "ultimi 20.000 pronostici chiusi", (c) => ({
       status: "LIVE",
       value: c.brier === null ? null : c.brier.toFixed(4),
-      sub: `n = ${fmtInt(c.n)} · più basso è meglio`,
-      caveat: "Stessa definizione di /api/research/calibration (blocco served). Non dipende dalla finestra selezionata.",
+      sub: `n = ${fmtInt(c.n)} · somma sui 3 esiti (casa/pareggio/trasferta), scala 0–2 · riferimento «1/3 a ogni esito» = ${BRIER_UNIFORM_3WAY.toLocaleString("it-IT", { maximumFractionDigits: 3 })} · più basso è meglio`,
+      caveat: "Stessa definizione di /api/research/calibration (blocco served): per ogni pronostico la somma dei quadrati degli errori sui 3 esiti, poi la media. Non dipende dalla finestra selezionata.",
     })),
     fromResult(d.calibration, "ECE (servito)", "ultimi 20.000 pronostici chiusi", (c) => ({
       status: "LIVE",
@@ -483,7 +493,10 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           {!isSnapshot && (
             <div className="text-right">
               <div className="text-gray-300 text-xs">Ultimo aggiornamento: <span className="font-semibold">{updated}</span></div>
-              <div className="text-gray-500 text-[11px]">letto dal DB a questo caricamento · <a href={hrefFor(w)} className="underline hover:text-white">ricarica</a></div>
+              <div className="text-gray-500 text-[11px]">
+                {meta.cacheTtlS ? `lettura dal DB riusata fino a ${meta.cacheTtlS / 60} min` : "letto dal DB a questo caricamento"} ·{" "}
+                <a href={hrefFor(w)} className="underline hover:text-white">ricarica</a>
+              </div>
             </div>
           )}
         </div>
@@ -505,7 +518,9 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           <div className="max-w-7xl mx-auto flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="text-emerald-200 font-bold text-base">Lettura diretta del database alle {updated} (ora di Roma)</span>
             <span className="text-emerald-300/80 text-xs">
-              I numeri sono letti a ogni caricamento della pagina, in sola lettura: ricarica per aggiornarli. Le finestre (Oggi / 7 / 30 giorni) contano all&apos;indietro da quell&apos;istante. Fonte: {meta.origin}.
+              {meta.cacheTtlS
+                ? `I numeri sono letti in sola lettura e la stessa lettura viene riusata per ${meta.cacheTtlS / 60} minuti, finestra per finestra: ricaricando prima vedi la stessa ora; dopo, una lettura nuova.`
+                : "I numeri sono letti a ogni caricamento della pagina, in sola lettura: ricarica per aggiornarli."} Le finestre (Oggi / 7 / 30 giorni) contano all&apos;indietro da quell&apos;istante. Fonte: {meta.origin}.
             </span>
           </div>
         </div>
@@ -518,6 +533,19 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           <span><StatusBadge s="MANCA" /> il dato non esiste ancora: niente numero ({counts.MANCA})</span>
           {counts.ERRORE > 0 && <span><StatusBadge s="ERRORE" /> lettura fallita ({counts.ERRORE})</span>}
         </div>
+
+        {spike?.spike && d.humanTraffic.ok && (
+          <div role="alert" className="bg-amber-950 border border-amber-600 rounded-xl px-4 py-3">
+            <div className="text-amber-200 font-semibold text-sm">
+              Picco anomalo, controllare prima di leggere i totali: {formatPct(spike.share, 0)} dei page view ({W}) è senza paese
+            </div>
+            <div className="text-amber-300/80 text-xs leading-snug mt-0.5">
+              {fmtInt(d.humanTraffic.data.excl_no_country)} su {fmtInt(d.humanTraffic.data.page_views)}, soglia {formatPct(NO_COUNTRY_SPIKE_SHARE, 0)}. Senza paese =
+              test locali, job sintetici o crawler: la causa non è determinabile dai dati. Sono esclusi dai «probabilmente umani» ma inclusi in ogni conteggio grezzo
+              (page view, ingressi, eventi).
+            </div>
+          </div>
+        )}
 
         <Section title="Funnel" hint={`visitatore → signup → pagante · ${W}`}>
           {!funnelOk ? (
@@ -538,6 +566,8 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
                       <div className="text-xs mt-1 text-amber-300">
                         {links[i - 1].rate === null ? (
                           <span className="text-gray-400">n/d — il passo precedente è 0</span>
+                        ) : links[i - 1].rate! > 1 ? (
+                          <span className="text-gray-400">n/d — passo più grande del precedente (unità diverse o tracking incompleto)</span>
                         ) : (
                           <>{formatPct(links[i - 1].rate)} <span className="text-gray-500">dal passo precedente</span></>
                         )}
@@ -554,7 +584,14 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           )}
         </Section>
 
-        <Section title="Acquisition" hint="da dove arrivano">
+        <Section
+          title="Acquisition"
+          hint={
+            d.humanTraffic.ok
+              ? `da dove arrivano · ${W}: ${fmtInt(d.humanTraffic.data.probably_human)} page view probabilmente umani (STIMATO) · ${fmtInt(d.humanTraffic.data.page_views)} grezzi (MISURATO)`
+              : "da dove arrivano"
+          }
+        >
           <TileGrid tiles={acquisition} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <SmallTable
@@ -572,6 +609,17 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
               rows={topEntries(d.entries)}
               cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Ingressi", get: (r) => fmtInt(Number(r.entries)), right: true }]}
               empty="Nessun page view d'ingresso con fonte nella finestra."
+              footer={
+                d.entries.ok && (
+                  <div className="border-t border-gray-700 mt-1 pt-1.5">
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>interni (esclusi)</span>
+                      <span className="tabular-nums">{fmtInt(splitEntries(d.entries.data).internal)}</span>
+                    </div>
+                    <div className="text-[11px] text-gray-500 leading-snug">Non sommati sopra: {INTERNAL_REFERRER_RULE}.</div>
+                  </div>
+                )
+              }
             />
             <SmallTable
               title="Nuovi signup per canale"

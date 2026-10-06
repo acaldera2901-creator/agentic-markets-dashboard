@@ -34,6 +34,8 @@ export interface SourceMeta {
   asOf: string;
   /** Human description of the origin, shown in the page. */
   origin: string;
+  /** LIVE only: the same read is served for up to this many seconds (per window, per server instance). */
+  cacheTtlS?: number;
 }
 
 export interface Freshness {
