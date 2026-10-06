@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { TOOL_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
 import { listPublishedPosts } from "@/lib/blog";
 import { GENERATED_AT, LAST_MODIFIED } from "@/lib/seo/last-modified.generated";
+import { envFlagOn } from "@/lib/redesign-flag";
 
 // #BLOG-SSR-0814: la sitemap ora legge i post published dal DB → ISR oraria,
 // altrimenti resterebbe congelata al build e un publish senza deploy non
@@ -38,7 +39,8 @@ const PUBLIC_ROUTES: Entry[] = [
   // #RESTYLING-0921 round 2: la vecchia landing vive qui, ora che "/" porta
   // direttamente nel prodotto. Contenuto informativo → weekly, non daily.
   { path: "/how-it-works", changeFrequency: "weekly" },
-  { path: "/plans", changeFrequency: "weekly" },
+  // #REDESIGN-V3C pages: a flag acceso /plans è un 308 verso /pricing → in sitemap la URL finale.
+  { path: envFlagOn(process.env.NEXT_PUBLIC_REDESIGN) ? "/pricing" : "/plans", changeFrequency: "weekly" },
   { path: "/history", changeFrequency: "daily" },
   // #SEO-PACK-0810: pillar UK (brief 06) — contenuto statico, weekly.
   { path: "/ai-tennis-predictions", changeFrequency: "weekly" },

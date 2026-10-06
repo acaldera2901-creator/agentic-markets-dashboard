@@ -71,7 +71,7 @@ function Inner({ mode, toggle, current, children }: { mode: V3cMode; toggle: () 
               </Link>
             ))}
             <Link href="/blog">{t.nav.news}</Link>
-            <Link href="/plans">{t.nav.pro}</Link>
+            <Link href="/pricing">{t.nav.pro}</Link>
           </nav>
           <div className="v3c-top-r">
             <ThemeToggle mode={mode} onToggle={toggle} />

@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 import { v3cRewrites } from "./lib/v3c/rewrites";
+import { v3cRedirects } from "./lib/v3c/redirects";
+import { mergeBeforeFiles, v3cPagesRewrites } from "./lib/v3c/pages-routes";
 
 // Security headers (#SEC-HARDENING michele-side, pending Andrea review/deploy).
 // Applied to every response. CSP shipped in Report-Only from #SEC-HARDENING
@@ -87,13 +89,16 @@ const nextConfig: NextConfig = {
     return [
       { source: "/weekly-pick", destination: "/weekly-model-case", permanent: true },
       { source: "/match-builder", destination: "/probability-view", permanent: true },
+      // #REDESIGN-V3C pages: /plans → /pricing (308) solo a flag acceso; spento è [].
+      ...v3cRedirects(process.env.NEXT_PUBLIC_REDESIGN),
     ];
   },
   // #REDESIGN-V3C F3: con NEXT_PUBLIC_REDESIGN acceso "/" e "/predictions"
   // servono la board v3c (app/v3c/*) senza cambiare URL; spento la lista è
   // vuota e le due pagine restano quelle di sempre, statiche, byte per byte.
   async rewrites() {
-    return v3cRewrites(process.env.NEXT_PUBLIC_REDESIGN);
+    // #REDESIGN-V3C pages: + News/Books/Pro/Metodo/community/legali (lib/v3c/pages-routes.ts), stesse regole.
+    return mergeBeforeFiles(v3cRewrites(process.env.NEXT_PUBLIC_REDESIGN), v3cPagesRewrites(process.env.NEXT_PUBLIC_REDESIGN));
   },
   async headers() {
     return [
