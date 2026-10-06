@@ -338,7 +338,7 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `record.state.emptyBody` | «The record starts with the first estimate sealed before a kick-off.» |
 | `record.limited` | «limited sample» |
 
-## fidelity (#REDESIGN-V3C fidelity) — chiavi nuove, EN+IT complete, le altre 9 lingue in fallback EN
+## fidelity (#REDESIGN-V3C fidelity) — chiavi nuove, tradotte in tutte le 11 lingue (v3c-final; parità: `lib/v3c/i18n-parity.test.ts`)
 
 | chiave | EN |
 |---|---|
@@ -351,3 +351,6 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `yday.observed` | «Observed» |
 | `yday.brierEstimate` | «Brier · estimate» |
 | `yday.brierMarket` | «fn: Brier · market · n {n}» |
+| `match.chartSealed` | «fn: Sealed · {time}» (`lib/v3c/match-copy.ts`) |
+
+v3c-final: anche `board.shownOf` / `board.showMore` (live) sono tradotte nelle 11 lingue; `toolbar.homeHorizon` è stata rimossa (live: i chip della home contano tutta la finestra).
