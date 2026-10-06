@@ -29,7 +29,7 @@ export function BenchTool({ sigla, name, line, href, example, variant = "bench",
   const out = ["v3c-out", "v3c-num", example.flat ? "v3c-g-flat" : null, example.market ? "v3c-m" : null].filter(Boolean).join(" ");
   return (
     <a className={cls} href={href} data-tool={slug}>
-      <ToolMark sigla={sigla} name={name} />
+      <ToolMark sigla={sigla} name={name} slug={slug} />
       <span className="v3c-tr-t">
         <b className="v3c-t-row">{name}</b>
         <span className="v3c-tr-l">{line}</span>

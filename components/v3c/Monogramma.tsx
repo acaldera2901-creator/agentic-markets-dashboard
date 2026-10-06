@@ -39,14 +39,35 @@ export function Monogrammi({ home, away, size = "sm" }: { home: TeamIdentity; aw
   );
 }
 
-type ToolProps = { sigla: string; name: string; size?: Size; className?: string };
+type ToolProps = { sigla: string; name: string; size?: Size; className?: string; slug?: string };
 
-/** Il cartellino tool: sigla della formula (EV, f*, Σ%), banda royal. */
-export function ToolMark({ sigla, name, size = "sm", className }: ToolProps) {
-  const cls = ["v3c-mg", "v3c-mg-tool", size === "lg" ? "v3c-mg-lg" : null, className].filter(Boolean).join(" ");
+/** polish: le 11 icone tool del kit (redesign/brand/icons/svg, svgo), al posto della sigla scritta. */
+export const TOOL_ICON: Readonly<Record<string, string>> = {
+  "odds-converter": "tool-odds-converter",
+  "margin-calculator": "tool-margin",
+  "ev-calculator": "tool-ev",
+  "kelly-criterion": "tool-kelly",
+  "probability-calculator": "tool-probability",
+  "arbitrage-calculator": "tool-arbitrage",
+  "parlay-calculator": "tool-parlay",
+  "roi-calculator": "tool-roi",
+  "yield-calculator": "tool-yield",
+  "stake-calculator": "tool-stake",
+  "bankroll-calculator": "tool-bankroll",
+};
+
+/** Un'icona del kit come maschera CSS: prende il colore del testo. */
+export function KitIcon({ name, className }: { name: string; className?: string }) {
+  return <i className={["v3c-ico", className].filter(Boolean).join(" ")} style={{ "--ico": `url(/brand/v3c/icons/${name}.svg)` } as React.CSSProperties} aria-hidden="true" />;
+}
+
+/** Il cartellino tool: l'icona del kit (o, senza icona, la sigla della formula), banda royal. */
+export function ToolMark({ sigla, name, size = "sm", className, slug }: ToolProps) {
+  const icon = slug ? TOOL_ICON[slug] : undefined;
+  const cls = ["v3c-mg", "v3c-mg-tool", icon ? "v3c-mg-ico" : null, size === "lg" ? "v3c-mg-lg" : null, className].filter(Boolean).join(" ");
   return (
     <span className={cls} title={name} aria-hidden="true">
-      <b>{sigla}</b>
+      {icon ? <KitIcon name={icon} /> : <b>{sigla}</b>}
       <i />
     </span>
   );

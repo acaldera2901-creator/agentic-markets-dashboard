@@ -103,10 +103,14 @@ export function HubBench({ groups, line, total, matchTitle, sample, copy }: Prop
               <span className="v3c-tr-l">{line.match.line}</span>
             </span>
             <span className="v3c-tr-ex">
-              <span className="v3c-in">{line.match.input}</span>
-              <span className="v3c-arr" aria-hidden="true">
-                →
-              </span>
+              {line.match.input ? (
+                <>
+                  <span className="v3c-in">{line.match.input}</span>
+                  <span className="v3c-arr" aria-hidden="true">
+                    →
+                  </span>
+                </>
+              ) : null}
               <span className="v3c-out v3c-num">{line.match.output}</span>
             </span>
             <i className="v3c-chev" aria-hidden="true">

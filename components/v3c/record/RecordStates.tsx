@@ -5,15 +5,16 @@
 // «riprova», il vuoto prima del primo sigillo.
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { BrandLoader, StateArt } from "../States";
 import { useRecordCopy } from "./useRecordCopy";
 
 export function RecordSkeleton() {
   const { t } = useRecordCopy();
   return (
     <div className="v3c-skel" aria-busy="true">
-      <span className="v3c-sr" role="status">
-        {t.state.loading}
-      </span>
+      <div className="v3c-load-row">
+        <BrandLoader label={t.state.loading} />
+      </div>
       <div className="v3c-rec-kpi" aria-hidden="true">
         {[0, 1, 2].map((i) => (
           <div key={i}>
@@ -50,22 +51,23 @@ export function RecordError() {
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
-    <section className="v3c-error v3c-rec-state" role="alert">
-      <p className="v3c-t-row">{t.state.errorTitle}</p>
-      <p className="v3c-small">{t.state.errorBody}</p>
-      <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" disabled={pending} onClick={() => start(() => router.refresh())}>
-        {pending ? `${t.state.loading}…` : t.state.retry}
-      </button>
-    </section>
+    <StateArt
+      kind="500"
+      role="alert"
+      title={t.state.errorTitle}
+      body={t.state.errorBody}
+      action={
+        <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" disabled={pending} onClick={() => start(() => router.refresh())}>
+          {pending ? `${t.state.loading}…` : t.state.retry}
+        </button>
+      }
+    />
   );
 }
 
 export function RecordEmpty() {
   const { t } = useRecordCopy();
   return (
-    <section className="v3c-empty v3c-rec-state">
-      <p className="v3c-t-row">{t.state.empty}</p>
-      <p className="v3c-small">{t.state.emptyBody}</p>
-    </section>
+    <StateArt kind="empty" title={t.state.empty} body={t.state.emptyBody} />
   );
 }

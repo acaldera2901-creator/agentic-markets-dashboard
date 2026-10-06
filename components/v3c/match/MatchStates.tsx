@@ -8,17 +8,18 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useV3cCopy } from "@/lib/v3c/lang.client";
 import { matchCopyFor } from "@/lib/v3c/match-copy";
-import { Fascia } from "../Fascia";
 import { V3C_ROUTES } from "../V3cChrome";
+import { Arrow } from "../Arrow";
+import { BrandLoader, StateArt } from "../States";
 
 export function MatchSkeleton({ label }: { label?: "match" | "pc" }) {
   const { lang } = useV3cCopy();
   const c = matchCopyFor(lang);
   return (
     <div className="v3c-mt-skel" aria-busy="true">
-      <span className="v3c-sr" role="status">
-        {label === "pc" ? c.pc.loading : c.loading}
-      </span>
+      <div className="v3c-load-row">
+        <BrandLoader label={label === "pc" ? c.pc.loading : c.loading} />
+      </div>
       <i style={{ height: 112, background: "var(--v3c-navy)" }} aria-hidden="true" />
       <i style={{ width: "40%" }} aria-hidden="true" />
       <i style={{ height: 96, width: "70%" }} aria-hidden="true" />
@@ -35,13 +36,17 @@ export function MatchError() {
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
-    <section className="v3c-mt-state" role="alert">
-      <p className="v3c-t-sec">{c.errorTitle}</p>
-      <p className="v3c-small">{c.errorBody}</p>
-      <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" disabled={pending} onClick={() => start(() => router.refresh())}>
-        {pending ? c.loading : c.retry}
-      </button>
-    </section>
+    <StateArt
+      kind="500"
+      role="alert"
+      title={c.errorTitle}
+      body={c.errorBody}
+      action={
+        <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" disabled={pending} onClick={() => start(() => router.refresh())}>
+          {pending ? c.loading : c.retry}
+        </button>
+      }
+    />
   );
 }
 
@@ -49,14 +54,16 @@ export function MatchNotFound() {
   const { lang } = useV3cCopy();
   const c = matchCopyFor(lang);
   return (
-    <>
-      <Fascia tab={c.notFoundTab} title={c.notFoundTitle} />
-      <section className="v3c-mt-state">
-        <p className="v3c-lede">{c.notFoundBody}</p>
+    <StateArt
+      kind="404"
+      size="page"
+      title={c.notFoundTitle}
+      body={c.notFoundBody}
+      action={
         <Link className="v3c-btn v3c-btn-cta" href={V3C_ROUTES.board}>
-          {c.backToBoard}
+          {c.backToBoard} <Arrow />
         </Link>
-      </section>
-    </>
+      }
+    />
   );
 }

@@ -6,6 +6,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useV3cCopy } from "@/lib/v3c/lang.client";
+import { BrandLoader, StateArt } from "../States";
 
 export function BoardSkeleton({ rows = 8 }: { rows?: number }) {
   const { t } = useV3cCopy();
@@ -19,9 +20,9 @@ export function BoardSkeleton({ rows = 8 }: { rows?: number }) {
         </div>
       </div>
       <section className="v3c-board" aria-label={t.loading}>
-        <span className="v3c-sr" role="status">
-          {t.loading}
-        </span>
+        <div className="v3c-load-row">
+          <BrandLoader label={t.loading} />
+        </div>
         {Array.from({ length: rows }, (_, i) => (
           <div key={i} className="v3c-row v3c-row-skel" aria-hidden="true">
             <span className="v3c-r-time">
@@ -57,13 +58,19 @@ export function BoardError() {
   const [pending, start] = useTransition();
   return (
     <div className="v3c-board-w">
-      <section className="v3c-board v3c-error" role="alert" aria-label={t.board.label}>
-        <p className="v3c-t-row">{t.error.title}</p>
-        <p className="v3c-small">{t.error.body}</p>
-        <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" disabled={pending} onClick={() => start(() => router.refresh())}>
-          {pending ? t.loading : t.error.retry}
-        </button>
-      </section>
+      <div className="v3c-board" aria-label={t.board.label}>
+        <StateArt
+          kind="500"
+          role="alert"
+          title={t.error.title}
+          body={t.error.body}
+          action={
+            <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" disabled={pending} onClick={() => start(() => router.refresh())}>
+              {pending ? t.loading : t.error.retry}
+            </button>
+          }
+        />
+      </div>
     </div>
   );
 }

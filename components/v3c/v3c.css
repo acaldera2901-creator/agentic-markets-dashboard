@@ -64,7 +64,20 @@
 [data-theme="v3c"] :where(button, input) { font: inherit; color: inherit; }
 [data-theme="v3c"] :where(button) { cursor: pointer; background: none; border: 0; padding: 0; }
 [data-theme="v3c"] :where(table) { border-collapse: collapse; width: 100%; }
-[data-theme="v3c"] :focus-visible { outline: 2px solid var(--v3c-royal); outline-offset: 2px; }
+[data-theme="v3c"] :focus-visible { outline: 2px solid var(--v3c-royal); outline-offset: 3px; }
+[data-theme="v3c"][data-mode="dark"] :focus-visible { outline-color: var(--v3c-royal-t); }
+/* polish · microdettagli del kit (brand/signature/_preview-microdetails.png): selezione
+   lime su inchiostro, scrollbar navy con filo lime, cursori di sistema. */
+[data-theme="v3c"] ::selection { background: #C8FF00; color: #14171C; }
+html:has([data-theme="v3c"]) { scrollbar-color: #071329 #E9E1CC; }
+html:has([data-theme="v3c"][data-mode="dark"]) { scrollbar-color: #C8FF00 #071329; }
+@supports selector(::-webkit-scrollbar) {
+  html:has([data-theme="v3c"]) { scrollbar-color: auto; }
+  html:has([data-theme="v3c"])::-webkit-scrollbar { width: 12px; height: 12px; background: #E9E1CC; }
+  html:has([data-theme="v3c"][data-mode="dark"])::-webkit-scrollbar { background: #071329; }
+  html:has([data-theme="v3c"][data-mode="dark"])::-webkit-scrollbar-thumb { background: #112C53; }
+  html:has([data-theme="v3c"])::-webkit-scrollbar-thumb { background: #071329; border-left: 2px solid #C8FF00; }
+}
 [data-theme="v3c"] [hidden] { display: none !important; }
 .v3c-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -125,18 +138,28 @@
 @media (max-width: 820px) { .v3c-fascia { margin: 12px 0 10px; padding: 14px 40px 12px 14px; clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%); gap: 6px; } .v3c-fascia .v3c-t-page { font-size: 30px; } .v3c-fascia-meta { font-size: 12.5px; } }
 
 /* ── Chrome: barra in alto (desktop) e barra in basso (mobile) ───────────────── */
-.v3c-top { background: var(--v3c-paper); border-bottom: 2px solid var(--v3c-ink); }
-.v3c-top .v3c-wrap { display: flex; align-items: center; gap: 24px; height: 56px; }
-.v3c-nav { display: flex; gap: 2px; }
-.v3c-nav a { padding: 19px 11px 14px; font-weight: 600; font-size: 14px; color: var(--v3c-ink-2); border-bottom: 3px solid transparent; }
+/* polish: UNA barra per tutto il redesign (components/v3c/Chrome.tsx). Cinque voci
+   di prodotto, un filetto, tre voci di sito più leggere (sotto i 1180 px vivono
+   solo nel piè), poi l'accesso a linea e il tema. */
+.v3c-top { position: relative; background: var(--v3c-paper); border-bottom: 2px solid var(--v3c-ink); }
+.v3c-top .v3c-wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
+.v3c-nav { display: flex; align-items: center; gap: 2px; }
+.v3c-nav a { padding: 21px 10px 15px; font-weight: 600; font-size: 14px; color: var(--v3c-ink-2); border-bottom: 3px solid transparent; white-space: nowrap; }
+.v3c-nav a.v3c-nav-2 { font-weight: 500; font-size: 13.5px; }
 .v3c-nav a[aria-current] { color: var(--v3c-ink); border-bottom-color: var(--v3c-royal); }
 .v3c-nav a:hover { color: var(--v3c-ink); text-decoration: none; }
-.v3c-top-r { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.v3c-nav-sep { width: 1px; height: 18px; background: var(--v3c-line-2); margin: 0 10px; }
+@media (max-width: 1180px) { .v3c-nav-2, .v3c-nav-sep { display: none; } }
+.v3c-top-r { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.v3c-signin { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 1.5px solid var(--v3c-ink); font-weight: 600; font-size: 13.5px; color: var(--v3c-ink); white-space: nowrap; }
+.v3c-signin:hover { background: var(--v3c-ink); color: var(--v3c-paper); text-decoration: none; }
 .v3c-ghost { font-weight: 600; color: var(--v3c-ink-2); font-size: 14px; }
 .v3c-theme { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--v3c-line-2); color: var(--v3c-ink-2); }
 .v3c-theme:hover { color: var(--v3c-ink); border-color: var(--v3c-ink); }
 .v3c-theme svg { width: 16px; height: 16px; }
-@media (max-width: 820px) { .v3c-nav, .v3c-top-r .v3c-ghost { display: none; } .v3c-top .v3c-wrap { height: 52px; } }
+.v3c-skip { position: absolute; left: 16px; top: -48px; z-index: 60; background: var(--v3c-royal); color: var(--v3c-royal-ink); padding: 10px 14px; font-weight: 700; font-size: 14px; }
+.v3c-skip:focus { top: 8px; }
+@media (max-width: 820px) { .v3c-nav { display: none; } .v3c-top .v3c-wrap { height: 54px; gap: 12px; } .v3c-signin { height: 32px; padding: 0 10px; font-size: 13px; } .v3c-theme { width: 32px; height: 32px; } }
 
 .v3c-bnav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: none; background: var(--v3c-paper); color: var(--v3c-ink); border-top: 2px solid var(--v3c-ink); padding: 0 4px env(safe-area-inset-bottom); }
 .v3c-bnav ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); }
@@ -434,26 +457,19 @@
 .v3c-faq details { border-bottom: 1px solid var(--v3c-line); padding: 12px 0; }
 .v3c-faq summary { cursor: pointer; font-weight: 600; font-size: 15px; }
 .v3c-faq details p { margin: 10px 0 2px; }
-.v3c-foot-g { display: grid; gap: 24px; grid-template-columns: 1.6fr repeat(3, 1fr); }
-.v3c-foot-g ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
-.v3c-foot-g .v3c-disc { grid-column: 1 / -1; }
-.v3c-foot-lede { margin: 6px 0 8px; max-width: 46ch; }
-@media (max-width: 820px) { .v3c-foot-g { grid-template-columns: 1fr 1fr; } .v3c-foot-g > :first-child { grid-column: 1 / -1; } }
-.v3c-logo { display: inline-flex; align-items: center; gap: 8px; font-family: var(--v3c-f-display); font-variation-settings: "opsz" 72; font-weight: 800; font-size: 20px; letter-spacing: .01em; }
-.v3c-logo:hover { text-decoration: none; }
-.v3c-logo-mark { display: inline-grid; place-items: center; width: 26px; height: 26px; background: var(--v3c-navy); color: var(--v3c-lime-hl); font-size: 15px; clip-path: var(--v3c-cut-sm); }
 
 /* ══ F5 · tool hub e pagine tool (#REDESIGN-V3C F5) ═══════════════════════════
    Stessa grammatica: righe a filetto, numeri da tabellone, UNA azione royal per
    schermata (qui nessuna: i tool non vendono), il resto bottoni a linea e ghost. */
 
-/* lockup: navy su carta, bianco su scuro. Due <img>, una sola visibile. */
-.v3c-logo { display: inline-flex; align-items: center; flex-shrink: 0; }
-.v3c-logo img { height: 26px; width: auto; display: block; }
-.v3c-logo-foot img { height: 22px; }
-.v3c-logo img.v3c-on-dark { display: none; }
-[data-theme="v3c"][data-mode="dark"] .v3c-logo img.v3c-on-paper { display: none; }
-[data-theme="v3c"][data-mode="dark"] .v3c-logo img.v3c-on-dark { display: block; }
+/* lockup ufficiale (polish): un SVG solo, la scritta navy su carta e bianca sullo
+   scuro tramite --v3c-logo-word; monogramma royal e freccia royal-t fissi (README §1). */
+.v3c-logo { display: inline-flex; align-items: center; flex-shrink: 0; --v3c-logo-word: #071329; }
+.v3c-logo:hover { text-decoration: none; }
+[data-theme="v3c"][data-mode="dark"] .v3c-logo { --v3c-logo-word: #FFFFFF; }
+.v3c-lockup { display: block; height: 40px; width: auto; aspect-ratio: 1390 / 459; }
+.v3c-logo-foot .v3c-lockup { height: 44px; }
+@media (max-width: 820px) { .v3c-top .v3c-lockup { height: 38px; } }
 
 .v3c-crumbs { font-size: 12.5px; color: var(--v3c-ink-2); display: flex; gap: 8px; margin: 20px 0 0; }
 .v3c-crumbs a { color: var(--v3c-ink-2); }
@@ -526,13 +542,88 @@
 .v3c-faq-i p { margin-top: 6px; }
 .v3c-others .v3c-sec-h { margin-bottom: 10px; }
 
-/* piè di pagina: quattro colonne, lingue, riga 18+ */
-.v3c-foot-g { display: grid; gap: 24px 32px; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); }
-.v3c-foot h4 { margin: 0 0 10px; }
+/* piè di pagina UNICO (polish): identità + quattro colonne, la riga dell'aiuto con
+   il 18+, la riga delle avvertenze, l'impressum. */
+.v3c-foot-g { display: grid; gap: 24px 32px; grid-template-columns: minmax(0, 1.7fr) repeat(4, minmax(0, 1fr)); }
+.v3c-foot .v3c-lab { margin: 0 0 10px; }
 .v3c-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; font-size: 14px; }
-.v3c-foot-tag { max-width: 36ch; margin: 12px 0 0; }
+.v3c-foot-tag { max-width: 38ch; margin: 12px 0 0; }
 .v3c-langs { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 14px; font-size: 12.5px; }
-.v3c-langs a { color: var(--v3c-ink-2); display: inline-flex; align-items: center; min-height: 24px; }
-.v3c-langs a[aria-current] { color: var(--v3c-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
-.v3c-foot .v3c-disc { margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--v3c-line); }
-@media (max-width: 820px) { .v3c-foot-g { grid-template-columns: 1fr 1fr; } .v3c-foot-g > :first-child { grid-column: 1 / -1; } }
+.v3c-langs a, .v3c-langs button { color: var(--v3c-ink-2); display: inline-flex; align-items: center; min-height: 24px; font-size: 12.5px; }
+.v3c-langs a[aria-current], .v3c-langs button[aria-pressed="true"] { color: var(--v3c-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.v3c-langs button:hover { color: var(--v3c-ink); }
+.v3c-foot-help { display: flex; gap: 12px; align-items: flex-start; margin-top: 28px; padding: 14px 0; border-top: 1px solid var(--v3c-line-2); }
+.v3c-foot-help p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--v3c-ink-2); max-width: 90ch; }
+.v3c-foot-help b { color: var(--v3c-ink); font-weight: 600; }
+.v3c-foot-help a { color: var(--v3c-ink); text-decoration: underline; text-underline-offset: 3px; }
+.v3c-foot-help .v3c-age { flex: none; margin-top: 1px; }
+.v3c-foot .v3c-disc { padding-top: 12px; border-top: 1px solid var(--v3c-line); }
+.v3c-foot-imp { margin-top: 10px; }
+@media (max-width: 1000px) { .v3c-foot-g { grid-template-columns: repeat(4, minmax(0, 1fr)); } .v3c-foot-g > :first-child { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .v3c-foot-g { grid-template-columns: 1fr 1fr; } }
+
+/* ══ polish · «la firma»: freccia del marchio, loader, stati illustrati ═════════
+   Asset in public/brand/v3c (copie pulite di redesign/brand, nessun hotlink). */
+.v3c-arw { display: inline-block; flex: none; width: 15px; height: 15px; background: currentColor; -webkit-mask: url(/brand/v3c/arrow-right.svg) center / contain no-repeat; mask: url(/brand/v3c/arrow-right.svg) center / contain no-repeat; vertical-align: -2px; }
+.v3c-arw-up { -webkit-mask-image: url(/brand/v3c/arrow-up-right.svg); mask-image: url(/brand/v3c/arrow-up-right.svg); }
+.v3c-btn-cta .v3c-arw { background: #C8FF00; }
+@media (prefers-reduced-motion: no-preference) { .v3c-btn:hover .v3c-arw { transform: translate(2px, -2px); transition: transform .15s ease-out; } }
+
+.v3c-loader { display: inline-flex; align-items: center; gap: 10px; font: 600 12px/1 var(--v3c-f-text); letter-spacing: .08em; text-transform: uppercase; color: var(--v3c-ink-2); }
+.v3c-loader img { display: block; }
+.v3c-load-row { display: flex; justify-content: center; padding: 18px 0 6px; }
+
+.v3c-state { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 48px; align-items: center; }
+.v3c-state-art img { display: block; width: 100%; height: auto; }
+.v3c-state-txt { display: grid; gap: 12px; justify-items: start; }
+.v3c-state-txt .v3c-lab, .v3c-state-txt .v3c-t-page, .v3c-state-txt .v3c-lede { margin: 0; }
+.v3c-state-act { margin-top: 8px; }
+.v3c-state-page { min-height: min(62vh, 560px); padding: 48px 0; }
+.v3c-state-page .v3c-t-page { font-size: clamp(44px, 7vw, 96px); line-height: .9; }
+.v3c-state-inline { padding: 24px 0; border-bottom: 1px solid var(--v3c-line); grid-template-columns: minmax(140px, 260px) minmax(0, 1fr); }
+.v3c-state-inline .v3c-t-page { font-size: clamp(26px, 3vw, 36px); }
+/* il 500 è disegnato su navy: vive su un pannello navy con maschera radiale, in carta e in scuro */
+.v3c-state-500 .v3c-state-art { background: #071329; }
+.v3c-state-500 .v3c-state-art img { -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent); mask-image: radial-gradient(closest-side, #000 72%, transparent); }
+[data-theme="v3c"][data-mode="dark"] .v3c-state-404 .v3c-state-art, [data-theme="v3c"][data-mode="dark"] .v3c-state-empty .v3c-state-art { background: #F3EDDC; padding: 12px; }
+@media (max-width: 820px) {
+  .v3c-state, .v3c-state-inline { grid-template-columns: 1fr; gap: 16px; }
+  .v3c-state-page { padding: 20px 0 32px; min-height: 0; }
+  .v3c-state-inline .v3c-state-art { max-width: 220px; }
+}
+
+/* polish · blocco partner: ora di ogni prezzo, pari prezzo senza «best», book senza quota raggruppati */
+.v3c-p-at { display: block; font-size: 11px; font-weight: 500; color: var(--v3c-ink-3); margin-top: 2px; font-stretch: 100%; font-variation-settings: "wdth" 100; letter-spacing: 0; }
+.v3c-books td .v3c-p-at { display: inline; margin: 0 0 0 8px; }
+.v3c-p-shared { grid-template-columns: auto 1fr; }
+.v3c-p-shared .v3c-small { margin: 0; }
+.v3c-p-more { margin-top: 10px; border-top: 1px solid var(--v3c-line); }
+.v3c-p-more summary { cursor: pointer; padding: 10px 0; font-weight: 600; font-size: 13.5px; color: var(--v3c-ink-2); }
+.v3c-p-more summary:hover { color: var(--v3c-ink); }
+.v3c-p-more[open] summary { color: var(--v3c-ink); }
+.v3c-mt-last { color: var(--v3c-ink-3); }
+
+/* polish · Kelly del price check: il bankroll si cambia accanto alla striscia */
+.v3c-pc-bank { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+.v3c-pc-bank input { width: 92px; height: 32px; border: 1.5px solid var(--v3c-ink); background: var(--v3c-panel); color: var(--v3c-ink); padding: 0 8px; border-radius: 0; font: 800 16px/1 var(--v3c-f-text); font-stretch: 75%; font-variation-settings: "wdth" 75; }
+
+/* polish · icone del kit (maschera CSS, prendono il colore del testo) */
+.v3c-ico { display: inline-block; flex: none; width: 22px; height: 22px; background: currentColor; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; }
+/* polish · price check: le tre quote su una riga anche a 390 px (prima «2» andava a capo da sola) */
+@media (max-width: 600px) { .v3c-pc-form { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } }
+.v3c-chips-note { align-self: center; margin-left: 4px; }
+.v3c-r-tie { display: block; font-size: 10.5px; color: var(--v3c-ink-3); text-align: right; margin-top: 3px; white-space: nowrap; }
+.v3c-r-book { display: grid; justify-items: end; }
+.v3c-mg.v3c-mg-ico { display: grid; grid-template-rows: 1fr 4px; }
+.v3c-mg-ico .v3c-ico { width: 20px; height: 20px; justify-self: center; align-self: center; color: var(--v3c-ink); }
+.v3c-mg-lg.v3c-mg-ico .v3c-ico { width: 30px; height: 30px; }
+.v3c-ico-chip { width: 16px; height: 16px; }
+.v3c-mg .v3c-ico { background: currentColor; display: block; }
+/* polish · targhette Free/Pro e sigillo col monogramma */
+.v3c-plan { display: inline-flex; align-items: center; height: 22px; padding: 0 14px 0 8px; border: 1.5px solid var(--v3c-ink); font: 800 12px/1 var(--v3c-f-text); font-stretch: 75%; font-variation-settings: "wdth" 75; letter-spacing: .08em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
+.v3c-plan-pro { background: #071329; color: #FFFFFF; border-color: #071329; box-shadow: inset 0 -2px 0 #C8FF00; }
+.v3c-seal-mk { width: 13px; height: 13px; flex: none; }
+.v3c-rec-fascia { position: relative; }
+.v3c-rec-seal { position: absolute; right: 64px; top: 50%; transform: translateY(-50%) rotate(-8deg); width: 112px; height: 112px; pointer-events: none; }
+@media (max-width: 1180px) { .v3c-rec-seal { display: none; } }
+@media (max-width: 600px) { .v3c-tf[style*="--n:3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } }

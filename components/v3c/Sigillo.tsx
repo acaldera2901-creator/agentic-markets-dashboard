@@ -28,6 +28,10 @@ export function Sigillo({ sealedAt, hash, label = "sealed", title, className }: 
       className={["v3c-seal", className].filter(Boolean).join(" ")}
       title={title ?? (short ? "Sealed to the public ledger; the hash is the first and last characters of the row at publication" : "Sealed to the public ledger at this time (UTC), before kick-off; the row cannot be edited afterwards")}
     >
+      {/* polish: il monogramma ufficiale apre il sigillo (redesign/brand/signature, «inline UI») */}
+      <svg className="v3c-seal-mk" viewBox="0 0 459 459" aria-hidden="true">
+        <use href="/brand/v3c/mark.svg#mark" />
+      </svg>
       <i>{label}</i> {time}
       {short ? (
         <>

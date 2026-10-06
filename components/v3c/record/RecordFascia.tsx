@@ -9,7 +9,14 @@ import { useRecordCopy } from "./useRecordCopy";
 
 export function RecordFascia({ meta }: { meta: ReactNode }) {
   const { t } = useRecordCopy();
-  return <Fascia tab={t.fascia.tab} title={t.fascia.title} meta={meta} />;
+  // polish: il sigillo grande del kit (public/brand/v3c/seal.svg, geometria da codice) accanto al titolo
+  return (
+    <div className="v3c-rec-fascia">
+      <Fascia tab={t.fascia.tab} title={t.fascia.title} meta={meta} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="v3c-rec-seal" src="/brand/v3c/seal.svg" alt="" width={112} height={112} />
+    </div>
+  );
 }
 
 export function RecordFasciaMeta({ since, sealed, sealedTennis, failed, pending }: { since: string | null; sealed: number | null; sealedTennis?: number | null; failed?: boolean; pending?: boolean }) {

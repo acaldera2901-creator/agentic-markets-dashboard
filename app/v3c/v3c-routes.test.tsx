@@ -39,6 +39,8 @@ describe("rewrite del redesign (next.config.ts)", () => {
         { source: "/:lang(it|es|fr|de|pt|nl|pl|tr|sv|ru)/tools/:tool", destination: "/v3c/:lang/tools/:tool" },
         ...V3C_PAGE_PATHS.map((p) => ({ source: p, destination: `/v3c${p}` })),
       ],
+      // polish: le URL sconosciute → 404 illustrato v3c (status 404 vero)
+      fallback: [{ source: "/:path((?!api/|_next/|brand/|images/|icons/).*)", destination: "/v3c/lost" }],
     });
   });
 });

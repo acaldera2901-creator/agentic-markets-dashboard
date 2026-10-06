@@ -13,7 +13,7 @@ import { PREFIXED_LOCALES } from "../tools/registry";
 
 type Rewrite = { source: string; destination: string };
 
-export function v3cRewrites(flag: string | undefined | null): { beforeFiles: Rewrite[] } | Rewrite[] {
+export function v3cRewrites(flag: string | undefined | null): { beforeFiles: Rewrite[]; fallback: Rewrite[] } | Rewrite[] {
   if (!envFlagOn(flag)) return [];
   return {
     beforeFiles: [
@@ -34,5 +34,8 @@ export function v3cRewrites(flag: string | undefined | null): { beforeFiles: Rew
       // pages: News/Books/Pro/Metodo/community/legali (elenco in lib/v3c/pages-routes.ts)
       ...V3C_PAGE_PATHS.map((p) => ({ source: p, destination: `/v3c${p}` })),
     ],
+    // polish: una URL che nessuna pagina serve → il 404 illustrato v3c (status 404 vero:
+    // /v3c/lost chiama notFound()). API, asset di Next e file statici restano fuori.
+    fallback: [{ source: "/:path((?!api/|_next/|brand/|images/|icons/).*)", destination: "/v3c/lost" }],
   };
 }
