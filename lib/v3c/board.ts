@@ -1,10 +1,11 @@
 // /api/v3/board — one row per published football match, market / model /
 // estimate / edge separated, plus real prices from the feed books only.
-import { BOOKS, bookByKey } from "@/lib/betconstruct-books";
-import type { BookBoard } from "@/lib/betconstruct-feed";
+import { enabledPriceBooks, priceBookByKey, type PriceBook } from "@/lib/price-books";
 import { buildFortuneplayMatchUrl } from "@/lib/fortuneplay-url";
 import { normName } from "@/lib/odds-api";
 import { teamPairKey } from "@/lib/team-pair-key";
+import type { FpMatch } from "@/lib/fortuneplay-live";
+import { fuzzyFootballMatch, type OurFixture } from "./fixture-match";
 import type { Outcome, Triple, V3BoardMatch, V3BoardOutcome, V3BookPrice } from "./contracts";
 import { MARKET_WEIGHT, MODEL_WEIGHT, OUTCOMES, edgePp, market1x2, roundP, topOutcome } from "./prob";
 
@@ -83,7 +84,13 @@ function validPrice(x: number | null | undefined): x is number {
   return typeof x === "number" && Number.isFinite(x) && x > 1;
 }
 
-/** Book prices per outcome: feed books only, fresh only, oriented to our fixture. */
+/**
+ * Max books listed per outcome in the comparison (sorted by price, best first).
+ * Today at most 6 partners can carry a price (lib/price-books.ts).
+ */
+export const COMPARE_MAX_BOOKS = 6;
+
+/** Book prices per outcome: enabled price books only, fresh only, oriented to our fixture. */
 export function bookPricesFor(
   ours: { home: string; away: string },
   rows: PartnerPriceRow[],
@@ -93,8 +100,8 @@ export function bookPricesFor(
   const out: Record<Outcome, V3BookPrice[]> = { home: [], draw: [], away: [] };
   const maxAgeMs = BOOK_PRICE_MAX_AGE_MIN * 60_000;
   for (const row of rows) {
-    const book = bookByKey(row.bookmaker);
-    if (!book) continue; // not a feed book → never a price
+    const book = priceBookByKey(row.bookmaker);
+    if (!book) continue; // not an enabled price book (or no affiliate link) → never a price
     if (now.getTime() - Date.parse(row.captured_at) > maxAgeMs) continue;
     const oriented = orientPartnerPrice(ours, row, norm);
     if (!oriented) continue;
@@ -111,7 +118,10 @@ export function bookPricesFor(
       });
     }
   }
-  for (const o of OUTCOMES) out[o].sort((a, b) => b.price - a.price || a.bookmaker.localeCompare(b.bookmaker));
+  for (const o of OUTCOMES) {
+    out[o].sort((a, b) => b.price - a.price || a.bookmaker.localeCompare(b.bookmaker));
+    out[o] = out[o].slice(0, COMPARE_MAX_BOOKS);
+  }
   return out;
 }
 
@@ -159,11 +169,15 @@ export function buildBoardMatch(src: BoardSourceRow, partner: PartnerPriceRow[],
 /**
  * Rows for `keys` from the live feed. Books whose live map came back empty
  * (feed down) are returned in `missingBooks`, for the history fallback.
+ * `fixtures` (football key → our fixture) enables the strict name-tolerant
+ * join for Altenar books (lib/v3c/fixture-match.ts); a fuzzy hit carries OUR
+ * names, oriented as the book lists them, so orientPartnerPrice still works.
  */
 export function liveFeedRows(
-  boards: BookBoard[],
+  boards: { book: Pick<PriceBook, "key" | "landing" | "matchUrlBase" | "stag"> & { platform?: PriceBook["platform"] }; map: Map<string, FpMatch> }[],
   keys: Set<string>,
   now: Date,
+  fixtures?: Map<string, OurFixture>,
 ): { rows: PartnerPriceRow[]; missingBooks: string[] } {
   const rows: PartnerPriceRow[] = [];
   const missingBooks: string[] = [];
@@ -173,13 +187,22 @@ export function liveFeedRows(
       continue;
     }
     for (const key of keys) {
-      const fm = map.get(key);
-      if (!fm) continue;
+      let fm = map.get(key);
+      let names = fm ? { home: fm.homeName, away: fm.awayName } : null;
+      const ours = fixtures?.get(key);
+      if (!fm && ours && book.platform === "altenar") {
+        const hit = fuzzyFootballMatch(map, ours);
+        if (hit) {
+          fm = hit.fm;
+          names = hit.swapped ? { home: ours.away, away: ours.home } : { home: ours.home, away: ours.away };
+        }
+      }
+      if (!fm || !names) continue;
       rows.push({
         team_pair_key: key,
         bookmaker: book.key,
-        home_name: fm.homeName,
-        away_name: fm.awayName,
+        home_name: names.home,
+        away_name: names.away,
         odds_home: fm.oddsHome,
         odds_draw: fm.oddsDraw,
         odds_away: fm.oddsAway,
@@ -187,7 +210,7 @@ export function liveFeedRows(
         source: "live_feed",
         url:
           book.matchUrlBase && fm.slug && fm.id && fm.sport
-            ? buildFortuneplayMatchUrl({ baseUrl: book.matchUrlBase, locale: "en", sport: fm.sport, slug: fm.slug, id: fm.id, code: book.stag })
+            ? buildFortuneplayMatchUrl({ baseUrl: book.matchUrlBase, locale: "en", sport: fm.sport, slug: fm.slug, id: fm.id, code: book.stag ?? "" })
             : book.landing,
       });
     }
@@ -195,5 +218,7 @@ export function liveFeedRows(
   return { rows, missingBooks };
 }
 
-/** Feed books, for the coverage block. */
-export const FEED_BOOK_KEYS = BOOKS.map((b) => b.key);
+/** Enabled price books, for the coverage block (read at call time: the gate is an env var). */
+export function feedBookKeys(): string[] {
+  return enabledPriceBooks().map((b) => b.key);
+}

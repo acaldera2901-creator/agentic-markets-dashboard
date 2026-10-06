@@ -10,6 +10,7 @@
 // nessun mercato, nessun gap, mai un valore inventato.
 import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
+import type { OddsOnSitePartner } from "@/lib/price-books";
 import type { V3cCopy } from "@/lib/v3c/copy";
 import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, sealedStamp, timeHM, dayShort, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
 import { trackEvent } from "@/lib/track-event";
@@ -26,6 +27,8 @@ type Common = {
   onToggle: () => void;
   /** false nei paesi dove i link ai book vanno nascosti */
   partners: boolean;
+  /** F7: partner senza quota letta, mostrati col bottone «Odds on site» */
+  siteOnly?: OddsOnSitePartner[];
   surface: "home" | "predictions";
 };
 
@@ -52,7 +55,7 @@ export function BookChip({ b, t, surface, outcome }: { b: V3BookPrice; t: V3cCop
 
 const BOOK_COLOUR: Record<string, string> = { fortuneplay: "#1B1F5E", ybets: "#0B6B4F" };
 
-function BookLogo({ b }: { b: V3BookPrice }) {
+function BookLogo({ b }: { b: Pick<V3BookPrice, "bookmaker" | "name"> }) {
   const code = b.name.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase();
   return (
     <span className="v3c-bk" style={{ "--bk": BOOK_COLOUR[b.bookmaker] ?? "#14171C" } as React.CSSProperties} aria-hidden="true">
@@ -93,6 +96,39 @@ function PanelBooks({ books, t, surface, label, partners }: { books: V3BookPrice
   );
 }
 
+/** F7: i partner di cui non leggiamo la quota — marchio e link affiliato reale, mai un numero. */
+function SiteOnlyBooks({ list, t, surface }: { list: OddsOnSitePartner[] | undefined; t: V3cCopy; surface: string }) {
+  if (!list?.length) return null;
+  return (
+    <div className="v3c-pn-books v3c-siteonly">
+      <span className="v3c-lab">{t.board.siteOnlyLab}</span>
+      <span className="v3c-chips">
+        {list.map((p) => (
+          <a
+            key={p.partner_id}
+            className="v3c-bchip"
+            href={p.url}
+            target="_blank"
+            rel="nofollow sponsored noopener noreferrer"
+            data-partner={p.partner_id}
+            data-reason={p.reason}
+            onClick={(e) => {
+              e.stopPropagation();
+              trackEvent("partner_click", { partner_id: p.name, meta: { surface: `v3c_${surface}`, kind: "odds_on_site" } });
+            }}
+          >
+            <BookLogo b={{ bookmaker: p.partner_id, name: p.name }} />
+            <span>{p.name}</span>
+            <small>{t.board.oddsOnSite}</small>
+            <span className="v3c-sr">{t.board.partnerAria(p.name)}</span>
+          </a>
+        ))}
+      </span>
+      <p className="v3c-fine">{t.board.siteOnlyNote}</p>
+    </div>
+  );
+}
+
 function BestCta({ best, t, surface, label }: { best: V3BookPrice; t: V3cCopy; surface: string; label: string }) {
   return (
     <div className="v3c-pn-cta">
@@ -110,7 +146,7 @@ function BestCta({ best, t, surface, label }: { best: V3BookPrice; t: V3cCopy; s
   );
 }
 
-export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, surface }: Common & { r: BoardRowVM }) {
+export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface }: Common & { r: BoardRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
   const match = `${m.home} – ${m.away}`;
@@ -210,6 +246,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
           ) : null}
           {m.blend == null ? <p className="v3c-fine">{t.board.noMarketLong}</p> : null}
           <PanelBooks books={lead.book_prices} t={t} surface={surface} label={leadLabel} partners={partners} />
+          {partners ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
           {partners && r.best ? <BestCta best={r.best} t={t} surface={surface} label={leadLabel} /> : null}
         </div>
       ) : null}
@@ -229,7 +266,7 @@ function tennisNoGap(m: TennisRowVM["m"], t: V3cCopy): string {
 
 const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctInt(p)}%`);
 
-export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, surface }: Common & { r: TennisRowVM }) {
+export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface }: Common & { r: TennisRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
   const match = `${m.player1} – ${m.player2}`;
@@ -362,6 +399,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sur
           ) : (
             <p className="v3c-fine">{t.board.partnerBlocked}</p>
           )}
+          {partners ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
           {partners && r.best ? <BestCta best={r.best} t={t} surface={surface} label={leadLabel} /> : null}
         </div>
       ) : null}

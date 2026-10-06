@@ -16,8 +16,20 @@ Published football matches of the live window (same filters as `/api/v2/predicti
 `source_table = match_predictions`), numbers from the latest `prediction_log` row:
 `market_p` (de-vigged composite), `margin_removed`, `model_p` (raw), `estimate_p`
 (served, = 0.3·model + 0.7·market), `edge_pp` (estimate − market, signed pp), `sealed_at`
-(`pick_ledger.captured_at`), `book_prices` / `best_price` from FortunePlay and YBets only — live
-BetConstruct feed first, last `partner_price_history` capture (≤150 min) if a feed is down.
+(`pick_ledger.captured_at`), `book_prices` / `best_price` from the enabled price books only
+(`lib/price-books.ts`) — live feed first, last `partner_price_history` capture (≤150 min) if a feed
+is down; sorted best first, at most 6 (`COMPARE_MAX_BOOKS`).
+
+**F7 (branch `betredge/v3c-partners`).** Each match/tennis row also carries `books`: one entry
+per partner (15) with `partner_id`, `oddsAvailable` and `reason` (`live_feed`, `price_history`,
+`not_listed`, `feed_down`, `pending_approval`, `awaiting_partner_feed`, `region_restricted`,
+`no_sportsbook`); name/logo/link are in the top-level `partners` (once). RollXO and N1 Bet
+(BetConstruct) and Wildz and Beazt (Altenar, `lib/altenar-feed.ts`) are wired but read nothing
+until their keys are in `BETREDGE_PARTNER_FEEDS` — set only after the APPROVE of
+`docs/v3c-partners-collector-proposal.md`. Without the variable `book_prices` is exactly as before.
+Altenar names differ from BetConstruct: a strict name-tolerant join (`lib/v3c/fixture-match.ts`,
+football only) brings Wildz from 72 to 162 of 213 board matches (90 joins checked by eye, 0 wrong).
+The v3c pages strip `books`/`partners` from their payload until the UI renders them.
 
 Verified on real data (05/10 ~21:20 UTC): 214 matches, 172 with market, 214 sealed, 103 with
 FortunePlay+YBets prices. Chicago Fire–Vancouver: market_p home 0.3276, edge −0.69 pp, margin

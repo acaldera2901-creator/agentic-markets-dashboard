@@ -2,10 +2,10 @@
 // Component too (the home and /predictions render the SAME payload server-side
 // instead of fetching themselves over HTTP). One function, one payload.
 // Tennis (v3.board.2) comes from lib/v3c/tennis.ts (branch betredge/v3c-tennis).
-import { fetchAllBooks } from "@/lib/betconstruct-feed";
+import { bookStatusFor, fetchAllPriceBooks, partnerDirectory } from "@/lib/price-books";
 import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
-import { BOOK_PRICE_MAX_AGE_MIN, FEED_BOOK_KEYS, buildBoardMatch, footballPairKey, liveFeedRows, type PartnerPriceRow } from "./board";
-import type { TennisProbabilityKind, V3BoardResponse } from "./contracts";
+import { BOOK_PRICE_MAX_AGE_MIN, buildBoardMatch, feedBookKeys, footballPairKey, liveFeedRows, type PartnerPriceRow } from "./board";
+import type { TennisProbabilityKind, V3BoardResponse, V3BookPrice } from "./contracts";
 import { fetchBoardExcluded, fetchBoardSources, fetchLatestPartnerPrices, fetchPartnerHistoryByKeys, fetchTennisBoardSources } from "./queries";
 import { buildTennisBoardMatch, isOurModel, ledgerTennisKind, tennisPairKey } from "./tennis";
 
@@ -25,10 +25,13 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
     const k = tennisPairKey(t);
     if (k) keyOf.set(t.id, k);
   }
-  // Live BetConstruct feed first (same source and 30s cache as the current
-  // board); a book whose feed is down falls back to its last stored capture.
+  // Live feeds first (BetConstruct: same 30s cache as the current board;
+  // Altenar: 5 min); a book whose feed is down falls back to its last stored
+  // capture. Gated partner feeds are read only when switched on (lib/price-books.ts).
   const keys = new Set(keyOf.values());
-  const live = liveFeedRows(await fetchAllBooks(now.getTime()), keys, now);
+  const fixtures = new Map(sources.map((s) => [keyOf.get(s.id) ?? "", { home: s.home, away: s.away, kickoff: s.kickoff }]));
+  fixtures.delete("");
+  const live = liveFeedRows(await fetchAllPriceBooks(now.getTime()), keys, now, fixtures);
   const history = live.missingBooks.length
     ? (await fetchLatestPartnerPrices([...keys], BOOK_PRICE_MAX_AGE_MIN))
         .filter((r) => live.missingBooks.includes(r.bookmaker))
@@ -42,7 +45,20 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
     byKey.set(p.team_pair_key, list);
   }
 
-  const matches = sources.map((s) => buildBoardMatch(s, byKey.get(keyOf.get(s.id) ?? "") ?? [], now));
+  // Feed down AND nothing recent in history → «feed_down» for that book.
+  const historyBooks = new Set(history.map((r) => r.bookmaker));
+  const down = new Set(live.missingBooks.filter((b) => !historyBooks.has(b)));
+  const statusOf = (lists: V3BookPrice[][]) => {
+    const priced = new Map<string, "live_feed" | "price_history">();
+    for (const p of lists.flat()) if (!priced.has(p.bookmaker)) priced.set(p.bookmaker, p.source);
+    return bookStatusFor(priced, down);
+  };
+
+  const matches = sources.map((s) => {
+    const m = buildBoardMatch(s, byKey.get(keyOf.get(s.id) ?? "") ?? [], now);
+    return { ...m, books: statusOf(m.outcomes.map((o) => o.book_prices)) };
+  });
+  const FEED_BOOK_KEYS = feedBookKeys();
   const withBook: Record<string, number> = Object.fromEntries(FEED_BOOK_KEYS.map((k) => [k, 0]));
   for (const m of matches) {
     const books = new Set(m.outcomes.flatMap((o) => o.book_prices.map((b) => b.bookmaker)));
@@ -57,7 +73,8 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
   const tennisHistory = await fetchPartnerHistoryByKeys(gapKeys);
   const tennis = tennisSources.map((t) => {
     const k = keyOf.get(t.id) ?? "";
-    return buildTennisBoardMatch(t, byKey.get(k) ?? [], now, tennisHistory.get(k) ?? []);
+    const m = buildTennisBoardMatch(t, byKey.get(k) ?? [], now, tennisHistory.get(k) ?? []);
+    return { ...m, books: statusOf(m.sides.map((s) => s.book_prices)) };
   });
   const tennisWithBook: Record<string, number> = Object.fromEntries(FEED_BOOK_KEYS.map((k) => [k, 0]));
   const byKind: Record<TennisProbabilityKind, number> = { model: 0, model_tempered: 0, market_tempered: 0 };
@@ -73,6 +90,7 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
     window_days: PREDICTION_WINDOW_DAYS,
     matches,
     tennis,
+    partners: partnerDirectory(),
     coverage: {
       matches: matches.length,
       with_market: matches.filter((m) => m.margin_removed != null).length,
@@ -98,7 +116,8 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
       "market_p excludes the bookmaker margin (proportional removal); margin_removed is the overround of the composite market price.",
       "Football estimate = 0.3 model + 0.7 de-vigged market (blend). Without a market, estimate = model and edge is null.",
       "edge_pp = estimate − market, in percentage points. It is a difference of probabilities, not an expected profit.",
-      "Book prices come only from books with a live feed (FortunePlay, YBets). Other partner books never carry a price.",
+      "Book prices come only from partner books with a real feed and an affiliate link (lib/price-books.ts: FortunePlay, YBets, plus RollXO/N1 Bet/Wildz/Beazt once switched on after APPROVE). book_prices is sorted best first, at most 6 books.",
+      "books lists EVERY partner per fixture with oddsAvailable and reason (live_feed, price_history, not_listed, feed_down, pending_approval, awaiting_partner_feed, region_restricted, no_sportsbook). A partner without a price is shown with its button, never hidden.",
       "sealed_at is when the match entered the sealed ledger (often days before kickoff); the numbers shown are the latest estimate (estimate_as_of) and can differ from the sealed ones.",
       "market_price / margin_removed refer to the composite market price stored with the estimate, not to the FortunePlay/YBets prices listed in book_prices.",
       "Tennis: probability_kind says what the served % IS. market_tempered = the market price without margin, temperature 1.68 — not a model of ours (all partner-market-v1 rows, and Elo v4 rows that had a price). model_p is the raw Elo v4 from prediction_log (not sealed); do not subtract it from market_p.",

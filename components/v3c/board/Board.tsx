@@ -31,12 +31,15 @@ import {
   type TennisRowVM,
 } from "@/lib/v3c/board-view";
 import { useLocalTimeZone, useV3cCopy } from "@/lib/v3c/lang.client";
+import type { OddsOnSitePartner } from "@/lib/price-books";
 import { FootballRow, TennisRow } from "./BoardRow";
 
 type Props = {
   board: V3BoardResponse;
   surface: "home" | "predictions";
   partners: boolean;
+  /** F7: partner senza quota letta (logo + «Odds on site»), uguali per ogni partita */
+  siteOnly?: OddsOnSitePartner[];
   /** l'ora del server: il primo render usa questa, poi il client avanza ogni minuto */
   nowIso: string;
   /** home: quante righe mostrare prima del link alla board intera */
@@ -71,7 +74,7 @@ function useNow(initialIso: string, frozen = false): Date {
   return useMemo(() => new Date(min * 60_000), [min]);
 }
 
-export function Board({ board, surface, partners, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow }: Props) {
+export function Board({ board, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow }: Props) {
   const { lang, t } = useV3cCopy();
   const locale = lang === "it" ? "it-IT" : "en-GB";
   const tz = useLocalTimeZone();
@@ -216,9 +219,9 @@ export function Board({ board, surface, partners, nowIso, limit, total, counts, 
               ) : null}
               {g.rows.map((r) =>
                 r.kind === "football" ? (
-                  <FootballRow key={r.m.id} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} surface={surface} />
+                  <FootballRow key={r.m.id} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
                 ) : (
-                  <TennisRow key={`tn-${r.m.id}`} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} surface={surface} />
+                  <TennisRow key={`tn-${r.m.id}`} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
                 ),
               )}
             </div>
