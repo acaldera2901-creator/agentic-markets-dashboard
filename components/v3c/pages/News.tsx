@@ -10,6 +10,7 @@ import { useV3cLang } from "@/lib/v3c/lang.client";
 import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
 import { hubPath } from "@/lib/tools/registry";
 import { Fascia } from "../Fascia";
+import { v3cLocale } from "@/lib/v3c/copy";
 
 export type NewsItem = {
   slug: string;
@@ -27,7 +28,7 @@ function dateParts(iso: string | null, lang: string): { day: string; rest: strin
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  const loc = lang.startsWith("it") ? "it-IT" : "en-GB";
+  const loc = v3cLocale(lang);
   return {
     day: d.toLocaleDateString(loc, { day: "2-digit", timeZone: "UTC" }),
     rest: d.toLocaleDateString(loc, { month: "short", year: "numeric", timeZone: "UTC" }),
@@ -38,7 +39,7 @@ function longDate(iso: string | null, lang: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(lang.startsWith("it") ? "it-IT" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return d.toLocaleDateString(v3cLocale(lang), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
 function Aside() {

@@ -36,6 +36,7 @@ import { isPacked, unpackBoard, type PackedBoard } from "@/lib/v3c/board-pack";
 import { KitIcon } from "../Monogramma";
 import { StateArt } from "../States";
 import { FootballRow, TennisRow } from "./BoardRow";
+import { v3cLocale } from "@/lib/v3c/copy";
 
 type Props = {
   /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
@@ -81,7 +82,7 @@ function useNow(initialIso: string, frozen = false): Date {
 export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow }: Props) {
   const { lang, t } = useV3cCopy();
   const board = useMemo(() => (isPacked(boardIn) ? unpackBoard(boardIn) : boardIn), [boardIn]);
-  const locale = lang === "it" ? "it-IT" : "en-GB";
+  const locale = v3cLocale(lang);
   const tz = useLocalTimeZone();
   const now = useNow(nowIso, frozenNow);
   // /predictions apre sul primo giorno con partite (435 righe insieme sono un elenco, non una board);

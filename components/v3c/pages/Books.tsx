@@ -16,6 +16,7 @@ import { trackEvent } from "@/lib/track-event";
 import { PARTNERS_SEO_FAQ, PARTNERS_SEO_HEADING, PARTNERS_SEO_INTRO } from "@/app/partners/seo";
 import { Arrow } from "../Arrow";
 import { Fascia } from "../Fascia";
+import { v3cLang } from "@/lib/v3c/copy";
 
 export type BookCard = {
   id: string;
@@ -43,7 +44,7 @@ type Props = {
 
 function regions(codes: string[], lang: string): string {
   try {
-    const dn = new Intl.DisplayNames([lang.startsWith("it") ? "it" : "en"], { type: "region" });
+    const dn = new Intl.DisplayNames([v3cLang(lang)], { type: "region" });
     return codes.map((c) => dn.of(c) ?? c).join(", ");
   } catch {
     return codes.join(", ");

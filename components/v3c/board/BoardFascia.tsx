@@ -7,11 +7,12 @@ import type { ReactNode } from "react";
 import { dayLong, timeHM } from "@/lib/v3c/board-view";
 import { useLocalTimeZone, useV3cCopy } from "@/lib/v3c/lang.client";
 import { Fascia } from "../Fascia";
+import { v3cLocale } from "@/lib/v3c/copy";
 
 export function BoardFascia({ surface, nowIso, meta }: { surface: "home" | "predictions"; nowIso: string; meta: ReactNode }) {
   const { lang, t } = useV3cCopy();
   const tz = useLocalTimeZone();
-  const locale = lang === "it" ? "it-IT" : "en-GB";
+  const locale = v3cLocale(lang);
   const title = surface === "home" ? dayLong(nowIso, tz, locale) : t.fascia.titlePredictions;
   return <Fascia tab={surface === "home" ? t.fascia.tab : t.fascia.tabPredictions} title={title} meta={meta} />;
 }
@@ -21,7 +22,7 @@ export type FasciaFacts = { n: number; sealed: number; generatedAt: string; wind
 /** Solo i fatti della riga meta: il payload della board non passa di qui. */
 export function FasciaMeta({ facts }: { facts: FasciaFacts | null }) {
   const { lang, t } = useV3cCopy();
-  const locale = lang === "it" ? "it-IT" : "en-GB";
+  const locale = v3cLocale(lang);
   if (!facts) return <span>{t.fascia.unavailable}</span>;
   return (
     <>

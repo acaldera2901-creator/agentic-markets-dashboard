@@ -143,10 +143,11 @@ describe("la striscia di tool", () => {
 });
 
 describe("copy", () => {
-  it("EN e IT hanno le stesse chiavi; le altre lingue cadono sull'inglese", () => {
+  it("EN e IT hanno le stesse chiavi; ogni lingua ha la sua copy (F10)", () => {
     const keys = (o: object): string[] => Object.entries(o).flatMap(([k, v]) => (v && typeof v === "object" && !Array.isArray(v) ? keys(v).map((x) => `${k}.${x}`) : [k])).sort();
     expect(keys(V3C_MATCH_COPY.it)).toEqual(keys(V3C_MATCH_COPY.en));
-    expect(matchCopyFor("fr")).toBe(V3C_MATCH_COPY.en);
+    expect(matchCopyFor("fr")).toBe(V3C_MATCH_COPY.fr);
+    expect(matchCopyFor("ja")).toBe(V3C_MATCH_COPY.en);
   });
   it("nessuna parola vietata", () => {
     const text = JSON.stringify(V3C_MATCH_COPY.en) + Object.values(V3C_MATCH_COPY.en).filter((v) => typeof v === "function").map(String).join(" ");

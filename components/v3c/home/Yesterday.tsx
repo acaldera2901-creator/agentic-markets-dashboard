@@ -9,6 +9,7 @@ import type { V3cCopy } from "@/lib/v3c/copy";
 import { dayLong, pctInt } from "@/lib/v3c/board-view";
 import { useV3cCopy } from "@/lib/v3c/lang.client";
 import { V3C_ROUTES } from "../V3cChrome";
+import { v3cLocale } from "@/lib/v3c/copy";
 
 const SHOWN = 8;
 
@@ -52,7 +53,7 @@ function Summary({ s, label, t }: { s: V3DaySummary; label: string; t: V3cCopy }
 
 export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
   const { lang, t } = useV3cCopy();
-  const locale = lang === "it" ? "it-IT" : "en-GB";
+  const locale = v3cLocale(lang);
   if (!data) {
     return (
       <section className="v3c-yday" id="v3c-yday" aria-labelledby="v3c-yday-h">

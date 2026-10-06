@@ -50,8 +50,8 @@ const PAGES: { name: string; path: string; h1: string }[] = [
   { name: "tool-ev-en", path: "/tools/ev-calculator", h1: "EV calculator" },
   { name: "hub-it", path: "/it/tools", h1: "Parti dalla tua domanda" },
   { name: "tool-kelly-it", path: "/it/tools/kelly-criterion", h1: "Criterio di Kelly" },
-  // tedesco: stringhe nuove in fallback inglese (dichiarato), contenuto lungo in tedesco
-  { name: "tool-margin-de", path: "/de/tools/margin-calculator", h1: "Margin calculator" },
+  // tedesco: stringhe nuove tradotte in F10 (lib/i18n/v3c-tools/de.ts), contenuto lungo in tedesco
+  { name: "tool-margin-de", path: "/de/tools/margin-calculator", h1: "Margen-Rechner" },
 ];
 
 for (const p of PAGES) {

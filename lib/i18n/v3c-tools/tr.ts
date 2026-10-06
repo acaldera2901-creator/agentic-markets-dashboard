@@ -1,0 +1,183 @@
+// lib/i18n/v3c-tools/tr.ts (#REDESIGN-V3C F10) — Türkçe, tam.
+// İngilizceyle aynı anahtarlar (copy.test.ts). Hitap «sen», hub araçlarıyla
+// (lib/tools/copy/tr.ts) aynı terimler: oran, marj, kasa, Kelly kriteri, yield.
+import type { V3cToolsCopy } from "./types";
+
+const tr: V3cToolsCopy = {
+  nav: {
+    board: "Pano",
+    tools: "Araçlar",
+    price: "Oran kontrolü",
+    priceShort: "Oran",
+    record: "Kayıt defteri",
+    books: "Bahis siteleri",
+    news: "Haberler",
+    pro: "Pro",
+    method: "Yöntem",
+    pricing: "Fiyatlar", // REVIEW-NATIVE
+    signIn: "Giriş yap",
+    skip: "İçeriğe geç",
+    primary: "Ana menü",
+    primaryMobile: "Ana menü (mobil)",
+    brand: "BetRedge — pano",
+    toPaper: "Kâğıt temaya geç",
+    toDark: "Koyu temaya geç",
+    language: "Dil",
+  },
+  footer: {
+    tagline: "Piyasa oranı, yanında tahminimiz, mühürlü kayıt. Sonra bağlı bir bahis sitesinden en iyi oran.",
+    product: "Ürün",
+    trust: "Güven",
+    booksCol: "Bahis siteleri",
+    toolsLink: "Araçlar · 11, ücretsiz",
+    method: "Yöntem",
+    terms: "Koşullar", // REVIEW-NATIVE
+    privacy: "Gizlilik", // REVIEW-NATIVE
+    responsible: "Sorumlu oyna", // REVIEW-NATIVE
+    notAdvice: "Analiz, tavsiye değil. BetRedge bir bahis sitesi değildir ve bahis kabul etmez.", // REVIEW-NATIVE
+    blend: "Futbol tahminleri %70 piyasa, %30 modeldir.",
+    affiliates: "Ortak bağlantıları ortaklık bağlantılarıdır: komisyon alabiliriz. Bu, sayıları asla değiştirmez.", // REVIEW-NATIVE
+    account: "Hesap",
+    legal: "Yasal", // REVIEW-NATIVE
+    helpTitle: "Bahis eğlenceli kalmalı", // REVIEW-NATIVE
+    helpLine: "Eğlenceli olmaktan çıkarsa biriyle konuş. Ücretsiz, gizli destek:", // REVIEW-NATIVE
+  },
+  hub: {
+    tab: "Tezgâh · 11 araç · hepsi ücretsiz",
+    title: "Kendi sorundan başla",
+    metaStrong: "Giriş yok, hiçbir şey saklanmaz",
+    metaRest: "her araç senin sayılarınla açılır ve bugünün panosunda biter",
+    searchLabel: "Araçlarda ara",
+    searchPlaceholder: "Ara: marj, Kelly, EV, yield…",
+    count: "{n} araç · {match} maçından örnekler",
+    countMatch: "{total} araçtan {n} tanesi “{q}” ile eşleşiyor",
+    empty: "“{q}” adında araç yok. Marj, Kelly, EV ya da yield dene — veya doğrudan bir oranı kontrol et.",
+    toolsN: "{n} araç",
+    toolOne: "1 araç",
+    notATool: "Hesaplayıcı değil",
+    lineQ: "Orana ne oldu?",
+    lineS: "Hareket eden bir oran, saati olan bir hikâyedir. Pano onu saklar.",
+    lineRow: "{match} · açılıştan beri oran",
+    lineRowLine: "Basamaklı şerit, mühürden itibaren adil oranımız, haberler kendi saatinde",
+    priceCheck: "Oran kontrolü",
+    priceCheckLine: "Bahis sitendeki üç oran, piyasaya ve tahminimize karşı",
+    explain: "Araçlar hiçbir şey satmaz ve ortak bağlantısı taşımaz. Pano taşır, okumadan sonra.",
+    openBoard: "Bugünün panosunu aç",
+    sampleNote: "Canlı pano bağlanana kadar örnekler örnek sayılar kullanır.",
+  },
+  questions: {
+    price: { q: "Bu oranlar mantıklı mı?", s: "Bir oran ne söyler, site ne alıkoyar, onu çıkarınca geriye ne kalır." },
+    stake: { q: "Ne kadar yatırmalıyım?", s: "Bir oran senin olasılığına göre değer mi, makul bir miktar neye benzer." },
+    record: { q: "Bahislerim ne getirdi?", s: "Kendi defterinde iki oran. Kendi kayıt defterimizde yayınladığımız aynı hesap." },
+  },
+  tool: {
+    tab: "Araç · ücretsiz · {q}",
+    crumbs: "Araçlar",
+    prefilled: "{match} maçından önceden dolduruldu · {outcome} {price}",
+    typeYours: "sayılarını yaz, hiçbir şey saklanmaz",
+    sameMaths: "Bugünün panosunda aynı hesap",
+    leadAsOf: "Her maçın ana sonucu · oranlar {asOf} itibarıyla",
+    colMatch: "Maç · ana sonuç",
+    colPrice: "Oran",
+    colEstimate: "Tahmin",
+    tapRow: "Üç sonuç, oran geçmişi ve oranın en iyi olduğu yer için bir satıra dokun. Araçlarda ortak bağlantısı yok.",
+    pickLegs: "Ayakları bugünün panosundan seç",
+    pickLegsBody: "Sekiz maç, her biri piyasa olasılığı ve yanında tahminimizle. Orandan değil, farktan başla.",
+    sameRatio: "Aynı oran, kayıt defterimizde",
+    sameRatioBody: "Sonuçlanan tahminlerde ROI değil, Brier ve kalibrasyon yayınlarız: kayıt, paradan önce bir olasılık sorusudur.",
+    openBoard: "Bugünün panosunu aç",
+    seeRecord: "Kayıt defterini gör →",
+    allTools: "11 aracın hepsi →",
+    noStake: "bahis yok",
+    invalid: "—",
+    sample: "örnek",
+  },
+  tools: {
+    "odds-converter": {
+      name: "Oran çevirici",
+      line: "ondalık, kesirli, Amerikan ve zımni %",
+      inputs: { price: "Ondalık oran" },
+      results: { implied: "Zımni olasılık", fractional: "Kesirli", american: "Amerikan" },
+      formula: "Zımni = 1 ÷ oran. Üç format, aynı sayının üç farklı yazılışıdır.",
+      column: "Zımni",
+    },
+    "probability-calculator": {
+      name: "Olasılık hesaplayıcı",
+      line: "üç orandan olasılıklara, marj hariç",
+      inputs: { p1: "Oran 1", p2: "Oran 2", p3: "Oran 3 (iki sonuç için boş)" },
+      results: { o1: "Sonuç 1 · marj hariç", o2: "Sonuç 2 · marj hariç", o3: "Sonuç 3 · marj hariç" },
+      formula: "Marj hariç = zımni ÷ zımnilerin toplamı. Panodaki “Piyasa” sütunu budur.",
+      column: "Piyasa %",
+    },
+    "margin-calculator": {
+      name: "Marj hesaplayıcı",
+      line: "bahis sitesi bir piyasada ne kadar alıkoyar",
+      inputs: { p1: "Oran 1", p2: "Oran 2", p3: "Oran 3 (iki sonuç için boş)" },
+      results: { margin: "Site marjı", sum: "Zımni toplam", kept: "Yatırılan €100 başına alıkonan" },
+      formula: "Marj = zımni olasılıkların toplamı − %100. %106,3'lük bir site her €100'ün yaklaşık €6'sını alıkoyar.",
+      column: "Marj",
+    },
+    "arbitrage-calculator": {
+      name: "Arbitraj hesaplayıcı",
+      line: "siteler arasında sonuç başına en iyi oran: bir boşluk var mı?",
+      inputs: { p1: "En iyi oran 1", p2: "En iyi oran 2", p3: "En iyi oran 3 (iki için boş)", total: "Toplam bahis €" },
+      results: { profit: "Her sonuçta aynı kâr", shortfall: "Arbitraj yok · açık", sum: "Zımni toplam", stake: "{n}. sonuca bahis" },
+      formula: "%100'ün altında bahisler, ne olursa olsun bir kârı sabitler. Üç bağlı site oraya nadiren ulaşır.",
+      column: "En iyi oran toplamı",
+    },
+    "parlay-calculator": {
+      name: "Kombine kupon hesaplayıcı",
+      line: "birleşik oran, gerçek olasılık, bileşik marj",
+      inputs: { l1: "Ayak 1", l2: "Ayak 2", mg: "Ayak başına marj %" },
+      results: { combined: "Birleşik oran", implied: "Zımni olasılık", compounded: "Bileşik marj" },
+      formula: "Her ayak sitenin marjını taşır; iki ayak onu iki kez öder. Birleşik oran bunu gizler.",
+    },
+    "ev-calculator": {
+      name: "EV hesaplayıcı",
+      line: "senin olasılığına göre oran buna değer mi?",
+      inputs: { price: "Ondalık oran", prob: "Senin olasılığın %" },
+      results: { ev: "€1 başına beklenen değer", fair: "%{prob} için adil oran", breakeven: "Başabaş olasılığı" },
+      formula: "EV = oran × olasılık − 1. Yazdığın olasılık kadar iyidir: bizimki bir tahmin, sonuç değil.",
+      column: "Tahmine göre EV",
+    },
+    "kelly-criterion": {
+      name: "Kelly kriteri",
+      line: "kasanın oranı, yarım ve çeyrek Kelly ile",
+      inputs: { price: "Ondalık oran", prob: "Senin olasılığın %", bank: "Kasa €" },
+      results: { full: "Tam Kelly", none: "Kelly diyor ki: bahis yok", half: "Yarım Kelly", quarter: "Çeyrek Kelly" },
+      formula: "f = (b·p − q) ÷ b, b = oran − 1. Tam Kelly oynaktır: çoğu kişi çeyrekte oynar.",
+      column: "Tahmine göre Kelly",
+    },
+    "stake-calculator": {
+      name: "Bahis miktarı hesaplayıcı",
+      line: "istediğin kârı getiren bahis miktarı",
+      inputs: { price: "Ondalık oran", target: "Hedef kâr €", bank: "Kasa €" },
+      results: { stake: "Gereken miktar", return: "Toplam getiri", share: "Kasadaki payı" },
+      formula: "Miktar = hedef kâr ÷ (oran − 1). Kasadaki pay, iki kez bakılması gereken sayıdır.",
+      column: "€100 için miktar",
+    },
+    "bankroll-calculator": {
+      name: "Kasa hesaplayıcı",
+      line: "birim büyüklüğü, kayıp serisi, düşüş",
+      inputs: { bank: "Kasa €", unit: "Birim %", streak: "Kayıp serisi" },
+      results: { unit: "Bir birim", streakLoss: "Üst üste {n} kayıp", ruin: "Bu birimle batışa kadar bahis" },
+      formula: "%2'lik bir birim, üst üste on kayıptan kasanın %80'iyle çıkar. %10'luk bir birim çıkamaz.",
+    },
+    "roi-calculator": {
+      name: "ROI hesaplayıcı",
+      line: "başladığın sermayeye göre kâr",
+      inputs: { cap: "Başlangıç sermayesi €", profit: "Kâr €" },
+      results: { roi: "Yatırım getirisi", end: "Bitiş sermayesi" },
+      formula: "ROI = kâr ÷ başlangıç sermayesi. Oraya varmak için ne kadar çevirdiğin hakkında hiçbir şey söylemez.",
+    },
+    "yield-calculator": {
+      name: "Yield hesaplayıcı",
+      line: "yatırdığın her şeye göre kâr",
+      inputs: { bets: "Bahis sayısı", avg: "Ortalama miktar €", profit: "Kâr €" },
+      results: { yield: "Yield", turnover: "Toplam hacim" },
+      formula: "Yield = kâr ÷ toplam hacim. 200 bahiste %4 yield, %40 ROI'den bambaşka bir şeydir.",
+    },
+  },
+};
+
+export default tr;

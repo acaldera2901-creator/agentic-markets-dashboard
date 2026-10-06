@@ -39,6 +39,7 @@ import { V3C_ROUTES } from "../V3cChrome";
 import { LineChart } from "./LineChart";
 import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
+import { v3cLocale } from "@/lib/v3c/copy";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
 const bookName = (k: string) => BOOK_NAME[k] ?? k;
@@ -55,7 +56,7 @@ type Ctx = { t: V3cCopy; c: V3cMatchCopy; lang: string; tz: string | undefined; 
 function useCtx(): Ctx {
   const { lang, t } = useV3cCopy();
   const tz = useLocalTimeZone();
-  return { t, c: matchCopyFor(lang), lang, tz, locale: lang === "it" ? "it-IT" : "en-GB" };
+  return { t, c: matchCopyFor(lang), lang, tz, locale: v3cLocale(lang) };
 }
 
 // ─── Testa ─────────────────────────────────────────────────────────────────
@@ -363,7 +364,7 @@ function Football({ ctx, m, series, events, partners, links, more }: { ctx: Ctx;
               {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
               <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
             </p>
-            <Nastro market={M} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} />
+            <Nastro market={M} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
           </>
         ) : (
           <p className="v3c-mt-note">{c.noMarketLong}</p>
@@ -567,7 +568,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
         </div>
         {hasGap && m.gap_market ? (
           <>
-            <Nastro market={Number(pctInt(lead.market_p_at_seal))} estimate={Number(pctInt(lead.sealed_p))} marketLabel={c.tennisMarketAtSeal} estimateLabel={c.tennisSealedEstimate} />
+            <Nastro market={Number(pctInt(lead.market_p_at_seal))} estimate={Number(pctInt(lead.sealed_p))} marketLabel={c.tennisMarketAtSeal} estimateLabel={c.tennisSealedEstimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
             <p className="v3c-explain">{t.tennis.gapVs(bookName(m.gap_market.bookmaker), sealedStamp(m.gap_market.captured_at, locale))}</p>
           </>
         ) : (

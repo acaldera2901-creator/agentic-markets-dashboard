@@ -9,6 +9,7 @@ import { checkoutDeepLink, PRO_CHECKOUT_HREF } from "./checkout-link";
 import { booksData, hhmmUtc } from "./books";
 import { readingMinutes } from "./news";
 import { PAGES_COPY, pagesCopyFor } from "./pages-copy";
+import { V3C_LANGS } from "./copy";
 import { COMMUNITY_SEO, COMMUNITY_SEO_V3C } from "@/app/community/seo";
 import type { V3BoardResponse } from "./contracts";
 
@@ -110,7 +111,7 @@ function strings(v: unknown): string[] {
 }
 
 describe("copy delle pagine", () => {
-  for (const lang of ["en", "it"] as const) {
+  for (const lang of V3C_LANGS) {
     const all = strings(PAGES_COPY[lang]);
     it(`${lang}: ≤22 parole per elemento`, () => {
       expect(all.filter((s) => s.split(/\s+/).filter(Boolean).length > 22)).toEqual([]);
@@ -120,8 +121,9 @@ describe("copy delle pagine", () => {
       expect(all.filter((s) => banned.test(s))).toEqual([]);
     });
   }
-  it("le nove lingue senza traduzione ricadono sull'inglese", () => {
-    expect(pagesCopyFor("de")).toBe(PAGES_COPY.en);
+  it("ogni lingua ha la sua copy (F10); una lingua sconosciuta legge l'inglese", () => {
+    expect(pagesCopyFor("de")).toBe(PAGES_COPY.de);
+    expect(pagesCopyFor("ja")).toBe(PAGES_COPY.en);
     expect(pagesCopyFor("it-IT")).toBe(PAGES_COPY.it);
   });
 });

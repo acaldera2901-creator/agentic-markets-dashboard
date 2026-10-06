@@ -1,0 +1,183 @@
+// lib/i18n/v3c-tools/nl.ts (#REDESIGN-V3C F10) — Nederlands, «je»-vorm.
+// Stesse chiavi dell'inglese (test in copy.test.ts). Termini come sugli hub tool
+// NL già pubblicati: odds, marge, EV, Kelly criterium, bankroll, yield.
+import type { V3cToolsCopy } from "./types";
+
+const nl: V3cToolsCopy = {
+  nav: {
+    board: "Board",
+    tools: "Tools",
+    price: "Odds-check",
+    priceShort: "Odds",
+    record: "Register",
+    books: "Bookmakers",
+    news: "Nieuws",
+    pro: "Pro",
+    method: "Methode",
+    pricing: "Prijzen", // REVIEW-NATIVE
+    signIn: "Inloggen",
+    skip: "Naar de inhoud",
+    primary: "Hoofdmenu",
+    primaryMobile: "Hoofdmenu (mobiel)",
+    brand: "BetRedge — board",
+    toPaper: "Naar papier",
+    toDark: "Naar donker",
+    language: "Taal",
+  },
+  footer: {
+    tagline: "Marktodd, onze schatting ernaast, het verzegelde register. Dan de beste odds van een gekoppelde bookmaker.",
+    product: "Product",
+    trust: "Vertrouwen",
+    booksCol: "Bookmakers",
+    toolsLink: "Tools · 11, gratis",
+    method: "Methode",
+    terms: "Voorwaarden", // REVIEW-NATIVE
+    privacy: "Privacy", // REVIEW-NATIVE
+    responsible: "Speel verantwoord", // REVIEW-NATIVE
+    notAdvice: "Analyse, geen advies. BetRedge is geen bookmaker en neemt geen weddenschappen aan.", // REVIEW-NATIVE
+    blend: "Voetbalschattingen zijn 70% markt, 30% model.",
+    affiliates: "Partnerlinks zijn affiliatelinks: we kunnen een commissie ontvangen. Dat verandert nooit de getallen.", // REVIEW-NATIVE
+    account: "Account",
+    legal: "Juridisch", // REVIEW-NATIVE
+    helpTitle: "Gokken moet leuk blijven", // REVIEW-NATIVE
+    helpLine: "Is het niet leuk meer, praat dan met iemand. Gratis, vertrouwelijke hulp:", // REVIEW-NATIVE
+  },
+  hub: {
+    tab: "De bank · 11 tools · allemaal gratis",
+    title: "Begin bij je vraag",
+    metaStrong: "Zonder inloggen, niets opgeslagen",
+    metaRest: "elke tool opent met jouw getallen en eindigt op het board van vandaag",
+    searchLabel: "Zoek in de tools",
+    searchPlaceholder: "Zoek: marge, Kelly, EV, yield…",
+    count: "{n} tools · voorbeelden uit {match}",
+    countMatch: "{n} van {total} tools passen bij „{q}”",
+    empty: "Geen tool heet „{q}”. Probeer marge, Kelly, EV of yield — of check direct een odd.",
+    toolsN: "{n} tools",
+    toolOne: "1 tool",
+    notATool: "Geen calculator",
+    lineQ: "Wat gebeurde er met de lijn?",
+    lineS: "Een odd die bewoog is een verhaal met een tijdstip. Het board bewaart het.",
+    lineRow: "{match} · odd sinds opening",
+    lineRowLine: "Getrapte lijn, onze eerlijke odd vanaf het zegel, nieuws op zijn tijdstip",
+    priceCheck: "Odds-check",
+    priceCheckLine: "Drie odds van je bookmaker tegenover de markt en onze schatting",
+    explain: "Tools verkopen niets en hebben geen partnerlink. Het board wel, na de lezing.",
+    openBoard: "Open het board van vandaag",
+    sampleNote: "Voorbeelden gebruiken voorbeeldgetallen tot het live board gekoppeld is.",
+  },
+  questions: {
+    price: { q: "Kloppen deze odds?", s: "Wat een odd zegt, wat de bookmaker houdt, wat overblijft als je dat eraf haalt." },
+    stake: { q: "Hoeveel zet ik in?", s: "Of een odd het waard is bij jouw kans, en hoe een verstandige inzet eruitziet." },
+    record: { q: "Wat leverden mijn weddenschappen op?", s: "Twee verhoudingen op je eigen dagboek. Dezelfde rekensom die wij op ons register publiceren." },
+  },
+  tool: {
+    tab: "Tool · gratis · {q}",
+    crumbs: "Tools",
+    prefilled: "vooraf ingevuld uit {match} · {outcome} {price}",
+    typeYours: "typ je getallen, niets wordt opgeslagen",
+    sameMaths: "Dezelfde rekensom op het board van vandaag",
+    leadAsOf: "Hoofduitkomst per wedstrijd · odds van {asOf}",
+    colMatch: "Wedstrijd · hoofduitkomst",
+    colPrice: "Odds",
+    colEstimate: "Schatting",
+    tapRow: "Tik op een rij voor de drie uitkomsten, het oddsverloop en waar de odds het best zijn. Tools hebben geen partnerlink.",
+    pickLegs: "Kies de selecties van het board van vandaag",
+    pickLegsBody: "Acht wedstrijden, elk met een marktkans en onze schatting ernaast. Begin bij het verschil, niet bij de odd.",
+    sameRatio: "Dezelfde verhouding, op ons register",
+    sameRatioBody: "We publiceren Brier en kalibratie op afgerekende schattingen, geen ROI: een register is eerst een kansvraag, pas daarna een geldvraag.",
+    openBoard: "Open het board van vandaag",
+    seeRecord: "Bekijk het register →",
+    allTools: "Alle 11 tools →",
+    noStake: "geen inzet",
+    invalid: "—",
+    sample: "voorbeeld",
+  },
+  tools: {
+    "odds-converter": {
+      name: "Odds converter",
+      line: "decimaal, fractioneel, Amerikaans en impliciet %",
+      inputs: { price: "Decimale odd" },
+      results: { implied: "Impliciete kans", fractional: "Fractioneel", american: "Amerikaans" },
+      formula: "Impliciet = 1 ÷ odd. De drie notaties zijn hetzelfde getal, op drie manieren geschreven.",
+      column: "Impliciet",
+    },
+    "probability-calculator": {
+      name: "Kansrekenmachine",
+      line: "drie odds naar kansen, zonder marge",
+      inputs: { p1: "Odd 1", p2: "Odd 2", p3: "Odd 3 (leeg voor twee)" },
+      results: { o1: "Uitkomst 1 · zonder marge", o2: "Uitkomst 2 · zonder marge", o3: "Uitkomst 3 · zonder marge" },
+      formula: "Zonder marge = impliciet ÷ som van de impliciete kansen. Dit is de kolom „Markt” op het board.",
+      column: "Markt-%",
+    },
+    "margin-calculator": {
+      name: "Margecalculator",
+      line: "hoeveel de bookmaker op een markt houdt",
+      inputs: { p1: "Odd 1", p2: "Odd 2", p3: "Odd 3 (leeg voor twee)" },
+      results: { margin: "Bookmakermarge", sum: "Impliciete som", kept: "Ingehouden per €100 inzet" },
+      formula: "Marge = som van de impliciete kansen − 100%. Een boek van 106.3% houdt ongeveer €6 van elke €100.",
+      column: "Marge",
+    },
+    "arbitrage-calculator": {
+      name: "Arbitrage-calculator",
+      line: "beste odd per uitkomst, over bookmakers heen: is er een gat?",
+      inputs: { p1: "Beste odd 1", p2: "Beste odd 2", p3: "Beste odd 3 (leeg voor twee)", total: "Totale inzet €" },
+      results: { profit: "Winst bij elke uitkomst", shortfall: "Geen arbitrage · tekort", sum: "Impliciete som", stake: "Inzet op {n}" },
+      formula: "Onder 100% leveren de inzetten winst op, wat er ook gebeurt. Drie gekoppelde bookmakers komen daar zelden.",
+      column: "Som beste odds",
+    },
+    "parlay-calculator": {
+      name: "Combinatiewedden-calculator",
+      line: "gecombineerde odd, echte kans, opgestapelde marge",
+      inputs: { l1: "Selectie 1", l2: "Selectie 2", mg: "Marge per selectie %" },
+      results: { combined: "Gecombineerde odd", implied: "Impliciete kans", compounded: "Opgestapelde marge" },
+      formula: "Elke selectie draagt de marge van de bookmaker; twee selecties betalen die twee keer. De gecombineerde odd verbergt dat.",
+    },
+    "ev-calculator": {
+      name: "EV calculator",
+      line: "is de odd het waard bij jouw kans?",
+      inputs: { price: "Decimale odd", prob: "Jouw kans %" },
+      results: { ev: "Verwachte waarde per €1", fair: "Eerlijke odd bij {prob}%", breakeven: "Break-evenkans" },
+      formula: "EV = odd × kans − 1. Zo goed als de kans die je typt: de onze is een schatting, geen uitslag.",
+      column: "EV bij schatting",
+    },
+    "kelly-criterion": {
+      name: "Kelly criterium",
+      line: "deel van de bankroll, met halve en kwart Kelly",
+      inputs: { price: "Decimale odd", prob: "Jouw kans %", bank: "Bankroll €" },
+      results: { full: "Volledige Kelly", none: "Kelly zegt: geen inzet", half: "Halve Kelly", quarter: "Kwart Kelly" },
+      formula: "f = (b·p − q) ÷ b met b = odd − 1. Volledige Kelly is volatiel: de meesten kiezen een kwart.",
+      column: "Kelly bij schatting",
+    },
+    "stake-calculator": {
+      name: "Inzet-calculator",
+      line: "de inzet die de winst oplevert die je wilt",
+      inputs: { price: "Decimale odd", target: "Beoogde winst €", bank: "Bankroll €" },
+      results: { stake: "Benodigde inzet", return: "Totale opbrengst", share: "Deel van de bankroll" },
+      formula: "Inzet = beoogde winst ÷ (odd − 1). Het deel van de bankroll is het getal om twee keer naar te kijken.",
+      column: "Inzet voor €100",
+    },
+    "bankroll-calculator": {
+      name: "Bankroll-calculator",
+      line: "eenheidsgrootte, verliesreeks, terugval",
+      inputs: { bank: "Bankroll €", unit: "Eenheid %", streak: "Verliesreeks" },
+      results: { unit: "Eén eenheid", streakLoss: "{n} verliezen op rij", ruin: "Weddenschappen tot ruïne bij deze eenheid" },
+      formula: "Een eenheid van 2% overleeft tien verliezen op rij met 80% van de bankroll. Een eenheid van 10% niet.",
+    },
+    "roi-calculator": {
+      name: "ROI-calculator",
+      line: "winst tegenover het kapitaal waarmee je begon",
+      inputs: { cap: "Startkapitaal €", profit: "Winst €" },
+      results: { roi: "Rendement op investering", end: "Eindkapitaal" },
+      formula: "ROI = winst ÷ startkapitaal. Het zegt niets over hoeveel je hebt omgezet om daar te komen.",
+    },
+    "yield-calculator": {
+      name: "Yield-calculator",
+      line: "winst tegenover alles wat je hebt ingezet",
+      inputs: { bets: "Aantal weddenschappen", avg: "Gemiddelde inzet €", profit: "Winst €" },
+      results: { yield: "Yield", turnover: "Omzet" },
+      formula: "Yield = winst ÷ omzet. Een yield van 4% op 200 weddenschappen is een heel ander beest dan een ROI van 40%.",
+    },
+  },
+};
+
+export default nl;

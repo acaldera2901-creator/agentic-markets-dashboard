@@ -1,0 +1,183 @@
+// lib/i18n/v3c-tools/fr.ts (#REDESIGN-V3C F10) — français, registre « vous ».
+// Mêmes clés que l'anglais (test dans copy.test.ts). Noms d'outils alignés sur
+// lib/tools/copy/fr.ts : « calculateur de marge », « critère de Kelly », « cote ».
+import type { V3cToolsCopy } from "./types";
+
+const fr: V3cToolsCopy = {
+  nav: {
+    board: "Tableau",
+    tools: "Outils",
+    price: "Vérifier la cote",
+    priceShort: "Cote",
+    record: "Registre",
+    books: "Bookmakers",
+    news: "Actus",
+    pro: "Pro",
+    method: "Méthode",
+    pricing: "Tarifs", // REVIEW-NATIVE
+    signIn: "Se connecter",
+    skip: "Aller au contenu",
+    primary: "Principale",
+    primaryMobile: "Principale (mobile)",
+    brand: "BetRedge — tableau",
+    toPaper: "Passer en papier",
+    toDark: "Passer en sombre",
+    language: "Langue",
+  },
+  footer: {
+    tagline: "La cote du marché, notre estimation à côté, le registre scellé. Puis la meilleure cote d’un bookmaker connecté.",
+    product: "Produit",
+    trust: "Confiance",
+    booksCol: "Bookmakers",
+    toolsLink: "Outils · 11, gratuits",
+    method: "Méthode",
+    terms: "Conditions", // REVIEW-NATIVE
+    privacy: "Confidentialité", // REVIEW-NATIVE
+    responsible: "Jouez de manière responsable", // REVIEW-NATIVE
+    notAdvice: "Analyse, pas des conseils. BetRedge n’est pas un bookmaker et ne prend aucun pari.", // REVIEW-NATIVE
+    blend: "Les estimations football sont 70 % marché, 30 % modèle.",
+    affiliates: "Les liens partenaires sont des liens affiliés : nous pouvons toucher une commission. Cela ne change jamais les chiffres.", // REVIEW-NATIVE
+    account: "Compte",
+    legal: "Mentions légales", // REVIEW-NATIVE
+    helpTitle: "Le jeu doit rester un plaisir", // REVIEW-NATIVE
+    helpLine: "S’il cesse de l’être, parlez-en à quelqu’un. Aide gratuite et confidentielle :", // REVIEW-NATIVE
+  },
+  hub: {
+    tab: "Le banc · 11 outils · tous gratuits",
+    title: "Partez de votre question",
+    metaStrong: "Sans connexion, rien n’est enregistré",
+    metaRest: "chaque outil s’ouvre avec vos chiffres et mène au tableau du jour",
+    searchLabel: "Rechercher dans les outils",
+    searchPlaceholder: "Rechercher : marge, Kelly, EV, yield…",
+    count: "{n} outils · exemples tirés de {match}",
+    countMatch: "{n} outils sur {total} correspondent à « {q} »",
+    empty: "Aucun outil ne s’appelle « {q} ». Essayez marge, Kelly, EV ou yield — ou vérifiez directement une cote.",
+    toolsN: "{n} outils",
+    toolOne: "1 outil",
+    notATool: "Pas un calculateur",
+    lineQ: "Qu’est-il arrivé à la cote ?",
+    lineS: "Une cote qui a bougé est une histoire avec une heure. Le tableau la garde.",
+    lineRow: "{match} · cote depuis l’ouverture",
+    lineRowLine: "Courbe en escalier, notre cote juste depuis le sceau, les actus à leur heure",
+    priceCheck: "Vérifier la cote",
+    priceCheckLine: "Trois cotes de votre bookmaker face au marché et à notre estimation",
+    explain: "Les outils ne vendent rien et n’ont aucun lien partenaire. Le tableau en a, après la lecture.",
+    openBoard: "Ouvrir le tableau du jour",
+    sampleNote: "Les exemples utilisent des chiffres types tant que le tableau en direct n’est pas connecté.",
+  },
+  questions: {
+    price: { q: "Ces cotes ont-elles du sens ?", s: "Ce que dit une cote, ce que garde le bookmaker, ce qui reste une fois la marge retirée." },
+    stake: { q: "Combien miser ?", s: "Si une cote vaut le coup à votre probabilité, et à quoi ressemble une mise raisonnable." },
+    record: { q: "Qu’ont rapporté mes paris ?", s: "Deux ratios sur votre propre historique. Le même calcul que nous publions sur notre registre." },
+  },
+  tool: {
+    tab: "Outil · gratuit · {q}",
+    crumbs: "Outils",
+    prefilled: "prérempli depuis {match} · {outcome} {price}",
+    typeYours: "saisissez vos chiffres, rien n’est enregistré",
+    sameMaths: "Le même calcul sur le tableau du jour",
+    leadAsOf: "Issue principale de chaque match · cotes à {asOf}",
+    colMatch: "Match · issue principale",
+    colPrice: "Cote",
+    colEstimate: "Estimation",
+    tapRow: "Touchez une ligne pour les trois issues, l’historique des cotes et la meilleure cote. Les outils n’ont aucun lien partenaire.",
+    pickLegs: "Choisissez les sélections dans le tableau du jour",
+    pickLegsBody: "Huit matchs, chacun avec une probabilité du marché et notre estimation à côté. Partez de l’écart, pas de la cote.",
+    sameRatio: "Le même ratio, sur notre registre",
+    sameRatioBody: "Nous publions Brier et calibration sur les estimations réglées, pas le rendement : un registre est une question de probabilité avant d’argent.",
+    openBoard: "Ouvrir le tableau du jour",
+    seeRecord: "Voir le registre →",
+    allTools: "Les 11 outils →",
+    noStake: "aucune mise",
+    invalid: "—",
+    sample: "exemple",
+  },
+  tools: {
+    "odds-converter": {
+      name: "Convertisseur de cotes",
+      line: "décimale, fractionnaire, américaine et % implicite",
+      inputs: { price: "Cote décimale" },
+      results: { implied: "Probabilité implicite", fractional: "Fractionnaire", american: "Américaine" },
+      formula: "Implicite = 1 ÷ cote. Les trois formats sont le même nombre écrit de trois façons.",
+      column: "Implicite",
+    },
+    "probability-calculator": {
+      name: "Calculateur de probabilité",
+      line: "trois cotes en probabilités, marge retirée",
+      inputs: { p1: "Cote 1", p2: "Cote 2", p3: "Cote 3 (vide pour deux)" },
+      results: { o1: "Issue 1 · marge retirée", o2: "Issue 2 · marge retirée", o3: "Issue 3 · marge retirée" },
+      formula: "Marge retirée = implicite ÷ somme des implicites. C’est la colonne « Marché » du tableau.",
+      column: "% du marché",
+    },
+    "margin-calculator": {
+      name: "Calculateur de marge",
+      line: "ce que le bookmaker garde sur un marché",
+      inputs: { p1: "Cote 1", p2: "Cote 2", p3: "Cote 3 (vide pour deux)" },
+      results: { margin: "Marge du bookmaker", sum: "Somme des implicites", kept: "Gardé pour 100 € misés" },
+      formula: "Marge = somme des probabilités implicites − 100 %. Un livre à 106,3 % garde environ 6 € sur 100 €.",
+      column: "Marge",
+    },
+    "arbitrage-calculator": {
+      name: "Calculateur d’arbitrage",
+      line: "meilleure cote par issue, entre bookmakers : y a-t-il un écart ?",
+      inputs: { p1: "Meilleure cote 1", p2: "Meilleure cote 2", p3: "Meilleure cote 3 (vide pour deux)", total: "Mise totale €" },
+      results: { profit: "Profit quelle que soit l’issue", shortfall: "Pas d’arbitrage · manque", sum: "Somme des implicites", stake: "Mise sur {n}" },
+      formula: "Sous 100 %, les mises assurent un profit quoi qu’il arrive. Trois bookmakers connectés y arrivent rarement.",
+      column: "Somme des meilleures cotes",
+    },
+    "parlay-calculator": {
+      name: "Calculateur de paris combinés",
+      line: "cote combinée, probabilité réelle, marge cumulée",
+      inputs: { l1: "Sélection 1", l2: "Sélection 2", mg: "Marge par sélection %" },
+      results: { combined: "Cote combinée", implied: "Probabilité implicite", compounded: "Marge cumulée" },
+      formula: "Chaque sélection porte la marge du bookmaker ; deux sélections la paient deux fois. La cote combinée le cache.",
+    },
+    "ev-calculator": {
+      name: "Calculateur de valeur espérée",
+      line: "la cote vaut-elle le coup à votre probabilité ?",
+      inputs: { price: "Cote décimale", prob: "Votre probabilité %" },
+      results: { ev: "Valeur espérée par 1 €", fair: "Cote juste à {prob} %", breakeven: "Probabilité d’équilibre" },
+      formula: "EV = cote × probabilité − 1. Ne vaut que la probabilité saisie : la nôtre est une estimation, pas un résultat.",
+      column: "EV à l’estimation",
+    },
+    "kelly-criterion": {
+      name: "Calculateur du critère de Kelly",
+      line: "fraction de la bankroll, avec demi et quart de Kelly",
+      inputs: { price: "Cote décimale", prob: "Votre probabilité %", bank: "Bankroll €" },
+      results: { full: "Kelly complet", none: "Kelly dit : aucune mise", half: "Demi-Kelly", quarter: "Quart de Kelly" },
+      formula: "f = (b·p − q) ÷ b avec b = cote − 1. Kelly complet est volatil : misez plutôt un quart.",
+      column: "Kelly à l’estimation",
+    },
+    "stake-calculator": {
+      name: "Calculateur de mise",
+      line: "la mise qui rapporte le profit que vous visez",
+      inputs: { price: "Cote décimale", target: "Profit visé €", bank: "Bankroll €" },
+      results: { stake: "Mise nécessaire", return: "Retour total", share: "Part de la bankroll" },
+      formula: "Mise = profit visé ÷ (cote − 1). La part de la bankroll est le chiffre à regarder deux fois.",
+      column: "Mise pour 100 €",
+    },
+    "bankroll-calculator": {
+      name: "Calculateur de bankroll",
+      line: "taille d’unité, série de pertes, drawdown",
+      inputs: { bank: "Bankroll €", unit: "Unité %", streak: "Série de pertes" },
+      results: { unit: "Une unité", streakLoss: "{n} pertes d’affilée", ruin: "Paris avant la ruine à cette unité" },
+      formula: "Une unité de 2 % survit à dix pertes d’affilée avec 80 % de la bankroll. Une unité de 10 %, non.",
+    },
+    "roi-calculator": {
+      name: "Calculateur de ROI",
+      line: "le profit rapporté au capital de départ",
+      inputs: { cap: "Capital de départ €", profit: "Profit €" },
+      results: { roi: "Retour sur investissement", end: "Capital final" },
+      formula: "ROI = profit ÷ capital de départ. Il ne dit rien du volume misé pour y arriver.",
+    },
+    "yield-calculator": {
+      name: "Calculateur de yield",
+      line: "le profit rapporté à tout ce que vous avez misé",
+      inputs: { bets: "Nombre de paris", avg: "Mise moyenne €", profit: "Profit €" },
+      results: { yield: "Yield", turnover: "Volume misé" },
+      formula: "Yield = profit ÷ volume misé. 4 % de yield sur 200 paris diffère totalement de 40 % de ROI.",
+    },
+  },
+};
+
+export default fr;
