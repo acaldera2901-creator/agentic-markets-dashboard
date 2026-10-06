@@ -13,6 +13,17 @@ ruolo DB **read-only dedicato**, dietro password, e i numeri chiave coincidono c
 
 ## Stato
 
+- **v6 (06/10, branch `feat/growth-v6`)** — redesign della UI secondo `docs/design-v6/README.md`:
+  tema carta di default e navy opzionale (stessi token, scelta in localStorage), lockup SVG ufficiale,
+  Big Shoulders + Archivo via `next/font`; home nell'ordine barra → «Oggi in 30 secondi» (cosa è
+  cambiato dalle serie di Andamento · non fidarti di) → «Conteggi delle fasi · unità diverse» (senza
+  frecce né %) → 6 KPI principali + secondari in righe «perché ▸» per famiglia → Canali → Andamento →
+  «Dati che non abbiamo ancora» (i 17 MANCA raggruppati per gap di `content/tracking-gaps.json`);
+  `/lavoro` con 4 riquadri di avanzamento e stepper in sola lettura. Etichetta UI «Contato» al posto
+  di «MISURATO» (`KpiStatus.LIVE` invariato). Solo `ui/`, `app/globals.css`, `app/layout.tsx` (font +
+  tema): `core/`, `data/`, `proxy.ts`, le route e i JSON non cambiano. Verificato: `verify` 149/149 e
+  0 divergenze, 144 valori renderizzati identici alla v5 (Oggi/7g/30g), contrasto AA misurato sui token
+  (Contato su carta scurito a `#176C4E`: il `#1E7F5C` proposto dava 4,34:1).
 - **v5 (06/10, branch `feat/growth-v5`)** — correzioni dell'audit QA: «Andamento» con la serie
   «Page view probabilmente umani» (STIMATO, stesso criterio di `core/estimate.ts`) prima del grezzo
   e la serie «senza paese»; etichetta «senza paese: test locali, job sintetici o crawler (causa non

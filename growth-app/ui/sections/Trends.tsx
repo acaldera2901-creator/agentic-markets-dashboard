@@ -1,23 +1,10 @@
 // Filone A — daily series, comparison with the previous period, anomalies.
 // Presentational only: receives the normalized series (or nothing) and renders.
 
-import type { ReactNode } from "react";
 import { HUMAN_FILTER_CRITERIA, NO_COUNTRY_SPIKE_SHARE, noCountrySpike } from "@/core/estimate";
 import type { GrowthData } from "@/core/model";
-import {
-  ANOMALY_BASELINE_DAYS,
-  ANOMALY_SIGMA,
-  type Anomaly,
-  SERIES_METRICS,
-  SMALL_SAMPLE_BASE,
-  anomalies,
-  compare,
-  windowDays,
-} from "@/core/series";
-
-const fmtInt = (n: number) => n.toLocaleString("it-IT");
-const fmtSigned = (n: number) => (n > 0 ? "+" : n < 0 ? "−" : "±") + fmtInt(Math.abs(n));
-const fmtDay = (ymd: string) => `${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
+import { ANOMALY_BASELINE_DAYS, ANOMALY_SIGMA, type Anomaly, SERIES_METRICS, SMALL_SAMPLE_BASE, anomalies, compare, windowDays } from "@/core/series";
+import { Chip, SectionTitle, Why, fmtDay, fmtInt, fmtSigned } from "../primitives";
 
 /** Inline SVG sparkline: one series, anomalous days ringed + labelled, native hover per point. */
 function Sparkline({ values, days, flagged }: { values: number[]; days: string[]; flagged: Set<number> }) {
@@ -30,11 +17,11 @@ function Sparkline({ values, days, flagged }: { values: number[]; days: string[]
   const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`andamento, massimo ${fmtInt(max)}`} className="overflow-visible">
-      <line x1={P} x2={W - P} y1={H - P} y2={H - P} className="stroke-gray-700" strokeWidth={1} />
-      <polyline points={pts} fill="none" className="stroke-sky-400" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      <line x1={P} x2={W - P} y1={H - P} y2={H - P} className="g-spark-base" strokeWidth={1} />
+      <polyline points={pts} fill="none" className="g-spark-line" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
       {values.map((v, i) => (
         <g key={days[i]}>
-          {flagged.has(i) && <circle cx={x(i)} cy={y(v)} r={4.5} className="fill-gray-900 stroke-amber-300" strokeWidth={2} />}
+          {flagged.has(i) && <circle cx={x(i)} cy={y(v)} r={4.5} className="g-spark-ring" strokeWidth={2} />}
           {/* invisible, larger hit target for the native tooltip */}
           <circle cx={x(i)} cy={y(v)} r={6} fill="transparent">
             <title>{`${fmtDay(days[i])}: ${fmtInt(v)}${flagged.has(i) ? " — anomalia" : ""}`}</title>
@@ -47,27 +34,14 @@ function Sparkline({ values, days, flagged }: { values: number[]; days: string[]
 
 function AnomalyNote({ a }: { a: Anomaly }) {
   return (
-    <div className="text-[11px] text-amber-300">
-      {a.z > 0 ? "▲" : "▼"} ANOMALIA {fmtDay(a.day)}: {fmtInt(a.value)} (media {ANOMALY_BASELINE_DAYS}g prima {a.mean.toFixed(1)} ± {a.sd.toFixed(1)}, {a.z > 0 ? "+" : ""}
-      {a.z.toFixed(1)}σ)
-    </div>
+    <li className="g-anom text-[12px] font-medium">
+      {a.z > 0 ? "▲" : "▼"} {fmtDay(a.day)}: {fmtInt(a.value)} <span className="g-muted font-normal">(media {ANOMALY_BASELINE_DAYS}g prima {a.mean.toFixed(1)} ± {a.sd.toFixed(1)}, {a.z > 0 ? "+" : ""}
+      {a.z.toFixed(1)}σ)</span>
+    </li>
   );
 }
 
 const pct = (r: number) => `${(r * 100).toFixed(0)}%`;
-
-function Shell({ n, headline, children }: { n: number; headline: ReactNode; children: ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-800 pb-2">
-        <h2 className="text-white font-semibold">Andamento giornaliero</h2>
-        <span className="text-gray-500 text-xs">ultimi {n} giorni interi vs i {n} precedenti</span>
-        {headline}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 export function Trends({ data }: { data: GrowthData }) {
   const n = windowDays(data.window);
@@ -84,76 +58,103 @@ export function Trends({ data }: { data: GrowthData }) {
   const noCountry = cur("page_views_no_country");
   const spike = raw !== null && noCountry !== null ? noCountrySpike(noCountry, raw) : null;
 
-  const headline = (
-    <span className="text-xs text-gray-300">
-      Page view ultimi {n}g: <span className="font-semibold text-white tabular-nums">{human === null ? "n/d" : fmtInt(human)}</span> probabilmente umani{" "}
-      <span className="text-[10px] font-semibold tracking-wider px-1 py-0.5 rounded border bg-amber-950 text-amber-300 border-amber-800">STIMATO</span>
-      <span className="text-gray-500"> · {raw === null ? "n/d" : fmtInt(raw)} grezzi </span>
-      <span className="text-[10px] font-semibold tracking-wider px-1 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800">MISURATO</span>
-    </span>
-  );
-
   return (
-    <Shell n={n} headline={headline}>
+    <section aria-labelledby="andamento" className="flex flex-col gap-3">
+      <SectionTitle id="andamento" title="Andamento giornaliero" hint={`ultimi ${n} giorni interi vs i ${n} precedenti`} />
+      <p className="text-[14px] flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span>
+          Page view ultimi {n}g: <span className="g-num g-num--sm">{human === null ? "n/d" : fmtInt(human)}</span> probabilmente umani
+        </span>
+        <Chip mark="EST" />
+        <span className="g-muted">· {raw === null ? "n/d" : fmtInt(raw)} grezzi</span>
+        <Chip mark="LIVE" />
+      </p>
       {spike?.spike && (
-        <div role="alert" className="bg-amber-950 border border-amber-600 rounded-xl px-4 py-2 text-sm text-amber-200">
-          Picco anomalo, controllare prima di leggere i totali: {pct(spike.share!)} dei page view degli ultimi {n} giorni è senza paese (soglia{" "}
+        <div role="alert" className="g-card px-4 py-3 text-[14px]" style={{ borderLeft: "4px solid var(--anomaly)" }}>
+          <span className="g-anom">▲</span> Picco anomalo, controllare prima di leggere i totali: {pct(spike.share!)} dei page view degli ultimi {n} giorni è senza paese (soglia{" "}
           {pct(NO_COUNTRY_SPIKE_SHARE)}).
         </div>
       )}
-      <p className="text-gray-500 text-[11px] leading-snug">
-        I page view grezzi contengono anche crawler, job sintetici e traffico senza paese: per le persone leggi la riga «probabilmente umani»
-        (STIMATO, stesso criterio della tile in Acquisition: {HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}). Il grezzo resta accanto.{" "}
-        Giorni di calendario nel fuso Europe/Rome, dal {fmtDay(shown[0])} al {fmtDay(shown[shown.length - 1])}; oggi è escluso perché
-        parziale. Un giorno senza eventi vale 0 solo se la lettura è riuscita: se la query fallisce la riga resta vuota.
-        Con un periodo precedente sotto {SMALL_SAMPLE_BASE} eventi c&apos;è solo il delta assoluto (campione piccolo). Anomalia = giorno oltre{" "}
-        {ANOMALY_SIGMA} deviazioni standard dalla media dei {ANOMALY_BASELINE_DAYS} giorni prima, solo con ≥{ANOMALY_BASELINE_DAYS} giorni di
-        storia dal primo dato registrato.
-      </p>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 overflow-x-auto">
-        <table className="w-full text-sm">
+      <Why label="perché e come si legge">
+        I page view grezzi contengono anche crawler, job sintetici e traffico senza paese: per le persone leggi la riga «probabilmente umani» (STIMATO, stesso criterio
+        della card in Acquisition: {HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}). Il grezzo resta accanto. Giorni di calendario nel fuso
+        Europe/Rome, dal {fmtDay(shown[0])} al {fmtDay(shown[shown.length - 1])}; oggi è escluso perché parziale. Un giorno senza eventi vale 0 solo se la lettura è
+        riuscita: se la query fallisce la riga resta vuota. Con un periodo precedente sotto {SMALL_SAMPLE_BASE} eventi c&apos;è solo il delta assoluto (campione
+        piccolo). <b>Anomalia</b> = giorno oltre {ANOMALY_SIGMA} deviazioni standard (σ) dalla media dei {ANOMALY_BASELINE_DAYS} giorni prima, solo con ≥
+        {ANOMALY_BASELINE_DAYS} giorni di storia dal primo dato registrato; σ è la deviazione standard campionaria di quei {ANOMALY_BASELINE_DAYS} giorni, z = (valore −
+        media) / σ.
+      </Why>
+      <div className="g-card p-4 g-scroll">
+        <table className="g-table">
           <thead>
-            <tr className="text-gray-500 text-[11px] uppercase tracking-wider text-left">
-              <th className="font-normal pb-2 pr-3">Metrica</th>
-              <th className="font-normal pb-2 pr-3 text-right">Ultimi {n}g</th>
-              <th className="font-normal pb-2 pr-3 text-right">{n}g prima</th>
-              <th className="font-normal pb-2 pr-3 text-right">Delta</th>
-              <th className="font-normal pb-2 pr-3">Andamento</th>
-              <th className="font-normal pb-2">Note</th>
+            <tr>
+              <th>Metrica</th>
+              <th className="r">Ultimi {n}g</th>
+              <th className="r">{n}g prima</th>
+              <th className="r">Delta</th>
+              <th>Andamento</th>
+              <th>Note</th>
             </tr>
           </thead>
           <tbody>
             {rows.map(({ m, v, c, an }) => (
-              <tr key={m.key} className="border-t border-gray-800 align-top">
-                <td className="py-2 pr-3 text-gray-300 whitespace-nowrap">
-                  {m.label}
-                  {m.key === "sessions" && <div className="text-[10px] text-gray-500">somma delle sessioni di ogni giorno</div>}
-                  {m.key === "probably_human" && <div className="text-[10px] text-amber-300">STIMATO · esclusi senza paese, paesi senza sessioni, raffiche</div>}
-                  {m.key === "page_views" && <div className="text-[10px] text-gray-500">MISURATO · crawler e senza paese inclusi</div>}
-                  {m.key === "page_views_no_country" && <div className="text-[10px] text-gray-500">test locali, job sintetici o crawler</div>}
+              <tr key={m.key}>
+                <td className="whitespace-nowrap">
+                  <span className="g-ink">{m.label}</span>
+                  {m.key === "sessions" && <div className="g-meta">somma delle sessioni di ogni giorno</div>}
+                  {m.key === "probably_human" && (
+                    <div className="g-meta">
+                      <Chip mark="EST" /> esclusi senza paese, paesi senza sessioni, raffiche
+                    </div>
+                  )}
+                  {m.key === "page_views" && (
+                    <div className="g-meta">
+                      <Chip mark="LIVE" /> crawler e senza paese inclusi
+                    </div>
+                  )}
+                  {m.key === "page_views_no_country" && <div className="g-meta">test locali, job sintetici o crawler</div>}
                 </td>
                 {v && c ? (
                   <>
-                    <td className="py-2 pr-3 text-right text-white font-semibold tabular-nums">{fmtInt(c.current)}</td>
-                    <td className="py-2 pr-3 text-right text-gray-400 tabular-nums">{fmtInt(c.previous)}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums text-gray-200 whitespace-nowrap">
-                      {fmtSigned(c.delta)}
-                      {c.pct !== null && <span className="text-gray-400"> ({c.pct > 0 ? "+" : ""}{(c.pct * 100).toFixed(0)}%)</span>}
+                    <td className="r g-num g-num--sm">{fmtInt(c.current)}</td>
+                    <td className="r g-muted">{fmtInt(c.previous)}</td>
+                    <td className="r whitespace-nowrap">
+                      <span className="font-semibold">{fmtSigned(c.delta)}</span>
+                      {c.pct !== null && (
+                        <span className="g-muted">
+                          {" "}
+                          ({c.pct > 0 ? "+" : ""}
+                          {(c.pct * 100).toFixed(0)}%)
+                        </span>
+                      )}
                     </td>
-                    <td className="py-2 pr-3">
+                    <td>
                       <Sparkline values={v.slice(v.length - n)} days={shown} flagged={new Set(an.map((a) => a.index - (v.length - n)))} />
                     </td>
-                    <td className="py-2 space-y-0.5">
-                      {c.smallSample && <div className="text-[11px] text-gray-400">campione piccolo (base {fmtInt(c.previous)} &lt; {SMALL_SAMPLE_BASE}): niente %</div>}
-                      {c.partialHistory && <div className="text-[11px] text-gray-400">il periodo precedente comincia prima del primo dato registrato</div>}
-                      {an.map((a) => (
-                        <AnomalyNote key={a.day} a={a} />
-                      ))}
+                    <td className="min-w-[180px]">
+                      {c.smallSample && (
+                        <div className="g-meta">
+                          campione piccolo (base {fmtInt(c.previous)} &lt; {SMALL_SAMPLE_BASE}): niente %
+                        </div>
+                      )}
+                      {c.partialHistory && <div className="g-meta">il periodo precedente comincia prima del primo dato registrato</div>}
+                      {an.length > 0 && (
+                        <details className="g-why">
+                          <summary>
+                            <span className="g-anom">▲ {an.length === 1 ? "1 anomalia" : `${an.length} anomalie`}</span> <span className="g-caret" aria-hidden="true">▸</span>
+                          </summary>
+                          <ul className="g-why-body flex flex-col gap-1">
+                            {an.map((a) => (
+                              <AnomalyNote key={a.day} a={a} />
+                            ))}
+                          </ul>
+                        </details>
+                      )}
                     </td>
                   </>
                 ) : (
-                  <td colSpan={5} className="py-2 text-red-400 text-[12px]">
-                    Lettura fallita ({s.errors[m.key] ?? "errore"}) — serie vuota, nessun valore sostituito con 0.
+                  <td colSpan={5} className="text-[12px]" style={{ color: "var(--s-err)" }}>
+                    <Chip mark="ERRORE" /> Lettura fallita ({s.errors[m.key] ?? "errore"}) — serie vuota, nessun valore sostituito con 0.
                   </td>
                 )}
               </tr>
@@ -161,15 +162,19 @@ export function Trends({ data }: { data: GrowthData }) {
           </tbody>
         </table>
       </div>
-      <details className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <summary className="text-gray-400 text-xs uppercase tracking-wider cursor-pointer">Tabella giorno per giorno</summary>
-        <div className="overflow-x-auto mt-3">
-          <table className="text-[12px] tabular-nums">
+      <details className="g-card g-why p-4">
+        <summary>
+          Tabella giorno per giorno <span className="g-caret" aria-hidden="true">▸</span>
+        </summary>
+        <div className="g-scroll mt-3">
+          <table className="g-table text-[12px] g-tab">
             <thead>
-              <tr className="text-gray-500">
-                <th className="font-normal text-left pr-3 pb-1">Giorno</th>
+              <tr>
+                <th>Giorno</th>
                 {SERIES_METRICS.map((m) => (
-                  <th key={m.key} className="font-normal text-right px-2 pb-1">{m.label}</th>
+                  <th key={m.key} className="r">
+                    {m.label}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -177,10 +182,10 @@ export function Trends({ data }: { data: GrowthData }) {
               {shown.map((d, j) => {
                 const i = s.days.length - n + j;
                 return (
-                  <tr key={d} className="border-t border-gray-800">
-                    <td className="pr-3 py-0.5 text-gray-400">{fmtDay(d)}</td>
+                  <tr key={d}>
+                    <td className="g-muted whitespace-nowrap">{fmtDay(d)}</td>
                     {rows.map(({ m, v, an }) => (
-                      <td key={m.key} className={`text-right px-2 py-0.5 ${an.some((a) => a.index === i) ? "text-amber-300 font-semibold" : "text-gray-200"}`}>
+                      <td key={m.key} className={`r ${an.some((a) => a.index === i) ? "g-anom" : ""}`}>
                         {v ? fmtInt(v[i]) : ""}
                         {an.filter((a) => a.index === i).map((a) => (a.z > 0 ? " ▲" : " ▼"))}
                       </td>
@@ -192,6 +197,6 @@ export function Trends({ data }: { data: GrowthData }) {
           </table>
         </div>
       </details>
-    </Shell>
+    </section>
   );
 }

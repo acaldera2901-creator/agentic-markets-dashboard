@@ -1,9 +1,11 @@
 // The whole dashboard as one presentational component: no auth, no data
 // loading, no router. The host (this app's page, or the CRM later) passes the
 // data, where it came from, and how to build a link for another window.
-// Ported from PR #516 (app/admin/growth/page.tsx).
+// Ported from PR #516 (app/admin/growth/page.tsx); v6 layout from
+// docs/design-v6/README.md. The tile builders (what each number is, its
+// caveat, its status) are unchanged from v5: only where and how they render.
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   BRIER_UNIFORM_3WAY,
   type Family,
@@ -14,7 +16,6 @@ import {
   formatAge,
   formatPct,
   formatShare,
-  funnelLinks,
   proxyTile,
   ratio,
   splitPaying,
@@ -22,8 +23,15 @@ import {
 } from "@/core/kpi";
 import { type EntryRow, HUMAN_FILTER_CRITERIA, INTERNAL_REFERRER_RULE, NO_COUNTRY_SPIKE_SHARE, noCountrySpike, splitEntries } from "@/core/estimate";
 import type { GrowthData, Result, SourceMeta } from "@/core/model";
+import gapsJson from "@/content/tracking-gaps.json";
+import { Lockup } from "./brand/Lockup";
+import { Chip, LockIcon, MARK_LABEL, type Mark, SectionTitle, Why, fmtInt } from "./primitives";
 import { Channels } from "./sections/Channels";
+import { FAMILY_ID, FAMILY_LABEL, MissingData } from "./sections/MissingData";
+import { Today } from "./sections/Today";
 import { Trends } from "./sections/Trends";
+import { ThemeToggle } from "./ThemeToggle";
+import { validateGaps } from "./work/content";
 
 export interface GrowthDashboardProps {
   data: GrowthData;
@@ -34,22 +42,7 @@ export interface GrowthDashboardProps {
   workHref?: string;
 }
 
-// ─── UI primitives (same palette as /admin) ──────────────────────────────────
-
-const STATUS_STYLE: Record<KpiStatus, string> = {
-  LIVE: "bg-emerald-950 text-emerald-300 border-emerald-800",
-  PROXY: "bg-amber-950 text-amber-300 border-amber-800",
-  MANCA: "bg-gray-800 text-gray-400 border-gray-700",
-  ERRORE: "bg-red-950 text-red-300 border-red-800",
-};
-
-// "LIVE" in the status model means "counted directly"; shown as MISURATO so a
-// snapshot page never carries a badge that reads like "live data".
-const STATUS_LABEL: Record<KpiStatus, string> = { LIVE: "MISURATO", PROXY: "PROXY", MANCA: "MANCA", ERRORE: "ERRORE" };
-
-function StatusBadge({ s, text }: { s: KpiStatus; text?: string }) {
-  return <span className={`text-[10px] font-semibold tracking-wider px-1.5 py-0.5 rounded border ${STATUS_STYLE[s]}`}>{text ?? STATUS_LABEL[s]}</span>;
-}
+// ─── Tile model (unchanged from v5) ─────────────────────────────────────────
 
 interface TileProps {
   label: string;
@@ -65,36 +58,6 @@ interface TileProps {
   owner?: string;
 }
 
-function Tile({ label, status, badge, value, sub, window, caveat, needs, owner }: TileProps) {
-  const dashed = status === "MANCA" ? "border-dashed" : "";
-  return (
-    <div className={`bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-1.5 ${dashed}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-gray-400 text-xs uppercase tracking-wider">{label}</div>
-        <StatusBadge s={status} text={status === "ERRORE" ? undefined : badge} />
-      </div>
-      {status === "MANCA" ? (
-        <div className="text-sm font-semibold text-gray-500 italic">Non misurato</div>
-      ) : status === "ERRORE" ? (
-        <div className="text-sm font-semibold text-red-400">Lettura fallita — nessun valore mostrato</div>
-      ) : value === null || value === undefined ? (
-        <div className="text-sm font-semibold text-gray-400">n/d <span className="font-normal text-gray-500">(non calcolabile: nessun dato su cui dividere o misurare)</span></div>
-      ) : (
-        <div className="text-2xl font-bold text-white tabular-nums">{value}</div>
-      )}
-      {sub && <div className="text-gray-400 text-xs">{sub}</div>}
-      <div className="text-gray-500 text-[11px]">Finestra: {window}</div>
-      <div className="text-gray-500 text-[11px] leading-snug">{caveat}</div>
-      {needs && (
-        <div className="text-[11px] leading-snug text-gray-400 border-t border-gray-800 pt-1.5 mt-0.5">
-          <span className="text-gray-500">Serve:</span> {needs}
-          {owner && <> · <span className="text-gray-500">sblocca:</span> {owner}</>}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function errorTile(label: string, window: string): TileProps {
   return { label, status: "ERRORE", window, caveat: "La query è fallita: riprova a ricaricare. Il valore non viene sostituito con 0." };
 }
@@ -102,82 +65,6 @@ function errorTile(label: string, window: string): TileProps {
 /** Build a tile from a query result; a failed read becomes an ERRORE tile. */
 function fromResult<T>(r: Result<T>, label: string, window: string, build: (d: T) => Omit<TileProps, "label" | "window">): TileProps {
   return r.ok ? { label, window, ...build(r.data) } : errorTile(label, window);
-}
-
-function Section({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-baseline gap-3 border-b border-gray-800 pb-2">
-        <h2 className="text-white font-semibold">{title}</h2>
-        <span className="text-gray-500 text-xs">{hint}</span>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function TileGrid({ tiles }: { tiles: TileProps[] }) {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-      {tiles.map((t) => (
-        <Tile key={t.label} {...t} />
-      ))}
-    </div>
-  );
-}
-
-function SmallTable<T>({
-  title,
-  status,
-  caveat,
-  rows,
-  cols,
-  empty,
-  footer,
-}: {
-  title: string;
-  status: KpiStatus;
-  caveat: string;
-  rows: Result<T[]>;
-  cols: { h: string; get: (r: T) => string | number; right?: boolean }[];
-  empty: string;
-  /** Shown under the table when the read succeeded (e.g. rows excluded from it, with the rule). */
-  footer?: ReactNode;
-}) {
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <div className="text-gray-400 text-xs uppercase tracking-wider">{title}</div>
-        <StatusBadge s={rows.ok ? status : "ERRORE"} />
-      </div>
-      <div className="text-gray-500 text-[11px] mb-2 leading-snug">{caveat}</div>
-      {!rows.ok ? (
-        <div className="text-sm text-red-400">Lettura fallita — nessun valore mostrato</div>
-      ) : rows.data.length === 0 ? (
-        <div className="text-sm text-gray-500 italic">{empty}</div>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-gray-500 text-xs">
-              {cols.map((c) => (
-                <th key={c.h} className={`font-normal pb-1 ${c.right ? "text-right" : "text-left"}`}>{c.h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.data.map((r, i) => (
-              <tr key={i} className="border-t border-gray-800">
-                {cols.map((c) => (
-                  <td key={c.h} className={`py-1 ${c.right ? "text-right tabular-nums text-white" : "text-gray-300 break-all"}`}>{c.get(r)}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {rows.ok && footer}
-    </div>
-  );
 }
 
 /** PROXY tile: always says which KPI it approximates and what makes it real (core/kpi.ts PROXY_TILES). */
@@ -190,19 +77,6 @@ function proxy<T>(label: string, window: string, r: Result<T>, build: (d: T) => 
 
 /** A field a query should return; absent (older snapshot) → the tile is ERRORE, never 0. */
 const has = (o: Record<string, number>, ...keys: string[]) => keys.every((k) => Number.isFinite(o[k]));
-
-function missingTiles(family: Family): TileProps[] {
-  return MISSING_KPIS.filter((m) => m.family === family).map((m) => ({
-    label: m.label,
-    status: "MANCA" as const,
-    window: "—",
-    caveat: `Perché manca: ${m.why}.`,
-    needs: m.needs,
-    owner: m.owner,
-  }));
-}
-
-const fmtInt = (n: number) => n.toLocaleString("it-IT");
 
 const ENTRY_ROWS_SHOWN = 20;
 
@@ -238,6 +112,239 @@ function topEntries(all: Result<EntryRow[]>): Result<EntryRow[]> {
 
 const fmtUsd = (n: number) => `$${n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+// ─── Rendering pieces ───────────────────────────────────────────────────────
+
+/** The chip a tile wears: PROXY with the STIMATO badge is the estimate mark. */
+const markOf = (t: TileProps): Mark => (t.status === "PROXY" && t.badge === "STIMATO" ? "EST" : t.status);
+
+const ERR_STYLE: CSSProperties = { color: "var(--s-err)" };
+
+function ValueLine({ t, size }: { t: TileProps; size: "lg" | "md" | "sm" }) {
+  if (t.status === "ERRORE") {
+    return (
+      <span className="text-[14px] font-semibold" style={ERR_STYLE} data-kpi={t.label} data-value="lettura fallita">
+        Lettura fallita — nessun valore mostrato
+      </span>
+    );
+  }
+  if (t.value === null || t.value === undefined) {
+    return (
+      <span data-kpi={t.label} data-value="n/d">
+        <span className={`g-num g-num--${size === "lg" ? "md" : "sm"}`}>n/d</span>
+        <span className="g-meta block">non calcolabile: niente su cui dividere</span>
+      </span>
+    );
+  }
+  return (
+    <span className={`g-num g-num--${size}`} data-kpi={t.label} data-value={t.value}>
+      {t.value}
+    </span>
+  );
+}
+
+function CaveatBody({ t }: { t: TileProps }) {
+  return (
+    <>
+      {t.sub && (
+        <p className="mb-1">
+          <b>{t.sub}</b>
+        </p>
+      )}
+      <p>{t.caveat}</p>
+      <p className="mt-1">
+        <b>Finestra:</b> {t.window}
+      </p>
+      {t.needs && (
+        <p className="mt-1">
+          <b>Serve:</b> {t.needs}
+          {t.owner && (
+            <>
+              {" "}
+              · <b>sblocca:</b> {t.owner}
+            </>
+          )}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** One of the six big KPI: number, mark, the raw count next to the estimate, «perché ▸». */
+function PrimaryCard({ t, pair }: { t: TileProps; pair?: TileProps }) {
+  return (
+    <article className="g-card p-4 flex flex-col gap-2 min-w-0">
+      <div className="flex flex-col gap-0.5">
+        <h3 className="g-label">{t.label}</h3>
+        <span className="g-meta">{t.window}</span>
+      </div>
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-2 mt-1">
+        <div className="flex flex-col gap-2">
+          <ValueLine t={t} size="lg" />
+          <span>
+            <Chip mark={markOf(t)} />
+          </span>
+        </div>
+        {pair && (
+          <div className="flex flex-col gap-1 pl-4" style={{ borderLeft: "1px solid var(--line)" }}>
+            <span className="g-meta">grezzi</span>
+            <ValueLine t={pair} size="md" />
+            <span>
+              <Chip mark={markOf(pair)} />
+            </span>
+          </div>
+        )}
+      </div>
+      {t.sub && (
+        <p className="g-meta" data-sub={t.label}>
+          {t.sub}
+        </p>
+      )}
+      {pair?.sub && (
+        <p className="g-meta" data-sub={pair.label}>
+          grezzi: {pair.sub}
+        </p>
+      )}
+      <Why>
+        <CaveatBody t={t} />
+        {pair && (
+          <div className="mt-2 pt-2" style={{ borderTop: "1px solid var(--line)" }}>
+            <b>{pair.label}</b>
+            <CaveatBody t={pair} />
+          </div>
+        )}
+      </Why>
+    </article>
+  );
+}
+
+/** The secondary KPI of a family, one disclosure row each; the family's missing KPI close the list as one grey row. */
+function SecondaryRows({ tiles, missing }: { tiles: TileProps[]; missing: string[] }) {
+  return (
+    <div className="g-card g-rows py-2">
+      <div className="g-rows-head">
+        <span>Metrica</span>
+        <span>Valore</span>
+        <span>Stato</span>
+        <span>Finestra</span>
+        <span className="text-right">perché</span>
+      </div>
+      {tiles.map((t) => (
+        <details key={t.label} className="g-row">
+          <summary>
+            <span className="c-m min-w-0">
+              <span className="g-label block">{t.label}</span>
+              {t.sub && (
+                <span className="g-meta block" data-sub={t.label}>
+                  {t.sub}
+                </span>
+              )}
+            </span>
+            <span className="c-v min-w-0 break-words">
+              <ValueLine t={t} size="sm" />
+            </span>
+            <span className="c-s">
+              <Chip mark={markOf(t)} />
+            </span>
+            <span className="c-w g-meta">{t.window}</span>
+            <span className="c-c g-why-cta">
+              perché <span className="g-caret" aria-hidden="true">▸</span>
+            </span>
+          </summary>
+          <div className="g-why-body">
+            <CaveatBody t={t} />
+          </div>
+        </details>
+      ))}
+      {missing.length > 0 && (
+        <div className="g-row g-row--manca">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-h-[44px] px-[14px] py-1.5 text-[14px] g-muted">
+            <LockIcon className="shrink-0" />
+            <span>
+              Non misurato in questa sezione: {missing.join(" · ")} → <a href="#mancanti">Dati che non abbiamo ancora</a>
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SmallTable<T>({
+  title,
+  mark,
+  caveat,
+  rows,
+  cols,
+  empty,
+  footer,
+}: {
+  title: string;
+  mark: Mark;
+  caveat: string;
+  rows: Result<T[]>;
+  cols: { h: string; get: (r: T) => string | number; right?: boolean }[];
+  empty: string;
+  /** Shown under the table when the read succeeded (e.g. rows excluded from it, with the rule). */
+  footer?: ReactNode;
+}) {
+  return (
+    <div className="g-card p-4 flex flex-col gap-2 min-w-0" data-table={title}>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="g-h g-h--card">{title}</h3>
+        <Chip mark={rows.ok ? mark : "ERRORE"} />
+      </div>
+      <Why>{caveat}</Why>
+      {!rows.ok ? (
+        <p className="text-[14px]" style={ERR_STYLE}>
+          Lettura fallita — nessun valore mostrato
+        </p>
+      ) : rows.data.length === 0 ? (
+        <p className="text-[14px] g-muted">{empty}</p>
+      ) : (
+        <table className="g-table">
+          <thead>
+            <tr>
+              {cols.map((c) => (
+                <th key={c.h} className={c.right ? "r" : ""}>
+                  {c.h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.data.map((r, i) => (
+              <tr key={i}>
+                {cols.map((c) => (
+                  <td key={c.h} className={c.right ? "r g-ink" : "break-all"}>
+                    {c.get(r)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {rows.ok && footer}
+    </div>
+  );
+}
+
+function missingLabels(family: Family): string[] {
+  return MISSING_KPIS.filter((m) => m.family === family).map((m) => m.label);
+}
+
+/** The six KPI that open the page; the raw page views ride inside the estimate's card. */
+const PRIMARY = ["Page view probabilmente umani", "Sessioni", "Signup completati", "Nuovi profili", "Paganti verificati", "Incassato Paygate + PayPal"] as const;
+const PAIRED = "Page view (grezzi)";
+
+const FAMILY_HINT: Record<Family, string> = {
+  acquisition: "da dove arrivano",
+  activation: "chi si iscrive e inizia a usarlo",
+  revenue: "chi paga e quanto",
+  retention: "chi resta",
+  quality: "il prodotto regge?",
+};
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDashboardProps) {
@@ -248,6 +355,7 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
   const ALL = "da sempre (cumulato)";
 
   const updated = new Date(meta.asOf).toLocaleString("it-IT", { timeZone: "Europe/Rome", dateStyle: "short", timeStyle: "medium" });
+  const updatedTime = new Date(meta.asOf).toLocaleTimeString("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit" });
 
   // Share of page_views without session_id in THIS window (measured, not assumed).
   const noSessShare = d.traffic.ok ? formatPct(ratio(d.traffic.data.page_views_no_session, d.traffic.data.page_views), 0) : null;
@@ -255,7 +363,7 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
   const spike = d.humanTraffic.ok ? noCountrySpike(d.humanTraffic.data.excl_no_country, d.humanTraffic.data.page_views) : null;
   const sessCaveat = `Solo traffico con consenso GDPR: ${noSessShare ?? "una parte"} dei page_view nella finestra non ha session_id e non è contato qui.`;
 
-  // ── Funnel ──
+  // ── Conteggi delle fasi (was «Funnel»: same four counts, no arrows, no rates) ──
   const { traffic, funnelEvents, newProfiles, revenue: rev, shopify } = d;
   const funnelOk = traffic.ok && funnelEvents.ok && newProfiles.ok && rev.ok && shopify.ok;
   const funnelSteps =
@@ -267,7 +375,6 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           { label: "Ordini pagati", value: rev.data.orders_w + shopify.data.orders_w, unit: "Paygate + PayPal + Shopify" },
         ]
       : [];
-  const links = funnelLinks(funnelSteps);
 
   // ── Acquisition ──
   const acquisition: TileProps[] = [
@@ -276,7 +383,7 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       badge: "STIMATO",
       value: fmtInt(h.probably_human),
       sub: `su ${fmtInt(h.page_views)} grezzi · esclusi: ${fmtInt(h.excl_no_country)} senza paese, ${fmtInt(h.excl_country)} da paesi senza sessioni, ${fmtInt(h.excl_burst)} in raffica`,
-      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Il numero grezzo resta nel riquadro «Page view (grezzi)».`,
+      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Il numero grezzo resta accanto, «Page view (grezzi)».`,
       needs: "user-agent letto (senza salvarlo) e filtro bot in /api/track — leva 2 di #SESSIONI-1006",
       owner: "Calde",
     })),
@@ -302,7 +409,6 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: `su ${fmtInt(p.new_profiles)} nuovi profili`,
       caveat: "Profili creati nella finestra con referred_by valorizzato (creator / invito).",
     })),
-    ...missingTiles("acquisition"),
   ];
 
   // ── Activation ──
@@ -347,7 +453,6 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: `${fmtInt(f.card_open)} card_open in ${fmtInt(f.card_open_sessions)} sessioni`,
       caveat: "Engagement anonimo, non per utente: card_open per sessione che ne ha aperta almeno una.",
     })),
-    ...missingTiles("activation"),
   ];
 
   // ── Revenue ──
@@ -407,7 +512,6 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: `${fmtInt(f.partner_menu_open)} aperture menu · click/aperture: ${formatShare(f.partner_click, f.partner_menu_open, "click > aperture: tracking incompleto")}`,
       caveat: "Solo click in uscita: le conversioni del partner non tornano a noi. I click possono arrivare anche fuori dal menu (o l'apertura non essere registrata), quindi il rapporto click/aperture non viene mai mostrato sopra il 100%: in quel caso è n/d.",
     })),
-    ...missingTiles("revenue"),
   ];
 
   // ── Retention ──
@@ -416,7 +520,6 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       value: fmtInt(Number(l.lapsed)),
       caveat: "Profili da canale a pagamento con plan_expires_at nella finestra e non rinnovati. È un conteggio di scadenze, non un churn rate.",
     })),
-    ...missingTiles("retention"),
   ];
 
   // ── Product quality ──
@@ -458,224 +561,280 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       value: fmtInt(f.error_patterns_24h),
       caveat: "Righe in error_patterns_log nelle ultime 24h (stessa lettura della torre).",
     })),
-    ...missingTiles("quality"),
   ];
 
-  const counts = { LIVE: 0, PROXY: 0, MANCA: 0, ERRORE: 0 } as Record<KpiStatus, number>;
-  for (const t of [...acquisition, ...activation, ...revenue, ...retention, ...quality]) counts[t.status]++;
+  const families: { family: Family; tiles: TileProps[] }[] = [
+    { family: "acquisition", tiles: acquisition },
+    { family: "activation", tiles: activation },
+    { family: "revenue", tiles: revenue },
+    { family: "retention", tiles: retention },
+    { family: "quality", tiles: quality },
+  ];
+  const allTiles = families.flatMap((f) => f.tiles);
+  const errorCount = allTiles.filter((t) => t.status === "ERRORE").length;
+  const byLabel = new Map(allTiles.map((t) => [t.label, t]));
+  const primary = PRIMARY.map((l) => byLabel.get(l)!);
+  const paired = byLabel.get(PAIRED)!;
+  const isPrimary = (t: TileProps) => (PRIMARY as readonly string[]).includes(t.label) || t.label === PAIRED;
+
+  // The work content is versioned in content/: read here only to group the
+  // missing KPI by gap and to count the open gaps in the bar (no I/O at runtime).
+  const gaps = validateGaps(gapsJson);
+  const openGaps = gaps.filter((g) => g.status !== "chiuso").length;
+
+  const serviceLine = isSnapshot
+    ? `Snapshot del ${updated} (Roma) · non live · le finestre contano all’indietro da quell’istante`
+    : `Letto alle ${updatedTime} (Roma)${meta.cacheTtlS ? ` · la stessa lettura vale ${meta.cacheTtlS / 60} min` : " · letto a questo caricamento"}`;
+
+  const navItems: { href: string; label: string; n?: number }[] = [
+    { href: "#oggi", label: "Oggi in 30 secondi" },
+    { href: "#conteggi", label: "Conteggi delle fasi" },
+    { href: "#principali", label: "KPI principali", n: primary.length },
+    ...families.map((f) => ({ href: `#${FAMILY_ID[f.family]}`, label: FAMILY_LABEL[f.family], n: f.tiles.length })),
+    { href: "#canali", label: "Canali" },
+    { href: "#andamento", label: "Andamento" },
+    { href: "#mancanti", label: "Dati che non abbiamo ancora", n: MISSING_KPIS.length },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="font-bold text-lg">BetRedge</span>
-          <span className="bg-emerald-900 text-emerald-300 text-xs px-2 py-0.5 rounded-full font-medium">GROWTH</span>
-          <span className="text-gray-500 text-xs">sola lettura</span>
-          {workHref && (
-            <a href={workHref} className="text-sm text-gray-400 hover:text-white underline underline-offset-4 decoration-gray-700">
-              Lavoro →
+    <div className="g-page">
+      <header className="g-wrap">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+          <div className="flex items-center gap-3 order-1">
+            <a href={hrefFor(w)} aria-label="BetRedge Growth, torna in cima" className="inline-flex" style={{ color: "var(--lockup-ink)" }}>
+              <Lockup className="h-8 w-auto" />
             </a>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <nav className="flex gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1" aria-label="Finestra temporale">
-            {WINDOWS.map((x) => (
-              <a
-                key={x.key}
-                href={hrefFor(x.key)}
-                aria-current={x.key === w ? "page" : undefined}
-                className={`px-3 py-1 rounded-md text-sm ${x.key === w ? "bg-emerald-900 text-emerald-200" : "text-gray-400 hover:text-white"}`}
-              >
-                {x.label}
+            <span className="g-eyebrow hidden sm:inline">Growth · sola lettura</span>
+          </div>
+          <div className="flex flex-col gap-1 order-3 md:order-2 basis-full md:basis-auto">
+            <nav className="g-seg" aria-label="Finestra temporale">
+              {WINDOWS.map((x) => (
+                <a key={x.key} href={hrefFor(x.key)} aria-current={x.key === w ? "page" : undefined}>
+                  {x.label}
+                </a>
+              ))}
+            </nav>
+            <span className="g-meta hidden md:block">Oggi = giorno di Roma fino alle {updatedTime} · 7 e 30 giorni = all’indietro da quell’istante</span>
+          </div>
+          <p role="status" className="g-meta order-4 md:order-3 basis-full md:basis-auto md:max-w-[34ch]">
+            {serviceLine}
+            {!isSnapshot && (
+              <>
+                {" "}
+                · <a href={hrefFor(w)}>ricarica</a>
+              </>
+            )}
+          </p>
+          <div className="ml-auto flex items-center gap-4 order-2 md:order-4">
+            {workHref && (
+              <a href={workHref} className="text-[14px] font-semibold whitespace-nowrap inline-flex items-center min-h-[44px]">
+                Lavoro · {fmtInt(openGaps)}
+                <span className="hidden sm:inline"> gap aperti</span> →
               </a>
-            ))}
-          </nav>
-          {!isSnapshot && (
-            <div className="text-right">
-              <div className="text-gray-300 text-xs">Ultimo aggiornamento: <span className="font-semibold">{updated}</span></div>
-              <div className="text-gray-500 text-[11px]">
-                {meta.cacheTtlS ? `lettura dal DB riusata fino a ${meta.cacheTtlS / 60} min` : "letto dal DB a questo caricamento"} ·{" "}
-                <a href={hrefFor(w)} className="underline hover:text-white">ricarica</a>
-              </div>
-            </div>
-          )}
+            )}
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
-      {isSnapshot && (
-        <div role="status" className="bg-amber-950 border-b-2 border-amber-600 px-4 sm:px-6 py-3">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-amber-200 font-bold text-base">Snapshot del {updated} (ora di Roma) — non live</span>
-            <span className="text-amber-300/80 text-xs">
-              I numeri sono fermi a quell&apos;istante e non si aggiornano ricaricando. Le finestre (Oggi / 7 / 30 giorni) contano all&apos;indietro da quel momento. Fonte: {meta.origin}.
-            </span>
-          </div>
-        </div>
-      )}
-
-      {!isSnapshot && (
-        <div role="status" className="bg-emerald-950 border-b-2 border-emerald-700 px-4 sm:px-6 py-3">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-emerald-200 font-bold text-base">Lettura diretta del database alle {updated} (ora di Roma)</span>
-            <span className="text-emerald-300/80 text-xs">
-              {meta.cacheTtlS
-                ? `I numeri sono letti in sola lettura e la stessa lettura viene riusata per ${meta.cacheTtlS / 60} minuti, finestra per finestra: ricaricando prima vedi la stessa ora; dopo, una lettura nuova.`
-                : "I numeri sono letti a ogni caricamento della pagina, in sola lettura: ricarica per aggiornarli."} Le finestre (Oggi / 7 / 30 giorni) contano all&apos;indietro da quell&apos;istante. Fonte: {meta.origin}.
-            </span>
-          </div>
-        </div>
-      )}
-
-      <main className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-8">
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400">
-          <span><StatusBadge s="LIVE" /> contato dal DB, significa quello che dice ({counts.LIVE})</span>
-          <span><StatusBadge s="PROXY" /> dal DB ma approssima il KPI: leggi il caveat ({counts.PROXY})</span>
-          <span><StatusBadge s="MANCA" /> il dato non esiste ancora: niente numero ({counts.MANCA})</span>
-          {counts.ERRORE > 0 && <span><StatusBadge s="ERRORE" /> lettura fallita ({counts.ERRORE})</span>}
-        </div>
-
-        {spike?.spike && d.humanTraffic.ok && (
-          <div role="alert" className="bg-amber-950 border border-amber-600 rounded-xl px-4 py-3">
-            <div className="text-amber-200 font-semibold text-sm">
-              Picco anomalo, controllare prima di leggere i totali: {formatPct(spike.share, 0)} dei page view ({W}) è senza paese
+      <div className="g-wrap">
+        <div className="g-body">
+          <nav className="g-nav g-nav--side" aria-label="Sezioni">
+            {navItems.map((i) => (
+              <a key={i.href} href={i.href}>
+                {i.label}
+                {i.n !== undefined && <span className="n">{i.n}</span>}
+              </a>
+            ))}
+            <div className="g-nav-legend" aria-hidden="true">
+              <Chip mark="LIVE" />
+              <Chip mark="PROXY" />
+              <Chip mark="EST" />
+              <Chip mark="ERRORE" />
+              <Chip mark="MANCA" />
             </div>
-            <div className="text-amber-300/80 text-xs leading-snug mt-0.5">
-              {fmtInt(d.humanTraffic.data.excl_no_country)} su {fmtInt(d.humanTraffic.data.page_views)}, soglia {formatPct(NO_COUNTRY_SPIKE_SHARE, 0)}. Senza paese =
-              test locali, job sintetici o crawler: la causa non è determinabile dai dati. Sono esclusi dai «probabilmente umani» ma inclusi in ogni conteggio grezzo
-              (page view, ingressi, eventi).
-            </div>
-          </div>
-        )}
+          </nav>
+          <details className="g-why md:hidden -mb-2">
+            <summary>
+              Vai a una sezione <span className="g-caret" aria-hidden="true">▸</span>
+            </summary>
+            <nav className="g-nav g-why-body" aria-label="Sezioni">
+              {navItems.map((i) => (
+                <a key={i.href} href={i.href}>
+                  {i.label}
+                  {i.n !== undefined && <span className="n">{i.n}</span>}
+                </a>
+              ))}
+            </nav>
+          </details>
 
-        <Section title="Funnel" hint={`visitatore → signup → pagante · ${W}`}>
-          {!funnelOk ? (
-            <div className="bg-gray-900 border border-red-800 rounded-xl p-4 text-sm text-red-400">Lettura del funnel fallita — nessun valore mostrato.</div>
-          ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-gray-400 text-xs uppercase tracking-wider">Funnel parziale</div>
-                <StatusBadge s="PROXY" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                {funnelSteps.map((s, i) => (
-                  <div key={s.label} className="border border-gray-800 rounded-lg p-3">
-                    <div className="text-gray-400 text-xs">{s.label}</div>
-                    <div className="text-2xl font-bold tabular-nums">{fmtInt(s.value)}</div>
-                    <div className="text-gray-500 text-[11px]">{s.unit}</div>
-                    {i > 0 && (
-                      <div className="text-xs mt-1 text-amber-300">
-                        {links[i - 1].rate === null ? (
-                          <span className="text-gray-400">n/d — il passo precedente è 0</span>
-                        ) : links[i - 1].rate! > 1 ? (
-                          <span className="text-gray-400">n/d — passo più grande del precedente (unità diverse o tracking incompleto)</span>
-                        ) : (
-                          <>{formatPct(links[i - 1].rate)} <span className="text-gray-500">dal passo precedente</span></>
-                        )}
+          <main className="g-main">
+            <Today
+              data={d}
+              windowLabel={W}
+              errorCount={errorCount}
+              noSessShare={noSessShare}
+              snapshotLabel={isSnapshot ? updated : undefined}
+              missingCount={MISSING_KPIS.length}
+              missingHref="#mancanti"
+            />
+
+            <section aria-labelledby="conteggi" className="flex flex-col gap-3">
+              <SectionTitle id="conteggi" title="Conteggi delle fasi" hint={`unità diverse, utenti non collegati · ${W}`}>
+                <Chip mark="PROXY" />
+              </SectionTitle>
+              {!funnelOk ? (
+                <div className="g-card p-4 text-[14px]" style={ERR_STYLE}>
+                  <Chip mark="ERRORE" /> Lettura dei conteggi fallita — nessun valore mostrato.
+                </div>
+              ) : (
+                <div className="g-card p-4 flex flex-col gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                    {funnelSteps.map((s, i) => (
+                      <div
+                        key={s.label}
+                        className={`grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-1 gap-x-4 gap-y-0.5 items-center sm:items-start py-2.5 sm:py-1 sm:px-4 ${i > 0 ? "border-t sm:border-t-0 sm:border-l [border-color:var(--line)]" : ""}`}
+                        data-step
+                      >
+                        <span className="g-label sm:order-1">{s.label}</span>
+                        <span className="g-num g-num--lg row-span-2 sm:row-span-1 sm:order-2 sm:my-1" data-kpi={s.label} data-value={fmtInt(s.value)}>
+                          {fmtInt(s.value)}
+                        </span>
+                        <span className="g-meta sm:order-3">{s.unit}</span>
                       </div>
-                    )}
+                    ))}
                   </div>
+                  <Why label="perché non è un funnel">
+                    I passi hanno unità diverse (sessioni con consenso → eventi → righe DB → ordini) e non sono legati alla stessa persona: nessuna freccia e nessuna
+                    percentuale di conversione, un passo può essere più grande del precedente senza che sia un errore. {sessCaveat} Gli ordini contano anche rinnovi di
+                    clienti già esistenti; Stripe non registra ordini con importo nel DB. Le conversioni torneranno quando esisterà un id utente stabile (G01 in Lavoro).
+                  </Why>
+                </div>
+              )}
+            </section>
+
+            <section aria-labelledby="principali" className="flex flex-col gap-3">
+              <SectionTitle id="principali" title="KPI principali" hint={`i sei numeri da cui partire · ${W}`} />
+              <Why label="legenda degli stati">
+                <ul className="flex flex-col gap-1.5">
+                  <li>
+                    <Chip mark="LIVE" /> {MARK_LABEL.LIVE}: contato dal DB, significa quello che dice l’etichetta.
+                  </li>
+                  <li>
+                    <Chip mark="PROXY" /> {MARK_LABEL.PROXY}: contato dal DB, ma approssima il KPI: «perché ▸» dice come e cosa lo renderà reale.
+                  </li>
+                  <li>
+                    <Chip mark="EST" /> {MARK_LABEL.EST}: dedotto con un criterio dichiarato, mai osservato; il grezzo resta sempre accanto.
+                  </li>
+                  <li>
+                    <Chip mark="ERRORE" /> {MARK_LABEL.ERRORE}: la lettura è fallita; il valore manca, non è sostituito con 0.
+                  </li>
+                  <li>
+                    <Chip mark="MANCA" />: il dato non esiste ancora in nessuna fonte; mai nella posizione di un numero, elencato in «Dati che non abbiamo ancora».
+                  </li>
+                </ul>
+              </Why>
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+                {primary.map((t) => (
+                  <PrimaryCard key={t.label} t={t} pair={t.label === PRIMARY[0] ? paired : undefined} />
                 ))}
               </div>
-              <p className="text-gray-500 text-[11px] mt-3 leading-snug">
-                PROXY: i passi hanno unità diverse (sessioni con consenso → eventi → righe DB → ordini) e non sono legati alla stessa persona, quindi i rapporti sono indicativi.
-                {" "}{sessCaveat} Gli ordini contano anche rinnovi di clienti già esistenti; Stripe non registra ordini con importo nel DB.
+            </section>
+
+            {families.map(({ family, tiles }) => (
+              <section key={family} aria-labelledby={FAMILY_ID[family]} className="flex flex-col gap-3">
+                <SectionTitle
+                  id={FAMILY_ID[family]}
+                  title={FAMILY_LABEL[family]}
+                  hint={
+                    family === "acquisition" && d.humanTraffic.ok
+                      ? `${FAMILY_HINT[family]} · ${W}: ${fmtInt(d.humanTraffic.data.probably_human)} page view probabilmente umani (≈ Stimato) · ${fmtInt(d.humanTraffic.data.page_views)} grezzi (● Contato)`
+                      : FAMILY_HINT[family]
+                  }
+                />
+                <SecondaryRows tiles={tiles.filter((t) => !isPrimary(t))} missing={missingLabels(family)} />
+                {tiles.filter((t) => !isPrimary(t)).length === 0 && <p className="g-meta">Tutti i KPI misurati di questa sezione sono fra i principali.</p>}
+              </section>
+            ))}
+
+            <section aria-labelledby="canali" className="flex flex-col gap-3">
+              <SectionTitle id="canali" title="Canali" hint={`fonti, ingressi, sessioni e signup · ${W} · ogni tabella dichiara la sua unità`} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <SmallTable
+                  title="Ingressi per fonte"
+                  mark="LIVE"
+                  caveat="Page view d'ingresso per fonte (utm_source, poi src/crm/ref/referrer), con e senza consenso. Pagine d'ingresso, non persone; crawler e test inclusi. Referrer ridotti al dominio, codici referral mascherati."
+                  rows={topEntries(d.entries)}
+                  cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Ingressi", get: (r) => fmtInt(Number(r.entries)), right: true }]}
+                  empty="Nessun page view d'ingresso con fonte nella finestra."
+                  footer={
+                    d.entries.ok && (
+                      <div className="g-rule pt-2">
+                        <div className="flex justify-between text-[14px] g-muted">
+                          <span>interni (esclusi)</span>
+                          <span className="g-tab">{fmtInt(splitEntries(d.entries.data).internal)}</span>
+                        </div>
+                        <div className="g-meta">Non sommati sopra: {INTERNAL_REFERRER_RULE}.</div>
+                      </div>
+                    )
+                  }
+                />
+                <SmallTable
+                  title="Sessioni per fonte"
+                  mark="PROXY"
+                  caveat={`Una fonte per sessione (utm_source, poi src/crm/ref/referrer del page_view d'ingresso). ${sessCaveat} Top 15. «(nessuna fonte)» è una riga esplicita, non una voce nascosta.`}
+                  rows={d.sources}
+                  cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Sessioni", get: (r) => fmtInt(Number(r.sessions)), right: true }]}
+                  empty="Nessuna sessione con consenso nella finestra."
+                />
+                <SmallTable
+                  title="Nuovi signup per canale"
+                  mark="LIVE"
+                  caveat="profiles.acquisition dei profili creati nella finestra. «(non registrata)» = profilo senza dato di acquisizione (i profili storici sono tutti così)."
+                  rows={d.channels}
+                  cols={[{ h: "Canale", get: (r) => r.channel }, { h: "Signup", get: (r) => fmtInt(Number(r.n)), right: true }]}
+                  empty="Nessun nuovo profilo nella finestra."
+                />
+                <SmallTable
+                  title="Widget sui siti partner"
+                  mark="LIVE"
+                  caveat="widget_view / widget_click per host dichiarato dal widget. Esclusi localhost e anteprime *.vercel.app."
+                  rows={d.widget}
+                  cols={[
+                    { h: "Host", get: (r) => r.host },
+                    { h: "View", get: (r) => fmtInt(Number(r.views)), right: true },
+                    { h: "Click", get: (r) => fmtInt(Number(r.clicks)), right: true },
+                  ]}
+                  empty="Nessuna visualizzazione del widget nella finestra."
+                />
+                <SmallTable
+                  title="Click per partner"
+                  mark="LIVE"
+                  caveat="Eventi partner_click per partner_id nella finestra. Top 10."
+                  rows={d.partners}
+                  cols={[{ h: "Partner", get: (r) => r.partner_id }, { h: "Click", get: (r) => fmtInt(Number(r.clicks)), right: true }]}
+                  empty="Nessun click partner nella finestra."
+                />
+              </div>
+              <Channels data={d} />
+            </section>
+
+            <Trends data={d} />
+
+            <MissingData gaps={gaps} workHref={workHref} />
+
+            {spike?.spike && d.humanTraffic.ok && (
+              <p className="g-meta sr-only">
+                Picco anomalo: {formatPct(spike.share, 0)} dei page view ({W}) è senza paese, soglia {formatPct(NO_COUNTRY_SPIKE_SHARE, 0)}.
               </p>
-            </div>
-          )}
-        </Section>
+            )}
 
-        <Section
-          title="Acquisition"
-          hint={
-            d.humanTraffic.ok
-              ? `da dove arrivano · ${W}: ${fmtInt(d.humanTraffic.data.probably_human)} page view probabilmente umani (STIMATO) · ${fmtInt(d.humanTraffic.data.page_views)} grezzi (MISURATO)`
-              : "da dove arrivano"
-          }
-        >
-          <TileGrid tiles={acquisition} />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <SmallTable
-              title="Sessioni per fonte"
-              status="PROXY"
-              caveat={`Una fonte per sessione (utm_source, poi src/crm/ref/referrer del page_view d'ingresso). ${sessCaveat} Top 15.`}
-              rows={d.sources}
-              cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Sessioni", get: (r) => fmtInt(Number(r.sessions)), right: true }]}
-              empty="Nessuna sessione con consenso nella finestra."
-            />
-            <SmallTable
-              title="Ingressi per fonte"
-              status="LIVE"
-              caveat="Page view d'ingresso per fonte (utm_source, poi src/crm/ref/referrer), con e senza consenso. Pagine d'ingresso, non persone; crawler e test inclusi. Referrer ridotti al dominio, codici referral mascherati."
-              rows={topEntries(d.entries)}
-              cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Ingressi", get: (r) => fmtInt(Number(r.entries)), right: true }]}
-              empty="Nessun page view d'ingresso con fonte nella finestra."
-              footer={
-                d.entries.ok && (
-                  <div className="border-t border-gray-700 mt-1 pt-1.5">
-                    <div className="flex justify-between text-sm text-gray-500">
-                      <span>interni (esclusi)</span>
-                      <span className="tabular-nums">{fmtInt(splitEntries(d.entries.data).internal)}</span>
-                    </div>
-                    <div className="text-[11px] text-gray-500 leading-snug">Non sommati sopra: {INTERNAL_REFERRER_RULE}.</div>
-                  </div>
-                )
-              }
-            />
-            <SmallTable
-              title="Nuovi signup per canale"
-              status="LIVE"
-              caveat="profiles.acquisition dei profili creati nella finestra. «(non registrata)» = profilo senza dato di acquisizione (i profili storici sono tutti così)."
-              rows={d.channels}
-              cols={[{ h: "Canale", get: (r) => r.channel }, { h: "Signup", get: (r) => fmtInt(Number(r.n)), right: true }]}
-              empty="Nessun nuovo profilo nella finestra."
-            />
-            <SmallTable
-              title="Widget sui siti partner"
-              status="LIVE"
-              caveat="widget_view / widget_click per host dichiarato dal widget. Esclusi localhost e anteprime *.vercel.app."
-              rows={d.widget}
-              cols={[
-                { h: "Host", get: (r) => r.host },
-                { h: "View", get: (r) => fmtInt(Number(r.views)), right: true },
-                { h: "Click", get: (r) => fmtInt(Number(r.clicks)), right: true },
-              ]}
-              empty="Nessuna visualizzazione del widget nella finestra."
-            />
-          </div>
-        </Section>
-
-        <Trends data={d} /><Channels data={d} />
-
-        <Section title="Activation" hint="chi si iscrive e inizia a usarlo">
-          <TileGrid tiles={activation} />
-        </Section>
-
-        <Section title="Revenue" hint="chi paga e quanto">
-          <TileGrid tiles={revenue} />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <SmallTable
-              title="Click per partner"
-              status="LIVE"
-              caveat="Eventi partner_click per partner_id nella finestra. Top 10."
-              rows={d.partners}
-              cols={[{ h: "Partner", get: (r) => r.partner_id }, { h: "Click", get: (r) => fmtInt(Number(r.clicks)), right: true }]}
-              empty="Nessun click partner nella finestra."
-            />
-          </div>
-        </Section>
-
-        <Section title="Retention" hint="chi resta">
-          <TileGrid tiles={retention} />
-        </Section>
-
-        <Section title="Product Quality" hint="il prodotto regge?">
-          <TileGrid tiles={quality} />
-        </Section>
-
-        <p className="text-gray-600 text-[11px] pb-6">
-          Fonte: {meta.origin}. Solo aggregati, nessun dato personale (referrer ridotti al dominio, codici referral mascherati). Definizioni in core/sql.ts.
-        </p>
-      </main>
+            <p className="g-meta pb-6">
+              Fonte: {meta.origin}. Solo aggregati, nessun dato personale (referrer ridotti al dominio, codici referral mascherati). Definizioni in core/sql.ts.
+            </p>
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
