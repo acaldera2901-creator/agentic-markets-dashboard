@@ -60,6 +60,25 @@ const devig = (o: number[]) => { const s = o.reduce((a, x) => a + 1 / x, 0); ret
 const blend = (m: number[], mk: number[]) => m.map((x, i) => 0.3 * x + 0.7 * mk[i]);
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
+// v3c-final: MOCK_BOARD_BULK=N aggiunge N partite di calcio FITTIZIE sui prossimi 7 giorni (metà con
+// storico) per misurare il peso di /predictions a scala reale (~435 righe). Senza la variabile: nulla cambia.
+{
+  const BULK = Number(process.env.MOCK_BOARD_BULK ?? 0);
+  const CLUBS = ["Bologna", "Genoa", "Udinese", "Cagliari", "Brentford", "Fulham", "Everton", "Getafe", "Osasuna", "Mainz 05", "Freiburg", "Lens", "Nantes", "Twente", "Braga", "Hull City", "Real Salt Lake", "Feyenoord", "Wolverhampton Wanderers", "Deportivo Alavés", "Borussia Dortmund", "Olympique de Marseille"];
+  const LEAGUES = ["Serie A", "Premier League", "La Liga", "Bundesliga", "Ligue 1", "Eredivisie", "Championship", "MLS"];
+  for (let i = 0; i < BULK; i++) {
+    const kickoff = Math.round((now + (1 + (i * 167) / BULK) * H) / (15 * 60_000)) * 15 * 60_000;
+    const home = CLUBS[i % CLUBS.length];
+    const away = CLUBS[(i * 5 + 7) % CLUBS.length] === home ? CLUBS[(i + 3) % CLUBS.length] : CLUBS[(i * 5 + 7) % CLUBS.length];
+    const odds: [number, number, number] = [r2(1.4 + (i % 9) * 0.25), r2(3.1 + (i % 5) * 0.2), r2(1.9 + (i % 7) * 0.45)];
+    const mk = devig(odds);
+    FOOTBALL.push({
+      id: `oddsapi:bulk${String(i + 1).padStart(4, "0")}`, league: LEAGUES[i % LEAGUES.length], competition: LEAGUES[i % LEAGUES.length], kickoff, home, away, odds,
+      model: [mk[0] + 0.02, mk[1] - 0.01, mk[2] - 0.01], sealed: i % 3 !== 0, books: i % 4 === 3 ? "none" : "both", history: i % 2 === 0,
+    });
+  }
+}
+
 const fbKey = (f: Fb) => teamPairKey("soccer", f.home, f.away, iso(f.kickoff))!;
 
 function boardSources() {
