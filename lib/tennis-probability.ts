@@ -1,4 +1,5 @@
 import { applyTennisTemperature, TENNIS_ANCHORED_TAU } from "./tennis-calibration";
+import { PARTNER_MARKET_MODEL } from "./partner-market";
 
 export type TennisProbabilitySource = "model" | "market" | "unknown";
 export type TennisPair = { p1: number; p2: number };
@@ -10,6 +11,7 @@ export type TennisProbabilityInput = {
   best_selection?: string | null;
   edge?: number | null;
   feature_snapshot?: unknown;
+  model_version?: string | null;
 };
 
 export function validTennisPair(p1: unknown, p2: unknown): boolean {
@@ -48,6 +50,12 @@ export function resolveTennisProbability(input: TennisProbabilityInput) {
     if (metadata.source === "model") source = "model";
     if (metadata.source === "market" && validTennisOdds(input.odds_p1) && validTennisOdds(input.odds_p2)) source = "market";
   }
+  // #TENNIS-PROB-PARTNER-1006: il feed partner non scrive feature_snapshot.probability
+  // (836 righe su 954 dal 02/10), ma la sua provenienza e' gia' fissata dal writer:
+  // partner-market-v1 = mercato devigato per costruzione. Non e' dedotta da quote/edge.
+  // Senza questo ramo l'88% del tennis perdeva la temperatura che main gli applica.
+  if (source === "unknown" && raw && input.model_version === PARTNER_MARKET_MODEL
+      && validTennisOdds(input.odds_p1) && validTennisOdds(input.odds_p2)) source = "market";
   const calibrated = source === "market" && TENNIS_ANCHORED_TAU !== 1
     && Number.isFinite(TENNIS_ANCHORED_TAU) && TENNIS_ANCHORED_TAU > 0;
   const published = raw && (calibrated

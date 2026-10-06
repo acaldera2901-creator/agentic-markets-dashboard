@@ -45,3 +45,18 @@ describe("explicit tennis probability contract", () => {
     expect(resolveTennisProbability({ ...base, p1: 1, p2: 0, feature_snapshot: provenance("market",1,0) }).published).toEqual({ p1: 1, p2: 0 });
   });
 });
+
+describe("#TENNIS-PROB-PARTNER-1006 partner feed provenance", () => {
+  const base = { p1: 0.7, p2: 0.3, odds_p1: 1.4, odds_p2: 3.1, edge: null, best_selection: null };
+  it("partner-market-v1 rows without metadata are market and get the temperature", () => {
+    const r = resolveTennisProbability({ ...base, model_version: "partner-market-v1" });
+    expect(r.source).toBe("market");
+    expect(r.published!.p1).toBeCloseTo(applyTennisTemperature(0.7, 1.68), 10);
+  });
+  it("partner rows without a valid price stay unknown", () => {
+    expect(resolveTennisProbability({ ...base, odds_p2: null, model_version: "partner-market-v1" }).source).toBe("unknown");
+  });
+  it("other untagged rows stay unknown (no inference from odds/edge)", () => {
+    expect(resolveTennisProbability({ ...base, model_version: "elo_surface_v4_features_odds" }).source).toBe("unknown");
+  });
+});
