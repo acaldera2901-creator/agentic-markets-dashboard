@@ -9,10 +9,11 @@
 //            11.732): stessa rete Rootz, stesso trading. Compaiono entrambi
 //            perché sono due partner con due link, ma il confronto li mostra
 //            uguali — non è un errore.
-//   betscore / casea / stonevegas → 400 (integration sconosciuta). Il loro
-//            bundle prevede Altenar, Kambi o Latrobe per brand e la scelta si
-//            carica a runtime da un sito che da US risponde 403: fornitore NON
-//            determinato, quindi nessuna entry qui (restano «Odds on site»).
+//   betscore / casea / stonevegas → 400 (integration sconosciuta). Rimisurato il
+//            06/10 (live): il fornitore è Kickertech/TG Lab (`*.sbx.bet`, fr=247/
+//            164/180), non Altenar né Kambi; l'endpoint eventi risponde 406 a un
+//            user-agent identificabile e usa parametri offuscati → nessuna entry
+//            qui, niente aggiramento (restano «Odds on site», feed chiesto al partner).
 //
 // Nessun deep-link per evento: i link di rete atterrano sulla home del brand
 // (nota #PARTNER-WILDZ-BEAZT in lib/affiliate.ts) → `landing`.

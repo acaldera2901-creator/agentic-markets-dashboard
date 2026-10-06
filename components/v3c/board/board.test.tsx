@@ -3,7 +3,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { V3BoardResponse, V3BoardTennisMatch, V3BoardTennisSide, V3BookPrice } from "@/lib/v3c/contracts";
-import { Board } from "./Board";
+import { BOARD_PAGE_ROWS, Board } from "./Board";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 vi.mock("@/lib/track-event", () => ({ trackEvent: vi.fn() }));
@@ -160,5 +160,33 @@ describe("Board v3c (F3)", () => {
     expect(screen.getByRole("status")).toHaveTextContent("No match for this filter.");
     expect(screen.getByText("Next up")).toBeInTheDocument();
     expect(screen.getByText(/starts in 3 h 0 min/)).toBeInTheDocument();
+  });
+  // live (06/10): Andrea vedeva 7 partite di calcio — /predictions apriva sul primo giorno con righe.
+  it("/predictions apre su tutti i giorni, le imminenti prima, a blocchi di 60 con «Show N more»", () => {
+    const base = BOARD.matches[0];
+    // 130 partite su 5 giorni, in ordine sparso: la board le ordina per calcio d'inizio
+    const matches = Array.from({ length: 130 }, (_, i) => ({
+      ...base,
+      id: `m${i}`,
+      home: `Home ${i}`,
+      away: `Away ${i}`,
+      kickoff: new Date(Date.parse("2026-10-10T13:00:00.000Z") + ((i * 37) % 130) * 3_600_000).toISOString(),
+    }));
+    const { container } = render(<Board {...props} initialFilters={undefined} board={{ ...BOARD, matches, tennis: [] }} />);
+    const rows = () => [...container.querySelectorAll('.v3c-row[data-sport="football"]')];
+    expect(rows()).toHaveLength(BOARD_PAGE_ROWS);
+    expect(screen.getByRole("button", { name: "All days" })).toHaveAttribute("aria-pressed", "true");
+    expect(container.querySelectorAll(".v3c-group").length).toBeGreaterThan(1); // più giorni, non solo il primo
+    expect(rows()[0].textContent).toContain("Home 0"); // la più vicina (13:00 del 10/10) per prima
+    expect(screen.getByText("60 of 130 matches")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show 60 more" }));
+    expect(rows()).toHaveLength(120);
+    fireEvent.click(screen.getByRole("button", { name: "Show 10 more" }));
+    expect(rows()).toHaveLength(130);
+    expect(screen.queryByRole("button", { name: /more$/ })).toBeNull();
+    // il chip sport resta su tutti i giorni e riparte dal primo blocco
+    fireEvent.click(screen.getByRole("button", { name: /Football/ }));
+    expect(screen.getByRole("button", { name: "All days" })).toHaveAttribute("aria-pressed", "true");
+    expect(rows()).toHaveLength(BOARD_PAGE_ROWS);
   });
 });

@@ -390,6 +390,7 @@ html:has([data-theme="v3c"][data-mode="dark"]) { scrollbar-color: #C8FF00 #07132
 
 .v3c-board-f { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 20px; flex-wrap: wrap; margin-top: 12px; }
 .v3c-board-f .v3c-ghost { color: var(--v3c-royal-t); }
+.v3c-board-more { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 /* stati: vuoto a cascata, errore, scheletro */
 .v3c-empty, .v3c-error { padding: 22px 0 18px; display: grid; gap: 8px; justify-items: start; border-bottom: 1px solid var(--v3c-line); }
@@ -611,7 +612,6 @@ html:has([data-theme="v3c"][data-mode="dark"]) { scrollbar-color: #C8FF00 #07132
 .v3c-ico { display: inline-block; flex: none; width: 22px; height: 22px; background: currentColor; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; }
 /* polish · price check: le tre quote su una riga anche a 390 px (prima «2» andava a capo da sola) */
 @media (max-width: 600px) { .v3c-pc-form { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } }
-.v3c-chips-note { align-self: center; margin-left: 4px; }
 .v3c-r-tie { display: block; font-size: 10.5px; color: var(--v3c-ink-3); text-align: right; margin-top: 3px; white-space: nowrap; }
 .v3c-r-book { display: grid; justify-items: end; }
 .v3c-mg.v3c-mg-ico { display: grid; grid-template-rows: 1fr 4px; }
