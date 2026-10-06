@@ -650,7 +650,7 @@ async def fetch_unsettled_unified_predictions(
         return []
 
 
-async def fetch_recent_sport_pairs(sport: str, days: int) -> list[dict]:
+async def fetch_recent_sport_pairs(sport: str, days: int) -> list[dict] | None:
     """
     Coppie squadra-squadra già pubblicate per uno sport negli ultimi `days`
     giorni, con la data di pubblicazione. Serve al cap anti-correlazione dei
@@ -662,15 +662,21 @@ async def fetch_recent_sport_pairs(sport: str, days: int) -> list[dict]:
     modello, misurava una settimana. Il cap è l'unica difesa, e va letta dal DB
     perché è lì che vive lo storico delle pick pubblicate.
 
-    Fail-soft: se la lettura non riesce torna [] e il chiamante NON pubblica
-    (fail-closed a monte) — meglio una pick in meno che una serie duplicata.
+    Ritorna `[]` SOLO quando il DB risponde e non ci sono pick nella finestra;
+    `None` quando lo storico non è leggibile (DB non configurato, HTTP != 200,
+    errore di rete, payload non-lista). #NEWSPORTS-QUALITA-1006: prima tornava
+    [] in entrambi i casi e il chiamante non poteva distinguere "nessuna pick"
+    da "lettura fallita" — il cap dichiarato fail-closed lasciava passare pick
+    nuove a storico illeggibile. Il chiamante su None NON pubblica.
+
+    Include `pick` (HOME/AWAY) per il cap squadra (v2.3 del lab).
     """
     base = _rest_base()
     if not base:
-        return []
+        return None
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     params = {
-        "select": "home_team,away_team,published_at",
+        "select": "home_team,away_team,pick,published_at",
         "sport": f"eq.{sport}",
         "published_at": f"gte.{since}",
         "order": "published_at.desc",
@@ -688,11 +694,15 @@ async def fetch_recent_sport_pairs(sport: str, days: int) -> list[dict]:
                     resp.status_code,
                     resp.text[:200],
                 )
-                return []
-            return resp.json() or []
+                return None
+            data = resp.json()
+            if not isinstance(data, list):
+                logger.warning("recent pairs fetch: payload non-lista (%s)", sport)
+                return None
+            return data
     except Exception as exc:
         logger.warning("recent pairs fetch error (%s): %s", sport, exc)
-        return []
+        return None
 
 
 async def settle_unified_prediction(

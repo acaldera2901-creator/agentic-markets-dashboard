@@ -71,6 +71,15 @@ K_PYTH = 50
 PYTH_EXP = 1.83
 MIN_GAMES = 20  # warm-up: no picks before both teams played 20
 ODDS_MATCH_WINDOW_H = 3  # audit C2: doubleheaders need team+time matching
+# Cap squadra v2.3 del lab (mlb_v2.mjs, CAP_TEAM_DAYS, 19/08): una pick su una
+# squadra blocca altre pick SU QUELLA SQUADRA per 14 giorni, qualunque sia
+# l'avversario. Il cap serie guarda la COPPIA e non morde quando un favorito
+# pesante cambia avversario: misurato sul ledger il 19/08, 11 pick su 29 erano
+# sui Dodgers (9 delle 11 premium) — non 11 osservazioni, una ripetuta. Rigiocato
+# sul ledger reale il cap toglie 13 pick su 31 (-42%): costa volume, e lo si
+# accetta perché le pick tolte erano ripetizioni. Costante di lab: non si tara
+# qui (#NEWSPORTS-QUALITA-1006 lo porta nel produttore, che aveva solo il cap serie).
+TEAM_CAP_DAYS = 14
 
 CYCLE_SECONDS = 30 * 60  # odds cost ~1 credit/cycle; MLB lines move slowly pre-match
 
@@ -140,6 +149,45 @@ def series_capped(
     key = pair_key(home, away)
     for row in recent:
         if pair_key(row.get("home_team") or "", row.get("away_team") or "") != key:
+            continue
+        raw = row.get("published_at")
+        if not raw:
+            return True
+        try:
+            when = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            return True
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        if abs((now - when).total_seconds()) <= cap_days * 86400:
+            return True
+    return False
+
+
+def picked_teams(row: dict) -> List[str]:
+    """Squadra/e su cui la riga ha preso posizione. `pick` è HOME/AWAY (contratto
+    unified_predictions); se manca o non è leggibile si considerano ENTRAMBE le
+    squadre — fail-closed come le date illeggibili del cap serie."""
+    pick = str(row.get("pick") or "").strip().upper()
+    home = (row.get("home_team") or "").strip().lower()
+    away = (row.get("away_team") or "").strip().lower()
+    if pick == "HOME":
+        return [home]
+    if pick == "AWAY":
+        return [away]
+    return [t for t in (home, away) if t]
+
+
+def team_capped(team: str, now: datetime, recent: List[dict],
+                cap_days: int = TEAM_CAP_DAYS) -> bool:
+    """True se entro cap_days è già stata pubblicata una pick SU `team` (la
+    squadra scelta, non l'avversario). Port di recentTeamPicks/CAP_TEAM_DAYS di
+    mlb_v2.mjs v2.3. Data illeggibile = dentro la finestra (fail-closed)."""
+    if cap_days <= 0:
+        return False
+    key = (team or "").strip().lower()
+    for row in recent:
+        if key not in picked_teams(row):
             continue
         raw = row.get("published_at")
         if not raw:
@@ -230,6 +278,9 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
             "odds_away": mkt["odds_away"],
             "mkt_source": mkt["source"],
             "n_books": mkt["n_books"],
+            # #NEWSPORTS-QUALITA-1006: quote derivate (mediana pari) e età della quota
+            "odds_derived": bool(mkt.get("odds_derived")),
+            "odds_last_update": mkt.get("last_update"),
         }),
         "enrichment": {
             "sp_home": sp_home,
@@ -251,26 +302,54 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
     }
 
 
-def match_odds_event(game: dict, events: List[dict]) -> Optional[dict]:
+def match_odds_event(game: dict, events: List[dict], *, now: datetime) -> Optional[dict]:
     """Team names AND start time within ±3h (lab audit C2: name-only matching
     grabbed the wrong doubleheader game, sometimes already live). Pops the
-    matched event so a second doubleheader game can't reuse it."""
+    matched event so a second doubleheader game can't reuse it.
+
+    #NEWSPORTS-QUALITA-1006 — CASO REALE 25/09/2026, Orioles @ Yankees
+    doubleheader: la gara 1 era già LIVE (quindi saltata dal loop pre-match, e
+    il suo evento quote restava nel pool) e la gara 2 era entro ±3h da lei. Il
+    matcher prendeva il PRIMO evento nella finestra = quello della gara 1, con
+    quote in-game (pHome 0,0099). Ora:
+      * un evento quote con commence_time <= now è GIÀ INIZIATO: mai agganciato
+        (le sue quote sono in-play, qualunque partita stiamo cercando);
+      * fra i candidati validi si sceglie il più VICINO in orario alla partita,
+        non il primo della lista."""
     home = game["teams"]["home"]["team"]["name"]
     away = game["teams"]["away"]["team"]["name"]
     try:
         g_ts = datetime.fromisoformat(game["gameDate"].replace("Z", "+00:00")).timestamp()
-    except (KeyError, ValueError):
+    except (KeyError, ValueError, AttributeError):
         return None
+    now_ts = now.timestamp()
+    best_i: Optional[int] = None
+    best_gap: Optional[float] = None
     for i, ev in enumerate(events):
         if ev["home_team"] != home or ev["away_team"] != away:
             continue
         try:
             e_ts = datetime.fromisoformat(ev["commence_time"].replace("Z", "+00:00")).timestamp()
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, AttributeError):
             continue
-        if abs(e_ts - g_ts) < ODDS_MATCH_WINDOW_H * 3600:
-            return events.pop(i)
-    return None
+        if e_ts <= now_ts:
+            continue  # evento già iniziato: quote in-game, mai pre-match
+        gap = abs(e_ts - g_ts)
+        if gap >= ODDS_MATCH_WINDOW_H * 3600:
+            continue
+        if best_gap is None or gap < best_gap:
+            best_i, best_gap = i, gap
+    return events.pop(best_i) if best_i is not None else None
+
+
+async def recent_picks_or_none(series_cap_days: int) -> Optional[List[dict]]:
+    """Storico per i due cap. None = illeggibile (il chiamante non pubblica).
+    La finestra è la più lunga fra cap serie e cap squadra; se entrambi fossero
+    disattivati non servirebbe leggere nulla."""
+    window = max(series_cap_days, TEAM_CAP_DAYS)
+    if window <= 0:
+        return []
+    return await fetch_recent_sport_pairs("baseball", window)
 
 
 class BaseballModelAgent(BaseAgent):
@@ -304,21 +383,17 @@ class BaseballModelAgent(BaseAgent):
             self.logger.info("no MLB odds this cycle (key/quota/season) — skipping")
             return 0
 
-        # Cap serie: lo storico delle pick già pubblicate. Se la lettura fallisce
-        # torna [] e sotto NON pubblichiamo — fail-closed, perché senza storico
-        # non si può escludere di stare duplicando una serie.
+        # Cap serie + cap squadra: lo storico delle pick già pubblicate, letto
+        # sulla finestra più lunga dei due cap. fetch_recent_sport_pairs torna
+        # None se la lettura fallisce e [] solo se il DB risponde senza pick
+        # (#NEWSPORTS-QUALITA-1006: prima tornava [] in entrambi i casi e il
+        # "secondo tentativo" controllava isinstance(probe, list), vero anche
+        # dopo un errore). Storico illeggibile = nessuna pick nuova (fail-closed).
         cap_days = settings.NEWSPORT_BASEBALL_SERIES_CAP_DAYS
-        recent_pairs = await fetch_recent_sport_pairs("baseball", cap_days) if cap_days > 0 else []
-        cap_readable = bool(recent_pairs) or cap_days <= 0
-        if cap_days > 0 and not recent_pairs:
-            # Distinguere "nessuna pick recente" da "lettura fallita" non è
-            # possibile con una lista vuota: si prova una seconda volta e, se
-            # ancora vuota, si assume il caso benigno solo quando il DB risponde.
-            probe = await fetch_recent_sport_pairs("baseball", 3650)
-            cap_readable = isinstance(probe, list)
-            if not cap_readable:
-                self.logger.warning("storico pick non leggibile: nessuna pick questo ciclo (fail-closed)")
-                return 0
+        recent_pairs = await recent_picks_or_none(cap_days)
+        if recent_pairs is None:
+            self.logger.warning("storico pick non leggibile: nessuna pick questo ciclo (fail-closed)")
+            return 0
 
         rows: List[dict] = []
         published_this_cycle: List[dict] = []
@@ -336,7 +411,7 @@ class BaseballModelAgent(BaseAgent):
                 continue  # già iniziata
 
             mkt = None
-            ev = match_odds_event(game, events)
+            ev = match_odds_event(game, events, now=now)
             if ev:
                 mkt = market_consensus(ev["books"])
             if not mkt:
@@ -385,6 +460,18 @@ class BaseballModelAgent(BaseAgent):
                 )
                 continue
 
+            # Cap squadra (v2.3 del lab): una pick sulla squadra SCELTA negli
+            # ultimi TEAM_CAP_DAYS giorni blocca, qualunque sia l'avversario.
+            # Valutato dopo il cap serie e prima di registrare la pick, come nel
+            # lab: registrare e poi cadere sul cap bloccherebbe senza aver preso nulla.
+            picked = home["team"]["name"] if p_home >= 0.5 else away["team"]["name"]
+            if team_capped(picked, now, recent_pairs + published_this_cycle):
+                self.logger.info(
+                    "cap squadra: già una pick su %s negli ultimi %d giorni, salto",
+                    picked, TEAM_CAP_DAYS,
+                )
+                continue
+
             flags: List[str] = []
             if not agrees:
                 flags.append("il modello discorda (nessun upgrade di tier)")
@@ -399,6 +486,7 @@ class BaseballModelAgent(BaseAgent):
             published_this_cycle.append({
                 "home_team": home["team"]["name"],
                 "away_team": away["team"]["name"],
+                "pick": "HOME" if p_home >= 0.5 else "AWAY",
                 "published_at": now.isoformat(),
             })
             rows.append(build_unified_row(

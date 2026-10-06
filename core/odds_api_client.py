@@ -191,18 +191,68 @@ async def get_odds(league: str) -> List[Dict]:
 # across books" (Gate 1 lab) — it needs the per-book probabilities, not the
 # best-margin pick that _best_odds returns. Fail-soft to [] like get_odds.
 
-def devig_two_way(odds_a: float, odds_b: float) -> float | None:
-    """Devigged probability of side A from a 2-outcome price pair."""
-    if not odds_a or not odds_b or odds_a <= 1 or odds_b <= 1:
+# ─── Quarantena prezzi (#NEWSPORTS-QUALITA-1006) ─────────────────────────────
+# Caso reale 25/09/2026 (Orioles @ Yankees, gara 2 di un doubleheader): nel
+# ledger shadow è entrata pHome=0,0099. devig_two_way controllava soltanto che
+# i prezzi fossero > 1, quindi qualunque coppia passava. Due guardie, entrambe
+# fail-closed (si scarta, non si corregge):
+#
+# 1. OVERROUND per coppia (1/quota_casa + 1/quota_ospite). Un moneyline a due
+#    vie reale sta fra ~1,00 (Pinnacle/exchange) e ~1,10 (book retail col
+#    margine alto). Sotto 0,98 la coppia promette un arbitraggio del 2% sullo
+#    STESSO book: prezzo stantio, un lato sospeso o errore di feed. Sopra 1,15
+#    il margine supera qualunque moneyline pre-partita: tipico di un mercato
+#    in-play sospeso o del mercato sbagliato. La coppia va in quarantena.
+# 2. CONSENSO anomalo: p < 0,05 o > 0,95 non è pubblicabile. Nei due ledger
+#    shadow (55 MLB + 80 UFC al 6/10) l'unica riga oltre soglia è proprio la
+#    0,0099 del 25/09: la soglia non ha tolto nessuna pick legittima osservata.
+OVERROUND_MIN = 0.98
+OVERROUND_MAX = 1.15
+CONSENSUS_P_MIN = 0.05
+CONSENSUS_P_MAX = 0.95
+
+
+def pair_overround(odds_a: float, odds_b: float) -> float | None:
+    """Somma delle probabilità implicite della coppia; None se i prezzi non
+    sono numeri > 1."""
+    try:
+        a, b = float(odds_a), float(odds_b)
+    except (TypeError, ValueError):
         return None
-    inv_a, inv_b = 1.0 / odds_a, 1.0 / odds_b
-    return inv_a / (inv_a + inv_b)
+    if a <= 1 or b <= 1:
+        return None
+    return 1.0 / a + 1.0 / b
+
+
+def devig_two_way(odds_a: float, odds_b: float) -> float | None:
+    """Devigged probability of side A from a 2-outcome price pair.
+
+    None (= coppia in QUARANTENA, il chiamante la scarta) se i prezzi non sono
+    numeri > 1 o se l'overround esce da [OVERROUND_MIN, OVERROUND_MAX] — vedi
+    la nota sulla quarantena prezzi sopra."""
+    if not odds_a or not odds_b:
+        return None
+    ovr = pair_overround(odds_a, odds_b)
+    if ovr is None:
+        return None
+    if not (OVERROUND_MIN <= ovr <= OVERROUND_MAX):
+        logger.warning(
+            "odds quarantena: overround %.4f fuori [%.2f, %.2f] (%s / %s)",
+            ovr, OVERROUND_MIN, OVERROUND_MAX, odds_a, odds_b,
+        )
+        return None
+    return (1.0 / float(odds_a)) / ovr
 
 
 async def get_h2h_events(league: str, regions: str = "eu,us") -> List[Dict]:
     """Raw h2h events for a SPORT_KEYS league, one entry per event:
     {event_id, home_team, away_team, commence_time,
-     books: [{book, p_home, odds_home, odds_away}]}  (p_home devigged)."""
+     books: [{book, p_home, odds_home, odds_away, last_update}]}  (p_home devigged).
+
+    `last_update` (#NEWSPORTS-QUALITA-1006) è il timestamp del provider per QUEL
+    book: quello del mercato h2h se presente, altrimenti quello del bookmaker,
+    None se assente. Prima veniva scartato e una quota stantia era
+    indistinguibile da una fresca: ora chi consuma può verificarne l'età."""
     if not settings.ODDS_API_KEY:
         return []
     sport_key = SPORT_KEYS.get(league)
@@ -233,8 +283,14 @@ async def get_h2h_events(league: str, regions: str = "eu,us") -> List[Dict]:
         # Key/quota errors must be VISIBLE (lab audit M9), not silent empties.
         logger.error(f"odds-api get_h2h_events({league}) HTTP {resp.status_code}: {resp.text[:200]}")
         return []
+    return parse_h2h_events(resp.json())
+
+
+def parse_h2h_events(payload: list) -> List[Dict]:
+    """Proiezione pura della risposta /odds h2h di get_h2h_events (senza rete,
+    così è testabile). Le coppie in quarantena (devig None) sono scartate."""
     out: List[Dict] = []
-    for event in resp.json():
+    for event in payload or []:
         home = event.get("home_team")
         away = event.get("away_team")
         if not home or not away:
@@ -252,7 +308,8 @@ async def get_h2h_events(league: str, regions: str = "eu,us") -> List[Dict]:
             if p is None:
                 continue
             books.append({"book": b.get("key"), "p_home": p,
-                          "odds_home": oh.get("price"), "odds_away": oa.get("price")})
+                          "odds_home": oh.get("price"), "odds_away": oa.get("price"),
+                          "last_update": m.get("last_update") or b.get("last_update")})
         out.append({
             "event_id": event.get("id"),
             "home_team": home,
@@ -263,10 +320,47 @@ async def get_h2h_events(league: str, regions: str = "eu,us") -> List[Dict]:
     return out
 
 
+def _oldest(*stamps: Optional[str]) -> Optional[str]:
+    """Il last_update più VECCHIO fra quelli dati; None se ne manca anche uno
+    (non si dichiara un'età che non si conosce)."""
+    if not stamps or any(not s for s in stamps):
+        return None
+    return min(stamps)
+
+
+def _guard_consensus(mkt: Dict) -> Optional[Dict]:
+    """Consenso anomalo = non pubblicabile (fail-closed), con avviso nel log."""
+    p = mkt["p_home"]
+    if not (CONSENSUS_P_MIN <= p <= CONSENSUS_P_MAX):
+        logger.warning(
+            "consenso ANOMALO non pubblicabile: p_home=%.4f (%s, %d book) fuori [%.2f, %.2f]",
+            p, mkt["source"], mkt["n_books"], CONSENSUS_P_MIN, CONSENSUS_P_MAX,
+        )
+        return None
+    return mkt
+
+
 def market_consensus(books: List[Dict]) -> Optional[Dict]:
     """Gate 1 market probability: Pinnacle if present, else the true median
     across books (even-n aware — lab audit B4). Returns
-    {p_home, source, n_books, odds_home, odds_away} or None."""
+    {p_home, source, n_books, odds_home, odds_away, odds_derived, odds_book,
+     last_update} or None.
+
+    None anche quando il consenso è ANOMALO (p fuori [CONSENSUS_P_MIN,
+    CONSENSUS_P_MAX]): non pubblicabile, fail-closed, con avviso nel log.
+
+    n PARI (#NEWSPORTS-QUALITA-1006): la mediana vera è la media delle due
+    probabilità centrali, e nessun book reale quota quella probabilità. Prima
+    si mostravano le quote del solo book inferiore: probabilità e quote
+    venivano da righe diverse. Ora la probabilità resta quella validata in lab
+    (media dei centrali: la probabilità servita non si sposta) e le quote sono
+    DERIVATE da quella stessa probabilità col margine medio dei due centrali:
+        odds_home = 1 / (p * ovr),   odds_away = 1 / ((1 - p) * ovr)
+    quindi devig(odds_home, odds_away) == p per costruzione (a meno
+    dell'arrotondamento a 3 decimali). Sono dichiarate `odds_derived=True` e
+    `odds_book=None`: non sono quotabili presso un book e chi le mostra deve
+    saperlo. Alternativa scartata: prendere una riga reale centrale anche per
+    la probabilità — coerente, ma cambierebbe la mediana validata (audit B4)."""
     if not books:
         return None
     pinn = next((b for b in books if b.get("book") == "pinnacle"), None)
@@ -278,22 +372,32 @@ def market_consensus(books: List[Dict]) -> Optional[Dict]:
             chosen = ordered[(n - 1) // 2]
         else:
             lo, hi = ordered[n // 2 - 1], ordered[n // 2]
-            return {
-                "p_home": (lo["p_home"] + hi["p_home"]) / 2,
+            p = (lo["p_home"] + hi["p_home"]) / 2
+            ovr_lo = pair_overround(lo["odds_home"], lo["odds_away"])
+            ovr_hi = pair_overround(hi["odds_home"], hi["odds_away"])
+            if ovr_lo is None or ovr_hi is None or not (0 < p < 1):
+                return None
+            ovr = (ovr_lo + ovr_hi) / 2
+            return _guard_consensus({
+                "p_home": p,
                 "source": "median",
                 "n_books": n,
-                # median of an even pool has no single book: keep the pair
-                # closest to the median for display odds (probability-neutral).
-                "odds_home": lo["odds_home"],
-                "odds_away": lo["odds_away"],
-            }
-    return {
+                "odds_home": round(1.0 / (p * ovr), 3),
+                "odds_away": round(1.0 / ((1 - p) * ovr), 3),
+                "odds_derived": True,
+                "odds_book": None,
+                "last_update": _oldest(lo.get("last_update"), hi.get("last_update")),
+            })
+    return _guard_consensus({
         "p_home": chosen["p_home"],
         "source": "pinnacle" if pinn else "median",
         "n_books": len(books),
         "odds_home": chosen["odds_home"],
         "odds_away": chosen["odds_away"],
-    }
+        "odds_derived": False,
+        "odds_book": chosen.get("book"),
+        "last_update": chosen.get("last_update"),
+    })
 
 
 def _match_date(commence_time: str | None) -> str:

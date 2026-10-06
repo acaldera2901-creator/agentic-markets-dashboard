@@ -73,6 +73,7 @@ def test_build_unified_row_contract():
     row = build_unified_row(
         ev=_event(), mkt=mkt, tier="standard", ufc_event="UFC 318",
         hours_to_fight=11.4, flags=[], now_iso="2026-07-11T15:00:00+00:00",
+        org_verification="bout_in_card",
     )
     assert row["sport"] == "mma"
     assert row["source_table"] == "ufc_model"
@@ -104,6 +105,7 @@ def test_build_unified_row_underdog_side():
     row = build_unified_row(
         ev=_event(), mkt=mkt, tier="standard", ufc_event="UFC Fight Night",
         hours_to_fight=5.0, flags=[], now_iso="2026-07-11T15:00:00+00:00",
+        org_verification="bout_in_card",
     )
     assert row["pick"] == "AWAY"
     assert row["confidence_score"] == 74
