@@ -43,13 +43,16 @@ export function isFlat(gap: number): boolean {
 }
 
 /**
- * Segno sempre scritto, con il MENO tipografico (U+2212) e «±0» per lo zero.
+ * Segno sempre scritto, con il MENO tipografico (U+2212) e «±» per lo zero.
  * `digits` undefined → intero se intero, altrimenti un decimale.
+ * Il segno si decide DOPO l'arrotondamento: −0,04 a un decimale è «±0.0», mai
+ * «−0.0» (né «+0.0»). Unica utility per i numeri con segno di v3c: board,
+ * partita, price check, tool, OG.
  */
 export function formatSigned(value: number, digits?: number): string {
   const a = Math.abs(value);
-  const sign = value > 0 ? "+" : value < 0 ? "−" : "±";
   const body = digits != null ? a.toFixed(digits) : Number.isInteger(a) ? String(a) : a.toFixed(1);
+  const sign = Number(body) === 0 ? "±" : value > 0 ? "+" : "−";
   return sign + body;
 }
 

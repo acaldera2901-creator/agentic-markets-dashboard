@@ -148,7 +148,7 @@
 .v3c-pc-t td { padding: 10px 0; border-bottom: 1px solid var(--v3c-line); font-size: 15px; }
 .v3c-pc-t .v3c-ra { text-align: right; }
 .v3c-pc-t th + th, .v3c-pc-t td + td { padding-left: 10px; }
-.v3c-pc-t td.v3c-num { font-size: 18px; }
+.v3c-pc-t td.v3c-num { font-size: 18px; white-space: nowrap; } /* polish-2: «±0.0 pp» non va a capo a 390 */
 .v3c-pc-t tr.v3c-pc-lead td { font-weight: 700; }
 .v3c-pc-t tr.v3c-pc-tot td { color: var(--v3c-ink-2); font-size: 13.5px; border-bottom: 0; }
 @media (max-width: 600px) { .v3c-pc-c-imp { display: none; } .v3c-pc-t td.v3c-num { font-size: 16px; } .v3c-pc-t td { font-size: 14px; } }

@@ -12,6 +12,7 @@ import { TOOL_SLUGS, toolPath, type ToolLocale } from "@/lib/tools/registry";
 import { hubJsonLd } from "@/lib/tools/seo";
 import { getV3cToolsCopy, fmt } from "@/lib/i18n/v3c-tools";
 import { matchTitle } from "@/lib/v3c/board-source";
+import { formatSigned } from "@/lib/v3c/scale";
 import { toolBoardSource } from "@/lib/v3c/board-source.server";
 import { QUESTIONS, toolPreview, toolsFor } from "@/lib/v3c/tools";
 import { v3cFontClass } from "../fonts";
@@ -58,7 +59,7 @@ export async function V3cToolsHub({ locale }: { locale: ToolLocale }) {
       line: c.hub.priceCheckLine,
       href: "/price-check",
       input: m.outcomes.map((o) => o.price.toFixed(2)).join(" · "),
-      output: `${gap > 0 ? "+" : gap < 0 ? "−" : "±"}${Number.isInteger(gap) ? Math.abs(gap) : Math.abs(gap).toFixed(1)} pp`,
+      output: `${formatSigned(gap)} pp`,
     },
   };
 

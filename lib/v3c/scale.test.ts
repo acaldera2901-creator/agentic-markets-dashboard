@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { describeScale, formatSigned, gapPp, isFlat, positionIn, scaleWindow } from "./scale";
+import { gapText } from "./board-view";
+import { eur, signedPct } from "./tools";
 
 describe("v3c nastro — scala a due punti", () => {
   it("Genoa 44/48 → finestra 30–60, tick ogni 5", () => {
@@ -39,6 +41,23 @@ describe("v3c nastro — scala a due punti", () => {
     expect(formatSigned(0)).toBe("±0");
     expect(formatSigned(3.25)).toBe("+3.3");
     expect(formatSigned(-2.5, 2)).toBe("−2.50");
+  });
+
+  it("zero negativo: il segno si decide dopo l'arrotondamento (mai «−0.0»)", () => {
+    expect(formatSigned(0, 1)).toBe("±0.0");
+    expect(formatSigned(-0, 1)).toBe("±0.0");
+    expect(formatSigned(-0.04, 1)).toBe("±0.0");
+    expect(formatSigned(0.04, 1)).toBe("±0.0");
+    expect(formatSigned(-0.05, 1)).toBe("−0.1");
+    expect(formatSigned(-0.5, 1)).toBe("−0.5");
+    expect(formatSigned(-0.004)).toBe("±0.0");
+    expect(gapText(-0.04)).toBe("±0.0");
+    expect(gapText(0.04)).toBe("±0.0");
+    expect(gapText(-0.05)).toBe("−0.1");
+    expect(signedPct(-0.04)).toBe("±0.0%");
+    expect(signedPct(-0.5)).toBe("−0.5%");
+    expect(eur(-0.004)).toBe("€0.00");
+    expect(eur(-0.5)).toBe("−€0.50");
   });
 
   it("descrizione accessibile completa", () => {

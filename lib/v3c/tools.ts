@@ -23,6 +23,7 @@ import {
   yieldPercent,
 } from "@/lib/betting-math";
 import type { BoardOutcome } from "./board-source";
+import { formatSigned } from "./scale";
 
 // ── Domande: tre, dimensionate per uso reale (5 · 4 · 2) ─────────────────────
 export type QuestionId = "price" | "stake" | "record";
@@ -97,11 +98,11 @@ export type ToolDef = {
 
 // ── Formattazione: le stesse regole del prototipo, il meno U+2212 ────────────
 export const pct = (x: number, d = 1) => `${x.toFixed(d)}%`;
-export const signedPct = (x: number, d = 1) => `${x > 0 ? "+" : x < 0 ? "−" : "±"}${Math.abs(x).toFixed(d)}%`;
+export const signedPct = (x: number, d = 1) => `${formatSigned(x, d)}%`;
 export function eur(x: number): string {
-  const sign = x < 0 ? "−" : "";
   const a = Math.abs(x);
   const body = a >= 1000 ? Math.round(a).toLocaleString("en") : a % 1 ? a.toFixed(2) : a.toFixed(0);
+  const sign = x < 0 && Number(body.replace(/,/g, "")) !== 0 ? "−" : ""; // −€0.00 mai: segno dopo l'arrotondamento
   return `${sign}€${body}`;
 }
 const dec = (x: number) => x.toFixed(2);
