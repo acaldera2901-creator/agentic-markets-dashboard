@@ -9,11 +9,10 @@ import { v3cProductOn, getBoard } from "@/lib/v3c/board-data.server";
 import { leadOutcome, outcomeLabel } from "@/lib/v3c/board-view";
 import { fetchFixture } from "@/lib/v3c/line-movement-service";
 import { cleanMatchId, findMatch } from "@/lib/v3c/match-view";
-import { OG, OG_SIZE, OgFrame, ogAssets } from "../../_og/og";
+import { OG, OG_SIZE, OgFrame, ogAssets } from "../../../_og/og";
 
-export const alt = "BetRedge match: market price and our estimate";
-export const size = OG_SIZE;
-export const contentType = "image/png";
+// polish-2: route handler (non più `opengraph-image`) così og:image può puntare
+// all'URL pubblico /match/<id>/og.png (rewrite) invece che a /v3c/… — vedi lib/v3c/og-meta.ts.
 
 const DAY = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -58,7 +57,7 @@ async function view(id: string): Promise<View | null> {
   return f ? { kicker: when(new Date(f.kickoff).toISOString()), home: f.home, away: f.away, market: null, estimate: null, line: "Market price, our estimate, the sealed record." } : null;
 }
 
-export default async function Image({ params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!v3cProductOn()) return new Response(null, { status: 404 });
   const id = cleanMatchId((await params).id);
   const v = id ? await view(id) : null;

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { V3cToolPage } from "@/components/v3c/tools/ToolPage";
 import { TOOL_SLUGS, isToolSlug } from "@/lib/tools/registry";
-import { toolMetadata } from "@/lib/tools/seo";
+import { v3cToolMetadata } from "@/lib/v3c/og-meta";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 
 export const dynamic = "force-static";
@@ -23,7 +23,7 @@ export async function generateMetadata({
   params: Promise<{ tool: string }>;
 }): Promise<Metadata> {
   const { tool } = await params;
-  return isToolSlug(tool) ? toolMetadata(tool, "en") : {};
+  return isToolSlug(tool) ? v3cToolMetadata(tool, "en") : {};
 }
 
 export default async function V3cToolRoute({ params }: { params: Promise<{ tool: string }> }) {

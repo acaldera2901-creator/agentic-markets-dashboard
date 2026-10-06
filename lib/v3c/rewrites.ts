@@ -21,6 +21,10 @@ export function v3cRewrites(flag: string | undefined | null): { beforeFiles: Rew
       { source: "/predictions", destination: "/v3c/predictions" },
       // F4: due URL NUOVI. Spento non esistono (404 di sempre); acceso servono le pagine v3c.
       { source: "/match/:id", destination: "/v3c/match/:id" },
+      // polish-2: le immagini OG dall'URL pubblico (og:image non scrive mai /v3c/…)
+      { source: "/match/:id/og.png", destination: "/v3c/match/:id/og.png" },
+      { source: "/tools/:tool/og.png", destination: "/v3c/tools/:tool/og.png" },
+      { source: `/:lang(${PREFIXED_LOCALES.join("|")})/tools/:tool/og.png`, destination: "/v3c/:lang/tools/:tool/og.png" },
       { source: "/price-check", destination: "/v3c/price-check" },
       // F6: /record non esiste nel filesystem — la rewrite serve la pagina v3c
       { source: "/record", destination: "/v3c/record" },

@@ -16,6 +16,7 @@ import { v3cProductOn } from "@/lib/v3c/board-data.server";
 import { fetchFixture, type Fixture } from "@/lib/v3c/line-movement-service";
 import { cleanMatchId, matchHref } from "@/lib/v3c/match-view";
 import { parseMode } from "@/lib/v3c/mode";
+import { v3cOgMetadata } from "@/lib/v3c/og-meta";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -34,10 +35,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = cleanMatchId((await params).id);
   const f = id ? await lookup(id) : null;
   if (!id || !f) return { title: "Match not found | BetRedge", robots: { index: false } };
+  const title = `${f.home} – ${f.away}: market, estimate and best price | BetRedge`;
+  const description = `${f.home} – ${f.away}: the market probability with the margin removed, our estimate next to it, the price history and the best price among connected books.`;
   return {
-    title: `${f.home} – ${f.away}: market, estimate and best price | BetRedge`,
-    description: `${f.home} – ${f.away}: the market probability with the margin removed, our estimate next to it, the price history and the best price among connected books.`,
+    title,
+    description,
     alternates: { canonical: matchHref(id) },
+    // og:image dall'URL pubblico /match/<id>/og.png (rewrite), mai /v3c/…
+    ...v3cOgMetadata(matchHref(id), "BetRedge match: market price and our estimate", { title, description, url: matchHref(id) }),
     // Pagine per partita, effimere: fuori dall'indice finché F9 (SEO) non decide il contrario.
     robots: { index: false, follow: true },
   };

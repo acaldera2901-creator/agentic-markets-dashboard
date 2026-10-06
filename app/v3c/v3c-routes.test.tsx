@@ -2,6 +2,7 @@
 // Flag spento: nessuna rewrite, /v3c risponde 404, le pagine di oggi non sono
 // toccate (app/page.tsx e app/predictions/page.tsx sono fuori dal diff).
 // Flag acceso: rewrite beforeFiles verso /v3c, con metadata IDENTICI.
+import type { Metadata } from "next";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { v3cRewrites } from "@/lib/v3c/rewrites";
 import { V3C_PAGE_PATHS } from "@/lib/v3c/pages-routes";
@@ -31,6 +32,9 @@ describe("rewrite del redesign (next.config.ts)", () => {
         { source: "/", destination: "/v3c" },
         { source: "/predictions", destination: "/v3c/predictions" },
         { source: "/match/:id", destination: "/v3c/match/:id" },
+        { source: "/match/:id/og.png", destination: "/v3c/match/:id/og.png" },
+        { source: "/tools/:tool/og.png", destination: "/v3c/tools/:tool/og.png" },
+        { source: "/:lang(it|es|fr|de|pt|nl|pl|tr|sv|ru)/tools/:tool/og.png", destination: "/v3c/:lang/tools/:tool/og.png" },
         { source: "/price-check", destination: "/v3c/price-check" },
         { source: "/record", destination: "/v3c/record" },
         { source: "/tools", destination: "/v3c/tools" },
@@ -106,10 +110,21 @@ describe("/v3c/tools* (F5, portati allo schema delle rewrite)", () => {
   it("metadata identici alle pagine di oggi", async () => {
     const [a, b] = await Promise.all([import("../tools/page"), import("./tools/page")]);
     expect(b.metadata).toEqual(a.metadata);
+    // polish-2: identici salvo l'immagine — og:image/twitter:image puntano all'og.png PUBBLICO (mai /v3c/…)
+    const sameButImage = async (today: Metadata, v3c: Metadata, ogPath: string) => {
+      const { openGraph: tOg, ...tRest } = today;
+      const { openGraph: vOg, twitter: vTw, ...vRest } = v3c;
+      expect(vRest).toEqual({ ...tRest, twitter: undefined }); // today: nessun twitter proprio (eredita la root)
+      const { images, ...vOgRest } = (vOg ?? {}) as Record<string, unknown>;
+      expect(vOgRest).toMatchObject(tOg as Record<string, unknown>);
+      expect(images).toEqual([expect.objectContaining({ url: ogPath, width: 1200, height: 630 })]);
+      expect(vTw).toMatchObject({ card: "summary_large_image", images: [expect.objectContaining({ url: ogPath })] });
+      expect(JSON.stringify(v3c)).not.toContain("/v3c");
+    };
     const [c, d] = await Promise.all([import("../tools/[tool]/page"), import("./tools/[tool]/page")]);
-    expect(await d.generateMetadata(tool)).toEqual(await c.generateMetadata(tool));
+    await sameButImage(await c.generateMetadata(tool), await d.generateMetadata(tool), "/tools/ev-calculator/og.png");
     const [e, f] = await Promise.all([import("../[lang]/tools/[tool]/page"), import("./[lang]/tools/[tool]/page")]);
-    expect(await f.generateMetadata(langTool)).toEqual(await e.generateMetadata(langTool));
+    await sameButImage(await e.generateMetadata(langTool), await f.generateMetadata(langTool), "/it/tools/kelly-criterion/og.png");
     const [g, h] = await Promise.all([import("../[lang]/tools/page"), import("./[lang]/tools/page")]);
     expect(await h.generateMetadata(lang)).toEqual(await g.generateMetadata(lang));
   });
