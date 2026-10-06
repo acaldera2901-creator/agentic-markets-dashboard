@@ -8,6 +8,8 @@
 // sempre). Sotto: il confronto dei prezzi di oggi, poi gli altri book (solo link
 // di registrazione, nessun prezzo), il gioco responsabile, la FAQ.
 // Una sola CTA royal: il primo book con feed. 18+ e affiliazione sempre visibili.
+import { Banner } from "../Banner";
+import "../fidelity.css";
 import Link from "next/link";
 import { useV3cLang } from "@/lib/v3c/lang.client";
 import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
@@ -121,6 +123,7 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
             <span className="v3c-age">18+</span>
           </>
         }
+        art={<Banner name="partner-crowd" priority position="60% 45%" />}
       />
 
       <div className="v3c-pg-cards">
