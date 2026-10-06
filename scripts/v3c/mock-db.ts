@@ -45,6 +45,8 @@ const FOOTBALL: Fb[] = [
   ["Primeira Liga", "Sporting CP", "Vitória de Guimarães", 31.5, [1.35, 5.2, 8.5], [0.7, 0.18, 0.12], true, "one", false],
   ["Championship", "Sheffield Wednesday", "West Bromwich Albion", 50, [2.6, 3.3, 2.75], [0.36, 0.28, 0.36], false, "none", false],
   ["MLS", "Inter Miami CF", "Columbus Crew", 53, [1.9, 3.9, 3.7], [0.47, 0.26, 0.27], true, "both", false],
+  // polish-2: modello ≈ mercato → gap −0,04 / +0,04 pp: deve leggersi «±0.0», mai «−0.0»
+  ["Serie A", "Bologna", "Genoa", 6.5, [2.0, 3.5, 3.8], [0.4754, 0.2737, 0.2509], true, "both", true],
 ].map(([competition, home, away, inH, odds, model, sealed, books, history], i) => ({
   id: `oddsapi:mock${String(i + 1).padStart(3, "0")}`,
   league: String(competition), competition: String(competition),
@@ -111,14 +113,16 @@ function history(): Pp[] {
   return [...out, ...latestPrices().filter((p) => FOOTBALL.some((f) => f.history && fbKey(f) === p.team_pair_key))];
 }
 
-type Tn = { id: string; tournament: string; kickoff: number; p1: string; p2: string; odds: [number, number]; elo: [number, number]; mv: string; sealed: boolean; books: boolean };
+type Tn = { id: string; tournament: string | null; kickoff: number; p1: string; p2: string; odds: [number, number]; elo: [number, number]; mv: string; sealed: boolean; books: boolean };
 const TENNIS: Tn[] = [
   ["ATP Shanghai", "Jannik Sinner", "Alexander Zverev", 3, [1.42, 2.9], [0.66, 0.34], "tennis-elo-v4", true, true],
   ["ATP Shanghai", "Carlos Alcaraz", "Holger Rune", 5, [1.3, 3.6], [0.72, 0.28], "tennis-elo-v4", true, true],
   ["WTA Wuhan", "Aryna Sabalenka", "Jasmine Paolini", 6, [1.36, 3.2], [0.69, 0.31], "partner-market-v1", true, true],
   ["WTA Wuhan", "Coco Gauff", "Mirra Andreeva", 24, [1.8, 2.05], [0.53, 0.47], "tennis-elo-v4", false, false],
+  // polish-2: in corso da ~2h10 e SENZA torneo («Partner feed») → riga Live senza minuti
+  [null, "Daniil Medvedev", "Taylor Fritz", -2.2, [1.7, 2.15], [0.56, 0.44], "tennis-elo-v4", true, true],
 ].map(([tournament, p1, p2, inH, odds, elo, mv, sealed, books], i) => ({
-  id: `tennis:mock${i + 1}`, tournament: String(tournament), kickoff: Math.round((now + Number(inH) * H) / (15 * 60_000)) * 15 * 60_000,
+  id: `tennis:mock${i + 1}`, tournament: tournament == null ? null : String(tournament), kickoff: Math.round((now + Number(inH) * H) / (15 * 60_000)) * 15 * 60_000,
   p1: String(p1), p2: String(p2), odds: odds as [number, number], elo: elo as [number, number], mv: String(mv), sealed: Boolean(sealed), books: Boolean(books),
 }));
 const tnKey = (t: Tn) => teamPairKey("tennis", t.p1, t.p2, iso(t.kickoff))!;
@@ -266,6 +270,7 @@ function answer(sql: string): unknown[] {
   if (s.includes("FROM tennis_predictions WHERE match_id =")) {
     const id = /match_id = '([^']+)'/.exec(s)?.[1];
     const t = TENNIS.find((x) => x.id === id);
+    if (id === "tennis:offboard1") return [{ home: "Ben Shelton", away: "Tommy Paul", kickoff: iso(now - 30 * H) }]; // polish-2: fuori board, senza torneo
     return t ? [{ home: t.p1, away: t.p2, kickoff: iso(t.kickoff) }] : [];
   }
   if (s.includes("l.commence_time >=") && s.includes("pick_settlement_current")) return sealedDay(s);
