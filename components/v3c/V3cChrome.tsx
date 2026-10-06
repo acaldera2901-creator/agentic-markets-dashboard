@@ -6,6 +6,7 @@
 // rotte non esistono ancora: «Price» va alla vista probabilità esistente
 // (/probability-view) e «Record» al registro di oggi (/history). Quando F4/F6
 // atterrano cambia SOLO questa mappa. Nessun link inventato, nessun 404.
+// F4: «Price» va a /price-check (rewrite verso app/v3c/price-check).
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { impressumLine } from "@/lib/legal-entity";
@@ -17,7 +18,7 @@ import { ThemeToggle, V3cShell, type V3cMode } from "./V3cShell";
 export const V3C_ROUTES: Record<NavKey, string> = {
   board: "/",
   tools: "/tools",
-  price: "/probability-view", // F4 → /price-check
+  price: "/price-check",
   record: "/history", // F6 → /record
   books: "/partners",
 };
@@ -36,12 +37,14 @@ type Props = {
   initialMode: V3cMode;
   fontClass: string;
   current: NavKey;
+  /** vedi V3cShell.boot (F4, pagina not-found) */
+  boot?: boolean;
   children: ReactNode;
 };
 
-export function V3cChrome({ initialMode, fontClass, current, children }: Props) {
+export function V3cChrome({ initialMode, fontClass, current, boot, children }: Props) {
   return (
-    <V3cShell initialMode={initialMode} fontClass={fontClass}>
+    <V3cShell initialMode={initialMode} fontClass={fontClass} boot={boot}>
       {(mode, toggle) => (
         <Inner mode={mode} toggle={toggle} current={current}>
           {children}

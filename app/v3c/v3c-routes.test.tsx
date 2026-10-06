@@ -26,6 +26,8 @@ describe("rewrite del redesign (next.config.ts)", () => {
       beforeFiles: [
         { source: "/", destination: "/v3c" },
         { source: "/predictions", destination: "/v3c/predictions" },
+        { source: "/match/:id", destination: "/v3c/match/:id" },
+        { source: "/price-check", destination: "/v3c/price-check" },
       ],
     });
   });

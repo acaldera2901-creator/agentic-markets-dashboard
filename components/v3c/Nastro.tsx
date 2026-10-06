@@ -13,11 +13,13 @@ type Props = {
   marketLabel?: string;
   estimateLabel?: string;
   className?: string;
+  /** F4: il gap esatto già mostrato accanto (es. −1.5 pp). Senza, si calcola dai due interi e può dire «gap −2» dove la pagina dice «in line». */
+  gap?: number | null;
 };
 
-export function Nastro({ market, estimate, marketLabel = "Market", estimateLabel = "Estimate", className }: Props) {
+export function Nastro({ market, estimate, marketLabel = "Market", estimateLabel = "Estimate", className, gap }: Props) {
   const w = scaleWindow(market, estimate);
-  const g = gapPp(market, estimate);
+  const g = gap != null && Number.isFinite(gap) ? Math.round(gap * 10) / 10 : gapPp(market, estimate);
   const lo = Math.min(market, estimate);
   const hi = Math.max(market, estimate);
   const pct = (v: number) => `${positionIn(v, w).toFixed(2)}%`;

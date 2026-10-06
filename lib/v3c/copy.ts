@@ -99,6 +99,7 @@ const EN = {
     siteOnlyLab: "Other partners · odds on their site",
     oddsOnSite: "Odds on site",
     siteOnlyNote: "No price shown: we do not read these books yet. Affiliate links · 18+.",
+    openMatch: "The match: price history and best price →",
   },
   tennis: {
     title: "Tennis",
@@ -290,6 +291,7 @@ const IT: V3cCopy = {
     siteOnlyLab: "Altri partner · quota sul loro sito",
     oddsOnSite: "Quota sul sito",
     siteOnlyNote: "Nessun prezzo: questi book non li leggiamo ancora. Link affiliati · 18+.",
+    openMatch: "La partita: storico prezzi e miglior prezzo →",
   },
   tennis: {
     title: "Tennis",

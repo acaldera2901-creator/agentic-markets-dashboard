@@ -101,6 +101,7 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `board.siteOnlyLab` | «Other partners · odds on their site» (F7) |
 | `board.oddsOnSite` | «Odds on site» (F7) |
 | `board.siteOnlyNote` | «No price shown: we do not read these books yet. Affiliate links · 18+.» (F7) |
+| `board.openMatch` | «The match: price history and best price →» |
 | `tennis.title` | «Tennis» |
 | `tennis.coming` | «market comparison coming» |
 | `tennis.comingLong` | «Tennis rows show our estimate and the connected books’ prices. The market comparison and the gap arrive once a market/model split is stored per match.» |
