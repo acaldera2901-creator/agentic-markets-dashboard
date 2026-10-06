@@ -96,6 +96,7 @@ const EN = {
     group: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
     partnerAria: (book: string) => `${book}, affiliate link, opens in a new tab`,
     partnerBlocked: "Partner prices are not shown in your region.",
+    openMatch: "The match: price history and best price →",
   },
   tennis: {
     title: "Tennis",
@@ -284,6 +285,7 @@ const IT: V3cCopy = {
     group: (n) => (n === 1 ? "1 partita" : `${n} partite`),
     partnerAria: (book) => `${book}, link affiliato, si apre in una nuova scheda`,
     partnerBlocked: "I prezzi dei partner non si mostrano nella tua regione.",
+    openMatch: "La partita: storico prezzi e miglior prezzo →",
   },
   tennis: {
     title: "Tennis",

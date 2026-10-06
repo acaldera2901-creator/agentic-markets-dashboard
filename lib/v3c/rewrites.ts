@@ -15,6 +15,9 @@ export function v3cRewrites(flag: string | undefined | null): { beforeFiles: Rew
     beforeFiles: [
       { source: "/", destination: "/v3c" },
       { source: "/predictions", destination: "/v3c/predictions" },
+      // F4: due URL NUOVI. Spento non esistono (404 di sempre); acceso servono le pagine v3c.
+      { source: "/match/:id", destination: "/v3c/match/:id" },
+      { source: "/price-check", destination: "/v3c/price-check" },
     ],
   };
 }

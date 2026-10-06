@@ -8,11 +8,13 @@
 // Tennis: la riga mostra tutto ciò che il contratto porta (stima, prezzi dei
 // book connessi) e dice onestamente cosa manca («market comparison coming»):
 // nessun mercato, nessun gap, mai un valore inventato.
+import Link from "next/link";
 import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
 import type { V3cCopy } from "@/lib/v3c/copy";
 import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, sealedStamp, timeHM, dayShort, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
 import { trackEvent } from "@/lib/track-event";
+import { matchHref } from "@/lib/v3c/match-view";
 import { Monogrammi } from "../Monogramma";
 import { Sigillo } from "../Sigillo";
 import { RowScale } from "./RowScale";
@@ -209,6 +211,9 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
             </p>
           ) : null}
           {m.blend == null ? <p className="v3c-fine">{t.board.noMarketLong}</p> : null}
+          <p className="v3c-small">
+            <Link href={matchHref(m.id)}>{t.board.openMatch}</Link>
+          </p>
           <PanelBooks books={lead.book_prices} t={t} surface={surface} label={leadLabel} partners={partners} />
           {partners && r.best ? <BestCta best={r.best} t={t} surface={surface} label={leadLabel} /> : null}
         </div>
@@ -346,6 +351,9 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sur
               <span className="v3c-small">{t.board.sealedWhy(sealedStamp(m.sealed_at, locale))}</span>
             </p>
           ) : null}
+          <p className="v3c-small">
+            <Link href={matchHref(m.id)}>{t.board.openMatch}</Link>
+          </p>
           {partners ? (
             m.sides.map((x) =>
               x.book_prices.length ? (

@@ -40,10 +40,12 @@ type Props = {
   fontClass: string;
   /** Lingua della pagina, sul contenitore (hreflang e screen reader). */
   lang?: string;
+  /** F4: false dove l'albero può essere reso dal client (not-found): lì uno <script> inline non gira e React lo segnala. */
+  boot?: boolean;
   children: ReactNode | ((mode: V3cMode, toggle: () => void) => ReactNode);
 };
 
-export function V3cShell({ initialMode = "light", fontClass, lang, children }: Props) {
+export function V3cShell({ initialMode = "light", fontClass, lang, boot = true, children }: Props) {
   const [mode, setMode] = useState<V3cMode>(initialMode);
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export function V3cShell({ initialMode = "light", fontClass, lang, children }: P
     // suppressHydrationWarning: lo script di boot può aver già scritto data-mode
     // prima dell'idratazione; lo stato lo raggiunge nel primo effetto.
     <div data-theme="v3c" data-mode={mode} lang={lang} className={`${fontClass} v3c-page`} suppressHydrationWarning>
-      <script dangerouslySetInnerHTML={{ __html: BOOT }} />
+      {boot ? <script dangerouslySetInnerHTML={{ __html: BOOT }} /> : null}
       <ModeContext.Provider value={{ mode, toggle }}>{typeof children === "function" ? children(mode, toggle) : children}</ModeContext.Provider>
     </div>
   );
