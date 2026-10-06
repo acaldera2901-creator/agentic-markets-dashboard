@@ -265,7 +265,7 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
       <div className="v3c-board-f">
         <p className="v3c-fine">{t.board.rowNote}</p>
         {!limit && more > 0 ? (
-          <span className="v3c-board-more">
+          <span className="v3c-board-showmore">
             <span className="v3c-small">{t.board.shownOf(shown.length, filtered.length)}</span>
             <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" onClick={() => setPages((n) => n + 1)}>
               {t.board.showMore(more)}

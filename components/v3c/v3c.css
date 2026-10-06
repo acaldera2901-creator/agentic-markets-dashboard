@@ -390,7 +390,7 @@ html:has([data-theme="v3c"][data-mode="dark"]) { scrollbar-color: #C8FF00 #07132
 
 .v3c-board-f { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 20px; flex-wrap: wrap; margin-top: 12px; }
 .v3c-board-f .v3c-ghost { color: var(--v3c-royal-t); }
-.v3c-board-more { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.v3c-board-showmore { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 /* stati: vuoto a cascata, errore, scheletro */
 .v3c-empty, .v3c-error { padding: 22px 0 18px; display: grid; gap: 8px; justify-items: start; border-bottom: 1px solid var(--v3c-line); }
