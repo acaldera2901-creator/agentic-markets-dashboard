@@ -6,7 +6,7 @@ import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { PARTNER_MARKET_MODEL } from "@/lib/partner-market";
 import type { BoardSourceRow, PartnerPriceRow } from "./board";
 import type { AhHistoryRow } from "./line-movement";
-import type { SealedFootballRow } from "./record";
+import { dedupeTwinFixtures, type SealedFootballRow } from "./record";
 import { TENNIS_LEDGER_SOURCE_TABLE, type SealedTennisRow, type TennisBoardSourceRow } from "./tennis";
 import type { SealedDayRow } from "./yesterday";
 import type { CorrectionRow, FootballReceiptRow, TennisReceiptRow } from "./receipts";
@@ -204,7 +204,7 @@ export async function fetchAhHistory(key: string): Promise<AhHistoryRow[]> {
  * computed at or before the seal — i.e. the exact numbers that were sealed.
  */
 export const SEALED_FOOTBALL_SQL = `
-  SELECT l.source_id, l.captured_at, l.commence_time, l.is_paper,
+  SELECT l.source_id, l.home_team, l.away_team, l.captured_at, l.commence_time, l.is_paper,
          l.p_home, l.p_draw, l.p_away,
          s.result, s.outcome,
          m.market_p_home, m.market_p_draw, m.market_p_away
@@ -233,8 +233,12 @@ export async function fetchSealedFootball(): Promise<SealedFootballRow[]> {
     FOOTBALL_LEDGER_SOURCE_TABLE,
     FOOTBALL_LEDGER_MODEL_VERSION,
   ]);
-  return rows.map((r) => ({
+  // v3c-int: the same match sealed twice (espn:* + oddsapi:*) counts once —
+  // read-only, the ledger is untouched (lib/v3c/record.ts dedupeTwinFixtures).
+  return dedupeTwinFixtures(rows.map((r) => ({
     source_id: String(r.source_id),
+    home_team: r.home_team == null ? undefined : String(r.home_team),
+    away_team: r.away_team == null ? undefined : String(r.away_team),
     captured_at: String(r.captured_at),
     commence_time: String(r.commence_time),
     is_paper: r.is_paper === true,
@@ -246,7 +250,7 @@ export async function fetchSealedFootball(): Promise<SealedFootballRow[]> {
     market_p_home: num(r.market_p_home),
     market_p_draw: num(r.market_p_draw),
     market_p_away: num(r.market_p_away),
-  }));
+  })));
 }
 
 /**

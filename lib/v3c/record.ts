@@ -19,6 +19,9 @@ import { FOOTBALL_LEDGER_MODEL_VERSION, FOOTBALL_LEDGER_SOURCE_TABLE } from "@/l
 /** A sealed row, its settlement (if any) and the market at seal time (if any). */
 export type SealedFootballRow = {
   source_id: string;
+  /** pick_ledger teams: only used to find twin fixture rows (dedupeTwinFixtures) */
+  home_team?: string;
+  away_team?: string;
   captured_at: string;
   commence_time: string;
   is_paper: boolean;
@@ -33,6 +36,63 @@ export type SealedFootballRow = {
   market_p_draw: number | null;
   market_p_away: number | null;
 };
+
+/**
+ * Twin fixture rows: the same match sealed twice under two source ids (measured
+ * 06/10: 134 pairs, all espn:* + oddsapi:*, same teams, kickoff equal in 130 and
+ * within 1h in 3 more). Same home and away team with kickoffs this close = one
+ * match. Pairs 6–96h apart exist too (24) but mostly settle differently: those
+ * are other games (rescheduled, another leg) and stay.
+ */
+export const TWIN_KICKOFF_WINDOW_HOURS = 6;
+
+function scorable(r: SealedFootballRow): boolean {
+  return r.result != null && parseOutcome(r.outcome) != null;
+}
+
+/** Which twin speaks for the match: a scored row first, then the earliest seal, then the smaller id. */
+function betterTwin(a: SealedFootballRow, b: SealedFootballRow): SealedFootballRow {
+  if (scorable(a) !== scorable(b)) return scorable(a) ? a : b;
+  const ca = Date.parse(a.captured_at);
+  const cb = Date.parse(b.captured_at);
+  if (ca !== cb) return ca < cb ? a : b;
+  return a.source_id <= b.source_id ? a : b;
+}
+
+/**
+ * Counts each match once (read-only: nothing is deleted from the ledger). The
+ * choice never looks at which side won, only at whether the row is settled and
+ * when it was sealed. Rows without team names are left as they are.
+ */
+export function dedupeTwinFixtures(rows: SealedFootballRow[]): SealedFootballRow[] {
+  const windowMs = TWIN_KICKOFF_WINDOW_HOURS * 3_600_000;
+  const byFixture = new Map<string, SealedFootballRow[]>();
+  for (const r of rows) {
+    if (!r.home_team || !r.away_team) continue;
+    const k = `${r.home_team}\u0000${r.away_team}`;
+    const list = byFixture.get(k);
+    if (list) list.push(r);
+    else byFixture.set(k, [r]);
+  }
+  const dropped = new Set<SealedFootballRow>();
+  for (const list of byFixture.values()) {
+    if (list.length < 2) continue;
+    list.sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time));
+    let first = list[0];
+    let best = first;
+    for (const r of list.slice(1)) {
+      if (Date.parse(r.commence_time) - Date.parse(first.commence_time) <= windowMs) {
+        const keep = betterTwin(best, r);
+        dropped.add(keep === best ? r : best);
+        best = keep;
+      } else {
+        first = r;
+        best = r;
+      }
+    }
+  }
+  return dropped.size === 0 ? rows : rows.filter((r) => !dropped.has(r));
+}
 
 /** Hours after kickoff before a missing settlement counts as an orphan (= sealedOrphansSql). */
 export const ORPHAN_GRACE_HOURS = 6;
