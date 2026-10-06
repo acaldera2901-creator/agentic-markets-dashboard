@@ -1,0 +1,31 @@
+// /v3c/[lang]/tools — hub tool v3c tradotto (#REDESIGN-V3C F5), destinazione della
+// rewrite di "/:lang/tools" (solo le dieci lingue prefissate, lib/v3c/rewrites.ts)
+// a flag acceso. Spento: 404, e app/[lang]/tools/page.tsx resta quella di main.
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { V3cToolsHub } from "@/components/v3c/tools/Hub";
+import { PREFIXED_LOCALES, isToolLocale } from "@/lib/tools/registry";
+import { hubMetadata } from "@/lib/tools/seo";
+import { v3cProductOn } from "@/lib/v3c/board-data.server";
+
+export const dynamic = "force-static";
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return PREFIXED_LOCALES.map((lang) => ({ lang }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  return isToolLocale(lang) && lang !== "en" ? hubMetadata(lang) : {};
+}
+
+export default async function V3cLocalizedToolsPage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  if (!v3cProductOn() || !isToolLocale(lang) || lang === "en") notFound();
+  return <V3cToolsHub locale={lang} />;
+}

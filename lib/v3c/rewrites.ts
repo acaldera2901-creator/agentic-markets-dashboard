@@ -9,6 +9,7 @@
 // i redirect stanno in lib/v3c/redirects.ts.
 import { envFlagOn } from "../redesign-flag";
 import { V3C_PAGE_PATHS } from "./pages-routes";
+import { PREFIXED_LOCALES } from "../tools/registry";
 
 type Rewrite = { source: string; destination: string };
 
@@ -23,6 +24,13 @@ export function v3cRewrites(flag: string | undefined | null): { beforeFiles: Rew
       { source: "/price-check", destination: "/v3c/price-check" },
       // F6: /record non esiste nel filesystem — la rewrite serve la pagina v3c
       { source: "/record", destination: "/v3c/record" },
+      // F5: hub e pagine tool. Le pagine di oggi restano quelle di main (nessun
+      // import v3c → né CSS né font a flag spento). :lang solo sulle dieci lingue
+      // prefissate, così una URL qualunque non finisce nel segmento [lang] v3c.
+      { source: "/tools", destination: "/v3c/tools" },
+      { source: "/tools/:tool", destination: "/v3c/tools/:tool" },
+      { source: `/:lang(${PREFIXED_LOCALES.join("|")})/tools`, destination: "/v3c/:lang/tools" },
+      { source: `/:lang(${PREFIXED_LOCALES.join("|")})/tools/:tool`, destination: "/v3c/:lang/tools/:tool" },
       // pages: News/Books/Pro/Metodo/community/legali (elenco in lib/v3c/pages-routes.ts)
       ...V3C_PAGE_PATHS.map((p) => ({ source: p, destination: `/v3c${p}` })),
     ],

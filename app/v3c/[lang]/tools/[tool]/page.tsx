@@ -1,10 +1,13 @@
-// /[lang]/tools/[tool] — le cinquanta pagine tradotte (5 tool × 10 lingue).
-// #TOOLS-HUB-0805
+// /v3c/[lang]/tools/[tool] — pagina tool v3c tradotta (#REDESIGN-V3C F5),
+// destinazione della rewrite di "/:lang/tools/:tool" a flag acceso
+// (lib/v3c/rewrites.ts). Spento: 404, e app/[lang]/tools/[tool]/page.tsx resta
+// quella di main. Stessi metadata e JSON-LD.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ToolShell } from "@/components/tools/ToolShell";
+import { V3cToolPage } from "@/components/v3c/tools/ToolPage";
 import { PREFIXED_LOCALES, TOOL_SLUGS, isToolLocale, isToolSlug } from "@/lib/tools/registry";
 import { toolMetadata } from "@/lib/tools/seo";
+import { v3cProductOn } from "@/lib/v3c/board-data.server";
 
 export const dynamic = "force-static";
 export const dynamicParams = false;
@@ -23,12 +26,12 @@ export async function generateMetadata({
   return toolMetadata(tool, lang);
 }
 
-export default async function LocalizedToolPage({
+export default async function V3cLocalizedToolRoute({
   params,
 }: {
   params: Promise<{ lang: string; tool: string }>;
 }) {
   const { lang, tool } = await params;
-  if (!isToolLocale(lang) || lang === "en" || !isToolSlug(tool)) notFound();
-  return <ToolShell slug={tool} locale={lang} />;
+  if (!v3cProductOn() || !isToolLocale(lang) || lang === "en" || !isToolSlug(tool)) notFound();
+  return <V3cToolPage slug={tool} locale={lang} />;
 }

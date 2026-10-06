@@ -1,11 +1,12 @@
-// /tools/[tool] — una pagina per calcolatore, inglese. #TOOLS-HUB-0805
-// dynamicParams=false: gli unici cinque slug esistenti sono quelli del registry,
-// qualunque altra cosa è 404 e non una pagina generata al volo.
+// /v3c/tools/[tool] — la pagina tool v3c (#REDESIGN-V3C F5), destinazione della
+// rewrite di "/tools/:tool" a flag acceso (lib/v3c/rewrites.ts). Spento: 404, e
+// app/tools/[tool]/page.tsx resta quella di main. Stessi metadata e JSON-LD.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ToolShell } from "@/components/tools/ToolShell";
+import { V3cToolPage } from "@/components/v3c/tools/ToolPage";
 import { TOOL_SLUGS, isToolSlug } from "@/lib/tools/registry";
 import { toolMetadata } from "@/lib/tools/seo";
+import { v3cProductOn } from "@/lib/v3c/board-data.server";
 
 export const dynamic = "force-static";
 export const dynamicParams = false;
@@ -23,8 +24,8 @@ export async function generateMetadata({
   return isToolSlug(tool) ? toolMetadata(tool, "en") : {};
 }
 
-export default async function ToolPage({ params }: { params: Promise<{ tool: string }> }) {
+export default async function V3cToolRoute({ params }: { params: Promise<{ tool: string }> }) {
   const { tool } = await params;
-  if (!isToolSlug(tool)) notFound();
-  return <ToolShell slug={tool} locale="en" />;
+  if (!v3cProductOn() || !isToolSlug(tool)) notFound();
+  return <V3cToolPage slug={tool} locale="en" />;
 }
