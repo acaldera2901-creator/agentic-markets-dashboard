@@ -64,7 +64,7 @@ const EN = {
     observed: "Observed: how often that outcome happened",
     aria: "Expected against observed outcomes, by ISO week",
     week: (d: string) => `wk of ${d}`,
-    caption: "Whiskers are the 95% interval of the observed count. Weeks under 30 matches are marked.",
+    caption: "Whiskers are the 95% interval of the observed count. Weeks under 30 matches: expected bar in grey, n marked *.",
   },
   tennis: {
     title: "Tennis, kept apart",
@@ -211,7 +211,7 @@ const IT: V3cRecordCopy = {
     observed: "Osservato: quante volte quell’esito è successo",
     aria: "Esiti attesi contro osservati, per settimana ISO",
     week: (d) => `sett. del ${d}`,
-    caption: "I baffi sono l’intervallo al 95% del conteggio osservato. Le settimane sotto le 30 partite sono segnate.",
+    caption: "I baffi sono l’intervallo al 95% del conteggio osservato. Settimane sotto le 30 partite: barra attesa in grigio, n segnato *.",
   },
   tennis: {
     title: "Il tennis, a parte",

@@ -32,10 +32,14 @@ import {
 } from "@/lib/v3c/board-view";
 import { useLocalTimeZone, useV3cCopy } from "@/lib/v3c/lang.client";
 import type { OddsOnSitePartner } from "@/lib/price-books";
+import { isPacked, unpackBoard, type PackedBoard } from "@/lib/v3c/board-pack";
+import { KitIcon } from "../Monogramma";
+import { StateArt } from "../States";
 import { FootballRow, TennisRow } from "./BoardRow";
 
 type Props = {
-  board: V3BoardResponse;
+  /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
+  board: V3BoardResponse | PackedBoard;
   surface: "home" | "predictions";
   partners: boolean;
   /** F7: partner senza quota letta (logo + «Odds on site»), uguali per ogni partita */
@@ -74,8 +78,9 @@ function useNow(initialIso: string, frozen = false): Date {
   return useMemo(() => new Date(min * 60_000), [min]);
 }
 
-export function Board({ board, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow }: Props) {
+export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow }: Props) {
   const { lang, t } = useV3cCopy();
+  const board = useMemo(() => (isPacked(boardIn) ? unpackBoard(boardIn) : boardIn), [boardIn]);
   const locale = lang === "it" ? "it-IT" : "en-GB";
   const tz = useLocalTimeZone();
   const now = useNow(nowIso, frozenNow);
@@ -139,9 +144,12 @@ export function Board({ board, surface, partners, siteOnly, nowIso, limit, total
             ] as const
           ).map(([k, label, n]) => (
             <button key={k} type="button" className="v3c-chip" aria-pressed={filters.sport === k} onClick={() => set({ sport: k, league: null, day: surface === "predictions" ? "next" : "all" })}>
+              {k !== "all" ? <KitIcon name={k} className="v3c-ico-chip" /> : null}
               {label} <small>{n}</small>
             </button>
           ))}
+          {/* polish: la home conta le prossime 36 ore, la fascia tutta la finestra: lo si dice accanto ai numeri */}
+          {surface === "home" && counts ? <span className="v3c-small v3c-chips-note">{t.toolbar.homeHorizon}</span> : null}
         </div>
         {surface === "predictions" ? (
           <div className="v3c-filters-2">
@@ -264,10 +272,7 @@ function EmptyCascade({
   const anyLive = all.some((r) => liveState(r.m.kickoff, now).live);
   const yWon = yesterday ? yesterday.football.won + yesterday.tennis.won : 0;
   const yLost = yesterday ? yesterday.football.lost + yesterday.tennis.lost : 0;
-  return (
-    <div className="v3c-empty" role="status">
-      <p className="v3c-t-row">{all.length === 0 ? t.empty.nothing : t.empty.filter}</p>
-      <p className="v3c-small">{all.length === 0 ? t.empty.nothingHint : t.empty.filterHint}</p>
+  const cascade = (
       <ol className="v3c-cascade">
         {!anyLive ? <li className="v3c-small">{t.empty.noLive}</li> : null}
         {c.biggestGap ? (
@@ -290,12 +295,25 @@ function EmptyCascade({
         {yesterday && yWon + yLost > 0 ? (
           <li>
             <span className="v3c-lab">{t.empty.yesterday}</span>
-            <a className="v3c-linkbtn" href={surface === "home" ? "#v3c-yday" : "/history"}>
+            <a className="v3c-linkbtn" href={surface === "home" ? "#v3c-yday" : "/record"}>
               {t.empty.yesterdayLine(yWon, yLost)}
             </a>
           </li>
         ) : null}
       </ol>
+  );
+  // polish: la board vuota per davvero porta l'illustrazione del kit («Bench is empty»); il filtro vuoto resta compatto
+  if (all.length === 0)
+    return (
+      <div role="status">
+        <StateArt kind="empty" title={t.empty.nothing} body={<>{t.empty.nothingHint}{cascade}</>} />
+      </div>
+    );
+  return (
+    <div className="v3c-empty" role="status">
+      <p className="v3c-t-row">{t.empty.filter}</p>
+      <p className="v3c-small">{t.empty.filterHint}</p>
+      {cascade}
       {filtered && all.length > 0 ? (
         <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" onClick={onReset}>
           {t.empty.seeAll}

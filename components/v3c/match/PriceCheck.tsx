@@ -49,6 +49,10 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
   const [id, setId] = useState<string>(initialId ?? "");
   const m = matches.find((x) => x.id === id) ?? null;
   const [raw, setRaw] = useState<string[]>(() => startPrices(m));
+  // polish: il Kelly in percentuale + importo su un bankroll che l'utente può cambiare (500 di partenza)
+  const [bankRaw, setBankRaw] = useState("500");
+  const bankN = Number(bankRaw.replace(",", "."));
+  const bank = Number.isFinite(bankN) && bankN > 0 ? bankN : 500;
 
   const labels = m ? [m.home, t.board.draw, m.away] : c.pc.outcomes;
   const parsed = raw.map(parsePrice);
@@ -80,7 +84,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
       ? m && E != null
         ? toolStrip([
             { slug: "ev-calculator", values: { price: leadPrice, prob: E } },
-            { slug: "kelly-criterion", values: { price: leadPrice, prob: E, bank: 500 } },
+            { slug: "kelly-criterion", values: { price: leadPrice, prob: E, bank } },
             { slug: "odds-converter", values: { price: leadPrice } },
           ])
         : toolStrip([
@@ -218,7 +222,22 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
         )}
       </section>
 
-      {strip ? <ToolStrip title={c.pc.strip} all={c.allTools} items={strip} lang={lang} /> : null}
+      {strip ? (
+        <ToolStrip
+          title={c.pc.strip}
+          all={c.allTools}
+          items={strip}
+          lang={lang}
+          bank={
+            m && E != null ? (
+              <label className="v3c-pc-bank">
+                <span className="v3c-lab">{c.pc.bankroll}</span>
+                <input type="number" inputMode="decimal" min="1" step="10" value={bankRaw} onChange={(e) => setBankRaw(e.target.value)} />
+              </label>
+            ) : null
+          }
+        />
+      ) : null}
 
       {m && chk ? (
         <div className="v3c-sec">
@@ -227,7 +246,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
               {c.pc.youBeat(leadPrice.toFixed(2))}
             </p>
           ) : null}
-          <PartnerBlock id="v3c-pc-p" title={c.pc.partnerTitle} label={labels[li]} books={books} checked={checked ? timeHM(checked, tz, locale) : null} partners={partners} surface="price_check" c={c} age={t.foot.age} />
+          <PartnerBlock id="v3c-pc-p" title={c.pc.partnerTitle} label={labels[li]} books={books} checked={checked ? timeHM(checked, tz, locale) : null} partners={partners} surface="price_check" c={c} age={t.foot.age} timeOf={(iso) => timeHM(iso, tz, locale)} />
           <p className="v3c-small" style={{ marginTop: 10 }}>
             <Link href={matchHref(m.id)}>{c.pc.openMatch}</Link>
           </p>

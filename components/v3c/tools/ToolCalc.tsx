@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { ToolSlug } from "@/lib/tools/registry";
 import type { V3cToolCopy } from "@/lib/i18n/v3c-tools";
 import { fmt } from "@/lib/i18n/v3c-tools";
-import { getBoardSource, matchTitle } from "@/lib/v3c/board-source";
+import { getBoardSource, matchTitle, sourceFrom, type BoardMatch } from "@/lib/v3c/board-source";
 import { defaultValues, toolDef, valuesFromQuery, type ToolValues } from "@/lib/v3c/tools";
 
 const subscribe = () => () => {};
@@ -22,20 +22,21 @@ function useSearch(): string {
 }
 
 /** L'esito della board indicato da ?m=&o= (se esiste nella sorgente). */
-function boardFromSearch(search: string) {
+function boardFromSearch(search: string, live?: readonly BoardMatch[]) {
   const sp = new URLSearchParams(search);
   const mid = sp.get("m");
   if (!mid) return null;
-  const src = getBoardSource();
+  // polish: le partite vere della board (passate dal server); il SAMPLE solo come ripiego
+  const src = live?.length ? sourceFrom("live", "", "/predictions", live) : getBoardSource();
   const m = src.match(mid);
   if (!m) return null;
   const o = m.outcomes.find((x) => x.key === sp.get("o")) ?? src.lead(m);
   return { match: m, outcome: o };
 }
 
-type Props = { slug: ToolSlug; copy: V3cToolCopy; invalid: string };
+type Props = { slug: ToolSlug; copy: V3cToolCopy; invalid: string; live?: readonly BoardMatch[] };
 
-export function ToolCalc({ slug, copy, invalid }: Props) {
+export function ToolCalc({ slug, copy, invalid, live }: Props) {
   const def = useMemo(() => toolDef(slug), [slug]);
   const search = useSearch();
   const [values, setValues] = useState<ToolValues>(() => defaultValues(def));
@@ -44,7 +45,7 @@ export function ToolCalc({ slug, copy, invalid }: Props) {
   // Prefill, una volta, quando la query arriva dal browser.
   useEffect(() => {
     if (!search) return;
-    const board = boardFromSearch(search);
+    const board = boardFromSearch(search, live);
     const fromBoard = board ? def.fromBoard({ outcomes: board.match.outcomes, lead: board.outcome }) : {};
     const fromQuery = valuesFromQuery(def, search);
     const next: ToolValues = { ...defaultValues(def), ...fromBoard, ...fromQuery } as ToolValues;
@@ -52,7 +53,7 @@ export function ToolCalc({ slug, copy, invalid }: Props) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setValues(next);
     setRaw(Object.fromEntries(def.inputs.map((i) => [i.key, next[i.key] == null ? "" : String(next[i.key])])));
-  }, [def, search]);
+  }, [def, search, live]);
 
   const results = def.compute(values);
   const [big, ...rest] = results;
@@ -109,9 +110,9 @@ export function ToolCalc({ slug, copy, invalid }: Props) {
 }
 
 /** Nella fascia: «prefilled from … » se la query indica un esito della board, altrimenti «type your numbers». */
-export function PrefillNote({ prefilled, typeYours }: { prefilled: string; typeYours: string }) {
+export function PrefillNote({ prefilled, typeYours, live }: { prefilled: string; typeYours: string; live?: readonly BoardMatch[] }) {
   const search = useSearch();
-  const board = search ? boardFromSearch(search) : null;
+  const board = search ? boardFromSearch(search, live) : null;
   if (!board) return <span>{typeYours}</span>;
   // «prefilled from {match} · {outcome} {price}»: la partita è un link, il resto testo.
   const [before, after = ""] = prefilled.split("{match}");

@@ -7,6 +7,11 @@
 //
 // Chi usa questa sorgente marca a schermo `kind === "sample"`: un numero finto
 // non deve mai sembrare un numero di oggi.
+// polish: la sorgente LIVE esiste (liveBoardSource, dalla stessa board di
+// /api/v3/board); la SAMPLE resta solo come ripiego dichiarato a schermo quando
+// la board non risponde o non ha una partita di calcio con un mercato.
+import type { V3BoardResponse } from "./contracts";
+import { matchHref } from "./match-view";
 import type { TeamIdentity } from "./monogram";
 import { SAMPLE_BOARD, leadOutcome, type SampleOutcome } from "./sample";
 
@@ -21,6 +26,8 @@ export type BoardOutcome = {
   estimate: number;
   /** Prezzi per book connesso (codice → quota); vuoto se non disponibili. */
   prices: Record<string, number>;
+  /** polish: il gap della board (edge_pp, un decimale) — lo stesso numero di board e pagina partita */
+  gap?: number | null;
 };
 
 export type BoardMatch = {
@@ -83,7 +90,65 @@ export const SAMPLE_BOARD_SOURCE: BoardSource = {
   },
 };
 
-/** L'unico punto da cambiare quando F2 consegna l'endpoint reale. */
+/** Il ripiego: i dati d'esempio, marcati SAMPLE a schermo. La sorgente vera è liveBoardSource. */
 export function getBoardSource(): BoardSource {
   return SAMPLE_BOARD_SOURCE;
+}
+
+/** Una sorgente da una lista di partite già pronte (serializzabile: viaggia fino al client). */
+export function sourceFrom(kind: BoardSource["kind"], pricesAsOf: string, boardHref: string, list: readonly BoardMatch[]): BoardSource {
+  return {
+    kind,
+    pricesAsOf,
+    boardHref,
+    matches: () => list,
+    match: (id) => list.find((m) => m.id === id),
+    // polish: con il gap della board l'esito guida è lo STESSO della board (|edge_pp| più ampio)
+    lead: (match) =>
+      match.outcomes.every((o) => o.gap != null)
+        ? match.outcomes.reduce((b, o) => (Math.abs(o.gap as number) > Math.abs(b.gap as number) ? o : b))
+        : leadOutcome(match.outcomes),
+  };
+}
+
+const hhmmUtc = (iso: string) => `${iso.slice(11, 16)} UTC`;
+const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/**
+ * polish: le partite di calcio VERE della board (con un mercato), in ordine di
+ * calcio d'inizio, le prime `limit`. Stessi numeri della board e della pagina
+ * partita (market_p, estimate_p arrotondati allo stesso modo: interi %).
+ * null = nessuna partita utilizzabile → chi chiama ripiega sul SAMPLE dichiarato.
+ */
+export function liveBoardMatches(board: Pick<V3BoardResponse, "matches">, now: Date, limit = 8): BoardMatch[] {
+  return board.matches
+    .filter((m) => m.margin_removed != null && Date.parse(m.kickoff) > now.getTime() && m.outcomes.every((o) => o.market_price != null && o.market_p != null))
+    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))
+    .slice(0, limit)
+    .map((m) => {
+      const k = new Date(m.kickoff);
+      return {
+        id: m.id,
+        league: m.competition || m.league || "",
+        day: DAY[k.getUTCDay()],
+        time: `${m.kickoff.slice(11, 16)} UTC`, // le pagine tool sono statiche (ISR): ora del server, dichiarata
+        home: { name: m.home },
+        away: { name: m.away },
+        outcomes: m.outcomes.map((o) => ({
+          key: o.outcome,
+          label: o.outcome === "home" ? m.home : o.outcome === "away" ? m.away : "Draw",
+          price: o.market_price as number,
+          market: Math.round((o.market_p as number) * 100),
+          estimate: Math.round(o.estimate_p * 100),
+          prices: Object.fromEntries(o.book_prices.map((b) => [b.bookmaker, b.price])),
+          gap: o.edge_pp,
+        })),
+        href: matchHref(m.id),
+      };
+    });
+}
+
+export function liveBoardSource(board: Pick<V3BoardResponse, "matches" | "generated_at">, now: Date): BoardSource | null {
+  const list = liveBoardMatches(board, now);
+  return list.length ? sourceFrom("live", hhmmUtc(board.generated_at), "/predictions", list) : null;
 }

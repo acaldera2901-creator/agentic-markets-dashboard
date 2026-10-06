@@ -10,10 +10,12 @@ import { hubMetadata } from "@/lib/tools/seo";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 
 export const dynamic = "force-static";
+// polish: i numeri d'esempio vengono dalla board vera (lib/v3c/board-source.server): ISR a 5 minuti.
+export const revalidate = 300;
 
 export const metadata: Metadata = hubMetadata("en");
 
-export default function V3cToolsPage() {
+export default async function V3cToolsPage() {
   if (!v3cProductOn()) notFound();
   return <V3cToolsHub locale="en" />;
 }

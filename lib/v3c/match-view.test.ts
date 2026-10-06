@@ -1,7 +1,7 @@
 // lib/v3c/match-view.test.ts (#REDESIGN-V3C F4)
 import { describe, expect, it } from "vitest";
 import type { V3BookPrice, V3LineSeries } from "./contracts";
-import { bookList, checkPrices, checkedAt, cleanMatchId, fairPrice, gapDirection, matchHref, parsePrice, priceAxis, readBookLinks, readLineEvents, tapeLines, tapeSummary, toolStrip } from "./match-view";
+import { bookList, checkPrices, checkedAt, cleanMatchId, fairPrice, gapDirection, matchHref, parsePrice, priceAxis, readBookLinks, readLineEvents, tapeLines, tapeSummary, toolStrip, topPriced } from "./match-view";
 import { matchCopyFor, V3C_MATCH_COPY } from "./match-copy";
 
 const bp = (bookmaker: string, name: string, price: number, at = "2026-10-05T23:10:15.445Z"): V3BookPrice => ({ bookmaker, name, price, captured_at: at, source: "live_feed", url: `https://example.test/${bookmaker}` });
@@ -151,5 +151,21 @@ describe("copy", () => {
   it("nessuna parola vietata", () => {
     const text = JSON.stringify(V3C_MATCH_COPY.en) + Object.values(V3C_MATCH_COPY.en).filter((v) => typeof v === "function").map(String).join(" ");
     expect(text).not.toMatch(/\bguarantee|\block\b|sure win|easy money|crush|\bROI\b|hit.rate|\bCLV\b|beat the market/i);
+  });
+});
+
+// polish: «best» solo con un prezzo STRETTAMENTE più alto
+describe("topPriced", () => {
+  it("one book above the rest = one best", () => {
+    const l = bookList([bp("fortuneplay", "FortunePlay", 1.67), bp("ybets", "YBets", 1.6)]);
+    expect(topPriced(l).map((b) => b.bookmaker)).toEqual(["fortuneplay"]);
+  });
+  it("same price to the cent = shared, no single best", () => {
+    const l = bookList([bp("fortuneplay", "FortunePlay", 1.52), bp("ybets", "YBets", 1.52)]);
+    expect(topPriced(l)).toHaveLength(2);
+  });
+  it("books without a price never count", () => {
+    const l = bookList([], [{ bookmaker: "ggbet", name: "GG.BET", url: "https://x.test" }]);
+    expect(topPriced(l)).toEqual([]);
   });
 });

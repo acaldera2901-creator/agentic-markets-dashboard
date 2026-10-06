@@ -13,10 +13,11 @@ import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
 import type { OddsOnSitePartner } from "@/lib/price-books";
 import type { V3cCopy } from "@/lib/v3c/copy";
-import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, sealedStamp, timeHM, dayShort, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
+import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, sealedStamp, timeHM, dayShort, topShared, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
 import { trackEvent } from "@/lib/track-event";
 import { matchHref } from "@/lib/v3c/match-view";
 import { Monogrammi } from "../Monogramma";
+import { Arrow } from "../Arrow";
 import { Sigillo } from "../Sigillo";
 import { RowScale } from "./RowScale";
 
@@ -131,7 +132,9 @@ function SiteOnlyBooks({ list, t, surface }: { list: OddsOnSitePartner[] | undef
   );
 }
 
-function BestCta({ best, t, surface, label }: { best: V3BookPrice; t: V3cCopy; surface: string; label: string }) {
+function BestCta({ best, shared, t, surface, label }: { best: V3BookPrice; shared: number; t: V3cCopy; surface: string; label: string }) {
+  // polish: «best» solo se un book paga strettamente di più; a pari prezzo nessuna CTA verso uno dei due
+  if (shared > 1) return <p className="v3c-pn-cta v3c-small">{t.board.sharedTop(label, price2(best.price), shared)}</p>;
   return (
     <div className="v3c-pn-cta">
       <a
@@ -141,7 +144,7 @@ function BestCta({ best, t, surface, label }: { best: V3BookPrice; t: V3cCopy; s
         rel="nofollow sponsored noopener noreferrer"
         onClick={() => trackEvent("partner_click", { partner_id: best.name, meta: { surface: `v3c_${surface}`, kind: "best_price", outcome: label } })}
       >
-        {t.board.bestCta(label, price2(best.price), best.name)} <span aria-hidden="true">↗</span>
+        {t.board.bestCta(label, price2(best.price), best.name)} <Arrow up />
       </a>
       <p className="v3c-fine">{t.board.bestNote}</p>
     </div>
@@ -193,7 +196,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
         )}
       </span>
       <span className="v3c-r-book">
-        {partners && r.best ? <BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} /> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
+        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
       </span>
       <span className="v3c-chev" aria-hidden="true">
         {open ? "–" : "+"}
@@ -252,7 +255,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
           </p>
           <PanelBooks books={lead.book_prices} t={t} surface={surface} label={leadLabel} partners={partners} />
           {partners ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
-          {partners && r.best ? <BestCta best={r.best} t={t} surface={surface} label={leadLabel} /> : null}
+          {partners && r.best ? <BestCta best={r.best} shared={topShared(lead).length} t={t} surface={surface} label={leadLabel} /> : null}
         </div>
       ) : null}
     </div>
@@ -322,7 +325,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
         </span>
       )}
       <span className="v3c-r-book">
-        {partners && r.best ? <BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} /> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
+        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
       </span>
       <span className="v3c-chev" aria-hidden="true">
         {open ? "–" : "+"}
@@ -408,7 +411,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
             <p className="v3c-fine">{t.board.partnerBlocked}</p>
           )}
           {partners ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
-          {partners && r.best ? <BestCta best={r.best} t={t} surface={surface} label={leadLabel} /> : null}
+          {partners && r.best ? <BestCta best={r.best} shared={topShared(lead).length} t={t} surface={surface} label={leadLabel} /> : null}
         </div>
       ) : null}
     </div>

@@ -3,6 +3,7 @@
 // beforeFiles, l'URL nel browser resta "/"); spento, questa rotta risponde 404
 // e "/" resta app/page.tsx, intatto byte per byte.
 //
+// polish: il FAQPage è quello di lib/v3c/home-faq.ts (= la FAQ visibile, senza «Base»).
 // Metadata e JSON-LD sono QUELLI di app/page.tsx (canonical "/", stessa
 // description, stesso FAQPage con le risposte visibili): una rewrite serve i
 // metadata della destinazione, quindi devono coincidere — lo verifica
@@ -11,7 +12,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JsonLd, faqJsonLd } from "@/components/seo/json-ld";
 import { V3cBoardPage } from "@/components/v3c/pages/V3cBoardPage";
-import { HOME_FAQ } from "@/lib/home-faq";
+import { V3C_HOME_FAQ } from "@/lib/v3c/home-faq";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 
 export const metadata: Metadata = {
@@ -26,7 +27,7 @@ export default async function V3cHomePage({ searchParams }: Props) {
   if (!v3cProductOn()) notFound();
   return (
     <>
-      <JsonLd data={faqJsonLd(HOME_FAQ.en.map(([q, a]) => [q, a]), "en")} />
+      <JsonLd data={faqJsonLd(V3C_HOME_FAQ.en.map(([q, a]) => [q, a]), "en")} />
       <V3cBoardPage surface="home" searchParams={searchParams} />
     </>
   );

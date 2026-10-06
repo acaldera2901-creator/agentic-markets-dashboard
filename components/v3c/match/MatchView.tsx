@@ -161,6 +161,8 @@ function Tape({ ctx, series, events, choices, initial, estimateAsOf, why, strip 
               {c.legendBook(bookName(l.bookmaker))}
             </span>
           ))}
+          {/* polish: l'ora dell'ultimo punto del grafico, accanto all'ora del best price (passo 3): possono differire di centesimi */}
+          <span className="v3c-mt-last">{c.lastCapture(`${day(summary.lastAt)} ${time(summary.lastAt)}`)}</span>
           {fair && estimateAsOf ? (
             <span>
               <i className="e" />
@@ -445,7 +447,7 @@ function Football({ ctx, m, series, events, partners, links, more }: { ctx: Ctx;
       <section className="v3c-mt-step" aria-labelledby="v3c-s3">
         <StepHead n={3} id="v3c-s3" title={c.s3} />
         <div className="v3c-cols v3c-cols-8-4">
-          <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={L} books={books} checked={chk ? timeHM(chk, ctx.tz, locale) : null} partners={partners} surface="match" c={c} age={t.foot.age} />
+          <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={L} books={books} checked={chk ? timeHM(chk, ctx.tz, locale) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={(iso) => timeHM(iso, ctx.tz, locale)} />
           <div className="v3c-mt-side">
             <Link className="v3c-btn v3c-btn-line v3c-btn-s" href={`/price-check?m=${encodeURIComponent(m.id)}`}>
               {c.pcBridge}
@@ -650,7 +652,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
 
       <section className="v3c-mt-step" aria-labelledby="v3c-s3">
         <StepHead n={3} id="v3c-s3" title={c.s3} />
-        <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={lead.player} books={books} checked={chk ? timeHM(chk, ctx.tz, locale) : null} partners={partners} surface="match" c={c} age={t.foot.age} />
+        <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={lead.player} books={books} checked={chk ? timeHM(chk, ctx.tz, locale) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={(iso) => timeHM(iso, ctx.tz, locale)} />
       </section>
       <More ctx={ctx} rows={more} />
     </>

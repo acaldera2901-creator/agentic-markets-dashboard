@@ -70,7 +70,7 @@
 .v3c-mt-chart .de { fill: var(--v3c-lime); }
 .v3c-mt-chart .lm { fill: var(--v3c-sky); font-weight: 700; }
 .v3c-mt-chart .le { fill: var(--v3c-lime); font-weight: 700; }
-.v3c-mt-chart .lo { fill: var(--v3c-ink-2); }
+.v3c-mt-chart .lo { fill: var(--v3c-ink-2); paint-order: stroke; stroke: var(--v3c-paper); stroke-width: 4px; stroke-linejoin: round; } /* polish: alone carta, l'etichetta resta leggibile se la linea la attraversa */
 .v3c-mt-chart .ev { stroke: var(--v3c-ink-3); stroke-width: 1; stroke-dasharray: 2 4; }
 .v3c-mt-chart .an { fill: var(--v3c-ink); font-weight: 600; }
 @media (max-width: 820px) { .v3c-mt-chart text { font-size: 20px; } }

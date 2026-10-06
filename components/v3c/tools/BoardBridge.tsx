@@ -5,15 +5,14 @@
 // yield) il ponte è testuale, verso la board o il registro. Nessun partner.
 import type { V3cToolsCopy } from "@/lib/i18n/v3c-tools";
 import { fmt } from "@/lib/i18n/v3c-tools";
-import { getBoardSource, matchTitle } from "@/lib/v3c/board-source";
+import { matchTitle, type BoardSource } from "@/lib/v3c/board-source";
 import type { ToolDef } from "@/lib/v3c/tools";
 import { ROUTES } from "../Chrome";
 import { Monogrammi } from "../Monogramma";
 
-type Props = { def: ToolDef; column?: string; copy: V3cToolsCopy["tool"] };
+type Props = { def: ToolDef; column?: string; copy: V3cToolsCopy["tool"]; src: BoardSource };
 
-export function BoardBridge({ def, column, copy }: Props) {
-  const src = getBoardSource();
+export function BoardBridge({ def, column, copy, src }: Props) {
   const sample = src.kind === "sample";
 
   if (!def.column) {
@@ -69,7 +68,7 @@ export function BoardBridge({ def, column, copy }: Props) {
           const c = col({ outcomes: m.outcomes, lead });
           const value = c.value === "none" ? copy.noStake : c.value;
           return (
-            <a key={m.id} className="v3c-tb-r" href={m.href} aria-label={`${matchTitle(m)}, ${lead.label} ${lead.price.toFixed(2)}, ${column} ${value}`}>
+            <a key={m.id} className="v3c-tb-r" href={m.href}>{/* polish: nessun aria-label: il nome accessibile è il testo visibile (Lighthouse label-content-name-mismatch) */}
               <span className="v3c-tb-t">
                 <Monogrammi home={m.home} away={m.away} />
                 <span className="v3c-tb-name">

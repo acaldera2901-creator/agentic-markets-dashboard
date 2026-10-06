@@ -5,6 +5,7 @@
 // non si assumono, così questa pagina non si rompe quando arrivano.
 // Una quota si mostra solo per i book con feed (come sulla board), mai inventata.
 import type { V3BoardResponse, V3BookPrice } from "./contracts";
+import { leadOutcome } from "./board-view";
 
 export type CompareRow = {
   id: string;
@@ -50,7 +51,8 @@ export function booksData(board: V3BoardResponse, now: Date, limit = 8): BooksDa
 
   for (const m of board.matches) {
     if (!upcoming(m.kickoff)) continue;
-    const o = m.outcomes.find((x) => x.outcome === m.focus);
+    // polish: lo STESSO esito guida della board (gap assoluto più ampio), non il focus del contratto
+    const o = leadOutcome(m);
     if (!o) continue;
     const prices = priceMap(o.book_prices);
     if (!Object.keys(prices).length) continue;

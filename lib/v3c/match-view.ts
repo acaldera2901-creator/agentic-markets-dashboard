@@ -108,6 +108,18 @@ export function bookList(prices: readonly V3BookPrice[], links: readonly V3BookL
   return [...priced, ...rest];
 }
 
+/**
+ * polish: il «best» esiste solo se un book paga STRETTAMENTE più degli altri.
+ * Restituisce i book che condividono il prezzo più alto (al centesimo): uno =
+ * c'è un miglior prezzo; due o più = pari, nessun «best»; vuoto = nessuna quota.
+ */
+export function topPriced<T extends { price: number | null }>(list: readonly T[]): T[] {
+  const priced = list.filter((b): b is T & { price: number } => b.price != null && Number.isFinite(b.price));
+  if (!priced.length) return [];
+  const top = Math.max(...priced.map((b) => Math.round(b.price * 100)));
+  return priced.filter((b) => Math.round(b.price * 100) === top);
+}
+
 /** L'ora del controllo: la cattura più recente fra i book con quota. */
 export function checkedAt(list: readonly BookListing[]): string | null {
   const ts = list.map((b) => (b.captured_at ? Date.parse(b.captured_at) : NaN)).filter(Number.isFinite);

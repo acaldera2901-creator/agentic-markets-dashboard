@@ -123,6 +123,14 @@ export function bestOf(o: { best_price: V3BookPrice | null; book_prices: V3BookP
   return o.best_price ?? o.book_prices[0] ?? null;
 }
 
+/** polish: quanti book hanno il prezzo più alto (al centesimo). >1 = pari: nessun «best» unico. */
+export function topShared(o: { best_price: V3BookPrice | null; book_prices: V3BookPrice[] }): V3BookPrice[] {
+  const top = bestOf(o);
+  if (!top) return [];
+  const seen = new Set<string>();
+  return o.book_prices.filter((b) => Math.round(b.price * 100) === Math.round(top.price * 100) && !seen.has(b.bookmaker) && seen.add(b.bookmaker));
+}
+
 export function footballRows(matches: V3BoardMatch[], timeZone?: string): BoardRowVM[] {
   return matches.map((m) => {
     const lead = leadOutcome(m);

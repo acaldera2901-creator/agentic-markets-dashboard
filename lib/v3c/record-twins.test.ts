@@ -2,8 +2,8 @@
 // The same match is sealed twice (espn:* and oddsapi:* source ids, same teams,
 // same kickoff): it must count once in /api/v3/record and /api/v3/calibration.
 // Fictitious rows only, no DB.
-import { describe, expect, it } from "vitest";
-import { buildRecord, dedupeTwinFixtures, TWIN_KICKOFF_WINDOW_HOURS, type SealedFootballRow } from "./record";
+import { describe, expect, it, vi } from "vitest";
+import { buildRecord, dedupeTwinFixtures, twinDroppedIds, TWIN_KICKOFF_WINDOW_HOURS, type SealedFootballRow } from "./record";
 import { SEALED_FOOTBALL_SQL } from "./queries";
 
 const row = (over: Partial<SealedFootballRow> = {}): SealedFootballRow => ({
@@ -62,5 +62,39 @@ describe("dedupeTwinFixtures", () => {
   it("the ledger query selects the team names the rule needs", () => {
     expect(SEALED_FOOTBALL_SQL).toMatch(/l\.home_team/);
     expect(SEALED_FOOTBALL_SQL).toMatch(/l\.away_team/);
+  });
+});
+
+// polish: the receipts list must show a twin fixture once, like the record.
+describe("receipts use the record's twin rule", () => {
+  it("twinDroppedIds returns exactly the rows dedupeTwinFixtures removes", () => {
+    const a = row({ source_id: "espn:1" });
+    const b = row({ source_id: "oddsapi:x", captured_at: "2026-09-11T00:00:00Z" });
+    const c = row({ source_id: "c", home_team: "Sabadell", away_team: "Andorra" });
+    expect(twinDroppedIds([a, b, c])).toEqual(["oddsapi:x"]);
+    expect(twinDroppedIds([c])).toEqual([]);
+  });
+
+  it("fetchFootballReceipts excludes the dropped twin in SQL, so paging stays exact", async () => {
+    vi.resetModules();
+    const sqls: string[] = [];
+    vi.doMock("@/lib/db", () => ({
+      dbQueryStrict: async (sql: string, params: unknown[]) => {
+        sqls.push(sql.replace(/\$(\d+)/g, (_, n) => `'${String(params[Number(n) - 1])}'`));
+        if (sqls.length === 1) {
+          return [
+            { source_id: "espn:1", home_team: "Botafogo", away_team: "Grêmio", captured_at: "2026-09-10T16:00:00Z", commence_time: "2026-09-16T22:00:00Z", result: "won", outcome: "HOME" },
+            { source_id: "oddsapi:x", home_team: "Botafogo", away_team: "Grêmio", captured_at: "2026-09-11T16:00:00Z", commence_time: "2026-09-16T22:00:00Z", result: "won", outcome: "HOME" },
+          ];
+        }
+        return [];
+      },
+    }));
+    const q = await import("./queries");
+    await q.fetchFootballReceipts(12, 0);
+    expect(sqls).toHaveLength(2);
+    expect(sqls[1]).toMatch(/NOT IN \('oddsapi:x'\)/);
+    expect(sqls[1]).not.toMatch(/'espn:1'/);
+    vi.doUnmock("@/lib/db");
   });
 });

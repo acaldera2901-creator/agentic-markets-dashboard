@@ -94,6 +94,12 @@ export function dedupeTwinFixtures(rows: SealedFootballRow[]): SealedFootballRow
   return dropped.size === 0 ? rows : rows.filter((r) => !dropped.has(r));
 }
 
+/** polish: gli id che dedupeTwinFixtures scarta — le ricevute escludono questi, così record e ricevute contano le stesse partite. */
+export function twinDroppedIds(rows: SealedFootballRow[]): string[] {
+  const kept = new Set(dedupeTwinFixtures(rows));
+  return rows.filter((r) => !kept.has(r)).map((r) => r.source_id);
+}
+
 /** Hours after kickoff before a missing settlement counts as an orphan (= sealedOrphansSql). */
 export const ORPHAN_GRACE_HOURS = 6;
 

@@ -6,7 +6,7 @@ import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { PARTNER_MARKET_MODEL } from "@/lib/partner-market";
 import type { BoardSourceRow, PartnerPriceRow } from "./board";
 import type { AhHistoryRow } from "./line-movement";
-import { dedupeTwinFixtures, type SealedFootballRow } from "./record";
+import { dedupeTwinFixtures, twinDroppedIds, type SealedFootballRow } from "./record";
 import { TENNIS_LEDGER_SOURCE_TABLE, type SealedTennisRow, type TennisBoardSourceRow } from "./tennis";
 import type { SealedDayRow } from "./yesterday";
 import type { CorrectionRow, FootballReceiptRow, TennisReceiptRow } from "./receipts";
@@ -397,7 +397,43 @@ export async function fetchTennisFixture(id: string): Promise<{ home: string; aw
  * SEALED_FOOTBALL_SQL), newest seal first, with the prediction_log row that
  * was sealed (market and prices at seal). `limit`/`offset` page through them.
  */
+/**
+ * polish: the twin rows (same match sealed under espn:* and oddsapi:*) that the
+ * record drops (dedupeTwinFixtures). Computed on the SAME population as
+ * SEALED_FOOTBALL_SQL — only the columns the rule reads — so the receipts can
+ * exclude them in SQL and page exactly. SELECT only.
+ */
+export async function fetchTwinDroppedIds(): Promise<string[]> {
+  const rows = await dbQueryStrict<Record<string, unknown>>(
+    `SELECT l.source_id, l.home_team, l.away_team, l.captured_at, l.commence_time, s.result, s.outcome
+       FROM pick_ledger l
+       LEFT JOIN pick_settlement_current s
+              ON s.source_table = l.source_table AND s.source_id = l.source_id AND s.model_version = l.model_version
+      WHERE l.source_table = $1 AND l.model_version = $2
+        AND l.is_backfill = FALSE AND l.p_home IS NOT NULL`,
+    [FOOTBALL_LEDGER_SOURCE_TABLE, FOOTBALL_LEDGER_MODEL_VERSION],
+  );
+  return twinDroppedIds(rows.map((r) => ({
+    source_id: String(r.source_id),
+    home_team: r.home_team == null ? undefined : String(r.home_team),
+    away_team: r.away_team == null ? undefined : String(r.away_team),
+    captured_at: String(r.captured_at),
+    commence_time: String(r.commence_time),
+    is_paper: false,
+    p_home: 0,
+    p_draw: 0,
+    p_away: 0,
+    result: (r.result as string) ?? null,
+    outcome: (r.outcome as string) ?? null,
+    market_p_home: null,
+    market_p_draw: null,
+    market_p_away: null,
+  })));
+}
+
 export async function fetchFootballReceipts(limit: number, offset: number): Promise<FootballReceiptRow[]> {
+  // polish: the receipts show the twin fixture once, like the record (same rule, same population)
+  const dropped = await fetchTwinDroppedIds();
   const rows = await dbQueryStrict<Record<string, unknown>>(
     `SELECT l.source_table, l.source_id, l.model_version, l.home_team, l.away_team,
             coalesce(l.competition, l.league) AS competition, l.pick,
@@ -420,9 +456,10 @@ export async function fetchFootballReceipts(limit: number, offset: number): Prom
               LIMIT 1) m ON TRUE
       WHERE l.source_table = $1 AND l.model_version = $2
         AND l.is_backfill = FALSE AND l.p_home IS NOT NULL
+        ${dropped.length ? `AND l.source_id NOT IN (${inList(dropped, 4)})` : ""}
       ORDER BY l.captured_at DESC, l.source_id
       LIMIT $3 OFFSET $4`,
-    [FOOTBALL_LEDGER_SOURCE_TABLE, FOOTBALL_LEDGER_MODEL_VERSION, limit, offset],
+    [FOOTBALL_LEDGER_SOURCE_TABLE, FOOTBALL_LEDGER_MODEL_VERSION, limit, offset, ...dropped],
   );
   return rows.map((r) => ({
     source_table: String(r.source_table),
