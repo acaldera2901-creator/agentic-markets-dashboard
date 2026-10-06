@@ -74,10 +74,11 @@ function leggi(file: string): string {
 }
 
 describe("nessuna superficie pubblica nomina la societa' operativa", () => {
+  // #REDESIGN-V3C pages: il testo legale di /privacy e /terms vive in *Body.tsx (lo rendono due cornici)
   const SUPERFICI = [
     "components/SiteFooter.tsx",
-    "app/privacy/page.tsx",
-    "app/terms/page.tsx",
+    "app/privacy/PrivacyBody.tsx",
+    "app/terms/TermsBody.tsx",
     "app/widget/page.tsx",
   ];
   const VIETATI = [/maven\s*agency/i, /blegistrasse/i, /CHE&#8209;193/i, /CHE-193/i];
@@ -91,15 +92,15 @@ describe("nessuna superficie pubblica nomina la societa' operativa", () => {
   const INIZIO_TITOLARE = ">1. Controller</h2>";
   function senzaSezioneTitolare(src: string): string {
     const inizio = src.indexOf(INIZIO_TITOLARE);
-    expect(inizio, "app/privacy/page.tsx: sezione '1. Controller' non trovata").toBeGreaterThan(-1);
+    expect(inizio, "app/privacy/PrivacyBody.tsx: sezione '1. Controller' non trovata").toBeGreaterThan(-1);
     const fine = src.indexOf("</section>", inizio);
-    expect(fine, "app/privacy/page.tsx: sezione '1. Controller' non chiusa").toBeGreaterThan(-1);
+    expect(fine, "app/privacy/PrivacyBody.tsx: sezione '1. Controller' non chiusa").toBeGreaterThan(-1);
     return src.slice(0, inizio) + src.slice(fine);
   }
 
   it("nessuna nomina la societa', la sede o il numero di registro", () => {
     for (const file of SUPERFICI) {
-      const src = file === "app/privacy/page.tsx" ? senzaSezioneTitolare(leggi(file)) : leggi(file);
+      const src = file === "app/privacy/PrivacyBody.tsx" ? senzaSezioneTitolare(leggi(file)) : leggi(file);
       for (const vietato of VIETATI) {
         expect(src, `${file} contiene ${vietato}`).not.toMatch(vietato);
       }
@@ -107,7 +108,7 @@ describe("nessuna superficie pubblica nomina la societa' operativa", () => {
   });
 
   it("l'eccezione del titolare non si estende alle altre superfici", () => {
-    for (const file of SUPERFICI.filter((f) => f !== "app/privacy/page.tsx")) {
+    for (const file of SUPERFICI.filter((f) => f !== "app/privacy/PrivacyBody.tsx")) {
       expect(leggi(file), `${file} usa PRIVACY_CONTROLLER`).not.toMatch(/PRIVACY_CONTROLLER/);
     }
   });
@@ -129,7 +130,7 @@ describe("nessuna superficie pubblica nomina la societa' operativa", () => {
 // esattamente quello che e' successo ad agosto (#SITE-ENTITY-0824) prima che Andrea
 // decidesse, il 2026-09-15, di rimetterla SOLO li'.
 describe("/privacy §1 nomina il titolare del trattamento", () => {
-  const src = leggi("app/privacy/page.tsx");
+  const src = leggi("app/privacy/PrivacyBody.tsx");
   const sezione = (() => {
     const inizio = src.indexOf(">1. Controller</h2>");
     return src.slice(inizio, src.indexOf("</section>", inizio));

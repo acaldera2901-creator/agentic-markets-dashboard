@@ -24,6 +24,8 @@ import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 import { storageGet, storageSet } from "@/lib/safe-storage";
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
+import { CHECKOUT_PARAM, checkoutDeepLink } from "@/lib/v3c/checkout-link"; // #REDESIGN-V3C pages: /pricing → checkout
+import { envFlagOn } from "@/lib/redesign-flag";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
@@ -10432,6 +10434,27 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     saveClientProfile({ ...clientProfile, plan: "free" });
     setTab("bets");
   };
+
+  // #REDESIGN-V3C pages: il «Go Pro» di /pricing arriva qui come
+  // /plans?checkout=premium e apre il CheckoutModal di sempre (stesso percorso
+  // del bottone della tab Piani: plan_cta_click, auth prima se anonimo, poi
+  // checkout). Aspetta authChecked, così un utente loggato non vede il login.
+  // Chi è già Pro resta sulla tab Piani. Solo "premium": Base non si vende più.
+  useEffect(() => {
+    // a flag spento nessuno linka /plans?checkout=: il sito resta identico
+    if (!authChecked || !envFlagOn(process.env.NEXT_PUBLIC_REDESIGN)) return;
+    const plan = checkoutDeepLink(window.location.search);
+    if (!plan) return;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete(CHECKOUT_PARAM);
+      window.history.replaceState({}, "", url.pathname + url.search);
+    } catch { /* URL unavailable */ }
+    if (clientProfile?.plan === "premium" || clientProfile?.plan === "admin_full") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deep link one-shot: apre il CheckoutModal di sempre dopo l'auth, come il click sul bottone della tab Piani
+    submitCryptoPayment(plan);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot, quando l'auth è risolta
+  }, [authChecked]);
 
   const handleCheckoutConfirm = async (txHash: string): Promise<boolean> => {
     if (!clientProfile || !checkoutPlan) return false;

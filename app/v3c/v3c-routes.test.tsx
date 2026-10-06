@@ -4,6 +4,7 @@
 // Flag acceso: rewrite beforeFiles verso /v3c, con metadata IDENTICI.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { v3cRewrites } from "@/lib/v3c/rewrites";
+import { V3C_PAGE_PATHS } from "@/lib/v3c/pages-routes";
 
 vi.mock("../app/page", () => ({ default: function Dashboard() { return null; } }));
 vi.mock("@/components/v3c/record/RecordPage", () => ({ RecordPage: function RecordPage() { return null; } }));
@@ -30,6 +31,7 @@ describe("rewrite del redesign (next.config.ts)", () => {
         { source: "/match/:id", destination: "/v3c/match/:id" },
         { source: "/price-check", destination: "/v3c/price-check" },
         { source: "/record", destination: "/v3c/record" },
+        ...V3C_PAGE_PATHS.map((p) => ({ source: p, destination: `/v3c${p}` })),
       ],
     });
   });

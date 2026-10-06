@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
-import { v3cRedirects, v3cRewrites } from "./lib/v3c/rewrites";
+import { v3cRewrites } from "./lib/v3c/rewrites";
+import { v3cRedirects } from "./lib/v3c/redirects";
 
 // Security headers (#SEC-HARDENING michele-side, pending Andrea review/deploy).
 // Applied to every response. CSP shipped in Report-Only from #SEC-HARDENING
@@ -87,7 +88,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/weekly-pick", destination: "/weekly-model-case", permanent: true },
       { source: "/match-builder", destination: "/probability-view", permanent: true },
-      // #REDESIGN-V3C F6: a flag acceso /history e /risultati → /record (308); spento nessuna voce.
+      // #REDESIGN-V3C: /plans → /pricing, /history e /risultati → /record (308) solo a flag acceso; spento è [].
       ...v3cRedirects(process.env.NEXT_PUBLIC_REDESIGN),
     ];
   },
@@ -95,6 +96,7 @@ const nextConfig: NextConfig = {
   // servono la board v3c (app/v3c/*) senza cambiare URL; spento la lista è
   // vuota e le due pagine restano quelle di sempre, statiche, byte per byte.
   async rewrites() {
+    // #REDESIGN-V3C: una sola lista (lib/v3c/rewrites.ts) per board, partita, record, tool e pagine.
     return v3cRewrites(process.env.NEXT_PUBLIC_REDESIGN);
   },
   async headers() {

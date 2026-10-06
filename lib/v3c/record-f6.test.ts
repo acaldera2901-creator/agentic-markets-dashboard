@@ -9,7 +9,8 @@ import { V3C_RECORD_COPY, brierVerdict, recordCopyFor } from "./copy-record";
 import { classifyCorrection, footballReceipt, mergeReceipts, receiptFingerprint, summarizeCorrections, tennisReceipt, type FootballReceiptRow, type TennisReceiptRow } from "./receipts";
 import { buildRecord, type SealedFootballRow } from "./record";
 import { binLabel, dotRadius, parseReceiptPage, parseReceiptSport, signedPp, signed4, shortFingerprint } from "./record-view";
-import { v3cRedirects, v3cRewrites } from "./rewrites";
+import { v3cRewrites } from "./rewrites";
+import { v3cRedirects } from "./redirects";
 
 const fb = (over: Partial<FootballReceiptRow> = {}): FootballReceiptRow => ({
   source_table: "match_predictions",
@@ -206,10 +207,9 @@ describe("routing (flag)", () => {
     for (const v of [undefined, "", "0", "false"]) expect(v3cRedirects(v)).toEqual([]);
   });
   it("on: /history and /risultati → /record, permanent (308); /record served by /v3c/record", () => {
-    expect(v3cRedirects("1")).toEqual([
-      { source: "/history", destination: "/record", permanent: true },
-      { source: "/risultati", destination: "/record", permanent: true },
-    ]);
+    const r = v3cRedirects("1");
+    expect(r).toContainEqual({ source: "/history", destination: "/record", permanent: true });
+    expect(r).toContainEqual({ source: "/risultati", destination: "/record", permanent: true });
     const rw = v3cRewrites("1") as { beforeFiles: { source: string; destination: string }[] };
     expect(rw.beforeFiles).toContainEqual({ source: "/record", destination: "/v3c/record" });
   });

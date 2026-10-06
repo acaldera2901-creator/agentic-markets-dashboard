@@ -19,11 +19,13 @@ export const ROUTES = {
   record: "/record", // F6
   books: "/partners",
   news: "/blog",
-  pro: "/plans",
+  pro: "/pricing", // #REDESIGN-V3C pages: /plans → /pricing (308) a flag acceso
   method: "/how-it-works",
   terms: "/terms",
   privacy: "/privacy",
-  signIn: "/app?auth=login",
+  // #REDESIGN-V3C pages: "/app?auth=login" finiva su /predictions, che a flag acceso
+  // è la board v3c senza modale di accesso. /plans?auth= resta la Dashboard (lib/v3c/redirects).
+  signIn: "/plans?auth=login",
   responsible: "https://www.begambleaware.org",
 } as const;
 
@@ -49,7 +51,7 @@ export function Lockup({ className }: { className?: string }) {
   );
 }
 
-type TopProps = { current: NavKey | "news" | "pro"; locale: ToolLocale; copy: V3cToolsCopy["nav"] };
+type TopProps = { current?: NavKey | "news" | "pro"; locale: ToolLocale; copy: V3cToolsCopy["nav"] };
 
 export function TopBar({ current, locale, copy }: TopProps) {
   const items: { key: string; label: string; href: string }[] = [

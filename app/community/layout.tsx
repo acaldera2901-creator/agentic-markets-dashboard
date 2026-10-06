@@ -8,6 +8,7 @@
 import type { Metadata } from "next";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { SeoProse } from "@/components/seo/SeoProse";
+import { COMMUNITY_SEO } from "./seo";
 
 export const metadata: Metadata = {
   title: "Creator Picks and Community | BetRedge",
@@ -15,36 +16,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/community" },
 };
 
+// #REDESIGN-V3C pages: prosa e FAQ vivono in ./seo.ts (stesso testo) perché le
+// usa anche app/v3c/community (servita da una rewrite a flag acceso).
 export default function CommunityLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Creator Picks", "/community"]])} />
       {children}
-      <SeoProse
-        heading="What Creator Picks are"
-        intro={[
-          "Creator Picks are accumulators assembled by BetRedge members using the Match Builder. The selections are chosen by a person; the probability attached to each leg, and to the slip as a whole, comes from the same model that prices every match on the board. Nothing about a creator slip changes the underlying numbers.",
-          "This is the difference between this page and the Weekly Pick. The Weekly Pick is selected by the model. A creator slip is a person's reading of the same probabilities, published under their name and settled the same way.",
-        ]}
-        faq={[
-          [
-            "Who builds the Creator Picks?",
-            "Community members, in the Match Builder. BetRedge does not assemble them and does not rank creators by profit or by returns.",
-          ],
-          [
-            "Where do the probabilities come from?",
-            "From the BetRedge model, unchanged. A creator picks the legs; the probability shown next to each one is the same number the model publishes for that match everywhere else on the site.",
-          ],
-          [
-            "How is a creator slip different from the Weekly Pick?",
-            "The Weekly Pick is the model's own selection, published once a week. A creator slip is a person's selection from the same set of probabilities, published whenever they build one.",
-          ],
-          [
-            "Do I need a paid plan to see them?",
-            "Creator Picks are included in the Base and Pro plans.",
-          ],
-        ]}
-      />
+      <SeoProse heading={COMMUNITY_SEO.heading} intro={COMMUNITY_SEO.intro} faq={COMMUNITY_SEO.faq} />
     </>
   );
 }
