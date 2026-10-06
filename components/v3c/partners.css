@@ -1,0 +1,4 @@
+/* F7 (#V3C-PARTNERS) — partner senza quota letta: stesso chip dei book, nome al posto del numero. */
+.v3c-siteonly .v3c-bchip span:not(.v3c-bk):not(.v3c-sr) { font-weight: 600; }
+.v3c-siteonly .v3c-bchip small { color: var(--v3c-ink-2); font-size: 12px; }
+.v3c-siteonly .v3c-fine { flex-basis: 100%; margin: 0; }

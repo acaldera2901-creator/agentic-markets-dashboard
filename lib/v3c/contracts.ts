@@ -10,7 +10,11 @@
 //   * football estimate = 0.3·model + 0.7·market (de-vigged) — `blend` says so;
 //   * the public record reads ONLY pick_ledger + pick_settlement_current;
 //   * no ROI, no CLV, no hit-rate field exists in any contract;
-//   * a price is shown only for books with a live feed (FortunePlay, YBets).
+//   * a price is shown only for partner books with a real feed AND an
+//     affiliate link (lib/price-books.ts); every other partner is still listed
+//     in `books` with oddsAvailable=false and the reason (F7).
+
+import type { BookStatus, PartnerDirEntry } from "@/lib/price-books";
 
 export type Outcome = "home" | "draw" | "away";
 
@@ -22,17 +26,26 @@ export const LIMITED_SAMPLE_N = 30;
 // ─── /api/v3/board ──────────────────────────────────────────────────────────
 
 export type V3BookPrice = {
-  /** registry key in lib/betconstruct-books.ts */
+  /** price-book key (lib/price-books.ts: BetConstruct or Altenar registry) */
   bookmaker: string;
   name: string;
   price: number;
   /** when this price was read from the book */
   captured_at: string;
-  /** live_feed = read now from the BetConstruct feed; price_history = last stored capture (feed down) */
+  /** live_feed = read now from the book's feed; price_history = last stored capture (feed down) */
   source: "live_feed" | "price_history";
   /** affiliate deep-link to the match when the book has one, else the affiliate landing */
   url: string;
 };
+
+/**
+ * One entry per partner on a fixture (F7). Nobody hides a missing price:
+ * oddsAvailable=false carries the reason, and the UI shows logo + button
+ * («Odds on site») instead of a number. Name, logo and link are in
+ * V3BoardResponse.partners (sent once, not per fixture).
+ */
+export type V3BookStatus = BookStatus;
+export type V3PartnerDirEntry = PartnerDirEntry;
 
 export type V3BoardOutcome = {
   outcome: Outcome;
@@ -46,7 +59,7 @@ export type V3BoardOutcome = {
   estimate_p: number;
   /** (estimate − market) in percentage points, signed. null without market. */
   edge_pp: number | null;
-  /** prices from feed books only; empty when none matched */
+  /** prices from enabled price books only, best first, at most COMPARE_MAX_BOOKS; empty when none matched */
   book_prices: V3BookPrice[];
   /** highest price among `book_prices` (null when empty) */
   best_price: V3BookPrice | null;
@@ -73,6 +86,8 @@ export type V3BoardMatch = {
   /** outcome with the highest estimate (the served pick rule, #PICK-FAVOURITE-0812) */
   focus: Outcome;
   outcomes: V3BoardOutcome[];
+  /** every partner, with oddsAvailable + reason (F7). Optional in the type for older fixtures; the board always fills it. */
+  books?: V3BookStatus[];
 };
 
 // ─── tennis (shared by board, record, calibration) ──────────────────────────
@@ -151,6 +166,8 @@ export type V3BoardTennisMatch = {
   /** why sides[].gap_pp is null (null when the gap exists) */
   gap_null_reason: string | null;
   sides: [V3BoardTennisSide, V3BoardTennisSide];
+  /** every partner, with oddsAvailable + reason (F7); see V3BoardMatch.books */
+  books?: V3BookStatus[];
 };
 
 export type V3BoardResponse = {
@@ -159,6 +176,8 @@ export type V3BoardResponse = {
   window_days: number;
   matches: V3BoardMatch[];
   tennis: V3BoardTennisMatch[];
+  /** every partner once (name, logo, affiliate link) for the per-fixture `books` (F7). Optional for older fixtures. */
+  partners?: V3PartnerDirEntry[];
   coverage: {
     matches: number;
     with_market: number;

@@ -96,6 +96,9 @@ const EN = {
     group: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
     partnerAria: (book: string) => `${book}, affiliate link, opens in a new tab`,
     partnerBlocked: "Partner prices are not shown in your region.",
+    siteOnlyLab: "Other partners · odds on their site",
+    oddsOnSite: "Odds on site",
+    siteOnlyNote: "No price shown: we do not read these books yet. Affiliate links · 18+.",
   },
   tennis: {
     title: "Tennis",
@@ -284,6 +287,9 @@ const IT: V3cCopy = {
     group: (n) => (n === 1 ? "1 partita" : `${n} partite`),
     partnerAria: (book) => `${book}, link affiliato, si apre in una nuova scheda`,
     partnerBlocked: "I prezzi dei partner non si mostrano nella tua regione.",
+    siteOnlyLab: "Altri partner · quota sul loro sito",
+    oddsOnSite: "Quota sul sito",
+    siteOnlyNote: "Nessun prezzo: questi book non li leggiamo ancora. Link affiliati · 18+.",
   },
   tennis: {
     title: "Tennis",

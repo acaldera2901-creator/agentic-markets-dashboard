@@ -20,6 +20,8 @@ import { Yesterday } from "@/components/v3c/home/Yesterday";
 import { getBoard, getYesterday, partnersAllowed } from "@/lib/v3c/board-data.server";
 import type { V3BoardResponse, V3BookPrice } from "@/lib/v3c/contracts";
 import { parseMode } from "@/lib/v3c/mode";
+import { oddsOnSitePartners } from "@/lib/price-books";
+import "@/components/v3c/partners.css";
 
 type Surface = "home" | "predictions";
 
@@ -39,12 +41,21 @@ function forSurface(board: V3BoardResponse, surface: Surface, now: Date): V3Boar
   const homeIds = surface === "home" ? homeCut(board, now) : null;
   const keep = (k: string, id: string) => surface === "predictions" || (Date.parse(k) <= until && (homeIds?.has(id) ?? true));
   const book = (b: V3BookPrice): V3BookPrice => ({ ...b, captured_at: "" });
+  // F7: `books` (per-partner status) and `partners` are API-only until the UI
+  // renders them — 15 entries × every row would add ~300 KB of HTML here.
+  const { partners: _partners, ...rest } = board;
+  void _partners;
+  const noBooks = <T extends { books?: unknown }>(x: T): Omit<T, "books"> => {
+    const { books: _b, ...r } = x;
+    void _b;
+    return r;
+  };
   return {
-    ...board,
+    ...rest,
     notes: [],
     coverage: { ...board.coverage, excluded: [] },
-    matches: board.matches.filter((m) => keep(m.kickoff, m.id)).map((m) => ({ ...m, outcomes: m.outcomes.map((o) => ({ ...o, model_p: null, best_price: null, book_prices: o.book_prices.map(book) })) })),
-    tennis: (board.tennis ?? []).filter((m) => keep(m.kickoff, `tn:${m.id}`)).map((m) => ({ ...m, sides: m.sides.map((x) => ({ ...x, best_price: null, book_prices: x.book_prices.map(book) })) as typeof m.sides })),
+    matches: board.matches.filter((m) => keep(m.kickoff, m.id)).map(noBooks).map((m) => ({ ...m, outcomes: m.outcomes.map((o) => ({ ...o, model_p: null, best_price: null, book_prices: o.book_prices.map(book) })) })),
+    tennis: (board.tennis ?? []).filter((m) => keep(m.kickoff, `tn:${m.id}`)).map(noBooks).map((m) => ({ ...m, sides: m.sides.map((x) => ({ ...x, best_price: null, book_prices: x.book_prices.map(book) })) as typeof m.sides })),
   };
 }
 
@@ -87,7 +98,7 @@ async function BoardBlock({ surface, nowIso }: { surface: Surface; nowIso: strin
   if (!b.ok) return <BoardError />;
   const board = forSurface(b.data, surface, new Date(nowIso));
   const yesterday = y.ok ? { day: y.data.day, football: y.data.football, tennis: y.data.tennis } : null;
-  return <Board board={board} surface={surface} partners={partners} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} />;
+  return <Board board={board} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} />;
 }
 
 async function BenchBlock({ nowIso }: { nowIso: string }) {

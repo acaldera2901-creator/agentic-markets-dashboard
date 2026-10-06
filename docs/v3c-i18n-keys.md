@@ -98,6 +98,9 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `board.group` | fn → «{a} matches» |
 | `board.partnerAria` | fn → «{a}, affiliate link, opens in a new tab» |
 | `board.partnerBlocked` | «Partner prices are not shown in your region.» |
+| `board.siteOnlyLab` | «Other partners · odds on their site» (F7) |
+| `board.oddsOnSite` | «Odds on site» (F7) |
+| `board.siteOnlyNote` | «No price shown: we do not read these books yet. Affiliate links · 18+.» (F7) |
 | `tennis.title` | «Tennis» |
 | `tennis.coming` | «market comparison coming» |
 | `tennis.comingLong` | «Tennis rows show our estimate and the connected books’ prices. The market comparison and the gap arrive once a market/model split is stored per match.» |
