@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { trackEvent } from "@/lib/track-event";
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
@@ -26,6 +27,9 @@ export default function CookieBanner() {
   try { it = (localStorage.getItem("agentic-lang") ?? "en") === "it"; } catch { /* no-storage */ }
   const decide = (v: "accepted" | "declined") => {
     try { localStorage.setItem("gdpr_consent", v); } catch { /* */ }
+    // #SESSIONI-1006 leva 4 — l'esito, contato in aggregato e senza session_id:
+    // separa "ha rifiutato" da "non ha risposto", oggi la stessa riga.
+    trackEvent("consent_choice", { anonymous: true, meta: { choice: v } });
     // #PRELAUNCH-AUDIT: segnala il consenso ai client che caricano terze parti solo
     // dopo l'Accept (es. LiveChat/Tawk.to) → si attivano senza reload.
     // #FUNNEL-MEAS-0813: lo ascolta anche PageViewTracker per l'attribuzione.

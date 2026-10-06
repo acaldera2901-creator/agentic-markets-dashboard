@@ -19,7 +19,7 @@ export default function PrivacyPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Privacy Policy</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: September 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: October 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -46,6 +46,11 @@ export default function PrivacyPage() {
                 sono PSEUDONIMI (Cons. 26 GDPR). La parola "anonymous" toglieva al
                 trattamento la base giuridica che gli serve davvero (consenso). */}
             <li><strong className="text-[var(--am-text)]">Usage events:</strong> Product usage events (page and tab views, tab clicks, plan views, banner views, partner link clicks, sign-up and checkout steps) recorded in our own first-party database. They contain no name, email or account reference, but they can be grouped by a randomly generated session identifier, so they are pseudonymous rather than anonymous. That identifier is created and sent <strong className="text-[var(--am-text)]">only after you accept cookies</strong> via the banner; if you decline, or have not answered yet, events are still counted but carry no identifier and cannot be linked to one another.</li>
+            {/* #SESSIONI-1006 — testo dal parere legale-compliance del 06/10/2026
+                (opzioni 3 e 4; l'opzione 2, hash IP+UA, NON e' implementata e il
+                suo paragrafo resta fuori). L'ultima frase sull'esito del banner
+                non e' nel parere: dichiara l'evento `consent_choice`. */}
+            <li><strong className="text-[var(--am-text)]">Aggregate audience measurement:</strong> Without any cookie or browser storage, we count page views by day, page, country (derived from your IP address, which is not stored), language and entry source (campaign parameters in the link and the referring website&apos;s domain only). These counts are not linked to you, to a session or to other events. If you accept cookies, the entry source of your current visit is attached to your session identifier; if you decline, it is discarded. In the same aggregate way, without any identifier, we count whether the cookie banner was accepted or declined. Legal basis: our legitimate interest in measuring the audience of our own site (Art. 6(1)(f) GDPR); you can object at info@betredge.com.</li>
             <li><strong className="text-[var(--am-text)]">Acquisition source:</strong> When you create an account, we store how you first reached the site (campaign parameters in the link you followed, the referring website, and the first page you landed on). This is first-party data kept in your browser&apos;s localStorage until sign-up and then saved with your profile; it is never shared with advertising networks.</li>
             <li><strong className="text-[var(--am-text)]">Deposit requests:</strong> For paying clients, name, email, and payment method are stored securely in Supabase with row-level security.</li>
             <li><strong className="text-[var(--am-text)]">Technical data:</strong> Standard server logs (IP address, browser type, request timestamps) retained for up to 30 days for security purposes.</li>
@@ -63,7 +68,7 @@ export default function PrivacyPage() {
                 (art. 6(1)(a) GDPR). Il legittimo interesse resta dov'è vero:
                 sicurezza dei log e soft opt-in della sez. 10. */}
             <li><strong className="text-[var(--am-text)]">Consent:</strong> Product analytics and any other non-essential storage on your device, including the session identifier described in Section 4 (Art. 6(1)(a) GDPR, together with Art. 5(3) of the ePrivacy Directive — Art. 122 of the Italian Privacy Code). Marketing communications where applicable. You may withdraw consent at any time through the cookie banner; withdrawal does not affect processing already carried out while consent was in place.</li>
-            <li><strong className="text-[var(--am-text)]">Legitimate interest:</strong> Security and abuse prevention (server logs, rate limiting) and the &quot;soft opt-in&quot; emails to existing clients described in Section 10.</li>
+            <li><strong className="text-[var(--am-text)]">Legitimate interest:</strong> Security and abuse prevention (server logs, rate limiting), aggregate audience measurement (Section 2) and the &quot;soft opt-in&quot; emails to existing clients described in Section 10.</li>
           </ul>
         </section>
 

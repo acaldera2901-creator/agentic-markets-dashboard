@@ -24,9 +24,12 @@ export function getSessionId(): string | null {
 
 export function trackEvent(
   event_type: string,
-  extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown> }
+  // `anonymous` (#SESSIONI-1006): l'evento non porta MAI il session_id, anche
+  // col consenso — per i conteggi aggregati come `consent_choice`.
+  extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown>; anonymous?: boolean }
 ) {
   if (typeof window === "undefined") return;
+  const { anonymous, ...fields } = extra ?? {};
   // #STORAGE-CRASH-0813: questa lettura era FUORI dal try (quella del consenso,
   // due righe sotto, era già protetta). Dove lo storage è vietato — Safari in
   // navigazione privata, i browser interni delle app, i cookie bloccati —
@@ -37,11 +40,11 @@ export function trackEvent(
   const stored = (() => {
     try { return localStorage.getItem("agentic-lang"); } catch { return null; }
   })();
-  const language = extra?.language ?? stored ?? undefined;
+  const language = fields.language ?? stored ?? undefined;
   // #GOLIVE-QW-A: no persistent session_id before GDPR consent is granted — the
   // beacon still fires (anonymous, no id) so we don't tie events to a device
   // identifier the user hasn't accepted. session_id resumes once consent lands.
-  const consented = (() => {
+  const consented = !anonymous && (() => {
     try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
   })();
   fetch("/api/track", {
@@ -58,7 +61,7 @@ export function trackEvent(
     // `?? undefined`: con lo storage vietato getSessionId ritorna null, e la
     // chiave va OMESSA dal payload invece di arrivare a null — la forma del
     // beacon resta identica a prima del fix.
-    body: JSON.stringify({ event_type, session_id: consented ? (getSessionId() ?? undefined) : undefined, language, ...extra }),
+    body: JSON.stringify({ event_type, session_id: consented ? (getSessionId() ?? undefined) : undefined, language, ...fields }),
   }).catch(() => { /* ignore */ });
 }
 

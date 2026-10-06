@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbQuery } from "@/lib/db";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { BROWSER_ANALYTICS_EVENT_SET } from "@/lib/analytics-events";
+import { analyticsWriteAllowed } from "@/lib/events-write-gate";
+import { createDropCounter, isBotUserAgent } from "@/lib/bot-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +23,25 @@ export const dynamic = "force-dynamic";
 // mesi". Tenerne due copie significa un evento che entra e non scade mai.
 const ALLOWED_EVENTS = BROWSER_ANALYTICS_EVENT_SET;
 
+// #SESSIONI-1006 leva 2 — totale dei beacon scartati come bot, una riga ogni
+// 10' per istanza. Solo il numero: lo user-agent non esce dalla richiesta.
+const botDrops = createDropCounter(10 * 60_000);
+
+// #SESSIONI-1006 leva 4 — l'esito del banner e' un conteggio AGGREGATO: niente
+// session_id e meta ridotto a {choice}, cosi' un client che mandasse altro non
+// puo' trasformarlo in un dato collegabile.
+const CONSENT_CHOICES = new Set(["accepted", "declined"]);
+
 const cap = (v: unknown, n: number): string | null =>
   typeof v === "string" && v.length ? v.slice(0, n) : null;
 
 export async function POST(req: NextRequest) {
   try {
+    // #SESSIONI-1006 leva 1 — dev e preview non scrivono su `events` di prod.
+    if (!analyticsWriteAllowed()) {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
     if (rateLimit(`track:${clientIp(req)}`, 60, 60_000)) {
       return NextResponse.json({ ok: true, throttled: true }); // never block the client
     }
@@ -45,6 +61,31 @@ export async function POST(req: NextRequest) {
     // strings into the events vocabulary the admin dashboard aggregates).
     if (!ALLOWED_EVENTS.has(eventType)) {
       return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    // #SESSIONI-1006 leva 2 — lo UA si legge e si butta: mai salvato.
+    if (isBotUserAgent(req.headers.get("user-agent"))) {
+      const flush = botDrops.hit(Date.now());
+      if (flush) {
+        await dbQuery(
+          `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+           VALUES ('track_bot_dropped', NULL, NULL, NULL, NULL, NULL, 0, $1)`,
+          [JSON.stringify(flush)]
+        );
+      }
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    if (eventType === "consent_choice") {
+      const choice = body.meta?.choice;
+      if (typeof choice !== "string" || !CONSENT_CHOICES.has(choice)) {
+        return NextResponse.json({ ok: true, ignored: true });
+      }
+      // Restano solo giorno, paese e lingua, come per un page_view anonimo.
+      body.meta = { choice };
+      body.session_id = undefined;
+      body.plan = undefined;
+      body.partner_id = undefined;
     }
 
     // #WIDGET-TRUTH-0824 — il widget gira sul sito di terzi e la guida partner
