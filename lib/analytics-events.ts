@@ -67,6 +67,11 @@ export const BROWSER_ANALYTICS_EVENTS = [
   // conversione in profilo dopo 2 settimane, o bounce in salita) resta
   // senza numeri.
   "signup_popup_shown", "signup_popup_dismissed", "signup_popup_cta_click",
+  // #SESSIONI-1006 — `entry_attributed`: la fonte dell'ingresso legata al
+  // session_id DOPO l'accept, una volta sola (PageViewTracker). Evento
+  // distinto dal page_view, cosi' l'ingresso non si conta due volte.
+  // `consent_choice`: esito del banner (meta.choice), SENZA session_id.
+  "entry_attributed", "consent_choice",
 ] as const;
 
 // Eventi che il client NON emette piu' ma che restano nello storico con un
@@ -85,6 +90,7 @@ export const SERVER_WRITTEN_EVENTS = [
   "admin_profile_switched",    // app/api/admin/profiles/switch — audit ('admin')
   "admin_profile_impersonated", // app/api/admin/profiles — audit ('admin')
   "signup_geo_denied",         // app/api/auth — session_id sempre NULL
+  "track_bot_dropped",         // app/api/track — #SESSIONI-1006, solo meta.count, session_id NULL
 ] as const;
 
 /** Eventi il cui `session_id`, quando c'e', e' l'identificatore pseudonimo del visitatore. */

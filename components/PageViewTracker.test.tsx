@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, screen, fireEvent, act } from "@testing-library/react";
 
 // #ATTRIB-EVERYWHERE-0915 — 15 iscrizioni su 21 senza sorgente identificabile,
 // nello stesso mese di 180 post IG, 42 card Telegram, 16 invii email, 3 dirette
@@ -11,6 +11,7 @@ const pathname = vi.hoisted(() => ({ value: "/tools" }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname.value }));
 
 import PageViewTracker from "./PageViewTracker";
+import CookieBanner from "./CookieBanner";
 
 let calls: Record<string, unknown>[] = [];
 
@@ -130,5 +131,63 @@ describe("PageViewTracker — ogni visita dice da dove arriva", () => {
     render(<PageViewTracker />);
     expect(String(meta().path)).toHaveLength(512);
     expect(JSON.stringify(meta()).length).toBeLessThan(2048);
+  });
+});
+
+// #SESSIONI-1006 leva 3 — dopo l'accept l'ingresso si lega alla sessione con
+// UN evento distinto; prima dell'accept la fonte non tocca mai lo storage.
+describe("PageViewTracker — entry_attributed dopo il consenso", () => {
+  const byType = (t: string) => calls.filter((c) => c.event_type === t);
+  const storageSnapshot = () => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage });
+
+  function arriveAndDecide(choice: "accept" | "decline") {
+    setUrl("/tools?utm_source=reddit&src=tg-free");
+    setReferrer("https://www.reddit.com/r/sportsbook/");
+    const view = render(<><PageViewTracker /><CookieBanner /></>);
+    // Prima della scelta: nessuna fonte nello storage, in nessuna chiave.
+    expect(storageSnapshot()).not.toContain("reddit");
+    // Navigazione interna prima di decidere: la fonte resta quella d'ingresso.
+    pathname.value = "/plans";
+    setUrl("/plans");
+    view.rerender(<><PageViewTracker /><CookieBanner /></>);
+    fireEvent.click(screen.getByRole("button", { name: choice === "accept" ? /accept/i : /decline/i }));
+    return view;
+  }
+
+  it("accept: un solo entry_attributed con sessione e fonte dell'ingresso", () => {
+    arriveAndDecide("accept");
+    const ev = byType("entry_attributed");
+    expect(ev).toHaveLength(1);
+    expect(typeof ev[0].session_id).toBe("string");
+    expect(ev[0].meta).toEqual({ path: "/tools", utm_source: "reddit", src: "tg-free", ref_host: "www.reddit.com" });
+    // L'ingresso non si conta due volte come page_view.
+    expect(byType("page_view")).toHaveLength(2);
+  });
+
+  it("reject: nessun entry_attributed, e la fonte non resta da nessuna parte", () => {
+    arriveAndDecide("decline");
+    expect(byType("entry_attributed")).toHaveLength(0);
+    expect(storageSnapshot()).not.toContain("reddit");
+    // Un secondo evento di consenso (es. altro componente) non lo resuscita.
+    localStorage.setItem("gdpr_consent", "accepted");
+    act(() => { window.dispatchEvent(new Event("betredge:gdpr-consent")); });
+    expect(byType("entry_attributed")).toHaveLength(0);
+  });
+
+  it("accept: un secondo evento di consenso non duplica", () => {
+    arriveAndDecide("accept");
+    act(() => { window.dispatchEvent(new Event("betredge:gdpr-consent")); });
+    expect(byType("entry_attributed")).toHaveLength(1);
+  });
+
+  it("ricarica dopo l'accept: il page_view porta gia' il sid, nessun entry_attributed", () => {
+    arriveAndDecide("accept");
+    cleanup();
+    calls = [];
+    setUrl("/tools?utm_source=reddit");
+    render(<><PageViewTracker /><CookieBanner /></>); // ricarica: consenso gia' salvato
+    act(() => { window.dispatchEvent(new Event("betredge:gdpr-consent")); });
+    expect(byType("entry_attributed")).toHaveLength(0);
+    expect(typeof byType("page_view")[0].session_id).toBe("string");
   });
 });

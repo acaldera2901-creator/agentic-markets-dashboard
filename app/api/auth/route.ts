@@ -15,6 +15,7 @@ import { grantInviteeBonus } from "@/lib/referral-rewards";
 import { assertConsent, ConsentError } from "./consent";
 import { CURRENT_CONSENT_VERSION } from "@/lib/legal-version";
 import { acquisitionJson } from "@/lib/attribution";
+import { analyticsWriteAllowed } from "@/lib/events-write-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -323,11 +324,14 @@ export async function POST(req: Request) {
     if (!signupCountryAllowed(requestCountry)) {
       const deniedCountry = requestCountry ?? "unknown";
       try {
-        await dbQuery(
-          `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
-           VALUES ('signup_geo_denied', NULL, $1, NULL, NULL, NULL, 0, '{}')`,
-          [deniedCountry]
-        );
+        // #SESSIONI-1006 leva 1 — e' un contatore: fuori produzione non scrive.
+        if (analyticsWriteAllowed()) {
+          await dbQuery(
+            `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
+             VALUES ('signup_geo_denied', NULL, $1, NULL, NULL, NULL, 0, '{}')`,
+            [deniedCountry]
+          );
+        }
       } catch (e) {
         console.error("[auth] signup_geo_denied log failed:", String(e));
       }
