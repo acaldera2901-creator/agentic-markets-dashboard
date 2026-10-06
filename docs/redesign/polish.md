@@ -52,3 +52,12 @@ Branch locale `betredge/v3c-polish` (worktree `~/Desktop/01-BETREDGE/am-v3c-poli
 
 ## Ripetere la verifica in locale
 `npx tsx scripts/v3c/mock-db.ts &` poi `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54399 SUPABASE_SERVICE_ROLE_KEY=mock NEXT_PUBLIC_REDESIGN=1 NODE_OPTIONS="--require ./scripts/v3c/no-network.cjs" npx next dev -p 3123`; nei test browser bloccare `/api/track` e `/api/partner-click`.
+
+## Preview con dati reali — 06/10/2026 (programmatore-andrea)
+Preview `betredge-b1jdakv57-betredge.vercel.app` (alias `betredge-git-betredge-v3c-polish-betredge.vercel.app`), redeploy di 543d7283 con `NEXT_PUBLIC_REDESIGN` solo Preview su questo branch.
+- HTTP: 200 v3c su tutte le rotte del brief, 404 vero, /plans→308 /pricing, /history e /risultati→308 /record; betredge.com resta il sito vecchio.
+- Tennis «market price only» (Akugue–Kostovic, Elo v4 ancorato al prezzo): testata 67% = mercato senza margine (non temperato), tabella «Estimate» 60% = stesso mercato con τ 1,68 (il numero servito e sigillato). La didascalia della testata diceva «temperature 1.68»: corretto in b387418e (non pushato), la τ ora è dichiarata accanto alla tabella.
+- Coerenza board/partita/price check vs SELECT su prediction_log: Chicago–Vancouver 43/44/+0,9, Remo–Grêmio 40/42/+1,5, Internacional–Corinthians 28/29/+0,3, Gnistan–Inter Turku 25/23/−1,4: identici.
+- Record: 2.047 sigillate (+1 rispetto al 2.046 atteso: un sigillo nuovo), 1.758 con esito, 1.603 appaiate, +0,0019 [−0,0006; +0,0043].
+- Lighthouse mobile (preview vs betredge.com): home LCP 4,9 vs 7,4 s, board 5,2 vs 7,8, partita 4,9, record 4,5 vs 9,4 (/history, CLS 0,549); CLS v3c 0. HTML /predictions 728 KB (80 KB brotli) vs 49 KB oggi.
+- Restano: «−0.0 pp» (zero negativo) su board/partita/price check; breadcrumb «Board › —» su partita tennis uscita dalla board senza torneo; og:image punta a `/v3c/...`.
