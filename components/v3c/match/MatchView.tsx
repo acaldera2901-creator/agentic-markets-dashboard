@@ -542,7 +542,9 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
               <span className="v3c-lab">
                 {marketOnly ? c.tennisMarketOnlyBig : c.tennisModelBig}
                 <small>
-                  {lead.player} · {kind}
+                  {/* polish: the big number of a market-only row is market_p (de-vigged, NOT tempered);
+                      the tempered kind describes estimate_p, so it is stated next to the table instead */}
+                  {marketOnly && big === lead.market_p ? c.marketSub(lead.player, price2(lead.market_price)) : `${lead.player} · ${kind}`}
                 </small>
               </span>
               <b className={["v3c-n-score", marketOnly ? "v3c-m" : null].filter(Boolean).join(" ")}>
@@ -620,6 +622,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
         <p className="v3c-pn-facts v3c-small" style={{ marginTop: 10, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
           {lead.model_p != null ? <span>{t.tennis.rawElo(pctInt(lead.model_p))}</span> : null}
           {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
+          {marketOnly && !hasGap ? <span>{`${c.estimate}: ${kind}`}</span> : null}
           <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
         </p>
       </section>
