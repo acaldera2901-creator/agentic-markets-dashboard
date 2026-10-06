@@ -419,6 +419,9 @@ export type V3RecordResponse = {
     /** 3-outcome Brier (0 = perfect, 2 = worst), lower is better */
     estimate: number | null;
     market: number | null;
+    /** 95% normal CI of each mean Brier on the paired rows (F6, additive) */
+    estimate_ci95?: V3Interval | null;
+    market_ci95?: V3Interval | null;
     /** estimate − market on the paired rows, with a 95% normal CI */
     difference: number | null;
     difference_ci95: V3Interval | null;
@@ -466,4 +469,70 @@ export type V3CalibrationResponse = {
     models: V3TennisCalibration[];
   };
   notes: string[];
+};
+
+// ─── record page (F6): receipts and settlement corrections ─────────────────
+
+/** One sealed row as the record page shows it: what was sealed, when, and how it settled. */
+export type V3Receipt = {
+  sport: "football" | "tennis";
+  source_id: string;
+  model_version: string;
+  home: string;
+  away: string;
+  competition: string | null;
+  /** pick_ledger.captured_at, full precision, UTC ISO */
+  sealed_at: string;
+  kickoff: string;
+  /** the outcome the row reads: the pick shown, else (football) the estimate's top outcome */
+  read: string;
+  /** "pick" = a pick was shown; "top" = no pick shown, the estimate's most likely outcome */
+  read_kind: "pick" | "top";
+  /** decimal price of `read` at seal (football: the prediction_log row that was sealed; tennis: pick_ledger.odds) */
+  price: number | null;
+  estimate_p: number;
+  /** market probability of `read` at seal; null when there is none or when the sealed number IS the market */
+  market_p: number | null;
+  /** estimate − market in signed pp; null with `gap_null_reason` */
+  gap_pp: number | null;
+  gap_null_reason: "no_market_at_seal" | "is_market" | null;
+  /** football: true when there was no real market at seal (paper row) */
+  is_paper: boolean;
+  /** "in_favour" = `read` happened; "against" = it did not; "void"/"unresolved" = no scored outcome */
+  verdict: "in_favour" | "against" | "void" | "unresolved";
+  final_score: string | null;
+  /** settlement revision of the current row; > 1 means it was corrected */
+  revision: number;
+  /** tennis only: what the sealed number is */
+  tennis_kind: TennisProbabilityKind | null;
+  /** SHA-256 of the sealed fields (lib/v3c/receipts.ts receiptFingerprint), recomputable by anyone */
+  fingerprint: string;
+};
+
+export type V3CorrectionCause = "late_result" | "postponed" | "no_pick_shown" | "late_fill" | "other";
+
+export type V3Correction = {
+  sport: "football" | "tennis";
+  home: string;
+  away: string;
+  kickoff: string;
+  revision: number;
+  corrected_at: string;
+  before: string;
+  after: string;
+  before_score: string | null;
+  after_score: string | null;
+  cause: V3CorrectionCause;
+  /** source of a recovered result, as stored (e.g. "espn-id") */
+  source: string | null;
+  /** new date of a postponed match, if stored */
+  new_date: string | null;
+  /** pick_settlement.correction_reason verbatim */
+  reason_raw: string;
+};
+
+export type V3CorrectionsSummary = {
+  total: number;
+  by_cause: Record<V3CorrectionCause, number>;
+  latest: V3Correction[];
 };

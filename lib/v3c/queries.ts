@@ -9,6 +9,7 @@ import type { AhHistoryRow } from "./line-movement";
 import type { SealedFootballRow } from "./record";
 import { TENNIS_LEDGER_SOURCE_TABLE, type SealedTennisRow, type TennisBoardSourceRow } from "./tennis";
 import type { SealedDayRow } from "./yesterday";
+import type { CorrectionRow, FootballReceiptRow, TennisReceiptRow } from "./receipts";
 
 const num = (v: unknown): number | null => (v == null || v === "" ? null : Number(v));
 
@@ -381,4 +382,157 @@ export async function fetchTennisFixture(id: string): Promise<{ home: string; aw
     [id],
   );
   return rows[0] && rows[0].kickoff ? { home: rows[0].home, away: rows[0].away, kickoff: String(rows[0].kickoff) } : null;
+}
+
+// ─── record page (F6): receipts and corrections — SELECT only ──────────────
+
+// captured_at is read as stored: UTC, microseconds (the fingerprint hashes this exact string).
+
+/**
+ * Settled football rows of the record population (same filter as
+ * SEALED_FOOTBALL_SQL), newest seal first, with the prediction_log row that
+ * was sealed (market and prices at seal). `limit`/`offset` page through them.
+ */
+export async function fetchFootballReceipts(limit: number, offset: number): Promise<FootballReceiptRow[]> {
+  const rows = await dbQueryStrict<Record<string, unknown>>(
+    `SELECT l.source_table, l.source_id, l.model_version, l.home_team, l.away_team,
+            coalesce(l.competition, l.league) AS competition, l.pick,
+            l.p_home, l.p_draw, l.p_away, l.odds, l.is_paper,
+            to_char(l.captured_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS captured_at, l.commence_time,
+            s.result, s.outcome, s.final_score, s.settlement_revision,
+            m.market_p_home, m.market_p_draw, m.market_p_away, m.odds_home, m.odds_draw, m.odds_away
+       FROM pick_ledger l
+       JOIN pick_settlement_current s
+         ON s.source_table = l.source_table AND s.source_id = l.source_id AND s.model_version = l.model_version
+       LEFT JOIN LATERAL (
+             SELECT pl.market_p_home, pl.market_p_draw, pl.market_p_away, pl.odds_home, pl.odds_draw, pl.odds_away
+               FROM prediction_log pl
+              WHERE pl.match_id = l.source_id
+                AND pl.computed_at <= l.captured_at
+                AND abs(pl.p_home - l.p_home) < 1e-9
+                AND abs(pl.p_draw - l.p_draw) < 1e-9
+                AND abs(pl.p_away - l.p_away) < 1e-9
+              ORDER BY pl.computed_at DESC
+              LIMIT 1) m ON TRUE
+      WHERE l.source_table = $1 AND l.model_version = $2
+        AND l.is_backfill = FALSE AND l.p_home IS NOT NULL
+      ORDER BY l.captured_at DESC, l.source_id
+      LIMIT $3 OFFSET $4`,
+    [FOOTBALL_LEDGER_SOURCE_TABLE, FOOTBALL_LEDGER_MODEL_VERSION, limit, offset],
+  );
+  return rows.map((r) => ({
+    source_table: String(r.source_table),
+    source_id: String(r.source_id),
+    model_version: String(r.model_version),
+    home: String(r.home_team ?? ""),
+    away: String(r.away_team ?? ""),
+    competition: (r.competition as string) ?? null,
+    pick: (r.pick as string) ?? null,
+    p_home: Number(r.p_home),
+    p_draw: Number(r.p_draw),
+    p_away: Number(r.p_away),
+    odds: num(r.odds),
+    is_paper: r.is_paper === true,
+    captured_at: String(r.captured_at),
+    commence_time: new Date(String(r.commence_time)).toISOString(),
+    result: String(r.result ?? ""),
+    outcome: (r.outcome as string) ?? null,
+    final_score: (r.final_score as string) ?? null,
+    revision: Number(r.settlement_revision ?? 1),
+    market_p_home: num(r.market_p_home),
+    market_p_draw: num(r.market_p_draw),
+    market_p_away: num(r.market_p_away),
+    odds_home: num(r.odds_home),
+    odds_draw: num(r.odds_draw),
+    odds_away: num(r.odds_away),
+  }));
+}
+
+/** Settled tennis rows (non-backfill), newest seal first. */
+export async function fetchTennisReceipts(limit: number, offset: number): Promise<TennisReceiptRow[]> {
+  const rows = await dbQueryStrict<Record<string, unknown>>(
+    `SELECT l.source_table, l.source_id, l.model_version, l.home_team, l.away_team,
+            coalesce(l.competition, l.league) AS competition, l.pick, l.confidence AS p,
+            l.p_home, l.p_away, l.odds, l.signal_type,
+            to_char(l.captured_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS captured_at, l.commence_time,
+            s.result, s.final_score, s.settlement_revision
+       FROM pick_ledger l
+       JOIN pick_settlement_current s
+         ON s.source_table = l.source_table AND s.source_id = l.source_id AND s.model_version = l.model_version
+      WHERE l.sport = 'tennis' AND l.is_backfill = FALSE AND l.confidence IS NOT NULL
+      ORDER BY l.captured_at DESC, l.source_id
+      LIMIT $1 OFFSET $2`,
+    [limit, offset],
+  );
+  return rows.map((r) => ({
+    source_table: String(r.source_table),
+    source_id: String(r.source_id),
+    model_version: String(r.model_version),
+    home_team: String(r.home_team ?? ""),
+    away_team: String(r.away_team ?? ""),
+    competition: (r.competition as string) ?? null,
+    pick: String(r.pick ?? ""),
+    p: Number(r.p),
+    p_home: num(r.p_home),
+    p_away: num(r.p_away),
+    result: (r.result as string) ?? null,
+    odds: num(r.odds),
+    signal_type: (r.signal_type as string) ?? null,
+    captured_at: String(r.captured_at),
+    commence_time: new Date(String(r.commence_time)).toISOString(),
+    final_score: (r.final_score as string) ?? null,
+    revision: Number(r.settlement_revision ?? 1),
+  }));
+}
+
+/**
+ * Settlement corrections of the record population: every pick_settlement row
+ * with revision > 1, next to the revision it replaced. `all` = every reason
+ * (for the counts); `latest` = the newest `limit`, with before → after.
+ */
+export async function fetchCorrections(limit: number): Promise<{ all: { reason: string | null }[]; latest: CorrectionRow[] }> {
+  const params = [FOOTBALL_LEDGER_SOURCE_TABLE, FOOTBALL_LEDGER_MODEL_VERSION];
+  const [all, latest] = await Promise.all([
+    dbQueryStrict<{ reason: string | null }>(`SELECT c.correction_reason AS reason FROM pick_settlement c
+       JOIN pick_ledger l
+         ON l.source_table = c.source_table AND l.source_id = c.source_id AND l.model_version = c.model_version
+       LEFT JOIN pick_settlement p
+         ON p.source_table = c.source_table AND p.source_id = c.source_id AND p.model_version = c.model_version
+        AND p.settlement_revision = c.settlement_revision - 1 WHERE c.settlement_revision > 1
+        AND l.is_backfill = FALSE
+        AND ((l.sport = 'football' AND l.source_table = $1 AND l.model_version = $2) OR l.sport = 'tennis')`, params),
+    dbQueryStrict<Record<string, unknown>>(
+      `SELECT l.sport, l.home_team, l.away_team, l.commence_time, c.settlement_revision, c.settled_at,
+              p.result AS before, c.result AS after, p.final_score AS before_score, c.final_score AS after_score,
+              c.correction_reason AS reason
+         FROM pick_settlement c
+       JOIN pick_ledger l
+         ON l.source_table = c.source_table AND l.source_id = c.source_id AND l.model_version = c.model_version
+       LEFT JOIN pick_settlement p
+         ON p.source_table = c.source_table AND p.source_id = c.source_id AND p.model_version = c.model_version
+        AND p.settlement_revision = c.settlement_revision - 1
+        WHERE c.settlement_revision > 1
+        AND l.is_backfill = FALSE
+        AND ((l.sport = 'football' AND l.source_table = $1 AND l.model_version = $2) OR l.sport = 'tennis')
+        ORDER BY c.settled_at DESC, l.commence_time DESC, c.source_id
+        LIMIT $3`,
+      [...params, limit],
+    ),
+  ]);
+  return {
+    all,
+    latest: latest.map((r) => ({
+      sport: String(r.sport) === "tennis" ? "tennis" : "football",
+      home: String(r.home_team ?? ""),
+      away: String(r.away_team ?? ""),
+      kickoff: new Date(String(r.commence_time)).toISOString(),
+      revision: Number(r.settlement_revision),
+      corrected_at: new Date(String(r.settled_at)).toISOString(),
+      before: String(r.before ?? "—"),
+      after: String(r.after ?? ""),
+      before_score: (r.before_score as string) ?? null,
+      after_score: (r.after_score as string) ?? null,
+      reason: (r.reason as string) ?? null,
+    })),
+  };
 }

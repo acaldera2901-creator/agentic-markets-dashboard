@@ -146,6 +146,10 @@ export function buildRecord(
   const diff = pairedDifference(
     paired.map((s) => brier3(s.estimate, s.happened) - brier3(s.market as Triple, s.happened)),
   );
+  // F6: the record page shows each Brier with its own 95% interval (same normal CI as the difference)
+  const ciE = pairedDifference(paired.map((s) => brier3(s.estimate, s.happened)));
+  const ciM = pairedDifference(paired.map((s) => brier3(s.market as Triple, s.happened)));
+  const ci = (c: typeof ciE) => (c ? { low: roundP(c.ci95.low), high: roundP(c.ci95.high) } : null);
 
   return {
     contract: "v3.record.2",
@@ -171,6 +175,8 @@ export function buildRecord(
     brier: {
       estimate: be == null ? null : roundP(be),
       market: bm == null ? null : roundP(bm),
+      estimate_ci95: ci(ciE),
+      market_ci95: ci(ciM),
       difference: diff ? roundP(diff.mean) : null,
       difference_ci95: diff ? { low: roundP(diff.ci95.low), high: roundP(diff.ci95.high) } : null,
       n_paired: paired.length,
