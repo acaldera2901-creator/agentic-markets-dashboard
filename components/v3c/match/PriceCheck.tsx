@@ -17,7 +17,7 @@ import { Fascia } from "../Fascia";
 import { Nastro } from "../Nastro";
 import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
-import { v3cLocale } from "@/lib/v3c/copy";
+import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 
 export type PcOutcome = { outcome: Outcome; market_price: number | null; estimate_p: number; book_prices: V3BookPrice[] };
 export type PcMatch = { id: string; home: string; away: string; kickoff: string; league: string | null; blend: boolean; outcomes: PcOutcome[]; links: V3BookLink[] };
@@ -181,7 +181,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
             ) : (
               <p className="v3c-pc-verdict">{c.pc.verdictNoEst(`${chk.sum.toFixed(1)}%`, `${chk.margin.toFixed(1)}%`)}</p>
             )}
-            <table className="v3c-pc-t">
+            <table className="v3c-pc-t" lang={v3cLang(lang)}>
               <thead>
                 <tr>
                   <th className="v3c-lab">{c.outcome}</th>

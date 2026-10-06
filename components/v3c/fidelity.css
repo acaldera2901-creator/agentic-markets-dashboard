@@ -30,6 +30,9 @@
 .v3c-r-none { font: 600 11.5px/1.25 var(--v3c-f-text); color: var(--v3c-ink-3); text-align: right; }
 .v3c-r-me { display: none; }
 .v3c-board-h .v3c-ra small { text-align: right; }
+/* v3c-final: nove colonne strette e teste tradotte (FR «Ouverture → actuel», SV «Uppskattning»): a una riga
+   si sovrapponevano alla colonna accanto. Vanno a capo e sillabano nella lingua della board (lang sull'intestazione). */
+.v3c-board-h > span { white-space: normal; hyphens: auto; letter-spacing: .03em; }
 
 /* mobile: ledger a due livelli — ora · partita · gap (+ mercato → stima) / tape · open → now · book */
 @media (max-width: 820px) {

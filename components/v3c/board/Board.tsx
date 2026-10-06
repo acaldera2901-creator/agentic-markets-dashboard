@@ -39,7 +39,7 @@ import { FootballRow, TennisRow } from "./BoardRow";
 import type { RowTape } from "@/lib/v3c/tape";
 import { TAPE_HOURS } from "@/lib/v3c/tape";
 import "../fidelity.css";
-import { v3cLocale } from "@/lib/v3c/copy";
+import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 
 type Props = {
   /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
@@ -206,7 +206,7 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
       </div>
 
       <section className="v3c-board" aria-label={t.board.label}>
-        <div className="v3c-board-h" aria-hidden="true">
+        <div className="v3c-board-h" aria-hidden="true" lang={v3cLang(lang)}>
           <span className="v3c-lab">{t.board.kickoff}</span>
           <span className="v3c-lab">{t.board.match}</span>
           <span className="v3c-lab">

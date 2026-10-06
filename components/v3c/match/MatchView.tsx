@@ -43,7 +43,7 @@ import { TAPE_HOURS } from "@/lib/v3c/tape";
 import "../fidelity.css";
 import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
-import { v3cLocale } from "@/lib/v3c/copy";
+import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
 const bookName = (k: string) => BOOK_NAME[k] ?? k;
@@ -267,7 +267,7 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
         </Link>
       </div>
       <div className="v3c-board v3c-board-more">
-        <div className="v3c-board-h" aria-hidden="true">
+        <div className="v3c-board-h" aria-hidden="true" lang={v3cLang(ctx.lang)}>
           <span className="v3c-lab">{t.board.kickoff}</span>
           <span className="v3c-lab">{t.board.match}</span>
           <span className="v3c-lab">

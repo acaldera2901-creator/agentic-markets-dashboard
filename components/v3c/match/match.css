@@ -152,3 +152,11 @@
 .v3c-pc-t tr.v3c-pc-lead td { font-weight: 700; }
 .v3c-pc-t tr.v3c-pc-tot td { color: var(--v3c-ink-2); font-size: 13.5px; border-bottom: 0; }
 @media (max-width: 600px) { .v3c-pc-c-imp { display: none; } .v3c-pc-t td.v3c-num { font-size: 16px; } .v3c-pc-t td { font-size: 14px; } }
+/* v3c-final: in DE/NL/SV/ES le teste («SCHÄTZUNG», «Bookmakermarge») sono parole uniche più larghe della
+   colonna e la tabella usciva di 25–60 px a 360–390. Sillabazione nella lingua della tabella (lang sul <table>),
+   spaziature più strette; i numeri restano su una riga (td.v3c-num nowrap). */
+@media (max-width: 600px) {
+  .v3c-pc-t th + th, .v3c-pc-t td + td { padding-left: 6px; }
+  .v3c-pc-t th, .v3c-pc-t tr.v3c-pc-tot td { hyphens: auto; }
+  .v3c-pc-t th { letter-spacing: 0.02em; }
+}
