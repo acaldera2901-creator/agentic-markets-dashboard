@@ -47,9 +47,10 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `toolbar.tomorrow` | «Tomorrow» |
 | `toolbar.league` | «League» |
 | `toolbar.allLeagues` | «All leagues» |
+| `toolbar.homeHorizon` | «next 36 hours» (polish) |
 | `toolbar.explain` | «Market %: the composite price, margin removed. Estimate: 70% market, 30% model. Gap: estimate − market, in points.» |
 | `toolbar.legendMarket` | «Market %, margin removed» |
-| `toolbar.legendEstimate` | «Estimate: 70% market + 30% model (football), model (tennis)» |
+| `toolbar.legendEstimate` | «Estimate: 70% market + 30% model (football); tennis mostly the market price» |
 | `toolbar.legendGap` | «Gap = estimate − market, in points.» |
 | `board.label` | «Today’s board» |
 | `board.kickoff` | «Kick-off» |
@@ -95,6 +96,8 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `board.noFeedBooks` | «No connected book has a price for this outcome yet.» |
 | `board.bestCta` | fn → «Best price on {a}: {b} at {c}» |
 | `board.bestNote` | «Opens the book’s site in a new tab. Commercial affiliate link · 18+ · the price on the book can differ from the one shown.» |
+| `board.sameAt` | fn → «same at {n} books» (polish) |
+| `board.sharedTop` | «{label} at {price} on {n} books: same price, no single best.» (polish) |
 | `board.group` | fn → «{a} matches» |
 | `board.partnerAria` | fn → «{a}, affiliate link, opens in a new tab» |
 | `board.partnerBlocked` | «Partner prices are not shown in your region.» |
@@ -251,7 +254,7 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `record.weeks.observed` | «Observed: how often that outcome happened» |
 | `record.weeks.aria` | «Expected against observed outcomes, by ISO week» |
 | `record.weeks.week` | «fn: wk of {a}» |
-| `record.weeks.caption` | «Whiskers are the 95% interval of the observed count. Weeks under 30 matches are marked.» |
+| `record.weeks.caption` | «Whiskers are the 95% interval of the observed count. Weeks under 30 matches: expected bar in grey, n marked *.» |
 | `record.tennis.title` | «Tennis, kept apart» |
 | `record.tennis.lede` | «Most sealed tennis numbers are the market price, tempered. They are shown, never counted as ours.» |
 | `record.tennis.group` | «Group» |

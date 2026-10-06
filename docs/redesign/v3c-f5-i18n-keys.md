@@ -50,3 +50,11 @@ EV · Kelly · yield · bankroll · Brier · «at our estimate» (il numero nasc
 Verificato: tsc pulito · eslint pulito sui file toccati · vitest 233 file / 2781 test (baseline 231 / 2754) · Playwright `e2e/v3c-tools.spec.ts` 31 verdi (1440/390, chiaro/scuro, overflow 0, 0 errori console) · `e2e/v3c-tools-off.spec.ts` 10 verdi (flag spento = base am-v3c-ds: title, canonical, hreflang, JSON-LD, testo visibile) · Lighthouse a11y 100 (hub), 100 desktop / ≥95 (tool), dev server.
 Note: nel run OFF il primo confronto a freddo di /tools è fallito una volta per differenza di testo (compilazione dev), poi 10/10; un run ON ha avuto 1 test intermittente non riprodotto.
 Non fatto: Lighthouse su build di produzione (solo dev), le 9 lingue (F10), la verifica con dati reali del board (`lib/v3c/board-source.ts` usa il campione, etichettato «Sample»).
+
+## polish (06/10) — chiavi nuove, EN + IT complete, le altre 9 lingue in fallback EN
+- `lib/i18n/v3c-tools`: `nav.method`, `nav.pricing`, `nav.skip`, `footer.account`, `footer.legal`, `footer.helpTitle`, `footer.helpLine` (cambiati: `footer.affiliates`, `footer.terms`, `footer.responsible`).
+- `lib/v3c/match-copy.ts`: `lastCapture`, `sharedTop`, `sharedNote`, `pricesFrom`, `priceAt`, `moreBooks`, `pc.bankroll`, `pc.kellyOf`.
+- `lib/v3c/copy.ts`: `toolbar.homeHorizon`, `board.sameAt`, `board.sharedTop` (cambiato: `toolbar.legendEstimate`).
+- `components/v3c/States.tsx` (`STATE_COPY`): `loading`, `404.*`, `500.*`, `empty.*`.
+- `lib/v3c/home-faq.ts`: le sei domande/risposte della home v3c.
+- `lib/v3c/pages-copy.ts`: `notesTitle` cambiato; `lib/v3c/copy-record.ts`: `weeks.caption` cambiato.
