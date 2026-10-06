@@ -55,7 +55,8 @@ const fromAltenar = (b: AltenarBook): PriceBook => ({ key: b.key, name: b.name, 
 
 /** Partner id (lib/partners) → static state when no feed is wired. */
 const NO_FEED: Record<string, Exclude<BookReason, "live_feed" | "price_history" | "not_listed" | "feed_down" | "pending_approval">> = {
-  // Sportsbook vendor not determined (Altenar/Kambi/Latrobe per brand, config at runtime).
+  // Kickertech/TG Lab (*.sbx.bet): events endpoint answers 406 to an identifiable
+  // user-agent, obfuscated params — not read, no workaround (measured 06/10).
   betscore: "awaiting_partner_feed",
   casea: "awaiting_partner_feed",
   stonevegas: "awaiting_partner_feed",

@@ -26,21 +26,26 @@ import "@/components/v3c/partners.css";
 
 type Surface = "home" | "predictions";
 
-/** Home: le partite live e quelle delle prossime 36 ore bastano a righe, cascata e banco. */
-const HOME_HORIZON_MS = 36 * 3_600_000;
+/**
+ * Home: le prime righe di ciascun filtro sport, su TUTTA la finestra della board.
+ * live: prima c'era un orizzonte di 36 ore, e nei giorni senza calcio (martedì,
+ * pause per le nazionali) il chip «Football» diceva 7 su 213 — Andrea, 06/10:
+ * il redesign mostra tutte le partite a tutti finché F8 non decide cosa compra Pro.
+ */
 const HOME_ROWS = 12;
+/** Una partita resta sulla board fino a 150 minuti dopo il calcio d'inizio (finestra live). */
+const OPEN_AFTER_KICKOFF_MS = 150 * 60_000;
 
 /**
  * Il payload che va al browser: lo stesso contratto, senza ciò che la pagina non
  * mostra (model_p, notes, coverage.excluded, best_price duplicato — è il primo
  * di book_prices, già ordinati). Misurato: la board intera passava da ~800 KB di
- * HTML; la home riceve solo le partite live e delle prossime 36 ore.
+ * HTML; la home riceve solo le prime righe di ciascun filtro sport.
  */
 function forSurface(board: V3BoardResponse, surface: Surface, now: Date): V3BoardResponse {
-  const until = now.getTime() + HOME_HORIZON_MS;
   // home: per ogni filtro sport bastano le prime HOME_ROWS righe (+ il gap più ampio di oggi per la cascata)
   const homeIds = surface === "home" ? homeCut(board, now) : null;
-  const keep = (k: string, id: string) => surface === "predictions" || (Date.parse(k) <= until && (homeIds?.has(id) ?? true));
+  const keep = (id: string) => surface === "predictions" || (homeIds?.has(id) ?? true);
   const book = (b: V3BookPrice): V3BookPrice => ({ ...b, captured_at: "" });
   // F7: `books` (per-partner status) and `partners` are API-only until the UI
   // renders them — 15 entries × every row would add ~300 KB of HTML here.
@@ -55,14 +60,14 @@ function forSurface(board: V3BoardResponse, surface: Surface, now: Date): V3Boar
     ...rest,
     notes: [],
     coverage: { ...board.coverage, excluded: [] },
-    matches: board.matches.filter((m) => keep(m.kickoff, m.id)).map(noBooks).map((m) => ({ ...m, outcomes: m.outcomes.map((o) => ({ ...o, model_p: null, best_price: null, book_prices: o.book_prices.map(book) })) })),
-    tennis: (board.tennis ?? []).filter((m) => keep(m.kickoff, `tn:${m.id}`)).map(noBooks).map((m) => ({ ...m, sides: m.sides.map((x) => ({ ...x, best_price: null, book_prices: x.book_prices.map(book) })) as typeof m.sides })),
+    matches: board.matches.filter((m) => keep(m.id)).map(noBooks).map((m) => ({ ...m, outcomes: m.outcomes.map((o) => ({ ...o, model_p: null, best_price: null, book_prices: o.book_prices.map(book) })) })),
+    tennis: (board.tennis ?? []).filter((m) => keep(`tn:${m.id}`)).map(noBooks).map((m) => ({ ...m, sides: m.sides.map((x) => ({ ...x, best_price: null, book_prices: x.book_prices.map(book) })) as typeof m.sides })),
   };
 }
 
 /** Gli id che la home spedisce: le prime righe di «tutti», «calcio», «tennis» e il gap più ampio di oggi (UTC). */
 function homeCut(board: V3BoardResponse, now: Date): Set<string> {
-  const open = (k: string) => Date.parse(k) > now.getTime() - 150 * 60_000;
+  const open = (k: string) => Date.parse(k) > now.getTime() - OPEN_AFTER_KICKOFF_MS;
   const fb = board.matches.filter((m) => open(m.kickoff)).map((m) => ({ id: m.id, k: m.kickoff }));
   const tn = (board.tennis ?? []).filter((m) => open(m.kickoff)).map((m) => ({ id: `tn:${m.id}`, k: m.kickoff }));
   const byTime = (a: { k: string }, b: { k: string }) => Date.parse(a.k) - Date.parse(b.k);
@@ -79,9 +84,9 @@ function homeCut(board: V3BoardResponse, now: Date): Set<string> {
   return ids;
 }
 
+/** I chip della home contano tutta la finestra (le stesse righe di /predictions), escluse le partite già finite. */
 function sportCounts(board: V3BoardResponse, now: Date) {
-  const until = now.getTime() + HOME_HORIZON_MS;
-  const open = (k: string) => Date.parse(k) > now.getTime() - 150 * 60_000 && Date.parse(k) <= until;
+  const open = (k: string) => Date.parse(k) > now.getTime() - OPEN_AFTER_KICKOFF_MS;
   const football = board.matches.filter((m) => open(m.kickoff)).length;
   const tennis = (board.tennis ?? []).filter((m) => open(m.kickoff)).length;
   return { all: football + tennis, football, tennis };

@@ -48,9 +48,9 @@ type Props = {
   nowIso: string;
   /** home: quante righe mostrare prima del link alla board intera */
   limit?: number;
-  /** home: i conteggi per sport delle prossime 36 ore (la home spedisce solo le prime righe di ciascuno) */
+  /** home: i conteggi per sport di tutta la finestra (la home spedisce solo le prime righe di ciascuno) */
   counts?: { all: number; football: number; tennis: number };
-  /** home: quante partite ha la board intera (il link lo dice; la home riceve solo le prossime 36 ore) */
+  /** home: quante partite ha la board intera (il link lo dice; la home riceve solo le prime righe) */
   total?: number;
   /** solo /dev/ds: parte da un filtro dato per mostrare lo stato vuoto */
   initialFilters?: Partial<BoardFilters>;
@@ -61,6 +61,13 @@ type Props = {
 };
 
 type Row = BoardRowVM | TennisRowVM;
+
+/**
+ * /predictions mostra tutte le partite, ma ne monta un blocco alla volta: ~3,6 KB di
+ * HTML per riga × ~400 righe vere farebbero ~1,4 MB solo di board. Le altre sono a un
+ * tocco («Mostra altre N»), i chip giorno dicono quante sono per giorno.
+ */
+export const BOARD_PAGE_ROWS = 60;
 
 // L'ora della board, al minuto: il server scrive la sua, il client avanza da solo
 // (store esterno = il tempo, nessun setState dentro un effetto). frozen = /dev/ds.
@@ -84,11 +91,13 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
   const locale = lang === "it" ? "it-IT" : "en-GB";
   const tz = useLocalTimeZone();
   const now = useNow(nowIso, frozenNow);
-  // /predictions apre sul primo giorno con partite (435 righe insieme sono un elenco, non una board);
-  // «Tutti i giorni» resta a un tocco. La home mostra le prossime righe, senza filtro giorno.
-  const initial: BoardFilters = { ...(surface === "predictions" ? { ...DEFAULT_FILTERS, day: "next" } : DEFAULT_FILTERS), ...initialFilters };
+  // live: /predictions apre su «Tutti i giorni» — tutte le partite, le imminenti prima, raggruppate per
+  // giorno (prima apriva sul primo giorno con partite: in un martedì senza calcio erano 7 su 213).
+  // Il filtro giorno resta a un tocco. La home mostra le prossime righe, senza filtro giorno.
+  const initial: BoardFilters = { ...DEFAULT_FILTERS, ...initialFilters };
   const [filters, setFilters] = useState<BoardFilters>(initial);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [pages, setPages] = useState(1);
 
   // Le righe: le partite già finite (oltre la finestra live) restano fuori anche se il payload le porta ancora.
   const all: Row[] = useMemo(() => {
@@ -115,7 +124,9 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
     const live = applyFilters(all, { ...effective, day: "all" }).filter((r) => r.day < today && liveState(r.m.kickoff, now).live);
     return [...live, ...rows];
   }, [all, effective, today, now]);
-  const shown = limit ? filtered.slice(0, limit) : filtered;
+  const visible = limit ?? pages * BOARD_PAGE_ROWS;
+  const shown = filtered.slice(0, visible);
+  const more = Math.min(BOARD_PAGE_ROWS, filtered.length - shown.length);
   // le partite in corso stanno in testa, in un gruppo loro: «ieri sera» non è un giorno della board
   const liveRows = shown.filter((r) => liveState(r.m.kickoff, now).live);
   const groups = [
@@ -127,6 +138,7 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
 
   const set = (patch: Partial<BoardFilters>) => {
     setOpenId(null);
+    setPages(1);
     setFilters((f) => ({ ...f, ...patch }));
   };
 
@@ -143,13 +155,11 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
               ["tennis", t.toolbar.tennis, counts?.tennis ?? nTennis],
             ] as const
           ).map(([k, label, n]) => (
-            <button key={k} type="button" className="v3c-chip" aria-pressed={filters.sport === k} onClick={() => set({ sport: k, league: null, day: surface === "predictions" ? "next" : "all" })}>
+            <button key={k} type="button" className="v3c-chip" aria-pressed={filters.sport === k} onClick={() => set({ sport: k, league: null, day: "all" })}>
               {k !== "all" ? <KitIcon name={k} className="v3c-ico-chip" /> : null}
               {label} <small>{n}</small>
             </button>
           ))}
-          {/* polish: la home conta le prossime 36 ore, la fascia tutta la finestra: lo si dice accanto ai numeri */}
-          {surface === "home" && counts ? <span className="v3c-small v3c-chips-note">{t.toolbar.homeHorizon}</span> : null}
         </div>
         {surface === "predictions" ? (
           <div className="v3c-filters-2">
@@ -214,6 +224,8 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
         {shown.length === 0 ? (
           <EmptyCascade all={all} now={now} tz={tz} yesterday={yesterday} filtered={effective.sport !== "all" || effective.day !== "all" || effective.league != null} onShow={(id) => {
               setFilters(DEFAULT_FILTERS);
+              // la riga può stare oltre il primo blocco: si montano i blocchi fino a lei
+              setPages(Math.max(1, Math.ceil((all.findIndex((r) => r.m.id === id) + 1) / BOARD_PAGE_ROWS)));
               setOpenId(id);
             }} onReset={() => set(DEFAULT_FILTERS)} surface={surface} />
         ) : (
@@ -238,6 +250,14 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
       </section>
       <div className="v3c-board-f">
         <p className="v3c-fine">{t.board.rowNote}</p>
+        {!limit && more > 0 ? (
+          <span className="v3c-board-more">
+            <span className="v3c-small">{t.board.shownOf(shown.length, filtered.length)}</span>
+            <button type="button" className="v3c-btn v3c-btn-line v3c-btn-s" onClick={() => setPages((n) => n + 1)}>
+              {t.board.showMore(more)}
+            </button>
+          </span>
+        ) : null}
         {limit ? (
           <Link className="v3c-ghost" href="/predictions">
             {t.board.seeAll(total ?? filtered.length)}

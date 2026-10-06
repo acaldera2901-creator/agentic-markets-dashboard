@@ -47,7 +47,6 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `toolbar.tomorrow` | «Tomorrow» |
 | `toolbar.league` | «League» |
 | `toolbar.allLeagues` | «All leagues» |
-| `toolbar.homeHorizon` | «next 36 hours» (polish) |
 | `toolbar.explain` | «Market %: the composite price, margin removed. Estimate: 70% market, 30% model. Gap: estimate − market, in points.» |
 | `toolbar.legendMarket` | «Market %, margin removed» |
 | `toolbar.legendEstimate` | «Estimate: 70% market + 30% model (football); tennis mostly the market price» |
@@ -93,6 +92,8 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `board.scaleAria` | fn → «Market {a} percent, estimate {b} percent, gap {c} points, on a 0 to 100 percent scale» |
 | `board.scaleAriaNoMarket` | fn → «No market price; estimate {a} percent, model only» |
 | `board.seeAll` | fn → «The whole board · {a} matches →» |
+| `board.shownOf` | fn → «{shown} of {total} matches» (live) |
+| `board.showMore` | fn → «Show {n} more» (live) |
 | `board.noFeedBooks` | «No connected book has a price for this outcome yet.» |
 | `board.bestCta` | fn → «Best price on {a}: {b} at {c}» |
 | `board.bestNote` | «Opens the book’s site in a new tab. Commercial affiliate link · 18+ · the price on the book can differ from the one shown.» |
