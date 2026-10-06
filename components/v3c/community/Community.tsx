@@ -42,7 +42,7 @@ export function V3cCommunity({ initial }: Props = {}) {
   const retry = () => { setError(false); setSlips(null); fetchSlips(); };
 
   return (
-    <main className="v3c-wrap v3c-cm">
+    <main className="v3c-wrap v3c-cm" id="main">
       <Fascia tab={t.tab} title={t.title} meta={<><b>{t.metaStrong}</b><span>{t.metaRest}</span></>} />
 
       <div className="v3c-cm-bar-h">

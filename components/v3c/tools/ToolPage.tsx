@@ -9,12 +9,11 @@ import { getToolsCopy } from "@/lib/tools/copy";
 import { TOOL_SLUGS, hubPath, toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
 import { toolJsonLd } from "@/lib/tools/seo";
 import { getV3cToolsCopy, fmt } from "@/lib/i18n/v3c-tools";
-import { getBoardSource } from "@/lib/v3c/board-source";
+import { toolBoardSource } from "@/lib/v3c/board-source.server";
 import { toolDef, toolPreview } from "@/lib/v3c/tools";
 import { v3cFontClass } from "../fonts";
 import { BenchTool } from "../BenchTool";
-import { BottomNav } from "../BottomNav";
-import { Footer, TopBar, navItems } from "../Chrome";
+import { SiteFrame } from "../Chrome";
 import { Fascia } from "../Fascia";
 import { V3cShell } from "../V3cShell";
 import { BoardBridge } from "./BoardBridge";
@@ -26,7 +25,7 @@ function withBold(text: string) {
   return text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part));
 }
 
-export function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: ToolLocale }) {
+export async function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
   const t = copy.tools[slug];
   const c = getV3cToolsCopy(locale);
@@ -34,15 +33,16 @@ export function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: ToolLoca
   const def = toolDef(slug);
   const question = c.questions[def.question].q;
 
-  const src = getBoardSource();
+  const src = await toolBoardSource();
+  const live = src.kind === "live" ? src.matches() : undefined;
   const m = src.matches()[0];
   const ctx = { outcomes: m.outcomes, lead: src.lead(m) };
   const others = TOOL_SLUGS.filter((s) => s !== slug);
 
   return (
     <V3cShell fontClass={v3cFontClass} lang={locale}>
-      <TopBar current="tools" locale={locale} copy={c.nav} />
-      <main className="v3c-wrap">
+      <SiteFrame current="tools" locale={locale} copy={c} slug={slug}>
+      <main className="v3c-wrap" id="main">
         <p className="v3c-crumbs">
           <a href={hubPath(locale)}>{c.tool.crumbs}</a>
           <span aria-hidden="true">›</span>
@@ -54,14 +54,14 @@ export function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: ToolLoca
           meta={
             <>
               <b>{tc.line}</b>
-              <PrefillNote prefilled={c.tool.prefilled} typeYours={c.tool.typeYours} />
+              <PrefillNote prefilled={c.tool.prefilled} typeYours={c.tool.typeYours} live={live} />
             </>
           }
         />
 
-        <ToolCalc slug={slug} copy={tc} invalid={c.tool.invalid} />
+        <ToolCalc slug={slug} copy={tc} invalid={c.tool.invalid} live={live} />
 
-        <BoardBridge def={def} column={tc.column} copy={c.tool} />
+        <BoardBridge def={def} column={tc.column} copy={c.tool} src={src} />
 
         {/* Il contenuto che la pagina già aveva: la frase chiave, il perché, i numeri, le domande. */}
         <p className="v3c-lede v3c-takeaway">{t.takeaway}</p>
@@ -128,9 +128,8 @@ export function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: ToolLoca
           </a>
         </section>
 
-        <Footer locale={locale} slug={slug} copy={c} />
       </main>
-      <BottomNav current="tools" items={navItems(c.nav, locale)} />
+      </SiteFrame>
       <script
         type="application/ld+json"
         // Dati strutturati dal dizionario: nessun input utente entra in questo JSON.

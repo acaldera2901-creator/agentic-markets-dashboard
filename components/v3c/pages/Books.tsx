@@ -14,6 +14,7 @@ import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
 import { hhmmUtc, type CompareRow } from "@/lib/v3c/books";
 import { trackEvent } from "@/lib/track-event";
 import { PARTNERS_SEO_FAQ, PARTNERS_SEO_HEADING, PARTNERS_SEO_INTRO } from "@/app/partners/seo";
+import { Arrow } from "../Arrow";
 import { Fascia } from "../Fascia";
 
 export type BookCard = {
@@ -96,7 +97,7 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
 
   if (blocked) {
     return (
-      <main className="v3c-wrap">
+      <main className="v3c-wrap" id="main">
         <Fascia tab={t.tab} title={t.blockedTitle} meta={<span>{t.blockedBody}</span>} />
         <p>
           <Link className="v3c-btn v3c-btn-line" href="/">
@@ -109,7 +110,7 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
   }
 
   return (
-    <main className="v3c-wrap">
+    <main className="v3c-wrap" id="main">
       <Fascia
         tab={t.tab}
         title={t.title}
@@ -151,7 +152,7 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
               data-partner={b.id}
               onClick={() => track(b, "card")}
             >
-              {t.goTo(b.name)} <span aria-hidden="true">↗</span>
+              {t.goTo(b.name)} <Arrow up />
             </a>
             <span className="v3c-fine">
               {t.affiliate} · 18+
@@ -230,7 +231,7 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
                   </span>
                 </span>
                 <a className="v3c-ghost v3c-pg-visit" href={b.url} target="_blank" rel="nofollow sponsored noopener noreferrer" data-partner={b.id} onClick={() => track(b, "more")}>
-                  {t.visit} <span aria-hidden="true">↗</span>
+                  {t.visit} <Arrow up />
                   <span className="v3c-sr"> {b.name}</span>
                 </a>
               </li>

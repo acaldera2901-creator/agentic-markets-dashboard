@@ -31,7 +31,11 @@ export type V3cToolsCopy = {
     books: string;
     news: string;
     pro: string;
+    /** polish: la voce «Metodo» e «Prezzi» della barra unica */
+    method: string;
+    pricing: string;
     signIn: string;
+    skip: string;
     primary: string;
     primaryMobile: string;
     brand: string;
@@ -52,6 +56,11 @@ export type V3cToolsCopy = {
     notAdvice: string;
     blend: string;
     affiliates: string;
+    /** polish: il piè di pagina unico */
+    account: string;
+    legal: string;
+    helpTitle: string;
+    helpLine: string;
   };
   hub: {
     tab: string;

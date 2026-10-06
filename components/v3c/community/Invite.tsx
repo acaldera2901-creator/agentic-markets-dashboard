@@ -130,7 +130,7 @@ export function V3cInvite() {
   };
 
   return (
-    <main className="v3c-wrap v3c-cm">
+    <main className="v3c-wrap v3c-cm" id="main">
       <Fascia tab={c.tab} title={c.title} meta={<><b>{c.metaStrong}</b><span>{c.metaRest}</span></>} />
       <p className="v3c-lede v3c-cm-lede">{c.intro}</p>
 

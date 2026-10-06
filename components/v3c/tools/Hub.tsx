@@ -11,20 +11,20 @@ import { getToolsCopy } from "@/lib/tools/copy";
 import { TOOL_SLUGS, toolPath, type ToolLocale } from "@/lib/tools/registry";
 import { hubJsonLd } from "@/lib/tools/seo";
 import { getV3cToolsCopy, fmt } from "@/lib/i18n/v3c-tools";
-import { getBoardSource, matchTitle } from "@/lib/v3c/board-source";
+import { matchTitle } from "@/lib/v3c/board-source";
+import { toolBoardSource } from "@/lib/v3c/board-source.server";
 import { QUESTIONS, toolPreview, toolsFor } from "@/lib/v3c/tools";
 import { v3cFontClass } from "../fonts";
 import { Fascia } from "../Fascia";
-import { BottomNav } from "../BottomNav";
-import { Footer, TopBar, navItems } from "../Chrome";
+import { SiteFrame } from "../Chrome";
 import { V3cShell } from "../V3cShell";
 import { HubBench, type HubGroup, type HubLine } from "./HubBench";
 import "../v3c.css";
 
-export function V3cToolsHub({ locale }: { locale: ToolLocale }) {
+export async function V3cToolsHub({ locale }: { locale: ToolLocale }) {
   const copy = getToolsCopy(locale);
   const c = getV3cToolsCopy(locale);
-  const src = getBoardSource();
+  const src = await toolBoardSource();
   const matches = src.matches();
   const m = matches[0];
   const lead = src.lead(m);
@@ -46,25 +46,26 @@ export function V3cToolsHub({ locale }: { locale: ToolLocale }) {
   }));
 
   const open = m.openPrice ?? lead.price;
-  const gap = lead.estimate - lead.market;
+  // polish: il gap della board quando c'è (stesso numero di board e partita), altrimenti la differenza degli interi
+  const gap = lead.gap ?? lead.estimate - lead.market;
   const line: HubLine = {
     notATool: c.hub.notATool,
     q: c.hub.lineQ,
     s: c.hub.lineS,
-    match: { title: fmt(c.hub.lineRow, { match: title }), line: c.hub.lineRowLine, href: m.href, home: m.home, away: m.away, input: open.toFixed(2), output: lead.price.toFixed(2) },
+    match: { title: fmt(c.hub.lineRow, { match: title }), line: c.hub.lineRowLine, href: m.href, home: m.home, away: m.away, input: m.openPrice != null ? open.toFixed(2) : "", output: lead.price.toFixed(2) },
     price: {
       title: c.hub.priceCheck,
       line: c.hub.priceCheckLine,
       href: "/price-check",
       input: m.outcomes.map((o) => o.price.toFixed(2)).join(" · "),
-      output: `${gap > 0 ? "+" : gap < 0 ? "−" : "±"}${Math.abs(gap)} pp`,
+      output: `${gap > 0 ? "+" : gap < 0 ? "−" : "±"}${Number.isInteger(gap) ? Math.abs(gap) : Math.abs(gap).toFixed(1)} pp`,
     },
   };
 
   return (
     <V3cShell fontClass={v3cFontClass} lang={locale}>
-      <TopBar current="tools" locale={locale} copy={c.nav} />
-      <main className="v3c-wrap">
+      <SiteFrame current="tools" locale={locale} copy={c} hub>
+      <main className="v3c-wrap" id="main">
         <Fascia
           tab={c.hub.tab}
           title={c.hub.title}
@@ -101,9 +102,8 @@ export function V3cToolsHub({ locale }: { locale: ToolLocale }) {
             {c.hub.openBoard}
           </a>
         </section>
-        <Footer locale={locale} copy={c} />
       </main>
-      <BottomNav current="tools" items={navItems(c.nav, locale)} />
+      </SiteFrame>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(hubJsonLd(locale)) }} />
     </V3cShell>
   );

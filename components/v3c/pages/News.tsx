@@ -72,7 +72,7 @@ export function V3cNewsIndex({ posts }: { posts: NewsItem[] }) {
   const lang = useV3cLang();
   const t = usePagesCopy().news;
   return (
-    <main className="v3c-wrap">
+    <main className="v3c-wrap" id="main">
       <Fascia
         tab={t.tab}
         title={t.title}
@@ -141,7 +141,7 @@ export function V3cArticle({ title, date, minutes, image, html, more }: ArticleP
   const t = usePagesCopy().news;
   const when = longDate(date, lang);
   return (
-    <main className="v3c-wrap">
+    <main className="v3c-wrap" id="main">
       <nav className="v3c-crumbs" aria-label="Breadcrumb">
         <Link href="/blog">{t.crumb}</Link>
         <span aria-hidden="true">/</span>

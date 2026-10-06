@@ -13,7 +13,7 @@ export function V3cLegalFrame({ kind, children }: { kind: Kind; children: ReactN
   const c = useCommunityCopy();
   const tab = kind === "privacy" ? c.legal.privacyTab : kind === "terms" ? c.legal.termsTab : c.profile.tab;
   return (
-    <main className="v3c-wrap v3c-cm">
+    <main className="v3c-wrap v3c-cm" id="main">
       {/* il testo legale porta già il suo h1 (il titolo del documento): la fascia è un h2 */}
       {kind === "profile" ? (
         <Fascia tab={tab} title={c.profile.title} />

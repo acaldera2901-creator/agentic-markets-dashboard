@@ -54,11 +54,11 @@ const GLYPH: Record<NavKey, React.ReactNode> = {
   ),
 };
 
-type Props = { current?: NavKey; items?: readonly NavItem[]; className?: string };
+type Props = { current?: NavKey; items?: readonly NavItem[]; className?: string; label?: string };
 
-export function BottomNav({ current, items = V3C_NAV, className }: Props) {
+export function BottomNav({ current, items = V3C_NAV, className, label = "Primary (mobile)" }: Props) {
   return (
-    <nav className={["v3c-bnav", className].filter(Boolean).join(" ")} aria-label="Primary (mobile)">
+    <nav className={["v3c-bnav", className].filter(Boolean).join(" ")} aria-label={label}>
       <ul>
         {items.map((it) => (
           <li key={it.key}>

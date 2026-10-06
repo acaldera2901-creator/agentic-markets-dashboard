@@ -43,7 +43,7 @@ export function V3cMethod() {
   const t = usePagesCopy().method;
   const b = t.blocks;
   return (
-    <main className="v3c-wrap">
+    <main className="v3c-wrap" id="main">
       <Fascia
         tab={t.tab}
         title={t.title}

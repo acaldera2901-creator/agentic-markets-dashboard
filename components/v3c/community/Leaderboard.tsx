@@ -76,7 +76,7 @@ export function V3cLeaderboard({ initial }: Props = {}) {
   const mine = me?.optedIn ? rows?.find((r) => r.name === me.name) ?? null : null;
 
   return (
-    <main className="v3c-wrap v3c-cm">
+    <main className="v3c-wrap v3c-cm" id="main">
       <Fascia
         tab={t.tab}
         title={t.title}

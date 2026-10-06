@@ -10,11 +10,10 @@ import type { ReactNode } from "react";
 import { getV3cToolsCopy } from "@/lib/i18n/v3c-tools";
 import { TOOL_LOCALES, type ToolLocale } from "@/lib/tools/registry";
 import { useV3cLang } from "@/lib/v3c/lang.client";
-import { BottomNav, type NavKey } from "../BottomNav";
-import { Footer, TopBar, navItems } from "../Chrome";
+import { SiteFrame, type ChromeCurrent } from "../Chrome";
 import { V3cShell } from "../V3cShell";
 
-export type FrameCurrent = NavKey | "news" | "pro" | undefined;
+export type FrameCurrent = ChromeCurrent;
 
 /** «it» → «it»; una lingua che il registry non conosce → inglese. */
 export function toToolLocale(lang: string): ToolLocale {
@@ -27,15 +26,11 @@ type Props = { fontClass: string; current?: FrameCurrent; children: ReactNode };
 export function FrameClient({ fontClass, current, children }: Props) {
   const locale = toToolLocale(useV3cLang());
   const c = getV3cToolsCopy(locale);
-  const bottom = current === "news" || current === "pro" ? undefined : current;
   return (
     <V3cShell fontClass={fontClass} lang={locale}>
-      <TopBar current={current} locale={locale} copy={c.nav} />
-      {children}
-      <div className="v3c-wrap">
-        <Footer locale={locale} copy={c} />
-      </div>
-      <BottomNav current={bottom} items={navItems(c.nav, locale)} />
+      <SiteFrame current={current} locale={locale} copy={c}>
+        {children}
+      </SiteFrame>
     </V3cShell>
   );
 }

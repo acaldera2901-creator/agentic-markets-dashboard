@@ -11,6 +11,8 @@ import { FREE_SIGNUP_HREF, PRO_CHECKOUT_HREF } from "@/lib/v3c/checkout-link";
 import { usd } from "@/lib/v3c/paywall";
 import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
 import { trackEvent } from "@/lib/track-event";
+import { Arrow } from "../Arrow";
+import { PlanBadge } from "../PlanBadge";
 import { Fascia } from "../Fascia";
 import { WhyPaywall } from "../paywall/WhyPaywall";
 
@@ -21,14 +23,14 @@ export type PricingProps = {
   promoUntil: string | null;
 };
 
-function Row({ title, sub, value, muted }: { title: string; sub?: string; value: string; muted?: boolean }) {
+function Row({ title, sub, value, muted, badge }: { title: string; sub?: string; value: string; muted?: boolean; badge?: boolean }) {
   return (
     <li>
       <span>
         {title}
         {sub ? <small>{sub}</small> : null}
       </span>
-      <span className={muted ? "v3c-pg-v v3c-pg-v-no" : "v3c-pg-v"}>{value}</span>
+      <span className={muted ? "v3c-pg-v v3c-pg-v-no" : "v3c-pg-v"}>{badge ? <PlanBadge plan="pro" label={value} /> : value}</span>
     </li>
   );
 }
@@ -47,7 +49,7 @@ export function V3cPricing({ monthly, annual, rails, promoUntil }: PricingProps)
   );
 
   return (
-    <main className="v3c-wrap">
+    <main className="v3c-wrap" id="main">
       <Fascia
         tab={p.tab}
         title={p.title}
@@ -99,13 +101,13 @@ export function V3cPricing({ monthly, annual, rails, promoUntil }: PricingProps)
           <p className="v3c-explain">{p.proLede}</p>
           <ul>
             {p.proItems.map(([title, sub]) => (
-              <Row key={title} title={title} sub={sub} value={p.pro} />
+              <Row key={title} title={title} sub={sub} value={p.pro} badge />
             ))}
             <Row title={p.everythingFree} value={p.included} />
           </ul>
           <div className="v3c-pg-act">
             <a className="v3c-btn v3c-btn-cta" href={PRO_CHECKOUT_HREF}>
-              {p.proCta}
+              {p.proCta} <Arrow />
             </a>
           </div>
           <ul className="v3c-pg-rails">
