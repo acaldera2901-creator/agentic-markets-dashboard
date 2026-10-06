@@ -7,13 +7,16 @@ import type { ReactNode } from "react";
 import { dayLong, timeHM } from "@/lib/v3c/board-view";
 import { useLocalTimeZone, useV3cCopy } from "@/lib/v3c/lang.client";
 import { Fascia } from "../Fascia";
+import { Banner } from "../Banner";
+import "../fidelity.css";
 
 export function BoardFascia({ surface, nowIso, meta }: { surface: "home" | "predictions"; nowIso: string; meta: ReactNode }) {
   const { lang, t } = useV3cCopy();
   const tz = useLocalTimeZone();
   const locale = lang === "it" ? "it-IT" : "en-GB";
   const title = surface === "home" ? dayLong(nowIso, tz, locale) : t.fascia.titlePredictions;
-  return <Fascia tab={surface === "home" ? t.fascia.tab : t.fascia.tabPredictions} title={title} meta={meta} />;
+  // fidelity: la home apre con il banner calcio del kit dietro la fascia da regia, la board intera con quello tennis (kit §3)
+  return <Fascia tab={surface === "home" ? t.fascia.tab : t.fascia.tabPredictions} title={title} meta={meta} art={surface === "home" ? <Banner name="hero-football" priority position="64% 38%" /> : <Banner name="hero-tennis" priority position="40% 30%" />} />;
 }
 
 export type FasciaFacts = { n: number; sealed: number; generatedAt: string; windowDays: number };

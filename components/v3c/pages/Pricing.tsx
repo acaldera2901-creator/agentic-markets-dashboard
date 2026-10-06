@@ -6,6 +6,8 @@
 // checkout mostra davvero (lib/v3c/plans.ts → checkoutRails), il prezzo è quello
 // di lib/commercial-plan.ts, l'annuale compare solo se il suo rail è acceso.
 // Nessun countdown: la promo di lancio, se attiva, è una data.
+import { Banner } from "../Banner";
+import "../fidelity.css";
 import { useEffect } from "react";
 import { FREE_SIGNUP_HREF, PRO_CHECKOUT_HREF } from "@/lib/v3c/checkout-link";
 import { usd } from "@/lib/v3c/paywall";
@@ -59,6 +61,7 @@ export function V3cPricing({ monthly, annual, rails, promoUntil }: PricingProps)
             <span>{p.metaRest}</span>
           </>
         }
+        art={<Banner name="hero-football" priority position="64% 38%" />}
       />
 
       {promoUntil ? <p className="v3c-pg-promo">{p.promo(promoUntil)}</p> : null}

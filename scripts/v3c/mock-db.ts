@@ -109,8 +109,16 @@ function history(): Pp[] {
       out.push({ team_pair_key: k, bookmaker: "fortuneplay", home_name: f.home, away_name: f.away, odds_home: r2(f.odds[0] * drift), odds_draw: r2(f.odds[1] * (1 + (rnd() - 0.5) * 0.03)), odds_away: r2(f.odds[2] / drift), captured_at: iso(t) });
     }
   }
+  // fidelity: storico anche per due partite di tennis (tape della board)
+  for (const t of TENNIS.slice(0, 2)) {
+    const k = tnKey(t);
+    for (let x = now - 40 * H; x <= now - 36 * 60_000; x += 3 * H) {
+      const drift = 1 + (rnd() - 0.5) * 0.05;
+      out.push({ team_pair_key: k, bookmaker: "fortuneplay", home_name: t.p1, away_name: t.p2, odds_home: r2(t.odds[0] * 1.02 * drift), odds_draw: null, odds_away: r2(t.odds[1] * 1.01 / drift), captured_at: iso(x) });
+    }
+  }
   // l'ultima cattura del grafico coincide con il «best» di ora (stessa riga)
-  return [...out, ...latestPrices().filter((p) => FOOTBALL.some((f) => f.history && fbKey(f) === p.team_pair_key))];
+  return [...out, ...latestPrices().filter((p) => FOOTBALL.some((f) => f.history && fbKey(f) === p.team_pair_key) || TENNIS.slice(0, 2).some((t) => tnKey(t) === p.team_pair_key))];
 }
 
 type Tn = { id: string; tournament: string | null; kickoff: number; p1: string; p2: string; odds: [number, number]; elo: [number, number]; mv: string; sealed: boolean; books: boolean };
@@ -219,6 +227,7 @@ function sealedDay(sql: string) {
     sport: "football", home_team: s.home_team, away_team: s.away_team, competition: s.competition, league: s.competition, pick: s.pick,
     confidence: Math.max(s.p_home, s.p_draw, s.p_away), p_home: s.p_home, p_draw: s.p_draw, p_away: s.p_away,
     commence_time: s.commence_time, captured_at: s.captured_at, is_paper: false, result: s.result, outcome: s.outcome || null, final_score: s.final_score || null,
+    market_p_home: s.market[0], market_p_draw: s.market[1], market_p_away: s.market[2],
   }));
   const tn = SEALED_TN.filter((s) => Date.parse(s.commence_time) >= from && Date.parse(s.commence_time) < to).map((s) => ({
     sport: "tennis", home_team: s.home_team, away_team: s.away_team, competition: s.competition, league: null, pick: s.pick, confidence: s.p,

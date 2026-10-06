@@ -248,6 +248,8 @@ export type V3YesterdayResponse = {
   football: V3DaySummary;
   tennis: V3DaySummary;
   picks: V3DayPick[];
+  /** fidelity: football Brier of the estimate and of the market at seal, on the same paired rows (null = none paired) */
+  brier?: { n: number; estimate: number; market: number } | null;
   notes: string[];
 };
 

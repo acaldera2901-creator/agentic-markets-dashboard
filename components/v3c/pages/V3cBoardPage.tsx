@@ -22,6 +22,7 @@ import type { V3BoardResponse, V3BookPrice } from "@/lib/v3c/contracts";
 import { parseMode } from "@/lib/v3c/mode";
 import { oddsOnSitePartners } from "@/lib/price-books";
 import { packBoard } from "@/lib/v3c/board-pack";
+import { boardTapes } from "@/lib/v3c/tape-data.server";
 import "@/components/v3c/partners.css";
 
 type Surface = "home" | "predictions";
@@ -104,7 +105,9 @@ async function BoardBlock({ surface, nowIso }: { surface: Surface; nowIso: strin
   if (!b.ok) return <BoardError />;
   const board = forSurface(b.data, surface, new Date(nowIso));
   const yesterday = y.ok ? { day: y.data.day, football: y.data.football, tennis: y.data.tennis } : null;
-  return <Board board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} />;
+  // fidelity: il tape «open → now» di ogni riga, dai dati veri (partner_price_history)
+  const tapes = await boardTapes(board.matches, board.tennis ?? []);
+  return <Board tapes={tapes} board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} />;
 }
 
 async function BenchBlock({ nowIso }: { nowIso: string }) {

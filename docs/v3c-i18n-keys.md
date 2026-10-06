@@ -337,3 +337,17 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `record.state.empty` | «Nothing sealed yet.» |
 | `record.state.emptyBody` | «The record starts with the first estimate sealed before a kick-off.» |
 | `record.limited` | «limited sample» |
+
+## fidelity (#REDESIGN-V3C fidelity) — chiavi nuove, EN+IT complete, le altre 9 lingue in fallback EN
+
+| chiave | EN |
+|---|---|
+| `board.tapeHead` | «Open → now» |
+| `board.tapeSub` | «fn: book price · last {h} h» |
+| `board.tapeAria` | «fn: {label} price at a connected book moved from {from} to {to}, {n} captures» |
+| `board.tapeNone` | «no history» |
+| `yday.stripBody` | «Expected in favour is the sum of the sealed probabilities. The market’s Brier sits next to ours (football, same rows).» |
+| `yday.expectedFavour` | «Expected in favour» |
+| `yday.observed` | «Observed» |
+| `yday.brierEstimate` | «Brier · estimate» |
+| `yday.brierMarket` | «fn: Brier · market · n {n}» |

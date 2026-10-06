@@ -20,6 +20,8 @@ import { Monogrammi } from "../Monogramma";
 import { Arrow } from "../Arrow";
 import { Sigillo } from "../Sigillo";
 import { RowScale } from "./RowScale";
+import { Tape } from "../Tape";
+import type { RowTape } from "@/lib/v3c/tape";
 
 type Common = {
   t: V3cCopy;
@@ -33,6 +35,8 @@ type Common = {
   /** F7: partner senza quota letta, mostrati col bottone «Odds on site» */
   siteOnly?: OddsOnSitePartner[];
   surface: "home" | "predictions";
+  /** fidelity: il tape «open → now» dai dati veri; assente = meno di due catture */
+  tape?: RowTape;
 };
 
 /** Il chip del book: marchio · quota. Link affiliato reale (deep-link o landing del registro), tracciato. */
@@ -152,7 +156,44 @@ function BestCta({ best, shared, t, surface, label }: { best: V3BookPrice; share
   );
 }
 
-export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface }: Common & { r: BoardRowVM }) {
+/** fidelity: il tape della riga (prototipo «Open → now»): gradini veri, «2.02 → 2.15» accanto su mobile. */
+function TapeCell({ tape, label, t }: { tape: RowTape | undefined; label: string; t: V3cCopy }) {
+  if (!tape) return <span className="v3c-r-tape v3c-r-tape-none">{t.board.tapeNone}</span>;
+  return (
+    <span className="v3c-r-tape">
+      <Tape points={tape.pts.map(([x, v]) => ({ t: x, v }))} fair={tape.fair} sealT={tape.fairT} label={t.board.tapeAria(label, price2(tape.from), price2(tape.to), tape.n)} />
+      <small className="v3c-num" aria-hidden="true">
+        {price2(tape.from)} → {price2(tape.to)}
+      </small>
+    </span>
+  );
+}
+
+/** fidelity: mercato e stima in due colonne di numeri (prototipo), «—» dove il contratto non porta il dato. */
+function MkEs({ market, estimate, markEstimate = true }: { market: number | null | undefined; estimate: number | null | undefined; markEstimate?: boolean }) {
+  return (
+    <>
+      <span className={market == null ? "v3c-r-mk v3c-r-none" : "v3c-r-mk v3c-num"}>{market == null ? "—" : <>{pctInt(market)}<small>%</small></>}</span>
+      <span className={estimate == null ? "v3c-r-es v3c-r-none" : "v3c-r-es v3c-num"}>
+        {estimate == null ? "—" : markEstimate ? <mark>{pctInt(estimate)}<small>%</small></mark> : <>{pctInt(estimate)}<small>%</small></>}
+      </span>
+    </>
+  );
+}
+
+/** fidelity, mobile: «44% → 48%» sotto il gap, come il ledger a due livelli del prototipo. */
+function MeLine({ market, estimate }: { market: number | null | undefined; estimate: number | null | undefined }) {
+  if (market == null && estimate == null) return null;
+  return (
+    <span className="v3c-r-me" aria-hidden="true">
+      {market != null ? <span className="v3c-m">{pctInt(market)}%</span> : null}
+      {market != null && estimate != null ? " → " : null}
+      {estimate != null ? <mark>{pctInt(estimate)}%</mark> : null}
+    </span>
+  );
+}
+
+export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape }: Common & { r: BoardRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
   const match = `${m.home} – ${m.away}`;
@@ -179,22 +220,24 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
           </small>
         </span>
       </span>
+      <TapeCell tape={tape} label={leadLabel} t={t} />
       <span className="v3c-r-price v3c-num">{price2(lead.market_price)}</span>
-      <RowScale className="v3c-r-scale" market={lead.market_p} estimate={lead.estimate_p} label={scaleAria} />
-      <span className={["v3c-r-gap", "v3c-num", flat ? "v3c-g-flat" : null, g == null ? "v3c-g-none" : null].filter(Boolean).join(" ")}>
+      <MkEs market={lead.market_p} estimate={lead.estimate_p} />
+      <span className={["v3c-r-gap", "v3c-num", flat ? "v3c-g-flat" : null, g == null ? "v3c-g-none" : null].filter(Boolean).join(" ")} title={scaleAria}>
         {g == null ? (
           <small className="v3c-r-nomkt">{t.board.noMarket}</small>
         ) : flat ? (
-          <>
+          <span>
             {gapText(g)}
             <small> {t.board.inLine}</small>
-          </>
+          </span>
         ) : (
-          <>
+          <span>
             {gapText(g)}
             <small> pp</small>
-          </>
+          </span>
         )}
+        <MeLine market={lead.market_p} estimate={lead.estimate_p} />
       </span>
       <span className="v3c-r-book">
         {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
@@ -275,7 +318,7 @@ function tennisNoGap(m: TennisRowVM["m"], t: V3cCopy): string {
 
 const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctInt(p)}%`);
 
-export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface }: Common & { r: TennisRowVM }) {
+export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape }: Common & { r: TennisRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
   const match = `${m.player1} – ${m.player2}`;
@@ -306,23 +349,29 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
           </small>
         </span>
       </span>
+      <TapeCell tape={tape} label={leadLabel} t={t} />
       <span className="v3c-r-price v3c-num">{price2(lead.market_price)}</span>
+      {/* fidelity: le due colonne dicono la stessa coppia della vecchia scala — al sigillo se c'è il gap, altrimenti solo ciò che il contratto porta */}
       {hasGap ? (
-        <RowScale className="v3c-r-scale" market={lead.market_p_at_seal} estimate={lead.sealed_p} label={scaleLabel} />
+        <MkEs market={lead.market_p_at_seal} estimate={lead.sealed_p} />
       ) : marketOnly ? (
-        <RowScale className="v3c-r-scale" market={null} estimate={lead.market_p ?? lead.estimate_p} marketOnly label={scaleLabel} />
+        <MkEs market={lead.market_p ?? lead.estimate_p} estimate={null} />
       ) : (
-        <RowScale className="v3c-r-scale" market={null} estimate={lead.estimate_p} label={scaleLabel} />
+        <MkEs market={null} estimate={lead.estimate_p} />
       )}
       {hasGap ? (
-        <span className={["v3c-r-gap", "v3c-num", isFlatGap(g) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
-          {gapText(g)}
-          <small> {isFlatGap(g) ? t.board.inLine : "pp"}</small>
+        <span className={["v3c-r-gap", "v3c-num", isFlatGap(g) ? "v3c-g-flat" : null].filter(Boolean).join(" ")} title={scaleLabel}>
+          <span>
+            {gapText(g)}
+            <small> {isFlatGap(g) ? t.board.inLine : "pp"}</small>
+          </span>
           <small className="v3c-r-atseal">{t.tennis.atSeal}</small>
+          <MeLine market={lead.market_p_at_seal} estimate={lead.sealed_p} />
         </span>
       ) : (
-        <span className="v3c-r-gap v3c-g-none">
+        <span className="v3c-r-gap v3c-g-none" title={scaleLabel}>
           <small className="v3c-r-nomkt">{marketOnly ? t.tennis.marketOnly : t.tennis.coming}</small>
+          <MeLine market={marketOnly ? lead.market_p ?? lead.estimate_p : null} estimate={marketOnly ? null : lead.estimate_p} />
         </span>
       )}
       <span className="v3c-r-book">

@@ -36,6 +36,9 @@ import { isPacked, unpackBoard, type PackedBoard } from "@/lib/v3c/board-pack";
 import { KitIcon } from "../Monogramma";
 import { StateArt } from "../States";
 import { FootballRow, TennisRow } from "./BoardRow";
+import type { RowTape } from "@/lib/v3c/tape";
+import { TAPE_HOURS } from "@/lib/v3c/tape";
+import "../fidelity.css";
 
 type Props = {
   /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
@@ -58,6 +61,8 @@ type Props = {
   frozenNow?: boolean;
   /** la revisione di ieri, ultimo gradino della cascata */
   yesterday: { day: string; football: V3DaySummary; tennis: V3DaySummary } | null;
+  /** fidelity: il tape «open → now» per id partita (solo le righe con ≥ 2 catture vere) */
+  tapes?: Record<string, RowTape>;
 };
 
 type Row = BoardRowVM | TennisRowVM;
@@ -85,7 +90,7 @@ function useNow(initialIso: string, frozen = false): Date {
   return useMemo(() => new Date(min * 60_000), [min]);
 }
 
-export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow }: Props) {
+export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow, tapes }: Props) {
   const { lang, t } = useV3cCopy();
   const board = useMemo(() => (isPacked(boardIn) ? unpackBoard(boardIn) : boardIn), [boardIn]);
   const locale = lang === "it" ? "it-IT" : "en-GB";
@@ -203,13 +208,21 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
         <div className="v3c-board-h" aria-hidden="true">
           <span className="v3c-lab">{t.board.kickoff}</span>
           <span className="v3c-lab">{t.board.match}</span>
+          <span className="v3c-lab">
+            {t.board.tapeHead}
+            <small>{t.board.tapeSub(TAPE_HOURS)}</small>
+          </span>
           <span className="v3c-lab v3c-ra">
             {t.board.price}
             <small>{t.board.priceSub}</small>
           </span>
-          <span className="v3c-lab">
-            {t.board.scaleHead}
-            <small>{t.board.scaleSub}</small>
+          <span className="v3c-lab v3c-ra">
+            {t.board.market}
+            <small>{t.board.marketSub}</small>
+          </span>
+          <span className="v3c-lab v3c-ra">
+            {t.board.estimate}
+            <small>{t.board.estimateSub}</small>
           </span>
           <span className="v3c-lab v3c-ra">
             {t.board.gap}
@@ -239,9 +252,9 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
               ) : null}
               {g.rows.map((r) =>
                 r.kind === "football" ? (
-                  <FootballRow key={r.m.id} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
+                  <FootballRow key={r.m.id} tape={tapes?.[r.m.id]} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
                 ) : (
-                  <TennisRow key={`tn-${r.m.id}`} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
+                  <TennisRow key={`tn-${r.m.id}`} tape={tapes?.[r.m.id]} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
                 ),
               )}
             </div>

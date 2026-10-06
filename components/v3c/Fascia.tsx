@@ -16,12 +16,15 @@ type Props = {
   meta?: ReactNode;
   id?: string;
   className?: string;
+  /** fidelity: il banner del kit dietro la fascia (decorativo, a destra, sotto un velo navy). */
+  art?: ReactNode;
 };
 
-export function Fascia({ tab, title, as: Tag = "h1", meta, id, className }: Props) {
+export function Fascia({ tab, title, as: Tag = "h1", meta, id, className, art }: Props) {
   const headingId = id ?? "v3c-fascia-h";
   return (
-    <section className={["v3c-fascia", className].filter(Boolean).join(" ")} aria-labelledby={headingId}>
+    <section className={["v3c-fascia", art ? "v3c-fascia-art" : null, className].filter(Boolean).join(" ")} aria-labelledby={headingId}>
+      {art}
       <span className="v3c-fascia-tab">{tab}</span>
       {typeof title === "string" ? (
         <Tag className="v3c-t-page" id={headingId}>

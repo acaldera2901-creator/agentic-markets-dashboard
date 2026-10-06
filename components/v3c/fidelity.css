@@ -1,0 +1,69 @@
+/* components/v3c/fidelity.css (#REDESIGN-V3C fidelity) — la passata di fedeltà al
+   prototipo proto-v3c: banner del kit nella fascia, tape «open → now» e colonne
+   mercato/stima della board (ledger a due livelli su mobile), «Ieri» come striscia
+   di numeri, evento del sigillo sul grafico. Solo token del design system v3c. */
+
+/* ── fascia con il banner del kit ─────────────────────────────────────────── */
+.v3c-fascia-art { min-height: 208px; align-content: end; overflow: hidden; isolation: isolate; }
+.v3c-fascia-art > :not(.v3c-banner) { position: relative; z-index: 2; }
+.v3c-fascia-art::before { z-index: 3; }
+.v3c-banner { position: absolute; z-index: 0; top: 0; right: 0; bottom: 0; width: min(62%, 760px); display: block; pointer-events: none; }
+.v3c-banner img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* velo navy: il testo sta sempre su un fondo calmo (README del kit, regola 7) */
+.v3c-banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--v3c-navy) 0%, color-mix(in srgb, var(--v3c-navy) 72%, transparent) 26%, color-mix(in srgb, var(--v3c-navy) 8%, transparent) 62%, transparent 100%); }
+@media (max-width: 820px) {
+  .v3c-fascia-art { min-height: 168px; }
+  .v3c-banner { width: 100%; }
+  .v3c-banner::after { background: linear-gradient(90deg, var(--v3c-navy) 0%, color-mix(in srgb, var(--v3c-navy) 82%, transparent) 45%, color-mix(in srgb, var(--v3c-navy) 35%, transparent) 100%); }
+}
+
+/* ── board: tape · prezzo · mercato · stima · gap · book (come il prototipo) ── */
+.v3c-board { --v3c-cols: 60px minmax(0, 1fr) 76px 52px 64px 64px 72px 104px 14px; }
+.v3c-r-tape { display: grid; justify-items: start; gap: 2px; }
+.v3c-r-tape .v3c-tape { width: 72px; height: 22px; }
+.v3c-r-tape small { display: none; font-size: 11.5px; color: var(--v3c-ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v3c-r-tape-none { font-size: 11px; color: var(--v3c-ink-3); }
+.v3c-r-mk, .v3c-r-es { text-align: right; font-size: 20px; }
+.v3c-r-mk { color: var(--v3c-sky); }
+.v3c-r-mk small, .v3c-r-es small { font-size: 11px; font-weight: 600; font-stretch: 100%; font-variation-settings: "wdth" 100; }
+.v3c-r-es mark { padding: 1px 3px; }
+.v3c-r-none { font: 600 11.5px/1.25 var(--v3c-f-text); color: var(--v3c-ink-3); text-align: right; }
+.v3c-r-me { display: none; }
+.v3c-board-h .v3c-ra small { text-align: right; }
+
+/* mobile: ledger a due livelli — ora · partita · gap (+ mercato → stima) / tape · open → now · book */
+@media (max-width: 820px) {
+  .v3c-row { grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "time name gap" "time tape book"; }
+  .v3c-row .v3c-r-mk, .v3c-row .v3c-r-es { display: none; }
+  .v3c-r-tape { grid-area: tape; grid-auto-flow: column; align-items: center; justify-content: start; gap: 10px; }
+  .v3c-r-tape small { display: inline; }
+  .v3c-r-gap { display: grid; justify-items: end; gap: 2px; }
+  .v3c-r-me { display: block; font: 800 14px/1 var(--v3c-f-text); font-stretch: 75%; font-variation-settings: "wdth" 75; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--v3c-ink-2); }
+  .v3c-r-me .v3c-m { color: var(--v3c-sky); }
+  .v3c-r-me mark { padding: 0 2px; color: var(--v3c-lime-mark-ink); }
+  .v3c-toolbar .v3c-legend { display: none; }
+  .v3c-r-time small { white-space: nowrap; }
+}
+
+/* ── «Ieri» come nel prototipo: una striscia di numeri, poi il link al record ── */
+.v3c-yd-strip { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px 40px; align-items: end; padding-bottom: 16px; border-bottom: 1px solid var(--v3c-line); }
+.v3c-yd-strip > div:first-child p { margin: 6px 0 0; max-width: 46ch; }
+.v3c-yd-k { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 0; }
+.v3c-yd-k dt { font-size: 12.5px; color: var(--v3c-ink-2); white-space: nowrap; }
+.v3c-yd-k dd { margin: 4px 0 0; font-size: 28px; }
+.v3c-yd-k dd small { font-size: 11px; color: var(--v3c-ink-3); font-weight: 600; margin-left: 4px; font-stretch: 100%; font-variation-settings: "wdth" 100; }
+@media (max-width: 820px) {
+  .v3c-yd-strip { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .v3c-yd-k { gap: 12px 22px; }
+  .v3c-yd-k dd { font-size: 24px; }
+}
+
+/* «More on today's board» della partita: le colonne della board, senza book (la CTA sta nel passo 3) */
+.v3c-board-more { --v3c-cols: 60px minmax(0, 1fr) 76px 52px 64px 64px 72px; }
+.v3c-mt-mr2 { color: inherit; }
+.v3c-mt-mr2:hover { text-decoration: none; }
+.v3c-mt-mr2 .v3c-t-row { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 820px) {
+  .v3c-board-more .v3c-row { grid-template-areas: "time name gap" "time tape tape"; }
+  .v3c-mt-mr2 .v3c-t-row { white-space: normal; overflow: visible; }
+}

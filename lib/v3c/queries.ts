@@ -22,12 +22,25 @@ export async function fetchSealedDay(fromIso: string, toIso: string): Promise<Se
   const rows = await dbQueryStrict<Record<string, unknown>>(
     `SELECT l.sport, l.home_team, l.away_team, l.competition, l.league, l.pick, l.confidence,
             l.p_home, l.p_draw, l.p_away, l.commence_time, l.captured_at, l.is_paper,
-            s.result, s.outcome, s.final_score
+            s.result, s.outcome, s.final_score,
+            m.market_p_home, m.market_p_draw, m.market_p_away
        FROM pick_ledger l
        JOIN pick_settlement_current s
          ON s.source_table = l.source_table
         AND s.source_id = l.source_id
         AND s.model_version = l.model_version
+       -- fidelity: the market at seal (same rule as SEALED_FOOTBALL_SQL) for yesterday's Brier pair
+       LEFT JOIN LATERAL (
+             SELECT pl.market_p_home, pl.market_p_draw, pl.market_p_away
+               FROM prediction_log pl
+              WHERE l.sport = 'football'
+                AND pl.match_id = l.source_id
+                AND pl.computed_at <= l.captured_at
+                AND abs(pl.p_home - l.p_home) < 1e-9
+                AND abs(pl.p_draw - l.p_draw) < 1e-9
+                AND abs(pl.p_away - l.p_away) < 1e-9
+              ORDER BY pl.computed_at DESC
+              LIMIT 1) m ON TRUE
       WHERE l.is_backfill = FALSE
         AND l.commence_time >= $1::timestamptz
         AND l.commence_time <  $2::timestamptz
@@ -51,6 +64,9 @@ export async function fetchSealedDay(fromIso: string, toIso: string): Promise<Se
     result: String(r.result ?? ""),
     outcome: (r.outcome as string) ?? null,
     final_score: (r.final_score as string) ?? null,
+    market_p_home: num(r.market_p_home),
+    market_p_draw: num(r.market_p_draw),
+    market_p_away: num(r.market_p_away),
   }));
 }
 
@@ -298,6 +314,34 @@ export async function fetchPartnerHistoryByKeys(keys: string[]): Promise<Map<str
         WHERE team_pair_key IN (${inList(chunk, 0)})
         ORDER BY team_pair_key, captured_at`,
       chunk,
+    );
+    for (const r of rows.map(toPartnerRow)) {
+      const list = out.get(r.team_pair_key) ?? [];
+      list.push(r);
+      out.set(r.team_pair_key, list);
+    }
+  }
+  return out;
+}
+
+/**
+ * fidelity: the captures of the last `hours` for the board's «open → now» tape,
+ * grouped by key, oldest first. Bounded by time so the whole board stays one
+ * small read (SELECT only).
+ */
+export async function fetchTapeHistory(keys: string[], hours: number): Promise<Map<string, PartnerPriceRow[]>> {
+  const out = new Map<string, PartnerPriceRow[]>();
+  const unique = [...new Set(keys)];
+  const since = new Date(Date.now() - hours * 3_600_000).toISOString();
+  for (let i = 0; i < unique.length; i += 200) {
+    const chunk = unique.slice(i, i + 200);
+    const rows = await dbQueryStrict<Record<string, unknown>>(
+      `SELECT team_pair_key, bookmaker, home_name, away_name, odds_home, odds_draw, odds_away, captured_at
+         FROM partner_price_history
+        WHERE team_pair_key IN (${inList(chunk, 1)})
+          AND captured_at >= $1::timestamptz
+        ORDER BY team_pair_key, captured_at`,
+      [since, ...chunk],
     );
     for (const r of rows.map(toPartnerRow)) {
       const list = out.get(r.team_pair_key) ?? [];
