@@ -36,6 +36,9 @@ export const v3cMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["500"],
   display: "swap",
+  // v3c-final: solo l'hash del sigillo, mai sopra la piega — niente preload ad alta priorità che
+  // contenda la banda al banner (l'elemento LCP) e ai due font dei titoli e del testo
+  preload: false,
 });
 
 /** Le tre variabili insieme, da mettere sul contenitore [data-theme="v3c"]. */
