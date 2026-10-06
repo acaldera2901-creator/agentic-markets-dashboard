@@ -99,7 +99,10 @@ describe("Board v3c (F3)", () => {
     const row = container.querySelector('.v3c-row[data-sport="football"]') as HTMLElement;
     expect(row).toBeTruthy();
     expect(within(row).getByText("2.15", { selector: ".v3c-r-price" })).toBeInTheDocument();
-    expect(within(row).getByRole("img", { name: /Market 44 percent, estimate 48 percent, gap \+4\.0 points/ })).toBeInTheDocument();
+    // fidelity: mercato e stima in due colonne (prototipo), il tape senza storico lo dice
+    expect(row.querySelector(".v3c-r-mk")?.textContent).toBe("44%");
+    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("48%");
+    expect(row.querySelector(".v3c-r-tape")?.textContent).toBe("no history");
     expect(row.querySelector(".v3c-r-gap")?.textContent).toContain("+4.0");
     expect(row.textContent).toContain("Fiorentina −3.0"); // gli altri esiti, segno U+2212
     const chip = row.querySelector(".v3c-r-book a") as HTMLAnchorElement;
@@ -125,9 +128,9 @@ describe("Board v3c (F3)", () => {
   it("tennis senza gap nel contratto: stima del modello, nessun punto mercato, «market comparison coming»", () => {
     const { container } = render(<Board {...props} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
-    expect(row.querySelector(".v3c-r-gap")?.textContent).toBe("market comparison coming");
-    expect(row.querySelector(".v3c-rs-m")).toBeNull(); // nessun punto mercato: niente gap implicito
-    expect(row.querySelector(".v3c-rs-e")?.textContent).toBe("71%");
+    expect(row.querySelector(".v3c-r-nomkt")?.textContent).toBe("market comparison coming");
+    expect(row.querySelector(".v3c-r-mk")?.textContent).toBe("—"); // nessun mercato in riga: niente gap implicito
+    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("71%");
     fireEvent.click(screen.getByRole("button", { name: /Jannik Sinner – Ben Shelton/ }));
     const pn = container.querySelector('.v3c-row[data-sport="tennis"] .v3c-pn') as HTMLElement;
     expect(pn.textContent).toContain("66%"); // il mercato c'è, nel pannello, come dato
@@ -139,15 +142,24 @@ describe("Board v3c (F3)", () => {
     const { container } = render(<Board {...props} board={{ ...BOARD, tennis: [tennisMatch({ gap: true })] }} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
     expect(row.querySelector(".v3c-r-gap")?.textContent).toContain("+5.0 pp");
-    expect(row.querySelector(".v3c-rs-m")?.textContent).toBe("66%");
-    expect(row.querySelector(".v3c-rs-e")?.textContent).toBe("71%");
+    expect(row.querySelector(".v3c-r-mk")?.textContent).toBe("66%");
+    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("71%");
   });
 
   it("tennis senza un nostro modello: solo prezzo di mercato", () => {
     const { container } = render(<Board {...props} board={{ ...BOARD, tennis: [tennisMatch({ kind: "market_tempered" })] }} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
-    expect(row.querySelector(".v3c-r-gap")?.textContent).toBe("market price only");
-    expect(row.querySelector(".v3c-rs-e")).toBeNull();
+    expect(row.querySelector(".v3c-r-nomkt")?.textContent).toBe("market price only");
+    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("—");
+  });
+
+  it("fidelity: il tape «open → now» dai dati veri, a gradini, con l'etichetta accessibile", () => {
+    const tape = { pts: [[0, 2.02], [50, 2.1], [100, 2.15]] as [number, number][], fair: 2.08, fairT: 80, from: 2.02, to: 2.15, n: 9 };
+    const { container } = render(<Board {...props} tapes={{ [BOARD.matches[0].id]: tape }} />);
+    const row = container.querySelector('.v3c-row[data-sport="football"]') as HTMLElement;
+    expect(within(row).getByRole("img", { name: /price at a connected book moved from 2\.02 to 2\.15, 9 captures/ })).toBeInTheDocument();
+    expect(row.querySelector(".v3c-tape path")?.getAttribute("d")).toMatch(/^M[\d.]+ [\d.]+ H[\d.]+ V[\d.]+ H/); // gradini, mai diagonali
+    expect(row.querySelector(".v3c-r-tape small")?.textContent).toBe("2.02 → 2.15");
   });
 
   it("paesi bloccati: nessun link ai book", () => {

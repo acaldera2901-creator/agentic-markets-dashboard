@@ -3,7 +3,8 @@
 // the SQL lives in queries.ts. No hit-rate, no ROI: integers (won, lost) next
 // to the sum of the sealed probabilities, which is what the estimates expected.
 import { LIMITED_SAMPLE_N, type V3DayPick, type V3DaySummary, type V3YesterdayResponse } from "./contracts";
-import { roundP } from "./prob";
+import { parseOutcome, roundP } from "./prob";
+import { brier3, mean } from "./scoring";
 
 export type SealedDayRow = {
   sport: "football" | "tennis";
@@ -22,6 +23,10 @@ export type SealedDayRow = {
   result: string;
   outcome: string | null;
   final_score: string | null;
+  /** fidelity: market at seal, margin removed (football only; null = not paired) */
+  market_p_home?: number | null;
+  market_p_draw?: number | null;
+  market_p_away?: number | null;
 };
 
 /** The UTC day before `now`, as YYYY-MM-DD, and its [from, to) bounds. */
@@ -93,6 +98,15 @@ export function buildYesterday(rows: SealedDayRow[], day: string, now: Date = ne
     });
   }
   picks.sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff) || a.home.localeCompare(b.home));
+  // fidelity: Brier of yesterday's football estimates next to the market's, on the SAME paired rows (as the record)
+  const paired = rows.flatMap((r) => {
+    const happened = r.sport === "football" ? parseOutcome(r.outcome) : null;
+    if (!happened || r.p_home == null || r.p_draw == null || r.p_away == null) return [];
+    if (r.market_p_home == null || r.market_p_draw == null || r.market_p_away == null) return [];
+    return [{ e: brier3({ home: r.p_home, draw: r.p_draw, away: r.p_away }, happened), m: brier3({ home: r.market_p_home, draw: r.market_p_draw, away: r.market_p_away }, happened) }];
+  });
+  const be = mean(paired.map((x) => x.e));
+  const bm = mean(paired.map((x) => x.m));
   return {
     contract: "v3.yesterday.1",
     generated_at: now.toISOString(),
@@ -100,10 +114,12 @@ export function buildYesterday(rows: SealedDayRow[], day: string, now: Date = ne
     football: summarise(picks.filter((p) => p.sport === "football")),
     tennis: summarise(picks.filter((p) => p.sport === "tennis")),
     picks,
+    brier: paired.length && be != null && bm != null ? { n: paired.length, estimate: roundP(be), market: roundP(bm) } : null,
     notes: [
       "Source: pick_ledger (sealed before kickoff, append-only) joined to pick_settlement_current. Only rows that kicked off on this UTC day and have a settlement.",
       "won/lost are the settlement of the sealed pick. expected_wins = Σ sealed probability of the pick over the won+lost rows: what the estimates expected, to read next to what happened.",
       "Rows without a declared pick settle as void/unresolved and are counted in `other`. No hit-rate, ROI or CLV is published.",
+      "brier: football rows paired with the market at seal (prediction_log row whose served probabilities equal the sealed ones), same rule as /api/v3/record. Lower is better; a measure, not a profit claim.",
       "Football = the ledger model of the public record (match_predictions, football-v4-xg-model); tennis = every non-backfill sealed tennis pick.",
     ],
   };

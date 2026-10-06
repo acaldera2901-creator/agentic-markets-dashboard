@@ -12,6 +12,8 @@ type Props = {
   /** quota equa della stima e da quando vale (ms); null = niente linea lime */
   fair: { price: number; from: number } | null;
   events: readonly LineEvent[];
+  /** fidelity: il sigillo come evento annotato sull'asse del tempo (dato vero: pick_ledger.captured_at) */
+  seal?: { t: number; label: string } | null;
   labels: { market: (book: string) => string; fair: string; opened: string; news: (time: string, label: string) => string; aria: string };
   bookName: (key: string) => string;
   timeLabel: (ms: number) => string;
@@ -25,7 +27,7 @@ const R = 150;
 const T = 20;
 const B = 34;
 
-export function LineChart({ lines, fair, events, labels, bookName, timeLabel, dayLabel }: Props) {
+export function LineChart({ lines, fair, events, labels, bookName, timeLabel, dayLabel, seal = null }: Props) {
   const all = lines.flatMap((l) => l.points);
   const t0 = Math.min(...all.map((p) => p.t));
   const t1 = Math.max(...all.map((p) => p.t));
@@ -77,6 +79,14 @@ export function LineChart({ lines, fair, events, labels, bookName, timeLabel, da
           </g>
         ) : null,
       )}
+      {seal && seal.t >= t0 && seal.t <= t1 ? (
+        <g>
+          <line className="ev" x1={x(seal.t).toFixed(1)} x2={x(seal.t).toFixed(1)} y1={T} y2={H - B} />
+          <text className="an" x={(x(seal.t) + (x(seal.t) - L < 160 ? 6 : -6)).toFixed(1)} y={T + 10} textAnchor={x(seal.t) - L < 160 ? "start" : "end"}>
+            {seal.label}
+          </text>
+        </g>
+      ) : null}
       {fair ? (
         <>
           <line className="se" x1={x(Math.max(fair.from, t0)).toFixed(1)} x2={W - R} y1={fairY.toFixed(1)} y2={fairY.toFixed(1)} />

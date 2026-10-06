@@ -7,19 +7,22 @@ export type TapePoint = { t: number; v: number }; // t 0–100 (apertura → ora
 
 type Props = {
   points: readonly TapePoint[];
-  /** Quota equa della stima (100 / stima%). */
-  fair: number;
+  /** Quota equa della stima (100 / stima%). fidelity: null = nessuna linea della stima (es. tennis «market price only»). */
+  fair: number | null;
   /** Momento del sigillo sulla scala 0–100. */
   sealT: number;
   width?: number;
   height?: number;
   draw?: boolean;
   className?: string;
+  /** fidelity: testo accessibile; senza, il tape è decorativo (aria-hidden) */
+  label?: string;
 };
 
-export function Tape({ points, fair, sealT, width = 72, height = 22, draw = false, className }: Props) {
-  const pts = points.length ? points : [{ t: 0, v: fair }, { t: 100, v: fair }];
-  const vs = pts.map((p) => p.v).concat([fair]);
+export function Tape({ points, fair, sealT, width = 72, height = 22, draw = false, className, label }: Props) {
+  const pts = points.length ? points : fair != null ? [{ t: 0, v: fair }, { t: 100, v: fair }] : [];
+  if (!pts.length) return null;
+  const vs = pts.map((p) => p.v).concat(fair != null ? [fair] : []);
   let lo = Math.min(...vs);
   let hi = Math.max(...vs);
   if (hi - lo < 0.06) {
@@ -29,11 +32,12 @@ export function Tape({ points, fair, sealT, width = 72, height = 22, draw = fals
   const pad = 2;
   const x = (t: number) => (t / 100) * (width - 1) + 0.5;
   const y = (v: number) => height - pad - ((v - lo) / (hi - lo)) * (height - pad * 2);
-  const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)} ${y(p.v).toFixed(1)}`).join(" ");
+  // fidelity: a gradini anche qui (orizzontale fino alla cattura dopo, poi verticale), come il grafico della partita
+  const d = pts.map((p, i) => (i ? `H${x(p.t).toFixed(1)} V${y(p.v).toFixed(1)}` : `M${x(p.t).toFixed(1)} ${y(p.v).toFixed(1)}`)).join(" ");
   const last = pts[pts.length - 1];
   return (
-    <svg className={["v3c-tape", draw ? "v3c-draw" : null, className].filter(Boolean).join(" ")} viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-hidden="true">
-      <line className="v3c-fair" x1={x(sealT).toFixed(1)} x2={width} y1={y(fair).toFixed(1)} y2={y(fair).toFixed(1)} />
+    <svg className={["v3c-tape", draw ? "v3c-draw" : null, className].filter(Boolean).join(" ")} viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
+      {fair != null ? <line className="v3c-fair" x1={x(sealT).toFixed(1)} x2={width} y1={y(fair).toFixed(1)} y2={y(fair).toFixed(1)} /> : null}
       <path d={d} />
       <circle className="v3c-now" cx={x(last.t).toFixed(1)} cy={y(last.v).toFixed(1)} r="2" />
     </svg>

@@ -37,13 +37,21 @@ import { Nastro } from "../Nastro";
 import { Sigillo } from "../Sigillo";
 import { V3C_ROUTES } from "../V3cChrome";
 import { LineChart } from "./LineChart";
+import { Tape as TapeMini } from "../Tape";
+import type { RowTape } from "@/lib/v3c/tape";
+import { TAPE_HOURS } from "@/lib/v3c/tape";
+import "../fidelity.css";
 import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
 const bookName = (k: string) => BOOK_NAME[k] ?? k;
 
-export type MoreRow = { id: string; home: string; away: string; kickoff: string; league: string | null; gap: number | null };
+export type MoreRow = {
+  id: string; home: string; away: string; kickoff: string; league: string | null; gap: number | null;
+  /** fidelity: la riga come sulla board del prototipo — esito guida, prezzo, mercato, stima, tape vero */
+  lead?: Outcome; price?: number | null; market?: number | null; estimate?: number | null; tape?: RowTape;
+};
 
 export type MatchViewProps =
   | { kind: "football"; m: V3BoardMatch; series: V3LineSeries[] | null; events: LineEvent[]; partners: boolean; links: V3BookLink[]; more: MoreRow[] }
@@ -116,7 +124,7 @@ function StepHead({ n, id, title, children }: { n: number; id: string; title: st
 
 type TapeChoice = { key: TapeKey; label: string; fair: number | null };
 
-function Tape({ ctx, series, events, choices, initial, estimateAsOf, why, strip }: { ctx: Ctx; series: V3LineSeries[] | null; events: LineEvent[]; choices: TapeChoice[]; initial: TapeKey; estimateAsOf: string | null; why: (summary: ReturnType<typeof tapeSummary>) => React.ReactNode; strip?: React.ReactNode }) {
+function Tape({ ctx, series, events, choices, initial, estimateAsOf, why, strip, sealedAt = null }: { ctx: Ctx; series: V3LineSeries[] | null; events: LineEvent[]; choices: TapeChoice[]; initial: TapeKey; estimateAsOf: string | null; why: (summary: ReturnType<typeof tapeSummary>) => React.ReactNode; strip?: React.ReactNode; sealedAt?: string | null }) {
   const { c, tz, locale } = ctx;
   const [key, setKey] = useState<TapeKey>(initial);
   const choice = choices.find((x) => x.key === key) ?? choices[0];
@@ -145,6 +153,7 @@ function Tape({ ctx, series, events, choices, initial, estimateAsOf, why, strip 
           lines={lines}
           fair={fair}
           events={events}
+          seal={sealedAt ? { t: Date.parse(sealedAt), label: c.chartSealed(time(Date.parse(sealedAt))) } : null}
           bookName={bookName}
           timeLabel={time}
           dayLabel={day}
@@ -243,8 +252,9 @@ function SealItem({ ctx, n, sealedAt }: { ctx: Ctx; n: number; sealedAt: string 
 // ─── More on today's board ──────────────────────────────────────────────────
 
 function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
-  const { c, tz, locale } = ctx;
+  const { c, t, tz, locale } = ctx;
   if (!rows.length) return null;
+  // fidelity: le stesse colonne della board del prototipo (tape · prezzo · mercato · stima · gap); la riga apre la partita
   return (
     <section className="v3c-sec" aria-labelledby="v3c-mt-more">
       <div className="v3c-sec-h">
@@ -255,25 +265,65 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
           {c.allMatches}
         </Link>
       </div>
-      <div className="v3c-mt-more">
+      <div className="v3c-board v3c-board-more">
+        <div className="v3c-board-h" aria-hidden="true">
+          <span className="v3c-lab">{t.board.kickoff}</span>
+          <span className="v3c-lab">{t.board.match}</span>
+          <span className="v3c-lab">
+            {t.board.tapeHead}
+            <small>{t.board.tapeSub(TAPE_HOURS)}</small>
+          </span>
+          <span className="v3c-lab v3c-ra">{t.board.price}</span>
+          <span className="v3c-lab v3c-ra">{t.board.market}</span>
+          <span className="v3c-lab v3c-ra">{t.board.estimate}</span>
+          <span className="v3c-lab v3c-ra">{t.board.gap}</span>
+        </div>
         {rows.map((r) => (
-          <Link key={r.id} className="v3c-mt-mr" href={matchHref(r.id)}>
-            <span className="v3c-small">
-              <b className="v3c-num" style={{ fontSize: 18, display: "block", textAlign: "left" }}>
-                {timeHM(r.kickoff, tz, locale)}
-              </b>
-              {dayShort(r.kickoff, tz, locale)}
+          <Link key={r.id} className="v3c-row v3c-mt-mr2" href={matchHref(r.id)}>
+            <span className="v3c-r-time">
+              {timeHM(r.kickoff, tz, locale)}
+              <small>{dayShort(r.kickoff, tz, locale)}</small>
             </span>
-            <Monogrammi home={{ name: r.home }} away={{ name: r.away }} />
-            <span>
-              <b className="v3c-t-row">
-                {r.home} — {r.away}
-              </b>
-              <small>{r.league ?? "—"}</small>
+            <span className="v3c-r-teams">
+              <Monogrammi home={{ name: r.home }} away={{ name: r.away }} />
+              <span className="v3c-r-name">
+                <b className="v3c-t-row">
+                  {r.home} — {r.away}
+                </b>
+                <small>
+                  {r.league ?? t.toolbar.football}
+                  {r.lead ? (
+                    <>
+                      {" · "}
+                      <b>{outcomeLabel(r, r.lead, t.board.draw)}</b>
+                    </>
+                  ) : null}
+                </small>
+              </span>
             </span>
-            <span className={["v3c-num", isFlatGap(r.gap) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
-              {r.gap == null ? "—" : gapText(r.gap)}
-              {r.gap == null ? null : <small> pp</small>}
+            {r.tape ? (
+              <span className="v3c-r-tape">
+                <TapeMini points={r.tape.pts.map(([x, v]) => ({ t: x, v }))} fair={r.tape.fair} sealT={r.tape.fairT} label={t.board.tapeAria(r.lead ? outcomeLabel(r, r.lead, t.board.draw) : r.home, price2(r.tape.from), price2(r.tape.to), r.tape.n)} />
+                <small className="v3c-num" aria-hidden="true">
+                  {price2(r.tape.from)} → {price2(r.tape.to)}
+                </small>
+              </span>
+            ) : (
+              <span className="v3c-r-tape v3c-r-tape-none">{t.board.tapeNone}</span>
+            )}
+            <span className="v3c-r-price v3c-num">{r.price == null ? "—" : price2(r.price)}</span>
+            <span className={r.market == null ? "v3c-r-mk v3c-r-none" : "v3c-r-mk v3c-num"}>{r.market == null ? "—" : <>{pctInt(r.market)}<small>%</small></>}</span>
+            <span className={r.estimate == null ? "v3c-r-es v3c-r-none" : "v3c-r-es v3c-num"}>{r.estimate == null ? "—" : <mark>{pctInt(r.estimate)}<small>%</small></mark>}</span>
+            <span className={["v3c-r-gap", "v3c-num", isFlatGap(r.gap) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
+              <span>
+                {r.gap == null ? "—" : gapText(r.gap)}
+                {r.gap == null ? null : <small> pp</small>}
+              </span>
+              <span className="v3c-r-me" aria-hidden="true">
+                {r.market != null ? <span className="v3c-m">{pctInt(r.market)}%</span> : null}
+                {r.market != null && r.estimate != null ? " → " : null}
+                {r.estimate != null ? <mark>{pctInt(r.estimate)}%</mark> : null}
+              </span>
             </span>
           </Link>
         ))}
@@ -429,6 +479,7 @@ function Football({ ctx, m, series, events, partners, links, more }: { ctx: Ctx;
           choices={choices}
           initial={lead.outcome}
           estimateAsOf={m.estimate_as_of}
+          sealedAt={m.sealed_at}
           why={(summary) => (
             <ol className="v3c-mt-why">
               <MovedItem ctx={ctx} n={1} summary={summary} />
@@ -638,6 +689,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
           choices={choices}
           initial={lead.side}
           estimateAsOf={marketOnly ? null : m.estimate_as_of}
+          sealedAt={m.sealed_at}
           why={(summary) => (
             <ol className="v3c-mt-why">
               <MovedItem ctx={ctx} n={1} summary={summary} />

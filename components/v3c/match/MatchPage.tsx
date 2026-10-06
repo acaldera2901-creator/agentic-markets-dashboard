@@ -17,14 +17,23 @@ import { findMatch, leadOutcome, readLineEvents } from "@/lib/v3c/match-view";
 import type { V3cMode } from "@/lib/v3c/mode";
 import { MatchError, MatchSkeleton } from "./MatchStates";
 import { MatchView, type MoreRow } from "./MatchView";
+import { boardTapes } from "@/lib/v3c/tape-data.server";
 
 /** Le prossime partite di calcio (non questa), per «More on today’s board». */
-function moreRows(board: V3BoardResponse, id: string, now: Date, n = 3): MoreRow[] {
-  return board.matches
+async function moreRows(board: V3BoardResponse, id: string, now: Date, n = 3): Promise<MoreRow[]> {
+  const list = board.matches
     .filter((m) => m.id !== id && Date.parse(m.kickoff) > now.getTime())
     .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))
-    .slice(0, n)
-    .map((m) => ({ id: m.id, home: m.home, away: m.away, kickoff: m.kickoff, league: m.competition || m.league, gap: leadOutcome(m).edge_pp }));
+    .slice(0, n);
+  // fidelity: le righe come sulla board (prototipo): esito guida, prezzo, mercato, stima e il tape vero
+  const tapes = await boardTapes(list, []);
+  return list.map((m) => {
+    const lead = leadOutcome(m);
+    return {
+      id: m.id, home: m.home, away: m.away, kickoff: m.kickoff, league: m.competition || m.league, gap: lead.edge_pp,
+      lead: lead.outcome, price: lead.market_price, market: lead.market_p, estimate: lead.estimate_p, tape: tapes[m.id],
+    };
+  });
 }
 
 async function MatchBody({ id, fixture }: { id: string; fixture: Fixture | null }) {
@@ -43,7 +52,7 @@ async function MatchBody({ id, fixture }: { id: string; fixture: Fixture | null 
   }
   if (!b.ok) return <MatchError />;
   const found = findMatch(b.data, id);
-  const more = moreRows(b.data, id, now);
+  const more = await moreRows(b.data, id, now);
   if (found?.sport === "football") return <MatchView kind="football" m={found.m} series={series} events={events} partners={partners} links={links} more={more} />;
   if (found?.sport === "tennis") return <MatchView kind="tennis" m={found.m} series={series} events={events} partners={partners} links={links} more={more} />;
   if (!fixture) return <MatchError />;
