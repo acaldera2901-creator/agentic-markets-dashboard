@@ -194,3 +194,138 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `foot.age` | «18+» |
 | `theme.toDark` | «Switch to dark» |
 | `theme.toPaper` | «Switch to paper» |
+
+## /record (F6) — `lib/v3c/copy-record.ts`
+
+EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso `record.` = chiave del dizionario del registro. Legali per prime in F10: `record.kpi.verdict.*`, `record.receipts.recipeNote`, `record.receipts.noReturn`, `record.tennis.lede`. Stringhe fuori dal dizionario: i nomi delle fonti di correzione (`SOURCE` in `components/v3c/record/Corrections.tsx`).
+
+| Chiave | EN |
+|---|---|
+| `record.fascia.tab` | «Record · read only from the sealed ledger» |
+| `record.fascia.title` | «Every estimate, and how it settled» |
+| `record.fascia.since` | «fn: On record since {a}» |
+| `record.fascia.sealed` | «fn: {a} football · {b} tennis sealed before kick-off» |
+| `record.fascia.edit` | «Nothing here can be edited after publication.» |
+| `record.fascia.unavailable` | «record data unavailable» |
+| `record.kpi.sealed` | «Football estimates sealed» |
+| `record.kpi.sealedVs` | «fn: {a} – {b} · {c} settled with a result» |
+| `record.kpi.brier` | «Brier score · lower is better» |
+| `record.kpi.ours` | «Our estimate» |
+| `record.kpi.market` | «Market, margin removed» |
+| `record.kpi.ci` | «fn: 95% interval {a}–{b}» |
+| `record.kpi.verdict.market_better` | «The market is slightly better than ours. We publish it anyway.» |
+| `record.kpi.verdict.tie` | «On this sample the two cannot be told apart. We publish it either way.» |
+| `record.kpi.verdict.ours_lower` | «Ours is lower on this sample. A sample, not a promise.» |
+| `record.kpi.diff` | «fn: Difference {a} (95%: {b} to {c}) on {d} matches with the market at seal.» |
+| `record.kpi.blend` | «Football estimate = 30% our model + 70% the market, margin removed.» |
+| `record.kpi.coverage` | «Coverage» |
+| `record.kpi.coverageMain` | «fn: {a} of {b}» |
+| `record.kpi.coverageVs` | «settled matches carry the market price at the moment of the seal» |
+| `record.kpi.coverageRest` | «fn: {a} awaiting a result · {b} past kick-off without one · {c} sealed with no market (paper)» |
+| `record.cal.title` | «Does a 60% happen 60 times in 100?» |
+| `record.cal.lede` | «Calibration: stated probability against how often it happened. Accuracy is the Brier score above.» |
+| `record.cal.fig` | «Reliability · stated against observed» |
+| `record.cal.figSub` | «fn: {a} outcomes from {b} matches · bars are 95% intervals» |
+| `record.cal.aria` | «Reliability diagram of our football estimate and of the market against the diagonal of perfect calibration» |
+| `record.cal.ours` | «our estimate» |
+| `record.cal.market` | «market» |
+| `record.cal.diag` | «perfect calibration» |
+| `record.cal.xAxis` | «stated probability» |
+| `record.cal.yAxis` | «observed» |
+| `record.cal.caption` | «Hollow marks: fewer than 30 outcomes in the bin. Dot size follows n.» |
+| `record.cal.binsTitle` | «By bin, with n» |
+| `record.cal.stated` | «Stated» |
+| `record.cal.observed` | «Observed» |
+| `record.cal.pm` | «±95%» |
+| `record.cal.n` | «n» |
+| `record.cal.gap` | «Gap» |
+| `record.cal.limited` | «limited sample» |
+| `record.cal.binsNote` | «Wilson 95% intervals. Gap = observed − stated, in points.» |
+| `record.weeks.title` | «Expected against observed, by week» |
+| `record.weeks.sub` | «A record is luck or measurement; this is how you tell.» |
+| `record.weeks.expected` | «Expected: sum of sealed probabilities of the most likely outcome» |
+| `record.weeks.observed` | «Observed: how often that outcome happened» |
+| `record.weeks.aria` | «Expected against observed outcomes, by ISO week» |
+| `record.weeks.week` | «fn: wk of {a}» |
+| `record.weeks.caption` | «Whiskers are the 95% interval of the observed count. Weeks under 30 matches are marked.» |
+| `record.tennis.title` | «Tennis, kept apart» |
+| `record.tennis.lede` | «Most sealed tennis numbers are the market price, tempered. They are shown, never counted as ours.» |
+| `record.tennis.group` | «Group» |
+| `record.tennis.what` | «What the number is» |
+| `record.tennis.settled` | «Settled» |
+| `record.tennis.expected` | «Expected wins» |
+| `record.tennis.observed` | «Observed» |
+| `record.tennis.brier` | «Brier» |
+| `record.tennis.vsMarket` | «Against the market» |
+| `record.tennis.isMarket` | «is the market» |
+| `record.tennis.ours` | «our Elo» |
+| `record.tennis.kindModel` | «Our Elo model» |
+| `record.tennis.kindModelTempered` | «Our Elo, tempered (no price when sealed)» |
+| `record.tennis.kindMarket` | «Market price, margin removed, tempered» |
+| `record.tennis.paired` | «fn: {a} with a price before the seal: ours {b}, market {c}» |
+| `record.tennis.pairedDiff` | «fn: difference {a} (95%: {b} to {c})» |
+| `record.tennis.noPaired` | «no book price before any seal» |
+| `record.tennis.calInsufficient` | «fn: Too few of our own tennis estimates for a calibration curve: {a} settled, {b} bins with 30 or more.» |
+| `record.tennis.calSufficient` | «Enough of our own tennis estimates for a calibration curve.» |
+| `record.tennis.binary` | «Binary Brier on the picked player: 0 perfect, 1 always wrong. Sealed values are whole percentages.» |
+| `record.receipts.title` | «Receipts, won and lost alike» |
+| `record.receipts.filter` | «Sport» |
+| `record.receipts.all` | «All» |
+| `record.receipts.football` | «Football» |
+| `record.receipts.tennis` | «Tennis» |
+| `record.receipts.sealed` | «Sealed (UTC)» |
+| `record.receipts.match` | «Match» |
+| `record.receipts.read` | «Outcome read» |
+| `record.receipts.price` | «Price» |
+| `record.receipts.marketPct` | «Market %» |
+| `record.receipts.estimatePct` | «Estimate %» |
+| `record.receipts.gap` | «Gap» |
+| `record.receipts.result` | «Result» |
+| `record.receipts.fingerprint` | «Fingerprint» |
+| `record.receipts.draw` | «Draw» |
+| `record.receipts.kickoff` | «kick-off» |
+| `record.receipts.top` | «top outcome · no pick shown» |
+| `record.receipts.pick` | «pick shown» |
+| `record.receipts.noMarket` | «no market at seal» |
+| `record.receipts.isMarket` | «is the market» |
+| `record.receipts.paper` | «paper» |
+| `record.receipts.corrected` | «corrected» |
+| `record.receipts.verdict.in_favour` | «in favour» |
+| `record.receipts.verdict.against` | «against» |
+| `record.receipts.verdict.void` | «void» |
+| `record.receipts.verdict.unresolved` | «unresolved» |
+| `record.receipts.older` | «Older receipts» |
+| `record.receipts.newer` | «Newer» |
+| `record.receipts.page` | «fn: Page {a}» |
+| `record.receipts.scroll` | «Scroll sideways for the full row.» |
+| `record.receipts.recipe` | «Fingerprint = SHA-256 of v1\|table\|id\|model\|sealed at\|p home\|p draw\|p away\|price. Recompute it from the row.» |
+| `record.receipts.recipeNote` | «The ledger stores no hash; this one is computed from the sealed fields, not at the seal.» |
+| `record.receipts.noReturn` | «No return figure: it would not be independent of us.» |
+| `record.receipts.fullHash` | «Full SHA-256» |
+| `record.receipts.empty` | «Nothing settled yet. A sealed estimate appears here once its match has a result.» |
+| `record.receipts.emptyFilter` | «No settled rows for this sport yet.» |
+| `record.corr.title` | «Corrections, shown as corrections» |
+| `record.corr.lede` | «fn: A result is never edited in place: a correction is a new row with its reason. {a} so far.» |
+| `record.corr.when` | «Corrected» |
+| `record.corr.match` | «Match» |
+| `record.corr.change` | «Before → after» |
+| `record.corr.reason` | «Reason» |
+| `record.corr.cause.late_result` | «fn: Result recovered late (source: {a})» |
+| `record.corr.cause.postponed` | «fn: Postponed beyond 48 h (to {a}): void» |
+| `record.corr.cause.no_pick_shown` | «fn: No pick was shown: the won/lost label was voided» |
+| `record.corr.cause.late_fill` | «fn: Result filled in late» |
+| `record.corr.cause.other` | «fn: Correction» |
+| `record.corr.byCause` | «By reason» |
+| `record.corr.settle.won` | «won» |
+| `record.corr.settle.lost` | «lost» |
+| `record.corr.settle.void` | «void» |
+| `record.corr.settle.unresolved` | «unresolved» |
+| `record.corr.none` | «No result has been corrected.» |
+| `record.corr.unavailable` | «Corrections didn’t load. The ledger keeps them.» |
+| `record.state.loading` | «Reading the ledger» |
+| `record.state.errorTitle` | «The record didn’t load.» |
+| `record.state.errorBody` | «The ledger is intact; this page couldn’t read it. Try again in a moment.» |
+| `record.state.retry` | «Try again» |
+| `record.state.empty` | «Nothing sealed yet.» |
+| `record.state.emptyBody` | «The record starts with the first estimate sealed before a kick-off.» |
+| `record.limited` | «limited sample» |

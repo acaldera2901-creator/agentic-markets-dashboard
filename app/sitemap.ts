@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { TOOL_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
 import { listPublishedPosts } from "@/lib/blog";
 import { GENERATED_AT, LAST_MODIFIED } from "@/lib/seo/last-modified.generated";
+import { envFlagOn } from "@/lib/redesign-flag";
 
 // #BLOG-SSR-0814: la sitemap ora legge i post published dal DB → ISR oraria,
 // altrimenti resterebbe congelata al build e un publish senza deploy non
@@ -39,7 +40,9 @@ const PUBLIC_ROUTES: Entry[] = [
   // direttamente nel prodotto. Contenuto informativo → weekly, non daily.
   { path: "/how-it-works", changeFrequency: "weekly" },
   { path: "/plans", changeFrequency: "weekly" },
-  { path: "/history", changeFrequency: "daily" },
+  // #REDESIGN-V3C F6: a flag acceso /history fa 308 su /record — la sitemap
+  // elenca la URL che risponde 200, non il redirect. Spento: invariata.
+  { path: envFlagOn(process.env.NEXT_PUBLIC_REDESIGN) ? "/record" : "/history", changeFrequency: "daily" },
   // #SEO-PACK-0810: pillar UK (brief 06) — contenuto statico, weekly.
   { path: "/ai-tennis-predictions", changeFrequency: "weekly" },
   { path: "/ai-football-predictions", changeFrequency: "weekly" },

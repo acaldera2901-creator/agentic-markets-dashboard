@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { v3cRewrites } from "./lib/v3c/rewrites";
+import { v3cRedirects, v3cRewrites } from "./lib/v3c/rewrites";
 
 // Security headers (#SEC-HARDENING michele-side, pending Andrea review/deploy).
 // Applied to every response. CSP shipped in Report-Only from #SEC-HARDENING
@@ -87,6 +87,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/weekly-pick", destination: "/weekly-model-case", permanent: true },
       { source: "/match-builder", destination: "/probability-view", permanent: true },
+      // #REDESIGN-V3C F6: a flag acceso /history e /risultati → /record (308); spento nessuna voce.
+      ...v3cRedirects(process.env.NEXT_PUBLIC_REDESIGN),
     ];
   },
   // #REDESIGN-V3C F3: con NEXT_PUBLIC_REDESIGN acceso "/" e "/predictions"

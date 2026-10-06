@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { v3cRewrites } from "@/lib/v3c/rewrites";
 
 vi.mock("../app/page", () => ({ default: function Dashboard() { return null; } }));
+vi.mock("@/components/v3c/record/RecordPage", () => ({ RecordPage: function RecordPage() { return null; } }));
 vi.mock("@/components/v3c/pages/V3cBoardPage", () => ({ V3cBoardPage: function V3cBoardPage() { return null; } }));
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -26,6 +27,7 @@ describe("rewrite del redesign (next.config.ts)", () => {
       beforeFiles: [
         { source: "/", destination: "/v3c" },
         { source: "/predictions", destination: "/v3c/predictions" },
+        { source: "/record", destination: "/v3c/record" },
       ],
     });
   });
@@ -53,5 +55,21 @@ describe("/v3c a flag spento è un 404, a flag acceso la board", () => {
     vi.stubEnv("NEXT_PUBLIC_REDESIGN", "1");
     const el = (await mod.default({ searchParams: sp })) as { props: { children: { props: { surface?: string } }[] } };
     expect(el.props.children[1].props.surface).toBe(surface);
+  });
+});
+
+describe("/v3c/record (F6)", () => {
+  it("a flag spento è un 404, a flag acceso il registro", async () => {
+    const mod = await import("./record/page");
+    vi.stubEnv("NEXT_PUBLIC_REDESIGN", "");
+    await expect(mod.default({ searchParams: sp })).rejects.toThrow("NEXT_NOT_FOUND");
+    vi.stubEnv("NEXT_PUBLIC_REDESIGN", "1");
+    const el = (await mod.default({ searchParams: sp })) as { props: { children: { type: { name?: string } }[] } };
+    expect(el.props.children[1].type.name).toBe("RecordPage");
+  });
+  it("canonical /record, lo stesso titolo del Track Record di oggi", async () => {
+    const [today, v3c] = await Promise.all([import("../history/page"), import("./record/page")]);
+    expect(v3c.metadata.alternates).toEqual({ canonical: "/record" });
+    expect(v3c.metadata.title).toBe(today.metadata.title);
   });
 });

@@ -16,7 +16,7 @@ import { ThemeToggle } from "./V3cShell";
 export const ROUTES = {
   board: "/",
   price: "/price-check",
-  record: "/history",
+  record: "/record", // F6
   books: "/partners",
   news: "/blog",
   pro: "/plans",

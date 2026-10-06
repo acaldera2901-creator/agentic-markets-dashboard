@@ -18,7 +18,7 @@ export const V3C_ROUTES: Record<NavKey, string> = {
   board: "/",
   tools: "/tools",
   price: "/probability-view", // F4 → /price-check
-  record: "/history", // F6 → /record
+  record: "/record", // F6: la pagina v3c (a flag acceso /history fa 308 qui)
   books: "/partners",
 };
 
