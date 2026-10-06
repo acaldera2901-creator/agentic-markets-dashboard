@@ -61,7 +61,8 @@ describe("inglese e italiano", () => {
 });
 
 describe("fallback dichiarato", () => {
-  it("le nove lingue senza dizionario sono esattamente FALLBACK_TO_EN e leggono l'inglese", () => {
+  it("dopo F10 nessuna lingua è senza dizionario: FALLBACK_TO_EN è vuoto e coincide con le mancanti", () => {
+    expect(FALLBACK_TO_EN).toEqual([]);
     const missing = TOOL_LOCALES.filter((l) => V3C_TOOLS_COPY[l] == null);
     expect([...missing].sort()).toEqual([...FALLBACK_TO_EN].sort());
     for (const l of FALLBACK_TO_EN) {

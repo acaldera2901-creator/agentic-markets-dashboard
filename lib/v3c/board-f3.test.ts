@@ -130,8 +130,9 @@ describe("copy v3c: EN fonte, IT completa, lessico del deck", () => {
     for (const k of en) expect(typeof get(V3C_COPY.it, k)).toBe(typeof get(V3C_COPY.en, k));
   });
 
-  it("le altre lingue ricadono sull'inglese", () => {
-    expect(copyFor("es")).toBe(V3C_COPY.en);
+  it("ogni lingua del sito ha la sua copy (F10); una lingua sconosciuta legge l'inglese", () => {
+    expect(copyFor("es")).toBe(V3C_COPY.es);
+    expect(copyFor("ja")).toBe(V3C_COPY.en);
     expect(copyFor("it")).toBe(V3C_COPY.it);
     expect(copyFor(null)).toBe(V3C_COPY.en);
   });

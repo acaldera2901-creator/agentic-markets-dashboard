@@ -39,6 +39,7 @@ import { FootballRow, TennisRow } from "./BoardRow";
 import type { RowTape } from "@/lib/v3c/tape";
 import { TAPE_HOURS } from "@/lib/v3c/tape";
 import "../fidelity.css";
+import { v3cLocale } from "@/lib/v3c/copy";
 
 type Props = {
   /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
@@ -93,7 +94,7 @@ function useNow(initialIso: string, frozen = false): Date {
 export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow, tapes }: Props) {
   const { lang, t } = useV3cCopy();
   const board = useMemo(() => (isPacked(boardIn) ? unpackBoard(boardIn) : boardIn), [boardIn]);
-  const locale = lang === "it" ? "it-IT" : "en-GB";
+  const locale = v3cLocale(lang);
   const tz = useLocalTimeZone();
   const now = useNow(nowIso, frozenNow);
   // live: /predictions apre su «Tutti i giorni» — tutte le partite, le imminenti prima, raggruppate per

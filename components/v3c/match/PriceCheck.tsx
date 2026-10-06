@@ -17,6 +17,7 @@ import { Fascia } from "../Fascia";
 import { Nastro } from "../Nastro";
 import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
+import { v3cLocale } from "@/lib/v3c/copy";
 
 export type PcOutcome = { outcome: Outcome; market_price: number | null; estimate_p: number; book_prices: V3BookPrice[] };
 export type PcMatch = { id: string; home: string; away: string; kickoff: string; league: string | null; blend: boolean; outcomes: PcOutcome[]; links: V3BookLink[] };
@@ -45,7 +46,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
   const { lang, t } = useV3cCopy();
   const c = matchCopyFor(lang);
   const tz = useLocalTimeZone();
-  const locale = lang === "it" ? "it-IT" : "en-GB";
+  const locale = v3cLocale(lang);
   const [id, setId] = useState<string>(initialId ?? "");
   const m = matches.find((x) => x.id === id) ?? null;
   const [raw, setRaw] = useState<string[]>(() => startPrices(m));
@@ -216,7 +217,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
                 </tr>
               </tbody>
             </table>
-            {m && E != null ? <Nastro market={Math.round(chk.noVig[li])} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} /> : null}
+            {m && E != null ? <Nastro market={Math.round(chk.noVig[li])} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} /> : null}
             <p className="v3c-fine">{m ? c.pc.fine : c.pc.fineNoEst}</p>
           </>
         )}

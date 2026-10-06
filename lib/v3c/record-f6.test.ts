@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { copyKeys } from "./copy";
+import { V3C_LANGS, copyKeys } from "./copy";
 import { V3C_RECORD_COPY, brierVerdict, recordCopyFor } from "./copy-record";
 import { classifyCorrection, footballReceipt, mergeReceipts, receiptFingerprint, summarizeCorrections, tennisReceipt, type FootballReceiptRow, type TennisReceiptRow } from "./receipts";
 import { buildRecord, type SealedFootballRow } from "./record";
@@ -185,8 +185,8 @@ describe("Brier side by side", () => {
 describe("copy", () => {
   const strings = (o: unknown): string[] =>
     typeof o === "string" ? [o] : typeof o === "function" ? [String((o as (...a: string[]) => string)("x", "y", "z", "w"))] : o && typeof o === "object" ? Object.values(o).flatMap(strings) : [];
-  it("never uses ROI, CLV, hit-rate, win rate or profit language (EN, IT)", () => {
-    for (const lang of ["en", "it"] as const) {
+  it("never uses ROI, CLV, hit-rate, win rate or profit language (all 11 languages)", () => {
+    for (const lang of V3C_LANGS) {
       const all = strings(V3C_RECORD_COPY[lang]).join(" \n ");
       for (const bad of [/\bROI\b/i, /\bCLV\b/i, /hit[- ]?rate/i, /win rate/i, /guarantee/i, /garantit/i, /beat(s|ing)? the market/i, /battiamo/i, /\block\b/i, /sure win/i, /profit/i]) {
         expect(all, `${lang}: ${bad}`).not.toMatch(bad);

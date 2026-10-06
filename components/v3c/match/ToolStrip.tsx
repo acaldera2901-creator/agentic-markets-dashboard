@@ -10,11 +10,12 @@ import type { StripItem } from "@/lib/v3c/match-view";
 import { matchCopyFor } from "@/lib/v3c/match-copy";
 import { eur, toolDef } from "@/lib/v3c/tools";
 import { ToolMark } from "../Monogramma";
+import { v3cLang } from "@/lib/v3c/copy";
 
 type Props = { title: string; all: string; items: readonly StripItem[]; lang: string; /** polish: il campo bankroll del Kelly, se la pagina lo offre */ bank?: React.ReactNode };
 
 export function ToolStrip({ title, all, items, lang, bank }: Props) {
-  const copy = getV3cToolsCopy(lang === "it" ? "it" : "en");
+  const copy = getV3cToolsCopy(v3cLang(lang));
   const mc = matchCopyFor(lang);
   return (
     <section className="v3c-mt-strip" aria-label={title}>
