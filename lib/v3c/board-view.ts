@@ -146,14 +146,14 @@ export function tennisRows(matches: V3BoardTennisMatch[], timeZone?: string): Te
 }
 
 export function leagueOf(m: V3BoardMatch): string {
-  return m.competition || m.league || "—";
+  return m.competition || m.league || "Football";
 }
 
 export function applyFilters<T extends BoardRowVM | TennisRowVM>(rows: T[], f: BoardFilters): T[] {
   return rows.filter((r) => {
     if (f.sport !== "all" && r.kind !== f.sport) return false;
     if (f.day !== "all" && r.day !== f.day) return false;
-    if (f.league && (r.kind === "football" ? leagueOf(r.m) : r.m.tournament ?? "—") !== f.league) return false;
+    if (f.league && (r.kind === "football" ? leagueOf(r.m) : r.m.tournament || "Tennis") !== f.league) return false;
     return true;
   });
 }
@@ -169,7 +169,7 @@ export function daysOf(rows: (BoardRowVM | TennisRowVM)[]): { day: string; n: nu
 export function leaguesOf(rows: (BoardRowVM | TennisRowVM)[]): { league: string; n: number }[] {
   const map = new Map<string, number>();
   for (const r of rows) {
-    const k = r.kind === "football" ? leagueOf(r.m) : r.m.tournament ?? "—";
+    const k = r.kind === "football" ? leagueOf(r.m) : r.m.tournament || "Tennis";
     map.set(k, (map.get(k) ?? 0) + 1);
   }
   return [...map.entries()].sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b)).map(([league, n]) => ({ league, n }));

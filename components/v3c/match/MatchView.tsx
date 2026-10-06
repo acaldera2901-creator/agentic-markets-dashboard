@@ -60,14 +60,16 @@ function useCtx(): Ctx {
 
 // ─── Testa ─────────────────────────────────────────────────────────────────
 
-function Head({ ctx, tab, home, away, kickoff, league, sealedAt }: { ctx: Ctx; tab: string; home: string; away: string; kickoff: string; league: string | null; sealedAt: string | null }) {
+function Head({ ctx, tab, home, away, kickoff, league, sport, sealedAt }: { ctx: Ctx; tab: string; home: string; away: string; kickoff: string; league: string | null; sport: "football" | "tennis"; sealedAt: string | null }) {
   const { c, t, tz, locale } = ctx;
+  // Briciola: torneo/campionato se c'è, altrimenti il nome dello sport — mai un trattino.
+  const crumb = league?.trim() || t.toolbar[sport];
   return (
     <>
       <p className="v3c-mt-crumbs">
         <Link href={V3C_ROUTES.board}>{c.crumbsBoard}</Link>
         <span aria-hidden="true">›</span>
-        <span>{league ?? "—"}</span>
+        <span>{crumb}</span>
       </p>
       <Fascia
         tab={tab}
@@ -306,7 +308,7 @@ function Football({ ctx, m, series, events, partners, links, more }: { ctx: Ctx;
   const choices: TapeChoice[] = m.outcomes.map((o) => ({ key: o.outcome, label: label(o.outcome), fair: fairPrice(o.estimate_p) }));
   return (
     <>
-      <Head ctx={ctx} tab={c.tabFootball} home={m.home} away={m.away} kickoff={m.kickoff} league={m.competition || m.league} sealedAt={m.sealed_at} />
+      <Head ctx={ctx} tab={c.tabFootball} home={m.home} away={m.away} kickoff={m.kickoff} league={m.competition || m.league} sport="football" sealedAt={m.sealed_at} />
 
       <section className="v3c-mt-step" aria-labelledby="v3c-s1">
         <StepHead n={1} id="v3c-s1" title={c.s1} />
@@ -495,7 +497,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   const big = hasGap ? null : marketOnly ? (lead.market_p ?? lead.estimate_p) : lead.estimate_p;
   return (
     <>
-      <Head ctx={ctx} tab={c.tabTennis} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sealedAt={m.sealed_at} />
+      <Head ctx={ctx} tab={c.tabTennis} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
       <section className="v3c-mt-step" aria-labelledby="v3c-s1">
         <StepHead n={1} id="v3c-s1" title={c.s1} />
         <div className="v3c-mt-score">
@@ -679,7 +681,7 @@ function OffBoard({ ctx, p }: { ctx: Ctx; p: Extract<MatchViewProps, { kind: "of
         ];
   return (
     <>
-      <Head ctx={ctx} tab={p.sport === "tennis" ? c.tabTennis : c.tabFootball} home={p.home} away={p.away} kickoff={p.kickoff} league={null} sealedAt={null} />
+      <Head ctx={ctx} tab={p.sport === "tennis" ? c.tabTennis : c.tabFootball} home={p.home} away={p.away} kickoff={p.kickoff} league={null} sport={p.sport} sealedAt={null} />
       <p className="v3c-mt-note" style={{ marginBottom: 24 }}>
         {c.offBoard}
       </p>

@@ -67,13 +67,14 @@ function BookLogo({ b }: { b: Pick<V3BookPrice, "bookmaker" | "name"> }) {
   );
 }
 
-function TimeCell({ kickoff, t, tz, locale, now }: { kickoff: string; t: V3cCopy; tz: string | undefined; locale: string; now: Date }) {
+function TimeCell({ kickoff, t, tz, locale, now, sport }: { kickoff: string; t: V3cCopy; tz: string | undefined; locale: string; now: Date; sport: "football" | "tennis" }) {
   const live = liveState(kickoff, now);
+  // Tennis: nessun minuto di gioco (e il contratto non porta il punteggio dei set) → solo «Live».
   if (live.live)
     return (
       <span className="v3c-r-time">
         <em className="v3c-live">{t.board.live}</em>
-        <small>{t.board.liveSince(live.minutes)}</small>
+        {sport === "football" ? <small>{t.board.liveSince(live.minutes)}</small> : null}
       </span>
     );
   return (
@@ -164,7 +165,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
   const scaleAria = lead.market_p == null ? t.board.scaleAriaNoMarket(pctInt(lead.estimate_p)) : t.board.scaleAria(pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g));
   return (
     <div className={["v3c-row", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="football">
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} />
+      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="football" />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.home }} away={{ name: m.away }} />
         <span className="v3c-r-name">
@@ -173,7 +174,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
             <span className="v3c-sr">, {t.board.rowAria(leadLabel, price2(lead.market_price), pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g))}</span>
           </button>
           <small>
-            {m.competition || m.league || "—"} · <b>{leadLabel}</b>
+            {m.competition || m.league || t.toolbar.football} · <b>{leadLabel}</b>
             {others && g != null ? <span className="v3c-r-others"> · {others}</span> : null}
           </small>
         </span>
@@ -292,7 +293,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       : t.tennis.scaleAriaModel(pctInt(lead.estimate_p));
   return (
     <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis">
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} />
+      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="tennis" />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.player1 }} away={{ name: m.player2 }} />
         <span className="v3c-r-name">
