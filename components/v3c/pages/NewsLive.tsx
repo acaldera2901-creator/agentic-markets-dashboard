@@ -3,8 +3,8 @@
 // /blog (= News) and «Most moved today». Mounted only when the server says the
 // news is on (NEWS_FOTMOB_ENABLED); otherwise News.tsx renders as before.
 // Every note shows its source, its time, a link to the original and the AI
-// label (or «not rewritten»). The strip says WHEN a note came, never WHY a
-// price moved.
+// label. Only rewritten notes reach this file (news2: never an original
+// headline). The strip says WHEN a note came, never WHY a price moved.
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useLocalTimeZone, useV3cLang } from "@/lib/v3c/lang.client";
 import { v3cLocale } from "@/lib/v3c/copy";
@@ -37,17 +37,15 @@ function relative(t: number, now: number, locale: string): string {
 }
 
 /** The text the visitor reads: IT for Italian, EN otherwise (tagged «In English» outside EN/IT). */
-export function noteText(card: NewsCard, lang: string): { title: string; body: string | null; ai: boolean; english: boolean } {
-  const n = card.note;
-  if (n.kind === "headline") return { title: n.title, body: null, ai: false, english: false };
-  const t = lang === "it" ? n.it : n.en;
-  return { title: t.title, body: t.body, ai: true, english: lang !== "en" && lang !== "it" };
+export function noteText(card: NewsCard, lang: string): { title: string; body: string; english: boolean } {
+  const t = lang === "it" ? card.note.it : card.note.en;
+  return { title: t.title, body: t.body, english: lang !== "en" && lang !== "it" };
 }
 
 function Label({ card, c, english }: { card: NewsCard; c: NewsCopy; english: boolean }) {
   return (
     <span className="v3c-nw-tag">
-      {card.note.kind === "ai" ? c.aiLabel(card.source) : c.notRewritten(card.source)}
+      {c.aiLabel(card.source)}
       {english ? <em> · {c.inEnglish}</em> : null}
     </span>
   );
@@ -63,14 +61,12 @@ function Card({ card, links, c, lang, tz, locale, now }: { card: NewsCard; links
       </span>
       <div>
         <span className="v3c-lab">{card.source}</span>
-        <h3 className="v3c-t-row v3c-pg-nw-h" lang={x.ai && !x.english ? lang : "en"}>
+        <h3 className="v3c-t-row v3c-pg-nw-h" lang={x.english ? "en" : lang}>
           {x.title}
         </h3>
-        {x.body ? (
-          <p className="v3c-small v3c-nw-body" lang={x.english ? "en" : lang}>
-            {x.body}
-          </p>
-        ) : null}
+        <p className="v3c-small v3c-nw-body" lang={x.english ? "en" : lang}>
+          {x.body}
+        </p>
         <p className="v3c-nw-meta">
           <Label card={card} c={c} english={x.english} />
           <a className="v3c-pg-more" href={card.url} rel="nofollow noopener noreferrer" target="_blank">
@@ -132,9 +128,9 @@ export function NewsLiveList({ live }: { live: NewsPage }) {
           </div>
         ) : null}
       </div>
-      {live.feed.state === "error" ? (
+      {live.feed.state !== "ok" ? (
         <div className="v3c-empty v3c-nw-state" role="status">
-          <p className="v3c-t-row">{c.error}</p>
+          <p className="v3c-t-row">{live.feed.state === "blocked" ? c.paused : live.feed.state === "error" ? c.error : c.pending}</p>
         </div>
       ) : shown.length === 0 ? (
         <div className="v3c-empty v3c-nw-state" role="status">
@@ -147,7 +143,7 @@ export function NewsLiveList({ live }: { live: NewsPage }) {
           ))}
         </ol>
       )}
-      <p className="v3c-fine v3c-nw-takedown">{c.takedown}</p>
+      {cards.length ? <p className="v3c-fine v3c-nw-takedown">{c.takedown}</p> : null}
     </section>
   );
 }

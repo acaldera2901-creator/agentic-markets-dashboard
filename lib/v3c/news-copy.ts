@@ -10,7 +10,6 @@ const EN = {
   updatedAt: (time: string) => `Updated at ${time}`,
   count: (n: number) => (n === 1 ? "1 note" : `${n} notes`),
   aiLabel: (source: string) => `Rewritten with AI from ${source}`,
-  notRewritten: (source: string) => `Headline from ${source}, not rewritten`,
   inEnglish: "In English",
   readOriginal: "Read the original",
   filterLabel: "Filter the news",
@@ -25,6 +24,8 @@ const EN = {
   draw: "Draw",
   error: "The news feed is unavailable right now. The guides below are unaffected.",
   empty: "No news in the feed right now.",
+  pending: "News is on its way. We only show a story once we have rewritten it. Our guides are below.",
+  paused: "The news source is paused. The guides below are unaffected.",
   guides: "Guides",
   guidesSub: "Written by us: numbers explained, no picks.",
   takedown: "Own this story? Write to info@betredge.com and we take it down within 24 hours.",
@@ -38,7 +39,6 @@ const IT: NewsCopy = {
   updatedAt: (time) => `Aggiornato alle ${time}`,
   count: (n) => (n === 1 ? "1 notizia" : `${n} notizie`),
   aiLabel: (source) => `Riscritto con l’IA a partire da ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Titolo di ${source}, non riscritto`, // REVIEW-NATIVE
   inEnglish: "In inglese",
   readOriginal: "Leggi l’originale",
   filterLabel: "Filtra le notizie",
@@ -53,6 +53,8 @@ const IT: NewsCopy = {
   draw: "Pareggio",
   error: "Il feed delle notizie ora non è disponibile. Le guide qui sotto non cambiano.",
   empty: "Nessuna notizia nel feed in questo momento.",
+  pending: "Notizie in arrivo. Mostriamo una notizia solo dopo averla riscritta. Le nostre guide sono qui sotto.",
+  paused: "La fonte delle notizie è in pausa. Le guide qui sotto non cambiano.",
   guides: "Guide",
   guidesSub: "Scritte da noi: numeri spiegati, nessun pronostico.",
   takedown: "La notizia è tua? Scrivi a info@betredge.com e la togliamo entro 24 ore.", // REVIEW-NATIVE
@@ -64,7 +66,6 @@ const DE: NewsCopy = {
   updatedAt: (time) => `Aktualisiert um ${time}`,
   count: (n) => (n === 1 ? "1 Meldung" : `${n} Meldungen`),
   aiLabel: (source) => `Mit KI umgeschrieben, Quelle: ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Schlagzeile von ${source}, nicht umgeschrieben`, // REVIEW-NATIVE
   inEnglish: "Auf Englisch",
   readOriginal: "Original lesen",
   filterLabel: "News filtern",
@@ -79,6 +80,8 @@ const DE: NewsCopy = {
   draw: "Unentschieden",
   error: "Der News-Feed ist gerade nicht verfügbar. Die Guides unten sind davon nicht betroffen.",
   empty: "Gerade keine Meldungen im Feed.",
+  pending: "News folgen in Kürze. Wir zeigen eine Meldung erst, wenn wir sie umgeschrieben haben. Unsere Guides stehen unten.",
+  paused: "Die News-Quelle ist pausiert. Die Guides unten sind davon nicht betroffen.",
   guides: "Guides",
   guidesSub: "Von uns geschrieben: Zahlen erklärt, keine Tipps.",
   takedown: "Deine Meldung? Schreib an info@betredge.com, wir entfernen sie innerhalb von 24 Stunden.", // REVIEW-NATIVE
@@ -90,7 +93,6 @@ const ES: NewsCopy = {
   updatedAt: (time) => `Actualizado a las ${time}`,
   count: (n) => (n === 1 ? "1 noticia" : `${n} noticias`),
   aiLabel: (source) => `Reescrito con IA a partir de ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Titular de ${source}, sin reescribir`, // REVIEW-NATIVE
   inEnglish: "En inglés",
   readOriginal: "Leer el original",
   filterLabel: "Filtrar las noticias",
@@ -105,6 +107,8 @@ const ES: NewsCopy = {
   draw: "Empate",
   error: "El feed de noticias no está disponible ahora. Las guías de abajo no cambian.",
   empty: "Ahora no hay noticias en el feed.",
+  pending: "Noticias en camino. Solo mostramos una noticia después de reescribirla. Nuestras guías están abajo.",
+  paused: "La fuente de noticias está en pausa. Las guías de abajo no cambian.",
   guides: "Guías",
   guidesSub: "Escritas por nosotros: números explicados, sin pronósticos.",
   takedown: "¿Es tu noticia? Escribe a info@betredge.com y la retiramos en 24 horas.", // REVIEW-NATIVE
@@ -116,7 +120,6 @@ const FR: NewsCopy = {
   updatedAt: (time) => `Mis à jour à ${time}`,
   count: (n) => (n === 1 ? "1 actu" : `${n} actus`),
   aiLabel: (source) => `Réécrit par IA à partir de ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Titre de ${source}, non réécrit`, // REVIEW-NATIVE
   inEnglish: "En anglais",
   readOriginal: "Lire l’original",
   filterLabel: "Filtrer les actus",
@@ -131,6 +134,8 @@ const FR: NewsCopy = {
   draw: "Match nul",
   error: "Le flux d’actus est indisponible pour le moment. Les guides ci-dessous ne changent pas.",
   empty: "Aucune actu dans le flux pour le moment.",
+  pending: "Actus en route. Nous ne montrons une actu qu’après l’avoir réécrite. Nos guides sont ci-dessous.",
+  paused: "La source d’actus est en pause. Les guides ci-dessous ne changent pas.",
   guides: "Guides",
   guidesSub: "Écrits par nous : chiffres expliqués, aucun pronostic.",
   takedown: "C’est votre article ? Écrivez à info@betredge.com, nous le retirons sous 24 heures.", // REVIEW-NATIVE
@@ -142,7 +147,6 @@ const NL: NewsCopy = {
   updatedAt: (time) => `Bijgewerkt om ${time}`,
   count: (n) => (n === 1 ? "1 bericht" : `${n} berichten`),
   aiLabel: (source) => `Met AI herschreven op basis van ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Kop van ${source}, niet herschreven`, // REVIEW-NATIVE
   inEnglish: "In het Engels",
   readOriginal: "Lees het origineel",
   filterLabel: "Nieuws filteren",
@@ -157,6 +161,8 @@ const NL: NewsCopy = {
   draw: "Gelijkspel",
   error: "De nieuwsfeed is nu niet beschikbaar. De gidsen hieronder veranderen niet.",
   empty: "Nu geen nieuws in de feed.",
+  pending: "Nieuws komt eraan. We tonen een bericht pas nadat we het herschreven hebben. Onze gidsen staan hieronder.",
+  paused: "De nieuwsbron is gepauzeerd. De gidsen hieronder veranderen niet.",
   guides: "Gidsen",
   guidesSub: "Door ons geschreven: cijfers uitgelegd, geen tips.",
   takedown: "Is dit jouw bericht? Mail info@betredge.com en we halen het binnen 24 uur weg.", // REVIEW-NATIVE
@@ -168,7 +174,6 @@ const PL: NewsCopy = {
   updatedAt: (time) => `Zaktualizowano o ${time}`,
   count: (n) => (n === 1 ? "1 wiadomość" : `${n} wiadomości`), // 2–4 and 5+ share the form
   aiLabel: (source) => `Przepisane przez AI na podstawie ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Nagłówek z ${source}, bez przepisania`, // REVIEW-NATIVE
   inEnglish: "Po angielsku",
   readOriginal: "Przeczytaj oryginał",
   filterLabel: "Filtruj wiadomości",
@@ -183,6 +188,8 @@ const PL: NewsCopy = {
   draw: "Remis",
   error: "Kanał wiadomości jest teraz niedostępny. Poradniki poniżej się nie zmieniają.",
   empty: "Teraz brak wiadomości w kanale.",
+  pending: "Wiadomości w drodze. Pokazujemy wiadomość dopiero po jej przepisaniu. Nasze poradniki są poniżej.",
+  paused: "Źródło wiadomości jest wstrzymane. Poradniki poniżej się nie zmieniają.",
   guides: "Poradniki",
   guidesSub: "Napisane przez nas: liczby wyjaśnione, bez typów.",
   takedown: "To twój tekst? Napisz na info@betredge.com, usuniemy go w ciągu 24 godzin.", // REVIEW-NATIVE
@@ -194,7 +201,6 @@ const PT: NewsCopy = {
   updatedAt: (time) => `Atualizado às ${time}`,
   count: (n) => (n === 1 ? "1 notícia" : `${n} notícias`),
   aiLabel: (source) => `Reescrito com IA a partir de ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Título de ${source}, não reescrito`, // REVIEW-NATIVE
   inEnglish: "Em inglês",
   readOriginal: "Ler o original",
   filterLabel: "Filtrar as notícias",
@@ -209,6 +215,8 @@ const PT: NewsCopy = {
   draw: "Empate",
   error: "O feed de notícias não está disponível agora. Os guias abaixo não mudam.",
   empty: "Agora não há notícias no feed.",
+  pending: "Notícias a caminho. Só mostramos uma notícia depois de a reescrever. Os nossos guias estão abaixo.",
+  paused: "A fonte de notícias está em pausa. Os guias abaixo não mudam.",
   guides: "Guias",
   guidesSub: "Escritos por nós: números explicados, sem prognósticos.",
   takedown: "A notícia é tua? Escreve para info@betredge.com e retiramo-la em 24 horas.", // REVIEW-NATIVE
@@ -224,7 +232,6 @@ const RU: NewsCopy = {
     return d === 1 && h !== 11 ? `${n} новость` : d >= 2 && d <= 4 && (h < 12 || h > 14) ? `${n} новости` : `${n} новостей`;
   },
   aiLabel: (source) => `Переписано с помощью ИИ по материалу ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Заголовок ${source}, без переписывания`, // REVIEW-NATIVE
   inEnglish: "На английском",
   readOriginal: "Читать оригинал",
   filterLabel: "Фильтр новостей",
@@ -239,6 +246,8 @@ const RU: NewsCopy = {
   draw: "Ничья",
   error: "Лента новостей сейчас недоступна. Руководства ниже не меняются.",
   empty: "Сейчас в ленте нет новостей.",
+  pending: "Новости скоро появятся. Мы показываем новость только после того, как перепишем её. Наши руководства ниже.",
+  paused: "Источник новостей приостановлен. Руководства ниже не меняются.",
   guides: "Руководства",
   guidesSub: "Написаны нами: цифры объяснены, без прогнозов.",
   takedown: "Это ваш материал? Напишите на info@betredge.com, и мы уберём его в течение 24 часов.", // REVIEW-NATIVE
@@ -250,7 +259,6 @@ const SV: NewsCopy = {
   updatedAt: (time) => `Uppdaterad kl. ${time}`,
   count: (n) => (n === 1 ? "1 nyhet" : `${n} nyheter`),
   aiLabel: (source) => `Omskriven med AI utifrån ${source}`, // REVIEW-NATIVE
-  notRewritten: (source) => `Rubrik från ${source}, inte omskriven`, // REVIEW-NATIVE
   inEnglish: "På engelska",
   readOriginal: "Läs originalet",
   filterLabel: "Filtrera nyheterna",
@@ -265,6 +273,8 @@ const SV: NewsCopy = {
   draw: "Oavgjort",
   error: "Nyhetsflödet är inte tillgängligt just nu. Guiderna nedan påverkas inte.",
   empty: "Inga nyheter i flödet just nu.",
+  pending: "Nyheter är på väg. Vi visar en nyhet först när vi har skrivit om den. Våra guider finns nedan.",
+  paused: "Nyhetskällan är pausad. Guiderna nedan påverkas inte.",
   guides: "Guider",
   guidesSub: "Skrivna av oss: siffror förklarade, inga tips.",
   takedown: "Är det din artikel? Skriv till info@betredge.com så tar vi bort den inom 24 timmar.", // REVIEW-NATIVE
@@ -276,7 +286,6 @@ const TR: NewsCopy = {
   updatedAt: (time) => `${time} itibarıyla güncellendi`,
   count: (n) => `${n} haber`,
   aiLabel: (source) => `${source} kaynağından yapay zekâ ile yeniden yazıldı`, // REVIEW-NATIVE
-  notRewritten: (source) => `${source} başlığı, yeniden yazılmadı`, // REVIEW-NATIVE
   inEnglish: "İngilizce",
   readOriginal: "Orijinali oku",
   filterLabel: "Haberleri filtrele",
@@ -291,6 +300,8 @@ const TR: NewsCopy = {
   draw: "Beraberlik",
   error: "Haber akışı şu anda kullanılamıyor. Aşağıdaki rehberler etkilenmez.",
   empty: "Şu anda akışta haber yok.",
+  pending: "Haberler yolda. Bir haberi yalnızca yeniden yazdıktan sonra gösteriyoruz. Rehberlerimiz aşağıda.",
+  paused: "Haber kaynağı duraklatıldı. Aşağıdaki rehberler etkilenmez.",
   guides: "Rehberler",
   guidesSub: "Bizim yazdıklarımız: sayılar açıklanır, tahmin yok.",
   takedown: "Haber senin mi? info@betredge.com adresine yaz, 24 saat içinde kaldıralım.", // REVIEW-NATIVE
