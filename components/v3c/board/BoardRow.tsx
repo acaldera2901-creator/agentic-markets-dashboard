@@ -17,6 +17,7 @@ import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, sealedStam
 import { trackEvent } from "@/lib/track-event";
 import { matchHref } from "@/lib/v3c/match-view";
 import { Monogrammi } from "../Monogramma";
+import { PartnerLogo, needsName } from "../PartnerLogo";
 import { Arrow } from "../Arrow";
 import { Sigillo } from "../Sigillo";
 import { RowScale } from "./RowScale";
@@ -40,7 +41,8 @@ type Common = {
 };
 
 /** Il chip del book: marchio · quota. Link affiliato reale (deep-link o landing del registro), tracciato. */
-export function BookChip({ b, t, surface, outcome }: { b: V3BookPrice; t: V3cCopy; surface: string; outcome: string }) {
+/** ui2: `compact` (la colonna stretta della riga) = solo logo e quota, il nome resta nel nome accessibile e nel title. */
+export function BookChip({ b, t, surface, outcome, compact = false }: { b: V3BookPrice; t: V3cCopy; surface: string; outcome: string; compact?: boolean }) {
   return (
     <a
       className="v3c-bchip"
@@ -48,26 +50,17 @@ export function BookChip({ b, t, surface, outcome }: { b: V3BookPrice; t: V3cCop
       target="_blank"
       rel="nofollow sponsored noopener noreferrer"
       data-partner={b.bookmaker}
+      title={b.name}
       onClick={(e) => {
         e.stopPropagation();
         trackEvent("partner_click", { partner_id: b.name, meta: { surface: `v3c_${surface}`, kind: "chip", outcome } });
       }}
     >
-      <BookLogo b={b} />
+      <PartnerLogo id={b.bookmaker} name={b.name} size="chip" decorative />
+      {!compact && needsName(b.bookmaker, b.name) ? <span className="v3c-bchip-n" aria-hidden="true">{b.name}</span> : null}
       <b>{price2(b.price)}</b>
       <span className="v3c-sr">{t.board.partnerAria(b.name)}</span>
     </a>
-  );
-}
-
-const BOOK_COLOUR: Record<string, string> = { fortuneplay: "#1B1F5E", ybets: "#0B6B4F" };
-
-function BookLogo({ b }: { b: Pick<V3BookPrice, "bookmaker" | "name"> }) {
-  const code = b.name.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase();
-  return (
-    <span className="v3c-bk" style={{ "--bk": BOOK_COLOUR[b.bookmaker] ?? "#14171C" } as React.CSSProperties} aria-hidden="true">
-      {code}
-    </span>
   );
 }
 
@@ -125,8 +118,8 @@ function SiteOnlyBooks({ list, t, surface }: { list: OddsOnSitePartner[] | undef
               trackEvent("partner_click", { partner_id: p.name, meta: { surface: `v3c_${surface}`, kind: "odds_on_site" } });
             }}
           >
-            <BookLogo b={{ bookmaker: p.partner_id, name: p.name }} />
-            <span>{p.name}</span>
+            <PartnerLogo id={p.partner_id} name={p.name} size="chip" decorative />
+            {needsName(p.partner_id, p.name) ? <span aria-hidden="true">{p.name}</span> : null}
             <small>{t.board.oddsOnSite}</small>
             <span className="v3c-sr">{t.board.partnerAria(p.name)}</span>
           </a>
@@ -240,7 +233,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
         <MeLine market={lead.market_p} estimate={lead.estimate_p} />
       </span>
       <span className="v3c-r-book">
-        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
+        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
       </span>
       <span className="v3c-chev" aria-hidden="true">
         {open ? "–" : "+"}
@@ -375,7 +368,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
         </span>
       )}
       <span className="v3c-r-book">
-        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
+        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
       </span>
       <span className="v3c-chev" aria-hidden="true">
         {open ? "–" : "+"}

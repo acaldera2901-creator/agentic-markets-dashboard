@@ -10,6 +10,19 @@ import { useV3cCopy } from "@/lib/v3c/lang.client";
 import "../fidelity.css";
 import { V3C_ROUTES } from "../V3cChrome";
 import { v3cLocale } from "@/lib/v3c/copy";
+import { pctInt } from "@/lib/v3c/board-view";
+import type { V3DayPick } from "@/lib/v3c/contracts";
+import { ResultPill, resultKindOf, scoreText } from "../ResultPill";
+
+/** ui2: quante righe restano aperte; le altre dietro «Show all N» (niente salto: chiuso al caricamento). */
+const OPEN_ROWS = 6;
+
+function pickLabel(p: V3DayPick, draw: string): string | null {
+  if (!p.pick) return null;
+  if (p.sport === "tennis") return p.pick;
+  const k = p.pick.toUpperCase();
+  return k === "HOME" ? p.home : k === "AWAY" ? p.away : k === "DRAW" ? draw : p.pick;
+}
 
 export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
   const { lang, t } = useV3cCopy();
@@ -26,6 +39,7 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
   }
   // fidelity: come il prototipo — una striscia di numeri: chiuse, attese a favore (Σ probabilità sigillate),
   // osservate, e il Brier della stima accanto a quello del mercato. Niente elenco di vinte/perse, niente tasso.
+  // ui2 (Andrea, 07/10): sotto la striscia ogni partita con il suo esito W/L/V/in attesa. Mai un tasso.
   const fb = data.football;
   const tn = data.tennis;
   const settled = fb.won + fb.lost + tn.won + tn.lost;
@@ -79,6 +93,42 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
           {t.yday.full}
         </a>
       </div>
+      {data.picks.length ? <DayList picks={data.picks} /> : null}
     </section>
+  );
+}
+
+/** ui2: ogni partita di ieri con il suo esito — pill W/L/V/in attesa (W e L con lo stesso peso), risultato, pick e stima sigillata. */
+function DayList({ picks }: { picks: V3DayPick[] }) {
+  const { t } = useV3cCopy();
+  const word = { won: t.yday.wonOne, lost: t.yday.lostOne, void: t.yday.voidOne, pending: t.yday.pending };
+  const rows = [...picks].sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
+  const row = (p: V3DayPick, i: number) => {
+    const kind = resultKindOf(p.result);
+    const pick = pickLabel(p, t.board.draw);
+    const score = scoreText(p.final_score);
+    return (
+      <li key={`${p.sport}|${p.home}|${p.away}|${p.kickoff}|${i}`} className="v3c-yd-row">
+        <ResultPill kind={kind} word={word[kind]} />
+        <span className="v3c-yd-m">
+          <b>
+            {p.home} — {p.away}
+          </b>
+          <small>{pick && p.p != null ? t.yday.picked(pick, pctInt(p.p)) : p.competition ?? (p.sport === "tennis" ? t.yday.tennis : t.yday.football)}</small>
+        </span>
+        <span className="v3c-score">{score ?? "—"}</span>
+      </li>
+    );
+  };
+  return (
+    <div className="v3c-yd-day">
+      <ol className="v3c-yd-rows">{rows.slice(0, OPEN_ROWS).map(row)}</ol>
+      {rows.length > OPEN_ROWS ? (
+        <details className="v3c-yd-all">
+          <summary>{t.yday.showAll(rows.length)}</summary>
+          <ol className="v3c-yd-rows">{rows.slice(OPEN_ROWS).map((p, i) => row(p, i + OPEN_ROWS))}</ol>
+        </details>
+      ) : null}
+    </div>
   );
 }

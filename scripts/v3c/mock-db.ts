@@ -337,8 +337,12 @@ createServer((req, res) => {
       writes += 1;
       console.warn(`[mock-db] ${req.method} ${req.url} (#${writes}) ignored`);
     }
-    res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify(rows));
+    // ui2: MOCK_DB_DELAY_MS=N ritarda le risposte della board (per guardare lo scheletro a occhio). Senza: nulla cambia.
+    const delay = /JOIN u ON u.source_id = pl.match_id/.test(String(body)) ? Number(process.env.MOCK_DB_DELAY_MS ?? 0) : 0;
+    setTimeout(() => {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(rows));
+    }, delay);
   });
 }).listen(PORT, "127.0.0.1", () => console.log(`[mock-db] fake Supabase on http://127.0.0.1:${PORT} — fictitious rows, no production access`));
 
