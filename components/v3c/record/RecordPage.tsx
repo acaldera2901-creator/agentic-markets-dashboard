@@ -23,6 +23,7 @@ import { RecordFascia, RecordFasciaMeta } from "./RecordFascia";
 import { RecordSummaryView } from "./RecordSummary";
 import { Receipts } from "./Receipts";
 import { Corrections } from "./Corrections";
+import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 import { RecordError, RecordSkeleton, ReceiptsSkeleton } from "./RecordStates";
 
 async function MetaBlock() {
@@ -66,12 +67,15 @@ export async function RecordPage({ searchParams }: { searchParams: Promise<Recor
         <Suspense fallback={<RecordSkeleton />}>
           <SummaryBlock />
         </Suspense>
+        {/* final3: banner colore (README §3b) — Metodo in testa alle ricevute (il solo GEN della pagina), Pro in fondo, separato */}
+        <ColourBanner theme="learn" gen />
         <Suspense fallback={<ReceiptsSkeleton />}>
           <ReceiptsBlock sport={sport} page={page} />
         </Suspense>
         <Suspense fallback={null}>
           <CorrectionsBlock />
         </Suspense>
+        <ColourBanner theme="pro" />
       </main>
     </V3cChrome>
   );

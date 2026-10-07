@@ -9,6 +9,7 @@ import Link from "next/link";
 import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
 import { hubPath } from "@/lib/tools/registry";
 import { Fascia } from "../Fascia";
+import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 
 function Info({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -105,6 +106,8 @@ export function V3cMethod() {
           {t.tools} <span aria-hidden="true">→</span>
         </a>
       </div>
+      {/* final3: banner colore (README §3b) — dopo il metodo, il registro */}
+      <ColourBanner theme="record" gen />
     </main>
   );
 }

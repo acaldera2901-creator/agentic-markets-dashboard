@@ -161,6 +161,13 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
     setOpenId(null);
     setPages(1);
     setFilters((f) => ({ ...f, ...patch }));
+    // final3: su /predictions lo sport scelto sta nella URL (?sport=…, quella dei banner Tennis/Calcio), così un ricarico non lo perde
+    if (surface === "predictions" && patch.sport && !frozenNow) {
+      const u = new URL(window.location.href);
+      if (patch.sport === "all") u.searchParams.delete("sport");
+      else u.searchParams.set("sport", patch.sport);
+      window.history.replaceState(window.history.state, "", u);
+    }
   };
 
   const dayName = (d: string) => (d === "live" ? t.board.liveGroup : d === today ? t.toolbar.today : d === tomorrow ? t.toolbar.tomorrow : dayShort(`${d}T12:00:00Z`, "UTC", locale));
@@ -283,7 +290,7 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
             }} onReset={() => set(DEFAULT_FILTERS)} surface={surface} />
         ) : (
           groups.map((g) => (
-            <div key={g.day} className="v3c-group" role="group" aria-label={g.day === "live" ? t.board.liveGroup : dayLong(`${g.day}T12:00:00Z`, "UTC", locale)}>
+            <div key={g.day} id={g.day === "live" && surface === "predictions" ? "live" : undefined} style={g.day === "live" ? { scrollMarginTop: 24 } : undefined} className="v3c-group" role="group" aria-label={g.day === "live" ? t.board.liveGroup : dayLong(`${g.day}T12:00:00Z`, "UTC", locale)}>
               {groups.length > 1 || surface === "predictions" ? (
                 <div className="v3c-group-h">
                   <h2 className="v3c-t-day">{dayName(g.day)}</h2>

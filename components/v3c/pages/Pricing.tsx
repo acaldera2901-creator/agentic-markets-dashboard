@@ -17,6 +17,7 @@ import { Arrow } from "../Arrow";
 import { PlanBadge } from "../PlanBadge";
 import { Fascia } from "../Fascia";
 import { WhyPaywall } from "../paywall/WhyPaywall";
+import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 
 export type PricingProps = {
   monthly: number;
@@ -147,6 +148,8 @@ export function V3cPricing({ monthly, annual, rails, promoUntil }: PricingProps)
         />
       </section>
 
+      {/* final3: banner colore (README §3b) — mai Pro qui; lo stacco porta al Metodo */}
+      <ColourBanner theme="learn" />
       <p className="v3c-fine v3c-pg-fine">{p.fine}</p>
     </main>
   );

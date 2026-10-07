@@ -25,6 +25,8 @@ import { oddsOnSitePartners } from "@/lib/price-books";
 import { packBoard } from "@/lib/v3c/board-pack";
 import { boardTapes } from "@/lib/v3c/tape-data.server";
 import "@/components/v3c/partners.css";
+import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
+import { liveState } from "@/lib/v3c/board-view";
 
 type Surface = "home" | "predictions";
 
@@ -101,7 +103,12 @@ async function MetaBlock() {
   return <FasciaMeta facts={{ n: all.length, sealed: all.filter((m) => m.sealed_at).length, generatedAt: b.data.generated_at, windowDays: b.data.window_days }} />;
 }
 
-async function BoardBlock({ surface, nowIso }: { surface: Surface; nowIso: string }) {
+/** final3: /predictions?sport=tennis|football apre la board su quello sport (i banner Tennis/Calcio); ogni altro valore = tutti. */
+function parseSport(v: string | string[] | undefined): "football" | "tennis" | undefined {
+  return v === "tennis" || v === "football" ? v : undefined;
+}
+
+async function BoardBlock({ surface, nowIso, sport }: { surface: Surface; nowIso: string; sport?: "football" | "tennis" }) {
   const [b, y, partners] = await Promise.all([getBoard(), getYesterday(), partnersAllowed()]);
   if (!b.ok) return <BoardError />;
   const board = forSurface(b.data, surface, new Date(nowIso));
@@ -110,7 +117,7 @@ async function BoardBlock({ surface, nowIso }: { surface: Surface; nowIso: strin
   const yesterday = y.ok ? { day: y.data.day, football: y.data.football, tennis: y.data.tennis } : null;
   // fidelity: il tape «open → now» di ogni riga, dai dati veri (partner_price_history)
   const tapes = await boardTapes(board.matches, board.tennis ?? []);
-  return <Board tapes={tapes} board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} liveSeed={liveFirst} />;
+  return <Board tapes={tapes} board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} liveSeed={liveFirst} initialFilters={sport ? { sport } : undefined} />;
 }
 
 async function BenchBlock({ nowIso }: { nowIso: string }) {
@@ -118,6 +125,19 @@ async function BenchBlock({ nowIso }: { nowIso: string }) {
   // il banco usa una partita di calcio con mercato: solo quelle viaggiano fino al browser
   const matches = b.ok ? forSurface(b.data, "home", new Date(nowIso)).matches.filter((m) => m.margin_removed != null) : [];
   return <Bench matches={matches} nowIso={nowIso} />;
+}
+
+/**
+ * final3: il solo banner colore della home (README §3b), in fondo, oltre uno schermo dalle chip partner
+ * della board (misurato: 1500 px a 1440, 2100 a 390): Live se una partita è davvero in corso
+ * (porta al gruppo live di /predictions, #live), altrimenti Record (il fondo Codex, unico GEN).
+ * Stessa geometria nei due casi: lo scheletro è il banner Record, nessuno spostamento.
+ */
+async function HomeBannerBlock({ nowIso }: { nowIso: string }) {
+  const b = await getBoard();
+  const now = new Date(nowIso);
+  const live = b.ok && [...b.data.matches, ...(b.data.tennis ?? [])].some((m) => liveState(m.kickoff, now).live);
+  return live ? <ColourBanner theme="live" /> : <ColourBanner theme="record" gen />;
 }
 
 async function YesterdayBlock() {
@@ -142,7 +162,7 @@ export async function V3cBoardPage({ surface, searchParams }: { surface: Surface
           }
         />
         <Suspense fallback={<BoardSkeleton rows={surface === "home" ? HOME_ROWS : 10} />}>
-          <BoardBlock surface={surface} nowIso={nowIso} />
+          <BoardBlock surface={surface} nowIso={nowIso} sport={surface === "predictions" ? parseSport(sp.sport) : undefined} />
         </Suspense>
         {surface === "home" ? (
           <>
@@ -153,6 +173,9 @@ export async function V3cBoardPage({ surface, searchParams }: { surface: Surface
               <YesterdayBlock />
             </Suspense>
             <Faq />
+            <Suspense fallback={<ColourBanner theme="record" gen />}>
+              <HomeBannerBlock nowIso={nowIso} />
+            </Suspense>
           </>
         ) : null}
       </main>

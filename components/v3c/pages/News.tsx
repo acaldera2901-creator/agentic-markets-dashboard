@@ -17,6 +17,7 @@ import { v3cLocale } from "@/lib/v3c/copy";
 import { newsCopyFor } from "@/lib/v3c/news-copy";
 import type { NewsPage } from "@/lib/v3c/news/news.server";
 import { MostMoved, NewsLiveList, UpdatedAt } from "./NewsLive";
+import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 
 export type NewsItem = {
   slug: string;
@@ -57,6 +58,7 @@ function Aside() {
   return (
     <aside className="v3c-pg-naside">
       <ToolsAside />
+      <ColourBanner theme="tennis" shape="tall" />
     </aside>
   );
 }
@@ -155,10 +157,13 @@ function LiveIndex({ posts, live }: { posts: NewsItem[]; live: NewsPage }) {
               <GuideList posts={posts} />
             )}
           </section>
+          {/* final3: banner colore (README §3b) — calcio in fondo alla colonna (il solo GEN), tennis nella colonna laterale */}
+          <ColourBanner theme="calcio" gen />
         </div>
         <aside className="v3c-pg-naside">
           {live.movers ? <MostMoved movers={live.movers} cards={cards} /> : null}
           <ToolsAside />
+          <ColourBanner theme="tennis" shape="tall" />
         </aside>
       </div>
     </main>
@@ -192,6 +197,7 @@ export function V3cNewsIndex({ posts, live = null }: { posts: NewsItem[]; live?:
           ) : (
             <GuideList posts={posts} />
           )}
+          <ColourBanner theme="calcio" gen />
         </div>
         <Aside />
       </div>

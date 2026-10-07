@@ -20,6 +20,7 @@ import { Fascia } from "../Fascia";
 import { SiteFrame } from "../Chrome";
 import { V3cShell } from "../V3cShell";
 import { HubBench, type HubGroup, type HubLine } from "./HubBench";
+import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 import "../v3c.css";
 
 export async function V3cToolsHub({ locale }: { locale: ToolLocale }) {
@@ -103,6 +104,8 @@ export async function V3cToolsHub({ locale }: { locale: ToolLocale }) {
             {c.hub.openBoard}
           </a>
         </section>
+        {/* final3: banner colore (README §3b) — in fondo all'hub, Pro (i tool restano Free) */}
+        <ColourBanner theme="pro" lang={locale} />
       </main>
       </SiteFrame>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(hubJsonLd(locale)) }} />
