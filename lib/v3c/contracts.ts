@@ -15,6 +15,7 @@
 //     in `books` with oddsAvailable=false and the reason (F7).
 
 import type { BookStatus, PartnerDirEntry } from "@/lib/price-books";
+import type { TennisEstimateKind } from "./tennis-estimate";
 
 export type Outcome = "home" | "draw" | "away";
 
@@ -105,6 +106,7 @@ export type TennisSide = "p1" | "p2";
  *                     (partner-market-v1, or an Elo row anchored to the market)
  */
 export type TennisProbabilityKind = "model" | "model_tempered" | "market_tempered";
+export type { TennisEstimateKind } from "./tennis-estimate";
 
 export type V3BoardTennisSide = {
   side: TennisSide;
@@ -168,6 +170,23 @@ export type V3BoardTennisMatch = {
   sides: [V3BoardTennisSide, V3BoardTennisSide];
   /** every partner, with oddsAvailable + reason (F7); see V3BoardMatch.books */
   books?: V3BookStatus[];
+  // ─── tennis2 (07/10): the displayed estimate, lib/v3c/tennis-estimate.ts. Optional, additive. ───
+  /**
+   * 'elo_blend_unsealed' = 0.1·raw Elo + 0.9·market without margin (Elo ≤ 6 h, ATP/WTA main tour),
+   * labelled «Elo-based, not sealed»; 'market_only' = no estimate, no gap. Never tempered (τ).
+   */
+  estimate_kind?: TennisEstimateKind;
+  /** the blend per player; null for market_only. NOT sides[].estimate_p (the served, tempered number). */
+  estimate_p?: { p1: number; p2: number } | null;
+  /** raw Elo of the last pre-start prediction_log snapshot with Elo and market (shadow log, not sealed) */
+  elo_p_raw?: { p1: number; p2: number } | null;
+  /** minutes between that snapshot and generated_at */
+  elo_age_min?: number | null;
+  elo_as_of?: string | null;
+  /** estimate_p − market_p in signed pp (= 0.1·(Elo − market)). NOT sides[].gap_pp (the sealed gap). */
+  gap_pp?: { p1: number; p2: number } | null;
+  /** false when |Elo − market| > 25 pp, the Elo is > 6 h old, or the circuit is not covered */
+  gap_visible?: boolean;
 };
 
 export type V3BoardResponse = {
@@ -198,6 +217,10 @@ export type V3BoardResponse = {
       /** matches whose sides carry a gap_pp */
       with_gap: number;
       with_book_price: Record<string, number>;
+      /** tennis2: rows with estimate_kind 'elo_blend_unsealed' (expected ≈ 16% of ATP/WTA board rows) */
+      with_estimate?: number;
+      /** tennis2: rows removed before the board — same match twice (partner + Elo), padel, doubles */
+      removed?: { duplicate: number; padel: number; doubles: number };
     };
   };
   notes: string[];

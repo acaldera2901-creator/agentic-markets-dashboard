@@ -140,7 +140,9 @@ function history(): Pp[] {
   return [...out, ...latestPrices().filter((p) => FOOTBALL.some((f) => f.history && fbKey(f) === p.team_pair_key) || TENNIS.slice(0, 2).some((t) => tnKey(t) === p.team_pair_key))];
 }
 
-type Tn = { id: string; tournament: string | null; kickoff: number; p1: string; p2: string; odds: [number, number]; elo: [number, number]; mv: string; sealed: boolean; books: boolean };
+type Tn = { id: string; tournament: string | null; kickoff: number; p1: string; p2: string; odds: [number, number]; elo: [number, number]; mv: string; sealed: boolean; books: boolean;
+  /** tennis2: minutes before now of the pre-start Elo snapshot (default 40); partner_tournament behind «Partner feed» */
+  eloAgeMin?: number; partnerTournament?: string };
 const TENNIS: Tn[] = [
   ["ATP Shanghai", "Jannik Sinner", "Alexander Zverev", 3, [1.42, 2.9], [0.66, 0.34], "tennis-elo-v4", true, true],
   ["ATP Shanghai", "Carlos Alcaraz", "Holger Rune", 5, [1.3, 3.6], [0.72, 0.28], "tennis-elo-v4", true, true],
@@ -152,6 +154,18 @@ const TENNIS: Tn[] = [
   id: `tennis:mock${i + 1}`, tournament: tournament == null ? null : String(tournament), kickoff: Math.round((now + Number(inH) * H) / (15 * 60_000)) * 15 * 60_000,
   p1: String(p1), p2: String(p2), odds: odds as [number, number], elo: elo as [number, number], mv: String(mv), sealed: Boolean(sealed), books: Boolean(books),
 }));
+// tennis2: every kind of tennis row the board must handle. Gauff–Andreeva's Elo is 7 h old (→ Market only);
+// Alcaraz–Rune's Elo is 33 pp off the market (→ estimate shown, gap hidden). The partner feed serves
+// Sinner–Zverev a second time (→ deduped), plus a Challenger (Market only), a doubles and a padel row (→ off the board).
+TENNIS[0].elo = [0.74, 0.26];
+TENNIS[1].elo = [0.99, 0.01];
+TENNIS[3].eloAgeMin = 7 * 60;
+TENNIS.push(
+  { id: "tennis:partner:dup-sinner-zverev", tournament: "Partner feed", partnerTournament: "ATP Masters Shanghai - Hard", kickoff: TENNIS[0].kickoff - 4 * H, p1: "Alexander Zverev", p2: "Jannik Sinner", odds: [2.85, 1.44], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
+  { id: "tennis:partner:braga", tournament: "Partner feed", partnerTournament: "ATP Challenger Braga - Clay", kickoff: Math.round((now + 7 * H) / (15 * 60_000)) * 15 * 60_000, p1: "Jaime Faria", p2: "Gonçalo Oliveira", odds: [1.55, 2.4], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: true },
+  { id: "tennis:partner:doubles", tournament: "Partner feed", partnerTournament: "WTA Wuhan - Hard (Doubles)", kickoff: Math.round((now + 8 * H) / (15 * 60_000)) * 15 * 60_000, p1: "Sara Errani/Jasmine Paolini", p2: "Coco Gauff/Jessica Pegula", odds: [1.9, 1.9], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
+  { id: "tennis:partner:padel", tournament: "Partner feed", partnerTournament: "Padel Tour Dusseldorf", kickoff: Math.round((now + 9 * H) / (15 * 60_000)) * 15 * 60_000, p1: "Federico Chingotto/Alejandro Galan", p2: "Javier Garrido/Juan Ignacio De Pascual", odds: [1.3, 3.4], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
+);
 const tnKey = (t: Tn) => teamPairKey("tennis", t.p1, t.p2, iso(t.kickoff))!;
 
 // livescores (#V3C-LIVESCORES): MOCK_LIVE=1 adds two football matches (one in play, one just finished) and one
@@ -247,6 +261,10 @@ function tennisSources() {
       model_as_of: iso(now - 40 * 60_000),
       sealed_at: t.sealed ? iso(t.kickoff - 20 * H) : null, sealed_p1: t.sealed ? mk[0] : null, sealed_p2: t.sealed ? mk[1] : null,
       sealed_odds: t.sealed ? t.odds[0] : null, sealed_signal_type: null,
+      partner_tournament: t.partnerTournament ?? null,
+      elo_p1: t.mv === "partner-market-v1" ? null : t.elo[0], elo_p2: t.mv === "partner-market-v1" ? null : t.elo[1],
+      elo_as_of: t.mv === "partner-market-v1" ? null : iso(Math.min(now - (t.eloAgeMin ?? 40) * 60_000, t.kickoff - 30 * 60_000)),
+      elo_home: t.mv === "partner-market-v1" ? null : t.p1,
     };
   });
 }

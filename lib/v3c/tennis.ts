@@ -31,6 +31,7 @@ import {
   type V3TennisRecordGroup,
 } from "./contracts";
 import { seriesCoverage } from "./line-movement";
+import { tennisEstimate } from "./tennis-estimate";
 import { market2way, roundP } from "./prob";
 import { mean, pairedDifference } from "./scoring";
 
@@ -170,6 +171,13 @@ export type TennisBoardSourceRow = {
   /** pick_ledger.odds / signal_type — what the sealed number is */
   sealed_odds: number | null;
   sealed_signal_type: string | null;
+  /** tennis2: feature_snapshot.partner.tournament (the real name behind «Partner feed») */
+  partner_tournament?: string | null;
+  /** tennis2: last prediction_log snapshot BEFORE the start with both raw Elo and market */
+  elo_p1?: number | null;
+  elo_p2?: number | null;
+  elo_as_of?: string | null;
+  elo_home?: string | null;
 };
 
 /**
@@ -217,6 +225,8 @@ export function buildTennisBoardMatch(
   };
 
   const pick = src.surfaced_pick;
+  // tennis2: the displayed estimate (0.1·Elo + 0.9·market, or market only) — lib/v3c/tennis-estimate.ts
+  const te = tennisEstimate({ ...src, market_p1: market?.p1 ?? null, market_p2: market?.p2 ?? null }, now);
   return {
     id: src.id,
     sport: "tennis",
@@ -239,6 +249,7 @@ export function buildTennisBoardMatch(
     gap_market: reason == null && atSeal ? { bookmaker: atSeal.bookmaker, captured_at: atSeal.captured_at } : null,
     gap_null_reason: reason,
     sides: [side("p1"), side("p2")],
+    ...te,
   };
 }
 
