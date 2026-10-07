@@ -11,6 +11,7 @@ import {
   type Family,
   type GrowthWindow,
   type KpiStatus,
+  MIN_ORDERS_FOR_SHARE,
   MISSING_KPIS,
   WINDOWS,
   formatAge,
@@ -21,8 +22,18 @@ import {
   splitPaying,
   windowLabel,
 } from "@/core/kpi";
-import { type EntryRow, HUMAN_FILTER_CRITERIA, INTERNAL_REFERRER_RULE, NO_COUNTRY_SPIKE_SHARE, noCountrySpike, splitEntries } from "@/core/estimate";
-import type { GrowthData, Result, SourceMeta } from "@/core/model";
+import {
+  type EntryRow,
+  HUMAN_ESTIMATE_MARGIN,
+  HUMAN_FILTER_CRITERIA,
+  INTERNAL_REFERRER_RULE,
+  NO_COUNTRY_SPIKE_SHARE,
+  noCountrySpike,
+  splitEntries,
+  splitFolded,
+} from "@/core/estimate";
+import type { Calibration, GrowthData, Result, SourceMeta } from "@/core/model";
+import { CLIENT_ERROR_DEDUP_SECONDS } from "@/core/sql";
 import gapsJson from "@/content/tracking-gaps.json";
 import { Lockup } from "./brand/Lockup";
 import { Chip, LockIcon, MARK_LABEL, type Mark, SectionTitle, Why, fmtInt } from "./primitives";
@@ -94,7 +105,7 @@ function entriesTile(d: GrowthData, window: string): TileProps {
           ? "page view senza fonte: n/d (lettura dei page view fallita)"
           : `page view senza nessuna fonte: ${fmtInt(noSource)} su ${fmtInt(pv!)} (${formatPct(ratio(noSource, pv!), 0) ?? "n/d"})`) +
         ` · interni (esclusi): ${fmtInt(internal)}`,
-      caveat: `Page view d'ingresso con utm_source, src, crm, ref o referrer esterno (ridotto al dominio), registrati anche senza consenso. Conta pagine d'ingresso, non persone: una ricarica conta due volte, crawler e test inclusi. Esclusi gli ingressi da nostre anteprime: ${INTERNAL_REFERRER_RULE}. La quota senza fonte è sui page view, non sugli ingressi: un ingresso diretto non si distingue da una pagina successiva (il tracker non marca l'ingresso), quindi è un limite superiore.`,
+      caveat: `Page view d'ingresso con utm_source, src, crm, ref o referrer esterno (ridotto al dominio), registrati anche senza consenso. Conta pagine d'ingresso, non persone: una ricarica conta due volte, crawler inclusi. Esclusi gli ingressi interni/test: ${INTERNAL_REFERRER_RULE}. La quota senza fonte è sui page view, non sugli ingressi: un ingresso diretto non si distingue da una pagina successiva (il tracker non marca l'ingresso), quindi è un limite superiore.`,
     };
   });
 }
@@ -110,7 +121,49 @@ function topEntries(all: Result<EntryRow[]>): Result<EntryRow[]> {
   };
 }
 
+const SOURCE_ROWS_SHOWN = 15;
+type SourceRow = { source: string; sessions: number };
+
+/** Sessions per source without the internal/test row, top 15 + the rest in one explicit row. */
+function topSources(all: Result<SourceRow[]>): Result<SourceRow[]> {
+  if (!all.ok) return all;
+  const ext = splitFolded(all.data, (r) => r.source, (r) => r.sessions).external;
+  if (ext.length <= SOURCE_ROWS_SHOWN) return { ok: true, data: ext };
+  const rest = ext.slice(SOURCE_ROWS_SHOWN - 1);
+  return { ok: true, data: [...ext.slice(0, SOURCE_ROWS_SHOWN - 1), { source: `(altre ${rest.length} fonti)`, sessions: rest.reduce((s, x) => s + x.sessions, 0) }] };
+}
+
+/** The «interni/test (esclusi)» line under a per-source table: its count and the rule. */
+function InternalFooter({ n }: { n: number }) {
+  return (
+    <div className="g-rule pt-2" data-internal-row>
+      <div className="flex justify-between text-[14px] g-muted">
+        <span>interni/test (esclusi)</span>
+        <span className="g-tab">{fmtInt(n)}</span>
+      </div>
+      <div className="g-meta">Non sommati sopra: {INTERNAL_REFERRER_RULE}.</div>
+    </div>
+  );
+}
+
 const fmtUsd = (n: number) => `$${n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const CAL_WINDOW = "tutte le partite chiuse · ultimo pronostico prima del calcio d'inizio";
+const fmtDec = (x: number, digits = 4) => x.toLocaleString("it-IT", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+/** Model vs market on the SAME matches, both numbers or n/d. */
+function marketLine(c: Calibration): string {
+  if (c.market_matches === 0 || c.brier_same === null || c.brier_market === null) return "mercato: n/d (nessuna partita con le probabilità di mercato)";
+  return `sulle ${fmtInt(c.market_matches)} partite con quote: modello ${fmtDec(c.brier_same)}, mercato ${fmtDec(c.brier_market)}`;
+}
+
+/** Plain statement of the comparison, never a claim: it says who is lower, nothing more. */
+function verdict(c: Calibration): string {
+  if (c.brier_same === null || c.brier_market === null) return "Il confronto col mercato non è calcolabile.";
+  if (c.brier_same > c.brier_market) return "Sulle stesse partite il modello NON fa meglio del mercato (il suo Brier è più alto).";
+  if (c.brier_same < c.brier_market) return "Sulle stesse partite il Brier del modello è più basso di quello del mercato: è una misura interna, non una prova di vantaggio economico.";
+  return "Sulle stesse partite modello e mercato hanno lo stesso Brier.";
+}
 
 // ─── Rendering pieces ───────────────────────────────────────────────────────
 
@@ -334,7 +387,7 @@ function missingLabels(family: Family): string[] {
 }
 
 /** The six KPI that open the page; the raw page views ride inside the estimate's card. */
-const PRIMARY = ["Page view probabilmente umani", "Sessioni", "Signup completati", "Nuovi profili", "Paganti verificati", "Incassato Paygate + PayPal"] as const;
+const PRIMARY = ["Page view probabilmente umani", "Sessioni", "Signup completati", "Nuovi profili", "Clienti esterni paganti", "Incassato esterno Paygate + PayPal"] as const;
 const PAIRED = "Page view (grezzi)";
 
 const FAMILY_HINT: Record<Family, string> = {
@@ -382,8 +435,8 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       status: "PROXY",
       badge: "STIMATO",
       value: fmtInt(h.probably_human),
-      sub: `su ${fmtInt(h.page_views)} grezzi · esclusi: ${fmtInt(h.excl_no_country)} senza paese, ${fmtInt(h.excl_country)} da paesi senza sessioni, ${fmtInt(h.excl_burst)} in raffica`,
-      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Il numero grezzo resta accanto, «Page view (grezzi)».`,
+      sub: `su ${fmtInt(h.page_views)} grezzi · esclusi: ${fmtInt(h.excl_no_country)} senza paese, ${fmtInt(h.excl_country)} da paesi senza sessioni, ${fmtInt(h.excl_burst)} in raffica · margine ampio: audit 07/10 109–310 a 7g, 685–2.148 a 30g`,
+      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Margine: ${HUMAN_ESTIMATE_MARGIN}. Il traffico probabilmente del team non è escluso. Il numero grezzo resta accanto, «Page view (grezzi)».`,
       needs: "user-agent letto (senza salvarlo) e filtro bot in /api/track — leva 2 di #SESSIONI-1006",
       owner: "Calde",
     })),
@@ -401,7 +454,7 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
     })),
     proxy("Sessioni /predictions", W, d.traffic, (t) => ({
       value: fmtInt(t.predictions_sessions),
-      caveat: `Sessioni con almeno un page_view su /predictions* (pagine partita incluse). ${sessCaveat}`,
+      caveat: `Sessioni con almeno un page_view su /predictions* (anche con prefisso lingua): è la lista dei pronostici, il prodotto non ha pagine partita separate. ${sessCaveat}`,
     })),
     fromResult(d.newProfiles, "Nuovi signup con referral", W, (p) => ({
       status: "LIVE",
@@ -431,7 +484,9 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           value: fmtInt(d.newProfiles.data.signups),
           window: W,
           sub: d.funnelEvents.ok
-            ? `tracking client: ${fmtInt(d.funnelEvents.data.signup_completed)} eventi signup_completed, ${fmtInt(d.funnelEvents.data.signup_started)} signup_started (${fmtInt(d.funnelEvents.data.signup_no_session)} senza sessione)`
+            ? has(d.funnelEvents.data, "signup_started_no_session")
+              ? `tracking client: ${fmtInt(d.funnelEvents.data.signup_completed)} eventi signup_completed, ${fmtInt(d.funnelEvents.data.signup_started)} signup_started (${fmtInt(d.funnelEvents.data.signup_started_no_session)} senza sessione)`
+              : "eventi di tracking: lettura nel formato vecchio, n/d"
             : "eventi di tracking: lettura fallita",
           caveat: "Profili creati dal form di registrazione nella finestra (unico inserimento che registra l'accettazione dei termini; esclusi gli account creati a mano). Gli eventi client possono perdersi o duplicarsi: qui servono solo a misurare il tracking.",
         }
@@ -448,64 +503,95 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       sub: "plan_view → plan_cta_click → checkout_opened",
       caveat: "Conteggi di eventi, non di persone: una persona può generarne più d'uno.",
     })),
-    proxy("Card aperte per sessione", W, d.funnelEvents, (f) => ({
-      value: f.card_open_sessions > 0 ? (f.card_open / f.card_open_sessions).toFixed(1) : null,
-      sub: `${fmtInt(f.card_open)} card_open in ${fmtInt(f.card_open_sessions)} sessioni`,
-      caveat: "Engagement anonimo, non per utente: card_open per sessione che ne ha aperta almeno una.",
-    })),
+    d.funnelEvents.ok && !has(d.funnelEvents.data, "card_open_with_session")
+      ? errorTile("Card aperte per sessione", W)
+      : proxy("Card aperte per sessione", W, d.funnelEvents, (f) => ({
+          value: f.card_open_sessions > 0 ? fmtDec(f.card_open_with_session / f.card_open_sessions, 1) : null,
+          sub: `${fmtInt(f.card_open_with_session)} card_open con sessione in ${fmtInt(f.card_open_sessions)} sessioni · ${fmtInt(f.card_open - f.card_open_with_session)} senza sessione esclusi`,
+          caveat:
+            "Engagement anonimo, non per utente: card_open con sessione diviso le sessioni che ne hanno aperta almeno una. Numeratore e denominatore hanno la stessa base (solo sessioni con consenso): le card aperte senza sessione non si possono attribuire a nessuna sessione e restano fuori. Parte delle sessioni è probabilmente del team (audit 07/10), non esclusa.",
+        })),
   ];
 
   // ── Revenue ──
   const paying = d.plans.ok ? splitPaying(d.plans.data) : null;
+  // #GROWTH-V7: internal/test accounts (content/internal-accounts.json) never count as customers or revenue.
+  const revOk = d.revenue.ok && has(d.revenue.data, "internal_usd_all", "internal_orders_w");
   const revenue: TileProps[] = [
     paying
       ? {
-          label: "Paganti verificati",
+          label: "Clienti esterni paganti",
           status: "LIVE",
-          value: fmtInt(paying.verified),
-          sub: `a parte, non paganti: ${fmtInt(paying.comp)} omaggio/manuali/senza fonte · ${fmtInt(paying.expiredNotSwept)} scaduti non ancora declassati (base/premium in tutto: ${fmtInt(paying.inclComp)})`,
-          window: NOW,
-          caveat: "Piano base/premium da un canale a pagamento (Paygate, PayPal, Shopify, Stripe) e non scaduto. Gli account omaggio e quelli scaduti sono contati a parte e non entrano nel numero.",
+          value: fmtInt(paying.external),
+          sub: `a parte, non contati: ${fmtInt(paying.internalWithPlan)} account interni/test con piano (di cui ${fmtInt(paying.internalAdminFull)} admin_full) · ${fmtInt(paying.comp)} omaggi/manuali/senza fonte · ${fmtInt(paying.externalNoPayment)} con piano da canale a pagamento ma nessun ordine pagato registrato · ${fmtInt(paying.expiredNotSwept)} scaduti non ancora declassati`,
+          window: `${NOW} · stato di tutti i profili`,
+          caveat:
+            "Profili esterni (non nell'elenco interni/test) con piano base/premium da un canale a pagamento (Paygate, PayPal, Shopify, Stripe), non scaduto e con almeno un ordine pagato registrato. È lo stato attuale di tutti i profili, non i profili creati nella finestra (quelli sono la colonna «Paganti esterni (oggi)» della Catena). Account interni/test = elenco di id in content/internal-accounts.json, generato in locale da scripts/internal-accounts.ts: un account nuovo del team resta esterno finché l'elenco non viene rigenerato.",
         }
-      : errorTile("Paganti verificati", NOW),
+      : errorTile("Clienti esterni paganti", NOW),
     paying
       ? {
           label: "Free",
           status: "LIVE",
           value: fmtInt(paying.free),
-          sub: `${fmtInt(paying.team)} account team (admin_full) esclusi`,
+          sub: `di cui ${fmtInt(paying.freeInternal)} account interni/test · ${fmtInt(paying.team)} account team (admin_full) non inclusi`,
           window: NOW,
-          caveat: "Profili con plan = free. Include account di test.",
+          caveat: "Profili con plan = free, account interni/test inclusi (contati a parte nel sottotitolo).",
         }
       : errorTile("Free", NOW),
-    fromResult(d.revenue, "Incassato Paygate + PayPal", W, (r) => ({
-      status: "LIVE",
-      value: fmtUsd(r.usd_w),
-      sub: `${fmtInt(r.orders_w)} ordini nella finestra`,
-      caveat: "Somma amount_usd degli ordini con paid_at nella finestra. Stripe non salva importi nel DB: escluso.",
-    })),
-    fromResult(d.revenue, "Incassato Paygate + PayPal (totale)", ALL, (r) => ({
-      status: "LIVE",
-      value: fmtUsd(r.usd_all),
-      sub: `${fmtInt(r.orders_all)} ordini pagati`,
-      caveat: `Stessa regola della torre (paid_at valorizzato). ${fmtInt(r.granted_unpaid)} accessi concessi senza pagamento registrato: non sommati.`,
-    })),
-    d.shopify.ok && has(d.shopify.data, "refunds_w", "refunds_all")
+    revOk && d.revenue.ok
+      ? {
+          label: "Incassato esterno Paygate + PayPal",
+          status: "LIVE",
+          value: fmtUsd(d.revenue.data.usd_w),
+          window: W,
+          sub: `${fmtInt(d.revenue.data.orders_w)} ordini esterni nella finestra · a parte, interni/test: ${fmtUsd(d.revenue.data.internal_usd_w)} (${fmtInt(d.revenue.data.internal_orders_w)} ordini)`,
+          caveat: "Somma amount_usd degli ordini con paid_at nella finestra, esclusi gli ordini degli account interni/test (elenco di id in content/internal-accounts.json). Stripe non salva importi nel DB: escluso. Shopify a parte: valuta ignota.",
+        }
+      : errorTile("Incassato esterno Paygate + PayPal", W),
+    revOk && d.revenue.ok
+      ? {
+          label: "Incassato esterno Paygate + PayPal (totale)",
+          status: "LIVE",
+          value: fmtUsd(d.revenue.data.usd_all),
+          window: ALL,
+          sub: `${fmtInt(d.revenue.data.orders_all)} ordini esterni pagati · ${fmtInt(d.revenue.data.granted_unpaid)} accessi esterni concessi senza pagamento, non sommati`,
+          caveat: "Stessa regola della torre (paid_at valorizzato), esclusi gli ordini degli account interni/test, che sono nella riga «Cassa interna/test».",
+        }
+      : errorTile("Incassato esterno Paygate + PayPal (totale)", ALL),
+    revOk && d.revenue.ok
+      ? {
+          label: "Cassa interna/test Paygate + PayPal (totale)",
+          status: "LIVE",
+          value: fmtUsd(d.revenue.data.internal_usd_all),
+          window: ALL,
+          sub: `${fmtInt(d.revenue.data.internal_orders_all)} ordini pagati da account interni/test · ${fmtInt(d.revenue.data.internal_granted_unpaid)} accessi concessi senza pagamento`,
+          caveat: "Pagamenti di prova del team (prezzi sotto listino, stesso account): non sono ricavi e non entrano in nessun totale. Mostrati solo perché non spariscano.",
+        }
+      : errorTile("Cassa interna/test Paygate + PayPal (totale)", ALL),
+    d.shopify.ok && has(d.shopify.data, "refunds_w", "refunds_all", "internal_orders_all")
       ? {
           label: "Ordini Shopify pagati",
           status: "LIVE",
           value: fmtInt(d.shopify.data.orders_w),
           window: W,
-          sub: `${fmtInt(d.shopify.data.refunds_w)} rimborsi nella finestra · da sempre: ${fmtInt(d.shopify.data.orders_all)} ordini, ${fmtInt(d.shopify.data.refunds_all)} rimborsi · importo ${d.shopify.data.amount_w.toLocaleString("it-IT", { minimumFractionDigits: 2 })} nella finestra (valuta del negozio)`,
-          caveat: "Un ordine orders/paid per order id (il webhook scarta le ripetizioni). Rimborsi = eventi refunds/create, contati a parte e non sottratti. L'importo è nella valuta del negozio, che il DB non registra: non si somma agli USD.",
+          sub: `${fmtInt(d.shopify.data.refunds_w)} rimborsi nella finestra · da sempre: ${fmtInt(d.shopify.data.orders_all)} ordini, ${fmtInt(d.shopify.data.refunds_all)} rimborsi · importo ${d.shopify.data.amount_w.toLocaleString("it-IT", { minimumFractionDigits: 2 })} nella finestra, valuta ignota · ${fmtInt(d.shopify.data.internal_orders_all)} ordini interni/test esclusi`,
+          caveat: "Un ordine orders/paid per order id (il webhook scarta le ripetizioni), esclusi gli ordini degli account interni/test. Rimborsi = eventi refunds/create, contati a parte e non sottratti. Valuta ignota: il DB non registra la valuta del negozio, quindi l'importo non si somma agli USD.",
         }
       : errorTile("Ordini Shopify pagati", W),
-    fromResult(d.revenue, "Quota annuale", ALL, (r) => ({
-      status: "LIVE",
-      value: formatPct(ratio(r.annual_all, r.orders_all), 0),
-      sub: `${fmtInt(r.annual_all)} annuali su ${fmtInt(r.orders_all)} ordini pagati`,
-      caveat: "Solo Paygate e PayPal (period). Shopify e Stripe non registrano il periodo qui. Campione piccolo.",
-    })),
+    revOk && d.revenue.ok
+      ? {
+          label: "Quota annuale",
+          status: "LIVE",
+          value: d.revenue.data.orders_all < MIN_ORDERS_FOR_SHARE ? "n/d" : formatPct(ratio(d.revenue.data.annual_all, d.revenue.data.orders_all), 0),
+          window: ALL,
+          sub:
+            d.revenue.data.orders_all < MIN_ORDERS_FOR_SHARE
+              ? `campione di ${fmtInt(d.revenue.data.orders_all)} ordini esterni pagati, sotto ${MIN_ORDERS_FOR_SHARE}: nessuna percentuale`
+              : `${fmtInt(d.revenue.data.annual_all)} annuali su ${fmtInt(d.revenue.data.orders_all)} ordini esterni pagati`,
+          caveat: `Solo Paygate e PayPal (period), esclusi gli ordini degli account interni/test. Shopify e Stripe non registrano il periodo qui. Con meno di ${MIN_ORDERS_FOR_SHARE} ordini esterni la quota non dice nulla: n/d.`,
+        }
+      : errorTile("Quota annuale", ALL),
     fromResult(d.funnelEvents, "Click partner (affiliate)", W, (f) => ({
       status: "LIVE",
       value: fmtInt(f.partner_click),
@@ -518,23 +604,23 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
   const retention: TileProps[] = [
     proxy("Abbonamenti pagati scaduti", W, d.lapsed, (l) => ({
       value: fmtInt(Number(l.lapsed)),
-      caveat: "Profili da canale a pagamento con plan_expires_at nella finestra e non rinnovati. È un conteggio di scadenze, non un churn rate.",
+      caveat: "Profili da canale a pagamento con plan_expires_at nella finestra e non rinnovati, esclusi gli account interni/test. È un conteggio di scadenze, non un churn rate.",
     })),
   ];
 
   // ── Product quality ──
   const quality: TileProps[] = [
-    fromResult(d.calibration, "Brier (servito)", "ultimi 20.000 pronostici chiusi", (c) => ({
+    fromResult(d.calibration, "Brier (servito)", CAL_WINDOW, (c) => ({
       status: "LIVE",
-      value: c.brier === null ? null : c.brier.toFixed(4),
-      sub: `n = ${fmtInt(c.n)} · somma sui 3 esiti (casa/pareggio/trasferta), scala 0–2 · riferimento «1/3 a ogni esito» = ${BRIER_UNIFORM_3WAY.toLocaleString("it-IT", { maximumFractionDigits: 3 })} · più basso è meglio`,
-      caveat: "Stessa definizione di /api/research/calibration (blocco served): per ogni pronostico la somma dei quadrati degli errori sui 3 esiti, poi la media. Non dipende dalla finestra selezionata.",
+      value: c.brier === null ? null : fmtDec(c.brier),
+      sub: `${fmtInt(c.matches)} partite chiuse, un pronostico per partita · ${marketLine(c)} · riferimento «1/3 a ogni esito» = ${fmtDec(BRIER_UNIFORM_3WAY, 3)} · più basso è meglio`,
+      caveat: `Dato interno di qualità, non un claim di marketing. Per ogni partita chiusa conta solo l'ultimo pronostico calcolato prima del calcio d'inizio (prediction_log ne salva decine per partita: contarli tutti pesava di più le partite aggiornate più spesso). Brier = somma dei quadrati degli errori sui 3 esiti (casa/pareggio/trasferta), scala 0–2, poi la media sulle partite. Il mercato (probabilità di mercato salvate col pronostico) è misurato sulle stesse partite in cui esiste. ${verdict(c)} Non dipende dalla finestra selezionata.`,
     })),
-    fromResult(d.calibration, "ECE (servito)", "ultimi 20.000 pronostici chiusi", (c) => ({
+    fromResult(d.calibration, "ECE (servito)", CAL_WINDOW, (c) => ({
       status: "LIVE",
-      value: c.ece === null ? null : c.ece.toFixed(4),
-      sub: "errore di calibrazione medio, 10 bin",
-      caveat: "Media su casa/pareggio/trasferta di |probabilità prevista − frequenza osservata|.",
+      value: c.ece === null ? null : fmtDec(c.ece),
+      sub: `errore di calibrazione medio, 10 bin · ${fmtInt(c.matches)} partite, un pronostico per partita`,
+      caveat: "Media su casa/pareggio/trasferta di |probabilità prevista − frequenza osservata|, sullo stesso pronostico per partita del Brier (l'ultimo prima del calcio d'inizio).",
     })),
     proxy("Freschezza quote", NOW, d.freshness, (f) => ({
       value: formatAge(f.odds_age_s),
@@ -551,16 +637,14 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       value: formatAge(f.tennis_age_s),
       caveat: "Età dell'ultimo computed_at in tennis_predictions (soglia torre: 6h).",
     })),
-    fromResult(d.funnelEvents, "Errori client", W, (f) => ({
-      status: "LIVE",
-      value: fmtInt(f.client_error),
-      caveat: "Eventi client_error dal boundary globale: schermate d'errore viste dagli utenti.",
-    })),
-    fromResult(d.freshness, "Pattern di errore server", "ultime 24h", (f) => ({
-      status: "LIVE",
-      value: fmtInt(f.error_patterns_24h),
-      caveat: "Righe in error_patterns_log nelle ultime 24h (stessa lettura della torre).",
-    })),
+    d.funnelEvents.ok && !has(d.funnelEvents.data, "client_error_dedup")
+      ? errorTile("Errori client", W)
+      : fromResult(d.funnelEvents, "Errori client", W, (f) => ({
+          status: "LIVE",
+          value: fmtInt(f.client_error_dedup),
+          sub: `${fmtInt(f.client_error)} eventi grezzi · ${fmtInt(f.client_error - f.client_error_dedup)} doppioni entro ${CLIENT_ERROR_DEDUP_SECONDS} s non contati`,
+          caveat: `Eventi client_error dal boundary globale, deduplicati: due errori identici (stessa sessione — o entrambi senza sessione —, stesso messaggio, digest e pagina) a ${CLIENT_ERROR_DEDUP_SECONDS} secondi o meno uno dall'altro contano una volta sola (il boundary li invia spesso due volte). Include crawler e bot: è un conteggio di errori, non di utenti colpiti.`,
+        })),
   ];
 
   const families: { family: Family; tiles: TileProps[] }[] = [
@@ -763,37 +847,29 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
                 <SmallTable
                   title="Ingressi per fonte"
                   mark="LIVE"
-                  caveat="Page view d'ingresso per fonte (utm_source, poi src/crm/ref/referrer), con e senza consenso. Pagine d'ingresso, non persone; crawler e test inclusi. Referrer ridotti al dominio, codici referral mascherati."
+                  caveat="Page view d'ingresso per fonte (utm_source, poi src/crm/ref/referrer), con e senza consenso. Pagine d'ingresso, non persone; crawler inclusi, fonti interne/test escluse (riga sotto). Referrer ridotti al dominio, codici referral mascherati."
                   rows={topEntries(d.entries)}
                   cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Ingressi", get: (r) => fmtInt(Number(r.entries)), right: true }]}
                   empty="Nessun page view d'ingresso con fonte nella finestra."
-                  footer={
-                    d.entries.ok && (
-                      <div className="g-rule pt-2">
-                        <div className="flex justify-between text-[14px] g-muted">
-                          <span>interni (esclusi)</span>
-                          <span className="g-tab">{fmtInt(splitEntries(d.entries.data).internal)}</span>
-                        </div>
-                        <div className="g-meta">Non sommati sopra: {INTERNAL_REFERRER_RULE}.</div>
-                      </div>
-                    )
-                  }
+                  footer={d.entries.ok && <InternalFooter n={splitEntries(d.entries.data).internal} />}
                 />
                 <SmallTable
                   title="Sessioni per fonte"
                   mark="PROXY"
-                  caveat={`Una fonte per sessione (utm_source, poi src/crm/ref/referrer del page_view d'ingresso). ${sessCaveat} Top 15. «(nessuna fonte)» è una riga esplicita, non una voce nascosta.`}
-                  rows={d.sources}
+                  caveat={`Una fonte per sessione (utm_source, poi src/crm/ref/referrer del page_view d'ingresso). ${sessCaveat} Top ${SOURCE_ROWS_SHOWN}, il resto in una riga. «(nessuna fonte)» è una riga esplicita, non una voce nascosta. Fonti interne/test escluse con la stessa regola degli ingressi (riga sotto).`}
+                  rows={topSources(d.sources)}
                   cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Sessioni", get: (r) => fmtInt(Number(r.sessions)), right: true }]}
                   empty="Nessuna sessione con consenso nella finestra."
+                  footer={d.sources.ok && <InternalFooter n={splitFolded(d.sources.data, (r) => r.source, (r) => r.sessions).internal} />}
                 />
                 <SmallTable
                   title="Nuovi signup per canale"
                   mark="LIVE"
-                  caveat="profiles.acquisition dei profili creati nella finestra. «(non registrata)» = profilo senza dato di acquisizione (i profili storici sono tutti così)."
-                  rows={d.channels}
+                  caveat="profiles.acquisition dei profili creati nella finestra. «(non registrata)» = profilo senza dato di acquisizione: il prodotto la salva solo con il consenso ai cookie, quindi un signup senza consenso resta così (e così sono i profili creati prima che l'attribuzione esistesse). Fonti interne/test escluse con la stessa regola degli ingressi (riga sotto)."
+                  rows={d.channels.ok ? { ok: true, data: splitFolded(d.channels.data, (r) => r.channel, (r) => r.n).external } : d.channels}
                   cols={[{ h: "Canale", get: (r) => r.channel }, { h: "Signup", get: (r) => fmtInt(Number(r.n)), right: true }]}
                   empty="Nessun nuovo profilo nella finestra."
+                  footer={d.channels.ok && <InternalFooter n={splitFolded(d.channels.data, (r) => r.channel, (r) => r.n).internal} />}
                 />
                 <SmallTable
                   title="Widget sui siti partner"

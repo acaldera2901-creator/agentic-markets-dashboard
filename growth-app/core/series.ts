@@ -131,6 +131,25 @@ export function compare(v: number[], n: number): Comparison {
   };
 }
 
+/**
+ * Days the audit of 07/10 found driven by our own or synthetic events. NOTHING is
+ * removed from any count: these anomalies only stop leading «Cosa è cambiato»
+ * and carry the note, so they are not read as growth.
+ */
+export const KNOWN_NOISE: readonly { day: string; metrics: readonly SeriesMetric[]; note: string }[] = [
+  { day: "2026-10-06", metrics: ["signup_started"], note: "raffica sintetica di signup avviati alle 04:09 (senza paese né sessione)" },
+  { day: "2026-10-06", metrics: ["page_views", "page_views_no_country"], note: "page view senza paese della stessa notte (04h)" },
+  { day: "2026-09-24", metrics: ["sessions", "page_views", "page_views_no_country"], note: "sessioni sintetiche 10:30–11:03, senza paese" },
+  { day: "2026-09-21", metrics: ["signup_started", "signup_completed", "new_profiles"], note: "signup di test del team" },
+  { day: "2026-10-01", metrics: ["partner_click"], note: "click partner probabilmente del team" },
+  { day: "2026-10-06", metrics: ["partner_click"], note: "click partner probabilmente del team" },
+];
+
+/** The audit note for a metric on a day, or null. */
+export function knownNoise(metric: SeriesMetric, day: string): string | null {
+  return KNOWN_NOISE.find((k) => k.day === day && k.metrics.includes(metric))?.note ?? null;
+}
+
 export interface Anomaly {
   index: number;
   day: string;

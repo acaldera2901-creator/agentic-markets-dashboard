@@ -51,39 +51,67 @@ export interface PlanRow {
   plan: string | null;
   plan_source: string | null;
   expired: boolean;
+  /** Our own / test account (content/internal-accounts.json). */
+  internal: boolean;
+  /** External paid-channel plan with no paid order recorded anywhere (same file). */
+  no_payment: boolean;
   n: number;
 }
 
 export interface PayingSplit {
-  /** base/premium from a paid channel and not expired. */
-  verified: number;
-  /** every base/premium row, comps and not-yet-swept expiries included. */
-  inclComp: number;
-  /** base/premium granted manually / by referral / with no recorded source. */
+  /**
+   * «Clienti esterni paganti»: base/premium from a paid channel, not expired,
+   * not an internal/test account, with a paid order recorded.
+   */
+  external: number;
+  /** Same as external but no paid order recorded anywhere: shown apart, never counted as paying. */
+  externalNoPayment: number;
+  /** Internal/test accounts holding base/premium/admin_full (any source). */
+  internalWithPlan: number;
+  /** …of which admin_full. */
+  internalAdminFull: number;
+  /** External base/premium granted manually / by referral / with no recorded source. */
   comp: number;
-  /** paid channel but plan_expires_at already passed (cron not yet run). */
+  /** External, paid channel, plan_expires_at already passed (cron not yet run). */
   expiredNotSwept: number;
+  /** Every base/premium row, internal and comps included. */
+  inclComp: number;
   free: number;
-  /** admin_full: team accounts, never counted as customers. */
+  /** …of which internal/test accounts. */
+  freeInternal: number;
+  /** admin_full in all (by the rules, every one is internal). */
   team: number;
 }
 
 export function splitPaying(rows: PlanRow[]): PayingSplit {
-  const out: PayingSplit = { verified: 0, inclComp: 0, comp: 0, expiredNotSwept: 0, free: 0, team: 0 };
+  const out: PayingSplit = { external: 0, externalNoPayment: 0, internalWithPlan: 0, internalAdminFull: 0, comp: 0, expiredNotSwept: 0, inclComp: 0, free: 0, freeInternal: 0, team: 0 };
   const paid = new Set<string>(PAID_CHANNELS);
   for (const r of rows) {
     const n = Number(r.n) || 0;
-    if (r.plan === "free") out.free += n;
-    else if (r.plan === "admin_full") out.team += n;
-    else if (r.plan === "base" || r.plan === "premium") {
-      out.inclComp += n;
-      if (!paid.has(r.plan_source ?? "")) out.comp += n;
-      else if (r.expired) out.expiredNotSwept += n;
-      else out.verified += n;
+    const onPlan = r.plan === "base" || r.plan === "premium";
+    if (r.plan === "free") {
+      out.free += n;
+      if (r.internal) out.freeInternal += n;
+    } else if (r.plan === "admin_full") {
+      out.team += n;
+      if (r.internal) {
+        out.internalWithPlan += n;
+        out.internalAdminFull += n;
+      }
     }
+    if (!onPlan) continue;
+    out.inclComp += n;
+    if (r.internal) out.internalWithPlan += n;
+    else if (!paid.has(r.plan_source ?? "")) out.comp += n;
+    else if (r.expired) out.expiredNotSwept += n;
+    else if (r.no_payment) out.externalNoPayment += n;
+    else out.external += n;
   }
   return out;
 }
+
+/** Below this many external paid orders a share (e.g. annual plans) is n/d: the sample says nothing. */
+export const MIN_ORDERS_FOR_SHARE = 5;
 
 /** Ratio as a fraction, or null when the denominator is 0 — never a fake 0%. */
 export function ratio(num: number, den: number): number | null {
@@ -194,10 +222,12 @@ export const MISSING_KPIS: MissingKpi[] = [
   { family: "retention", label: "Churn rate", why: "esiste solo il conteggio delle scadenze (tile PROXY «Abbonamenti pagati scaduti»), non il denominatore storico dei paganti", needs: "storico giornaliero dei paganti (snapshot) per calcolare la base di inizio periodo", owner: "Calde" },
   { family: "revenue", label: "MRR", why: "events.value è sempre 0; Stripe non salva importi nel DB; Shopify senza normalizzazione periodo/valuta", needs: "importo + periodo + valuta per ogni abbonamento attivo, da tutti i canali", owner: "Andrea" },
   { family: "revenue", label: "ARPU", why: "dipende dall'MRR, che manca", needs: "MRR (sopra)", owner: "Andrea" },
+  { family: "revenue", label: "Free → paid", why: "oggi 0 clienti esterni paganti con un pagamento registrato, nessuna definizione scritta della conversione e nessun id utente negli events per seguire chi passa da free a pagante", needs: "almeno 1 cliente esterno pagante, una definizione scritta da Steve (finestra, base dei free esterni, cosa conta come «paid») e l'id utente negli events (G01)", owner: "Calde" },
   { family: "revenue", label: "Trial → paid", why: "non esiste un trial", needs: "un trial nel prodotto + evento trial_started", owner: "Andrea" },
   { family: "revenue", label: "Revenue affiliate per utente", why: "registriamo solo i click, non le conversioni dei partner", needs: "report conversioni/commissioni dei partner (postback o export)", owner: "Tommy" },
   { family: "quality", label: "Uptime %", why: "nessun monitor esterno che registri la storia della disponibilità", needs: "uptime monitor con storico (es. check periodico salvato)", owner: "Calde" },
   { family: "quality", label: "Latenza quote", why: "abbiamo solo l'età dell'ultima quota salvata, non il ritardo rispetto al bookmaker", needs: "timestamp sorgente del bookmaker accanto a captured_at", owner: "Calde" },
   { family: "quality", label: "Accuratezza del tracking", why: "nessun riconciliatore fra events e fonti esterne (pagamenti, Vercel analytics)", needs: "job che confronti signup/ordini negli events con profiles/ordini", owner: "Calde" },
+  { family: "quality", label: "Pattern di errore server", why: "fonte non alimentata: error_patterns_log non ha mai ricevuto una riga (0 inserimenti da sempre, verificato il 07/10), quindi uno 0 lì non vorrebbe dire «nessun errore»", needs: "un writer che registri i pattern di errore server in error_patterns_log (dai log o dal monitor errori) e una prova che una riga arrivi davvero", owner: "Calde" },
   { family: "quality", label: "CLV verificato", why: "copertura della closing line all'1,8% (misurata il 17/09): troppo bassa per un numero onesto", needs: "cattura sistematica delle quote di chiusura", owner: "Calde" },
 ];

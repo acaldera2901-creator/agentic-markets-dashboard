@@ -15,8 +15,8 @@ function raw(over: Partial<RawResults> = {}): RawResults {
     ...base,
     traffic: ok([{ page_views: 10, page_views_no_session: 2, sessions: 4, tools_sessions: 1, predictions_sessions: 0 }]),
     lapsed: ok([{ lapsed: 0 }]),
-    freshness: ok([{ odds_age_s: null, football_age_s: 60, tennis_age_s: 120, error_patterns_24h: 0 }]),
-    calibration: ok([{ n: 0, brier: null, ece: null }]),
+    freshness: ok([{ odds_age_s: null, football_age_s: 60, tennis_age_s: 120 }]),
+    calibration: ok([{ matches: 0, brier: null, ece: null, market_matches: 0, brier_same: null, brier_market: null }]),
     ...over,
   };
 }
@@ -43,6 +43,11 @@ describe("normalize — absence is never a 0", () => {
     expect(d.calibration.ok && d.calibration.data.brier).toBeNull();
     expect(d.lapsed.ok && d.lapsed.data.lapsed).toBe(0);
     expect(d.traffic.ok && d.traffic.data.sessions).toBe(4);
+  });
+
+  it("a calibration row in the old per-row format (n, no matches) is a failure, never a 0", () => {
+    const d = normalize("7d", raw({ calibration: ok([{ n: 20000, brier: 0.6, ece: 0.03 }]) }), EXTRAS);
+    expect(d.calibration.ok).toBe(false);
   });
 
   it("an empty list is a genuine 'nothing', not a failure", () => {

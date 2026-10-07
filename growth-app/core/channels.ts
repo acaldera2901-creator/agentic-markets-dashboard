@@ -5,6 +5,7 @@
 // profiles.acquisition. A rate is only computed inside one base — never
 // "profiles / signup events", which mixes the two and can exceed 100%.
 
+import { INTERNAL_ENTRY_LABEL, foldInternal } from "./estimate";
 import type { Result, Row } from "./model";
 import { coarsenLabel } from "./privacy";
 
@@ -29,11 +30,15 @@ export const UNATTRIBUTED = new Set([
   "(sessione senza page_view nella finestra)",
 ]);
 
-/** Coarsen labels (referrer → registrable domain, referral codes masked) and sum rows that collapse. */
+/**
+ * Fold internal/test sources (on the RAW label, core/estimate.ts), coarsen labels
+ * (referrer → registrable domain, referral codes masked) and sum rows that collapse.
+ * Idempotent: a snapshot's already-merged rows pass through unchanged.
+ */
 export function mergeChain(rows: Row[]): Row[] {
   const acc = new Map<string, Row>();
   for (const r of rows) {
-    const label = coarsenLabel(String(r.source));
+    const label = coarsenLabel(foldInternal(String(r.source)));
     const prev = acc.get(label);
     if (prev) for (const k of COUNTS) prev[k] = Number(prev[k]) + Number(r[k]);
     else acc.set(label, { ...r, source: label });
@@ -53,9 +58,11 @@ export function normalizeChain(r: Result<Row[]>): Result<ChainRow[]> {
     }
     out.push(c);
   }
+  // Order: sources, then the attribution holes, then the excluded internal/test row.
+  const rank = (s: string) => (s === INTERNAL_ENTRY_LABEL ? 2 : UNATTRIBUTED.has(s) ? 1 : 0);
   out.sort(
     (a, b) =>
-      Number(UNATTRIBUTED.has(a.source)) - Number(UNATTRIBUTED.has(b.source)) ||
+      rank(a.source) - rank(b.source) ||
       b.sessions - a.sessions ||
       b.profiles - a.profiles ||
       a.source.localeCompare(b.source),
@@ -82,11 +89,18 @@ export interface ChainTotals extends Omit<ChainRow, "source"> {
   profilesUnattributed: number;
   /** Signup events with no session (no consent) or a session outside the window. */
   signupsUnattributed: number;
+  /** The internal/test row, excluded from every total above (null when there is none). */
+  internal: ChainRow | null;
 }
 
+/** Totals WITHOUT the internal/test row, which is returned apart. */
 export function chainTotals(rows: ChainRow[]): ChainTotals {
-  const t: ChainTotals = { sessions: 0, signup_started: 0, signup_completed: 0, profiles: 0, paying: 0, profilesUnattributed: 0, signupsUnattributed: 0 };
+  const t: ChainTotals = { sessions: 0, signup_started: 0, signup_completed: 0, profiles: 0, paying: 0, profilesUnattributed: 0, signupsUnattributed: 0, internal: null };
   for (const r of rows) {
+    if (r.source === INTERNAL_ENTRY_LABEL) {
+      t.internal = r;
+      continue;
+    }
     for (const k of COUNTS) t[k] += r[k];
     if (r.source === "(non registrata)") t.profilesUnattributed += r.profiles;
     if (r.source === "(signup senza sessione)" || r.source === "(sessione senza page_view nella finestra)") t.signupsUnattributed += r.signup_started;

@@ -1,9 +1,10 @@
 // Filone A — daily series, comparison with the previous period, anomalies.
 // Presentational only: receives the normalized series (or nothing) and renders.
 
-import { HUMAN_FILTER_CRITERIA, NO_COUNTRY_SPIKE_SHARE, noCountrySpike } from "@/core/estimate";
+import { HUMAN_ESTIMATE_MARGIN, HUMAN_FILTER_CRITERIA, NO_COUNTRY_SPIKE_SHARE, noCountrySpike } from "@/core/estimate";
 import type { GrowthData } from "@/core/model";
-import { ANOMALY_BASELINE_DAYS, ANOMALY_SIGMA, type Anomaly, SERIES_METRICS, SMALL_SAMPLE_BASE, anomalies, compare, windowDays } from "@/core/series";
+import { ANOMALY_BASELINE_DAYS, ANOMALY_SIGMA, type Anomaly, SERIES_METRICS, SMALL_SAMPLE_BASE, anomalies, compare, knownNoise, windowDays } from "@/core/series";
+import { CLIENT_ERROR_DEDUP_SECONDS } from "@/core/sql";
 import { Chip, SectionTitle, Why, fmtDay, fmtInt, fmtSigned } from "../primitives";
 
 /** Inline SVG sparkline: one series, anomalous days ringed + labelled, native hover per point. */
@@ -32,11 +33,11 @@ function Sparkline({ values, days, flagged }: { values: number[]; days: string[]
   );
 }
 
-function AnomalyNote({ a }: { a: Anomaly }) {
+function AnomalyNote({ a, noise }: { a: Anomaly; noise: string | null }) {
   return (
     <li className="g-anom text-[12px] font-medium">
       {a.z > 0 ? "▲" : "▼"} {fmtDay(a.day)}: {fmtInt(a.value)} <span className="g-muted font-normal">(media {ANOMALY_BASELINE_DAYS}g prima {a.mean.toFixed(1)} ± {a.sd.toFixed(1)}, {a.z > 0 ? "+" : ""}
-      {a.z.toFixed(1)}σ)</span>
+      {a.z.toFixed(1)}σ){noise && <> · non è crescita: {noise} (audit 07/10, non escluso dai conteggi)</>}</span>
     </li>
   );
 }
@@ -68,6 +69,9 @@ export function Trends({ data }: { data: GrowthData }) {
         <Chip mark="EST" />
         <span className="g-muted">· {raw === null ? "n/d" : fmtInt(raw)} grezzi</span>
         <Chip mark="LIVE" />
+      </p>
+      <p className="g-meta" data-sub="margine stima">
+        Margine della stima: {HUMAN_ESTIMATE_MARGIN}.
       </p>
       {spike?.spike && (
         <div role="alert" className="g-card px-4 py-3 text-[14px]" style={{ borderLeft: "4px solid var(--anomaly)" }}>
@@ -113,6 +117,8 @@ export function Trends({ data }: { data: GrowthData }) {
                     </div>
                   )}
                   {m.key === "page_views_no_country" && <div className="g-meta">test locali, job sintetici o crawler</div>}
+                  {m.key === "client_error" && <div className="g-meta">doppioni identici entro {CLIENT_ERROR_DEDUP_SECONDS} s contati una volta</div>}
+                  {m.key === "paid_orders" && <div className="g-meta">esclusi gli ordini degli account interni/test</div>}
                 </td>
                 {v && c ? (
                   <>
@@ -145,7 +151,7 @@ export function Trends({ data }: { data: GrowthData }) {
                           </summary>
                           <ul className="g-why-body flex flex-col gap-1">
                             {an.map((a) => (
-                              <AnomalyNote key={a.day} a={a} />
+                              <AnomalyNote key={a.day} a={a} noise={knownNoise(m.key, a.day)} />
                             ))}
                           </ul>
                         </details>

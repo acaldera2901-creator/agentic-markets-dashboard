@@ -13,6 +13,7 @@ import { coarsenRows } from "@/core/privacy";
 import type { RawSeries } from "@/core/series";
 import { LIST_KEYS, type QueryKey, SCALAR_KEYS, SERIES_KEYS, buildChainSql, buildSeriesSql, buildSql } from "@/core/sql";
 import { ttlCache } from "./cache";
+import { INTERNAL } from "./internal";
 import type { GrowthSource } from "./source";
 
 const STATEMENT_TIMEOUT_MS = 60_000;
@@ -54,18 +55,21 @@ async function readOnly(sql: Sql, query: string): Promise<Result<Row[]>> {
 
 const KEYS: QueryKey[] = [...SCALAR_KEYS, ...LIST_KEYS];
 
-/** Free-text labels are coarsened before they leave this module (snapshot or page). */
+/** Internal/test sources folded on the RAW label (core/estimate.ts), before any coarsening. */
+const fold = (rows: Row[], key: string): Row[] => rows.map((r) => ({ ...r, [key]: foldInternal(String(r[key])) }));
+
+/** Free-text labels are folded and coarsened before they leave this module (snapshot or page). */
 function sanitize(raw: RawResults): RawResults {
-  if (raw.sources.ok) raw.sources = { ok: true, data: coarsenRows(raw.sources.data, "source", "sessions") };
-  if (raw.channels.ok) raw.channels = { ok: true, data: coarsenRows(raw.channels.data, "channel", "n") };
-  // Internal referrers are folded on the RAW host, then everything is coarsened.
-  if (raw.entries.ok) raw.entries = { ok: true, data: coarsenRows(raw.entries.data.map((r): Row => ({ ...r, source: foldInternal(String(r.source)) })), "source", "entries") };
+  // #GROWTH-V7: the same internal/test fold for entries, sessions per source and signups per channel.
+  if (raw.sources.ok) raw.sources = { ok: true, data: coarsenRows(fold(raw.sources.data, "source"), "source", "sessions") };
+  if (raw.channels.ok) raw.channels = { ok: true, data: coarsenRows(fold(raw.channels.data, "channel"), "channel", "n") };
+  if (raw.entries.ok) raw.entries = { ok: true, data: coarsenRows(fold(raw.entries.data, "source"), "source", "entries") };
   return raw;
 }
 
 /** Live page load: one read-only transaction per query, so one failure stays one ERRORE tile. */
 export async function readRaw(sql: Sql, w: GrowthWindow): Promise<RawResults> {
-  const q = buildSql(w);
+  const q = buildSql(w, INTERNAL);
   const results = await Promise.all(KEYS.map((k) => readOnly(sql, q[k])));
   return sanitize(Object.fromEntries(KEYS.map((k, i) => [k, results[i]])) as RawResults);
 }
@@ -87,14 +91,14 @@ export async function readAllWindows(sql: Sql): Promise<{
     const windows = {} as Record<GrowthWindow, RawResults>;
     const chain = {} as Record<GrowthWindow, Result<Row[]>>;
     for (const { key } of WINDOWS) {
-      const q = buildSql(key);
+      const q = buildSql(key, INTERNAL);
       const raw = {} as RawResults;
       for (const k of KEYS) raw[k] = { ok: true, data: (await tx.unsafe(q[k])).map((r) => ({ ...r })) };
       windows[key] = sanitize(raw);
-      // Labels coarsened BEFORE they reach the snapshot file.
-      chain[key] = { ok: true, data: mergeChain((await tx.unsafe(buildChainSql(key))).map((r) => ({ ...r }))) };
+      // Labels folded and coarsened BEFORE they reach the snapshot file.
+      chain[key] = { ok: true, data: mergeChain((await tx.unsafe(buildChainSql(key, INTERNAL))).map((r) => ({ ...r }))) };
     }
-    const sq = buildSeriesSql();
+    const sq = buildSeriesSql(INTERNAL);
     const series = {} as RawSeries;
     for (const k of SERIES_KEYS) series[k] = { ok: true, data: (await tx.unsafe(sq[k])).map((r) => ({ ...r })) };
     return { dbNow: new Date(now as string | Date).toISOString(), windows, series, chain };
@@ -103,8 +107,8 @@ export async function readAllWindows(sql: Sql): Promise<{
 
 /** Live page load of the daily series and the source chain, each query in its own read-only transaction. */
 export async function readExtras(sql: Sql, w: GrowthWindow, asOf: string): Promise<RawExtras> {
-  const sq = buildSeriesSql();
-  const [chain, ...seriesRaw] = await Promise.all([readOnly(sql, buildChainSql(w)), ...SERIES_KEYS.map((k) => readOnly(sql, sq[k]))]);
+  const sq = buildSeriesSql(INTERNAL);
+  const [chain, ...seriesRaw] = await Promise.all([readOnly(sql, buildChainSql(w, INTERNAL)), ...SERIES_KEYS.map((k) => readOnly(sql, sq[k]))]);
   const series = Object.fromEntries(SERIES_KEYS.map((k, i) => [k, seriesRaw[i]])) as RawSeries;
   return { asOf, series, chain };
 }

@@ -42,13 +42,19 @@ export interface Freshness {
   odds_age_s: number | null;
   football_age_s: number | null;
   tennis_age_s: number | null;
-  error_patterns_24h: number;
 }
 
+/** One forecast per match: the last computed before kick-off (core/sql.ts calibration). */
 export interface Calibration {
-  n: number;
+  /** Settled matches scored. */
+  matches: number;
   brier: number | null;
   ece: number | null;
+  /** Matches that also have the three market probabilities. */
+  market_matches: number;
+  /** Our Brier on exactly those matches, and the market's. */
+  brier_same: number | null;
+  brier_market: number | null;
 }
 
 export interface GrowthData {
@@ -102,6 +108,22 @@ function mapRows<T>(r: Result<Row[]>, f: (row: Row) => T): Result<T[]> {
   return r.ok ? { ok: true, data: r.data.map(f) } : r;
 }
 
+/** An older snapshot (rows, not matches) has no `matches`: that is a failed read, never a 0. */
+function toCalibration(r: Row): Result<Calibration> {
+  if (r.matches === undefined || r.market_matches === undefined) return { ok: false, error: "calibrazione nel formato vecchio (righe, non partite)" };
+  return {
+    ok: true,
+    data: {
+      matches: num(r.matches),
+      brier: numOrNull(r.brier),
+      ece: numOrNull(r.ece),
+      market_matches: num(r.market_matches),
+      brier_same: numOrNull(r.brier_same),
+      brier_market: numOrNull(r.brier_market),
+    },
+  };
+}
+
 export function normalize(w: GrowthWindow, raw: RawResults, extras: RawExtras): GrowthData {
   for (const k of [...SCALAR_KEYS, ...LIST_KEYS]) {
     if (!raw[k]) throw new Error(`RawResults senza la query ${k}`);
@@ -120,6 +142,8 @@ export function normalize(w: GrowthWindow, raw: RawResults, extras: RawExtras): 
       plan: r.plan === null || r.plan === undefined ? null : String(r.plan),
       plan_source: r.plan_source === null || r.plan_source === undefined ? null : String(r.plan_source),
       expired: Boolean(r.expired),
+      internal: Boolean(r.internal),
+      no_payment: Boolean(r.no_payment),
       n: num(r.n),
     })),
     revenue: toNums(one(raw.revenue)),
@@ -136,13 +160,10 @@ export function normalize(w: GrowthWindow, raw: RawResults, extras: RawExtras): 
             odds_age_s: numOrNull(freshness.data.odds_age_s),
             football_age_s: numOrNull(freshness.data.football_age_s),
             tennis_age_s: numOrNull(freshness.data.tennis_age_s),
-            error_patterns_24h: num(freshness.data.error_patterns_24h),
           },
         }
       : freshness,
-    calibration: calibration.ok
-      ? { ok: true, data: { n: num(calibration.data.n), brier: numOrNull(calibration.data.brier), ece: numOrNull(calibration.data.ece) } }
-      : calibration,
+    calibration: calibration.ok ? toCalibration(calibration.data) : calibration,
     // An absent series makes every metric fail with MISSING_READ (see normalizeSeries).
     trends: normalizeSeries(extras.series ?? ({} as RawSeries), extras.asOf),
     chain: extras.chain ? normalizeChain(extras.chain) : { ok: false, error: MISSING_READ },

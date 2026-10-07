@@ -13,7 +13,17 @@ ruolo DB **read-only dedicato**, dietro password, e i numeri chiave coincidono c
 
 ## Stato
 
-- **v6 (06/10, branch `feat/growth-v6`)** — redesign della UI secondo `docs/design-v6/README.md`:
+- **v7 (07/10, branch `feat/growth-v7`)** — correzioni dei due audit di verità del 07/10. Paganti/ricavi
+  escludono gli account interni/test (elenco di id in `content/internal-accounts.json`, vedi sotto):
+  tile «Clienti esterni paganti» (0) con a parte interni/test con piano, omaggi e piani senza ordine pagato;
+  «Incassato esterno» e «Cassa interna/test» separati; Shopify «valuta ignota»; quota annuale n/d sotto 5
+  ordini esterni. Brier/ECE sull'ultimo pronostico prima del calcio d'inizio (1 per partita) col mercato
+  sulle stesse partite. Errori client deduplicati (identici entro 5 s). «Pattern di errore server» e
+  «Free → paid» passano a MANCA. Fonti interne/test esplicite piegate in una riga esclusa in ingressi,
+  sessioni per fonte, signup per canale e Catena (mai il paese). «Non fidarti di» dichiara il traffico
+  nostro/sintetico senza escluderlo; margine della stima «probabilmente umani». Gap G14 (flag interno).
+  Verificato: `verify` 205/205 e 0 divergenze per cella (snapshot `dbNow 2026-10-07T08:49:16Z`).
+- **v6 (06/10, branch `feat/growth-v6`)** — redesign della UI secondo `docs/design-v6/README.md`:- **v6 (06/10, branch `feat/growth-v6`)** — redesign della UI secondo `docs/design-v6/README.md`:
   tema carta di default e navy opzionale (stessi token, scelta in localStorage), lockup SVG ufficiale,
   Big Shoulders + Archivo via `next/font`; home nell'ordine barra → «Oggi in 30 secondi» (cosa è
   cambiato dalle serie di Andamento · non fidarti di) → «Conteggi delle fasi · unità diverse» (senza
@@ -113,6 +123,27 @@ npm test                                                          # lo snapshot 
 mai su Vercel né nel repo. Lo script scrive `data/snapshot.json` solo se **tutte** le
 letture riescono; poi commit del JSON e nuovo deploy preview. Il banner in pagina
 mostra il `dbNow` della transazione in ora di Roma («Snapshot del … — non live»).
+
+## Account interni/test (`content/internal-accounts.json`)
+
+Paganti e ricavi escludono gli account del team e di test. La dashboard **non legge mai e-mail o
+identificativi**: riceve solo un elenco di id (profili e ordini) con un motivo in codice, generato in
+locale con la connessione admin in sola lettura:
+
+```bash
+npx tsx scripts/internal-accounts.ts --env-file ~/Desktop/agentic-markets/.env
+```
+
+Lo script stampa solo **conteggi per motivo** (mai id, mai e-mail) e scrive il file solo se passa la
+stessa validazione della build (niente `@`, id solo uuid / id Shopify). Regole in
+`scripts/internal-rules.ts` (testate): `team-plan` (admin_full), `maven-domain`, `team-handle`
+(calde, mavenagency, tommy), `test-orders` (ordini sotto il listino $14,99); ordini `internal-account`
+/ `test-price`; `paidPlanNoPayment` = profili esterni con piano da canale a pagamento ma nessun ordine
+pagato registrato (non contati come clienti). **Rigenerarlo** quando nasce un account del team, dopo un
+ordine di prova o prima di uno snapshot: finché non lo si rigenera, un account nuovo resta «esterno».
+Poi `npm run snapshot`, `npm run verify` (ricontrolla gli ordini interni ricollegandoli per
+identificativo dentro SQL) e commit del JSON. Il ruolo `growth_ro` ha bisogno solo di `profiles.id`
+oltre alle colonne già lette.
 
 ## Attivare il LIVE
 

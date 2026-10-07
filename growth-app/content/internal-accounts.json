@@ -1,0 +1,358 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-10-07T08:38:40.301Z",
+  "rules": [
+    "team-plan: plan admin_full o plan_source team/admin/admin_full",
+    "maven-domain: e-mail del dominio mavenagency.io",
+    "team-handle: la parte prima della chiocciola contiene calde, mavenagency, tommy",
+    "test-orders: ha generato un ordine Paygate/PayPal sotto il prezzo di listino più basso ($14.99)",
+    "ordini: internal-account = ordine di un account interno (collegato per identificativo); test-price = ordine Paygate/PayPal sotto listino di chiunque",
+    "no-paid-order: profilo esterno con piano base/premium da canale a pagamento ma nessun ordine pagato registrato (Paygate/PayPal con paid_at, Shopify orders/paid; Stripe solo con stripe_subscription_id)",
+    "un account ha un solo motivo: il primo che vale, in quest'ordine"
+  ],
+  "accounts": [
+    {
+      "id": "0f3fdda4-8570-49bf-b567-a31f45c6ba18",
+      "reason": "maven-domain"
+    },
+    {
+      "id": "1c24e2e3-c1f2-4c73-ba8d-e2886baed8a4",
+      "reason": "team-handle"
+    },
+    {
+      "id": "22142bca-e4c4-4c97-9610-51f5a6b3c99f",
+      "reason": "maven-domain"
+    },
+    {
+      "id": "3292741d-361f-4d6c-983e-dec79a28b721",
+      "reason": "maven-domain"
+    },
+    {
+      "id": "38c1d6c6-4c0e-4b46-a6b8-2cfa6f6030db",
+      "reason": "maven-domain"
+    },
+    {
+      "id": "4ec674cf-4628-47ff-a0a5-2eceef46de7e",
+      "reason": "maven-domain"
+    },
+    {
+      "id": "790109ab-04e6-43f9-8ac1-d2f2f172e03a",
+      "reason": "team-plan"
+    },
+    {
+      "id": "8d86eb4a-dbd1-4e7b-9102-b9a26830e7b0",
+      "reason": "team-plan"
+    },
+    {
+      "id": "9335184c-1027-444d-bd89-3495033ca5f4",
+      "reason": "team-handle"
+    },
+    {
+      "id": "e28d3295-0739-435d-9ac9-deb47028e1bc",
+      "reason": "team-handle"
+    }
+  ],
+  "orders": [
+    {
+      "table": "paygate_orders",
+      "id": "08011088-0106-4810-9340-2b39a2f4abfc",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "105f71ff-f39f-48d9-a50c-0982b7165c69",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "12c3aaf1-f27e-4d3c-88b6-bb7fb76f9fa5",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "134ce40e-bbde-4586-8645-8623d9aaf15e",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "13bf781e-abef-44b0-afe1-c4d72b220c54",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "179afe6d-b195-454b-a61c-fd472d4c0b9a",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "1b1091c6-9e16-4b14-9e45-9ec35570edd9",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "1d1b0c49-e88b-4915-ae70-6f231200372c",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "20331b52-1da7-47ac-8f56-570cef6129fa",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "25ef0f4b-1a28-4c79-bc10-6005dd529b1a",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "2ca13435-fec6-4a54-8476-30464cd05e73",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "2d52e715-659c-4a3e-af09-5e73e6194f9b",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "2ff7f311-c0ac-4ddd-9a8d-6efef8589df8",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "31266b15-7333-48d2-978e-30c6c0f1694e",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "33eab457-2de5-406a-a708-380a9f7416cf",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "3a57ff3a-9856-4092-94e5-5889a23e76be",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "4069fc3b-8b0a-4921-98dc-c47ae3ec996e",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "40e8ff50-e96a-414c-a81f-7f5972eece21",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "46a6edd3-a95b-4337-b052-72bd2f775a43",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "5445bd01-46ca-42e3-84e6-a1e5f4168bdf",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "58c31983-c8e0-4425-8f01-18d32ba2e62a",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "5a55f8d3-6cd6-4124-8c9a-d928cf88416e",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "5c632cde-cbbc-4dd8-8a4b-7e74f3776c3f",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "60cceee9-8afa-4a2c-8f19-a32095158176",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "674293e8-56d2-48df-8341-c01651b70c4d",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "6dda149d-432e-4e68-91ee-0eb74d1dd9bc",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "7078cf2a-4e1b-4026-8b91-3e1a7b0c4bbd",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "707de430-842e-4e41-87a4-21dc2e4b5d0b",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "78fb5da5-d797-4012-9c13-dbc2bb23df3f",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "790844ec-e84b-4aff-862f-088c2148b829",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "794015e1-5031-465b-98e4-3d815f4f273b",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "7b6c7215-339d-4cb8-9805-bba28d4b2e52",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "7c796d32-3298-4dfc-9dc8-067723e52a70",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "8655f30c-3a27-4777-b00f-5dd462724225",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "91c13288-23b7-46b6-9857-41eaf10b2a5b",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "9c33a5ba-43bc-4c1e-a065-65be586efd3c",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "9ec898c1-8bb6-44e9-83d7-8d503f360683",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "b300a72f-5b66-44ce-a439-085eb10b989f",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "b9167979-f783-4bb9-815f-12560e8c52d9",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "c0e74491-f240-4a0d-b1cb-ec34f9eb7998",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "c1aa7b8c-7b00-447a-a29d-a3cff8a47477",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "d1793e73-401b-4588-832f-007a967dd2a3",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "d256fe47-a5ea-48b9-9fc3-9ec86dbc6e94",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "d5a5793b-9bbb-4bc9-a2e7-d66326302850",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "d72c3408-63ba-4a45-94b9-c8ee8c65c3a6",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "da9037e1-9d7b-45fc-8be3-11316453853e",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "ddf2e2a4-0b7f-4085-9e23-4a04845a6888",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "e310c222-e5f1-4946-ba3f-2b3586df6696",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "e4dc0d93-6a50-432e-8a2e-309d17ea1f8d",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "e893a0ea-d1e2-45b6-9342-b57f6d7bcba6",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "e9bb30be-1324-4411-b67f-54d1f5d74019",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "ea5f9f30-237b-41d7-88a1-49a95481dfa9",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "ebebb620-8f03-4e82-8ad6-c461d888819e",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "ed099cc6-212f-4a15-a419-c1dc55b9630c",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "eef241b0-0f8d-4e88-8c8b-19aa593910ff",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "f102fd55-560e-42b8-97fc-54071b48c313",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "f6f598fd-dfff-43c1-8592-3d9da923b56f",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "f93f82df-405c-4de4-ac17-a61139de2d7d",
+      "reason": "internal-account"
+    },
+    {
+      "table": "paygate_orders",
+      "id": "fe575f16-7618-48e0-8256-c2d9e7ae56f0",
+      "reason": "internal-account"
+    }
+  ],
+  "paidPlanNoPayment": [
+    {
+      "id": "31eea77c-122c-4183-b3b3-d742e4dc9799",
+      "reason": "no-paid-order"
+    }
+  ]
+}

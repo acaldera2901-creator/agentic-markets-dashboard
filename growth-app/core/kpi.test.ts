@@ -36,32 +36,59 @@ describe("windows", () => {
 });
 
 describe("splitPaying — comp exclusion", () => {
+  const ext = { internal: false, no_payment: false };
   const rows = [
-    { plan: "premium", plan_source: "paygate", expired: false, n: 3 },
-    { plan: "base", plan_source: "paygate", expired: false, n: 1 },
-    { plan: "premium", plan_source: "shopify", expired: true, n: 2 },
-    { plan: "premium", plan_source: "manual", expired: false, n: 4 },
-    { plan: "premium", plan_source: null, expired: false, n: 2 },
-    { plan: "base", plan_source: "referral", expired: false, n: 1 },
-    { plan: "admin_full", plan_source: null, expired: false, n: 2 },
-    { plan: "free", plan_source: null, expired: false, n: 36 },
-    { plan: "free", plan_source: "shopify", expired: true, n: 1 },
-    { plan: "pending_payment", plan_source: null, expired: false, n: 5 },
+    { plan: "premium", plan_source: "paygate", expired: false, ...ext, n: 3 },
+    { plan: "base", plan_source: "paygate", expired: false, ...ext, n: 1 },
+    { plan: "premium", plan_source: "shopify", expired: true, ...ext, n: 2 },
+    { plan: "premium", plan_source: "manual", expired: false, ...ext, n: 4 },
+    { plan: "premium", plan_source: null, expired: false, ...ext, n: 2 },
+    { plan: "base", plan_source: "referral", expired: false, ...ext, n: 1 },
+    { plan: "admin_full", plan_source: null, expired: false, ...ext, internal: true, n: 2 },
+    { plan: "free", plan_source: null, expired: false, ...ext, n: 36 },
+    { plan: "free", plan_source: "shopify", expired: true, ...ext, n: 1 },
+    { plan: "pending_payment", plan_source: null, expired: false, ...ext, n: 5 },
   ];
 
-  it("counts only paid-channel, non-expired base/premium as verified", () => {
+  it("counts only external, paid-channel, non-expired base/premium as paying", () => {
     const s = splitPaying(rows);
-    expect(s.verified).toBe(4);
+    expect(s.external).toBe(4);
     expect(s.expiredNotSwept).toBe(2);
     expect(s.comp).toBe(7); // manual + NULL + referral
     expect(s.inclComp).toBe(13);
-    expect(s.verified + s.comp + s.expiredNotSwept).toBe(s.inclComp);
+    expect(s.external + s.comp + s.expiredNotSwept).toBe(s.inclComp);
   });
 
   it("never counts team accounts or free as paying", () => {
     const s = splitPaying(rows);
     expect(s.team).toBe(2);
     expect(s.free).toBe(37);
+  });
+
+  // #GROWTH-V7 — the state measured on 07/10: 4 «verified» of which 3 internal and 1 with no paid order.
+  it("internal accounts and plans without a paid order are never external paying customers", () => {
+    const s = splitPaying([
+      { plan: "premium", plan_source: "paygate", expired: false, internal: true, no_payment: false, n: 2 },
+      { plan: "base", plan_source: "paygate", expired: false, internal: true, no_payment: false, n: 1 },
+      { plan: "premium", plan_source: "paygate", expired: false, internal: false, no_payment: true, n: 1 },
+      { plan: "premium", plan_source: "manual", expired: false, internal: true, no_payment: false, n: 2 },
+      { plan: "premium", plan_source: "manual", expired: false, internal: false, no_payment: false, n: 2 },
+      { plan: "admin_full", plan_source: null, expired: false, internal: true, no_payment: false, n: 2 },
+      { plan: "free", plan_source: null, expired: false, internal: true, no_payment: false, n: 3 },
+      { plan: "free", plan_source: null, expired: false, internal: false, no_payment: false, n: 35 },
+    ]);
+    expect(s.external).toBe(0);
+    expect(s.externalNoPayment).toBe(1);
+    expect(s.internalWithPlan).toBe(7); // 2 + 1 + 2 + 2 admin_full
+    expect(s.internalAdminFull).toBe(2);
+    expect(s.comp).toBe(2); // only the external manual ones
+    expect(s.free).toBe(38);
+    expect(s.freeInternal).toBe(3);
+  });
+
+  it("an internal account is internal even on a paid channel with an expired plan", () => {
+    const s = splitPaying([{ plan: "premium", plan_source: "shopify", expired: true, internal: true, no_payment: false, n: 1 }]);
+    expect(s).toMatchObject({ external: 0, expiredNotSwept: 0, internalWithPlan: 1 });
   });
 
   it("paid channels match the subscriptions cron", () => {
@@ -111,7 +138,7 @@ describe("proxy audit (06/10)", () => {
 
   it("Shopify counts paid orders and refunds apart, never netting them", () => {
     const q = buildSql("30d").shopify;
-    expect(q).toMatch(/event_type = 'orders\/paid'\)::int AS orders_all/);
+    expect(q).toMatch(/event_type = 'orders\/paid' AND NOT event_id = ANY\(.*\)\)::int AS orders_all/);
     expect(q).toMatch(/event_type = 'refunds\/create' AND processed_at >= .*AS refunds_w/);
     expect(q).toContain("interval '30 days'");
   });

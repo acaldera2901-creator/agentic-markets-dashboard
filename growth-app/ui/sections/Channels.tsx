@@ -3,6 +3,7 @@
 // groups, and the holes in the attribution are rows of their own.
 
 import { MIN_SIGNUPS_FOR_PCT, UNATTRIBUTED, chainRates, chainTotals } from "@/core/channels";
+import { INTERNAL_ENTRY_LABEL, INTERNAL_REFERRER_RULE } from "@/core/estimate";
 import { formatPct, ratio, windowLabel } from "@/core/kpi";
 import type { GrowthData } from "@/core/model";
 import { Chip, Why, fmtInt } from "../primitives";
@@ -37,10 +38,14 @@ export function Channels({ data }: { data: GrowthData }) {
         Sessioni e signup vengono dagli eventi delle sole sessioni con consenso: in questa finestra {pvNoSess ?? "una parte"} dei page_view non ha sessione e non è
         attribuibile.
         {t.signupsUnattributed > 0 && ` ${fmtInt(t.signupsUnattributed)} su ${fmtInt(t.signup_started)} signup avviati non hanno una fonte (righe in fondo).`} Profili e
-        paganti vengono da profiles.acquisition, che esiste solo per i signup recenti: gli storici sono NULL
+        paganti vengono da profiles.acquisition, che il prodotto salva solo con il consenso ai cookie: un signup senza consenso resta senza fonte, come i profili creati
+        prima che l&apos;attribuzione esistesse
         {` (${fmtInt(t.profilesUnattributed)} su ${fmtInt(t.profiles)} profili della finestra, riga «(non registrata)»)`}. Le due basi non si dividono fra loro:
-        «profili / signup» non è un tasso. Con meno di {MIN_SIGNUPS_FOR_PCT} signup una fonte mostra solo i conteggi (n/d al posto della percentuale). Paganti =
-        profili creati nella finestra con piano base/premium da un canale a pagamento e non scaduto. Referrer ridotti al dominio, codici referral mascherati.
+        «profili / signup» non è un tasso. Con meno di {MIN_SIGNUPS_FOR_PCT} signup una fonte mostra solo i conteggi (n/d al posto della percentuale). Paganti esterni
+        (oggi) = fra i profili creati nella finestra, quelli che oggi sono clienti esterni paganti (stessa regola della card «Clienti esterni paganti»: non interni, piano
+        base/premium da un canale a pagamento, non scaduto, con un ordine pagato registrato). Le fonti interne/test sono escluse dai totali e mostrate in una riga a parte
+        ({INTERNAL_REFERRER_RULE}). Il traffico del team senza fonte esplicita resta dentro i conteggi: nessuna esclusione per paese. Referrer ridotti al dominio, codici
+        referral mascherati.
       </Why>
       {ch.data.length === 0 ? (
         <p className="text-[14px] g-muted">Nessuna sessione, signup o profilo nella finestra (lettura riuscita: è 0 reale).</p>
@@ -63,12 +68,12 @@ export function Channels({ data }: { data: GrowthData }) {
                 <th className="r pt-1">Sess→signup</th>
                 <th className="r pt-1">Signup compl.</th>
                 <th className="r pt-1 pl-4">Profili</th>
-                <th className="r pt-1">Paganti</th>
+                <th className="r pt-1">Paganti esterni (oggi)</th>
                 <th className="r pt-1">Prof→pag.</th>
               </tr>
             </thead>
             <tbody>
-              {ch.data.map((r) => {
+              {ch.data.filter((r) => r.source !== INTERNAL_ENTRY_LABEL).map((r) => {
                 const rt = chainRates(r);
                 const hole = UNATTRIBUTED.has(r.source);
                 return (
@@ -94,6 +99,18 @@ export function Channels({ data }: { data: GrowthData }) {
                 <td className="r">{fmtInt(t.paying)}</td>
                 <td className="r" />
               </tr>
+              {t.internal && (
+                <tr className="g-hole" data-internal-row>
+                  <td>interni/test (esclusi dal totale)</td>
+                  <td className="r">{fmtInt(t.internal.sessions)}</td>
+                  <td className="r">{fmtInt(t.internal.signup_started)}</td>
+                  <td className="r" />
+                  <td className="r">{fmtInt(t.internal.signup_completed)}</td>
+                  <td className="r pl-4">{fmtInt(t.internal.profiles)}</td>
+                  <td className="r">{fmtInt(t.internal.paying)}</td>
+                  <td className="r" />
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

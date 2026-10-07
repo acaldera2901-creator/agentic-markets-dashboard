@@ -112,9 +112,9 @@
   {
     "id": "G12",
     "title": "Conteggio paganti inquinato da account comp/team",
-    "problem": "I profili con piano pagato includono account dati a mano (manual, referral) e del team (admin_full). La dashboard ora li separa usando plan_source. Restano ambigui i vecchi account con plan_source NULL.",
+    "problem": "I profili con piano pagato includono account dati a mano (manual, referral), del team e di test: il 07/10 3 dei 4 «paganti verificati» erano account nostri e nessuno aveva un pagamento esterno registrato. Dalla v7 la dashboard conta «Clienti esterni paganti» escludendo l'elenco di id di content/internal-accounts.json (generato in locale, da rigenerare quando nasce un account del team) e i piani senza nessun ordine pagato. Resta manuale: il prodotto non marca gli account interni.",
     "priority": "P1",
-    "unlocks": ["Paganti verificati", "Conversione free → paid"],
+    "unlocks": ["Clienti esterni paganti", "Free → paid"],
     "owner": "Calde",
     "status": "mitigato"
   },
@@ -128,5 +128,15 @@
     "status": "aperto",
     "tiles": ["Sessioni", "Sessioni /tools", "Sessioni /predictions"],
     "dependsOn": "conteggio delle sessioni senza cookie lato server (es. hash giornaliero non persistente), solo dopo parere di legale-compliance su ePrivacy/GDPR. Per la sola parte organica, i clic di Search Console sono un controllo indipendente che non dipende dal consenso."
+  },
+  {
+    "id": "G14",
+    "title": "Nessun flag interno nel prodotto: il traffico del team non si può separare",
+    "problem": "Gli events non dicono se una visita, un click o un signup viene da noi. L'audit del 07/10 stima che una parte grande delle sessioni, delle card aperte e dei click partner sia del team, ma la stima si basa sul paese, che non è un criterio accettato per escludere traffico. Oggi la dashboard può solo avvertire («Non fidarti di») ed escludere le fonti di test esplicite (pr-check, qa, localhost…), non il team.",
+    "priority": "P1",
+    "unlocks": ["Sessioni senza il team", "Click partner senza il team", "Accuratezza del tracking"],
+    "owner": "Calde",
+    "status": "aperto",
+    "dependsOn": "un flag interno impostato dal prodotto per gli account del team (es. cookie o campo meta.internal sul beacon quando l'utente loggato è nell'elenco interni) e scritto negli events; per i visitatori non loggati, un toggle «sono del team» sulle pagine. Dipende da G01 (id utente negli events) per legare il flag all'account; tocca il beacon del prodotto, quindi passa da una PR."
   }
 ]

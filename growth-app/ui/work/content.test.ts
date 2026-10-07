@@ -8,8 +8,8 @@ import { loadMemos, loadWorkContent, validateExperiments, validateGaps, validate
 describe("versioned work content", () => {
   const content = loadWorkContent();
 
-  it("lists the 13 known tracking gaps, each with an owner and at least one unlocked KPI", () => {
-    expect(content.gaps).toHaveLength(13);
+  it("lists the 14 known tracking gaps, each with an owner and at least one unlocked KPI", () => {
+    expect(content.gaps).toHaveLength(14);
     for (const g of content.gaps) {
       expect(g.owner.trim(), g.id).not.toBe("");
       expect(g.unlocks.length, g.id).toBeGreaterThan(0);

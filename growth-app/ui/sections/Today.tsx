@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { NO_COUNTRY_SPIKE_SHARE, noCountrySpike } from "@/core/estimate";
 import { formatPct } from "@/core/kpi";
 import type { GrowthData } from "@/core/model";
-import { type Anomaly, SERIES_METRICS, SMALL_SAMPLE_BASE, type SeriesMetric, anomalies, compare, windowDays } from "@/core/series";
+import { type Anomaly, SERIES_METRICS, SMALL_SAMPLE_BASE, type SeriesMetric, anomalies, compare, knownNoise, windowDays } from "@/core/series";
 import { Chip, type Mark, fmtDay, fmtInt, fmtSigned } from "../primitives";
 
 const SHOWN = 4;
@@ -54,7 +54,9 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
     rows.push({ key: m.key, label: m.label, ...c, an: anomalies(v, s.days, n) });
   }
   // Anomalous metrics first (strongest σ), then the biggest absolute movement.
-  const topZ = (r: Row) => Math.max(0, ...r.an.map((a) => Math.abs(a.z)));
+  // Anomalies on days the audit found ours/synthetic (core/series.ts KNOWN_NOISE)
+  // do not lead the ranking: they stay visible with their note, nothing is excluded.
+  const topZ = (r: Row) => Math.max(0, ...r.an.filter((a) => !knownNoise(r.key, a.day)).map((a) => Math.abs(a.z)));
   const ranked = [...rows].sort((a, b) => topZ(b) - topZ(a) || Math.abs(b.delta) - Math.abs(a.delta) || b.current - a.current).slice(0, SHOWN);
   const anomalyCount = rows.reduce((k, r) => k + r.an.length, 0);
 
@@ -85,6 +87,16 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
       text: <><b>{noSessShare} dei page view ({windowLabel}) non ha session_id</b>: sessioni, fonti delle sessioni e signup per fonte contano solo il traffico con consenso.</>,
     });
   }
+  warnings.push({
+    glyph: "▲",
+    text: (
+        <>
+          <b>Parte del traffico e degli eventi è probabilmente nostro o sintetico</b> (audit del 07/10): sessioni, card e click partner del team, la raffica
+          sintetica di signup avviati del 06/10 alle 04:09, le sessioni sintetiche del 24/09, i signup di test del 21/09. Nessuno è escluso dai conteggi: un
+          picco in quei giorni non è crescita.
+        </>
+    ),
+  });
   warnings.push({ glyph: "·", text: <><b>Conteggi delle fasi</b>: unità diverse per passo, nessuna conversione calcolabile.</> });
   if (ranked.some((r) => r.smallSample)) {
     warnings.push({ glyph: "·", text: <>Periodo precedente sotto {SMALL_SAMPLE_BASE} eventi su alcune righe: solo il delta assoluto, niente percentuale.</> });
@@ -132,12 +144,15 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
                     )}
                     <span> vs {fmtInt(r.previous)} prima</span>
                     {r.smallSample && <span> · base &lt; {SMALL_SAMPLE_BASE}, niente %</span>}
-                    {r.an.map((a) => (
-                      <span key={a.day} className="g-anom block">
-                        {a.z > 0 ? "▲" : "▼"} anomalia {fmtDay(a.day)} · {a.z > 0 ? "+" : ""}
-                        {a.z.toFixed(1)}σ
-                      </span>
-                    ))}
+                    {r.an.map((a) => {
+                      const noise = knownNoise(r.key, a.day);
+                      return (
+                        <span key={a.day} className={noise ? "g-muted block" : "g-anom block"} data-noise={noise ? a.day : undefined}>
+                          {a.z > 0 ? "▲" : "▼"} anomalia {fmtDay(a.day)} · {a.z > 0 ? "+" : ""}
+                          {a.z.toFixed(1)}σ{noise && <> · non è crescita: {noise}</>}
+                        </span>
+                      );
+                    })}
                   </span>
                   <span className="justify-self-end">
                     <Chip mark={SERIES_MARK[r.key] ?? "LIVE"} />
