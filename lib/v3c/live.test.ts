@@ -124,6 +124,34 @@ describe("football matching", () => {
     const twin = [...ESP2, { ...ESP2[3], id: "999" }];
     expect(matchFootball(row({ id: "a", home: "Las Palmas", away: "Real Valladolid", kickoff: "2026-10-04T16:30:00Z" }), twin)).toBeNull();
   });
+  // #V3C-LIVEFIX — measured on the preview 07/10 against ESPN: 181/213 board rows matched by the strict rule; in
+  // leagues ESPN covers, misses were the same club written two ways («FC Bayern München» = «Bayern Munich»,
+  // «1. FC Köln» = «FC Cologne»). The SLOT rule of lib/dedupe-fixtures.ts (#DUP-SAMESLOT-0916): the row's own
+  // league scoreboard, same kick-off to the minute, one club EQUAL → the other is the same club written otherwise.
+  it("slot: own league scoreboard + exact kick-off + one club equal → that match (real ESPN Bundesliga 10/10)", () => {
+    const GER1 = parseEspnSoccer(fx("soccer-ger1-20261010.json"));
+    const aug = matchFootball(row({ id: "oddsapi:aug", league: "BL1", home: "FC Augsburg", away: "FC Bayern München", kickoff: "2026-10-10T13:30:00.000Z" }), GER1, { slot: true })!;
+    expect([aug.ev.home, aug.ev.away, aug.swapped, aug.by]).toEqual(["FC Augsburg", "Bayern Munich", false, "slot"]);
+    // SYNTHETIC orientation: the same real event with our home/away reversed → re-oriented
+    const rev = matchFootball(row({ id: "oddsapi:rev", league: "BL1", home: "FC Bayern München", away: "FC Augsburg", kickoff: "2026-10-10T13:30:00.000Z" }), GER1, { slot: true })!;
+    expect([rev.ev.home, rev.swapped]).toEqual(["FC Augsburg", true]);
+    // without the slot option (an espn: id row, read against every scoreboard) the rule stays «both names»
+    expect(matchFootball(row({ id: "oddsapi:aug", league: "BL1", home: "FC Augsburg", away: "FC Bayern München", kickoff: "2026-10-10T13:30:00.000Z" }), GER1)).toBeNull();
+  });
+  it("slot never guesses: kick-off off by a minute, a club only CONTAINED, or our other club playing elsewhere → no match", () => {
+    const GER1 = parseEspnSoccer(fx("soccer-ger1-20261010.json"));
+    const FRA1 = parseEspnSoccer(fx("soccer-fra1-20261009.json"));
+    expect(matchFootball(row({ id: "a", home: "FC Augsburg", away: "FC Bayern München", kickoff: "2026-10-10T13:31:00.000Z" }), GER1, { slot: true })).toBeNull();
+    // accepted misses (real): «TSG 1899 Hoffenheim» only CONTAINS «TSG Hoffenheim», «Hamburger» ≠ «Hamburg»;
+    // «Racing Club de Lens» ⊃ «Lens», «Olympique Lyonnais» ≠ «Lyon». Containment is not equality (Dundee ⊂ Dundee United)
+    expect(matchFootball(row({ id: "a", home: "TSG 1899 Hoffenheim", away: "Hamburger SV", kickoff: "2026-10-10T13:30:00.000Z" }), GER1, { slot: true })).toBeNull();
+    expect(matchFootball(row({ id: "a", home: "Racing Club de Lens", away: "Olympique Lyonnais", kickoff: "2026-10-09T18:45:00.000Z" }), FRA1, { slot: true })).toBeNull();
+    // Augsburg is there, but our «Mainz» plays another match of the same slot: the sources disagree → nothing
+    expect(matchFootball(row({ id: "a", home: "FC Augsburg", away: "Mainz", kickoff: "2026-10-10T13:30:00.000Z" }), GER1, { slot: true })).toBeNull();
+    // the slot fallback never overrides an ambiguity of the strict rule
+    const twin = [...ESP2, { ...ESP2[3], id: "999" }];
+    expect(matchFootball(row({ id: "a", home: "Las Palmas", away: "Real Valladolid", kickoff: "2026-10-04T16:30:00Z" }), twin, { slot: true })).toBeNull();
+  });
   it("an espn: id matches by id", () => {
     const id = ESP2[2].id;
     expect(espnIdOf({ id: `espn:${id}`, sport: "football" })).toBe(id);

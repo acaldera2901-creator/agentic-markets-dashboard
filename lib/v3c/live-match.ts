@@ -87,7 +87,22 @@ export function strongSameTeam(a: string, b: string): boolean {
   return [...small].some((t) => t.length >= MIN_TOKEN);
 }
 
-export function matchFootball(row: LiveRow, events: readonly EspnSoccerEvent[]): { ev: EspnSoccerEvent; swapped: boolean; by: "id" | "names" } | null {
+function sameClub(a: string, b: string): boolean {
+  const x = teamTokens(a);
+  const y = teamTokens(b);
+  return x.size > 0 && x.size === y.size && [...x].every((t) => y.has(t));
+}
+
+/**
+ * `slot` (#V3C-LIVEFIX): `events` is the scoreboard of the row's OWN league, so the
+ * calendar rule of lib/dedupe-fixtures.ts (#DUP-SAMESLOT-0916) holds — at the same
+ * kick-off, to the minute, in the same competition a club plays one match. When
+ * the strict «both names» rule finds nothing, one club EQUAL (not contained) is
+ * enough, provided the event is the only one and our other club is not in
+ * another match of that slot. Measured 07/10: «FC Bayern München» = «Bayern
+ * Munich», «1. FC Köln» = «FC Cologne», «Olympique Lyonnais» = «Lyon».
+ */
+export function matchFootball(row: LiveRow, events: readonly EspnSoccerEvent[], opts: { slot?: boolean } = {}): { ev: EspnSoccerEvent; swapped: boolean; by: "id" | "names" | "slot" } | null {
   const id = espnIdOf(row);
   if (id) {
     const ev = events.find((e) => e.id === id);
@@ -102,7 +117,20 @@ export function matchFootball(row: LiveRow, events: readonly EspnSoccerEvent[]):
     if (strongSameTeam(ev.home, row.home) && strongSameTeam(ev.away, row.away)) found.push({ ev, swapped: false });
     else if (strongSameTeam(ev.home, row.away) && strongSameTeam(ev.away, row.home)) found.push({ ev, swapped: true });
   }
-  return found.length === 1 ? { ...found[0], by: "names" } : null;
+  if (found.length) return found.length === 1 ? { ...found[0], by: "names" } : null;
+  if (!opts.slot) return null;
+  const slot = events.filter((ev) => Date.parse(ev.kickoff) === k);
+  const hits: { ev: EspnSoccerEvent; swapped: boolean }[] = [];
+  for (const ev of slot) {
+    const straight = sameClub(ev.home, row.home) || sameClub(ev.away, row.away);
+    const swapped = sameClub(ev.home, row.away) || sameClub(ev.away, row.home);
+    if (straight !== swapped) hits.push({ ev, swapped });
+  }
+  if (hits.length !== 1) return null;
+  const [hit] = hits;
+  const other = hit.swapped ? (sameClub(hit.ev.home, row.away) ? row.home : row.away) : sameClub(hit.ev.home, row.home) ? row.away : row.home;
+  if (slot.some((ev) => ev !== hit.ev && (strongSameTeam(ev.home, other) || strongSameTeam(ev.away, other)))) return null;
+  return { ...hit, by: "slot" };
 }
 
 export function footballItem(ev: EspnSoccerEvent, swapped: boolean): V3LiveFootball {
@@ -214,7 +242,7 @@ export function buildLive(rows: readonly LiveRow[], feeds: LiveFeeds, now: Date)
       const slug = soccerSlugFor(row.league);
       const pool = slug ? feeds.soccer.get(slug) : undefined;
       // an `espn:` id is found in whatever scoreboard was read; a name match needs its league's scoreboard
-      const hit = matchFootball(row, espnIdOf(row) ? allSoccer : pool ?? []);
+      const hit = espnIdOf(row) ? matchFootball(row, allSoccer) : matchFootball(row, pool ?? [], { slot: true });
       if (hit) {
         items[row.id] = { ...footballItem(hit.ev, hit.swapped), source_id: `espn:${hit.ev.id}`, matched_by: hit.by, source: "espn", updated_at: readAt };
         c.matched += 1;
