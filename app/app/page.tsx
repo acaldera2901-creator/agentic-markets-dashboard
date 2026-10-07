@@ -76,6 +76,7 @@ import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
 import { quotaRuleCopy } from "@/lib/ui/quota-rule"; // #INCLUDED-TODAY-0928
 import { buildTeamNews } from "@/lib/ui/team-news"; // #INFORTUNI-1001
+import { tennisLiveScoreLabel } from "@/lib/ui/tennis-live-score"; // #LIVE-INVERTED-1007
 import { displayTournament, probabilityLabel, probabilitySourceOf } from "@/lib/partner-market"; // #COERENZA-1001
 import { useWatchlist } from "@/lib/watchlist";
 
@@ -8730,7 +8731,8 @@ function HomeLobby({
       // #LIVE-SCORE-CARD-0925 — un set per elemento ("6-4 3-6 2-1"), stessa
       // forma di `setsLabel` in LiveNowStrip (il ticker che passava questo
       // stesso dato ma non arrivava mai a schermo).
-      const liveScoreLabel = lm ? lm.sets_p1.map((v, i) => `${v}-${lm.sets_p2[i] ?? ""}`).join(" ") : null;
+      // #LIVE-INVERTED-1007 — orientato sull'ordine della board, non di ESPN.
+      const liveScoreLabel = lm ? tennisLiveScoreLabel(lm, m.player1) : null;
       const data = fromDeskTennis(m, {
         winLabel,
         kickoffLabel: fmtKickoff(m.scheduled, lang, tz),
