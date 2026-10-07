@@ -54,6 +54,7 @@ import { type GoalscorerMarket } from "@/lib/goalscorer-model";
 import { buildSoftLookup } from "@/lib/soft-lookup";
 import { dedupeByFixture } from "@/lib/dedupe-fixtures"; // #DUP-FIXTURES-0821
 import { splitUnifiedFallback } from "@/lib/board-merge"; // #NATIONS-BOARD-0929
+import { MATCH_PREDICTIONS_UPSERT_SQL } from "@/lib/match-predictions-upsert"; // #RECORD-ATOMICO-0930
 
 // #DUP-FIXTURES-0821 — si PRENDONO più righe di quante se ne servano.
 // Il cap era applicato PRIMA della deduplica: i 22 doppioni fra fonti
@@ -719,29 +720,17 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         }
       }
 
+      // Upsert e regole della riga (record atomico, giro senza quote, kickoff):
+      // lib/match-predictions-upsert.ts, coperto da un test su Postgres vero.
       await dbQuery(
-        `INSERT INTO match_predictions (
-           match_id, league, league_name, home_team, away_team, kickoff,
-           p_home, p_draw, p_away, lambda_home, lambda_away,
-           odds_home, odds_draw, odds_away, edge, best_selection, model_matches,
-           enrichment, computed_at
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,NOW())
-         ON CONFLICT (match_id) DO UPDATE SET
-           p_home=EXCLUDED.p_home, p_draw=EXCLUDED.p_draw, p_away=EXCLUDED.p_away,
-           lambda_home=EXCLUDED.lambda_home, lambda_away=EXCLUDED.lambda_away,
-           odds_home=COALESCE(EXCLUDED.odds_home, match_predictions.odds_home),
-           odds_draw=COALESCE(EXCLUDED.odds_draw, match_predictions.odds_draw),
-           odds_away=COALESCE(EXCLUDED.odds_away, match_predictions.odds_away),
-           edge=COALESCE(EXCLUDED.edge, match_predictions.edge),
-           best_selection=COALESCE(EXCLUDED.best_selection, match_predictions.best_selection),
-           model_matches=EXCLUDED.model_matches, enrichment=EXCLUDED.enrichment,
-           computed_at=NOW()`,
+        MATCH_PREDICTIONS_UPSERT_SQL,
         [
           fix.id, code, LEAGUES[code], fix.homeTeam, fix.awayTeam, finalKickoff,
           probs.pHome, probs.pDraw, probs.pAway, probs.lambdaHome, probs.lambdaAway,
           odds?.oddsHome ?? null, odds?.oddsDraw ?? null, odds?.oddsAway ?? null,
           edge, bestSel, model.matchCount,
           JSON.stringify(enrichment),
+          enrichment.time_confirmed === true,
         ]
       );
       stored.push(code);
@@ -1000,6 +989,20 @@ export async function GET(req: Request) {
   // serves real upcoming fixtures (e.g. World Cup), so the banner would lie.
   const isOffSeason = predictions_raw.length === 0;
   const isStale = !isOffSeason && !usingFallback && ageMinutes > 60;
+  // #FRESHNESS-ROWS-0930 (audit agentic_codex 29/09): `computed_at` e' il MAX,
+  // quindi una sola lega appena ricalcolata copre tutte le altre (misurato 29/09:
+  // 38 righe su 78 piu' vecchie di 2h con il board "fresco"). Il banner resta
+  // com'e' — con il MIN diventerebbe rosso a ogni lega fuori giro — ma la
+  // risposta dice ora anche la riga piu' vecchia e quante superano le 2h.
+  const oldestComputedAt = clubRows.length
+    ? clubRows.reduce<string | null>(
+        (min, row) => (min === null || row.computed_at < min ? row.computed_at : min),
+        null
+      )
+    : null;
+  const staleRows = clubRows.filter(
+    (row) => Date.now() - new Date(row.computed_at).getTime() > 2 * 3_600_000
+  ).length;
 
   // Mercati marcatore (B-serve): mappa match_id -> mercati. Fail-soft (vedi
   // fetchGoalscorerMarkets): vuota finche` i dati player non sono live.
@@ -1099,6 +1102,8 @@ export async function GET(req: Request) {
     {
       predictions,
       computed_at: computedAt,
+      oldest_computed_at: oldestComputedAt,
+      stale_rows: staleRows,
       count: predictions.length,
       is_stale: isStale,
       is_off_season: isOffSeason,
