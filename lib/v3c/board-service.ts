@@ -7,10 +7,12 @@ import { PREDICTION_WINDOW_DAYS } from "@/lib/prediction-window";
 import { BOOK_PRICE_MAX_AGE_MIN, buildBoardMatch, feedBookKeys, footballPairKey, liveFeedRows, type PartnerPriceRow } from "./board";
 import type { TennisProbabilityKind, V3BoardResponse, V3BookPrice } from "./contracts";
 import { fetchBoardExcluded, fetchBoardSources, fetchLatestPartnerPrices, fetchPartnerHistoryByKeys, fetchTennisBoardSources } from "./queries";
-import { buildTennisBoardMatch, isOurModel, ledgerTennisKind, tennisPairKey } from "./tennis";
+import { buildTennisBoardMatch, isOurModel, ledgerTennisKind, preStartOdds, tennisPairKey } from "./tennis";
+import { PARTNER_MARKET_MODEL } from "@/lib/partner-market";
+import { dedupePartnerRelistings, resolveAlias } from "./fixdata2";
 import { dedupeTennisRows, splitTennisCategories, tennisEstimate } from "./tennis-estimate";
 import { market2way } from "./prob";
-import { dedupeFootballBoard, relevanceTier } from "./fixdata";
+import { dedupeFootballBoard, hasStarted, relevanceTier } from "./fixdata";
 import { orientPartnerPrice } from "./board";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
 import type { TennisBoardSourceRow } from "./tennis";
@@ -39,13 +41,24 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
   const tennisAll = tennisWindow.filter((t) => open(t.kickoff));
   // tennis2: padel and doubles are not on the tennis board (no Elo, the «/» pairs read as one
   // player); a match served twice (partner feed + Elo agent) is shown once — lib/v3c/tennis-estimate.ts.
-  const { singles, removed: catRemoved } = splitTennisCategories(tennisAll);
+  const { singles: singlesAll, removed: catRemoved } = splitTennisCategories(tennisAll);
+  // fixdata2 B6: a partner listing re-dated (same players within 36 h) is shown once — the later listing
+  const relist = dedupePartnerRelistings(singlesAll, PARTNER_MARKET_MODEL);
+  const singles = relist.kept;
   // fixdata B8/M6: the Elo row is kept over its partner twin also when it is a sealed row of our model
   // (before, a tempered-Elo row without a price lost to the partner row and its sealed gap never reached the board)
+  // fixdata2 N2: the choice reads the same market the row will show — after the start, the pre-start price,
+  // never the in-play one the Elo agent writes into tennis_predictions (it made the kept row flip mid-match)
+  const pairOf = (t: TennisBoardSourceRow) => {
+    if (hasStarted(t.kickoff, now) && t.model_version !== PARTNER_MARKET_MODEL) {
+      const pre = preStartOdds(t);
+      return market2way(pre?.p1, pre?.p2);
+    }
+    return market2way(t.odds_p1, t.odds_p2);
+  };
   const dedupe = dedupeTennisRows(singles, (t) =>
     ourSealedTennis(t) ||
-    tennisEstimate({ ...t, market_p1: market2way(t.odds_p1, t.odds_p2)?.p1 ?? null, market_p2: market2way(t.odds_p1, t.odds_p2)?.p2 ?? null }, now)
-      .estimate_kind === "elo_blend_unsealed",
+    tennisEstimate({ ...t, market_p1: pairOf(t)?.p1 ?? null, market_p2: pairOf(t)?.p2 ?? null }, now).estimate_kind === "elo_blend_unsealed",
   );
   // …and, when it has no price of its own, it shows the market of the twin it replaced (oriented by name)
   const byId = new Map(singles.map((t) => [t.id, t]));
@@ -53,7 +66,7 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
   for (const [droppedId, keptId] of dedupe.dropped) {
     const kept = byId.get(keptId);
     const twin = byId.get(droppedId);
-    if (!kept || !twin || market2way(kept.odds_p1, kept.odds_p2) || !market2way(twin.odds_p1, twin.odds_p2)) continue;
+    if (!kept || !twin || pairOf(kept) || !market2way(twin.odds_p1, twin.odds_p2)) continue;
     const o = orientPartnerPrice(
       { home: kept.player1, away: kept.player2 },
       { team_pair_key: "", bookmaker: "", home_name: twin.player1, away_name: twin.player2, odds_home: twin.odds_p1, odds_draw: null, odds_away: twin.odds_p2, captured_at: twin.computed_at },
@@ -74,7 +87,7 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
   }
   // the kept row of a duplicate also reads the book prices keyed on the dropped row
   const altKeys = new Map<string, string[]>();
-  for (const [droppedId, keptId] of dedupe.dropped) {
+  for (const [droppedId, keptId] of [...relist.dropped, ...dedupe.dropped]) {
     const k = keyOf.get(droppedId);
     if (k && k !== keyOf.get(keptId)) altKeys.set(keptId, [...(altKeys.get(keptId) ?? []), k]);
   }
@@ -147,12 +160,17 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
     for (const b of books) tennisWithBook[b] = (tennisWithBook[b] ?? 0) + 1;
   }
 
+  // fixdata2 N2: every dropped twin points at the row the board shows (resolved transitively)
+  const aliasRaw: Record<string, string> = Object.fromEntries([...fbDedupe.dropped, ...relist.dropped, ...dedupe.dropped]);
+  const aliases: Record<string, string> = Object.fromEntries(Object.keys(aliasRaw).map((k) => [k, resolveAlias(aliasRaw, k)]));
+
   const body: V3BoardResponse = {
     contract: "v3.board.2",
     generated_at: now.toISOString(),
     window_days: PREDICTION_WINDOW_DAYS,
     matches,
     tennis,
+    aliases,
     partners: partnerDirectory(),
     coverage: {
       matches: matches.length,
@@ -174,7 +192,7 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
         with_gap: tennis.filter((t) => t.sides[0].gap_pp != null).length,
         with_book_price: tennisWithBook,
         with_estimate: tennis.filter((t) => t.estimate_kind === "elo_blend_unsealed").length,
-        removed: { duplicate: dedupe.dropped.size, ...catRemoved },
+        removed: { duplicate: dedupe.dropped.size + relist.dropped.size, ...catRemoved },
       },
     },
     notes: [
@@ -194,6 +212,10 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
       "fixdata: book_prices[].captured_at is when the price was read — the time the book's feed was fetched (a cached or last-good copy keeps its own time) or the partner_price_history capture — never the request time.",
       "fixdata: model_guard compares the RAW model with the de-vigged market at the widest outcome. > 15 pp: no EV, Kelly, stake or edge badge on any page. > 25 pp: estimate_p = market_p and edge_pp = 0 («Market only»); model_p keeps the raw number. The sealed record is untouched.",
       "fixdata: a football match listed twice (same home and away, kick-offs within 48 h — a rescheduled match under its old date) is shown once: the row the pipeline still refreshes, on a tie the later kick-off. A tennis Elo row sealed by our model is kept over its partner twin and shows the twin's market.",
+      "fixdata2: market_from says where market_p comes from. Football without a stored market (or with an impossible one, or one > 15 pp from the partner books) reads the books' real prices, de-vigged per book and averaged: market_price is then the best real price and the estimate the same declared 0.3/0.7 blend on that market. No market at all → model_guard.level «no_market»: no estimate, fair price, EV or Kelly is shown. A book price with an implied probability outside 0.5–99%, or a book whose own set has an overround < 0 or > 25%, is dropped (the match stays).",
+      "fixdata2: when the estimate's fair price (1/estimate, outcomes ≥ 10%) is > 25% from the best real price, model_guard becomes «market_only» with reason «price_far»: the market only, no estimate and no fair price.",
+      "fixdata2: a started tennis Elo row reads its market from the last pre-start prediction_log snapshot (market_from «pre_start»): tennis_predictions.odds_* receive in-play prices after the start. Started tennis rows carry no book_prices, like football.",
+      "fixdata2: sealed_guard puts the sealed Elo of our tennis model under the football thresholds (15 / 25 pp) against the market at seal, else the row's market. aliases maps every dropped twin id to the row shown (one source per match).",
       "fixdata: relevance = 0 top-league football (top five + UEFA cups) · 1 ATP/WTA main tour · 2 other football · 3 other tennis. The board orders each day by relevance, then kick-off.",
     ],
   };

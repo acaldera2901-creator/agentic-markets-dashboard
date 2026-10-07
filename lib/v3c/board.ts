@@ -9,7 +9,8 @@ import { fuzzyFootballMatch, type OurFixture } from "./fixture-match";
 import type { Outcome, Triple, V3BoardMatch, V3BoardOutcome, V3BookPrice } from "./contracts";
 import { MARKET_WEIGHT, MODEL_WEIGHT, OUTCOMES, edgePp, market1x2, roundP, topOutcome } from "./prob";
 import { feedMapAt } from "@/lib/feed-stamp";
-import { applyGuard, hasStarted, modelGuard, relevanceTier } from "./fixdata";
+import { applyGuard, hasStarted, modelGuard, relevanceTier, type ModelGuard } from "./fixdata";
+import { bookImpliedMarket, fairFarFromBest, saneMarketSet, sanePrice, storedMarketTrusted } from "./fixdata2";
 
 /** Latest prediction_log row of a published match (+ seal time from pick_ledger). */
 export type BoardSourceRow = {
@@ -107,9 +108,13 @@ export function bookPricesFor(
     if (now.getTime() - Date.parse(row.captured_at) > maxAgeMs) continue;
     const oriented = orientPartnerPrice(ours, row, norm);
     if (!oriented) continue;
+    // fixdata2 N10: a book whose own set of prices is impossible (overround < 0 or > 25%) gives no price here;
+    // a single impossible price (implied outside 0.5–99%) is dropped, the match stays
+    const legs = [oriented.home, oriented.draw, oriented.away].filter((x): x is number => x != null);
+    if (legs.length >= 2 && legs.every(validPrice) && !saneMarketSet(legs)) continue;
     for (const o of OUTCOMES) {
       const price = oriented[o];
-      if (!validPrice(price)) continue;
+      if (!validPrice(price) || !sanePrice(price)) continue;
       out[o].push({
         bookmaker: book.key,
         name: book.name,
@@ -128,30 +133,58 @@ export function bookPricesFor(
 }
 
 export function buildBoardMatch(src: BoardSourceRow, partner: PartnerPriceRow[], now: Date): V3BoardMatch {
-  const market = market1x2({ home: src.odds_home, draw: src.odds_draw, away: src.odds_away });
-  const estimate: Triple = { home: src.p_home, draw: src.p_draw, away: src.p_away };
+  // fixdata B1: once the match has started a pre-match price is not a price — no book, no best, no CTA
+  const prices = hasStarted(src.kickoff, now) ? { home: [], draw: [], away: [] } : bookPricesFor(src, partner, now);
+  const storedPrices = [src.odds_home, src.odds_draw, src.odds_away];
+  const stored = market1x2({ home: src.odds_home, draw: src.odds_draw, away: src.odds_away });
+  // fixdata2 N3/N10: the partner books' own market (real prices with a link), the reference when the stored
+  // market is missing, impossible, or farther than 15 pp from it
+  const books = bookImpliedMarket([prices.home, prices.draw, prices.away]);
+  const trusted = storedMarketTrusted(storedPrices, stored ? [stored.p.home, stored.p.draw, stored.p.away] : null, books);
+  const fromBooks = !trusted && books != null;
+  const market: { p: Triple; margin: number } | null = trusted && stored
+    ? stored
+    : books
+      ? { p: { home: books.p[0], draw: books.p[1], away: books.p[2] }, margin: books.margin }
+      : null;
   const model: Triple | null =
     src.model_p_home != null && src.model_p_draw != null && src.model_p_away != null
       ? { home: src.model_p_home, draw: src.model_p_draw, away: src.model_p_away }
       : null;
-  // fixdata B1: once the match has started a pre-match price is not a price — no book, no best, no CTA
-  const prices = hasStarted(src.kickoff, now) ? { home: [], draw: [], away: [] } : bookPricesFor(src, partner, now);
-  const priceOf: Record<Outcome, number | null> = {
-    home: src.odds_home, draw: src.odds_draw, away: src.odds_away,
-  };
+  // Without a stored market the pipeline served the model alone (p = model): the raw model is that number.
+  const rawModel: Triple | null = model ?? (stored ? null : { home: src.p_home, draw: src.p_draw, away: src.p_away });
+  // The served blend when it was made with the market shown; with the books' market, the same declared blend on it.
+  const estimate: Triple =
+    trusted || !market
+      ? { home: src.p_home, draw: src.p_draw, away: src.p_away }
+      : rawModel
+        ? {
+            home: MODEL_WEIGHT * rawModel.home + MARKET_WEIGHT * market.p.home,
+            draw: MODEL_WEIGHT * rawModel.draw + MARKET_WEIGHT * market.p.draw,
+            away: MODEL_WEIGHT * rawModel.away + MARKET_WEIGHT * market.p.away,
+          }
+        : market.p;
+  const priceOf: Record<Outcome, number | null> = fromBooks
+    ? { home: prices.home[0]?.price ?? null, draw: prices.draw[0]?.price ?? null, away: prices.away[0]?.price ?? null }
+    : { home: src.odds_home, draw: src.odds_draw, away: src.odds_away };
 
   const raw: V3BoardOutcome[] = OUTCOMES.map((o) => ({
     outcome: o,
     market_price: market ? priceOf[o] : null,
     market_p: market ? roundP(market.p[o]) : null,
-    model_p: model ? roundP(model[o]) : null,
+    model_p: rawModel ? roundP(rawModel[o]) : null,
     estimate_p: roundP(estimate[o]),
     edge_pp: market ? edgePp(estimate[o], market.p[o]) : null,
     book_prices: prices[o],
     best_price: prices[o][0] ?? null,
   }));
   // fixdata B5: the raw model against the market; > 25 pp the estimate shown is the market
-  const guard = modelGuard(raw);
+  let guard: ModelGuard = market ? modelGuard(raw) : { level: "no_market", delta_pp: null, reason: "no_market" };
+  // fixdata2 N3: the estimate's fair price far from the best real price → the market only, no fair price
+  // (read on the lead outcome — the widest gap, the one the page puts beside the book button — as the board does)
+  const withGap = raw.filter((o) => o.edge_pp != null);
+  const lead = withGap.length ? withGap.reduce((b, o) => (Math.abs(o.edge_pp as number) > Math.abs(b.edge_pp as number) ? o : b)) : raw[OUTCOMES.indexOf(topOutcome(estimate))];
+  if (guard.level !== "market_only" && guard.level !== "no_market" && fairFarFromBest([lead])) guard = { level: "market_only", delta_pp: guard.delta_pp, reason: "price_far" };
   const outcomes = applyGuard(raw, guard);
   const shown: Triple = { home: outcomes[0].estimate_p, draw: outcomes[1].estimate_p, away: outcomes[2].estimate_p };
 
@@ -172,6 +205,7 @@ export function buildBoardMatch(src: BoardSourceRow, partner: PartnerPriceRow[],
     outcomes,
     relevance: relevanceTier({ sport: "football", competition: src.competition, league: src.league }),
     model_guard: guard,
+    market_from: market ? (fromBooks ? "books" : "stored") : null,
   };
 }
 

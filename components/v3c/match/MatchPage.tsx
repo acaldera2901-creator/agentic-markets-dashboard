@@ -15,6 +15,7 @@ import type { V3BoardResponse, V3LineSeries } from "@/lib/v3c/contracts";
 import { buildLineMovement, isTennisId, type Fixture } from "@/lib/v3c/line-movement-service";
 import { landingBookLinks } from "@/lib/v3c/match-links.server";
 import { findMatch, leadOutcome, readLineEvents } from "@/lib/v3c/match-view";
+import { estimateShown, resolveAlias } from "@/lib/v3c/fixdata2";
 import { tennisLead } from "@/lib/v3c/board-view";
 import { tennisEstimateOf } from "@/lib/v3c/tennis-estimate";
 import type { V3cMode } from "@/lib/v3c/mode";
@@ -53,14 +54,16 @@ async function moreRows(board: V3BoardResponse, id: string, now: Date, sport: "f
     const lead = leadOutcome(m);
     return {
       id: m.id, home: m.home, away: m.away, kickoff: m.kickoff, league: m.competition || m.league, gap: lead.edge_pp,
-      lead: lead.outcome, price: lead.market_price, market: lead.market_p, estimate: lead.estimate_p, tape: tapes[m.id],
+      lead: lead.outcome, price: lead.market_price, market: lead.market_p, estimate: estimateShown(m) ? lead.estimate_p : null, tape: tapes[m.id],
     };
   });
 }
 
-async function MatchBody({ id, fixture }: { id: string; fixture: Fixture | null }) {
+async function MatchBody({ id: asked, fixture }: { id: string; fixture: Fixture | null }) {
   const now = new Date();
   const [b, partners, links] = await Promise.all([getBoard(), partnersAllowed(), landingBookLinks()]);
+  // fixdata2 N2: a twin the board dropped reads the kept row — its numbers, its price history, its live score
+  const id = b.ok ? resolveAlias(b.data.aliases, asked) : asked;
   let series: V3LineSeries[] | null = null;
   let events: ReturnType<typeof readLineEvents> = [];
   try {

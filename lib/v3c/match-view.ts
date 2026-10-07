@@ -9,6 +9,7 @@
 // che è dato o funzione: l'ordine dei partner (sortBooksForMenu) e il
 // tracciamento dei click — non il JSX.
 import { inputProblem } from "./fixdata";
+import { resolveAlias } from "./fixdata2";
 import { bookmakerMargin, noVigProbabilities } from "@/lib/betting-math";
 import { sortBooksForMenu } from "@/lib/partners";
 import { toolPath, type ToolSlug } from "@/lib/tools/registry";
@@ -21,7 +22,9 @@ import { toolDef, type ToolResult, type ToolValues } from "./tools";
 
 export type FoundMatch = { sport: "football"; m: V3BoardMatch } | { sport: "tennis"; m: V3BoardTennisMatch } | null;
 
-export function findMatch(board: Pick<V3BoardResponse, "matches" | "tennis">, id: string): FoundMatch {
+export function findMatch(board: Pick<V3BoardResponse, "matches" | "tennis"> & { aliases?: V3BoardResponse["aliases"] }, wanted: string): FoundMatch {
+  // fixdata2 N2: an id the board dropped as a twin shows the row the board kept (same numbers everywhere)
+  const id = resolveAlias(board.aliases, wanted);
   const f = board.matches.find((m) => m.id === id);
   if (f) return { sport: "football", m: f };
   const t = (board.tennis ?? []).find((m) => m.id === id);

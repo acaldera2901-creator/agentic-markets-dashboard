@@ -383,7 +383,8 @@ export async function fetchTennisBoardSources(): Promise<TennisBoardSourceRow[]>
             l.captured_at AS sealed_at, l.p_home AS sealed_p1, l.p_away AS sealed_p2,
             l.odds AS sealed_odds, l.signal_type AS sealed_signal_type,
             tp.feature_snapshot->'partner'->>'tournament' AS partner_tournament,
-            el.model_p_home AS elo_p1, el.model_p_away AS elo_p2, el.computed_at AS elo_as_of, el.home_team AS elo_home
+            el.model_p_home AS elo_p1, el.model_p_away AS elo_p2, el.computed_at AS elo_as_of, el.home_team AS elo_home,
+            el.odds_home AS pre_odds_p1, el.odds_away AS pre_odds_p2
        FROM u
        JOIN tennis_predictions tp ON tp.match_id = u.source_id
        LEFT JOIN LATERAL (
@@ -394,7 +395,7 @@ export async function fetchTennisBoardSources(): Promise<TennisBoardSourceRow[]>
              LIMIT 1) sh ON tp.model_version <> $3
        -- tennis2: the raw Elo of the estimate = last snapshot BEFORE the start with Elo AND market
        LEFT JOIN LATERAL (
-            SELECT pl.model_p_home, pl.model_p_away, pl.computed_at, pl.home_team
+            SELECT pl.model_p_home, pl.model_p_away, pl.computed_at, pl.home_team, pl.odds_home, pl.odds_away
               FROM prediction_log pl
              WHERE pl.match_id = tp.match_id
                AND pl.model_p_home IS NOT NULL AND pl.model_p_away IS NOT NULL
@@ -435,6 +436,8 @@ export async function fetchTennisBoardSources(): Promise<TennisBoardSourceRow[]>
       elo_p2: num(r.elo_p2),
       elo_as_of: r.elo_as_of == null ? null : String(r.elo_as_of),
       elo_home: (r.elo_home as string) ?? null,
+      pre_odds_p1: num(r.pre_odds_p1),
+      pre_odds_p2: num(r.pre_odds_p2),
     }))
     .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff) || a.id.localeCompare(b.id));
 }

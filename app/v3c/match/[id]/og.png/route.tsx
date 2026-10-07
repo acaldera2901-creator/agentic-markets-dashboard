@@ -9,6 +9,7 @@ import { v3cProductOn, getBoard } from "@/lib/v3c/board-data.server";
 import { leadOutcome, outcomeLabel, tennisLead } from "@/lib/v3c/board-view";
 import { fetchFixture, isTennisId } from "@/lib/v3c/line-movement-service";
 import { cleanMatchId, findMatch } from "@/lib/v3c/match-view";
+import { estimateShown } from "@/lib/v3c/fixdata2";
 import { OG, OG_SIZE, OgFrame, ogAssets } from "../../../_og/og";
 
 // polish-2: route handler (non più `opengraph-image`) così og:image può puntare
@@ -37,8 +38,16 @@ async function view(id: string): Promise<View | null> {
       away: m.away,
       market: pct(lead.market_p),
       // fixdata B5: the model differs > 25 pp from the market → the card shows the market only, never the estimate
-      estimate: m.model_guard?.level === "market_only" ? null : pct(lead.estimate_p),
-      line: m.model_guard?.level === "market_only" ? `${label}. Market only: the model differs too much to show.` : lead.market_p == null ? `${label}. No market price stored: the estimate is the model alone.` : `${label}. Estimate = 0.3 model + 0.7 market${m.sealed_at ? ", sealed before kick-off" : ""}.`,
+      // fixdata2 N3: no market to compare → no estimate either; an estimate far from the best real price → market only
+      estimate: m.model_guard?.level === "market_only" || !estimateShown(m) ? null : pct(lead.estimate_p),
+      line:
+        m.model_guard?.level === "no_market" || lead.market_p == null
+          ? `${label}. Model only: no market to compare.`
+          : m.model_guard?.reason === "price_far"
+            ? `${label}. Market only: our estimate is far from the best price.`
+            : m.model_guard?.level === "market_only"
+              ? `${label}. Market only: the model differs too much to show.`
+              : `${label}. Estimate = 0.3 model + 0.7 market${m.market_from === "books" ? " (the partner books’ prices)" : ""}${m.sealed_at ? ", sealed before kick-off" : ""}.`,
     };
   }
   if (found?.sport === "tennis") {

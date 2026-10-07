@@ -56,8 +56,13 @@ export const GUARD_NO_VALUE_PP = 15;
 /** Above this the estimate shown IS the market (gap 0): «Market only». */
 export const GUARD_MARKET_ONLY_PP = 25;
 
-export type ModelGuardLevel = "ok" | "no_value" | "market_only";
-export type ModelGuard = { level: ModelGuardLevel; delta_pp: number | null };
+/** fixdata2 N3: «no_market» = no market and no partner-book price to compare with: no estimate, no fair price, no EV/Kelly. */
+export type ModelGuardLevel = "ok" | "no_value" | "market_only" | "no_market";
+/**
+ * fixdata2: why the level is not «ok» — model_far (raw model vs market, B5), price_far (the estimate's fair
+ * price > 25% from the best real price, N3), no_market (N3). Optional: older payloads have no reason.
+ */
+export type ModelGuard = { level: ModelGuardLevel; delta_pp: number | null; reason?: "model_far" | "price_far" | "no_market" };
 
 /**
  * The largest |raw model − de-vigged market| over the outcomes, in pp. The football estimate is
@@ -74,7 +79,8 @@ export function modelGuard(outcomes: readonly { model_p: number | null; market_p
   }
   if (d == null) return { level: "ok", delta_pp: null };
   const delta_pp = Math.round(d * 10) / 10;
-  return { level: d > GUARD_MARKET_ONLY_PP ? "market_only" : d > GUARD_NO_VALUE_PP ? "no_value" : "ok", delta_pp };
+  const level: ModelGuardLevel = d > GUARD_MARKET_ONLY_PP ? "market_only" : d > GUARD_NO_VALUE_PP ? "no_value" : "ok";
+  return level === "ok" ? { level, delta_pp } : { level, delta_pp, reason: "model_far" };
 }
 
 /** «market_only»: the shown estimate is the market and the gap is 0 (raw numbers stay in model_p). */

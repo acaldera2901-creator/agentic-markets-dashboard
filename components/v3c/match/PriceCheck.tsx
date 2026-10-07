@@ -24,6 +24,7 @@ import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 import type { ModelGuardLevel } from "@/lib/v3c/fixdata";
 import { PRICE_MAX, PRICE_MIN, inputProblem } from "@/lib/v3c/fixdata";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { pcStartPrices } from "@/lib/v3c/fixdata2";
 
 /** tennis2: estimate_p nel tennis = la stima basata su Elo (0,1·Elo + 0,9·mercato) dove c'è, altrimenti null (solo mercato). */
 export type PcOutcome = { outcome: Outcome; market_price: number | null; estimate_p: number | null; book_prices: V3BookPrice[] };
@@ -32,11 +33,10 @@ export type PcMatch = { id: string; sport: "football" | "tennis"; home: string; 
   /** fixdata B5: the model sanity guard of the match (lib/v3c/fixdata.ts); not «ok» → no EV, Kelly or stake */
   guard?: ModelGuardLevel };
 
-const fmt2 = (n: number | null) => (n == null ? "" : n.toFixed(2));
-
 function startPrices(m: PcMatch | null): string[] {
   if (!m) return ["2.15", "3.20", "3.50"];
-  return m.outcomes.map((o) => fmt2(o.market_price ?? o.book_prices[0]?.price ?? null));
+  // fixdata2 N4: the best price a book really offers, else an empty field (never the composite market price)
+  return pcStartPrices(m.outcomes);
 }
 
 /** I book che hanno una quota per tutti e tre gli esiti: «riempi con i prezzi di X». */

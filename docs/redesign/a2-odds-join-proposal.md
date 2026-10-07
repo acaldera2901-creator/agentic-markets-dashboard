@@ -44,3 +44,44 @@ Comandi: nessuna migrazione, nessuna scrittura manuale. Branch + PR, deploy norm
 
 ## Alternativa solo v3c (decisione, non eseguita)
 Leggere il mercato dalle `odds_snapshots` del collector Python (Pinnacle, già nel DB, ≤ 2 h) quando prediction_log non lo ha. Fattibile in sola lettura, ma la **stima mostrata** resterebbe il modello puro (il blend 70/30 servito e sigillato è calcolato senza quel mercato): mostrare mercato e stima di due fonti diverse cambierebbe il significato del gap. Non l'ho fatto: serve una scelta di Andrea (e di ml-engineer sul blend).
+
+---
+
+## Aggiornamento fixdata2 — 07/10 ~17:40 UTC (solo SELECT, nessuna chiamata a The Odds API)
+
+**Misura attuale (QA-2: 12 partite top-4 senza mercato sulla board).** Ultimo snapshot di prediction_log per
+partita, prossimi 10 giorni, id football-data:
+
+| Lega | partite | con quota | ultima riga con quota |
+|---|---|---|---|
+| SA | 12 | 12 | 07/10 14:01 |
+| PD | 13 | 13 | 07/10 14:01 |
+| BL1 | 15 | 14 | 07/10 14:01 — manca Augsburg–Bayern |
+| FL1 | 11 | 9 | 07/10 14:01 — mancano Lens–Lyon, Rennes–Auxerre |
+| **PL** | 14 | **0** | **02/10 16:01** |
+| CL | 18 | 0 | 06/10 00:01 (non sulla board di oggi) |
+
+**Sonda sul join (odds_snapshots, collector Python, ultime 6 h):** il mercato c'è per tutte e 12, con Pinnacle:
+`arsenal|leeds united` 25 book, `crystal palace|nottingham forest` 25, `everton|hull city` 25,
+`liverpool|manchester city` 25, `coventry city|newcastle united` 25, `augsburg|bayern munich` 24,
+`lyon|rc lens` 22, `auxerre|rennes` 22.
+
+**Cosa cambia nella diagnosi.**
+1. La causa «richieste parallele → 429» è **indebolita**: oggi SA/PD/BL1/FL1 agganciano quasi tutto nello stesso
+   `Promise.all`; è la **sola Premier League** che non aggancia nulla da 5 giorni. Il difetto è specifico della chiamata
+   EPL (status non-2xx o 422 sul set di mercati) o del suo parse — non visibile dal DB perché `fetchOdds` torna `[]` muto.
+   Il punto 1 della change-spec (loggare lo status) resta il primo passo e basta a decidere; il punto 2 (seriale) diventa
+   facoltativo, da fare solo se il log mostra 429.
+2. I 3 buchi fuori dalla PL sono **alias** (confermati dai nomi in odds_snapshots): `bayern munich ↔ fc bayern münchen`,
+   `lyon ↔ olympique lyonnais` + `rc lens ↔ racing club de lens`, `rennes ↔ stade rennais fc 1901`. Da aggiungere alla
+   mappa del punto 3 (insieme a `inter milan ↔ internazionale milano`, oggi agganciata).
+
+**Cosa fa già la v3c senza questa PROPOSAL (fixdata2 N3, sul branch, nessuna scrittura).** Dove prediction_log non ha il
+mercato, la board lo ricava dai prezzi REALI dei book partner (de-vig per book, media), lo dichiara («Market from the
+partner books' prices») e applica la stessa stima dichiarata 0,3·modello + 0,7·mercato con il guard 15/25 pp sopra.
+Sulla board del 07/10 15:26: 10 delle 12 tornano ad avere mercato (Palace–Forest e Hull–Everton e Chelsea–Bournemouth
+finiscono «no value», 16–23 pp); Augsburg–Bayern e Rennes–Auxerre non hanno nessun book partner → «Model only: no market
+to compare», senza stima. **Questo non sostituisce la PROPOSAL**: la stima servita e sigillata di quelle partite resta il
+modello puro (il blend del pipeline è calcolato senza mercato); il fix vero è a monte.
+
+- **Owner esecuzione:** programmatore (path predictions) · **Serve OK da:** Andrea. Ancora NON eseguita.

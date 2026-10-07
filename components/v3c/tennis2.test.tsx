@@ -62,8 +62,8 @@ describe("tennis2 · price check", () => {
   const pc = (over: Partial<PcMatch>): PcMatch => ({
     id: ELO.id, sport: "tennis", home: "Jannik Sinner", away: "Ben Shelton", kickoff: ELO.kickoff, league: "ATP Shanghai", blend: false, links: [],
     outcomes: [
-      { outcome: "home", market_price: 1.5, estimate_p: 0.657, book_prices: [] },
-      { outcome: "away", market_price: 2.6, estimate_p: 0.343, book_prices: [] },
+      { outcome: "home", market_price: 1.5, estimate_p: 0.657, book_prices: [{ bookmaker: "fortuneplay", name: "FortunePlay", price: 1.5, captured_at: "2099-10-10T09:00:00.000Z", source: "live_feed" as const, url: "https://fp.example/a" }] },
+      { outcome: "away", market_price: 2.6, estimate_p: 0.343, book_prices: [{ bookmaker: "fortuneplay", name: "FortunePlay", price: 2.6, captured_at: "2099-10-10T09:00:00.000Z", source: "live_feed" as const, url: "https://fp.example/a" }] },
     ],
     tnElo: true, gapHidden: false, ...over,
   });

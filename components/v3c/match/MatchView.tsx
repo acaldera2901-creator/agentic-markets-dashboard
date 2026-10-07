@@ -56,6 +56,9 @@ import type { NewsCard } from "@/lib/v3c/news/news.server";
 import { noteText } from "../pages/NewsLive";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
 import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
+import { estimateShown } from "@/lib/v3c/fixdata2";
+import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
+import { StartedNote } from "./StartedNote";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
 const bookName = (k: string) => BOOK_NAME[k] ?? k;
@@ -451,8 +454,11 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
         ])
       : null;
   const guard = m.model_guard?.level ?? "ok";
+  // fixdata2 N3: no market to compare (no estimate at all) or an estimate far from the best real price (no estimate, no fair price)
+  const showEst = estimateShown(m);
+  const f2 = fixdata2CopyFor(lang);
   const priceTime = (iso: string) => timeHM(iso, ctx.tz, locale);
-  const choices: TapeChoice[] = m.outcomes.map((o) => ({ key: o.outcome, label: label(o.outcome), fair: fairPrice(o.estimate_p) }));
+  const choices: TapeChoice[] = m.outcomes.map((o) => ({ key: o.outcome, label: label(o.outcome), fair: showEst ? fairPrice(o.estimate_p) : null }));
   return (
     <>
       <Head ctx={ctx} tab={c.tabFootball} id={m.id} home={m.home} away={m.away} kickoff={m.kickoff} league={m.competition || m.league} sport="football" sealedAt={m.sealed_at} />
@@ -478,6 +484,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               </span>
             </>
           ) : null}
+          {showEst ? (
           <div>
             <span className="v3c-lab">
               {c.estimate}
@@ -491,7 +498,8 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               </mark>
             </b>
           </div>
-          {g != null ? (
+          ) : null}
+          {g != null && showEst ? (
             <div className={["v3c-mt-gap", isFlatGap(g) || guard !== "ok" ? "v3c-g-flat" : null].filter(Boolean).join(" ")} data-guard={guard}>
               <span className="v3c-lab">
                 {c.gap}
@@ -507,13 +515,14 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
         </div>
         {hasMarket && M != null && guard === "market_only" ? (
           // fixdata B5: the estimate shown is the market — no «our estimate» sentence, no blend line, no tape of a gap
-          <p className="v3c-mt-note v3c-guard-note" data-guard={guard}>{fc.marketOnly}</p>
+          <p className="v3c-mt-note v3c-guard-note" data-guard={guard} data-reason={m.model_guard?.reason}>{m.model_guard?.reason === "price_far" ? f2.priceFar : fc.marketOnly}</p>
         ) : hasMarket && M != null ? (
           <>
             {/* fixui UX-3: la frase-verdetto è il pezzo grande, la stima ha solo un contorno (fixui.css) */}
             <p className="v3c-explain v3c-mt-verdict">{c.explain(L, price2(lead.market_price), M, E, Math.abs(g ?? 0).toFixed(1), dir)}</p>
             <p className="v3c-pn-facts v3c-small" style={{ marginTop: 6, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
               <span>{t.board.blend}</span>
+              {m.market_from === "books" ? <span data-market-from="books">{f2.marketFromBooks}</span> : null}
               {m.margin_removed != null ? (
                 <span className="v3c-fm-i">
                   {t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}
@@ -525,6 +534,13 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
             </p>
             <Nastro market={M} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
             {guard === "no_value" ? <p className="v3c-mt-note v3c-guard-note" data-guard={guard}>{fc.noValue}</p> : null}
+          </>
+        ) : guard === "no_market" ? (
+          <>
+            <p className="v3c-mt-note v3c-guard-note" data-guard={guard}>
+              <b>{f2.modelOnly}</b>
+            </p>
+            <p className="v3c-fine">{f2.modelOnlyNote}</p>
           </>
         ) : (
           <p className="v3c-mt-note">{c.noMarketLong}</p>
@@ -548,7 +564,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
             </span>
           </div>
           {m.outcomes.map((o) => {
-            const fp = fairPrice(o.estimate_p);
+            const fp = showEst ? fairPrice(o.estimate_p) : null;
             return (
               <div key={o.outcome} role="row" className={["v3c-mt-or", o === lead ? "v3c-mt-lead" : null].filter(Boolean).join(" ")}>
                 <span role="cell" className="v3c-mt-who">
@@ -563,21 +579,25 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
                   {o.market_p == null ? null : <small>%</small>}
                 </span>
                 <span role="cell" className="v3c-num v3c-ra">
-                  <mark>
-                    {pctInt(o.estimate_p)}
-                    <small>%</small>
-                  </mark>
+                  {showEst ? (
+                    <mark>
+                      {pctInt(o.estimate_p)}
+                      <small>%</small>
+                    </mark>
+                  ) : (
+                    "—"
+                  )}
                 </span>
                 <span role="cell" className={["v3c-num", "v3c-ra", isFlatGap(o.edge_pp) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
-                  {gapText(o.edge_pp)}
-                  {o.edge_pp == null ? null : <small> pp</small>}
+                  {showEst ? gapText(o.edge_pp) : "—"}
+                  {o.edge_pp == null || !showEst ? null : <small> pp</small>}
                 </span>
               </div>
             );
           })}
         </div>
         <p className="v3c-fine" style={{ marginTop: 10 }}>
-          {c.wrongN(E)} {g != null ? <span className="v3c-gap-round">{fc.gapRounding}</span> : null}
+          {showEst ? c.wrongN(E) : null} {g != null && showEst ? <span className="v3c-gap-round">{fc.gapRounding}</span> : null}
         </p>
       </section>
 
@@ -598,8 +618,9 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               <li>
                 <span className="k">{(summary ? 2 : 1) + (news[0] ? 1 : 0)}</span>
                 <div>
-                  <h3>{m.blend ? c.blendTitle : c.modelTitle}</h3>
-                  <p>{m.blend ? c.blendBody : c.modelBody}</p>
+                  {/* fixdata2 N3: without a market there is no estimate, so the step does not call the model one */}
+                  <h3>{m.blend ? c.blendTitle : guard === "no_market" ? f2.modelOnly : c.modelTitle}</h3>
+                  <p>{m.blend ? c.blendBody : guard === "no_market" ? f2.modelOnlyNote : c.modelBody}</p>
                 </div>
               </li>
               <SealItem ctx={ctx} n={(summary ? 3 : 2) + (news[0] ? 1 : 0)} sealedAt={m.sealed_at} />
@@ -628,7 +649,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           {started ? (
             <section className="v3c-partner v3c-mt-partner" aria-labelledby="v3c-mt-p">
               <h2 className="v3c-t-sec" id="v3c-mt-p">{fc.startedGroup}</h2>
-              <p className="v3c-fine">{fc.startedNote}</p>
+              <StartedNote id={m.id} kickoff={m.kickoff} />
             </section>
           ) : (
             <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={L} books={books} checked={chk ? priceTime(chk) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={priceTime} />
@@ -679,7 +700,12 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   // fixdata B8: a sealed row of OUR model (tempered Elo): the sealed number and its gap against the book before the seal
   const fc = fixdataCopyFor(lang);
   // (QA B8: the model_tempered branch only — the ui3 rule «no estimate of ours in tennis» stays for every other kind)
-  const sealedOurs = m.probability_kind === "model_tempered" && m.sealed_at != null && lead.sealed_p != null;
+  // fixdata2 N9: the sealed Elo under the 15 / 25 pp guard — > 25 pp or no market, the board's «Market only» here too
+  const sg = m.sealed_guard?.level ?? "ok";
+  const f2 = fixdata2CopyFor(lang);
+  const sealedRow = m.probability_kind === "model_tempered" && m.sealed_at != null && lead.sealed_p != null;
+  const sealedOurs = sealedRow && (sg === "ok" || sg === "no_value");
+  const sealedHidden = sealedRow && !sealedOurs;
   return (
     <>
       <Head ctx={ctx} tab={c.tabTennis} id={m.id} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
@@ -744,7 +770,11 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
               <Nastro className="v3c-gl-tn" market={pct0(lead.market_p as number)} estimate={pct0(est.estimate as number)} gap={est.gap} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
             ) : null}
           </>
-        ) : sealedOurs ? null : (
+        ) : sealedOurs ? null : sealedHidden ? (
+          <p className="v3c-mt-note v3c-guard-note" data-guard={sg}>
+            {sg === "no_market" ? f2.modelOnly : f2.sealedFar}
+          </p>
+        ) : (
           <p className="v3c-mt-note">{t.tennis.noEstimate}</p>
         )}
         {sealedOurs ? (
@@ -785,7 +815,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
                 </>
               ) : null}
             </div>
-            <p className="v3c-fine">{lead.gap_pp != null ? fc.sealedGapNote : m.gap_null_reason}</p>
+            <p className="v3c-fine" data-guard={sg}>{lead.gap_pp != null ? fc.sealedGapNote : sg === "no_value" ? f2.sealedNoValue : m.gap_null_reason}</p>
           </div>
         ) : null}
         <div className={["v3c-mt-out", elo ? "v3c-mt-out-tn5" : "v3c-mt-out-tn3"].join(" ")} role="table" aria-label={t.tennis.winner}>
@@ -881,7 +911,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
           {started ? (
             <section className="v3c-partner v3c-mt-partner" aria-labelledby="v3c-mt-p">
               <h2 className="v3c-t-sec" id="v3c-mt-p">{fc.startedGroup}</h2>
-              <p className="v3c-fine">{fc.startedNote}</p>
+              <StartedNote id={m.id} kickoff={m.kickoff} />
             </section>
           ) : (
             <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={lead.player} books={books} checked={chk ? priceTime(chk) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={priceTime} />

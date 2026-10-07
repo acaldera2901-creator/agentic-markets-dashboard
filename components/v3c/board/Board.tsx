@@ -50,6 +50,7 @@ import { useLiveScores } from "../live/useLiveScores";
 import { LiveAnnouncer, LiveNow } from "../live/LiveBits";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
 import { byRelevance, hasStarted } from "@/lib/v3c/fixdata";
+import { oneRowPerMatch } from "@/lib/v3c/fixdata2";
 
 type Props = {
   /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
@@ -188,11 +189,12 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
         <LiveNow
           c={lc}
           feed={live}
-          rows={[
+          // fixdata2 B6/A3: one row per match — a tennis twin of /api/v3/live (partner feed + Elo) is not listed twice
+          rows={oneRowPerMatch([
             ...all.map((r) => ({ id: r.m.id, sport: r.kind, home: sidesOf(r.m)[0], away: sidesOf(r.m)[1], league: r.kind === "football" ? leagueOf(r.m) : r.m.tournament })),
             // fixdata A3: every live match of /api/v3/live, also those the home does not carry
             ...Object.entries(live.names ?? {}).filter(([id]) => !names.has(id)).map(([id, n]) => ({ id, sport: n.sport, home: n.home, away: n.away, league: n.league })),
-          ]}
+          ], (id) => live.items[id] != null)}
         />
       ) : null}
       <LiveAnnouncer text={live.announce} />

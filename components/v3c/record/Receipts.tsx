@@ -12,6 +12,7 @@ import { pctInt, price2 } from "@/lib/v3c/board-view";
 import { shortFingerprint, signedPp, stampUtc } from "@/lib/v3c/record-view";
 import { useRecordCopy } from "./useRecordCopy";
 import { ResultPill, resultKindOf, scoreText } from "../ResultPill";
+import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
 
 const SPORTS: ReceiptSport[] = ["football", "tennis", "all"];
 
@@ -102,7 +103,7 @@ export function Receipts({ result, sport, page }: { result: ReceiptsPage | null;
                         </td>
                         <td className="v3c-r rc-gap" data-l={t.receipts.gap}>
                           {r.gap_pp == null ? (
-                            <small>{r.gap_null_reason === "is_market" ? t.receipts.isMarket : t.receipts.noMarket}</small>
+                            <small data-reason={r.gap_null_reason ?? undefined}>{r.gap_null_reason === "is_market" ? t.receipts.isMarket : r.gap_null_reason === "model_far" ? fixdata2CopyFor(locale).recordModelFar : t.receipts.noMarket}</small>
                           ) : (
                             <span className="v3c-num">{signedPp(r.gap_pp, locale)}</span>
                           )}
