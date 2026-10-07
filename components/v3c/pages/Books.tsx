@@ -1,15 +1,18 @@
 "use client";
-// components/v3c/pages/Books.tsx (#REDESIGN-V3C F9 · filone pages) — la pagina Books.
-// Una cosa grande: le card dei book con prezzi live (gli unici che possono essere
-// «best» sulla board). Ogni card: logo del catalogo, cosa fa il book qui, il
-// bonus — NESSUNO, perché il catalogo non ne ha uno verificato (lib/partners.ts:
-// le tagline sono FTC-safe e dichiarano di non affermare bonus) —, dove vale il
-// link, il bottone affiliato reale tracciato (partner_click, come la vetrina di
-// sempre). Sotto: il confronto dei prezzi di oggi, poi gli altri book (solo link
-// di registrazione, nessun prezzo), il gioco responsabile, la FAQ.
-// Una sola CTA royal: il primo book con feed. 18+ e affiliazione sempre visibili.
+// components/v3c/pages/Books.tsx (#REDESIGN-V3C F9 · filone pages → ui2) — la pagina Books.
+// ui2 (Andrea, 07/10): «tutti i partner in evidenza, non solo 2». Ogni partner
+// del catalogo (lib/partners.ts) ha la STESSA card: logo, nome, tipo, dove vale
+// il link, 18+, bottone affiliato reale tracciato (partner_click, come la
+// vetrina di sempre), rel="nofollow sponsored". Ordine alfabetico, dichiarato.
+// L'unica differenza fra le card è un fatto: chi ha un feed di quote letto dice
+// «Live prices on the board», gli altri «Odds on their site» — stesso stile,
+// stessa riga. Nessun bonus: il catalogo non ne ha di verificati. Nessuna CTA
+// royal: tutti i bottoni hanno lo stesso peso. Sotto: il confronto dei prezzi
+// di oggi (solo book con feed), il gioco responsabile, la FAQ.
+import { useMemo, useState } from "react";
 import { Banner } from "../Banner";
 import "../fidelity.css";
+import "../ui2.css";
 import Link from "next/link";
 import { useV3cLang } from "@/lib/v3c/lang.client";
 import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
@@ -18,15 +21,16 @@ import { trackEvent } from "@/lib/track-event";
 import { PARTNERS_SEO_FAQ, PARTNERS_SEO_HEADING, PARTNERS_SEO_INTRO } from "@/app/partners/seo";
 import { Arrow } from "../Arrow";
 import { Fascia } from "../Fascia";
+import { PartnerLogo, needsName } from "../PartnerLogo";
 import { v3cLang } from "@/lib/v3c/copy";
 
 export type BookCard = {
   id: string;
   name: string;
-  logo: string;
-  emblem: boolean;
   url: string;
   category: "sportsbook" | "casino";
+  /** un feed di quote letto: la quota compare sulla board e nel confronto */
+  live: boolean;
   /** il partner esiste SOLO in questi paesi (nessun link neutro) */
   onlyIn: string[] | null;
   /** il partner ha un link di registrazione locale in questi paesi */
@@ -35,14 +39,15 @@ export type BookCard = {
 
 type Props = {
   blocked: boolean;
+  /** tutti i partner, già in ordine alfabetico */
+  cards: BookCard[];
+  /** i soli book con feed, per le colonne del confronto */
   connected: BookCard[];
-  more: BookCard[];
   rows: CompareRow[];
-  bestCount: Record<string, number>;
-  priced: number;
   checkedAt: string | null;
-  boardOk: boolean;
 };
+
+type Kind = "all" | "sportsbook" | "casino";
 
 function regions(codes: string[], lang: string): string {
   try {
@@ -55,15 +60,6 @@ function regions(codes: string[], lang: string): string {
 
 function track(b: BookCard, kind: string) {
   trackEvent("partner_click", { partner_id: b.name, meta: { surface: "v3c_partners", kind } });
-}
-
-function Logo({ b }: { b: BookCard }) {
-  return (
-    <span className={b.emblem ? "v3c-pg-plate v3c-pg-plate-em" : "v3c-pg-plate"}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- loghi statici in /public, come la vetrina di sempre */}
-      <img src={b.logo} alt="" loading="lazy" />
-    </span>
-  );
 }
 
 /** La prosa SEO di /partners (stesso testo del layout a flag spento); il JSON-LD lo scrive il server. */
@@ -92,11 +88,18 @@ function PartnersSeo() {
 
 const price2 = (n: number) => n.toFixed(2);
 
-export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, checkedAt, boardOk }: Props) {
+export function V3cBooks({ blocked, cards, connected, rows, checkedAt }: Props) {
   const lang = useV3cLang();
   const t = usePagesCopy().books;
+  const [kind, setKind] = useState<Kind>("all");
+  const [q, setQ] = useState("");
 
   const where = (b: BookCard) => (b.onlyIn ? t.onlyIn(regions(b.onlyIn, lang)) : b.localIn ? `${t.everywhere} · ${t.localLink(regions(b.localIn, lang))}` : t.everywhere);
+  const count = (k: Kind) => (k === "all" ? cards.length : cards.filter((c) => c.category === k).length);
+  const shown = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return cards.filter((c) => (kind === "all" || c.category === kind) && (!needle || c.name.toLowerCase().includes(needle)));
+  }, [cards, kind, q]);
 
   if (blocked) {
     return (
@@ -112,6 +115,12 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
     );
   }
 
+  const KINDS: [Kind, string][] = [
+    ["all", t.all],
+    ["sportsbook", t.sportsbooks],
+    ["casino", t.casinos],
+  ];
+
   return (
     <main className="v3c-wrap" id="main">
       <Fascia
@@ -119,7 +128,7 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
         title={t.title}
         meta={
           <>
-            <b>{t.metaStrong(connected.length)}</b>
+            <b>{t.metaStrong(cards.length)}</b>
             <span>{t.metaRest}</span>
             <span className="v3c-age">18+</span>
           </>
@@ -127,45 +136,60 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
         art={<Banner name="partner-crowd" priority position="60% 45%" />}
       />
 
-      <div className="v3c-pg-cards">
-        {connected.map((b, i) => (
-          <article key={b.id} className={i === 0 ? "v3c-pg-card v3c-pg-card-first" : "v3c-pg-card"} aria-labelledby={`v3c-bk-${b.id}`}>
-            <div className="v3c-pg-card-h">
-              <Logo b={b} />
-              <div>
-                <h2 className="v3c-t-row" id={`v3c-bk-${b.id}`}>
-                  {b.name}
-                </h2>
-                <span className="v3c-small">
-                  {t.connected} · {boardOk && priced > 0 ? <b>{t.bestOn(bestCount[b.id] ?? 0, priced)}</b> : t.noBoard}
-                </span>
-              </div>
-            </div>
-            <p className="v3c-pg-bonus">
-              <b>{t.bonusNone}</b>
-              <small>{t.bonusWhy}</small>
-            </p>
-            <p className="v3c-pg-where">
-              <span className="v3c-lab">{t.where}</span> {where(b)}
-            </p>
-            <a
-              className={i === 0 ? "v3c-btn v3c-btn-cta" : "v3c-btn v3c-btn-line"}
-              href={b.url}
-              target="_blank"
-              rel="nofollow sponsored noopener noreferrer"
-              data-partner={b.id}
-              onClick={() => track(b, "card")}
-            >
-              {t.goTo(b.name)} <Arrow up />
-            </a>
-            <span className="v3c-fine">
-              {t.affiliate} · 18+
-            </span>
-          </article>
-        ))}
+      <div className="v3c-bks-bar">
+        <div className="v3c-chips" role="group" aria-label={t.filterLabel}>
+          {KINDS.map(([k, label]) => (
+            <button key={k} type="button" className="v3c-chip" aria-pressed={kind === k} onClick={() => setKind(k)}>
+              {label} <small>{count(k)}</small>
+            </button>
+          ))}
+        </div>
+        <label className="v3c-bks-search">
+          <span className="v3c-sr">{t.search}</span>
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} autoComplete="off" spellCheck={false} />
+        </label>
+        <p className="v3c-small v3c-bks-order" aria-live="polite">
+          {t.shown(shown.length, cards.length)} · {t.order}
+        </p>
       </div>
 
-      <section className="v3c-sec" aria-labelledby="v3c-pg-cmp">
+      {shown.length === 0 ? (
+        <p className="v3c-small v3c-bks-none">{t.none}</p>
+      ) : (
+        <ul className="v3c-bks-grid">
+          {shown.map((b) => (
+            <li key={b.id}>
+              <article className="v3c-bks-card" aria-labelledby={`v3c-bks-${b.id}`}>
+                <PartnerLogo id={b.id} name={b.name} size="card" decorative />
+                <div className="v3c-bks-id">
+                  <h2 className="v3c-t-row" id={`v3c-bks-${b.id}`}>
+                    {b.name}
+                  </h2>
+                  <span className="v3c-small">
+                    {b.category === "sportsbook" ? t.typeSportsbook : t.typeCasino} · <span className="v3c-age">18+</span>
+                  </span>
+                </div>
+                <dl className="v3c-bks-facts">
+                  <div>
+                    <dt className="v3c-lab">{t.pricesLab}</dt>
+                    <dd>{b.live ? t.live : t.siteOdds}</dd>
+                  </div>
+                  <div>
+                    <dt className="v3c-lab">{t.where}</dt>
+                    <dd>{where(b)}</dd>
+                  </div>
+                </dl>
+                <a className="v3c-btn v3c-btn-line v3c-bks-go" href={b.url} target="_blank" rel="nofollow sponsored noopener noreferrer" data-partner={b.id} onClick={() => track(b, "card")}>
+                  {t.goTo(b.name)} <Arrow up />
+                </a>
+                <span className="v3c-fine">{t.affiliate}</span>
+              </article>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <section className="v3c-sec" id="v3c-pg-compare" aria-labelledby="v3c-pg-cmp">
         <div className="v3c-sec-h">
           <h2 className="v3c-t-sec" id="v3c-pg-cmp">
             {t.compareTitle}
@@ -184,7 +208,10 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
                   </th>
                   {connected.map((b) => (
                     <th key={b.id} className="v3c-lab v3c-r" scope="col">
-                      {b.name}
+                      <span className="v3c-bks-th">
+                        <PartnerLogo id={b.id} name={b.name} size="chip" decorative />
+                        <span className={needsName(b.id, b.name) ? undefined : "v3c-sr"}>{b.name}</span>
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -214,35 +241,6 @@ export function V3cBooks({ blocked, connected, more, rows, bestCount, priced, ch
         )}
         {rows.length > 0 && checkedAt ? <p className="v3c-fine v3c-pg-checked">{t.compareChecked(hhmmUtc(checkedAt))}</p> : null}
       </section>
-
-      {more.length > 0 ? (
-        <section className="v3c-sec" aria-labelledby="v3c-pg-more">
-          <div className="v3c-sec-h">
-            <h2 className="v3c-t-sec" id="v3c-pg-more">
-              {t.moreTitle}
-            </h2>
-            <span className="v3c-small">{t.moreSub}</span>
-          </div>
-          <ul className="v3c-pg-morelist">
-            {more.map((b) => (
-              <li key={b.id}>
-                <Logo b={b} />
-                <span className="v3c-pg-more-n">
-                  <b>{b.name}</b>
-                  <span className="v3c-small">
-                    {b.category === "sportsbook" ? t.sportsbook : t.casino}
-                    {b.onlyIn || b.localIn ? ` · ${where(b)}` : ""}
-                  </span>
-                </span>
-                <a className="v3c-ghost v3c-pg-visit" href={b.url} target="_blank" rel="nofollow sponsored noopener noreferrer" data-partner={b.id} onClick={() => track(b, "more")}>
-                  {t.visit} <Arrow up />
-                  <span className="v3c-sr"> {b.name}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <aside className="v3c-pg-resp">
         <span className="v3c-age v3c-pg-age">18+</span>

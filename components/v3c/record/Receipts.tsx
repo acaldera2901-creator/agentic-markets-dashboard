@@ -11,6 +11,7 @@ import type { ReceiptSport, ReceiptsPage } from "@/lib/v3c/record-data.server";
 import { pctInt, price2 } from "@/lib/v3c/board-view";
 import { shortFingerprint, signedPp, stampUtc } from "@/lib/v3c/record-view";
 import { useRecordCopy } from "./useRecordCopy";
+import { ResultPill, resultKindOf, scoreText } from "../ResultPill";
 
 const SPORTS: ReceiptSport[] = ["football", "tennis", "all"];
 
@@ -96,9 +97,13 @@ export function Receipts({ result, sport, page }: { result: ReceiptsPage | null;
                       )}
                     </td>
                     <td className={`v3c-rec-res v3c-rec-${r.verdict} rc-res`}>
-                      {t.receipts.verdict[r.verdict]}
+                      {/* ui2: l'esito come pill W/L/V/in attesa (stesso peso per W e L) e il risultato finale accanto */}
+                      <span className="v3c-rec-out">
+                        <ResultPill kind={resultKindOf(r.verdict)} word={t.receipts.outcome[resultKindOf(r.verdict)]} />
+                        {scoreText(r.final_score) ? <span className="v3c-score">{scoreText(r.final_score)}</span> : null}
+                      </span>
                       <small>
-                        {r.final_score ?? ""}
+                        {t.receipts.verdict[r.verdict]}
                         {r.revision > 1 ? <em className="v3c-tag">{t.receipts.corrected}</em> : null}
                         {r.is_paper ? <em className="v3c-tag">{t.receipts.paper}</em> : null}
                       </small>

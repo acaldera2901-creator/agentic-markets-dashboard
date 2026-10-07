@@ -11,21 +11,52 @@ import { matchCopyFor } from "@/lib/v3c/match-copy";
 import { V3C_ROUTES } from "../V3cChrome";
 import { Arrow } from "../Arrow";
 import { BrandLoader, StateArt } from "../States";
+import "../ui2.css";
 
-export function MatchSkeleton({ label }: { label?: "match" | "pc" }) {
+/**
+ * ui2 (CLS): lo scheletro occupa lo stesso spazio della pagina che arriva. Con la
+ * board grande (~440 partite) il corpo arriva ~180 ms dopo la cornice; prima lo
+ * scheletro era alto la metà della pagina, il piè finiva nel primo schermo e
+ * veniva spinto giù di ~750 px (CLS 0,88 su mobile). Ora: stessa briciola (stesso
+ * margine, quindi `main` non si sposta), stessa fascia, e i tre passi + «More»
+ * con l'altezza minima misurata della pagina vera (components/v3c/ui2.css).
+ */
+export function MatchSkeleton({ label, sport = "football" }: { label?: "match" | "pc"; sport?: "football" | "tennis" }) {
   const { lang } = useV3cCopy();
   const c = matchCopyFor(lang);
-  return (
-    <div className="v3c-mt-skel" aria-busy="true">
-      <div className="v3c-load-row">
-        <BrandLoader label={label === "pc" ? c.pc.loading : c.loading} />
+  if (label === "pc") {
+    return (
+      <div className="v3c-mt-skel v3c-mt-skel-pc" aria-busy="true">
+        <div className="v3c-load-row">
+          <BrandLoader label={c.pc.loading} />
+        </div>
+        <i style={{ height: 112, background: "var(--v3c-navy)" }} aria-hidden="true" />
+        <i style={{ width: "40%" }} aria-hidden="true" />
+        <i style={{ height: 96, width: "70%" }} aria-hidden="true" />
+        <i aria-hidden="true" />
+        <i aria-hidden="true" />
+        <i style={{ height: 240 }} aria-hidden="true" />
       </div>
-      <i style={{ height: 112, background: "var(--v3c-navy)" }} aria-hidden="true" />
-      <i style={{ width: "40%" }} aria-hidden="true" />
-      <i style={{ height: 96, width: "70%" }} aria-hidden="true" />
-      <i aria-hidden="true" />
-      <i aria-hidden="true" />
-      <i style={{ height: 240 }} aria-hidden="true" />
+    );
+  }
+  return (
+    <div className={`v3c-mt-skel2 v3c-mt-skel2-${sport}`} aria-busy="true">
+      <p className="v3c-mt-crumbs" aria-hidden="true">
+        <i className="v3c-mt-skel2-bar" style={{ width: 160 }} />
+      </p>
+      <div className="v3c-fascia v3c-mt-skel2-fascia" aria-hidden="true" />
+      <div className="v3c-mt-step v3c-mt-skel2-s1">
+        <div className="v3c-load-row">
+          <BrandLoader label={c.loading} />
+        </div>
+        <i className="v3c-mt-skel2-bar" style={{ width: "40%" }} aria-hidden="true" />
+        <i className="v3c-mt-skel2-bar" style={{ height: 96, width: "70%" }} aria-hidden="true" />
+      </div>
+      <div className="v3c-mt-step v3c-mt-skel2-s2" aria-hidden="true">
+        <i className="v3c-mt-skel2-bar" style={{ height: 240 }} />
+      </div>
+      <div className="v3c-mt-step v3c-mt-skel2-s3" aria-hidden="true" />
+      <div className="v3c-sec v3c-mt-skel2-more" aria-hidden="true" />
     </div>
   );
 }

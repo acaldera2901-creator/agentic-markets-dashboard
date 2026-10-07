@@ -354,3 +354,18 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `match.chartSealed` | «fn: Sealed · {time}» (`lib/v3c/match-copy.ts`) |
 
 v3c-final: anche `board.shownOf` / `board.showMore` (live) sono tradotte nelle 11 lingue; `toolbar.homeHorizon` è stata rimossa (live: i chip della home contano tutta la finestra).
+
+### ui2 (07/10) — esiti W/L/V e pagina Books, tradotte nelle 11 lingue
+
+| Chiave | EN |
+|---|---|
+| `yday.voidOne` | «Void» |
+| `yday.pending` | «Pending» |
+| `yday.showAll` | «fn: Show all {n}» |
+| `record.receipts.outcome.won` | «Won» |
+| `record.receipts.outcome.lost` | «Lost» |
+| `record.receipts.outcome.void` | «Void» |
+| `record.receipts.outcome.pending` | «Pending» |
+
+W / L / V nelle pill (`components/v3c/ResultPill.tsx`) sono la sigla internazionale e restano tali in ogni lingua.
+Books (`lib/v3c/pages-copy.ts` → `books`): nuove `filterLabel`, `all`, `sportsbooks`, `casinos`, `search`, `none`, `shown`, `order`, `typeSportsbook`, `typeCasino`, `pricesLab`, `live`, `siteOdds`; riscritte `title`, `metaStrong`, `metaRest`; rimosse `connected`, `bestOn`, `noBoard`, `bonusNone`, `bonusWhy`, `moreTitle`, `moreSub`, `sportsbook`, `casino`, `visit`. Le nove lingue sono da rivedere da madrelingua come il resto di F10.

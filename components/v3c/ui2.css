@@ -1,0 +1,110 @@
+/* components/v3c/ui2.css (#REDESIGN-V3C ui2) — scheletro della partita, risultati
+   W/L/V del record, loghi dei partner, pagina Books. Solo token v3c. */
+
+/* ── Scheletro della partita: le altezze minime sono quelle misurate della
+   pagina vera (mock, calcio con/senza storico, tennis; 390 e 1440). Lo
+   scheletro deve essere ALTO ALMENO quanto la pagina nel primo schermo: ciò
+   che arriva sostituisce, non spinge. ── */
+.v3c-mt-skel2 { display: block; }
+.v3c-mt-skel2-bar { display: block; height: 18px; background: var(--v3c-paper-2); }
+.v3c-mt-crumbs .v3c-mt-skel2-bar { height: 13px; margin: 3px 0; } /* la briciola vera è alta 19 px */
+.v3c-mt-skel2-s1, .v3c-mt-skel2-s2 { display: grid; gap: 14px; align-content: start; }
+.v3c-mt-skel2-fascia { min-height: 155px; }
+.v3c-mt-skel2-football .v3c-mt-skel2-s1 { min-height: 720px; }
+.v3c-mt-skel2-football .v3c-mt-skel2-s2 { min-height: 420px; }
+.v3c-mt-skel2-football .v3c-mt-skel2-s3 { min-height: 270px; }
+.v3c-mt-skel2-tennis .v3c-mt-skel2-s1 { min-height: 520px; }
+.v3c-mt-skel2-tennis .v3c-mt-skel2-s2 { min-height: 470px; }
+.v3c-mt-skel2-tennis .v3c-mt-skel2-s3 { min-height: 440px; }
+.v3c-mt-skel2-more { min-height: 390px; }
+@media (max-width: 820px) {
+  .v3c-mt-skel2-fascia { min-height: 157px; }
+  .v3c-mt-skel2-football .v3c-mt-skel2-s1 { min-height: 820px; }
+  .v3c-mt-skel2-football .v3c-mt-skel2-s2 { min-height: 900px; }
+  .v3c-mt-skel2-football .v3c-mt-skel2-s3 { min-height: 340px; }
+  .v3c-mt-skel2-tennis .v3c-mt-skel2-s1 { min-height: 540px; }
+  .v3c-mt-skel2-tennis .v3c-mt-skel2-s2 { min-height: 900px; }
+  .v3c-mt-skel2-tennis .v3c-mt-skel2-s3 { min-height: 530px; }
+  .v3c-mt-skel2-more { min-height: 400px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .v3c-mt-skel2-bar { animation: v3c-pulse 1.4s ease-in-out infinite; }
+}
+
+/* ── Logo del partner: placca navy fissa (i file dei book sono scritti per il
+   fondo scuro), logo in object-fit: contain, stessa misura per tutti. ── */
+.v3c-plogo { position: relative; display: inline-grid; place-items: center; flex-shrink: 0; background: var(--v3c-navy); vertical-align: middle; overflow: hidden; clip-path: var(--v3c-cut-sm); }
+.v3c-plogo-chip { width: 56px; height: 22px; } .v3c-plogo-row { width: 72px; height: 28px; } .v3c-plogo-lg { width: 112px; height: 44px; } .v3c-plogo-card { width: 168px; height: 64px; }
+.v3c-plogo-chip.v3c-plogo-sq { width: 22px; } .v3c-plogo-sq img { padding: 2px; }
+/* assoluta: l'altezza in % di un figlio di griglia non si risolve sulla placca (misurato: 104 px in una placca da 44) */
+.v3c-plogo img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.v3c-plogo-chip img { padding: 3px 5px; }
+.v3c-plogo-row img { padding: 4px 6px; }
+.v3c-plogo-lg img { padding: 6px 10px; }
+.v3c-plogo-card img { padding: 10px 16px; }
+.v3c-plogo-txt { color: var(--v3c-on-navy); font: 700 11px/1.1 var(--v3c-f-text); text-align: center; padding: 0 4px; overflow-wrap: anywhere; }
+.v3c-plogo-lg.v3c-plogo-txt { font-size: 14px; }
+.v3c-plogo-card.v3c-plogo-txt { font-size: 17px; }
+[data-theme="v3c"][data-mode="dark"] .v3c-plogo { box-shadow: inset 0 0 0 1px var(--v3c-line); }
+
+/* il chip del book: placca + (nome, se il marchio non lo porta) + quota */
+.v3c-bchip .v3c-plogo { margin-left: -1px; }
+.v3c-bchip-n { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.v3c-books td .v3c-plogo { margin-right: 10px; }
+@media (max-width: 600px) { .v3c-books td .v3c-plogo-row { width: 52px; height: 24px; margin-right: 8px; } .v3c-books td .v3c-plogo-row img { padding: 3px 4px; } }
+.v3c-books td { vertical-align: middle; }
+
+/* ── Esito W/L/V/in attesa: stessa misura e stesso pieno per W e L. ── */
+.v3c-rp { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 24px; min-width: 42px; padding: 0 8px; border: 1.5px solid transparent; font: 800 13px/1 var(--v3c-f-text); font-stretch: 75%; font-variation-settings: "wdth" 75; letter-spacing: .04em; white-space: nowrap; clip-path: var(--v3c-cut-sm); }
+.v3c-rp-g { font-size: 12px; font-weight: 700; }
+.v3c-rp-won { background: var(--v3c-lime); border-color: var(--v3c-lime); color: var(--v3c-paper); }
+.v3c-rp-lost { background: var(--v3c-ink); border-color: var(--v3c-ink); color: var(--v3c-paper); }
+.v3c-rp-void, .v3c-rp-pending { border-color: var(--v3c-line-2); color: var(--v3c-ink-2); clip-path: none; }
+.v3c-rp-pending { font-weight: 700; letter-spacing: .02em; }
+.v3c-score { font-family: var(--v3c-f-text); font-stretch: 75%; font-variation-settings: "wdth" 75; font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v3c-rec-out { display: inline-flex; align-items: center; gap: 8px; }
+.v3c-rec-ledger .rc-res small { margin-top: 5px; }
+@media (max-width: 760px) { .v3c-rec-ledger .rc-res .v3c-rec-out { justify-content: flex-end; } }
+
+/* ── «Ieri»: una riga per partita, esito a sinistra, risultato a destra ── */
+.v3c-yd-day { width: 100%; }
+.v3c-yd-rows { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); column-gap: 32px; border-top: 1px solid var(--v3c-line-2); }
+.v3c-yd-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--v3c-line); }
+.v3c-yd-row .v3c-rp { min-width: 52px; }
+.v3c-yd-row .v3c-rp-pending { font-size: 11px; padding: 0 4px; white-space: normal; text-align: center; height: auto; min-height: 24px; }
+.v3c-yd-row .v3c-yd-m { display: grid; min-width: 0; gap: 2px; }
+.v3c-yd-row .v3c-yd-m b { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.v3c-yd-row .v3c-yd-m small { font-size: 12.5px; color: var(--v3c-ink-2); }
+.v3c-yd-all { margin-top: 0; }
+.v3c-yd-all summary { cursor: pointer; padding: 12px 0; font-weight: 600; font-size: 14px; color: var(--v3c-royal-t); }
+.v3c-yd-all[open] summary { border-bottom: 1px solid var(--v3c-line); }
+.v3c-yd-all .v3c-yd-rows { border-top: 0; }
+
+/* ── Books: tutti i partner, la stessa card. Griglia a filetti (niente ombre,
+   niente card "in evidenza"): 3 colonne ≥1100, 2 ≥640, 1 sotto. ── */
+.v3c-bks-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 6px 0 18px; }
+.v3c-bks-search input { height: 36px; width: 240px; max-width: 100%; border: 1.5px solid var(--v3c-ink); background: var(--v3c-panel); color: var(--v3c-ink); padding: 0 12px; font: 500 14px/1 var(--v3c-f-text); border-radius: 0; }
+.v3c-bks-search input::placeholder { color: var(--v3c-ink-3); }
+.v3c-bks-order { margin: 0 0 0 auto; }
+.v3c-bks-none { margin: 0; padding: 18px 0; border-top: 2px solid var(--v3c-ink); }
+.v3c-bks-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 28px; }
+.v3c-bks-grid > li { display: flex; min-width: 0; }
+.v3c-bks-card { flex: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "logo id" "facts facts" "go go" "fine fine"; gap: 12px 16px; align-content: start; align-items: center; padding: 16px 0 22px; border-top: 2px solid var(--v3c-ink); min-width: 0; }
+.v3c-bks-card .v3c-plogo { grid-area: logo; }
+.v3c-bks-id { grid-area: id; display: grid; gap: 4px; min-width: 0; }
+.v3c-bks-id h2 { margin: 0; overflow-wrap: anywhere; }
+.v3c-bks-id .v3c-age { font-size: 10.5px; }
+.v3c-bks-facts { grid-area: facts; margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; align-items: baseline; }
+.v3c-bks-facts > div { display: contents; }
+.v3c-bks-facts dd { margin: 0; font-size: 13.5px; color: var(--v3c-ink); }
+.v3c-bks-go { grid-area: go; justify-self: stretch; justify-content: center; }
+.v3c-bks-card .v3c-fine { grid-area: fine; margin: 0; }
+.v3c-bks-th { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 1099px) { .v3c-bks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639px) {
+  .v3c-bks-grid { grid-template-columns: minmax(0, 1fr); }
+  .v3c-bks-card .v3c-plogo-card { width: 120px; height: 48px; }
+  .v3c-bks-card .v3c-plogo-card img { padding: 7px 12px; }
+  .v3c-bks-search, .v3c-bks-search input { width: 100%; }
+  .v3c-bks-order { margin: 0; }
+}

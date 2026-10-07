@@ -32,13 +32,10 @@ export async function V3cBooksPage() {
         <V3cFrame current="books">
           <V3cBooks
             blocked
+            cards={[]}
             connected={[]}
-            more={[]}
             rows={[]}
-            bestCount={{}}
-            priced={0}
             checkedAt={null}
-            boardOk={false}
           />
         </V3cFrame>
       </>
@@ -50,28 +47,25 @@ export async function V3cBooksPage() {
     .trim()
     .toUpperCase();
   const partners = partnersFor(country);
-  const card = (p: (typeof partners)[number]): BookCard => ({
-    id: p.id,
-    name: p.name,
-    logo: p.logo,
-    emblem: p.logoShape === "emblem",
-    url: p.url,
-    category: p.category,
-    onlyIn: null,
-    localIn: p.geoUrls ? Object.keys(p.geoUrls) : null,
-  });
+  // ui2: TUTTI i partner del catalogo con la stessa card, in ordine alfabetico (neutro e dichiarato).
+  // `live` = il book ha un feed di quote letto (lib/betconstruct-books BOOKS): solo questo cambia nella card.
   const feedKeys = new Set(BOOKS.map((b) => b.key));
-  const connected = BOOKS.map((b) => partners.find((p) => p.id === b.key))
-    .filter((p): p is (typeof partners)[number] => Boolean(p))
-    .map(card);
-  const more = partners
-    .filter((p) => !feedKeys.has(p.id))
+  const cards: BookCard[] = partners
     .map((p) => {
-      const c = card(p);
-      return PARTNER_NO_NEUTRAL.has(p.id) && c.localIn
-        ? { ...c, onlyIn: c.localIn, localIn: null }
-        : c;
-    });
+      const localIn = p.geoUrls ? Object.keys(p.geoUrls) : null;
+      const noNeutral = PARTNER_NO_NEUTRAL.has(p.id) && localIn;
+      return {
+        id: p.id,
+        name: p.name,
+        url: p.url,
+        category: p.category,
+        live: feedKeys.has(p.id),
+        onlyIn: noNeutral ? localIn : null,
+        localIn: noNeutral ? null : localIn,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+  const connected = cards.filter((c) => c.live);
 
   const b = await getBoard();
   const data = b.ok ? booksData(b.data, new Date()) : null;
@@ -82,13 +76,10 @@ export async function V3cBooksPage() {
       <V3cFrame current="books">
         <V3cBooks
           blocked={false}
+          cards={cards}
           connected={connected}
-          more={more}
           rows={data?.rows ?? []}
-          bestCount={data?.bestCount ?? {}}
-          priced={data?.priced ?? 0}
           checkedAt={data?.checkedAt ?? null}
-          boardOk={b.ok}
         />
       </V3cFrame>
     </>

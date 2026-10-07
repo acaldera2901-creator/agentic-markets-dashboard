@@ -63,7 +63,7 @@ export function V3cMatchPage({ id, fixture, mode }: { id: string; fixture: Fixtu
   return (
     <V3cChrome initialMode={mode} fontClass={v3cFontClass} current="board">
       <main className="v3c-wrap" id="main">
-        <Suspense fallback={<MatchSkeleton />}>
+        <Suspense fallback={<MatchSkeleton sport={isTennisId(id) ? "tennis" : "football"} />}>
           <MatchBody id={id} fixture={fixture} />
         </Suspense>
       </main>

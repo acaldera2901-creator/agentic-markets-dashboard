@@ -9,16 +9,11 @@ import { topPriced, type BookListing } from "@/lib/v3c/match-view";
 import type { V3cMatchCopy } from "@/lib/v3c/match-copy";
 import { trackEvent } from "@/lib/track-event";
 import { Arrow } from "../Arrow";
+import { PartnerLogo } from "../PartnerLogo";
 
-const BOOK_COLOUR: Record<string, string> = { fortuneplay: "#1B1F5E", ybets: "#0B6B4F" };
-
+/** ui2: il logo del partner (catalogo), non più le iniziali. Il nome è sempre scritto accanto (riga, «Best at …»): alt vuoto. */
 function Mark({ b, lg }: { b: { bookmaker: string; name: string }; lg?: boolean }) {
-  const code = b.name.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase();
-  return (
-    <span className={lg ? "v3c-bk v3c-bk-lg" : "v3c-bk"} style={{ "--bk": BOOK_COLOUR[b.bookmaker] ?? "#14171C" } as React.CSSProperties} aria-hidden="true">
-      {code}
-    </span>
-  );
+  return <PartnerLogo id={b.bookmaker} name={b.name} size={lg ? "lg" : "row"} decorative />;
 }
 
 type Props = {

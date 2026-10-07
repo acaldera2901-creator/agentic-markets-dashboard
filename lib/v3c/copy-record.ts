@@ -113,6 +113,8 @@ const EN = {
     paper: "paper",
     corrected: "corrected",
     verdict: { in_favour: "in favour", against: "against", void: "void", unresolved: "unresolved" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Won", lost: "Lost", void: "Void", pending: "Pending" } as Record<"won" | "lost" | "void" | "pending", string>,
     older: "Older receipts",
     newer: "Newer",
     page: (p: number) => `Page ${p}`,
@@ -260,6 +262,8 @@ const IT: V3cRecordCopy = {
     paper: "paper",
     corrected: "corretta",
     verdict: { in_favour: "a favore", against: "contro", void: "annullata", unresolved: "non risolta" },
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Vinta", lost: "Persa", void: "Annullata", pending: "In attesa" },
     older: "Ricevute più vecchie",
     newer: "Più recenti",
     page: (p) => `Pagina ${p}`,
@@ -405,6 +409,8 @@ const DE: V3cRecordCopy = {
     paper: "Paper",
     corrected: "korrigiert",
     verdict: { in_favour: "dafür", against: "dagegen", void: "ungültig", unresolved: "offen" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Gewonnen", lost: "Verloren", void: "Ungültig", pending: "Offen" },
     older: "Ältere Belege",
     newer: "Neuere",
     page: (p: number) => `Seite ${p}`,
@@ -550,6 +556,8 @@ const ES: V3cRecordCopy = {
     paper: "papel",
     corrected: "corregido",
     verdict: { in_favour: "a favor", against: "en contra", void: "nula", unresolved: "sin resolver" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Acertada", lost: "Fallada", void: "Nula", pending: "Pendiente" },
     older: "Comprobantes anteriores",
     newer: "Más recientes",
     page: (p: number) => `Página ${p}`,
@@ -695,6 +703,8 @@ const FR: V3cRecordCopy = {
     paper: "papier",
     corrected: "corrigé",
     verdict: { in_favour: "favorable", against: "défavorable", void: "annulé", unresolved: "non résolu" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Gagné", lost: "Perdu", void: "Annulé", pending: "En attente" },
     older: "Justificatifs plus anciens",
     newer: "Plus récents",
     page: (p: number) => `Page ${p}`,
@@ -840,6 +850,8 @@ const NL: V3cRecordCopy = {
     paper: "papier",
     corrected: "gecorrigeerd",
     verdict: { in_favour: "in het voordeel", against: "tegen", void: "ongeldig", unresolved: "onbeslist" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Gewonnen", lost: "Verloren", void: "Ongeldig", pending: "In afwachting" },
     older: "Oudere bewijzen",
     newer: "Nieuwere",
     page: (p: number) => `Pagina ${p}`,
@@ -985,6 +997,8 @@ const PL: V3cRecordCopy = {
     paper: "papier",
     corrected: "poprawione",
     verdict: { in_favour: "na korzyść", against: "przeciw", void: "anulowane", unresolved: "nierozstrzygnięte" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Trafiony", lost: "Nietrafiony", void: "Anulowany", pending: "Oczekuje" },
     older: "Starsze potwierdzenia",
     newer: "Nowsze",
     page: (p: number) => `Strona ${p}`,
@@ -1130,6 +1144,8 @@ const PT: V3cRecordCopy = {
     paper: "papel",
     corrected: "corrigido",
     verdict: { in_favour: "a favor", against: "contra", void: "anulado", unresolved: "por resolver" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Ganho", lost: "Perdido", void: "Anulado", pending: "Pendente" },
     older: "Comprovativos anteriores",
     newer: "Mais recentes",
     page: (p: number) => `Página ${p}`,
@@ -1275,6 +1291,8 @@ const RU: V3cRecordCopy = {
     paper: "бумажная",
     corrected: "исправлено",
     verdict: { in_favour: "в пользу", against: "против", void: "возврат", unresolved: "не решено" },
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Выигрыш", lost: "Проигрыш", void: "Возврат", pending: "Ожидает" },
     older: "Более старые квитанции",
     newer: "Новее",
     page: (p) => `Страница ${p}`,
@@ -1420,6 +1438,8 @@ const SV: V3cRecordCopy = {
     paper: "papper",
     corrected: "korrigerad",
     verdict: { in_favour: "till fördel", against: "emot", void: "ogiltig", unresolved: "ej avgjord" } as Record<"in_favour" | "against" | "void" | "unresolved", string>,
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Vunnen", lost: "Förlorad", void: "Ogiltig", pending: "Väntar" },
     older: "Äldre kvitton",
     newer: "Nyare",
     page: (p: number) => `Sida ${p}`,
@@ -1565,6 +1585,8 @@ const TR: V3cRecordCopy = {
     paper: "kâğıt",
     corrected: "düzeltildi",
     verdict: { in_favour: "lehte", against: "aleyhte", void: "geçersiz", unresolved: "belirsiz" },
+    // ui2: la pill dell'esito accanto a ogni ricevuta (W/L/V sono la sigla internazionale, la parola è questa)
+    outcome: { won: "Kazandı", lost: "Kaybetti", void: "Geçersiz", pending: "Bekliyor" },
     older: "Eski makbuzlar",
     newer: "Yeni",
     page: (p: number) => `Sayfa ${p}`,
