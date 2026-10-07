@@ -137,7 +137,8 @@ async function BoardBlock({ surface, nowIso, sport }: { surface: Surface; nowIso
 async function BenchBlock({ nowIso }: { nowIso: string }) {
   const b = await getBoard();
   // il banco usa una partita di calcio con mercato: solo quelle viaggiano fino al browser
-  const matches = b.ok ? forSurface(b.data, "home", new Date(nowIso)).matches.filter((m) => m.margin_removed != null) : [];
+  // fixdata2 N1/N3: only a match the model guard does not hold back (no EV, Kelly or stake on a guarded one)
+  const matches = b.ok ? forSurface(b.data, "home", new Date(nowIso)).matches.filter((m) => m.margin_removed != null && valueToolsAllowed(m)) : [];
   return <Bench matches={matches} nowIso={nowIso} />;
 }
 

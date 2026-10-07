@@ -18,6 +18,7 @@ import { getBoard, partnersAllowed, v3cProductOn } from "@/lib/v3c/board-data.se
 import type { V3BoardResponse } from "@/lib/v3c/contracts";
 import { landingBookLinks } from "@/lib/v3c/match-links.server";
 import { readBookLinks } from "@/lib/v3c/match-view";
+import { estimateShown, resolveAlias } from "@/lib/v3c/fixdata2";
 import { parseMode } from "@/lib/v3c/mode";
 
 export const metadata: Metadata = {
@@ -47,7 +48,8 @@ function pcMatches(board: V3BoardResponse, now: Date, max = 80): PcMatch[] {
       links: readBookLinks(m),
       // fixdata B5: the model sanity guard travels with the match (no EV/Kelly when it is not «ok»)
       guard: m.model_guard?.level ?? "ok",
-      outcomes: m.outcomes.map((o) => ({ outcome: o.outcome, market_price: o.market_price, estimate_p: o.estimate_p, book_prices: o.book_prices })),
+      // fixdata2 N3: no estimate travels when the board does not show one (no market, or its fair price far from the best)
+      outcomes: m.outcomes.map((o) => ({ outcome: o.outcome, market_price: o.market_price, estimate_p: estimateShown(m) ? o.estimate_p : null, book_prices: o.book_prices })),
     }));
   const tennis: PcMatch[] = (board.tennis ?? [])
     .filter((m) => Date.parse(m.kickoff) > now.getTime() && m.sides.every((s) => s.market_price != null))
@@ -78,8 +80,10 @@ async function PcBody({ wanted }: { wanted: string | null }) {
   const [b, partners, landing] = await Promise.all([getBoard(), partnersAllowed(), landingBookLinks()]);
   if (!b.ok) return <MatchError />;
   const list = pcMatches(b.data, new Date());
+  // fixdata2 N2: ?m= of a twin the board dropped opens the row the board kept
+  const want = wanted ? resolveAlias(b.data.aliases, wanted) : null;
   // ?m= dalla pagina partita; altrimenti la prima partita di calcio con un prezzo di un book connesso
-  const initial = (wanted && list.find((m) => m.id === wanted)?.id) || list.find((m) => m.sport === "football" && m.outcomes.every((o) => o.book_prices.length))?.id || list.find((m) => m.sport === "football")?.id || list[0]?.id || null;
+  const initial = (want && list.find((m) => m.id === want)?.id) || list.find((m) => m.sport === "football" && m.outcomes.every((o) => o.book_prices.length))?.id || list.find((m) => m.sport === "football")?.id || list[0]?.id || null;
   return <PriceCheck matches={list} initialId={initial} partners={partners} landing={landing} />;
 }
 

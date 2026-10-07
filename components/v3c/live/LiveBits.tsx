@@ -143,6 +143,10 @@ const LiveSeedContext = createContext<LiveSeed | null>(null);
 export function LiveSeedProvider({ value, children }: { value: LiveSeed; children: React.ReactNode }) {
   return <LiveSeedContext.Provider value={value}>{children}</LiveSeedContext.Provider>;
 }
+/** fixdata2 N11: the page's first live read, for the other live-aware bits of the match page (StartedNote). */
+export function useLiveSeed(): LiveSeed | null {
+  return useContext(LiveSeedContext);
+}
 
 export function MatchLive({ id, kickoff, home, away }: { id: string; kickoff: string; home: string; away: string }) {
   const lang = useV3cLang();

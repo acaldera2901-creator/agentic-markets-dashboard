@@ -32,6 +32,8 @@ import { tennisEstimateOf } from "@/lib/v3c/tennis-estimate";
 import { LiveScoreChip, LiveTimeCell } from "../live/LiveBits";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
 import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
+import { estimateShown } from "@/lib/v3c/fixdata2";
+import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
 import "../ui3.css";
 import "../fixdata.css";
 import "../tennis2.css";
@@ -227,7 +229,11 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
   const others = r.others
     .map((o) => `${outcomeLabel(m, o.outcome, t.board.draw)} ${gapText(o.edge_pp)}`)
     .join(" · ");
-  const scaleAria = lead.market_p == null ? t.board.scaleAriaNoMarket(pctInt(lead.estimate_p)) : t.board.scaleAria(pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g));
+  // fixdata2 N3: no market to compare, or an estimate far from the best real price → no estimate on the row
+  const showEst = estimateShown(m);
+  const f2 = fixdata2CopyFor(locale);
+  const est = showEst ? lead.estimate_p : null;
+  const scaleAria = lead.market_p == null ? (showEst ? t.board.scaleAriaNoMarket(pctInt(lead.estimate_p)) : f2.modelOnly) : t.board.scaleAria(pctInt(lead.market_p), pctInt(est ?? lead.market_p), gapText(g));
   // fixdata B1: a started match has no book, no best price, no partner button
   const started = hasStarted(m.kickoff, now);
   // fixdata B5: model far from the market — no edge badge (neutral gap); > 25 pp «Market only»
@@ -241,7 +247,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
         <span className="v3c-r-name">
           <button type="button" className="v3c-rowlink v3c-t-row" title={match} aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
             {match}
-            <span className="v3c-sr">, {t.board.rowAria(leadLabel, price2(lead.market_price), pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g))}</span>
+            <span className="v3c-sr">, {showEst ? t.board.rowAria(leadLabel, price2(lead.market_price), pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g)) : guard === "no_market" ? f2.modelOnly : f2.priceFar}</span>
           </button>
           <small>
             {badge?.score ? <LiveScoreChip score={badge.score} final={badge.tone === "done"} /> : null}
@@ -252,9 +258,11 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
       </span>
       <TapeCell tape={tape} label={leadLabel} t={t} />
       <span className="v3c-r-price v3c-num">{price2(lead.market_price)}</span>
-      <MkEs market={lead.market_p} estimate={lead.estimate_p} />
-      <span className={["v3c-r-gap", "v3c-num", flat || !valueToolsAllowed(m) ? "v3c-g-flat" : null, g == null ? "v3c-g-none" : null].filter(Boolean).join(" ")} title={guard === "market_only" ? fc.marketOnly : guard === "no_value" ? `${scaleAria} · ${fc.noValue}` : scaleAria} data-guard={guard}>
-        {g == null ? (
+      <MkEs market={lead.market_p} estimate={est} />
+      <span className={["v3c-r-gap", "v3c-num", flat || !valueToolsAllowed(m) ? "v3c-g-flat" : null, g == null ? "v3c-g-none" : null].filter(Boolean).join(" ")} title={guard === "no_market" ? f2.modelOnly : m.model_guard?.reason === "price_far" ? f2.priceFar : guard === "market_only" ? fc.marketOnly : guard === "no_value" ? `${scaleAria} · ${fc.noValue}` : scaleAria} data-guard={guard}>
+        {guard === "no_market" ? (
+          <small className="v3c-r-nomkt">{t.board.noMarket}</small>
+        ) : g == null ? (
           <small className="v3c-r-nomkt">{t.board.noMarket}</small>
         ) : guard === "market_only" ? (
           <small className="v3c-r-nomkt">{t.tennis.marketOnly}</small>
@@ -269,7 +277,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
             <small> pp</small>
           </span>
         )}
-        <MeLine market={lead.market_p} estimate={lead.estimate_p} />
+        <MeLine market={lead.market_p} estimate={est} />
       </span>
       <span className="v3c-r-book">
         {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners && !started ? t.board.noPrice : ""}</small>}
@@ -305,17 +313,18 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
                     {price2(o.market_price)}
                   </span>
                   <span role="cell">
-                    <RowScale market={o.market_p} estimate={o.estimate_p} label={o.market_p == null ? t.board.scaleAriaNoMarket(pctInt(o.estimate_p)) : t.board.scaleAria(pctInt(o.market_p), pctInt(o.estimate_p), gapText(o.edge_pp))} />
+                    <RowScale market={o.market_p} estimate={showEst ? o.estimate_p : null} label={!showEst ? (o.market_p == null ? f2.modelOnly : f2.priceFar) : o.market_p == null ? t.board.scaleAriaNoMarket(pctInt(o.estimate_p)) : t.board.scaleAria(pctInt(o.market_p), pctInt(o.estimate_p), gapText(o.edge_pp))} />
                   </span>
                   <span role="cell" className={["v3c-num", "v3c-ra", isFlatGap(o.edge_pp) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
-                    {o.edge_pp == null ? "—" : `${gapText(o.edge_pp)} pp`}
+                    {o.edge_pp == null || !showEst ? "—" : `${gapText(o.edge_pp)} pp`}
                   </span>
                 </div>
               );
             })}
           </div>
           <p className="v3c-pn-facts v3c-small">
-            <span>{m.blend ? t.board.blend : t.board.modelOnly}</span>
+            <span>{m.blend ? t.board.blend : guard === "no_market" ? f2.modelOnly : t.board.modelOnly}</span>
+            {m.market_from === "books" ? <span data-market-from="books">{f2.marketFromBooks}</span> : null}
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
             <span>{t.board.estimateAsOf(stampLocal(m.estimate_as_of, tz, locale))}</span>
           </p>
@@ -325,8 +334,8 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
               <span className="v3c-small">{t.board.sealedWhy(stampLocal(m.sealed_at, tz, locale))}</span>
             </p>
           ) : null}
-          {m.blend == null ? <p className="v3c-fine">{t.board.noMarketLong}</p> : null}
-          {guard !== "ok" ? <p className="v3c-fine" data-guard={guard}>{guard === "market_only" ? fc.marketOnly : fc.noValue}</p> : null}
+          {m.blend == null ? <p className="v3c-fine">{guard === "no_market" ? f2.modelOnlyNote : t.board.noMarketLong}</p> : null}
+          {guard !== "ok" && guard !== "no_market" ? <p className="v3c-fine" data-guard={guard}>{m.model_guard?.reason === "price_far" ? f2.priceFar : guard === "market_only" ? fc.marketOnly : fc.noValue}</p> : null}
           <p className="v3c-small">
             <Link href={matchHref(m.id)}>{t.board.openMatch}</Link>
           </p>
