@@ -38,6 +38,7 @@ describe("N3 · match page without a stored market", () => {
     expect(t).not.toMatch(/59\s*%/);
     expect(t).not.toMatch(/fair 1\.70|fair price 1\.70|1\.70/);
     expect(t).not.toMatch(/EV calculator|Kelly criterion/);
+    expect(t).not.toContain("Estimate = our model alone");
   });
   it("Palace–Forest with the books' prices: the market is theirs (declared), the estimate is no longer 59%", () => {
     const html = view(buildBoardMatch(palace(), [fbRow("fortuneplay", [2.68, 3.35, 2.64]), fbRow("ybets", [2.63, 3.29, 2.59])], NOW));

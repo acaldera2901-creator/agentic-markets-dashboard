@@ -618,8 +618,9 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               <li>
                 <span className="k">{(summary ? 2 : 1) + (news[0] ? 1 : 0)}</span>
                 <div>
-                  <h3>{m.blend ? c.blendTitle : c.modelTitle}</h3>
-                  <p>{m.blend ? c.blendBody : c.modelBody}</p>
+                  {/* fixdata2 N3: without a market there is no estimate, so the step does not call the model one */}
+                  <h3>{m.blend ? c.blendTitle : guard === "no_market" ? f2.modelOnly : c.modelTitle}</h3>
+                  <p>{m.blend ? c.blendBody : guard === "no_market" ? f2.modelOnlyNote : c.modelBody}</p>
                 </div>
               </li>
               <SealItem ctx={ctx} n={(summary ? 3 : 2) + (news[0] ? 1 : 0)} sealedAt={m.sealed_at} />

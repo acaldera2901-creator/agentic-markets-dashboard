@@ -214,7 +214,7 @@ if (MOCK_FIXDATA2) {
     { id: "tennis:espn:185246:anna-blinkova:caroline-werner", tournament: "WTA Ningbo", kickoff: q(10), p1: "Anna Blinkova", p2: "Caroline Werner", odds: [1.1, 5.4], elo: [0.5947, 0.4053], mv: "elo_surface_v4_features_odds", sealed: true, books: false, noOdds: true, sealedP: [0.59, 0.41], eloAgeMin: 30 },
     { id: "tennis:partner:fx2-blinkova", tournament: "Partner feed", partnerTournament: "WTA Ningbo - Hard", kickoff: q(14), p1: "Caroline Werner", p2: "Anna Blinkova", odds: [5.4, 1.1], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
     { id: "tennis:espn:184885:daniel-altmaier:holger-rune", tournament: "ATP Shanghai", kickoff: q(-0.7), p1: "Daniel Altmaier", p2: "Holger Rune", odds: [6.41, 1.16], elo: [0.2872, 0.7128], mv: "elo_surface_v4_features_odds", sealed: false, books: true, preOdds: [2.73, 1.51] },
-    { id: "tennis:partner:fx2-rune", tournament: "Partner feed", partnerTournament: "ATP Masters Shanghai - Hard", kickoff: q(-2.7), p1: "Holger Rune", p2: "Daniel Altmaier", odds: [1.32, 2.85], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
+    { id: "tennis:partner:fx2-rune", tournament: "Partner feed", partnerTournament: "ATP Masters Shanghai - Hard", kickoff: q(-2.2), p1: "Holger Rune", p2: "Daniel Altmaier", odds: [1.32, 2.85], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
     { id: "tennis:espn:184354:ann-li:elina-svitolina", tournament: "WTA China Open", kickoff: q(6), p1: "Ann Li", p2: "Elina Svitolina", odds: [45.71, 1.02], bookOdds: [3.35, 1.24], elo: [0.3, 0.7], mv: "elo_surface_v4_features_odds", sealed: false, books: true },
   );
 }
