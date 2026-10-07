@@ -22,8 +22,10 @@ import {
   groupByDay,
   dayLong,
   leaguesOf,
+  leagueOf,
   liveState,
   matchTitle,
+  sidesOf,
   outcomeLabel,
   tennisRows,
   type BoardFilters,
@@ -40,6 +42,10 @@ import type { RowTape } from "@/lib/v3c/tape";
 import { TAPE_HOURS } from "@/lib/v3c/tape";
 import "../fidelity.css";
 import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
+import { liveCopyFor } from "@/lib/v3c/live-copy";
+import { wantsLive } from "@/lib/v3c/live-view";
+import { useLiveScores } from "../live/useLiveScores";
+import { LiveAnnouncer, LiveNow } from "../live/LiveBits";
 
 type Props = {
   /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
@@ -111,6 +117,12 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
     return rows.sort((a, b) => Date.parse(a.m.kickoff) - Date.parse(b.m.kickoff) || a.m.id.localeCompare(b.m.id));
   }, [board, tz]);
 
+  // livescores: GET /api/v3/live solo se c'è una partita intorno al calcio d'inizio (e mai su /dev/ds)
+  const lc = liveCopyFor(lang);
+  const liveOn = !frozenNow && all.some((r) => wantsLive(r.m.kickoff, now));
+  const names = useMemo(() => new Map(all.map((r) => [r.m.id, sidesOf(r.m)] as const)), [all]);
+  const live = useLiveScores(liveOn, (id) => names.get(id) ?? null, lc);
+
   const today = dayKey(now.toISOString(), tz);
   const tomorrow = dayKey(new Date(now.getTime() + 86_400_000).toISOString(), tz);
   const bySport = useMemo(() => applyFilters(all, { ...DEFAULT_FILTERS, sport: filters.sport }), [all, filters.sport]);
@@ -152,6 +164,14 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
 
   return (
     <div className="v3c-board-w" data-surface={surface}>
+      {surface === "home" && live.loaded ? (
+        <LiveNow
+          c={lc}
+          feed={live}
+          rows={all.map((r) => ({ id: r.m.id, sport: r.kind, home: sidesOf(r.m)[0], away: sidesOf(r.m)[1], league: r.kind === "football" ? leagueOf(r.m) : r.m.tournament }))}
+        />
+      ) : null}
+      <LiveAnnouncer text={live.announce} />
       <div className="v3c-toolbar">
         <div className="v3c-chips" role="group" aria-label={t.toolbar.sport}>
           {(
@@ -253,9 +273,9 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
               ) : null}
               {g.rows.map((r) =>
                 r.kind === "football" ? (
-                  <FootballRow key={r.m.id} tape={tapes?.[r.m.id]} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
+                  <FootballRow key={r.m.id} live={live.items[r.m.id]} liveLoaded={live.loaded} lc={lc} tape={tapes?.[r.m.id]} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
                 ) : (
-                  <TennisRow key={`tn-${r.m.id}`} tape={tapes?.[r.m.id]} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
+                  <TennisRow key={`tn-${r.m.id}`} live={live.items[r.m.id]} liveLoaded={live.loaded} lc={lc} tape={tapes?.[r.m.id]} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
                 ),
               )}
             </div>

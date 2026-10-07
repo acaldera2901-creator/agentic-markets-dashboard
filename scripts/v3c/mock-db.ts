@@ -154,6 +154,62 @@ const TENNIS: Tn[] = [
 }));
 const tnKey = (t: Tn) => teamPairKey("tennis", t.p1, t.p2, iso(t.kickoff))!;
 
+// livescores (#V3C-LIVESCORES): MOCK_LIVE=1 adds two football matches (one in play, one just finished) and one
+// tennis match in play, plus FICTITIOUS ESPN-shaped scoreboards under /espn — the dev server reads them with
+// V3C_LIVE_ESPN_BASE=http://127.0.0.1:54399/espn. Scores and minutes are INVENTED; no player is named.
+// Medvedev–Fritz (already in play above) has no scoreboard on purpose: the board must say «score n/a».
+// Without the variable nothing changes for the other e2e runs.
+const MOCK_LIVE = process.env.MOCK_LIVE === "1";
+const kick5 = (inH: number) => Math.round((now + inH * H) / (5 * 60_000)) * 5 * 60_000;
+if (MOCK_LIVE) {
+  FOOTBALL.push(
+    { id: "oddsapi:live001", league: "Serie A", competition: "Serie A", kickoff: kick5(-1.2), home: "Juventus", away: "Napoli", odds: [2.3, 3.2, 3.2], model: [0.4, 0.28, 0.32], sealed: true, books: "both", history: false },
+    { id: "oddsapi:live002", league: "Premier League", competition: "Premier League", kickoff: kick5(-2.1), home: "Arsenal", away: "Chelsea", odds: [1.9, 3.6, 4.1], model: [0.5, 0.26, 0.24], sealed: true, books: "one", history: false },
+  );
+  TENNIS.push({ id: "tennis:espn:990001:ben-shelton:lorenzo-musetti", tournament: "ATP Shanghai", kickoff: kick5(-1.0), p1: "Lorenzo Musetti", p2: "Ben Shelton", odds: [1.85, 1.95], elo: [0.52, 0.48], mv: "tennis-elo-v4", sealed: true, books: true });
+}
+
+/** The rows GET /api/v3/live reads (lib/v3c/live-service.server.ts → fetchLiveRows), same window. */
+function liveRows() {
+  const inWindow = (k: number) => k > now - 180 * 60_000 && k < now + 15 * 60_000;
+  return [
+    ...FOOTBALL.filter((f) => inWindow(f.kickoff)).map((f) => ({ source_id: f.id, source_table: "match_predictions", league: f.league, starts_at: iso(f.kickoff), home_team: f.home, away_team: f.away })),
+    ...TENNIS.filter((t) => inWindow(t.kickoff)).map((t) => ({ source_id: t.id, source_table: "tennis_predictions", league: t.tournament ?? "Partner feed", starts_at: iso(t.kickoff), home_team: t.p1, away_team: t.p2 })),
+  ];
+}
+
+const team = (id: string, name: string) => ({ id, displayName: name });
+const goal = (min: string, teamId: string, extra: Record<string, boolean> = {}) => ({ clock: { displayValue: min }, team: { id: teamId }, scoringPlay: true, redCard: false, ownGoal: false, penaltyKick: false, shootout: false, athletesInvolved: [], ...extra });
+
+/** Fictitious ESPN scoreboards for the MOCK_LIVE rows only. */
+function espnMock(path: string): unknown {
+  if (!MOCK_LIVE) return { events: [] };
+  if (path.startsWith("/espn/soccer/ita.1/")) {
+    const f = FOOTBALL.find((x) => x.id === "oddsapi:live001")!;
+    const el = Math.floor((Date.now() - f.kickoff) / 60_000);
+    const minute = el > 60 ? Math.min(90, el - 15) : Math.min(45, el);
+    return { events: [{ id: "880001", date: iso(f.kickoff), status: { displayClock: `${minute}'`, type: { name: "STATUS_SECOND_HALF", state: "in", completed: false } },
+      competitions: [{ competitors: [{ homeAway: "home", score: "2", team: team("111", "Juventus") }, { homeAway: "away", score: "1", team: team("114", "Napoli") }],
+        details: [goal("12'", "111"), goal("38'", "114", { penaltyKick: true }), goal("51'", "111")] }] }] };
+  }
+  if (path.startsWith("/espn/soccer/eng.1/")) {
+    const f = FOOTBALL.find((x) => x.id === "oddsapi:live002")!;
+    return { events: [{ id: "880002", date: iso(f.kickoff), status: { displayClock: "90'+5'", type: { name: "STATUS_FULL_TIME", state: "post", completed: true } },
+      competitions: [{ competitors: [{ homeAway: "home", score: "2", team: team("359", "Arsenal") }, { homeAway: "away", score: "2", team: team("363", "Chelsea") }],
+        details: [goal("9'", "363"), goal("27'", "359"), { ...goal("70'", "363"), scoringPlay: false, redCard: true }, goal("81'", "359", { ownGoal: true }), goal("88'", "363")] }] }] };
+  }
+  if (path.startsWith("/espn/tennis/atp/")) {
+    const t = TENNIS.find((x) => x.id.startsWith("tennis:espn:990001"))!;
+    return { events: [{ id: "9901", name: "Rolex Shanghai Masters", groupings: [{ grouping: { displayName: "Men's Singles" }, competitions: [{ id: "990001", date: iso(t.kickoff),
+      status: { type: { name: "STATUS_IN_PROGRESS", state: "in", completed: false } },
+      competitors: [
+        { homeAway: "away", athlete: { displayName: "Ben Shelton" }, possession: false, linescores: [{ value: 6 }, { value: 6, tiebreak: 3 }] },
+        { homeAway: "home", athlete: { displayName: "Lorenzo Musetti" }, possession: true, linescores: [{ value: 4 }, { value: 6, tiebreak: 5 }] },
+      ] }] }] }] };
+  }
+  return { events: [] };
+}
+
 function tennisSources() {
   return TENNIS.map((t) => {
     const mk = devig(t.odds);
@@ -281,6 +337,7 @@ function answer(sql: string): unknown[] {
     }
     return posts;
   }
+  if (s.startsWith("SELECT source_id, source_table, league, starts_at, home_team, away_team")) return liveRows();
   if (s.includes("JOIN u ON u.source_id = pl.match_id")) return boardSources();
   if (s.includes("JOIN tennis_predictions tp")) return tennisSources();
   if (s.includes("GROUP BY 1 ORDER BY 1") && s.includes("unified_predictions")) return [];
@@ -326,6 +383,11 @@ createServer((req, res) => {
   let body = "";
   req.on("data", (c) => (body += c));
   req.on("end", () => {
+    if (req.method === "GET" && req.url?.startsWith("/espn/")) {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(espnMock(req.url)));
+      return;
+    }
     let rows: unknown[] = [];
     if (req.method === "POST" && req.url?.startsWith("/rest/v1/rpc/exec_sql")) {
       try {

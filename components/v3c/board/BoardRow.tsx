@@ -23,6 +23,10 @@ import { Sigillo } from "../Sigillo";
 import { RowScale } from "./RowScale";
 import { Tape } from "../Tape";
 import type { RowTape } from "@/lib/v3c/tape";
+import type { V3LiveItem } from "@/lib/v3c/live-contract";
+import type { V3cLiveCopy } from "@/lib/v3c/live-copy";
+import { liveBadge, type LiveBadge } from "@/lib/v3c/live-view";
+import { LiveScoreChip, LiveTimeCell } from "../live/LiveBits";
 
 type Common = {
   t: V3cCopy;
@@ -38,7 +42,18 @@ type Common = {
   surface: "home" | "predictions";
   /** fidelity: il tape «open → now» dai dati veri; assente = meno di due catture */
   tape?: RowTape;
+  /** livescores: il punteggio della fonte (GET /api/v3/live), solo informazione; assente = nessun dato */
+  live?: V3LiveItem;
+  /** livescores: la prima risposta è arrivata (da qui «nessun item» vuol dire «punteggio n.d.») */
+  liveLoaded?: boolean;
+  lc?: V3cLiveCopy;
 };
+
+/** livescores: il badge della riga — solo nella finestra live (o se la fonte ha un dato), mai prima del primo dato. */
+function rowBadge(kickoff: string, now: Date, live: V3LiveItem | undefined, loaded: boolean | undefined, lc: V3cLiveCopy | undefined): LiveBadge | null {
+  if (!lc || (!live && !liveState(kickoff, now).live)) return null;
+  return liveBadge(live, Boolean(loaded), lc);
+}
 
 /** Il chip del book: marchio · quota. Link affiliato reale (deep-link o landing del registro), tracciato. */
 /** ui2: `compact` (la colonna stretta della riga) = solo logo e quota, il nome resta nel nome accessibile e nel title. */
@@ -64,7 +79,8 @@ export function BookChip({ b, t, surface, outcome, compact = false }: { b: V3Boo
   );
 }
 
-function TimeCell({ kickoff, t, tz, locale, now, sport }: { kickoff: string; t: V3cCopy; tz: string | undefined; locale: string; now: Date; sport: "football" | "tennis" }) {
+function TimeCell({ kickoff, t, tz, locale, now, sport, badge }: { kickoff: string; t: V3cCopy; tz: string | undefined; locale: string; now: Date; sport: "football" | "tennis"; badge: LiveBadge | null }) {
+  if (badge) return <LiveTimeCell badge={badge} kickoffTime={timeHM(kickoff, tz, locale)} />;
   const live = liveState(kickoff, now);
   // Tennis: nessun minuto di gioco (e il contratto non porta il punteggio dei set) → solo «Live».
   if (live.live)
@@ -186,9 +202,10 @@ function MeLine({ market, estimate }: { market: number | null | undefined; estim
   );
 }
 
-export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape }: Common & { r: BoardRowVM }) {
+export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape, live, liveLoaded, lc }: Common & { r: BoardRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
+  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc);
   const match = `${m.home} – ${m.away}`;
   const leadLabel = outcomeLabel(m, lead.outcome, t.board.draw);
   const g = lead.edge_pp;
@@ -199,7 +216,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
   const scaleAria = lead.market_p == null ? t.board.scaleAriaNoMarket(pctInt(lead.estimate_p)) : t.board.scaleAria(pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g));
   return (
     <div className={["v3c-row", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="football">
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="football" />
+      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="football" badge={badge} />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.home }} away={{ name: m.away }} />
         <span className="v3c-r-name">
@@ -208,6 +225,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
             <span className="v3c-sr">, {t.board.rowAria(leadLabel, price2(lead.market_price), pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g))}</span>
           </button>
           <small>
+            {badge?.score ? <LiveScoreChip score={badge.score} final={badge.tone === "done"} /> : null}
             {m.competition || m.league || t.toolbar.football} · <b>{leadLabel}</b>
             {others && g != null ? <span className="v3c-r-others"> · {others}</span> : null}
           </small>
@@ -311,9 +329,10 @@ function tennisNoGap(m: TennisRowVM["m"], t: V3cCopy): string {
 
 const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctInt(p)}%`);
 
-export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape }: Common & { r: TennisRowVM }) {
+export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape, live, liveLoaded, lc }: Common & { r: TennisRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
+  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc);
   const match = `${m.player1} – ${m.player2}`;
   const leadLabel = lead.player;
   // Il gap del tennis esiste SOLO dove il contratto lo dà: stima sigillata del nostro Elo − prezzo di un
@@ -329,7 +348,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       : t.tennis.scaleAriaModel(pctInt(lead.estimate_p));
   return (
     <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis">
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="tennis" />
+      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="tennis" badge={badge} />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.player1 }} away={{ name: m.player2 }} />
         <span className="v3c-r-name">
@@ -338,6 +357,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
             <span className="v3c-sr">, {t.tennis.rowAria(leadLabel, scaleLabel)}</span>
           </button>
           <small>
+            {badge?.score ? <LiveScoreChip score={badge.score} final={badge.tone === "done"} /> : null}
             {m.tournament || t.tennis.title} · <b>{leadLabel}</b>
           </small>
         </span>
