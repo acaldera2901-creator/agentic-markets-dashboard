@@ -43,6 +43,7 @@ import { TAPE_HOURS } from "@/lib/v3c/tape";
 import "../fidelity.css";
 import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
+import { MatchLive } from "../live/LiveBits";
 import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
@@ -69,7 +70,7 @@ function useCtx(): Ctx {
 
 // ─── Testa ─────────────────────────────────────────────────────────────────
 
-function Head({ ctx, tab, home, away, kickoff, league, sport, sealedAt }: { ctx: Ctx; tab: string; home: string; away: string; kickoff: string; league: string | null; sport: "football" | "tennis"; sealedAt: string | null }) {
+function Head({ ctx, tab, id, home, away, kickoff, league, sport, sealedAt }: { ctx: Ctx; tab: string; id: string; home: string; away: string; kickoff: string; league: string | null; sport: "football" | "tennis"; sealedAt: string | null }) {
   const { c, t, tz, locale } = ctx;
   // Briciola: torneo/campionato se c'è, altrimenti il nome dello sport — mai un trattino.
   const crumb = league?.trim() || t.toolbar[sport];
@@ -103,6 +104,8 @@ function Head({ ctx, tab, home, away, kickoff, league, sport, sealedAt }: { ctx:
           </>
         }
       />
+      {/* livescores: il punteggio della fonte intorno al calcio d'inizio — informazione, non tocca stime né registro */}
+      <MatchLive id={id} kickoff={kickoff} home={home} away={away} />
     </>
   );
 }
@@ -359,7 +362,7 @@ function Football({ ctx, m, series, events, partners, links, more }: { ctx: Ctx;
   const choices: TapeChoice[] = m.outcomes.map((o) => ({ key: o.outcome, label: label(o.outcome), fair: fairPrice(o.estimate_p) }));
   return (
     <>
-      <Head ctx={ctx} tab={c.tabFootball} home={m.home} away={m.away} kickoff={m.kickoff} league={m.competition || m.league} sport="football" sealedAt={m.sealed_at} />
+      <Head ctx={ctx} tab={c.tabFootball} id={m.id} home={m.home} away={m.away} kickoff={m.kickoff} league={m.competition || m.league} sport="football" sealedAt={m.sealed_at} />
 
       <section className="v3c-mt-step" aria-labelledby="v3c-s1">
         <StepHead n={1} id="v3c-s1" title={c.s1} />
@@ -549,7 +552,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   const big = hasGap ? null : marketOnly ? (lead.market_p ?? lead.estimate_p) : lead.estimate_p;
   return (
     <>
-      <Head ctx={ctx} tab={c.tabTennis} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
+      <Head ctx={ctx} tab={c.tabTennis} id={m.id} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
       <section className="v3c-mt-step" aria-labelledby="v3c-s1">
         <StepHead n={1} id="v3c-s1" title={c.s1} />
         <div className="v3c-mt-score">
@@ -734,7 +737,7 @@ function OffBoard({ ctx, p }: { ctx: Ctx; p: Extract<MatchViewProps, { kind: "of
         ];
   return (
     <>
-      <Head ctx={ctx} tab={p.sport === "tennis" ? c.tabTennis : c.tabFootball} home={p.home} away={p.away} kickoff={p.kickoff} league={null} sport={p.sport} sealedAt={null} />
+      <Head ctx={ctx} tab={p.sport === "tennis" ? c.tabTennis : c.tabFootball} id={p.id} home={p.home} away={p.away} kickoff={p.kickoff} league={null} sport={p.sport} sealedAt={null} />
       <p className="v3c-mt-note" style={{ marginBottom: 24 }}>
         {c.offBoard}
       </p>

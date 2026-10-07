@@ -1,0 +1,631 @@
+{
+ "_note": "Recorded from ESPN site.web.api on 2026-10-07 ~08:15 UTC, trimmed (venue/links/flags removed). Real data.",
+ "events": [
+  {
+   "id": "959-2026",
+   "name": "China Open",
+   "groupings": [
+    {
+     "grouping": {
+      "displayName": "Men's Singles"
+     },
+     "competitions": [
+      {
+       "id": "186254",
+       "uid": "s:850~l:851~e:959-2026~c:186254",
+       "date": "2026-09-28T03:00Z",
+       "startDate": "2026-09-28T03:00Z",
+       "timeValid": true,
+       "recent": false,
+       "status": {
+        "period": 2,
+        "type": {
+         "id": "3",
+         "name": "STATUS_FINAL",
+         "state": "post",
+         "completed": true,
+         "description": "Final",
+         "detail": "Final",
+         "shortDetail": "Final"
+        }
+       },
+       "format": {
+        "regulation": {
+         "periods": 5
+        }
+       },
+       "notes": [
+        {
+         "text": "Arthur Gea (FRA) bt Rigele Te (CHN) 6-2 6-3",
+         "type": "event"
+        }
+       ],
+       "broadcast": "",
+       "competitors": [
+        {
+         "id": "10427",
+         "uid": "s:850~l:851~a:10427",
+         "type": "athlete",
+         "order": 2,
+         "homeAway": "away",
+         "winner": true,
+         "linescores": [
+          {
+           "value": 6.0,
+           "winner": true
+          },
+          {
+           "value": 6.0,
+           "winner": true
+          }
+         ],
+         "athlete": {
+          "displayName": "Arthur Gea"
+         }
+        },
+        {
+         "id": "2856",
+         "uid": "s:850~l:851~a:2856",
+         "type": "athlete",
+         "order": 1,
+         "homeAway": "home",
+         "winner": false,
+         "linescores": [
+          {
+           "value": 2.0,
+           "winner": false
+          },
+          {
+           "value": 3.0,
+           "winner": false
+          }
+         ],
+         "athlete": {
+          "displayName": "Te Rigele"
+         }
+        }
+       ],
+       "tournamentId": 959,
+       "type": {
+        "id": "1",
+        "text": "Men's Singles",
+        "slug": "mens-singles"
+       },
+       "round": {
+        "id": "11",
+        "displayName": "Qualifying 1st Round"
+       },
+       "wasSuspended": false
+      },
+      {
+       "id": "183466",
+       "uid": "s:850~l:851~e:959-2026~c:183466",
+       "date": "2026-10-05T09:25Z",
+       "startDate": "2026-10-05T09:25Z",
+       "timeValid": true,
+       "recent": false,
+       "status": {
+        "period": 2,
+        "type": {
+         "id": "38",
+         "name": "STATUS_RETIRED",
+         "state": "post",
+         "completed": true,
+         "description": "Retired",
+         "detail": "Retired",
+         "shortDetail": "Retired"
+        }
+       },
+       "format": {
+        "regulation": {
+         "periods": 5
+        }
+       },
+       "notes": [
+        {
+         "text": "(5) Alex de Minaur (AUS) bt Hubert Hurkacz (POL) 6-4 3-2 ret",
+         "type": "event"
+        }
+       ],
+       "broadcast": "",
+       "competitors": [
+        {
+         "id": "2726",
+         "uid": "s:850~l:851~a:2726",
+         "type": "athlete",
+         "order": 2,
+         "homeAway": "away",
+         "winner": false,
+         "linescores": [
+          {
+           "value": 4.0,
+           "winner": false
+          },
+          {
+           "value": 2.0,
+           "winner": false
+          }
+         ],
+         "athlete": {
+          "displayName": "Hubert Hurkacz"
+         }
+        },
+        {
+         "id": "2651",
+         "uid": "s:850~l:851~a:2651",
+         "type": "athlete",
+         "order": 1,
+         "homeAway": "home",
+         "winner": true,
+         "curatedRank": {
+          "current": 5
+         },
+         "linescores": [
+          {
+           "value": 6.0,
+           "winner": true
+          },
+          {
+           "value": 3.0,
+           "winner": false
+          }
+         ],
+         "athlete": {
+          "displayName": "Alex de Minaur"
+         }
+        }
+       ],
+       "tournamentId": 959,
+       "type": {
+        "id": "1",
+        "text": "Men's Singles",
+        "slug": "mens-singles"
+       },
+       "round": {
+        "id": "6",
+        "displayName": "Semifinal"
+       },
+       "wasSuspended": false
+      }
+     ]
+    },
+    {
+     "grouping": {
+      "displayName": "Women's Singles"
+     },
+     "competitions": [
+      {
+       "id": "184346",
+       "uid": "s:850~l:851~e:959-2026~c:184346",
+       "date": "2026-10-07T07:05Z",
+       "startDate": "2026-10-07T07:05Z",
+       "timeValid": true,
+       "recent": true,
+       "status": {
+        "period": 2,
+        "type": {
+         "id": "2",
+         "name": "STATUS_IN_PROGRESS",
+         "state": "in",
+         "completed": false,
+         "description": "In Progress",
+         "detail": "2nd Set",
+         "shortDetail": "2nd"
+        }
+       },
+       "format": {
+        "regulation": {
+         "periods": 5
+        }
+       },
+       "notes": [
+        {
+         "text": "(13) Elise Mertens (BEL) leads (3) Coco Gauff (USA) 6-3 4-1",
+         "type": "event"
+        }
+       ],
+       "broadcast": "",
+       "competitors": [
+        {
+         "id": "2221",
+         "uid": "s:850~l:851~a:2221",
+         "type": "athlete",
+         "order": 2,
+         "homeAway": "away",
+         "possession": false,
+         "curatedRank": {
+          "current": 13
+         },
+         "linescores": [
+          {
+           "value": 6.0,
+           "winner": true
+          },
+          {
+           "value": 4.0
+          }
+         ],
+         "athlete": {
+          "displayName": "Elise Mertens"
+         }
+        },
+        {
+         "id": "3626",
+         "uid": "s:850~l:851~a:3626",
+         "type": "athlete",
+         "order": 1,
+         "homeAway": "home",
+         "possession": true,
+         "curatedRank": {
+          "current": 3
+         },
+         "linescores": [
+          {
+           "value": 3.0,
+           "winner": false
+          },
+          {
+           "value": 1.0
+          }
+         ],
+         "athlete": {
+          "displayName": "Coco Gauff"
+         }
+        }
+       ],
+       "situation": {
+        "onFirst": false,
+        "onSecond": false,
+        "onThird": false
+       },
+       "tournamentId": 959,
+       "type": {
+        "id": "2",
+        "text": "Women's Singles",
+        "slug": "womens-singles"
+       },
+       "round": {
+        "id": "4",
+        "displayName": "Round 4"
+       },
+       "wasSuspended": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "315-2026",
+   "name": "Rolex Shanghai Masters",
+   "groupings": [
+    {
+     "grouping": {
+      "displayName": "Men's Singles"
+     },
+     "competitions": [
+      {
+       "id": "184878",
+       "uid": "s:850~l:851~e:315-2026~c:184878",
+       "date": "2026-10-07T06:40Z",
+       "startDate": "2026-10-07T06:40Z",
+       "timeValid": true,
+       "recent": true,
+       "status": {
+        "period": 2,
+        "type": {
+         "id": "2",
+         "name": "STATUS_IN_PROGRESS",
+         "state": "in",
+         "completed": false,
+         "description": "In Progress",
+         "detail": "2nd Set",
+         "shortDetail": "2nd"
+        }
+       },
+       "format": {
+        "regulation": {
+         "periods": 5
+        }
+       },
+       "notes": [
+        {
+         "text": "Yannick Hanfmann (GER) is tied with Kamil Majchrzak (POL) 6-7 (4-7) 4-3",
+         "type": "event"
+        }
+       ],
+       "broadcast": "",
+       "competitors": [
+        {
+         "id": "2416",
+         "uid": "s:850~l:851~a:2416",
+         "type": "athlete",
+         "order": 2,
+         "homeAway": "away",
+         "linescores": [
+          {
+           "value": 7.0,
+           "tiebreak": 7,
+           "winner": true
+          },
+          {
+           "value": 3.0
+          }
+         ],
+         "athlete": {
+          "displayName": "Kamil Majchrzak"
+         }
+        },
+        {
+         "id": "3322",
+         "uid": "s:850~l:851~a:3322",
+         "type": "athlete",
+         "order": 1,
+         "homeAway": "home",
+         "linescores": [
+          {
+           "value": 6.0,
+           "tiebreak": 4,
+           "winner": false
+          },
+          {
+           "value": 4.0
+          }
+         ],
+         "athlete": {
+          "displayName": "Yannick Hanfmann"
+         }
+        }
+       ],
+       "tournamentId": 315,
+       "type": {
+        "id": "1",
+        "text": "Men's Singles",
+        "slug": "mens-singles"
+       },
+       "round": {
+        "id": "1",
+        "displayName": "Round 1"
+       },
+       "wasSuspended": false
+      },
+      {
+       "id": "184839",
+       "uid": "s:850~l:851~e:315-2026~c:184839",
+       "date": "2026-10-07T06:45Z",
+       "startDate": "2026-10-07T06:45Z",
+       "timeValid": true,
+       "recent": true,
+       "status": {
+        "period": 2,
+        "type": {
+         "id": "2",
+         "name": "STATUS_IN_PROGRESS",
+         "state": "in",
+         "completed": false,
+         "description": "In Progress",
+         "detail": "2nd Set",
+         "shortDetail": "2nd"
+        }
+       },
+       "format": {
+        "regulation": {
+         "periods": 5
+        }
+       },
+       "notes": [
+        {
+         "text": "Zhang Zhizhen (CHN) is tied with Tomas Machac (CZE) 6-1 6-6 (1-5)",
+         "type": "event"
+        }
+       ],
+       "broadcast": "",
+       "competitors": [
+        {
+         "id": "3811",
+         "uid": "s:850~l:851~a:3811",
+         "type": "athlete",
+         "order": 2,
+         "homeAway": "away",
+         "linescores": [
+          {
+           "value": 1.0,
+           "winner": false
+          },
+          {
+           "value": 6.0,
+           "tiebreak": 5
+          }
+         ],
+         "athlete": {
+          "displayName": "Tomas Machac"
+         }
+        },
+        {
+         "id": "3024",
+         "uid": "s:850~l:851~a:3024",
+         "type": "athlete",
+         "order": 1,
+         "homeAway": "home",
+         "linescores": [
+          {
+           "value": 6.0,
+           "winner": true
+          },
+          {
+           "value": 6.0,
+           "tiebreak": 1
+          }
+         ],
+         "athlete": {
+          "displayName": "Zhang Zhizhen"
+         }
+        }
+       ],
+       "tournamentId": 315,
+       "type": {
+        "id": "1",
+        "text": "Men's Singles",
+        "slug": "mens-singles"
+       },
+       "round": {
+        "id": "1",
+        "displayName": "Round 1"
+       },
+       "wasSuspended": false
+      },
+      {
+       "id": "184842",
+       "uid": "s:850~l:851~e:315-2026~c:184842",
+       "date": "2026-10-07T07:05Z",
+       "startDate": "2026-10-07T07:05Z",
+       "timeValid": true,
+       "recent": true,
+       "status": {
+        "period": 2,
+        "type": {
+         "id": "2",
+         "name": "STATUS_IN_PROGRESS",
+         "state": "in",
+         "completed": false,
+         "description": "In Progress",
+         "detail": "2nd Set",
+         "shortDetail": "2nd"
+        }
+       },
+       "format": {
+        "regulation": {
+         "periods": 5
+        }
+       },
+       "notes": [
+        {
+         "text": "Marco Trungelliti (ARG) leads Rei Sakamoto (JPN) 3-6 3-3",
+         "type": "event"
+        }
+       ],
+       "broadcast": "",
+       "competitors": [
+        {
+         "id": "13871",
+         "uid": "s:850~l:851~a:13871",
+         "type": "athlete",
+         "order": 2,
+         "homeAway": "away",
+         "possession": true,
+         "linescores": [
+          {
+           "value": 6.0,
+           "winner": true
+          },
+          {
+           "value": 3.0
+          }
+         ],
+         "athlete": {
+          "displayName": "Rei Sakamoto"
+         }
+        },
+        {
+         "id": "2278",
+         "uid": "s:850~l:851~a:2278",
+         "type": "athlete",
+         "order": 1,
+         "homeAway": "home",
+         "possession": false,
+         "linescores": [
+          {
+           "value": 3.0,
+           "winner": false
+          },
+          {
+           "value": 3.0
+          }
+         ],
+         "athlete": {
+          "displayName": "Marco Trungelliti"
+         }
+        }
+       ],
+       "situation": {
+        "onFirst": false,
+        "onSecond": false,
+        "onThird": false
+       },
+       "tournamentId": 315,
+       "type": {
+        "id": "1",
+        "text": "Men's Singles",
+        "slug": "mens-singles"
+       },
+       "round": {
+        "id": "1",
+        "displayName": "Round 1"
+       },
+       "wasSuspended": false
+      },
+      {
+       "id": "184870",
+       "uid": "s:850~l:851~e:315-2026~c:184870",
+       "date": "2026-10-07T08:20Z",
+       "startDate": "2026-10-07T08:20Z",
+       "timeValid": true,
+       "recent": true,
+       "status": {
+        "period": 1,
+        "type": {
+         "id": "1",
+         "name": "STATUS_SCHEDULED",
+         "state": "pre",
+         "completed": false,
+         "description": "Scheduled",
+         "detail": "Wed, October 7th at 4:20 AM EDT",
+         "shortDetail": "10/7 - 4:20 AM EDT"
+        }
+       },
+       "format": {
+        "regulation": {
+         "periods": 5
+        }
+       },
+       "notes": [],
+       "broadcast": "",
+       "competitors": [
+        {
+         "id": "13444",
+         "uid": "s:850~l:851~a:13444",
+         "type": "athlete",
+         "order": 2,
+         "homeAway": "away",
+         "athlete": {
+          "displayName": "Zhou Yi"
+         }
+        },
+        {
+         "id": "10153",
+         "uid": "s:850~l:851~a:10153",
+         "type": "athlete",
+         "order": 1,
+         "homeAway": "home",
+         "athlete": {
+          "displayName": "Mattia Bellucci"
+         }
+        }
+       ],
+       "tournamentId": 315,
+       "type": {
+        "id": "1",
+        "text": "Men's Singles",
+        "slug": "mens-singles"
+       },
+       "round": {
+        "id": "1",
+        "displayName": "Round 1"
+       },
+       "wasSuspended": false
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

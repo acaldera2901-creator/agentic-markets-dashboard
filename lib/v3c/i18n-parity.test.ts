@@ -15,6 +15,7 @@ import { communityCopyFor } from "./community-copy";
 import { V3C_HOME_FAQ } from "./home-faq";
 import { STATE_COPY } from "@/components/v3c/States";
 import { V3C_TOOLS_COPY } from "@/lib/i18n/v3c-tools";
+import { V3C_LIVE_COPY } from "./live-copy";
 
 type Fn = (...a: unknown[]) => unknown;
 const SAMPLE_N = [7301, 7302, 7303, 7304, 7305, 7306];
@@ -102,6 +103,7 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "home-faq", of: (l) => V3C_HOME_FAQ[l as never], maxWords: null },
   { name: "states", of: (l) => STATE_COPY[l as never], maxWords: 22 },
   { name: "tools", of: (l) => V3C_TOOLS_COPY[l as never], maxWords: 22 },
+  { name: "live", of: (l) => V3C_LIVE_COPY[l as never], maxWords: 22 },
 ];
 
 describe("F10 · le 11 lingue del redesign", () => {
