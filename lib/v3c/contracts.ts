@@ -348,6 +348,21 @@ export type V3WeekRow = {
   brier_market: number | null;
   n_paired: number;
   limited_sample: boolean;
+  /**
+   * (additive) every sealed row that kicked off in the week, scored or not. `n` is the
+   * part with an outcome; the rest is still to be played, awaiting a result, or void.
+   */
+  sealed?: number;
+  /** (additive) kicked off, no settlement row yet: the result is not in */
+  awaiting_result?: number;
+  /** (additive) the week that contains generated_at: still being played, incomplete */
+  in_progress?: boolean;
+  /**
+   * (additive) no sealed match of the five top leagues this week, with weeks before
+   * and after that had them (lib/v3c/record.ts TOP_LEAGUE_CODES). Absent when the
+   * rows carry no league.
+   */
+  nations_break?: boolean;
 };
 
 /** One tennis group of the sealed ledger: one model_version × probability kind. */

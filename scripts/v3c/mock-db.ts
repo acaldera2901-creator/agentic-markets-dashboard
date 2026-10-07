@@ -255,12 +255,27 @@ for (let i = 0; i < 180; i++) {
   if (i % 22 === 3) SEALED.push({ ...row, source_id: `oddsapi:twin${i}`, captured_at: iso(ko - 20 * H) });
 }
 
-function sealedFootball() {
-  return SEALED.map((s) => ({
-    source_id: s.source_id, home_team: s.home_team, away_team: s.away_team, captured_at: s.captured_at, commence_time: s.commence_time,
+// final2: il grafico settimanale del record. pick_ledger.league è un codice (PL, PD, SA, BL1, FL1 = i cinque
+// grandi); le due settimane UTC prima della scorsa sono una sosta (solo League One), e la settimana in corso
+// ha 3 partite iniziate senza esito («in attesa») e 4 ancora da giocare. Solo la query del record le vede.
+const LEAGUE_CODE: Record<string, string> = { "Serie A": "SA", "Premier League": "PL", "La Liga": "PD", Bundesliga: "BL1", "Ligue 1": "FL1" };
+const DAY = 24 * H;
+const weekStart = (t: number) => { const d = new Date(t); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - ((d.getUTCDay() + 6) % 7) * DAY; };
+const THIS_WEEK = weekStart(now);
+const inBreak = (t: number) => { const w = weekStart(t); return w === THIS_WEEK - 14 * DAY || w === THIS_WEEK - 21 * DAY; };
+const OPEN_THIS_WEEK = [
+  ...[3, 5, 8].map((h) => now - h * H).filter((t) => t >= THIS_WEEK),
+  ...[20, 44, 68, 92].map((h) => now + h * H).filter((t) => t < THIS_WEEK + 7 * DAY),
+].map((ko, i) => ({ source_id: `espn:open${i}`, home_team: TEAMS[i], away_team: TEAMS[i + 6], league: "SA", captured_at: iso(ko - 20 * H), commence_time: iso(ko), is_paper: false, p_home: 0.45, p_draw: 0.28, p_away: 0.27, result: null, outcome: null, market_p_home: 0.44, market_p_draw: 0.29, market_p_away: 0.27 }));
+
+function sealedFootball(withOpen = false) {
+  return [...SEALED.map((s) => ({
+    source_id: s.source_id, home_team: s.home_team, away_team: s.away_team,
+    league: inBreak(Date.parse(s.commence_time)) ? "EL1" : LEAGUE_CODE[s.competition] ?? null,
+    captured_at: s.captured_at, commence_time: s.commence_time,
     is_paper: s.is_paper, p_home: s.p_home, p_draw: s.p_draw, p_away: s.p_away, result: s.result, outcome: s.outcome || null,
     market_p_home: s.market[0], market_p_draw: s.market[1], market_p_away: s.market[2],
-  }));
+  })), ...(withOpen ? OPEN_THIS_WEEK : [])];
 }
 
 function footballReceipts(sql: string) {
@@ -359,7 +374,7 @@ function answer(sql: string): unknown[] {
     return t ? [{ home: t.p1, away: t.p2, kickoff: iso(t.kickoff) }] : [];
   }
   if (s.includes("l.commence_time >=") && s.includes("pick_settlement_current")) return sealedDay(s);
-  if (s.includes("market_p_home, pl.market_p_draw, pl.market_p_away\n") || (s.includes("LEFT JOIN LATERAL") && s.includes("l.is_backfill = FALSE") && !s.includes("LIMIT $") && !/LIMIT\s+\d+\s+OFFSET/i.test(s) && s.includes("m.market_p_home"))) return sealedFootball();
+  if (s.includes("market_p_home, pl.market_p_draw, pl.market_p_away\n") || (s.includes("LEFT JOIN LATERAL") && s.includes("l.is_backfill = FALSE") && !s.includes("LIMIT $") && !/LIMIT\s+\d+\s+OFFSET/i.test(s) && s.includes("m.market_p_home"))) return sealedFootball(s.includes("l.league"));
   if (/LIMIT\s+\d+\s+OFFSET/i.test(s) && s.includes("m.market_p_home")) return footballReceipts(s);
   if (/LIMIT\s+\d+\s+OFFSET/i.test(s) && s.includes("l.sport = 'tennis'")) {
     const m = /LIMIT\s+(\d+)\s+OFFSET\s+(\d+)/i.exec(s)!;

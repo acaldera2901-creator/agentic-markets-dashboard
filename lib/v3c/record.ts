@@ -22,6 +22,8 @@ export type SealedFootballRow = {
   /** pick_ledger teams: only used to find twin fixture rows (dedupeTwinFixtures) */
   home_team?: string;
   away_team?: string;
+  /** pick_ledger.league code (PL, PD, SA, …): only used to mark the weeks without top-five league matches */
+  league?: string | null;
   captured_at: string;
   commence_time: string;
   is_paper: boolean;
@@ -141,7 +143,32 @@ export function marketReliability(scored: ScoredRow[]): V3ReliabilityBucket[] {
   );
 }
 
-function weekly(scored: ScoredRow[]): V3WeekRow[] {
+/**
+ * The five league codes a «nations break» is read from (pick_ledger.league, measured
+ * 07/10/2026: Premier League PL, La Liga PD, Serie A SA, Bundesliga BL1, Ligue 1 FL1).
+ * A week is a break when none of them has a sealed match while weeks before and after
+ * do: derived from the ledger, no calendar typed in. Summer weeks before the season
+ * (no top-five match yet) are not a break.
+ */
+export const TOP_LEAGUE_CODES: ReadonlySet<string> = new Set(["PL", "PD", "SA", "BL1", "FL1"]);
+
+type WeekTally = { sealed: number; awaiting: number; top: number };
+
+/** Every sealed row by week: how many, how many kicked off with no settlement row yet, how many top-five. */
+function tallyWeeks(rows: SealedFootballRow[], now: Date): Map<string, WeekTally> {
+  const out = new Map<string, WeekTally>();
+  for (const r of rows) {
+    const w = weekStartUtc(r.commence_time);
+    const t = out.get(w) ?? { sealed: 0, awaiting: 0, top: 0 };
+    t.sealed += 1;
+    if (r.result == null && Date.parse(r.commence_time) <= now.getTime()) t.awaiting += 1;
+    if (r.league && TOP_LEAGUE_CODES.has(r.league)) t.top += 1;
+    out.set(w, t);
+  }
+  return out;
+}
+
+function weekly(scored: ScoredRow[], rows: SealedFootballRow[] = [], now: Date = new Date()): V3WeekRow[] {
   const byWeek = new Map<string, ScoredRow[]>();
   for (const s of scored) {
     const w = weekStartUtc(s.kickoff);
@@ -149,6 +176,15 @@ function weekly(scored: ScoredRow[]): V3WeekRow[] {
     if (list) list.push(s);
     else byWeek.set(w, [s]);
   }
+  const tally = tallyWeeks(rows, now);
+  const thisWeek = weekStartUtc(now.toISOString());
+  // a started week with sealed rows shows even before its first result (bars at 0)
+  for (const w of tally.keys()) if (w <= thisWeek && !byWeek.has(w)) byWeek.set(w, []);
+  // no league on any row (old callers, tests) → breaks are not computed rather than guessed
+  const hasLeague = rows.some((r) => r.league);
+  const topWeeks = [...tally.entries()].filter(([, t]) => t.top > 0).map(([w]) => w).sort();
+  const isBreak = (w: string) =>
+    hasLeague && (tally.get(w)?.top ?? 0) === 0 && topWeeks.length > 0 && topWeeks[0] < w && topWeeks[topWeeks.length - 1] > w;
   return [...byWeek.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([week_start, list]) => {
@@ -163,6 +199,7 @@ function weekly(scored: ScoredRow[]): V3WeekRow[] {
       const be = mean(paired.map((s) => brier3(s.estimate, s.happened)));
       const bm = mean(paired.map((s) => brier3(s.market as Triple, s.happened)));
       const w = wilson95(observed, list.length);
+      const t = tally.get(week_start);
       return {
         week_start,
         n: list.length,
@@ -173,6 +210,9 @@ function weekly(scored: ScoredRow[]): V3WeekRow[] {
         brier_market: bm == null ? null : roundP(bm),
         n_paired: paired.length,
         limited_sample: list.length < LIMITED_SAMPLE_N,
+        ...(t ? { sealed: t.sealed, awaiting_result: t.awaiting } : {}),
+        in_progress: week_start === thisWeek,
+        ...(hasLeague ? { nations_break: isBreak(week_start) } : {}),
       };
     });
 }
@@ -248,7 +288,7 @@ export function buildRecord(
       n_paired: paired.length,
       limited_sample: paired.length < LIMITED_SAMPLE_N,
     },
-    weekly: weekly(scored),
+    weekly: weekly(scored, rows, now),
     reliability: estimateReliability(scored),
     tennis: { source: "pick_ledger + pick_settlement_current", groups: tennisRecordGroups(tennis, tennisHistory) },
     notes: [

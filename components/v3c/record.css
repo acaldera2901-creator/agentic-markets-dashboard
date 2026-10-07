@@ -55,8 +55,8 @@
 .v3c-rec-weeks .v3c-rec-scroll { direction: rtl; }
 .v3c-rec-weeks .v3c-rec-wk { direction: ltr; }
 .v3c-rec-scroll:focus-visible { outline: 2px solid var(--v3c-royal); outline-offset: 2px; }
-.v3c-rec-wk { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--wk), minmax(56px, 1fr)); gap: 8px; height: 190px; min-width: calc(var(--wk) * 64px); }
-.v3c-rec-wk li { display: grid; grid-template-rows: 1fr auto auto; gap: 6px; text-align: center; min-width: 0; }
+.v3c-rec-wk { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--wk), minmax(56px, 1fr)); gap: 8px; height: 236px; min-width: calc(var(--wk) * 64px); }
+.v3c-rec-wk li { display: grid; grid-template-rows: auto 1fr auto auto; gap: 6px; text-align: center; min-width: 0; }
 .v3c-rec-wk-bars { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 3px; border-bottom: 1px solid var(--v3c-ink); }
 .v3c-rec-wk-bars i { display: block; width: 12px; }
 .v3c-rec-exp { background: var(--v3c-lime); }
@@ -71,6 +71,13 @@
 .v3c-rec-legend i { display: inline-block; width: 12px; height: 12px; flex-shrink: 0; }
 .v3c-rec-k-e { background: var(--v3c-lime); }
 .v3c-rec-k-o { background: var(--v3c-ink); }
+/* final2: why the bars drop · nations break (hatched column) · this week (dashed) · awaiting a result */
+.v3c-rec-why { margin: 4px 0 0; max-width: 70ch; color: var(--v3c-ink-2); }
+.v3c-rec-wk-tag { display: block; min-height: 13px; font-style: normal; font-size: 10px; line-height: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--v3c-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3c-rec-brk .v3c-rec-wk-bars, .v3c-rec-k-brk { background: repeating-linear-gradient(135deg, var(--v3c-line-2) 0 1.5px, transparent 1.5px 6px); }
+.v3c-rec-now .v3c-rec-wk-bars { outline: 1.5px dashed var(--v3c-ink-3); outline-offset: -1.5px; }
+.v3c-rec-legend i.v3c-rec-k-now { border: 1.5px dashed var(--v3c-ink-3); }
+.v3c-rec-wk-l .v3c-rec-wk-wait { color: var(--v3c-ink-2); white-space: normal; }
 
 /* ── tabelle (tennis, ricevute, correzioni) ── */
 .v3c-rec-table { width: 100%; border-collapse: collapse; }

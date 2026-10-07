@@ -220,7 +220,7 @@ export async function fetchAhHistory(key: string): Promise<AhHistoryRow[]> {
  * computed at or before the seal — i.e. the exact numbers that were sealed.
  */
 export const SEALED_FOOTBALL_SQL = `
-  SELECT l.source_id, l.home_team, l.away_team, l.captured_at, l.commence_time, l.is_paper,
+  SELECT l.source_id, l.home_team, l.away_team, l.league, l.captured_at, l.commence_time, l.is_paper,
          l.p_home, l.p_draw, l.p_away,
          s.result, s.outcome,
          m.market_p_home, m.market_p_draw, m.market_p_away
@@ -255,6 +255,7 @@ export async function fetchSealedFootball(): Promise<SealedFootballRow[]> {
     source_id: String(r.source_id),
     home_team: r.home_team == null ? undefined : String(r.home_team),
     away_team: r.away_team == null ? undefined : String(r.away_team),
+    league: r.league == null ? null : String(r.league),
     captured_at: String(r.captured_at),
     commence_time: String(r.commence_time),
     is_paper: r.is_paper === true,
