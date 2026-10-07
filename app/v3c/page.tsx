@@ -14,10 +14,15 @@ import { JsonLd, faqJsonLd } from "@/components/seo/json-ld";
 import { V3cBoardPage } from "@/components/v3c/pages/V3cBoardPage";
 import { V3C_HOME_FAQ } from "@/lib/v3c/home-faq";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
+import { EN_TITLES } from "@/lib/v3c/doc-titles";
 
+// fixui B4/L5 (QA): a flag acceso la home non si presenta più come «predictions» né promette una
+// probabilità «calibrated» (vietato nel tennis, POSITIONING §2): «Price check for football and tennis odds».
+// Canonical e JSON-LD restano quelli di oggi; il title ha la sua traduzione in lib/v3c/doc-titles.
 export const metadata: Metadata = {
+  title: EN_TITLES.home,
   description:
-    "Football and tennis predictions: the model's calibrated probability next to the market's, the edge between the two, and the reasoning behind every number. Readable before you sign up.",
+    "Price check for football and tennis odds: the market’s probability, our estimate beside it and the gap, with every result kept on a public record.",
   alternates: { canonical: "/" },
 };
 

@@ -6,14 +6,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { V3cToolsHub } from "@/components/v3c/tools/Hub";
-import { hubMetadata } from "@/lib/tools/seo";
+import { v3cHubMetadata } from "@/lib/v3c/og-meta";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 
 export const dynamic = "force-static";
 // polish: i numeri d'esempio vengono dalla board vera (lib/v3c/board-source.server): ISR a 5 minuti.
 export const revalidate = 300;
 
-export const metadata: Metadata = hubMetadata("en");
+// fixui M8: + og:image (lib/v3c/og-meta)
+export const metadata: Metadata = v3cHubMetadata("en");
 
 export default async function V3cToolsPage() {
   if (!v3cProductOn()) notFound();

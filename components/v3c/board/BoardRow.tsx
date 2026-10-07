@@ -14,7 +14,8 @@ import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
 import type { OddsOnSitePartner } from "@/lib/price-books";
 import type { V3cCopy } from "@/lib/v3c/copy";
-import { gapText, isFlatGap, outcomeLabel, pctInt, price2, sealedStamp, timeHM, dayShort, topShared, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
+import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, timeHM, dayShort, topShared, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
+import { stampLocal } from "@/lib/v3c/time-ui";
 import { trackEvent } from "@/lib/track-event";
 import { matchHref } from "@/lib/v3c/match-view";
 import { Monogrammi } from "../Monogramma";
@@ -238,7 +239,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.home }} away={{ name: m.away }} />
         <span className="v3c-r-name">
-          <button type="button" className="v3c-rowlink v3c-t-row" aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
+          <button type="button" className="v3c-rowlink v3c-t-row" title={match} aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
             {match}
             <span className="v3c-sr">, {t.board.rowAria(leadLabel, price2(lead.market_price), pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g))}</span>
           </button>
@@ -316,12 +317,12 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
           <p className="v3c-pn-facts v3c-small">
             <span>{m.blend ? t.board.blend : t.board.modelOnly}</span>
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-            <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
+            <span>{t.board.estimateAsOf(stampLocal(m.estimate_as_of, tz, locale))}</span>
           </p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
-              <Sigillo sealedAt={m.sealed_at} label={t.fascia.sealed} title={t.board.sealedWhy(sealedStamp(m.sealed_at, locale))} />
-              <span className="v3c-small">{t.board.sealedWhy(sealedStamp(m.sealed_at, locale))}</span>
+              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.board.sealedWhy(stampLocal(m.sealed_at, tz, locale))} />
+              <span className="v3c-small">{t.board.sealedWhy(stampLocal(m.sealed_at, tz, locale))}</span>
             </p>
           ) : null}
           {m.blend == null ? <p className="v3c-fine">{t.board.noMarketLong}</p> : null}
@@ -367,7 +368,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.player1 }} away={{ name: m.player2 }} />
         <span className="v3c-r-name">
-          <button type="button" className="v3c-rowlink v3c-t-row" aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
+          <button type="button" className="v3c-rowlink v3c-t-row" title={match} aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
             {match}
             <span className="v3c-sr">, {t.tennis.rowAria(leadLabel, scaleLabel)}</span>
           </button>
@@ -476,14 +477,14 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
           <p className="v3c-pn-facts v3c-small">
             {elo ? <span>{t.tennis.blendFact}</span> : null}
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-            <span>{t.fascia.pricesAsOf(sealedStamp(m.market_source?.as_of ?? m.estimate_as_of, locale))}</span>
-            {elo && m.elo_as_of ? <span>{t.tennis.eloAsOf(sealedStamp(m.elo_as_of, locale))}</span> : null}
+            <span>{t.fascia.pricesAsOf(stampLocal(m.market_source?.as_of ?? m.estimate_as_of, tz, locale))}</span>
+            {elo && m.elo_as_of ? <span>{t.tennis.eloAsOf(stampLocal(m.elo_as_of, tz, locale))}</span> : null}
           </p>
           <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : t.tennis.noEstimate}</p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
-              <Sigillo sealedAt={m.sealed_at} label={t.fascia.sealed} title={t.tennis.sealedWhy(sealedStamp(m.sealed_at, locale))} />
-              <span className="v3c-small">{t.tennis.sealedWhy(sealedStamp(m.sealed_at, locale))}</span>
+              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))} />
+              <span className="v3c-small">{t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))}</span>
             </p>
           ) : null}
           <p className="v3c-small">

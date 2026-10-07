@@ -11,6 +11,9 @@
 // stima calcio è il blend 70% mercato + 30% modello, dichiarato.
 // tennis2 (Andrea 07/10): nel tennis la stima c'è solo dove l'Elo è fresco (90% mercato + 10% Elo, non
 // sigillata; il gap è un'informazione, non un consiglio) — risposte 2 e 6 lo dicono.
+// fixui Fase 0 (DECISIONI-FREE-PRO §f, 07/10): Pro NON è in vendita. La domanda 1 non parla più di
+// pagamenti (niente carta/crypto/rinnovo da vendere) e Pro «aggiungerà» il perché, al futuro: non
+// esiste ancora in nessuna pagina partita. Il testo sotto descrive la versione precedente.
 // Fatti invariati, uno per uno: carta mensile/annuale con rinnovo, disdetta
 // dall'account; crypto = un pagamento, 30 giorni, nessun rinnovo; calcio 1X2 e
 // tennis vincente; live solo Pro; nessuna scommessa, nessun rendimento promesso;
@@ -23,12 +26,12 @@ import { v3cLang } from "./copy";
 export const V3C_HOME_FAQ = {
   en: [
     [
-      "How does billing work, and can I cancel?",
-      "Pro is an ordinary card subscription. You pick monthly or annual, and it renews by itself until you stop it. You stop it from your account, any day you want, and from that moment we charge you nothing further. Crypto is the odd one out: one payment, 30 days of access, no renewal of any kind. On day 31 nothing happens unless you decide to pay again.",
+      "Do I have to pay anything?",
+      "No. During the launch everything on BetRedge is free, Pro features included: Pro isn’t on sale yet. When it is, we’ll give 7 days’ notice before any feature moves to Pro, and the price will be on the plans page first.",
     ],
     [
       "What’s in a reading, and what does Pro add?",
-      "Three numbers, all of them sealed before kick-off. What the market thinks, which is the odds turned into a percentage with the margin removed. Our estimate: in football that is 70% market and 30% model, and we say so next to it. In tennis, on ATP/WTA matches with a fresh Elo, the estimate is 90% market and 10% our Elo, not sealed; elsewhere only the market price. And the gap between the two, in points. Pro adds the why: open any football match and you see the factors the model actually weighed, like form, expected goals, Elo, head-to-head.",
+      "Three numbers, all of them sealed before kick-off. What the market thinks, which is the odds turned into a percentage with the margin removed. Our estimate: in football that is 70% market and 30% model, and we say so next to it. In tennis, on ATP/WTA matches with a fresh Elo, the estimate is 90% market and 10% our Elo, not sealed; elsewhere only the market price. And the gap between the two, in points. Pro will add the why, factor by factor; it isn’t built yet.",
     ],
     [
       "Which sports do you cover?",
@@ -36,7 +39,7 @@ export const V3C_HOME_FAQ = {
     ],
     [
       "What happens on the live board?",
-      "The number moves while the match does. The score changes, the clock runs, the momentum turns, and the model reads the game again, so you see the probability shift while it’s shifting. Nothing is ever placed or executed for you at any point: you’re reading a screen. Live is Pro only.",
+      "The number moves while the match does. The score changes, the clock runs, the momentum turns, and the model reads the game again, so you see the probability shift while it’s shifting. Nothing is ever placed or executed for you at any point: you’re reading a screen. Live is a Pro feature, open to everyone during the launch.",
     ],
     [
       "Do you place bets, or promise I’ll make money?",
@@ -44,17 +47,17 @@ export const V3C_HOME_FAQ = {
     ],
     [
       "How do I use it day to day?",
-      "Open the board. Each row shows the outcome where our estimate and the market sit furthest apart: the market, our estimate, the gap. Tennis rows show our estimate only where it exists, 90% market and 10% our Elo, with the gap as information, not advice; the others show the market only. Tap it for all three outcomes and the prices of the connected books. Then look at the public record, because seeing how earlier readings settled tells you how much weight a number like that deserves. What you do with it after that is your call. Free shows every match on the board, gap included; Pro adds why the model disagrees.",
+      "Open the board. Each row shows the outcome where our estimate and the market sit furthest apart: the market, our estimate, the gap. Tennis rows show our estimate only where it exists, 90% market and 10% our Elo, with the gap as information, not advice; the others show the market only. Tap it for all three outcomes and the prices of the connected books. Then look at the public record, because seeing how earlier readings settled tells you how much weight a number like that deserves. What you do with it after that is your call. Free shows every match on the board, gap included; during the launch the Pro features are open to everyone too.",
     ],
   ],
   it: [
     [
-      "Come funziona il pagamento, e posso disdire?",
-      "Pro è un normale abbonamento con carta. Scegli tu se mensile o annuale, e si rinnova da solo finché non lo fermi. Lo fermi dal tuo account, in qualsiasi giorno, e da quel momento non ti addebitiamo più niente. Le crypto vanno per conto loro: pagamento singolo, 30 giorni di accesso, nessun rinnovo. Il giorno 31 non succede niente, a meno che tu non decida di ripagare.",
+      "Devo pagare qualcosa?",
+      "No. Durante il lancio tutto su BetRedge è gratuito, funzioni Pro comprese: Pro non è ancora in vendita. Quando lo sarà, ti avviseremo 7 giorni prima che una funzione passi a Pro, e il prezzo comparirà prima sulla pagina dei piani.",
     ],
     [
       "Cosa c’è dentro una lettura, e cosa aggiunge Pro?",
-      "Tre numeri, tutti sigillati prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale senza il margine. La nostra stima: nel calcio è 70% mercato e 30% modello, e lo scriviamo accanto. Nel tennis, sulle partite ATP/WTA con un Elo recente, la stima è 90% mercato e 10% nostro Elo, non sigillata; altrove solo il prezzo di mercato. E la distanza fra le due, in punti. Pro aggiunge il perché: apri una partita di calcio e vedi i fattori che il modello ha davvero pesato, come forma, gol attesi, Elo, scontri diretti.",
+      "Tre numeri, tutti sigillati prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale senza il margine. La nostra stima: nel calcio è 70% mercato e 30% modello, e lo scriviamo accanto. Nel tennis, sulle partite ATP/WTA con un Elo recente, la stima è 90% mercato e 10% nostro Elo, non sigillata; altrove solo il prezzo di mercato. E la distanza fra le due, in punti. Pro aggiungerà il perché, fattore per fattore; non è ancora costruito.",
     ],
     [
       "Quali sport coprite?",
@@ -62,7 +65,7 @@ export const V3C_HOME_FAQ = {
     ],
     [
       "Cosa succede sul board live?",
-      "Il numero si muove insieme alla partita. Cambia il punteggio, passano i minuti, gira l’inerzia, e il modello rilegge il match, così vedi la probabilità spostarsi mentre si sta spostando. In nessun momento viene piazzato o eseguito qualcosa per te: stai guardando uno schermo. Il live è solo Pro.",
+      "Il numero si muove insieme alla partita. Cambia il punteggio, passano i minuti, gira l’inerzia, e il modello rilegge il match, così vedi la probabilità spostarsi mentre si sta spostando. In nessun momento viene piazzato o eseguito qualcosa per te: stai guardando uno schermo. Il live è una funzione Pro, aperta a tutti durante il lancio.",
     ],
     [
       "Piazzate scommesse? Mi promettete un guadagno?",
@@ -70,17 +73,17 @@ export const V3C_HOME_FAQ = {
     ],
     [
       "Come lo uso, in pratica?",
-      "Apri il board. Ogni riga mostra l’esito dove la nostra stima e il mercato sono più lontani: il mercato, la stima, il gap. Le righe del tennis mostrano la stima solo dove c’è, 90% mercato e 10% nostro Elo, con il gap come informazione, non consiglio; le altre solo il mercato. Toccala e vedi tutti e tre gli esiti e i prezzi dei book connessi. Poi guarda il registro pubblico, perché è guardando come si sono chiuse le letture precedenti che capisci quanto peso dare a un numero del genere. Quello che ne fai dopo lo decidi tu. Free mostra ogni partita del board, gap compreso; Pro aggiunge il perché del modello.",
+      "Apri il board. Ogni riga mostra l’esito dove la nostra stima e il mercato sono più lontani: il mercato, la stima, il gap. Le righe del tennis mostrano la stima solo dove c’è, 90% mercato e 10% nostro Elo, con il gap come informazione, non consiglio; le altre solo il mercato. Toccala e vedi tutti e tre gli esiti e i prezzi dei book connessi. Poi guarda il registro pubblico, perché è guardando come si sono chiuse le letture precedenti che capisci quanto peso dare a un numero del genere. Quello che ne fai dopo lo decidi tu. Free mostra ogni partita sulla board, gap compreso; durante il lancio anche le funzioni Pro sono aperte a tutti.",
     ],
   ],
     de: [
       [ // REVIEW-NATIVE
-        "Wie funktioniert die Abrechnung, und kann ich kündigen?",
-        "Pro ist ein ganz normales Kartenabo. Du wählst monatlich oder jährlich, und es verlängert sich von selbst, bis du es beendest. Du beendest es in deinem Konto, an jedem beliebigen Tag, und ab diesem Moment berechnen wir dir nichts mehr. Krypto ist die Ausnahme: eine Zahlung, 30 Tage Zugang, keinerlei Verlängerung. An Tag 31 passiert nichts, außer du entscheidest dich, erneut zu zahlen.",
+        "Muss ich etwas bezahlen?",
+        "Nein. Während des Starts ist auf BetRedge alles kostenlos, Pro-Funktionen eingeschlossen: Pro ist noch nicht im Verkauf. Sobald es so weit ist, sagen wir 7 Tage vorher Bescheid, bevor eine Funktion zu Pro wechselt, und der Preis steht zuerst auf der Seite mit den Plänen.",
       ],
       [
         "Was steckt in einer Analyse, und was bringt Pro dazu?",
-        "Drei Zahlen, alle vor dem Anstoß versiegelt. Was der Markt denkt, also die Quote als Prozentwert, ohne Marge. Unsere Schätzung: Im Fußball sind das 70% Markt und 30% Modell, und das schreiben wir dazu. Im Tennis ist die Schätzung bei ATP/WTA-Spielen mit aktuellem Elo 90% Markt und 10% unser Elo, nicht versiegelt; sonst nur die Marktquote. Und der Abstand zwischen beiden, in Punkten. Pro ergänzt das Warum: Öffne ein beliebiges Fußballspiel und du siehst die Faktoren, die das Modell tatsächlich gewichtet hat, etwa Form, erwartete Tore, Elo, direkte Duelle.",
+        "Drei Zahlen, alle vor dem Anstoß versiegelt. Was der Markt denkt, also die Quote als Prozentwert, ohne Marge. Unsere Schätzung: Im Fußball sind das 70% Markt und 30% Modell, und das schreiben wir dazu. Im Tennis ist die Schätzung bei ATP/WTA-Spielen mit aktuellem Elo 90% Markt und 10% unser Elo, nicht versiegelt; sonst nur die Marktquote. Und der Abstand zwischen beiden, in Punkten. Pro wird das Warum ergänzen, Faktor für Faktor; das ist noch nicht gebaut.",
       ],
       [
         "Welche Sportarten deckt ihr ab?",
@@ -88,7 +91,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Was passiert auf dem Live-Board?",
-        "Die Zahl bewegt sich, während das Spiel läuft. Der Spielstand ändert sich, die Uhr läuft, das Momentum kippt, und das Modell liest das Spiel neu, sodass du siehst, wie sich die Wahrscheinlichkeit verschiebt, während sie sich verschiebt. Nichts wird jemals für dich platziert oder ausgeführt: Du liest einen Bildschirm. Live gibt es nur mit Pro.",
+        "Die Zahl bewegt sich, während das Spiel läuft. Der Spielstand ändert sich, die Uhr läuft, das Momentum kippt, und das Modell liest das Spiel neu, sodass du siehst, wie sich die Wahrscheinlichkeit verschiebt, während sie sich verschiebt. Nichts wird jemals für dich platziert oder ausgeführt: Du liest einen Bildschirm. Live ist eine Pro-Funktion, während des Starts für alle offen.",
       ],
       [ // REVIEW-NATIVE
         "Platziert ihr Wetten, oder versprecht ihr mir Geld?",
@@ -96,17 +99,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Wie nutze ich es im Alltag?",
-        "Öffne das Board. Jede Zeile zeigt den Ausgang, bei dem unsere Schätzung und der Markt am weitesten auseinanderliegen: den Markt, unsere Schätzung, den Abstand. Tennis-Zeilen zeigen die Schätzung nur, wo es sie gibt, 90% Markt und 10% unser Elo, mit dem Abstand als Information, nicht als Empfehlung; die übrigen nur den Markt. Tippe darauf für alle drei Ausgänge und die Quoten der verbundenen Buchmacher. Dann schau ins öffentliche Register, denn wie frühere Analysen ausgingen, zeigt dir, wie viel Gewicht eine solche Zahl verdient. Was du danach damit machst, ist deine Entscheidung. Free zeigt jedes Spiel auf dem Board, Abstand inklusive; Pro ergänzt, warum das Modell abweicht.",
+        "Öffne das Board. Jede Zeile zeigt den Ausgang, bei dem unsere Schätzung und der Markt am weitesten auseinanderliegen: den Markt, unsere Schätzung, den Abstand. Tennis-Zeilen zeigen die Schätzung nur, wo es sie gibt, 90% Markt und 10% unser Elo, mit dem Abstand als Information, nicht als Empfehlung; die übrigen nur den Markt. Tippe darauf für alle drei Ausgänge und die Quoten der verbundenen Buchmacher. Dann schau ins öffentliche Register, denn wie frühere Analysen ausgingen, zeigt dir, wie viel Gewicht eine solche Zahl verdient. Was du danach damit machst, ist deine Entscheidung. Free zeigt jedes Spiel auf dem Board, Abstand inklusive; während des Starts sind auch die Pro-Funktionen für alle offen.",
       ],
     ],
     es: [
       [ // REVIEW-NATIVE
-        "¿Cómo funciona el cobro y puedo cancelar?",
-        "Pro es una suscripción normal con tarjeta. Eliges mensual o anual, y se renueva sola hasta que la detengas. La detienes desde tu cuenta, el día que quieras, y desde ese momento no te cobramos nada más. Las cripto son la excepción: un único pago, 30 días de acceso, sin ningún tipo de renovación. El día 31 no pasa nada a menos que decidas volver a pagar.",
+        "¿Tengo que pagar algo?",
+        "No. Durante el lanzamiento todo en BetRedge es gratis, funciones Pro incluidas: Pro aún no está a la venta. Cuando lo esté, avisaremos con 7 días de antelación antes de que una función pase a Pro, y el precio aparecerá primero en la página de planes.",
       ],
       [
         "¿Qué hay en una lectura y qué añade Pro?",
-        "Tres números, todos sellados antes del inicio. Lo que piensa el mercado, es decir, la cuota convertida en porcentaje sin el margen. Nuestra estimación: en fútbol es 70% mercado y 30% modelo, y lo decimos al lado. En tenis, en partidos ATP/WTA con un Elo reciente, la estimación es 90% mercado y 10% nuestro Elo, sin sellar; en el resto, solo la cuota del mercado. Y la diferencia entre ambos, en puntos. Pro añade el porqué: abre cualquier partido de fútbol y verás los factores que el modelo ha ponderado de verdad, como la forma, los goles esperados, el Elo o los enfrentamientos directos.",
+        "Tres números, todos sellados antes del inicio. Lo que piensa el mercado, es decir, la cuota convertida en porcentaje sin el margen. Nuestra estimación: en fútbol es 70% mercado y 30% modelo, y lo decimos al lado. En tenis, en partidos ATP/WTA con un Elo reciente, la estimación es 90% mercado y 10% nuestro Elo, sin sellar; en el resto, solo la cuota del mercado. Y la diferencia entre ambos, en puntos. Pro añadirá el porqué, factor por factor; aún no está construido.",
       ],
       [
         "¿Qué deportes cubrís?",
@@ -114,7 +117,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "¿Qué pasa en el tablero en directo?",
-        "El número se mueve mientras se mueve el partido. Cambia el marcador, corre el reloj, gira el impulso, y el modelo vuelve a leer el juego, así que ves cómo cambia la probabilidad mientras cambia. En ningún momento se coloca ni se ejecuta nada por ti: estás leyendo una pantalla. El directo es solo para Pro.",
+        "El número se mueve mientras se mueve el partido. Cambia el marcador, corre el reloj, gira el impulso, y el modelo vuelve a leer el juego, así que ves cómo cambia la probabilidad mientras cambia. En ningún momento se coloca ni se ejecuta nada por ti: estás leyendo una pantalla. El directo es una función Pro, abierta a todos durante el lanzamiento.",
       ],
       [ // REVIEW-NATIVE
         "¿Hacéis apuestas, o me prometéis que ganaré dinero?",
@@ -122,17 +125,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "¿Cómo lo uso en el día a día?",
-        "Abre el tablero. Cada fila muestra el resultado en el que nuestra estimación y el mercado están más lejos: el mercado, nuestra estimación, la diferencia. Las filas de tenis muestran la estimación solo donde existe, 90% mercado y 10% nuestro Elo, con la diferencia como información, no como consejo; las demás, solo el mercado. Tócala para ver los tres resultados y las cuotas de las casas conectadas. Luego mira el registro público, porque ver cómo se liquidaron las lecturas anteriores te dice cuánto peso merece un número así. Lo que hagas después es decisión tuya. Free muestra cada partido del tablero, diferencia incluida; Pro añade por qué el modelo discrepa.",
+        "Abre el tablero. Cada fila muestra el resultado en el que nuestra estimación y el mercado están más lejos: el mercado, nuestra estimación, la diferencia. Las filas de tenis muestran la estimación solo donde existe, 90% mercado y 10% nuestro Elo, con la diferencia como información, no como consejo; las demás, solo el mercado. Tócala para ver los tres resultados y las cuotas de las casas conectadas. Luego mira el registro público, porque ver cómo se liquidaron las lecturas anteriores te dice cuánto peso merece un número así. Lo que hagas después es decisión tuya. Free muestra cada partido del tablero, diferencia incluida; durante el lanzamiento las funciones Pro también están abiertas a todos.",
       ],
     ],
   fr: [
       [ // REVIEW-NATIVE
-        "Comment fonctionne la facturation, et puis-je résilier ?",
-        "Pro est un abonnement par carte classique. Vous choisissez mensuel ou annuel, et il se renouvelle tout seul jusqu’à ce que vous l’arrêtiez. Vous l’arrêtez depuis votre compte, le jour que vous voulez, et à partir de ce moment nous ne vous facturons plus rien. La crypto fait exception : un paiement, 30 jours d’accès, aucun renouvellement d’aucune sorte. Le 31e jour, il ne se passe rien, sauf si vous décidez de payer à nouveau.",
+        "Dois-je payer quelque chose ?",
+        "Non. Pendant le lancement, tout sur BetRedge est gratuit, fonctions Pro comprises : Pro n’est pas encore en vente. Quand il le sera, nous préviendrons 7 jours avant qu’une fonction passe dans Pro, et le prix figurera d’abord sur la page des offres.",
       ],
       [
         "Que contient une lecture, et qu’ajoute Pro ?",
-        "Trois chiffres, tous scellés avant le coup d’envoi. Ce que pense le marché, c’est-à-dire la cote convertie en pourcentage, marge retirée. Notre estimation : en football, c’est 70 % marché et 30 % modèle, et nous l’indiquons à côté. Au tennis, sur les matchs ATP/WTA avec un Elo récent, l’estimation est à 90 % le marché et à 10 % notre Elo, non scellée ; ailleurs, seulement la cote du marché. Et l’écart entre les deux, en points. Pro ajoute le pourquoi : ouvrez n’importe quel match de football et vous voyez les facteurs que le modèle a réellement pesés, comme la forme, les buts attendus, l’Elo, les confrontations directes.",
+        "Trois chiffres, tous scellés avant le coup d’envoi. Ce que pense le marché, c’est-à-dire la cote convertie en pourcentage, marge retirée. Notre estimation : en football, c’est 70 % marché et 30 % modèle, et nous l’indiquons à côté. Au tennis, sur les matchs ATP/WTA avec un Elo récent, l’estimation est à 90 % le marché et à 10 % notre Elo, non scellée ; ailleurs, seulement la cote du marché. Et l’écart entre les deux, en points. Pro ajoutera le pourquoi, facteur par facteur ; ce n’est pas encore construit.",
       ],
       [
         "Quels sports couvrez-vous ?",
@@ -140,7 +143,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Que se passe-t-il sur le tableau en direct ?",
-        "Le chiffre bouge pendant que le match avance. Le score change, le chrono tourne, la dynamique bascule, et le modèle relit la rencontre : vous voyez la probabilité évoluer au moment où elle évolue. Rien n’est jamais placé ni exécuté pour vous, à aucun moment : vous lisez un écran. Le direct est réservé à Pro.",
+        "Le chiffre bouge pendant que le match avance. Le score change, le chrono tourne, la dynamique bascule, et le modèle relit la rencontre : vous voyez la probabilité évoluer au moment où elle évolue. Rien n’est jamais placé ni exécuté pour vous, à aucun moment : vous lisez un écran. Le direct est une fonction Pro, ouverte à tous pendant le lancement.",
       ],
       [ // REVIEW-NATIVE
         "Placez-vous des paris, ou me promettez-vous de gagner de l’argent ?",
@@ -148,17 +151,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Comment l’utiliser au quotidien ?",
-        "Ouvrez le tableau. Chaque ligne montre l’issue où notre estimation et le marché sont le plus éloignés : le marché, notre estimation, l’écart. Les lignes de tennis montrent l’estimation seulement là où elle existe, 90 % marché et 10 % notre Elo, avec l’écart comme information, pas comme conseil ; les autres, le marché seul. Touchez-la pour les trois issues et les cotes des bookmakers connectés. Puis regardez le registre public, car voir comment les lectures précédentes se sont réglées vous dit quel poids mérite un tel chiffre. Ce que vous en faites ensuite vous appartient. Free montre chaque match du tableau, écart compris ; Pro ajoute pourquoi le modèle n’est pas d’accord.",
+        "Ouvrez le tableau. Chaque ligne montre l’issue où notre estimation et le marché sont le plus éloignés : le marché, notre estimation, l’écart. Les lignes de tennis montrent l’estimation seulement là où elle existe, 90 % marché et 10 % notre Elo, avec l’écart comme information, pas comme conseil ; les autres, le marché seul. Touchez-la pour les trois issues et les cotes des bookmakers connectés. Puis regardez le registre public, car voir comment les lectures précédentes se sont réglées vous dit quel poids mérite un tel chiffre. Ce que vous en faites ensuite vous appartient. Free montre chaque match du tableau, écart compris ; pendant le lancement, les fonctions Pro sont aussi ouvertes à tous.",
       ],
     ],
     nl: [
       [ // REVIEW-NATIVE
-        "Hoe werkt de betaling, en kan ik opzeggen?",
-        "Pro is een gewoon kaartabonnement. Je kiest maandelijks of jaarlijks, en het verlengt vanzelf tot je het stopt. Stoppen doe je vanuit je account, op elke dag die je wilt, en vanaf dat moment rekenen we je niets meer aan. Crypto is de uitzondering: één betaling, 30 dagen toegang, geen enkele verlenging. Op dag 31 gebeurt er niets, tenzij je zelf besluit opnieuw te betalen.",
+        "Moet ik iets betalen?",
+        "Nee. Tijdens de lancering is alles op BetRedge gratis, Pro-functies inbegrepen: Pro is nog niet te koop. Zodra het zover is, laten we het 7 dagen van tevoren weten voordat een functie naar Pro gaat, en staat de prijs eerst op de pagina met abonnementen.",
       ],
       [
         "Wat zit er in een lezing, en wat voegt Pro toe?",
-        "Drie getallen, allemaal verzegeld vóór de aftrap. Wat de markt denkt: de odds omgezet in een percentage, zonder marge. Onze schatting: in het voetbal is dat 70% markt en 30% model, en dat zeggen we er ook bij. Bij tennis is de schatting bij ATP/WTA-wedstrijden met een recente Elo 90% markt en 10% onze Elo, niet verzegeld; elders alleen de marktodds. En het verschil tussen de twee, in punten. Pro voegt het waarom toe: open een voetbalwedstrijd en je ziet de factoren die het model echt heeft gewogen, zoals vorm, verwachte doelpunten, Elo, onderlinge duels.",
+        "Drie getallen, allemaal verzegeld vóór de aftrap. Wat de markt denkt: de odds omgezet in een percentage, zonder marge. Onze schatting: in het voetbal is dat 70% markt en 30% model, en dat zeggen we er ook bij. Bij tennis is de schatting bij ATP/WTA-wedstrijden met een recente Elo 90% markt en 10% onze Elo, niet verzegeld; elders alleen de marktodds. En het verschil tussen de twee, in punten. Pro voegt het waarom toe, factor voor factor; dat is nog niet gebouwd.",
       ],
       [
         "Welke sporten dekken jullie?",
@@ -166,7 +169,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Wat gebeurt er op het live board?",
-        "Het getal beweegt mee met de wedstrijd. De stand verandert, de klok loopt, het momentum kantelt, en het model leest het spel opnieuw, zodat je de kans ziet verschuiven terwijl ze verschuift. Er wordt op geen enkel moment iets voor je geplaatst of uitgevoerd: je leest een scherm. Live is alleen voor Pro.",
+        "Het getal beweegt mee met de wedstrijd. De stand verandert, de klok loopt, het momentum kantelt, en het model leest het spel opnieuw, zodat je de kans ziet verschuiven terwijl ze verschuift. Er wordt op geen enkel moment iets voor je geplaatst of uitgevoerd: je leest een scherm. Live is een Pro-functie, tijdens de lancering open voor iedereen.",
       ],
       [ // REVIEW-NATIVE
         "Plaatsen jullie weddenschappen, of beloven jullie dat ik geld verdien?",
@@ -174,17 +177,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Hoe gebruik ik het van dag tot dag?",
-        "Open het board. Elke rij toont de uitkomst waar onze schatting en de markt het verst uit elkaar liggen: de markt, onze schatting, het verschil. Tennisrijen tonen de schatting alleen waar die er is, 90% markt en 10% onze Elo, met het verschil als informatie, niet als advies; de rest alleen de markt. Tik erop voor alle drie de uitkomsten en de odds van de gekoppelde bookmakers. Kijk daarna naar het openbare register, want zien hoe eerdere lezingen afliepen vertelt je hoeveel gewicht zo'n getal verdient. Wat je er daarna mee doet, is jouw keuze. Free toont elke wedstrijd op het board, verschil inbegrepen; Pro voegt toe waarom het model het oneens is.",
+        "Open het board. Elke rij toont de uitkomst waar onze schatting en de markt het verst uit elkaar liggen: de markt, onze schatting, het verschil. Tennisrijen tonen de schatting alleen waar die er is, 90% markt en 10% onze Elo, met het verschil als informatie, niet als advies; de rest alleen de markt. Tik erop voor alle drie de uitkomsten en de odds van de gekoppelde bookmakers. Kijk daarna naar het openbare register, want zien hoe eerdere lezingen afliepen vertelt je hoeveel gewicht zo'n getal verdient. Wat je er daarna mee doet, is jouw keuze. Free toont elke wedstrijd op het board, verschil inbegrepen; tijdens de lancering staan ook de Pro-functies open voor iedereen.",
       ],
     ],
     pl: [
       [ // REVIEW-NATIVE
-        "Jak działa płatność i czy mogę zrezygnować?",
-        "Pro to zwykła subskrypcja kartą. Wybierasz plan miesięczny albo roczny, a subskrypcja odnawia się sama, dopóki jej nie zatrzymasz. Zatrzymujesz ją na swoim koncie, w dowolnym dniu, i od tej chwili nie pobieramy od ciebie nic więcej. Krypto to wyjątek: jedna płatność, 30 dni dostępu, żadnego odnowienia. 31. dnia nic się nie dzieje, chyba że sam zdecydujesz się zapłacić ponownie.",
+        "Czy muszę za coś płacić?",
+        "Nie. Podczas startu wszystko w BetRedge jest darmowe, łącznie z funkcjami Pro: Pro nie jest jeszcze w sprzedaży. Gdy będzie, uprzedzimy 7 dni wcześniej, zanim jakakolwiek funkcja przejdzie do Pro, a cena najpierw pojawi się na stronie planów.",
       ],
       [
         "Co jest w analizie i co dodaje Pro?",
-        "Trzy liczby, wszystkie zapieczętowane przed początkiem meczu. Co myśli rynek, czyli kurs zamieniony na procent bez marży. Nasz szacunek: w piłce nożnej to 70% rynek i 30% model, i piszemy to obok. W tenisie, w meczach ATP/WTA z aktualnym Elo, szacunek to w 90% rynek i w 10% nasze Elo, niezapieczętowany; w pozostałych tylko kurs rynkowy. Oraz różnica między nimi, w punktach. Pro dodaje dlaczego: otwórz dowolny mecz piłkarski i zobaczysz czynniki, które model faktycznie uwzględnił, takie jak forma, gole oczekiwane, Elo, bezpośrednie mecze.",
+        "Trzy liczby, wszystkie zapieczętowane przed początkiem meczu. Co myśli rynek, czyli kurs zamieniony na procent bez marży. Nasz szacunek: w piłce nożnej to 70% rynek i 30% model, i piszemy to obok. W tenisie, w meczach ATP/WTA z aktualnym Elo, szacunek to w 90% rynek i w 10% nasze Elo, niezapieczętowany; w pozostałych tylko kurs rynkowy. Oraz różnica między nimi, w punktach. Pro doda wyjaśnienie dlaczego, czynnik po czynniku; jeszcze tego nie zbudowaliśmy.",
       ],
       [
         "Jakie sporty obejmujecie?",
@@ -192,7 +195,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Co dzieje się na tablicy na żywo?",
-        "Liczba rusza się razem z meczem. Zmienia się wynik, biegnie zegar, przechyla się momentum, a model czyta grę od nowa, więc widzisz zmianę prawdopodobieństwa w chwili, gdy zachodzi. Nic nigdy nie jest stawiane ani wykonywane za ciebie: patrzysz na ekran. Na żywo jest tylko w Pro.",
+        "Liczba rusza się razem z meczem. Zmienia się wynik, biegnie zegar, przechyla się momentum, a model czyta grę od nowa, więc widzisz zmianę prawdopodobieństwa w chwili, gdy zachodzi. Nic nigdy nie jest stawiane ani wykonywane za ciebie: patrzysz na ekran. Na żywo to funkcja Pro, otwarta dla wszystkich podczas startu.",
       ],
       [ // REVIEW-NATIVE
         "Czy stawiacie zakłady albo obiecujecie, że zarobię?",
@@ -200,17 +203,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Jak z tego korzystać na co dzień?",
-        "Otwórz tablicę. Każdy wiersz pokazuje wynik, przy którym nasz szacunek i rynek są najdalej od siebie: rynek, nasz szacunek, różnica. Wiersze tenisowe pokazują szacunek tylko tam, gdzie istnieje, 90% rynek i 10% nasze Elo, z różnicą jako informacją, nie poradą; pozostałe tylko rynek. Stuknij go, by zobaczyć wszystkie trzy wyniki i kursy połączonych bukmacherów. Potem zajrzyj do publicznego rejestru, bo to, jak rozliczyły się wcześniejsze analizy, mówi ci, na ile wagi zasługuje taka liczba. Co z tym zrobisz potem, to twoja decyzja. Free pokazuje każdy mecz na tablicy, razem z różnicą; Pro dodaje, dlaczego model się nie zgadza.",
+        "Otwórz tablicę. Każdy wiersz pokazuje wynik, przy którym nasz szacunek i rynek są najdalej od siebie: rynek, nasz szacunek, różnica. Wiersze tenisowe pokazują szacunek tylko tam, gdzie istnieje, 90% rynek i 10% nasze Elo, z różnicą jako informacją, nie poradą; pozostałe tylko rynek. Stuknij go, by zobaczyć wszystkie trzy wyniki i kursy połączonych bukmacherów. Potem zajrzyj do publicznego rejestru, bo to, jak rozliczyły się wcześniejsze analizy, mówi ci, na ile wagi zasługuje taka liczba. Co z tym zrobisz potem, to twoja decyzja. Free pokazuje każdy mecz na tablicy, razem z różnicą; podczas startu funkcje Pro również są otwarte dla wszystkich.",
       ],
     ],
   pt: [
       [
-        "Como funciona a faturação, e posso cancelar?", // REVIEW-NATIVE
-        "O Pro é uma subscrição normal por cartão. Escolhes mensal ou anual, e renova-se sozinha até a parares. Paras na tua conta, no dia que quiseres, e a partir desse momento não te cobramos mais nada. A cripto é a exceção: um pagamento, 30 dias de acesso, nenhuma renovação de qualquer tipo. No dia 31 não acontece nada, a menos que decidas pagar de novo.",
+        "Tenho de pagar alguma coisa?", // REVIEW-NATIVE
+        "Não. Durante o lançamento tudo no BetRedge é gratuito, funções Pro incluídas: o Pro ainda não está à venda. Quando estiver, avisamos 7 dias antes de qualquer função passar para o Pro, e o preço aparece primeiro na página dos planos.",
       ],
       [
         "O que há numa leitura, e o que acrescenta o Pro?", // REVIEW-NATIVE
-        "Três números, todos selados antes do início. O que o mercado pensa, ou seja, as odds transformadas em percentagem sem a margem. A nossa estimativa: no futebol é 70% mercado e 30% modelo, e dizemo-lo ao lado. No ténis, em jogos ATP/WTA com um Elo recente, a estimativa é 90% mercado e 10% o nosso Elo, não selada; nos restantes, só a odd de mercado. E a diferença entre as duas, em pontos. O Pro acrescenta o porquê: abre qualquer jogo de futebol e vês os fatores que o modelo realmente pesou, como forma, golos esperados, Elo, confrontos diretos.",
+        "Três números, todos selados antes do início. O que o mercado pensa, ou seja, as odds transformadas em percentagem sem a margem. A nossa estimativa: no futebol é 70% mercado e 30% modelo, e dizemo-lo ao lado. No ténis, em jogos ATP/WTA com um Elo recente, a estimativa é 90% mercado e 10% o nosso Elo, não selada; nos restantes, só a odd de mercado. E a diferença entre as duas, em pontos. O Pro vai acrescentar o porquê, fator a fator; ainda não está construído.",
       ],
       [
         "Que desportos cobrem?",
@@ -218,7 +221,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "O que acontece no board ao vivo?",
-        "O número mexe-se enquanto o jogo decorre. O marcador muda, o relógio corre, o momento vira, e o modelo volta a ler o jogo, por isso vês a probabilidade a mudar enquanto muda. Nada é alguma vez apostado ou executado por ti: estás a ler um ecrã. O ao vivo é só para Pro.",
+        "O número mexe-se enquanto o jogo decorre. O marcador muda, o relógio corre, o momento vira, e o modelo volta a ler o jogo, por isso vês a probabilidade a mudar enquanto muda. Nada é alguma vez apostado ou executado por ti: estás a ler um ecrã. O ao vivo é uma função Pro, aberta a todos durante o lançamento.",
       ],
       [
         "Fazem apostas, ou prometem que vou ganhar dinheiro?", // REVIEW-NATIVE
@@ -226,17 +229,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Como o uso no dia a dia?",
-        "Abre o board. Cada linha mostra o resultado em que a nossa estimativa e o mercado estão mais afastados: o mercado, a nossa estimativa, a diferença. As linhas de ténis mostram a estimativa só onde existe, 90% mercado e 10% o nosso Elo, com a diferença como informação, não conselho; as restantes só o mercado. Toca nela para os três resultados e as odds das casas ligadas. Depois olha para o registo público, porque ver como as leituras anteriores foram liquidadas diz-te quanto peso merece um número assim. O que fazes com isso a seguir é decisão tua. O Free mostra cada jogo do board, diferença incluída; o Pro acrescenta porque é que o modelo discorda.",
+        "Abre o board. Cada linha mostra o resultado em que a nossa estimativa e o mercado estão mais afastados: o mercado, a nossa estimativa, a diferença. As linhas de ténis mostram a estimativa só onde existe, 90% mercado e 10% o nosso Elo, com a diferença como informação, não conselho; as restantes só o mercado. Toca nela para os três resultados e as odds das casas ligadas. Depois olha para o registo público, porque ver como as leituras anteriores foram liquidadas diz-te quanto peso merece um número assim. O que fazes com isso a seguir é decisão tua. O Free mostra cada jogo no board, diferença incluída; durante o lançamento as funções Pro também estão abertas a todos.",
       ],
     ],
   ru: [
       [ // REVIEW-NATIVE
-        "Как устроена оплата и можно ли отменить?",
-        "Pro — обычная подписка по карте. Вы выбираете месячную или годовую, и она продлевается сама, пока вы её не остановите. Остановить её можно в своём аккаунте в любой день, и с этого момента мы больше ничего не списываем. Криптовалюта — исключение: один платёж, 30 дней доступа, никакого продления. На 31-й день ничего не происходит, если вы сами не решите заплатить снова.",
+        "Нужно ли за что-то платить?",
+        "Нет. На время запуска всё на BetRedge бесплатно, включая функции Pro: Pro пока не продаётся. Когда начнутся продажи, мы предупредим за 7 дней до того, как какая-либо функция перейдёт в Pro, и цена сначала появится на странице тарифов.",
       ],
       [
         "Что входит в анализ и что добавляет Pro?",
-        "Три числа, и все они зафиксированы до начала матча. Что думает рынок — коэффициенты, переведённые в проценты без маржи. Наша оценка: в футболе это 70% рынок и 30% модель, и мы пишем это рядом. В теннисе, в матчах ATP/WTA со свежим Elo, оценка — на 90% рынок и на 10% наш Elo, не зафиксирована; в остальных — только рыночный коэффициент. И разрыв между ними, в пунктах. Pro добавляет «почему»: откройте любой футбольный матч и увидите факторы, которые модель действительно учла, — форму, ожидаемые голы, Elo, личные встречи.",
+        "Три числа, и все они зафиксированы до начала матча. Что думает рынок — коэффициенты, переведённые в проценты без маржи. Наша оценка: в футболе это 70% рынок и 30% модель, и мы пишем это рядом. В теннисе, в матчах ATP/WTA со свежим Elo, оценка — на 90% рынок и на 10% наш Elo, не зафиксирована; в остальных — только рыночный коэффициент. И разрыв между ними, в пунктах. Pro добавит объяснение причин, фактор за фактором; это ещё не сделано.",
       ],
       [
         "Какие виды спорта вы охватываете?",
@@ -244,7 +247,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Что происходит на панели в режиме live?",
-        "Число движется вместе с матчем. Меняется счёт, идёт время, переходит инициатива, и модель заново читает игру, так что вы видите, как вероятность сдвигается прямо в момент сдвига. Ничего и никогда не ставится и не исполняется за вас: вы просто смотрите на экран. Live — только в Pro.",
+        "Число движется вместе с матчем. Меняется счёт, идёт время, переходит инициатива, и модель заново читает игру, так что вы видите, как вероятность сдвигается прямо в момент сдвига. Ничего и никогда не ставится и не исполняется за вас: вы просто смотрите на экран. Эфир — функция Pro, открытая для всех на время запуска.",
       ],
       [ // REVIEW-NATIVE
         "Вы делаете ставки или обещаете, что я заработаю?",
@@ -252,17 +255,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Как пользоваться этим каждый день?",
-        "Откройте панель. Каждая строка показывает исход, где наша оценка и рынок расходятся сильнее всего: рынок, наша оценка, разрыв. Строки тенниса показывают оценку только там, где она есть, — 90% рынок и 10% наш Elo, а разрыв — информация, не совет; остальные — только рынок. Нажмите на неё — увидите все три исхода и коэффициенты подключённых букмекеров. Затем загляните в публичный реестр: то, чем закончились прежние оценки, подсказывает, какой вес заслуживает такое число. Что делать с этим дальше — решать вам. Free показывает каждый матч на панели вместе с разрывом; Pro добавляет, почему модель не согласна.",
+        "Откройте панель. Каждая строка показывает исход, где наша оценка и рынок расходятся сильнее всего: рынок, наша оценка, разрыв. Строки тенниса показывают оценку только там, где она есть, — 90% рынок и 10% наш Elo, а разрыв — информация, не совет; остальные — только рынок. Нажмите на неё — увидите все три исхода и коэффициенты подключённых букмекеров. Затем загляните в публичный реестр: то, чем закончились прежние оценки, подсказывает, какой вес заслуживает такое число. Что делать с этим дальше — решать вам. Free показывает каждый матч на панели, вместе с разрывом; на время запуска функции Pro тоже открыты для всех.",
       ],
     ],
     sv: [
       [ // REVIEW-NATIVE
-        "Hur fungerar betalningen, och kan jag säga upp?",
-        "Pro är ett vanligt kortabonnemang. Du väljer månadsvis eller årsvis, och det förnyas av sig självt tills du stoppar det. Du stoppar det från ditt konto, vilken dag du vill, och från det ögonblicket debiterar vi dig ingenting mer. Krypto är undantaget: en betalning, 30 dagars tillgång, ingen förnyelse av något slag. Dag 31 händer ingenting om du inte själv bestämmer dig för att betala igen.",
+        "Måste jag betala något?",
+        "Nej. Under lanseringen är allt på BetRedge gratis, Pro-funktionerna inräknade: Pro säljs inte än. När det gör det meddelar vi 7 dagar innan någon funktion flyttar till Pro, och priset står först på sidan med planer.",
       ],
       [
         "Vad ingår i en läsning, och vad lägger Pro till?",
-        "Tre siffror, alla förseglade före avspark. Vad marknaden tror, alltså oddset omvandlat till en procentsats med marginalen borttagen. Vår uppskattning: i fotboll är den 70 % marknad och 30 % modell, och det står bredvid. I tennis är uppskattningen i ATP/WTA-matcher med färsk Elo 90 % marknad och 10 % vår Elo, inte förseglad; annars bara marknadens odds. Och skillnaden mellan de två, i punkter. Pro lägger till varför: öppna vilken fotbollsmatch som helst och du ser faktorerna modellen faktiskt vägde in, som form, förväntade mål, Elo, inbördes möten.",
+        "Tre siffror, alla förseglade före avspark. Vad marknaden tror, alltså oddset omvandlat till en procentsats med marginalen borttagen. Vår uppskattning: i fotboll är den 70 % marknad och 30 % modell, och det står bredvid. I tennis är uppskattningen i ATP/WTA-matcher med färsk Elo 90 % marknad och 10 % vår Elo, inte förseglad; annars bara marknadens odds. Och skillnaden mellan de två, i punkter. Pro kommer att lägga till varför, faktor för faktor; det är inte byggt än.",
       ],
       [
         "Vilka sporter täcker ni?",
@@ -270,7 +273,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Vad händer på liveboarden?",
-        "Siffran rör sig medan matchen gör det. Ställningen ändras, klockan går, momentum vänder, och modellen läser matchen igen, så du ser sannolikheten skifta medan den skiftar. Ingenting läggs eller genomförs någonsin åt dig: du läser en skärm. Live finns bara i Pro.",
+        "Siffran rör sig medan matchen gör det. Ställningen ändras, klockan går, momentum vänder, och modellen läser matchen igen, så du ser sannolikheten skifta medan den skiftar. Ingenting läggs eller genomförs någonsin åt dig: du läser en skärm. Live är en Pro-funktion, öppen för alla under lanseringen.",
       ],
       [ // REVIEW-NATIVE
         "Lägger ni spel, eller lovar ni att jag tjänar pengar?",
@@ -278,17 +281,17 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Hur använder jag det i vardagen?",
-        "Öppna boarden. Varje rad visar utfallet där vår uppskattning och marknaden ligger längst isär: marknaden, vår uppskattning, skillnaden. Tennisrader visar uppskattningen bara där den finns, 90 % marknad och 10 % vår Elo, med skillnaden som information, inte råd; övriga bara marknaden. Tryck på den för alla tre utfallen och oddsen från de anslutna spelbolagen. Titta sedan på det offentliga registret, för att se hur tidigare läsningar avgjordes säger dig hur mycket vikt en sådan siffra förtjänar. Vad du gör med det sedan är ditt beslut. Free visar varje match på boarden, skillnaden inräknad; Pro lägger till varför modellen inte håller med.",
+        "Öppna boarden. Varje rad visar utfallet där vår uppskattning och marknaden ligger längst isär: marknaden, vår uppskattning, skillnaden. Tennisrader visar uppskattningen bara där den finns, 90 % marknad och 10 % vår Elo, med skillnaden som information, inte råd; övriga bara marknaden. Tryck på den för alla tre utfallen och oddsen från de anslutna spelbolagen. Titta sedan på det offentliga registret, för att se hur tidigare läsningar avgjordes säger dig hur mycket vikt en sådan siffra förtjänar. Vad du gör med det sedan är ditt beslut. Free visar varje match på boarden, skillnaden inräknad; under lanseringen är även Pro-funktionerna öppna för alla.",
       ],
     ],
     tr: [
       [ // REVIEW-NATIVE
-        "Ödeme nasıl işliyor, iptal edebilir miyim?",
-        "Pro sıradan bir kart aboneliğidir. Aylık ya da yıllık seçersin ve sen durdurana kadar kendiliğinden yenilenir. İstediğin gün hesabından durdurursun ve o andan itibaren senden başka bir ücret almayız. Kripto istisnadır: tek ödeme, 30 günlük erişim, hiçbir şekilde yenileme yok. 31. gün, yeniden ödemeye karar vermedikçe hiçbir şey olmaz.",
+        "Bir şey ödemem gerekiyor mu?",
+        "Hayır. Lansman süresince BetRedge'deki her şey ücretsiz, Pro özellikleri dahil: Pro henüz satışta değil. Satışa çıktığında, bir özellik Pro'ya geçmeden 7 gün önce haber vereceğiz ve fiyat önce planlar sayfasında yer alacak.",
       ],
       [
         "Bir okumada ne var, Pro ne ekliyor?",
-        "Üç sayı, hepsi başlamadan önce mühürlü. Piyasanın düşündüğü: oranın marj çıkarılarak yüzdeye çevrilmiş hali. Tahminimiz: futbolda %70 piyasa ve %30 modeldir ve bunu yanında yazarız. Teniste, güncel Elo’su olan ATP/WTA maçlarında tahmin %90 piyasa ve %10 kendi Elo’muzdur, mühürsüzdür; diğerlerinde yalnızca piyasa oranı. Ve ikisi arasındaki fark, puan olarak. Pro nedenini ekler: herhangi bir futbol maçını aç ve modelin gerçekten tarttığı etkenleri gör; form, beklenen goller, Elo, ikili rekabet gibi.",
+        "Üç sayı, hepsi başlamadan önce mühürlü. Piyasanın düşündüğü: oranın marj çıkarılarak yüzdeye çevrilmiş hali. Tahminimiz: futbolda %70 piyasa ve %30 modeldir ve bunu yanında yazarız. Teniste, güncel Elo’su olan ATP/WTA maçlarında tahmin %90 piyasa ve %10 kendi Elo’muzdur, mühürsüzdür; diğerlerinde yalnızca piyasa oranı. Ve ikisi arasındaki fark, puan olarak. Pro nedenini faktör faktör ekleyecek; henüz yapılmadı.",
       ],
       [
         "Hangi sporları kapsıyorsunuz?",
@@ -296,7 +299,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Canlı panoda ne oluyor?",
-        "Maç ilerledikçe sayı da hareket eder. Skor değişir, saat işler, üstünlük el değiştirir ve model oyunu yeniden okur; böylece olasılığın kaydığını tam kayarken görürsün. Hiçbir anda senin adına hiçbir şey oynanmaz ya da yürütülmez: bir ekran okuyorsun. Canlı yalnızca Pro'dadır.",
+        "Maç ilerledikçe sayı da hareket eder. Skor değişir, saat işler, üstünlük el değiştirir ve model oyunu yeniden okur; böylece olasılığın kaydığını tam kayarken görürsün. Hiçbir anda senin adına hiçbir şey oynanmaz ya da yürütülmez: bir ekran okuyorsun. Canlı bir Pro özelliğidir, lansman süresince herkese açık.",
       ],
       [ // REVIEW-NATIVE
         "Bahis oynuyor musunuz ya da para kazanacağımı vaat ediyor musunuz?",
@@ -304,7 +307,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Günlük olarak nasıl kullanırım?",
-        "Panoyu aç. Her satır, tahminimiz ile piyasanın en çok ayrıştığı sonucu gösterir: piyasa, tahminimiz, fark. Tenis satırları tahmini yalnızca bulunduğu yerde gösterir: %90 piyasa ve %10 kendi Elo’muz; fark bir bilgidir, tavsiye değildir. Diğerleri yalnızca piyasayı gösterir. Üç sonucun hepsi ve bağlı bahis sitelerinin oranları için dokun. Sonra kamuya açık kayda bak, çünkü önceki okumaların nasıl sonuçlandığını görmek böyle bir sayıya ne kadar ağırlık verileceğini söyler. Bundan sonra ne yapacağın senin kararın. Free panodaki her maçı, fark dahil gösterir; Pro modelin neden farklı düşündüğünü ekler.",
+        "Panoyu aç. Her satır, tahminimiz ile piyasanın en çok ayrıştığı sonucu gösterir: piyasa, tahminimiz, fark. Tenis satırları tahmini yalnızca bulunduğu yerde gösterir: %90 piyasa ve %10 kendi Elo’muz; fark bir bilgidir, tavsiye değildir. Diğerleri yalnızca piyasayı gösterir. Üç sonucun hepsi ve bağlı bahis sitelerinin oranları için dokun. Sonra kamuya açık kayda bak, çünkü önceki okumaların nasıl sonuçlandığını görmek böyle bir sayıya ne kadar ağırlık verileceğini söyler. Bundan sonra ne yapacağın senin kararın. Free panodaki her maçı fark dahil gösterir; lansman süresince Pro özellikleri de herkese açık.",
       ],
     ],
 } as const satisfies Record<string, readonly FaqItem[]>;

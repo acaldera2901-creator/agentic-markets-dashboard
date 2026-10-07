@@ -13,6 +13,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import "@/components/v3c/v3c.css";
+import "@/components/v3c/fixui.css";
 import "@/components/v3c/record.css";
 import { v3cFontClass } from "@/components/v3c/fonts";
 import { V3cChrome } from "@/components/v3c/V3cChrome";

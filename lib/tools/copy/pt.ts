@@ -358,12 +358,12 @@ const pt: ToolsCopy = {
         removeOutcome: "Remover",
         total: "Aposta total",
         resultTitle: "Como dividir",
-        profit: "Lucro",
+        profit: "Margem de arbitragem",
         impliedSum: "Soma das probabilidades implícitas",
         stakeOn: "Aposta no resultado",
         guaranteedReturn: "Retorno em cada resultado",
         verdictArb:
-          "As odds somam menos de 100%: dividida assim, cada resultado devolve a mesma quantia.",
+          "As odds somam menos de 100%: dividida assim, cada resultado devolve a mesma quantia, se todas as odds ainda estiverem disponíveis.",
         verdictNoArb:
           "As odds somam mais de 100%, portanto aqui não há arbitragem — qualquer divisão perde essa margem, saia o que sair.",
         hint: "Uma odd por resultado, cada uma da casa que paga mais nesse lado. O decimal aceita vírgula: 2,10 vale como 2.10.",
@@ -377,7 +377,7 @@ const pt: ToolsCopy = {
           { label: "Soma das probabilidades implícitas", value: "95,24%" },
           { label: "Aposta em cada lado, sobre 1.000", value: "500 · 500" },
           { label: "Retorno em cada resultado", value: "1.050" },
-          { label: "Lucro", value: "+50 (+5,00%)" },
+          { label: "Margem de arbitragem", value: "+50 (+5,00%)" },
         ],
         note:
           "O mesmo mercado a 1.90/1.90 dentro de uma só casa soma 105,26% e devolve −5,00% qualquer que seja a divisão. Entre as duas linhas nada mudou no jogo: a diferença está toda em qual casa paga mais em qual lado, e em ter contas com saldo nas duas enquanto as odds ainda estavam expostas.",

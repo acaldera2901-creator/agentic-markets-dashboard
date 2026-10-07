@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { V3cToolsHub } from "@/components/v3c/tools/Hub";
 import { PREFIXED_LOCALES, isToolLocale } from "@/lib/tools/registry";
-import { hubMetadata } from "@/lib/tools/seo";
+import { v3cHubMetadata } from "@/lib/v3c/og-meta";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 
 export const dynamic = "force-static";
@@ -23,7 +23,7 @@ export async function generateMetadata({
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  return isToolLocale(lang) && lang !== "en" ? hubMetadata(lang) : {};
+  return isToolLocale(lang) && lang !== "en" ? v3cHubMetadata(lang) : {};
 }
 
 export default async function V3cLocalizedToolsPage({ params }: { params: Promise<{ lang: string }> }) {

@@ -4,6 +4,7 @@
 // prova (la riga è nel registro pubblico da quell'ora), non un ornamento: se
 // l'hash non è valido non si mostra niente che somigli a una prova.
 import { sealTimeUtc, shortHash } from "@/lib/v3c/seal";
+import { hmLocal } from "@/lib/v3c/time-ui";
 
 type Props = {
   /** ISO dell'ora del sigillo, oppure l'ora già scritta («09:02 UTC»). */
@@ -14,14 +15,20 @@ type Props = {
   /** Il tooltip; senza, quello di default spiega cos'è il sigillo. */
   title?: string;
   className?: string;
+  /**
+   * fixui M2: il fuso della vista. Con `tz` (dopo il mount) l'ora è locale e senza sigla — la
+   * dichiara la nota del fuso della vista; senza, resta «hh:mm UTC» (server, ricevute del registro).
+   */
+  tz?: string;
+  locale?: string;
 };
 
-export function Sigillo({ sealedAt, hash, label = "sealed", title, className }: Props) {
+export function Sigillo({ sealedAt, hash, label = "sealed", title, className, tz, locale }: Props) {
   // F3: the ledger stores no row hash today. Without one the seal shows the
   // time only — a fact (pick_ledger.captured_at) — and never a made-up code.
   const short = hash == null ? "" : shortHash(hash);
   if (hash != null && !short) return null;
-  const time = /^\d{2}:\d{2}/.test(sealedAt) ? sealedAt : sealTimeUtc(sealedAt);
+  const time = /^\d{2}:\d{2}/.test(sealedAt) ? sealedAt : tz ? hmLocal(sealedAt, tz, locale) : sealTimeUtc(sealedAt);
   if (!time) return null;
   return (
     <span

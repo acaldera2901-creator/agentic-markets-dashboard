@@ -22,6 +22,7 @@ import { V3cShell } from "../V3cShell";
 import { HubBench, type HubGroup, type HubLine } from "./HubBench";
 import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 import "../v3c.css";
+import "../fixui.css";
 
 export async function V3cToolsHub({ locale }: { locale: ToolLocale }) {
   const copy = getToolsCopy(locale);

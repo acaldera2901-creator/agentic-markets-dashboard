@@ -53,9 +53,8 @@ export function V3cCommunity({ initial }: Props = {}) {
           </div>
         ) : <span />}
         <div className="v3c-act">
-          {/* hard nav: la vista probabilità risolve la tab al mount (come la pagina di sempre) */}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hard nav intenzionale */}
-          <a className="v3c-btn v3c-btn-line" href="/probability-view">{t.create}</a>
+          {/* fixui A7: «Build yours» portava a /probability-view, il sito vecchio (scuro, Base, cripto):
+              nascosto finché il costruttore non ha una pagina v3c. La chiave t.create resta per allora. */}
           {access !== "full" && <a className="v3c-btn v3c-btn-cta" href={PRICING}>{t.seePlans}</a>}
         </div>
       </div>

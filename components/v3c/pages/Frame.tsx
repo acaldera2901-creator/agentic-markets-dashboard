@@ -5,6 +5,7 @@
 // spento le pagine non importano né questo file né i suoi CSS/font.
 import type { ReactNode } from "react";
 import "../v3c.css";
+import "../fixui.css";
 import "./pages.css";
 // community.css qui (server) e non nei componenti client: un import CSS in un modulo
 // client entra nel CSS della rotta anche a flag spento (misurato su /privacy).

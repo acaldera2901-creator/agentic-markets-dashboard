@@ -33,6 +33,7 @@ import {
   type TennisRowVM,
 } from "@/lib/v3c/board-view";
 import { useLocalTimeZone, useV3cCopy } from "@/lib/v3c/lang.client";
+import { GlossaryLink, InfoButton } from "../guide/Glossary";
 import type { OddsOnSitePartner } from "@/lib/price-books";
 import { isPacked, unpackBoard, type PackedBoard } from "@/lib/v3c/board-pack";
 import { KitIcon } from "../Monogramma";
@@ -236,19 +237,34 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
           </div>
         ) : null}
         {/* tennis2: stima e gap anche nel tennis (90% mercato + 10% Elo, non sigillata, dove l'Elo è fresco); la legenda dice le due regole */}
+        {/* fixui UX-2: ogni voce della legenda ha la sua «i» e il pannello «How to read this page»
+            parte da qui (su mobile la legenda è nascosta: resta visibile solo il link al pannello). */}
         <p className="v3c-explain v3c-legend">
           <span>
             <i className="v3c-key v3c-key-m" aria-hidden="true" />
             {t.toolbar.legendMarket}
+            <InfoButton term="market" label={t.board.market} />
           </span>
           {filters.sport !== "tennis" ? (
             <span>
               <i className="v3c-key v3c-key-e" aria-hidden="true" />
               {t.toolbar.legendEstimate}
+              <InfoButton term="estimate" label={t.board.estimate} />
             </span>
           ) : null}
-          {filters.sport !== "football" ? <span>{t.toolbar.legendTennis}</span> : null}
-          <span>{t.toolbar.legendGap}</span>
+          {filters.sport !== "football" ? (
+            <span>
+              {t.toolbar.legendTennis}
+              <InfoButton term="tennis" label={t.toolbar.tennis} />
+            </span>
+          ) : null}
+          <span>
+            {t.toolbar.legendGap}
+            <InfoButton term="gap" label={t.board.gap} />
+          </span>
+          <span className="v3c-legend-gl">
+            <GlossaryLink />
+          </span>
         </p>
       </div>
 

@@ -14,13 +14,15 @@ type Props = {
   as?: "h1" | "h2";
   /** La riga dei fatti sotto il titolo. */
   meta?: ReactNode;
+  /** fixui A1: una frase sotto il titolo che dice cos'è la pagina (home: cos'è BetRedge). */
+  lede?: ReactNode;
   id?: string;
   className?: string;
   /** fidelity: il banner del kit dietro la fascia (decorativo, a destra, sotto un velo navy). */
   art?: ReactNode;
 };
 
-export function Fascia({ tab, title, as: Tag = "h1", meta, id, className, art }: Props) {
+export function Fascia({ tab, title, as: Tag = "h1", meta, lede, id, className, art }: Props) {
   const headingId = id ?? "v3c-fascia-h";
   return (
     <section className={["v3c-fascia", art ? "v3c-fascia-art" : null, className].filter(Boolean).join(" ")} aria-labelledby={headingId}>
@@ -35,6 +37,7 @@ export function Fascia({ tab, title, as: Tag = "h1", meta, id, className, art }:
           {title}
         </Tag>
       )}
+      {lede ? <p className="v3c-fascia-lede">{lede}</p> : null}
       {meta ? <p className="v3c-fascia-meta">{meta}</p> : null}
     </section>
   );

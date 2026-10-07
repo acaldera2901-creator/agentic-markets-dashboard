@@ -6,6 +6,7 @@
 // geometria della pagina. Montata SOLO a flag acceso (app/v3c/match/[id]).
 import { Suspense } from "react";
 import "@/components/v3c/v3c.css";
+import "@/components/v3c/fixui.css";
 import "./match.css";
 import { v3cFontClass } from "@/components/v3c/fonts";
 import { V3cChrome } from "@/components/v3c/V3cChrome";

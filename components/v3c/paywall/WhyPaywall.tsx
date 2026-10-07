@@ -24,12 +24,15 @@ type Props = {
   gapPp: number | null;
   /** «$29.99» */
   price: string;
-  href: string;
+  /** il checkout; senza (o con `draft`) il bottone non c'è */
+  href?: string;
   /** calcio: la stima è 70% mercato, e il paywall lo dice */
   sport?: "football" | "tennis";
   /** pagina prezzi: anatomia senza dati di partita, dichiarata come esempio */
   example?: boolean;
   headingLevel?: "h2" | "h3";
+  /** fixui Fase 0: bozza NON attiva (Pro non è in vendita) — nessun bottone, nessun prezzo cliccabile */
+  draft?: boolean;
 };
 
 function Lock() {
@@ -41,7 +44,7 @@ function Lock() {
   );
 }
 
-export function WhyPaywall({ copy, factors, gapPp, price, href, sport = "football", example = false, headingLevel = "h2" }: Props) {
+export function WhyPaywall({ copy, factors, gapPp, price, href, sport = "football", example = false, headingLevel = "h2", draft = false }: Props) {
   // l'anatomia della pagina prezzi non è una partita: niente gap da controllare
   if (example ? factors.length === 0 : !paywallApplies(gapPp, factors.length)) return null;
   const H = headingLevel;
@@ -81,12 +84,14 @@ export function WhyPaywall({ copy, factors, gapPp, price, href, sport = "footbal
         })}
       </ol>
       {sport === "football" ? <p className="v3c-fine v3c-pw-blend">{copy.blend}</p> : null}
-      <div className="v3c-pw-act">
-        <a className="v3c-btn v3c-btn-line" href={href}>
-          {copy.cta(price)}
-        </a>
-        <span className="v3c-fine">{copy.cancel}</span>
-      </div>
+      {!draft && href ? (
+        <div className="v3c-pw-act">
+          <a className="v3c-btn v3c-btn-line" href={href}>
+            {copy.cta(price)}
+          </a>
+          <span className="v3c-fine">{copy.cancel}</span>
+        </div>
+      ) : null}
       {example ? <p className="v3c-fine v3c-pw-example">{copy.example}</p> : null}
     </section>
   );

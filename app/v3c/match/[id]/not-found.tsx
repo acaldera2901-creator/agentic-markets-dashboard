@@ -4,6 +4,7 @@
 // 404 standard di Next, come prima del redesign.
 import DefaultNotFound from "next/dist/client/components/builtin/not-found";
 import "@/components/v3c/v3c.css";
+import "@/components/v3c/fixui.css";
 import "@/components/v3c/match/match.css";
 import { v3cFontClass } from "@/components/v3c/fonts";
 import { V3cChrome } from "@/components/v3c/V3cChrome";

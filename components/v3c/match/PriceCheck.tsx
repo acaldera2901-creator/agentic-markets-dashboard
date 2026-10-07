@@ -12,6 +12,7 @@ import { useState } from "react";
 import type { Outcome, V3BookPrice } from "@/lib/v3c/contracts";
 import { dayShort, gapText, isFlatGap, timeHM } from "@/lib/v3c/board-view";
 import { useLocalTimeZone, useV3cCopy } from "@/lib/v3c/lang.client";
+import { TzNote } from "../guide/TzNote";
 import { matchCopyFor } from "@/lib/v3c/match-copy";
 import { bookList, checkPrices, checkedAt, gapDirection, matchHref, parsePrice, pricesAsInputs, toolStrip, type V3BookLink } from "@/lib/v3c/match-view";
 import { Fascia } from "../Fascia";
@@ -126,6 +127,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
             ) : null}
             <span>{m?.sport === "tennis" ? t.tennis.winner : "1X2"}</span>
             <span>{c.pc.hint}</span>
+            <TzNote />
           </>
         }
       />
@@ -173,7 +175,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
         ))}
       </form>
 
-      <section aria-live="polite">
+      <section className="v3c-pc-res" aria-live="polite">
         {!chk ? (
           <p className="v3c-pc-err">
             {c.pc.invalid} {fixdataCopyFor(lang).toolErrRange(new Intl.NumberFormat(locale).format(PRICE_MIN), new Intl.NumberFormat(locale).format(PRICE_MAX))}

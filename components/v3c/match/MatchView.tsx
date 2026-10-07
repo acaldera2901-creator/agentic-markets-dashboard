@@ -11,7 +11,10 @@ import Link from "next/link";
 import { useId, useMemo, useState } from "react";
 import type { Outcome, TennisSide, V3BoardMatch, V3BoardTennisMatch, V3BoardTennisSide, V3LineSeries } from "@/lib/v3c/contracts";
 import type { V3cCopy } from "@/lib/v3c/copy";
-import { bestOf, dayShort, gapText, isFlatGap, outcomeLabel, pctInt, price2, sealedStamp, tennisLead, timeHM, dayLong } from "@/lib/v3c/board-view";
+import { bestOf, dayShort, gapText, isFlatGap, outcomeLabel, pctInt, price2, tennisLead, timeHM, dayLong } from "@/lib/v3c/board-view";
+import { stampLocal } from "@/lib/v3c/time-ui";
+import { GlossaryLink, InfoButton } from "../guide/Glossary";
+import { TzNote } from "../guide/TzNote";
 import { useLocalTimeZone, useV3cCopy } from "@/lib/v3c/lang.client";
 import { matchCopyFor, type V3cMatchCopy } from "@/lib/v3c/match-copy";
 import {
@@ -108,10 +111,16 @@ function Head({ ctx, tab, id, home, away, kickoff, league, sport, sealedAt }: { 
           <>
             <b>
               {dayLong(kickoff, tz, locale)} · {timeHM(kickoff, tz, locale)}
-              {tz ? "" : ` ${c.kickoffUtc}`}
             </b>
+            {/* fixui M2: un fuso per vista, dichiarato qui una volta (prima: «UTC» solo prima del mount) */}
+            <TzNote />
             {league ? <span>{league}</span> : null}
-            {sealedAt ? <Sigillo sealedAt={sealedAt} label={t.fascia.sealed} title={(sport === "tennis" ? t.tennis.sealedWhy : t.board.sealedWhy)(sealedStamp(sealedAt, locale))} /> : null}
+            {sealedAt ? (
+              <span className="v3c-fm-i">
+                <Sigillo sealedAt={sealedAt} tz={tz} locale={locale} label={t.fascia.sealed} title={(sport === "tennis" ? t.tennis.sealedWhy : t.board.sealedWhy)(stampLocal(sealedAt, ctx.tz, locale))} />
+                <InfoButton term="sealed" label={t.fascia.sealed} />
+              </span>
+            ) : null}
           </>
         }
       />
@@ -192,7 +201,7 @@ function Tape({ ctx, series, events, choices, initial, estimateAsOf, why, strip,
           {fair && estimateAsOf ? (
             <span>
               <i className="e" />
-              {c.legendFair(fair.price.toFixed(2), sealedStamp(estimateAsOf, locale))}
+              {c.legendFair(fair.price.toFixed(2), stampLocal(estimateAsOf, ctx.tz, locale))}
             </span>
           ) : null}
           {events.length ? (
@@ -275,7 +284,7 @@ function NewsItem({ ctx, n, card }: { ctx: Ctx; n: number; card: NewsCard }) {
 function SealItem({ ctx, n, sealedAt, tennis = false }: { ctx: Ctx; n: number; sealedAt: string | null; tennis?: boolean }) {
   const { c, t, locale } = ctx;
   // ui3: nel tennis il numero sigillato è del mercato, non una nostra stima — lo si dice
-  const body = sealedAt ? (tennis ? c.tnSealBody : c.sealBody)(sealedStamp(sealedAt, locale)) : c.notSealedBody;
+  const body = sealedAt ? (tennis ? c.tnSealBody : c.sealBody)(stampLocal(sealedAt, ctx.tz, locale)) : c.notSealedBody;
   return (
     <li>
       <span className="k">{n}</span>
@@ -332,7 +341,7 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
             <span className="v3c-r-teams">
               <Monogrammi home={{ name: r.home }} away={{ name: r.away }} />
               <span className="v3c-r-name">
-                <b className="v3c-t-row">
+                <b className="v3c-t-row" title={`${r.home} — ${r.away}`}>
                   {r.home} — {r.away}
                 </b>
                 <small>
@@ -456,6 +465,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               <div>
                 <span className="v3c-lab">
                   {c.market}
+                  <InfoButton term="market" label={c.market} />
                   <small>{c.marketSub(L, price2(lead.market_price))}</small>
                 </span>
                 <b className="v3c-n-score v3c-m">
@@ -471,6 +481,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           <div>
             <span className="v3c-lab">
               {c.estimate}
+              <InfoButton term="estimate" label={c.estimate} />
               <small>{guard === "market_only" ? t.tennis.marketOnly : m.blend ? c.estimateBlend : c.estimateModel}</small>
             </span>
             <b className="v3c-n-score">
@@ -484,6 +495,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
             <div className={["v3c-mt-gap", isFlatGap(g) || guard !== "ok" ? "v3c-g-flat" : null].filter(Boolean).join(" ")} data-guard={guard}>
               <span className="v3c-lab">
                 {c.gap}
+                <InfoButton term="gap" label={c.gap} />
                 <small>{c.gapSub}</small>
               </span>
               <b className="v3c-n-score">
@@ -498,11 +510,18 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           <p className="v3c-mt-note v3c-guard-note" data-guard={guard}>{fc.marketOnly}</p>
         ) : hasMarket && M != null ? (
           <>
-            <p className="v3c-explain">{c.explain(L, price2(lead.market_price), M, E, Math.abs(g ?? 0).toFixed(1), dir)}</p>
+            {/* fixui UX-3: la frase-verdetto è il pezzo grande, la stima ha solo un contorno (fixui.css) */}
+            <p className="v3c-explain v3c-mt-verdict">{c.explain(L, price2(lead.market_price), M, E, Math.abs(g ?? 0).toFixed(1), dir)}</p>
             <p className="v3c-pn-facts v3c-small" style={{ marginTop: 6, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
               <span>{t.board.blend}</span>
-              {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-              <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
+              {m.margin_removed != null ? (
+                <span className="v3c-fm-i">
+                  {t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}
+                  <InfoButton term="market" label={t.board.marketSub} />
+                </span>
+              ) : null}
+              <span>{t.board.estimateAsOf(stampLocal(m.estimate_as_of, ctx.tz, locale))}</span>
+              <GlossaryLink />
             </p>
             <Nastro market={M} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
             {guard === "no_value" ? <p className="v3c-mt-note v3c-guard-note" data-guard={guard}>{fc.noValue}</p> : null}
@@ -670,6 +689,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
           <div>
             <span className="v3c-lab">
               {c.tennisMarketOnlyBig}
+              <InfoButton term="market" label={c.tennisMarketOnlyBig} />
               <small>{lead.market_price != null ? c.marketSub(lead.player, price2(lead.market_price)) : lead.player}</small>
             </span>
             <b className="v3c-n-score v3c-m">
@@ -716,8 +736,9 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
             <p className="v3c-pn-facts v3c-small" style={{ marginTop: 6, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
               <span>{t.tennis.blendFact}</span>
               {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-              <span>{t.fascia.pricesAsOf(sealedStamp(asOf, locale))}</span>
-              {m.elo_as_of ? <span>{t.tennis.eloAsOf(sealedStamp(m.elo_as_of, locale))}</span> : null}
+              <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span>
+              {m.elo_as_of ? <span>{t.tennis.eloAsOf(stampLocal(m.elo_as_of, ctx.tz, locale))}</span> : null}
+              <GlossaryLink />
             </p>
             {est.gap != null ? (
               <Nastro className="v3c-gl-tn" market={pct0(lead.market_p as number)} estimate={pct0(est.estimate as number)} gap={est.gap} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
@@ -732,7 +753,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
               <div>
                 <span className="v3c-lab">
                   {fc.sealedElo}
-                  <small>{fc.sealedAt(sealedStamp(m.sealed_at as string, locale))}</small>
+                  <small>{fc.sealedAt(stampLocal(m.sealed_at as string, ctx.tz, locale))}</small>
                 </span>
                 <b className="v3c-n-score">
                   {pctInt(lead.sealed_p)}
@@ -744,7 +765,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
                   <div>
                     <span className="v3c-lab">
                       {c.market}
-                      <small>{fc.marketAtSeal(bookName(m.gap_market.bookmaker), sealedStamp(m.gap_market.captured_at, locale))}</small>
+                      <small>{fc.marketAtSeal(bookName(m.gap_market.bookmaker), stampLocal(m.gap_market.captured_at, ctx.tz, locale))}</small>
                     </span>
                     <b className="v3c-n-score v3c-m">
                       {pctInt(lead.market_p_at_seal)}
@@ -820,7 +841,8 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
         {elo ? null : (
           <p className="v3c-pn-facts v3c-small" style={{ marginTop: 10, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-            <span>{t.fascia.pricesAsOf(sealedStamp(asOf, locale))}</span>
+            <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span>
+            <GlossaryLink />
           </p>
         )}
       </section>

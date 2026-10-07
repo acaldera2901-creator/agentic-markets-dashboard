@@ -3,6 +3,7 @@
 // toccate (app/page.tsx e app/predictions/page.tsx sono fuori dal diff).
 // Flag acceso: rewrite beforeFiles verso /v3c, con metadata IDENTICI.
 import type { Metadata } from "next";
+import { EN_TITLES } from "@/lib/v3c/doc-titles";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { v3cRewrites } from "@/lib/v3c/rewrites";
 import { V3C_PAGE_PATHS } from "@/lib/v3c/pages-routes";
@@ -49,14 +50,22 @@ describe("rewrite del redesign (next.config.ts)", () => {
   });
 });
 
-describe("le destinazioni hanno i metadata delle pagine di oggi", () => {
-  it("home: description e canonical identici", async () => {
+describe("le destinazioni: canonical di oggi, title e description del redesign (fixui B4/L5)", () => {
+  // fixui: a flag acceso / e /predictions non si presentano più come «predictions» né come probabilità
+  // «calibrated» (POSITIONING §2; vietato nel tennis). Canonical invariati; il sito di oggi non cambia.
+  const BANNED = /predictions?|calibrat/i;
+  it("home: canonical /, nessun claim vietato", async () => {
     const [today, v3c] = await Promise.all([import("../page"), import("./page")]);
-    expect(v3c.metadata).toEqual(today.metadata);
+    expect(v3c.metadata.alternates).toEqual(today.metadata.alternates);
+    expect(String(v3c.metadata.title)).toBe(EN_TITLES.home);
+    expect(`${v3c.metadata.title} ${v3c.metadata.description}`).not.toMatch(BANNED);
+    expect(String(v3c.metadata.description)).toMatch(/^Price check for football and tennis odds/);
   });
-  it("predictions: title, description e canonical identici", async () => {
+  it("predictions: canonical /predictions, nessun claim vietato", async () => {
     const [today, v3c] = await Promise.all([import("../predictions/page"), import("./predictions/page")]);
-    expect(v3c.metadata).toEqual(today.metadata);
+    expect(v3c.metadata.alternates).toEqual(today.metadata.alternates);
+    expect(String(v3c.metadata.title)).toBe(EN_TITLES.board);
+    expect(`${v3c.metadata.title} ${v3c.metadata.description}`).not.toMatch(BANNED);
   });
 });
 
@@ -83,10 +92,10 @@ describe("/v3c/record (F6)", () => {
     const el = (await mod.default({ searchParams: sp })) as { props: { children: { type: { name?: string } }[] } };
     expect(el.props.children[1].type.name).toBe("RecordPage");
   });
-  it("canonical /record, lo stesso titolo del Track Record di oggi", async () => {
-    const [today, v3c] = await Promise.all([import("../history/page"), import("./record/page")]);
+  it("canonical /record, title descrittivo (fixui M8)", async () => {
+    const v3c = await import("./record/page");
     expect(v3c.metadata.alternates).toEqual({ canonical: "/record" });
-    expect(v3c.metadata.title).toBe(today.metadata.title);
+    expect(v3c.metadata.title).toBe("Track record: every pick sealed before kick-off | BetRedge");
   });
 });
 
@@ -109,7 +118,13 @@ describe("/v3c/tools* (F5, portati allo schema delle rewrite)", () => {
   });
   it("metadata identici alle pagine di oggi", async () => {
     const [a, b] = await Promise.all([import("../tools/page"), import("./tools/page")]);
-    expect(b.metadata).toEqual(a.metadata);
+    // fixui M8: l'hub v3c aggiunge og:image/twitter (prima non ne aveva); il resto identico a oggi
+    const { openGraph: aOg, ...aRest } = a.metadata;
+    const { openGraph: bOg, twitter: bTw, ...bRest } = b.metadata;
+    expect(bRest).toEqual(aRest);
+    expect(bOg).toMatchObject(aOg as Record<string, unknown>);
+    expect((bOg as { images?: unknown[] }).images).toEqual([expect.objectContaining({ url: "/tools/probability-calculator/og.png" })]);
+    expect(bTw).toMatchObject({ card: "summary_large_image" });
     // polish-2: identici salvo l'immagine — og:image/twitter:image puntano all'og.png PUBBLICO (mai /v3c/…)
     const sameButImage = async (today: Metadata, v3c: Metadata, ogPath: string) => {
       const { openGraph: tOg, ...tRest } = today;
@@ -126,7 +141,12 @@ describe("/v3c/tools* (F5, portati allo schema delle rewrite)", () => {
     const [e, f] = await Promise.all([import("../[lang]/tools/[tool]/page"), import("./[lang]/tools/[tool]/page")]);
     await sameButImage(await e.generateMetadata(langTool), await f.generateMetadata(langTool), "/it/tools/kelly-criterion/og.png");
     const [g, h] = await Promise.all([import("../[lang]/tools/page"), import("./[lang]/tools/page")]);
-    expect(await h.generateMetadata(lang)).toEqual(await g.generateMetadata(lang));
+    const { openGraph: gOg, ...gRest } = await g.generateMetadata(lang);
+    const { openGraph: hOg, twitter: _hTw, ...hRest } = await h.generateMetadata(lang);
+    void _hTw;
+    expect(hRest).toEqual(gRest);
+    expect(hOg).toMatchObject(gOg as Record<string, unknown>);
+    expect((hOg as { images?: unknown[] }).images).toEqual([expect.objectContaining({ url: "/it/tools/probability-calculator/og.png" })]);
   });
   it("le pagine tool di oggi non importano nulla del redesign", async () => {
     const fs = await import("node:fs");

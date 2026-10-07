@@ -18,6 +18,7 @@ import {
   metaTitleOf,
 } from "@/lib/blog";
 import { readingMinutes } from "@/lib/v3c/news";
+import { relativizeSiteLinks } from "@/lib/v3c/site-links";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 import { V3cFrame } from "@/components/v3c/pages/Frame";
 import { V3cArticle } from "@/components/v3c/pages/News";
@@ -60,7 +61,7 @@ export default async function Page({
   const post = await getPublishedPost(slug);
   if (!post) notFound();
   const dateIso = post.pub_date ?? post.published_at;
-  const html = sanitizeBlogHtml(post.content_html);
+  const html = relativizeSiteLinks(sanitizeBlogHtml(post.content_html));
   const all = await listPublishedPosts(4);
   const more = all
     .filter((p) => p.slug !== slug)

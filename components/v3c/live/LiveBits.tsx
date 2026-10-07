@@ -101,7 +101,8 @@ export function LiveNow({ rows, feed, c }: { rows: LiveNowRow[]; feed: LiveFeed;
                   {b.sub ? <small>{b.sub}</small> : null}
                 </span>
                 <span className="v3c-ls-now-m">
-                  <span className="v3c-t-row">
+                  {/* fixui L3: i nomi lunghi (doppi del tennis) vanno in ellissi: il nome intero nel tooltip */}
+                  <span className="v3c-t-row" title={`${r.home} – ${r.away}`}>
                     {r.home} – {r.away}
                   </span>
                   <small>{r.league ?? ""}</small>

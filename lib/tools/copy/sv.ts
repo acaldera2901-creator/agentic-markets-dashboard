@@ -358,12 +358,12 @@ const sv: ToolsCopy = {
         removeOutcome: "Ta bort",
         total: "Total insats",
         resultTitle: "Så delas den",
-        profit: "Vinst",
+        profit: "Arbitragemarginal",
         impliedSum: "Summa av implicita sannolikheter",
         stakeOn: "Insats på utfall",
         guaranteedReturn: "Återbäring vid varje utfall",
         verdictArb:
-          "Oddsen summerar till under 100 %: delad så här betalar varje utfall tillbaka samma belopp.",
+          "Oddsen summerar till under 100 %: delad så här betalar varje utfall tillbaka samma belopp, om alla odds fortfarande finns.",
         verdictNoArb:
           "Oddsen summerar till över 100 %, så här finns inget arbitrage — varje delning förlorar den marginalen, vilket utfall som än kommer.",
         hint: "Ett odds per utfall, vart och ett från bolaget som betalar mest på den sidan. Decimal godtar komma: 2,10 fungerar som 2.10.",
@@ -377,7 +377,7 @@ const sv: ToolsCopy = {
           { label: "Summa av implicita sannolikheter", value: "95,24 %" },
           { label: "Insats per sida, av 1 000", value: "500 · 500" },
           { label: "Återbäring vid varje utfall", value: "1 050" },
-          { label: "Vinst", value: "+50 (+5,00 %)" },
+          { label: "Arbitragemarginal", value: "+50 (+5,00 %)" },
         ],
         note:
           "Samma marknad prissatt 1.90/1.90 inom ett enda bolag summerar till 105,26 % och ger tillbaka −5,00 % hur du än delar. Inget i matchen har ändrats mellan de två linjerna: hela skillnaden ligger i vilket bolag som betalar mest på vilken sida, och i om du hade laddade konton hos båda medan oddsen fortfarande stod uppe.",

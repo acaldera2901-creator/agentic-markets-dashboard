@@ -358,12 +358,12 @@ const nl: ToolsCopy = {
         removeOutcome: "Verwijderen",
         total: "Totale inzet",
         resultTitle: "Hoe je verdeelt",
-        profit: "Winst",
+        profit: "Arbitragemarge",
         impliedSum: "Som van de impliciete kansen",
         stakeOn: "Inzet op uitkomst",
         guaranteedReturn: "Opbrengst bij elke uitkomst",
         verdictArb:
-          "De quoteringen tellen op tot minder dan 100%: zo verdeeld betaalt elke uitkomst hetzelfde terug.",
+          "De quoteringen tellen op tot minder dan 100%: zo verdeeld betaalt elke uitkomst hetzelfde terug, als alle quoteringen nog beschikbaar zijn.",
         verdictNoArb:
           "De quoteringen tellen op tot meer dan 100%, dus hier is geen arbitrage — elke verdeling verliest die marge, welke uitkomst er ook valt.",
         hint: "Eén quotering per uitkomst, elk bij de bookmaker die op die kant het meest betaalt. Decimaal accepteert een komma: 2,10 werkt als 2.10.",
@@ -377,7 +377,7 @@ const nl: ToolsCopy = {
           { label: "Som van de impliciete kansen", value: "95,24%" },
           { label: "Inzet per kant, van 1.000", value: "500 · 500" },
           { label: "Opbrengst bij elke uitkomst", value: "1.050" },
-          { label: "Winst", value: "+50 (+5,00%)" },
+          { label: "Arbitragemarge", value: "+50 (+5,00%)" },
         ],
         note:
           "Dezelfde markt op 1.90/1.90 binnen één bookmaker telt op tot 105,26% en geeft −5,00% terug, hoe je ook verdeelt. Aan de wedstrijd is tussen de twee lijnen niets veranderd: het hele verschil zit in welke bookmaker op welke kant meer betaalt, en of je bij beide een gevulde rekening had toen de quoteringen er nog stonden.",

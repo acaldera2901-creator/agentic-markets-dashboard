@@ -7,11 +7,12 @@
 import { connection } from "next/server";
 import { headers } from "next/headers";
 import { JsonLd, faqJsonLd } from "@/components/seo/json-ld";
-import { BOOKS } from "@/lib/betconstruct-books";
 import { PARTNERS, partnersFor } from "@/lib/partners";
+import { enabledPriceBooks } from "@/lib/price-books";
+import type { V3BoardResponse } from "@/lib/v3c/contracts";
 import { getBoard, partnersAllowed } from "@/lib/v3c/board-data.server";
 import { booksData } from "@/lib/v3c/books";
-import { PARTNERS_SEO_FAQ } from "@/app/partners/seo";
+import { V3C_PARTNERS_FAQ } from "@/lib/v3c/partners-seo";
 import { V3cFrame } from "./Frame";
 import { V3cBooks, type BookCard } from "./Books";
 
@@ -20,10 +21,34 @@ const PARTNER_NO_NEUTRAL = new Set(
   PARTNERS.filter((p) => !p.url).map((p) => p.id),
 );
 
+/**
+ * fixui A5: «Live prices on the board» vale per chi ha DAVVERO un prezzo sulla board
+ * (books[].oddsAvailable su almeno una partita, la stessa copertura che la board mostra),
+ * non per chi sta nella lista dei feed BetConstruct: Beazt, Wildz, RollXO e N1 hanno
+ * prezzi live e la card diceva «Odds on partner site». Senza board (errore) si ripiega
+ * sui book abilitati. `notes`: lo stato fisso di chi non può avere prezzi (hollywin
+ * region_restricted, slotsbonus no_sportsbook), segnalato sulla card — la lista non cambia.
+ */
+function coverage(board: V3BoardResponse | null): { live: Set<string>; notes: Map<string, "region_restricted" | "no_sportsbook"> } {
+  const live = new Set<string>();
+  const notes = new Map<string, "region_restricted" | "no_sportsbook">();
+  if (!board) {
+    for (const b of enabledPriceBooks()) live.add(b.key);
+    return { live, notes };
+  }
+  for (const m of [...board.matches, ...(board.tennis ?? [])]) {
+    for (const b of m.books ?? []) {
+      if (b.oddsAvailable) live.add(b.partner_id);
+      else if (b.reason === "region_restricted" || b.reason === "no_sportsbook") notes.set(b.partner_id, b.reason);
+    }
+  }
+  return { live, notes };
+}
+
 export async function V3cBooksPage() {
   await connection();
   // FAQPage JSON-LD dal server; la prosa la rende V3cBooks (stesso array) dentro la cornice.
-  const ld = <JsonLd data={faqJsonLd(PARTNERS_SEO_FAQ, "en")} />;
+  const ld = <JsonLd data={faqJsonLd(V3C_PARTNERS_FAQ, "en")} />;
 
   if (!(await partnersAllowed())) {
     return (
@@ -47,9 +72,10 @@ export async function V3cBooksPage() {
     .trim()
     .toUpperCase();
   const partners = partnersFor(country);
+  const b = await getBoard();
+  const cov = coverage(b.ok ? b.data : null);
   // ui2: TUTTI i partner del catalogo con la stessa card, in ordine alfabetico (neutro e dichiarato).
-  // `live` = il book ha un feed di quote letto (lib/betconstruct-books BOOKS): solo questo cambia nella card.
-  const feedKeys = new Set(BOOKS.map((b) => b.key));
+  // `live` = il partner ha un prezzo sulla board (fixui A5, sopra): solo questo cambia nella card.
   const cards: BookCard[] = partners
     .map((p) => {
       const localIn = p.geoUrls ? Object.keys(p.geoUrls) : null;
@@ -59,7 +85,8 @@ export async function V3cBooksPage() {
         name: p.name,
         url: p.url,
         category: p.category,
-        live: feedKeys.has(p.id),
+        live: cov.live.has(p.id),
+        note: cov.notes.get(p.id) ?? null,
         onlyIn: noNeutral ? localIn : null,
         localIn: noNeutral ? null : localIn,
       };
@@ -67,7 +94,6 @@ export async function V3cBooksPage() {
     .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
   const connected = cards.filter((c) => c.live);
 
-  const b = await getBoard();
   const data = b.ok ? booksData(b.data, new Date()) : null;
 
   return (

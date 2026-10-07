@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import "@/components/v3c/v3c.css";
+import "@/components/v3c/fixui.css";
 import "@/components/v3c/match/match.css";
 import { v3cFontClass } from "@/components/v3c/fonts";
 import { V3cChrome } from "@/components/v3c/V3cChrome";
@@ -90,9 +91,13 @@ export default async function V3cPriceCheck({ searchParams }: Props) {
   return (
     <V3cChrome initialMode={parseMode(sp.mode)} fontClass={v3cFontClass} current="price">
       <main className="v3c-wrap" id="main">
-        <Suspense fallback={<MatchSkeleton label="pc" />}>
-          <PcBody wanted={wanted} />
-        </Suspense>
+        {/* fixui A8 (CLS 0,862 sulla preview): lo slot tiene almeno uno schermo mentre i dati arrivano,
+            così lo scheletro → contenuto non sposta il piè dentro la finestra (fixui.css) */}
+        <div className="v3c-pc-slot">
+          <Suspense fallback={<MatchSkeleton label="pc" />}>
+            <PcBody wanted={wanted} />
+          </Suspense>
+        </div>
       </main>
     </V3cChrome>
   );

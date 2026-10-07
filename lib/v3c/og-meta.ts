@@ -6,7 +6,7 @@
 // metadataBase della root (https://www.betredge.com).
 import type { Metadata } from "next";
 import { toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
-import { toolMetadata } from "@/lib/tools/seo";
+import { hubMetadata, toolMetadata } from "@/lib/tools/seo";
 
 export const V3C_OG_FILE = "og.png";
 export const V3C_OG_SIZE = { width: 1200, height: 630 } as const;
@@ -42,4 +42,16 @@ export function v3cToolMetadata(slug: ToolSlug, locale: ToolLocale): Metadata {
     ...m,
     ...v3cOgMetadata(toolPath(slug, locale), "BetRedge free betting calculator", { title: String(og.title ?? m.title), description: String(og.description ?? m.description), url: String(og.url) }, og),
   };
+}
+
+/**
+ * fixui M8: l'hub dei tool non aveva og:image (eredita l'icona della root). Stessi metadata
+ * di oggi (title, canonical, hreflang) + l'immagine OG del calcolatore di probabilità nella
+ * stessa lingua: è il primo calcolo dell'hub, con un esempio vero dalla board.
+ */
+export function v3cHubMetadata(locale: ToolLocale): Metadata {
+  const m = hubMetadata(locale);
+  const og = m.openGraph ?? {};
+  const pc = v3cToolMetadata("probability-calculator", locale);
+  return { ...m, openGraph: { ...og, images: pc.openGraph?.images }, twitter: { ...pc.twitter, title: String(og.title ?? m.title), description: String(og.description ?? m.description) } };
 }

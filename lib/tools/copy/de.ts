@@ -358,12 +358,12 @@ const de: ToolsCopy = {
         removeOutcome: "Entfernen",
         total: "Gesamteinsatz",
         resultTitle: "So wird aufgeteilt",
-        profit: "Gewinn",
+        profit: "Arbitrage-Marge",
         impliedSum: "Summe der impliziten Wahrscheinlichkeiten",
         stakeOn: "Einsatz auf Ergebnis",
         guaranteedReturn: "Rückfluss bei jedem Ergebnis",
         verdictArb:
-          "Die Quoten summieren sich auf unter 100 %: so aufgeteilt zahlt jedes Ergebnis denselben Betrag zurück.",
+          "Die Quoten summieren sich auf unter 100 %: so aufgeteilt zahlt jedes Ergebnis denselben Betrag zurück, wenn alle Quoten noch verfügbar sind.",
         verdictNoArb:
           "Die Quoten summieren sich auf über 100 %, hier gibt es also keine Arbitrage — jede Aufteilung verliert diese Marge, egal welches Ergebnis kommt.",
         hint: "Eine Quote je Ergebnis, jeweils vom Buchmacher, der auf dieser Seite am meisten zahlt. Dezimal akzeptiert das Komma: 2,10 gilt wie 2.10.",
@@ -377,7 +377,7 @@ const de: ToolsCopy = {
           { label: "Summe der impliziten Wahrscheinlichkeiten", value: "95,24 %" },
           { label: "Einsatz je Seite, von 1.000", value: "500 · 500" },
           { label: "Rückfluss bei jedem Ergebnis", value: "1.050" },
-          { label: "Gewinn", value: "+50 (+5,00 %)" },
+          { label: "Arbitrage-Marge", value: "+50 (+5,00 %)" },
         ],
         note:
           "Derselbe Markt zu 1.90/1.90 innerhalb eines Buchmachers summiert sich auf 105,26 % und gibt −5,00 % zurück, wie man auch aufteilt. Am Spiel hat sich zwischen den beiden Linien nichts geändert: der ganze Unterschied liegt darin, welcher Buchmacher auf welcher Seite mehr zahlt — und ob man bei beiden gedeckte Konten hatte, während die Quoten noch standen.",

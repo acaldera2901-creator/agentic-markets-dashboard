@@ -8,10 +8,13 @@ import { notFound } from "next/navigation";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { V3cBoardPage } from "@/components/v3c/pages/V3cBoardPage";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
+import { EN_TITLES } from "@/lib/v3c/doc-titles";
 
+// fixui B4/L5 (QA): niente «Predictions» come categoria né «calibrated» (il tennis non ha una stima
+// calibrata). URL e canonical invariati; il title ha la sua traduzione in lib/v3c/doc-titles.
 export const metadata: Metadata = {
-  title: "Predictions | BetRedge",
-  description: "Live football and tennis predictions with calibrated probabilities, confidence bands, and the reasoning behind every number.",
+  title: EN_TITLES.board,
+  description: "Every football and tennis match on today’s board: the odds as a probability, our football estimate beside it and the gap, before kick-off.",
   alternates: { canonical: "/predictions" },
 };
 
@@ -21,7 +24,7 @@ export default async function V3cPredictionsPage({ searchParams }: Props) {
   if (!v3cProductOn()) notFound();
   return (
     <>
-      <JsonLd data={breadcrumbJsonLd([["Predictions", "/predictions"]])} />
+      <JsonLd data={breadcrumbJsonLd([["Board", "/predictions"]])} />
       <V3cBoardPage surface="predictions" searchParams={searchParams} />
     </>
   );

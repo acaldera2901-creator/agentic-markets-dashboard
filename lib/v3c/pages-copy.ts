@@ -12,48 +12,34 @@ export type PagesLang = V3cLang;
 
 const EN = {
   pricing: {
-    tab: "Plans · two, no trial tricks",
-    title: "Free shows the gap. Pro shows why.",
-    metaStrong: (monthly: string) => `Pro ${monthly} a month`,
-    metaRest: "Prices in USD. The card subscription is cancelled from your account.",
+    tab: "Plans · Free and Pro preview",
+    title: "Free, plus a Pro preview",
+    metaStrong: "Nothing to buy yet",
+    metaRest: "Pro isn’t on sale; during the launch its features are open to everyone.",
+    preview: "Preview: Pro features are open to everyone during the launch.",
+    colWhat: "What you get",
     freeName: "Free",
-    freeLede: "The whole reading, free.",
     proName: "Pro",
-    proLede: "The why behind the number, and more depth.",
     perMonth: "/ month",
-    perYear: (annual: string) => `· ${annual} a year`,
+    proSoon: "coming",
     included: "Included",
-    pro: "Pro",
-    notLive: "Not live yet",
-    free: [
-      ["Today’s board", "every match: market, estimate and the signed gap"],
-      ["The record", "every sealed estimate, won and lost"],
-      ["Price check and 11 tools", "no account needed"],
-      ["Watchlist", "the matches you follow, saved on this device"],
-    ] as [string, string][],
-    freeSoon: ["Alerts and bet tracker", "planned for Free; not live yet"] as [string, string],
-    proItems: [
-      ["Why the model disagrees", "each factor behind the estimate: form, venue, goals"],
-      ["Full line movement", "every stored price since the market opened"],
-      ["Live probabilities", "the estimate updates during the match"],
-      ["Probability view", "combine markets on one match, model against market"],
-      ["Weekly Model Case", "a worked example of how the model reads a week; not a bet to place"],
-    ] as [string, string][],
-    everythingFree: "Everything in Free",
-    freeCta: "Create a free account",
-    proCta: "Go Pro",
-    railCard: "Card: a subscription that renews monthly; cancel it from your account.",
-    railCardAnnual: "Yearly by card: renews every 12 months.",
-    railCrypto: "Crypto: one payment for 30 days, no renewal.",
-    railPaypal: "PayPal: available at checkout.",
-    railUsdt: "USDT (TRC20) transfer: one payment, checked by hand.",
-    withdrawal: "Before paying you confirm that Pro starts at once, which ends the 14-day withdrawal right.",
-    promo: (until: string) => `Launch offer: the first purchase is half price until ${until}. It applies at checkout.`,
-    sameStrong: "Same in both:",
-    same: "every price, estimate, gap and the whole record. Pro never hides a number Free shows; it adds the why.",
-    anatomyTitle: "What Pro opens on a match",
-    anatomyLede: "Factor titles are visible to everyone. The first is explained in Free; the rest open with Pro.",
-    anatomyNever: "Never shown when estimate and market agree (gap under 1.5 points).",
+    same: "Same",
+    rows: [
+      ["Today’s board", "every match: odds, our estimate and the signed gap", "Included", "Same"],
+      ["The record", "every sealed estimate, won and lost", "Included", "Same"],
+      ["Price check and 11 tools", "no account needed", "Included", "Same"],
+      ["News and book prices", "partner links only where they’re allowed", "Included", "Same"],
+      ["Price history", "how the odds moved since we stored them", "Last 24 hours", "Full history"],
+      ["Live matches", "scores and prices during play", "—", "Included"],
+      ["Why our estimate differs", "Pro will show why, factor by factor", "—", "Planned"],
+    ] as [string, string, string, string][],
+    previewTag: "open to all in preview",
+    plannedTag: "not built yet",
+    notice: "When Pro goes on sale we’ll give 7 days’ notice before any feature moves to it.",
+    t4: "Pro won’t make our estimate more accurate and doesn’t promise profit. Same estimate, same record, for everyone.",
+    draftTitle: "Draft: how Pro could look on a match",
+    draftLede: "A layout draft, not active: during the preview nothing on a match is closed.",
+    draftTag: "Draft · not active",
     fine: "Analysis, not advice. 18+. BetRedge is not a bookmaker and takes no bets.",
   },
   paywall: {
@@ -109,6 +95,8 @@ const EN = {
     pricesLab: "Prices",
     live: "Live prices on the board",
     siteOdds: "Odds on partner site",
+    regionRestricted: "Odds on partner site · feed blocked in our region",
+    noSportsbook: "No sports odds: not a sportsbook",
     where: "Where",
     everywhere: "Every country where we show partners",
     onlyIn: (list: string) => `Only in ${list}`,
@@ -177,48 +165,34 @@ export type PagesCopy = typeof EN;
 
 const IT: PagesCopy = {
   pricing: {
-    tab: "Piani · due, senza trucchi",
-    title: "Free mostra il gap. Pro spiega perché.",
-    metaStrong: (monthly: string) => `Pro ${monthly} al mese`,
-    metaRest: "Prezzi in USD. L’abbonamento con carta si disdice dal tuo account.",
+    tab: "Piani · Free e anteprima Pro",
+    title: "Free, più un’anteprima di Pro",
+    metaStrong: "Per ora niente da comprare",
+    metaRest: "Pro non è in vendita; durante il lancio le sue funzioni sono aperte a tutti.",
+    preview: "Anteprima: le funzioni Pro sono aperte a tutti durante il lancio.",
+    colWhat: "Cosa trovi",
     freeName: "Free",
-    freeLede: "La lettura intera, gratis.",
     proName: "Pro",
-    proLede: "Il perché dietro il numero, e più profondità.",
     perMonth: "/ mese",
-    perYear: (annual: string) => `· ${annual} l’anno`,
+    proSoon: "in arrivo",
     included: "Incluso",
-    pro: "Pro",
-    notLive: "Non ancora attivo",
-    free: [
-      ["La board di oggi", "ogni partita: mercato, stima e gap con segno"],
-      ["Il registro", "ogni stima sigillata, vinte e perse"],
-      ["Price check e 11 tool", "senza account"],
-      ["Watchlist", "le partite che segui, salvate su questo dispositivo"],
+    same: "Uguale",
+    rows: [
+      ["La board di oggi", "ogni partita: quota, nostra stima e gap con segno", "Incluso", "Uguale"],
+      ["Il registro", "ogni stima sigillata, vinte e perse", "Incluso", "Uguale"],
+      ["Controllo prezzo e 11 strumenti", "senza account", "Incluso", "Uguale"],
+      ["Notizie e quote dei book", "link ai partner solo dove sono ammessi", "Incluso", "Uguale"],
+      ["Storico delle quote", "come si è mossa la quota da quando la salviamo", "Ultime 24 ore", "Tutto lo storico"],
+      ["Partite live", "punteggio e quote durante il gioco", "—", "Incluso"],
+      ["Perché la nostra stima differisce", "Pro mostrerà il perché, fattore per fattore", "—", "In programma"],
     ],
-    freeSoon: ["Alert e tracker delle giocate", "previsti in Free; non ancora attivi"],
-    proItems: [
-      ["Perché il modello non è d’accordo", "ogni fattore dietro la stima: forma, campo, gol"],
-      ["Movimento di quota completo", "ogni prezzo salvato dall’apertura del mercato"],
-      ["Probabilità live", "la stima si aggiorna durante la partita"],
-      ["Probability view", "combina mercati su una partita, modello contro mercato"],
-      ["Weekly Model Case", "un esempio di come il modello legge una settimana; non una giocata"],
-    ],
-    everythingFree: "Tutto quello che c’è in Free",
-    freeCta: "Crea un account gratuito",
-    proCta: "Passa a Pro",
-    railCard: "Carta: abbonamento che si rinnova ogni mese; lo disdici dal tuo account.",
-    railCardAnnual: "Annuale con carta: si rinnova ogni 12 mesi.",
-    railCrypto: "Crypto: un pagamento per 30 giorni, senza rinnovo.",
-    railPaypal: "PayPal: disponibile al checkout.",
-    railUsdt: "Bonifico USDT (TRC20): un pagamento, verificato a mano.",
-    withdrawal: "Prima di pagare confermi che Pro parte subito, cosa che fa cadere il recesso di 14 giorni.",
-    promo: (until: string) => `Offerta di lancio: il primo acquisto è a metà prezzo fino al ${until}. Si applica al checkout.`,
-    sameStrong: "Uguale in entrambi:",
-    same: "ogni prezzo, stima, gap e l’intero registro. Pro non nasconde nessun numero che Free mostra; aggiunge il perché.",
-    anatomyTitle: "Cosa apre Pro su una partita",
-    anatomyLede: "I titoli dei fattori li vedono tutti. Il primo è spiegato in Free; gli altri si aprono con Pro.",
-    anatomyNever: "Mai mostrato quando stima e mercato coincidono (gap sotto 1,5 punti).",
+    previewTag: "aperto a tutti in anteprima",
+    plannedTag: "non ancora costruito",
+    notice: "Quando Pro sarà in vendita ti avviseremo 7 giorni prima che una funzione passi a Pro.",
+    t4: "Pro non renderà la stima più precisa e non promette guadagni. Stessa stima, stesso registro, per tutti.",
+    draftTitle: "Bozza: come potrebbe apparire Pro su una partita",
+    draftLede: "Una bozza di impaginazione, non attiva: durante l’anteprima niente è chiuso su una partita.",
+    draftTag: "Bozza · non attiva",
     fine: "Analisi, non consigli. 18+. BetRedge non è un bookmaker e non accetta scommesse.",
   },
   paywall: {
@@ -274,6 +248,8 @@ const IT: PagesCopy = {
     pricesLab: "Prezzi",
     live: "Prezzi live sulla board",
     siteOdds: "Quote sul sito del partner",
+    regionRestricted: "Quote sul sito del partner · feed bloccato nella nostra regione",
+    noSportsbook: "Nessuna quota sportiva: non è un bookmaker",
     where: "Dove",
     everywhere: "Ogni paese in cui mostriamo i partner",
     onlyIn: (list: string) => `Solo in ${list}`,
@@ -340,48 +316,34 @@ const IT: PagesCopy = {
 
 const DE: PagesCopy = {
   pricing: {
-    tab: "Pläne · zwei, ohne Test-Tricks", // REVIEW-NATIVE
-    title: "Free zeigt den Abstand. Pro zeigt das Warum.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro ${monthly} pro Monat`, // REVIEW-NATIVE
-    metaRest: "Preise in USD. Das Kartenabo kündigst du in deinem Konto.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "Die ganze Analyse, kostenlos.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "Das Warum hinter der Zahl, und mehr Tiefe.", // REVIEW-NATIVE
-    perMonth: "/ Monat", // REVIEW-NATIVE
-    perYear: (annual: string) => `· ${annual} pro Jahr`, // REVIEW-NATIVE
-    included: "Enthalten", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Noch nicht verfügbar", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["Das Board von heute", "jedes Spiel: Markt, Schätzung und der Abstand mit Vorzeichen"],
-      ["Das Register", "jede versiegelte Schätzung, gewonnen und verloren"],
-      ["Quoten-Check und 11 Tools", "kein Konto nötig"],
-      ["Merkliste", "die Spiele, denen du folgst, auf diesem Gerät gespeichert"],
-    ] as [string, string][],
-    freeSoon: ["Alerts und Wett-Tracker", "für Free geplant; noch nicht verfügbar"] as [string, string], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Warum das Modell abweicht", "jeder Faktor hinter der Schätzung: Form, Spielort, Tore"],
-      ["Voller Quotenverlauf", "jede gespeicherte Quote seit Marktöffnung"],
-      ["Live-Wahrscheinlichkeiten", "die Schätzung aktualisiert sich während des Spiels"],
-      ["Wahrscheinlichkeitsansicht", "Märkte eines Spiels kombinieren, Modell gegen Markt"],
-      ["Weekly Model Case", "ein durchgerechnetes Beispiel, wie das Modell eine Woche liest; keine Wettempfehlung"],
-    ] as [string, string][],
-    everythingFree: "Alles aus Free", // REVIEW-NATIVE
-    freeCta: "Kostenloses Konto erstellen", // REVIEW-NATIVE
-    proCta: "Pro holen", // REVIEW-NATIVE
-    railCard: "Karte: ein Abo, das sich monatlich verlängert; kündbar in deinem Konto.", // REVIEW-NATIVE
-    railCardAnnual: "Jährlich per Karte: verlängert sich alle 12 Monate.", // REVIEW-NATIVE
-    railCrypto: "Krypto: eine Zahlung für 30 Tage, keine Verlängerung.", // REVIEW-NATIVE
-    railPaypal: "PayPal: an der Kasse verfügbar.", // REVIEW-NATIVE
-    railUsdt: "USDT-Überweisung (TRC20): eine Zahlung, manuell geprüft.", // REVIEW-NATIVE
-    withdrawal: "Vor der Zahlung bestätigst du, dass Pro sofort startet; damit erlischt das 14-tägige Widerrufsrecht.", // REVIEW-NATIVE
-    promo: (until: string) => `Startangebot: Der erste Kauf kostet bis ${until} die Hälfte. Gilt an der Kasse.`, // REVIEW-NATIVE
-    sameStrong: "In beiden gleich:", // REVIEW-NATIVE
-    same: "jede Quote, Schätzung, jeder Abstand und das ganze Register. Pro versteckt keine Zahl, die Free zeigt; es ergänzt das Warum.", // REVIEW-NATIVE
-    anatomyTitle: "Was Pro bei einem Spiel öffnet", // REVIEW-NATIVE
-    anatomyLede: "Die Faktortitel sieht jeder. Der erste wird in Free erklärt; die anderen öffnen sich mit Pro.", // REVIEW-NATIVE
-    anatomyNever: "Nie angezeigt, wenn Schätzung und Markt übereinstimmen (Abstand unter 1.5 Punkten).", // REVIEW-NATIVE
+    tab: "Pläne · Free und Pro-Vorschau",
+    title: "Free, dazu eine Pro-Vorschau",
+    metaStrong: "Noch nichts zu kaufen",
+    metaRest: "Pro ist nicht im Verkauf; während des Starts sind seine Funktionen für alle offen.", // REVIEW-NATIVE
+    preview: "Vorschau: Die Pro-Funktionen sind während des Starts für alle offen.", // REVIEW-NATIVE
+    colWhat: "Was du bekommst",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ Monat",
+    proSoon: "kommt bald", // REVIEW-NATIVE
+    included: "Enthalten",
+    same: "Gleich",
+    rows: [
+      ["Das Board von heute", "jedes Spiel: Quote, unsere Schätzung und der Abstand mit Vorzeichen", "Enthalten", "Gleich"],
+      ["Das Register", "jede versiegelte Schätzung, gewonnen und verloren", "Enthalten", "Gleich"],
+      ["Quoten-Check und 11 Tools", "kein Konto nötig", "Enthalten", "Gleich"],
+      ["News und Buchmacher-Quoten", "Partnerlinks nur, wo sie erlaubt sind", "Enthalten", "Gleich"],
+      ["Quotenverlauf", "wie sich die Quote bewegt hat, seit wir sie speichern", "Letzte 24 Stunden", "Gesamter Verlauf"],
+      ["Live-Spiele", "Spielstand und Quoten während des Spiels", "—", "Enthalten"],
+      ["Warum unsere Schätzung abweicht", "Pro wird das Warum zeigen, Faktor für Faktor", "—", "Geplant"],
+    ],
+    previewTag: "in der Vorschau für alle offen",
+    plannedTag: "noch nicht gebaut",
+    notice: "Wenn Pro in den Verkauf geht, sagen wir 7 Tage vorher Bescheid, bevor eine Funktion zu Pro wechselt.", // REVIEW-NATIVE
+    t4: "Pro macht unsere Schätzung nicht genauer und verspricht keinen Gewinn. Gleiche Schätzung, gleiches Register, für alle.", // REVIEW-NATIVE
+    draftTitle: "Entwurf: wie Pro bei einem Spiel aussehen könnte",
+    draftLede: "Ein Layout-Entwurf, nicht aktiv: In der Vorschau ist bei keinem Spiel etwas gesperrt.",
+    draftTag: "Entwurf · nicht aktiv",
     fine: "Analyse, keine Beratung. 18+. BetRedge ist kein Buchmacher und nimmt keine Wetten an.", // REVIEW-NATIVE
   },
   paywall: {
@@ -437,6 +399,8 @@ const DE: PagesCopy = {
     pricesLab: "Quoten",
     live: "Live-Quoten auf dem Board",
     siteOdds: "Quoten auf der Partnerseite",
+    regionRestricted: "Quoten auf der Partnerseite · Feed in unserer Region gesperrt",
+    noSportsbook: "Keine Sportquoten: kein Buchmacher",
     where: "Wo",
     everywhere: "Jedes Land, in dem wir Partner zeigen",
     onlyIn: (list: string) => `Nur in ${list}`,
@@ -503,48 +467,34 @@ const DE: PagesCopy = {
 
 const ES: PagesCopy = {
   pricing: {
-    tab: "Planes · dos, sin trucos de prueba", // REVIEW-NATIVE
-    title: "Free te enseña la diferencia. Pro te explica por qué.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro ${monthly} al mes`, // REVIEW-NATIVE
-    metaRest: "Precios en USD. La suscripción con tarjeta se cancela desde tu cuenta.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "La lectura completa, gratis.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "El porqué detrás del número, y más profundidad.", // REVIEW-NATIVE
-    perMonth: "/ mes", // REVIEW-NATIVE
-    perYear: (annual: string) => `· ${annual} al año`, // REVIEW-NATIVE
-    included: "Incluido", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Aún no disponible", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["El tablero de hoy", "cada partido: mercado, estimación y la diferencia con signo"],
-      ["El registro", "cada estimación sellada, acertada o fallada"],
-      ["Comprobar cuota y 11 herramientas", "sin necesidad de cuenta"],
-      ["Lista de seguimiento", "los partidos que sigues, guardados en este dispositivo"],
-    ] as [string, string][],
-    freeSoon: ["Alertas y registro de apuestas", "previstos para Free; aún no disponibles"] as [string, string], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Por qué el modelo discrepa", "cada factor detrás de la estimación: forma, campo, goles"],
-      ["Movimiento de cuotas completo", "cada cuota guardada desde que abrió el mercado"],
-      ["Probabilidades en directo", "la estimación se actualiza durante el partido"],
-      ["Vista de probabilidad", "combina mercados de un partido, modelo frente a mercado"],
-      ["Caso semanal del modelo", "un ejemplo práctico de cómo el modelo lee una semana; no es una apuesta a realizar"],
-    ] as [string, string][],
-    everythingFree: "Todo lo de Free", // REVIEW-NATIVE
-    freeCta: "Crea una cuenta gratis", // REVIEW-NATIVE
-    proCta: "Hazte Pro", // REVIEW-NATIVE
-    railCard: "Tarjeta: una suscripción que se renueva cada mes; cancélala desde tu cuenta.", // REVIEW-NATIVE
-    railCardAnnual: "Anual con tarjeta: se renueva cada 12 meses.", // REVIEW-NATIVE
-    railCrypto: "Cripto: un único pago por 30 días, sin renovación.", // REVIEW-NATIVE
-    railPaypal: "PayPal: disponible al pagar.", // REVIEW-NATIVE
-    railUsdt: "Transferencia USDT (TRC20): un único pago, verificado a mano.", // REVIEW-NATIVE
-    withdrawal: "Antes de pagar confirmas que Pro empieza de inmediato, lo que pone fin al derecho de desistimiento de 14 días.", // REVIEW-NATIVE
-    promo: (until: string) => `Oferta de lanzamiento: la primera compra a mitad de precio hasta el ${until}. Se aplica al pagar.`, // REVIEW-NATIVE
-    sameStrong: "Igual en los dos:", // REVIEW-NATIVE
-    same: "cada cuota, estimación, diferencia y el registro entero. Pro nunca oculta un número que Free muestra; añade el porqué.", // REVIEW-NATIVE
-    anatomyTitle: "Lo que Pro abre en un partido", // REVIEW-NATIVE
-    anatomyLede: "Los títulos de los factores los ve todo el mundo. El primero se explica en Free; el resto se abre con Pro.", // REVIEW-NATIVE
-    anatomyNever: "Nunca se muestra si estimación y mercado coinciden (diferencia inferior a 1,5 puntos).", // REVIEW-NATIVE
+    tab: "Planes · Free y vista previa de Pro",
+    title: "Free, y una vista previa de Pro",
+    metaStrong: "Aún no hay nada que comprar",
+    metaRest: "Pro no está a la venta; durante el lanzamiento sus funciones están abiertas a todos.", // REVIEW-NATIVE
+    preview: "Vista previa: las funciones Pro están abiertas a todos durante el lanzamiento.", // REVIEW-NATIVE
+    colWhat: "Qué incluye",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ mes",
+    proSoon: "próximamente", // REVIEW-NATIVE
+    included: "Incluido",
+    same: "Igual",
+    rows: [
+      ["El tablero de hoy", "cada partido: cuota, nuestra estimación y la diferencia con signo", "Incluido", "Igual"],
+      ["El registro", "cada estimación sellada, ganadas y perdidas", "Incluido", "Igual"],
+      ["Comprobar cuota y 11 herramientas", "sin cuenta", "Incluido", "Igual"],
+      ["Noticias y cuotas de las casas", "enlaces a socios solo donde están permitidos", "Incluido", "Igual"],
+      ["Historial de cuotas", "cómo se movió la cuota desde que la guardamos", "Últimas 24 horas", "Historial completo"],
+      ["Partidos en directo", "marcador y cuotas durante el juego", "—", "Incluido"],
+      ["Por qué difiere nuestra estimación", "Pro mostrará el porqué, factor por factor", "—", "Previsto"],
+    ],
+    previewTag: "abierto a todos en la vista previa",
+    plannedTag: "aún no construido",
+    notice: "Cuando Pro salga a la venta avisaremos con 7 días de antelación antes de que una función pase a Pro.", // REVIEW-NATIVE
+    t4: "Pro no hará más precisa nuestra estimación y no promete ganancias. La misma estimación y el mismo registro para todos.", // REVIEW-NATIVE
+    draftTitle: "Borrador: cómo podría verse Pro en un partido",
+    draftLede: "Un borrador de diseño, no activo: durante la vista previa nada está cerrado en un partido.",
+    draftTag: "Borrador · no activo",
     fine: "Análisis, no consejos. 18+. BetRedge no es una casa de apuestas y no acepta apuestas.", // REVIEW-NATIVE
   },
   paywall: {
@@ -600,6 +550,8 @@ const ES: PagesCopy = {
     pricesLab: "Cuotas",
     live: "Cuotas en directo en el tablero",
     siteOdds: "Cuotas en la web del socio",
+    regionRestricted: "Cuotas en la web del socio · feed bloqueado en nuestra región",
+    noSportsbook: "Sin cuotas deportivas: no es una casa de apuestas",
     where: "Dónde",
     everywhere: "Todos los países donde mostramos socios",
     onlyIn: (list: string) => `Solo en ${list}`,
@@ -666,48 +618,34 @@ const ES: PagesCopy = {
 
 const FR: PagesCopy = {
   pricing: {
-    tab: "Formules · deux, sans piège d’essai", // REVIEW-NATIVE
-    title: "Free montre l’écart. Pro montre pourquoi.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro ${monthly} par mois`, // REVIEW-NATIVE
-    metaRest: "Prix en USD. L’abonnement par carte se résilie depuis votre compte.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "Toute la lecture, gratuitement.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "Le pourquoi derrière le chiffre, et plus de profondeur.", // REVIEW-NATIVE
-    perMonth: "/ mois", // REVIEW-NATIVE
-    perYear: (annual: string) => `· ${annual} par an`, // REVIEW-NATIVE
-    included: "Inclus", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Pas encore disponible", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["Le tableau du jour", "chaque match : marché, estimation et écart signé"],
-      ["Le registre", "chaque estimation scellée, gagnée ou perdue"],
-      ["Vérifier la cote et 11 outils", "sans compte"],
-      ["Liste de suivi", "les matchs que vous suivez, enregistrés sur cet appareil"],
-    ] as [string, string][],
-    freeSoon: ["Alertes et suivi des paris", "prévus pour Free ; pas encore disponibles"] as [string, string], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Pourquoi le modèle n’est pas d’accord", "chaque facteur derrière l’estimation : forme, terrain, buts"],
-      ["Mouvement des cotes complet", "chaque cote enregistrée depuis l’ouverture du marché"],
-      ["Probabilités en direct", "l’estimation se met à jour pendant le match"],
-      ["Vue des probabilités", "combinez les marchés d’un match, modèle contre marché"],
-      ["Cas du modèle de la semaine", "un exemple détaillé de la lecture d’une semaine par le modèle ; pas un pari à placer"],
-    ] as [string, string][],
-    everythingFree: "Tout ce qu’offre Free", // REVIEW-NATIVE
-    freeCta: "Créer un compte gratuit", // REVIEW-NATIVE
-    proCta: "Passer à Pro", // REVIEW-NATIVE
-    railCard: "Carte : un abonnement renouvelé chaque mois ; résiliez-le depuis votre compte.", // REVIEW-NATIVE
-    railCardAnnual: "Annuel par carte : renouvelé tous les 12 mois.", // REVIEW-NATIVE
-    railCrypto: "Crypto : un paiement pour 30 jours, sans renouvellement.", // REVIEW-NATIVE
-    railPaypal: "PayPal : disponible au paiement.", // REVIEW-NATIVE
-    railUsdt: "Virement USDT (TRC20) : un paiement, vérifié à la main.", // REVIEW-NATIVE
-    withdrawal: "Avant de payer, vous confirmez que Pro démarre immédiatement, ce qui met fin au droit de rétractation de 14 jours.", // REVIEW-NATIVE
-    promo: (until: string) => `Offre de lancement : le premier achat est à moitié prix jusqu’au ${until}. Elle s’applique au paiement.`, // REVIEW-NATIVE
-    sameStrong: "Identique dans les deux :", // REVIEW-NATIVE
-    same: "chaque cote, estimation, écart et tout le registre. Pro ne cache jamais un chiffre que Free montre ; il ajoute le pourquoi.", // REVIEW-NATIVE
-    anatomyTitle: "Ce que Pro ouvre sur un match", // REVIEW-NATIVE
-    anatomyLede: "Les titres des facteurs sont visibles par tous. Le premier est expliqué dans Free ; les autres s’ouvrent avec Pro.", // REVIEW-NATIVE
-    anatomyNever: "Jamais affiché quand estimation et marché concordent (écart sous 1,5 point).", // REVIEW-NATIVE
+    tab: "Offres · Free et aperçu de Pro",
+    title: "Free, plus un aperçu de Pro",
+    metaStrong: "Rien à acheter pour l’instant",
+    metaRest: "Pro n’est pas en vente ; pendant le lancement, ses fonctions sont ouvertes à tous.", // REVIEW-NATIVE
+    preview: "Aperçu : les fonctions Pro sont ouvertes à tous pendant le lancement.", // REVIEW-NATIVE
+    colWhat: "Ce que vous obtenez",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ mois",
+    proSoon: "bientôt", // REVIEW-NATIVE
+    included: "Inclus",
+    same: "Identique",
+    rows: [
+      ["Le tableau du jour", "chaque match : cote, notre estimation et l’écart signé", "Inclus", "Identique"],
+      ["Le registre", "chaque estimation scellée, gagnées et perdues", "Inclus", "Identique"],
+      ["Vérifier la cote et 11 outils", "sans compte", "Inclus", "Identique"],
+      ["Actualités et cotes des bookmakers", "liens partenaires seulement là où ils sont autorisés", "Inclus", "Identique"],
+      ["Historique des cotes", "comment la cote a bougé depuis que nous l’enregistrons", "Dernières 24 heures", "Historique complet"],
+      ["Matchs en direct", "score et cotes pendant le jeu", "—", "Inclus"],
+      ["Pourquoi notre estimation diffère", "Pro montrera pourquoi, facteur par facteur", "—", "Prévu"],
+    ],
+    previewTag: "ouvert à tous pendant l’aperçu",
+    plannedTag: "pas encore construit",
+    notice: "Quand Pro sera en vente, nous préviendrons 7 jours avant qu’une fonction passe dans Pro.", // REVIEW-NATIVE
+    t4: "Pro ne rendra pas notre estimation plus précise et ne promet aucun gain. Même estimation, même registre, pour tous.", // REVIEW-NATIVE
+    draftTitle: "Brouillon : à quoi Pro pourrait ressembler sur un match",
+    draftLede: "Un brouillon de mise en page, non actif : pendant l’aperçu, rien n’est fermé sur un match.",
+    draftTag: "Brouillon · non actif",
     fine: "Analyse, pas des conseils. 18+. BetRedge n’est pas un bookmaker et ne prend aucun pari.", // REVIEW-NATIVE
   },
   paywall: {
@@ -763,6 +701,8 @@ const FR: PagesCopy = {
     pricesLab: "Cotes",
     live: "Cotes en direct sur le tableau",
     siteOdds: "Cotes sur le site du partenaire",
+    regionRestricted: "Cotes sur le site du partenaire · flux bloqué dans notre région",
+    noSportsbook: "Pas de cotes sportives : ce n’est pas un bookmaker",
     where: "Où",
     everywhere: "Tous les pays où nous affichons des partenaires",
     onlyIn: (list: string) => `Uniquement en ${list}`,
@@ -829,48 +769,34 @@ const FR: PagesCopy = {
 
 const NL: PagesCopy = {
   pricing: {
-    tab: "Abonnementen · twee, geen proeftrucs", // REVIEW-NATIVE
-    title: "Free toont het verschil. Pro toont waarom.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro ${monthly} per maand`, // REVIEW-NATIVE
-    metaRest: "Prijzen in USD. Het kaartabonnement zeg je op vanuit je account.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "De hele lezing, gratis.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "Het waarom achter het getal, en meer diepgang.", // REVIEW-NATIVE
-    perMonth: "/ maand", // REVIEW-NATIVE
-    perYear: (annual: string) => `· ${annual} per jaar`, // REVIEW-NATIVE
-    included: "Inbegrepen", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Nog niet live", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["Het board van vandaag", "elke wedstrijd: markt, schatting en het verschil met teken"],
-      ["Het register", "elke verzegelde schatting, gewonnen en verloren"],
-      ["Odds-check en 11 tools", "geen account nodig"],
-      ["Volglijst", "de wedstrijden die je volgt, bewaard op dit apparaat"],
-    ] as [string, string][],
-    freeSoon: ["Meldingen en wedtracker", "gepland voor Free; nog niet live"] as [string, string], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Waarom het model het oneens is", "elke factor achter de schatting: vorm, thuis/uit, doelpunten"],
-      ["Volledige oddsbeweging", "elke opgeslagen odd sinds de markt openging"],
-      ["Live kansen", "de schatting wordt tijdens de wedstrijd bijgewerkt"],
-      ["Kansweergave", "combineer markten binnen één wedstrijd, model tegenover markt"],
-      ["Wekelijkse Model Case", "een uitgewerkt voorbeeld van hoe het model een week leest; geen wed om te plaatsen"],
-    ] as [string, string][],
-    everythingFree: "Alles uit Free", // REVIEW-NATIVE
-    freeCta: "Maak een gratis account", // REVIEW-NATIVE
-    proCta: "Neem Pro", // REVIEW-NATIVE
-    railCard: "Kaart: een abonnement dat maandelijks verlengt; opzeggen doe je vanuit je account.", // REVIEW-NATIVE
-    railCardAnnual: "Jaarlijks per kaart: verlengt elke 12 maanden.", // REVIEW-NATIVE
-    railCrypto: "Crypto: één betaling voor 30 dagen, geen verlenging.", // REVIEW-NATIVE
-    railPaypal: "PayPal: beschikbaar bij het afrekenen.", // REVIEW-NATIVE
-    railUsdt: "USDT-overboeking (TRC20): één betaling, handmatig gecontroleerd.", // REVIEW-NATIVE
-    withdrawal: "Voor het betalen bevestig je dat Pro direct start, waarmee het herroepingsrecht van 14 dagen vervalt.", // REVIEW-NATIVE
-    promo: (until: string) => `Lanceringsaanbod: de eerste aankoop is half geprijsd tot ${until}. Wordt toegepast bij het afrekenen.`, // REVIEW-NATIVE
-    sameStrong: "In beide hetzelfde:", // REVIEW-NATIVE
-    same: "elke odd, schatting, elk verschil en het hele register. Pro verbergt nooit een getal dat Free toont; het voegt het waarom toe.", // REVIEW-NATIVE
-    anatomyTitle: "Wat Pro opent bij een wedstrijd", // REVIEW-NATIVE
-    anatomyLede: "De titels van de factoren ziet iedereen. De eerste wordt in Free uitgelegd; de rest opent met Pro.", // REVIEW-NATIVE
-    anatomyNever: "Nooit getoond als schatting en markt overeenkomen (verschil onder 1,5 punten).", // REVIEW-NATIVE
+    tab: "Abonnementen · Free en Pro-preview",
+    title: "Free, plus een Pro-preview",
+    metaStrong: "Nog niets te koop",
+    metaRest: "Pro is niet te koop; tijdens de lancering staan de functies open voor iedereen.", // REVIEW-NATIVE
+    preview: "Preview: de Pro-functies staan tijdens de lancering open voor iedereen.", // REVIEW-NATIVE
+    colWhat: "Wat je krijgt",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ maand",
+    proSoon: "binnenkort", // REVIEW-NATIVE
+    included: "Inbegrepen",
+    same: "Hetzelfde",
+    rows: [
+      ["Het board van vandaag", "elke wedstrijd: odds, onze schatting en het verschil met teken", "Inbegrepen", "Hetzelfde"],
+      ["Het register", "elke verzegelde schatting, gewonnen en verloren", "Inbegrepen", "Hetzelfde"],
+      ["Odds-check en 11 tools", "geen account nodig", "Inbegrepen", "Hetzelfde"],
+      ["Nieuws en odds van bookmakers", "partnerlinks alleen waar ze zijn toegestaan", "Inbegrepen", "Hetzelfde"],
+      ["Oddsgeschiedenis", "hoe de odds bewogen sinds we ze opslaan", "Laatste 24 uur", "Volledige geschiedenis"],
+      ["Live wedstrijden", "stand en odds tijdens het spel", "—", "Inbegrepen"],
+      ["Waarom onze schatting afwijkt", "Pro zal laten zien waarom, factor voor factor", "—", "Gepland"],
+    ],
+    previewTag: "open voor iedereen in de preview",
+    plannedTag: "nog niet gebouwd",
+    notice: "Als Pro te koop gaat, laten we het 7 dagen van tevoren weten voordat een functie naar Pro gaat.", // REVIEW-NATIVE
+    t4: "Pro maakt onze schatting niet nauwkeuriger en belooft geen winst. Dezelfde schatting, hetzelfde register, voor iedereen.", // REVIEW-NATIVE
+    draftTitle: "Concept: hoe Pro eruit kan zien bij een wedstrijd",
+    draftLede: "Een opmaakconcept, niet actief: tijdens de preview is bij geen enkele wedstrijd iets afgesloten.",
+    draftTag: "Concept · niet actief",
     fine: "Analyse, geen advies. 18+. BetRedge is geen bookmaker en neemt geen weddenschappen aan.", // REVIEW-NATIVE
   },
   paywall: {
@@ -926,6 +852,8 @@ const NL: PagesCopy = {
     pricesLab: "Odds",
     live: "Live odds op het board",
     siteOdds: "Odds op de partnersite",
+    regionRestricted: "Odds op de partnersite · feed geblokkeerd in onze regio",
+    noSportsbook: "Geen sportodds: geen bookmaker",
     where: "Waar",
     everywhere: "Elk land waar we partners tonen", // REVIEW-NATIVE
     onlyIn: (list: string) => `Alleen in ${list}`, // REVIEW-NATIVE
@@ -992,48 +920,34 @@ const NL: PagesCopy = {
 
 const PL: PagesCopy = {
   pricing: {
-    tab: "Plany · dwa, bez sztuczek z próbą", // REVIEW-NATIVE
-    title: "Free pokazuje różnicę. Pro pokazuje dlaczego.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro ${monthly} miesięcznie`, // REVIEW-NATIVE
-    metaRest: "Ceny w USD. Subskrypcję kartą anulujesz na swoim koncie.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "Cała analiza, za darmo.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "Dlaczego za liczbą, i więcej szczegółów.", // REVIEW-NATIVE
-    perMonth: "/ miesiąc", // REVIEW-NATIVE
-    perYear: (annual: string) => `· ${annual} rocznie`, // REVIEW-NATIVE
-    included: "W cenie", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Jeszcze niedostępne", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["Dzisiejsza tablica", "każdy mecz: rynek, szacunek i różnica ze znakiem"],
-      ["Rejestr", "każdy zapieczętowany szacunek, trafiony i nietrafiony"],
-      ["Sprawdź kurs i 11 narzędzi", "bez zakładania konta"],
-      ["Obserwowane", "mecze, które śledzisz, zapisane na tym urządzeniu"],
-    ] as [string, string][],
-    freeSoon: ["Alerty i dziennik zakładów", "planowane w Free; jeszcze niedostępne"] as [string, string], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Dlaczego model się nie zgadza", "każdy czynnik za szacunkiem: forma, miejsce, gole"],
-      ["Pełny ruch kursów", "każdy zapisany kurs od otwarcia rynku"],
-      ["Prawdopodobieństwa na żywo", "szacunek aktualizuje się w trakcie meczu"],
-      ["Widok prawdopodobieństw", "łącz rynki jednego meczu, model kontra rynek"],
-      ["Tygodniowy Model Case", "przykład, jak model czyta tydzień; to nie zakład do postawienia"],
-    ] as [string, string][],
-    everythingFree: "Wszystko z Free", // REVIEW-NATIVE
-    freeCta: "Załóż darmowe konto", // REVIEW-NATIVE
-    proCta: "Przejdź na Pro", // REVIEW-NATIVE
-    railCard: "Karta: subskrypcja odnawiana co miesiąc; anulujesz ją na swoim koncie.", // REVIEW-NATIVE
-    railCardAnnual: "Rocznie kartą: odnawia się co 12 miesięcy.", // REVIEW-NATIVE
-    railCrypto: "Krypto: jedna płatność za 30 dni, bez odnowienia.", // REVIEW-NATIVE
-    railPaypal: "PayPal: dostępny przy płatności.", // REVIEW-NATIVE
-    railUsdt: "Przelew USDT (TRC20): jedna płatność, sprawdzana ręcznie.", // REVIEW-NATIVE
-    withdrawal: "Przed płatnością potwierdzasz, że Pro startuje od razu, co kończy 14-dniowe prawo odstąpienia.", // REVIEW-NATIVE
-    promo: (until: string) => `Oferta startowa: pierwszy zakup za pół ceny do ${until}. Zniżka naliczana przy płatności.`, // REVIEW-NATIVE
-    sameStrong: "Tak samo w obu:", // REVIEW-NATIVE
-    same: "każdy kurs, szacunek, różnica i cały rejestr. Pro nigdy nie ukrywa liczby z Free; dodaje dlaczego.", // REVIEW-NATIVE
-    anatomyTitle: "Co Pro otwiera w meczu", // REVIEW-NATIVE
-    anatomyLede: "Nazwy czynników widzi każdy. Pierwszy jest wyjaśniony w Free; reszta otwiera się z Pro.", // REVIEW-NATIVE
-    anatomyNever: "Nie pokazujemy, gdy szacunek i rynek się zgadzają (różnica poniżej 1.5 pkt).", // REVIEW-NATIVE
+    tab: "Plany · Free i podgląd Pro",
+    title: "Free i podgląd Pro",
+    metaStrong: "Na razie nic do kupienia",
+    metaRest: "Pro nie jest w sprzedaży; podczas startu jego funkcje są otwarte dla wszystkich.", // REVIEW-NATIVE
+    preview: "Podgląd: funkcje Pro są otwarte dla wszystkich podczas startu.", // REVIEW-NATIVE
+    colWhat: "Co dostajesz",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ mies.",
+    proSoon: "wkrótce", // REVIEW-NATIVE
+    included: "Dostępne",
+    same: "Tak samo",
+    rows: [
+      ["Dzisiejsza tablica", "każdy mecz: kurs, nasz szacunek i różnica ze znakiem", "Dostępne", "Tak samo"],
+      ["Rejestr", "każdy zapieczętowany szacunek, wygrane i przegrane", "Dostępne", "Tak samo"],
+      ["Sprawdź kurs i 11 narzędzi", "bez konta", "Dostępne", "Tak samo"],
+      ["Wiadomości i kursy bukmacherów", "linki partnerów tylko tam, gdzie są dozwolone", "Dostępne", "Tak samo"],
+      ["Historia kursów", "jak zmieniał się kurs, odkąd go zapisujemy", "Ostatnie 24 godziny", "Cała historia"],
+      ["Mecze na żywo", "wynik i kursy w trakcie gry", "—", "Dostępne"],
+      ["Dlaczego nasz szacunek się różni", "Pro pokaże dlaczego, czynnik po czynniku", "—", "W planach"],
+    ],
+    previewTag: "otwarte dla wszystkich w podglądzie",
+    plannedTag: "jeszcze niezbudowane",
+    notice: "Gdy Pro trafi do sprzedaży, uprzedzimy 7 dni wcześniej, zanim jakakolwiek funkcja przejdzie do Pro.", // REVIEW-NATIVE
+    t4: "Pro nie uczyni naszego szacunku dokładniejszym i nie obiecuje zysku. Ten sam szacunek i ten sam rejestr dla wszystkich.", // REVIEW-NATIVE
+    draftTitle: "Szkic: jak Pro mogłoby wyglądać przy meczu",
+    draftLede: "Szkic układu, nieaktywny: w czasie podglądu nic przy meczu nie jest zamknięte.",
+    draftTag: "Szkic · nieaktywny",
     fine: "Analiza, nie porady. 18+. BetRedge nie jest bukmacherem i nie przyjmuje zakładów.", // REVIEW-NATIVE
   },
   paywall: {
@@ -1089,6 +1003,8 @@ const PL: PagesCopy = {
     pricesLab: "Kursy",
     live: "Kursy na żywo na tablicy",
     siteOdds: "Kursy na stronie partnera",
+    regionRestricted: "Kursy na stronie partnera · kanał zablokowany w naszym regionie",
+    noSportsbook: "Brak kursów sportowych: to nie bukmacher",
     where: "Gdzie",
     everywhere: "Każdy kraj, w którym pokazujemy partnerów", // REVIEW-NATIVE
     onlyIn: (list: string) => `Tylko w: ${list}`, // REVIEW-NATIVE
@@ -1155,48 +1071,34 @@ const PL: PagesCopy = {
 
 const PT: PagesCopy = {
   pricing: {
-    tab: "Planos · dois, sem truques de teste", // REVIEW-NATIVE
-    title: "O Free mostra a diferença. O Pro mostra o porquê.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro ${monthly} por mês`, // REVIEW-NATIVE
-    metaRest: "Preços em USD. A subscrição por cartão cancela-se na tua conta.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "A leitura completa, grátis.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "O porquê por trás do número, e mais profundidade.", // REVIEW-NATIVE
-    perMonth: "/ mês", // REVIEW-NATIVE
-    perYear: (annual: string) => `· ${annual} por ano`, // REVIEW-NATIVE
-    included: "Incluído", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Ainda não disponível", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["O board de hoje", "cada jogo: mercado, estimativa e a diferença com sinal"],
-      ["O registo", "cada estimativa selada, ganha ou perdida"],
-      ["Verificar odd e 11 ferramentas", "sem conta"],
-      ["Lista de seguidos", "os jogos que segues, guardados neste dispositivo"],
-    ] as [string, string][],
-    freeSoon: ["Alertas e registo de apostas", "previstos para o Free; ainda não disponíveis"] as [string, string], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Porque é que o modelo discorda", "cada fator por trás da estimativa: forma, campo, golos"],
-      ["Movimento das odds completo", "cada odd guardada desde a abertura do mercado"],
-      ["Probabilidades ao vivo", "a estimativa atualiza-se durante o jogo"],
-      ["Vista de probabilidades", "combina mercados de um jogo, modelo contra mercado"],
-      ["Caso semanal do modelo", "um exemplo prático de como o modelo lê uma semana; não é uma aposta a fazer"],
-    ] as [string, string][],
-    everythingFree: "Tudo o que está no Free", // REVIEW-NATIVE
-    freeCta: "Criar uma conta grátis", // REVIEW-NATIVE
-    proCta: "Passar a Pro", // REVIEW-NATIVE
-    railCard: "Cartão: uma subscrição que se renova todos os meses; cancela-a na tua conta.", // REVIEW-NATIVE
-    railCardAnnual: "Anual por cartão: renova-se a cada 12 meses.", // REVIEW-NATIVE
-    railCrypto: "Cripto: um pagamento para 30 dias, sem renovação.", // REVIEW-NATIVE
-    railPaypal: "PayPal: disponível no checkout.", // REVIEW-NATIVE
-    railUsdt: "Transferência USDT (TRC20): um pagamento, verificado à mão.", // REVIEW-NATIVE
-    withdrawal: "Antes de pagar confirmas que o Pro começa de imediato, o que extingue o direito de livre resolução de 14 dias.", // REVIEW-NATIVE
-    promo: (until: string) => `Oferta de lançamento: a primeira compra custa metade até ${until}. Aplica-se no checkout.`, // REVIEW-NATIVE
-    sameStrong: "Igual nos dois:", // REVIEW-NATIVE
-    same: "cada odd, estimativa, diferença e o registo completo. O Pro nunca esconde um número que o Free mostra; acrescenta o porquê.", // REVIEW-NATIVE
-    anatomyTitle: "O que o Pro abre num jogo", // REVIEW-NATIVE
-    anatomyLede: "Os títulos dos fatores são visíveis para todos. O primeiro é explicado no Free; os outros abrem com o Pro.", // REVIEW-NATIVE
-    anatomyNever: "Nunca aparece quando estimativa e mercado coincidem (diferença abaixo de 1,5 pontos).", // REVIEW-NATIVE
+    tab: "Planos · Free e pré-visualização Pro",
+    title: "Free, mais uma pré-visualização de Pro",
+    metaStrong: "Ainda não há nada para comprar",
+    metaRest: "O Pro não está à venda; durante o lançamento as suas funções estão abertas a todos.", // REVIEW-NATIVE
+    preview: "Pré-visualização: as funções Pro estão abertas a todos durante o lançamento.", // REVIEW-NATIVE
+    colWhat: "O que tens",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ mês",
+    proSoon: "em breve", // REVIEW-NATIVE
+    included: "Incluído",
+    same: "Igual",
+    rows: [
+      ["O board de hoje", "cada jogo: odd, a nossa estimativa e a diferença com sinal", "Incluído", "Igual"],
+      ["O registo", "cada estimativa selada, ganhas e perdidas", "Incluído", "Igual"],
+      ["Verificar odd e 11 ferramentas", "sem conta", "Incluído", "Igual"],
+      ["Notícias e odds das casas", "links de parceiros só onde são permitidos", "Incluído", "Igual"],
+      ["Histórico de odds", "como a odd se moveu desde que a guardamos", "Últimas 24 horas", "Histórico completo"],
+      ["Jogos ao vivo", "resultado e odds durante o jogo", "—", "Incluído"],
+      ["Porque a nossa estimativa difere", "O Pro vai mostrar porquê, fator a fator", "—", "Previsto"],
+    ],
+    previewTag: "aberto a todos na pré-visualização",
+    plannedTag: "ainda não construído",
+    notice: "Quando o Pro estiver à venda, avisamos 7 dias antes de qualquer função passar para o Pro.", // REVIEW-NATIVE
+    t4: "O Pro não torna a nossa estimativa mais precisa e não promete lucro. A mesma estimativa e o mesmo registo para todos.", // REVIEW-NATIVE
+    draftTitle: "Rascunho: como o Pro poderia aparecer num jogo",
+    draftLede: "Um rascunho de layout, não ativo: durante a pré-visualização nada está fechado num jogo.",
+    draftTag: "Rascunho · não ativo",
     fine: "Análise, não conselhos. 18+. A BetRedge não é uma casa de apostas e não aceita apostas.", // REVIEW-NATIVE
   },
   paywall: {
@@ -1252,6 +1154,8 @@ const PT: PagesCopy = {
     pricesLab: "Odds",
     live: "Odds ao vivo no board",
     siteOdds: "Odds no site do parceiro",
+    regionRestricted: "Odds no site do parceiro · feed bloqueado na nossa região",
+    noSportsbook: "Sem odds desportivas: não é uma casa de apostas",
     where: "Onde",
     everywhere: "Todos os países onde mostramos parceiros",
     onlyIn: (list: string) => `Só em ${list}`,
@@ -1318,48 +1222,34 @@ const PT: PagesCopy = {
 
 const RU: PagesCopy = {
   pricing: {
-    tab: "Тарифы · два, без пробных уловок", // REVIEW-NATIVE
-    title: "Free показывает разрыв. Pro показывает почему.", // REVIEW-NATIVE
-    metaStrong: (monthly) => `Pro — ${monthly} в месяц`, // REVIEW-NATIVE
-    metaRest: "Цены в USD. Подписку по карте вы отменяете в своём аккаунте.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "Весь анализ — бесплатно.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "Почему число именно такое — и больше глубины.", // REVIEW-NATIVE
-    perMonth: "/ месяц", // REVIEW-NATIVE
-    perYear: (annual) => `· ${annual} в год`, // REVIEW-NATIVE
-    included: "Включено", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Ещё не запущено", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["Панель на сегодня", "каждый матч: рынок, оценка и разрыв со знаком"],
-      ["Реестр", "каждая зафиксированная оценка — и выигрыши, и проигрыши"],
-      ["Проверка коэффициента и 11 инструментов", "без аккаунта"],
-      ["Избранное", "матчи, за которыми вы следите, сохраняются на этом устройстве"],
+    tab: "Тарифы · Free и предпросмотр Pro",
+    title: "Free и предпросмотр Pro",
+    metaStrong: "Пока покупать нечего",
+    metaRest: "Pro не продаётся; на время запуска его функции открыты для всех.", // REVIEW-NATIVE
+    preview: "Предпросмотр: функции Pro открыты для всех на время запуска.", // REVIEW-NATIVE
+    colWhat: "Что вы получаете",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ мес.",
+    proSoon: "скоро", // REVIEW-NATIVE
+    included: "Включено",
+    same: "Так же",
+    rows: [
+      ["Панель на сегодня", "каждый матч: коэффициент, наша оценка и разрыв со знаком", "Включено", "Так же"],
+      ["Реестр", "каждая зафиксированная оценка, выигрыши и проигрыши", "Включено", "Так же"],
+      ["Проверка коэффициента и 11 инструментов", "без аккаунта", "Включено", "Так же"],
+      ["Новости и коэффициенты букмекеров", "партнёрские ссылки только там, где они разрешены", "Включено", "Так же"],
+      ["История коэффициентов", "как менялся коэффициент с тех пор, как мы его сохраняем", "Последние 24 часа", "Вся история"],
+      ["Матчи в эфире", "счёт и коэффициенты по ходу игры", "—", "Включено"],
+      ["Почему наша оценка отличается", "Pro покажет почему, фактор за фактором", "—", "В планах"],
     ],
-    freeSoon: ["Оповещения и трекер ставок", "запланировано для Free; пока не запущено"], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Почему модель не согласна", "каждый фактор за оценкой: форма, место проведения, голы"],
-      ["Полное движение коэффициентов", "каждый сохранённый коэффициент с открытия рынка"],
-      ["Вероятности в эфире", "оценка обновляется по ходу матча"],
-      ["Вероятностный вид", "комбинируйте рынки одного матча, модель против рынка"],
-      ["Разбор модели за неделю", "пример того, как модель читает неделю; это не ставка к исполнению"],
-    ],
-    everythingFree: "Всё, что есть во Free", // REVIEW-NATIVE
-    freeCta: "Создать бесплатный аккаунт", // REVIEW-NATIVE
-    proCta: "Перейти на Pro", // REVIEW-NATIVE
-    railCard: "Карта: подписка с ежемесячным продлением; отмена — в вашем аккаунте.", // REVIEW-NATIVE
-    railCardAnnual: "Годовая по карте: продлевается каждые 12 месяцев.", // REVIEW-NATIVE
-    railCrypto: "Криптовалюта: один платёж за 30 дней, без продления.", // REVIEW-NATIVE
-    railPaypal: "PayPal: доступен при оформлении заказа.", // REVIEW-NATIVE
-    railUsdt: "Перевод USDT (TRC20): один платёж, проверяется вручную.", // REVIEW-NATIVE
-    withdrawal: "Перед оплатой вы подтверждаете, что Pro начинает действовать сразу: это прекращает 14-дневное право на отказ.", // REVIEW-NATIVE
-    promo: (until) => `Стартовое предложение: первая покупка за полцены до ${until}. Скидка применяется при оплате.`, // REVIEW-NATIVE
-    sameStrong: "Одинаково в обоих:", // REVIEW-NATIVE
-    same: "каждый коэффициент, оценка, разрыв и весь реестр. Pro никогда не скрывает число, которое показывает Free; он добавляет «почему».", // REVIEW-NATIVE
-    anatomyTitle: "Что Pro открывает на странице матча", // REVIEW-NATIVE
-    anatomyLede: "Названия факторов видны всем. Первый объяснён во Free; остальные открываются с Pro.", // REVIEW-NATIVE
-    anatomyNever: "Не показывается, когда оценка и рынок совпадают (разрыв меньше 1.5 пункта).", // REVIEW-NATIVE
+    previewTag: "открыто для всех в предпросмотре",
+    plannedTag: "ещё не сделано",
+    notice: "Когда Pro поступит в продажу, мы предупредим за 7 дней до того, как какая-либо функция перейдёт в Pro.", // REVIEW-NATIVE
+    t4: "Pro не сделает нашу оценку точнее и не обещает прибыли. Та же оценка и тот же реестр для всех.", // REVIEW-NATIVE
+    draftTitle: "Черновик: как Pro мог бы выглядеть на странице матча",
+    draftLede: "Черновик макета, неактивен: во время предпросмотра на странице матча ничего не закрыто.",
+    draftTag: "Черновик · неактивен",
     fine: "Анализ, не советы. 18+. BetRedge — не букмекер и не принимает ставки.", // REVIEW-NATIVE
   },
   paywall: {
@@ -1415,6 +1305,8 @@ const RU: PagesCopy = {
     pricesLab: "Коэффициенты",
     live: "Live-коэффициенты на панели",
     siteOdds: "Коэффициенты на сайте партнёра",
+    regionRestricted: "Коэффициенты на сайте партнёра · поток закрыт в нашем регионе",
+    noSportsbook: "Нет спортивных коэффициентов: это не букмекер",
     where: "Где",
     everywhere: "Все страны, где мы показываем партнёров", // REVIEW-NATIVE
     onlyIn: (list) => `Только: ${list}`, // REVIEW-NATIVE
@@ -1481,48 +1373,34 @@ const RU: PagesCopy = {
 
 const SV: PagesCopy = {
   pricing: {
-    tab: "Abonnemang · två, inga provperiodsknep", // REVIEW-NATIVE
-    title: "Free visar skillnaden. Pro visar varför.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro ${monthly} i månaden`, // REVIEW-NATIVE
-    metaRest: "Priser i USD. Kortabonnemanget sägs upp från ditt konto.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "Hela läsningen, gratis.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "Varför bakom siffran, och mer djup.", // REVIEW-NATIVE
-    perMonth: "/ månad", // REVIEW-NATIVE
-    perYear: (annual: string) => `· ${annual} per år`, // REVIEW-NATIVE
-    included: "Ingår", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Inte live än", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["Dagens board", "varje match: marknad, uppskattning och skillnaden med tecken"],
-      ["Registret", "varje förseglad uppskattning, vunnen och förlorad"],
-      ["Oddskoll och 11 verktyg", "inget konto behövs"],
-      ["Bevakningslista", "matcherna du följer, sparade på den här enheten"],
-    ] as [string, string][],
-    freeSoon: ["Aviseringar och spelspårare", "planerat för Free; inte live än"] as [string, string], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Varför modellen inte håller med", "varje faktor bakom uppskattningen: form, plan, mål"],
-      ["Hela oddsrörelsen", "varje sparat odds sedan marknaden öppnade"],
-      ["Livesannolikheter", "uppskattningen uppdateras under matchen"],
-      ["Sannolikhetsvy", "kombinera marknader i en match, modell mot marknad"],
-      ["Veckans modellfall", "ett genomarbetat exempel på hur modellen läser en vecka; inget spel att lägga"],
-    ] as [string, string][],
-    everythingFree: "Allt i Free", // REVIEW-NATIVE
-    freeCta: "Skapa ett gratis konto", // REVIEW-NATIVE
-    proCta: "Skaffa Pro", // REVIEW-NATIVE
-    railCard: "Kort: ett abonnemang som förnyas varje månad; säg upp det från ditt konto.", // REVIEW-NATIVE
-    railCardAnnual: "Årsvis med kort: förnyas var 12:e månad.", // REVIEW-NATIVE
-    railCrypto: "Krypto: en betalning för 30 dagar, ingen förnyelse.", // REVIEW-NATIVE
-    railPaypal: "PayPal: tillgängligt i kassan.", // REVIEW-NATIVE
-    railUsdt: "USDT-överföring (TRC20): en betalning, kontrolleras manuellt.", // REVIEW-NATIVE
-    withdrawal: "Innan du betalar bekräftar du att Pro startar direkt, vilket avslutar den 14 dagar långa ångerrätten.", // REVIEW-NATIVE
-    promo: (until: string) => `Lanseringserbjudande: första köpet till halva priset fram till ${until}. Det dras av i kassan.`, // REVIEW-NATIVE
-    sameStrong: "Samma i båda:", // REVIEW-NATIVE
-    same: "varje odds, uppskattning, skillnad och hela registret. Pro döljer aldrig en siffra som Free visar; det lägger till varför.", // REVIEW-NATIVE
-    anatomyTitle: "Vad Pro öppnar i en match", // REVIEW-NATIVE
-    anatomyLede: "Faktorernas rubriker syns för alla. Den första förklaras i Free; resten öppnas med Pro.", // REVIEW-NATIVE
-    anatomyNever: "Visas aldrig när uppskattning och marknad är överens (skillnad under 1,5 punkter).", // REVIEW-NATIVE
+    tab: "Planer · Free och förhandsvisning av Pro",
+    title: "Free, plus en förhandsvisning av Pro",
+    metaStrong: "Inget att köpa än",
+    metaRest: "Pro säljs inte; under lanseringen är funktionerna öppna för alla.", // REVIEW-NATIVE
+    preview: "Förhandsvisning: Pro-funktionerna är öppna för alla under lanseringen.", // REVIEW-NATIVE
+    colWhat: "Vad du får",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ månad",
+    proSoon: "kommer", // REVIEW-NATIVE
+    included: "Ingår",
+    same: "Samma",
+    rows: [
+      ["Dagens board", "varje match: odds, vår uppskattning och skillnaden med tecken", "Ingår", "Samma"],
+      ["Registret", "varje förseglad uppskattning, vunna och förlorade", "Ingår", "Samma"],
+      ["Oddskoll och 11 verktyg", "inget konto behövs", "Ingår", "Samma"],
+      ["Nyheter och spelbolagens odds", "partnerlänkar bara där de är tillåtna", "Ingår", "Samma"],
+      ["Oddshistorik", "hur oddset rört sig sedan vi började spara det", "Senaste 24 timmarna", "Hela historiken"],
+      ["Livematcher", "ställning och odds under spelet", "—", "Ingår"],
+      ["Varför vår uppskattning skiljer sig", "Pro kommer att visa varför, faktor för faktor", "—", "Planerad"],
+    ],
+    previewTag: "öppet för alla under förhandsvisningen",
+    plannedTag: "inte byggt än",
+    notice: "När Pro börjar säljas meddelar vi 7 dagar innan någon funktion flyttar till Pro.", // REVIEW-NATIVE
+    t4: "Pro gör inte vår uppskattning säkrare och lovar ingen vinst. Samma uppskattning, samma register, för alla.", // REVIEW-NATIVE
+    draftTitle: "Utkast: hur Pro skulle kunna se ut på en match",
+    draftLede: "Ett layoututkast, inte aktivt: under förhandsvisningen är inget stängt på en match.",
+    draftTag: "Utkast · inte aktivt",
     fine: "Analys, inga råd. 18+. BetRedge är inget spelbolag och tar inte emot spel.", // REVIEW-NATIVE
   },
   paywall: {
@@ -1578,6 +1456,8 @@ const SV: PagesCopy = {
     pricesLab: "Odds",
     live: "Liveodds på boarden",
     siteOdds: "Odds på partnerns sajt",
+    regionRestricted: "Odds på partnerns sajt · flödet är blockerat i vår region",
+    noSportsbook: "Inga sportodds: inget spelbolag",
     where: "Var",
     everywhere: "Alla länder där vi visar partner",
     onlyIn: (list: string) => `Bara i ${list}`,
@@ -1644,48 +1524,34 @@ const SV: PagesCopy = {
 
 const TR: PagesCopy = {
   pricing: {
-    tab: "Planlar · iki tane, deneme tuzağı yok", // REVIEW-NATIVE
-    title: "Free farkı gösterir. Pro nedenini gösterir.", // REVIEW-NATIVE
-    metaStrong: (monthly: string) => `Pro aylık ${monthly}`, // REVIEW-NATIVE
-    metaRest: "Fiyatlar USD cinsindendir. Kart aboneliği hesabından iptal edilir.", // REVIEW-NATIVE
-    freeName: "Free", // REVIEW-NATIVE
-    freeLede: "Okumanın tamamı, ücretsiz.", // REVIEW-NATIVE
-    proName: "Pro", // REVIEW-NATIVE
-    proLede: "Sayının arkasındaki neden ve daha fazla derinlik.", // REVIEW-NATIVE
-    perMonth: "/ ay", // REVIEW-NATIVE
-    perYear: (annual: string) => `· yıllık ${annual}`, // REVIEW-NATIVE
-    included: "Dahil", // REVIEW-NATIVE
-    pro: "Pro", // REVIEW-NATIVE
-    notLive: "Henüz yayında değil", // REVIEW-NATIVE
-    free: [ // REVIEW-NATIVE
-      ["Bugünün panosu", "her maç: piyasa, tahmin ve işaretli fark"],
-      ["Kayıt defteri", "mühürlenen her tahmin, kazanan ve kaybeden"],
-      ["Oran kontrolü ve 11 araç", "hesap gerekmez"],
-      ["İzleme listesi", "takip ettiğin maçlar, bu cihazda kayıtlı"],
+    tab: "Planlar · Free ve Pro önizlemesi",
+    title: "Free, artı bir Pro önizlemesi",
+    metaStrong: "Şimdilik satın alınacak bir şey yok",
+    metaRest: "Pro satışta değil; lansman süresince özellikleri herkese açık.", // REVIEW-NATIVE
+    preview: "Önizleme: Pro özellikleri lansman süresince herkese açık.", // REVIEW-NATIVE
+    colWhat: "Neler var",
+    freeName: "Free",
+    proName: "Pro",
+    perMonth: "/ ay",
+    proSoon: "yakında", // REVIEW-NATIVE
+    included: "Dahil",
+    same: "Aynı",
+    rows: [
+      ["Bugünün panosu", "her maç: oran, tahminimiz ve işaretli fark", "Dahil", "Aynı"],
+      ["Kayıt defteri", "her mühürlü tahmin, kazanılan ve kaybedilen", "Dahil", "Aynı"],
+      ["Oran kontrolü ve 11 araç", "hesap gerekmez", "Dahil", "Aynı"],
+      ["Haberler ve site oranları", "ortak bağlantıları yalnızca izin verilen yerlerde", "Dahil", "Aynı"],
+      ["Oran geçmişi", "kaydetmeye başladığımızdan beri oranın nasıl değiştiği", "Son 24 saat", "Tüm geçmiş"],
+      ["Canlı maçlar", "oyun sırasında skor ve oranlar", "—", "Dahil"],
+      ["Tahminimiz neden farklı", "Pro nedenini faktör faktör gösterecek", "—", "Planlandı"],
     ],
-    freeSoon: ["Uyarılar ve bahis takibi", "Free için planlandı; henüz yayında değil"], // REVIEW-NATIVE
-    proItems: [ // REVIEW-NATIVE
-      ["Model neden farklı düşünüyor", "tahminin arkasındaki her etken: form, saha, goller"],
-      ["Oran hareketinin tamamı", "piyasa açıldığından beri kaydedilen her oran"],
-      ["Canlı olasılıklar", "tahmin maç sırasında güncellenir"],
-      ["Olasılık görünümü", "bir maçta piyasaları birleştir, model ile piyasayı karşılaştır"],
-      ["Haftalık Model Vakası", "modelin bir haftayı nasıl okuduğuna dair çözümlü örnek; oynanacak bir bahis değil"],
-    ],
-    everythingFree: "Free'deki her şey", // REVIEW-NATIVE
-    freeCta: "Ücretsiz hesap oluştur", // REVIEW-NATIVE
-    proCta: "Pro'ya geç", // REVIEW-NATIVE
-    railCard: "Kart: her ay yenilenen bir abonelik; hesabından iptal edebilirsin.", // REVIEW-NATIVE
-    railCardAnnual: "Kartla yıllık: her 12 ayda bir yenilenir.", // REVIEW-NATIVE
-    railCrypto: "Kripto: 30 gün için tek ödeme, yenileme yok.", // REVIEW-NATIVE
-    railPaypal: "PayPal: ödeme adımında kullanılabilir.", // REVIEW-NATIVE
-    railUsdt: "USDT (TRC20) transferi: tek ödeme, elle kontrol edilir.", // REVIEW-NATIVE
-    withdrawal: "Ödemeden önce Pro'nun hemen başladığını onaylarsın; bu, 14 günlük cayma hakkını sona erdirir.", // REVIEW-NATIVE
-    promo: (until: string) => `Lansman teklifi: ilk satın alma ${until} tarihine kadar yarı fiyatına. Ödeme adımında uygulanır.`, // REVIEW-NATIVE
-    sameStrong: "İkisinde de aynı:", // REVIEW-NATIVE
-    same: "her oran, tahmin, fark ve kayıt defterinin tamamı. Pro, Free'nin gösterdiği hiçbir sayıyı gizlemez; nedenini ekler.", // REVIEW-NATIVE
-    anatomyTitle: "Pro bir maçta neyi açar", // REVIEW-NATIVE
-    anatomyLede: "Etken başlıkları herkese görünür. İlki Free'de açıklanır; diğerleri Pro ile açılır.", // REVIEW-NATIVE
-    anatomyNever: "Tahmin ile piyasa uyuştuğunda asla gösterilmez (fark 1,5 puanın altında).", // REVIEW-NATIVE
+    previewTag: "önizlemede herkese açık",
+    plannedTag: "henüz yapılmadı",
+    notice: "Pro satışa çıktığında, bir özellik Pro'ya geçmeden 7 gün önce haber vereceğiz.", // REVIEW-NATIVE
+    t4: "Pro tahminimizi daha isabetli yapmaz ve kazanç vaat etmez. Herkes için aynı tahmin, aynı kayıt defteri.", // REVIEW-NATIVE
+    draftTitle: "Taslak: Pro bir maçta nasıl görünebilir",
+    draftLede: "Etkin olmayan bir düzen taslağı: önizleme süresince maçta hiçbir şey kapalı değil.",
+    draftTag: "Taslak · etkin değil",
     fine: "Analiz, tavsiye değil. 18+. BetRedge bir bahis sitesi değildir ve bahis kabul etmez.", // REVIEW-NATIVE
   },
   paywall: {
@@ -1741,6 +1607,8 @@ const TR: PagesCopy = {
     pricesLab: "Oranlar",
     live: "Panoda canlı oranlar",
     siteOdds: "Oranlar ortağın sitesinde",
+    regionRestricted: "Oranlar ortağın sitesinde · akış bölgemizde engelli",
+    noSportsbook: "Spor oranı yok: bahis sitesi değil",
     where: "Nerede",
     everywhere: "Ortak gösterdiğimiz her ülke",
     onlyIn: (list: string) => `Yalnızca ${list}`,
