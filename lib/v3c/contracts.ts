@@ -205,7 +205,13 @@ export type V3BoardTennisMatch = {
   /** fixdata: see V3BoardMatch.relevance */
   relevance?: number;
   /** fixdata2 (N10): see V3BoardMatch.market_from; «pre_start» = the last price stored before the start (N2) */
-  market_from?: "stored" | "twin" | "books" | "pre_start" | null;
+  market_from?: "stored" | "twin" | "books" | "pre_start" | "stale" | null;
+  /**
+   * fixdata3 (R3): age in minutes of the market shown, at the reading (or at the start once play has started).
+   * A stored price older than 6 h is not the market: the partner books' prices are («books»); with no book the old
+   * price stays as «stale» — shown as «may be outdated» with its age, no estimate and no gap.
+   */
+  market_age_min?: number | null;
   /**
    * fixdata2 (N9): the sealed Elo of our model against the market it is read next to (market at seal, else the
    * row's market). no_value (> 15 pp): no gap; market_only (> 25 pp) and no_market: the sealed number is not shown.

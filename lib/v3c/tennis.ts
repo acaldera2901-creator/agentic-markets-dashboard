@@ -16,6 +16,7 @@
 import { PARTNER_MARKET_MODEL, displayTournament } from "@/lib/partner-market";
 import { TENNIS_ANCHORED_TAU, probabilitaMostrata } from "@/lib/tennis-calibration";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
+import { marketAgeMin, marketFresh, playerKey } from "./fixdata3";
 import { teamPairKey } from "@/lib/team-pair-key";
 import { wilson95 } from "@/lib/wilson";
 import { bookByKey } from "@/lib/betconstruct-books";
@@ -79,7 +80,8 @@ export function ledgerTennisKind(r: {
   return (r.odds ?? 0) > 1 ? "market_tempered" : "model_tempered";
 }
 
-const tennisNorm = (n: string) => canonicalPlayerKey(n);
+// fixdata3 R2: a book listing «Zhuoxuan Bai» is oriented onto our «Bai Zhuoxuan» (name tokens without order)
+const tennisNorm = (n: string) => playerKey(n);
 
 /**
  * Pair key of a tennis match. Partner rows carry it in the id
@@ -228,14 +230,27 @@ export function buildTennisBoardMatch(
     const m = market2way(pair[0], pair[1]);
     return m && storedMarketTrusted(pair, [m.p1, m.p2], books) ? m : null;
   };
-  const ownM = usable(ownPair);
-  const lentM = ownM ? null : usable(lentPair);
+  // fixdata3 R3: a stored pair is the market only while it is ≤ 6 h old (at the reading, or at the start once started)
+  const ownAsOf = pre ? (src.elo_as_of ?? null) : src.computed_at;
+  const ownRaw = usable(ownPair);
+  const ownM = ownRaw && marketFresh(ownAsOf, src.kickoff, now) ? ownRaw : null;
+  const lentRaw = ownM ? null : usable(lentPair);
+  const lentM = lentRaw && marketFresh(src.borrowed_market?.as_of, src.kickoff, now) ? lentRaw : null;
   const lent = lentM ? (src.borrowed_market ?? null) : null;
   const fromBooks = !ownM && !lentM && books != null;
-  const market = ownM ?? lentM ?? (books ? { p1: books.p[0], p2: books.p[1], margin: books.margin } : null);
-  const odds1 = ownM ? ownPair[0] : lentM ? lentPair[0] : (prices.home[0]?.price ?? null);
-  const odds2 = ownM ? ownPair[1] : lentM ? lentPair[1] : (prices.away[0]?.price ?? null);
-  const marketFrom: V3BoardTennisMatch["market_from"] = ownM ? (pre ? "pre_start" : "stored") : lentM ? "twin" : fromBooks ? "books" : null;
+  // nothing fresh and no book: the old stored price, declared «may be outdated» — never an estimate or gap on it
+  const stale =
+    ownM || lentM || fromBooks
+      ? null
+      : ownRaw
+        ? { m: ownRaw, pair: ownPair, as_of: ownAsOf, bookmaker: src.odds_bookmaker }
+        : lentRaw
+          ? { m: lentRaw, pair: lentPair, as_of: src.borrowed_market?.as_of ?? null, bookmaker: src.borrowed_market?.bookmaker ?? null }
+          : null;
+  const market = ownM ?? lentM ?? (books ? { p1: books.p[0], p2: books.p[1], margin: books.margin } : null) ?? stale?.m ?? null;
+  const odds1 = ownM ? ownPair[0] : lentM ? lentPair[0] : fromBooks ? (prices.home[0]?.price ?? null) : (stale?.pair[0] ?? null);
+  const odds2 = ownM ? ownPair[1] : lentM ? lentPair[1] : fromBooks ? (prices.away[0]?.price ?? null) : (stale?.pair[1] ?? null);
+  const marketFrom: V3BoardTennisMatch["market_from"] = ownM ? (pre ? "pre_start" : "stored") : lentM ? "twin" : fromBooks ? "books" : stale ? "stale" : null;
   const hasModel = src.model_p1 != null && src.model_p2 != null;
   // Served probability, exactly as lib/tennis-adapter computes it (same function).
   const est = (p: number) => probabilitaMostrata(p, src.edge != null);
@@ -252,7 +267,7 @@ export function buildTennisBoardMatch(
   const leadSide: TennisSide = (src.sealed_p1 ?? 0) >= (src.sealed_p2 ?? 0) ? "p1" : "p2";
   const sealedGuard =
     sealed && isOurModel(sealedKind)
-      ? sealedTennisGuard(leadSide === "p1" ? src.sealed_p1 : src.sealed_p2, reason == null && atSeal ? atSeal[leadSide] : null, market ? market[leadSide] : null)
+      ? sealedTennisGuard(leadSide === "p1" ? src.sealed_p1 : src.sealed_p2, reason == null && atSeal ? atSeal[leadSide] : null, market && !stale ? market[leadSide] : null)
       : undefined;
   const gapOk = !sealedGuard || sealedGuard.level === "ok";
   const side = (s: TennisSide): V3BoardTennisSide => {
@@ -277,7 +292,11 @@ export function buildTennisBoardMatch(
 
   const pick = src.surfaced_pick;
   // tennis2: the displayed estimate (0.1·Elo + 0.9·market, or market only) — lib/v3c/tennis-estimate.ts
-  const te = tennisEstimate({ ...src, market_p1: market?.p1 ?? null, market_p2: market?.p2 ?? null }, now);
+  const te0 = tennisEstimate({ ...src, market_p1: market?.p1 ?? null, market_p2: market?.p2 ?? null }, now);
+  // fixdata3 R3: no estimate and no gap on a price that may be outdated
+  const te = stale ? { ...te0, estimate_kind: "market_only" as const, estimate_p: null, gap_pp: null, gap_visible: false } : te0;
+  const booksAsOf = () => new Date(Math.max(...[...prices.home, ...prices.away].map((b) => Date.parse(b.captured_at)).filter(Number.isFinite))).toISOString();
+  const marketAsOf = !market ? null : lent ? lent.as_of : fromBooks ? booksAsOf() : stale ? stale.as_of : ownAsOf;
   return {
     id: src.id,
     sport: "tennis",
@@ -295,11 +314,15 @@ export function buildTennisBoardMatch(
       ? lent
         ? { bookmaker: lent.bookmaker, as_of: new Date(lent.as_of).toISOString() }
         : fromBooks
-          ? { bookmaker: books?.books.join(",") ?? null, as_of: new Date(Math.max(...[...prices.home, ...prices.away].map((b) => Date.parse(b.captured_at)).filter(Number.isFinite))).toISOString() }
-          : pre && src.elo_as_of
+          ? { bookmaker: books?.books.join(",") ?? null, as_of: booksAsOf() }
+          : stale
+            ? { bookmaker: stale.bookmaker, as_of: new Date(stale.as_of ?? src.computed_at).toISOString() }
+            : pre && src.elo_as_of
             ? { bookmaker: src.odds_bookmaker, as_of: new Date(src.elo_as_of).toISOString() }
             : { bookmaker: src.odds_bookmaker, as_of: new Date(src.computed_at).toISOString() }
       : null,
+    // fixdata3 R3: how old the market shown is, at the reading (or at the start once play has started)
+    market_age_min: market ? marketAgeMin(marketAsOf, src.kickoff, now) : null,
     model_as_of: src.model_as_of ? new Date(src.model_as_of).toISOString() : null,
     estimate_as_of: new Date(src.computed_at).toISOString(),
     sealed_at: src.sealed_at ? new Date(src.sealed_at).toISOString() : null,

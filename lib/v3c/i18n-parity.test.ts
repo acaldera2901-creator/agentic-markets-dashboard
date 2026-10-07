@@ -20,6 +20,7 @@ import { V3C_LIVE_COPY } from "./live-copy";
 import { V3C_BANNER_COPY } from "./banner-copy";
 import { FIXDATA_COPY } from "./fixdata-copy";
 import { FIXDATA2_COPY } from "./fixdata2-copy";
+import { FIXDATA3_COPY } from "./fixdata3-copy";
 import { FIXUI2_COPY } from "./fixui2-copy";
 import { GUIDE_COPY } from "./guide-copy";
 import { DOC_TITLES } from "./doc-titles";
@@ -118,6 +119,8 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "fixdata", of: (l) => FIXDATA_COPY[l as never], maxWords: 22 },
   // fixdata2: the strings of N3 (model only / books' market / price far), N9 (sealed Elo guard), N11
   { name: "fixdata2", of: (l) => FIXDATA2_COPY[l as never], maxWords: 22 },
+  // fixdata3: R3 (a tennis price that may be outdated, with its age)
+  { name: "fixdata3", of: (l) => FIXDATA3_COPY[l as never], maxWords: 22 },
   // fixui2: B3 N1 N4 N5 N6 N8 (QA-REPORT-2)
   { name: "fixui2", of: (l) => FIXUI2_COPY[l as never], maxWords: 22 },
   // fixui: orientamento (frase della home, pannello «How to read this page», fuso, «More») e title per lingua

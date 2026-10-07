@@ -14,7 +14,7 @@ import { dedupeTennisRows, splitTennisCategories, tennisEstimate } from "./tenni
 import { market2way } from "./prob";
 import { dedupeFootballBoard, hasStarted, relevanceTier } from "./fixdata";
 import { orientPartnerPrice } from "./board";
-import { canonicalPlayerKey } from "@/lib/tennis-names";
+import { playerKey } from "./fixdata3";
 import type { TennisBoardSourceRow } from "./tennis";
 
 /** A row stays on the board until this long after its kick-off (same window as the SQL, on the row's own kick-off). */
@@ -70,7 +70,7 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
     const o = orientPartnerPrice(
       { home: kept.player1, away: kept.player2 },
       { team_pair_key: "", bookmaker: "", home_name: twin.player1, away_name: twin.player2, odds_home: twin.odds_p1, odds_draw: null, odds_away: twin.odds_p2, captured_at: twin.computed_at },
-      canonicalPlayerKey,
+      playerKey, // fixdata3 R2: «Zhuoxuan Bai» on the twin = «Bai Zhuoxuan» on the kept row
     );
     if (o && o.home != null && o.away != null) borrowed.set(keptId, { odds_p1: o.home, odds_p2: o.away, bookmaker: twin.odds_bookmaker, as_of: twin.computed_at });
   }
@@ -216,6 +216,8 @@ export async function buildBoardResponse(now: Date = new Date()): Promise<V3Boar
       "fixdata2: when the estimate's fair price (1/estimate, outcomes ≥ 10%) is > 25% from the best real price, model_guard becomes «market_only» with reason «price_far»: the market only, no estimate and no fair price.",
       "fixdata2: a started tennis Elo row reads its market from the last pre-start prediction_log snapshot (market_from «pre_start»): tennis_predictions.odds_* receive in-play prices after the start. Started tennis rows carry no book_prices, like football.",
       "fixdata2: sealed_guard puts the sealed Elo of our tennis model under the football thresholds (15 / 25 pp) against the market at seal, else the row's market. aliases maps every dropped twin id to the row shown (one source per match).",
+      "fixdata3 (R2): two tennis rows are the same match when they carry the same two players in any order, each player compared as the set of their name tokens («Bai Zhuoxuan» = «Zhuoxuan Bai»), within 36 h; book prices are oriented the same way.",
+      "fixdata3 (R3): a stored tennis price is the market only while it is ≤ 6 h old at the reading (at the start once play has started). Older: the partner books' prices (market_from «books»); no book: the old price as market_from «stale» with market_age_min, labelled «may be outdated», no estimate and no gap. market_age_min is the age of the market shown.",
       "fixdata: relevance = 0 top-league football (top five + UEFA cups) · 1 ATP/WTA main tour · 2 other football · 3 other tennis. The board orders each day by relevance, then kick-off.",
     ],
   };

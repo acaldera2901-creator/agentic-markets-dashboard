@@ -19,6 +19,7 @@
 // shadow log (client clock, not sealed): hence «not sealed», and no record claims.
 import { PARTNER_MARKET_MODEL } from "@/lib/partner-market";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
+import { tennisPairId } from "./fixdata3";
 import { roundP } from "./prob";
 
 export type TennisEstimateKind = "elo_blend_unsealed" | "market_only";
@@ -179,10 +180,11 @@ export function dedupeTennisRows<T extends DupRow>(rows: T[], hasEstimate: (r: T
   const near = (a: T, b: T) => Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= DUP_WINDOW_MS;
   const used = new Set<string>();
   for (const e of elo) {
-    const exact = pairOf(canonicalPlayerKey, e.player1, e.player2);
+    // fixdata3 R2: players and name tokens without order («Bai Zhuoxuan» = «Zhuoxuan Bai»)
+    const exact = tennisPairId(e.player1, e.player2);
     const loose = pairOf(lastAndInitial, e.player1, e.player2);
     const twin =
-      partner.find((p) => !used.has(p.id) && near(p, e) && pairOf(canonicalPlayerKey, p.player1, p.player2) === exact) ??
+      partner.find((p) => !used.has(p.id) && near(p, e) && tennisPairId(p.player1, p.player2) === exact) ??
       partner.find((p) => !used.has(p.id) && near(p, e) && pairOf(lastAndInitial, p.player1, p.player2) === loose);
     if (!twin) continue;
     used.add(twin.id);

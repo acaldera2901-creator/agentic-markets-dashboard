@@ -60,6 +60,8 @@ import { sealedBeforeKickoff } from "@/lib/v3c/fixui2";
 import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { estimateShown } from "@/lib/v3c/fixdata2";
 import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
+import { fixdata3CopyFor } from "@/lib/v3c/fixdata3-copy";
+import { ageHhMm } from "@/lib/v3c/fixdata3";
 import { StartedNote } from "./StartedNote";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
@@ -714,6 +716,10 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   const sealedRow = m.probability_kind === "model_tempered" && m.sealed_at != null && lead.sealed_p != null;
   const sealedOurs = sealedRow && (sg === "ok" || sg === "no_value");
   const sealedHidden = sealedRow && !sealedOurs;
+  // fixdata3 R3: an old stored price no book prices now — said, with its age; the books' market declared
+  const x3 = fixdata3CopyFor(lang);
+  const stale = m.market_from === "stale";
+  const marketFromNote = stale ? <span data-market-from="stale">{x3.priceAge(ageHhMm(m.market_age_min))}</span> : m.market_from === "books" ? <span data-market-from="books">{f2.marketFromBooks}</span> : null;
   return (
     <>
       <Head ctx={ctx} tab={c.tabTennis} id={m.id} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
@@ -771,6 +777,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
               <span>{t.tennis.blendFact}</span>
               {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
               <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span>
+              {marketFromNote}
               {m.elo_as_of ? <span>{t.tennis.eloAsOf(stampLocal(m.elo_as_of, ctx.tz, locale))}</span> : null}
               <GlossaryLink />
             </p>
@@ -781,6 +788,10 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
         ) : sealedOurs ? null : sealedHidden ? (
           <p className="v3c-mt-note v3c-guard-note" data-guard={sg}>
             {sg === "no_market" ? f2.modelOnly : f2.sealedFar}
+          </p>
+        ) : stale ? (
+          <p className="v3c-mt-note" data-market-from="stale">
+            <b>{x3.staleLabel}.</b> {x3.staleNote(ageHhMm(m.market_age_min))}
           </p>
         ) : (
           <p className="v3c-mt-note">{t.tennis.noEstimate}</p>
@@ -880,6 +891,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
           <p className="v3c-pn-facts v3c-small" style={{ marginTop: 10, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
             <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span>
+            {marketFromNote}
             <GlossaryLink />
           </p>
         )}

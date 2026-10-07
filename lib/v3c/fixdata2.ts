@@ -8,7 +8,7 @@
 //   N9  the sealed Elo of our tennis model under the same 15 / 25 pp guard as football;
 //   N2  one row per match: an id dropped as a twin resolves to the row the board kept.
 import { bookmakerMargin, noVigProbabilities } from "@/lib/betting-math";
-import { canonicalPlayerKey } from "@/lib/tennis-names";
+import { tennisPairId } from "./fixdata3";
 import type { V3BookPrice } from "./contracts";
 import type { V3LiveItem } from "./live-contract";
 import { scoreOf } from "./live-view";
@@ -164,7 +164,8 @@ export const PARTNER_TWIN_WINDOW_H = 36;
  */
 export function dedupePartnerRelistings<T extends PartnerRow>(rows: T[], partnerModel: string): { kept: T[]; dropped: Map<string, string> } {
   const dropped = new Map<string, string>();
-  const pair = (r: T) => [canonicalPlayerKey(r.player1), canonicalPlayerKey(r.player2)].sort().join("|");
+  // fixdata3 R2: players and name tokens without order
+  const pair = (r: T) => tennisPairId(r.player1, r.player2);
   const groups = new Map<string, T[]>();
   for (const r of rows) {
     if (r.model_version !== partnerModel) continue;
@@ -206,7 +207,7 @@ export function oneRowPerMatch<T extends { id: string; sport: "football" | "tenn
   const ordered = rows.map((r, i) => ({ r, i, s: hasScore(r.id) ? 0 : 1 })).sort((a, b) => a.s - b.s || a.i - b.i).map((x) => x.r);
   const keep = new Set<T>();
   for (const r of ordered) {
-    const k = r.sport === "tennis" ? `t|${[canonicalPlayerKey(r.home), canonicalPlayerKey(r.away)].sort().join("|")}` : `id|${r.id}`;
+    const k = r.sport === "tennis" ? `t|${tennisPairId(r.home, r.away)}` : `id|${r.id}`;
     if (seen.has(k) || seen.has(`id|${r.id}`)) continue;
     seen.add(k);
     seen.add(`id|${r.id}`);
