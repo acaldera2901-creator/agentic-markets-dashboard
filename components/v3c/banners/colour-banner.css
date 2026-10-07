@@ -1,0 +1,43 @@
+/* components/v3c/banners/colour-banner.css (#REDESIGN-V3C final3) — i banner colore (brand/README §3b).
+   Geometria fissa (4/1, 8/5 sotto i 640 px): lo spazio è riservato prima dell'arte → CLS 0.
+   I colori sono quelli dell'arte (token v3c fissi, non cambiano col tema): il testo è carta sui fondi
+   royal/navy, ink su sky e carta-2. I banner navy portano il filo LED lime in basso, come la fascia. */
+
+.v3c-cb { position: relative; isolation: isolate; aspect-ratio: 4 / 1; margin: calc(var(--v3c-u) * 4) 0; overflow: hidden; color: #F3EDDC; background: #071329; }
+.v3c-cb[data-cb="calcio"] { background: #145AFF; }
+.v3c-cb[data-cb="tennis"] { background: #81D9FF; color: #14171C; }
+.v3c-cb[data-cb="learn"] { background: #E9E1CC; color: #14171C; }
+.v3c-cb[data-cb="record"]::after, .v3c-cb[data-cb="live"]::after, .v3c-cb[data-cb="pro"]::after {
+  content: ""; position: absolute; inset: auto 0 0; height: 3px; background: var(--v3c-lime-hl); z-index: 2;
+}
+
+.v3c-cb-art, .v3c-cb-art > span, .v3c-cb-art picture { position: absolute; inset: 0; z-index: -1; display: block; }
+.v3c-cb-art svg, .v3c-cb-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
+.v3c-cb-m { visibility: hidden; }
+
+/* wide: la metà sinistra è libera (README), il testo resta nel 40% e al centro in verticale */
+.v3c-cb-txt { position: relative; height: 100%; max-width: 44%; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 0 0 0 clamp(16px, 3.5%, 48px); }
+.v3c-cb-t { margin: 0; font: 800 clamp(22px, 2.4vw, 34px)/1 var(--v3c-f-display); letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+.v3c-cb-a { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font: 600 15px/1.2 var(--v3c-f-text); color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.v3c-cb-a:hover { text-decoration-thickness: 2px; }
+.v3c-cb-a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) { .v3c-cb-a:hover .v3c-arw { transform: translateX(2px); transition: transform .15s ease-out; } }
+
+/* stretto: l'arte mobile (8/5), il testo nella fascia alta libera (~40%) */
+.v3c-cb[data-shape="tall"] { aspect-ratio: 8 / 5; }
+.v3c-cb[data-shape="tall"] .v3c-cb-m { visibility: visible; }
+.v3c-cb[data-shape="tall"] .v3c-cb-txt { max-width: none; height: auto; justify-content: flex-start; gap: 8px; padding: 16px 16px 0; }
+.v3c-cb[data-shape="tall"] .v3c-cb-t { font-size: 20px; }
+
+@media (max-width: 640px) {
+  .v3c-cb { aspect-ratio: 8 / 5; }
+  .v3c-cb-w { visibility: hidden; }
+  .v3c-cb-m { visibility: visible; }
+  .v3c-cb-txt { max-width: none; height: auto; justify-content: flex-start; gap: 8px; padding: 16px 16px 0; }
+  .v3c-cb-t { font-size: 20px; }
+}
+
+/* tema scuro: i fondi navy coincidono con la pagina — un filo navy-2 ne disegna il bordo (il LED lime resta sotto) */
+[data-theme="v3c"][data-mode="dark"] :is(.v3c-cb[data-cb="record"], .v3c-cb[data-cb="live"], .v3c-cb[data-cb="pro"])::before {
+  content: ""; position: absolute; inset: 0; border: 1px solid #112C53; border-bottom: 0; z-index: 2; pointer-events: none;
+}

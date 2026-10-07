@@ -370,3 +370,16 @@ Decisione di Andrea: un partner senza quota letta dice ovunque «Odds on partner
 | `record.tennis.awaiting` | «Awaiting a result» |
 | `record.tennis.note` | «Won = the picked player won. Without a price at the seal, a tempered Elo stood in. No Brier, no calibration.» |
 | `record.receipts.marketBased` | «market-based» |
+
+### final3 (07/10) — banner colore e FAQ senza fattori tennis, tradotte nelle 11 lingue
+
+Nuovo dizionario `lib/v3c/banner-copy.ts` (`V3C_BANNER_COPY`, controllato da `i18n-parity.test.ts`, titolo ≤ 8 parole). Nessuna stringa legale o di prezzo: niente REVIEW-NATIVE. Riscritta la risposta 2 della FAQ home (`lib/v3c/home-faq.ts`): Pro mostra i fattori del modello «in any football match» (forma, gol attesi, Elo, scontri diretti) — tolti «serve and return numbers» e «surface», perché nel tennis non diamo la nostra stima.
+
+| Chiave | EN | IT |
+|---|---|---|
+| `record.title` / `.link` | «Every read sealed before kick-off» / «See the record» | «Ogni lettura sigillata prima del fischio d’inizio» / «Vedi il registro» |
+| `learn.title` / `.link` | «How a read is built, step by step» / «How it works» | «Come nasce una lettura, passo per passo» / «Come funziona» |
+| `calcio.title` / `.link` | «Football: model and market, weights declared» / «Football on the board» | «Calcio: modello e mercato, pesi dichiarati» / «Il calcio sulla board» |
+| `tennis.title` / `.link` | «Tennis: the market price, read clearly» / «Tennis on the board» | «Tennis: il prezzo di mercato, letto chiaro» / «Il tennis sulla board» |
+| `live.title` / `.link` | «Matches in play, prices moving now» / «See live matches» | «Partite in corso, quote in movimento» / «Vedi le partite live» |
+| `pro.title` / `.link` | «See what Pro adds» / «Compare Free and Pro» | «Scopri cosa aggiunge Pro» / «Confronta Free e Pro» |
