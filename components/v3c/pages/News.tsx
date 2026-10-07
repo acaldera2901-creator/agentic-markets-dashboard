@@ -6,6 +6,7 @@
 // terzi in questo filone (la proposta FotMob è docs/v3c-news-proposal.md, gated).
 // #REDESIGN-V3C news: con NEWS_FOTMOB_ENABLED acceso il server passa `live` e la
 // pagina mostra le note riscritte (NewsLive.tsx); le guide restano sotto, a parte.
+// Spento (produzione): solo le guide, senza il riquadro «note in arrivo» (final2).
 // URL, canonical, JSON-LD (Article + breadcrumb) restano quelli di app/blog/*.
 import Link from "next/link";
 import { useV3cLang } from "@/lib/v3c/lang.client";
@@ -47,23 +48,14 @@ function longDate(iso: string | null, lang: string): string {
   return d.toLocaleDateString(v3cLocale(lang), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-/** `notes` off when the live news is on: «Not live yet» would no longer be true. */
-function Aside({ notes = true }: { notes?: boolean }) {
-  const t = usePagesCopy().news;
+/**
+ * final2: the aside carries only the tools. The old «Match notes are coming · Not
+ * live yet» box is gone: with NEWS_FOTMOB_ENABLED unset (production) the page is
+ * our guides and nothing else, no promise of a feed.
+ */
+function Aside() {
   return (
     <aside className="v3c-pg-naside">
-      {notes ? (
-      <section className="v3c-pg-notes" aria-labelledby="v3c-pg-notes-h">
-        <span className="v3c-lab">{t.notesTitle}</span>
-        <h2 className="v3c-t-row" id="v3c-pg-notes-h">
-          {t.notesBody}
-        </h2>
-        <p className="v3c-fine">{t.notesNot}</p>
-        <a className="v3c-pg-more" href={BOARD}>
-          {t.boardLink} <span aria-hidden="true">→</span>
-        </a>
-      </section>
-      ) : null}
       <ToolsAside />
     </aside>
   );
@@ -179,7 +171,7 @@ export function V3cNewsIndex({ posts, live = null }: { posts: NewsItem[]; live?:
   return (
     <main className="v3c-wrap" id="main">
       <Fascia
-        tab={t.tab}
+        tab={t.tabOff}
         title={t.title}
         meta={
           <>
@@ -216,11 +208,9 @@ export type ArticleProps = {
   /** già passato da sanitizeBlogHtml sul server */
   html: string;
   more: NewsItem[];
-  /** live news on (NEWS_FOTMOB_ENABLED): the «Not live yet» box is left out */
-  liveNews?: boolean;
 };
 
-export function V3cArticle({ title, date, minutes, image, html, more, liveNews = false }: ArticleProps) {
+export function V3cArticle({ title, date, minutes, image, html, more }: ArticleProps) {
   const lang = useV3cLang();
   const t = usePagesCopy().news;
   const when = longDate(date, lang);
@@ -266,7 +256,7 @@ export function V3cArticle({ title, date, minutes, image, html, more, liveNews =
           </p>
         </article>
         <div>
-          <Aside notes={!liveNews} />
+          <Aside />
           {more.length ? (
             <ol className="v3c-pg-nlist v3c-pg-nlist-s">
               {more.map((p) => (

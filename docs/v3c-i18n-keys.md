@@ -369,3 +369,19 @@ v3c-final: anche `board.shownOf` / `board.showMore` (live) sono tradotte nelle 1
 
 W / L / V nelle pill (`components/v3c/ResultPill.tsx`) sono la sigla internazionale e restano tali in ogni lingua.
 Books (`lib/v3c/pages-copy.ts` → `books`): nuove `filterLabel`, `all`, `sportsbooks`, `casinos`, `search`, `none`, `shown`, `order`, `typeSportsbook`, `typeCasino`, `pricesLab`, `live`, `siteOdds`; riscritte `title`, `metaStrong`, `metaRest`; rimosse `connected`, `bestOn`, `noBoard`, `bonusNone`, `bonusWhy`, `moreTitle`, `moreSub`, `sportsbook`, `casino`, `visit`. Le nove lingue sono da rivedere da madrelingua come il resto di F10.
+
+### final2 (07/10) — grafico settimanale del record e News a feed spento, tradotte nelle 11 lingue
+
+| Chiave | EN |
+|---|---|
+| `record.weeks.why` | «Shorter bars mean fewer settled matches that week: national-team breaks pause the top leagues, and this week is still being played.» |
+| `record.weeks.counts` | «Under each week: matches with an outcome / sealed.» |
+| `record.weeks.awaiting` | «fn: {n} awaiting» (RU/PL: «без итога: {n}» / «bez wyniku: {n}», niente plurali) |
+| `record.weeks.awaitingKey` | «Awaiting: kicked off, result not in yet.» |
+| `record.weeks.breakTag` | «Break» |
+| `record.weeks.breakKey` | «Nations break: no top-five league match sealed that week.» |
+| `record.weeks.nowTag` | «Ongoing» |
+| `record.weeks.nowKey` | «This week: in progress, incomplete.» |
+
+La sosta è letta dal registro (settimane senza partite PL/PD/SA/BL1/FL1 fra settimane che ne hanno, `TOP_LEAGUE_CODES` in `lib/v3c/record.ts`), non da un calendario. Nessuna stringa legale o di prezzo: niente REVIEW-NATIVE.
+News (`lib/v3c/pages-copy.ts` → `news`): nuova `tabOff` («News · guides», la fascia a feed spento, 11 lingue); rimosse `notesTitle`, `notesBody`, `notesNot`, `boardLink` — a feed spento la pagina mostra solo le guide, senza il riquadro «note in arrivo».

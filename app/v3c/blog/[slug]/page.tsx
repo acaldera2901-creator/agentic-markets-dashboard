@@ -21,7 +21,6 @@ import { readingMinutes } from "@/lib/v3c/news";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 import { V3cFrame } from "@/components/v3c/pages/Frame";
 import { V3cArticle } from "@/components/v3c/pages/News";
-import { newsEnabled } from "@/lib/v3c/news/news.server";
 
 export const revalidate = 600;
 export const dynamicParams = true;
@@ -99,7 +98,6 @@ export default async function Page({
           image={post.featured_image_url}
           html={html}
           more={more}
-          liveNews={newsEnabled()}
         />
       </V3cFrame>
     </>
