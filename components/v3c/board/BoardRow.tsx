@@ -5,10 +5,10 @@
 // SOLO DOPO la lettura il miglior prezzo di un book connesso. Il tocco apre il
 // pannello: tutti gli esiti, il sigillo spiegato, i book, e l'unico bottone.
 //
-// Tennis (ui3, decisione di Andrea 07/10): NON diamo la nostra stima. La riga
-// mostra solo il mercato (probabilità senza margine), il tape Open→now, il
-// prezzo e il miglior prezzo dei book connessi; niente stima, niente gap —
-// anche dove il contratto li porta (i campi restano nell'API, non si disegnano).
+// Tennis (tennis2, Andrea 07/10): Market → Estimate → Gap come il calcio, ma SOLO dove il
+// contratto dice estimate_kind 'elo_blend_unsealed' (0,1·Elo + 0,9·mercato, Elo ≤ 6 h, ATP/WTA):
+// stima senza evidenziatore, etichetta «Elo-based, not sealed», gap ATTENUATO (grigio, mai
+// verde/rosso, nessuna freccia, nessun badge). Altrove «Market only», nessuna colonna vuota.
 import Link from "next/link";
 import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
@@ -27,8 +27,10 @@ import type { RowTape } from "@/lib/v3c/tape";
 import type { V3LiveItem } from "@/lib/v3c/live-contract";
 import type { V3cLiveCopy } from "@/lib/v3c/live-copy";
 import { liveBadge, type LiveBadge } from "@/lib/v3c/live-view";
+import { tennisEstimateOf } from "@/lib/v3c/tennis-estimate";
 import { LiveScoreChip, LiveTimeCell } from "../live/LiveBits";
 import "../ui3.css";
+import "../tennis2.css";
 
 type Common = {
   t: V3cCopy;
@@ -328,10 +330,22 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
   const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc, "tennis");
   const match = `${m.player1} – ${m.player2}`;
   const leadLabel = lead.player;
-  // ui3: solo il mercato (market_p, margine tolto). estimate_p / sealed_p / gap_pp restano nel contratto, non qui.
-  const scaleLabel = lead.market_p == null ? t.board.noMarket : t.tennis.scaleAriaMarket(pctInt(lead.market_p));
+  // tennis2: la stima solo dove il contratto la porta; il gap è informativo, attenuato, mai un segnale
+  const est = tennisEstimateOf(m, lead.side);
+  const elo = est.kind === "elo_blend_unsealed" && est.estimate != null;
+  // la home non mostra il gap del tennis (resta il mercato con la stima accanto); il gap vive sulla board e sulla partita
+  const noGap = surface === "home";
+  const gap = noGap ? null : est.gap;
+  const kindLabel = elo ? t.tennis.eloLabel : t.tennis.marketOnly;
+  const scaleLabel =
+    lead.market_p == null
+      ? t.board.noMarket
+      : elo
+        ? t.tennis.scaleAriaElo(pctInt(lead.market_p), pctInt(est.estimate), gap == null ? null : gapText(gap))
+        : `${t.tennis.scaleAriaMarket(pctInt(lead.market_p))}, ${t.tennis.marketOnly}`;
+  const sideEst = (x: (typeof m.sides)[number]) => tennisEstimateOf(m, x.side);
   return (
-    <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis">
+    <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis" data-estimate={elo ? "elo" : "market"}>
       <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} badge={badge} />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.player1 }} away={{ name: m.player2 }} />
@@ -343,21 +357,47 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
           <small>
             {badge?.score ? <LiveScoreChip score={badge.score} final={badge.tone === "done"} /> : null}
             {m.tournament || t.tennis.title} · <b>{leadLabel}</b>
+            <span className="v3c-tn-kind" aria-hidden="true"> · {kindLabel}</span>
           </small>
         </span>
       </span>
       <TapeCell tape={tape} label={leadLabel} t={t} />
       <span className="v3c-r-price v3c-num">{price2(lead.market_price)}</span>
-      {/* ui3: solo la colonna Market; Estimate e Gap restano vuote nel tennis (la griglia è quella del calcio) */}
       <span className={lead.market_p == null ? "v3c-r-mk v3c-r-none" : "v3c-r-mk v3c-num"}>{lead.market_p == null ? "—" : <>{pctInt(lead.market_p)}<small>%</small></>}</span>
-      <span className="v3c-r-es" aria-hidden="true" />
-      <span className="v3c-r-gap v3c-g-none v3c-r-tnm" title={scaleLabel}>
-        {/* mobile: le colonne mercato/stima sono nascoste, qui il mercato al posto del gap */}
-        <span className="v3c-r-tnm-v v3c-num" aria-hidden="true">
-          {pctOrDash(lead.market_p)}
-          <small>{t.board.market}</small>
-        </span>
-      </span>
+      {elo ? (
+        <>
+          {/* la stima tennis non porta l'evidenziatore lime: non è sigillata */}
+          <span className="v3c-r-es v3c-num v3c-r-es-tn">{pctInt(est.estimate)}<small>%</small></span>
+          <span className={["v3c-r-gap", "v3c-num", "v3c-g-tn", noGap ? "v3c-g-none" : null].filter(Boolean).join(" ")} title={noGap ? scaleLabel : est.gap == null ? t.tennis.gapHidden : scaleLabel}>
+            {noGap ? (
+              <small className="v3c-r-nomkt">{t.tennis.eloLabel}</small>
+            ) : gap == null ? (
+              <small className="v3c-r-nomkt">—</small>
+            ) : (
+              <span>
+                {gapText(gap)}
+                <small> pp</small>
+              </span>
+            )}
+            <span className="v3c-r-me" aria-hidden="true">
+              {lead.market_p != null ? <span className="v3c-m">{pctInt(lead.market_p)}%</span> : null}
+              {lead.market_p != null ? " → " : null}
+              <span className="v3c-tn-e">{pctInt(est.estimate)}%</span>
+            </span>
+          </span>
+        </>
+      ) : (
+        <>
+          {/* Market only: una sola etichetta al posto di Estimate e Gap (desktop); su mobile il mercato al posto del gap */}
+          <span className="v3c-r-es v3c-r-tnonly">{t.tennis.marketOnly}</span>
+          <span className="v3c-r-gap v3c-g-none v3c-r-tnm" title={scaleLabel}>
+            <span className="v3c-r-tnm-v v3c-num" aria-hidden="true">
+              {pctOrDash(lead.market_p)}
+              <small>{t.tennis.marketOnly}</small>
+            </span>
+          </span>
+        </>
+      )}
       <span className="v3c-r-book">
         {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
       </span>
@@ -366,7 +406,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       </span>
       {open ? (
         <div className="v3c-pn" id={panelId}>
-          <div className="v3c-pn-o v3c-pn-o-tn3" role="table" aria-label={t.tennis.winner}>
+          <div className={["v3c-pn-o", elo ? (noGap ? "v3c-pn-o-tn4" : "v3c-pn-o-tn5") : "v3c-pn-o-tn3"].join(" ")} role="table" aria-label={t.tennis.winner}>
             <div className="v3c-pn-oh" role="row">
               <span className="v3c-lab" role="columnheader">
                 {t.tennis.winner}
@@ -377,6 +417,18 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
               <span className="v3c-lab v3c-ra" role="columnheader">
                 {t.board.market}
               </span>
+              {elo ? (
+                <>
+                  <span className="v3c-lab v3c-ra" role="columnheader">
+                    {t.board.estimate}
+                  </span>
+                  {noGap ? null : (
+                    <span className="v3c-lab v3c-ra" role="columnheader">
+                      {t.board.gap}
+                    </span>
+                  )}
+                </>
+              ) : null}
             </div>
             {m.sides.map((x) => (
               <div key={x.side} role="row" className={x === lead ? "v3c-pn-lead" : undefined}>
@@ -389,14 +441,28 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
                 <span role="cell" className="v3c-num v3c-ra v3c-m">
                   {pctOrDash(x.market_p)}
                 </span>
+                {elo ? (
+                  <>
+                    <span role="cell" className="v3c-num v3c-ra">
+                      {pctOrDash(sideEst(x).estimate)}
+                    </span>
+                    {noGap ? null : (
+                      <span role="cell" className="v3c-num v3c-ra v3c-g-tn">
+                        {sideEst(x).gap == null ? "—" : `${gapText(sideEst(x).gap)} pp`}
+                      </span>
+                    )}
+                  </>
+                ) : null}
               </div>
             ))}
           </div>
           <p className="v3c-pn-facts v3c-small">
+            {elo ? <span>{t.tennis.blendFact}</span> : null}
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
             <span>{t.fascia.pricesAsOf(sealedStamp(m.market_source?.as_of ?? m.estimate_as_of, locale))}</span>
+            {elo && m.elo_as_of ? <span>{t.tennis.eloAsOf(sealedStamp(m.elo_as_of, locale))}</span> : null}
           </p>
-          <p className="v3c-small v3c-pn-note">{t.tennis.noEstimate}</p>
+          <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : t.tennis.noEstimate}</p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
               <Sigillo sealedAt={m.sealed_at} label={t.fascia.sealed} title={t.tennis.sealedWhy(sealedStamp(m.sealed_at, locale))} />

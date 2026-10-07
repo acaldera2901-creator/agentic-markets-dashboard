@@ -66,13 +66,23 @@ describe("pagina tennis: «More on today's board»", () => {
   const more: MoreRow[] = [
     { sport: "tennis", id: "tennis:t2", home: "Carlos Alcaraz", away: "Holger Rune", kickoff: "2099-10-10T18:00:00.000Z", league: "ATP Shanghai", gap: null, leadName: "Carlos Alcaraz", price: 1.3, market: 0.73, estimate: null },
   ];
-  it("righe tennis con il mercato; niente intestazioni Estimate e Gap", () => {
+  // tennis2: le righe senza stima dicono «Market only» al posto di stima e gap (nessuna colonna vuota)
+  it("righe tennis Market only: il mercato e l'etichetta, nessun gap", () => {
     const html = renderToStaticMarkup(<MatchView kind="tennis" m={TN} series={[]} events={[]} partners={false} links={[]} more={more} />);
     const t = text(html);
     expect(t).toContain("Carlos Alcaraz — Holger Rune");
     expect(t).toContain("73");
     const block = html.slice(html.indexOf("v3c-mt-more"));
-    expect(text(block)).not.toMatch(/Estimate|Gap/);
+    expect(text(block)).toContain("Market only");
+    expect(text(block)).not.toMatch(/\bpp\b/);
+  });
+  it("righe tennis con la stima basata su Elo: stima senza evidenziatore, gap attenuato", () => {
+    const elo: MoreRow[] = [{ ...more[0], tnElo: true, estimate: 0.7346, gap: 0.46 }];
+    const html = renderToStaticMarkup(<MatchView kind="tennis" m={TN} series={[]} events={[]} partners={false} links={[]} more={elo} />);
+    const block = html.slice(html.indexOf("v3c-mt-more"));
+    expect(block).toContain("v3c-g-tn");
+    expect(text(block)).toMatch(/\+0\.5 pp/);
+    expect(block).not.toMatch(/<mark>73/);
   });
   it("nessuna riga tennis → nessun blocco", () => {
     const html = renderToStaticMarkup(<MatchView kind="tennis" m={TN} series={[]} events={[]} partners={false} links={[]} more={[]} />);

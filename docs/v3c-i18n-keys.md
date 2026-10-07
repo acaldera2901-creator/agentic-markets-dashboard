@@ -383,3 +383,26 @@ Nuovo dizionario `lib/v3c/banner-copy.ts` (`V3C_BANNER_COPY`, controllato da `i1
 | `tennis.title` / `.link` | «Tennis: the market price, read clearly» / «Tennis on the board» | «Tennis: il prezzo di mercato, letto chiaro» / «Il tennis sulla board» |
 | `live.title` / `.link` | «Matches in play, prices moving now» / «See live matches» | «Partite in corso, quote in movimento» / «Vedi le partite live» |
 | `pro.title` / `.link` | «See what Pro adds» / «Compare Free and Pro» | «Scopri cosa aggiunge Pro» / «Confronta Free e Pro» |
+
+## tennis2 (07/10/2026) — Market → Estimate → Gap nel tennis, dove c'è l'Elo fresco
+
+Decisione di Andrea (07/10), definizione vincolante misurata da ml-engineer-agentic
+(`01-BETREDGE/redesign/proposals/tennis-estimate.md`): stima tennis = 0,1·Elo + 0,9·mercato senza margine,
+SOLO con Elo ≤ 6 h e circuito ATP/WTA; etichetta «Elo-based, not sealed»; altrove «Market only». Gap attenuato,
+mai un segnale. Tutte e 11 le lingue scritte; `// REVIEW-NATIVE` sull'avvertenza (`tennis.caveat`) nelle 9 lingue
+non EN/IT. Riscritte: `toolbar.legendEstimate`, `toolbar.legendTennis`, `tennis.noEstimate`; FAQ home risposte 2 e 6,
+`method.blocks.blend.detail` (pages-copy).
+
+| Chiave | EN | IT |
+|---|---|---|
+| `tennis.eloLabel` | «Elo-based, not sealed» | «basata su Elo, non sigillata» |
+| `tennis.marketOnly` | «Market only» | «Solo mercato» |
+| `tennis.caveat` | «In tennis our estimate is 90% market, 10% our Elo. Not sealed: the gap is information, not advice.» | «Nel tennis la nostra stima è 90% mercato e 10% nostro Elo. Non sigillata: il gap è un’informazione, non un consiglio.» |
+| `tennis.estimateSub` | «90% market · Elo» | «90% mercato · Elo» |
+| `tennis.blendFact` | «estimate = 90% market + 10% our Elo, not sealed» | «stima = 90% mercato + 10% nostro Elo, non sigillata» |
+| `tennis.gapHidden` | «Gap not shown: our Elo is too far from the market» | «Gap non mostrato: il nostro Elo è troppo lontano dal mercato» |
+| `tennis.eloAsOf` | fn → «Elo as of {a}» | fn → «Elo aggiornato al {a}» |
+| `tennis.scaleAriaElo` | fn → «Market {a} percent, estimate {b} percent, Elo-based and not sealed[, gap {c} points]» | fn → «Mercato {a} per cento, stima {b} per cento, basata su Elo e non sigillata[, gap {c} punti]» |
+| `toolbar.legendEstimate` | «Estimate · football: 70% market + 30% model» | «Stima · calcio: 70% mercato + 30% modello» |
+| `toolbar.legendTennis` | «Tennis: 90% market + 10% our Elo where fresh, not sealed; else market only» | «Tennis: 90% mercato + 10% nostro Elo dove è recente, non sigillata; altrove solo mercato» |
+| `tennis.noEstimate` | «Market only: the market price with the margin removed and the books’ prices. No estimate of ours for this match.» | «Solo mercato: il prezzo di mercato senza margine e le quote dei book. Nessuna nostra stima per questa partita.» |

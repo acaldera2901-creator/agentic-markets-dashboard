@@ -68,7 +68,7 @@ describe("B · tennis senza la nostra stima", () => {
     const html = renderToStaticMarkup(<PriceCheck matches={[pc]} initialId={TN.id} partners />);
     const t = text(html);
     expect(html.match(/<input[^>]+type="number"[^>]+name="p\d"/g)).toHaveLength(2);
-    expect(t).toContain("Tennis: market price only, no estimate of ours");
+    expect(t).toContain("This match: market only, no estimate of ours");
     expect(t.replace(/(no|not an) estimate of ours/gi, "")).not.toMatch(/estimate|\bgap\b|EV calculator|Kelly/i);
   });
 
