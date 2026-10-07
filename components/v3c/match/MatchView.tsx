@@ -659,11 +659,14 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           ) : (
             <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={L} books={books} checked={chk ? priceTime(chk) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={priceTime} />
           )}
-          <div className="v3c-mt-side">
-            <Link className="v3c-btn v3c-btn-line v3c-btn-s" href={`/price-check?m=${encodeURIComponent(m.id)}`}>
-              {c.pcBridge}
-            </Link>
-          </div>
+          {/* final6: a started match leaves the price check (fixui2 N6) — no «Check it →» toward a page that cannot open it */}
+          {started ? null : (
+            <div className="v3c-mt-side">
+              <Link className="v3c-btn v3c-btn-line v3c-btn-s" href={`/price-check?m=${encodeURIComponent(m.id)}`}>
+                {c.pcBridge}
+              </Link>
+            </div>
+          )}
         </div>
       </section>
       <More ctx={ctx} rows={more} />
@@ -921,11 +924,14 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
           ) : (
             <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={lead.player} books={books} checked={chk ? priceTime(chk) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={priceTime} />
           )}
-          <div className="v3c-mt-side">
-            <Link className="v3c-btn v3c-btn-line v3c-btn-s" href={`/price-check?m=${encodeURIComponent(m.id)}`}>
-              {c.pcBridge}
-            </Link>
-          </div>
+          {/* final6: a started match leaves the price check (fixui2 N6) — no «Check it →» toward a page that cannot open it */}
+          {started ? null : (
+            <div className="v3c-mt-side">
+              <Link className="v3c-btn v3c-btn-line v3c-btn-s" href={`/price-check?m=${encodeURIComponent(m.id)}`}>
+                {c.pcBridge}
+              </Link>
+            </div>
+          )}
         </div>
       </section>
       <More ctx={ctx} rows={more} />
