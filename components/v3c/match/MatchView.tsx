@@ -293,7 +293,7 @@ function SealItem({ ctx, n, sealedAt, tennis = false }: { ctx: Ctx; n: number; s
         <p>{body}</p>
         {sealedAt ? (
           <p className="v3c-mt-reg">
-            <Sigillo sealedAt={sealedAt} label={t.fascia.sealed} />
+            <Sigillo sealedAt={sealedAt} tz={ctx.tz} locale={locale} label={t.fascia.sealed} />
             <Link href={V3C_ROUTES.record}>{c.record}</Link>
           </p>
         ) : null}
