@@ -53,7 +53,8 @@ export function Weeks({ weeks }: { weeks: V3WeekRow[] }) {
                 <span className="v3c-rec-wk-l">
                   {weekShort(w.week_start, locale)}
                   <small>
-                    {w.sealed != null ? `${int(w.n, locale)}/${int(w.sealed, locale)}` : `n ${int(w.n, locale)}`}
+                    n {int(w.n, locale)}
+                    {w.sealed != null ? `/${int(w.sealed, locale)}` : ""}
                     {w.limited_sample ? " *" : ""}
                   </small>
                   {w.awaiting_result ? <small className="v3c-rec-wk-wait">{t.weeks.awaiting(int(w.awaiting_result, locale))}</small> : null}

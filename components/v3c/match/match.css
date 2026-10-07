@@ -50,6 +50,9 @@
   .v3c-mt-out-tn { --oc: minmax(0, 1fr) 54px 58px 64px; }
   .v3c-mt-c-price, .v3c-mt-c-seal { display: none; }
   .v3c-mt-or { gap: 10px; } .v3c-mt-oh { gap: 10px; }
+  /* final2: the outcome header had the same problem as the price-check table: «SCHÄTZUNG» (DE) or «MARCHÉ»
+     + «ESTIMATION» (FR) are wider than a 58–64 px column and ran into the next one. They wrap and hyphenate. */
+  .v3c-mt-oh .v3c-lab { white-space: normal; hyphens: auto; overflow-wrap: anywhere; letter-spacing: .02em; }
   .v3c-mt-or .v3c-num { font-size: 18px; } .v3c-mt-or.v3c-mt-lead .v3c-num { font-size: 21px; }
   .v3c-mt-who { font-size: 17px; }
 }

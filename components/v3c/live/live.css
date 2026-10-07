@@ -21,7 +21,9 @@
   /* the time column is 44 px on a phone: «Finished» in the long languages does not fit */
   .v3c-ls-time .v3c-ls-long { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .v3c-ls-time .v3c-ls-short { display: inline; }
-  .v3c-ls-time small { white-space: normal; overflow-wrap: anywhere; }
+  /* final2: .v3c-r-time.v3c-ls-time beats fidelity.css's phone `.v3c-r-time small { nowrap }` (loaded later):
+     «Kein Spielstand» / «Score indisp.» wrap in the 44 px column instead of running into the match name */
+  .v3c-r-time.v3c-ls-time small { white-space: normal; overflow-wrap: anywhere; hyphens: auto; }
 }
 
 /* home: «Live now» */

@@ -452,7 +452,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           <p className="v3c-mt-note">{c.noMarketLong}</p>
         )}
         <div className="v3c-mt-out" role="table" aria-label={t.board.allOutcomes}>
-          <div className="v3c-mt-oh" role="row">
+          <div className="v3c-mt-oh" role="row" lang={v3cLang(lang)}>
             <span className="v3c-lab" role="columnheader">
               {c.outcome}
             </span>
@@ -663,7 +663,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
           </p>
         )}
         <div className="v3c-mt-out v3c-mt-out-tn" role="table" aria-label={t.tennis.winner}>
-          <div className="v3c-mt-oh" role="row">
+          <div className="v3c-mt-oh" role="row" lang={v3cLang(lang)}>
             <span className="v3c-lab" role="columnheader">
               {t.tennis.winner}
             </span>
