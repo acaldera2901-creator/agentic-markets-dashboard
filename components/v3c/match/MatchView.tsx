@@ -250,11 +250,11 @@ function NewsItem({ ctx, n, card }: { ctx: Ctx; n: number; card: NewsCard }) {
       <span className="k">{n}</span>
       <div>
         <h3>
-          {nc.newsAt(`${dayShort(at, tz, locale)} ${timeHM(at, tz, locale)}`)}: <span lang={x.ai && !x.english ? lang : "en"}>{x.title}</span>
+          {nc.newsAt(`${dayShort(at, tz, locale)} ${timeHM(at, tz, locale)}`)}: <span lang={x.english ? "en" : lang}>{x.title}</span>
         </h3>
         <p>{nc.matchBody(card.source)}</p>
         <p className="v3c-fine">
-          {x.ai ? nc.aiLabel(card.source) : nc.notRewritten(card.source)}
+          {nc.aiLabel(card.source)}
           {x.english ? ` · ${nc.inEnglish}` : ""} ·{" "}
           <a href={card.url} rel="nofollow noopener noreferrer" target="_blank">
             {nc.readOriginal} <span aria-hidden="true">↗</span>
