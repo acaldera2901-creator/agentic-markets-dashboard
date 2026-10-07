@@ -18,6 +18,7 @@ import { STATE_COPY } from "@/components/v3c/States";
 import { V3C_TOOLS_COPY } from "@/lib/i18n/v3c-tools";
 import { V3C_LIVE_COPY } from "./live-copy";
 import { V3C_BANNER_COPY } from "./banner-copy";
+import { FIXDATA_COPY } from "./fixdata-copy";
 
 type Fn = (...a: unknown[]) => unknown;
 const SAMPLE_N = [7301, 7302, 7303, 7304, 7305, 7306];
@@ -109,6 +110,8 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "live", of: (l) => V3C_LIVE_COPY[l as never], maxWords: 22 },
   // final3: i banner colore (brand/README §3b) — titolo ≤ 8 parole
   { name: "banner", of: (l) => V3C_BANNER_COPY[l as never], maxWords: 8 },
+  // fixdata: the strings of the data/logic fixes (B1 B2 B5 A6 M4 L4)
+  { name: "fixdata", of: (l) => FIXDATA_COPY[l as never], maxWords: 22 },
 ];
 
 describe("F10 · le 11 lingue del redesign", () => {

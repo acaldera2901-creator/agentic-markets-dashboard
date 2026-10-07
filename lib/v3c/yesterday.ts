@@ -124,3 +124,27 @@ export function buildYesterday(rows: SealedDayRow[], day: string, now: Date = ne
     ],
   };
 }
+
+/**
+ * fixdata A6: what the home shows of yesterday. A Brier or an «expected / observed» on a handful
+ * of matches says nothing (n 1 → 0.819 vs 0.796): below LIMITED_SAMPLE_N settled football matches
+ * there is no score, only the day's won–lost. The tennis won–lost (a count of favourites, read as a
+ * hit rate) stays on the Record with its note, never on the home.
+ */
+export type YesterdayHome = {
+  /** football won–lost of the day (settled with a result) */
+  wl: { won: number; lost: number };
+  /** null under the minimum n */
+  score: { expected: number; observed: number; brier: { n: number; estimate: number; market: number } | null } | null;
+  min_n: number;
+};
+
+export function yesterdayHome(d: V3YesterdayResponse): YesterdayHome {
+  const n = d.football.won + d.football.lost;
+  const brier = d.brier && d.brier.n >= LIMITED_SAMPLE_N ? d.brier : null;
+  return {
+    wl: { won: d.football.won, lost: d.football.lost },
+    score: n >= LIMITED_SAMPLE_N ? { expected: d.football.expected_wins ?? 0, observed: d.football.won, brier } : null,
+    min_n: LIMITED_SAMPLE_N,
+  };
+}

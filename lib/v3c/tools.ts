@@ -24,6 +24,7 @@ import {
 } from "@/lib/betting-math";
 import type { BoardOutcome } from "./board-source";
 import { formatSigned } from "./scale";
+import { inputProblem } from "./fixdata";
 
 // ── Domande: tre, dimensionate per uso reale (5 · 4 · 2) ─────────────────────
 export type QuestionId = "price" | "stake" | "record";
@@ -38,22 +39,9 @@ export type ToolInput = { key: string; kind: InputKind; default: number; optiona
 /** null = campo vuoto o non numerico. */
 export type ToolValues = Record<string, number | null>;
 
+/** fixdata M4: the bounds live in lib/v3c/fixdata.ts (inputBounds / inputProblem): a price is 1.01–1000. */
 export function validInput(kind: InputKind, v: number | null | undefined): v is number {
-  if (v == null || !Number.isFinite(v)) return false;
-  switch (kind) {
-    case "price":
-      return v > 1;
-    case "percent":
-      return v > 0 && v < 100;
-    case "money":
-      return v > 0;
-    case "signed":
-      return true;
-    case "count":
-      return Number.isInteger(v) && v > 0;
-    case "rate":
-      return v >= 0;
-  }
+  return inputProblem(kind, v) == null;
 }
 
 // ── Risultati ────────────────────────────────────────────────────────────────

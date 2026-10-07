@@ -8,6 +8,8 @@ import type { FpMatch } from "@/lib/fortuneplay-live";
 import { fuzzyFootballMatch, type OurFixture } from "./fixture-match";
 import type { Outcome, Triple, V3BoardMatch, V3BoardOutcome, V3BookPrice } from "./contracts";
 import { MARKET_WEIGHT, MODEL_WEIGHT, OUTCOMES, edgePp, market1x2, roundP, topOutcome } from "./prob";
+import { feedMapAt } from "@/lib/feed-stamp";
+import { applyGuard, hasStarted, modelGuard, relevanceTier } from "./fixdata";
 
 /** Latest prediction_log row of a published match (+ seal time from pick_ledger). */
 export type BoardSourceRow = {
@@ -132,12 +134,13 @@ export function buildBoardMatch(src: BoardSourceRow, partner: PartnerPriceRow[],
     src.model_p_home != null && src.model_p_draw != null && src.model_p_away != null
       ? { home: src.model_p_home, draw: src.model_p_draw, away: src.model_p_away }
       : null;
-  const prices = bookPricesFor(src, partner, now);
+  // fixdata B1: once the match has started a pre-match price is not a price — no book, no best, no CTA
+  const prices = hasStarted(src.kickoff, now) ? { home: [], draw: [], away: [] } : bookPricesFor(src, partner, now);
   const priceOf: Record<Outcome, number | null> = {
     home: src.odds_home, draw: src.odds_draw, away: src.odds_away,
   };
 
-  const outcomes: V3BoardOutcome[] = OUTCOMES.map((o) => ({
+  const raw: V3BoardOutcome[] = OUTCOMES.map((o) => ({
     outcome: o,
     market_price: market ? priceOf[o] : null,
     market_p: market ? roundP(market.p[o]) : null,
@@ -147,6 +150,10 @@ export function buildBoardMatch(src: BoardSourceRow, partner: PartnerPriceRow[],
     book_prices: prices[o],
     best_price: prices[o][0] ?? null,
   }));
+  // fixdata B5: the raw model against the market; > 25 pp the estimate shown is the market
+  const guard = modelGuard(raw);
+  const outcomes = applyGuard(raw, guard);
+  const shown: Triple = { home: outcomes[0].estimate_p, draw: outcomes[1].estimate_p, away: outcomes[2].estimate_p };
 
   return {
     id: src.id,
@@ -161,8 +168,10 @@ export function buildBoardMatch(src: BoardSourceRow, partner: PartnerPriceRow[],
     blend: market ? { model: MODEL_WEIGHT, market: MARKET_WEIGHT } : null,
     estimate_as_of: new Date(src.computed_at).toISOString(),
     sealed_at: src.sealed_at ? new Date(src.sealed_at).toISOString() : null,
-    focus: topOutcome(estimate),
+    focus: topOutcome(guard.level === "market_only" ? shown : estimate),
     outcomes,
+    relevance: relevanceTier({ sport: "football", competition: src.competition, league: src.league }),
+    model_guard: guard,
   };
 }
 
@@ -182,6 +191,8 @@ export function liveFeedRows(
   const rows: PartnerPriceRow[] = [];
   const missingBooks: string[] = [];
   for (const { book, map } of boards) {
+    // fixdata B2: the time the book's feed was read (a cached or last-good copy can be old), not now
+    const readAt = new Date(feedMapAt(map) ?? now.getTime()).toISOString();
     if (map.size === 0) {
       missingBooks.push(book.key);
       continue;
@@ -206,7 +217,7 @@ export function liveFeedRows(
         odds_home: fm.oddsHome,
         odds_draw: fm.oddsDraw,
         odds_away: fm.oddsAway,
-        captured_at: now.toISOString(),
+        captured_at: readAt,
         source: "live_feed",
         url:
           book.matchUrlBase && fm.slug && fm.id && fm.sport

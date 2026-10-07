@@ -13,6 +13,7 @@ import { parseOutcome, roundP, topOutcome } from "./prob";
 import { brier3, mean, pairedDifference, reliability, triplePairs, weekStartUtc } from "./scoring";
 import { wilson95 } from "@/lib/wilson";
 import { tennisRecordGroups, type SealedTennisRow } from "./tennis";
+import { normName } from "@/lib/odds-api";
 import type { PartnerPriceRow } from "./board";
 import { FOOTBALL_LEDGER_MODEL_VERSION, FOOTBALL_LEDGER_SOURCE_TABLE } from "@/lib/pick-ledger-mirror";
 
@@ -43,10 +44,14 @@ export type SealedFootballRow = {
  * Twin fixture rows: the same match sealed twice under two source ids (measured
  * 06/10: 134 pairs, all espn:* + oddsapi:*, same teams, kickoff equal in 130 and
  * within 1h in 3 more). Same home and away team with kickoffs this close = one
- * match. Pairs 6–96h apart exist too (24) but mostly settle differently: those
- * are other games (rescheduled, another leg) and stay.
+ * match.
+ * fixdata B6 (SELECT 07/10): the 6 h window let 2 pairs count twice — Sabadell–Andorra
+ * (3/10 and 4/10, both 0–0) and León–Monterrey (22 and 23/08, both 2–0): a rescheduled
+ * match keeps its old date under another id. Within 6–48 h the 23 pairs are 15 with one
+ * row never settled (the old date) and 8 settled identically or both pending: the same
+ * match every time. The reverse fixture (another leg) is never merged; beyond 48 h, other games.
  */
-export const TWIN_KICKOFF_WINDOW_HOURS = 6;
+export const TWIN_KICKOFF_WINDOW_HOURS = 48;
 
 function scorable(r: SealedFootballRow): boolean {
   return r.result != null && parseOutcome(r.outcome) != null;
@@ -71,7 +76,7 @@ export function dedupeTwinFixtures(rows: SealedFootballRow[]): SealedFootballRow
   const byFixture = new Map<string, SealedFootballRow[]>();
   for (const r of rows) {
     if (!r.home_team || !r.away_team) continue;
-    const k = `${r.home_team}\u0000${r.away_team}`;
+    const k = `${normName(r.home_team)}\u0000${normName(r.away_team)}`;
     const list = byFixture.get(k);
     if (list) list.push(r);
     else byFixture.set(k, [r]);
