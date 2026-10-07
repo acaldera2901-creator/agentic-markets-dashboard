@@ -5,10 +5,10 @@ import { announcements, liveBadge, nextDelay, scoreOf, wantsLive } from "./live-
 
 const c = V3C_LIVE_COPY.en;
 const fb = (p: Partial<Extract<V3LiveItem, { sport: "football" }>> = {}): V3LiveItem => ({
-  sport: "football", state: "live", final_kind: null, minute: "67'", home: 2, away: 1, pens: null, events: [], source_id: "espn:1", matched_by: "names", ...p,
+  sport: "football", state: "live", final_kind: null, minute: "67'", home: 2, away: 1, pens: null, events: [], source_id: "espn:1", matched_by: "names", source: "espn", updated_at: "2026-10-07T10:00:00Z", ...p,
 });
 const tn = (p: Partial<Extract<V3LiveItem, { sport: "tennis" }>> = {}): V3LiveItem => ({
-  sport: "tennis", state: "live", final_kind: null, sets: [{ p1: 6, p2: 3, tb1: null, tb2: null }, { p1: 4, p2: 1, tb1: null, tb2: null }], server: "p1", winner: null, source_id: "espn:2", matched_by: "id", ...p,
+  sport: "tennis", state: "live", final_kind: null, sets: [{ p1: 6, p2: 3, tb1: null, tb2: null }, { p1: 4, p2: 1, tb1: null, tb2: null }], server: "p1", winner: null, source_id: "espn:2", matched_by: "id", source: "espn", updated_at: "2026-10-07T10:00:00Z", ...p,
 });
 
 describe("live badge", () => {
@@ -19,7 +19,11 @@ describe("live badge", () => {
     expect(liveBadge(fb({ state: "break", minute: null }), true, c)).toMatchObject({ label: "HT", score: "2–1" });
     expect(liveBadge(fb({ state: "final", final_kind: "ft", minute: null }), true, c)).toMatchObject({ label: "Finished", tone: "done", sub: "FT" });
     expect(liveBadge(fb({ state: "final", final_kind: "pen", pens: { home: 4, away: 3 } }), true, c)?.sub).toBe("Pens 4–3");
-    expect(liveBadge(undefined, true, c)).toEqual({ label: "Live", tone: "live", sub: "Score n/a", score: null });
+    // live2: started and no source covers it → «Kick-off» before the time, quiet: no «Live», no minute, no number
+    expect(liveBadge(undefined, true, c)).toEqual({ label: "Kick-off", tone: "quiet", sub: null, score: null, lead: true });
+    expect(liveBadge(undefined, true, c, "tennis")).toMatchObject({ label: "Start", lead: true, score: null });
+    // The Odds API: «completed» without FT/AET/pens → no word we would have to guess
+    expect(liveBadge(fb({ state: "final", final_kind: null, minute: null }), true, c)).toMatchObject({ label: "Finished", sub: null, score: "2–1" });
     expect(liveBadge(undefined, false, c)).toBeNull();
   });
   it("a missing score stays missing", () => {

@@ -166,6 +166,13 @@ if (MOCK_LIVE) {
     { id: "oddsapi:live001", league: "Serie A", competition: "Serie A", kickoff: kick5(-1.2), home: "Juventus", away: "Napoli", odds: [2.3, 3.2, 3.2], model: [0.4, 0.28, 0.32], sealed: true, books: "both", history: false },
     { id: "oddsapi:live002", league: "Premier League", competition: "Premier League", kickoff: kick5(-2.1), home: "Arsenal", away: "Chelsea", odds: [1.9, 3.6, 4.1], model: [0.5, 0.26, 0.24], sealed: true, books: "one", history: false },
   );
+  // live2 (#V3C-LIVE2): one row only The Odds API covers (Ekstraklasa: no ESPN scoreboard), one ESPN misses that
+  // API-Football has (with a minute), one no source covers (→ «Kick-off · time», never a number). INVENTED scores.
+  FOOTBALL.push(
+    { id: "oddsapi:00000000000000000000000000c0ffee", league: "POL", competition: "Ekstraklasa", kickoff: kick5(-0.9), home: "Lech Poznan", away: "Legia Warsaw", odds: [2.1, 3.4, 3.3], model: [0.44, 0.27, 0.29], sealed: true, books: "one", history: false },
+    { id: "oddsapi:00000000000000000000000000beef01", league: "NED", competition: "Eredivisie", kickoff: kick5(-0.7), home: "Ajax", away: "PSV", odds: [2.6, 3.5, 2.6], model: [0.37, 0.26, 0.37], sealed: true, books: "one", history: false },
+    { id: "live-nosource-1", league: "JPN", competition: "J1 League", kickoff: kick5(-0.5), home: "Kashima Antlers", away: "Urawa Reds", odds: [2.2, 3.3, 3.2], model: [0.42, 0.28, 0.3], sealed: true, books: "one", history: false },
+  );
   TENNIS.push({ id: "tennis:espn:990001:ben-shelton:lorenzo-musetti", tournament: "ATP Shanghai", kickoff: kick5(-1.0), p1: "Lorenzo Musetti", p2: "Ben Shelton", odds: [1.85, 1.95], elo: [0.52, 0.48], mv: "tennis-elo-v4", sealed: true, books: true });
 }
 
@@ -208,6 +215,25 @@ function espnMock(path: string): unknown {
       ] }] }] }] };
   }
   return { events: [] };
+}
+
+/** live2: a fictitious The Odds API /scores for the Ekstraklasa row (no minute: the source has none). */
+function oddsMock(path: string): unknown {
+  if (!MOCK_LIVE || !path.startsWith("/odds/sports/soccer_poland_ekstraklasa/scores")) return [];
+  const f = FOOTBALL.find((x) => x.id === "oddsapi:00000000000000000000000000c0ffee")!;
+  return [{ id: "00000000000000000000000000c0ffee", commence_time: iso(f.kickoff), completed: false, home_team: "Lech Poznań", away_team: "Legia Warszawa",
+    scores: [{ name: "Lech Poznań", score: "1" }, { name: "Legia Warszawa", score: "0" }], last_update: new Date(Date.now() - 40_000).toISOString() }];
+}
+
+/** live2: a fictitious API-Football `live=all` with the Eredivisie row in play. */
+function apifMock(path: string): unknown {
+  if (!MOCK_LIVE || !path.startsWith("/apif/fixtures")) return { errors: [], response: [] };
+  const f = FOOTBALL.find((x) => x.id === "oddsapi:00000000000000000000000000beef01")!;
+  const el = Math.max(1, Math.min(45, Math.floor((Date.now() - f.kickoff) / 60_000)));
+  return { errors: [], results: 1, response: [{ fixture: { id: 990101, date: iso(f.kickoff), status: { short: "1H", elapsed: el, extra: null } },
+    league: { name: "Eredivisie", country: "Netherlands" }, teams: { home: { id: 194, name: "Ajax" }, away: { id: 197, name: "PSV Eindhoven" } },
+    goals: { home: 0, away: 1 }, score: { penalty: { home: null, away: null } },
+    events: [{ time: { elapsed: Math.max(1, el - 3), extra: null }, team: { id: 197 }, player: { name: null }, type: "Goal", detail: "Normal Goal" }] }] };
 }
 
 function tennisSources() {
@@ -398,6 +424,11 @@ createServer((req, res) => {
   let body = "";
   req.on("data", (c) => (body += c));
   req.on("end", () => {
+    if (req.method === "GET" && (req.url?.startsWith("/odds/") || req.url?.startsWith("/apif/"))) {
+      res.writeHead(200, { "content-type": "application/json", "x-requests-remaining": "4900000", "x-ratelimit-requests-remaining": "90" });
+      res.end(JSON.stringify(req.url.startsWith("/odds/") ? oddsMock(req.url) : apifMock(req.url)));
+      return;
+    }
     if (req.method === "GET" && req.url?.startsWith("/espn/")) {
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(espnMock(req.url)));

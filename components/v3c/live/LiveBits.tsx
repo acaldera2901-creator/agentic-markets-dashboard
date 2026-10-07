@@ -5,7 +5,7 @@
 // the record. No item → the honest «score n/a», never a number we made up.
 import Link from "next/link";
 import { createContext, useContext } from "react";
-import type { V3LiveItem, V3LiveResponse } from "@/lib/v3c/live-contract";
+import { SOURCE_NAMES, type V3LiveItem, type V3LiveResponse } from "@/lib/v3c/live-contract";
 import type { V3cLiveCopy } from "@/lib/v3c/live-copy";
 import { liveCopyFor } from "@/lib/v3c/live-copy";
 import { liveBadge, scoreOf, wantsLive, type LiveBadge } from "@/lib/v3c/live-view";
@@ -27,6 +27,14 @@ export function LiveAnnouncer({ text }: { text: string }) {
 
 /** The time cell of a board row when the source has something to say (quiet = not started / suspended: the kick-off time stays). */
 export function LiveTimeCell({ badge, kickoffTime }: { badge: LiveBadge; kickoffTime: string }) {
+  // live2: started, no source → «Kick-off» then the time it started: a fact, never a minute
+  if (badge.lead)
+    return (
+      <span className="v3c-r-time v3c-ls-time" data-tone="quiet" data-lead="">
+        <small>{badge.label}</small>
+        {kickoffTime}
+      </span>
+    );
   if (badge.tone === "quiet")
     return (
       <span className="v3c-r-time v3c-ls-time" data-tone="quiet">
@@ -105,7 +113,7 @@ export function LiveNow({ rows, feed, c }: { rows: LiveNowRow[]; feed: LiveFeed;
         })}
       </ul>
       <p className="v3c-fine">
-        {c.source}
+        {c.source(feed.sourceName)}
         {feed.updatedAt ? <> · {c.updated(timeHM(feed.updatedAt, tz, v3cLocale(lang)))}</> : null}
         {now.length > shown.length ? (
           <>
@@ -145,11 +153,14 @@ export function MatchLive({ id, kickoff, home, away }: { id: string; kickoff: st
   const feed = useLiveScores(on, (x) => (x === id ? [home, away] : null), c, seed?.data ?? null);
   if (!on || !feed.loaded) return null;
   const it = feed.items[id];
-  const updated = feed.updatedAt ? c.updated(timeHM(feed.updatedAt, tz, v3cLocale(lang))) : null;
+  // live2: the time of THIS score, from its source (a fallback source may be read every few minutes)
+  const at = it?.updated_at ?? feed.updatedAt;
+  const updated = at ? c.updated(timeHM(at, tz, v3cLocale(lang))) : null;
+  const lead = `${id.startsWith("tennis:") ? c.start : c.kickoff} ${timeHM(kickoff, tz, v3cLocale(lang))}`;
   if (!it || it.state === "pre")
     return (
       <div className="v3c-ls-board v3c-ls-board-na" role="status">
-        <p className="v3c-small">{it ? c.notStarted : c.unavailableLong}</p>
+        <p className="v3c-small">{it ? c.notStarted : Date.parse(kickoff) <= now.getTime() ? c.noSourceLong(lead) : c.unavailableLong}</p>
         <LiveAnnouncer text={feed.announce} />
       </div>
     );
@@ -163,7 +174,7 @@ export function MatchLive({ id, kickoff, home, away }: { id: string; kickoff: st
       </p>
       {it.sport === "football" ? <FootballBoard it={it} home={home} away={away} c={c} /> : <TennisBoard it={it} home={home} away={away} c={c} />}
       <p className="v3c-fine">
-        {c.source}
+        {c.source(SOURCE_NAMES[it.source] ?? feed.sourceName)}
         {updated ? <> · {updated}</> : null}
       </p>
       <LiveAnnouncer text={feed.announce} />

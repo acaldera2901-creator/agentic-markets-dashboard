@@ -3,6 +3,8 @@
 //   MOCK_LIVE=1 npx tsx scripts/v3c/mock-db.ts   (fictitious rows + ESPN-shaped scoreboards)
 //   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:<port> SUPABASE_SERVICE_ROLE_KEY=mock NEXT_PUBLIC_REDESIGN=1 \
 //   V3C_LIVE_ESPN_BASE=http://127.0.0.1:<port>/espn NODE_OPTIONS="--require ./scripts/v3c/no-network.cjs" npx next dev
+// live2: + V3C_LIVE_ODDS_BASE=http://127.0.0.1:<port>/odds V3C_LIVE_APIF_BASE=http://127.0.0.1:<port>/apif
+//   ODDS_API_KEY=mock API_FOOTBALL_DIRECT_KEY=mock (dummies: the mock ignores them, nothing leaves 127.0.0.1)
 // Skipped unless PW_LIVE=1 (the other e2e runs use the mock without MOCK_LIVE).
 // For each page and mode: the score is visible, overflow 0, 0 console errors,
 // /api/track and /api/partner-click aborted (counted), a screenshot to LOOK AT.
@@ -53,7 +55,7 @@ for (const mode of ["light", "dark"] as const) {
     await page.goto(`/${q}`);
     const now = page.locator(".v3c-ls-now");
     await expect(now).toBeVisible({ timeout: 30_000 });
-    await expect(now.locator("li")).toHaveCount(2); // Juventus–Napoli and Musetti–Shelton; the finished one is not «live now»
+    await expect(now.locator("li")).toHaveCount(4); // Juventus–Napoli, Lech–Legia (Odds API), Ajax–PSV (API-Football), Musetti–Shelton; not the finished one, not the uncovered one
     await expect(now).toContainText("2–1");
     await expect(now).toContainText("4-6 6-6(5-3)");
     await expect(page.locator("[aria-live=polite]").first()).toBeAttached();
@@ -74,9 +76,21 @@ for (const mode of ["light", "dark"] as const) {
     await expect(ars.locator(".v3c-r-time")).toContainText("Finished");
     await expect(ars.locator(".v3c-r-time")).toContainText("FT");
     await expect(ars.locator(".v3c-ls-sc")).toHaveText("2–2");
+    // live2: started, no source → «Start» + the time it started, never «Live» or a number
     const med = page.locator(".v3c-row", { hasText: "Daniil Medvedev – Taylor Fritz" });
-    await expect(med.locator(".v3c-r-time")).toContainText("Score n/a");
+    await expect(med.locator(".v3c-r-time")).toHaveText(/^Start\d{1,2}:\d{2}$/);
     await expect(med.locator(".v3c-ls-sc")).toHaveCount(0);
+    // live2: The Odds API only (no minute), API-Football (minute), and a football row no source covers
+    const pol = page.locator(".v3c-row", { hasText: "Lech Poznan – Legia Warsaw" });
+    await expect(pol.locator(".v3c-ls-sc")).toHaveText("1–0");
+    await expect(pol.locator(".v3c-r-time .v3c-live")).toBeVisible();
+    await expect(pol.locator(".v3c-r-time small")).toHaveCount(0);
+    const ajax = page.locator(".v3c-row", { hasText: "Ajax – PSV" });
+    await expect(ajax.locator(".v3c-ls-sc")).toHaveText("0–1");
+    await expect(ajax.locator(".v3c-r-time small")).toHaveText(/^\d{1,2}'$/);
+    const jpn = page.locator(".v3c-row", { hasText: "Kashima Antlers – Urawa Reds" });
+    await expect(jpn.locator(".v3c-r-time")).toHaveText(/^Kick-off\d{1,2}:\d{2}$/);
+    await expect(jpn.locator(".v3c-ls-sc")).toHaveCount(0);
     const tn = page.locator(".v3c-row", { hasText: "Lorenzo Musetti – Ben Shelton" });
     await expect(tn.locator(".v3c-ls-sc")).toHaveText("4-6 6-6(5-3)");
     await expect(tn.locator(".v3c-r-time small")).toHaveText("Set 2");
@@ -97,6 +111,23 @@ for (const mode of ["light", "dark"] as const) {
     expect(await overflow(page)).toBe(0);
     expect(await offenders(page)).toEqual([]);
     await page.screenshot({ path: `${SHOTS}/match-fb-${mode}-${info.project.name}.png` });
+    expect(g.errors).toEqual([]);
+  });
+
+  test(`match: fallback source named, and «Kick-off» when none covers it (${mode})`, async ({ page }, info) => {
+    const g = await guard(page);
+    await page.goto(`/match/oddsapi%3A00000000000000000000000000c0ffee${q}`);
+    const b = page.locator(".v3c-ls-board");
+    await expect(b).toBeVisible({ timeout: 30_000 });
+    await expect(b.locator(".v3c-ls-fb-s")).toHaveText("1–0");
+    await expect(b).toContainText("Scores from The Odds API");
+    await page.screenshot({ path: `${SHOTS}/match-odds-${mode}-${info.project.name}.png` });
+    await page.goto(`/match/live-nosource-1${q}`);
+    const na = page.locator(".v3c-ls-board-na");
+    await expect(na).toBeVisible({ timeout: 30_000 });
+    await expect(na).toContainText(/^Kick-off \d{1,2}:\d{2}\. No score source covers this match yet/);
+    expect(await overflow(page)).toBe(0);
+    await page.screenshot({ path: `${SHOTS}/match-nosource-${mode}-${info.project.name}.png` });
     expect(g.errors).toEqual([]);
   });
 
