@@ -32,6 +32,13 @@ const SIZES = "(max-width: 820px) calc(100vw - 32px), 760px";
 const MOBILE = "(max-width: 820px)";
 const DESKTOP = "(min-width: 821px)";
 const DESKTOP_SIZES = "760px";
+/**
+ * final4 (decisione di Andrea): sotto i 600 px la fascia non porta la foto (coprirebbe il soggetto) ma
+ * una fascia pulita, colore + motivo (banner-fit.css). Questa sorgente vuota, prima di tutte, fa sì che
+ * il telefono non scarichi la foto che non mostra; i preload hanno la stessa soglia.
+ */
+const NO_PHOTO = "(max-width: 599px)";
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
 /** I ritagli «fit» (360/720 px di larghezza, scripts/v3c/banner-fit-crops.mjs): le dimensioni del 720. */
 const FIT: Partial<Record<BannerName, { w: number; h: number }>> = {
@@ -62,11 +69,12 @@ export function Banner({ name, priority = false, position = "70% 40%" }: { name:
   // sopra la piega: il preload dell'AVIF nell'<head> (la sorgente che il browser sceglie, una per breakpoint),
   // così il banner non aspetta il parsing del body e non allunga l'LCP della pagina
   if (priority) {
-    preload(mobile("avif"), { as: "image", type: "image/avif", media: MOBILE, fetchPriority: "high" });
+    preload(mobile("avif"), { as: "image", type: "image/avif", media: "(min-width: 600px) and (max-width: 820px)", fetchPriority: "high" });
     preload(`${BASE}/${name}-1200.avif`, { as: "image", type: "image/avif", media: DESKTOP, imageSrcSet: set("avif"), imageSizes: DESKTOP_SIZES, fetchPriority: "high" });
   }
   return (
     <picture className="v3c-banner">
+      <source media={NO_PHOTO} srcSet={BLANK} />
       <source media={MOBILE} type="image/avif" srcSet={mobile("avif")} />
       <source media={MOBILE} type="image/webp" srcSet={mobile("webp")} />
       <source type="image/avif" srcSet={set("avif")} sizes={DESKTOP_SIZES} />
@@ -89,10 +97,11 @@ function FitBanner({ name, priority, w, h }: { name: BannerName; priority: boole
     fetchPriority: priority ? "high" : "auto",
     sizes: FIT_SIZES,
   });
-  if (priority) preload(`${BASE}/${name}-fit-720.avif`, { as: "image", type: "image/avif", imageSrcSet: set("avif"), imageSizes: FIT_SIZES, fetchPriority: "high" });
+  if (priority) preload(`${BASE}/${name}-fit-720.avif`, { as: "image", type: "image/avif", media: "(min-width: 600px)", imageSrcSet: set("avif"), imageSizes: FIT_SIZES, fetchPriority: "high" });
   return (
     // --fit-ar: il rapporto del ritaglio, da cui banner-fit.css ricava la larghezza del riquadro
     <picture className="v3c-banner v3c-banner-fit" data-banner={name} style={{ ["--fit-ar" as string]: (w / h).toFixed(3) }}>
+      <source media={NO_PHOTO} srcSet={BLANK} />
       <source type="image/avif" srcSet={set("avif")} sizes={FIT_SIZES} />
       <source type="image/webp" srcSet={set("webp")} sizes={FIT_SIZES} />
       <img {...props} alt="" />

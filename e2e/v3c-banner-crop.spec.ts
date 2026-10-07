@@ -6,7 +6,8 @@
 // riquadro, il contenitore e il taglio diagonale a destra (34 px desktop / 22 px mobile, v3c.css) —
 // con 2 px di tolleranza. Da 600 px in su, dove il banner sta a destra del testo, testa e palla non
 // devono nemmeno passare sotto il testo della fascia (tab, titolo, riga meta) — in inglese e nelle due
-// lingue coi titoli più lunghi (pt, fr: misurato sulle 6 lingue principali).
+// lingue coi titoli più lunghi (pt, fr: misurato sulle 6 lingue principali). Sotto i 600 px (final4)
+// la foto non c'è: il test verifica che sia nascosta e non scaricata.
 // Flag ON contro il mock locale (come gli altri e2e v3c):
 //   MOCK_DB_PORT=<p> npx tsx scripts/v3c/mock-db.ts
 //   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:<p> SUPABASE_SERVICE_ROLE_KEY=mock NEXT_PUBLIC_REDESIGN=1 \
@@ -46,6 +47,13 @@ test.describe("banner della fascia: nessun soggetto tagliato", () => {
           await page.goto(`${path}?mode=${mode}`, { waitUntil: "load" });
           const pic = page.locator(".v3c-fascia .v3c-banner").first();
           await expect(pic, `${path}: banner`).toHaveCount(1);
+          // final4: sotto i 600 px la fascia è pulita (colore + motivo), la foto non si mostra né si scarica
+          if (width < 600) {
+            await expect(pic, `${path}: niente foto sotto i 600 px`).toBeHidden();
+            const src = await pic.locator("img").evaluate((i: HTMLImageElement) => i.currentSrc);
+            if (!src.startsWith("data:")) problems.push(`${path}: foto scaricata sotto i 600 px (${src})`);
+            continue;
+          }
           await pic.locator("img").evaluate((i: HTMLImageElement) => i.decode().catch(() => undefined));
           const g = await pic.evaluate((p) => {
             const img = p.querySelector("img")!;
