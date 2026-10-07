@@ -124,12 +124,19 @@ function LiveIndex({ posts, live }: { posts: NewsItem[]; live: NewsPage }) {
         tab={t.tab}
         title={t.title}
         meta={
-          live.feed.state === "ok" ? (
+          live.feed.state === "ok" || live.feed.state === "empty" ? (
             <>
               <b>
-                <UpdatedAt at={live.feed.fetchedAt} />
+                <UpdatedAt at={live.feed.updatedAt} />
               </b>
-              <span>{nc.count(cards.length)}</span>
+              {cards.length ? <span>{nc.count(cards.length)}</span> : null}
+            </>
+          ) : live.feed.state === "paused" && live.feed.since != null ? (
+            <>
+              <b>{nc.pausedMeta}</b>
+              <span>
+                <UpdatedAt at={live.feed.since} paused />
+              </span>
             </>
           ) : (
             <>

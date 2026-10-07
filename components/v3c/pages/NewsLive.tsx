@@ -2,6 +2,8 @@
 // components/v3c/pages/NewsLive.tsx (#REDESIGN-V3C news) — the live notes on
 // /blog (= News) and «Most moved today». Mounted only when the server says the
 // news is on (NEWS_FOTMOB_ENABLED); otherwise News.tsx renders as before.
+// newswatch: the notes come from the `news_items` table the watcher writes;
+// states ok · empty (watcher alive, nothing yet) · paused · error.
 // Every note shows its source, its time, a link to the original and the AI
 // label. Only rewritten notes reach this file (news2: never an original
 // headline). The strip says WHEN a note came, never WHY a price moved.
@@ -130,7 +132,7 @@ export function NewsLiveList({ live }: { live: NewsPage }) {
       </div>
       {live.feed.state !== "ok" ? (
         <div className="v3c-empty v3c-nw-state" role="status">
-          <p className="v3c-t-row">{live.feed.state === "blocked" ? c.paused : live.feed.state === "error" ? c.error : c.pending}</p>
+          <p className="v3c-t-row">{live.feed.state === "paused" ? c.paused : live.feed.state === "error" ? c.error : c.pending}</p>
         </div>
       ) : shown.length === 0 ? (
         <div className="v3c-empty v3c-nw-state" role="status">
@@ -197,9 +199,11 @@ export function MostMoved({ movers, cards }: { movers: MoverCard[]; cards: NewsC
   );
 }
 
-/** «Updated at hh:mm» for the Fascia meta. */
-export function UpdatedAt({ at }: { at: number }) {
+/** «Updated at hh:mm» (or, paused, «Last update at hh:mm») for the Fascia meta. */
+export function UpdatedAt({ at, paused = false }: { at: number; paused?: boolean }) {
   const lang = useV3cLang();
   const tz = useLocalTimeZone();
-  return <>{newsCopyFor(lang).updatedAt(timeHM(iso(at), tz, v3cLocale(lang)))}</>;
+  const c = newsCopyFor(lang);
+  const time = timeHM(iso(at), tz, v3cLocale(lang));
+  return <>{paused ? c.lastUpdateAt(time) : c.updatedAt(time)}</>;
 }

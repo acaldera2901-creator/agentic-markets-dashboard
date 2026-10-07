@@ -1,147 +1,111 @@
-// lib/v3c/news/news.server.test.ts (#REDESIGN-V3C news2) — the pipeline with the
-// sources injected (no network, Next cache bypassed): only rewritten notes reach the
-// page, no key = no request to FotMob, a block stops the source and is not retried,
-// errors back off.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// lib/v3c/news/news.server.test.ts (#REDESIGN-V3C newswatch) — the site side:
+// it only READS news_state / news_items (SELECT), never FotMob, never a model.
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/cache", () => ({ unstable_cache: <T extends (...a: never[]) => unknown>(f: T) => f }));
+vi.mock("server-only", () => ({}));
+const query = vi.fn();
+vi.mock("@/lib/db", () => ({ dbQueryStrict: (sql: string) => query(sql) }));
 
-import { buildNews, getNews, readSource, resetNewsHealth } from "./news.server";
-import { parseNewsPage } from "./page";
-import { parseRss, type FeedItem } from "./feed";
-import { RewriteError, type AiNote, type Rewriter } from "./rewrite";
+import { getNews, newsTeams, readNews } from "./news.server";
+import { cardFromRow, feedFromTable, ITEMS_SQL, STALE_MS, STATE_SQL, type NewsItemRow, type NewsStateRow } from "./table";
 
-const page = parseNewsPage(readFileSync(join(__dirname, "__fixtures__", "fotmob-news-page.html"), "utf8"));
-const PAGE_ITEMS = page.ok ? page.items : [];
-const RSS_ITEMS = parseRss(readFileSync(join(__dirname, "__fixtures__", "fotmob-topnews.xml"), "utf8")).items;
-const T = Date.parse("2026-10-07T10:36:00Z");
+const NOW = Date.parse("2026-10-07T12:00:00Z");
+const iso = (t: number) => new Date(t).toISOString();
+const state = (o: Partial<NewsStateRow> = {}): NewsStateRow => ({ enabled: true, last_run_at: iso(NOW - 5 * 60_000), last_error: null, source_status: "ok", ...o });
+const row = (i: number, o: Partial<NewsItemRow> = {}): NewsItemRow => ({
+  guid_hash: `h${i}`,
+  source: "SI via FotMob",
+  source_url: `https://www.fotmob.com/embed/news/${i}`,
+  published_at: iso(NOW - i * 3_600_000),
+  rewritten_en: { title: `Note ${i}`, body: "Body." },
+  rewritten_it: { title: `Nota ${i}`, body: "Testo." },
+  teams: ["Inter"],
+  rewrite_model: "claude-haiku-4-5 · prompt v3",
+  rewritten_at: iso(NOW - i * 3_600_000 + 60_000),
+  ...o,
+});
 
-/** Rewrites only the items whose title contains «3-0» or «1-0»; the rest are «insufficient». */
-const fakeRw = (): Rewriter & { calls: string[] } => {
-  const calls: string[] = [];
-  return {
-    id: "fake:v",
-    calls,
-    async rewrite(it: FeedItem): Promise<AiNote> {
-      calls.push(it.guid);
-      if (!/\b[0-9]-[0-9]\b/.test(it.title)) throw new RewriteError("insufficient");
-      return { kind: "ai", en: { title: `Result ${calls.length}`, body: "A match was played." }, it: { title: `Risultato ${calls.length}`, body: "Si è giocata una partita." }, model: "fake" };
-    },
-  };
-};
-const okRead = (items: FeedItem[], at = T) => vi.fn(async () => ({ ok: true as const, fetchedAt: at, items }));
+afterEach(() => {
+  query.mockReset();
+  vi.unstubAllEnvs();
+});
 
-describe("buildNews", () => {
-  beforeEach(() => resetNewsHealth());
-  afterEach(() => vi.restoreAllMocks());
-
-  it("no rewriter → «pending», and NO request to FotMob", async () => {
-    const read = { page: okRead(PAGE_ITEMS), rss: okRead(RSS_ITEMS) };
-    const r = await buildNews(null, read, T);
-    expect(r.feed).toEqual({ state: "pending" });
-    expect(read.page).not.toHaveBeenCalled();
-    expect(read.rss).not.toHaveBeenCalled();
+describe("feedFromTable · the page states", () => {
+  it("fresh run + rows → ok, «Updated at» = the watcher's last_run_at, newest first", () => {
+    const f = feedFromTable(state(), [row(3), row(1), row(2)], NOW);
+    expect(f.state).toBe("ok");
+    if (f.state !== "ok") return;
+    expect(f.updatedAt).toBe(NOW - 5 * 60_000);
+    expect(f.cards.map((c) => c.guid)).toEqual(["h1", "h2", "h3"]);
+    expect(f.cards[0]).toMatchObject({ url: "https://www.fotmob.com/embed/news/1", source: "SI via FotMob", note: { kind: "ai", en: { title: "Note 1" } }, teams: ["Inter"] });
   });
-
-  it("only rewritten items become cards; the original headline never travels", async () => {
-    const rw = fakeRw();
-    const r = await buildNews(rw, { page: okRead(PAGE_ITEMS), rss: okRead(RSS_ITEMS) }, T);
-    expect(r.feed.state).toBe("ok");
-    if (r.feed.state !== "ok") return;
-    const results = PAGE_ITEMS.filter((i) => /\b[0-9]-[0-9]\b/.test(i.title));
-    expect(r.feed.cards.map((c) => c.guid).sort()).toEqual(results.map((i) => i.guid).sort());
-    const json = JSON.stringify(r.feed);
-    for (const it of [...PAGE_ITEMS, ...RSS_ITEMS]) expect(json).not.toContain(it.title);
-    expect(r.feed.fetchedAt).toBe(T);
-    expect(rw.calls.length).toBe(20); // merged and capped
+  it("fresh run, no rows → empty (the guides show)", () => {
+    expect(feedFromTable(state(), [], NOW)).toEqual({ state: "empty", updatedAt: NOW - 5 * 60_000 });
   });
-
-  it("nothing rewritten yet → «pending», not an empty list of originals", async () => {
-    const rw: Rewriter = { id: "x", rewrite: async () => { throw new RewriteError("insufficient"); } };
-    const r = await buildNews(rw, { page: okRead(PAGE_ITEMS), rss: okRead(RSS_ITEMS) }, T);
-    expect(r.feed).toEqual({ state: "pending" });
+  it("paused: switched off, blocked, last run over 2 h ago, never run, or no state row — and no cards", () => {
+    const since = NOW - STALE_MS - 60_000;
+    expect(feedFromTable(state({ enabled: false }), [row(1)], NOW)).toEqual({ state: "paused", since: NOW - 5 * 60_000 });
+    expect(feedFromTable(state({ source_status: "blocked" }), [row(1)], NOW).state).toBe("paused");
+    expect(feedFromTable(state({ last_run_at: iso(since) }), [row(1)], NOW)).toEqual({ state: "paused", since });
+    expect(feedFromTable(state({ last_run_at: iso(NOW - STALE_MS) }), [row(1)], NOW).state).toBe("ok"); // exactly 2 h: still fresh
+    expect(feedFromTable(state({ last_run_at: null }), [], NOW)).toEqual({ state: "paused", since: null });
+    expect(feedFromTable(null, [row(1)], NOW)).toEqual({ state: "paused", since: null });
   });
-
-  it("403/challenge → «blocked», the RSS is not asked either, and nothing is fetched again", async () => {
-    const pageRead = vi.fn(async () => ({ ok: false as const, checkedAt: T, error: "blocked (http 403)", blocked: "http 403" }));
-    const rssRead = okRead(RSS_ITEMS);
-    const err = vi.spyOn(console, "error").mockImplementation(() => {});
-    const r1 = await buildNews(fakeRw(), { page: pageRead, rss: rssRead }, T);
-    expect(r1.feed).toEqual({ state: "blocked" });
-    expect(err.mock.calls[0][0]).toMatch(/block.*OFF on this instance.*NEWS_FOTMOB_ENABLED=0/);
-    const r2 = await buildNews(fakeRw(), { page: pageRead, rss: rssRead }, T + 24 * 3_600_000);
-    expect(r2.feed).toEqual({ state: "blocked" });
-    expect(pageRead).toHaveBeenCalledTimes(1);
-    expect(rssRead).not.toHaveBeenCalled();
+  it("a usage limit or a degraded source still shows the notes while runs are fresh", () => {
+    expect(feedFromTable(state({ source_status: "limited", last_error: "usage limit" }), [row(1)], NOW).state).toBe("ok");
   });
-
-  it("a 5xx backs off: no new request inside the window, the RSS still serves", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    const pageRead = vi.fn(async () => ({ ok: false as const, checkedAt: T, error: "http 503" }));
-    const read = { page: pageRead, rss: okRead(RSS_ITEMS) };
-    const r = await buildNews(fakeRw(), read, T);
-    expect(r.feed.state === "ok" || r.feed.state === "pending").toBe(true); // RSS items have no score → pending
-    await buildNews(fakeRw(), read, T + 5 * 60_000);
-    expect(pageRead).toHaveBeenCalledTimes(1);
-    await buildNews(fakeRw(), read, T + 11 * 60_000);
-    expect(pageRead).toHaveBeenCalledTimes(2);
-  });
-
-  it("both sources down → «error»", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    const down = vi.fn(async () => ({ ok: false as const, checkedAt: T, error: "http 500" }));
-    expect((await buildNews(fakeRw(), { page: down, rss: down }, T)).feed).toEqual({ state: "error", checkedAt: T });
+  it("malformed rows are dropped, never patched (jsonb as text is read)", () => {
+    expect(cardFromRow(row(1, { rewritten_en: JSON.stringify({ title: "T", body: "B" }) as never }))?.note.en).toEqual({ title: "T", body: "B" });
+    expect(cardFromRow(row(1, { rewritten_it: { title: "", body: "x" } }))).toBeNull();
+    expect(cardFromRow(row(1, { source_url: "javascript:alert(1)" }))).toBeNull();
+    expect(cardFromRow(row(1, { published_at: "nope" }))).toBeNull();
+    expect(cardFromRow(row(1, { teams: null as never }))?.teams).toEqual([]);
   });
 });
 
-describe("readSource · one GET, robots first, /api refused", () => {
-  afterEach(() => vi.restoreAllMocks());
-  const robots = "User-agent: *\nAllow: /\nDisallow: /api/*\n";
-  const html = readFileSync(join(__dirname, "__fixtures__", "fotmob-news-page.html"), "utf8");
-
-  it("reads the page with our user-agent, after robots.txt", async () => {
-    const f = vi.spyOn(globalThis, "fetch").mockImplementation(async (u) => new Response(String(u).endsWith("/robots.txt") ? robots : html, { status: 200 }));
-    const s = await readSource("https://www.fotmob.com/en/news", "page", T);
-    expect(s.ok && s.items.length).toBe(20);
-    const urls = f.mock.calls.map((c) => String(c[0]));
-    expect(urls).toEqual(["https://www.fotmob.com/robots.txt", "https://www.fotmob.com/en/news"]);
-    expect(((f.mock.calls[1][1] as RequestInit).headers as Record<string, string>)["user-agent"]).toMatch(/^BetRedgeNews\/1\.0/);
+describe("readNews · SELECT only, at request time", () => {
+  it("reads the state row then the items; only SELECTs", async () => {
+    query.mockImplementation(async (sql: string) => (sql === STATE_SQL ? [state()] : [row(1)]));
+    const f = await readNews(NOW);
+    expect(f.state).toBe("ok");
+    expect(query.mock.calls.map((c) => c[0])).toEqual([STATE_SQL, ITEMS_SQL]);
+    for (const [sql] of query.mock.calls) expect(sql).toMatch(/^SELECT /);
   });
-
-  it("an /api URL is never requested", async () => {
-    const f = vi.spyOn(globalThis, "fetch");
-    const s = await readSource("https://www.fotmob.com/api/worldnews?lang=en&page=1", "page", T);
-    expect(s.ok).toBe(false);
-    expect(f).not.toHaveBeenCalled();
+  it("switched off → the items are not even read", async () => {
+    query.mockImplementation(async () => [state({ enabled: false })]);
+    expect((await readNews(NOW)).state).toBe("paused");
+    expect(query).toHaveBeenCalledTimes(1);
   });
-
-  it("a challenge page is reported as a block; a 429 carries Retry-After", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (u) =>
-      String(u).endsWith("/robots.txt") ? new Response(robots) : new Response("<title>Just a moment...</title>", { status: 403 }),
-    );
-    expect(await readSource("https://www.fotmob.com/en/news", "page", T)).toMatchObject({ ok: false, blocked: "http 403" });
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (u) =>
-      String(u).endsWith("/robots.txt") ? new Response(robots) : new Response("slow down", { status: 429, headers: { "retry-after": "900" } }),
-    );
-    expect(await readSource("https://www.fotmob.com/en/news", "page", T)).toMatchObject({ ok: false, error: "http 429", retryAfterS: 900 });
+  it("table missing / DB down → error state, no exception", async () => {
+    query.mockRejectedValue(new Error('relation "news_state" does not exist'));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await readNews(NOW)).toEqual({ state: "error" });
+    spy.mockRestore();
   });
-});
-
-describe("never at build time", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.restoreAllMocks();
+  it("NEWS_FOTMOB_ENABLED unset → off: no query, no fetch", async () => {
+    vi.stubEnv("NEWS_FOTMOB_ENABLED", "");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    expect(await getNews()).toEqual({ state: "off" });
+    expect(query).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
-
-  it("`next build` (NEXT_PHASE=phase-production-build): «pending», NO request to FotMob nor to the model", async () => {
-    vi.stubEnv("NEXT_PHASE", "phase-production-build");
+  it("`next build` never reads the tables, nor calls anything out", async () => {
     vi.stubEnv("NEWS_FOTMOB_ENABLED", "1");
-    vi.stubEnv("NEWS_REWRITE_PROVIDER", "gateway");
-    const f = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("", { status: 500 }));
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(await getNews()).toEqual({ state: "pending" });
-    expect(f).not.toHaveBeenCalled();
+    vi.stubEnv("NEXT_PHASE", "phase-production-build");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    expect(await getNews()).toEqual({ state: "off" });
+    expect(query).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+});
+
+describe("newsTeams · board links from the stored teams", () => {
+  it("matches the board names through the aliases; a note without teams links nothing", () => {
+    const f = feedFromTable(state(), [row(1, { teams: ["Man Utd", "Brighton"] }), row(2, { teams: [] })], NOW);
+    if (f.state !== "ok") throw new Error(f.state);
+    const m = newsTeams(f.cards, ["Manchester United", "Brighton & Hove Albion", "Inter"]);
+    expect([...m.entries()]).toEqual([["h1", ["Manchester United", "Brighton & Hove Albion"]]]);
   });
 });

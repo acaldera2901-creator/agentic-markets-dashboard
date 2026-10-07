@@ -8,6 +8,8 @@ import { v3cLang, type V3cLang } from "./copy";
 const EN = {
   latest: "Latest football news",
   updatedAt: (time: string) => `Updated at ${time}`,
+  lastUpdateAt: (time: string) => `Last update at ${time}`,
+  pausedMeta: "News paused",
   count: (n: number) => (n === 1 ? "1 note" : `${n} notes`),
   aiLabel: (source: string) => `Rewritten with AI from ${source}`,
   inEnglish: "In English",
@@ -37,6 +39,8 @@ export type NewsCopy = typeof EN;
 const IT: NewsCopy = {
   latest: "Ultime notizie di calcio",
   updatedAt: (time) => `Aggiornato alle ${time}`,
+  lastUpdateAt: (time) => `Ultimo aggiornamento alle ${time}`,
+  pausedMeta: "Notizie in pausa",
   count: (n) => (n === 1 ? "1 notizia" : `${n} notizie`),
   aiLabel: (source) => `Riscritto con l’IA a partire da ${source}`, // REVIEW-NATIVE
   inEnglish: "In inglese",
@@ -64,6 +68,8 @@ const IT: NewsCopy = {
 const DE: NewsCopy = {
   latest: "Aktuelle Fußball-News",
   updatedAt: (time) => `Aktualisiert um ${time}`,
+  lastUpdateAt: (time) => `Letzte Aktualisierung um ${time}`,
+  pausedMeta: "News pausiert",
   count: (n) => (n === 1 ? "1 Meldung" : `${n} Meldungen`),
   aiLabel: (source) => `Mit KI umgeschrieben, Quelle: ${source}`, // REVIEW-NATIVE
   inEnglish: "Auf Englisch",
@@ -91,6 +97,8 @@ const DE: NewsCopy = {
 const ES: NewsCopy = {
   latest: "Últimas noticias de fútbol",
   updatedAt: (time) => `Actualizado a las ${time}`,
+  lastUpdateAt: (time) => `Última actualización a las ${time}`,
+  pausedMeta: "Noticias en pausa",
   count: (n) => (n === 1 ? "1 noticia" : `${n} noticias`),
   aiLabel: (source) => `Reescrito con IA a partir de ${source}`, // REVIEW-NATIVE
   inEnglish: "En inglés",
@@ -118,6 +126,8 @@ const ES: NewsCopy = {
 const FR: NewsCopy = {
   latest: "Dernières actus football",
   updatedAt: (time) => `Mis à jour à ${time}`,
+  lastUpdateAt: (time) => `Dernière mise à jour à ${time}`,
+  pausedMeta: "Actus en pause",
   count: (n) => (n === 1 ? "1 actu" : `${n} actus`),
   aiLabel: (source) => `Réécrit par IA à partir de ${source}`, // REVIEW-NATIVE
   inEnglish: "En anglais",
@@ -145,6 +155,8 @@ const FR: NewsCopy = {
 const NL: NewsCopy = {
   latest: "Laatste voetbalnieuws",
   updatedAt: (time) => `Bijgewerkt om ${time}`,
+  lastUpdateAt: (time) => `Laatst bijgewerkt om ${time}`,
+  pausedMeta: "Nieuws gepauzeerd",
   count: (n) => (n === 1 ? "1 bericht" : `${n} berichten`),
   aiLabel: (source) => `Met AI herschreven op basis van ${source}`, // REVIEW-NATIVE
   inEnglish: "In het Engels",
@@ -172,6 +184,8 @@ const NL: NewsCopy = {
 const PL: NewsCopy = {
   latest: "Najnowsze wiadomości piłkarskie",
   updatedAt: (time) => `Zaktualizowano o ${time}`,
+  lastUpdateAt: (time) => `Ostatnia aktualizacja o ${time}`,
+  pausedMeta: "Newsy wstrzymane",
   count: (n) => (n === 1 ? "1 wiadomość" : `${n} wiadomości`), // 2–4 and 5+ share the form
   aiLabel: (source) => `Przepisane przez AI na podstawie ${source}`, // REVIEW-NATIVE
   inEnglish: "Po angielsku",
@@ -199,6 +213,8 @@ const PL: NewsCopy = {
 const PT: NewsCopy = {
   latest: "Últimas notícias de futebol",
   updatedAt: (time) => `Atualizado às ${time}`,
+  lastUpdateAt: (time) => `Última atualização às ${time}`,
+  pausedMeta: "Notícias em pausa",
   count: (n) => (n === 1 ? "1 notícia" : `${n} notícias`),
   aiLabel: (source) => `Reescrito com IA a partir de ${source}`, // REVIEW-NATIVE
   inEnglish: "Em inglês",
@@ -226,6 +242,8 @@ const PT: NewsCopy = {
 const RU: NewsCopy = {
   latest: "Свежие футбольные новости",
   updatedAt: (time) => `Обновлено в ${time}`,
+  lastUpdateAt: (time) => `Последнее обновление в ${time}`,
+  pausedMeta: "Новости на паузе",
   count: (n) => {
     const d = n % 10;
     const h = n % 100;
@@ -257,6 +275,8 @@ const RU: NewsCopy = {
 const SV: NewsCopy = {
   latest: "Senaste fotbollsnyheterna",
   updatedAt: (time) => `Uppdaterad kl. ${time}`,
+  lastUpdateAt: (time) => `Senast uppdaterad kl. ${time}`,
+  pausedMeta: "Nyheterna pausade",
   count: (n) => (n === 1 ? "1 nyhet" : `${n} nyheter`),
   aiLabel: (source) => `Omskriven med AI utifrån ${source}`, // REVIEW-NATIVE
   inEnglish: "På engelska",
@@ -284,6 +304,8 @@ const SV: NewsCopy = {
 const TR: NewsCopy = {
   latest: "Son futbol haberleri",
   updatedAt: (time) => `${time} itibarıyla güncellendi`,
+  lastUpdateAt: (time) => `Son güncelleme: ${time}`,
+  pausedMeta: "Haberler duraklatıldı",
   count: (n) => `${n} haber`,
   aiLabel: (source) => `${source} kaynağından yapay zekâ ile yeniden yazıldı`, // REVIEW-NATIVE
   inEnglish: "İngilizce",

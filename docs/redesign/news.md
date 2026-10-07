@@ -1,5 +1,12 @@
 # Redesign v3c · News live da FotMob (branch `betredge/v3c-news` → `betredge/v3c-news2`)
 
+> **Superato il 07/10 da `betredge/v3c-newswatch`** (decisione di Andrea: niente `ANTHROPIC_API_KEY`
+> né AI Gateway). Il sito non chiama più FotMob né alcun modello: legge `news_items`/`news_state`,
+> scritte dal watcher locale sul Mac con `claude -p`. Disegno, convenzioni e stati in
+> [`news-watcher.md`](news-watcher.md); tabelle e daemon nella PROPOSAL
+> [`news-watcher-proposal.md`](news-watcher-proposal.md). Sotto resta lo storico di news/news2
+> (le misure della pagina FotMob valgono ancora; la sezione «Come si accende» no).
+
 Debito accettato da Andrea il 05/10/2026 e il 07/10/2026 (rischio ToS «uso automatico sistematico»,
 copyright e diritto degli editori; owner Andrea): vedi `PIANO-COSTRUZIONE.md` «News da FotMob» e
 `legale/LAUNCH-BLOCKERS.md` R6/R7. **Non usa il DB**: cache di Next al posto della tabella
@@ -21,19 +28,10 @@ The Analyst), `page.url` (relativa su fotmob.com o assoluta verso l'editore), `i
 (10:51, 11:00, 11:15). Arrivano a grappoli: un rinfresco ogni 10 min basta.
 
 ## Come si accende
-| Variabile (server) | Dove | Effetto |
-|---|---|---|
-| `NEWS_FOTMOB_ENABLED=1` | solo Preview | accende pagina+RSS, riscrittura, note in pagina partita e «Most moved today». Assente/`0` = spento: nessuna richiesta, nessuna chiamata LLM, /blog come prima (solo guide) |
-| `ANTHROPIC_API_KEY` | Preview | riscrittura diretta con Claude **Haiku 4.5** (`claude-haiku-4-5`) |
-| oppure `AI_GATEWAY_API_KEY` | Preview | stessa riscrittura via Vercel AI Gateway (`anthropic/claude-haiku-4.5`) |
-| oppure `NEWS_REWRITE_PROVIDER=gateway` | Preview | AI Gateway **senza chiave**, col token OIDC del deployment (OIDC attivo sul progetto `betredge`, verificato 07/10). Serve credito AI Gateway sul team |
-| `NEWS_REWRITE_MODEL` | opzionale | altro modello (id Anthropic o id Gateway) |
-| `NEWS_FOTMOB_PAGE_URL`, `NEWS_FOTMOB_FEED_URL`, `NEWS_REWRITE_API_URL` | solo test locali | puntano a `scripts/v3c/mock-news.ts` |
-
-Senza nessuna credenziale LLM: **nessuna richiesta a FotMob** e la pagina dice «news in arrivo» con le
-guide (decisione di Andrea: mai un titolo originale senza riscrittura).
-
-**Spegnimento:** togliere `NEWS_FOTMOB_ENABLED` e ridistribuire. Nessun dato da cancellare (tag cache `v3c-news`).
+Vedi [`news-watcher.md`](news-watcher.md): `NEWS_FOTMOB_ENABLED=1` sul sito accende la lettura delle
+tabelle; l'interruttore senza redeploy è `news_state.enabled`. Le variabili `ANTHROPIC_API_KEY`,
+`AI_GATEWAY_API_KEY`, `NEWS_REWRITE_*`, `NEWS_FOTMOB_PAGE_URL/FEED_URL` e `scripts/v3c/mock-news.ts`
+non esistono più.
 
 ## Guardrail, dove stanno
 - Fonti: pagina `/en/news` (`lib/v3c/news/page.ts`) prima, RSS (`feed.ts`) seconda; unione senza doppioni per

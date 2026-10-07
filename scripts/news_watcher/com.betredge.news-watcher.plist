@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  TEMPLATE, not installed (#REDESIGN-V3C newswatch). Install only after APPROVE of
+  Andrea: docs/redesign/news-watcher-proposal.md §4. Everything it runs lives OUTSIDE
+  ~/Desktop (TCC: a LaunchAgent cannot read ~/Desktop — lesson 2026-07-25).
+  No secret in this file: the service role key is in news-watcher/.env (chmod 600).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.betredge.news-watcher</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/calde/.nvm/versions/node/v24.14.0/bin/node</string>
+        <string>/Users/calde/Library/Application Support/news-watcher/news-watcher.mjs</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/calde/Library/Application Support/news-watcher</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/calde/.local/bin:/Users/calde/.nvm/versions/node/v24.14.0/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>StartInterval</key>
+    <integer>600</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/calde/Library/Application Support/news-watcher/watcher.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/calde/Library/Application Support/news-watcher/watcher.err.log</string>
+</dict>
+</plist>
