@@ -25,6 +25,8 @@ import { ThemeToggle } from "./V3cShell";
 import { DocLang } from "./guide/DocLang";
 import { GlossaryDialog, GlossaryLink } from "./guide/Glossary";
 import { MoreMenu } from "./guide/MoreMenu";
+import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
+import "./fixui2.css";
 
 export const ROUTES = {
   board: "/",
@@ -124,9 +126,8 @@ export function TopBar({ current, locale, copy }: TopProps) {
           ))}
         </nav>
         <div className="v3c-top-r">
-          <a className="v3c-signin" href={ROUTES.signIn}>
-            {copy.signIn}
-          </a>
+          {/* fixui2 B3: no «Sign in» in Fase 0 — it led to today's /plans (Base, crypto-only). Nothing on v3c is
+              behind an account yet; the one way to today's sign-in is «Existing members» in the footer. */}
           <ThemeToggle labels={{ toPaper: copy.toPaper, toDark: copy.toDark }} />
         </div>
       </div>
@@ -190,7 +191,6 @@ export function Footer({ locale, slug, hub, copy }: FootProps) {
             <h2 className="v3c-lab">{f.account}</h2>
             <ul>
               <li><a href={ROUTES.pro}>{n.pricing}</a></li>
-              <li><a href={ROUTES.signIn}>{n.signIn}</a></li>
             </ul>
           </div>
           <div>
@@ -223,7 +223,11 @@ export function Footer({ locale, slug, hub, copy }: FootProps) {
         {/* fixui B7: niente indirizzo di corrispondenza (POSITIONING R9) finché il legale non indica
             l'entità: il marchio e i Termini. lib/legal-entity resta intatto per il sito di oggi e le email. */}
         <p className="v3c-fine v3c-foot-imp">
-          BetRedge · <a href={ROUTES.terms}>{f.terms}</a>
+          BetRedge · <a href={ROUTES.terms}>{f.terms}</a> ·{" "}
+          {/* fixui2 B3: the discreet way to today's sign-in flow (the Dashboard's modal, untouched) */}
+          <a href={ROUTES.signIn} rel="nofollow" title={fixui2CopyFor(locale).existingMembersTitle} data-v3c="existing-members">
+            {fixui2CopyFor(locale).existingMembers}
+          </a>
         </p>
       </div>
     </footer>

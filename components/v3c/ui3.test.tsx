@@ -57,12 +57,13 @@ describe("B · tennis senza la nostra stima", () => {
     expect(html).toContain('href="/price-check?m=tennis%3At1"');
   });
 
+  // fixui2 N4: a book quoting both players, so the price check opens on its prices
   it("price check su una partita tennis: due prezzi, margine, nessuna colonna stima/gap", () => {
     const pc: PcMatch = {
       id: TN.id, sport: "tennis", home: TN.player1, away: TN.player2, kickoff: TN.kickoff, league: TN.tournament, blend: false, links: [],
       outcomes: [
-        { outcome: "home", market_price: 1.5, estimate_p: null, book_prices: [] },
-        { outcome: "away", market_price: 2.6, estimate_p: null, book_prices: [] },
+        { outcome: "home", market_price: 1.5, estimate_p: null, book_prices: [{ bookmaker: "fortuneplay", name: "FortunePlay", price: 1.5, captured_at: "2099-10-10T09:00:00.000Z", source: "live_feed", url: "https://fp.example/x" }] },
+        { outcome: "away", market_price: 2.6, estimate_p: null, book_prices: [{ bookmaker: "fortuneplay", name: "FortunePlay", price: 2.6, captured_at: "2099-10-10T09:00:00.000Z", source: "live_feed", url: "https://fp.example/x" }] },
       ],
     };
     const html = renderToStaticMarkup(<PriceCheck matches={[pc]} initialId={TN.id} partners />);

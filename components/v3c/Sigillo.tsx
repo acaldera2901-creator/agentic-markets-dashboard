@@ -4,7 +4,7 @@
 // prova (la riga è nel registro pubblico da quell'ora), non un ornamento: se
 // l'hash non è valido non si mostra niente che somigli a una prova.
 import { sealTimeUtc, shortHash } from "@/lib/v3c/seal";
-import { hmLocal } from "@/lib/v3c/time-ui";
+import { sealStamp, sealedBeforeKickoff } from "@/lib/v3c/fixui2";
 
 type Props = {
   /** ISO dell'ora del sigillo, oppure l'ora già scritta («09:02 UTC»). */
@@ -21,25 +21,38 @@ type Props = {
    */
   tz?: string;
   locale?: string;
+  /**
+   * fixui2 N8: the kick-off of the match. A row dated after it is not a pre-match seal: the stamp
+   * then reads `afterLabel` («logged») with `afterTitle`, and carries data-seal="after".
+   */
+  kickoff?: string | null;
+  afterLabel?: string;
+  afterTitle?: string;
 };
 
-export function Sigillo({ sealedAt, hash, label = "sealed", title, className, tz, locale }: Props) {
+export function Sigillo({ sealedAt, hash, label = "sealed", title, className, tz, locale, kickoff, afterLabel, afterTitle }: Props) {
   // F3: the ledger stores no row hash today. Without one the seal shows the
   // time only — a fact (pick_ledger.captured_at) — and never a made-up code.
   const short = hash == null ? "" : shortHash(hash);
   if (hash != null && !short) return null;
-  const time = /^\d{2}:\d{2}/.test(sealedAt) ? sealedAt : tz ? hmLocal(sealedAt, tz, locale) : sealTimeUtc(sealedAt);
+  // fixui2 N8: day AND time («7 Oct 16:02») — a bare «16:02» next to a 16:00 kick-off read as sealed after it.
+  // Before the mount (no zone) the stamp stays in UTC and says so, as before.
+  const written = /^\d{2}:\d{2}/.test(sealedAt);
+  const stamp = written ? sealedAt : sealStamp(sealedAt, tz, locale);
+  const time = written ? sealedAt : stamp ? (tz ? stamp : `${stamp} UTC`) : sealTimeUtc(sealedAt);
   if (!time) return null;
+  const after = !written && kickoff != null && !sealedBeforeKickoff(sealedAt, kickoff);
   return (
     <span
       className={["v3c-seal", className].filter(Boolean).join(" ")}
-      title={title ?? (short ? "Sealed to the public ledger; the hash is the first and last characters of the row at publication" : "Sealed to the public ledger at this time (UTC), before kick-off; the row cannot be edited afterwards")}
+      data-seal={after ? "after" : undefined}
+      title={after && afterTitle ? afterTitle : title ?? (short ? "Sealed to the public ledger; the hash is the first and last characters of the row at publication" : "Sealed to the public ledger at this time (UTC), before kick-off; the row cannot be edited afterwards")}
     >
       {/* polish: il monogramma ufficiale apre il sigillo (redesign/brand/signature, «inline UI») */}
       <svg className="v3c-seal-mk" viewBox="0 0 459 459" aria-hidden="true">
         <use href="/brand/v3c/mark.svg#mark" />
       </svg>
-      <i>{label}</i> {time}
+      <i>{after && afterLabel ? afterLabel : label}</i> {time}
       {short ? (
         <>
           {" "}

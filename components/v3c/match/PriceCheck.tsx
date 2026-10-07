@@ -24,6 +24,7 @@ import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 import type { ModelGuardLevel } from "@/lib/v3c/fixdata";
 import { PRICE_MAX, PRICE_MIN, inputProblem } from "@/lib/v3c/fixdata";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
 
 /** tennis2: estimate_p nel tennis = la stima basata su Elo (0,1·Elo + 0,9·mercato) dove c'è, altrimenti null (solo mercato). */
 export type PcOutcome = { outcome: Outcome; market_price: number | null; estimate_p: number | null; book_prices: V3BookPrice[] };
@@ -34,9 +35,21 @@ export type PcMatch = { id: string; sport: "football" | "tennis"; home: string; 
 
 const fmt2 = (n: number | null) => (n == null ? "" : n.toFixed(2));
 
-function startPrices(m: PcMatch | null): string[] {
-  if (!m) return ["2.15", "3.20", "3.50"];
+/** The market prices of the match (the «Market price» chip: a reference, not a price a book necessarily offers). */
+function marketPrices(m: PcMatch): string[] {
   return m.outcomes.map((o) => fmt2(o.market_price ?? o.book_prices[0]?.price ?? null));
+}
+
+/**
+ * fixui2 N4: what the price check opens on. A match → the prices of a connected book that quotes every outcome
+ * (a price somebody actually offers), else empty boxes and «Enter the price you see» — never the composite market
+ * price, which no book may offer (QA-2: 5.00 when the best book paid 4.50, «EV +5%»). No match → the sample of the
+ * maths, unless the page was asked for a match it cannot open (N6): then empty.
+ */
+function startPrices(m: PcMatch | null, empty = false): string[] {
+  if (!m) return empty ? ["", "", ""] : ["2.15", "3.20", "3.50"];
+  const f = fillers(m)[0];
+  return f ? f.prices.map((p) => p.toFixed(2)) : m.outcomes.map(() => "");
 }
 
 /** I book che hanno una quota per tutti e tre gli esiti: «riempi con i prezzi di X». */
@@ -52,18 +65,17 @@ function fillers(m: PcMatch | null): { key: string; name: string; prices: number
   return out;
 }
 
-export function PriceCheck({ matches, initialId, partners, landing = [] }: { matches: PcMatch[]; initialId: string | null; partners: boolean; landing?: V3BookLink[] }) {
+export function PriceCheck({ matches, initialId, partners, landing = [], notListed = false }: { matches: PcMatch[]; initialId: string | null; partners: boolean; landing?: V3BookLink[]; /** fixui2 N6: ?m= named a match the list cannot open */ notListed?: boolean }) {
   const { lang, t } = useV3cCopy();
   const c = matchCopyFor(lang);
   const tz = useLocalTimeZone();
   const locale = v3cLocale(lang);
   const [id, setId] = useState<string>(initialId ?? "");
   const m = matches.find((x) => x.id === id) ?? null;
-  const [raw, setRaw] = useState<string[]>(() => startPrices(m));
-  // polish: il Kelly in percentuale + importo su un bankroll che l'utente può cambiare (500 di partenza)
-  const [bankRaw, setBankRaw] = useState("500");
-  const bankN = Number(bankRaw.replace(",", "."));
-  const bank = Number.isFinite(bankN) && bankN > 0 ? bankN : 500;
+  const x2 = fixui2CopyFor(lang);
+  const [raw, setRaw] = useState<string[]>(() => startPrices(m, notListed));
+  // fixui2 N6: the «not in the price check» note stays until the visitor picks something
+  const [missing, setMissing] = useState(notListed);
 
   // la stima (colonne, nastro) nel calcio e nel tennis con l'Elo fresco; verdetto «più alto/più basso» ed EV/Kelly solo nel calcio
   const tnEst = m != null && m.sport === "tennis" && m.tnElo === true && m.outcomes.every((o) => o.estimate_p != null);
@@ -75,9 +87,12 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
   const used = m ? parsed : parsed.filter((p, i) => i < 2 || raw[i].trim() !== "");
   const estimates = withEst ? m.outcomes.map((o) => (o.estimate_p == null ? null : o.estimate_p * 100)) : [];
   const chk = checkPrices(used, estimates);
+  // fixui2 N4: nothing typed yet is a state, not an error
+  const blank = raw.slice(0, labels.length).every((x) => x.trim() === "");
 
   function choose(next: string) {
     setId(next);
+    setMissing(false);
     const nm = matches.find((x) => x.id === next) ?? null;
     setRaw(startPrices(nm));
     try {
@@ -100,7 +115,8 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
       ? withEst && !tnEst && E != null && (m?.guard ?? "ok") === "ok"
         ? toolStrip([
             { slug: "ev-calculator", values: { price: leadPrice, prob: E } },
-            { slug: "kelly-criterion", values: { price: leadPrice, prob: E, bank } },
+            // fixui2 N4: Kelly as a fraction only — no «€x of a €500 bankroll» (the bankroll is the visitor's, in the tool)
+            { slug: "kelly-criterion", values: { price: leadPrice, prob: E } },
             { slug: "odds-converter", values: { price: leadPrice } },
           ])
         : toolStrip([
@@ -146,7 +162,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
         {m ? (
           <div className="v3c-pc-fill" role="group" aria-label={c.pc.fill}>
             <span className="v3c-lab">{c.pc.fill}</span>
-            <button type="button" className="v3c-chip" onClick={() => setRaw(startPrices(m))}>
+            <button type="button" className="v3c-chip" onClick={() => setRaw(marketPrices(m))}>
               {c.pc.useMarket}
             </button>
             {fills.map((f) => (
@@ -157,7 +173,15 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
           </div>
         ) : null}
       </div>
-      <form className="v3c-tf v3c-pc-form" style={{ "--n": labels.length === 2 ? 2 : 3 } as React.CSSProperties} onSubmit={(e) => e.preventDefault()}>
+      {missing ? (
+        <p className="v3c-small v3c-pc-missing" role="status" data-pc="not-listed">
+          {x2.notListed}
+        </p>
+      ) : null}
+      <p className="v3c-lab v3c-pc-enter" id="v3c-pc-enter">
+        {x2.enterPrice}
+      </p>
+      <form aria-labelledby="v3c-pc-enter" className="v3c-tf v3c-pc-form" style={{ "--n": labels.length === 2 ? 2 : 3 } as React.CSSProperties} onSubmit={(e) => e.preventDefault()}>
         {labels.map((l, i) => (
           <label key={i}>
             <span className="v3c-lab">{l}</span>
@@ -176,7 +200,11 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
       </form>
 
       <section className="v3c-pc-res" aria-live="polite">
-        {!chk ? (
+        {!chk && blank ? (
+          <p className="v3c-pc-empty" data-pc="empty">
+            {x2.emptyPrices}
+          </p>
+        ) : !chk ? (
           <p className="v3c-pc-err">
             {c.pc.invalid} {fixdataCopyFor(lang).toolErrRange(new Intl.NumberFormat(locale).format(PRICE_MIN), new Intl.NumberFormat(locale).format(PRICE_MAX))}
           </p>
@@ -253,14 +281,6 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
           all={c.allTools}
           items={strip}
           lang={lang}
-          bank={
-            withEst && !tnEst && E != null && (m?.guard ?? "ok") === "ok" ? (
-              <label className="v3c-pc-bank">
-                <span className="v3c-lab">{c.pc.bankroll}</span>
-                <input type="number" inputMode="decimal" min="1" step="10" value={bankRaw} onChange={(e) => setBankRaw(e.target.value)} />
-              </label>
-            ) : null
-          }
         />
       ) : null}
 

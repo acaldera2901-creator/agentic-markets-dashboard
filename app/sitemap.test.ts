@@ -142,3 +142,18 @@ describe("sitemap", () => {
     });
   });
 });
+
+// #REDESIGN-V3C fixui2 N5: a flag acceso /community (paywall Pro, in attesa del legale) esce dalla sitemap;
+// /leaderboard e /invite non ci sono mai state. Spento: /community resta (test sopra).
+describe("sitemap a flag acceso (fixui2 N5)", () => {
+  it("non elenca /community, /leaderboard né /invite", async () => {
+    vi.stubEnv("NEXT_PUBLIC_REDESIGN", "1");
+    try {
+      const urls = (await sitemap()).map((e) => e.url);
+      for (const p of ["/community", "/leaderboard", "/invite"]) expect(urls).not.toContain(`${BASE}${p}`);
+      expect(urls).toContain(`${BASE}/partners`);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});

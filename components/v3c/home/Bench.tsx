@@ -14,6 +14,8 @@ import { BENCH_SLUGS, SAMPLE_MATCH, benchExample, sampleTool, type LeadShape } f
 import { bookmakerMargin } from "@/lib/betting-math";
 import { toolPath } from "@/lib/tools/registry";
 import { BenchTool } from "../BenchTool";
+import { exampleEligible, withoutMoney } from "@/lib/v3c/fixui2";
+import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
 import { ToolMark } from "../Monogramma";
 import { V3C_ROUTES } from "../V3cChrome";
 
@@ -31,11 +33,17 @@ function fromBoard(m: V3BoardMatch, drawWord: string): Example | null {
   return { label: outcomeLabel(m, lead.outcome, drawWord), match: `${m.home} – ${m.away}`, outcomes: ordered, lead: shapes[idx], sample: false };
 }
 
+/** fixui2 N1: the bench speaks in percentages only — Kelly «10.7% · €54» → «10.7%». */
+function benchSafe(e: ReturnType<typeof benchExample>): ReturnType<typeof benchExample> {
+  return { ...e, input: withoutMoney(e.input), output: withoutMoney(e.output) };
+}
+
 export function Bench({ matches, nowIso }: { matches: V3BoardMatch[]; nowIso: string }) {
-  const { t } = useV3cCopy();
+  const { lang, t } = useV3cCopy();
   const tz = useLocalTimeZone();
   const ex: Example = useMemo(() => {
-    const m = benchMatch(matches, new Date(nowIso), tz);
+    // fixui2 N1: only a match not started and not held back by the model guard (never EV/Kelly of a guarded match)
+    const m = benchMatch(exampleEligible(matches, new Date(nowIso)), new Date(nowIso), tz);
     const real = m ? fromBoard(m, t.board.draw) : null;
     if (real) return real;
     const outs = SAMPLE_MATCH.outcomes.map((o) => ({ price: o.price, market: o.market, estimate: o.estimate }));
@@ -79,10 +87,10 @@ export function Bench({ matches, nowIso }: { matches: V3BoardMatch[]; nowIso: st
         {BENCH_SLUGS.map((slug) => {
           const tool = sampleTool(slug);
           const copy = t.bench.tools[slug];
-          return <BenchTool key={slug} slug={slug} sigla={tool.sigla} name={copy?.name ?? tool.name} line={copy?.line ?? tool.line} href={toolPath(slug, "en")} example={benchExample(slug, { outcomes: ex.outcomes })} />;
+          return <BenchTool key={slug} slug={slug} sigla={tool.sigla} name={copy?.name ?? tool.name} line={copy?.line ?? tool.line} href={toolPath(slug, "en")} example={benchSafe(benchExample(slug, { outcomes: ex.outcomes }))} />;
         })}
       </div>
-      <p className="v3c-fine">{ex.sample ? t.bench.noteNoMatch : t.bench.note(ex.match)}</p>
+      <p className="v3c-fine" data-bench={ex.sample ? "sample" : "match"}>{ex.sample ? fixui2CopyFor(lang).benchSample : t.bench.note(ex.match)}</p>
     </section>
   );
 }

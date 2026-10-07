@@ -99,6 +99,13 @@ if (process.env.MOCK_FIXDATA === "1") {
   add({ id: "560593", competition: "Premier League", kickoff: q(5), home: "Arsenal FC", away: "Leeds United FC", odds: [1.36, 5.0, 8.0], model: [0.7, 0.18, 0.12], sealed: true, books: "both", history: false });
 }
 
+// fixui2 (#REDESIGN-V3C fixui2): MOCK_FIXUI2=1 adds the N1 case of QA-REPORT-2 — the FIRST top-league match of today is held
+// back by the model guard (model 62% vs market ≈44%: no_value, like Botafogo–Vasco). The home bench must not pick it.
+if (process.env.MOCK_FIXUI2 === "1") {
+  const q = (inH: number) => Math.round((now + inH * H) / (15 * 60_000)) * 15 * 60_000;
+  FOOTBALL.push({ id: "oddsapi:fx2-guarded-first", league: "Serie A", competition: "Serie A", kickoff: q(1), home: "Como", away: "Cagliari", odds: [2.2, 3.3, 3.4], model: [0.62, 0.2, 0.18], sealed: true, books: "both", history: false });
+}
+
 const fbKey = (f: Fb) => teamPairKey("soccer", f.home, f.away, iso(f.kickoff))!;
 
 function boardSources() {

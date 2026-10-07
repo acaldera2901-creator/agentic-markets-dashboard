@@ -55,6 +55,8 @@ import { newsCopyFor } from "@/lib/v3c/news-copy";
 import type { NewsCard } from "@/lib/v3c/news/news.server";
 import { noteText } from "../pages/NewsLive";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
+import { sealedBeforeKickoff } from "@/lib/v3c/fixui2";
 import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
@@ -85,7 +87,7 @@ function useCtx(): Ctx {
 // ─── Testa ─────────────────────────────────────────────────────────────────
 
 function Head({ ctx, tab, id, home, away, kickoff, league, sport, sealedAt }: { ctx: Ctx; tab: string; id: string; home: string; away: string; kickoff: string; league: string | null; sport: "football" | "tennis"; sealedAt: string | null }) {
-  const { c, t, tz, locale } = ctx;
+  const { c, t, tz, locale, lang } = ctx;
   // Briciola: torneo/campionato se c'è, altrimenti il nome dello sport — mai un trattino.
   const crumb = league?.trim() || t.toolbar[sport];
   return (
@@ -117,7 +119,7 @@ function Head({ ctx, tab, id, home, away, kickoff, league, sport, sealedAt }: { 
             {league ? <span>{league}</span> : null}
             {sealedAt ? (
               <span className="v3c-fm-i">
-                <Sigillo sealedAt={sealedAt} tz={tz} locale={locale} label={t.fascia.sealed} title={(sport === "tennis" ? t.tennis.sealedWhy : t.board.sealedWhy)(stampLocal(sealedAt, ctx.tz, locale))} />
+                <Sigillo sealedAt={sealedAt} tz={tz} locale={locale} label={t.fascia.sealed} title={(sport === "tennis" ? t.tennis.sealedWhy : t.board.sealedWhy)(stampLocal(sealedAt, ctx.tz, locale))} kickoff={kickoff} afterLabel={fixui2CopyFor(lang).loggedLabel} afterTitle={fixui2CopyFor(lang).loggedWhy(stampLocal(sealedAt, ctx.tz, locale))} />
                 <InfoButton term="sealed" label={t.fascia.sealed} />
               </span>
             ) : null}
@@ -281,19 +283,22 @@ function NewsItem({ ctx, n, card }: { ctx: Ctx; n: number; card: NewsCard }) {
   );
 }
 
-function SealItem({ ctx, n, sealedAt, tennis = false }: { ctx: Ctx; n: number; sealedAt: string | null; tennis?: boolean }) {
-  const { c, t, locale } = ctx;
+function SealItem({ ctx, n, sealedAt, tennis = false, kickoff }: { ctx: Ctx; n: number; sealedAt: string | null; tennis?: boolean; kickoff: string }) {
+  const { c, t, locale, lang } = ctx;
+  const x2 = fixui2CopyFor(lang);
+  // fixui2 N8: a row dated after kick-off is not «Sealed before kick-off»
+  const after = sealedAt != null && !sealedBeforeKickoff(sealedAt, kickoff);
   // ui3: nel tennis il numero sigillato è del mercato, non una nostra stima — lo si dice
-  const body = sealedAt ? (tennis ? c.tnSealBody : c.sealBody)(stampLocal(sealedAt, ctx.tz, locale)) : c.notSealedBody;
+  const body = sealedAt ? (after ? x2.loggedBody : tennis ? c.tnSealBody : c.sealBody)(stampLocal(sealedAt, ctx.tz, locale)) : c.notSealedBody;
   return (
     <li>
       <span className="k">{n}</span>
       <div>
-        <h3>{sealedAt ? c.sealTitle : c.notSealed}</h3>
+        <h3>{sealedAt ? (after ? x2.loggedTitle : c.sealTitle) : c.notSealed}</h3>
         <p>{body}</p>
         {sealedAt ? (
           <p className="v3c-mt-reg">
-            <Sigillo sealedAt={sealedAt} tz={ctx.tz} locale={locale} label={t.fascia.sealed} />
+            <Sigillo sealedAt={sealedAt} tz={ctx.tz} locale={locale} label={t.fascia.sealed} kickoff={kickoff} afterLabel={x2.loggedLabel} afterTitle={x2.loggedWhy(stampLocal(sealedAt, ctx.tz, locale))} />
             <Link href={V3C_ROUTES.record}>{c.record}</Link>
           </p>
         ) : null}
@@ -602,7 +607,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
                   <p>{m.blend ? c.blendBody : c.modelBody}</p>
                 </div>
               </li>
-              <SealItem ctx={ctx} n={(summary ? 3 : 2) + (news[0] ? 1 : 0)} sealedAt={m.sealed_at} />
+              <SealItem ctx={ctx} n={(summary ? 3 : 2) + (news[0] ? 1 : 0)} sealedAt={m.sealed_at} kickoff={m.kickoff} />
             </ol>
           )}
           strip={
@@ -868,7 +873,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
                   <p>{sealedOurs ? fc.sealedGapNote : elo ? c.tnEloWhyBody : c.tnWhyBody}</p>
                 </div>
               </li>
-              <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} tennis={!sealedOurs} />
+              <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} tennis={!sealedOurs} kickoff={m.kickoff} />
             </ol>
           )}
           strip={strip ? <ToolStrip title={c.stripTennis} all={c.allTools} items={strip} lang={lang} /> : null}

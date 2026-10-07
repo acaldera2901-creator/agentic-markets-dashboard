@@ -416,3 +416,24 @@ Riscritte nelle 11 lingue (nessuna chiave nuova):
 | `yday.stripBody` | «… Tennis: in the Record.» (era «Tennis: outcomes only.»: la home ora mostra solo il calcio, fixdata A6); mostrata solo quando c'è il punteggio (n ≥ minimo) | «… Tennis: nel Registro.» |
 | `fixdata.priceAt` | fn(time) → «price at {t}» (senza sigla: il fuso è dichiarato una volta per vista da TzNote, fixui M2) | fn(time) → «prezzo delle {t}» |
 
+
+## fixui2 (#REDESIGN-V3C fixui2) — QA-REPORT-2, filone interfaccia
+
+Dizionario nuovo `lib/v3c/fixui2-copy.ts` (11 lingue complete, `// REVIEW-NATIVE`, in `lib/v3c/i18n-parity.test.ts`):
+
+| Chiave | EN | IT |
+|---|---|---|
+| `existingMembers` | «Existing members» (B3: unico link, nel piè, al flusso di accesso di oggi) | «Utenti già registrati» |
+| `existingMembersTitle` | «Sign in on the current site» | «Accedi sul sito attuale» |
+| `enterPrice` | «Enter the price you see» (N4) | «Scrivi il prezzo che vedi» |
+| `emptyPrices` | «Type the prices from your book: the margin and the probabilities appear here.» | «Scrivi i prezzi del tuo book: margine e probabilità compaiono qui.» |
+| `notListed` | «This match is not in the price check: it has started or has no prices yet.» (N6) | «Questa partita non è nel controllo prezzo: è iniziata o non ha ancora prezzi.» |
+| `loggedLabel` | «logged» (N8: riga del registro dopo il calcio d'inizio) | «registrato» |
+| `loggedWhy` | fn → «Entered the public ledger on {t}, after kick-off: not a pre-match seal.» | fn → «Entrata nel registro pubblico il {t}, dopo il fischio d’inizio: non è un sigillo pre-partita.» |
+| `loggedTitle` | «Logged after kick-off» | «Registrata dopo il fischio d’inizio» |
+| `loggedBody` | fn → «This row entered the public ledger on {t}, after the start: it is not a pre-match seal.» | fn → «Questa riga è entrata nel registro pubblico il {t}, dopo l’inizio: non è un sigillo pre-partita.» |
+| `benchSample` | «Example numbers, not a real match: no match on today’s board fits the example yet.» (N1) | «Numeri d’esempio, non una partita vera: …» |
+| `cmPreviewTitle` / `cmPreviewSub` / `cmLockedLine` | «Creator slips · preview» / «Matches are visible to everyone. Legs and probabilities are not shown in this preview.» / «Preview: legs and probability not shown» (N5) | «Schedine dei creator · anteprima» / … |
+
+Riscritte nelle 11 lingue: `banner.pro` «Pro preview: nothing to buy yet» / «Read the Pro preview» (N13; era «See what Pro adds» / «Compare Free and Pro»).
+Non più a schermo (chiavi lasciate per quando torneranno): `nav.signIn` (B3), `t.bench.noteNoMatch`, `pc.bankroll`, `cm.gateNoneTitle`, `cm.gateNoneSub`, `cm.gatePartial`, `cm.seePlans`, `cm.lockedLine`.

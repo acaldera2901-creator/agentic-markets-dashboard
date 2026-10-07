@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   description:
     "Accumulators built by the BetRedge community with the Match Builder, each leg carrying the model's own probability.",
   alternates: { canonical: "/community" },
+  // fixui2 N5: held for the legal review (docs/redesign/fixui2-legal-hold.md) — out of the index and the
+  // v3c sitemap, no internal link. Only this v3c route (flag on): today's page is untouched.
+  robots: { index: false, follow: false },
 };
 
 /** La prosa SEO del layout in v3c, prima del footer: stesso array, stesso FAQPage JSON-LD. h2: la fascia è l'h1. */

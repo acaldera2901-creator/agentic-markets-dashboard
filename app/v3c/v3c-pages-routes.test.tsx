@@ -65,10 +65,14 @@ describe("le destinazioni hanno i metadata delle pagine di oggi", () => {
       () => import("../community/layout"),
       () => import("./community/page"),
     ],
-  ])("%s", async (_n, today, v3c) => {
+  ])("%s", async (n, today, v3c) => {
     const [a, b] = await Promise.all([today(), v3c()]);
+    // fixui2 N5: leaderboard, invite and community add only noindex/nofollow (legal hold); the rest is today's
+    const held = /^(leaderboard|invite|community)/.test(n);
     expect((b as { metadata: unknown }).metadata).toEqual(
-      (a as { metadata: unknown }).metadata,
+      held
+        ? { ...(a as { metadata: object }).metadata, robots: { index: false, follow: false } }
+        : (a as { metadata: unknown }).metadata,
     );
   });
 

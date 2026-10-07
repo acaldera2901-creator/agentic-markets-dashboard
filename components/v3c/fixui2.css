@@ -1,0 +1,12 @@
+/* components/v3c/fixui2.css (#REDESIGN-V3C fixui2) — the third UI round (QA-REPORT-2). Tokens only, no new hex. */
+
+/* N4: «Enter the price you see» sits over the boxes; an empty form is a state (dashed: nothing to read yet), not an error */
+.v3c-pc-enter { margin: 2px 0 6px; color: var(--v3c-ink-2); }
+.v3c-pc-empty { margin: 18px 0; padding: 10px 12px; font-size: 14px; color: var(--v3c-ink-2); border: 1.5px dashed var(--v3c-line-2); }
+/* N6: the match asked by the link could not open — said once, above the boxes */
+.v3c-pc-missing { margin: 0 0 12px; padding: 2px 0 2px 10px; border-left: 3px solid var(--v3c-ink); color: var(--v3c-ink); }
+
+/* N7 (QA-2: Books at 390 px scrolled 67 px sideways and cut the cookie banner's ACCEPT): the visually hidden book
+   names of the price table are position:absolute; their containing block was outside the scrolling wrapper, so they
+   escaped its clip and widened the page. The wrapper becomes their containing block: the table scrolls inside it. */
+.v3c-pg-scroll { position: relative; max-width: 100%; }

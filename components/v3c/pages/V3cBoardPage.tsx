@@ -30,6 +30,7 @@ import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 import { leadOutcome, liveState, pctInt } from "@/lib/v3c/board-view";
 import { byRelevance, hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { wantsLive } from "@/lib/v3c/live-view";
+import { exampleEligible } from "@/lib/v3c/fixui2";
 import { matchHref } from "@/lib/v3c/match-view";
 import { HeroExample, type HeroExampleData } from "@/components/v3c/guide/HeroExample";
 
@@ -137,7 +138,8 @@ async function BoardBlock({ surface, nowIso, sport }: { surface: Surface; nowIso
 async function BenchBlock({ nowIso }: { nowIso: string }) {
   const b = await getBoard();
   // il banco usa una partita di calcio con mercato: solo quelle viaggiano fino al browser
-  const matches = b.ok ? forSurface(b.data, "home", new Date(nowIso)).matches.filter((m) => m.margin_removed != null) : [];
+  // fixui2 N1: a guarded or started match never travels to the bench (no EV/Kelly of a match the guard holds back)
+  const matches = b.ok ? exampleEligible(forSurface(b.data, "home", new Date(nowIso)).matches, new Date(nowIso)) : [];
   return <Bench matches={matches} nowIso={nowIso} />;
 }
 

@@ -19,6 +19,7 @@ import type { V3BoardResponse } from "@/lib/v3c/contracts";
 import { landingBookLinks } from "@/lib/v3c/match-links.server";
 import { readBookLinks } from "@/lib/v3c/match-view";
 import { parseMode } from "@/lib/v3c/mode";
+import { priceCheckInitial } from "@/lib/v3c/fixui2";
 
 export const metadata: Metadata = {
   title: "Price check: what does this price claim? | BetRedge",
@@ -77,10 +78,19 @@ function pcMatches(board: V3BoardResponse, now: Date, max = 80): PcMatch[] {
 async function PcBody({ wanted }: { wanted: string | null }) {
   const [b, partners, landing] = await Promise.all([getBoard(), partnersAllowed(), landingBookLinks()]);
   if (!b.ok) return <MatchError />;
-  const list = pcMatches(b.data, new Date());
-  // ?m= dalla pagina partita; altrimenti la prima partita di calcio con un prezzo di un book connesso
-  const initial = (wanted && list.find((m) => m.id === wanted)?.id) || list.find((m) => m.sport === "football" && m.outcomes.every((o) => o.book_prices.length))?.id || list.find((m) => m.sport === "football")?.id || list[0]?.id || null;
-  return <PriceCheck matches={list} initialId={initial} partners={partners} landing={landing} />;
+  const now = new Date();
+  const short = pcMatches(b.data, now);
+  // fixui2 N6: the match asked by ?m= is always in the list when the board can open it (a Saturday match sat
+  // beyond the first 80 and the page opened another one in silence); otherwise the page opens empty and says so
+  const all = wanted && !short.some((m) => m.id === wanted) ? pcMatches(b.data, now, Number.MAX_SAFE_INTEGER) : null;
+  const extra = all?.find((m) => m.id === wanted);
+  const list = extra ? [...short, extra].sort((a, c) => Date.parse(a.kickoff) - Date.parse(c.kickoff)) : short;
+  // senza ?m=: la prima partita di calcio con un prezzo di un book connesso — fixui2 (N1): e non trattenuta dalla
+  // protezione del modello, così l'esempio di apertura non è mai una partita senza EV/Kelly
+  const ok = (m: PcMatch) => m.sport === "football" && (m.guard ?? "ok") === "ok";
+  const fallback = list.find((m) => ok(m) && m.outcomes.every((o) => o.book_prices.length))?.id || list.find((m) => m.sport === "football" && m.outcomes.every((o) => o.book_prices.length))?.id || list.find((m) => m.sport === "football")?.id || list[0]?.id || null;
+  const init = priceCheckInitial(wanted, list.map((m) => m.id), fallback);
+  return <PriceCheck matches={list} initialId={init.id} notListed={init.notListed} partners={partners} landing={landing} />;
 }
 
 export default async function V3cPriceCheck({ searchParams }: Props) {

@@ -19,6 +19,7 @@ import { V3C_TOOLS_COPY } from "@/lib/i18n/v3c-tools";
 import { V3C_LIVE_COPY } from "./live-copy";
 import { V3C_BANNER_COPY } from "./banner-copy";
 import { FIXDATA_COPY } from "./fixdata-copy";
+import { FIXUI2_COPY } from "./fixui2-copy";
 import { GUIDE_COPY } from "./guide-copy";
 import { DOC_TITLES } from "./doc-titles";
 
@@ -114,6 +115,8 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "banner", of: (l) => V3C_BANNER_COPY[l as never], maxWords: 8 },
   // fixdata: the strings of the data/logic fixes (B1 B2 B5 A6 M4 L4)
   { name: "fixdata", of: (l) => FIXDATA_COPY[l as never], maxWords: 22 },
+  // fixui2: B3 N1 N4 N5 N6 N8 (QA-REPORT-2)
+  { name: "fixui2", of: (l) => FIXUI2_COPY[l as never], maxWords: 22 },
   // fixui: orientamento (frase della home, pannello «How to read this page», fuso, «More») e title per lingua
   { name: "guide", of: (l) => GUIDE_COPY[l as never], maxWords: 22 },
   { name: "doc-titles", of: (l) => DOC_TITLES[l as never], maxWords: null },
