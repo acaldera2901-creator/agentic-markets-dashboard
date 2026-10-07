@@ -5950,7 +5950,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
   // even with no favourite (dead heat), show the model's higher-prob player with
   // NO edge claimed (FTC-honest).
   const topPlayer: "P1" | "P2" = m.p1 >= m.p2 ? "P1" : "P2";
-  const pickPlayer: "P1" | "P2" = (isValue && valuePlayer) ? valuePlayer : (favPlayer ?? topPlayer);
+  const pickPlayer: "P1" | "P2" = valuePlayer ?? favPlayer ?? topPlayer;
   const pickName = pickPlayer === "P1" ? (m.player1.split(" ").pop() ?? m.player1)
     : pickPlayer === "P2" ? (m.player2.split(" ").pop() ?? m.player2) : null;
   const pickProb = pickPlayer === "P1" ? m.p1 : pickPlayer === "P2" ? m.p2 : null;

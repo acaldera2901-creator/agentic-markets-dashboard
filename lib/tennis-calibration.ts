@@ -2,9 +2,9 @@
 // sulle righe tennis MARKET-ANCHORED, e SOLO su quelle.
 //
 // ─── Cosa si corregge, e perche' non e' il modello ─────────────────────────
-// Il tennis serve due cose diverse sotto la stessa veste. Dove esiste un
-// mercato e non un edge calcolato (`edge = null`, righe dette market-anchored)
-// la probabilita' mostrata e' il MERCATO devigato; altrove e' il nostro Elo.
+// La ricerca storica classificava come market-anchored le righe con mercato
+// ed edge nullo. Il serving attuale richiede provenienza esplicita: edge=null
+// da solo NON dimostra che la probabilita' provenga dal mercato devigato.
 // Misurato su 1.421 pick concluse (04/06 -> 11/09):
 //
 //   market-anchored  n=911   dichiarato 68,1%   ottenuto 62,2%   -5,9pt  z=-3,94
@@ -48,9 +48,9 @@
 
 /**
  * Temperatura delle righe tennis market-anchored. 1.0 = identita' (rollback).
- * NON si applica alle righe con un edge del modello: quelle sono calibrate.
+ * Serving eligibility is determined by explicit provenance in tennis-probability.ts.
  */
-export const TENNIS_ANCHORED_TAU = 1.68;
+export const TENNIS_ANCHORED_TAU: number = 1.68;
 
 /**
  * Temperatura su una probabilita' BINARIA (il tennis ha due esiti).
@@ -81,10 +81,8 @@ export function applyTennisTemperature(
  *
  * @param p               probabilita' del lato scelto, come arriva dal modello
  *                        o dal mercato devigato
- * @param haEdgeDelModello true se la riga porta un edge calcolato da noi: in
- *                        quel caso la probabilita' e' del nostro Elo, che e'
- *                        calibrato, e non va toccata.
+ * @param source          provenance validated by the serving resolver.
  */
-export function probabilitaMostrata(p: number, haEdgeDelModello: boolean): number {
-  return haEdgeDelModello ? p : applyTennisTemperature(p);
+export function probabilitaMostrata(p: number, source: "model" | "market" | "unknown"): number {
+  return source === "market" ? applyTennisTemperature(p) : p;
 }

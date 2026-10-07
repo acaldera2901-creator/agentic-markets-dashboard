@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="it"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Predictions tennis — esito prima tranche</title>
+<style>body{font:16px/1.65 system-ui;color:#172333;background:#f6f8fa;max-width:1000px;margin:40px auto;padding:24px}h1,h2{line-height:1.2}section{background:white;padding:24px;margin:20px 0;border:1px solid #dde3e9;border-radius:12px}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:10px;border-bottom:1px solid #dde3e9}code,pre{background:#edf1f5}pre{padding:16px;overflow:auto}small{color:#526172}</style>
+<h1>Predictions tennis: prima tranche</h1>
+<p><strong>La modifica corregge la coerenza della pubblicazione. Non dimostra ancora maggiore accuratezza predittiva.</strong></p>
+<p>29 settembre 2026 · agentic_codex · lavoro locale approvato da Michele.</p>
+<section><h2>Che cosa cambia</h2><ul>
+<li>Il produttore Python registra se la probabilità proviene dal modello o dal mercato, insieme alla coppia effettivamente persistita.</li>
+<li>API tennis e adattatore unified usano lo stesso resolver: probabilità, giocatore scelto, confidence e quota pubblicata seguono un solo contratto.</li>
+<li>La temperatura 1,68 si applica solo a una provenienza mercato valida. Il solo <code>edge = null</code> non decide più la calibrazione. Le righe senza provenienza restano <code>unknown</code> e mantengono i valori di ingresso.</li>
+<li>Una selezione P1/P2 valida del produttore viene rispettata, anche se è il giocatore sfavorito. Probabilità invalide non producono una pick.</li>
+<li>Le quote pubblicate hanno due decimali, coerenti con il database unified. Le coppie approssimate vengono normalizzate solo prima della calibrazione; i valori raw restano distinti.</li>
+<li>I metadati privati conservano raw, pubblicato e versione della calibrazione nelle notes esistenti. Le risposte pubbliche non li espongono.</li>
+</ul><p>Modello Elo, coefficiente di temperatura e soglie di surfacing invariati. Il gate continua a usare la probabilità raw del lato selezionato; l'ordinamento showcase conserva la scala raw.</p></section>
+<section><h2>Verifiche locali</h2><table>
+<tr><th>Controllo</th><th>Esito e cosa misura</th></tr>
+<tr><td>Vitest completo</td><td>2.585 test passati, due errori iniziali per <code>grep ENOENT</code> su Windows. Il file interessato è stato ripetuto aggiungendo al PATH il grep già installato: 4/4 passati. Complessivamente tutti i 2.587 test hanno superato l'esecuzione.</td></tr>
+<tr><td>Python pertinente</td><td>28 test passati: provenienza, modello agent, anchor, Elo, blend, feature e igiene delle predictions.</td></tr>
+<tr><td>TypeScript e build</td><td><code>npx tsc --noEmit</code> e <code>npm run build</code>: exit 0. Build di 173 pagine statiche; avviso sulla convenzione middleware deprecata.</td></tr>
+<tr><td>SQL effettivo dell'adattatore</td><td>Harness locale con PGlite: inserimento e aggiornamento notes, preservazione JSON/testo legacy, aggiornamento concorrente saltato e riprovato, freeze al kickoff e primo record ledger immutabile. Nessun database esterno.</td></tr>
+<tr><td>Promotion gate dei componenti</td><td>Passato. Tennis n=8.044, Brier 0,2206, ECE 0,0099, accuracy 0,6344. Verifica dei componenti esistenti, non del nuovo percorso pubblicato. Baseline non modificata.</td></tr>
+<tr><td>Replay offline</td><td>Test e CLI eseguiti con fixture sintetiche: timestamp, duplicati, esclusione post-kickoff, provenienza, baseline mancante, Brier/log loss e fasce di calibrazione.</td></tr>
+</table><p>Due revisioni indipendenti, di conformità alla specifica e qualità del codice, concluse senza rilievi. Il secondo revisore ha verificato in memoria 10.001 coppie: massimo errore della somma 6,66×10⁻¹⁶; lato, confidence, quota e assenza di doppia calibrazione corretti.</p><p>I test dell'interfaccia hanno emesso avvisi React act/jsdom; le asserzioni sono passate. Nessun export live è stato analizzato in questa tranche.</p></section>
+<section><h2>Storico e concorrenza</h2>
+<p>Le righe unified già congelate al kickoff mantengono i numeri registrati; il ledger conserva la prima pick. Nessun backfill, migrazione o cambio della versione del modello. Se un altro writer modifica le notes dopo la lettura, l'intero aggiornamento obsoleto viene saltato; il refresh successivo rilegge e riprova.</p>
+<p><strong>La board tennis corrente non è un registro storico congelato:</strong> il produttore preesistente ricalcola anche fixture iniziate nelle ultime 12 ore. Queste possono ricevere la nuova provenienza durante un normale ciclo e la board può allora applicare la calibrazione. Questo non modifica i record congelati unified/ledger. Un'eventuale garanzia di immutabilità anche della board richiede un intervento distinto sul suo ciclo di vita.</p></section>
+<section><h2>Come misurare l'effetto reale</h2>
+<p>Preparare un export locale con uno o più snapshot per partita. La probabilità precedente deve essere quella effettivamente pubblicata e registrata: non va ricostruita a posteriori da una regola presunta.</p>
+<pre>npx tsx scripts/audit-tennis-probability.ts percorso/export.json</pre>
+<p>Input: array JSON oppure <code>{ "snapshots": [...] }</code>. Ogni snapshot contiene <code>match_id</code>, <code>snapshot_at</code>, <code>kickoff</code> (ISO con timezone), <code>p1</code>, <code>p2</code>, quote, selezione e <code>feature_snapshot</code>. Per il confronto servono <code>published_p1</code>/<code>published_p2</code> precedenti; per le metriche serve il risultato indipendente <code>result: "P1" | "P2"</code>.</p>
+<p>Il replay sceglie l'ultimo snapshot valido strettamente prima del kickoff, al massimo uno per evento, e scarta parità temporali conflittuali. Espone esclusioni, unknown, risultati disponibili e baseline mancanti. Confronta Brier binario P1, log loss e calibrazione sulle stesse righe concluse, separate per sorgente. Nessun confronto numerico viene inventato quando manca il baseline.</p></section>
+<section><h2>Rilascio successivo</h2><ol>
+<li>Revisione e GO di rilascio secondo i gate correnti di Michele/Andrea.</li>
+<li>Worker prima: osservare la copertura effettiva dei nuovi metadati sulle fixture future. Poi web/API/cron con il resolver condiviso. <strong>Aggiornamento 29/09 (agentic_lab):</strong> dal 22/09 (#440) un merge su main arriva sulla flotta in ~2 minuti e sul web nello stesso momento (misurato con la #435: merge 12:51:16Z, 17/17 agenti riavviati 12:53:31Z). Un'unica PR renderebbe il rilascio simultaneo e tutte le righe tennis non congelate passerebbero a <code>unknown</code> fino al ciclo successivo del worker. La tranche è quindi spezzata in due PR: <code>michele/tennis-provenance-worker-0929</code> (solo worker, servito invariato) e <code>michele/tennis-probability-web-0929</code> (resolver web, da mergiare dopo la misura di copertura).</li>
+<li>Misurare unknown e coppie incoerenti durante la transizione. Le righe legacy senza contratto valido non vengono classificate dal solo edge.</li>
+<li>Il rollout può cambiare la confidence delle righe legacy non congelate: prima l'adattatore applicava temperatura a qualsiasi edge nullo; ora unknown mantiene il raw. Questa è una conseguenza esplicita del contratto, da osservare con il replay.</li>
+<li>La temperatura 1,68 resta da rivalidare sulla popolazione realmente servita. Il rollback del coefficiente a 1 produce identità e una versione coerente, senza riscrivere lo storico.</li>
+</ol><p>Nessun push, deploy, servizio live o scrittura in produzione eseguiti. Branch conservato: <code>codex/betredge-tennis-probability-20260929</code>; worktree: <code>C:/codex-wt/betredge-tennis-probability-20260929</code>; base <code>ebde69a3</code>.</p></section>
+</html>
