@@ -15,6 +15,7 @@ import { matchTitle } from "@/lib/v3c/board-source";
 import { formatSigned } from "@/lib/v3c/scale";
 import { toolBoardSource } from "@/lib/v3c/board-source.server";
 import { QUESTIONS, toolPreview, toolsFor } from "@/lib/v3c/tools";
+import { previewWordsFor } from "@/lib/v3c/fixui3-copy";
 import { v3cFontClass } from "../fonts";
 import { Fascia } from "../Fascia";
 import { SiteFrame } from "../Chrome";
@@ -44,7 +45,7 @@ export async function V3cToolsHub({ locale }: { locale: ToolLocale }) {
       name: c.tools[t.slug].name,
       line: c.tools[t.slug].line,
       href: toolPath(t.slug, locale),
-      example: toolPreview(t.slug, ctx),
+      example: toolPreview(t.slug, ctx, previewWordsFor(locale)),
     })),
   }));
 

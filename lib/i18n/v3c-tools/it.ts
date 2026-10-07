@@ -114,7 +114,7 @@ const it: V3cToolsCopy = {
       name: "Calcolatore di margine",
       line: "quanto trattiene il book su un mercato",
       inputs: { p1: "Quota 1", p2: "Quota 2", p3: "Quota 3 (vuota per due esiti)" },
-      results: { margin: "Margine del book", sum: "Somma delle implicite", kept: "Trattenuto ogni €100 giocati" },
+      results: { margin: "Margine del book", sum: "Somma delle implicite", kept: "Trattenuto ogni 100 giocati" },
       formula: "Margine = somma delle probabilità implicite − 100%. Un book al 106,3% trattiene circa €6 ogni €100.",
       column: "Margine",
     },
@@ -156,7 +156,7 @@ const it: V3cToolsCopy = {
       inputs: { price: "Quota decimale", target: "Profitto obiettivo €", bank: "Bankroll €" },
       results: { stake: "Puntata necessaria", return: "Ritorno totale", share: "Quota del bankroll" },
       formula: "Puntata = profitto obiettivo ÷ (quota − 1). La quota del bankroll è il numero da guardare due volte.",
-      column: "Puntata per €100",
+      column: "Puntata per 1 di profitto",
     },
     "bankroll-calculator": {
       name: "Calcolatore di bankroll",

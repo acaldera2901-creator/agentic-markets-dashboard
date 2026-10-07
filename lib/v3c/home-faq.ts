@@ -1,315 +1,145 @@
-// lib/v3c/home-faq.ts (#REDESIGN-V3C polish) — le sei domande della home v3c.
+// lib/v3c/home-faq.ts (#REDESIGN-V3C polish · fixui3 R1) — le domande della home v3c.
 // Fonte UNICA per la FAQ visibile (components/v3c/home/Faq.tsx) e per il
 // FAQPage JSON-LD di "/" a flag acceso (app/v3c/page.tsx): lo schema dice
 // esattamente ciò che la pagina mostra.
 //
 // Perché un file a parte e non lib/home-faq.ts: quello alimenta la home di oggi
-// (flag spento) e deve restare identico. Qui cambia SOLO ciò che il redesign
-// rende falso: (1) i piani sono due, Free e Pro — «Base» sparisce (regola di
-// Andrea 05/10, i clienti base passano a Pro senza cambio di prezzo); (2) la
-// riga della board non porta più «un numero solo»: mercato, stima e gap; (3) la
-// stima calcio è il blend 70% mercato + 30% modello, dichiarato.
-// tennis2 (Andrea 07/10): nel tennis la stima c'è solo dove l'Elo è fresco (90% mercato + 10% Elo, non
-// sigillata; il gap è un'informazione, non un consiglio) — risposte 2 e 6 lo dicono.
-// fixui Fase 0 (DECISIONI-FREE-PRO §f, 07/10): Pro NON è in vendita. La domanda 1 non parla più di
-// pagamenti (niente carta/crypto/rinnovo da vendere) e Pro «aggiungerà» il perché, al futuro: non
-// esiste ancora in nessuna pagina partita. Il testo sotto descrive la versione precedente.
-// Fatti invariati, uno per uno: carta mensile/annuale con rinnovo, disdetta
-// dall'account; crypto = un pagamento, 30 giorni, nessun rinnovo; calcio 1X2 e
-// tennis vincente; live solo Pro; nessuna scommessa, nessun rendimento promesso;
-// sulla board Free vede ogni partita con mercato, stima e gap e Pro aggiunge il
-// perché: è la promessa di /pricing v3c (lib/v3c/pages-copy.ts), qui ripetuta
-// uguale — la quota «tre letture al giorno» del sito di oggi non vale nel redesign.
+// (flag spento) e deve restare identico.
+//
+// fixui3 R1 (QA-REPORT-3, 07/10): riscritta per dire SOLO ciò che il sito fa oggi, ≤ 22 parole per
+// risposta (lib/v3c/i18n-parity.test.ts lo misura). Tolto, perché falso:
+//   · «il modello rilegge la partita in diretta»: il live è solo il punteggio (/api/v3/live, «never part of
+//     the estimates»); una partita iniziata mostra i numeri pre-partita, senza prezzi;
+//   · «tre numeri, tutti sigillati prima del calcio d'inizio»: la stima tennis mostrata (90% mercato +
+//     10% Elo) non è sigillata; nel calcio mercato e stima sì, e stanno nel registro;
+//   · «funzioni Pro comprese» / «il live è una funzione Pro aperta a tutti»: in Fase 0 Pro è un'anteprima,
+//     non c'è niente da comprare né una funzione Pro da aprire (DECISIONI-FREE-PRO §f);
+//   · «tutti e tre gli esiti»: nel tennis gli esiti sono due. «I prezzi dei book» restano: li mostra la
+//     pagina partita quando la partita non è iniziata.
+// Nessun claim nuovo: blend calcio 70/30 e tennis 90/10 sono quelli dichiarati sulla board.
 import type { FaqItem } from "@/lib/home-faq";
 import { v3cLang } from "./copy";
 
 export const V3C_HOME_FAQ = {
   en: [
-    [
-      "Do I have to pay anything?",
-      "No. During the launch everything on BetRedge is free, Pro features included: Pro isn’t on sale yet. When it is, we’ll give 7 days’ notice before any feature moves to Pro, and the price will be on the plans page first.",
-    ],
-    [
-      "What’s in a reading, and what does Pro add?",
-      "Three numbers, all of them sealed before kick-off. What the market thinks, which is the odds turned into a percentage with the margin removed. Our estimate: in football that is 70% market and 30% model, and we say so next to it. In tennis, on ATP/WTA matches with a fresh Elo, the estimate is 90% market and 10% our Elo, not sealed; elsewhere only the market price. And the gap between the two, in points. Pro will add the why, factor by factor; it isn’t built yet.",
-    ],
-    [
-      "Which sports do you cover?",
-      "Football and tennis. That’s all, for now. In football we read the match result, so home, draw or away; in tennis, who wins the match. Which competitions show up changes from one day to the next, and the board tells you what’s there.",
-    ],
-    [
-      "What happens on the live board?",
-      "The number moves while the match does. The score changes, the clock runs, the momentum turns, and the model reads the game again, so you see the probability shift while it’s shifting. Nothing is ever placed or executed for you at any point: you’re reading a screen. Live is a Pro feature, open to everyone during the launch.",
-    ],
-    [
-      "Do you place bets, or promise I’ll make money?",
-      "No. We don’t place bets, we’re not a bookmaker, and your money is something we never touch. You don’t need an account anywhere else either, because BetRedge runs on its own. And we don’t promise a return of any kind. A probability is an estimate: when we say 71%, it means that across a lot of situations that resemble this one we would expect that outcome about 71 times in 100. What happens in this particular match, tonight, it does not know. The public record shows how past readings settled, and about the next one it says nothing.",
-    ],
-    [
-      "How do I use it day to day?",
-      "Open the board. Each row shows the outcome where our estimate and the market sit furthest apart: the market, our estimate, the gap. Tennis rows show our estimate only where it exists, 90% market and 10% our Elo, with the gap as information, not advice; the others show the market only. Tap it for all three outcomes and the prices of the connected books. Then look at the public record, because seeing how earlier readings settled tells you how much weight a number like that deserves. What you do with it after that is your call. Free shows every match on the board, gap included; during the launch the Pro features are open to everyone too.",
-    ],
+    ["Do I have to pay anything?", "No. Everything on BetRedge is free today. Pro is a preview: there is nothing to buy yet."],
+    ["What’s in a reading?", "The market’s probability with the margin removed, our estimate, and the gap between them, in points."],
+    ["How is the estimate made?", "Football: 70% market, 30% our model. Tennis, where our Elo is fresh: 90% market, 10% Elo; otherwise the market only."],
+    ["What is sealed before kick-off?", "Football: market and estimate are sealed before kick-off and kept in the record. Tennis: the estimate shown isn’t sealed yet."],
+    ["Which sports do you cover?", "Football and tennis. Football: home, draw or away. Tennis: who wins the match. The board shows what’s on."],
+    ["What happens during a match?", "A live score updates while the match is on; our market and estimate numbers are from before kick-off."],
+    ["Do you place bets, or promise I’ll make money?", "No. We take no bets, never touch your money and promise no return: a probability is an estimate."],
+    ["How do I use it day to day?", "Open the board and tap a match: every outcome, the books’ prices. Then check the record of past readings."],
   ],
   it: [
-    [
-      "Devo pagare qualcosa?",
-      "No. Durante il lancio tutto su BetRedge è gratuito, funzioni Pro comprese: Pro non è ancora in vendita. Quando lo sarà, ti avviseremo 7 giorni prima che una funzione passi a Pro, e il prezzo comparirà prima sulla pagina dei piani.",
-    ],
-    [
-      "Cosa c’è dentro una lettura, e cosa aggiunge Pro?",
-      "Tre numeri, tutti sigillati prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale senza il margine. La nostra stima: nel calcio è 70% mercato e 30% modello, e lo scriviamo accanto. Nel tennis, sulle partite ATP/WTA con un Elo recente, la stima è 90% mercato e 10% nostro Elo, non sigillata; altrove solo il prezzo di mercato. E la distanza fra le due, in punti. Pro aggiungerà il perché, fattore per fattore; non è ancora costruito.",
-    ],
-    [
-      "Quali sport coprite?",
-      "Calcio e tennis. Per ora basta così. Nel calcio leggiamo il risultato della partita, quindi 1, X o 2; nel tennis, chi vince il match. Quali competizioni ci siano cambia da un giorno all’altro, e te lo dice il board.",
-    ],
-    [
-      "Cosa succede sul board live?",
-      "Il numero si muove insieme alla partita. Cambia il punteggio, passano i minuti, gira l’inerzia, e il modello rilegge il match, così vedi la probabilità spostarsi mentre si sta spostando. In nessun momento viene piazzato o eseguito qualcosa per te: stai guardando uno schermo. Il live è una funzione Pro, aperta a tutti durante il lancio.",
-    ],
-    [
-      "Piazzate scommesse? Mi promettete un guadagno?",
-      "No. Non piazziamo scommesse, non siamo un bookmaker, e i tuoi soldi non li tocchiamo mai. E non ti serve un conto da nessun’altra parte, perché BetRedge funziona per conto suo. Un rendimento non te lo promettiamo, di nessun tipo. Una probabilità è una stima: quando diciamo 71%, vuol dire che su tante situazioni simili a questa ci aspetteremmo quell’esito circa 71 volte su 100. Cosa succede in questa partita qui, stasera, non lo sa. Il registro pubblico mostra come si sono chiuse le letture passate, e sulla prossima non dice nulla.",
-    ],
-    [
-      "Come lo uso, in pratica?",
-      "Apri il board. Ogni riga mostra l’esito dove la nostra stima e il mercato sono più lontani: il mercato, la stima, il gap. Le righe del tennis mostrano la stima solo dove c’è, 90% mercato e 10% nostro Elo, con il gap come informazione, non consiglio; le altre solo il mercato. Toccala e vedi tutti e tre gli esiti e i prezzi dei book connessi. Poi guarda il registro pubblico, perché è guardando come si sono chiuse le letture precedenti che capisci quanto peso dare a un numero del genere. Quello che ne fai dopo lo decidi tu. Free mostra ogni partita sulla board, gap compreso; durante il lancio anche le funzioni Pro sono aperte a tutti.",
-    ],
+    ["Devo pagare qualcosa?", "No. Oggi tutto su BetRedge è gratuito. Pro è un’anteprima: non c’è ancora niente da comprare."],
+    ["Cosa c’è dentro una lettura?", "La probabilità del mercato senza il margine, la nostra stima e il gap fra le due, in punti."],
+    ["Come nasce la stima?", "Calcio: 70% mercato, 30% nostro modello. Tennis, dove il nostro Elo è recente: 90% mercato, 10% Elo; altrimenti solo il mercato."],
+    ["Cosa viene sigillato prima del fischio d’inizio?", "Calcio: mercato e stima sono sigillati prima dell’inizio e restano nel registro. Tennis: la stima mostrata non è ancora sigillata."],
+    ["Quali sport coprite?", "Calcio e tennis. Calcio: 1, X o 2. Tennis: chi vince il match. Il board mostra cosa c’è in programma."],
+    ["Cosa succede durante la partita?", "Un punteggio live si aggiorna mentre si gioca; i nostri numeri di mercato e stima sono di prima del fischio d’inizio."],
+    ["Piazzate scommesse? Mi promettete un guadagno?", "No. Non accettiamo scommesse, non tocchiamo i tuoi soldi e non promettiamo rendimenti: una probabilità è una stima."],
+    ["Come lo uso, in pratica?", "Apri il board e tocca una partita: tutti gli esiti, i prezzi dei book. Poi guarda il registro delle letture passate."],
   ],
-    de: [
-      [ // REVIEW-NATIVE
-        "Muss ich etwas bezahlen?",
-        "Nein. Während des Starts ist auf BetRedge alles kostenlos, Pro-Funktionen eingeschlossen: Pro ist noch nicht im Verkauf. Sobald es so weit ist, sagen wir 7 Tage vorher Bescheid, bevor eine Funktion zu Pro wechselt, und der Preis steht zuerst auf der Seite mit den Plänen.",
-      ],
-      [
-        "Was steckt in einer Analyse, und was bringt Pro dazu?",
-        "Drei Zahlen, alle vor dem Anstoß versiegelt. Was der Markt denkt, also die Quote als Prozentwert, ohne Marge. Unsere Schätzung: Im Fußball sind das 70% Markt und 30% Modell, und das schreiben wir dazu. Im Tennis ist die Schätzung bei ATP/WTA-Spielen mit aktuellem Elo 90% Markt und 10% unser Elo, nicht versiegelt; sonst nur die Marktquote. Und der Abstand zwischen beiden, in Punkten. Pro wird das Warum ergänzen, Faktor für Faktor; das ist noch nicht gebaut.",
-      ],
-      [
-        "Welche Sportarten deckt ihr ab?",
-        "Fußball und Tennis. Das ist vorerst alles. Im Fußball lesen wir das Spielergebnis, also Heimsieg, Unentschieden oder Auswärtssieg; im Tennis, wer das Match gewinnt. Welche Wettbewerbe auftauchen, ändert sich von Tag zu Tag, und das Board zeigt dir, was da ist.",
-      ],
-      [
-        "Was passiert auf dem Live-Board?",
-        "Die Zahl bewegt sich, während das Spiel läuft. Der Spielstand ändert sich, die Uhr läuft, das Momentum kippt, und das Modell liest das Spiel neu, sodass du siehst, wie sich die Wahrscheinlichkeit verschiebt, während sie sich verschiebt. Nichts wird jemals für dich platziert oder ausgeführt: Du liest einen Bildschirm. Live ist eine Pro-Funktion, während des Starts für alle offen.",
-      ],
-      [ // REVIEW-NATIVE
-        "Platziert ihr Wetten, oder versprecht ihr mir Geld?",
-        "Nein. Wir platzieren keine Wetten, wir sind kein Buchmacher, und dein Geld berühren wir nie. Du brauchst auch nirgendwo sonst ein Konto, denn BetRedge läuft für sich. Und wir versprechen keinerlei Rendite. Eine Wahrscheinlichkeit ist eine Schätzung: Wenn wir 71% sagen, heißt das, dass wir über viele ähnliche Situationen diesen Ausgang etwa 71 von 100 Mal erwarten würden. Was in genau diesem Spiel heute Abend passiert, weiß sie nicht. Das öffentliche Register zeigt, wie frühere Analysen ausgingen, und über die nächste sagt es nichts.",
-      ],
-      [
-        "Wie nutze ich es im Alltag?",
-        "Öffne das Board. Jede Zeile zeigt den Ausgang, bei dem unsere Schätzung und der Markt am weitesten auseinanderliegen: den Markt, unsere Schätzung, den Abstand. Tennis-Zeilen zeigen die Schätzung nur, wo es sie gibt, 90% Markt und 10% unser Elo, mit dem Abstand als Information, nicht als Empfehlung; die übrigen nur den Markt. Tippe darauf für alle drei Ausgänge und die Quoten der verbundenen Buchmacher. Dann schau ins öffentliche Register, denn wie frühere Analysen ausgingen, zeigt dir, wie viel Gewicht eine solche Zahl verdient. Was du danach damit machst, ist deine Entscheidung. Free zeigt jedes Spiel auf dem Board, Abstand inklusive; während des Starts sind auch die Pro-Funktionen für alle offen.",
-      ],
-    ],
-    es: [
-      [ // REVIEW-NATIVE
-        "¿Tengo que pagar algo?",
-        "No. Durante el lanzamiento todo en BetRedge es gratis, funciones Pro incluidas: Pro aún no está a la venta. Cuando lo esté, avisaremos con 7 días de antelación antes de que una función pase a Pro, y el precio aparecerá primero en la página de planes.",
-      ],
-      [
-        "¿Qué hay en una lectura y qué añade Pro?",
-        "Tres números, todos sellados antes del inicio. Lo que piensa el mercado, es decir, la cuota convertida en porcentaje sin el margen. Nuestra estimación: en fútbol es 70% mercado y 30% modelo, y lo decimos al lado. En tenis, en partidos ATP/WTA con un Elo reciente, la estimación es 90% mercado y 10% nuestro Elo, sin sellar; en el resto, solo la cuota del mercado. Y la diferencia entre ambos, en puntos. Pro añadirá el porqué, factor por factor; aún no está construido.",
-      ],
-      [
-        "¿Qué deportes cubrís?",
-        "Fútbol y tenis. Nada más, por ahora. En fútbol leemos el resultado del partido, así que local, empate o visitante; en tenis, quién gana el partido. Las competiciones que aparecen cambian de un día a otro, y el tablero te dice lo que hay.",
-      ],
-      [
-        "¿Qué pasa en el tablero en directo?",
-        "El número se mueve mientras se mueve el partido. Cambia el marcador, corre el reloj, gira el impulso, y el modelo vuelve a leer el juego, así que ves cómo cambia la probabilidad mientras cambia. En ningún momento se coloca ni se ejecuta nada por ti: estás leyendo una pantalla. El directo es una función Pro, abierta a todos durante el lanzamiento.",
-      ],
-      [ // REVIEW-NATIVE
-        "¿Hacéis apuestas, o me prometéis que ganaré dinero?",
-        "No. No hacemos apuestas, no somos una casa de apuestas y tu dinero es algo que nunca tocamos. Tampoco necesitas una cuenta en ningún otro sitio, porque BetRedge funciona por sí solo. Y no prometemos ningún tipo de rentabilidad. Una probabilidad es una estimación: cuando decimos 71%, significa que en muchas situaciones parecidas a esta esperaríamos ese resultado unas 71 veces de cada 100. Lo que pase en este partido concreto, esta noche, no lo sabe. El registro público muestra cómo se liquidaron las lecturas pasadas, y sobre la próxima no dice nada.",
-      ],
-      [
-        "¿Cómo lo uso en el día a día?",
-        "Abre el tablero. Cada fila muestra el resultado en el que nuestra estimación y el mercado están más lejos: el mercado, nuestra estimación, la diferencia. Las filas de tenis muestran la estimación solo donde existe, 90% mercado y 10% nuestro Elo, con la diferencia como información, no como consejo; las demás, solo el mercado. Tócala para ver los tres resultados y las cuotas de las casas conectadas. Luego mira el registro público, porque ver cómo se liquidaron las lecturas anteriores te dice cuánto peso merece un número así. Lo que hagas después es decisión tuya. Free muestra cada partido del tablero, diferencia incluida; durante el lanzamiento las funciones Pro también están abiertas a todos.",
-      ],
-    ],
+  de: [
+    // REVIEW-NATIVE (1 · 7)
+    ["Muss ich etwas bezahlen?", "Nein. Auf BetRedge ist heute alles kostenlos. Pro ist eine Vorschau: Noch gibt es nichts zu kaufen."],
+    ["Was steckt in einer Analyse?", "Die Marktwahrscheinlichkeit ohne Marge, unsere Schätzung und der Abstand zwischen beiden, in Punkten."],
+    ["Wie entsteht die Schätzung?", "Fußball: 70% Markt, 30% unser Modell. Tennis, wo unser Elo aktuell ist: 90% Markt, 10% Elo; sonst nur der Markt."],
+    ["Was wird vor dem Anstoß versiegelt?", "Fußball: Markt und Schätzung werden vor dem Anstoß versiegelt und bleiben im Register. Tennis: Die gezeigte Schätzung ist noch nicht versiegelt."],
+    ["Welche Sportarten deckt ihr ab?", "Fußball und Tennis. Fußball: Heimsieg, Unentschieden oder Auswärtssieg. Tennis: wer das Match gewinnt. Das Board zeigt, was ansteht."],
+    ["Was passiert während des Spiels?", "Ein Live-Spielstand wird während des Spiels aktualisiert; unsere Markt- und Schätzwerte stammen von vor dem Anstoß."],
+    ["Platziert ihr Wetten, oder versprecht ihr mir Geld?", "Nein. Wir nehmen keine Wetten an, berühren nie dein Geld und versprechen keine Rendite: Eine Wahrscheinlichkeit ist eine Schätzung."],
+    ["Wie nutze ich es im Alltag?", "Öffne das Board und tippe auf ein Spiel: alle Ausgänge, die Quoten der Buchmacher. Dann schau ins Register früherer Analysen."],
+  ],
+  es: [
+    // REVIEW-NATIVE (1 · 7)
+    ["¿Tengo que pagar algo?", "No. Hoy todo en BetRedge es gratis. Pro es una vista previa: todavía no hay nada que comprar."],
+    ["¿Qué hay en una lectura?", "La probabilidad del mercado sin el margen, nuestra estimación y la diferencia entre ambas, en puntos."],
+    ["¿Cómo se calcula la estimación?", "Fútbol: 70% mercado, 30% nuestro modelo. Tenis, donde nuestro Elo es reciente: 90% mercado, 10% Elo; si no, solo el mercado."],
+    ["¿Qué se sella antes del inicio?", "Fútbol: mercado y estimación se sellan antes del inicio y quedan en el registro. Tenis: la estimación mostrada aún no está sellada."],
+    ["¿Qué deportes cubrís?", "Fútbol y tenis. Fútbol: local, empate o visitante. Tenis: quién gana el partido. El tablero muestra lo que hay."],
+    ["¿Qué pasa durante el partido?", "Un marcador en directo se actualiza mientras se juega; nuestras cifras de mercado y estimación son de antes del inicio."],
+    ["¿Hacéis apuestas, o me prometéis que ganaré dinero?", "No. No aceptamos apuestas, nunca tocamos tu dinero ni prometemos rendimientos: una probabilidad es una estimación."],
+    ["¿Cómo lo uso en el día a día?", "Abre el tablero y toca un partido: cada resultado y las cuotas de las casas. Luego mira el registro de lecturas pasadas."],
+  ],
   fr: [
-      [ // REVIEW-NATIVE
-        "Dois-je payer quelque chose ?",
-        "Non. Pendant le lancement, tout sur BetRedge est gratuit, fonctions Pro comprises : Pro n’est pas encore en vente. Quand il le sera, nous préviendrons 7 jours avant qu’une fonction passe dans Pro, et le prix figurera d’abord sur la page des offres.",
-      ],
-      [
-        "Que contient une lecture, et qu’ajoute Pro ?",
-        "Trois chiffres, tous scellés avant le coup d’envoi. Ce que pense le marché, c’est-à-dire la cote convertie en pourcentage, marge retirée. Notre estimation : en football, c’est 70 % marché et 30 % modèle, et nous l’indiquons à côté. Au tennis, sur les matchs ATP/WTA avec un Elo récent, l’estimation est à 90 % le marché et à 10 % notre Elo, non scellée ; ailleurs, seulement la cote du marché. Et l’écart entre les deux, en points. Pro ajoutera le pourquoi, facteur par facteur ; ce n’est pas encore construit.",
-      ],
-      [
-        "Quels sports couvrez-vous ?",
-        "Le football et le tennis. C’est tout, pour l’instant. En football, nous lisons le résultat du match : victoire à domicile, match nul ou victoire à l’extérieur ; au tennis, qui gagne le match. Les compétitions présentes changent d’un jour à l’autre, et le tableau vous dit ce qu’il y a.",
-      ],
-      [
-        "Que se passe-t-il sur le tableau en direct ?",
-        "Le chiffre bouge pendant que le match avance. Le score change, le chrono tourne, la dynamique bascule, et le modèle relit la rencontre : vous voyez la probabilité évoluer au moment où elle évolue. Rien n’est jamais placé ni exécuté pour vous, à aucun moment : vous lisez un écran. Le direct est une fonction Pro, ouverte à tous pendant le lancement.",
-      ],
-      [ // REVIEW-NATIVE
-        "Placez-vous des paris, ou me promettez-vous de gagner de l’argent ?",
-        "Non. Nous ne plaçons pas de paris, nous ne sommes pas un bookmaker, et votre argent, nous n’y touchons jamais. Vous n’avez pas non plus besoin d’un compte ailleurs, car BetRedge fonctionne seul. Et nous ne promettons aucun rendement, de quelque sorte que ce soit. Une probabilité est une estimation : quand nous disons 71 %, cela signifie que sur un grand nombre de situations semblables à celle-ci, nous attendrions cette issue environ 71 fois sur 100. Ce qui se passera dans ce match précis, ce soir, elle ne le sait pas. Le registre public montre comment les lectures passées se sont réglées, et sur la prochaine il ne dit rien.",
-      ],
-      [
-        "Comment l’utiliser au quotidien ?",
-        "Ouvrez le tableau. Chaque ligne montre l’issue où notre estimation et le marché sont le plus éloignés : le marché, notre estimation, l’écart. Les lignes de tennis montrent l’estimation seulement là où elle existe, 90 % marché et 10 % notre Elo, avec l’écart comme information, pas comme conseil ; les autres, le marché seul. Touchez-la pour les trois issues et les cotes des bookmakers connectés. Puis regardez le registre public, car voir comment les lectures précédentes se sont réglées vous dit quel poids mérite un tel chiffre. Ce que vous en faites ensuite vous appartient. Free montre chaque match du tableau, écart compris ; pendant le lancement, les fonctions Pro sont aussi ouvertes à tous.",
-      ],
-    ],
-    nl: [
-      [ // REVIEW-NATIVE
-        "Moet ik iets betalen?",
-        "Nee. Tijdens de lancering is alles op BetRedge gratis, Pro-functies inbegrepen: Pro is nog niet te koop. Zodra het zover is, laten we het 7 dagen van tevoren weten voordat een functie naar Pro gaat, en staat de prijs eerst op de pagina met abonnementen.",
-      ],
-      [
-        "Wat zit er in een lezing, en wat voegt Pro toe?",
-        "Drie getallen, allemaal verzegeld vóór de aftrap. Wat de markt denkt: de odds omgezet in een percentage, zonder marge. Onze schatting: in het voetbal is dat 70% markt en 30% model, en dat zeggen we er ook bij. Bij tennis is de schatting bij ATP/WTA-wedstrijden met een recente Elo 90% markt en 10% onze Elo, niet verzegeld; elders alleen de marktodds. En het verschil tussen de twee, in punten. Pro voegt het waarom toe, factor voor factor; dat is nog niet gebouwd.",
-      ],
-      [
-        "Welke sporten dekken jullie?",
-        "Voetbal en tennis. Dat is alles, voorlopig. In het voetbal lezen we de uitslag van de wedstrijd, dus thuis, gelijkspel of uit; in het tennis wie de wedstrijd wint. Welke competities verschijnen, verandert van dag tot dag, en het board laat je zien wat er is.",
-      ],
-      [
-        "Wat gebeurt er op het live board?",
-        "Het getal beweegt mee met de wedstrijd. De stand verandert, de klok loopt, het momentum kantelt, en het model leest het spel opnieuw, zodat je de kans ziet verschuiven terwijl ze verschuift. Er wordt op geen enkel moment iets voor je geplaatst of uitgevoerd: je leest een scherm. Live is een Pro-functie, tijdens de lancering open voor iedereen.",
-      ],
-      [ // REVIEW-NATIVE
-        "Plaatsen jullie weddenschappen, of beloven jullie dat ik geld verdien?",
-        "Nee. We plaatsen geen weddenschappen, we zijn geen bookmaker en aan je geld komen we nooit. Je hebt ook nergens anders een account nodig, want BetRedge werkt op zichzelf. En we beloven geen enkel rendement. Een kans is een schatting: als we 71% zeggen, betekent dat dat we over veel situaties die op deze lijken die uitkomst ongeveer 71 keer op 100 zouden verwachten. Wat er in deze specifieke wedstrijd vanavond gebeurt, weet ze niet. Het openbare register laat zien hoe eerdere lezingen afliepen, en over de volgende zegt het niets.",
-      ],
-      [
-        "Hoe gebruik ik het van dag tot dag?",
-        "Open het board. Elke rij toont de uitkomst waar onze schatting en de markt het verst uit elkaar liggen: de markt, onze schatting, het verschil. Tennisrijen tonen de schatting alleen waar die er is, 90% markt en 10% onze Elo, met het verschil als informatie, niet als advies; de rest alleen de markt. Tik erop voor alle drie de uitkomsten en de odds van de gekoppelde bookmakers. Kijk daarna naar het openbare register, want zien hoe eerdere lezingen afliepen vertelt je hoeveel gewicht zo'n getal verdient. Wat je er daarna mee doet, is jouw keuze. Free toont elke wedstrijd op het board, verschil inbegrepen; tijdens de lancering staan ook de Pro-functies open voor iedereen.",
-      ],
-    ],
-    pl: [
-      [ // REVIEW-NATIVE
-        "Czy muszę za coś płacić?",
-        "Nie. Podczas startu wszystko w BetRedge jest darmowe, łącznie z funkcjami Pro: Pro nie jest jeszcze w sprzedaży. Gdy będzie, uprzedzimy 7 dni wcześniej, zanim jakakolwiek funkcja przejdzie do Pro, a cena najpierw pojawi się na stronie planów.",
-      ],
-      [
-        "Co jest w analizie i co dodaje Pro?",
-        "Trzy liczby, wszystkie zapieczętowane przed początkiem meczu. Co myśli rynek, czyli kurs zamieniony na procent bez marży. Nasz szacunek: w piłce nożnej to 70% rynek i 30% model, i piszemy to obok. W tenisie, w meczach ATP/WTA z aktualnym Elo, szacunek to w 90% rynek i w 10% nasze Elo, niezapieczętowany; w pozostałych tylko kurs rynkowy. Oraz różnica między nimi, w punktach. Pro doda wyjaśnienie dlaczego, czynnik po czynniku; jeszcze tego nie zbudowaliśmy.",
-      ],
-      [
-        "Jakie sporty obejmujecie?",
-        "Piłkę nożną i tenis. Na razie tylko tyle. W piłce nożnej czytamy wynik meczu, czyli gospodarze, remis albo goście; w tenisie, kto wygra mecz. Które rozgrywki się pojawiają, zmienia się z dnia na dzień, a tablica mówi ci, co na niej jest.",
-      ],
-      [
-        "Co dzieje się na tablicy na żywo?",
-        "Liczba rusza się razem z meczem. Zmienia się wynik, biegnie zegar, przechyla się momentum, a model czyta grę od nowa, więc widzisz zmianę prawdopodobieństwa w chwili, gdy zachodzi. Nic nigdy nie jest stawiane ani wykonywane za ciebie: patrzysz na ekran. Na żywo to funkcja Pro, otwarta dla wszystkich podczas startu.",
-      ],
-      [ // REVIEW-NATIVE
-        "Czy stawiacie zakłady albo obiecujecie, że zarobię?",
-        "Nie. Nie stawiamy zakładów, nie jesteśmy bukmacherem i nigdy nie dotykamy twoich pieniędzy. Nie potrzebujesz też konta nigdzie indziej, bo BetRedge działa samodzielnie. I nie obiecujemy żadnego zwrotu. Prawdopodobieństwo to szacunek: gdy mówimy 71%, znaczy to, że w wielu sytuacjach podobnych do tej spodziewalibyśmy się tego wyniku mniej więcej 71 razy na 100. Co stanie się w tym konkretnym meczu, dziś wieczorem, tego ono nie wie. Publiczny rejestr pokazuje, jak rozliczyły się wcześniejsze analizy, a o następnej nie mówi nic.",
-      ],
-      [
-        "Jak z tego korzystać na co dzień?",
-        "Otwórz tablicę. Każdy wiersz pokazuje wynik, przy którym nasz szacunek i rynek są najdalej od siebie: rynek, nasz szacunek, różnica. Wiersze tenisowe pokazują szacunek tylko tam, gdzie istnieje, 90% rynek i 10% nasze Elo, z różnicą jako informacją, nie poradą; pozostałe tylko rynek. Stuknij go, by zobaczyć wszystkie trzy wyniki i kursy połączonych bukmacherów. Potem zajrzyj do publicznego rejestru, bo to, jak rozliczyły się wcześniejsze analizy, mówi ci, na ile wagi zasługuje taka liczba. Co z tym zrobisz potem, to twoja decyzja. Free pokazuje każdy mecz na tablicy, razem z różnicą; podczas startu funkcje Pro również są otwarte dla wszystkich.",
-      ],
-    ],
+    // REVIEW-NATIVE (1 · 7)
+    ["Dois-je payer quelque chose ?", "Non. Aujourd’hui, tout est gratuit sur BetRedge. Pro est un aperçu : il n’y a encore rien à acheter."],
+    ["Que contient une lecture ?", "La probabilité du marché sans la marge, notre estimation et l’écart entre les deux, en points."],
+    ["Comment l’estimation est-elle faite ?", "Football : 70% marché, 30% notre modèle. Tennis, avec un Elo récent : 90% marché, 10% Elo ; sinon le marché."],
+    ["Qu’est-ce qui est scellé avant le coup d’envoi ?", "Au football, marché et estimation sont scellés avant le match et gardés au registre. Au tennis, l’estimation affichée n’est pas encore scellée."],
+    ["Quels sports couvrez-vous ?", "Football et tennis. Football : domicile, nul ou extérieur. Tennis : qui gagne le match. Le tableau montre le programme."],
+    ["Que se passe-t-il pendant le match ?", "Un score en direct s’actualise pendant la rencontre ; nos chiffres de marché et d’estimation datent d’avant le coup d’envoi."],
+    ["Placez-vous des paris, ou me promettez-vous de gagner de l’argent ?", "Non. Nous ne prenons pas de paris, ne touchons pas votre argent, ne promettons aucun gain : une probabilité est une estimation."],
+    ["Comment l’utiliser au quotidien ?", "Ouvrez le tableau et touchez un match : chaque issue, les cotes des bookmakers. Puis consultez le registre des lectures passées."],
+  ],
+  nl: [
+    // REVIEW-NATIVE (1 · 7)
+    ["Moet ik iets betalen?", "Nee. Alles op BetRedge is vandaag gratis. Pro is een preview: er is nog niets te koop."],
+    ["Wat zit er in een lezing?", "De marktkans zonder marge, onze schatting en het verschil tussen beide, in punten."],
+    ["Hoe komt de schatting tot stand?", "Voetbal: 70% markt, 30% ons model. Tennis, waar onze Elo recent is: 90% markt, 10% Elo; anders alleen de markt."],
+    ["Wat wordt vóór de aftrap verzegeld?", "Voetbal: markt en schatting worden vóór de aftrap verzegeld en bewaard in het register. Tennis: de getoonde schatting is nog niet verzegeld."],
+    ["Welke sporten dekken jullie?", "Voetbal en tennis. Voetbal: thuis, gelijk of uit. Tennis: wie de wedstrijd wint. Het board toont wat er op het programma staat."],
+    ["Wat gebeurt er tijdens de wedstrijd?", "Een livescore wordt bijgewerkt zolang er gespeeld wordt; onze markt- en schattingscijfers zijn van vóór de aftrap."],
+    ["Plaatsen jullie weddenschappen, of beloven jullie dat ik geld verdien?", "Nee. We nemen geen weddenschappen aan, raken je geld nooit aan en beloven geen rendement: een kans is een schatting."],
+    ["Hoe gebruik ik het van dag tot dag?", "Open het board en tik op een wedstrijd: elke uitkomst, de odds van de bookmakers. Bekijk daarna het register van eerdere lezingen."],
+  ],
+  pl: [
+    // REVIEW-NATIVE (1 · 7)
+    ["Czy muszę za coś płacić?", "Nie. Dziś wszystko na BetRedge jest darmowe. Pro to podgląd: na razie nie ma nic do kupienia."],
+    ["Co jest w analizie?", "Prawdopodobieństwo rynku bez marży, nasz szacunek i różnica między nimi, w punktach."],
+    ["Jak powstaje szacunek?", "Piłka nożna: 70% rynek, 30% nasz model. Tenis, gdy nasze Elo jest aktualne: 90% rynek, 10% Elo; inaczej tylko rynek."],
+    ["Co jest pieczętowane przed początkiem meczu?", "Piłka nożna: rynek i szacunek są pieczętowane przed początkiem i zostają w rejestrze. Tenis: pokazany szacunek nie jest jeszcze zapieczętowany."],
+    ["Jakie sporty obejmujecie?", "Piłka nożna i tenis. W piłce: gospodarze, remis lub goście. W tenisie: kto wygra mecz. Tablica pokazuje, co jest w programie."],
+    ["Co dzieje się w trakcie meczu?", "Wynik na żywo aktualizuje się w trakcie gry; nasze liczby rynku i szacunku pochodzą sprzed początku meczu."],
+    ["Czy stawiacie zakłady albo obiecujecie, że zarobię?", "Nie. Nie przyjmujemy zakładów, nie dotykamy twoich pieniędzy i nie obiecujemy zysku: prawdopodobieństwo to szacunek."],
+    ["Jak z tego korzystać na co dzień?", "Otwórz tablicę i dotknij meczu: każdy wynik, kursy bukmacherów. Potem zajrzyj do rejestru wcześniejszych analiz."],
+  ],
   pt: [
-      [
-        "Tenho de pagar alguma coisa?", // REVIEW-NATIVE
-        "Não. Durante o lançamento tudo no BetRedge é gratuito, funções Pro incluídas: o Pro ainda não está à venda. Quando estiver, avisamos 7 dias antes de qualquer função passar para o Pro, e o preço aparece primeiro na página dos planos.",
-      ],
-      [
-        "O que há numa leitura, e o que acrescenta o Pro?", // REVIEW-NATIVE
-        "Três números, todos selados antes do início. O que o mercado pensa, ou seja, as odds transformadas em percentagem sem a margem. A nossa estimativa: no futebol é 70% mercado e 30% modelo, e dizemo-lo ao lado. No ténis, em jogos ATP/WTA com um Elo recente, a estimativa é 90% mercado e 10% o nosso Elo, não selada; nos restantes, só a odd de mercado. E a diferença entre as duas, em pontos. O Pro vai acrescentar o porquê, fator a fator; ainda não está construído.",
-      ],
-      [
-        "Que desportos cobrem?",
-        "Futebol e ténis. É tudo, por agora. No futebol lemos o resultado do jogo, portanto casa, empate ou fora; no ténis, quem ganha o encontro. As competições que aparecem mudam de um dia para o outro, e o board diz-te o que lá está.",
-      ],
-      [
-        "O que acontece no board ao vivo?",
-        "O número mexe-se enquanto o jogo decorre. O marcador muda, o relógio corre, o momento vira, e o modelo volta a ler o jogo, por isso vês a probabilidade a mudar enquanto muda. Nada é alguma vez apostado ou executado por ti: estás a ler um ecrã. O ao vivo é uma função Pro, aberta a todos durante o lançamento.",
-      ],
-      [
-        "Fazem apostas, ou prometem que vou ganhar dinheiro?", // REVIEW-NATIVE
-        "Não. Não fazemos apostas, não somos uma casa de apostas, e o teu dinheiro é algo em que nunca tocamos. Também não precisas de conta em mais lado nenhum, porque a BetRedge funciona sozinha. E não prometemos nenhum retorno de qualquer tipo. Uma probabilidade é uma estimativa: quando dizemos 71%, significa que, em muitas situações parecidas com esta, esperaríamos esse resultado cerca de 71 vezes em 100. O que acontece neste jogo em concreto, esta noite, ela não sabe. O registo público mostra como as leituras passadas foram liquidadas, e sobre a próxima não diz nada.",
-      ],
-      [
-        "Como o uso no dia a dia?",
-        "Abre o board. Cada linha mostra o resultado em que a nossa estimativa e o mercado estão mais afastados: o mercado, a nossa estimativa, a diferença. As linhas de ténis mostram a estimativa só onde existe, 90% mercado e 10% o nosso Elo, com a diferença como informação, não conselho; as restantes só o mercado. Toca nela para os três resultados e as odds das casas ligadas. Depois olha para o registo público, porque ver como as leituras anteriores foram liquidadas diz-te quanto peso merece um número assim. O que fazes com isso a seguir é decisão tua. O Free mostra cada jogo no board, diferença incluída; durante o lançamento as funções Pro também estão abertas a todos.",
-      ],
-    ],
+    // REVIEW-NATIVE (1 · 7)
+    ["Tenho de pagar alguma coisa?", "Não. Hoje, tudo no BetRedge é gratuito. O Pro é uma pré-visualização: ainda não há nada para comprar."],
+    ["O que há numa leitura?", "A probabilidade do mercado sem a margem, a nossa estimativa e a diferença entre as duas, em pontos."],
+    ["Como é feita a estimativa?", "Futebol: 70% mercado, 30% nosso modelo. Ténis, onde o nosso Elo é recente: 90% mercado, 10% Elo; senão, só o mercado."],
+    ["O que é selado antes do início?", "Futebol: mercado e estimativa são selados antes do início e ficam no registo. Ténis: a estimativa mostrada ainda não está selada."],
+    ["Que desportos cobrem?", "Futebol e ténis. Futebol: casa, empate ou fora. Ténis: quem ganha o encontro. O board mostra o que está em programa."],
+    ["O que acontece durante o jogo?", "Um resultado ao vivo atualiza-se enquanto se joga; os nossos números de mercado e estimativa são de antes do início."],
+    ["Fazem apostas, ou prometem que vou ganhar dinheiro?", "Não. Não aceitamos apostas, nunca tocamos no teu dinheiro e não prometemos rendimento: uma probabilidade é uma estimativa."],
+    ["Como o uso no dia a dia?", "Abre o board e toca num jogo: cada resultado, as odds das casas. Depois vê o registo das leituras anteriores."],
+  ],
   ru: [
-      [ // REVIEW-NATIVE
-        "Нужно ли за что-то платить?",
-        "Нет. На время запуска всё на BetRedge бесплатно, включая функции Pro: Pro пока не продаётся. Когда начнутся продажи, мы предупредим за 7 дней до того, как какая-либо функция перейдёт в Pro, и цена сначала появится на странице тарифов.",
-      ],
-      [
-        "Что входит в анализ и что добавляет Pro?",
-        "Три числа, и все они зафиксированы до начала матча. Что думает рынок — коэффициенты, переведённые в проценты без маржи. Наша оценка: в футболе это 70% рынок и 30% модель, и мы пишем это рядом. В теннисе, в матчах ATP/WTA со свежим Elo, оценка — на 90% рынок и на 10% наш Elo, не зафиксирована; в остальных — только рыночный коэффициент. И разрыв между ними, в пунктах. Pro добавит объяснение причин, фактор за фактором; это ещё не сделано.",
-      ],
-      [
-        "Какие виды спорта вы охватываете?",
-        "Футбол и теннис. Пока только их. В футболе мы читаем исход матча — победа хозяев, ничья или победа гостей; в теннисе — кто выиграет матч. Какие турниры появляются, меняется изо дня в день, и панель показывает, что есть.",
-      ],
-      [
-        "Что происходит на панели в режиме live?",
-        "Число движется вместе с матчем. Меняется счёт, идёт время, переходит инициатива, и модель заново читает игру, так что вы видите, как вероятность сдвигается прямо в момент сдвига. Ничего и никогда не ставится и не исполняется за вас: вы просто смотрите на экран. Эфир — функция Pro, открытая для всех на время запуска.",
-      ],
-      [ // REVIEW-NATIVE
-        "Вы делаете ставки или обещаете, что я заработаю?",
-        "Нет. Мы не делаем ставок, мы не букмекер, и ваших денег мы никогда не касаемся. Аккаунт где-то ещё вам тоже не нужен: BetRedge работает сам по себе. И мы не обещаем никакой доходности. Вероятность — это оценка: когда мы говорим 71%, это значит, что во множестве похожих ситуаций мы ожидали бы этот исход примерно 71 раз из 100. Что произойдёт именно в этом матче сегодня вечером, она не знает. Публичный реестр показывает, чем закончились прошлые оценки, а о следующей он не говорит ничего.",
-      ],
-      [
-        "Как пользоваться этим каждый день?",
-        "Откройте панель. Каждая строка показывает исход, где наша оценка и рынок расходятся сильнее всего: рынок, наша оценка, разрыв. Строки тенниса показывают оценку только там, где она есть, — 90% рынок и 10% наш Elo, а разрыв — информация, не совет; остальные — только рынок. Нажмите на неё — увидите все три исхода и коэффициенты подключённых букмекеров. Затем загляните в публичный реестр: то, чем закончились прежние оценки, подсказывает, какой вес заслуживает такое число. Что делать с этим дальше — решать вам. Free показывает каждый матч на панели, вместе с разрывом; на время запуска функции Pro тоже открыты для всех.",
-      ],
-    ],
-    sv: [
-      [ // REVIEW-NATIVE
-        "Måste jag betala något?",
-        "Nej. Under lanseringen är allt på BetRedge gratis, Pro-funktionerna inräknade: Pro säljs inte än. När det gör det meddelar vi 7 dagar innan någon funktion flyttar till Pro, och priset står först på sidan med planer.",
-      ],
-      [
-        "Vad ingår i en läsning, och vad lägger Pro till?",
-        "Tre siffror, alla förseglade före avspark. Vad marknaden tror, alltså oddset omvandlat till en procentsats med marginalen borttagen. Vår uppskattning: i fotboll är den 70 % marknad och 30 % modell, och det står bredvid. I tennis är uppskattningen i ATP/WTA-matcher med färsk Elo 90 % marknad och 10 % vår Elo, inte förseglad; annars bara marknadens odds. Och skillnaden mellan de två, i punkter. Pro kommer att lägga till varför, faktor för faktor; det är inte byggt än.",
-      ],
-      [
-        "Vilka sporter täcker ni?",
-        "Fotboll och tennis. Det är allt, för tillfället. I fotboll läser vi matchresultatet, alltså hemmaseger, oavgjort eller bortaseger; i tennis, vem som vinner matchen. Vilka tävlingar som syns ändras från dag till dag, och boarden visar vad som finns.",
-      ],
-      [
-        "Vad händer på liveboarden?",
-        "Siffran rör sig medan matchen gör det. Ställningen ändras, klockan går, momentum vänder, och modellen läser matchen igen, så du ser sannolikheten skifta medan den skiftar. Ingenting läggs eller genomförs någonsin åt dig: du läser en skärm. Live är en Pro-funktion, öppen för alla under lanseringen.",
-      ],
-      [ // REVIEW-NATIVE
-        "Lägger ni spel, eller lovar ni att jag tjänar pengar?",
-        "Nej. Vi lägger inga spel, vi är inget spelbolag, och dina pengar rör vi aldrig. Du behöver inte heller något konto någon annanstans, eftersom BetRedge fungerar på egen hand. Och vi lovar ingen avkastning av något slag. En sannolikhet är en uppskattning: när vi säger 71 % betyder det att vi, över många situationer som liknar den här, skulle vänta oss det utfallet ungefär 71 gånger av 100. Vad som händer i just den här matchen, i kväll, vet den inte. Det offentliga registret visar hur tidigare läsningar avgjordes, och om nästa säger det ingenting.",
-      ],
-      [
-        "Hur använder jag det i vardagen?",
-        "Öppna boarden. Varje rad visar utfallet där vår uppskattning och marknaden ligger längst isär: marknaden, vår uppskattning, skillnaden. Tennisrader visar uppskattningen bara där den finns, 90 % marknad och 10 % vår Elo, med skillnaden som information, inte råd; övriga bara marknaden. Tryck på den för alla tre utfallen och oddsen från de anslutna spelbolagen. Titta sedan på det offentliga registret, för att se hur tidigare läsningar avgjordes säger dig hur mycket vikt en sådan siffra förtjänar. Vad du gör med det sedan är ditt beslut. Free visar varje match på boarden, skillnaden inräknad; under lanseringen är även Pro-funktionerna öppna för alla.",
-      ],
-    ],
-    tr: [
-      [ // REVIEW-NATIVE
-        "Bir şey ödemem gerekiyor mu?",
-        "Hayır. Lansman süresince BetRedge'deki her şey ücretsiz, Pro özellikleri dahil: Pro henüz satışta değil. Satışa çıktığında, bir özellik Pro'ya geçmeden 7 gün önce haber vereceğiz ve fiyat önce planlar sayfasında yer alacak.",
-      ],
-      [
-        "Bir okumada ne var, Pro ne ekliyor?",
-        "Üç sayı, hepsi başlamadan önce mühürlü. Piyasanın düşündüğü: oranın marj çıkarılarak yüzdeye çevrilmiş hali. Tahminimiz: futbolda %70 piyasa ve %30 modeldir ve bunu yanında yazarız. Teniste, güncel Elo’su olan ATP/WTA maçlarında tahmin %90 piyasa ve %10 kendi Elo’muzdur, mühürsüzdür; diğerlerinde yalnızca piyasa oranı. Ve ikisi arasındaki fark, puan olarak. Pro nedenini faktör faktör ekleyecek; henüz yapılmadı.",
-      ],
-      [
-        "Hangi sporları kapsıyorsunuz?",
-        "Futbol ve tenis. Şimdilik bu kadar. Futbolda maç sonucunu okuruz, yani ev sahibi, beraberlik ya da deplasman; teniste maçı kimin kazanacağını. Hangi turnuvaların görüneceği günden güne değişir ve pano neyin olduğunu sana söyler.",
-      ],
-      [
-        "Canlı panoda ne oluyor?",
-        "Maç ilerledikçe sayı da hareket eder. Skor değişir, saat işler, üstünlük el değiştirir ve model oyunu yeniden okur; böylece olasılığın kaydığını tam kayarken görürsün. Hiçbir anda senin adına hiçbir şey oynanmaz ya da yürütülmez: bir ekran okuyorsun. Canlı bir Pro özelliğidir, lansman süresince herkese açık.",
-      ],
-      [ // REVIEW-NATIVE
-        "Bahis oynuyor musunuz ya da para kazanacağımı vaat ediyor musunuz?",
-        "Hayır. Bahis oynamayız, bahis sitesi değiliz ve paran asla dokunduğumuz bir şey değildir. Başka bir yerde hesaba da ihtiyacın yok, çünkü BetRedge kendi başına çalışır. Ve hiçbir türde getiri vaat etmeyiz. Olasılık bir tahmindir: %71 dediğimizde, buna benzeyen pek çok durumda o sonucun 100'de yaklaşık 71 kez gerçekleşmesini beklediğimiz anlamına gelir. Bu akşam bu maçta ne olacağını bilmez. Kamuya açık kayıt geçmiş okumaların nasıl sonuçlandığını gösterir; bir sonrakine dair hiçbir şey söylemez.",
-      ],
-      [
-        "Günlük olarak nasıl kullanırım?",
-        "Panoyu aç. Her satır, tahminimiz ile piyasanın en çok ayrıştığı sonucu gösterir: piyasa, tahminimiz, fark. Tenis satırları tahmini yalnızca bulunduğu yerde gösterir: %90 piyasa ve %10 kendi Elo’muz; fark bir bilgidir, tavsiye değildir. Diğerleri yalnızca piyasayı gösterir. Üç sonucun hepsi ve bağlı bahis sitelerinin oranları için dokun. Sonra kamuya açık kayda bak, çünkü önceki okumaların nasıl sonuçlandığını görmek böyle bir sayıya ne kadar ağırlık verileceğini söyler. Bundan sonra ne yapacağın senin kararın. Free panodaki her maçı fark dahil gösterir; lansman süresince Pro özellikleri de herkese açık.",
-      ],
-    ],
+    // REVIEW-NATIVE (1 · 7)
+    ["Нужно ли за что-то платить?", "Нет. Сегодня всё на BetRedge бесплатно. Pro — это предпросмотр: покупать пока нечего."],
+    ["Что входит в анализ?", "Вероятность рынка без маржи, наша оценка и разрыв между ними в процентных пунктах."],
+    ["Как получается оценка?", "Футбол: 70% рынок, 30% наша модель. Теннис, где наш Elo свежий: 90% рынок, 10% Elo; иначе только рынок."],
+    ["Что фиксируется до начала матча?", "Футбол: рынок и оценка фиксируются до начала и хранятся в реестре. Теннис: показанная оценка пока не зафиксирована."],
+    ["Какие виды спорта вы охватываете?", "Футбол и теннис. Футбол: победа хозяев, ничья или победа гостей. Теннис: кто выиграет матч. Панель показывает, что в программе."],
+    ["Что происходит во время матча?", "Счёт в реальном времени обновляется по ходу игры; наши цифры рынка и оценки сняты до начала матча."],
+    ["Вы делаете ставки или обещаете, что я заработаю?", "Нет. Мы не принимаем ставки, не касаемся ваших денег и не обещаем доходности: вероятность — это оценка."],
+    ["Как пользоваться этим каждый день?", "Откройте панель и нажмите на матч: все исходы, коэффициенты букмекеров. Затем загляните в реестр прошлых анализов."],
+  ],
+  sv: [
+    // REVIEW-NATIVE (1 · 7)
+    ["Måste jag betala något?", "Nej. Allt på BetRedge är gratis i dag. Pro är en förhandsvisning: det finns inget att köpa än."],
+    ["Vad ingår i en läsning?", "Marknadens sannolikhet utan marginal, vår uppskattning och skillnaden mellan dem, i punkter."],
+    ["Hur tas uppskattningen fram?", "Fotboll: 70% marknad, 30% vår modell. Tennis, där vår Elo är färsk: 90% marknad, 10% Elo; annars bara marknaden."],
+    ["Vad förseglas före avspark?", "Fotboll: marknad och uppskattning förseglas före avspark och sparas i registret. Tennis: den visade uppskattningen är inte förseglad än."],
+    ["Vilka sporter täcker ni?", "Fotboll och tennis. Fotboll: hemma, oavgjort eller borta. Tennis: vem som vinner matchen. Boarden visar vad som står på programmet."],
+    ["Vad händer under matchen?", "Ett liveresultat uppdateras medan matchen pågår; våra siffror för marknad och uppskattning är från före avspark."],
+    ["Lägger ni spel, eller lovar ni att jag tjänar pengar?", "Nej. Vi tar inte emot spel, rör aldrig dina pengar och lovar ingen avkastning: en sannolikhet är en uppskattning."],
+    ["Hur använder jag det i vardagen?", "Öppna boarden och tryck på en match: alla utfall, spelbolagens odds. Titta sedan i registret över tidigare läsningar."],
+  ],
+  tr: [
+    // REVIEW-NATIVE (1 · 7)
+    ["Bir şey ödemem gerekiyor mu?", "Hayır. Bugün BetRedge'deki her şey ücretsiz. Pro bir önizleme: henüz satın alınacak bir şey yok."],
+    ["Bir okumada ne var?", "Marj çıkarılmış piyasa olasılığı, tahminimiz ve ikisi arasındaki fark, puan olarak."],
+    ["Tahmin nasıl yapılıyor?", "Futbol: %70 piyasa, %30 modelimiz. Tenis, Elo’muz güncelse: %90 piyasa, %10 Elo; değilse yalnızca piyasa."],
+    ["Başlamadan önce ne mühürleniyor?", "Futbol: piyasa ve tahmin başlama öncesi mühürlenir ve kayıt defterinde kalır. Tenis: gösterilen tahmin henüz mühürlü değil."],
+    ["Hangi sporları kapsıyorsunuz?", "Futbol ve tenis. Futbol: ev sahibi, beraberlik ya da deplasman. Tenis: maçı kimin kazandığı. Pano programda olanı gösterir."],
+    ["Maç sırasında ne oluyor?", "Maç sürerken canlı skor güncellenir; piyasa ve tahmin sayılarımız başlama öncesine aittir."],
+    ["Bahis oynuyor musunuz ya da para kazanacağımı vaat ediyor musunuz?", "Hayır. Bahis almayız, parana asla dokunmayız ve getiri vaat etmeyiz: olasılık bir tahmindir."],
+    ["Günlük olarak nasıl kullanırım?", "Panoyu aç ve bir maça dokun: tüm sonuçlar, bahis sitelerinin oranları. Sonra geçmiş okumaların kayıt defterine bak."],
+  ],
 } as const satisfies Record<string, readonly FaqItem[]>;
 
 /** Le 11 lingue; una lingua sconosciuta ricade su EN. */

@@ -15,10 +15,13 @@ import { inputBounds, inputProblem } from "@/lib/v3c/fixdata";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
 import { useV3cLang } from "@/lib/v3c/lang.client";
 import { v3cLocale } from "@/lib/v3c/copy";
+import { amountPlaceholder } from "@/lib/v3c/fixui3-copy";
 
 /** fixdata M4: why this input is refused, in words (null = fine; an empty optional field is fine). */
 function inputError(i: ToolInput, v: number | null | undefined, raw: string, lang: string): string | null {
   if (i.optional && raw.trim() === "") return null;
+  // fixui3 R4: a field that starts empty (an amount) is not an error before the visitor types: the result waits
+  if (i.default == null && raw.trim() === "") return null;
   if (i.optional && v === 0) return null; // the third price of a two-way market: 0 = none
   const p = inputProblem(i.kind, v);
   if (!p) return null;
@@ -52,9 +55,9 @@ function boardFromSearch(search: string, live?: readonly BoardMatch[]) {
   return { match: m, outcome: o };
 }
 
-type Props = { slug: ToolSlug; copy: V3cToolCopy; invalid: string; live?: readonly BoardMatch[] };
+type Props = { slug: ToolSlug; copy: V3cToolCopy; invalid: string; live?: readonly BoardMatch[]; /** fixui3: the page's locale (URL), for the placeholder */ locale?: string };
 
-export function ToolCalc({ slug, copy, invalid, live }: Props) {
+export function ToolCalc({ slug, copy, invalid, live, locale }: Props) {
   const def = useMemo(() => toolDef(slug), [slug]);
   const search = useSearch();
   const [values, setValues] = useState<ToolValues>(() => defaultValues(def));
@@ -101,6 +104,7 @@ export function ToolCalc({ slug, copy, invalid, live }: Props) {
                 step="any"
                 name={i.key}
                 value={raw[i.key] ?? ""}
+                placeholder={i.default == null ? amountPlaceholder(locale ?? lang) : undefined}
                 onChange={(e) => onChange(i.key, e.target.value)}
                 aria-invalid={err ? true : undefined}
                 aria-describedby={err ? errId : undefined}

@@ -114,7 +114,7 @@ const es: V3cToolsCopy = {
       name: "Calculadora de margen",
       line: "cuánto se queda la casa en un mercado",
       inputs: { p1: "Cuota 1", p2: "Cuota 2", p3: "Cuota 3 (vacía si son dos)" },
-      results: { margin: "Margen de la casa", sum: "Suma de implícitas", kept: "Retenido por cada 100 € apostados" },
+      results: { margin: "Margen de la casa", sum: "Suma de implícitas", kept: "Retenido por cada 100 apostados" },
       formula: "Margen = suma de las probabilidades implícitas − 100%. Un mercado al 106,3% retiene unos 6 € de cada 100 €.",
       column: "Margen",
     },
@@ -156,7 +156,7 @@ const es: V3cToolsCopy = {
       inputs: { price: "Cuota decimal", target: "Beneficio objetivo €", bank: "Bankroll €" },
       results: { stake: "Stake necesario", return: "Retorno total", share: "Parte del bankroll" },
       formula: "Stake = beneficio objetivo ÷ (cuota − 1). La parte del bankroll es el número que hay que mirar dos veces.",
-      column: "Stake para 100 €",
+      column: "Stake por 1 de beneficio",
     },
     "bankroll-calculator": {
       name: "Calculadora de bankroll",

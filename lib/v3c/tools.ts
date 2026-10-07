@@ -62,6 +62,10 @@ export type ToolResult = {
 
 export type ToolPreview = { input: string; output: string; flat?: boolean; market?: boolean };
 
+/** fixui3: the few words of a preview line («2.15 at 48%», «+400 on 1,000»), translated (lib/v3c/fixui3-copy). */
+export type PreviewWords = { at: string; on: string; bets: string; unit: string; eg: string };
+export const PREVIEW_WORDS_EN: PreviewWords = { at: "at", on: "on", bets: "bets", unit: "unit", eg: "e.g." };
+
 /** Il contesto di board da cui un tool si precompila: l'esito guida e i prezzi del mercato. */
 export type BoardCtx = {
   outcomes: readonly Pick<BoardOutcome, "price" | "estimate" | "market" | "prices">[];
@@ -75,8 +79,14 @@ export type ToolDef = {
   sigla: string;
   inputs: readonly ToolInput[];
   compute(v: ToolValues): ToolResult[];
-  /** La riga «input» dell'anteprima, dai valori. */
-  previewInput(v: ToolValues): string;
+  /** La riga «input» dell'anteprima, dai valori (fixui3: con le parole della lingua). */
+  previewInput(v: ToolValues, w?: PreviewWords): string;
+  /**
+   * fixui3 R4: the illustrative amounts of the preview line on the hub, for the tools whose inputs are money.
+   * Never a prefill: the calculator's money fields start empty, and the preview shows them without «€»,
+   * after «e.g.».
+   */
+  example?: ToolValues;
   /** I valori precompilati da un esito della board. */
   fromBoard(ctx: BoardCtx): ToolValues;
   /** La colonna del tool sul board di oggi; assente → ponte testuale. */
@@ -95,6 +105,8 @@ export function eur(x: number): string {
   return `${sign}€${body}`;
 }
 const dec = (x: number) => x.toFixed(2);
+/** fixui3 R4: an amount of the preview line, no currency («1,000», «86.96»). */
+const amt = (x: number) => eur(x).replace("€", "");
 
 function prices3(v: ToolValues): number[] | null {
   const ps = [v.p1, v.p2, v.p3];
@@ -168,7 +180,7 @@ export const TOOLS: readonly ToolDef[] = [
       return [
         { key: "margin", value: pct(mg), big: true },
         { key: "sum", value: pct(mg + 100) },
-        { key: "kept", value: eur((mg / (mg + 100)) * 100) },
+        { key: "kept", value: amt((mg / (mg + 100)) * 100) }, // fixui3 R4: per 100 staked, no «€» by default
       ];
     },
     previewInput: (v) => joinPrices([v.p1, v.p2, v.p3]),
@@ -180,11 +192,14 @@ export const TOOLS: readonly ToolDef[] = [
     slug: "arbitrage-calculator",
     question: "price",
     sigla: "ARB",
-    inputs: [price("p1", 2.15), price("p2", 3.2), { key: "p3", kind: "price", default: 3.55, optional: true }, { key: "total", kind: "money", default: 1000 }],
+    // fixui3 R4: no default total — the stakes appear only once the visitor types theirs; the margin needs prices only
+    inputs: [price("p1", 2.15), price("p2", 3.2), { key: "p3", kind: "price", default: 3.55, optional: true }, { key: "total", kind: "money", default: null }],
     compute(v) {
       const ps = prices3(v);
-      if (!ps || !validInput("money", v.total)) return [];
-      const r = arbitrage({ decimals: ps, total: v.total });
+      if (!ps) return [];
+      const noTotal = v.total == null;
+      if (!noTotal && !validInput("money", v.total)) return [];
+      const r = arbitrage({ decimals: ps, total: noTotal ? 1 : (v.total as number) });
       if (!r) return [];
       const profit = r.profitPercent * 100;
       const sum = r.impliedSum * 100;
@@ -192,13 +207,13 @@ export const TOOLS: readonly ToolDef[] = [
         profit >= 0 ? { key: "profit", value: signedPct(profit), big: true } : { key: "shortfall", value: signedPct(profit), big: true, flat: true },
         { key: "sum", value: pct(sum) },
       ];
-      r.stakes.forEach((s, i) => out.push({ key: "stake", value: eur(s), vars: { n: String(i + 1) } }));
+      if (!noTotal) r.stakes.forEach((s, i) => out.push({ key: "stake", value: eur(s), vars: { n: String(i + 1) } }));
       return out;
     },
     previewInput: (v) => joinPrices([v.p1, v.p2, v.p3]),
     fromBoard(ctx) {
       const ps = ctx.outcomes.map(bestPriceOf);
-      return { p1: ps[0] ?? null, p2: ps[1] ?? null, p3: ps[2] ?? null, total: 1000 };
+      return { p1: ps[0] ?? null, p2: ps[1] ?? null, p3: ps[2] ?? null, total: null };
     },
     column(ctx) {
       const sum = ctx.outcomes.reduce((a, o) => a + 100 / bestPriceOf(o), 0);
@@ -241,7 +256,7 @@ export const TOOLS: readonly ToolDef[] = [
         { key: "breakeven", value: pct(100 / v.price) },
       ];
     },
-    previewInput: (v) => (validInput("price", v.price) && validInput("percent", v.prob) ? `${dec(v.price)} at ${v.prob}%` : "—"),
+    previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("price", v.price) && validInput("percent", v.prob) ? `${dec(v.price)} ${w.at} ${v.prob}%` : "—"),
     fromBoard: (ctx) => ({ price: ctx.lead.price, prob: ctx.lead.estimate }),
     column(ctx) {
       const e = (expectedValue({ probability: ctx.lead.estimate / 100, decimal: ctx.lead.price, stake: 1 })?.evPercent ?? 0);
@@ -275,7 +290,7 @@ export const TOOLS: readonly ToolDef[] = [
         { key: "quarter", value: `${pct(f / 4)} · ${eur(Math.round(r.stake / 4))}` },
       ];
     },
-    previewInput: (v) => (validInput("price", v.price) && validInput("percent", v.prob) ? `${dec(v.price)} at ${v.prob}%` : "—"),
+    previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("price", v.price) && validInput("percent", v.prob) ? `${dec(v.price)} ${w.at} ${v.prob}%` : "—"),
     fromBoard: (ctx) => ({ price: ctx.lead.price, prob: ctx.lead.estimate, bank: null }),
     column(ctx) {
       const f = (kelly({ probability: ctx.lead.estimate / 100, decimal: ctx.lead.price, bankroll: 1, fraction: 1 })?.fullKelly ?? 0) * 100;
@@ -287,20 +302,25 @@ export const TOOLS: readonly ToolDef[] = [
     slug: "stake-calculator",
     question: "stake",
     sigla: "STK",
-    inputs: [price("price", 2.15), { key: "target", kind: "money", default: 100 }, { key: "bank", kind: "money", default: 1000 }],
+    // fixui3 R4: target and bankroll start empty (never assumed); the share of bankroll only with the visitor's bankroll
+    inputs: [price("price", 2.15), { key: "target", kind: "money", default: null }, { key: "bank", kind: "money", default: null, optional: true }],
     compute(v) {
-      if (!validInput("price", v.price) || !validInput("money", v.target) || !validInput("money", v.bank)) return [];
+      if (!validInput("price", v.price) || !validInput("money", v.target)) return [];
+      if (v.bank != null && !validInput("money", v.bank)) return [];
       const s = stakeForTarget({ targetProfit: v.target, decimal: v.price });
       if (s == null) return [];
-      return [
+      const out: ToolResult[] = [
         { key: "stake", value: eur(s), big: true },
         { key: "return", value: eur(s + v.target) },
-        { key: "share", value: pct((s / v.bank) * 100) },
       ];
+      if (v.bank != null) out.push({ key: "share", value: pct((s / v.bank) * 100) });
+      return out;
     },
-    previewInput: (v) => (validInput("price", v.price) && validInput("money", v.target) ? `${eur(v.target)} at ${dec(v.price)}` : "—"),
-    fromBoard: (ctx) => ({ price: ctx.lead.price, target: 100, bank: 1000 }),
-    column: (ctx) => ({ key: "stakeFor", value: eur(stakeForTarget({ targetProfit: 100, decimal: ctx.lead.price }) ?? 0) }),
+    previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("price", v.price) && validInput("money", v.target) ? `${w.eg} ${amt(v.target)} ${w.at} ${dec(v.price)}` : "—"),
+    example: { target: 100 },
+    fromBoard: (ctx) => ({ price: ctx.lead.price, target: null, bank: null }),
+    // fixui3 R4: the board column is the stake per 1 of profit, no amount in € (it was «Stake for €100»)
+    column: (ctx) => ({ key: "stakeFor", value: dec(stakeForTarget({ targetProfit: 1, decimal: ctx.lead.price }) ?? 0) }),
     bridge: "board",
   },
   {
@@ -331,7 +351,7 @@ export const TOOLS: readonly ToolDef[] = [
         { key: "ruin", value: String(r.betsToRuin) },
       ];
     },
-    previewInput: (v) => (validInput("percent", v.unit) ? (validInput("money", v.bank) ? `${eur(v.bank)} at ${v.unit}%` : `${v.unit}% unit`) : "—"),
+    previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("percent", v.unit) ? (validInput("money", v.bank) ? `${amt(v.bank)} ${w.at} ${v.unit}%` : `${v.unit}% ${w.unit}`) : "—"),
     fromBoard: () => ({ bank: null, unit: 2, streak: 10 }),
     bridge: "board",
   },
@@ -339,9 +359,10 @@ export const TOOLS: readonly ToolDef[] = [
     slug: "roi-calculator",
     question: "record",
     sigla: "ROI",
+    // fixui3 R4: both empty — the visitor's own diary, never a default bankroll
     inputs: [
-      { key: "cap", kind: "money", default: 1000 },
-      { key: "profit", kind: "signed", default: 400 },
+      { key: "cap", kind: "money", default: null },
+      { key: "profit", kind: "signed", default: null },
     ],
     compute(v) {
       if (!validInput("money", v.cap) || !validInput("signed", v.profit)) return [];
@@ -352,18 +373,20 @@ export const TOOLS: readonly ToolDef[] = [
         { key: "end", value: eur(v.cap + v.profit) },
       ];
     },
-    previewInput: (v) => (validInput("money", v.cap) && validInput("signed", v.profit) ? `${eur(v.profit)} on ${eur(v.cap)}` : "—"),
-    fromBoard: () => ({ cap: 1000, profit: 400 }),
+    previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("money", v.cap) && validInput("signed", v.profit) ? `${w.eg} ${amt(v.profit)} ${w.on} ${amt(v.cap)}` : "—"),
+    example: { cap: 1000, profit: 400 },
+    fromBoard: () => ({ cap: null, profit: null }),
     bridge: "record",
   },
   {
     slug: "yield-calculator",
     question: "record",
     sigla: "YLD",
+    // fixui3 R4: all three empty — the visitor's own diary
     inputs: [
-      { key: "bets", kind: "count", default: 200 },
-      { key: "avg", kind: "money", default: 50 },
-      { key: "profit", kind: "signed", default: 400 },
+      { key: "bets", kind: "count", default: null },
+      { key: "avg", kind: "money", default: null },
+      { key: "profit", kind: "signed", default: null },
     ],
     compute(v) {
       if (!validInput("count", v.bets) || !validInput("money", v.avg) || !validInput("signed", v.profit)) return [];
@@ -375,8 +398,9 @@ export const TOOLS: readonly ToolDef[] = [
         { key: "turnover", value: eur(turnover) },
       ];
     },
-    previewInput: (v) => (validInput("count", v.bets) && validInput("money", v.avg) ? `${v.bets} bets · ${eur(v.avg)}` : "—"),
-    fromBoard: () => ({ bets: 200, avg: 50, profit: 400 }),
+    previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("count", v.bets) && validInput("money", v.avg) ? `${w.eg} ${v.bets} ${w.bets} · ${amt(v.avg)}` : "—"),
+    example: { bets: 200, avg: 50, profit: 400 },
+    fromBoard: () => ({ bets: null, avg: null, profit: null }),
     bridge: "record",
   },
 ];
@@ -405,13 +429,14 @@ export const BENCH_SLUGS: readonly ToolSlug[] = ["ev-calculator", "probability-c
  * risultato, calcolato sui numeri precompilati. Le probabilità di mercato
  * escono senza decimali, come la colonna «Market» della board.
  */
-export function toolPreview(slug: ToolSlug, ctx: BoardCtx): ToolPreview {
+export function toolPreview(slug: ToolSlug, ctx: BoardCtx, w: PreviewWords = PREVIEW_WORDS_EN): ToolPreview {
   const t = toolDef(slug);
-  const v = t.fromBoard(ctx);
+  // fixui3 R4: the money tools preview their declared example amounts («e.g.»), never a prefill, and without «€»
+  const v = { ...t.fromBoard(ctx), ...(t.example ?? {}) };
   const [r] = t.compute(v);
-  if (!r) return { input: t.previewInput(v), output: "—", flat: true };
-  const output = r.market ? pct(parseFloat(r.value), 0) : r.value;
-  return { input: t.previewInput(v), output, flat: r.flat, market: r.market };
+  if (!r) return { input: t.previewInput(v, w), output: "—", flat: true };
+  const output = r.market ? pct(parseFloat(r.value), 0) : t.example ? r.value.replace("€", "") : r.value;
+  return { input: t.previewInput(v, w), output, flat: r.flat, market: r.market };
 }
 
 /** Ogni slug del registry ha il suo tool nel motore, nessuno in più. */

@@ -21,6 +21,7 @@ import { V3C_BANNER_COPY } from "./banner-copy";
 import { FIXDATA_COPY } from "./fixdata-copy";
 import { FIXDATA2_COPY } from "./fixdata2-copy";
 import { FIXUI2_COPY } from "./fixui2-copy";
+import { FIXUI3_COPY } from "./fixui3-copy";
 import { GUIDE_COPY } from "./guide-copy";
 import { DOC_TITLES } from "./doc-titles";
 
@@ -108,7 +109,7 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "pages", of: (l) => PAGES_COPY[l as never], maxWords: 22 },
   { name: "news", of: (l) => NEWS_COPY[l as never], maxWords: 22 },
   { name: "community", of: (l) => communityCopyFor(l), maxWords: 22 },
-  { name: "home-faq", of: (l) => V3C_HOME_FAQ[l as never], maxWords: null },
+  { name: "home-faq", of: (l) => V3C_HOME_FAQ[l as never], maxWords: 22 }, // fixui3 R1: ≤ 22 parole per risposta (EN e IT: components/v3c/fixui3.test.tsx)
   { name: "states", of: (l) => STATE_COPY[l as never], maxWords: 22 },
   { name: "tools", of: (l) => V3C_TOOLS_COPY[l as never], maxWords: 22 },
   { name: "live", of: (l) => V3C_LIVE_COPY[l as never], maxWords: 22 },
@@ -120,6 +121,8 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "fixdata2", of: (l) => FIXDATA2_COPY[l as never], maxWords: 22 },
   // fixui2: B3 N1 N4 N5 N6 N8 (QA-REPORT-2)
   { name: "fixui2", of: (l) => FIXUI2_COPY[l as never], maxWords: 22 },
+  // fixui3: R4 (tools «Example», placeholder, preview words), L1/B3 (account in Fase 0)
+  { name: "fixui3", of: (l) => FIXUI3_COPY[l as never], maxWords: 22 },
   // fixui: orientamento (frase della home, pannello «How to read this page», fuso, «More») e title per lingua
   { name: "guide", of: (l) => GUIDE_COPY[l as never], maxWords: 22 },
   { name: "doc-titles", of: (l) => DOC_TITLES[l as never], maxWords: null },

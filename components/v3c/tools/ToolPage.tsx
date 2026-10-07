@@ -12,6 +12,7 @@ import { getV3cToolsCopy, fmt } from "@/lib/i18n/v3c-tools";
 import { toolBoardSource } from "@/lib/v3c/board-source.server";
 import { getBoard } from "@/lib/v3c/board-data.server";
 import { toolDef, toolPreview } from "@/lib/v3c/tools";
+import { fixui3CopyFor, previewWordsFor } from "@/lib/v3c/fixui3-copy";
 import { v3cFontClass } from "../fonts";
 import { BenchTool } from "../BenchTool";
 import { SiteFrame } from "../Chrome";
@@ -67,7 +68,7 @@ export async function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: To
           }
         />
 
-        <ToolCalc slug={slug} copy={tc} invalid={c.tool.invalid} live={live} />
+        <ToolCalc slug={slug} copy={tc} invalid={c.tool.invalid} live={live} locale={locale} />
 
         <BoardBridge def={def} column={tc.column} copy={c.tool} src={src} times={times} locale={locale} />
 
@@ -86,6 +87,8 @@ export async function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: To
         </section>
 
         <section className="v3c-sec v3c-example" aria-labelledby="v3c-example-h">
+          {/* fixui3 R4: the worked example (amounts like «1,000 in the bank») is labelled as one, never a prefill */}
+          <span className="v3c-lab" data-v3c="example-label">{fixui3CopyFor(locale).example}</span>
           <h2 className="v3c-t-sec" id="v3c-example-h">
             {t.example.title}
           </h2>
@@ -124,7 +127,7 @@ export async function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: To
           <div className="v3c-hq-l">
             {others.map((s) => {
               const d = toolDef(s);
-              return <BenchTool key={s} variant="hub" slug={s} sigla={d.sigla} name={c.tools[s].name} line={c.tools[s].line} href={toolPath(s, locale)} example={toolPreview(s, ctx)} />;
+              return <BenchTool key={s} variant="hub" slug={s} sigla={d.sigla} name={c.tools[s].name} line={c.tools[s].line} href={toolPath(s, locale)} example={toolPreview(s, ctx, previewWordsFor(locale))} />;
             })}
           </div>
         </section>

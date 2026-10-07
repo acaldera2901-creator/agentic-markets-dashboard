@@ -113,7 +113,7 @@ const en: V3cToolsCopy = {
       name: "Margin calculator",
       line: "how much the book keeps on a market",
       inputs: { p1: "Price 1", p2: "Price 2", p3: "Price 3 (blank for two)" },
-      results: { margin: "Book margin", sum: "Implied sum", kept: "Kept per €100 staked" },
+      results: { margin: "Book margin", sum: "Implied sum", kept: "Kept per 100 staked" },
       formula: "Margin = sum of the implied probabilities − 100%. A 106.3% book keeps about €6 of every €100.",
       column: "Margin",
     },
@@ -155,7 +155,7 @@ const en: V3cToolsCopy = {
       inputs: { price: "Decimal price", target: "Target profit €", bank: "Bankroll €" },
       results: { stake: "Stake needed", return: "Total return", share: "Share of bankroll" },
       formula: "Stake = target profit ÷ (price − 1). The share of bankroll is the number to look at twice.",
-      column: "Stake for €100",
+      column: "Stake per 1 of profit",
     },
     "bankroll-calculator": {
       name: "Bankroll calculator",
