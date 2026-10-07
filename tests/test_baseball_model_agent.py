@@ -131,6 +131,10 @@ def _game(pk, home="Los Angeles Dodgers", away="San Diego Padres",
     }
 
 
+# "adesso" prima di tutti gli eventi del 05/07: il matcher rifiuta quelli gia' iniziati.
+_NOW_PRE = datetime(2026, 7, 5, 12, 0, tzinfo=timezone.utc)
+
+
 def _event(when="2026-07-05T22:05:00Z", home="Los Angeles Dodgers", away="San Diego Padres"):
     return {"event_id": "ev1", "home_team": home, "away_team": away,
             "commence_time": when, "books": []}
@@ -138,12 +142,12 @@ def _event(when="2026-07-05T22:05:00Z", home="Los Angeles Dodgers", away="San Di
 
 def test_match_odds_event_requires_teams_and_time_window():
     events = [_event()]
-    assert match_odds_event(_game(1), events) is not None
+    assert match_odds_event(_game(1), events, now=_NOW_PRE) is not None
     assert events == []  # matched event is consumed (doubleheader safety)
 
     # same teams but 8h away (the OTHER doubleheader game) → no match
     events = [_event(when="2026-07-05T14:00:00Z")]
-    assert match_odds_event(_game(2), events) is None
+    assert match_odds_event(_game(2), events, now=_NOW_PRE) is None
     assert len(events) == 1
 
 
@@ -151,8 +155,8 @@ def test_match_odds_event_doubleheader_pairs_each_game_once():
     ev_day = _event(when="2026-07-05T17:00:00Z")
     ev_night = _event(when="2026-07-05T23:30:00Z")
     events = [ev_day, ev_night]
-    got_day = match_odds_event(_game(1, when="2026-07-05T17:05:00Z"), events)
-    got_night = match_odds_event(_game(2, when="2026-07-05T23:10:00Z"), events)
+    got_day = match_odds_event(_game(1, when="2026-07-05T17:05:00Z"), events, now=_NOW_PRE)
+    got_night = match_odds_event(_game(2, when="2026-07-05T23:10:00Z"), events, now=_NOW_PRE)
     assert got_day is ev_day and got_night is ev_night
     assert events == []
 

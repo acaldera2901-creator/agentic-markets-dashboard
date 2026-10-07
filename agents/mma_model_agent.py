@@ -23,7 +23,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import time
+import unicodedata
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -70,7 +72,13 @@ async def get_ufc_windows() -> Optional[list]:
                 start = datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp() * 1000
             except ValueError:
                 continue
-            windows.append({"name": e.get("strEvent"), "start_ms": start})
+            # `text`: tutto ciò che il tier gratuito dice dei fighter della card
+            # (titolo + titolo alternativo + descrizione). Serve a
+            # bout_in_card; vedi la nota lì sui limiti.
+            text = " ".join(
+                str(e.get(k) or "") for k in ("strEvent", "strEventAlternate", "strDescriptionEN")
+            )
+            windows.append({"name": e.get("strEvent"), "start_ms": start, "text": text})
         if windows:
             _windows_cache = (now, windows)
         return windows or None
@@ -81,13 +89,92 @@ async def get_ufc_windows() -> Optional[list]:
         return None  # fail-closed
 
 
+def card_windows_at(commence_ms: float, windows: list) -> List[dict]:
+    """Tutte le card la cui finestra (-3h early prelims, +9h coda) contiene
+    l'orario del fight."""
+    return [
+        w for w in windows
+        if w["start_ms"] - 3 * 3.6e6 <= commence_ms <= w["start_ms"] + 9 * 3.6e6
+    ]
+
+
 def match_ufc_event(commence_ms: float, windows: list) -> Optional[str]:
     """UFC cards run ~6-8h from the listed start; margin -3h (early prelims)
-    to +9h. A fight outside every card window is not (verifiably) UFC."""
-    for w in windows:
-        if w["start_ms"] - 3 * 3.6e6 <= commence_ms <= w["start_ms"] + 9 * 3.6e6:
-            return w["name"]
-    return None
+    to +9h. A fight outside every card window is not (verifiably) UFC.
+    ⚠️ È una verifica SOLO TEMPORALE: non prova che il bout sia nella card
+    (vedi verify_bout_card)."""
+    hits = card_windows_at(commence_ms, windows)
+    return hits[0]["name"] if hits else None
+
+
+# ─── Appartenenza del bout alla card (#NEWSPORTS-QUALITA-1006) ────────────────
+# Prima: un fight era "UFC verificato" (org_verified=true) se il suo orario
+# cadeva nella finestra di una card TheSportsDB — che non prova che QUEI due
+# fighter siano nel programma. Cosa offre il tier gratuito (misurato il 6/10/2026
+# con la chiave pubblica 123): eventsnextleague / lookupevent danno la CARD
+# (strEvent "UFC 332 Silva vs Wang", strDescriptionEN in prosa, spesso vuota —
+# vuota per le DWCS), strHomeTeam/strAwayTeam null; lookuplineup, eventresults
+# e lookuptimeline tornano null per gli eventi UFC. Una lista strutturata dei
+# bout NON c'è. Quindi:
+#   * "bout_in_card": entrambi i fighter (tutti i token del nome, accenti e
+#     ordine normalizzati) compaiono nel testo della card — tipicamente main
+#     event e co-main. Solo qui org_verified=true.
+#   * "time_only": la finestra torna ma i nomi no. La pick resta (il filtro
+#     d'orario è quello validato in lab) ma org_verified=false: non si dichiara
+#     una verifica che non è stata fatta.
+# Limite dichiarato: la prosa può nominare due fighter che non si affrontano
+# (es. "dopo le vittorie su X"): "bout_in_card" = "entrambi nominati dalla
+# card", non "incontro confermato da un programma ufficiale".
+_NAME_TOKEN_RE = re.compile(r"[a-z0-9]+")
+
+
+def normalize_name_tokens(name: str | None) -> frozenset:
+    """Token del nome senza accenti, minuscoli, punteggiatura via; insieme,
+    quindi indipendente dall'ordine ("Wang Cong" == "Cong Wang")."""
+    if not name:
+        return frozenset()
+    flat = unicodedata.normalize("NFKD", str(name))
+    flat = "".join(c for c in flat if not unicodedata.combining(c)).lower()
+    flat = flat.replace("'", "").replace("\u2019", "")  # O'Malley -> omalley
+    return frozenset(_NAME_TOKEN_RE.findall(flat))
+
+
+def bout_in_card(fighter_a: str, fighter_b: str, window: dict) -> bool:
+    """True se ENTRAMBI i fighter compaiono (tutti i token) nel testo della card."""
+    card = normalize_name_tokens(window.get("text") or window.get("name"))
+    ta, tb = normalize_name_tokens(fighter_a), normalize_name_tokens(fighter_b)
+    if not ta or not tb or not card:
+        return False
+    return ta <= card and tb <= card
+
+
+def verify_bout_card(fighter_a: str, fighter_b: str, commence_ms: float,
+                     windows: list) -> tuple[Optional[str], Optional[str]]:
+    """(nome card, livello di verifica). Livello: "bout_in_card" se una card
+    nella finestra nomina entrambi i fighter, "time_only" se torna solo
+    l'orario, (None, None) se il fight non cade in nessuna card."""
+    hits = card_windows_at(commence_ms, windows)
+    if not hits:
+        return None, None
+    for w in hits:
+        if bout_in_card(fighter_a, fighter_b, w):
+            return w["name"], "bout_in_card"
+    return hits[0]["name"], "time_only"
+
+
+# ─── Card di sviluppo escluse (#NEWSPORTS-DWCS-EXCL-0921, port dal lab) ───────
+# Port di DEV_CARD_RE di ufc_v2.mjs: Dana White's Contender Series e Road to
+# UFC sono escluse dalle pick FUTURE (regola pre-registrata il 21/09). Il
+# motivo che regge è OPERATIVO: sono la sorgente della coda di settlement
+# manuale (lo scores endpoint copre 3 giorni e Wikipedia non pubblica i bout
+# DWCS), quindi il ledger resta cieco a tratti; il motivo di qualità è debole
+# (78,8% card principali vs 75,0% DWCS/RTU, n=16). TheSportsDB scrive "Dana
+# Whites Contender Series" senza apostrofo: la regex guarda "contender series".
+_DEV_CARD_RE = re.compile(r"contender series|road to ufc", re.I)
+
+
+def is_development_card(event_name: str | None) -> bool:
+    return bool(event_name) and bool(_DEV_CARD_RE.search(event_name))
 
 
 def assign_tier(conf: float) -> Optional[str]:
@@ -101,7 +188,8 @@ def assign_tier(conf: float) -> Optional[str]:
 
 
 def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
-                      hours_to_fight: float, flags: List[str], now_iso: str) -> dict:
+                      hours_to_fight: float, flags: List[str], now_iso: str,
+                      org_verification: str) -> dict:
     """unified_predictions row per docs/NEWSPORTS-INTEGRATION.md (fighter A in
     the home slot, fighter B in the away slot — prod convention)."""
     p_home = round(mkt["p_home"], 4)
@@ -135,10 +223,16 @@ def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
             "odds_away": mkt["odds_away"],
             "mkt_source": mkt["source"],
             "n_books": mkt["n_books"],
+            # #NEWSPORTS-QUALITA-1006: quote derivate (mediana pari) e età della quota
+            "odds_derived": bool(mkt.get("odds_derived")),
+            "odds_last_update": mkt.get("last_update"),
         }),
         "enrichment": {
             "tier": tier,
-            "org_verified": True,   # fail-closed filter: a row exists only if verified
+            # true SOLO se la card nomina entrambi i fighter; "time_only" = la
+            # sola finestra oraria, che non prova l'appartenenza del bout.
+            "org_verified": org_verification == "bout_in_card",
+            "org_verification": org_verification,
             "n_books": mkt["n_books"],
             "window_ok": True,      # ditto: 2-30h enforced before the builder
             "hours_to_fight": round(hours_to_fight, 1),
@@ -189,6 +283,7 @@ class MmaModelAgent(BaseAgent):
         now_ms = now.timestamp() * 1000
         rows: List[dict] = []
         waiting = 0
+        dev_cards = 0
         for ev in events:
             try:
                 commence_ms = datetime.fromisoformat(
@@ -212,20 +307,30 @@ class MmaModelAgent(BaseAgent):
                 continue
             if mkt["n_books"] < MIN_BOOKS and mkt["source"] != "pinnacle":
                 continue  # exotic single-book price — never a pick
-            ufc_event = match_ufc_event(commence_ms, windows)
+            ufc_event, verification = verify_bout_card(
+                ev["home_team"], ev["away_team"], commence_ms, windows,
+            )
             if not ufc_event:
                 continue  # non-UFC org or unverifiable
+            if is_development_card(ufc_event):
+                dev_cards += 1
+                continue  # DWCS / Road to UFC: fuori dalle pick (#NEWSPORTS-DWCS-EXCL-0921)
             if fighter_counts[ev["home_team"]] > 1 or fighter_counts[ev["away_team"]] > 1:
                 continue  # ambiguous matchup
 
+            flags: List[str] = []
+            if verification != "bout_in_card":
+                flags.append("card verificata solo per orario: fighter non nominati dalla card")
             rows.append(build_unified_row(
                 ev=ev, mkt=mkt, tier=tier, ufc_event=ufc_event,
-                hours_to_fight=hours, flags=[], now_iso=now.isoformat(),
+                hours_to_fight=hours, flags=flags, now_iso=now.isoformat(),
+                org_verification=verification,
             ))
 
         written = await upsert_unified_rows(rows) if rows else 0
         self.logger.info(
             f"cycle: {len(events)} fights in feed, {len(rows)} picks in window, "
-            f"{waiting} candidates waiting (> {MAX_H}h), {written} rows upserted"
+            f"{waiting} candidates waiting (> {MAX_H}h), {dev_cards} on development cards "
+            f"(excluded), {written} rows upserted"
         )
         return written
