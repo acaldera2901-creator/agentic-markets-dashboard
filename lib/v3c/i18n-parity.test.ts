@@ -11,6 +11,7 @@ import { V3C_COPY, V3C_LANGS, copyFor, v3cLang, v3cLocale } from "./copy";
 import { V3C_MATCH_COPY } from "./match-copy";
 import { V3C_RECORD_COPY } from "./copy-record";
 import { PAGES_COPY } from "./pages-copy";
+import { NEWS_COPY } from "./news-copy";
 import { communityCopyFor } from "./community-copy";
 import { V3C_HOME_FAQ } from "./home-faq";
 import { STATE_COPY } from "@/components/v3c/States";
@@ -98,6 +99,7 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "match", of: (l) => V3C_MATCH_COPY[l as never], maxWords: 22 },
   { name: "record", of: (l) => V3C_RECORD_COPY[l as never], maxWords: 22 },
   { name: "pages", of: (l) => PAGES_COPY[l as never], maxWords: 22 },
+  { name: "news", of: (l) => NEWS_COPY[l as never], maxWords: 22 },
   { name: "community", of: (l) => communityCopyFor(l), maxWords: 22 },
   { name: "home-faq", of: (l) => V3C_HOME_FAQ[l as never], maxWords: null },
   { name: "states", of: (l) => STATE_COPY[l as never], maxWords: 22 },

@@ -4,6 +4,8 @@
 // published, lib/blog.ts): guide scritte da noi. Lo spazio «News at hh:mm» per le
 // note partita legate a un prezzo esiste, ma è dichiarato vuoto: nessun feed di
 // terzi in questo filone (la proposta FotMob è docs/v3c-news-proposal.md, gated).
+// #REDESIGN-V3C news: con NEWS_FOTMOB_ENABLED acceso il server passa `live` e la
+// pagina mostra le note riscritte (NewsLive.tsx); le guide restano sotto, a parte.
 // URL, canonical, JSON-LD (Article + breadcrumb) restano quelli di app/blog/*.
 import Link from "next/link";
 import { useV3cLang } from "@/lib/v3c/lang.client";
@@ -11,6 +13,9 @@ import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
 import { hubPath } from "@/lib/tools/registry";
 import { Fascia } from "../Fascia";
 import { v3cLocale } from "@/lib/v3c/copy";
+import { newsCopyFor } from "@/lib/v3c/news-copy";
+import type { NewsPage } from "@/lib/v3c/news/news.server";
+import { MostMoved, NewsLiveList, UpdatedAt } from "./NewsLive";
 
 export type NewsItem = {
   slug: string;
@@ -42,10 +47,12 @@ function longDate(iso: string | null, lang: string): string {
   return d.toLocaleDateString(v3cLocale(lang), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-function Aside() {
+/** `notes` off when the live news is on: «Not live yet» would no longer be true. */
+function Aside({ notes = true }: { notes?: boolean }) {
   const t = usePagesCopy().news;
   return (
     <aside className="v3c-pg-naside">
+      {notes ? (
       <section className="v3c-pg-notes" aria-labelledby="v3c-pg-notes-h">
         <span className="v3c-lab">{t.notesTitle}</span>
         <h2 className="v3c-t-row" id="v3c-pg-notes-h">
@@ -56,22 +63,119 @@ function Aside() {
           {t.boardLink} <span aria-hidden="true">→</span>
         </a>
       </section>
-      <section className="v3c-pg-ntools" aria-labelledby="v3c-pg-ntools-h">
-        <h2 className="v3c-t-row" id="v3c-pg-ntools-h">
-          {t.toolsTitle}
-        </h2>
-        <p className="v3c-small">{t.toolsBody}</p>
-        <a className="v3c-pg-more" href={TOOLS}>
-          {t.toolsLink} <span aria-hidden="true">→</span>
-        </a>
-      </section>
+      ) : null}
+      <ToolsAside />
     </aside>
   );
 }
 
-export function V3cNewsIndex({ posts }: { posts: NewsItem[] }) {
+function GuideList({ posts }: { posts: NewsItem[] }) {
   const lang = useV3cLang();
   const t = usePagesCopy().news;
+  return (
+    <ol className="v3c-pg-nlist">
+      {posts.map((p) => {
+        const d = dateParts(p.date, lang);
+        return (
+          <li key={p.slug} className="v3c-pg-nw">
+            <span className="v3c-pg-nw-t">
+              {d ? (
+                <>
+                  <b className="v3c-num">{d.day}</b>
+                  <small>{d.rest}</small>
+                </>
+              ) : null}
+            </span>
+            <div>
+              <span className="v3c-lab">{t.guide}</span>
+              <h2 className="v3c-t-row v3c-pg-nw-h">
+                <a href={`/blog/${p.slug}`}>{p.title}</a>
+              </h2>
+              {p.description ? <p className="v3c-small">{p.description}</p> : null}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ToolsAside() {
+  const t = usePagesCopy().news;
+  return (
+    <section className="v3c-pg-ntools" aria-labelledby="v3c-pg-ntools-h">
+      <h2 className="v3c-t-row" id="v3c-pg-ntools-h">
+        {t.toolsTitle}
+      </h2>
+      <p className="v3c-small">{t.toolsBody}</p>
+      <a className="v3c-pg-more" href={TOOLS}>
+        {t.toolsLink} <span aria-hidden="true">→</span>
+      </a>
+    </section>
+  );
+}
+
+/**
+ * News with the live notes (NEWS_FOTMOB_ENABLED on): the notes first, then our
+ * guides under their own heading; the aside carries «Most moved today».
+ */
+function LiveIndex({ posts, live }: { posts: NewsItem[]; live: NewsPage }) {
+  const lang = useV3cLang();
+  const t = usePagesCopy().news;
+  const nc = newsCopyFor(lang);
+  const cards = live.feed.state === "ok" ? live.feed.cards : [];
+  return (
+    <main className="v3c-wrap" id="main">
+      <Fascia
+        tab={t.tab}
+        title={t.title}
+        meta={
+          live.feed.state === "ok" ? (
+            <>
+              <b>
+                <UpdatedAt at={live.feed.fetchedAt} />
+              </b>
+              <span>{nc.count(cards.length)}</span>
+            </>
+          ) : (
+            <>
+              <b>{t.metaStrong(posts.length)}</b>
+              <span>{t.metaRest}</span>
+            </>
+          )
+        }
+      />
+      <div className="v3c-cols v3c-cols-8-4">
+        <div>
+          <NewsLiveList live={live} />
+          <section className="v3c-nw-guides" aria-labelledby="v3c-nw-guides-h">
+            <div className="v3c-nw-head">
+              <h2 className="v3c-t-sec" id="v3c-nw-guides-h">
+                {nc.guides}
+              </h2>
+              <p className="v3c-small">{nc.guidesSub}</p>
+            </div>
+            {posts.length === 0 ? (
+              <div className="v3c-empty">
+                <p className="v3c-t-row">{t.empty}</p>
+              </div>
+            ) : (
+              <GuideList posts={posts} />
+            )}
+          </section>
+        </div>
+        <aside className="v3c-pg-naside">
+          {live.movers ? <MostMoved movers={live.movers} cards={cards} /> : null}
+          <ToolsAside />
+        </aside>
+      </div>
+    </main>
+  );
+}
+
+export function V3cNewsIndex({ posts, live = null }: { posts: NewsItem[]; live?: NewsPage | null }) {
+  const t = usePagesCopy().news;
+  if (live && live.feed.state !== "off") return <LiveIndex posts={posts} live={live} />;
   return (
     <main className="v3c-wrap" id="main">
       <Fascia
@@ -94,30 +198,7 @@ export function V3cNewsIndex({ posts }: { posts: NewsItem[] }) {
               </a>
             </div>
           ) : (
-            <ol className="v3c-pg-nlist">
-              {posts.map((p) => {
-                const d = dateParts(p.date, lang);
-                return (
-                  <li key={p.slug} className="v3c-pg-nw">
-                    <span className="v3c-pg-nw-t">
-                      {d ? (
-                        <>
-                          <b className="v3c-num">{d.day}</b>
-                          <small>{d.rest}</small>
-                        </>
-                      ) : null}
-                    </span>
-                    <div>
-                      <span className="v3c-lab">{t.guide}</span>
-                      <h2 className="v3c-t-row v3c-pg-nw-h">
-                        <a href={`/blog/${p.slug}`}>{p.title}</a>
-                      </h2>
-                      {p.description ? <p className="v3c-small">{p.description}</p> : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
+            <GuideList posts={posts} />
           )}
         </div>
         <Aside />
@@ -135,9 +216,11 @@ export type ArticleProps = {
   /** già passato da sanitizeBlogHtml sul server */
   html: string;
   more: NewsItem[];
+  /** live news on (NEWS_FOTMOB_ENABLED): the «Not live yet» box is left out */
+  liveNews?: boolean;
 };
 
-export function V3cArticle({ title, date, minutes, image, html, more }: ArticleProps) {
+export function V3cArticle({ title, date, minutes, image, html, more, liveNews = false }: ArticleProps) {
   const lang = useV3cLang();
   const t = usePagesCopy().news;
   const when = longDate(date, lang);
@@ -183,7 +266,7 @@ export function V3cArticle({ title, date, minutes, image, html, more }: ArticleP
           </p>
         </article>
         <div>
-          <Aside />
+          <Aside notes={!liveNews} />
           {more.length ? (
             <ol className="v3c-pg-nlist v3c-pg-nlist-s">
               {more.map((p) => (

@@ -44,6 +44,9 @@ import "../fidelity.css";
 import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
 import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
+import { newsCopyFor } from "@/lib/v3c/news-copy";
+import type { NewsCard } from "@/lib/v3c/news/news.server";
+import { noteText } from "../pages/NewsLive";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
 const bookName = (k: string) => BOOK_NAME[k] ?? k;
@@ -55,7 +58,7 @@ export type MoreRow = {
 };
 
 export type MatchViewProps =
-  | { kind: "football"; m: V3BoardMatch; series: V3LineSeries[] | null; events: LineEvent[]; partners: boolean; links: V3BookLink[]; more: MoreRow[] }
+  | { kind: "football"; m: V3BoardMatch; series: V3LineSeries[] | null; events: LineEvent[]; partners: boolean; links: V3BookLink[]; more: MoreRow[]; news?: NewsCard[] }
   | { kind: "tennis"; m: V3BoardTennisMatch; series: V3LineSeries[] | null; events: LineEvent[]; partners: boolean; links: V3BookLink[]; more: MoreRow[] }
   | { kind: "off"; id: string; sport: "football" | "tennis"; home: string; away: string; kickoff: string; series: V3LineSeries[] | null; events: LineEvent[]; more: MoreRow[] };
 
@@ -231,6 +234,32 @@ function MovedItem({ ctx, n, summary }: { ctx: Ctx; n: number; summary: ReturnTy
   );
 }
 
+/** #REDESIGN-V3C news: the latest note naming a team — when it came, never what it caused. */
+function NewsItem({ ctx, n, card }: { ctx: Ctx; n: number; card: NewsCard }) {
+  const { lang, tz, locale } = ctx;
+  const nc = newsCopyFor(lang);
+  const x = noteText(card, lang);
+  const at = new Date(card.t).toISOString();
+  return (
+    <li>
+      <span className="k">{n}</span>
+      <div>
+        <h3>
+          {nc.newsAt(`${dayShort(at, tz, locale)} ${timeHM(at, tz, locale)}`)}: <span lang={x.ai && !x.english ? lang : "en"}>{x.title}</span>
+        </h3>
+        <p>{nc.matchBody(card.source)}</p>
+        <p className="v3c-fine">
+          {x.ai ? nc.aiLabel(card.source) : nc.notRewritten(card.source)}
+          {x.english ? ` · ${nc.inEnglish}` : ""} ·{" "}
+          <a href={card.url} rel="nofollow noopener noreferrer" target="_blank">
+            {nc.readOriginal} <span aria-hidden="true">↗</span>
+          </a>
+        </p>
+      </div>
+    </li>
+  );
+}
+
 function SealItem({ ctx, n, sealedAt }: { ctx: Ctx; n: number; sealedAt: string | null }) {
   const { c, t, locale } = ctx;
   return (
@@ -335,7 +364,7 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
 
 // ─── Calcio ─────────────────────────────────────────────────────────────────
 
-function Football({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m: V3BoardMatch; series: V3LineSeries[] | null; events: LineEvent[]; partners: boolean; links: V3BookLink[]; more: MoreRow[] }) {
+function Football({ ctx, m, series, events, partners, links, more, news = [] }: { ctx: Ctx; m: V3BoardMatch; series: V3LineSeries[] | null; events: LineEvent[]; partners: boolean; links: V3BookLink[]; more: MoreRow[]; news?: NewsCard[] }) {
   const { t, c, lang, locale } = ctx;
   const lead = leadOutcome(m);
   const label = (o: Outcome) => outcomeLabel(m, o, t.board.draw);
@@ -484,14 +513,15 @@ function Football({ ctx, m, series, events, partners, links, more }: { ctx: Ctx;
           why={(summary) => (
             <ol className="v3c-mt-why">
               <MovedItem ctx={ctx} n={1} summary={summary} />
+              {news[0] ? <NewsItem ctx={ctx} n={summary ? 2 : 1} card={news[0]} /> : null}
               <li>
-                <span className="k">{summary ? 2 : 1}</span>
+                <span className="k">{(summary ? 2 : 1) + (news[0] ? 1 : 0)}</span>
                 <div>
                   <h3>{m.blend ? c.blendTitle : c.modelTitle}</h3>
                   <p>{m.blend ? c.blendBody : c.modelBody}</p>
                 </div>
               </li>
-              <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} />
+              <SealItem ctx={ctx} n={(summary ? 3 : 2) + (news[0] ? 1 : 0)} sealedAt={m.sealed_at} />
             </ol>
           )}
           strip={strip ? <ToolStrip title={c.strip(L, price2(lead.market_price))} all={c.allTools} items={strip} lang={lang} /> : null}

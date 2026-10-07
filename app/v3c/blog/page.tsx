@@ -10,6 +10,8 @@ import { listPublishedPosts } from "@/lib/blog";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 import { V3cFrame } from "@/components/v3c/pages/Frame";
 import { V3cNewsIndex } from "@/components/v3c/pages/News";
+import "@/components/v3c/pages/news.css";
+import { newsEnabled, newsPage } from "@/lib/v3c/news/news.server";
 
 export const revalidate = 600;
 
@@ -23,6 +25,9 @@ export const metadata: Metadata = {
 export default async function Page() {
   if (!v3cProductOn()) notFound();
   const posts = await listPublishedPosts();
+  // live notes only behind NEWS_FOTMOB_ENABLED (off: no request leaves, page as before).
+  // The page stays ISR (revalidate above); the feed has its own 15-min cache.
+  const live = newsEnabled() ? await newsPage() : null;
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Blog", "/blog"]])} />
@@ -34,6 +39,7 @@ export default async function Page() {
             description: p.description,
             date: p.pub_date ?? p.published_at,
           }))}
+          live={live}
         />
       </V3cFrame>
     </>
