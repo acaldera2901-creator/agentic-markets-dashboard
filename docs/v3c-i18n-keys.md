@@ -49,7 +49,7 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `toolbar.allLeagues` | «All leagues» |
 | `toolbar.explain` | «Market %: the composite price, margin removed. Estimate: 70% market, 30% model. Gap: estimate − market, in points.» |
 | `toolbar.legendMarket` | «Market %, margin removed» |
-| `toolbar.legendEstimate` | «Estimate: 70% market + 30% model (football); tennis mostly the market price» |
+| `toolbar.legendEstimate` | «Estimate (football only): 70% market + 30% model» |
 | `toolbar.legendGap` | «Gap = estimate − market, in points.» |
 | `board.label` | «Today’s board» |
 | `board.kickoff` | «Kick-off» |
@@ -65,7 +65,7 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `board.best` | «Best price» |
 | `board.bestSub` | «connected books» |
 | `board.moreBooks` | «More books» |
-| `board.noPrice` | «no feed price» |
+| `board.noPrice` | «Odds on partner site» (ui3) |
 | `board.inLine` | «in line» |
 | `board.gapWord` | «gap» |
 | `board.draw` | «Draw» |
@@ -102,32 +102,14 @@ oggi en/it), le etichette fisse di `ThemeToggle` e `BottomNav` (aria-label ingle
 | `board.group` | fn → «{a} matches» |
 | `board.partnerAria` | fn → «{a}, affiliate link, opens in a new tab» |
 | `board.partnerBlocked` | «Partner prices are not shown in your region.» |
-| `board.siteOnlyLab` | «Other partners · odds on their site» (F7) |
-| `board.oddsOnSite` | «Odds on site» (F7) |
+| `board.siteOnlyLab` | «Other partners · odds on partner site» (F7, ui3) |
+| `board.oddsOnSite` | «Odds on partner site» (F7, ui3) |
 | `board.siteOnlyNote` | «No price shown: we do not read these books yet. Affiliate links · 18+.» (F7) |
 | `board.openMatch` | «The match: price history and best price →» |
 | `tennis.title` | «Tennis» |
-| `tennis.coming` | «market comparison coming» |
-| `tennis.comingLong` | «Tennis rows show our estimate and the connected books’ prices. The market comparison and the gap arrive once a market/model split is stored per match.» |
-| `tennis.marketOnly` | «market price only» |
-| `tennis.marketOnlyLong` | «No model of ours on this match: the percentage is the book’s price with the margin removed (temperature 1.68). A gap against itself would be zero.» |
 | `tennis.winner` | «Winner» |
-| `tennis.estimateModel` | «Estimate · model» |
-| `tennis.sealedCol` | «Sealed» |
-| `tennis.gapCol` | «Gap at seal» |
-| `tennis.atSeal` | «at seal» |
-| `tennis.kindModel` | «Elo v4, our model» |
-| `tennis.kindModelTempered` | «Elo v4 with temperature 1.68, our model (no market when served)» |
-| `tennis.kindMarket` | «Market price without margin, temperature 1.68: not a model of ours» |
-| `tennis.rawElo` | fn → «raw Elo {a}% (not sealed)» |
-| `tennis.gapVs` | fn → «Gap = our sealed estimate − the {a} price captured on {b}, before the seal, margin removed. A difference of probabilities, not a profit.» |
-| `tennis.reasonNotSealed` | «Not sealed yet: the gap appears once our estimate is in the ledger.» |
-| `tennis.reasonNoMarketAtSeal` | «No FortunePlay or YBets price was captured in the 150 minutes before the seal, so there is no gap to show.» |
-| `tennis.reasonAnchored` | «The sealed number is the market price itself (our Elo was anchored to it): a gap against itself would be zero.» |
 | `tennis.rowAria` | fn → «{a}: {b}. Show both players» |
-| `tennis.scaleAriaModel` | fn → «Estimate {a} percent, our model; no market comparison yet» |
-| `tennis.scaleAriaMarket` | fn → «Market {a} percent, margin removed; no model estimate» |
-| `tennis.scaleAriaSeal` | fn → «At the seal: market {a} percent, our estimate {b} percent, gap {c} points» |
+| `tennis.scaleAriaMarket` | fn → «Market {a} percent, margin removed» |
 | `empty.filter` | «No match for this filter.» |
 | `empty.filterHint` | «Try another day or sport; the board covers the next ten days.» |
 | `empty.noLive` | «No match is live right now.» |
@@ -257,25 +239,8 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `record.weeks.week` | «fn: wk of {a}» |
 | `record.weeks.caption` | «Whiskers are the 95% interval of the observed count. Weeks under 30 matches: expected bar in grey, n marked *.» |
 | `record.tennis.title` | «Tennis, kept apart» |
-| `record.tennis.lede` | «Most sealed tennis numbers are the market price, tempered. They are shown, never counted as ours.» |
-| `record.tennis.group` | «Group» |
-| `record.tennis.what` | «What the number is» |
+| `record.tennis.lede` | «In tennis the sealed number is market-based, not an estimate of ours, so we show outcomes and match counts only.» |
 | `record.tennis.settled` | «Settled» |
-| `record.tennis.expected` | «Expected wins» |
-| `record.tennis.observed` | «Observed» |
-| `record.tennis.brier` | «Brier» |
-| `record.tennis.vsMarket` | «Against the market» |
-| `record.tennis.isMarket` | «is the market» |
-| `record.tennis.ours` | «our Elo» |
-| `record.tennis.kindModel` | «Our Elo model» |
-| `record.tennis.kindModelTempered` | «Our Elo, tempered (no price when sealed)» |
-| `record.tennis.kindMarket` | «Market price, margin removed, tempered» |
-| `record.tennis.paired` | «fn: {a} with a price before the seal: ours {b}, market {c}» |
-| `record.tennis.pairedDiff` | «fn: difference {a} (95%: {b} to {c})» |
-| `record.tennis.noPaired` | «no book price before any seal» |
-| `record.tennis.calInsufficient` | «fn: Too few of our own tennis estimates for a calibration curve: {a} settled, {b} bins with 30 or more.» |
-| `record.tennis.calSufficient` | «Enough of our own tennis estimates for a calibration curve.» |
-| `record.tennis.binary` | «Binary Brier on the picked player: 0 perfect, 1 always wrong. Sealed values are whole percentages.» |
 | `record.receipts.title` | «Receipts, won and lost alike» |
 | `record.receipts.filter` | «Sport» |
 | `record.receipts.all` | «All» |
@@ -346,7 +311,7 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `board.tapeSub` | «fn: book price · last {h} h» |
 | `board.tapeAria` | «fn: {label} price at a connected book moved from {from} to {to}, {n} captures» |
 | `board.tapeNone` | «no history» |
-| `yday.stripBody` | «Expected in favour is the sum of the sealed probabilities. The market’s Brier sits next to ours (football, same rows).» |
+| `yday.stripBody` | «Football: expected in favour is the sum of the sealed probabilities, the market’s Brier next to ours (same rows). Tennis: outcomes only.» |
 | `yday.expectedFavour` | «Expected in favour» |
 | `yday.observed` | «Observed» |
 | `yday.brierEstimate` | «Brier · estimate» |
@@ -385,3 +350,23 @@ Books (`lib/v3c/pages-copy.ts` → `books`): nuove `filterLabel`, `all`, `sports
 
 La sosta è letta dal registro (settimane senza partite PL/PD/SA/BL1/FL1 fra settimane che ne hanno, `TOP_LEAGUE_CODES` in `lib/v3c/record.ts`), non da un calendario. Nessuna stringa legale o di prezzo: niente REVIEW-NATIVE.
 News (`lib/v3c/pages-copy.ts` → `news`): nuova `tabOff` («News · guides», la fascia a feed spento, 11 lingue); rimosse `notesTitle`, `notesBody`, `notesNot`, `boardLink` — a feed spento la pagina mostra solo le guide, senza il riquadro «note in arrivo».
+
+### ui3 (07/10) — «Odds on partner site» e tennis senza la nostra stima, tradotte nelle 11 lingue
+
+Decisione di Andrea: un partner senza quota letta dice ovunque «Odds on partner site» (IT «Quote sul sito del partner»; glossario aggiornato); nel tennis non diamo la nostra stima (solo mercato senza margine, quote dei partner, best price, line movement, live). Rimosse le chiavi della stima/gap tennis (`tennis.coming`, `tennis.comingLong`, `tennis.marketOnly`, `tennis.marketOnlyLong`, `tennis.estimateModel`, `tennis.sealedCol`, `tennis.gapCol`, `tennis.atSeal`, `tennis.kind*`, `tennis.rawElo`, `tennis.gapVs`, `tennis.reason*`, `tennis.scaleAriaModel`, `tennis.scaleAriaSeal`) e del Brier/calibrazione tennis del registro (`record.tennis.group`, `what`, `expected`, `observed`, `brier`, `vsMarket`, `isMarket`, `ours`, `kind*`, `paired`, `pairedDiff`, `noPaired`, `calInsufficient`, `calSufficient`, `binary`). Riscritte: `toolbar.legendEstimate`, `board.noPrice`, `board.siteOnlyLab`, `board.oddsOnSite`, `tennis.scaleAriaMarket`, `yday.stripBody`, `record.tennis.lede`, `books.siteOdds` e `books.metaRest` (pages-copy), `method.blocks.blend.detail` (pages-copy), FAQ home risposte 2 e 6 (`lib/v3c/home-faq.ts`).
+
+| Chiave | EN |
+|---|---|
+| `toolbar.legendTennis` | «Tennis: market price only, no estimate of ours» |
+| `tennis.noEstimate` | «Tennis: the market price with the margin removed and the books’ prices. No estimate of ours.» |
+| `tennis.sealedWhy` | fn → «Entered the public ledger on {a}, before the start. The sealed number is market-based, not an estimate of ours.» |
+| `yday.pickedTennis` | fn → «sealed on {a} · market-based {b}%» |
+| `yday.tennisWL` | «Tennis · won–lost» |
+| `record.tennis.label` | «Market-based probability» |
+| `record.tennis.sealed` | «Matches sealed» |
+| `record.tennis.won` | «Won» |
+| `record.tennis.lost` | «Lost» |
+| `record.tennis.void` | «Void» |
+| `record.tennis.awaiting` | «Awaiting a result» |
+| `record.tennis.note` | «Won = the picked player won. Without a price at the seal, a tempered Elo stood in. No Brier, no calibration.» |
+| `record.receipts.marketBased` | «market-based» |

@@ -64,7 +64,7 @@ export type BookListing = {
   bookmaker: string;
   name: string;
   url: string;
-  /** null = il book non ha un feed: si mostra «Odds on site», mai una quota. */
+  /** null = il book non ha un feed: si mostra «Odds on partner site», mai una quota. */
   price: number | null;
   captured_at: string | null;
 };

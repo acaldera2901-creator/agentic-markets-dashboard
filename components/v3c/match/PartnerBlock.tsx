@@ -1,7 +1,7 @@
 "use client";
 // components/v3c/match/PartnerBlock.tsx (#REDESIGN-V3C F4)
 // Il passo 3: SOLO dopo la lettura. Una lista di N book — chi ha un feed mostra
-// la quota, chi non ce l'ha dice «Odds on site» e non finge un numero — e UNA
+// la quota, chi non ce l'ha dice «Odds on partner site» e non finge un numero — e UNA
 // CTA royal verso il miglior prezzo. Link affiliati reali dal contratto
 // (deep-link del book o landing del registro), rel="nofollow sponsored",
 // tracciati come sulla board. 18+ e «affiliate» discreti ma presenti.

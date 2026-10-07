@@ -53,7 +53,7 @@ type Props = {
   board: V3BoardResponse | PackedBoard;
   surface: "home" | "predictions";
   partners: boolean;
-  /** F7: partner senza quota letta (logo + «Odds on site»), uguali per ogni partita */
+  /** F7: partner senza quota letta (logo + «Odds on partner site»), uguali per ogni partita */
   siteOnly?: OddsOnSitePartner[];
   /** l'ora del server: il primo render usa questa, poi il client avanza ogni minuto */
   nowIso: string;
@@ -215,16 +215,22 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
             </label>
           </div>
         ) : null}
+        {/* ui3: nel tennis non diamo la stima — la legenda parla di stima e gap solo dove c'è il calcio */}
         <p className="v3c-explain v3c-legend">
           <span>
             <i className="v3c-key v3c-key-m" aria-hidden="true" />
             {t.toolbar.legendMarket}
           </span>
-          <span>
-            <i className="v3c-key v3c-key-e" aria-hidden="true" />
-            {t.toolbar.legendEstimate}
-          </span>
-          <span>{t.toolbar.legendGap}</span>
+          {filters.sport !== "tennis" ? (
+            <>
+              <span>
+                <i className="v3c-key v3c-key-e" aria-hidden="true" />
+                {t.toolbar.legendEstimate}
+              </span>
+              <span>{t.toolbar.legendGap}</span>
+            </>
+          ) : null}
+          {filters.sport !== "football" ? <span>{t.toolbar.legendTennis}</span> : null}
         </p>
       </div>
 
@@ -244,14 +250,24 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
             {t.board.market}
             <small>{t.board.marketSub}</small>
           </span>
-          <span className="v3c-lab v3c-ra">
-            {t.board.estimate}
-            <small>{t.board.estimateSub}</small>
-          </span>
-          <span className="v3c-lab v3c-ra">
-            {t.board.gap}
-            <small>{t.board.gapSub}</small>
-          </span>
+          {/* ui3: con il solo tennis le colonne Estimate e Gap restano vuote anche nell'intestazione */}
+          {filters.sport === "tennis" ? (
+            <>
+              <span />
+              <span />
+            </>
+          ) : (
+            <>
+              <span className="v3c-lab v3c-ra">
+                {t.board.estimate}
+                <small>{t.board.estimateSub}</small>
+              </span>
+              <span className="v3c-lab v3c-ra">
+                {t.board.gap}
+                <small>{t.board.gapSub}</small>
+              </span>
+            </>
+          )}
           <span className="v3c-lab v3c-ra">
             {t.board.best}
             <small>{t.board.bestSub}</small>
@@ -286,7 +302,8 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
         )}
       </section>
       <div className="v3c-board-f">
-        <p className="v3c-fine">{t.board.rowNote}</p>
+        {/* ui3: la nota parla del gap, che il tennis non ha */}
+        {filters.sport !== "tennis" ? <p className="v3c-fine">{t.board.rowNote}</p> : null}
         {!limit && more > 0 ? (
           <span className="v3c-board-showmore">
             <span className="v3c-small">{t.board.shownOf(shown.length, filtered.length)}</span>

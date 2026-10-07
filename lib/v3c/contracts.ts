@@ -41,7 +41,7 @@ export type V3BookPrice = {
 /**
  * One entry per partner on a fixture (F7). Nobody hides a missing price:
  * oddsAvailable=false carries the reason, and the UI shows logo + button
- * («Odds on site») instead of a number. Name, logo and link are in
+ * («Odds on partner site») instead of a number. Name, logo and link are in
  * V3BoardResponse.partners (sent once, not per fixture).
  */
 export type V3BookStatus = BookStatus;

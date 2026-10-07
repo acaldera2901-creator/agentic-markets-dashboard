@@ -13,7 +13,7 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { V3cMatchPage } from "@/components/v3c/match/MatchPage";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
-import { fetchFixture, type Fixture } from "@/lib/v3c/line-movement-service";
+import { fetchFixture, isTennisId, type Fixture } from "@/lib/v3c/line-movement-service";
 import { cleanMatchId, matchHref } from "@/lib/v3c/match-view";
 import { parseMode } from "@/lib/v3c/mode";
 import { v3cOgMetadata } from "@/lib/v3c/og-meta";
@@ -35,14 +35,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = cleanMatchId((await params).id);
   const f = id ? await lookup(id) : null;
   if (!id || !f) return { title: "Match not found | BetRedge", robots: { index: false } };
-  const title = `${f.home} – ${f.away}: market, estimate and best price | BetRedge`;
-  const description = `${f.home} – ${f.away}: the market probability with the margin removed, our estimate next to it, the price history and the best price among connected books.`;
+  // ui3: nel tennis non diamo la stima — titolo e description non la promettono
+  const tennis = isTennisId(id);
+  const title = tennis ? `${f.home} – ${f.away}: market price and best price | BetRedge` : `${f.home} – ${f.away}: market, estimate and best price | BetRedge`;
+  const description = tennis
+    ? `${f.home} – ${f.away}: the market probability with the margin removed, the price history and the best price among connected books.`
+    : `${f.home} – ${f.away}: the market probability with the margin removed, our estimate next to it, the price history and the best price among connected books.`;
   return {
     title,
     description,
     alternates: { canonical: matchHref(id) },
     // og:image dall'URL pubblico /match/<id>/og.png (rewrite), mai /v3c/…
-    ...v3cOgMetadata(matchHref(id), "BetRedge match: market price and our estimate", { title, description, url: matchHref(id) }),
+    ...v3cOgMetadata(matchHref(id), tennis ? "BetRedge match: market price" : "BetRedge match: market price and our estimate", { title, description, url: matchHref(id) }),
     // Pagine per partita, effimere: fuori dall'indice finché F9 (SEO) non decide il contrario.
     robots: { index: false, follow: true },
   };

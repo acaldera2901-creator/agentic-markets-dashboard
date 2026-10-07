@@ -125,32 +125,49 @@ describe("Board v3c (F3)", () => {
     expect(screen.getByRole("link", { name: /Best price on Genoa: 2\.15 at FortunePlay/ })).toHaveAttribute("href", "https://www.fortuneplay.example/m?stag=185731");
   });
 
-  it("tennis senza gap nel contratto: stima del modello, nessun punto mercato, «market comparison coming»", () => {
+  // ui3 (Andrea, 07/10): nel tennis non diamo la nostra stima — la riga e il pannello mostrano solo il mercato.
+  it("tennis: solo il mercato in riga — niente stima, niente gap, niente «market comparison coming»", () => {
     const { container } = render(<Board {...props} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
-    expect(row.querySelector(".v3c-r-nomkt")?.textContent).toBe("market comparison coming");
-    expect(row.querySelector(".v3c-r-mk")?.textContent).toBe("—"); // nessun mercato in riga: niente gap implicito
-    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("71%");
+    expect(row.querySelector(".v3c-r-mk")?.textContent).toBe("66%");
+    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("");
+    expect(row.textContent).not.toMatch(/71|market comparison coming|pp/);
     fireEvent.click(screen.getByRole("button", { name: /Jannik Sinner – Ben Shelton/ }));
     const pn = container.querySelector('.v3c-row[data-sport="tennis"] .v3c-pn') as HTMLElement;
-    expect(pn.textContent).toContain("66%"); // il mercato c'è, nel pannello, come dato
-    expect(pn.textContent).toContain("Not sealed yet");
-    expect(pn.textContent).toContain("raw Elo 73% (not sealed)");
+    expect(within(pn).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Winner", "Price", "Market"]);
+    expect(pn.textContent).toContain("66%");
+    expect(pn.textContent).toContain("No estimate of ours");
+    expect(pn.textContent).not.toMatch(/71%|73%|raw Elo|Estimate|Gap|Not sealed yet/);
   });
 
-  it("tennis con gap al sigillo: la scala mostra sigillata vs mercato al sigillo, il gap coincide", () => {
+  it("tennis con un gap nel contratto: non si disegna comunque (il campo resta nell'API)", () => {
     const { container } = render(<Board {...props} board={{ ...BOARD, tennis: [tennisMatch({ gap: true })] }} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
-    expect(row.querySelector(".v3c-r-gap")?.textContent).toContain("+5.0 pp");
     expect(row.querySelector(".v3c-r-mk")?.textContent).toBe("66%");
-    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("71%");
+    expect(row.textContent).not.toMatch(/\+5\.0|71%|pp/);
+    fireEvent.click(screen.getByRole("button", { name: /Jannik Sinner – Ben Shelton/ }));
+    const pn = container.querySelector('.v3c-row[data-sport="tennis"] .v3c-pn') as HTMLElement;
+    expect(pn.textContent).toContain("The sealed number is market-based, not an estimate of ours");
+    expect(pn.textContent).not.toMatch(/\+5\.0|Gap = our sealed estimate/);
   });
 
-  it("tennis senza un nostro modello: solo prezzo di mercato", () => {
-    const { container } = render(<Board {...props} board={{ ...BOARD, tennis: [tennisMatch({ kind: "market_tempered" })] }} />);
+  it("tennis: in evidenza il favorito del mercato, non quello della stima", () => {
+    const m = tennisMatch();
+    // la stima preferisce Sinner (focus p1), il mercato Shelton: la riga segue il mercato
+    const flipped = { ...m, sides: [{ ...m.sides[0], market_p: 0.4 }, { ...m.sides[1], market_p: 0.6 }] as typeof m.sides };
+    const { container } = render(<Board {...props} board={{ ...BOARD, tennis: [flipped] }} />);
     const row = container.querySelector('.v3c-row[data-sport="tennis"]') as HTMLElement;
-    expect(row.querySelector(".v3c-r-nomkt")?.textContent).toBe("market price only");
-    expect(row.querySelector(".v3c-r-es")?.textContent).toBe("—");
+    expect(row.querySelector(".v3c-r-name small b")?.textContent).toBe("Ben Shelton");
+    expect(row.querySelector(".v3c-r-mk")?.textContent).toBe("60%");
+  });
+
+  it("tennis: la legenda col solo tennis non parla di stima né di gap", () => {
+    const { container } = render(<Board {...props} initialFilters={{ sport: "tennis" }} />);
+    const legend = container.querySelector(".v3c-legend") as HTMLElement;
+    expect(legend.textContent).toContain("Tennis: market price only, no estimate of ours");
+    expect(legend.textContent).not.toMatch(/Estimate \(|Gap =/);
+    const head = container.querySelector(".v3c-board-h") as HTMLElement;
+    expect(head.textContent).not.toMatch(/Estimate|Gap/);
   });
 
   it("fidelity: il tape «open → now» dai dati veri, a gradini, con l'etichetta accessibile", () => {

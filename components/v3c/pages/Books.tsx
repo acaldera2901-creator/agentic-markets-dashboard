@@ -5,7 +5,7 @@
 // il link, 18+, bottone affiliato reale tracciato (partner_click, come la
 // vetrina di sempre), rel="nofollow sponsored". Ordine alfabetico, dichiarato.
 // L'unica differenza fra le card è un fatto: chi ha un feed di quote letto dice
-// «Live prices on the board», gli altri «Odds on their site» — stesso stile,
+// «Live prices on the board», gli altri «Odds on partner site» — stesso stile,
 // stessa riga. Nessun bonus: il catalogo non ne ha di verificati. Nessuna CTA
 // royal: tutti i bottoni hanno lo stesso peso. Sotto: il confronto dei prezzi
 // di oggi (solo book con feed), il gioco responsabile, la FAQ.

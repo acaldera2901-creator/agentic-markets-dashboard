@@ -43,8 +43,10 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
   const fb = data.football;
   const tn = data.tennis;
   const settled = fb.won + fb.lost + tn.won + tn.lost;
-  const expected = (fb.expected_wins ?? 0) + (tn.expected_wins ?? 0);
-  const observed = fb.won + tn.won;
+  // ui3: nel tennis non diamo la stima — atteso/osservato e Brier sono del calcio; il tennis porta solo vinte–perse
+  const expected = fb.expected_wins ?? 0;
+  const observed = fb.won;
+  const tnSettled = tn.won + tn.lost;
   const dayLabel = dayLong(`${data.day}T12:00:00Z`, "UTC", locale);
   const b = data.brier ?? null;
   return (
@@ -73,6 +75,14 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
               <dt>{t.yday.observed}</dt>
               <dd className="v3c-num">{observed}</dd>
             </div>
+            {tnSettled ? (
+              <div>
+                <dt>{t.yday.tennisWL}</dt>
+                <dd className="v3c-num">
+                  {tn.won}–{tn.lost}
+                </dd>
+              </div>
+            ) : null}
             {b ? (
               <>
                 <div>
@@ -114,7 +124,7 @@ function DayList({ picks }: { picks: V3DayPick[] }) {
           <b>
             {p.home} — {p.away}
           </b>
-          <small>{pick && p.p != null ? t.yday.picked(pick, pctInt(p.p)) : p.competition ?? (p.sport === "tennis" ? t.yday.tennis : t.yday.football)}</small>
+          <small>{pick && p.p != null ? (p.sport === "tennis" ? t.yday.pickedTennis : t.yday.picked)(pick, pctInt(p.p)) : p.competition ?? (p.sport === "tennis" ? t.yday.tennis : t.yday.football)}</small>
         </span>
         <span className="v3c-score">{score ?? "—"}</span>
       </li>

@@ -1,6 +1,6 @@
 // lib/v3c/match-links.server.ts (#REDESIGN-V3C F4)
 // I book partner senza feed di quote, per il passo 3 della pagina partita e il
-// price check: compaiono come «Odds on site» dopo i book con quota. Fonte unica:
+// price check: compaiono come «Odds on partner site» dopo i book con quota. Fonte unica:
 // lib/affiliate.ts (landingPartnersFor), gli stessi link tracciati del menu
 // partner del sito di oggi. Nessun link inventato. Il paese serve solo a scegliere
 // il link per paese di Casea.

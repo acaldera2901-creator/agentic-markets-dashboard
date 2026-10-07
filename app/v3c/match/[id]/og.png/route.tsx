@@ -1,13 +1,13 @@
 // L'immagine OG della pagina partita (#REDESIGN-V3C polish): il template del kit
 // con squadre, orario, mercato e stima DA DATI VERI — la stessa board di
 // /api/v3/board e della pagina (getBoard), lo stesso esito guida (gap più ampio),
-// gli stessi interi %. Calcio: riga del blend 0,3/0,7. Tennis: se il numero è il
-// prezzo di mercato lo si dice e non si mostra una «stima». Partita fuori dalla
+// gli stessi interi %. Calcio: riga del blend 0,3/0,7. Tennis (ui3): solo il
+// mercato, mai una «stima» (decisione di Andrea 07/10). Partita fuori dalla
 // board: solo nomi e orario, nessuna cifra. A flag spento: 404.
 import { ImageResponse } from "next/og";
 import { v3cProductOn, getBoard } from "@/lib/v3c/board-data.server";
-import { leadOutcome, outcomeLabel } from "@/lib/v3c/board-view";
-import { fetchFixture } from "@/lib/v3c/line-movement-service";
+import { leadOutcome, outcomeLabel, tennisLead } from "@/lib/v3c/board-view";
+import { fetchFixture, isTennisId } from "@/lib/v3c/line-movement-service";
 import { cleanMatchId, findMatch } from "@/lib/v3c/match-view";
 import { OG, OG_SIZE, OgFrame, ogAssets } from "../../../_og/og";
 
@@ -41,20 +41,20 @@ async function view(id: string): Promise<View | null> {
     };
   }
   if (found?.sport === "tennis") {
+    // ui3: nel tennis non diamo la stima — solo il mercato, margine tolto (null = nessuna cifra)
     const m = found.m;
-    const lead = m.sides.find((x) => x.side === m.focus) ?? m.sides[0];
-    const marketOnly = m.probability_kind === "market_tempered";
+    const lead = tennisLead(m);
     return {
       kicker: `${(m.tournament || "Tennis").toUpperCase()} · ${when(m.kickoff)}`,
       home: m.player1,
       away: m.player2,
-      market: pct(lead.market_p ?? lead.estimate_p),
-      estimate: marketOnly ? null : pct(lead.estimate_p),
-      line: marketOnly ? `${lead.player}. The market price, margin removed: not a model of ours.` : `${lead.player} to win. Our Elo, tempered.`,
+      market: pct(lead.market_p),
+      estimate: null,
+      line: `${lead.player} to win. The market price, margin removed.`,
     };
   }
   const f = await fetchFixture(id).catch(() => null);
-  return f ? { kicker: when(new Date(f.kickoff).toISOString()), home: f.home, away: f.away, market: null, estimate: null, line: "Market price, our estimate, the sealed record." } : null;
+  return f ? { kicker: when(new Date(f.kickoff).toISOString()), home: f.home, away: f.away, market: null, estimate: null, line: isTennisId(id) ? "Market price, margin removed, and the best price." : "Market price, our estimate, the sealed record." } : null;
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {

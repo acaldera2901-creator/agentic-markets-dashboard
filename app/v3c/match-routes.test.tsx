@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const fetchFixture = vi.fn();
-vi.mock("@/lib/v3c/line-movement-service", () => ({ fetchFixture: (id: string) => fetchFixture(id) }));
+vi.mock("@/lib/v3c/line-movement-service", () => ({ fetchFixture: (id: string) => fetchFixture(id), isTennisId: (id: string) => id.startsWith("tennis:") }));
 vi.mock("@/components/v3c/match/MatchPage", () => ({ V3cMatchPage: function V3cMatchPage() { return null; } }));
 vi.mock("@/components/v3c/match/PriceCheck", () => ({ PriceCheck: function PriceCheck() { return null; } }));
 vi.mock("@/components/v3c/V3cChrome", () => ({ V3cChrome: function V3cChrome() { return null; } }));
@@ -41,6 +41,11 @@ describe("/v3c/match/[id]", () => {
     expect(el.props.id).toBe("oddsapi:abc");
     const meta = await mod.generateMetadata({ params: Promise.resolve({ id: "oddsapi:abc" }), searchParams: sp });
     expect(meta.alternates?.canonical).toBe("/match/oddsapi%3Aabc");
+    expect(String(meta.description)).toContain("our estimate");
+    // ui3: nel tennis non diamo la stima — title e description non la promettono
+    const tn = await mod.generateMetadata({ params: Promise.resolve({ id: "tennis:espn:1:a:b" }), searchParams: sp });
+    expect(`${String(tn.title)} ${String(tn.description)}`).not.toMatch(/estimate/i);
+    expect(String(tn.description)).toContain("margin removed");
   });
 });
 

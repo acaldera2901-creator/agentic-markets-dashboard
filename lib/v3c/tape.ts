@@ -8,7 +8,7 @@ import type { V3BoardMatch, V3BoardTennisMatch } from "./contracts";
 import type { PartnerPriceRow } from "./board";
 import { partnerSeries } from "./line-movement";
 import { tennisMlSeries } from "./tennis";
-import { leadOutcome } from "./board-view";
+import { leadOutcome, tennisLead } from "./board-view";
 import { tapeLines, type TapeKey } from "./match-view";
 
 /** pts: [t 0–100 sulla finestra prima→ultima cattura, quota]; fairT: da dove parte la linea della stima. */
@@ -58,9 +58,9 @@ export function footballTape(m: V3BoardMatch, rows: PartnerPriceRow[]): RowTape 
   return buildTape(lines[0], m.blend ? lead.estimate_p : null, Date.parse(m.estimate_as_of));
 }
 
-/** Tape della riga di tennis: lato in evidenza; la linea della stima solo se è un nostro numero (non il mercato). */
+/** Tape della riga di tennis: lato in evidenza (favorito del mercato). ui3: nel tennis non diamo la stima, quindi nessuna linea della stima. */
 export function tennisTape(m: V3BoardTennisMatch, rows: PartnerPriceRow[]): RowTape | null {
-  const lead = m.sides.find((x) => x.side === m.focus) ?? m.sides[0];
+  const lead = tennisLead(m);
   const lines = tapeLines(tennisMlSeries({ home: m.player1, away: m.player2 }, rows), lead.side as TapeKey);
-  return buildTape(lines[0], m.is_our_model ? lead.estimate_p : null, Date.parse(m.estimate_as_of));
+  return buildTape(lines[0], null, null);
 }

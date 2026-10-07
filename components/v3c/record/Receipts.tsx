@@ -3,8 +3,8 @@
 // Le ricevute, vinte e perse con lo stesso peso d'inchiostro: sigillo UTC,
 // esito letto, quota, mercato %, stima %, gap col segno, esito, impronta.
 // Calcio: se nessuna pick è stata mostrata la riga legge l'esito più
-// probabile della stima, e lo dice. Tennis: il gap c'è solo per il nostro Elo
-// con un prezzo prima del sigillo; altrimenti si dice perché non c'è.
+// probabile della stima, e lo dice. Tennis (ui3): nessuna nostra stima e nessun
+// gap — solo il mercato, marcato «market-based»; i campi restano nel contratto.
 import Link from "next/link";
 import type { V3Receipt } from "@/lib/v3c/contracts";
 import type { ReceiptSport, ReceiptsPage } from "@/lib/v3c/record-data.server";
@@ -84,18 +84,31 @@ export function Receipts({ result, sport, page }: { result: ReceiptsPage | null;
                       <small>{r.read_kind === "top" ? t.receipts.top : t.receipts.pick}</small>
                     </td>
                     <td className="v3c-r v3c-num rc-price" data-l={t.receipts.price}>{price2(r.price)}</td>
-                    <td className="v3c-r v3c-num v3c-m rc-mk" data-l={t.receipts.marketPct}>{r.market_p == null ? "—" : pctInt(r.market_p)}</td>
-                    <td className="v3c-r v3c-num rc-est" data-l={t.receipts.estimatePct}>
-                      {/* the lime mark is the estimate's colour: a sealed number that IS the market does not get it */}
-                      {r.gap_null_reason === "is_market" ? pctInt(r.estimate_p) : <mark>{pctInt(r.estimate_p)}</mark>}
-                    </td>
-                    <td className="v3c-r rc-gap" data-l={t.receipts.gap}>
-                      {r.gap_pp == null ? (
-                        <small>{r.gap_null_reason === "is_market" ? t.receipts.isMarket : t.receipts.noMarket}</small>
-                      ) : (
-                        <span className="v3c-num">{signedPp(r.gap_pp, locale)}</span>
-                      )}
-                    </td>
+                    {r.sport === "tennis" ? (
+                      <>
+                        {/* ui3: nel tennis non diamo la stima — il mercato (o il numero sigillato quando È il mercato), niente stima né gap */}
+                        <td className="v3c-r v3c-num v3c-m rc-mk" data-l={t.receipts.marketPct}>{pctInt(r.market_p ?? (r.gap_null_reason === "is_market" ? r.estimate_p : null))}</td>
+                        <td className="v3c-r v3c-num rc-est" data-l={t.receipts.estimatePct}>—</td>
+                        <td className="v3c-r rc-gap" data-l={t.receipts.gap}>
+                          <small>{t.receipts.marketBased}</small>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="v3c-r v3c-num v3c-m rc-mk" data-l={t.receipts.marketPct}>{r.market_p == null ? "—" : pctInt(r.market_p)}</td>
+                        <td className="v3c-r v3c-num rc-est" data-l={t.receipts.estimatePct}>
+                          {/* the lime mark is the estimate's colour: a sealed number that IS the market does not get it */}
+                          {r.gap_null_reason === "is_market" ? pctInt(r.estimate_p) : <mark>{pctInt(r.estimate_p)}</mark>}
+                        </td>
+                        <td className="v3c-r rc-gap" data-l={t.receipts.gap}>
+                          {r.gap_pp == null ? (
+                            <small>{r.gap_null_reason === "is_market" ? t.receipts.isMarket : t.receipts.noMarket}</small>
+                          ) : (
+                            <span className="v3c-num">{signedPp(r.gap_pp, locale)}</span>
+                          )}
+                        </td>
+                      </>
+                    )}
                     <td className={`v3c-rec-res v3c-rec-${r.verdict} rc-res`}>
                       {/* ui2: l'esito come pill W/L/V/in attesa (stesso peso per W e L) e il risultato finale accanto */}
                       <span className="v3c-rec-out">

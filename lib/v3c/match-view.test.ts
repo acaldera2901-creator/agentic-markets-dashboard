@@ -21,7 +21,7 @@ describe("id e URL della partita", () => {
   });
 });
 
-describe("i book: quota oppure «Odds on site»", () => {
+describe("i book: quota oppure «Odds on partner site»", () => {
   it("prima i prezzi dal più alto, poi i link senza quota; un book una volta", () => {
     const list = bookList([bp("ybets", "YBets", 2.1), bp("fortuneplay", "FortunePlay", 2.19)], [
       { bookmaker: "ybets", name: "YBets", url: "https://x.test" },

@@ -2,8 +2,8 @@
 // components/v3c/match/PriceCheck.tsx (#REDESIGN-V3C F4)
 // Il price check: l'utente sceglie una partita della board (o nessuna) e
 // digita — o riempie con un clic — le quote del suo book. Subito: probabilità
-// implicita, margine del book, margine tolto e, se c'è una partita, la nostra
-// stima accanto con il gap. Poi la striscia EV · Kelly · convertitore con i
+// implicita, margine del book, margine tolto e, se c'è una partita di calcio, la
+// nostra stima accanto con il gap (ui3: nel tennis niente stima, solo il mercato). Poi la striscia EV · Kelly · convertitore con i
 // prezzi digitati, poi (solo con una partita) dove il prezzo è migliore.
 // Nessun input finisce nel markup come HTML: sono valori di <input>.
 import Link from "next/link";
@@ -19,8 +19,9 @@ import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
 import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 
-export type PcOutcome = { outcome: Outcome; market_price: number | null; estimate_p: number; book_prices: V3BookPrice[] };
-export type PcMatch = { id: string; home: string; away: string; kickoff: string; league: string | null; blend: boolean; outcomes: PcOutcome[]; links: V3BookLink[] };
+/** ui3: estimate_p null nel tennis — lì non diamo la stima, il price check mostra solo prezzi e margine. */
+export type PcOutcome = { outcome: Outcome; market_price: number | null; estimate_p: number | null; book_prices: V3BookPrice[] };
+export type PcMatch = { id: string; sport: "football" | "tennis"; home: string; away: string; kickoff: string; league: string | null; blend: boolean; outcomes: PcOutcome[]; links: V3BookLink[] };
 
 const fmt2 = (n: number | null) => (n == null ? "" : n.toFixed(2));
 
@@ -55,11 +56,13 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
   const bankN = Number(bankRaw.replace(",", "."));
   const bank = Number.isFinite(bankN) && bankN > 0 ? bankN : 500;
 
-  const labels = m ? [m.home, t.board.draw, m.away] : c.pc.outcomes;
+  // ui3: la stima (colonne, verdetto, nastro, EV/Kelly) solo per il calcio; il tennis ha due esiti e solo il mercato
+  const withEst = m != null && m.sport === "football";
+  const labels = m ? (m.sport === "tennis" ? [m.home, m.away] : [m.home, t.board.draw, m.away]) : c.pc.outcomes;
   const parsed = raw.map(parsePrice);
   // senza partita il terzo prezzo è facoltativo (mercati a due esiti)
   const used = m ? parsed : parsed.filter((p, i) => i < 2 || raw[i].trim() !== "");
-  const estimates = m ? m.outcomes.map((o) => o.estimate_p * 100) : [];
+  const estimates = withEst ? m.outcomes.map((o) => (o.estimate_p == null ? null : o.estimate_p * 100)) : [];
   const chk = checkPrices(used, estimates);
 
   function choose(next: string) {
@@ -76,13 +79,14 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
     }
   }
 
-  const li = chk?.lead ?? 0;
+  // tennis: nessun gap a guidare → l'esito in evidenza è il favorito del prezzo (quota più bassa)
+  const li = m?.sport === "tennis" && chk ? used.reduce<number>((best, p, i) => ((p as number) < (used[best] as number) ? i : best), 0) : (chk?.lead ?? 0);
   const leadPrice = used[li] ?? null;
-  const E = m ? Math.round(estimates[li]) : null;
+  const E = withEst && estimates[li] != null ? Math.round(estimates[li] as number) : null;
   const g = chk?.gaps[li] ?? null;
   const strip =
     chk && leadPrice != null
-      ? m && E != null
+      ? withEst && E != null
         ? toolStrip([
             { slug: "ev-calculator", values: { price: leadPrice, prob: E } },
             { slug: "kelly-criterion", values: { price: leadPrice, prob: E, bank } },
@@ -110,7 +114,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
                 {m.home} — {m.away}
               </b>
             ) : null}
-            <span>1X2</span>
+            <span>{m?.sport === "tennis" ? t.tennis.winner : "1X2"}</span>
             <span>{c.pc.hint}</span>
           </>
         }
@@ -141,7 +145,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
           </div>
         ) : null}
       </div>
-      <form className="v3c-tf v3c-pc-form" style={{ "--n": 3 } as React.CSSProperties} onSubmit={(e) => e.preventDefault()}>
+      <form className="v3c-tf v3c-pc-form" style={{ "--n": labels.length === 2 ? 2 : 3 } as React.CSSProperties} onSubmit={(e) => e.preventDefault()}>
         {labels.map((l, i) => (
           <label key={i}>
             <span className="v3c-lab">{l}</span>
@@ -164,7 +168,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
           <p className="v3c-pc-err">{c.pc.invalid}</p>
         ) : (
           <>
-            {m && E != null && g != null ? (
+            {withEst && E != null && g != null ? (
               (() => {
                 const v = c.pc.verdict(labels[li], (leadPrice as number).toFixed(2), chk.noVig[li].toFixed(0), E, Math.abs(g).toFixed(1), gapDirection(g));
                 return (
@@ -188,8 +192,8 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
                   <th className="v3c-lab v3c-ra">{c.pc.yourPrice}</th>
                   <th className="v3c-lab v3c-ra v3c-pc-c-imp">{c.pc.implied}</th>
                   <th className="v3c-lab v3c-ra">{c.pc.noVig}</th>
-                  {m ? <th className="v3c-lab v3c-ra">{c.estimate}</th> : null}
-                  {m ? <th className="v3c-lab v3c-ra">{c.gap}</th> : null}
+                  {withEst ? <th className="v3c-lab v3c-ra">{c.estimate}</th> : null}
+                  {withEst ? <th className="v3c-lab v3c-ra">{c.gap}</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -199,12 +203,12 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
                     <td className="v3c-ra v3c-num">{(p as number).toFixed(2)}</td>
                     <td className="v3c-ra v3c-num v3c-pc-c-imp">{chk.implied[i].toFixed(1)}%</td>
                     <td className="v3c-ra v3c-num v3c-m">{chk.noVig[i].toFixed(0)}%</td>
-                    {m ? (
+                    {withEst ? (
                       <td className="v3c-ra v3c-num">
-                        <mark>{Math.round(estimates[i])}%</mark>
+                        <mark>{estimates[i] == null ? "—" : `${Math.round(estimates[i] as number)}%`}</mark>
                       </td>
                     ) : null}
-                    {m ? <td className={["v3c-ra", "v3c-num", isFlatGap(chk.gaps[i]) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>{gapText(chk.gaps[i])} pp</td> : null}
+                    {withEst ? <td className={["v3c-ra", "v3c-num", isFlatGap(chk.gaps[i]) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>{gapText(chk.gaps[i])} pp</td> : null}
                   </tr>
                 ))}
                 <tr className="v3c-pc-tot">
@@ -212,13 +216,13 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
                   <td />
                   <td className="v3c-ra v3c-pc-c-imp">{chk.sum.toFixed(1)}%</td>
                   <td className="v3c-ra">{chk.margin < 0 ? c.pc.under : c.pc.kept(`${chk.margin.toFixed(1)}%`)}</td>
-                  {m ? <td /> : null}
-                  {m ? <td /> : null}
+                  {withEst ? <td /> : null}
+                  {withEst ? <td /> : null}
                 </tr>
               </tbody>
             </table>
-            {m && E != null ? <Nastro market={Math.round(chk.noVig[li])} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} /> : null}
-            <p className="v3c-fine">{m ? c.pc.fine : c.pc.fineNoEst}</p>
+            {withEst && E != null ? <Nastro market={Math.round(chk.noVig[li])} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} /> : null}
+            <p className="v3c-fine">{withEst ? c.pc.fine : m ? c.pc.fineTennis : c.pc.fineNoEst}</p>
           </>
         )}
       </section>
@@ -230,7 +234,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
           items={strip}
           lang={lang}
           bank={
-            m && E != null ? (
+            withEst && E != null ? (
               <label className="v3c-pc-bank">
                 <span className="v3c-lab">{c.pc.bankroll}</span>
                 <input type="number" inputMode="decimal" min="1" step="10" value={bankRaw} onChange={(e) => setBankRaw(e.target.value)} />
@@ -259,7 +263,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
           {c.pc.whyTitle}
         </h2>
         <p className="v3c-explain" style={{ marginTop: 8 }}>
-          {c.pc.whyBody}
+          {m?.sport === "tennis" ? c.pc.whyBodyTennis : c.pc.whyBody}
         </p>
       </section>
     </>

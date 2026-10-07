@@ -102,7 +102,7 @@ export type BoardRowVM = {
 export type TennisRowVM = {
   kind: "tennis";
   m: V3BoardTennisMatch;
-  /** il giocatore con la stima servita più alta (focus del contratto) */
+  /** ui3: il favorito del mercato (tennisLead); senza mercato, il focus del contratto */
   lead: V3BoardTennisSide;
   best: V3BookPrice | null;
   day: string;
@@ -138,9 +138,19 @@ export function footballRows(matches: V3BoardMatch[], timeZone?: string): BoardR
   });
 }
 
+/**
+ * ui3 (Andrea, 07/10): nel tennis non diamo la nostra stima. Il giocatore in evidenza è quindi il
+ * favorito del MERCATO (market_p più alta); senza le due probabilità di mercato resta il focus del contratto.
+ */
+export function tennisLead(m: V3BoardTennisMatch): V3BoardTennisSide {
+  const [a, b] = m.sides;
+  if (a && b && a.market_p != null && b.market_p != null && a.market_p !== b.market_p) return a.market_p > b.market_p ? a : b;
+  return m.sides.find((x) => x.side === m.focus) ?? m.sides[0];
+}
+
 export function tennisRows(matches: V3BoardTennisMatch[], timeZone?: string): TennisRowVM[] {
   return matches.map((m) => {
-    const lead = m.sides.find((x) => x.side === m.focus) ?? m.sides[0];
+    const lead = tennisLead(m);
     return { kind: "tennis", m, lead, best: bestOf(lead), day: dayKey(m.kickoff, timeZone) };
   });
 }

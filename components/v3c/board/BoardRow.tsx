@@ -5,9 +5,10 @@
 // SOLO DOPO la lettura il miglior prezzo di un book connesso. Il tocco apre il
 // pannello: tutti gli esiti, il sigillo spiegato, i book, e l'unico bottone.
 //
-// Tennis: la riga mostra tutto ciò che il contratto porta (stima, prezzi dei
-// book connessi) e dice onestamente cosa manca («market comparison coming»):
-// nessun mercato, nessun gap, mai un valore inventato.
+// Tennis (ui3, decisione di Andrea 07/10): NON diamo la nostra stima. La riga
+// mostra solo il mercato (probabilità senza margine), il tape Open→now, il
+// prezzo e il miglior prezzo dei book connessi; niente stima, niente gap —
+// anche dove il contratto li porta (i campi restano nell'API, non si disegnano).
 import Link from "next/link";
 import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
@@ -27,6 +28,7 @@ import type { V3LiveItem } from "@/lib/v3c/live-contract";
 import type { V3cLiveCopy } from "@/lib/v3c/live-copy";
 import { liveBadge, type LiveBadge } from "@/lib/v3c/live-view";
 import { LiveScoreChip, LiveTimeCell } from "../live/LiveBits";
+import "../ui3.css";
 
 type Common = {
   t: V3cCopy;
@@ -37,7 +39,7 @@ type Common = {
   onToggle: () => void;
   /** false nei paesi dove i link ai book vanno nascosti */
   partners: boolean;
-  /** F7: partner senza quota letta, mostrati col bottone «Odds on site» */
+  /** F7: partner senza quota letta, mostrati col bottone «Odds on partner site» */
   siteOnly?: OddsOnSitePartner[];
   surface: "home" | "predictions";
   /** fidelity: il tape «open → now» dai dati veri; assente = meno di due catture */
@@ -317,16 +319,6 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
   );
 }
 
-/** Perché il tennis non ha un gap, nella lingua del visitatore (il motivo del contratto è inglese tecnico). */
-function tennisNoGap(m: TennisRowVM["m"], t: V3cCopy): string {
-  if (!m.is_our_model) return t.tennis.marketOnlyLong;
-  const r = m.gap_null_reason ?? "";
-  if (r.startsWith("not sealed")) return t.tennis.reasonNotSealed;
-  if (r.startsWith("no FortunePlay")) return t.tennis.reasonNoMarketAtSeal;
-  if (r) return t.tennis.reasonAnchored;
-  return t.tennis.comingLong;
-}
-
 const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctInt(p)}%`);
 
 export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape, live, liveLoaded, lc }: Common & { r: TennisRowVM }) {
@@ -335,17 +327,8 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
   const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc);
   const match = `${m.player1} – ${m.player2}`;
   const leadLabel = lead.player;
-  // Il gap del tennis esiste SOLO dove il contratto lo dà: stima sigillata del nostro Elo − prezzo di un
-  // book connesso catturato prima del sigillo. Allora la scala mostra QUEI due numeri, così distanza e gap coincidono.
-  const hasGap = lead.gap_pp != null && lead.sealed_p != null && lead.market_p_at_seal != null;
-  const marketOnly = !m.is_our_model;
-  const g = lead.gap_pp;
-  const kind = m.probability_kind === "model" ? t.tennis.kindModel : m.probability_kind === "model_tempered" ? t.tennis.kindModelTempered : t.tennis.kindMarket;
-  const scaleLabel = hasGap
-    ? t.tennis.scaleAriaSeal(pctInt(lead.market_p_at_seal), pctInt(lead.sealed_p), gapText(g))
-    : marketOnly
-      ? t.tennis.scaleAriaMarket(pctInt(lead.market_p ?? lead.estimate_p))
-      : t.tennis.scaleAriaModel(pctInt(lead.estimate_p));
+  // ui3: solo il mercato (market_p, margine tolto). estimate_p / sealed_p / gap_pp restano nel contratto, non qui.
+  const scaleLabel = lead.market_p == null ? t.board.noMarket : t.tennis.scaleAriaMarket(pctInt(lead.market_p));
   return (
     <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis">
       <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="tennis" badge={badge} />
@@ -364,29 +347,16 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       </span>
       <TapeCell tape={tape} label={leadLabel} t={t} />
       <span className="v3c-r-price v3c-num">{price2(lead.market_price)}</span>
-      {/* fidelity: le due colonne dicono la stessa coppia della vecchia scala — al sigillo se c'è il gap, altrimenti solo ciò che il contratto porta */}
-      {hasGap ? (
-        <MkEs market={lead.market_p_at_seal} estimate={lead.sealed_p} />
-      ) : marketOnly ? (
-        <MkEs market={lead.market_p ?? lead.estimate_p} estimate={null} />
-      ) : (
-        <MkEs market={null} estimate={lead.estimate_p} />
-      )}
-      {hasGap ? (
-        <span className={["v3c-r-gap", "v3c-num", isFlatGap(g) ? "v3c-g-flat" : null].filter(Boolean).join(" ")} title={scaleLabel}>
-          <span>
-            {gapText(g)}
-            <small> {isFlatGap(g) ? t.board.inLine : "pp"}</small>
-          </span>
-          <small className="v3c-r-atseal">{t.tennis.atSeal}</small>
-          <MeLine market={lead.market_p_at_seal} estimate={lead.sealed_p} />
+      {/* ui3: solo la colonna Market; Estimate e Gap restano vuote nel tennis (la griglia è quella del calcio) */}
+      <span className={lead.market_p == null ? "v3c-r-mk v3c-r-none" : "v3c-r-mk v3c-num"}>{lead.market_p == null ? "—" : <>{pctInt(lead.market_p)}<small>%</small></>}</span>
+      <span className="v3c-r-es" aria-hidden="true" />
+      <span className="v3c-r-gap v3c-g-none v3c-r-tnm" title={scaleLabel}>
+        {/* mobile: le colonne mercato/stima sono nascoste, qui il mercato al posto del gap */}
+        <span className="v3c-r-tnm-v v3c-num" aria-hidden="true">
+          {pctOrDash(lead.market_p)}
+          <small>{t.board.market}</small>
         </span>
-      ) : (
-        <span className="v3c-r-gap v3c-g-none" title={scaleLabel}>
-          <small className="v3c-r-nomkt">{marketOnly ? t.tennis.marketOnly : t.tennis.coming}</small>
-          <MeLine market={marketOnly ? lead.market_p ?? lead.estimate_p : null} estimate={marketOnly ? null : lead.estimate_p} />
-        </span>
-      )}
+      </span>
       <span className="v3c-r-book">
         {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
       </span>
@@ -395,7 +365,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       </span>
       {open ? (
         <div className="v3c-pn" id={panelId}>
-          <div className="v3c-pn-o v3c-pn-o-tn" role="table" aria-label={t.tennis.winner}>
+          <div className="v3c-pn-o v3c-pn-o-tn3" role="table" aria-label={t.tennis.winner}>
             <div className="v3c-pn-oh" role="row">
               <span className="v3c-lab" role="columnheader">
                 {t.tennis.winner}
@@ -405,15 +375,6 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
               </span>
               <span className="v3c-lab v3c-ra" role="columnheader">
                 {t.board.market}
-              </span>
-              <span className="v3c-lab v3c-ra" role="columnheader">
-                {t.board.estimate}
-              </span>
-              <span className="v3c-lab v3c-ra" role="columnheader">
-                {t.tennis.sealedCol}
-              </span>
-              <span className="v3c-lab v3c-ra" role="columnheader">
-                {t.tennis.gapCol}
               </span>
             </div>
             {m.sides.map((x) => (
@@ -427,31 +388,18 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
                 <span role="cell" className="v3c-num v3c-ra v3c-m">
                   {pctOrDash(x.market_p)}
                 </span>
-                <span role="cell" className="v3c-num v3c-ra">
-                  {marketOnly ? pctOrDash(x.estimate_p) : <mark>{pctOrDash(x.estimate_p)}</mark>}
-                </span>
-                <span role="cell" className="v3c-num v3c-ra">
-                  {pctOrDash(x.sealed_p)}
-                </span>
-                <span role="cell" className={["v3c-num", "v3c-ra", isFlatGap(x.gap_pp) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
-                  {x.gap_pp == null ? "—" : `${gapText(x.gap_pp)} pp`}
-                </span>
               </div>
             ))}
           </div>
           <p className="v3c-pn-facts v3c-small">
-            <span>{kind}</span>
-            {lead.model_p != null ? <span>{t.tennis.rawElo(pctInt(lead.model_p))}</span> : null}
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-            <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
+            <span>{t.fascia.pricesAsOf(sealedStamp(m.market_source?.as_of ?? m.estimate_as_of, locale))}</span>
           </p>
-          <p className="v3c-small v3c-pn-note">
-            {m.gap_market ? t.tennis.gapVs(m.gap_market.bookmaker === "ybets" ? "YBets" : m.gap_market.bookmaker === "fortuneplay" ? "FortunePlay" : m.gap_market.bookmaker, sealedStamp(m.gap_market.captured_at, locale)) : tennisNoGap(m, t)}
-          </p>
+          <p className="v3c-small v3c-pn-note">{t.tennis.noEstimate}</p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
-              <Sigillo sealedAt={m.sealed_at} label={t.fascia.sealed} title={t.board.sealedWhy(sealedStamp(m.sealed_at, locale))} />
-              <span className="v3c-small">{t.board.sealedWhy(sealedStamp(m.sealed_at, locale))}</span>
+              <Sigillo sealedAt={m.sealed_at} label={t.fascia.sealed} title={t.tennis.sealedWhy(sealedStamp(m.sealed_at, locale))} />
+              <span className="v3c-small">{t.tennis.sealedWhy(sealedStamp(m.sealed_at, locale))}</span>
             </p>
           ) : null}
           <p className="v3c-small">

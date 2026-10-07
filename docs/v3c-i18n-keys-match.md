@@ -68,7 +68,7 @@ Una chiave nuova anche in `lib/v3c/copy.ts`: `board.openMatch` (in `docs/v3c-i18
 | `book` | «Book» |
 | `vsBest` | «vs best» |
 | `best` | «best» |
-| `oddsOnSite` | «Odds on site» |
+| `oddsOnSite` | «Odds on partner site» (ui3) |
 | `open` | «Open» |
 | `partnerFine` | fn |
 | `affiliates` | «Affiliate links.» |
@@ -86,18 +86,7 @@ Una chiave nuova anche in `lib/v3c/copy.ts`: `board.openMatch` (in `docs/v3c-i18
 | `notFoundBody` | «This link points to no match we price. It may be mistyped, or the fixture was never on the board.» |
 | `backToBoard` | «Back to the board» |
 | `offBoard` | «This match has left the board: it started over 150 minutes ago or sits outside the ten-day window. The price history stays.» |
-| `tennisSealed` | «Sealed» |
-| `tennisMarketAtSeal` | «Market at seal» |
-| `tennisSealedEstimate` | «Sealed estimate» |
-| `tennisGapAtSeal` | «gap at seal» |
 | `tennisMarketOnlyBig` | «Market, margin removed» |
-| `tennisModelBig` | «Our estimate» |
-| `tennisSub` | fn |
-| `tnMarketOnly` | «No model of ours here: the percentage is the book’s price, margin removed. A gap against itself is zero.» |
-| `tnNotSealed` | «Not sealed yet: the gap appears once our estimate is in the ledger.» |
-| `tnNoMarketAtSeal` | «No connected-book price in the 150 minutes before the seal, so no gap.» |
-| `tnAnchored` | «The sealed number is the market price itself, so a gap would be zero.» |
-| `tnComing` | «The gap arrives once a market/model split is stored for this match.» |
 | `pc.tab` | «Price check · free» |
 | `pc.title` | «What does this price claim?» |
 | `pc.choose` | «Match» |
@@ -125,3 +114,18 @@ Una chiave nuova anche in `lib/v3c/copy.ts`: `board.openMatch` (in `docs/v3c-i18
 | `pc.outcomes` | «1 · X · 2» |
 | `pc.openMatch` | «Open the match →» |
 | `pc.loading` | «Loading today’s matches» |
+
+### ui3 (07/10) — tennis senza la nostra stima, tradotte nelle 11 lingue
+
+Rimosse: `tennisSealed`, `tennisMarketAtSeal`, `tennisSealedEstimate`, `tennisGapAtSeal`, `tennisModelBig`, `tennisSub`, `tnMarketOnly`, `tnNotSealed`, `tnNoMarketAtSeal`, `tnAnchored`, `tnComing`. Riscritte: `oddsOnSite`, `moreBooks` («odds on partner site»).
+
+| Chiave | EN |
+|---|---|
+| `s1Tennis` | «The market price, margin removed» |
+| `tnSealBody` | fn → «In the public ledger since {t}. The sealed number is market-based, not an estimate of ours.» |
+| `tnWhyTitle` | «Market price only» |
+| `tnWhyBody` | «No estimate of ours in tennis: the number above is the books’ price, margin removed. The chart shows how it moved.» |
+| `pc.fineTennis` | «Implied = 1 ÷ price. Margin removed = implied ÷ the sum. Tennis: market price only, no estimate of ours.» |
+| `movedBodyTennis` | fn → «{n} captures since {since}, connected books only.» (movedBody senza la frase sul gap) |
+| `pc.whyBodyTennis` | «Prices adding up past 100% hide the book’s fee. Removed, they show what the book believes.» |
+| `s2Tennis` | «The price line, and what you can check» |

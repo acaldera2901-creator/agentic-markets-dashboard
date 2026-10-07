@@ -27,7 +27,7 @@ Regole che valgono in ogni lingua:
 | edge (= gap, mai profitto) | gap | Abstand | diferencia | écart | verschil | różnica | diferença | разрыв | skillnad | fark |
 | price (odds) | prezzo / quota | Quote | cuota | cote | odds | kurs | odd | коэффициент | odds | oran |
 | best price | miglior prezzo | beste Quote | mejor cuota | meilleure cote | beste odds | najlepszy kurs | melhor odd | лучший коэффициент | bästa odds | en iyi oran |
-| odds on site | quota sul sito | Quote auf der Seite | cuota en su web | cote sur le site | odds op de site | kurs na stronie | odd no site | коэффициент на сайте | odds på sajten | oran sitede |
+| odds on partner site (ui3: unica formula per il partner senza quota) | Quote sul sito del partner | Quoten auf der Partnerseite | Cuotas en la web del socio | Cotes sur le site du partenaire | Odds op de partnersite | Kursy na stronie partnera | Odds no site do parceiro | Коэффициенты на сайте партнёра | Odds på partnerns sajt | Oranlar ortağın sitesinde |
 | book / bookmaker | book | Buchmacher | casa de apuestas | bookmaker | bookmaker | bukmacher | casa de apostas | букмекер | spelbolag | bahis sitesi |
 | connected books | book connessi | verbundene Buchmacher | casas conectadas | bookmakers connectés | gekoppelde bookmakers | połączeni bukmacherzy | casas ligadas | подключённые букмекеры | anslutna spelbolag | bağlı bahis siteleri |
 | margin | margine | Marge | margen | marge | marge | marża | margem | маржа | marginal | marj |

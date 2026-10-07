@@ -2,7 +2,8 @@
 // components/v3c/record/RecordSummary.tsx (#REDESIGN-V3C F6)
 // Il riepilogo del registro: tre fatti in riga (sigillate e periodo · Brier
 // nostro e del mercato AFFIANCATI con i loro intervalli e la frase che il dato
-// sceglie · copertura), poi calibrazione, atteso/osservato, tennis a parte.
+// sceglie · copertura), poi calibrazione, atteso/osservato, tennis a parte
+// (ui3: per il tennis solo esiti e numero di partite, nessuna stima).
 // La cosa grande della pagina è il reliability diagram (DIRECTION-v3b).
 import type { V3TennisRecordGroup } from "@/lib/v3c/contracts";
 import { brierVerdict } from "@/lib/v3c/copy-record";
@@ -70,7 +71,7 @@ export function RecordSummaryView({ data }: { data: RecordSummary }) {
 
       <Reliability cal={cal} />
       <Weeks weeks={r.weekly} />
-      <TennisRecord groups={r.tennis.groups} calibration={cal.tennis} />
+      <TennisRecord groups={r.tennis.groups} />
     </>
   );
 }
