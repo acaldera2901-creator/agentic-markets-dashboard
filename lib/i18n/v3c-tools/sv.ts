@@ -114,7 +114,7 @@ const sv: V3cToolsCopy = {
       name: "Marginalkalkylator",
       line: "hur mycket spelbolaget behåller på en marknad",
       inputs: { p1: "Odds 1", p2: "Odds 2", p3: "Odds 3 (tomt för två)" },
-      results: { margin: "Spelbolagets marginal", sum: "Implicit summa", kept: "Behålls per 100 € insats" },
+      results: { margin: "Spelbolagets marginal", sum: "Implicit summa", kept: "Behålls per 100 insats" },
       formula: "Marginal = summan av de implicita sannolikheterna − 100 %. Ett spelbolag på 106,3 % behåller cirka 6 € per 100 €.",
       column: "Marginal",
     },
@@ -156,7 +156,7 @@ const sv: V3cToolsCopy = {
       inputs: { price: "Decimalodds", target: "Önskad vinst €", bank: "Bankrulle €" },
       results: { stake: "Insats som krävs", return: "Total återbetalning", share: "Andel av bankrullen" },
       formula: "Insats = önskad vinst ÷ (odds − 1). Andelen av bankrullen är siffran att titta på två gånger.",
-      column: "Insats för 100 €",
+      column: "Insats per 1 i vinst",
     },
     "bankroll-calculator": {
       name: "Kassakalkylator",

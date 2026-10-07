@@ -114,7 +114,7 @@ const pt: V3cToolsCopy = {
       name: "Calculadora de margem",
       line: "quanto a casa fica num mercado",
       inputs: { p1: "Odd 1", p2: "Odd 2", p3: "Odd 3 (vazia para duas)" },
-      results: { margin: "Margem da casa", sum: "Soma das implícitas", kept: "Retido por cada 100 € apostados" },
+      results: { margin: "Margem da casa", sum: "Soma das implícitas", kept: "Retido por cada 100 apostados" },
       formula: "Margem = soma das probabilidades implícitas − 100%. Uma casa a 106,3% fica com cerca de 6 € de cada 100 €.",
       column: "Margem",
     },
@@ -156,7 +156,7 @@ const pt: V3cToolsCopy = {
       inputs: { price: "Odd decimal", target: "Lucro pretendido €", bank: "Banca €" },
       results: { stake: "Stake necessário", return: "Retorno total", share: "Parte da banca" },
       formula: "Stake = lucro pretendido ÷ (odd − 1). A parte da banca é o número a olhar duas vezes.",
-      column: "Stake para 100 €",
+      column: "Stake por 1 de lucro",
     },
     "bankroll-calculator": {
       name: "Calculadora de banca",

@@ -26,7 +26,8 @@ describe("il motore copre il registry", () => {
   it("ogni tool ha una sigla corta e il primo risultato è quello grande", () => {
     for (const t of TOOLS) {
       expect(TOOL_SIGLA[t.slug].length).toBeLessThanOrEqual(3);
-      const [big] = t.compute(defaultValues(t));
+      // fixui3 R4: the money tools start empty — their declared example fills them here
+      const [big] = t.compute({ ...defaultValues(t), ...(t.example ?? {}) });
       expect(big, t.slug).toBeTruthy();
       expect(big.big, t.slug).toBe(true);
     }
@@ -58,7 +59,7 @@ describe("i numeri del prototipo (DIRECTION-v3c §1)", () => {
     const r = toolDef("margin-calculator").compute({ p1: 2.15, p2: 3.2, p3: 3.5 });
     expect(r[0].value).toBe("6.3%");
     expect(r[1].value).toBe("106.3%");
-    expect(r[2].value).toBe("€5.96");
+    expect(r[2].value).toBe("5.96"); // fixui3 R4: per 100 staked, no «€» by default
   });
 
   it("Probabilità: la prima è il 43.7% (44% sul board), in sky", () => {
@@ -144,7 +145,7 @@ describe("anteprima, colonna e prefill dalla board", () => {
     expect(toolDef("margin-calculator").column!(genoa).value).toBe("6.3%");
     expect(toolDef("odds-converter").column!(genoa).value).toBe("46.5%");
     expect(toolDef("probability-calculator").column!(genoa)).toMatchObject({ value: "44%", market: true });
-    expect(toolDef("stake-calculator").column!(genoa).value).toBe("€86.96");
+    expect(toolDef("stake-calculator").column!(genoa).value).toBe("0.87"); // fixui3 R4: stake per 1 of profit, was «€86.96» for €100
     for (const s of ["parlay-calculator", "bankroll-calculator", "roi-calculator", "yield-calculator"] as const) expect(toolDef(s).column).toBeUndefined();
   });
 

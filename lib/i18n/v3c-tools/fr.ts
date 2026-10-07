@@ -113,7 +113,7 @@ const fr: V3cToolsCopy = {
       name: "Calculateur de marge",
       line: "ce que le bookmaker garde sur un marché",
       inputs: { p1: "Cote 1", p2: "Cote 2", p3: "Cote 3 (vide pour deux)" },
-      results: { margin: "Marge du bookmaker", sum: "Somme des implicites", kept: "Gardé pour 100 € misés" },
+      results: { margin: "Marge du bookmaker", sum: "Somme des implicites", kept: "Gardé pour 100 misés" },
       formula: "Marge = somme des probabilités implicites − 100 %. Un livre à 106,3 % garde environ 6 € sur 100 €.",
       column: "Marge",
     },
@@ -155,7 +155,7 @@ const fr: V3cToolsCopy = {
       inputs: { price: "Cote décimale", target: "Profit visé €", bank: "Bankroll €" },
       results: { stake: "Mise nécessaire", return: "Retour total", share: "Part de la bankroll" },
       formula: "Mise = profit visé ÷ (cote − 1). La part de la bankroll est le chiffre à regarder deux fois.",
-      column: "Mise pour 100 €",
+      column: "Mise pour 1 de gain",
     },
     "bankroll-calculator": {
       name: "Calculateur de bankroll",

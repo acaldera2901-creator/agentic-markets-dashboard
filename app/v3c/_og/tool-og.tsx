@@ -10,6 +10,7 @@ import { fmt, getV3cToolsCopy } from "@/lib/i18n/v3c-tools";
 import type { ToolLocale, ToolSlug } from "@/lib/tools/registry";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
 import { defaultValues, toolDef } from "@/lib/v3c/tools";
+import { previewWordsFor } from "@/lib/v3c/fixui3-copy";
 import { OG, OG_SIZE, OgFrame, ogAssets } from "./og";
 
 export async function toolOgImage(slug: ToolSlug, locale: ToolLocale) {
@@ -17,7 +18,8 @@ export async function toolOgImage(slug: ToolSlug, locale: ToolLocale) {
   const c = getV3cToolsCopy(locale);
   const tc = c.tools[slug];
   const def = toolDef(slug);
-  const v = defaultValues(def);
+  // fixui3 R4: the money tools start empty; the OG shows their declared example amounts, without «€»
+  const v = { ...defaultValues(def), ...(def.example ?? {}) };
   const [r] = def.compute(v);
   const a = await ogAssets("tool");
   const svg = (await readFile(join(process.cwd(), "public/brand/v3c/icons", `${TOOL_ICON[slug]}.svg`), "utf8")).replace(/currentColor/g, OG.royal);
@@ -33,9 +35,9 @@ export async function toolOgImage(slug: ToolSlug, locale: ToolLocale) {
         {r ? (
           <div style={{ display: "flex", alignItems: "baseline", gap: 18, marginTop: 26, whiteSpace: "nowrap" }}>
             <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: 2, color: OG.ink2 }}>EXAMPLE</span>
-            <span style={{ fontSize: 40, fontWeight: 800 }}>{def.previewInput(v)}</span>
+            <span style={{ fontSize: 40, fontWeight: 800 }}>{def.previewInput(v, previewWordsFor(locale))}</span>
             <span style={{ fontSize: 36, color: OG.ink2 }}>→</span>
-            <span style={{ fontSize: 40, fontWeight: 800 }}>{r.value}</span>
+            <span style={{ fontSize: 40, fontWeight: 800 }}>{def.example ? r.value.replace("€", "") : r.value}</span>
             <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: 1, color: OG.ink2 }}>{fmt(tc.results[r.key] ?? r.key, r.vars ?? {}).toUpperCase()}</span>
           </div>
         ) : null}

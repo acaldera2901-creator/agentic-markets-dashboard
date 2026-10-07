@@ -65,12 +65,13 @@ describe("N1 · the home bench", () => {
 
 describe("B3 · no «Sign in» on v3c in Fase 0", () => {
   for (const l of ["en", "it", "de"] as const) {
-    it(`${l}: header and footer carry no «${getV3cToolsCopy(l).nav.signIn}»; the footer has the discreet «Existing members» link`, () => {
+    // fixui3 B3 (Andrea, Fase 0): «Existing members» is gone too — no link at all to /plans?auth=login
+    it(`${l}: header and footer carry no «${getV3cToolsCopy(l).nav.signIn}» and no way to the old sign-in`, () => {
       const c = getV3cToolsCopy(l);
       const html = renderToStaticMarkup(<><TopBar locale={l} copy={c.nav} /><Footer locale={l} copy={c} /></>);
       expect(text(html)).not.toContain(c.nav.signIn);
-      expect(html.match(/href="\/plans\?auth=login"/g)?.length).toBe(1);
-      expect(html).toContain('data-v3c="existing-members"');
+      expect(html).not.toMatch(/\/plans\?/);
+      expect(html).not.toContain('data-v3c="existing-members"');
     });
   }
 });

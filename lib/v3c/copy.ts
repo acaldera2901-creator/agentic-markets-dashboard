@@ -221,7 +221,7 @@ const EN = {
       "margin-calculator": { name: "Margin calculator", line: "how much the book keeps on a market" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Questions people ask before signing up" },
+  faq: { title: "Questions people ask first" },
   foot: {
     lede: "Market price, our estimate next to it, the sealed record. Then the best price from a connected book.",
     product: "Product",
@@ -425,7 +425,7 @@ const IT: V3cCopy = {
       "margin-calculator": { name: "Calcolatore di margine", line: "quanto trattiene il book su un mercato" },
     },
   },
-  faq: { title: "Le domande che fanno prima di registrarsi" },
+  faq: { title: "Le domande che si fanno per prime" },
   foot: {
     lede: "Il prezzo di mercato, la nostra stima accanto, il registro sigillato. Poi il miglior prezzo da un book connesso.",
     product: "Prodotto",
@@ -638,7 +638,7 @@ const DE: V3cCopy = {
       "margin-calculator": { name: "Margen-Rechner", line: "wie viel der Buchmacher an einem Markt behält" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Fragen vor der Anmeldung" },
+  faq: { title: "Die ersten Fragen" },
   foot: {
     lede: "Die Marktquote, unsere Schätzung daneben, das versiegelte Register. Dann die beste Quote eines verbundenen Buchmachers.",
     product: "Produkt",
@@ -851,7 +851,7 @@ const ES: V3cCopy = {
       "margin-calculator": { name: "Calculadora de margen", line: "cuánto se queda la casa en un mercado" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Preguntas que se hacen antes de registrarse" },
+  faq: { title: "Las primeras preguntas" },
   foot: {
     lede: "Cuota de mercado, nuestra estimación al lado, el registro sellado. Y luego la mejor cuota de una casa conectada.",
     product: "Producto",
@@ -1064,7 +1064,7 @@ const FR: V3cCopy = {
       "margin-calculator": { name: "Calculateur de marge", line: "ce que le bookmaker garde sur un marché" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Les questions posées avant de s’inscrire" },
+  faq: { title: "Les premières questions" },
   foot: {
     lede: "La cote du marché, notre estimation à côté, le registre scellé. Puis la meilleure cote d’un bookmaker connecté.",
     product: "Produit",
@@ -1277,7 +1277,7 @@ const NL: V3cCopy = {
       "margin-calculator": { name: "Margecalculator", line: "hoeveel de bookmaker op een markt houdt" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Vragen die mensen stellen voor ze zich aanmelden" },
+  faq: { title: "De eerste vragen" },
   foot: {
     lede: "Marktodd, onze schatting ernaast, het verzegelde register. Dan de beste odds van een gekoppelde bookmaker.",
     product: "Product",
@@ -1490,7 +1490,7 @@ const PL: V3cCopy = {
       "margin-calculator": { name: "Kalkulator marży", line: "ile bukmacher zatrzymuje na rynku" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Pytania zadawane przed rejestracją" },
+  faq: { title: "Pierwsze pytania" },
   foot: {
     lede: "Kurs rynkowy, obok nasz szacunek, zapieczętowany rejestr. Potem najlepszy kurs od połączonego bukmachera.",
     product: "Produkt",
@@ -1703,7 +1703,7 @@ const PT: V3cCopy = {
       "margin-calculator": { name: "Calculadora de margem", line: "quanto a casa fica num mercado" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Perguntas que se fazem antes de criar conta" },
+  faq: { title: "As primeiras perguntas" },
   foot: {
     lede: "Odd de mercado, a nossa estimativa ao lado, o registo selado. Depois, a melhor odd de uma casa ligada.",
     product: "Produto",
@@ -1916,7 +1916,7 @@ const RU: V3cCopy = {
       "margin-calculator": { name: "Калькулятор маржи", line: "сколько букмекер оставляет себе на рынке" },
     },
   },
-  faq: { title: "Вопросы, которые задают перед регистрацией" },
+  faq: { title: "Первые вопросы" },
   foot: {
     lede: "Рыночный коэффициент, рядом наша оценка, зафиксированный реестр. Затем лучший коэффициент у подключённого букмекера.",
     product: "Продукт",
@@ -2129,7 +2129,7 @@ const SV: V3cCopy = {
       "margin-calculator": { name: "Marginalkalkylator", line: "hur mycket spelbolaget behåller på en marknad" },
     } as Record<string, { name: string; line: string }>,
   },
-  faq: { title: "Frågor folk ställer innan de registrerar sig" },
+  faq: { title: "De första frågorna" },
   foot: {
     lede: "Marknadens odds, vår uppskattning bredvid, det förseglade registret. Sedan bästa odds från ett anslutet spelbolag.",
     product: "Produkt",
@@ -2342,7 +2342,7 @@ const TR: V3cCopy = {
       "margin-calculator": { name: "Marj hesaplayıcı", line: "bahis sitesi bir piyasada ne kadar alıkoyar" },
     },
   },
-  faq: { title: "Kayıt olmadan önce sorulan sorular" },
+  faq: { title: "İlk sorulan sorular" },
   foot: {
     lede: "Piyasa oranı, yanında tahminimiz, mühürlü kayıt. Sonra bağlı bir bahis sitesinden en iyi oran.",
     product: "Ürün",

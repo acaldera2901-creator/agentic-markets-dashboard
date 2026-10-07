@@ -43,11 +43,13 @@ describe("leaderboard v3c", () => {
 });
 
 describe("invite v3c", () => {
-  it("401 → «Sign in to get your invite link» con il link all'accesso esistente", async () => {
+  // fixui3 B3: in Fase 0 no link to the old sign-in (/plans?auth=login sells Base on the old site)
+  it("401 → «Account: coming with Pro», senza link all'accesso di oggi", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 401 })));
-    render(<V3cInvite />);
-    await waitFor(() => expect(screen.getByText("Sign in to get your invite link")).toBeInTheDocument());
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/plans?auth=login");
+    const { container } = render(<V3cInvite />);
+    await waitFor(() => expect(screen.getByText("Account: coming with Pro.")).toBeInTheDocument());
+    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
+    expect(container.innerHTML).not.toMatch(/\/plans\?/);
   });
 
   it("403 → claim del codice (stesso stato del pannello di sempre)", async () => {

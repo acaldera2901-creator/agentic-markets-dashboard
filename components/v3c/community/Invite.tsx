@@ -5,11 +5,12 @@
 // loading → unclaimed → claimed, «error» quando lo stato è ignoto (5xx/rete:
 // offrire il claim a chi un codice ce l'ha già darebbe un 409). In più lo stato
 // «signin»: la pagina non sta più dietro il muro della Dashboard, quindi un 401
-// si dice per quello che è, con il link all'accesso che esiste oggi.
+// si dice per quello che è — fixui3 B3: senza link all'accesso di oggi (Fase 0, niente account da raggiungere).
 // Nessun premio e nessuna soglia scritti qui: arrivano tutti dall'API.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { launchPromoLive } from "@/lib/launch-promo-client";
-import { SIGN_IN_HREF } from "@/lib/v3c/checkout-link";
+import { fixui3CopyFor } from "@/lib/v3c/fixui3-copy";
+import { useV3cLang } from "@/lib/v3c/lang.client";
 import { trackEvent } from "@/lib/track-event";
 import { Fascia } from "../Fascia";
 import { useCommunityCopy } from "./useCopy";
@@ -37,6 +38,7 @@ function toStats(d: Record<string, unknown>): Stats {
 
 export function V3cInvite() {
   const c = useCommunityCopy().inv;
+  const x3 = fixui3CopyFor(useV3cLang());
   const [phase, setPhase] = useState<InvitePhase>("loading");
   const [code, setCode] = useState("");
   const [claimedCode, setClaimedCode] = useState<string | null>(null);
@@ -136,11 +138,12 @@ export function V3cInvite() {
 
       {phase === "loading" && <p className="v3c-cm-wait" aria-busy="true">{c.loading}</p>}
 
+      {/* fixui3 B3: no link to the old sign-in (/plans?auth=login sells Base on the old site). In Fase 0 an
+          invite link has no account to live in: say so, with nothing to click (fixui3-existing-members.md). */}
       {phase === "signin" && (
-        <section className="v3c-cm-box">
-          <h2 className="v3c-t-sec">{c.signInTitle}</h2>
-          <p className="v3c-small">{c.signInBody}</p>
-          <a className="v3c-btn v3c-btn-cta" href={SIGN_IN_HREF}>{c.signIn}</a>
+        <section className="v3c-cm-box" data-v3c="account-soon">
+          <h2 className="v3c-t-sec">{x3.accountSoon}</h2>
+          <p className="v3c-small">{x3.accountSoonBody}</p>
         </section>
       )}
 

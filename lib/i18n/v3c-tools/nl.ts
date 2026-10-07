@@ -113,7 +113,7 @@ const nl: V3cToolsCopy = {
       name: "Margecalculator",
       line: "hoeveel de bookmaker op een markt houdt",
       inputs: { p1: "Odd 1", p2: "Odd 2", p3: "Odd 3 (leeg voor twee)" },
-      results: { margin: "Bookmakermarge", sum: "Impliciete som", kept: "Ingehouden per €100 inzet" },
+      results: { margin: "Bookmakermarge", sum: "Impliciete som", kept: "Ingehouden per 100 inzet" },
       formula: "Marge = som van de impliciete kansen − 100%. Een boek van 106.3% houdt ongeveer €6 van elke €100.",
       column: "Marge",
     },
@@ -155,7 +155,7 @@ const nl: V3cToolsCopy = {
       inputs: { price: "Decimale odd", target: "Beoogde winst €", bank: "Bankroll €" },
       results: { stake: "Benodigde inzet", return: "Totale opbrengst", share: "Deel van de bankroll" },
       formula: "Inzet = beoogde winst ÷ (odd − 1). Het deel van de bankroll is het getal om twee keer naar te kijken.",
-      column: "Inzet voor €100",
+      column: "Inzet per 1 winst",
     },
     "bankroll-calculator": {
       name: "Bankroll-calculator",

@@ -113,7 +113,7 @@ const tr: V3cToolsCopy = {
       name: "Marj hesaplayıcı",
       line: "bahis sitesi bir piyasada ne kadar alıkoyar",
       inputs: { p1: "Oran 1", p2: "Oran 2", p3: "Oran 3 (iki sonuç için boş)" },
-      results: { margin: "Site marjı", sum: "Zımni toplam", kept: "Yatırılan €100 başına alıkonan" },
+      results: { margin: "Site marjı", sum: "Zımni toplam", kept: "Yatırılan 100 başına alıkonan" },
       formula: "Marj = zımni olasılıkların toplamı − %100. %106,3'lük bir site her €100'ün yaklaşık €6'sını alıkoyar.",
       column: "Marj",
     },
@@ -155,7 +155,7 @@ const tr: V3cToolsCopy = {
       inputs: { price: "Ondalık oran", target: "Hedef kâr €", bank: "Kasa €" },
       results: { stake: "Gereken miktar", return: "Toplam getiri", share: "Kasadaki payı" },
       formula: "Miktar = hedef kâr ÷ (oran − 1). Kasadaki pay, iki kez bakılması gereken sayıdır.",
-      column: "€100 için miktar",
+      column: "1 kâr için miktar",
     },
     "bankroll-calculator": {
       name: "Kasa hesaplayıcı",

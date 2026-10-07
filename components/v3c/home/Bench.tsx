@@ -16,6 +16,7 @@ import { toolPath } from "@/lib/tools/registry";
 import { BenchTool } from "../BenchTool";
 import { exampleEligible, withoutMoney } from "@/lib/v3c/fixui2";
 import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
+import { previewWordsFor } from "@/lib/v3c/fixui3-copy";
 import { ToolMark } from "../Monogramma";
 import { V3C_ROUTES } from "../V3cChrome";
 
@@ -87,7 +88,7 @@ export function Bench({ matches, nowIso }: { matches: V3BoardMatch[]; nowIso: st
         {BENCH_SLUGS.map((slug) => {
           const tool = sampleTool(slug);
           const copy = t.bench.tools[slug];
-          return <BenchTool key={slug} slug={slug} sigla={tool.sigla} name={copy?.name ?? tool.name} line={copy?.line ?? tool.line} href={toolPath(slug, "en")} example={benchSafe(benchExample(slug, { outcomes: ex.outcomes }))} />;
+          return <BenchTool key={slug} slug={slug} sigla={tool.sigla} name={copy?.name ?? tool.name} line={copy?.line ?? tool.line} href={toolPath(slug, "en")} example={benchSafe(benchExample(slug, { outcomes: ex.outcomes }, previewWordsFor(lang)))} />;
         })}
       </div>
       <p className="v3c-fine" data-bench={ex.sample ? "sample" : "match"}>{ex.sample ? fixui2CopyFor(lang).benchSample : t.bench.note(ex.match)}</p>

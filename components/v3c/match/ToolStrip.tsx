@@ -10,6 +10,7 @@ import type { StripItem } from "@/lib/v3c/match-view";
 import { matchCopyFor } from "@/lib/v3c/match-copy";
 import { eur, toolDef } from "@/lib/v3c/tools";
 import { ToolMark } from "../Monogramma";
+import { previewWordsFor } from "@/lib/v3c/fixui3-copy";
 import { v3cLang } from "@/lib/v3c/copy";
 
 type Props = { title: string; all: string; items: readonly StripItem[]; lang: string; /** polish: il campo bankroll del Kelly, se la pagina lo offre */ bank?: React.ReactNode };
@@ -40,7 +41,7 @@ export function ToolStrip({ title, all, items, lang, bank }: Props) {
                 <span className="v3c-lab">{tc.name}</span>
                 <b className={["v3c-num", r?.flat ? "v3c-g-flat" : null, r?.market ? "v3c-m" : null].filter(Boolean).join(" ")}>{kelly ? kelly[0] : r ? r.value : "—"}</b>
                 <small>
-                  {kelly && kelly[1] && bankV != null ? mc.pc.kellyOf(kelly[1], eur(bankV)) : r ? fmt(tc.results[r.key] ?? r.key, r.vars) : ""} · {toolDef(it.slug).previewInput(it.values)}
+                  {kelly && kelly[1] && bankV != null ? mc.pc.kellyOf(kelly[1], eur(bankV)) : r ? fmt(tc.results[r.key] ?? r.key, r.vars) : ""} · {toolDef(it.slug).previewInput(it.values, previewWordsFor(lang))}
                 </small>
               </span>
             </a>

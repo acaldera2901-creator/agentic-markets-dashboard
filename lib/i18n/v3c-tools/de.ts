@@ -114,7 +114,7 @@ const de: V3cToolsCopy = {
       name: "Margen-Rechner",
       line: "wie viel der Buchmacher an einem Markt behält",
       inputs: { p1: "Quote 1", p2: "Quote 2", p3: "Quote 3 (leer bei zwei)" },
-      results: { margin: "Buchmacher-Marge", sum: "Summe der Impliziten", kept: "Einbehalten pro €100 Einsatz" },
+      results: { margin: "Buchmacher-Marge", sum: "Summe der Impliziten", kept: "Einbehalten pro 100 Einsatz" },
       formula: "Marge = Summe der impliziten Wahrscheinlichkeiten − 100%. Ein Buchmacher bei 106,3% behält etwa €6 von €100.",
       column: "Marge",
     },
@@ -156,7 +156,7 @@ const de: V3cToolsCopy = {
       inputs: { price: "Dezimalquote", target: "Zielgewinn €", bank: "Bankroll €" },
       results: { stake: "Nötiger Einsatz", return: "Gesamtrückfluss", share: "Anteil der Bankroll" },
       formula: "Einsatz = Zielgewinn ÷ (Quote − 1). Den Anteil der Bankroll solltest du zweimal ansehen.",
-      column: "Einsatz für €100",
+      column: "Einsatz je 1 Gewinn",
     },
     "bankroll-calculator": {
       name: "Bankroll-Rechner",

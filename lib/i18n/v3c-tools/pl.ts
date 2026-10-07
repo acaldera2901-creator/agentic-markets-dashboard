@@ -114,7 +114,7 @@ const pl: V3cToolsCopy = {
       name: "Kalkulator marży",
       line: "ile bukmacher zatrzymuje na rynku",
       inputs: { p1: "Kurs 1", p2: "Kurs 2", p3: "Kurs 3 (puste dla dwóch)" },
-      results: { margin: "Marża bukmachera", sum: "Suma implikowanych", kept: "Zatrzymane na każde postawione €100" },
+      results: { margin: "Marża bukmachera", sum: "Suma implikowanych", kept: "Zatrzymane na każde postawione 100" },
       formula: "Marża = suma prawdopodobieństw implikowanych − 100%. Rynek 106.3% zatrzymuje około €6 z każdych €100.",
       column: "Marża",
     },
@@ -156,7 +156,7 @@ const pl: V3cToolsCopy = {
       inputs: { price: "Kurs dziesiętny", target: "Docelowy zysk €", bank: "Bankroll €" },
       results: { stake: "Potrzebna stawka", return: "Całkowity zwrot", share: "Udział w bankrollu" },
       formula: "Stawka = docelowy zysk ÷ (kurs − 1). Udział w bankrollu to liczba, na którą warto spojrzeć dwa razy.",
-      column: "Stawka na €100",
+      column: "Stawka na 1 zysku",
     },
     "bankroll-calculator": {
       name: "Kalkulator bankrolla",

@@ -6,7 +6,7 @@
 // della board. Chi la importa marca a schermo ciò che mostra come SAMPLE.
 import { TOOL_SLUGS, type ToolSlug } from "@/lib/tools/registry";
 import type { TeamIdentity } from "./monogram";
-import { TOOL_SIGLA, toolPreview } from "./tools";
+import { TOOL_SIGLA, toolPreview, type PreviewWords } from "./tools";
 
 export const SAMPLE = "SAMPLE" as const;
 
@@ -244,12 +244,12 @@ export type ToolExample = { input: string; output: string; flat?: boolean; marke
  * (lib/v3c/tools.ts, con lib/betting-math) sui numeri della partita d'esempio:
  * il tool parla la stessa lingua della board. Da F5 copre tutti e 11 gli slug.
  */
-export function benchExample(slug: ToolSlug, match: { outcomes: readonly LeadShape[] } = SAMPLE_MATCH): ToolExample {
+export function benchExample(slug: ToolSlug, match: { outcomes: readonly LeadShape[] } = SAMPLE_MATCH, words?: PreviewWords): ToolExample {
   // F3+F5: la board vera passa esiti senza book né etichetta; il motore dei tool
   // (bestPriceOf) ricade sul prezzo di riferimento quando i book mancano.
   const outcomes = match.outcomes.map((o) => ({ ...o, label: o.label ?? "", prices: o.prices ?? {} }));
   const lead = leadOutcome(outcomes);
-  const p = toolPreview(slug, { outcomes, lead });
+  const p = toolPreview(slug, { outcomes, lead }, words); // fixui3: the preview words in the visitor's language
   return { input: p.input, output: p.output, flat: p.flat, market: p.market };
 }
 

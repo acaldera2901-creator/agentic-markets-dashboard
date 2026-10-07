@@ -25,7 +25,6 @@ import { ThemeToggle } from "./V3cShell";
 import { DocLang } from "./guide/DocLang";
 import { GlossaryDialog, GlossaryLink } from "./guide/Glossary";
 import { MoreMenu } from "./guide/MoreMenu";
-import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
 import "./fixui2.css";
 
 export const ROUTES = {
@@ -38,9 +37,6 @@ export const ROUTES = {
   method: "/how-it-works",
   terms: "/terms",
   privacy: "/privacy",
-  // #REDESIGN-V3C pages: "/app?auth=login" finiva su /predictions, che a flag acceso
-  // è la board v3c senza modale di accesso. /plans?auth= resta la Dashboard (lib/v3c/redirects).
-  signIn: "/plans?auth=login",
   responsible: "https://www.begambleaware.org",
 } as const;
 
@@ -126,8 +122,8 @@ export function TopBar({ current, locale, copy }: TopProps) {
           ))}
         </nav>
         <div className="v3c-top-r">
-          {/* fixui2 B3: no «Sign in» in Fase 0 — it led to today's /plans (Base, crypto-only). Nothing on v3c is
-              behind an account yet; the one way to today's sign-in is «Existing members» in the footer. */}
+          {/* fixui2/fixui3 B3: no «Sign in» in Fase 0 — it led to today's /plans (Base, crypto-only). Nothing on
+              v3c is behind an account yet, so no link anywhere leads to the old sign-in (fixui3-existing-members.md). */}
           <ThemeToggle labels={{ toPaper: copy.toPaper, toDark: copy.toDark }} />
         </div>
       </div>
@@ -223,11 +219,9 @@ export function Footer({ locale, slug, hub, copy }: FootProps) {
         {/* fixui B7: niente indirizzo di corrispondenza (POSITIONING R9) finché il legale non indica
             l'entità: il marchio e i Termini. lib/legal-entity resta intatto per il sito di oggi e le email. */}
         <p className="v3c-fine v3c-foot-imp">
-          BetRedge · <a href={ROUTES.terms}>{f.terms}</a> ·{" "}
-          {/* fixui2 B3: the discreet way to today's sign-in flow (the Dashboard's modal, untouched) */}
-          <a href={ROUTES.signIn} rel="nofollow" title={fixui2CopyFor(locale).existingMembersTitle} data-v3c="existing-members">
-            {fixui2CopyFor(locale).existingMembers}
-          </a>
+          {/* fixui3 B3: «Existing members» (→ /plans?auth=login, the old site selling Base $14.99) is gone in
+              Fase 0 — nothing on v3c sits behind an account. How to bring it back: docs/redesign/fixui3-existing-members.md */}
+          BetRedge · <a href={ROUTES.terms}>{f.terms}</a>
         </p>
       </div>
     </footer>

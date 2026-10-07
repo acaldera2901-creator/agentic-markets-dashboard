@@ -86,7 +86,7 @@ const DE: V3cLiveCopy = {
   ht: "HZ",
   htLong: "Halbzeit",
   breakShort: "Pause",
-  ft: "Ende",
+  ft: "90 Min.", // fixui3: «ENDE / Ende» twice on the board — FT is the regular 90, n.V./i.E. stay
   aet: "n.V.",
   pens: (h, a) => `i.E. ${h}–${a}`,
   finished: "Beendet",
@@ -158,7 +158,7 @@ const FR: V3cLiveCopy = {
   ht: "MT",
   htLong: "Mi-temps",
   breakShort: "Pause",
-  ft: "Fin",
+  ft: "90 min", // fixui3: not «FIN / Fin» twice
   aet: "a.p.",
   pens: (h, a) => `t.a.b. ${h}–${a}`,
   finished: "Terminé",
@@ -194,7 +194,7 @@ const NL: V3cLiveCopy = {
   ht: "Rust",
   htLong: "Rust",
   breakShort: "Pauze",
-  ft: "Einde",
+  ft: "90 min.", // fixui3: not «EINDE / Einde» twice
   aet: "n.v.",
   pens: (h, a) => `Pen. ${h}–${a}`,
   finished: "Afgelopen",
@@ -231,7 +231,7 @@ const PL: V3cLiveCopy = {
   ht: "Przerwa",
   htLong: "Przerwa",
   breakShort: "Pauza",
-  ft: "Koniec",
+  ft: "90 min", // fixui3: not «Kon. / Koniec»
   aet: "Po dogr.",
   pens: (h, a) => `Karne ${h}–${a}`,
   finished: "Zakończony",
@@ -267,7 +267,7 @@ const PT: V3cLiveCopy = {
   ht: "Int.",
   htLong: "Intervalo",
   breakShort: "Pausa",
-  ft: "Fim",
+  ft: "90 min", // fixui3: not «FIM / Fim» twice
   aet: "Prol.",
   pens: (h, a) => `Pen. ${h}–${a}`,
   finished: "Terminado",
@@ -310,7 +310,7 @@ const RU: V3cLiveCopy = {
   ht: "Пер.",
   htLong: "Перерыв",
   breakShort: "Пауза",
-  ft: "Конец",
+  ft: "90 мин", // fixui3: not «КОНЕЦ / Конец» twice
   aet: "Доп. вр.",
   pens: (h, a) => `Пен. ${h}–${a}`,
   finished: "Завершён",
@@ -346,7 +346,7 @@ const SV: V3cLiveCopy = {
   ht: "Paus",
   htLong: "Halvtid",
   breakShort: "Paus",
-  ft: "Slut",
+  ft: "90 min", // fixui3: not «SLUT / Slut» twice
   aet: "e. förl.",
   pens: (h, a) => `Straffar ${h}–${a}`,
   finished: "Avslutad",
