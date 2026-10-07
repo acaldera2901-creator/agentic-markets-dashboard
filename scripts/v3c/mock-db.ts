@@ -34,6 +34,8 @@ type Fb = {
   noMarket?: boolean;
   /** fixdata: minutes since the last prediction_log snapshot (a rescheduled twin stops being refreshed) */
   computedAgoMin?: number;
+  /** fixdata2: the partner books' prices when they differ from the stored `odds` (N3/N10) */
+  bookOdds?: [number, number, number];
 };
 
 const FOOTBALL: Fb[] = [
@@ -99,6 +101,19 @@ if (process.env.MOCK_FIXDATA === "1") {
   add({ id: "560593", competition: "Premier League", kickoff: q(5), home: "Arsenal FC", away: "Leeds United FC", odds: [1.36, 5.0, 8.0], model: [0.7, 0.18, 0.12], sealed: true, books: "both", history: false });
 }
 
+// fixdata2 (#REDESIGN-V3C fixdata2): MOCK_FIXDATA2=1 adds the QA-2 cases — FICTITIOUS numbers shaped on the real rows:
+// N3 a top-league match without a stored market but with partner books (Palace–Forest), one without any book
+// (Augsburg–Bayern); N10 a stored market far from the books (absurd stored prices).
+const MOCK_FIXDATA2 = process.env.MOCK_FIXDATA2 === "1";
+if (MOCK_FIXDATA2) {
+  const q = (inH: number) => Math.round((now + inH * H) / (15 * 60_000)) * 15 * 60_000;
+  FOOTBALL.push(
+    { id: "fx2-palace", league: "Premier League", competition: "Premier League", kickoff: q(4), home: "Crystal Palace FC", away: "Nottingham Forest FC", odds: [2.6, 3.25, 2.56], model: [0.1987, 0.2142, 0.5871], sealed: true, books: "both", history: false, noMarket: true },
+    { id: "fx2-augsburg", league: "Bundesliga", competition: "Bundesliga", kickoff: q(4.5), home: "FC Augsburg", away: "FC Bayern München", odds: [8, 6, 1.3], model: [0.1226, 0.1657, 0.7117], sealed: true, books: "none", history: false, noMarket: true },
+    { id: "fx2-absurd", league: "Ligue 1", competition: "Ligue 1", kickoff: q(5.5), home: "Stade Rennais FC 1901", away: "AJ Auxerre", odds: [1.3, 5.0, 9.0], bookOdds: [2.1, 3.4, 3.5], model: [0.5, 0.27, 0.23], sealed: true, books: "both", history: false },
+  );
+}
+
 const fbKey = (f: Fb) => teamPairKey("soccer", f.home, f.away, iso(f.kickoff))!;
 
 function boardSources() {
@@ -124,15 +139,17 @@ function latestPrices(): Pp[] {
   for (const f of FOOTBALL) {
     if (f.books === "none") continue;
     const k = fbKey(f);
-    const fp = f.odds.map((o, i) => r2(o * (i === 0 ? 1.03 : 1.01)));
-    const yb = f.books === "tie" ? fp : f.odds.map((o, i) => r2(o * (i === 2 ? 1.04 : 0.99)));
+    const base = f.bookOdds ?? f.odds;
+    const fp = base.map((o, i) => r2(o * (i === 0 ? 1.03 : 1.01)));
+    const yb = f.books === "tie" ? fp : base.map((o, i) => r2(o * (i === 2 ? 1.04 : 0.99)));
     out.push({ team_pair_key: k, bookmaker: "fortuneplay", home_name: f.home, away_name: f.away, odds_home: fp[0], odds_draw: fp[1], odds_away: fp[2], captured_at: iso(now - 38 * 60_000) });
     if (f.books !== "one") out.push({ team_pair_key: k, bookmaker: "ybets", home_name: f.home, away_name: f.away, odds_home: yb[0], odds_draw: yb[1], odds_away: yb[2], captured_at: iso(now - 41 * 60_000) });
   }
   for (const t of TENNIS) {
     if (!t.books) continue;
     const k = tnKey(t);
-    out.push({ team_pair_key: k, bookmaker: "fortuneplay", home_name: t.p1, away_name: t.p2, odds_home: r2(t.odds[0] * 1.02), odds_draw: null, odds_away: r2(t.odds[1] * 1.01), captured_at: iso(now - 35 * 60_000) });
+    const b = t.bookOdds ?? t.odds;
+    out.push({ team_pair_key: k, bookmaker: "fortuneplay", home_name: t.p1, away_name: t.p2, odds_home: r2(b[0] * 1.02), odds_draw: null, odds_away: r2(b[1] * 1.01), captured_at: iso(now - 35 * 60_000) });
   }
   return out;
 }
@@ -162,7 +179,9 @@ function history(): Pp[] {
 
 type Tn = { id: string; tournament: string | null; kickoff: number; p1: string; p2: string; odds: [number, number]; elo: [number, number]; mv: string; sealed: boolean; books: boolean;
   /** tennis2: minutes before now of the pre-start Elo snapshot (default 40); partner_tournament behind «Partner feed» */
-  eloAgeMin?: number; partnerTournament?: string };
+  eloAgeMin?: number; partnerTournament?: string;
+  /** fixdata2: no stored price (model_tempered), the sealed numbers, the pre-start snapshot price, the books' prices */
+  noOdds?: boolean; sealedP?: [number, number]; preOdds?: [number, number]; bookOdds?: [number, number] };
 const TENNIS: Tn[] = [
   ["ATP Shanghai", "Jannik Sinner", "Alexander Zverev", 3, [1.42, 2.9], [0.66, 0.34], "tennis-elo-v4", true, true],
   ["ATP Shanghai", "Carlos Alcaraz", "Holger Rune", 5, [1.3, 3.6], [0.72, 0.28], "tennis-elo-v4", true, true],
@@ -186,6 +205,19 @@ TENNIS.push(
   { id: "tennis:partner:doubles", tournament: "Partner feed", partnerTournament: "WTA Wuhan - Hard (Doubles)", kickoff: Math.round((now + 8 * H) / (15 * 60_000)) * 15 * 60_000, p1: "Sara Errani/Jasmine Paolini", p2: "Coco Gauff/Jessica Pegula", odds: [1.9, 1.9], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
   { id: "tennis:partner:padel", tournament: "Partner feed", partnerTournament: "Padel Tour Dusseldorf", kickoff: Math.round((now + 9 * H) / (15 * 60_000)) * 15 * 60_000, p1: "Federico Chingotto/Alejandro Galan", p2: "Javier Garrido/Juan Ignacio De Pascual", odds: [1.3, 3.4], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
 );
+// fixdata2: N9 Blinkova (sealed Elo 59% vs the twin's 83%, no price of its own), N2 Altmaier–Rune started with the
+// in-play price written on the Elo row (6.41/1.16, pre-start 2.73/1.51) and its partner twin, N10 Ann Li 45.71/1.02
+// stored against books at 3.35/1.24.
+if (MOCK_FIXDATA2) {
+  const q = (inH: number) => Math.round((now + inH * H) / (5 * 60_000)) * 5 * 60_000;
+  TENNIS.push(
+    { id: "tennis:espn:185246:anna-blinkova:caroline-werner", tournament: "WTA Ningbo", kickoff: q(10), p1: "Anna Blinkova", p2: "Caroline Werner", odds: [1.1, 5.4], elo: [0.5947, 0.4053], mv: "elo_surface_v4_features_odds", sealed: true, books: false, noOdds: true, sealedP: [0.59, 0.41], eloAgeMin: 30 },
+    { id: "tennis:partner:fx2-blinkova", tournament: "Partner feed", partnerTournament: "WTA Ningbo - Hard", kickoff: q(14), p1: "Caroline Werner", p2: "Anna Blinkova", odds: [5.4, 1.1], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
+    { id: "tennis:espn:184885:daniel-altmaier:holger-rune", tournament: "ATP Shanghai", kickoff: q(-0.7), p1: "Daniel Altmaier", p2: "Holger Rune", odds: [6.41, 1.16], elo: [0.2872, 0.7128], mv: "elo_surface_v4_features_odds", sealed: false, books: true, preOdds: [2.73, 1.51] },
+    { id: "tennis:partner:fx2-rune", tournament: "Partner feed", partnerTournament: "ATP Masters Shanghai - Hard", kickoff: q(-2.7), p1: "Holger Rune", p2: "Daniel Altmaier", odds: [1.32, 2.85], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
+    { id: "tennis:espn:184354:ann-li:elina-svitolina", tournament: "WTA China Open", kickoff: q(6), p1: "Ann Li", p2: "Elina Svitolina", odds: [45.71, 1.02], bookOdds: [3.35, 1.24], elo: [0.3, 0.7], mv: "elo_surface_v4_features_odds", sealed: false, books: true },
+  );
+}
 const tnKey = (t: Tn) => teamPairKey("tennis", t.p1, t.p2, iso(t.kickoff))!;
 
 // livescores (#V3C-LIVESCORES): MOCK_LIVE=1 adds two football matches (one in play, one just finished) and one
@@ -224,6 +256,7 @@ const goal = (min: string, teamId: string, extra: Record<string, boolean> = {}) 
 
 /** Fictitious ESPN scoreboards for the MOCK_LIVE rows only. */
 function espnMock(path: string): unknown {
+  if (MOCK_FIXDATA2 && !MOCK_LIVE && path.startsWith("/espn/tennis/atp/")) return { events: [runeBoard()] };
   if (!MOCK_LIVE) return { events: [] };
   if (path.startsWith("/espn/soccer/ita.1/")) {
     const f = FOOTBALL.find((x) => x.id === "oddsapi:live001")!;
@@ -251,6 +284,17 @@ function espnMock(path: string): unknown {
   return { events: [] };
 }
 
+/** fixdata2 N11: a fictitious ESPN scoreboard for Altmaier–Rune in play (INVENTED score). */
+function runeBoard() {
+  const t = TENNIS.find((x) => x.id.startsWith("tennis:espn:184885"))!;
+  return { id: "9902", name: "Rolex Shanghai Masters", groupings: [{ grouping: { displayName: "Men's Singles" }, competitions: [{ id: "184885", date: iso(t.kickoff),
+    status: { type: { name: "STATUS_IN_PROGRESS", state: "in", completed: false } },
+    competitors: [
+      { homeAway: "home", athlete: { displayName: "Daniel Altmaier" }, possession: false, linescores: [{ value: 3 }, { value: 1 }] },
+      { homeAway: "away", athlete: { displayName: "Holger Rune" }, possession: true, linescores: [{ value: 6 }, { value: 2 }] },
+    ] }] }] };
+}
+
 /** live2: a fictitious The Odds API /scores for the Ekstraklasa row (no minute: the source has none). */
 function oddsMock(path: string): unknown {
   if (!MOCK_LIVE || !path.startsWith("/odds/sports/soccer_poland_ekstraklasa/scores")) return [];
@@ -275,16 +319,18 @@ function tennisSources() {
     const mk = devig(t.odds);
     return {
       id: t.id, tournament: t.tournament, kickoff: iso(t.kickoff), player1: t.p1, player2: t.p2,
-      p1: mk[0], p2: mk[1], odds_p1: t.odds[0], odds_p2: t.odds[1], edge: null, model_version: t.mv,
+      p1: t.noOdds ? t.elo[0] : mk[0], p2: t.noOdds ? t.elo[1] : mk[1], odds_p1: t.noOdds ? null : t.odds[0], odds_p2: t.noOdds ? null : t.odds[1], edge: null, model_version: t.mv,
       computed_at: iso(now - 30 * 60_000), odds_bookmaker: "fortuneplay", surfaced_pick: mk[0] >= mk[1] ? t.p1 : t.p2,
       model_p1: t.mv === "partner-market-v1" ? null : t.elo[0], model_p2: t.mv === "partner-market-v1" ? null : t.elo[1],
       model_as_of: iso(now - 40 * 60_000),
-      sealed_at: t.sealed ? iso(t.kickoff - 20 * H) : null, sealed_p1: t.sealed ? mk[0] : null, sealed_p2: t.sealed ? mk[1] : null,
-      sealed_odds: t.sealed ? t.odds[0] : null, sealed_signal_type: null,
+      sealed_at: t.sealed ? iso(t.kickoff - 20 * H) : null, sealed_p1: t.sealed ? (t.sealedP?.[0] ?? mk[0]) : null, sealed_p2: t.sealed ? (t.sealedP?.[1] ?? mk[1]) : null,
+      sealed_odds: t.sealed && !t.noOdds ? t.odds[0] : null, sealed_signal_type: t.sealed ? "paper" : null,
       partner_tournament: t.partnerTournament ?? null,
       elo_p1: t.mv === "partner-market-v1" ? null : t.elo[0], elo_p2: t.mv === "partner-market-v1" ? null : t.elo[1],
       elo_as_of: t.mv === "partner-market-v1" ? null : iso(Math.min(now - (t.eloAgeMin ?? 40) * 60_000, t.kickoff - 30 * 60_000)),
       elo_home: t.mv === "partner-market-v1" ? null : t.p1,
+      pre_odds_p1: t.preOdds?.[0] ?? null,
+      pre_odds_p2: t.preOdds?.[1] ?? null,
     };
   });
 }
