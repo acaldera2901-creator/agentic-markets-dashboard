@@ -1,0 +1,34 @@
+/* components/v3c/pages/news.css — filone «news» del redesign v3c: le note
+   riscritte su /blog (= News) e «Most moved today». Stessa grammatica di
+   pages.css: filetti, numeri da tabellone, nessun colore nuovo (solo --v3c-*).
+   Scope: classi v3c-nw-*. Importato solo da app/v3c/blog/page.tsx. */
+
+.v3c-nw { margin-bottom: 36px; }
+.v3c-nw-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px 16px; margin-bottom: 12px; }
+.v3c-nw-head p { margin: 0; }
+.v3c-nw-card .v3c-pg-nw-t b { font-size: 24px; }
+.v3c-nw-card .v3c-pg-nw-h { font-size: 19px; }
+.v3c-nw-body { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.v3c-nw-card .v3c-nw-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; margin-top: 8px; }
+.v3c-nw-tag { font-size: 12px; line-height: 1.5; color: var(--v3c-ink-3); }
+.v3c-nw-tag em { font-style: normal; }
+.v3c-nw-card .v3c-nw-meta .v3c-pg-more { font-size: 13px; }
+.v3c-nw-card .v3c-nw-board { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-top: 6px; font-size: 13px; font-weight: 600; }
+.v3c-nw-board a { color: var(--v3c-ink); text-decoration: underline; text-decoration-color: var(--v3c-line-2); text-underline-offset: 3px; }
+.v3c-nw-board a:hover { text-decoration-color: currentColor; }
+.v3c-nw-takedown { margin-top: 12px; }
+.v3c-nw-guides { margin-top: 8px; }
+
+.v3c-nw-moved .v3c-fine { margin-bottom: 2px; }
+.v3c-nw-movers { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--v3c-line-2); }
+.v3c-nw-movers li { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--v3c-line); }
+.v3c-nw-movers li:last-child { border-bottom: 0; padding-bottom: 0; }
+.v3c-nw-mv-h { font-weight: 700; color: var(--v3c-ink); }
+.v3c-nw-mv-h:hover { text-decoration: underline; text-underline-offset: 3px; }
+.v3c-nw-movers .v3c-num { color: var(--v3c-ink); }
+.v3c-nw-mv-n b { color: var(--v3c-ink); font-weight: 600; }
+
+@media (max-width: 600px) {
+  .v3c-nw-card .v3c-pg-nw-t b { font-size: 18px; }
+  .v3c-nw-head .v3c-chips { width: 100%; }
+}

@@ -18,6 +18,7 @@ import type { V3cMode } from "@/lib/v3c/mode";
 import { MatchError, MatchSkeleton } from "./MatchStates";
 import { MatchView, type MoreRow } from "./MatchView";
 import { boardTapes } from "@/lib/v3c/tape-data.server";
+import { newsEnabled, newsForMatch, type NewsCard } from "@/lib/v3c/news/news.server";
 
 /** Le prossime partite di calcio (non questa), per «More on today’s board». */
 async function moreRows(board: V3BoardResponse, id: string, now: Date, n = 3): Promise<MoreRow[]> {
@@ -53,7 +54,14 @@ async function MatchBody({ id, fixture }: { id: string; fixture: Fixture | null 
   if (!b.ok) return <MatchError />;
   const found = findMatch(b.data, id);
   const more = await moreRows(b.data, id, now);
-  if (found?.sport === "football") return <MatchView kind="football" m={found.m} series={series} events={events} partners={partners} links={links} more={more} />;
+  // #REDESIGN-V3C news: notes naming either team (football only; NEWS_FOTMOB_ENABLED). On the
+  // chart they are a «news at hh:mm» mark labelled with the source; never a cause.
+  let news: NewsCard[] = [];
+  if (found?.sport === "football" && newsEnabled()) {
+    news = await newsForMatch(found.m.home, found.m.away);
+    events = [...events, ...news.map((n) => ({ t: n.t, label: n.source, url: n.url }))].sort((a, b) => a.t - b.t);
+  }
+  if (found?.sport === "football") return <MatchView kind="football" m={found.m} series={series} events={events} partners={partners} links={links} more={more} news={news} />;
   if (found?.sport === "tennis") return <MatchView kind="tennis" m={found.m} series={series} events={events} partners={partners} links={links} more={more} />;
   if (!fixture) return <MatchError />;
   return <MatchView kind="off" id={id} sport={isTennisId(id) ? "tennis" : "football"} home={fixture.home} away={fixture.away} kickoff={new Date(fixture.kickoff).toISOString()} series={series} events={events} more={more} />;
