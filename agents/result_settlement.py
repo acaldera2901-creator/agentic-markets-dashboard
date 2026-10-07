@@ -33,9 +33,14 @@ from core.odds_api_client import (
 )
 from core.redis_client import publish
 from core.supabase_client import (
+    fetch_sealed_football_pick,
     fetch_unsettled_unified_predictions,
     record_pick_settlement,
     settle_unified_prediction,
+)
+from core.ledger_sealed_grading import (
+    ledger_settlement_result,
+    sealed_grading_config,
 )
 from core.telegram_client import send as tg_send
 from config.settings import settings
@@ -277,6 +282,33 @@ class ResultSettlementAgent(BaseAgent):
                     outcome = _outcome(pick, result["home_goals"], result["away_goals"])
 
                 final_score = f"{result['home_goals']}-{result['away_goals']}"
+
+                # #LEDGER-SIGILLATA-1007 — con il flag acceso la chiusura nel
+                # registro si grada sulla pick SIGILLATA (per le partite del
+                # periodo). La lettura si fa PRIMA di chiudere la riga servita:
+                # se fallisce si salta il giro (si riprova al prossimo) invece
+                # di scrivere nel registro immutabile l'esito di un'altra pick.
+                # Flag spento: nessuna lettura, ledger_outcome == outcome.
+                ledger_outcome = outcome
+                sealed_cfg = sealed_grading_config()
+                ext_sealed = row.get("external_event_id")
+                if sealed_cfg.enabled and ext_sealed:
+                    ok, sealed = await fetch_sealed_football_pick(str(ext_sealed))
+                    if not ok:
+                        self.logger.warning(
+                            f"sealed pick unreadable for {ext_sealed}: settlement deferred"
+                        )
+                        continue
+                    if sealed:
+                        ledger_outcome = ledger_settlement_result(
+                            served_result=outcome,
+                            sealed_pick=sealed.get("pick"),
+                            commence_time=sealed.get("commence_time"),
+                            home_goals=result["home_goals"],
+                            away_goals=result["away_goals"],
+                            cfg=sealed_cfg,
+                        )
+
                 if await settle_unified_prediction(
                     str(row["id"]),
                     outcome,
@@ -317,7 +349,7 @@ class ResultSettlementAgent(BaseAgent):
                             source_table="match_predictions",
                             source_id=str(ext),
                             model_version="football-v4-xg-model",
-                            result=outcome,
+                            result=ledger_outcome,
                             outcome=realized,
                             final_score=final_score,
                         )

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import { dbQuery } from "@/lib/db";
+import { dbQuery, dbQueryStrict } from "@/lib/db";
 import { currentShowcaseDay } from "@/lib/access-projection";
 import { pickYesterdayReads, shiftUtcDay, type YesterdayCandidateRow } from "@/lib/yesterday-read";
-import { TRACK_RECORD_BASE_CONDITIONS } from "@/lib/track-record";
+import { TRACK_RECORD_BASE_CONDITIONS, isShownPick } from "@/lib/track-record";
+import {
+  applySealedGrading, sealedEntriesSql, sealedGradingConfig, sealedMapFrom, type SealedEntry,
+} from "@/lib/ledger-sealed-grading";
 
 // #HOOK-A-LITE-0928 — «La lettura di ieri, con l'esito», per la Home anonima.
 //
@@ -38,10 +41,14 @@ export async function GET() {
   // vengono da lib/track-record.ts. Qui solo la finestra e gli sport. La query
   // non pre-filtra su verification_state/result di proposito: la gemella che
   // vince il dedup va scelta fra TUTTE, come fa la route dello storico.
-  const rows = await dbQuery<YesterdayCandidateRow>(
+  // #LEDGER-SIGILLATA-1007 — stessa popolazione di /api/v2/history anche col
+  // flag acceso (lib/track-record-coherence.test.ts): flag spento = query di main.
+  const sealedCfg = sealedGradingConfig();
+  const sealedCols = sealedCfg.enabled ? ", source_table, source_id" : "";
+  let rows = await dbQuery<YesterdayCandidateRow & { source_table?: string | null; source_id?: string | null }>(
     `SELECT id, sport, competition, league, home_team, away_team, market, pick,
             confidence_score, fair_odds, odds, edge_percent, explanation,
-            result, starts_at, settled_at, notes, verification_state, published_at
+            result, starts_at, settled_at, notes, verification_state, published_at${sealedCols}
      FROM unified_predictions
      WHERE ${TRACK_RECORD_BASE_CONDITIONS.join(" AND ")}
        AND sport IN ('football', 'tennis')
@@ -50,6 +57,18 @@ export async function GET() {
      LIMIT $3`,
     [since, until, MAX_ROWS],
   );
+
+  if (sealedCfg.enabled && sealedCfg.from) {
+    let entries: SealedEntry[] = [];
+    try {
+      entries = await dbQueryStrict<SealedEntry>(sealedEntriesSql(sealedCfg.from));
+    } catch (e) {
+      // Registro illeggibile: le righe del periodo escono (pick null), non
+      // ricadono sulla servita — come in /api/v2/history.
+      console.error("[yesterday-read] sealed ledger read failed:", String(e));
+    }
+    rows = applySealedGrading(rows, sealedMapFrom(entries), sealedCfg, isShownPick).rows;
+  }
 
   const reads = pickYesterdayReads(rows, { today, maxLookbackDays: LOOKBACK_DAYS });
 

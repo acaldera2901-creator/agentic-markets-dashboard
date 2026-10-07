@@ -8,6 +8,7 @@ import {
 import { resultSourceFor } from "@/lib/result-sources";
 import { isWorldCupSignalReady } from "@/lib/world-cup-readiness";
 import { footballSurfaceDecision, surfaceFloorFor } from "@/lib/surfacing-gate";
+import { sealedGradingConfig, shouldSealFootballPick } from "@/lib/ledger-sealed-grading";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -303,6 +304,8 @@ export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
 
   const wcSignalReady = await isWorldCupSignalReady();
   const report = emptySyncReport();
+  // #LEDGER-SIGILLATA-1007 — spento di default: sigilla come main.
+  const sealedCfg = sealedGradingConfig();
 
   for (const row of rows) {
     const d = matchPredictionToUnifiedInsert(row);
@@ -398,7 +401,11 @@ export async function syncMatchPredictionsToUnified(): Promise<SyncReport> {
     // kickoff, so a re-sync of a row whose match already started is dropped by
     // Postgres — that is the integrity guarantee, not an error. Fully fail-soft:
     // a ledger failure must NEVER block serving unified_predictions.
-    try {
+    // #LEDGER-SIGILLATA-1007 — con LEDGER_SEALED_GRADING acceso si sigilla solo
+    // una pick VERA: sigillare la NULL del primo sync (prima delle quote, o
+    // sotto floor) la congelava per sempre, e la pick pubblicata dopo non
+    // entrava mai nel registro (1.350 su 1.976 il 29/09). Flag spento: main.
+    if (shouldSealFootballPick(d.pick, sealedCfg)) try {
       await dbQuery(
         `INSERT INTO pick_ledger (
           source_table, source_id, model_version, sport, league, competition,

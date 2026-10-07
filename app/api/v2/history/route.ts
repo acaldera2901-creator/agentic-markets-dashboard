@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
-import { dbQuery } from "@/lib/db";
+import { dbQuery, dbQueryStrict } from "@/lib/db";
 import {
   edgeTally, outcomeTally, EDGE_MIN_CONFIDENCE,
   FOOTBALL_FLOOR_CUTOVER_AT, trackRecordPopulation, TRACK_RECORD_BASE_CONDITIONS,
-  trackRecordBySource,
+  trackRecordBySource, isShownPick,
 } from "@/lib/track-record";
 import { UnifiedPrediction } from "@/lib/unified-adapter";
 import { resolveAccessState } from "@/lib/auth";
 import { projectPrediction } from "@/lib/access-projection";
 import { bySegment } from "@/lib/track-record-history";
 import { wilson95, formatWilson } from "@/lib/wilson"; // #SETTLE-0909
+import {
+  applySealedGrading, sealedEntriesSql, sealedGradingConfig, sealedMapFrom,
+  type SealedEntry, type SealedGradingStats,
+} from "@/lib/ledger-sealed-grading";
 
 // #TRACKREC-REAL-0626 + #WC-FLOOR-0707 → #COERENZA-1001: «mostrata come pick»,
 // il dedup e il floor post-cutover vivono in lib/track-record.ts
@@ -25,7 +29,11 @@ type HistoryRow = Pick<
   | "result" | "signal_type" | "is_paper" | "is_verified" | "is_demo"
   | "starts_at" | "settled_at" | "notes" | "world_cup_stage" | "group_name"
   | "confidence_score"
-> & { verification_state?: string | null; published_at?: string | null; model_version?: string | null };
+> & {
+  verification_state?: string | null; published_at?: string | null; model_version?: string | null;
+  // #LEDGER-SIGILLATA-1007 — letti solo con il flag acceso.
+  source_table?: string | null; source_id?: string | null;
+};
 
 export async function GET(req: Request) {
   const { state } = await resolveAccessState(req); // never denies (read)
@@ -96,12 +104,16 @@ export async function GET(req: Request) {
   // aggregates into SQL COUNTs) if real settled signals ever approach it.
   // #COERENZA-1001: con le righe senza esito la popolazione e' ~7.000 (01/10).
   const STATS_CAP = 15000;
-  const fetched = await dbQuery<HistoryRow>(
+  // #LEDGER-SIGILLATA-1007 — flag spento: la query e' quella di main, carattere
+  // per carattere. Acceso: servono la chiave del registro (source_table/id).
+  const sealedCfg = sealedGradingConfig();
+  const sealedCols = sealedCfg.enabled ? ", source_table, source_id" : "";
+  let fetched = await dbQuery<HistoryRow>(
     `SELECT id, sport, competition, event_name, home_team, away_team,
             player_one, player_two, market, pick, status,
             result, signal_type, is_paper, is_verified, is_demo,
             starts_at, settled_at, notes, world_cup_stage, group_name,
-            confidence_score, verification_state, published_at, model_version
+            confidence_score, verification_state, published_at, model_version${sealedCols}
      FROM unified_predictions
      WHERE ${conditions.join(" AND ")}
      -- #HISTORY-ORDINE-0911 — si ordina per QUANDO SI E' GIOCATA la partita,
@@ -146,6 +158,28 @@ export async function GET(req: Request) {
   // board (lib/dedupe-fixtures.ts): nessun dato toccato, e due MERCATI diversi
   // sulla stessa partita restano due righe (il mercato entra nella chiave).
   // #COERENZA-1001 — vince la gemella pubblicata PER PRIMA (dedupeShownPicks).
+  // #LEDGER-SIGILLATA-1007 — (c) dal LEDGER_SEALED_FROM in poi il calcio
+  // conta la pick SIGILLATA prima del calcio d'inizio, gradata sul risultato
+  // reale: e' cio' che il registro immutabile prova, non cio' che la riga
+  // servita portava al settlement. Prima della data nulla cambia. Se il
+  // registro non si legge, le righe del periodo NON ricadono sulla servita
+  // (sarebbe mescolare due metodi in silenzio): escono dal numero e la
+  // risposta lo dichiara in `sealed_grading.unavailable`.
+  let sealedStats: (SealedGradingStats & { unavailable?: boolean }) | null = null;
+  if (sealedCfg.enabled && sealedCfg.from) {
+    let entries: SealedEntry[] = [];
+    let unavailable = false;
+    try {
+      entries = await dbQueryStrict<SealedEntry>(sealedEntriesSql(sealedCfg.from));
+    } catch (e) {
+      console.error("[history] sealed ledger read failed:", String(e));
+      unavailable = true;
+    }
+    const applied = applySealedGrading(fetched, sealedMapFrom(entries), sealedCfg, isShownPick);
+    fetched = applied.rows;
+    sealedStats = applied.stats ? { ...applied.stats, ...(unavailable ? { unavailable } : {}) } : null;
+  }
+
   const {
     surfaced, rows, headlineRows, excludedByFloor,
     dedupDropped, dedupDroppedDecided, unresolvedExcluded, unverifiedExcluded,
@@ -295,6 +329,7 @@ export async function GET(req: Request) {
         // confronto non e' verificabile da chi legge la risposta.
         rest_n: decisi - edge.n,
       },
+      ...(sealedStats ? { sealed_grading: sealedStats } : {}),
       insufficient_sample_reason: sufficiente
         ? null
         : `campione insufficiente: ${decisi} esiti verificati su un minimo di ${MIN_SAMPLE}`,

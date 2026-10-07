@@ -76,6 +76,9 @@ const ALLOWLIST = new Set<string>([
   // (lib/track-record.ts::TRACK_RECORD_BASE_CONDITIONS), nessun dato utente:
   // la finestra di date viaggia nei params ($1, $2).
   'app/api/v2/yesterday-read/route.ts::TRACK_RECORD_BASE_CONDITIONS.join(" AND ")',
+  // #LEDGER-SIGILLATA-1007 — costante: "" (flag spento) o ", source_table, source_id".
+  "app/api/v2/history/route.ts::sealedCols",
+  "app/api/v2/yesterday-read/route.ts::sealedCols",
 ]);
 
 function walk(dir: string, acc: string[]): void {
