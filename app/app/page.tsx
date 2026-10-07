@@ -30,7 +30,7 @@ import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful, headlineFigure, type SourceBlock } from "@/lib/track-record";
-import { sourceBreakdownLine } from "@/lib/track-record-copy"; // #SPLIT-0201
+import { sourceBreakdownLine, sealedCohortFrom, sealedPopulationNote } from "@/lib/track-record-copy"; // #SPLIT-0201 #COPY-LEDGER-1007
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
@@ -1730,6 +1730,8 @@ interface V2HistoryStats {
   insufficient_sample_reason?: string | null;
   // #SPLIT-0201 — la stessa popolazione per fonte (modello / quote del partner).
   by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
+  // #COPY-LEDGER-1007 — presente solo con LEDGER_SEALED_GRADING acceso e data valida.
+  sealed_grading?: { from?: string | null } | null;
 }
 
 // #021: live tennis match from /api/tennis-live (real ESPN scores, curated
@@ -2215,7 +2217,7 @@ function isTennisBestBet(m: TennisMatch) {
 // per sport, tutte le altre come schede mascherate), quindi il pannello non
 // "rappresenta" più il resto del catalogo: lo affianca. Va in DUE punti — una
 // copia in griglia dopo la terza scheda (`inGrid`) e una a chiusura board.
-type PaywallHitRate = { rate: string; n: number; breakdown: ReturnType<typeof headlineFigure>["breakdown"] };
+type PaywallHitRate = { rate: string; n: number; breakdown: ReturnType<typeof headlineFigure>["breakdown"]; sealedFrom?: string | null };
 
 function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
   count: number;
@@ -2259,6 +2261,10 @@ function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
           <strong>{hitRate.rate}</strong> {pick5(lang, { it: "hit rate · tutte le pick concluse", en: "hit rate · all settled picks", es: "hit rate · todas las picks cerradas", fr: "hit rate · tous les picks réglés", ru: "hit rate · все закрытые пики" })} · {hitRate.n}
           {hitRate.breakdown && (
             <span className="fp-note">{sourceBreakdownLine(lang, hitRate.breakdown)}</span>
+          )}
+          {/* #COPY-LEDGER-1007 — il cambio di popolazione, solo a flag acceso. */}
+          {hitRate.sealedFrom && (
+            <span className="fp-note">{sealedPopulationNote(lang, hitRate.sealedFrom)}</span>
           )}
         </p>
       )}
@@ -10714,6 +10720,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // #HITRATE-GUARD-1: niente percentuale promozionale sotto la soglia di
   // campione (isRateMeaningful(v2Head.n) dove si mostra).
   const v2Head = headlineFigure(historyV2Stats);
+  // #COPY-LEDGER-1007 — la nota sul cambio di popolazione: null a flag spento.
+  const v2SealedNote = sealedPopulationNote(uiLanguage, historyV2Stats);
   const tNav = TRANSLATIONS[uiLanguage];
   const lockedGateMode: "auth" | "plan" = hasClientProfile ? "plan" : "auth";
   const handleProtectedUnlock = () => {
@@ -11226,6 +11234,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   {v2Head.breakdown && (
                     <span className="note">{sourceBreakdownLine(uiLanguage, v2Head.breakdown)}</span>
                   )}
+                  {v2SealedNote && <span className="note">{v2SealedNote}</span>}
                 </div>
               )}
             </div>
@@ -11287,7 +11296,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
-                ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown } : null}
+                ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown, sealedFrom: sealedCohortFrom(historyV2Stats) } : null}
               view={deskView}
               query={lobbyQuery}
               watchSaved={watchlist.saved}
