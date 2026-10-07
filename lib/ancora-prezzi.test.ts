@@ -46,10 +46,10 @@ beforeEach(() => {
 });
 
 /** dbQuery serve sia per la SELECT delle partite sia per gli INSERT. */
-function conPartite(partite: unknown[], tabella: string | null = "anchor_price_history") {
+function conPartite(partite: unknown[], presente: boolean | "vuoto" = true) {
   let primo = true;
   dbFinto.mockImplementation(async (sql: string) => {
-    if (sql.includes("to_regclass")) return [{ t: tabella }];
+    if (sql.includes("to_regclass")) return presente === "vuoto" ? [] : [{ presente }];
     if (primo) { primo = false; return partite; }
     return [];
   });
@@ -76,13 +76,30 @@ describe("disciplina di costo", () => {
   });
 
   it("#ANCORA-GUARDIA-0930: tabella assente ⇒ nessuna chiamata Odds API", async () => {
-    conPartite([partita()], null);
+    conPartite([partita()], false);
     quoteFinte.mockResolvedValue([quota()]);
     const esito = await registraPrezzoAncora(ADESSO);
     expect(quoteFinte).not.toHaveBeenCalled();
     expect(esito.chiamateOddsApi).toBe(0);
     expect(esito.tabellaAssente).toBe(true);
     expect(esito.partiteImminenti).toBe(1);
+  });
+
+  it("#ANCORA-ALIAS-1007: guardia illeggibile ([] da exec_sql) NON vale come tabella assente", async () => {
+    conPartite([partita()], "vuoto");
+    quoteFinte.mockResolvedValue([quota()]);
+    const esito = await registraPrezzoAncora(ADESSO);
+    expect(esito.tabellaAssente).toBeUndefined();
+    expect(quoteFinte).toHaveBeenCalledTimes(1);
+  });
+
+  it("#ANCORA-ALIAS-1007: la guardia non aliasa la colonna come `t` (exec_sql la restituisce vuota)", async () => {
+    conPartite([partita()]);
+    quoteFinte.mockResolvedValue([]);
+    await registraPrezzoAncora(ADESSO);
+    const guardia = dbFinto.mock.calls.map((c) => String(c[0])).find((q) => q.includes("to_regclass"));
+    expect(guardia).toBeDefined();
+    expect(guardia).not.toMatch(/\bAS\s+t\b/i);
   });
 
   it("una lega senza chiave Odds API non viene interrogata", async () => {
