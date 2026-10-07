@@ -17,6 +17,7 @@ import { createHash } from "node:crypto";
 import type { Outcome, Triple, V3Correction, V3CorrectionCause, V3CorrectionsSummary, V3Receipt } from "./contracts";
 import { edgePp, parseOutcome, topOutcome } from "./prob";
 import type { PartnerPriceRow } from "./board";
+import { recordGapShown } from "./fixdata2";
 import { isOurModel, ledgerTennisKind, pickedMarketAtSeal, sealedTennisKey, type SealedTennisRow } from "./tennis";
 
 export const RECEIPTS_PAGE = 30;
@@ -127,6 +128,7 @@ export function tennisReceipt(r: TennisReceiptRow, history: PartnerPriceRow[] = 
   const kind = ledgerTennisKind(r);
   const ours = isOurModel(kind);
   const marketP = ours ? pickedMarketAtSeal(r, history) : null;
+  const gap = edgePp(r.p, marketP);
   const verdict: V3Receipt["verdict"] =
     r.result === "won" ? "in_favour" : r.result === "lost" ? "against" : r.result === "unresolved" ? "unresolved" : "void";
   return {
@@ -143,8 +145,9 @@ export function tennisReceipt(r: TennisReceiptRow, history: PartnerPriceRow[] = 
     price: r.odds,
     estimate_p: r.p,
     market_p: marketP,
-    gap_pp: edgePp(r.p, marketP),
-    gap_null_reason: !ours ? "is_market" : marketP == null ? "no_market_at_seal" : null,
+    // fixdata2 N9: a sealed Elo more than 25 pp from the book before the seal is not printed as a gap
+    gap_pp: recordGapShown(gap) ? gap : null,
+    gap_null_reason: !ours ? "is_market" : marketP == null ? "no_market_at_seal" : recordGapShown(gap) ? null : "model_far",
     is_paper: false,
     verdict,
     final_score: r.final_score,

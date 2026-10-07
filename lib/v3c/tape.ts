@@ -4,6 +4,7 @@
 // stessa linea principale = il book con più catture), e la stima come prezzo
 // equo da quando è stata calcolata. Puro e testato: niente interpolazione,
 // niente punto d'apertura inventato; meno di due catture = nessun tape.
+import { estimateShown } from "./fixdata2";
 import type { V3BoardMatch, V3BoardTennisMatch } from "./contracts";
 import type { PartnerPriceRow } from "./board";
 import { partnerSeries } from "./line-movement";
@@ -55,7 +56,8 @@ export function buildTape(line: { points: readonly { t: number; v: number }[] } 
 export function footballTape(m: V3BoardMatch, rows: PartnerPriceRow[]): RowTape | null {
   const lead = leadOutcome(m);
   const lines = tapeLines(partnerSeries(m, rows), lead.outcome as TapeKey);
-  return buildTape(lines[0], m.blend ? lead.estimate_p : null, Date.parse(m.estimate_as_of));
+  // fixdata2 N3: no fair-price line where the estimate is not shown (no market, or far from the best price)
+  return buildTape(lines[0], m.blend && estimateShown(m) ? lead.estimate_p : null, Date.parse(m.estimate_as_of));
 }
 
 /** Tape della riga di tennis: lato in evidenza (favorito del mercato). ui3: nel tennis non diamo la stima, quindi nessuna linea della stima. */

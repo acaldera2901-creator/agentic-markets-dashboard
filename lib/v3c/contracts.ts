@@ -97,6 +97,13 @@ export type V3BoardMatch = {
    * market_only (> 25 pp): estimate_p = market_p and edge_pp = 0 («Market only»). model_p keeps the raw model.
    */
   model_guard?: ModelGuard;
+  /**
+   * fixdata2 (N3/N10): where market_p comes from — «stored» = the composite price stored with the estimate;
+   * «books» = the partner books' real prices, de-vigged per book and averaged (no stored market, an impossible
+   * one, or one > 15 pp from the books); then market_price is the best real price. null = no market at all
+   * (model_guard.level «no_market»: no estimate, no fair price, no EV/Kelly).
+   */
+  market_from?: "stored" | "books" | null;
 };
 
 // ─── tennis (shared by board, record, calibration) ──────────────────────────
@@ -197,6 +204,13 @@ export type V3BoardTennisMatch = {
   gap_visible?: boolean;
   /** fixdata: see V3BoardMatch.relevance */
   relevance?: number;
+  /** fixdata2 (N10): see V3BoardMatch.market_from; «pre_start» = the last price stored before the start (N2) */
+  market_from?: "stored" | "twin" | "books" | "pre_start" | null;
+  /**
+   * fixdata2 (N9): the sealed Elo of our model against the market it is read next to (market at seal, else the
+   * row's market). no_value (> 15 pp): no gap; market_only (> 25 pp) and no_market: the sealed number is not shown.
+   */
+  sealed_guard?: ModelGuard;
 };
 
 export type V3BoardResponse = {
@@ -207,6 +221,11 @@ export type V3BoardResponse = {
   tennis: V3BoardTennisMatch[];
   /** every partner once (name, logo, affiliate link) for the per-fixture `books` (F7). Optional for older fixtures. */
   partners?: V3PartnerDirEntry[];
+  /**
+   * fixdata2 (N2): dropped id → kept id of every match listed twice (football rescheduled, tennis partner + Elo,
+   * tennis partner re-listed). A page or card asked for a dropped id shows the kept row: one source per match.
+   */
+  aliases?: Record<string, string>;
   coverage: {
     matches: number;
     with_market: number;
@@ -545,7 +564,8 @@ export type V3Receipt = {
   market_p: number | null;
   /** estimate − market in signed pp; null with `gap_null_reason` */
   gap_pp: number | null;
-  gap_null_reason: "no_market_at_seal" | "is_market" | null;
+  /** fixdata2 (N9): model_far = a sealed tennis gap wider than 25 pp, not printed as a gap */
+  gap_null_reason: "no_market_at_seal" | "is_market" | "model_far" | null;
   /** football: true when there was no real market at seal (paper row) */
   is_paper: boolean;
   /** "in_favour" = `read` happened; "against" = it did not; "void"/"unresolved" = no scored outcome */

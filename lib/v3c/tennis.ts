@@ -32,6 +32,8 @@ import {
 } from "./contracts";
 import { seriesCoverage } from "./line-movement";
 import { tennisEstimate } from "./tennis-estimate";
+import { GUARD_NO_VALUE_PP, hasStarted } from "./fixdata";
+import { bookImpliedMarket, sealedTennisGuard, storedMarketTrusted } from "./fixdata2";
 import { market2way, roundP } from "./prob";
 import { mean, pairedDifference } from "./scoring";
 
@@ -183,7 +185,24 @@ export type TennisBoardSourceRow = {
    * price of its own — shown as the market, never used to say what the served probability IS.
    */
   borrowed_market?: { odds_p1: number; odds_p2: number; bookmaker: string | null; as_of: string };
+  /**
+   * fixdata2 N2: the prices of that same pre-start prediction_log snapshot (elo_as_of, oriented with elo_home).
+   * After the start the Elo agent rewrites tennis_predictions.odds_* with in-play prices (Altmaier–Rune 07/10:
+   * 6.41/1.16 at 14:34, back to 2.20/1.77 at 15:00): a started Elo row reads its market from here.
+   */
+  pre_odds_p1?: number | null;
+  pre_odds_p2?: number | null;
 };
+
+/** fixdata2 N2: the pre-start snapshot prices oriented to player1/player2 (null when the snapshot is another pairing). */
+export function preStartOdds(r: Pick<TennisBoardSourceRow, "player1" | "player2" | "elo_home" | "pre_odds_p1" | "pre_odds_p2">): { p1: number; p2: number } | null {
+  if (r.pre_odds_p1 == null || r.pre_odds_p2 == null) return null;
+  if (!r.elo_home) return { p1: r.pre_odds_p1, p2: r.pre_odds_p2 };
+  const h = canonicalPlayerKey(r.elo_home);
+  if (h === canonicalPlayerKey(r.player1)) return { p1: r.pre_odds_p1, p2: r.pre_odds_p2 };
+  if (h === canonicalPlayerKey(r.player2)) return { p1: r.pre_odds_p2, p2: r.pre_odds_p1 };
+  return null;
+}
 
 /**
  * @param partner     current feed-book prices (live feed / last capture) → book_prices
@@ -196,12 +215,27 @@ export function buildTennisBoardMatch(
   history: PartnerPriceRow[] = [],
 ): V3BoardTennisMatch {
   const kind = servedTennisKind(src);
-  const own = market2way(src.odds_p1, src.odds_p2);
-  const lent = own ? null : src.borrowed_market ?? null;
-  const market = own ?? (lent ? market2way(lent.odds_p1, lent.odds_p2) : null);
-  const odds1 = own ? src.odds_p1 : (lent?.odds_p1 ?? null);
-  const odds2 = own ? src.odds_p2 : (lent?.odds_p2 ?? null);
-  const prices = bookPricesFor({ home: src.player1, away: src.player2 }, partner, now, tennisNorm);
+  // fixdata B1 (now in the API too): once play has started a pre-match book price is not a price
+  const started = hasStarted(src.kickoff, now);
+  const prices = started ? { home: [], draw: [], away: [] } : bookPricesFor({ home: src.player1, away: src.player2 }, partner, now, tennisNorm);
+  const books = bookImpliedMarket([prices.home, prices.away]);
+  // fixdata2 N2: a started Elo row reads the last pre-start price (tennis_predictions gets in-play prices)
+  const pre = started && src.model_version !== PARTNER_MARKET_MODEL ? preStartOdds(src) : null;
+  const ownPair: [number | null, number | null] = started && src.model_version !== PARTNER_MARKET_MODEL ? [pre?.p1 ?? null, pre?.p2 ?? null] : [src.odds_p1, src.odds_p2];
+  const lentPair: [number | null, number | null] = [src.borrowed_market?.odds_p1 ?? null, src.borrowed_market?.odds_p2 ?? null];
+  // fixdata2 N10: a pair is the market only when it is possible and agrees with the books (≤ 15 pp)
+  const usable = (pair: [number | null, number | null]) => {
+    const m = market2way(pair[0], pair[1]);
+    return m && storedMarketTrusted(pair, [m.p1, m.p2], books) ? m : null;
+  };
+  const ownM = usable(ownPair);
+  const lentM = ownM ? null : usable(lentPair);
+  const lent = lentM ? (src.borrowed_market ?? null) : null;
+  const fromBooks = !ownM && !lentM && books != null;
+  const market = ownM ?? lentM ?? (books ? { p1: books.p[0], p2: books.p[1], margin: books.margin } : null);
+  const odds1 = ownM ? ownPair[0] : lentM ? lentPair[0] : (prices.home[0]?.price ?? null);
+  const odds2 = ownM ? ownPair[1] : lentM ? lentPair[1] : (prices.away[0]?.price ?? null);
+  const marketFrom: V3BoardTennisMatch["market_from"] = ownM ? (pre ? "pre_start" : "stored") : lentM ? "twin" : fromBooks ? "books" : null;
   const hasModel = src.model_p1 != null && src.model_p2 != null;
   // Served probability, exactly as lib/tennis-adapter computes it (same function).
   const est = (p: number) => probabilitaMostrata(p, src.edge != null);
@@ -214,10 +248,18 @@ export function buildTennisBoardMatch(
   const atSeal = sealed && isOurModel(sealedKind) ? marketAtSeal(src, src.sealed_at as string, history) : null;
   const reason = tennisGapReason({ kind: sealedKind, sealed, hasRawModel: hasModel, market: atSeal });
 
+  // fixdata2 N9: the sealed Elo of our model under the 15 / 25 pp guard, against the market at seal (else the row's)
+  const leadSide: TennisSide = (src.sealed_p1 ?? 0) >= (src.sealed_p2 ?? 0) ? "p1" : "p2";
+  const sealedGuard =
+    sealed && isOurModel(sealedKind)
+      ? sealedTennisGuard(leadSide === "p1" ? src.sealed_p1 : src.sealed_p2, reason == null && atSeal ? atSeal[leadSide] : null, market ? market[leadSide] : null)
+      : undefined;
+  const gapOk = !sealedGuard || sealedGuard.level === "ok";
   const side = (s: TennisSide): V3BoardTennisSide => {
     const books = s === "p1" ? prices.home : prices.away;
     const sp = s === "p1" ? src.sealed_p1 : src.sealed_p2;
     const mAt = reason == null && atSeal ? atSeal[s] : null;
+    const gap = gapOk && mAt != null && sp != null ? Math.round((sp - mAt) * 10_000) / 100 : null;
     return {
       side: s,
       player: s === "p1" ? src.player1 : src.player2,
@@ -227,7 +269,7 @@ export function buildTennisBoardMatch(
       estimate_p: roundP(estimate[s]),
       sealed_p: sp,
       market_p_at_seal: mAt == null ? null : roundP(mAt),
-      gap_pp: mAt != null && sp != null ? Math.round((sp - mAt) * 10_000) / 100 : null,
+      gap_pp: gap,
       book_prices: books,
       best_price: books[0] ?? null,
     };
@@ -249,16 +291,26 @@ export function buildTennisBoardMatch(
     is_our_model: isOurModel(kind),
     temperature: src.edge != null ? null : TENNIS_ANCHORED_TAU,
     margin_removed: market ? roundP(market.margin) : null,
-    market_source: market ? (lent ? { bookmaker: lent.bookmaker, as_of: new Date(lent.as_of).toISOString() } : { bookmaker: src.odds_bookmaker, as_of: new Date(src.computed_at).toISOString() }) : null,
+    market_source: market
+      ? lent
+        ? { bookmaker: lent.bookmaker, as_of: new Date(lent.as_of).toISOString() }
+        : fromBooks
+          ? { bookmaker: books?.books.join(",") ?? null, as_of: new Date(Math.max(...[...prices.home, ...prices.away].map((b) => Date.parse(b.captured_at)).filter(Number.isFinite))).toISOString() }
+          : pre && src.elo_as_of
+            ? { bookmaker: src.odds_bookmaker, as_of: new Date(src.elo_as_of).toISOString() }
+            : { bookmaker: src.odds_bookmaker, as_of: new Date(src.computed_at).toISOString() }
+      : null,
     model_as_of: src.model_as_of ? new Date(src.model_as_of).toISOString() : null,
     estimate_as_of: new Date(src.computed_at).toISOString(),
     sealed_at: src.sealed_at ? new Date(src.sealed_at).toISOString() : null,
     focus: estimate.p1 >= estimate.p2 ? "p1" : "p2",
     surfaced_pick: pick === src.player1 ? "p1" : pick === src.player2 ? "p2" : null,
-    gap_market: reason == null && atSeal ? { bookmaker: atSeal.bookmaker, captured_at: atSeal.captured_at } : null,
-    gap_null_reason: reason,
+    gap_market: reason == null && atSeal && gapOk ? { bookmaker: atSeal.bookmaker, captured_at: atSeal.captured_at } : null,
+    gap_null_reason: reason ?? (gapOk ? null : `the sealed Elo is ${sealedGuard?.delta_pp} pp from the market: more than ${GUARD_NO_VALUE_PP} pp, no gap is shown`),
     sides: [side("p1"), side("p2")],
     ...te,
+    market_from: marketFrom,
+    ...(sealedGuard ? { sealed_guard: sealedGuard } : {}),
   };
 }
 

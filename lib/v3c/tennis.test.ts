@@ -173,9 +173,10 @@ describe("tennis board", () => {
   });
 
   it("Elo row without a price: tempered Elo; gap vs the feed price captured before the seal", () => {
+    // fixdata2 N9: sealed 0.52 vs market at seal 0.42 = 9.9 pp, inside the guard (the 0.69 of before is 26.9 pp: guarded, see fixdata2.test.ts)
     const row = src({
       id: "tennis:espn:9:a:b", model_version: ELO, p1: 0.79, p2: 0.21, odds_p1: null, odds_p2: null,
-      model_p1: 0.79, model_p2: 0.21, sealed_p1: 0.69, sealed_p2: 0.31, sealed_odds: null, sealed_at: "2026-10-05T10:01:00Z",
+      model_p1: 0.79, model_p2: 0.21, sealed_p1: 0.52, sealed_p2: 0.48, sealed_odds: null, sealed_at: "2026-10-05T10:01:00Z",
     });
     const before = { ...reversed, captured_at: "2026-10-05T09:01:00Z" }; // Bea 1.6, Anna 2.2
     const m = buildTennisBoardMatch(row, [], NOW, [before, { ...reversed, captured_at: "2026-10-05T11:00:00Z", odds_away: 9 }]);
@@ -188,8 +189,8 @@ describe("tennis board", () => {
     expect(m.gap_null_reason).toBeNull();
     expect(m.gap_market).toEqual({ bookmaker: BOOK, captured_at: "2026-10-05T09:01:00.000Z" });
     expect(m.sides[0].market_p_at_seal).toBe(Math.round(mp1 * 10_000) / 10_000);
-    expect(m.sides[0].gap_pp).toBe(Math.round((0.69 - mp1) * 10_000) / 100);
-    expect(m.sides[1].gap_pp).toBe(Math.round((0.31 - (1 - mp1)) * 10_000) / 100);
+    expect(m.sides[0].gap_pp).toBe(Math.round((0.52 - mp1) * 10_000) / 100);
+    expect(m.sides[1].gap_pp).toBe(Math.round((0.48 - (1 - mp1)) * 10_000) / 100);
     // no history → no gap, with the reason
     const n = buildTennisBoardMatch(row, [], NOW);
     expect(n.sides[0].gap_pp).toBeNull();
