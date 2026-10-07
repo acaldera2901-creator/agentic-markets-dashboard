@@ -28,7 +28,6 @@ ALTER ROLE growth_ro SET statement_timeout = '60s';
 GRANT USAGE ON SCHEMA public TO growth_ro;
 GRANT SELECT ON TABLE
   public.events,
-  public.profiles,
   public.paygate_orders,
   public.paypal_orders,
   public.shopify_events,
@@ -38,3 +37,18 @@ GRANT SELECT ON TABLE
   public.error_patterns_log,
   public.prediction_log
 TO growth_ro;
+
+-- profiles: column-level SELECT only (applied 2026-10-07, approved by Andrea
+-- after the QA audit found the role could read password_hash / reset_token_hash).
+-- Columns = every profiles column referenced by core/sql.ts and scripts/verify.ts
+-- on feat/growth-v6, plus id (v7: exclude internal accounts by id list).
+-- Never add: identifier (login/e-mail), name, password_hash, reset_token_*,
+-- activation_token_*, stripe_*, tx_hash, referral_code, sessions_valid_from.
+-- count(*) works with column privileges (SELECT on at least one column).
+-- Idempotent and convergent: a table-level REVOKE also drops every column
+-- grant (and the table-level grant of older versions of this script), then
+-- the GRANT re-adds exactly this list.
+REVOKE SELECT ON TABLE public.profiles FROM growth_ro;
+GRANT SELECT (id, created_at, tos_accepted_at, activated_at, referred_by,
+              acquisition, plan, plan_source, plan_expires_at)
+  ON public.profiles TO growth_ro;
