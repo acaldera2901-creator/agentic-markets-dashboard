@@ -22,6 +22,8 @@ export type LiveFeed = {
   announce: string;
   /** live2: the sources that gave the scores shown («ESPN + The Odds API») */
   sourceName: string;
+  /** fixdata A3: who plays in each item (from /api/v3/live): «Live now» does not depend on the rows the page carries */
+  names?: V3LiveResponse["names"];
 };
 
 const EMPTY: LiveFeed = { items: {}, loaded: false, failed: false, updatedAt: null, announce: "", sourceName: "ESPN" };
@@ -30,12 +32,12 @@ const EMPTY: LiveFeed = { items: {}, loaded: false, failed: false, updatedAt: nu
 export function useLiveScores(enabled: boolean, names: (id: string) => [string, string] | null, copy: V3cLiveCopy, initial: V3LiveResponse | null = null): LiveFeed {
   const [seed] = useState(initial);
   const [feed, setFeed] = useState<LiveFeed>(() =>
-    seed ? { items: seed.items, loaded: true, failed: false, updatedAt: seed.generated_at, announce: "", sourceName: seed.source?.name ?? "ESPN" } : EMPTY,
+    seed ? { items: seed.items, loaded: true, failed: false, updatedAt: seed.generated_at, announce: "", sourceName: seed.source?.name ?? "ESPN", names: seed.names } : EMPTY,
   );
 
   const onData = useEffectEvent((prev: Record<string, V3LiveItem> | null, data: V3LiveResponse) => {
     const said = announcements(prev, data.items, names, copy);
-    setFeed((f) => ({ items: data.items, loaded: true, failed: false, updatedAt: data.generated_at, announce: said.length ? said.join(". ") : f.announce, sourceName: data.source?.name ?? "ESPN" }));
+    setFeed((f) => ({ items: data.items, loaded: true, failed: false, updatedAt: data.generated_at, announce: said.length ? said.join(". ") : f.announce, sourceName: data.source?.name ?? "ESPN", names: data.names }));
   });
   const onFail = useEffectEvent((errors: number) => {
     if (errors >= 2) setFeed((f) => ({ ...f, items: {}, loaded: true, failed: true, updatedAt: null }));

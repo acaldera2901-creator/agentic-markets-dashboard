@@ -1,0 +1,9 @@
+/* components/v3c/fixdata.css (#REDESIGN-V3C fixdata) — the few styles of the data fixes. */
+/* B1: «Started» in the time cell — longer than «Live»: on mobile its row gets a wider time column */
+.v3c-r-time em.v3c-started { display: block; font-size: 12px; letter-spacing: 0; white-space: nowrap; }
+@media (max-width: 820px) {
+  .v3c-r-time em.v3c-started { font-size: 11px; }
+  .v3c-row:has(em.v3c-started) { grid-template-columns: 62px minmax(0, 1fr) auto; }
+}
+/* A6: «too few matches» is a sentence, not a number */
+.v3c-yd-k .v3c-yd-few dd { font-size: 14px; font-weight: 400; line-height: 1.4; }

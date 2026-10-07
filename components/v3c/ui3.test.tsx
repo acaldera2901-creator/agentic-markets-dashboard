@@ -93,9 +93,9 @@ describe("B · tennis senza la nostra stima", () => {
       notes: [],
     } as unknown as V3YesterdayResponse;
     const t = text(renderToStaticMarkup(<Yesterday data={data} />));
-    expect(t).toContain("Expected in favour 2.9");
-    expect(t).toContain("Observed 3");
-    expect(t).toContain("Tennis · won–lost 4–1");
-    expect(t).toContain("sealed on Jannik Sinner · market-based 64%");
+    // fixdata A6: 5 settled football matches < 30 → no expected/observed, only the day's W/L; the tennis W/L and picks are not on the home
+    expect(t).toContain("Too few matches for a score yet");
+    expect(t).toContain("Won–lost, football 3–2");
+    expect(t).not.toMatch(/Expected in favour|Observed 3|Tennis · won–lost|Jannik Sinner/);
   });
 });

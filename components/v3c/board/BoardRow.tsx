@@ -14,7 +14,7 @@ import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
 import type { OddsOnSitePartner } from "@/lib/price-books";
 import type { V3cCopy } from "@/lib/v3c/copy";
-import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, sealedStamp, timeHM, dayShort, topShared, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
+import { gapText, isFlatGap, outcomeLabel, pctInt, price2, sealedStamp, timeHM, dayShort, topShared, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
 import { trackEvent } from "@/lib/track-event";
 import { matchHref } from "@/lib/v3c/match-view";
 import { Monogrammi } from "../Monogramma";
@@ -29,7 +29,10 @@ import type { V3cLiveCopy } from "@/lib/v3c/live-copy";
 import { liveBadge, type LiveBadge } from "@/lib/v3c/live-view";
 import { tennisEstimateOf } from "@/lib/v3c/tennis-estimate";
 import { LiveScoreChip, LiveTimeCell } from "../live/LiveBits";
+import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { hasStarted, valueToolsAllowed, zoneAbbr } from "@/lib/v3c/fixdata";
 import "../ui3.css";
+import "../fixdata.css";
 import "../tennis2.css";
 
 type Common = {
@@ -53,9 +56,10 @@ type Common = {
   lc?: V3cLiveCopy;
 };
 
-/** livescores: il badge della riga — solo nella finestra live (o se la fonte ha un dato), mai prima del primo dato. */
-function rowBadge(kickoff: string, now: Date, live: V3LiveItem | undefined, loaded: boolean | undefined, lc: V3cLiveCopy | undefined, sport: "football" | "tennis"): LiveBadge | null {
-  if (!lc || (!live && !liveState(kickoff, now).live)) return null;
+/** livescores: il badge della riga — solo se la fonte ha un dato (fixdata B1). */
+function rowBadge(live: V3LiveItem | undefined, loaded: boolean | undefined, lc: V3cLiveCopy | undefined, sport: "football" | "tennis"): LiveBadge | null {
+  // fixdata B1: without an item from the live feed there is no badge — the time cell says «Started», never «Kick-off/Start hh:mm»
+  if (!lc || !live) return null;
   return liveBadge(live, Boolean(loaded), lc, sport);
 }
 
@@ -83,15 +87,14 @@ export function BookChip({ b, t, surface, outcome, compact = false }: { b: V3Boo
   );
 }
 
-function TimeCell({ kickoff, t, tz, locale, now, badge }: { kickoff: string; t: V3cCopy; tz: string | undefined; locale: string; now: Date; badge: LiveBadge | null }) {
+function TimeCell({ kickoff, tz, locale, now, badge }: { kickoff: string; tz: string | undefined; locale: string; now: Date; badge: LiveBadge | null }) {
   if (badge) return <LiveTimeCell badge={badge} kickoffTime={timeHM(kickoff, tz, locale)} />;
-  const live = liveState(kickoff, now);
-  // Before the first live read: «Live» from the clock, and under it the kick-off time — live2: no longer
-  // the minutes since kick-off («62′»), which read as a game minute no source gave us.
-  if (live.live)
+  // fixdata B1: started and no score from the live feed (or past the live window, a long tennis match) — «Started»,
+  // never «Start hh:mm» again, and not «Live» from the clock either: without a score we do not know it is in play
+  if (hasStarted(kickoff, now))
     return (
       <span className="v3c-r-time">
-        <em className="v3c-live">{t.board.live}</em>
+        <em className="v3c-live v3c-started">{fixdataCopyFor(locale).startedGroup}</em>
         <small>{timeHM(kickoff, tz, locale)}</small>
       </span>
     );
@@ -151,7 +154,9 @@ function SiteOnlyBooks({ list, t, surface }: { list: OddsOnSitePartner[] | undef
   );
 }
 
-function BestCta({ best, shared, t, surface, label }: { best: V3BookPrice; shared: number; t: V3cCopy; surface: string; label: string }) {
+function BestCta({ best, shared, t, surface, label, tz, locale }: { best: V3BookPrice; shared: number; t: V3cCopy; surface: string; label: string; tz?: string; locale?: string }) {
+  // fixdata B2: the time the price was read, in the visitor's zone
+  const at = best.captured_at ? fixdataCopyFor(locale).priceAt(timeHM(best.captured_at, tz, locale), zoneAbbr(best.captured_at, tz, locale)) : null;
   // polish: «best» solo se un book paga strettamente di più; a pari prezzo nessuna CTA verso uno dei due
   if (shared > 1) return <p className="v3c-pn-cta v3c-small">{t.board.sharedTop(label, price2(best.price), shared)}</p>;
   return (
@@ -165,7 +170,10 @@ function BestCta({ best, shared, t, surface, label }: { best: V3BookPrice; share
       >
         {t.board.bestCta(label, price2(best.price), best.name)} <Arrow up />
       </a>
-      <p className="v3c-fine">{t.board.bestNote}</p>
+      <p className="v3c-fine">
+        {at ? <span className="v3c-price-at">{at} · </span> : null}
+        {t.board.bestNote}
+      </p>
     </div>
   );
 }
@@ -210,7 +218,7 @@ function MeLine({ market, estimate }: { market: number | null | undefined; estim
 export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape, live, liveLoaded, lc }: Common & { r: BoardRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
-  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc, "football");
+  const badge = rowBadge(live, liveLoaded, lc, "football");
   const match = `${m.home} – ${m.away}`;
   const leadLabel = outcomeLabel(m, lead.outcome, t.board.draw);
   const g = lead.edge_pp;
@@ -219,9 +227,14 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
     .map((o) => `${outcomeLabel(m, o.outcome, t.board.draw)} ${gapText(o.edge_pp)}`)
     .join(" · ");
   const scaleAria = lead.market_p == null ? t.board.scaleAriaNoMarket(pctInt(lead.estimate_p)) : t.board.scaleAria(pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g));
+  // fixdata B1: a started match has no book, no best price, no partner button
+  const started = hasStarted(m.kickoff, now);
+  // fixdata B5: model far from the market — no edge badge (neutral gap); > 25 pp «Market only»
+  const fc = fixdataCopyFor(locale);
+  const guard = m.model_guard?.level ?? "ok";
   return (
     <div className={["v3c-row", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="football">
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} badge={badge} />
+      <TimeCell kickoff={m.kickoff} tz={tz} locale={locale} now={now} badge={badge} />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.home }} away={{ name: m.away }} />
         <span className="v3c-r-name">
@@ -239,9 +252,11 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
       <TapeCell tape={tape} label={leadLabel} t={t} />
       <span className="v3c-r-price v3c-num">{price2(lead.market_price)}</span>
       <MkEs market={lead.market_p} estimate={lead.estimate_p} />
-      <span className={["v3c-r-gap", "v3c-num", flat ? "v3c-g-flat" : null, g == null ? "v3c-g-none" : null].filter(Boolean).join(" ")} title={scaleAria}>
+      <span className={["v3c-r-gap", "v3c-num", flat || !valueToolsAllowed(m) ? "v3c-g-flat" : null, g == null ? "v3c-g-none" : null].filter(Boolean).join(" ")} title={guard === "market_only" ? fc.marketOnly : guard === "no_value" ? `${scaleAria} · ${fc.noValue}` : scaleAria} data-guard={guard}>
         {g == null ? (
           <small className="v3c-r-nomkt">{t.board.noMarket}</small>
+        ) : guard === "market_only" ? (
+          <small className="v3c-r-nomkt">{t.tennis.marketOnly}</small>
         ) : flat ? (
           <span>
             {gapText(g)}
@@ -256,7 +271,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
         <MeLine market={lead.market_p} estimate={lead.estimate_p} />
       </span>
       <span className="v3c-r-book">
-        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
+        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners && !started ? t.board.noPrice : ""}</small>}
       </span>
       <span className="v3c-chev" aria-hidden="true">
         {open ? "–" : "+"}
@@ -310,12 +325,13 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
             </p>
           ) : null}
           {m.blend == null ? <p className="v3c-fine">{t.board.noMarketLong}</p> : null}
+          {guard !== "ok" ? <p className="v3c-fine" data-guard={guard}>{guard === "market_only" ? fc.marketOnly : fc.noValue}</p> : null}
           <p className="v3c-small">
             <Link href={matchHref(m.id)}>{t.board.openMatch}</Link>
           </p>
-          <PanelBooks books={lead.book_prices} t={t} surface={surface} label={leadLabel} partners={partners} />
-          {partners ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
-          {partners && r.best ? <BestCta best={r.best} shared={topShared(lead).length} t={t} surface={surface} label={leadLabel} /> : null}
+          {started ? <p className="v3c-fine">{fc.startedNote}</p> : <PanelBooks books={lead.book_prices} t={t} surface={surface} label={leadLabel} partners={partners} />}
+          {partners && !started ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
+          {partners && r.best ? <BestCta best={r.best} shared={topShared(lead).length} t={t} surface={surface} label={leadLabel} tz={tz} locale={locale} /> : null}
         </div>
       ) : null}
     </div>
@@ -327,7 +343,7 @@ const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctI
 export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape, live, liveLoaded, lc }: Common & { r: TennisRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
-  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc, "tennis");
+  const badge = rowBadge(live, liveLoaded, lc, "tennis");
   const match = `${m.player1} – ${m.player2}`;
   const leadLabel = lead.player;
   // tennis2: la stima solo dove il contratto la porta; il gap è informativo, attenuato, mai un segnale
@@ -344,9 +360,10 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
         ? t.tennis.scaleAriaElo(pctInt(lead.market_p), pctInt(est.estimate), gap == null ? null : gapText(gap))
         : `${t.tennis.scaleAriaMarket(pctInt(lead.market_p))}, ${t.tennis.marketOnly}`;
   const sideEst = (x: (typeof m.sides)[number]) => tennisEstimateOf(m, x.side);
+  const started = hasStarted(m.kickoff, now);
   return (
     <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis" data-estimate={elo ? "elo" : "market"}>
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} badge={badge} />
+      <TimeCell kickoff={m.kickoff} tz={tz} locale={locale} now={now} badge={badge} />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.player1 }} away={{ name: m.player2 }} />
         <span className="v3c-r-name">
@@ -399,7 +416,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
         </>
       )}
       <span className="v3c-r-book">
-        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners ? t.board.noPrice : ""}</small>}
+        {partners && r.best ? <><BookChip b={r.best} t={t} surface={surface} outcome={leadLabel} compact />{topShared(lead).length > 1 ? <small className="v3c-r-tie">{t.board.sameAt(topShared(lead).length)}</small> : null}</> : <small className="v3c-r-nobook">{partners && !started ? t.board.noPrice : ""}</small>}
       </span>
       <span className="v3c-chev" aria-hidden="true">
         {open ? "–" : "+"}
@@ -472,7 +489,9 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
           <p className="v3c-small">
             <Link href={matchHref(m.id)}>{t.board.openMatch}</Link>
           </p>
-          {partners ? (
+          {started ? (
+            <p className="v3c-fine">{fixdataCopyFor(locale).startedNote}</p>
+          ) : partners ? (
             m.sides.map((x) =>
               x.book_prices.length ? (
                 <div key={x.side} className="v3c-pn-books">
@@ -488,8 +507,8 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
           ) : (
             <p className="v3c-fine">{t.board.partnerBlocked}</p>
           )}
-          {partners ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
-          {partners && r.best ? <BestCta best={r.best} shared={topShared(lead).length} t={t} surface={surface} label={leadLabel} /> : null}
+          {partners && !started ? <SiteOnlyBooks list={siteOnly} t={t} surface={surface} /> : null}
+          {partners && r.best ? <BestCta best={r.best} shared={topShared(lead).length} t={t} surface={surface} label={leadLabel} tz={tz} locale={locale} /> : null}
         </div>
       ) : null}
     </div>

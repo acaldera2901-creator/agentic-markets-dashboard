@@ -8,11 +8,14 @@ import type { V3YesterdayResponse } from "@/lib/v3c/contracts";
 import { dayLong } from "@/lib/v3c/board-view";
 import { useV3cCopy } from "@/lib/v3c/lang.client";
 import "../fidelity.css";
+import "../fixdata.css";
 import { V3C_ROUTES } from "../V3cChrome";
 import { v3cLocale } from "@/lib/v3c/copy";
 import { pctInt } from "@/lib/v3c/board-view";
 import type { V3DayPick } from "@/lib/v3c/contracts";
 import { ResultPill, resultKindOf, scoreText } from "../ResultPill";
+import { yesterdayHome } from "@/lib/v3c/yesterday";
+import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
 
 /** ui2: quante righe restano aperte; le altre dietro «Show all N» (niente salto: chiuso al caricamento). */
 const OPEN_ROWS = 6;
@@ -40,15 +43,13 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
   // fidelity: come il prototipo — una striscia di numeri: chiuse, attese a favore (Σ probabilità sigillate),
   // osservate, e il Brier della stima accanto a quello del mercato. Niente elenco di vinte/perse, niente tasso.
   // ui2 (Andrea, 07/10): sotto la striscia ogni partita con il suo esito W/L/V/in attesa. Mai un tasso.
-  const fb = data.football;
-  const tn = data.tennis;
-  const settled = fb.won + fb.lost + tn.won + tn.lost;
-  // ui3: nel tennis non diamo la stima — atteso/osservato e Brier sono del calcio; il tennis porta solo vinte–perse
-  const expected = fb.expected_wins ?? 0;
-  const observed = fb.won;
-  const tnSettled = tn.won + tn.lost;
+  // fixdata A6: football only on the home (the tennis W/L is a count of favourites: Record only, with its note);
+  // under n = 30 settled matches no Brier and no expected/observed — «too few matches», with the day's W/L
+  const fc = fixdataCopyFor(lang);
+  const h = yesterdayHome(data);
+  const settled = h.wl.won + h.wl.lost;
   const dayLabel = dayLong(`${data.day}T12:00:00Z`, "UTC", locale);
-  const b = data.brier ?? null;
+  const b = h.score?.brier ?? null;
   return (
     <section className="v3c-yday" id="v3c-yday" aria-labelledby="v3c-yday-h">
       <div className="v3c-yd-strip">
@@ -58,31 +59,33 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
           </h2>
           <p className="v3c-small">{settled ? t.yday.stripBody : t.yday.noneHint}</p>
         </div>
-        {settled ? (
-          <dl className="v3c-yd-k">
+        {settled && !h.score ? (
+          <dl className="v3c-yd-k" data-yday="too-few">
+            <div>
+              <dt>{fc.ydayWL}</dt>
+              <dd className="v3c-num">
+                {h.wl.won}–{h.wl.lost}
+              </dd>
+            </div>
+            <div className="v3c-yd-few">
+              <dt>{fc.ydayTooFew}</dt>
+              <dd className="v3c-small">{fc.ydayMin(h.min_n)}</dd>
+            </div>
+          </dl>
+        ) : settled && h.score ? (
+          <dl className="v3c-yd-k" data-yday="score">
             <div>
               <dt>{t.yday.settled}</dt>
-              <dd className="v3c-num">
-                {settled}
-                {settled < 30 ? <small>{t.yday.limited}</small> : null}
-              </dd>
+              <dd className="v3c-num">{settled}</dd>
             </div>
             <div>
               <dt>{t.yday.expectedFavour}</dt>
-              <dd className="v3c-num">{expected.toFixed(1)}</dd>
+              <dd className="v3c-num">{h.score.expected.toFixed(1)}</dd>
             </div>
             <div>
               <dt>{t.yday.observed}</dt>
-              <dd className="v3c-num">{observed}</dd>
+              <dd className="v3c-num">{h.score.observed}</dd>
             </div>
-            {tnSettled ? (
-              <div>
-                <dt>{t.yday.tennisWL}</dt>
-                <dd className="v3c-num">
-                  {tn.won}–{tn.lost}
-                </dd>
-              </div>
-            ) : null}
             {b ? (
               <>
                 <div>
@@ -103,7 +106,7 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
           {t.yday.full}
         </a>
       </div>
-      {data.picks.length ? <DayList picks={data.picks} /> : null}
+      {data.picks.some((p) => p.sport === "football") ? <DayList picks={data.picks.filter((p) => p.sport === "football")} /> : null}
     </section>
   );
 }
