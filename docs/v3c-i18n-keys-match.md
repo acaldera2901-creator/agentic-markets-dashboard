@@ -129,3 +129,17 @@ Rimosse: `tennisSealed`, `tennisMarketAtSeal`, `tennisSealedEstimate`, `tennisGa
 | `movedBodyTennis` | fn → «{n} captures since {since}, connected books only.» (movedBody senza la frase sul gap) |
 | `pc.whyBodyTennis` | «Prices adding up past 100% hide the book’s fee. Removed, they show what the book believes.» |
 | `s2Tennis` | «The price line, and what you can check» |
+
+## tennis2 (07/10/2026) — pagina partita e price check tennis con la stima basata su Elo
+
+11 lingue scritte; `// REVIEW-NATIVE` su `tnEloWhyBody` e `pc.fineTennisElo` nelle 9 lingue non EN/IT.
+Riscritte: `tnWhyBody` («per questa partita» invece di «nel tennis»), `pc.fineTennis`.
+
+| Chiave | EN | IT |
+|---|---|---|
+| `s1TennisElo` | «Market, then our Elo-based estimate» | «Il mercato, poi la nostra stima basata su Elo» |
+| `tnEloWhyTitle` | «Estimate: 90% market, 10% our Elo» | «Stima: 90% mercato, 10% nostro Elo» |
+| `tnEloWhyBody` | «Our player rating nudges the market price slightly. It is not sealed, so it is not in the record.» | «Il nostro rating dei giocatori sposta di poco il prezzo di mercato. Non è sigillata, quindi non entra nel registro.» |
+| `pc.fineTennisElo` | «Implied = 1 ÷ price. Margin removed = implied ÷ the sum. Estimate = 90% market + 10% our Elo, not sealed.» | «Implicita = 1 ÷ prezzo. Margine tolto = implicita ÷ la somma. Stima = 90% mercato + 10% nostro Elo, non sigillata.» |
+| `pc.fineTennis` | «… This match: market only, no estimate of ours.» | «… Questa partita: solo mercato, nessuna nostra stima.» |
+| `tnWhyBody` | «No estimate of ours for this match: the number above is the books’ price, margin removed. The chart shows how it moved.» | «Nessuna nostra stima per questa partita: …» |

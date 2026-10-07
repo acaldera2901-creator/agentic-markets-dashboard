@@ -56,7 +56,11 @@ const EN = {
   sealBody: (t: string) => `In the public ledger since ${t}. The latest estimate shown can differ from the sealed one.`,
   tnSealBody: (t: string) => `In the public ledger since ${t}. The sealed number is market-based, not an estimate of ours.`,
   tnWhyTitle: "Market price only",
-  tnWhyBody: "No estimate of ours in tennis: the number above is the books’ price, margin removed. The chart shows how it moved.",
+  tnWhyBody: "No estimate of ours for this match: the number above is the books’ price, margin removed. The chart shows how it moved.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Market, then our Elo-based estimate",
+  tnEloWhyTitle: "Estimate: 90% market, 10% our Elo",
+  tnEloWhyBody: "Our player rating nudges the market price slightly. It is not sealed, so it is not in the record.",
   notSealed: "Not sealed yet",
   notSealedBody: "This match is not in the public ledger yet: there is nothing to verify against.",
   record: "View in the record",
@@ -125,7 +129,9 @@ const EN = {
     invalid: "Type a decimal price above 1.00 in every box.",
     fine: "Implied = 1 ÷ price. Margin removed = implied ÷ the sum. Estimate: 70% market, 30% model.",
     fineNoEst: "Implied = 1 ÷ price. Margin removed = implied ÷ the sum. Pick a match to see our estimate next to it.",
-    fineTennis: "Implied = 1 ÷ price. Margin removed = implied ÷ the sum. Tennis: market price only, no estimate of ours.",
+    fineTennis: "Implied = 1 ÷ price. Margin removed = implied ÷ the sum. This match: market only, no estimate of ours.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implied = 1 ÷ price. Margin removed = implied ÷ the sum. Estimate = 90% market + 10% our Elo, not sealed.",
     strip: "Go further with these prices",
     bankroll: "Bankroll",
     kellyOf: (stake: string, bank: string) => `${stake} of a ${bank} bankroll`,
@@ -190,7 +196,11 @@ const IT: V3cMatchCopy = {
   sealBody: (t) => `Nel registro pubblico dal ${t}. L’ultima stima mostrata può differire da quella sigillata.`,
   tnSealBody: (t: string) => `Nel registro pubblico dal ${t}. Il numero sigillato viene dal mercato, non è una nostra stima.`,
   tnWhyTitle: "Solo il prezzo di mercato",
-  tnWhyBody: "Nel tennis nessuna nostra stima: il numero sopra è la quota dei book senza margine. Il grafico mostra come si è mossa.",
+  tnWhyBody: "Nessuna nostra stima per questa partita: il numero sopra è la quota dei book senza margine. Il grafico mostra come si è mossa.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Il mercato, poi la nostra stima basata su Elo",
+  tnEloWhyTitle: "Stima: 90% mercato, 10% nostro Elo",
+  tnEloWhyBody: "Il nostro rating dei giocatori sposta di poco il prezzo di mercato. Non è sigillata, quindi non entra nel registro.",
   notSealed: "Non ancora sigillata",
   notSealedBody: "Questa partita non è ancora nel registro pubblico: non c’è nulla con cui verificarla.",
   record: "Vedi nel registro",
@@ -258,7 +268,9 @@ const IT: V3cMatchCopy = {
     invalid: "Scrivi una quota decimale sopra 1,00 in ogni casella.",
     fine: "Implicita = 1 ÷ prezzo. Margine tolto = implicita ÷ la somma. Stima: 70% mercato, 30% modello.",
     fineNoEst: "Implicita = 1 ÷ prezzo. Margine tolto = implicita ÷ la somma. Scegli una partita per vedere la nostra stima accanto.",
-    fineTennis: "Implicita = 1 ÷ prezzo. Margine tolto = implicita ÷ la somma. Tennis: solo il prezzo di mercato, nessuna nostra stima.",
+    fineTennis: "Implicita = 1 ÷ prezzo. Margine tolto = implicita ÷ la somma. Questa partita: solo mercato, nessuna nostra stima.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implicita = 1 ÷ prezzo. Margine tolto = implicita ÷ la somma. Stima = 90% mercato + 10% nostro Elo, non sigillata.",
     strip: "Vai oltre con questi prezzi",
     bankroll: "Bankroll",
     kellyOf: (stake, bank) => `${stake} su un bankroll di ${bank}`,
@@ -321,7 +333,11 @@ const DE: V3cMatchCopy = {
   sealBody: (t: string) => `Seit ${t} im öffentlichen Register. Die angezeigte neueste Schätzung kann von der versiegelten abweichen.`,
   tnSealBody: (t: string) => `Seit ${t} im öffentlichen Register. Die versiegelte Zahl stammt vom Markt, keine eigene Schätzung.`,
   tnWhyTitle: "Nur die Marktquote",
-  tnWhyBody: "Im Tennis keine eigene Schätzung: Die Zahl oben ist die Buchmacherquote ohne Marge. Das Diagramm zeigt ihren Verlauf.",
+  tnWhyBody: "Keine eigene Schätzung für dieses Spiel: Die Zahl oben ist die Buchmacherquote ohne Marge. Das Diagramm zeigt ihren Verlauf.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Der Markt, dann unsere Elo-basierte Schätzung",
+  tnEloWhyTitle: "Schätzung: 90% Markt, 10% unser Elo",
+  tnEloWhyBody: "Unser Spielerrating verschiebt die Marktquote nur leicht. Sie ist nicht versiegelt und steht deshalb nicht im Register.",  // REVIEW-NATIVE
   notSealed: "Noch nicht versiegelt",
   notSealedBody: "Dieses Spiel ist noch nicht im öffentlichen Register: Es gibt nichts zu überprüfen.",
   record: "Im Register ansehen",
@@ -389,7 +405,9 @@ const DE: V3cMatchCopy = {
     invalid: "Gib in jedes Feld eine Dezimalquote über 1.00 ein.",
     fine: "Implizit = 1 ÷ Quote. Ohne Marge = implizit ÷ Summe. Schätzung: 70% Markt, 30% Modell.",
     fineNoEst: "Implizit = 1 ÷ Quote. Ohne Marge = implizit ÷ Summe. Wähl ein Spiel, um unsere Schätzung daneben zu sehen.",
-    fineTennis: "Implizit = 1 ÷ Quote. Ohne Marge = implizit ÷ Summe. Tennis: nur die Marktquote, keine eigene Schätzung.",
+    fineTennis: "Implizit = 1 ÷ Quote. Ohne Marge = implizit ÷ Summe. Dieses Spiel: nur Markt, keine eigene Schätzung.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implizit = 1 ÷ Quote. Ohne Marge = implizit ÷ Summe. Schätzung = 90% Markt + 10% unser Elo, nicht versiegelt.",  // REVIEW-NATIVE
     strip: "Mit diesen Quoten weiterrechnen",
     bankroll: "Bankroll",
     kellyOf: (stake: string, bank: string) => `${stake} von ${bank} Bankroll`,
@@ -452,7 +470,11 @@ const ES: V3cMatchCopy = {
   sealBody: (t: string) => `En el registro público desde ${t}. La última estimación mostrada puede diferir de la sellada.`,
   tnSealBody: (t: string) => `En el registro público desde ${t}. El número sellado viene del mercado, no es una estimación propia.`,
   tnWhyTitle: "Solo la cuota del mercado",
-  tnWhyBody: "En tenis no hay estimación propia: el número de arriba es la cuota sin margen. El gráfico muestra su evolución.",
+  tnWhyBody: "Sin estimación propia para este partido: el número de arriba es la cuota sin margen. El gráfico muestra su evolución.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "El mercado y luego nuestra estimación basada en Elo",
+  tnEloWhyTitle: "Estimación: 90% mercado, 10% nuestro Elo",
+  tnEloWhyBody: "Nuestro rating de jugadores mueve un poco la cuota del mercado. No está sellada, así que no entra en el registro.",  // REVIEW-NATIVE
   notSealed: "Aún no sellado",
   notSealedBody: "Este partido aún no está en el registro público: no hay nada con qué contrastar.",
   record: "Ver en el registro",
@@ -520,7 +542,9 @@ const ES: V3cMatchCopy = {
     invalid: "Escribe una cuota decimal mayor que 1.00 en cada casilla.",
     fine: "Implícita = 1 ÷ cuota. Sin margen = implícita ÷ la suma. Estimación: 70% mercado, 30% modelo.",
     fineNoEst: "Implícita = 1 ÷ cuota. Sin margen = implícita ÷ la suma. Elige un partido para ver nuestra estimación al lado.",
-    fineTennis: "Implícita = 1 ÷ cuota. Sin margen = implícita ÷ la suma. Tenis: solo la cuota del mercado, sin estimación propia.",
+    fineTennis: "Implícita = 1 ÷ cuota. Sin margen = implícita ÷ la suma. Este partido: solo mercado, sin estimación propia.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implícita = 1 ÷ cuota. Sin margen = implícita ÷ la suma. Estimación = 90% mercado + 10% nuestro Elo, sin sellar.",  // REVIEW-NATIVE
     strip: "Ve más allá con estas cuotas",
     bankroll: "Bankroll",
     kellyOf: (stake: string, bank: string) => `${stake} de un bankroll de ${bank}`,
@@ -583,7 +607,11 @@ const FR: V3cMatchCopy = {
   sealBody: (t: string) => `Au registre public depuis ${t}. La dernière estimation affichée peut différer de celle scellée.`,
   tnSealBody: (t: string) => `Au registre public depuis ${t}. Le chiffre scellé vient du marché, ce n’est pas notre estimation.`,
   tnWhyTitle: "La cote du marché seulement",
-  tnWhyBody: "Au tennis, aucune estimation de notre part : le chiffre ci-dessus est la cote, marge retirée. Le graphique montre son évolution.",
+  tnWhyBody: "Aucune estimation de notre part pour ce match : le chiffre ci-dessus est la cote, marge retirée. Le graphique montre son évolution.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Le marché, puis notre estimation fondée sur l’Elo",
+  tnEloWhyTitle: "Estimation : 90 % marché, 10 % notre Elo",
+  tnEloWhyBody: "Notre classement des joueurs déplace légèrement la cote du marché. Elle n’est pas scellée, donc pas dans le registre.",  // REVIEW-NATIVE
   notSealed: "Pas encore scellé",
   notSealedBody: "Ce match n’est pas encore au registre public : il n’y a rien à vérifier.",
   record: "Voir dans le registre",
@@ -651,7 +679,9 @@ const FR: V3cMatchCopy = {
     invalid: "Saisissez une cote décimale supérieure à 1,00 dans chaque case.",
     fine: "Implicite = 1 ÷ cote. Marge retirée = implicite ÷ la somme. Estimation : 70 % marché, 30 % modèle.",
     fineNoEst: "Implicite = 1 ÷ cote. Marge retirée = implicite ÷ la somme. Choisissez un match pour voir notre estimation à côté.",
-    fineTennis: "Implicite = 1 ÷ cote. Marge retirée = implicite ÷ la somme. Tennis : cote du marché seulement, sans estimation.",
+    fineTennis: "Implicite = 1 ÷ cote. Marge retirée = implicite ÷ la somme. Ce match : marché seul, sans estimation.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implicite = 1 ÷ cote. Marge retirée = implicite ÷ la somme. Tennis : 90 % marché, 10 % Elo, non scellée.",  // REVIEW-NATIVE
     strip: "Aller plus loin avec ces cotes",
     bankroll: "Bankroll",
     kellyOf: (stake: string, bank: string) => `${stake} d’une bankroll de ${bank}`,
@@ -714,7 +744,11 @@ const NL: V3cMatchCopy = {
   sealBody: (t: string) => `In het openbare register sinds ${t}. De getoonde laatste schatting kan afwijken van de verzegelde.`,
   tnSealBody: (t: string) => `In het openbare register sinds ${t}. Het verzegelde getal komt van de markt, geen eigen schatting.`,
   tnWhyTitle: "Alleen de marktodds",
-  tnWhyBody: "Bij tennis geen eigen schatting: het getal hierboven is de odds zonder marge. De grafiek toont hoe die bewoog.",
+  tnWhyBody: "Geen eigen schatting voor deze wedstrijd: het getal hierboven is de odds zonder marge. De grafiek toont hoe die bewoog.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "De markt, dan onze schatting op basis van Elo",
+  tnEloWhyTitle: "Schatting: 90% markt, 10% onze Elo",
+  tnEloWhyBody: "Onze spelersrating verschuift de marktodds een beetje. Niet verzegeld, dus niet in het register.",  // REVIEW-NATIVE
   notSealed: "Nog niet verzegeld",
   notSealedBody: "Deze wedstrijd staat nog niet in het openbare register: er is nog niets om tegen te controleren.",
   record: "Bekijk in het register",
@@ -782,7 +816,9 @@ const NL: V3cMatchCopy = {
     invalid: "Typ in elk vak een decimale odd boven 1.00.",
     fine: "Impliciet = 1 ÷ odd. Zonder marge = impliciet ÷ de som. Schatting: 70% markt, 30% model.",
     fineNoEst: "Impliciet = 1 ÷ odd. Zonder marge = impliciet ÷ de som. Kies een wedstrijd om onze schatting ernaast te zien.",
-    fineTennis: "Impliciet = 1 ÷ odd. Zonder marge = impliciet ÷ de som. Tennis: alleen de marktodds, geen eigen schatting.",
+    fineTennis: "Impliciet = 1 ÷ odd. Zonder marge = impliciet ÷ de som. Deze wedstrijd: alleen markt, geen eigen schatting.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Impliciet = 1 ÷ odd. Zonder marge = impliciet ÷ de som. Schatting = 90% markt + 10% onze Elo, niet verzegeld.",  // REVIEW-NATIVE
     strip: "Ga verder met deze odds",
     bankroll: "Bankroll",
     kellyOf: (stake: string, bank: string) => `${stake} van een bankroll van ${bank}`,
@@ -845,7 +881,11 @@ const PL: V3cMatchCopy = {
   sealBody: (t: string) => `W publicznym rejestrze od ${t}. Najnowszy pokazany szacunek może różnić się od zapieczętowanego.`,
   tnSealBody: (t: string) => `W publicznym rejestrze od ${t}. Zapieczętowana liczba pochodzi z rynku, to nie nasz szacunek.`,
   tnWhyTitle: "Tylko kurs rynkowy",
-  tnWhyBody: "W tenisie nie podajemy własnego szacunku: liczba powyżej to kurs bukmacherów bez marży. Wykres pokazuje, jak się zmieniał.",
+  tnWhyBody: "Bez naszego szacunku dla tego meczu: liczba powyżej to kurs bukmacherów bez marży. Wykres pokazuje, jak się zmieniał.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Rynek, potem nasz szacunek oparty na Elo",
+  tnEloWhyTitle: "Szacunek: 90% rynek, 10% nasze Elo",
+  tnEloWhyBody: "Nasz ranking zawodników lekko przesuwa kurs rynkowy. Nie jest zapieczętowany, więc nie trafia do rejestru.",  // REVIEW-NATIVE
   notSealed: "Jeszcze niezapieczętowany",
   notSealedBody: "Tego meczu nie ma jeszcze w publicznym rejestrze: nie ma czego weryfikować.",
   record: "Zobacz w rejestrze",
@@ -913,7 +953,9 @@ const PL: V3cMatchCopy = {
     invalid: "Wpisz w każde pole kurs dziesiętny powyżej 1.00.",
     fine: "Implikowane = 1 ÷ kurs. Bez marży = implikowane ÷ suma. Szacunek: 70% rynek, 30% model.",
     fineNoEst: "Implikowane = 1 ÷ kurs. Bez marży = implikowane ÷ suma. Wybierz mecz, by zobaczyć obok nasz szacunek.",
-    fineTennis: "Implikowane = 1 ÷ kurs. Bez marży = implikowane ÷ suma. Tenis: tylko kurs rynkowy, bez naszego szacunku.",
+    fineTennis: "Implikowane = 1 ÷ kurs. Bez marży = implikowane ÷ suma. Ten mecz: tylko rynek, bez naszego szacunku.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implikowane = 1 ÷ kurs. Bez marży = implikowane ÷ suma. Szacunek = 90% rynek + 10% nasze Elo, niezapieczętowany.",  // REVIEW-NATIVE
     strip: "Idź dalej z tymi kursami",
     bankroll: "Bankroll",
     kellyOf: (stake: string, bank: string) => `${stake} z bankrolla ${bank}`,
@@ -976,7 +1018,11 @@ const PT: V3cMatchCopy = {
   sealBody: (t: string) => `No registo público desde ${t}. A estimativa mais recente mostrada pode diferir da selada.`,
   tnSealBody: (t: string) => `No registo público desde ${t}. O número selado vem do mercado, não é uma estimativa nossa.`,
   tnWhyTitle: "Só a odd de mercado",
-  tnWhyBody: "No ténis não há estimativa nossa: o número acima é a odd sem margem. O gráfico mostra como se moveu.",
+  tnWhyBody: "Sem estimativa nossa para este jogo: o número acima é a odd sem margem. O gráfico mostra como se moveu.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "O mercado, depois a nossa estimativa baseada no Elo",
+  tnEloWhyTitle: "Estimativa: 90% mercado, 10% o nosso Elo",
+  tnEloWhyBody: "O nosso rating de jogadores mexe pouco na odd de mercado. Não está selada, por isso não entra no registo.",  // REVIEW-NATIVE
   notSealed: "Ainda não selado",
   notSealedBody: "Este jogo ainda não está no registo público: não há nada contra o qual verificar.",
   record: "Ver no registo",
@@ -1044,7 +1090,9 @@ const PT: V3cMatchCopy = {
     invalid: "Escreve uma odd decimal acima de 1.00 em cada caixa.",
     fine: "Implícita = 1 ÷ odd. Sem margem = implícita ÷ a soma. Estimativa: 70% mercado, 30% modelo.",
     fineNoEst: "Implícita = 1 ÷ odd. Sem margem = implícita ÷ a soma. Escolhe um jogo para ver a nossa estimativa ao lado.",
-    fineTennis: "Implícita = 1 ÷ odd. Sem margem = implícita ÷ a soma. Ténis: só a odd de mercado, sem estimativa nossa.",
+    fineTennis: "Implícita = 1 ÷ odd. Sem margem = implícita ÷ a soma. Este jogo: só mercado, sem estimativa nossa.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implícita = 1 ÷ odd. Sem margem = implícita ÷ a soma. Estimativa: 90% mercado + 10% Elo, não selada.",  // REVIEW-NATIVE
     strip: "Vai mais longe com estas odds",
     bankroll: "Banca",
     kellyOf: (stake: string, bank: string) => `${stake} de uma banca de ${bank}`,
@@ -1107,7 +1155,11 @@ const RU: V3cMatchCopy = {
   sealBody: (t) => `В публичном реестре с ${t}. Показанная последняя оценка может отличаться от зафиксированной.`,
   tnSealBody: (t: string) => `В публичном реестре с ${t}. Зафиксированное число основано на рынке, это не наша оценка.`,
   tnWhyTitle: "Только рыночный коэффициент",
-  tnWhyBody: "В теннисе мы не даём своей оценки: число выше — коэффициент букмекеров без маржи. График показывает, как он менялся.",
+  tnWhyBody: "Для этого матча нашей оценки нет: число выше — коэффициент букмекеров без маржи. График показывает, как он менялся.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Рынок, затем наша оценка на основе Elo",
+  tnEloWhyTitle: "Оценка: 90% рынок, 10% наш Elo",
+  tnEloWhyBody: "Наш рейтинг игроков лишь слегка сдвигает рыночный коэффициент. Оценка не зафиксирована, поэтому её нет в реестре.",  // REVIEW-NATIVE
   notSealed: "Ещё не зафиксировано",
   notSealedBody: "Этого матча ещё нет в публичном реестре: сверять пока не с чем.",
   record: "Смотреть в реестре",
@@ -1175,7 +1227,9 @@ const RU: V3cMatchCopy = {
     invalid: "Введите в каждое поле десятичный коэффициент больше 1.00.",
     fine: "Подразумеваемая = 1 ÷ коэффициент. Без маржи = подразумеваемая ÷ сумма. Оценка: 70% рынок, 30% модель.",
     fineNoEst: "Подразумеваемая = 1 ÷ коэффициент. Без маржи = подразумеваемая ÷ сумма. Выберите матч, чтобы увидеть рядом нашу оценку.",
-    fineTennis: "Подразумеваемая = 1 ÷ коэффициент. Без маржи = подразумеваемая ÷ сумма. Теннис: только рыночный коэффициент, без нашей оценки.",
+    fineTennis: "Подразумеваемая = 1 ÷ коэффициент. Без маржи = подразумеваемая ÷ сумма. Этот матч: только рынок, без нашей оценки.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Подразумеваемая = 1 ÷ коэффициент. Без маржи = подразумеваемая ÷ сумма. Оценка = 90% рынок + 10% наш Elo, не зафиксирована.",  // REVIEW-NATIVE
     strip: "Дальше с этими коэффициентами",
     bankroll: "Банкролл",
     kellyOf: (stake, bank) => `${stake} от банкролла ${bank}`,
@@ -1238,7 +1292,11 @@ const SV: V3cMatchCopy = {
   sealBody: (t: string) => `I det offentliga registret sedan ${t}. Den senaste uppskattningen kan skilja sig från den förseglade.`,
   tnSealBody: (t: string) => `I det offentliga registret sedan ${t}. Den förseglade siffran kommer från marknaden, ingen egen uppskattning.`,
   tnWhyTitle: "Bara marknadens odds",
-  tnWhyBody: "I tennis ger vi ingen egen uppskattning: siffran ovan är spelbolagens odds utan marginal. Diagrammet visar hur de rörde sig.",
+  tnWhyBody: "Ingen egen uppskattning för den här matchen: siffran ovan är spelbolagens odds utan marginal. Diagrammet visar hur de rörde sig.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Marknaden, sedan vår Elo-baserade uppskattning",
+  tnEloWhyTitle: "Uppskattning: 90 % marknad, 10 % vår Elo",
+  tnEloWhyBody: "Vårt spelarbetyg flyttar marknadens odds en aning. Den är inte förseglad och finns därför inte i registret.",  // REVIEW-NATIVE
   notSealed: "Inte förseglad än",
   notSealedBody: "Matchen finns inte i det offentliga registret än: det finns inget att kontrollera mot.",
   record: "Visa i registret",
@@ -1306,7 +1364,9 @@ const SV: V3cMatchCopy = {
     invalid: "Skriv ett decimalodds över 1,00 i varje ruta.",
     fine: "Implicit = 1 ÷ odds. Utan marginal = implicit ÷ summan. Uppskattning: 70 % marknad, 30 % modell.",
     fineNoEst: "Implicit = 1 ÷ odds. Utan marginal = implicit ÷ summan. Välj en match för att se vår uppskattning bredvid.",
-    fineTennis: "Implicit = 1 ÷ odds. Utan marginal = implicit ÷ summan. Tennis: bara marknadens odds, ingen egen uppskattning.",
+    fineTennis: "Implicit = 1 ÷ odds. Utan marginal = implicit ÷ summan. Den här matchen: bara marknad, ingen egen uppskattning.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Implicit = 1 ÷ odds. Utan marginal = implicit ÷ summan. Uppskattning: 90 % marknad + 10 % Elo, inte förseglad.",  // REVIEW-NATIVE
     strip: "Gå vidare med de här oddsen",
     bankroll: "Bankrulle",
     kellyOf: (stake: string, bank: string) => `${stake} av en bankrulle på ${bank}`,
@@ -1369,7 +1429,11 @@ const TR: V3cMatchCopy = {
   sealBody: (t: string) => `${t} itibarıyla kamuya açık defterde. Gösterilen son tahmin mühürlüden farklı olabilir.`,
   tnSealBody: (t: string) => `${t} itibarıyla kamuya açık defterde. Mühürlü sayı piyasaya dayanır, kendi tahminimiz değildir.`,
   tnWhyTitle: "Yalnızca piyasa oranı",
-  tnWhyBody: "Teniste kendi tahminimizi vermiyoruz: yukarıdaki sayı bahis sitelerinin marj hariç oranıdır. Grafik nasıl hareket ettiğini gösterir.",
+  tnWhyBody: "Bu maç için kendi tahminimiz yok: yukarıdaki sayı bahis sitelerinin marj hariç oranıdır. Grafik nasıl hareket ettiğini gösterir.",
+  // tennis2: the page of a tennis match with the Elo-based estimate
+  s1TennisElo: "Önce piyasa, sonra Elo tabanlı tahminimiz",
+  tnEloWhyTitle: "Tahmin: %90 piyasa, %10 kendi Elo’muz",
+  tnEloWhyBody: "Oyuncu reytingimiz piyasa oranını biraz kaydırır. Mühürlü değildir, bu yüzden kayıt defterinde yer almaz.",  // REVIEW-NATIVE
   notSealed: "Henüz mühürlü değil",
   notSealedBody: "Bu maç henüz kamuya açık defterde değil: karşılaştırılacak bir şey yok.",
   record: "Kayıt defterinde gör",
@@ -1437,7 +1501,9 @@ const TR: V3cMatchCopy = {
     invalid: "Her kutuya 1.00'dan büyük ondalık bir oran yaz.",
     fine: "Zımni = 1 ÷ oran. Marj hariç = zımni ÷ toplam. Tahmin: %70 piyasa, %30 model.",
     fineNoEst: "Zımni = 1 ÷ oran. Marj hariç = zımni ÷ toplam. Tahminimizi yanında görmek için bir maç seç.",
-    fineTennis: "Zımni = 1 ÷ oran. Marj hariç = zımni ÷ toplam. Tenis: yalnızca piyasa oranı, kendi tahminimiz yok.",
+    fineTennis: "Zımni = 1 ÷ oran. Marj hariç = zımni ÷ toplam. Bu maç: yalnızca piyasa, kendi tahminimiz yok.",
+    // tennis2: price check of a tennis match with the Elo-based estimate
+    fineTennisElo: "Zımni = 1 ÷ oran. Marj hariç = zımni ÷ toplam. Tahmin = %90 piyasa + %10 kendi Elo’muz, mühürsüz.",  // REVIEW-NATIVE
     strip: "Bu oranlarla daha ileri git",
     bankroll: "Kasa",
     kellyOf: (stake: string, bank: string) => `${bank} kasanın ${stake} kadarı`,
