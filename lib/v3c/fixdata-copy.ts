@@ -11,8 +11,8 @@ export type FixdataCopy = {
   /** B1: the declared order of the board and of the home */
   order: string;
   homeOrder: string;
-  /** B2: «price at 14:52 CEST» — the capture time in the visitor's zone */
-  priceAt: (time: string, zone: string) => string;
+  /** B2: «price at 14:52» — the capture time in the visitor's zone; the zone is declared once per view (TzNote, final5) */
+  priceAt: (time: string) => string;
   /** B5 */
   marketOnly: string;
   noValue: string;
@@ -41,7 +41,7 @@ const EN: FixdataCopy = {
   startedNote: "Under way, no live score yet: pre-match numbers, no prices.",
   order: "Order: top leagues and ATP/WTA first, then by start time.",
   homeOrder: "Next matches: top leagues and ATP/WTA first, then by start time. Started ones are in Live.",
-  priceAt: (time, zone) => `price at ${time} ${zone}`,
+  priceAt: (time) => `price at ${time}`,
   marketOnly: "Market only: the model differs too much to show",
   noValue: "The model is far from the market here: no EV, Kelly or stake shown.",
   kellyNote: "Kelly needs your bankroll: set it in the tool. A fraction, not advice.",
@@ -64,7 +64,7 @@ const IT: FixdataCopy = {
   startedNote: "In corso, punteggio non ancora disponibile: numeri pre-partita, nessun prezzo.",
   order: "Ordine: prima i campionati top e ATP/WTA, poi per orario.",
   homeOrder: "Prossime partite: prima i campionati top e ATP/WTA, poi per orario. Quelle iniziate sono in Live.",
-  priceAt: (time, zone) => `prezzo delle ${time} ${zone}`,
+  priceAt: (time) => `prezzo delle ${time}`,
   marketOnly: "Solo mercato: il modello si discosta troppo per mostrarlo",
   noValue: "Qui il modello è lontano dal mercato: niente EV, Kelly né puntata.",
   kellyNote: "Il Kelly vuole il tuo bankroll: impostalo nello strumento. Una frazione, non un consiglio.",
@@ -87,7 +87,7 @@ const DE: FixdataCopy = {
   startedNote: "Läuft, noch kein Live-Stand: Zahlen vor dem Anstoß, keine Quoten.",
   order: "Reihenfolge: zuerst Top-Ligen und ATP/WTA, dann nach Uhrzeit.",
   homeOrder: "Nächste Spiele: zuerst Top-Ligen und ATP/WTA, dann nach Uhrzeit. Begonnene stehen unter Live.",
-  priceAt: (time, zone) => `Quote um ${time} ${zone}`,
+  priceAt: (time) => `Quote um ${time}`,
   marketOnly: "Nur Markt: das Modell weicht zu stark ab, um es zu zeigen",
   noValue: "Hier liegt das Modell weit vom Markt: kein EV, kein Kelly, kein Einsatz.",
   kellyNote: "Kelly braucht deine Bankroll: trag sie im Tool ein. Ein Anteil, keine Empfehlung.",
@@ -110,7 +110,7 @@ const ES: FixdataCopy = {
   startedNote: "En juego, sin marcador en directo aún: cifras previas, sin cuotas.",
   order: "Orden: primero ligas top y ATP/WTA, luego por hora.",
   homeOrder: "Próximos partidos: primero ligas top y ATP/WTA, luego por hora. Los empezados están en En directo.",
-  priceAt: (time, zone) => `cuota a las ${time} ${zone}`,
+  priceAt: (time) => `cuota a las ${time}`,
   marketOnly: "Solo mercado: el modelo se aleja demasiado para mostrarlo",
   noValue: "Aquí el modelo está lejos del mercado: sin EV, Kelly ni importe.",
   kellyNote: "Kelly necesita tu bankroll: indícalo en la herramienta. Una fracción, no un consejo.",
@@ -133,7 +133,7 @@ const FR: FixdataCopy = {
   startedNote: "En cours, pas encore de score en direct : chiffres d’avant-match, aucune cote.",
   order: "Ordre : d’abord les grands championnats et l’ATP/WTA, puis par horaire.",
   homeOrder: "Prochains matchs : d’abord les grands championnats et l’ATP/WTA, puis par horaire. Les matchs commencés sont dans En direct.",
-  priceAt: (time, zone) => `cote à ${time} ${zone}`,
+  priceAt: (time) => `cote à ${time}`,
   marketOnly: "Marché seul : le modèle s’écarte trop pour être affiché",
   noValue: "Ici le modèle est loin du marché : ni EV, ni Kelly, ni mise affichés.",
   kellyNote: "Kelly demande votre bankroll : indiquez-la dans l’outil. Une fraction, pas un conseil.",
@@ -156,7 +156,7 @@ const NL: FixdataCopy = {
   startedNote: "Bezig, nog geen live stand: cijfers van voor de aftrap, geen odds.",
   order: "Volgorde: eerst topcompetities en ATP/WTA, dan op tijd.",
   homeOrder: "Volgende wedstrijden: eerst topcompetities en ATP/WTA, dan op tijd. Begonnen wedstrijden staan bij Live.",
-  priceAt: (time, zone) => `odd om ${time} ${zone}`,
+  priceAt: (time) => `odd om ${time}`,
   marketOnly: "Alleen markt: het model wijkt te veel af om te tonen",
   noValue: "Hier ligt het model ver van de markt: geen EV, Kelly of inzet.",
   kellyNote: "Kelly heeft je bankroll nodig: vul die in de tool in. Een fractie, geen advies.",
@@ -179,7 +179,7 @@ const PL: FixdataCopy = {
   startedNote: "Trwa, brak wyniku na żywo: liczby sprzed meczu, bez kursów.",
   order: "Kolejność: najpierw topowe ligi i ATP/WTA, potem według godziny.",
   homeOrder: "Najbliższe mecze: najpierw topowe ligi i ATP/WTA, potem według godziny. Rozpoczęte są w sekcji Na żywo.",
-  priceAt: (time, zone) => `kurs o ${time} ${zone}`,
+  priceAt: (time) => `kurs o ${time}`,
   marketOnly: "Tylko rynek: model odbiega za bardzo, by go pokazać",
   noValue: "Tu model jest daleko od rynku: bez EV, Kelly i stawki.",
   kellyNote: "Kelly potrzebuje twojego bankrolla: ustaw go w narzędziu. Ułamek, nie porada.",
@@ -202,7 +202,7 @@ const PT: FixdataCopy = {
   startedNote: "A decorrer, ainda sem resultado ao vivo: números pré-jogo, sem odds.",
   order: "Ordem: primeiro as ligas de topo e ATP/WTA, depois por hora.",
   homeOrder: "Próximos jogos: primeiro as ligas de topo e ATP/WTA, depois por hora. Os começados estão em Ao vivo.",
-  priceAt: (time, zone) => `odd às ${time} ${zone}`,
+  priceAt: (time) => `odd às ${time}`,
   marketOnly: "Só mercado: o modelo afasta-se demasiado para o mostrar",
   noValue: "Aqui o modelo está longe do mercado: sem EV, Kelly nem montante.",
   kellyNote: "O Kelly precisa da tua banca: define-a na ferramenta. Uma fração, não um conselho.",
@@ -225,7 +225,7 @@ const RU: FixdataCopy = {
   startedNote: "Идёт, счёта в реальном времени пока нет: данные до начала, без коэффициентов.",
   order: "Порядок: сначала топ-лиги и ATP/WTA, затем по времени.",
   homeOrder: "Ближайшие матчи: сначала топ-лиги и ATP/WTA, затем по времени. Начавшиеся — в разделе Live.",
-  priceAt: (time, zone) => `коэф. на ${time} ${zone}`,
+  priceAt: (time) => `коэф. на ${time}`,
   marketOnly: "Только рынок: модель расходится слишком сильно, чтобы её показывать",
   noValue: "Здесь модель далека от рынка: без EV, Kelly и суммы ставки.",
   kellyNote: "Для Kelly нужен ваш банкролл: укажите его в инструменте. Доля, а не совет.",
@@ -248,7 +248,7 @@ const SV: FixdataCopy = {
   startedNote: "Pågår, inget liveresultat ännu: siffror före start, inga odds.",
   order: "Ordning: först toppligor och ATP/WTA, sedan efter tid.",
   homeOrder: "Nästa matcher: först toppligor och ATP/WTA, sedan efter tid. Startade finns under Live.",
-  priceAt: (time, zone) => `odds kl. ${time} ${zone}`,
+  priceAt: (time) => `odds kl. ${time}`,
   marketOnly: "Bara marknad: modellen avviker för mycket för att visas",
   noValue: "Här ligger modellen långt från marknaden: ingen EV, Kelly eller insats.",
   kellyNote: "Kelly behöver din bankrulle: ange den i verktyget. En andel, inget råd.",
@@ -271,7 +271,7 @@ const TR: FixdataCopy = {
   startedNote: "Devam ediyor, henüz canlı skor yok: maç öncesi rakamlar, oran yok.",
   order: "Sıra: önce üst ligler ve ATP/WTA, sonra saate göre.",
   homeOrder: "Sıradaki maçlar: önce üst ligler ve ATP/WTA, sonra saate göre. Başlayanlar Canlı bölümünde.",
-  priceAt: (time, zone) => `${time} ${zone} oranı`,
+  priceAt: (time) => `${time} oranı`,
   marketOnly: "Yalnızca piyasa: model göstermek için fazla sapıyor",
   noValue: "Burada model piyasadan uzak: EV, Kelly veya bahis tutarı yok.",
   kellyNote: "Kelly kasanı ister: araçta gir. Bir oran, tavsiye değil.",

@@ -28,7 +28,7 @@ import { boardTapes } from "@/lib/v3c/tape-data.server";
 import "@/components/v3c/partners.css";
 import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 import { leadOutcome, liveState, pctInt } from "@/lib/v3c/board-view";
-import { byRelevance, hasStarted } from "@/lib/v3c/fixdata";
+import { byRelevance, hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { wantsLive } from "@/lib/v3c/live-view";
 import { matchHref } from "@/lib/v3c/match-view";
 import { HeroExample, type HeroExampleData } from "@/components/v3c/guide/HeroExample";
@@ -165,7 +165,8 @@ async function HeroExampleBlock({ nowIso }: { nowIso: string }) {
   const now = Date.parse(nowIso);
   const today = nowIso.slice(0, 10);
   const ok = b.data.matches
-    .filter((m) => Date.parse(m.kickoff) > now && m.margin_removed != null)
+    // final5 (fixdata B1/B5): only a match not started, and never one the model guard holds back
+    .filter((m) => !hasStarted(m.kickoff, new Date(now)) && valueToolsAllowed(m) && m.margin_removed != null)
     .map((m) => ({ m, o: leadOutcome(m) }))
     .filter(({ o }) => o.market_price != null && o.market_p != null)
     .sort((a, c) => Date.parse(a.m.kickoff) - Date.parse(c.m.kickoff));

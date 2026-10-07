@@ -57,7 +57,8 @@ export function Yesterday({ data }: { data: V3YesterdayResponse | null }) {
           <h2 className="v3c-lab" id="v3c-yday-h">
             {t.yday.lab(dayLabel)}
           </h2>
-          <p className="v3c-small">{settled ? t.yday.stripBody : t.yday.noneHint}</p>
+          {/* final5: the strip body explains expected/Brier, so it shows only with a score; tennis is in the Record */}
+          {settled ? h.score ? <p className="v3c-small">{t.yday.stripBody}</p> : null : <p className="v3c-small">{t.yday.noneHint}</p>}
         </div>
         {settled && !h.score ? (
           <dl className="v3c-yd-k" data-yday="too-few">

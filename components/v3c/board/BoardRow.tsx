@@ -14,7 +14,7 @@ import { useId } from "react";
 import type { V3BookPrice } from "@/lib/v3c/contracts";
 import type { OddsOnSitePartner } from "@/lib/price-books";
 import type { V3cCopy } from "@/lib/v3c/copy";
-import { gapText, isFlatGap, liveState, outcomeLabel, pctInt, price2, timeHM, dayShort, topShared, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
+import { gapText, isFlatGap, outcomeLabel, pctInt, price2, timeHM, dayShort, topShared, type BoardRowVM, type TennisRowVM } from "@/lib/v3c/board-view";
 import { stampLocal } from "@/lib/v3c/time-ui";
 import { trackEvent } from "@/lib/track-event";
 import { matchHref } from "@/lib/v3c/match-view";
@@ -31,7 +31,7 @@ import { liveBadge, type LiveBadge } from "@/lib/v3c/live-view";
 import { tennisEstimateOf } from "@/lib/v3c/tennis-estimate";
 import { LiveScoreChip, LiveTimeCell } from "../live/LiveBits";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
-import { hasStarted, valueToolsAllowed, zoneAbbr } from "@/lib/v3c/fixdata";
+import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import "../ui3.css";
 import "../fixdata.css";
 import "../tennis2.css";
@@ -156,8 +156,8 @@ function SiteOnlyBooks({ list, t, surface }: { list: OddsOnSitePartner[] | undef
 }
 
 function BestCta({ best, shared, t, surface, label, tz, locale }: { best: V3BookPrice; shared: number; t: V3cCopy; surface: string; label: string; tz?: string; locale?: string }) {
-  // fixdata B2: the time the price was read, in the visitor's zone
-  const at = best.captured_at ? fixdataCopyFor(locale).priceAt(timeHM(best.captured_at, tz, locale), zoneAbbr(best.captured_at, tz, locale)) : null;
+  // fixdata B2: the time the price was read, in the visitor's zone (declared once by the fascia's TzNote)
+  const at = best.captured_at ? fixdataCopyFor(locale).priceAt(timeHM(best.captured_at, tz, locale)) : null;
   // polish: «best» solo se un book paga strettamente di più; a pari prezzo nessuna CTA verso uno dei due
   if (shared > 1) return <p className="v3c-pn-cta v3c-small">{t.board.sharedTop(label, price2(best.price), shared)}</p>;
   return (

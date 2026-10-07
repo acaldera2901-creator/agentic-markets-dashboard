@@ -60,7 +60,7 @@ for (const [vname, viewport] of VIEWS) {
           evKelly: /EV calculator|Kelly criterion/.test(txt),
           euroStake: /€\d+ of a €\d+ bankroll/.test(txt),
           bestBasis: (txt.match(/EV and Kelly at the best price, [^.]+\./) ?? [null])[0],
-          priceAt: (txt.match(/price at \d\d:\d\d [A-Z+0-9]+/) ?? [null])[0],
+          priceAt: (txt.match(/price at \d\d:\d\d/) ?? [null])[0],
           liveNow: [...document.querySelectorAll(".v3c-ls-now-i")].length,
           order: txt.includes("top leagues and ATP/WTA first"),
           yday: document.querySelector(".v3c-yd-k")?.getAttribute("data-yday") ?? null,

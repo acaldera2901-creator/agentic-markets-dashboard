@@ -55,7 +55,7 @@ import { newsCopyFor } from "@/lib/v3c/news-copy";
 import type { NewsCard } from "@/lib/v3c/news/news.server";
 import { noteText } from "../pages/NewsLive";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
-import { hasStarted, valueToolsAllowed, zoneAbbr } from "@/lib/v3c/fixdata";
+import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
 const bookName = (k: string) => BOOK_NAME[k] ?? k;
@@ -451,7 +451,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
         ])
       : null;
   const guard = m.model_guard?.level ?? "ok";
-  const priceTime = (iso: string) => `${timeHM(iso, ctx.tz, locale)} ${zoneAbbr(iso, ctx.tz, locale)}`.trim();
+  const priceTime = (iso: string) => timeHM(iso, ctx.tz, locale);
   const choices: TapeChoice[] = m.outcomes.map((o) => ({ key: o.outcome, label: label(o.outcome), fair: fairPrice(o.estimate_p) }));
   return (
     <>
@@ -660,7 +660,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   // fixdata B1: once the match has started, no book, no best price, no partner button
   const started = hasStarted(m.kickoff, new Date());
   const books = started ? [] : bookList(lead.book_prices, [...readBookLinks(m), ...links]);
-  const priceTime = (iso: string) => `${timeHM(iso, ctx.tz, locale)} ${zoneAbbr(iso, ctx.tz, locale)}`.trim();
+  const priceTime = (iso: string) => timeHM(iso, ctx.tz, locale);
   const chk = checkedAt(books);
   const sidePrices = m.sides.map((s) => s.market_price ?? bestOf(s)?.price ?? null);
   const leadPrice = sidePrices[m.sides.indexOf(lead)];

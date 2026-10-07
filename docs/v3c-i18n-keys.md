@@ -311,7 +311,7 @@ EN fonte, IT completa, le altre nove in fallback EN (`recordCopyFor`). Prefisso 
 | `board.tapeSub` | «fn: book price · last {h} h» |
 | `board.tapeAria` | «fn: {label} price at a connected book moved from {from} to {to}, {n} captures» |
 | `board.tapeNone` | «no history» |
-| `yday.stripBody` | «Football: expected in favour is the sum of the sealed probabilities, the market’s Brier next to ours (same rows). Tennis: outcomes only.» |
+| `yday.stripBody` | «Football: expected in favour is the sum of the sealed probabilities, the market’s Brier next to ours (same rows). Tennis: in the Record.» (final5: the home shows football only) |
 | `yday.expectedFavour` | «Expected in favour» |
 | `yday.observed` | «Observed» |
 | `yday.brierEstimate` | «Brier · estimate» |
@@ -406,3 +406,13 @@ non EN/IT. Riscritte: `toolbar.legendEstimate`, `toolbar.legendTennis`, `tennis.
 | `toolbar.legendEstimate` | «Estimate · football: 70% market + 30% model» | «Stima · calcio: 70% mercato + 30% modello» |
 | `toolbar.legendTennis` | «Tennis: 90% market + 10% our Elo where fresh, not sealed; else market only» | «Tennis: 90% mercato + 10% nostro Elo dove è recente, non sigillata; altrove solo mercato» |
 | `tennis.noEstimate` | «Market only: the market price with the margin removed and the books’ prices. No estimate of ours for this match.» | «Solo mercato: il prezzo di mercato senza margine e le quote dei book. Nessuna nostra stima per questa partita.» |
+
+## final5 (#REDESIGN-V3C final5) — merge di fixdata + fixui
+
+Riscritte nelle 11 lingue (nessuna chiave nuova):
+
+| Chiave | EN | IT |
+|---|---|---|
+| `yday.stripBody` | «… Tennis: in the Record.» (era «Tennis: outcomes only.»: la home ora mostra solo il calcio, fixdata A6); mostrata solo quando c'è il punteggio (n ≥ minimo) | «… Tennis: nel Registro.» |
+| `fixdata.priceAt` | fn(time) → «price at {t}» (senza sigla: il fuso è dichiarato una volta per vista da TzNote, fixui M2) | fn(time) → «prezzo delle {t}» |
+

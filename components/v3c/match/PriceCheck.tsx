@@ -22,7 +22,7 @@ import { ToolStrip } from "./ToolStrip";
 import "../tennis2.css";
 import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 import type { ModelGuardLevel } from "@/lib/v3c/fixdata";
-import { PRICE_MAX, PRICE_MIN, inputProblem, zoneAbbr } from "@/lib/v3c/fixdata";
+import { PRICE_MAX, PRICE_MIN, inputProblem } from "@/lib/v3c/fixdata";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
 
 /** tennis2: estimate_p nel tennis = la stima basata su Elo (0,1·Elo + 0,9·mercato) dove c'è, altrimenti null (solo mercato). */
@@ -271,7 +271,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
               {c.pc.youBeat(leadPrice.toFixed(2))}
             </p>
           ) : null}
-          <PartnerBlock id="v3c-pc-p" title={c.pc.partnerTitle} label={labels[li]} books={books} checked={checked ? `${timeHM(checked, tz, locale)} ${zoneAbbr(checked, tz, locale)}` : null} partners={partners} surface="price_check" c={c} age={t.foot.age} timeOf={(iso) => `${timeHM(iso, tz, locale)} ${zoneAbbr(iso, tz, locale)}`} />
+          <PartnerBlock id="v3c-pc-p" title={c.pc.partnerTitle} label={labels[li]} books={books} checked={checked ? timeHM(checked, tz, locale) : null} partners={partners} surface="price_check" c={c} age={t.foot.age} timeOf={(iso) => timeHM(iso, tz, locale)} />
           <p className="v3c-small" style={{ marginTop: 10 }}>
             <Link href={matchHref(m.id)}>{c.pc.openMatch}</Link>
           </p>
