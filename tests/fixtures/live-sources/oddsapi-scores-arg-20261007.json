@@ -1,0 +1,503 @@
+[
+ {
+  "id": "aa690fd7e46982c83048052821dc9cc6",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-04T17:45:00Z",
+  "completed": true,
+  "home_team": "Atlético Huracán",
+  "away_team": "Aldosivi Mar del Plata",
+  "scores": [
+   {
+    "name": "Atlético Huracán",
+    "score": "1"
+   },
+   {
+    "name": "Aldosivi Mar del Plata",
+    "score": "0"
+   }
+  ],
+  "last_update": "2026-10-05T07:03:44Z"
+ },
+ {
+  "id": "b572ad6feac72764dd496ddd90f019ce",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-04T20:00:00Z",
+  "completed": true,
+  "home_team": "Talleres",
+  "away_team": "Belgrano de Cordoba",
+  "scores": [
+   {
+    "name": "Talleres",
+    "score": "0"
+   },
+   {
+    "name": "Belgrano de Cordoba",
+    "score": "1"
+   }
+  ],
+  "last_update": "2026-10-05T07:03:44Z"
+ },
+ {
+  "id": "fd73ff6279d08f38434fb0c4fca0f065",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-04T22:15:00Z",
+  "completed": true,
+  "home_team": "Argentinos Juniors",
+  "away_team": "CA Tigre BA",
+  "scores": [
+   {
+    "name": "Argentinos Juniors",
+    "score": "2"
+   },
+   {
+    "name": "CA Tigre BA",
+    "score": "1"
+   }
+  ],
+  "last_update": "2026-10-05T07:03:44Z"
+ },
+ {
+  "id": "82be231269013917c7649f4143004dde",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-05T00:30:00Z",
+  "completed": true,
+  "home_team": "Estudiantes de Río Cuarto",
+  "away_team": "Racing Club",
+  "scores": [
+   {
+    "name": "Estudiantes de Río Cuarto",
+    "score": "1"
+   },
+   {
+    "name": "Racing Club",
+    "score": "2"
+   }
+  ],
+  "last_update": "2026-10-05T07:03:44Z"
+ },
+ {
+  "id": "e87f6e4beae72a0c9132d3f03543b144",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-05T19:45:00Z",
+  "completed": true,
+  "home_team": "Deportivo Riestra",
+  "away_team": "Central Córdoba",
+  "scores": [
+   {
+    "name": "Deportivo Riestra",
+    "score": "1"
+   },
+   {
+    "name": "Central Córdoba",
+    "score": "1"
+   }
+  ],
+  "last_update": "2026-10-06T04:15:00Z"
+ },
+ {
+  "id": "570408816c1cec5681409e38c4d04f59",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-05T22:00:00Z",
+  "completed": true,
+  "home_team": "Estudiantes",
+  "away_team": "Gimnasia Mendoza",
+  "scores": [
+   {
+    "name": "Estudiantes",
+    "score": "3"
+   },
+   {
+    "name": "Gimnasia Mendoza",
+    "score": "0"
+   }
+  ],
+  "last_update": "2026-10-06T04:15:00Z"
+ },
+ {
+  "id": "a918e9889e7c0c7126a1d2bb437d1fbb",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-05T22:00:00Z",
+  "completed": true,
+  "home_team": "Velez Sarsfield BA",
+  "away_team": "Platense",
+  "scores": [
+   {
+    "name": "Velez Sarsfield BA",
+    "score": "2"
+   },
+   {
+    "name": "Platense",
+    "score": "2"
+   }
+  ],
+  "last_update": "2026-10-06T04:15:00Z"
+ },
+ {
+  "id": "887722a9c77581f0bb94ffde30026253",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-06T00:15:00Z",
+  "completed": true,
+  "home_team": "Banfield",
+  "away_team": "Rosario Central",
+  "scores": [
+   {
+    "name": "Banfield",
+    "score": "1"
+   },
+   {
+    "name": "Rosario Central",
+    "score": "1"
+   }
+  ],
+  "last_update": "2026-10-06T04:15:00Z"
+ },
+ {
+  "id": "271a6d20ede17d1858ebf2089454b948",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-09T17:30:00Z",
+  "completed": false,
+  "home_team": "Aldosivi Mar del Plata",
+  "away_team": "Sarmiento de Junin",
+  "scores": null,
+  "last_update": "2026-10-06T07:40:36Z"
+ },
+ {
+  "id": "52782f7a9b6917268227ca65fec15528",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-09T21:00:00Z",
+  "completed": false,
+  "home_team": "Gimnasia La Plata",
+  "away_team": "Atlético Tucuman",
+  "scores": null,
+  "last_update": "2026-10-06T07:40:36Z"
+ },
+ {
+  "id": "f87773f0aca0cfaa154985be26336c21",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-09T22:30:00Z",
+  "completed": false,
+  "home_team": "Instituto de Córdoba",
+  "away_team": "Boca Juniors",
+  "scores": null,
+  "last_update": "2026-10-06T07:40:36Z"
+ },
+ {
+  "id": "9d0c5f56eef99d6301d547adde8ef368",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-10T00:45:00Z",
+  "completed": false,
+  "home_team": "Union Santa Fe",
+  "away_team": "Defensa y Justicia",
+  "scores": null,
+  "last_update": "2026-10-06T07:40:36Z"
+ },
+ {
+  "id": "a4f88b2e04b06ffc66014520b7e484ee",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-10T18:45:00Z",
+  "completed": false,
+  "home_team": "Barracas Central",
+  "away_team": "Atlético Huracán",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "4d9ca33b88d61314c79c75fc7a109dec",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-10T20:00:00Z",
+  "completed": false,
+  "home_team": "Central Córdoba",
+  "away_team": "Estudiantes",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "ae0467d02e1e53bb0ebaba185b5917aa",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-10T22:15:00Z",
+  "completed": false,
+  "home_team": "CA Tigre BA",
+  "away_team": "Banfield",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "1507425376d8bf9c482d9761e8be72b0",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-11T00:30:00Z",
+  "completed": false,
+  "home_team": "River Plate",
+  "away_team": "Estudiantes de Río Cuarto",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "295b7888e9346eb782c5b9ef22221c52",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-11T17:45:00Z",
+  "completed": false,
+  "home_team": "San Lorenzo",
+  "away_team": "Deportivo Riestra",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "d46cc37bbea091d772e0803a53078703",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-11T20:00:00Z",
+  "completed": false,
+  "home_team": "Platense",
+  "away_team": "Argentinos Juniors",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "0349c82e45e4342369596c2017d36d63",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-11T20:00:00Z",
+  "completed": false,
+  "home_team": "Rosario Central",
+  "away_team": "Independiente Rivadavia",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "32c0c0e4d625e121749708d239ffe8a4",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-11T22:15:00Z",
+  "completed": false,
+  "home_team": "Racing Club",
+  "away_team": "Belgrano de Cordoba",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "a238f34cc0cb3f59267b8d63af610b28",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-12T00:30:00Z",
+  "completed": false,
+  "home_team": "Talleres",
+  "away_team": "Independiente",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "1629edf1896c89bbb5bc3187bc3a6163",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-12T19:00:00Z",
+  "completed": false,
+  "home_team": "Lanus",
+  "away_team": "Velez Sarsfield BA",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "6195812c615898d3c37e59c0e2689662",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-12T21:30:00Z",
+  "completed": false,
+  "home_team": "Gimnasia Mendoza",
+  "away_team": "Newells Old Boys",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "63d4f2a7f1d59c91f4431f0349f573bb",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-14T22:00:00Z",
+  "completed": false,
+  "home_team": "Sarmiento de Junin",
+  "away_team": "River Plate",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "98b44cda0bb21e6412fd8c8e68905d6d",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Estudiantes de Río Cuarto",
+  "away_team": "Aldosivi Mar del Plata",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "4fc5f9f863937c43e2e7ea005b4db1f6",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Banfield",
+  "away_team": "Argentinos Juniors",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "91072a98d5c462714d20fdc94219241c",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Atlético Huracán",
+  "away_team": "Gimnasia La Plata",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "77da9d57f8682e024e36434435d1567c",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Atlético Tucuman",
+  "away_team": "Rosario Central",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "c12c6e54a14c5d5079ca005fb4863770",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Sarmiento de Junin",
+  "away_team": "Barracas Central",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "8953e4f981210d66a702071b296d069a",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Belgrano de Cordoba",
+  "away_team": "River Plate",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "64507580e739f9eac6722b91fa3ddd79",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Boca Juniors",
+  "away_team": "Talleres",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "8830fe1a1fae1fcb125b305812cc023b",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Independiente Rivadavia",
+  "away_team": "CA Tigre BA",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "99a36bd3d42d1ca944892d9955ad4943",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Newells Old Boys",
+  "away_team": "Central Córdoba",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "dad29e65166284d9949060de9c8a3068",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Defensa y Justicia",
+  "away_team": "Instituto de Córdoba",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "df4adcbb12592029df9e691310ec375d",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Deportivo Riestra",
+  "away_team": "Union Santa Fe",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "dd7b53a2fac297a4882221bbf2b5befe",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Estudiantes",
+  "away_team": "San Lorenzo",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "c1f0a59e7193dc4e3cfba20f0c6087b3",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Velez Sarsfield BA",
+  "away_team": "Gimnasia Mendoza",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "a4ea2c5016a95547b793098e4b8a0523",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Racing Club",
+  "away_team": "Independiente",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "c67c926373064675b0603019cc8ee888",
+  "sport_key": "soccer_argentina_primera_division",
+  "sport_title": "Primera División - Argentina",
+  "commence_time": "2026-10-18T20:00:00Z",
+  "completed": false,
+  "home_team": "Platense",
+  "away_team": "Lanus",
+  "scores": null,
+  "last_update": null
+ }
+]

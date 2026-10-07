@@ -50,9 +50,9 @@ type Common = {
 };
 
 /** livescores: il badge della riga — solo nella finestra live (o se la fonte ha un dato), mai prima del primo dato. */
-function rowBadge(kickoff: string, now: Date, live: V3LiveItem | undefined, loaded: boolean | undefined, lc: V3cLiveCopy | undefined): LiveBadge | null {
+function rowBadge(kickoff: string, now: Date, live: V3LiveItem | undefined, loaded: boolean | undefined, lc: V3cLiveCopy | undefined, sport: "football" | "tennis"): LiveBadge | null {
   if (!lc || (!live && !liveState(kickoff, now).live)) return null;
-  return liveBadge(live, Boolean(loaded), lc);
+  return liveBadge(live, Boolean(loaded), lc, sport);
 }
 
 /** Il chip del book: marchio · quota. Link affiliato reale (deep-link o landing del registro), tracciato. */
@@ -79,15 +79,16 @@ export function BookChip({ b, t, surface, outcome, compact = false }: { b: V3Boo
   );
 }
 
-function TimeCell({ kickoff, t, tz, locale, now, sport, badge }: { kickoff: string; t: V3cCopy; tz: string | undefined; locale: string; now: Date; sport: "football" | "tennis"; badge: LiveBadge | null }) {
+function TimeCell({ kickoff, t, tz, locale, now, badge }: { kickoff: string; t: V3cCopy; tz: string | undefined; locale: string; now: Date; badge: LiveBadge | null }) {
   if (badge) return <LiveTimeCell badge={badge} kickoffTime={timeHM(kickoff, tz, locale)} />;
   const live = liveState(kickoff, now);
-  // Tennis: nessun minuto di gioco (e il contratto non porta il punteggio dei set) → solo «Live».
+  // Before the first live read: «Live» from the clock, and under it the kick-off time — live2: no longer
+  // the minutes since kick-off («62′»), which read as a game minute no source gave us.
   if (live.live)
     return (
       <span className="v3c-r-time">
         <em className="v3c-live">{t.board.live}</em>
-        {sport === "football" ? <small>{t.board.liveSince(live.minutes)}</small> : null}
+        <small>{timeHM(kickoff, tz, locale)}</small>
       </span>
     );
   return (
@@ -205,7 +206,7 @@ function MeLine({ market, estimate }: { market: number | null | undefined; estim
 export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape, live, liveLoaded, lc }: Common & { r: BoardRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
-  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc);
+  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc, "football");
   const match = `${m.home} – ${m.away}`;
   const leadLabel = outcomeLabel(m, lead.outcome, t.board.draw);
   const g = lead.edge_pp;
@@ -216,7 +217,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
   const scaleAria = lead.market_p == null ? t.board.scaleAriaNoMarket(pctInt(lead.estimate_p)) : t.board.scaleAria(pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g));
   return (
     <div className={["v3c-row", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="football">
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="football" badge={badge} />
+      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} badge={badge} />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.home }} away={{ name: m.away }} />
         <span className="v3c-r-name">
@@ -332,7 +333,7 @@ const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctI
 export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, siteOnly, surface, tape, live, liveLoaded, lc }: Common & { r: TennisRowVM }) {
   const panelId = useId();
   const { m, lead } = r;
-  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc);
+  const badge = rowBadge(m.kickoff, now, live, liveLoaded, lc, "tennis");
   const match = `${m.player1} – ${m.player2}`;
   const leadLabel = lead.player;
   // Il gap del tennis esiste SOLO dove il contratto lo dà: stima sigillata del nostro Elo − prezzo di un
@@ -348,7 +349,7 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       : t.tennis.scaleAriaModel(pctInt(lead.estimate_p));
   return (
     <div className={["v3c-row", "v3c-row-tn", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="tennis">
-      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} sport="tennis" badge={badge} />
+      <TimeCell kickoff={m.kickoff} t={t} tz={tz} locale={locale} now={now} badge={badge} />
       <span className="v3c-r-teams">
         <Monogrammi home={{ name: m.player1 }} away={{ name: m.player2 }} />
         <span className="v3c-r-name">

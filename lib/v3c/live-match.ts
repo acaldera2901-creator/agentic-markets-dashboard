@@ -25,7 +25,7 @@ export const LIVE_WINDOW_MIN = 180;
 /** …and minutes BEFORE kick-off (a clock a little off, a match started early). */
 export const LIVE_LEAD_MIN = 15;
 
-const FOOTBALL_KICKOFF_MS = 30 * 60_000;
+export const FOOTBALL_KICKOFF_MS = 30 * 60_000;
 const TENNIS_KICKOFF_MS = 12 * 3_600_000;
 const MIN_TOKEN = 4;
 
@@ -78,7 +78,7 @@ function teamTokens(name: string): Set<string> {
   return new Set(tokenSquadra(name).map((t) => (t === "b" ? "ii" : t.length >= 5 && t.endsWith("s") && !t.endsWith("ss") ? t.slice(0, -1) : t)));
 }
 
-function strongSameTeam(a: string, b: string): boolean {
+export function strongSameTeam(a: string, b: string): boolean {
   const x = teamTokens(a);
   const y = teamTokens(b);
   const [small, big] = x.size <= y.size ? [x, y] : [y, x];
@@ -194,6 +194,8 @@ export type LiveFeeds = {
   /** whether the tennis feed was read at all (both scoreboards failed → no source) */
   tennisRead: boolean;
   failed: string[];
+  /** live2: when the scoreboards were read (default: `now`) */
+  readAt?: string;
 };
 
 export const LIVE_SOURCE_NOTE =
@@ -204,6 +206,7 @@ export function buildLive(rows: readonly LiveRow[], feeds: LiveFeeds, now: Date)
   const cov = (): V3LiveCoverage => ({ rows: 0, matched: 0, no_source: 0, unmatched: 0 });
   const coverage = { football: cov(), tennis: cov(), failed_feeds: [...feeds.failed] };
   const allSoccer = [...feeds.soccer.values()].flat();
+  const readAt = feeds.readAt ?? now.toISOString();
   for (const row of inLiveWindow(rows, now)) {
     const c = coverage[row.sport];
     c.rows += 1;
@@ -213,14 +216,14 @@ export function buildLive(rows: readonly LiveRow[], feeds: LiveFeeds, now: Date)
       // an `espn:` id is found in whatever scoreboard was read; a name match needs its league's scoreboard
       const hit = matchFootball(row, espnIdOf(row) ? allSoccer : pool ?? []);
       if (hit) {
-        items[row.id] = { ...footballItem(hit.ev, hit.swapped), source_id: `espn:${hit.ev.id}`, matched_by: hit.by };
+        items[row.id] = { ...footballItem(hit.ev, hit.swapped), source_id: `espn:${hit.ev.id}`, matched_by: hit.by, source: "espn", updated_at: readAt };
         c.matched += 1;
       } else if (!pool && !espnIdOf(row)) c.no_source += 1;
       else c.unmatched += 1;
     } else {
       const hit = feeds.tennisRead ? matchTennis(row, feeds.tennis) : null;
       if (hit) {
-        items[row.id] = { ...tennisItem(hit.m, hit.aIsP1), source_id: `espn:${hit.m.id}`, matched_by: hit.by };
+        items[row.id] = { ...tennisItem(hit.m, hit.aIsP1), source_id: `espn:${hit.m.id}`, matched_by: hit.by, source: "espn", updated_at: readAt };
         c.matched += 1;
       } else if (!feeds.tennisRead) c.no_source += 1;
       else c.unmatched += 1;
@@ -231,6 +234,8 @@ export function buildLive(rows: readonly LiveRow[], feeds: LiveFeeds, now: Date)
     generated_at: now.toISOString(),
     window_min: LIVE_WINDOW_MIN,
     source: { name: "ESPN", note: LIVE_SOURCE_NOTE },
+    sources: [],
+    degraded: false,
     items,
     coverage,
   };

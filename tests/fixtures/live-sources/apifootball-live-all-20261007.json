@@ -1,0 +1,1250 @@
+{
+ "get": "fixtures",
+ "parameters": {
+  "live": "all"
+ },
+ "errors": [],
+ "results": 12,
+ "paging": {
+  "current": 1,
+  "total": 1
+ },
+ "response": [
+  {
+   "fixture": {
+    "id": 1533785,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "venue": {
+     "id": null,
+     "name": null,
+     "city": null
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 37,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 660,
+    "name": "WK-League",
+    "country": "South-Korea",
+    "logo": "https://media.api-sports.io/football/leagues/660.png",
+    "flag": "https://media.api-sports.io/flags/kr.svg",
+    "season": 2026,
+    "round": "Regular Season - 26",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 14373,
+     "name": "Changnyeong W",
+     "logo": "https://media.api-sports.io/football/teams/14373.png",
+     "winner": true
+    },
+    "away": {
+     "id": 14379,
+     "name": "Suwon FMC W",
+     "logo": "https://media.api-sports.io/football/teams/14379.png",
+     "winner": false
+    }
+   },
+   "goals": {
+    "home": 2,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 2,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 1,
+      "extra": null
+     },
+     "team": {
+      "id": 14373,
+      "name": "Changnyeong W",
+      "logo": "https://media.api-sports.io/football/teams/14373.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    },
+    {
+     "time": {
+      "elapsed": 32,
+      "extra": null
+     },
+     "team": {
+      "id": 14373,
+      "name": "Changnyeong W",
+      "logo": "https://media.api-sports.io/football/teams/14373.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1533786,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "venue": {
+     "id": null,
+     "name": "Gyeongju Civic Stadium",
+     "city": "Gyeongju"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 37,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 660,
+    "name": "WK-League",
+    "country": "South-Korea",
+    "logo": "https://media.api-sports.io/football/leagues/660.png",
+    "flag": "https://media.api-sports.io/flags/kr.svg",
+    "season": 2026,
+    "round": "Regular Season - 26",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 14375,
+     "name": "Gyeongju W",
+     "logo": "https://media.api-sports.io/football/teams/14375.png",
+     "winner": null
+    },
+    "away": {
+     "id": 14376,
+     "name": "Hwacheon KSPO W",
+     "logo": "https://media.api-sports.io/football/teams/14376.png",
+     "winner": null
+    }
+   },
+   "goals": {
+    "home": 1,
+    "away": 1
+   },
+   "score": {
+    "halftime": {
+     "home": 1,
+     "away": 1
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 9,
+      "extra": null
+     },
+     "team": {
+      "id": 14376,
+      "name": "Hwacheon KSPO W",
+      "logo": "https://media.api-sports.io/football/teams/14376.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    },
+    {
+     "time": {
+      "elapsed": 20,
+      "extra": null
+     },
+     "team": {
+      "id": 14375,
+      "name": "Gyeongju W",
+      "logo": "https://media.api-sports.io/football/teams/14375.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1533787,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "venue": {
+     "id": null,
+     "name": "Sejong Civic Stadium",
+     "city": "Sejong"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 38,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 660,
+    "name": "WK-League",
+    "country": "South-Korea",
+    "logo": "https://media.api-sports.io/football/leagues/660.png",
+    "flag": "https://media.api-sports.io/flags/kr.svg",
+    "season": 2026,
+    "round": "Regular Season - 26",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 14374,
+     "name": "Gumi Sportstoto W",
+     "logo": "https://media.api-sports.io/football/teams/14374.png",
+     "winner": false
+    },
+    "away": {
+     "id": 14377,
+     "name": "Incheon Red Angels W",
+     "logo": "https://media.api-sports.io/football/teams/14377.png",
+     "winner": true
+    }
+   },
+   "goals": {
+    "home": 0,
+    "away": 1
+   },
+   "score": {
+    "halftime": {
+     "home": 0,
+     "away": 1
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 31,
+      "extra": null
+     },
+     "team": {
+      "id": 14377,
+      "name": "Incheon Red Angels W",
+      "logo": "https://media.api-sports.io/football/teams/14377.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1533788,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "venue": {
+     "id": null,
+     "name": "Hyochang Stadium",
+     "city": "Seoul"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 37,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 660,
+    "name": "WK-League",
+    "country": "South-Korea",
+    "logo": "https://media.api-sports.io/football/leagues/660.png",
+    "flag": "https://media.api-sports.io/flags/kr.svg",
+    "season": 2026,
+    "round": "Regular Season - 26",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 14378,
+     "name": "Seoul W",
+     "logo": "https://media.api-sports.io/football/teams/14378.png",
+     "winner": true
+    },
+    "away": {
+     "id": 14372,
+     "name": "Boeun Sangmu W",
+     "logo": "https://media.api-sports.io/football/teams/14372.png",
+     "winner": false
+    }
+   },
+   "goals": {
+    "home": 1,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 1,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 29,
+      "extra": null
+     },
+     "team": {
+      "id": 14378,
+      "name": "Seoul W",
+      "logo": "https://media.api-sports.io/football/teams/14378.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1573272,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": null,
+     "name": null,
+     "city": null
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 28,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 879,
+    "name": "Segunda División RFEF - Group 5",
+    "country": "Spain",
+    "logo": "https://media.api-sports.io/football/leagues/879.png",
+    "flag": "https://media.api-sports.io/flags/es.svg",
+    "season": 2026,
+    "round": "Group 5 - 3",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 22142,
+     "name": "Real Madrid III",
+     "logo": "https://media.api-sports.io/football/teams/22142.png",
+     "winner": null
+    },
+    "away": {
+     "id": 9900,
+     "name": "Guadalajara",
+     "logo": "https://media.api-sports.io/football/teams/9900.png",
+     "winner": null
+    }
+   },
+   "goals": {
+    "home": 0,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 0,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": []
+  },
+  {
+   "fixture": {
+    "id": 1611770,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": null,
+     "name": null,
+     "city": null
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 36,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 1065,
+    "name": "U19 League",
+    "country": "Ukraine",
+    "logo": "https://media.api-sports.io/football/leagues/1065.png",
+    "flag": "https://media.api-sports.io/flags/ua.svg",
+    "season": 2026,
+    "round": "Regular Season - 9",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 23075,
+     "name": "Kolos Kovalivka U19",
+     "logo": "https://media.api-sports.io/football/teams/23075.png",
+     "winner": null
+    },
+    "away": {
+     "id": 7898,
+     "name": "Dynamo Kyiv U19",
+     "logo": "https://media.api-sports.io/football/teams/7898.png",
+     "winner": null
+    }
+   },
+   "goals": {
+    "home": 1,
+    "away": 1
+   },
+   "score": {
+    "halftime": {
+     "home": 1,
+     "away": 1
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 19,
+      "extra": null
+     },
+     "team": {
+      "id": 7898,
+      "name": "Dynamo Kyiv U19",
+      "logo": "https://media.api-sports.io/football/teams/7898.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    },
+    {
+     "time": {
+      "elapsed": 33,
+      "extra": null
+     },
+     "team": {
+      "id": 23075,
+      "name": "Kolos Kovalivka U19",
+      "logo": "https://media.api-sports.io/football/teams/23075.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1611771,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": 8330,
+     "name": "Obolon Arena",
+     "city": "Kyiv"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 21,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 1065,
+    "name": "U19 League",
+    "country": "Ukraine",
+    "logo": "https://media.api-sports.io/football/leagues/1065.png",
+    "flag": "https://media.api-sports.io/flags/ua.svg",
+    "season": 2026,
+    "round": "Regular Season - 9",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 23080,
+     "name": "Obolon' Kyiv U19",
+     "logo": "https://media.api-sports.io/football/teams/23080.png",
+     "winner": null
+    },
+    "away": {
+     "id": 7929,
+     "name": "Shakhtar Donetsk U19",
+     "logo": "https://media.api-sports.io/football/teams/7929.png",
+     "winner": null
+    }
+   },
+   "goals": {
+    "home": 0,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 0,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": []
+  },
+  {
+   "fixture": {
+    "id": 1611772,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": 20747,
+     "name": "CSC Nika Stadium",
+     "city": "Oleksandria"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 32,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 1065,
+    "name": "U19 League",
+    "country": "Ukraine",
+    "logo": "https://media.api-sports.io/football/leagues/1065.png",
+    "flag": "https://media.api-sports.io/flags/ua.svg",
+    "season": 2026,
+    "round": "Regular Season - 9",
+    "standings": true
+   },
+   "teams": {
+    "home": {
+     "id": 23081,
+     "name": "Oleksandria U19",
+     "logo": "https://media.api-sports.io/football/teams/23081.png",
+     "winner": false
+    },
+    "away": {
+     "id": 25118,
+     "name": "Livyi Bereh U19",
+     "logo": "https://media.api-sports.io/football/teams/25118.png",
+     "winner": true
+    }
+   },
+   "goals": {
+    "home": 0,
+    "away": 1
+   },
+   "score": {
+    "halftime": {
+     "home": 0,
+     "away": 1
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 8,
+      "extra": null
+     },
+     "team": {
+      "id": 25118,
+      "name": "Livyi Bereh U19",
+      "logo": "https://media.api-sports.io/football/teams/25118.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1635580,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": 960,
+     "name": "Ajinomoto Stadium",
+     "city": "Chofu"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 35,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 102,
+    "name": "Emperor Cup",
+    "country": "Japan",
+    "logo": "https://media.api-sports.io/football/leagues/102.png",
+    "flag": "https://media.api-sports.io/flags/jp.svg",
+    "season": 2026,
+    "round": "Round of 32",
+    "standings": false
+   },
+   "teams": {
+    "home": {
+     "id": 292,
+     "name": "FC Tokyo",
+     "logo": "https://media.api-sports.io/football/teams/292.png",
+     "winner": true
+    },
+    "away": {
+     "id": 284,
+     "name": "Shonan Bellmare",
+     "logo": "https://media.api-sports.io/football/teams/284.png",
+     "winner": false
+    }
+   },
+   "goals": {
+    "home": 2,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 2,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 14,
+      "extra": null
+     },
+     "team": {
+      "id": 292,
+      "name": "FC Tokyo",
+      "logo": "https://media.api-sports.io/football/teams/292.png"
+     },
+     "player": {
+      "id": 199899,
+      "name": "F. Yamada"
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    },
+    {
+     "time": {
+      "elapsed": 34,
+      "extra": null
+     },
+     "team": {
+      "id": 292,
+      "name": "FC Tokyo",
+      "logo": "https://media.api-sports.io/football/teams/292.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1635581,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": 11577,
+     "name": "Tottori Bank Bird Stadium",
+     "city": "Tottori"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 35,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 102,
+    "name": "Emperor Cup",
+    "country": "Japan",
+    "logo": "https://media.api-sports.io/football/leagues/102.png",
+    "flag": "https://media.api-sports.io/flags/jp.svg",
+    "season": 2026,
+    "round": "Round of 32",
+    "standings": false
+   },
+   "teams": {
+    "home": {
+     "id": 4319,
+     "name": "Gainare Tottori",
+     "logo": "https://media.api-sports.io/football/teams/4319.png",
+     "winner": null
+    },
+    "away": {
+     "id": 306,
+     "name": "Tokyo Verdy",
+     "logo": "https://media.api-sports.io/football/teams/306.png",
+     "winner": null
+    }
+   },
+   "goals": {
+    "home": 0,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 0,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 17,
+      "extra": null
+     },
+     "team": {
+      "id": 306,
+      "name": "Tokyo Verdy",
+      "logo": "https://media.api-sports.io/football/teams/306.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Card",
+     "detail": "Yellow Card",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1635585,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": null,
+     "name": "Kawasaki Todoroki Stadium",
+     "city": "Kawasaki"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 35,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 102,
+    "name": "Emperor Cup",
+    "country": "Japan",
+    "logo": "https://media.api-sports.io/football/leagues/102.png",
+    "flag": "https://media.api-sports.io/flags/jp.svg",
+    "season": 2026,
+    "round": "Round of 32",
+    "standings": false
+   },
+   "teams": {
+    "home": {
+     "id": 294,
+     "name": "Kawasaki Frontale",
+     "logo": "https://media.api-sports.io/football/teams/294.png",
+     "winner": true
+    },
+    "away": {
+     "id": 10409,
+     "name": "Tegevajaro Miyazaki",
+     "logo": "https://media.api-sports.io/football/teams/10409.png",
+     "winner": false
+    }
+   },
+   "goals": {
+    "home": 1,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 1,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 12,
+      "extra": null
+     },
+     "team": {
+      "id": 294,
+      "name": "Kawasaki Frontale",
+      "logo": "https://media.api-sports.io/football/teams/294.png"
+     },
+     "player": {
+      "id": 10425,
+      "name": "Marcinho"
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Normal Goal",
+     "comments": null
+    },
+    {
+     "time": {
+      "elapsed": 14,
+      "extra": null
+     },
+     "team": {
+      "id": 10409,
+      "name": "Tegevajaro Miyazaki",
+      "logo": "https://media.api-sports.io/football/teams/10409.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Card",
+     "detail": "Yellow Card",
+     "comments": null
+    },
+    {
+     "time": {
+      "elapsed": 31,
+      "extra": null
+     },
+     "team": {
+      "id": 294,
+      "name": "Kawasaki Frontale",
+      "logo": "https://media.api-sports.io/football/teams/294.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Card",
+     "detail": "Yellow Card",
+     "comments": null
+    }
+   ]
+  },
+  {
+   "fixture": {
+    "id": 1635588,
+    "referee": null,
+    "timezone": "UTC",
+    "date": "2026-10-07T10:00:00+00:00",
+    "timestamp": 1791367200,
+    "periods": {
+     "first": 1791367200,
+     "second": null
+    },
+    "venue": {
+     "id": 21808,
+     "name": "JFE Harenokuni Stadium",
+     "city": "Okayama"
+    },
+    "status": {
+     "long": "First Half",
+     "short": "1H",
+     "elapsed": 34,
+     "extra": null
+    }
+   },
+   "league": {
+    "id": 102,
+    "name": "Emperor Cup",
+    "country": "Japan",
+    "logo": "https://media.api-sports.io/football/leagues/102.png",
+    "flag": "https://media.api-sports.io/flags/jp.svg",
+    "season": 2026,
+    "round": "Round of 32",
+    "standings": false
+   },
+   "teams": {
+    "home": {
+     "id": 310,
+     "name": "Fagiano Okayama",
+     "logo": "https://media.api-sports.io/football/teams/310.png",
+     "winner": null
+    },
+    "away": {
+     "id": 301,
+     "name": "JEF United Chiba",
+     "logo": "https://media.api-sports.io/football/teams/301.png",
+     "winner": null
+    }
+   },
+   "goals": {
+    "home": 0,
+    "away": 0
+   },
+   "score": {
+    "halftime": {
+     "home": 0,
+     "away": 0
+    },
+    "fulltime": {
+     "home": null,
+     "away": null
+    },
+    "extratime": {
+     "home": null,
+     "away": null
+    },
+    "penalty": {
+     "home": null,
+     "away": null
+    }
+   },
+   "events": [
+    {
+     "time": {
+      "elapsed": 19,
+      "extra": null
+     },
+     "team": {
+      "id": 301,
+      "name": "JEF United Chiba",
+      "logo": "https://media.api-sports.io/football/teams/301.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Goal",
+     "detail": "Missed Penalty",
+     "comments": null
+    },
+    {
+     "time": {
+      "elapsed": 29,
+      "extra": null
+     },
+     "team": {
+      "id": 301,
+      "name": "JEF United Chiba",
+      "logo": "https://media.api-sports.io/football/teams/301.png"
+     },
+     "player": {
+      "id": null,
+      "name": null
+     },
+     "assist": {
+      "id": null,
+      "name": null
+     },
+     "type": "Card",
+     "detail": "Yellow Card",
+     "comments": null
+    }
+   ]
+  }
+ ]
+}

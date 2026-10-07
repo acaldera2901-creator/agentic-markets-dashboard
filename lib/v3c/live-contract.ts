@@ -46,11 +46,44 @@ export type V3LiveTennis = {
   winner: "p1" | "p2" | null;
 };
 
+/** live2: the sources, in priority order (a tie on freshness goes to the first). */
+export type V3LiveSourceId = "espn" | "api_football" | "odds_api";
+
+/** live2: how each source is named on screen (the contract file has no server imports: safe in the browser). */
+export const SOURCE_NAMES: Record<V3LiveSourceId, string> = { espn: "ESPN", api_football: "API-Football", odds_api: "The Odds API" };
+
 export type V3LiveItem = (V3LiveFootball | V3LiveTennis) & {
-  /** the source event id we matched (audit) */
+  /** the source event id we matched (audit), prefixed by the source («espn:…», «apif:…», «oddsapi:…») */
   source_id: string;
   /** how the row was matched: exact source id, or kickoff + names */
   matched_by: "id" | "names";
+  /** live2: the source this score comes from */
+  source: V3LiveSourceId;
+  /** live2: when the source last refreshed it (its own timestamp when it gives one, else when we read it) */
+  updated_at: string;
+};
+
+/**
+ * live2: how each source did on this build.
+ *   ok       — read (or served from its own short cache) this round;
+ *   idle     — nothing needed it (every row already had a score, or no row of its leagues);
+ *   off      — not configured (no key);
+ *   degraded — quota almost spent, backoff after errors or daily budget reached: nothing new read,
+ *              its last good data (if still fresh) is kept, otherwise its rows show no score.
+ */
+export type V3LiveSourceStatus = {
+  id: V3LiveSourceId;
+  name: string;
+  state: "ok" | "idle" | "off" | "degraded";
+  reason: string | null;
+  /** quota units this instance spent today (UTC) on live reads */
+  calls_today: number;
+  /** the daily budget this instance allows itself (null = no quota, e.g. ESPN) */
+  budget_day: number | null;
+  /** the provider's own «remaining» header, when it sends one */
+  remaining: number | null;
+  /** board rows whose score came from this source in this response */
+  items: number;
 };
 
 export type V3LiveCoverage = {
@@ -69,7 +102,12 @@ export type V3LiveResponse = {
   generated_at: string;
   /** rows that kicked off up to this many minutes ago (and up to 15 min ahead) are looked up */
   window_min: number;
-  source: { name: "ESPN"; note: string };
+  /** the names of the sources that gave at least one score («ESPN», «ESPN + The Odds API»…) */
+  source: { name: string; note: string };
+  /** live2: one line per source, quota and degradation stated, never hidden */
+  sources: V3LiveSourceStatus[];
+  /** live2: true when a source that was needed could not be read (quota, backoff): some rows may lack a score because of it */
+  degraded: boolean;
   /** keyed by board id (match_predictions / tennis_predictions match_id) */
   items: Record<string, V3LiveItem>;
   coverage: { football: V3LiveCoverage; tennis: V3LiveCoverage; failed_feeds: string[] };

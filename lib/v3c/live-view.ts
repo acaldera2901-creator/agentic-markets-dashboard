@@ -33,6 +33,8 @@ export type LiveBadge = {
   sub: string | null;
   /** the scoreline («2–1», «6-3 4-1»), null when the source has none */
   score: string | null;
+  /** live2: the label goes BEFORE the kick-off time («Kick-off · 14:00»): a started match no source covers */
+  lead?: boolean;
 };
 
 export function footballScore(x: Pick<V3LiveFootball, "home" | "away">): string | null {
@@ -59,11 +61,12 @@ export function scoreOf(item: V3LiveItem): string | null {
 /**
  * The badge of a row in the live window.
  *   item          → state from the source;
- *   no item, ok   → «Live» + «score n/a» (the source has no match for it);
+ *   no item, ok   → live2: «Kick-off» before the kick-off time, quiet — no source covers it, so we
+ *                   do not even claim it is in play (it may be over, or postponed), and never a minute;
  *   still loading → null (the caller keeps today's time-based «Live»).
  */
-export function liveBadge(item: V3LiveItem | undefined, loaded: boolean, c: V3cLiveCopy): LiveBadge | null {
-  if (!item) return loaded ? { label: c.live, tone: "live", sub: c.unavailable, score: null } : null;
+export function liveBadge(item: V3LiveItem | undefined, loaded: boolean, c: V3cLiveCopy, sport: "football" | "tennis" = "football"): LiveBadge | null {
+  if (!item) return loaded ? { label: sport === "football" ? c.kickoff : c.start, tone: "quiet", sub: null, score: null, lead: true } : null;
   const score = scoreOf(item);
   switch (item.state) {
     case "pre":
@@ -79,7 +82,9 @@ export function liveBadge(item: V3LiveItem | undefined, loaded: boolean, c: V3cL
             ? c.aet
             : item.final_kind === "pen" && item.pens
               ? c.pens(item.pens.home, item.pens.away)
-              : c.ft
+              : item.final_kind === "ft"
+                ? c.ft
+                : null // live2: The Odds API says «completed» without FT/AET/pens: no word we would have to guess
           : item.final_kind === "ret"
             ? c.ret
             : null;

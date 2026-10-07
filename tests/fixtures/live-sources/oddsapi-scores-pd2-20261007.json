@@ -1,0 +1,263 @@
+[
+ {
+  "id": "0361dfed6e8b19c60cda9df605437447",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-04T12:00:00Z",
+  "completed": true,
+  "home_team": "Real Sociedad B",
+  "away_team": "Granada CF",
+  "scores": [
+   {
+    "name": "Real Sociedad B",
+    "score": "2"
+   },
+   {
+    "name": "Granada CF",
+    "score": "3"
+   }
+  ],
+  "last_update": "2026-10-06T17:47:30Z"
+ },
+ {
+  "id": "429c16be4cc62dc2acb2799d91abd94a",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-04T14:17:00Z",
+  "completed": true,
+  "home_team": "Sporting Gijón",
+  "away_team": "Celta Fortuna",
+  "scores": [
+   {
+    "name": "Sporting Gijón",
+    "score": "3"
+   },
+   {
+    "name": "Celta Fortuna",
+    "score": "2"
+   }
+  ],
+  "last_update": "2026-10-06T17:47:30Z"
+ },
+ {
+  "id": "f42371061db78b72824e768318c7e80b",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-04T16:31:00Z",
+  "completed": true,
+  "home_team": "Las Palmas",
+  "away_team": "Real Valladolid CF",
+  "scores": [
+   {
+    "name": "Las Palmas",
+    "score": "2"
+   },
+   {
+    "name": "Real Valladolid CF",
+    "score": "2"
+   }
+  ],
+  "last_update": "2026-10-06T17:47:30Z"
+ },
+ {
+  "id": "973746780f7c2d027194eba7204674b2",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-04T16:32:00Z",
+  "completed": true,
+  "home_team": "CD Castellón",
+  "away_team": "AD Ceuta FC",
+  "scores": [
+   {
+    "name": "CD Castellón",
+    "score": "1"
+   },
+   {
+    "name": "AD Ceuta FC",
+    "score": "1"
+   }
+  ],
+  "last_update": "2026-10-06T17:47:30Z"
+ },
+ {
+  "id": "71df73801eb691fef039b6a34b076df3",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-04T19:00:00Z",
+  "completed": true,
+  "home_team": "Sabadell FC",
+  "away_team": "Andorra CF",
+  "scores": [
+   {
+    "name": "Sabadell FC",
+    "score": "0"
+   },
+   {
+    "name": "Andorra CF",
+    "score": "0"
+   }
+  ],
+  "last_update": "2026-10-06T17:47:30Z"
+ },
+ {
+  "id": "04ec46217ab498eea210d1e96ead781c",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-04T19:00:00Z",
+  "completed": true,
+  "home_team": "Girona FC",
+  "away_team": "Mallorca",
+  "scores": [
+   {
+    "name": "Girona FC",
+    "score": "0"
+   },
+   {
+    "name": "Mallorca",
+    "score": "0"
+   }
+  ],
+  "last_update": "2026-10-06T17:47:30Z"
+ },
+ {
+  "id": "87e6a3807e957e43bedb63ebeabdf76e",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-05T18:30:00Z",
+  "completed": true,
+  "home_team": "Córdoba",
+  "away_team": "Tenerife",
+  "scores": [
+   {
+    "name": "Córdoba",
+    "score": "3"
+   },
+   {
+    "name": "Tenerife",
+    "score": "2"
+   }
+  ],
+  "last_update": "2026-10-06T17:47:30Z"
+ },
+ {
+  "id": "d77351dbeec002fbc5d942392f102eef",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-10T14:15:00Z",
+  "completed": false,
+  "home_team": "AD Ceuta FC",
+  "away_team": "Sabadell FC",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "d79783ce845a4d360b3926e719d04f10",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-10T16:30:00Z",
+  "completed": false,
+  "home_team": "CD Eldense",
+  "away_team": "Córdoba",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "e3c9d955043df858d28a6100e8fe6d28",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-10T19:00:00Z",
+  "completed": false,
+  "home_team": "Celta Fortuna",
+  "away_team": "Real Sociedad B",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "dd1d8e31b59058edb81d3ff77fe3c95e",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-11T12:00:00Z",
+  "completed": false,
+  "home_team": "Andorra CF",
+  "away_team": "CD Castellón",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "b6634ca0e08a2c96f3fb7504966c9eb6",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-11T14:15:00Z",
+  "completed": false,
+  "home_team": "Almería",
+  "away_team": "Leganés",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "61302089b5064e90f300782acbcb1cd8",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-11T16:30:00Z",
+  "completed": false,
+  "home_team": "Mallorca",
+  "away_team": "Las Palmas",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "e30010afc86f011e4de86e15f2f6ddb1",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-11T19:00:00Z",
+  "completed": false,
+  "home_team": "Cádiz CF",
+  "away_team": "Sporting Gijón",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "8fd7558e7ee137b7c2df589a99585840",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-12T12:00:00Z",
+  "completed": false,
+  "home_team": "Real Valladolid CF",
+  "away_team": "Albacete",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "8a4e09b20dd89e2f756af1907269766f",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-12T14:15:00Z",
+  "completed": false,
+  "home_team": "Burgos CF",
+  "away_team": "Granada CF",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "fc9cdbc6bd9fd25f947caba859944c79",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-12T16:30:00Z",
+  "completed": false,
+  "home_team": "Oviedo",
+  "away_team": "SD Eibar",
+  "scores": null,
+  "last_update": null
+ },
+ {
+  "id": "6c14ecd9bce26382c5cc5d5f5f28128f",
+  "sport_key": "soccer_spain_segunda_division",
+  "sport_title": "La Liga 2 - Spain",
+  "commence_time": "2026-10-12T19:00:00Z",
+  "completed": false,
+  "home_team": "Tenerife",
+  "away_team": "Girona FC",
+  "scores": null,
+  "last_update": null
+ }
+]

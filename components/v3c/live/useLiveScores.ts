@@ -20,20 +20,22 @@ export type LiveFeed = {
   updatedAt: string | null;
   /** the last thing worth announcing (aria-live polite) */
   announce: string;
+  /** live2: the sources that gave the scores shown («ESPN + The Odds API») */
+  sourceName: string;
 };
 
-const EMPTY: LiveFeed = { items: {}, loaded: false, failed: false, updatedAt: null, announce: "" };
+const EMPTY: LiveFeed = { items: {}, loaded: false, failed: false, updatedAt: null, announce: "", sourceName: "ESPN" };
 
 /** final2: `initial` = the first read done by the server (liveSeed): shown at once, the next poll comes LIVE_POLL_MS after it. */
 export function useLiveScores(enabled: boolean, names: (id: string) => [string, string] | null, copy: V3cLiveCopy, initial: V3LiveResponse | null = null): LiveFeed {
   const [seed] = useState(initial);
   const [feed, setFeed] = useState<LiveFeed>(() =>
-    seed ? { items: seed.items, loaded: true, failed: false, updatedAt: seed.generated_at, announce: "" } : EMPTY,
+    seed ? { items: seed.items, loaded: true, failed: false, updatedAt: seed.generated_at, announce: "", sourceName: seed.source?.name ?? "ESPN" } : EMPTY,
   );
 
   const onData = useEffectEvent((prev: Record<string, V3LiveItem> | null, data: V3LiveResponse) => {
     const said = announcements(prev, data.items, names, copy);
-    setFeed((f) => ({ items: data.items, loaded: true, failed: false, updatedAt: data.generated_at, announce: said.length ? said.join(". ") : f.announce }));
+    setFeed((f) => ({ items: data.items, loaded: true, failed: false, updatedAt: data.generated_at, announce: said.length ? said.join(". ") : f.announce, sourceName: data.source?.name ?? "ESPN" }));
   });
   const onFail = useEffectEvent((errors: number) => {
     if (errors >= 2) setFeed((f) => ({ ...f, items: {}, loaded: true, failed: true, updatedAt: null }));
