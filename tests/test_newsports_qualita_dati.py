@@ -215,7 +215,7 @@ def _wire_mlb_cycle(monkeypatch, recent):
 
     written = []
 
-    async def upsert(rows):
+    async def upsert(rows, **_kw):
         written.extend(rows)
         return len(rows)
 
@@ -368,7 +368,7 @@ def _wire_mma_cycle(monkeypatch, card_name, card_text=""):
 
     written = []
 
-    async def upsert(rows):
+    async def upsert(rows, **_kw):
         written.extend(rows)
         return len(rows)
 

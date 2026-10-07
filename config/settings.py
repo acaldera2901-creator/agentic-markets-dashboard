@@ -288,6 +288,18 @@ class Settings(BaseSettings):
     # (76.8% alla close contro 73.2% all'open). Prima della finestra la partita
     # non viene servita: e' lo stesso principio della finestra 2-30h dell'UFC.
     NEWSPORT_BASEBALL_LATE_WINDOW_HOURS: int = 8
+    # Eta' massima del consenso quote MLB/UFC (#NEWSPORTS-FIX-REVIEW-1007). Il
+    # `last_update` del provider (per book) era registrato in notes ma mai letto:
+    # una quota ferma da ore passava per fresca. Oltre questa soglia il consenso
+    # NON e' pubblicabile (la riga del ciclo viene saltata, quella gia' scritta
+    # resta com'e'). 6h: la finestra MLB e' 8h e quella UFC 2-30h, e un book attivo
+    # pre-match aggiorna l'h2h ben piu' spesso; una quota piu' vecchia di 6h vuol
+    # dire linea sospesa/ritirata o feed fermo, non un mercato quieto.
+    # Timestamp ILLEGGIBILE = non pubblicabile (feed rotto, fail-closed).
+    # Timestamp ASSENTE = pubblicabile con avviso nel log: The Odds API v4 lo
+    # fornisce sempre, quindi l'assenza e' un cambio di schema del provider, e
+    # bloccare su quella spegnerebbe in silenzio entrambi gli sport.
+    NEWSPORT_ODDS_MAX_AGE_HOURS: float = 6.0
     # #NEWSPORTS ingestion agents — DARK by default: without these flags the
     # agents are not even registered in run.py (and their loops self-guard).
     # Flip only via deploy-gate at activation (docs/NEWSPORTS-INTEGRATION.md).

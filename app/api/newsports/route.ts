@@ -24,7 +24,7 @@ type UnifiedNewsportRow = {
   away_team: string | null; //   the home/away slots carry both-sport sides)
   starts_at: string;
   pick: string | null;
-  notes: string | null; // JSON: { p_home, p_away, odds_home, odds_away, mkt_source, n_books }
+  notes: string | null; // JSON: { p_home, p_away, odds_home, odds_away, mkt_source, n_books, odds_derived, odds_last_update }
   confidence_score: number | null;
   enrichment: Record<string, unknown> | null;
   updated_at: string;
@@ -42,6 +42,11 @@ type NewsportMatch = {
   p_b: number;
   odds_a: number | null;
   odds_b: number | null;
+  // #NEWSPORTS-FIX-REVIEW-1007: true = il consenso era una mediana PARI, le cui
+  // quote sono DERIVATE dalla probabilità (nessun book le offre). In quel caso
+  // odds_a/odds_b sono null: non si presenta come quota giocabile un numero che
+  // nessun bookmaker quota. La probabilità (p_a/p_b) resta invariata.
+  odds_derived: boolean;
   confidence_score: number;
   enrichment: Record<string, unknown> | null;
 };
@@ -53,6 +58,7 @@ function toMatch(u: UnifiedNewsportRow): NewsportMatch | null {
     p_away?: unknown;
     odds_home?: unknown;
     odds_away?: unknown;
+    odds_derived?: unknown;
   };
   try {
     notes = JSON.parse(u.notes ?? "");
@@ -62,8 +68,11 @@ function toMatch(u: UnifiedNewsportRow): NewsportMatch | null {
   const pA = Number(notes?.p_home);
   const pB = Number(notes?.p_away);
   if (!Number.isFinite(pA) || !Number.isFinite(pB)) return null;
-  const oddsA = Number(notes?.odds_home);
-  const oddsB = Number(notes?.odds_away);
+  // Solo `true` esplicito = derivata; righe precedenti a #NEWSPORTS-QUALITA-1006
+  // non hanno il campo e portano quote di un book reale.
+  const oddsDerived = notes?.odds_derived === true;
+  const oddsA = oddsDerived ? NaN : Number(notes?.odds_home);
+  const oddsB = oddsDerived ? NaN : Number(notes?.odds_away);
   return {
     id: u.id,
     sport: u.sport,
@@ -76,6 +85,7 @@ function toMatch(u: UnifiedNewsportRow): NewsportMatch | null {
     p_b: pB,
     odds_a: Number.isFinite(oddsA) ? oddsA : null,
     odds_b: Number.isFinite(oddsB) ? oddsB : null,
+    odds_derived: oddsDerived,
     confidence_score: u.confidence_score ?? Math.round(Math.max(pA, pB) * 100),
     enrichment: u.enrichment,
   };

@@ -481,7 +481,7 @@ async def log_prediction_snapshot(
         logger.warning("prediction_log snapshot failed (non-fatal): %s", exc)
 
 
-async def upsert_unified_rows(rows: list[dict]) -> int:
+async def upsert_unified_rows(rows: list[dict], *, keep_published_at: bool = False) -> int:
     """
     Upsert pre-built unified_predictions rows via PostgREST.
 
@@ -492,6 +492,15 @@ async def upsert_unified_rows(rows: list[dict]) -> int:
     explicit PATCH-then-POST per row: update the existing key, insert when no
     row matched. Single writer per key, 30-ish rows per cycle — two round
     trips are fine. Fail-soft per row; returns rows successfully written.
+
+    ``keep_published_at`` (#NEWSPORTS-FIX-REVIEW-1007, MLB/UFC): la riga è
+    riscritta a ogni ciclo e ``published_at`` deve restare l'istante della PRIMA
+    pubblicazione (lo legge il cap MLB, e "quando è uscita la pick" è un fatto,
+    non l'ora dell'ultimo refresh). Il PATCH allora non porta ``published_at`` e
+    tocca solo le righe che ce l'hanno già; una riga esistente con
+    ``published_at`` NULL lo riceve dal secondo PATCH (altrimenti resterebbe
+    invisibile: /api/newsports serve solo published_at IS NOT NULL); il POST di
+    una riga nuova lo porta sempre. Default False: il calcio resta invariato.
     """
     base = _rest_base()
     if not base:
@@ -509,9 +518,29 @@ async def upsert_unified_rows(rows: list[dict]) -> int:
                     if not source_table or not source_id:
                         logger.warning("unified upsert skipped: missing dedup key")
                         continue
-                    resp = await client.patch(
+                    key_filter = (
                         f"{base}/unified_predictions"
-                        f"?source_table=eq.{source_table}&source_id=eq.{source_id}",
+                        f"?source_table=eq.{source_table}&source_id=eq.{source_id}"
+                    )
+                    if keep_published_at and row.get("published_at"):
+                        # Riga già pubblicata: aggiorna tutto TRANNE published_at.
+                        resp = await client.patch(
+                            f"{key_filter}&published_at=not.is.null",
+                            json={k: v for k, v in row.items() if k != "published_at"},
+                            headers={**headers, "Prefer": "return=representation"},
+                        )
+                        if resp.status_code == 200 and resp.json():
+                            written += 1
+                            continue
+                        if resp.status_code not in (200, 404):
+                            logger.warning(
+                                "unified upsert PATCH (keep published_at) failed: %s %s",
+                                resp.status_code,
+                                resp.text[:200],
+                            )
+                            continue
+                    resp = await client.patch(
+                        key_filter,
                         json=row,
                         headers={**headers, "Prefer": "return=representation"},
                     )
@@ -705,14 +734,18 @@ async def fetch_recent_sport_pairs(sport: str, days: int) -> list[dict] | None:
     da "lettura fallita" — il cap dichiarato fail-closed lasciava passare pick
     nuove a storico illeggibile. Il chiamante su None NON pubblica.
 
-    Include `pick` (HOME/AWAY) per il cap squadra (v2.3 del lab).
+    Include `pick` (HOME/AWAY) per il cap squadra (v2.3 del lab) e
+    `source_table`/`source_id` (#NEWSPORTS-FIX-REVIEW-1007): senza l'identità
+    della riga il cap non distingueva "un'altra gara della serie" da "la stessa
+    gara già pubblicata al ciclo prima", e la gara si auto-bloccava congelando
+    tier e quota al primo ciclo della finestra.
     """
     base = _rest_base()
     if not base:
         return None
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     params = {
-        "select": "home_team,away_team,pick,published_at",
+        "select": "source_table,source_id,home_team,away_team,pick,published_at",
         "sport": f"eq.{sport}",
         "published_at": f"gte.{since}",
         "order": "published_at.desc",

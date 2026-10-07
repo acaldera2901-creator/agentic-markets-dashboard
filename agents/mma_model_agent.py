@@ -34,7 +34,7 @@ import httpx
 
 from agents.base import BaseAgent
 from config.settings import settings
-from core.odds_api_client import get_h2h_events, market_consensus
+from core.odds_api_client import consensus_is_fresh, get_h2h_events, market_consensus
 from core.supabase_client import upsert_unified_rows
 
 logger = logging.getLogger("MmaModelAgent")
@@ -296,6 +296,8 @@ class MmaModelAgent(BaseAgent):
             mkt = market_consensus(ev["books"])
             if not mkt:
                 continue
+            if not consensus_is_fresh(mkt, now, settings.NEWSPORT_ODDS_MAX_AGE_HOURS):
+                continue  # quota stantia o età illeggibile (#NEWSPORTS-FIX-REVIEW-1007)
             conf = max(mkt["p_home"], 1 - mkt["p_home"])
             tier = assign_tier(conf)
             if not tier:
@@ -327,7 +329,10 @@ class MmaModelAgent(BaseAgent):
                 org_verification=verification,
             ))
 
-        written = await upsert_unified_rows(rows) if rows else 0
+        # keep_published_at: il bout è riscritto a ogni ciclo della finestra 2-30h,
+        # ma published_at resta la PRIMA pubblicazione (#NEWSPORTS-FIX-REVIEW-1007:
+        # prima ogni ciclo lo sovrascriveva con `now`).
+        written = await upsert_unified_rows(rows, keep_published_at=True) if rows else 0
         self.logger.info(
             f"cycle: {len(events)} fights in feed, {len(rows)} picks in window, "
             f"{waiting} candidates waiting (> {MAX_H}h), {dev_cards} on development cards "

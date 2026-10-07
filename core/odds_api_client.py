@@ -400,6 +400,40 @@ def market_consensus(books: List[Dict]) -> Optional[Dict]:
     })
 
 
+def consensus_is_fresh(mkt: Dict, now: datetime, max_age_hours: float) -> bool:
+    """#NEWSPORTS-FIX-REVIEW-1007 — il consenso è abbastanza recente da pubblicarlo?
+
+    Legge `mkt["last_update"]` (il timestamp del provider: per la mediana pari è
+    il più VECCHIO dei due book centrali, vedi `_oldest`). Regole:
+      * età > max_age_hours            → False (quota stantia: non pubblicabile);
+      * timestamp presente ma illeggibile → False (feed rotto: fail-closed);
+      * timestamp ASSENTE              → True, con avviso nel log. The Odds API v4
+        lo fornisce sempre: l'assenza è un cambio di schema del provider e
+        bloccare lì spegnerebbe in silenzio MLB e UFC. Scelta documentata in
+        config/settings.py (NEWSPORT_ODDS_MAX_AGE_HOURS);
+      * max_age_hours <= 0             → controllo disattivato (True).
+    Un timestamp nel futuro (orologi sfasati) conta come fresco."""
+    if max_age_hours <= 0:
+        return True
+    raw = mkt.get("last_update")
+    if not raw:
+        logger.warning("consenso senza last_update (%s): età ignota, pubblicabile", mkt.get("source"))
+        return True
+    try:
+        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        logger.warning("consenso con last_update illeggibile %r: non pubblicabile", raw)
+        return False
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    age_h = (now - when).total_seconds() / 3600
+    if age_h > max_age_hours:
+        logger.info("consenso stantio: quota vecchia di %.1fh (> %.1fh), non pubblicabile",
+                    age_h, max_age_hours)
+        return False
+    return True
+
+
 def _match_date(commence_time: str | None) -> str:
     """UTC date (YYYY-MM-DD) of an event's commence_time, '' if unparseable."""
     if not commence_time:
