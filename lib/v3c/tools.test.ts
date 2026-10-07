@@ -179,3 +179,18 @@ describe("formattazione", () => {
     expect(signedPct(-2.5)).toBe("−2.5%");
   });
 });
+
+// final6: no amount in € derived from a bankroll the visitor did not type
+describe("final6 · no default bankroll", () => {
+  it("Kelly and the bankroll plan have an empty bankroll by default and speak in percentages", () => {
+    for (const slug of ["kelly-criterion", "bankroll-calculator"] as const) {
+      const t = toolDef(slug);
+      expect(t.inputs.find((i) => i.key === "bank")?.default, slug).toBeNull();
+      const out = t.compute(defaultValues(t)).map((r) => r.value).join(" ");
+      expect(out, slug).not.toMatch(/€/);
+      expect(t.fromBoard({ outcomes: [], lead: { price: 2.15, estimate: 52, market: 46, prices: {}, label: "A" } }).bank ?? null, slug).toBeNull();
+    }
+    // a bankroll the visitor types still gives the stake
+    expect(toolDef("kelly-criterion").compute({ price: 2.15, prob: 52, bank: 500 })[0].value).toMatch(/€/);
+  });
+});

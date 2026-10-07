@@ -147,6 +147,7 @@ const es: V3cToolsCopy = {
       inputs: { price: "Cuota decimal", prob: "Tu probabilidad %", bank: "Bankroll €" },
       results: { full: "Kelly completo", none: "Kelly dice: no apostar", half: "Medio Kelly", quarter: "Cuarto de Kelly" },
       formula: "f = (b·p − q) ÷ b con b = cuota − 1. El Kelly completo es volátil: casi todos usan ¼.",
+      note: "Opcional: nunca suponemos un bankroll. Déjalo vacío y Kelly muestra solo la fracción.",
       column: "Kelly con la estimación",
     },
     "stake-calculator": {
@@ -163,6 +164,7 @@ const es: V3cToolsCopy = {
       inputs: { bank: "Bankroll €", unit: "Unidad %", streak: "Racha perdedora" },
       results: { unit: "Una unidad", streakLoss: "{n} derrotas seguidas", ruin: "Apuestas hasta la ruina con esta unidad" },
       formula: "Una unidad del 2% aguanta diez derrotas seguidas con el 80% del bankroll. Una del 10%, no.",
+      note: "Opcional: nunca suponemos un bankroll. Déjalo vacío y el plan muestra solo porcentajes.",
     },
     "roi-calculator": {
       name: "Calculadora de ROI",

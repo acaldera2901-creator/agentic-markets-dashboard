@@ -146,6 +146,7 @@ const nl: V3cToolsCopy = {
       inputs: { price: "Decimale odd", prob: "Jouw kans %", bank: "Bankroll €" },
       results: { full: "Volledige Kelly", none: "Kelly zegt: geen inzet", half: "Halve Kelly", quarter: "Kwart Kelly" },
       formula: "f = (b·p − q) ÷ b met b = odd − 1. Volledige Kelly is volatiel: de meesten kiezen een kwart.",
+      note: "Optioneel: we gaan nooit uit van een bankroll. Laat het leeg en Kelly toont alleen het deel.",
       column: "Kelly bij schatting",
     },
     "stake-calculator": {
@@ -162,6 +163,7 @@ const nl: V3cToolsCopy = {
       inputs: { bank: "Bankroll €", unit: "Eenheid %", streak: "Verliesreeks" },
       results: { unit: "Eén eenheid", streakLoss: "{n} verliezen op rij", ruin: "Weddenschappen tot ruïne bij deze eenheid" },
       formula: "Een eenheid van 2% overleeft tien verliezen op rij met 80% van de bankroll. Een eenheid van 10% niet.",
+      note: "Optioneel: we gaan nooit uit van een bankroll. Laat het leeg en het plan toont alleen percentages.",
     },
     "roi-calculator": {
       name: "ROI-calculator",

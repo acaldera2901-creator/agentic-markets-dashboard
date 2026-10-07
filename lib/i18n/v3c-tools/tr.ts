@@ -146,6 +146,7 @@ const tr: V3cToolsCopy = {
       inputs: { price: "Ondalık oran", prob: "Senin olasılığın %", bank: "Kasa €" },
       results: { full: "Tam Kelly", none: "Kelly diyor ki: bahis yok", half: "Yarım Kelly", quarter: "Çeyrek Kelly" },
       formula: "f = (b·p − q) ÷ b, b = oran − 1. Tam Kelly oynaktır: çoğu kişi çeyrekte oynar.",
+      note: "İsteğe bağlı: asla bir kasa varsaymayız. Boş bırakın, Kelly yalnızca oranı gösterir.",
       column: "Tahmine göre Kelly",
     },
     "stake-calculator": {
@@ -162,6 +163,7 @@ const tr: V3cToolsCopy = {
       inputs: { bank: "Kasa €", unit: "Birim %", streak: "Kayıp serisi" },
       results: { unit: "Bir birim", streakLoss: "Üst üste {n} kayıp", ruin: "Bu birimle batışa kadar bahis" },
       formula: "%2'lik bir birim, üst üste on kayıptan kasanın %80'iyle çıkar. %10'luk bir birim çıkamaz.",
+      note: "İsteğe bağlı: asla bir kasa varsaymayız. Boş bırakın, plan yalnızca yüzdeleri gösterir.",
     },
     "roi-calculator": {
       name: "ROI hesaplayıcı",

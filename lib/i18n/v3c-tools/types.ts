@@ -19,6 +19,8 @@ export type V3cToolCopy = {
   formula: string;
   /** L'intestazione della colonna «sul board di oggi», se il tool ne ha una. */
   column?: string;
+  /** final6: an advisory line under the inputs (Kelly, bankroll: the bankroll is never assumed). */
+  note?: string;
 };
 
 export type V3cToolsCopy = {

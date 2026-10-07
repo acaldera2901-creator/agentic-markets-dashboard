@@ -25,7 +25,8 @@ describe("v3c dati d'esempio (SAMPLE)", () => {
     expect(benchExample("ev-calculator")).toEqual({ input: "2.15 at 48%", output: "+3.2%", flat: false });
     expect(benchExample("margin-calculator").output).toBe("6.3%");
     expect(benchExample("probability-calculator")).toEqual({ input: "2.15 · 3.20 · 3.50", output: "44%", market: true });
-    expect(benchExample("kelly-criterion").output).toBe("2.8% · €14");
+    // final6: no default bankroll anywhere — the Kelly example is the fraction only (it was «2.8% · €14» of a €500 bankroll)
+    expect(benchExample("kelly-criterion").output).toBe("2.8%");
     expect(benchExample("odds-converter").output).toBe("46.5%");
   });
 });

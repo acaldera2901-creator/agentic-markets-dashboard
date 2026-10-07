@@ -13,6 +13,7 @@
 import type { V3BoardResponse } from "./contracts";
 import { matchHref } from "./match-view";
 import { estimateShown } from "./fixdata2";
+import { valueToolsAllowed } from "./fixdata";
 import type { TeamIdentity } from "./monogram";
 import { SAMPLE_BOARD, leadOutcome, type SampleOutcome } from "./sample";
 
@@ -123,8 +124,9 @@ const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
  */
 export function liveBoardMatches(board: Pick<V3BoardResponse, "matches">, now: Date, limit = 8): BoardMatch[] {
   return board.matches
-    // fixdata2 N3: a match whose estimate is not shown (no market, or far from the best price) is not a tool example
-    .filter((m) => m.margin_removed != null && estimateShown(m) && Date.parse(m.kickoff) > now.getTime() && m.outcomes.every((o) => o.market_price != null && o.market_p != null))
+    // fixdata2 N3: a match whose estimate is not shown (no market, or far from the best price) is not a tool example;
+    // final6 (fixui2 N1): nor one the model guard holds back — the tool pages prefill EV/Kelly from these rows
+    .filter((m) => m.margin_removed != null && estimateShown(m) && valueToolsAllowed(m) && Date.parse(m.kickoff) > now.getTime() && m.outcomes.every((o) => o.market_price != null && o.market_p != null))
     .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))
     .slice(0, limit)
     .map((m) => {

@@ -35,7 +35,8 @@ export const QUESTIONS: readonly QuestionId[] = ["price", "stake", "record"];
  *  signed: qualsiasi importo (il profitto può essere negativo) · count: intero > 0 ·
  *  rate: ≥ 0 (un margine per gamba può essere zero). */
 export type InputKind = "price" | "percent" | "money" | "signed" | "count" | "rate";
-export type ToolInput = { key: string; kind: InputKind; default: number; optional?: boolean };
+/** final6: `default: null` = an empty field the visitor fills (a bankroll is never assumed). */
+export type ToolInput = { key: string; kind: InputKind; default: number | null; optional?: boolean };
 /** null = campo vuoto o non numerico. */
 export type ToolValues = Record<string, number | null>;
 
@@ -252,13 +253,22 @@ export const TOOLS: readonly ToolDef[] = [
     slug: "kelly-criterion",
     question: "stake",
     sigla: "f*",
-    inputs: [price("price", 2.15), { key: "prob", kind: "percent", default: 48 }, { key: "bank", kind: "money", default: 500 }],
+    // final6: no default bankroll — empty, Kelly is the fraction only; a stake in € only from the visitor's own bankroll
+    inputs: [price("price", 2.15), { key: "prob", kind: "percent", default: 48 }, { key: "bank", kind: "money", default: null, optional: true }],
     compute(v) {
-      if (!validInput("price", v.price) || !validInput("percent", v.prob) || !validInput("money", v.bank)) return [];
-      const r = kelly({ probability: v.prob / 100, decimal: v.price, bankroll: v.bank, fraction: 1 });
+      if (!validInput("price", v.price) || !validInput("percent", v.prob)) return [];
+      const noBank = v.bank == null;
+      if (!noBank && !validInput("money", v.bank)) return [];
+      const r = kelly({ probability: v.prob / 100, decimal: v.price, bankroll: noBank ? 1 : (v.bank as number), fraction: 1 });
       if (!r) return [];
       const f = r.fullKelly * 100;
       if (f <= 0) return [{ key: "none", value: "0%", big: true, flat: true }];
+      if (noBank)
+        return [
+          { key: "full", value: pct(f), big: true },
+          { key: "half", value: pct(f / 2) },
+          { key: "quarter", value: pct(f / 4) },
+        ];
       return [
         { key: "full", value: `${pct(f)} · ${eur(Math.round(r.stake))}`, big: true },
         { key: "half", value: `${pct(f / 2)} · ${eur(Math.round(r.stake / 2))}` },
@@ -266,7 +276,7 @@ export const TOOLS: readonly ToolDef[] = [
       ];
     },
     previewInput: (v) => (validInput("price", v.price) && validInput("percent", v.prob) ? `${dec(v.price)} at ${v.prob}%` : "—"),
-    fromBoard: (ctx) => ({ price: ctx.lead.price, prob: ctx.lead.estimate, bank: 500 }),
+    fromBoard: (ctx) => ({ price: ctx.lead.price, prob: ctx.lead.estimate, bank: null }),
     column(ctx) {
       const f = (kelly({ probability: ctx.lead.estimate / 100, decimal: ctx.lead.price, bankroll: 1, fraction: 1 })?.fullKelly ?? 0) * 100;
       return f <= 0 ? { key: "kellyAt", value: "none", flat: true } : { key: "kellyAt", value: pct(f) };
@@ -298,22 +308,31 @@ export const TOOLS: readonly ToolDef[] = [
     question: "stake",
     sigla: "BNK",
     inputs: [
-      { key: "bank", kind: "money", default: 2000 },
+      // final6: no default bankroll — empty, the plan speaks in percentages of the visitor's bankroll
+      { key: "bank", kind: "money", default: null, optional: true },
       { key: "unit", kind: "percent", default: 2 },
       { key: "streak", kind: "count", default: 10 },
     ],
     compute(v) {
-      if (!validInput("money", v.bank) || !validInput("percent", v.unit) || !validInput("count", v.streak)) return [];
-      const r = bankrollPlan({ bankroll: v.bank, unitPercent: v.unit / 100, losingStreak: v.streak });
+      if (!validInput("percent", v.unit) || !validInput("count", v.streak)) return [];
+      const noBank = v.bank == null;
+      if (!noBank && !validInput("money", v.bank)) return [];
+      const r = bankrollPlan({ bankroll: noBank ? 100 : (v.bank as number), unitPercent: v.unit / 100, losingStreak: v.streak });
       if (!r) return [];
+      if (noBank)
+        return [
+          { key: "unit", value: pct(v.unit), big: true },
+          { key: "streakLoss", value: `−${pct(r.streakDrawdown * 100, 0)}`, vars: { n: String(v.streak) } },
+          { key: "ruin", value: String(r.betsToRuin) },
+        ];
       return [
         { key: "unit", value: eur(r.unit), big: true },
         { key: "streakLoss", value: `−${eur(r.streakLoss)} · ${pct(r.streakDrawdown * 100, 0)}`, vars: { n: String(v.streak) } },
         { key: "ruin", value: String(r.betsToRuin) },
       ];
     },
-    previewInput: (v) => (validInput("money", v.bank) && validInput("percent", v.unit) ? `${eur(v.bank)} at ${v.unit}%` : "—"),
-    fromBoard: () => ({ bank: 2000, unit: 2, streak: 10 }),
+    previewInput: (v) => (validInput("percent", v.unit) ? (validInput("money", v.bank) ? `${eur(v.bank)} at ${v.unit}%` : `${v.unit}% unit`) : "—"),
+    fromBoard: () => ({ bank: null, unit: 2, streak: 10 }),
     bridge: "board",
   },
   {

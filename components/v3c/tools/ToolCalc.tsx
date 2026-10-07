@@ -58,7 +58,7 @@ export function ToolCalc({ slug, copy, invalid, live }: Props) {
   const def = useMemo(() => toolDef(slug), [slug]);
   const search = useSearch();
   const [values, setValues] = useState<ToolValues>(() => defaultValues(def));
-  const [raw, setRaw] = useState<Record<string, string>>(() => Object.fromEntries(def.inputs.map((i) => [i.key, String(i.default)])));
+  const [raw, setRaw] = useState<Record<string, string>>(() => Object.fromEntries(def.inputs.map((i) => [i.key, i.default == null ? "" : String(i.default)])));
 
   // Prefill, una volta, quando la query arriva dal browser.
   useEffect(() => {
@@ -134,6 +134,7 @@ export function ToolCalc({ slug, copy, invalid, live }: Props) {
           </div>
         ) : null}
       </section>
+      {copy.note ? <p className="v3c-fine v3c-tool-note" data-testid="tool-note">{copy.note}</p> : null}
       <p className="v3c-fine v3c-formula">{copy.formula}</p>
     </>
   );

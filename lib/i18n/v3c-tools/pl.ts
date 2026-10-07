@@ -147,6 +147,7 @@ const pl: V3cToolsCopy = {
       inputs: { price: "Kurs dziesiętny", prob: "Twoje prawdopodobieństwo %", bank: "Bankroll €" },
       results: { full: "Pełny Kelly", none: "Kelly mówi: bez stawki", half: "Połowa Kelly", quarter: "Ćwiartka Kelly" },
       formula: "f = (b·p − q) ÷ b, gdzie b = kurs − 1. Pełny Kelly jest zmienny: większość stawia ćwiartkę.",
+      note: "Opcjonalnie: nigdy nie zakładamy bankrolla. Zostaw puste, a Kelly pokaże tylko ułamek.",
       column: "Kelly przy szacunku",
     },
     "stake-calculator": {
@@ -163,6 +164,7 @@ const pl: V3cToolsCopy = {
       inputs: { bank: "Bankroll €", unit: "Jednostka %", streak: "Seria porażek" },
       results: { unit: "Jedna jednostka", streakLoss: "Porażki z rzędu: {n}", ruin: "Zakłady do bankructwa przy tej jednostce" },
       formula: "Jednostka 2% przetrwa dziesięć porażek z rzędu z 80% bankrolla. Jednostka 10% nie.",
+      note: "Opcjonalnie: nigdy nie zakładamy bankrolla. Zostaw puste, a plan pokaże tylko procenty.",
     },
     "roi-calculator": {
       name: "Kalkulator ROI",

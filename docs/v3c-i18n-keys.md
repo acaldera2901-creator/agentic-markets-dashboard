@@ -437,3 +437,28 @@ Dizionario nuovo `lib/v3c/fixui2-copy.ts` (11 lingue complete, `// REVIEW-NATIVE
 
 Riscritte nelle 11 lingue: `banner.pro` «Pro preview: nothing to buy yet» / «Read the Pro preview» (N13; era «See what Pro adds» / «Compare Free and Pro»).
 Non più a schermo (chiavi lasciate per quando torneranno): `nav.signIn` (B3), `t.bench.noteNoMatch`, `pc.bankroll`, `cm.gateNoneTitle`, `cm.gateNoneSub`, `cm.gatePartial`, `cm.seePlans`, `cm.lockedLine`.
+
+## fixdata2 (#REDESIGN-V3C fixdata2) — QA-REPORT-2, filone dati (documentata in final6)
+
+Dizionario nuovo `lib/v3c/fixdata2-copy.ts` (11 lingue complete, `// REVIEW-NATIVE`, in `lib/v3c/i18n-parity.test.ts`):
+
+| Chiave | EN |
+|---|---|
+| `modelOnly` | «Model only: no market to compare» (N3) |
+| `modelOnlyNote` | «No market price and no partner book to compare with: no estimate, fair price, EV or Kelly.» |
+| `marketFromBooks` | «Market from the partner books’ prices, margin removed» |
+| `priceFar` | «Our estimate is far from the best price: market only, no fair price.» |
+| `sealedNoValue` / `sealedFar` | N9: Elo sigillato oltre 15 / 25 pp dal mercato |
+| `startedLive` | «Under way, score above: pre-match numbers, no prices.» (N11) |
+| `recordModelFar` | «over 25 pp, not shown» |
+
+## final6 (#REDESIGN-V3C final6) — merge di fixdata2 + fixui2
+
+Chiave nuova in `lib/i18n/v3c-tools/*` (11 lingue complete, glossario: bankroll / banca / банкролл / bankrulle / kasa):
+
+| Chiave | EN | IT |
+|---|---|---|
+| `tools.kelly-criterion.note` | «Optional: we never assume a bankroll. Leave it empty and Kelly shows the fraction only.» | «Facoltativo: non presumiamo mai un bankroll. Lascialo vuoto e il Kelly mostra solo la frazione.» |
+| `tools.bankroll-calculator.note` | «Optional: we never assume a bankroll. Leave it empty and the plan shows percentages only.» | «Facoltativo: non presumiamo mai un bankroll. Lascialo vuoto e il piano mostra solo percentuali.» |
+
+Il campo bankroll del Kelly e del bankroll calculator è vuoto di default (era €500 / €2000): nessun importo in € derivato da un bankroll di default in nessuna pagina v3c. Non più a schermo senza un bankroll digitato: `pc.kellyOf`.

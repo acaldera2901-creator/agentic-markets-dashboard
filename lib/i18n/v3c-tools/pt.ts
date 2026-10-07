@@ -147,6 +147,7 @@ const pt: V3cToolsCopy = {
       inputs: { price: "Odd decimal", prob: "A tua probabilidade %", bank: "Banca €" },
       results: { full: "Kelly completo", none: "Kelly diz: sem stake", half: "Meio Kelly", quarter: "Um quarto de Kelly" },
       formula: "f = (b·p − q) ÷ b com b = odd − 1. Kelly completo é volátil: a maioria aposta um quarto.",
+      note: "Opcional: nunca assumimos uma banca. Deixa vazio e o Kelly mostra só a fração.",
       column: "Kelly à estimativa",
     },
     "stake-calculator": {
@@ -163,6 +164,7 @@ const pt: V3cToolsCopy = {
       inputs: { bank: "Banca €", unit: "Unidade %", streak: "Série negativa" },
       results: { unit: "Uma unidade", streakLoss: "{n} derrotas seguidas", ruin: "Apostas até à ruína com esta unidade" },
       formula: "Uma unidade de 2% sobrevive a dez derrotas seguidas com 80% da banca. Uma unidade de 10% não.",
+      note: "Opcional: nunca assumimos uma banca. Deixa vazio e o plano mostra só percentagens.",
     },
     "roi-calculator": {
       name: "Calculadora de ROI",

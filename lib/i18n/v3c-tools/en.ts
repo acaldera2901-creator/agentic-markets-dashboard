@@ -146,6 +146,7 @@ const en: V3cToolsCopy = {
       inputs: { price: "Decimal price", prob: "Your probability %", bank: "Bankroll €" },
       results: { full: "Full Kelly", none: "Kelly says: no stake", half: "Half Kelly", quarter: "Quarter Kelly" },
       formula: "f = (b·p − q) ÷ b with b = price − 1. Full Kelly is volatile: most size at a quarter.",
+      note: "Optional: we never assume a bankroll. Leave it empty and Kelly shows the fraction only.",
       column: "Kelly at estimate",
     },
     "stake-calculator": {
@@ -162,6 +163,7 @@ const en: V3cToolsCopy = {
       inputs: { bank: "Bankroll €", unit: "Unit %", streak: "Losing streak" },
       results: { unit: "One unit", streakLoss: "{n} losses in a row", ruin: "Bets to ruin at this unit" },
       formula: "A 2% unit survives ten straight losses with 80% of the bankroll. A 10% unit does not.",
+      note: "Optional: we never assume a bankroll. Leave it empty and the plan shows percentages only.",
     },
     "roi-calculator": {
       name: "ROI calculator",

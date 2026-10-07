@@ -147,6 +147,7 @@ const de: V3cToolsCopy = {
       inputs: { price: "Dezimalquote", prob: "Deine Wahrscheinlichkeit %", bank: "Bankroll €" },
       results: { full: "Voller Kelly", none: "Kelly sagt: kein Einsatz", half: "Halber Kelly", quarter: "Viertel-Kelly" },
       formula: "f = (b·p − q) ÷ b mit b = Quote − 1. Voller Kelly schwankt stark: Die meisten setzen ein Viertel.",
+      note: "Optional: Wir nehmen nie eine Bankroll an. Leer lassen, dann zeigt Kelly nur den Anteil.",
       column: "Kelly bei Schätzung",
     },
     "stake-calculator": {
@@ -163,6 +164,7 @@ const de: V3cToolsCopy = {
       inputs: { bank: "Bankroll €", unit: "Einheit %", streak: "Verlustserie" },
       results: { unit: "Eine Einheit", streakLoss: "{n} Verluste in Folge", ruin: "Wetten bis zum Ruin bei dieser Einheit" },
       formula: "Eine Einheit von 2% übersteht zehn Verluste in Folge mit 80% der Bankroll. Eine von 10% nicht.",
+      note: "Optional: Wir nehmen nie eine Bankroll an. Leer lassen, dann zeigt der Plan nur Prozente.",
     },
     "roi-calculator": {
       name: "ROI-Rechner",

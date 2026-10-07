@@ -147,6 +147,7 @@ const sv: V3cToolsCopy = {
       inputs: { price: "Decimalodds", prob: "Din sannolikhet %", bank: "Bankrulle €" },
       results: { full: "Hel Kelly", none: "Kelly säger: ingen insats", half: "Halv Kelly", quarter: "Kvarts Kelly" },
       formula: "f = (b·p − q) ÷ b med b = odds − 1. Hel Kelly är volatil: de flesta satsar en fjärdedel.",
+      note: "Valfritt: vi antar aldrig en bankrulle. Lämna tomt så visar Kelly bara andelen.",
       column: "Kelly vid uppskattning",
     },
     "stake-calculator": {
@@ -163,6 +164,7 @@ const sv: V3cToolsCopy = {
       inputs: { bank: "Bankrulle €", unit: "Enhet %", streak: "Förlustsvit" },
       results: { unit: "En enhet", streakLoss: "{n} förluster i rad", ruin: "Spel till ruin vid den här enheten" },
       formula: "En enhet på 2 % klarar tio raka förluster med 80 % av bankrullen kvar. En på 10 % gör det inte.",
+      note: "Valfritt: vi antar aldrig en bankrulle. Lämna tomt så visar planen bara procent.",
     },
     "roi-calculator": {
       name: "ROI-kalkylator",
