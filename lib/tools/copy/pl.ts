@@ -358,12 +358,12 @@ const pl: ToolsCopy = {
         removeOutcome: "Usuń",
         total: "Stawka łączna",
         resultTitle: "Jak ją podzielić",
-        profit: "Zysk",
+        profit: "Marża arbitrażu",
         impliedSum: "Suma prawdopodobieństw implikowanych",
         stakeOn: "Stawka na wynik",
         guaranteedReturn: "Zwrot przy każdym wyniku",
         verdictArb:
-          "Kursy sumują się do mniej niż 100%: podzielona tak stawka zwraca tyle samo przy każdym wyniku.",
+          "Kursy sumują się do mniej niż 100%: podzielona tak stawka zwraca tyle samo przy każdym wyniku, jeśli wszystkie kursy są nadal dostępne.",
         verdictNoArb:
           "Kursy sumują się do więcej niż 100%, więc arbitrażu tu nie ma — każdy podział traci tę marżę, niezależnie od wyniku.",
         hint: "Jeden kurs na wynik, każdy od bukmachera, który płaci najwięcej po tej stronie. Format dziesiętny przyjmuje przecinek: 2,10 działa jak 2.10.",
@@ -377,7 +377,7 @@ const pl: ToolsCopy = {
           { label: "Suma prawdopodobieństw implikowanych", value: "95,24%" },
           { label: "Stawka na każdą stronę, z 1000", value: "500 · 500" },
           { label: "Zwrot przy każdym wyniku", value: "1050" },
-          { label: "Zysk", value: "+50 (+5,00%)" },
+          { label: "Marża arbitrażu", value: "+50 (+5,00%)" },
         ],
         note:
           "Ten sam rynek wyceniony 1.90/1.90 u jednego bukmachera sumuje się do 105,26% i oddaje −5,00%, jakkolwiek go podzielić. Między tymi dwiema liniami w meczu nie zmieniło się nic: cała różnica leży w tym, który bukmacher płaci więcej po której stronie, i czy miałeś zasilone konta u obu, gdy kursy jeszcze stały.",

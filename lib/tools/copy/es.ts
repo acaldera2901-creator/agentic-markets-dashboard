@@ -358,12 +358,12 @@ const es: ToolsCopy = {
         removeOutcome: "Quitar",
         total: "Apuesta total",
         resultTitle: "Cómo repartirla",
-        profit: "Beneficio",
+        profit: "Margen de arbitraje",
         impliedSum: "Suma de probabilidades implícitas",
         stakeOn: "Apuesta al resultado",
         guaranteedReturn: "Retorno en cada resultado",
         verdictArb:
-          "Las cuotas suman menos del 100%: repartida así, cada resultado devuelve la misma cantidad.",
+          "Las cuotas suman menos del 100%: repartida así, cada resultado devuelve la misma cantidad, si todas las cuotas siguen disponibles.",
         verdictNoArb:
           "Las cuotas suman más del 100%, así que aquí no hay arbitraje — cualquier reparto pierde ese margen, salga lo que salga.",
         hint: "Una cuota por resultado, cada una de la casa que más paga en ese lado. El decimal acepta coma: 2,10 vale como 2.10.",
@@ -377,7 +377,7 @@ const es: ToolsCopy = {
           { label: "Suma de probabilidades implícitas", value: "95,24%" },
           { label: "Apuesta a cada lado, sobre 1.000", value: "500 · 500" },
           { label: "Retorno en cada resultado", value: "1.050" },
-          { label: "Beneficio", value: "+50 (+5,00%)" },
+          { label: "Margen de arbitraje", value: "+50 (+5,00%)" },
         ],
         note:
           "El mismo mercado a 1.90/1.90 dentro de una sola casa suma 105,26% y devuelve −5,00% como lo repartas. Entre las dos líneas no ha cambiado nada del partido: la diferencia está entera en qué casa paga más en qué lado, y en tener cuentas con saldo en ambas mientras las cuotas seguían publicadas.",

@@ -359,12 +359,12 @@ const it: ToolsCopy = {
         removeOutcome: "Togli",
         total: "Puntata totale",
         resultTitle: "Come dividerla",
-        profit: "Profitto",
+        profit: "Margine di arbitraggio",
         impliedSum: "Somma delle probabilità implicite",
         stakeOn: "Puntata sull'esito",
         guaranteedReturn: "Ritorno in ogni esito",
         verdictArb:
-          "Le quote sommano a meno del 100%: divisa così, ogni esito restituisce la stessa cifra.",
+          "Le quote sommano a meno del 100%: divisa così, ogni esito restituisce la stessa cifra, se tutte le quote sono ancora disponibili.",
         verdictNoArb:
           "Le quote sommano a più del 100%, quindi qui non c'è arbitraggio — qualunque divisione perde quel margine, qualunque esito si verifichi.",
         hint: "Una quota per esito, ciascuna dal book che paga di più su quel lato. Il decimale accetta la virgola: 2,10 vale come 2.10.",
@@ -378,7 +378,7 @@ const it: ToolsCopy = {
           { label: "Somma delle probabilità implicite", value: "95,24%" },
           { label: "Puntata su ciascuno, su 1.000", value: "500 · 500" },
           { label: "Ritorno in ogni esito", value: "1.050" },
-          { label: "Profitto", value: "+50 (+5,00%)" },
+          { label: "Margine di arbitraggio", value: "+50 (+5,00%)" },
         ],
         note:
           "Lo stesso mercato prezzato 1.90/1.90 dentro un solo book somma a 105,26% e restituisce −5,00% comunque lo dividi. Fra le due linee della partita non è cambiato nulla: la differenza è tutta in quale book paga di più su quale lato, e nell'avere conti alimentati su entrambi mentre le quote erano ancora esposte.",

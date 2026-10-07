@@ -370,12 +370,12 @@ const en: ToolsCopy = {
         removeOutcome: "Remove",
         total: "Total stake",
         resultTitle: "How to split it",
-        profit: "Profit",
+        profit: "Arbitrage margin",
         impliedSum: "Sum of implied probabilities",
         stakeOn: "Stake on outcome",
         guaranteedReturn: "Return in every outcome",
         verdictArb:
-          "The prices add up to less than 100%: split this way, every outcome pays back the same amount.",
+          "The prices add up to less than 100%: split this way, every outcome pays back the same amount, if all prices are still available.",
         verdictNoArb:
           "The prices add up to more than 100%, so there is no arbitrage here — any split loses that margin whichever outcome lands.",
         hint: "One price per outcome, each from the book paying most on that side. Decimal accepts a comma: 2,10 works like 2.10.",
@@ -389,7 +389,7 @@ const en: ToolsCopy = {
           { label: "Sum of implied probabilities", value: "95.24%" },
           { label: "Stake on each, out of 1,000", value: "500 · 500" },
           { label: "Return in every outcome", value: "1,050" },
-          { label: "Profit", value: "+50 (+5.00%)" },
+          { label: "Arbitrage margin", value: "+50 (+5.00%)" },
         ],
         note:
           "The same market priced 1.90/1.90 inside one book sums to 105.26% and hands back −5.00% however you split it. Nothing about the match changed between the two lines: the whole difference is which book pays more on which side, and whether you had funded accounts at both while the prices were still up.",

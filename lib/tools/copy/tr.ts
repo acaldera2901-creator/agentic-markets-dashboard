@@ -358,12 +358,12 @@ const tr: ToolsCopy = {
         removeOutcome: "Kaldır",
         total: "Toplam bahis",
         resultTitle: "Nasıl bölünür",
-        profit: "Kâr",
+        profit: "Arbitraj marjı",
         impliedSum: "Örtük olasılıkların toplamı",
         stakeOn: "Sonuca yatırılan",
         guaranteedReturn: "Her sonuçta dönen tutar",
         verdictArb:
-          "Oranlar %100'ün altında toplanıyor: böyle bölündüğünde her sonuç aynı tutarı geri veriyor.",
+          "Oranlar %100'ün altında toplanıyor: böyle bölündüğünde tüm oranlar hâlâ geçerliyse her sonuç aynı tutarı geri veriyor.",
         verdictNoArb:
           "Oranlar %100'ün üzerinde toplanıyor, yani burada arbitraj yok — hangi sonuç gelirse gelsin her bölüşüm bu marjı kaybeder.",
         hint: "Her sonuç için tek oran, her biri o tarafta en çok ödeyen büroda. Ondalık virgülü kabul eder: 2,10, 2.10 gibi çalışır.",
@@ -377,7 +377,7 @@ const tr: ToolsCopy = {
           { label: "Örtük olasılıkların toplamı", value: "%95,24" },
           { label: "Her tarafa, 1.000 üzerinden", value: "500 · 500" },
           { label: "Her sonuçta dönen tutar", value: "1.050" },
-          { label: "Kâr", value: "+50 (+%5,00)" },
+          { label: "Arbitraj marjı", value: "+50 (+%5,00)" },
         ],
         note:
           "Aynı pazar tek büroda 1.90/1.90 fiyatlandığında toplam %105,26 olur ve nasıl bölersen böl −%5,00 geri verir. İki çizgi arasında maçla ilgili hiçbir şey değişmedi: bütün fark hangi büronun hangi tarafta daha çok ödediğinde ve oranlar hâlâ açıkken ikisinde de bakiyeli hesabın olup olmadığında.",

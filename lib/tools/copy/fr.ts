@@ -358,12 +358,12 @@ const fr: ToolsCopy = {
         removeOutcome: "Retirer",
         total: "Mise totale",
         resultTitle: "Comment la répartir",
-        profit: "Profit",
+        profit: "Marge d’arbitrage",
         impliedSum: "Somme des probabilités implicites",
         stakeOn: "Mise sur l'issue",
         guaranteedReturn: "Retour sur chaque issue",
         verdictArb:
-          "Les cotes totalisent moins de 100 % : répartie ainsi, chaque issue rend la même somme.",
+          "Les cotes totalisent moins de 100 % : répartie ainsi, chaque issue rend la même somme, si toutes les cotes sont encore disponibles.",
         verdictNoArb:
           "Les cotes totalisent plus de 100 %, il n'y a donc pas d'arbitrage ici — toute répartition perd cette marge, quelle que soit l'issue.",
         hint: "Une cote par issue, chacune chez le book qui paie le plus de ce côté. Le décimal accepte la virgule : 2,10 vaut 2.10.",
@@ -377,7 +377,7 @@ const fr: ToolsCopy = {
           { label: "Somme des probabilités implicites", value: "95,24 %" },
           { label: "Mise de chaque côté, sur 1 000", value: "500 · 500" },
           { label: "Retour sur chaque issue", value: "1 050" },
-          { label: "Profit", value: "+50 (+5,00 %)" },
+          { label: "Marge d’arbitrage", value: "+50 (+5,00 %)" },
         ],
         note:
           "Le même marché coté 1.90/1.90 chez un seul book totalise 105,26 % et rend −5,00 % quelle que soit la répartition. Rien du match n'a changé entre les deux lignes : toute la différence tient à quel book paie le plus de quel côté, et au fait d'avoir des comptes approvisionnés chez les deux pendant que les cotes étaient encore affichées.",
