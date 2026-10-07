@@ -10,17 +10,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { Fascia } from "../Fascia";
 import { useCommunityCopy } from "./useCopy";
+import { useV3cLang } from "@/lib/v3c/lang.client";
+import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
 
 type Sel = { label: string; sport: string; when: string; market: string | null; prob: number | null };
 export type Slip = { id: string; creator_code: string; mb_param: string; created_at: string; locked: boolean; combined_prob: number | null; selections: Sel[] };
 type Access = "none" | "partial" | "full";
 
-const PRICING = "/pricing";
 
 type Props = { initial?: { slips: Slip[]; access: Access } };
 
 export function V3cCommunity({ initial }: Props = {}) {
   const t = useCommunityCopy().cm;
+  // fixui2 N5: Fase 0 sells nothing — the gate is a neutral «preview», no «See Pro», no «open with Pro»
+  const x2 = fixui2CopyFor(useV3cLang());
   const [slips, setSlips] = useState<Slip[] | null>(initial?.slips ?? null);
   const [access, setAccess] = useState<Access>(initial?.access ?? "none");
   const [error, setError] = useState(false);
@@ -48,14 +51,13 @@ export function V3cCommunity({ initial }: Props = {}) {
       <div className="v3c-cm-bar-h">
         {access !== "full" ? (
           <div className="v3c-cm-gate">
-            <p className="v3c-t-row">{access === "none" ? t.gateNoneTitle : t.gatePartial}</p>
-            {access === "none" && <p className="v3c-small">{t.gateNoneSub}</p>}
+            <p className="v3c-t-row">{x2.cmPreviewTitle}</p>
+            <p className="v3c-small">{x2.cmPreviewSub}</p>
           </div>
         ) : <span />}
         <div className="v3c-act">
           {/* fixui A7: «Build yours» portava a /probability-view, il sito vecchio (scuro, Base, cripto):
               nascosto finché il costruttore non ha una pagina v3c. La chiave t.create resta per allora. */}
-          {access !== "full" && <a className="v3c-btn v3c-btn-cta" href={PRICING}>{t.seePlans}</a>}
         </div>
       </div>
 
@@ -96,7 +98,7 @@ export function V3cCommunity({ initial }: Props = {}) {
               </ul>
               <div className="v3c-cm-slip-f">
                 {s.locked ? (
-                  <span className="v3c-small">{t.lockedLine}</span>
+                  <span className="v3c-small">{x2.cmLockedLine}</span>
                 ) : (
                   <a className="v3c-linkbtn" href={`/probability-view?mb=${encodeURIComponent(s.mb_param)}&ref=${encodeURIComponent(s.creator_code)}`}>{t.open} →</a>
                 )}

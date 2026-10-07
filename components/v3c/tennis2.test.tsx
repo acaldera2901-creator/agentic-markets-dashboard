@@ -58,6 +58,7 @@ describe("tennis2 · pagina partita", () => {
   });
 });
 
+// fixui2 N4: the price check opens on a book that quotes every outcome (never on a price no book offers): the fixtures carry one
 describe("tennis2 · price check", () => {
   const pc = (over: Partial<PcMatch>): PcMatch => ({
     id: ELO.id, sport: "tennis", home: "Jannik Sinner", away: "Ben Shelton", kickoff: ELO.kickoff, league: "ATP Shanghai", blend: false, links: [],

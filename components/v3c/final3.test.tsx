@@ -36,7 +36,7 @@ describe("ColourBanner", () => {
     expect(html).not.toContain("<svg");
   });
   it("lingua passata dalla pagina (hub tool localizzato)", () => {
-    expect(text(renderToStaticMarkup(<ColourBanner theme="pro" lang="it" />))).toContain("Scopri cosa aggiunge Pro");
+    expect(text(renderToStaticMarkup(<ColourBanner theme="pro" lang="it" />))).toContain("Anteprima Pro: ancora niente da comprare"); // fixui2 N13: Pro preview, no upsell
   });
   it("i link Tennis/Calcio aprono la board filtrata, Live il gruppo live", () => {
     expect(BANNER_HREF.tennis).toBe("/predictions?sport=tennis");

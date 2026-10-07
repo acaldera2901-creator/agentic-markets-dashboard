@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description:
     "Invite friends to BetRedge and unlock rewards as they join. Track your referrals from one panel.",
   alternates: { canonical: "/invite" },
+  // fixui2 N5: held for the legal review (docs/redesign/fixui2-legal-hold.md) — out of the index and the
+  // v3c sitemap, no internal link. Only this v3c route (flag on): today's page is untouched.
+  robots: { index: false, follow: false },
 };
 
 export default async function Page() {

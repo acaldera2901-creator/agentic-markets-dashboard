@@ -57,6 +57,7 @@ describe("B · tennis senza la nostra stima", () => {
     expect(html).toContain('href="/price-check?m=tennis%3At1"');
   });
 
+  // fixui2 N4: a book quoting both players, so the price check opens on its prices
   it("price check su una partita tennis: due prezzi, margine, nessuna colonna stima/gap", () => {
     const pc: PcMatch = {
       id: TN.id, sport: "tennis", home: TN.player1, away: TN.player2, kickoff: TN.kickoff, league: TN.tournament, blend: false, links: [],

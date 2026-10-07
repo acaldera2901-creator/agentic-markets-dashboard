@@ -30,6 +30,8 @@ import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 import { leadOutcome, liveState, pctInt } from "@/lib/v3c/board-view";
 import { byRelevance, hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { wantsLive } from "@/lib/v3c/live-view";
+import { exampleEligible } from "@/lib/v3c/fixui2";
+import { estimateShown } from "@/lib/v3c/fixdata2";
 import { matchHref } from "@/lib/v3c/match-view";
 import { HeroExample, type HeroExampleData } from "@/components/v3c/guide/HeroExample";
 
@@ -137,8 +139,8 @@ async function BoardBlock({ surface, nowIso, sport }: { surface: Surface; nowIso
 async function BenchBlock({ nowIso }: { nowIso: string }) {
   const b = await getBoard();
   // il banco usa una partita di calcio con mercato: solo quelle viaggiano fino al browser
-  // fixdata2 N1/N3: only a match the model guard does not hold back (no EV, Kelly or stake on a guarded one)
-  const matches = b.ok ? forSurface(b.data, "home", new Date(nowIso)).matches.filter((m) => m.margin_removed != null && valueToolsAllowed(m)) : [];
+  // fixdata2 N1/N3 + fixui2 N1: a guarded, estimate-less or started match never travels to the bench (no EV/Kelly of a match the guard holds back)
+  const matches = b.ok ? exampleEligible(forSurface(b.data, "home", new Date(nowIso)).matches, new Date(nowIso)).filter(estimateShown) : [];
   return <Bench matches={matches} nowIso={nowIso} />;
 }
 

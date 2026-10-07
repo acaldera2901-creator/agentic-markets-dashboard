@@ -89,7 +89,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .sort()
     .at(-1);
 
-  const staticEntries: MetadataRoute.Sitemap = [...PUBLIC_ROUTES, ...TOOLS_ROUTES].map((r) => {
+  // #REDESIGN-V3C fixui2 N5: a flag acceso /community (paywall Pro) è in attesa del legale → fuori dalla
+  // sitemap, come /leaderboard e /invite che non ci sono mai state. Spento: lista invariata.
+  const held = envFlagOn(process.env.NEXT_PUBLIC_REDESIGN) ? new Set(["/community", "/leaderboard", "/invite"]) : null;
+  const staticEntries: MetadataRoute.Sitemap = [...PUBLIC_ROUTES, ...TOOLS_ROUTES].filter((r) => !held?.has(r.path)).map((r) => {
     // GENERATED_AT è il fallback per una rotta che la mappa non conosce (rotta
     // nuova, generato non rigenerato): mai un `undefined` silenzioso.
     let lastModified = LAST_MODIFIED[r.path] ?? GENERATED_AT;

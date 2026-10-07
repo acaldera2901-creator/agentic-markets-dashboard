@@ -31,6 +31,8 @@ import { liveBadge, type LiveBadge } from "@/lib/v3c/live-view";
 import { tennisEstimateOf } from "@/lib/v3c/tennis-estimate";
 import { LiveScoreChip, LiveTimeCell } from "../live/LiveBits";
 import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { fixui2CopyFor } from "@/lib/v3c/fixui2-copy";
+import { sealedBeforeKickoff } from "@/lib/v3c/fixui2";
 import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { estimateShown } from "@/lib/v3c/fixdata2";
 import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
@@ -330,8 +332,8 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
           </p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
-              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.board.sealedWhy(stampLocal(m.sealed_at, tz, locale))} />
-              <span className="v3c-small">{t.board.sealedWhy(stampLocal(m.sealed_at, tz, locale))}</span>
+              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.board.sealedWhy(stampLocal(m.sealed_at, tz, locale))} kickoff={m.kickoff} afterLabel={fixui2CopyFor(locale).loggedLabel} afterTitle={fixui2CopyFor(locale).loggedWhy(stampLocal(m.sealed_at, tz, locale))} />
+              <span className="v3c-small">{(sealedBeforeKickoff(m.sealed_at, m.kickoff) ? t.board.sealedWhy : fixui2CopyFor(locale).loggedWhy)(stampLocal(m.sealed_at, tz, locale))}</span>
             </p>
           ) : null}
           {m.blend == null ? <p className="v3c-fine">{guard === "no_market" ? f2.modelOnlyNote : t.board.noMarketLong}</p> : null}
@@ -492,8 +494,8 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
           <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : t.tennis.noEstimate}</p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
-              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))} />
-              <span className="v3c-small">{t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))}</span>
+              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))} kickoff={m.kickoff} afterLabel={fixui2CopyFor(locale).loggedLabel} afterTitle={fixui2CopyFor(locale).loggedWhy(stampLocal(m.sealed_at, tz, locale))} />
+              <span className="v3c-small">{(sealedBeforeKickoff(m.sealed_at, m.kickoff) ? t.tennis.sealedWhy : fixui2CopyFor(locale).loggedWhy)(stampLocal(m.sealed_at, tz, locale))}</span>
             </p>
           ) : null}
           <p className="v3c-small">
