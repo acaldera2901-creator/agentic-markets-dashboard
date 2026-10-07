@@ -4,9 +4,9 @@
 // rewriter checks, the fallback, team matching and «Most moved today».
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { cleanLink, parseRss, plainText, robotsAllows, FOTMOB_FEED_URL, NEWS_USER_AGENT } from "./feed";
-import { newsRewriter, checkRewrite, headlineFallback, readModelOutput, RewriteError, sharesRun, SYSTEM_PROMPT, userPrompt, MAX_WORDS } from "./rewrite";
+import { checkRewrite, readModelOutput, RewriteError, sharesRun, statedTeams, SYSTEM_PROMPT, userPrompt, MAX_WORDS } from "./rewrite";
 import { aliasesFor, matchTeams } from "./teams";
 import { dayMove, mostMoved, nearestInTime, DAY_MS } from "./movers";
 
@@ -91,10 +91,6 @@ describe("rewrite · checks and fallback", () => {
     const shortHead = { ...item, title: "Kane breaks record", text: "" };
     expect(checkRewrite({ ...good, en: { title: "Kane breaks record", body: "It happened in Munich on Saturday night." } }, shortHead)).toMatch(/headline/);
   });
-  it("a failed rewrite records only why: the original headline never travels (news2)", () => {
-    expect(headlineFallback(item, "no-key")).toEqual({ kind: "headline", reason: "no-key" });
-    expect(JSON.stringify(headlineFallback(item, "x"))).not.toContain(item.title);
-  });
   it("the IT text is held to the same anti-copy rule as the EN", () => {
     expect(checkRewrite({ ...good, it: { ...good.it, body: "Croatia play host to England on Saturday evening." } }, item)).toMatch(/6-word/);
   });
@@ -109,69 +105,30 @@ describe("rewrite · checks and fallback", () => {
   });
 });
 
-describe("rewrite · Claude through the Messages API (fetch faked, no network)", () => {
-  const out = (o: object, stop = "end_turn") => ({ ok: true, status: 200, json: async () => ({ stop_reason: stop, content: [{ type: "thinking", thinking: "" }, { type: "text", text: JSON.stringify(o) }] }) });
-  const ok = { status: "ok", headline_en: "Croatia host England in Rijeka on Saturday", body_en: "The Nations League sides meet in matchday three.", headline_it: "La Croazia ospita l’Inghilterra sabato", body_it: "Terza giornata di Nations League a Fiume." };
-  it("no credential → no rewriter (nothing rewritten, nothing shown)", () => {
-    expect(newsRewriter({})).toBeNull();
-    expect(newsRewriter({ ANTHROPIC_API_KEY: "  " })).toBeNull();
-    expect(newsRewriter({ VERCEL_OIDC_TOKEN: "oidc" })).toBeNull(); // OIDC alone never spends: needs NEWS_REWRITE_PROVIDER=gateway
+describe("rewrite · the model's JSON (from `claude -p`, no network)", () => {
+  const ok = { status: "ok", headline_en: "Croatia host England in Rijeka on Saturday", body_en: "The Nations League sides meet in matchday three.", headline_it: "La Croazia ospita l’Inghilterra sabato", body_it: "Terza giornata di Nations League a Fiume.", teams: ["Croatia", "England"] };
+  it("parsed object or JSON text → an AI note with the stated teams", () => {
+    const a = readModelOutput(ok, item, "haiku · prompt v3");
+    expect(a.note).toMatchObject({ kind: "ai", en: { title: ok.headline_en }, it: { body: ok.body_it }, model: "haiku · prompt v3" });
+    expect(a.teams).toEqual(["Croatia", "England"]);
+    expect(readModelOutput(JSON.stringify(ok), item, "m").note.kind).toBe("ai");
   });
-  it("direct: Haiku 4.5 by default, key, structured output, no effort; reads the JSON into an AI note", async () => {
-    const f = vi.fn(async () => out(ok));
-    const rw = newsRewriter({ ANTHROPIC_API_KEY: "k-test" }, f as unknown as typeof fetch)!;
-    expect(rw.id).toBe("anthropic:claude-haiku-4-5:v2");
-    const note = await rw.rewrite(item);
-    expect(note).toMatchObject({ kind: "ai", en: { title: ok.headline_en }, it: { body: ok.body_it }, model: "claude-haiku-4-5" });
-    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("https://api.anthropic.com/v1/messages");
-    const h = init.headers as Record<string, string>;
-    expect(h["x-api-key"]).toBe("k-test");
-    expect(h["anthropic-beta"]).toBeUndefined();
-    const body = JSON.parse(String(init.body));
-    expect(body.model).toBe("claude-haiku-4-5");
-    expect(body.output_config.format.type).toBe("json_schema");
-    expect(body.output_config.effort).toBeUndefined();
-    expect(body.fallbacks).toBeUndefined();
-    expect(body.messages[0].content).toContain(item.title);
-  });
-  it("a 5.5 model override gets low effort and the refusal fallback", async () => {
-    const f = vi.fn(async () => out(ok));
-    await newsRewriter({ ANTHROPIC_API_KEY: "k", NEWS_REWRITE_MODEL: "claude-opus-5-5" }, f as unknown as typeof fetch)!.rewrite(item);
-    const [, init] = f.mock.calls[0] as unknown as [string, RequestInit];
-    const body = JSON.parse(String(init.body));
-    expect(body.output_config.effort).toBe("low");
-    expect(body.fallbacks).toBe("default");
-    expect((init.headers as Record<string, string>)["anthropic-beta"]).toBe("server-side-fallback-2026-07-01");
-  });
-  it("AI Gateway: with its key, or with NEWS_REWRITE_PROVIDER=gateway and the Vercel OIDC token (Bearer)", async () => {
-    const f = vi.fn(async () => out(ok));
-    const rw = newsRewriter({ NEWS_REWRITE_PROVIDER: "gateway", VERCEL_OIDC_TOKEN: "oidc-test" }, f as unknown as typeof fetch)!;
-    expect(rw.id).toBe("gateway:anthropic/claude-haiku-4.5:v2");
-    await rw.rewrite(item);
-    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("https://ai-gateway.vercel.sh/v1/messages");
-    expect((init.headers as Record<string, string>).authorization).toBe("Bearer oidc-test");
-    expect(JSON.parse(String(init.body)).model).toBe("anthropic/claude-haiku-4.5");
-    const g = vi.fn(async () => out(ok));
-    await newsRewriter({ AI_GATEWAY_API_KEY: "gw" }, g as unknown as typeof fetch)!.rewrite(item);
-    expect(((g.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>).authorization).toBe("Bearer gw");
-    // gateway chosen but no token in this context → a transient error, nothing sent
-    const h = vi.fn(async () => out(ok));
-    await expect(newsRewriter({ NEWS_REWRITE_PROVIDER: "gateway" }, h as unknown as typeof fetch)!.rewrite(item)).rejects.toThrow("http 401");
-    expect(h).not.toHaveBeenCalled();
-  });
-  it("a fenced JSON answer (proxy without the schema) is still read; prose is not", () => {
-    expect(readModelOutput("```json\n" + JSON.stringify(ok) + "\n```", item, "m").kind).toBe("ai");
+  it("a fenced JSON answer is still read; prose is not", () => {
+    expect(readModelOutput("```json\n" + JSON.stringify(ok) + "\n```", item, "m").note.kind).toBe("ai");
     expect(() => readModelOutput("Here you go: " + JSON.stringify(ok), item, "m")).toThrow(RewriteError);
+    expect(() => readModelOutput(["x"], item, "m")).toThrow("not JSON");
   });
-  it("«insufficient», a refusal, a failed check or bad JSON all throw (→ headline)", async () => {
-    const run = (r: object) => newsRewriter({ ANTHROPIC_API_KEY: "k" }, (async () => r) as unknown as typeof fetch)!.rewrite(item);
-    await expect(run(out({ ...ok, status: "insufficient" }))).rejects.toThrow("insufficient");
-    await expect(run(out(ok, "refusal"))).rejects.toThrow("refusal");
-    await expect(run(out({ ...ok, body_en: "England are a lock." }))).rejects.toThrow(/banned/);
-    await expect(run({ ok: false, status: 529, json: async () => ({}) })).rejects.toThrow("http 529");
+  it("«insufficient», a failed check or bad JSON all throw (→ dropped, never shown)", () => {
+    expect(() => readModelOutput({ ...ok, status: "insufficient" }, item, "m")).toThrow("insufficient");
+    expect(() => readModelOutput({ ...ok, body_en: "England are a lock." }, item, "m")).toThrow(/banned/);
     expect(() => readModelOutput("{nope", item, "m")).toThrow(RewriteError);
+  });
+  it("teams the item does not name are dropped (no invented board link)", () => {
+    expect(statedTeams(["Croatia", "Brazil", 7, "England", "Croatia"], item)).toEqual(["Croatia", "England"]);
+    expect(statedTeams("Croatia", item)).toEqual([]);
+  });
+  it("the prompt asks for the teams as written in the item", () => {
+    expect(SYSTEM_PROMPT).toMatch(/teams: the football clubs and national teams the item names/);
   });
 });
 

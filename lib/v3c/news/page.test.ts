@@ -74,8 +74,9 @@ describe("page · the recorded FotMob news page", () => {
 
 describe("page · robots.txt and /api", () => {
   const FOTMOB = "User-agent: *\nAllow: /\nDisallow: /api/*\nDisallow: /auth/*\nDisallow: /info\n\nUser-agent: Googlebot\nAllow: /api/*\n";
-  it("FotMob's real rules (07/10): /en/news allowed, /api/worldnews not", () => {
-    expect(new URL(FOTMOB_NEWS_PAGE_URL).pathname).toBe("/en/news");
+  it("FotMob's real rules (07/10): /it/news and /en/news allowed, /api/worldnews not", () => {
+    expect(new URL(FOTMOB_NEWS_PAGE_URL).pathname).toBe("/it/news");
+    expect(robotsAllows(FOTMOB, "/it/news")).toBe(true);
     expect(robotsAllows(FOTMOB, "/en/news")).toBe(true);
     expect(robotsAllows(FOTMOB, "/api/worldnews?lang=en&page=1")).toBe(false);
   });

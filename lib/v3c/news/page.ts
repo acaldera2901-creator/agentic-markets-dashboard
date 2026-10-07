@@ -17,8 +17,8 @@
 import { decodeEntities, plainText, type FeedItem } from "./feed";
 
 export const FOTMOB_ORIGIN = "https://www.fotmob.com";
-/** The one page we read (the /it/news page embeds the same English list). */
-export const FOTMOB_NEWS_PAGE_URL = `${FOTMOB_ORIGIN}/en/news`;
+/** The one page we read (newswatch, Andrea 07/10: /it/news; it embeds the same English list as /en/news). */
+export const FOTMOB_NEWS_PAGE_URL = `${FOTMOB_ORIGIN}/it/news`;
 
 /** Throws on any /api path: we never call an API, whatever robots.txt says. */
 export function assertNotApi(url: string): void {
