@@ -1,0 +1,48 @@
+/* components/v3c/banner-fit.css (#REDESIGN-V3C banners-fix) — il riquadro dei banner «fit» della fascia.
+   Alto quanto la fascia minima (208 px; 168 sotto gli 820, fidelity.css), largo altezza × il rapporto
+   del ritaglio (--fit-ar, inline) e ancorato in alto: l'immagine entra sempre intera. Se la fascia
+   cresce (titolo su due righe, altre lingue) sotto il riquadro resta navy, sfumato.
+   A destra il riquadro si ferma prima del taglio diagonale della fascia (34 px desktop, 22 px mobile,
+   v3c.css): la mano del tennista sta a 45 px dal bordo del ritaglio e il taglio se la mangiava.
+   Il testo della fascia si ferma prima del riquadro (meno la sfumatura): le parole non passano sopra
+   testa e palla in nessuna lingua — il conto è sul riquadro più largo (tennis, 1,65 → 343 px). */
+.v3c-banner.v3c-banner-fit { top: 0; bottom: auto; height: 208px; width: calc(208px * var(--fit-ar)); max-width: none; right: 34px; }
+.v3c-fascia-art:has(> .v3c-banner-fit) > :is(.v3c-t-page, .v3c-t-match, .v3c-fascia-meta) { max-width: calc(100% - 300px); }
+.v3c-banner.v3c-banner-fit::after {
+  background:
+    linear-gradient(180deg, transparent 90%, var(--v3c-navy) 100%),
+    linear-gradient(90deg, var(--v3c-navy) 0%, color-mix(in srgb, var(--v3c-navy) 40%, transparent) 9%, transparent 22%, transparent 96%, var(--v3c-navy) 100%);
+}
+@media (max-width: 820px) {
+  .v3c-banner.v3c-banner-fit { height: 168px; width: calc(168px * var(--fit-ar)); right: 22px; }
+  .v3c-fascia-art:has(> .v3c-banner-fit) > :is(.v3c-t-page, .v3c-t-match, .v3c-fascia-meta) { max-width: calc(100% - 240px); }
+}
+/* telefono: lo spazio non basta per testo e soggetto affiancati — il testo torna a tutta larghezza e passa
+   sopra il soggetto, sotto il velo di fidelity.css (82→35%), come prima del fix; il soggetto resta intero */
+@media (max-width: 599px) {
+  .v3c-fascia-art:has(> .v3c-banner-fit) > :is(.v3c-t-page, .v3c-t-match, .v3c-fascia-meta) { max-width: none; }
+  .v3c-banner.v3c-banner-fit::after {
+    background:
+      linear-gradient(180deg, transparent 90%, var(--v3c-navy) 100%),
+      linear-gradient(90deg, transparent 95%, var(--v3c-navy) 100%),
+      linear-gradient(90deg, var(--v3c-navy) 0%, color-mix(in srgb, var(--v3c-navy) 82%, transparent) 45%, color-mix(in srgb, var(--v3c-navy) 35%, transparent) 100%);
+  }
+}
+
+/* la folla (partner-crowd, `cover` largo): stessa altezza fissa, ancorata in alto. Se la fascia cresce
+   (titoli lunghi in fr/pt su un telefono) il riquadro non si stringe sotto 1,9:1 e il `cover` non taglia
+   i tifosi ai lati; sotto resta navy, sfumato. I veli sono quelli di fidelity.css più la sfumatura in basso. */
+.v3c-fascia-art > .v3c-banner:not(.v3c-banner-fit) { bottom: auto; height: 208px; }
+.v3c-fascia-art > .v3c-banner:not(.v3c-banner-fit)::after {
+  background:
+    linear-gradient(180deg, transparent 90%, var(--v3c-navy) 100%),
+    linear-gradient(90deg, var(--v3c-navy) 0%, color-mix(in srgb, var(--v3c-navy) 72%, transparent) 26%, color-mix(in srgb, var(--v3c-navy) 8%, transparent) 62%, transparent 100%);
+}
+@media (max-width: 820px) {
+  .v3c-fascia-art > .v3c-banner:not(.v3c-banner-fit) { height: 168px; }
+  .v3c-fascia-art > .v3c-banner:not(.v3c-banner-fit)::after {
+    background:
+      linear-gradient(180deg, transparent 90%, var(--v3c-navy) 100%),
+      linear-gradient(90deg, var(--v3c-navy) 0%, color-mix(in srgb, var(--v3c-navy) 82%, transparent) 45%, color-mix(in srgb, var(--v3c-navy) 35%, transparent) 100%);
+  }
+}
