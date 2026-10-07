@@ -462,3 +462,16 @@ Chiave nuova in `lib/i18n/v3c-tools/*` (11 lingue complete, glossario: bankroll 
 | `tools.bankroll-calculator.note` | «Optional: we never assume a bankroll. Leave it empty and the plan shows percentages only.» | «Facoltativo: non presumiamo mai un bankroll. Lascialo vuoto e il piano mostra solo percentuali.» |
 
 Il campo bankroll del Kelly e del bankroll calculator è vuoto di default (era €500 / €2000): nessun importo in € derivato da un bankroll di default in nessuna pagina v3c. Non più a schermo senza un bankroll digitato: `pc.kellyOf`.
+
+## final7 (#REDESIGN-V3C final7) — merge di fixdata3 + fixui3, R5 di QA-REPORT-3
+
+Dizionario nuovo `lib/v3c/final7-copy.ts` (11 lingue complete, glossario `docs/redesign/i18n-glossary.md`, `// REVIEW-NATIVE`, in `lib/v3c/i18n-parity.test.ts`):
+
+| Chiave | EN | IT |
+|---|---|---|
+| `noMarket` | «No market» (R5: board e pagina, la stessa etichetta) | «Senza mercato» |
+| `noMarketNote` | «No book prices this match yet: no market, no estimate, no gap.» | «Nessun book quota ancora questa partita: niente mercato, stima né gap.» |
+| `staleAged(age)` | «Market only: price may be outdated, 50:08 old (hh:mm)» | «Solo mercato: il prezzo potrebbe essere superato, vecchio di 50:08 (hh:mm)» |
+| `guardMarketBody` | «Our model differs too much from the market to show: the number is the market, margin removed.» | «Il nostro modello si discosta troppo dal mercato per mostrarlo: il numero è il mercato, margine tolto.» |
+
+Senza mercato, o con un prezzo che potrebbe essere superato, nessuna «prices as of» su board e pagina partita; l'età hh:mm è detta nell'etichetta/nota. Non più a schermo: `fixdata3.priceAge` (chiave lasciata). Sotto «Market only» nel calcio: niente `wrongN`, niente riga 70/30 né «estimate as of» (R6).

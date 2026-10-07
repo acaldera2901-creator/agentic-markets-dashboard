@@ -62,6 +62,7 @@ import { estimateShown } from "@/lib/v3c/fixdata2";
 import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
 import { fixdata3CopyFor } from "@/lib/v3c/fixdata3-copy";
 import { ageHhMm } from "@/lib/v3c/fixdata3";
+import { final7CopyFor } from "@/lib/v3c/final7-copy";
 import { StartedNote } from "./StartedNote";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
@@ -604,7 +605,8 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           })}
         </div>
         <p className="v3c-fine" style={{ marginTop: 10 }}>
-          {showEst ? c.wrongN(E) : null} {g != null && showEst ? <span className="v3c-gap-round">{fc.gapRounding}</span> : null}
+          {/* final7 (QA-3 R6): under «Market only» the number is the market — no sentence about «a 26% estimate» */}
+          {showEst && guard !== "market_only" ? c.wrongN(E) : null} {g != null && showEst ? <span className="v3c-gap-round">{fc.gapRounding}</span> : null}
         </p>
       </section>
 
@@ -626,8 +628,9 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
                 <span className="k">{(summary ? 2 : 1) + (news[0] ? 1 : 0)}</span>
                 <div>
                   {/* fixdata2 N3: without a market there is no estimate, so the step does not call the model one */}
-                  <h3>{m.blend ? c.blendTitle : guard === "no_market" ? f2.modelOnly : c.modelTitle}</h3>
-                  <p>{m.blend ? c.blendBody : guard === "no_market" ? f2.modelOnlyNote : c.modelBody}</p>
+                  {/* final7 (QA-3 R6): under «Market only» the step does not explain the 70/30 estimate it does not show */}
+                  <h3>{guard === "market_only" ? t.tennis.marketOnly : m.blend ? c.blendTitle : guard === "no_market" ? f2.modelOnly : c.modelTitle}</h3>
+                  <p>{guard === "market_only" ? (m.model_guard?.reason === "price_far" ? f2.priceFar : final7CopyFor(lang).guardMarketBody) : m.blend ? c.blendBody : guard === "no_market" ? f2.modelOnlyNote : c.modelBody}</p>
                 </div>
               </li>
               <SealItem ctx={ctx} n={(summary ? 3 : 2) + (news[0] ? 1 : 0)} sealedAt={m.sealed_at} kickoff={m.kickoff} />
@@ -719,7 +722,12 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   // fixdata3 R3: an old stored price no book prices now — said, with its age; the books' market declared
   const x3 = fixdata3CopyFor(lang);
   const stale = m.market_from === "stale";
-  const marketFromNote = stale ? <span data-market-from="stale">{x3.priceAge(ageHhMm(m.market_age_min))}</span> : m.market_from === "books" ? <span data-market-from="books">{f2.marketFromBooks}</span> : null;
+  // final7 R5: no market, or a price that may be outdated, has no «prices as of»: the outdated price is said once,
+  // with its age (the note below); no market reads «No market», as on the board
+  const x7 = final7CopyFor(lang);
+  const noMkt = lead.market_p == null;
+  const priceTimeShown = !noMkt && !stale;
+  const marketFromNote = m.market_from === "books" && !noMkt ? <span data-market-from="books">{f2.marketFromBooks}</span> : null;
   return (
     <>
       <Head ctx={ctx} tab={c.tabTennis} id={m.id} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
@@ -776,7 +784,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
             <p className="v3c-pn-facts v3c-small" style={{ marginTop: 6, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
               <span>{t.tennis.blendFact}</span>
               {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-              <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span>
+              {priceTimeShown ? <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span> : null}
               {marketFromNote}
               {m.elo_as_of ? <span>{t.tennis.eloAsOf(stampLocal(m.elo_as_of, ctx.tz, locale))}</span> : null}
               <GlossaryLink />
@@ -792,6 +800,10 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
         ) : stale ? (
           <p className="v3c-mt-note" data-market-from="stale">
             <b>{x3.staleLabel}.</b> {x3.staleNote(ageHhMm(m.market_age_min))}
+          </p>
+        ) : noMkt ? (
+          <p className="v3c-mt-note" data-market="none">
+            <b>{x7.noMarket}.</b> {x7.noMarketNote}
           </p>
         ) : (
           <p className="v3c-mt-note">{t.tennis.noEstimate}</p>
@@ -890,7 +902,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
         {elo ? null : (
           <p className="v3c-pn-facts v3c-small" style={{ marginTop: 10, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-            <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span>
+            {priceTimeShown ? <span>{t.fascia.pricesAsOf(stampLocal(asOf, ctx.tz, locale))}</span> : null}
             {marketFromNote}
             <GlossaryLink />
           </p>
@@ -914,8 +926,8 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
                 <span className="k">{summary ? 2 : 1}</span>
                 <div>
                   {/* fixdata B8: a sealed row of our tempered Elo is not «market only» and its seal is not market-based */}
-                  <h3>{sealedOurs ? fc.sealedElo : elo ? c.tnEloWhyTitle : c.tnWhyTitle}</h3>
-                  <p>{sealedOurs ? fc.sealedGapNote : elo ? c.tnEloWhyBody : c.tnWhyBody}</p>
+                  <h3>{sealedOurs ? fc.sealedElo : elo ? c.tnEloWhyTitle : sealedHidden && sg === "no_market" ? f2.modelOnly : noMkt ? x7.noMarket : c.tnWhyTitle}</h3>
+                  <p>{sealedOurs ? fc.sealedGapNote : elo ? c.tnEloWhyBody : sealedHidden && sg === "no_market" ? f2.modelOnlyNote : noMkt ? x7.noMarketNote : c.tnWhyBody}</p>
                 </div>
               </li>
               <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} tennis={!sealedOurs} kickoff={m.kickoff} />

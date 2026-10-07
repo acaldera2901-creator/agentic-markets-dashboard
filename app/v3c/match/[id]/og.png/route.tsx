@@ -63,7 +63,10 @@ async function view(id: string): Promise<View | null> {
       estimate: null,
       // fixdata3 R3: the books' market declared; an old stored price said to be possibly outdated, with its age
       line:
-        m.market_from === "stale"
+        // final7 R5: no book prices it → «No market», never «the market price»
+        lead.market_p == null
+          ? `${lead.player} to win. No market: no book prices this match yet.`
+          : m.market_from === "stale"
           ? `${lead.player} to win. Market only: price may be outdated (${ageHhMm(m.market_age_min)} old).`
           : m.market_from === "books"
             ? `${lead.player} to win. The partner books’ prices, margin removed.`

@@ -38,6 +38,7 @@ import { estimateShown } from "@/lib/v3c/fixdata2";
 import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
 import { fixdata3CopyFor } from "@/lib/v3c/fixdata3-copy";
 import { ageHhMm } from "@/lib/v3c/fixdata3";
+import { final7CopyFor } from "@/lib/v3c/final7-copy";
 import "../ui3.css";
 import "../fixdata.css";
 import "../tennis2.css";
@@ -327,10 +328,11 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
             })}
           </div>
           <p className="v3c-pn-facts v3c-small">
-            <span>{m.blend ? t.board.blend : guard === "no_market" ? f2.modelOnly : t.board.modelOnly}</span>
+            {/* final7 (QA-3 R6): under «Market only» no 70/30 line and no estimate time — the note below says why */}
+            {guard === "market_only" ? null : <span>{m.blend ? t.board.blend : guard === "no_market" ? f2.modelOnly : t.board.modelOnly}</span>}
             {m.market_from === "books" ? <span data-market-from="books">{f2.marketFromBooks}</span> : null}
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-            <span>{t.board.estimateAsOf(stampLocal(m.estimate_as_of, tz, locale))}</span>
+            {guard === "market_only" ? null : <span>{t.board.estimateAsOf(stampLocal(m.estimate_as_of, tz, locale))}</span>}
           </p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
@@ -369,7 +371,13 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
   // fixdata3 R3: an old stored price no book prices now — said, with its age
   const x3 = fixdata3CopyFor(locale);
   const stale = m.market_from === "stale";
-  const kindLabel = elo ? t.tennis.eloLabel : stale ? x3.staleLabel : t.tennis.marketOnly;
+  // final7 R5: no market is not «Market only» — the page's words here too («Model only» for a sealed Elo row, else
+  // «No market»), and no price time; a price that may be outdated is said once, always with its age
+  const x7 = final7CopyFor(locale);
+  const noMkt = lead.market_p == null;
+  const sealedNoMkt = noMkt && m.probability_kind === "model_tempered" && m.sealed_at != null && lead.sealed_p != null && m.sealed_guard?.level === "no_market";
+  const kindLabel = noMkt ? (sealedNoMkt ? fixdata2CopyFor(locale).modelOnly : x7.noMarket) : elo ? t.tennis.eloLabel : stale ? x7.staleAged(ageHhMm(m.market_age_min)) : t.tennis.marketOnly;
+  const onlyLabel = noMkt ? x7.noMarket : t.tennis.marketOnly;
   const scaleLabel =
     lead.market_p == null
       ? t.board.noMarket
@@ -423,11 +431,11 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
       ) : (
         <>
           {/* Market only: una sola etichetta al posto di Estimate e Gap (desktop); su mobile il mercato al posto del gap */}
-          <span className="v3c-r-es v3c-r-tnonly">{t.tennis.marketOnly}</span>
+          <span className="v3c-r-es v3c-r-tnonly">{onlyLabel}</span>
           <span className="v3c-r-gap v3c-g-none v3c-r-tnm" title={scaleLabel}>
             <span className="v3c-r-tnm-v v3c-num" aria-hidden="true">
               {pctOrDash(lead.market_p)}
-              <small>{t.tennis.marketOnly}</small>
+              <small>{onlyLabel}</small>
             </span>
           </span>
         </>
@@ -493,11 +501,11 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
           <p className="v3c-pn-facts v3c-small">
             {elo ? <span>{t.tennis.blendFact}</span> : null}
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
-            <span>{t.fascia.pricesAsOf(stampLocal(m.market_source?.as_of ?? m.estimate_as_of, tz, locale))}</span>
-            {stale ? <span data-market-from="stale">{x3.priceAge(ageHhMm(m.market_age_min))}</span> : m.market_from === "books" ? <span data-market-from="books">{fixdata2CopyFor(locale).marketFromBooks}</span> : null}
+            {noMkt || stale ? null : <span>{t.fascia.pricesAsOf(stampLocal(m.market_source?.as_of ?? m.estimate_as_of, tz, locale))}</span>}
+            {m.market_from === "books" && !noMkt ? <span data-market-from="books">{fixdata2CopyFor(locale).marketFromBooks}</span> : null}
             {elo && m.elo_as_of ? <span>{t.tennis.eloAsOf(stampLocal(m.elo_as_of, tz, locale))}</span> : null}
           </p>
-          <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : stale ? x3.staleNote(ageHhMm(m.market_age_min)) : t.tennis.noEstimate}</p>
+          <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : noMkt ? (sealedNoMkt ? fixdata2CopyFor(locale).modelOnlyNote : x7.noMarketNote) : stale ? <span data-market-from="stale">{x3.staleNote(ageHhMm(m.market_age_min))}</span> : t.tennis.noEstimate}</p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
               <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))} kickoff={m.kickoff} afterLabel={fixui2CopyFor(locale).loggedLabel} afterTitle={fixui2CopyFor(locale).loggedWhy(stampLocal(m.sealed_at, tz, locale))} />
