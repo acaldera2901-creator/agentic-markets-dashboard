@@ -227,7 +227,10 @@ export function summerSnapshotAgeDays(code?: string): number {
 // vs "HJK", "Bodø/Glimt" vs "Bodo/Glimt") → normalized containment + token
 // overlap; no match → null (caller skips the fixture, fail-closed).
 
-const NOISE = new Set(["fc", "if", "ik", "bk", "afc", "sk", "fk", "ff", "aif", "cf", "sc", "club", "cd"]);
+// #TEAM-MATCHER-1007 — "ksv" aggiunto: "Cercle Brugge" (senza sigla) e "Cercle
+// Brugge KSV" devono essere uguali al passo 1 di matchModelTeam; altrimenti al
+// passo 2 sia Cercle sia Club Brugge ("club" è rumore) contengono il nome → null.
+const NOISE = new Set(["fc", "if", "ik", "bk", "afc", "sk", "fk", "ff", "aif", "cf", "sc", "club", "cd", "ksv"]);
 
 // #TEAM-NAME-FOLD-0727 — lettere latine che NFKD NON scompone. NFKD separa
 // base+segno combinante ("é" → "e"+◌́), ma ł/ø/đ/æ/ß sono glifi a sé: restano
@@ -277,17 +280,61 @@ function tokens(name: string): string[] {
 // partita non servita che una servita col modello di un'altra squadra.
 const MIN_OVERLAP = 0.6;
 
+// #TEAM-MATCHER-1007 — l'uguaglianza e il contenimento stavano DENTRO il ciclo,
+// e il contenimento era fra STRINGHE: si restituiva la prima squadra del roster
+// che conteneva il nome, prima ancora di guardare se c'era quella esatta.
+// Misurato in produzione il 07/10: "Cercle Brugge KSV" calcolata come Club
+// Brugge ("brugge" ⊂ "cercle brugge ksv"), "Dundee FC" come Dundee United,
+// "Aris" come Larisa ("aris" ⊂ "larisa"), "Los Angeles FC" come LA Galaxy,
+// "Wieczysta Krakow" come Rakow ("rakow" ⊂ "krakow"). L'ordine del roster cambia
+// a ogni snapshot, quindi il verso dell'errore si ribaltava. Ora, in ordine:
+// 1. uguaglianza normalizzata su TUTTO il roster (unica, altrimenti null);
+// 2. contenimento a TOKEN interi, solo se la candidata è UNICA (più d'una → null).
+//    Due token contano come uguali anche quando uno è l'INIZIO dell'altro e il
+//    più corto ha ≥4 lettere ("laval"/"lavallois", "tripoli"/"tripolis",
+//    "djurgarden"/"djurgardens", "amed"/"amedspor"): misurato col replay
+//    (scripts/replay-team-matcher.ts) sullo storico, senza questo 7 nomi veri
+//    smettevano di essere serviti. Mai una sottostringa a metà parola: è
+//    esattamente il difetto ("aris" dentro "larisa", "rakow" dentro "krakow");
+// 3. la sovrapposizione a soglia di prima, invariata.
+// Limite noto: una squadra ASSENTE dal roster il cui nome contiene per intero
+// quello di un'altra ("Cercle Brugge" senza Cercle nel roster → "Club Brugge",
+// perché "club" è rumore) passa ancora dal punto 2: la strada è un alias
+// esplicito, non un'euristica in più.
+const MIN_PREFIX = 4;
+function samePrefix(a: string, b: string): boolean {
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.length >= MIN_PREFIX && long.startsWith(short);
+}
+
 export function matchModelTeam(sourceName: string, modelTeams: Iterable<string>): string | null {
-  const src = tokens(sourceName).join(" ");
+  const srcTokens = tokens(sourceName);
+  const src = srcTokens.join(" ");
   if (!src) return null;
+  const roster = [...modelTeams];
+
+  const exact = roster.filter((team) => tokens(team).join(" ") === src);
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) return null; // due squadre con lo stesso nome normalizzato → ambiguo
+
+  const srcSet = new Set(srcTokens);
+  const contained = roster.filter((team) => {
+    const t = tokens(team);
+    if (!t.length) return false;
+    const tSet = new Set(t);
+    const [small, big] = tSet.size <= srcSet.size ? [tSet, srcSet] : [srcSet, tSet];
+    for (const w of small) if (!big.has(w) && ![...big].some((b) => samePrefix(w, b))) return false;
+    return true;
+  });
+  if (contained.length === 1) return contained[0];
+  if (contained.length > 1) return null; // ambiguo → fail-closed
+
   let best: string | null = null;
   let bestScore = 0;
   let tied = false;
-  for (const team of modelTeams) {
+  for (const team of roster) {
     const t = tokens(team).join(" ");
     if (!t) continue;
-    if (t === src) return team;
-    if (t.includes(src) || src.includes(t)) return team;
     const a = new Set(tokens(sourceName));
     const b = new Set(tokens(team));
     let overlap = 0;
