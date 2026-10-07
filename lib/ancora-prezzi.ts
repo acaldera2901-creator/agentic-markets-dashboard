@@ -42,11 +42,18 @@ export type EsitoAncora = {
  * silenzio. Si controlla PRIMA di spendere; quando la tabella arriva, riparte da
  * solo, senza toccare vercel.json.
  */
+//
+// #ANCORA-ALIAS-1007: la prima versione aliasava la colonna `AS t` ed exec_sql,
+// con quell'alias, restituisce [] anche quando la tabella c'e' (misurato il
+// 07/10: `SELECT 'x' AS t` -> [], `AS nome` -> riga). La guardia leggeva quindi
+// "assente" a ogni giro: dal merge della #480 (02/10) zero catture. Due difese:
+// un alias che non collide, e un risultato vuoto NON vale come "assente" —
+// solo un `false` esplicito salta il giro (dbQuery inghiotte gli errori in []).
 async function tabellaPresente(): Promise<boolean> {
-  const r = await dbQuery<{ t: string | null }>(
-    `SELECT to_regclass('public.anchor_price_history')::text AS t`
+  const r = await dbQuery<{ presente: boolean | null }>(
+    `SELECT to_regclass('public.anchor_price_history') IS NOT NULL AS presente`
   );
-  return r[0]?.t != null;
+  return r[0]?.presente !== false;
 }
 
 type PartitaImminente = {
