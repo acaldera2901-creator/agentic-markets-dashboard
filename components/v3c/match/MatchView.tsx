@@ -57,6 +57,8 @@ export type MoreRow = {
   id: string; home: string; away: string; kickoff: string; league: string | null; gap: number | null;
   /** fidelity: la riga come sulla board del prototipo — esito guida, prezzo, mercato, stima, tape vero */
   lead?: Outcome; price?: number | null; market?: number | null; estimate?: number | null; tape?: RowTape;
+  /** final3: le righe tennis (solo sulla pagina tennis) mostrano il mercato e basta, come la board tennis */
+  sport?: "tennis"; leadName?: string;
 };
 
 export type MatchViewProps =
@@ -291,6 +293,8 @@ function SealItem({ ctx, n, sealedAt, tennis = false }: { ctx: Ctx; n: number; s
 function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
   const { c, t, tz, locale } = ctx;
   if (!rows.length) return null;
+  const tennis = rows[0].sport === "tennis";
+  const leadOf = (r: MoreRow) => (r.sport === "tennis" ? r.leadName ?? null : r.lead ? outcomeLabel(r, r.lead, t.board.draw) : null);
   // fidelity: le stesse colonne della board del prototipo (tape · prezzo · mercato · stima · gap); la riga apre la partita
   return (
     <section className="v3c-sec" aria-labelledby="v3c-mt-more">
@@ -312,8 +316,17 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
           </span>
           <span className="v3c-lab v3c-ra">{t.board.price}</span>
           <span className="v3c-lab v3c-ra">{t.board.market}</span>
-          <span className="v3c-lab v3c-ra">{t.board.estimate}</span>
-          <span className="v3c-lab v3c-ra">{t.board.gap}</span>
+          {tennis ? (
+            <>
+              <span />
+              <span />
+            </>
+          ) : (
+            <>
+              <span className="v3c-lab v3c-ra">{t.board.estimate}</span>
+              <span className="v3c-lab v3c-ra">{t.board.gap}</span>
+            </>
+          )}
         </div>
         {rows.map((r) => (
           <Link key={r.id} className="v3c-row v3c-mt-mr2" href={matchHref(r.id)}>
@@ -328,11 +341,11 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
                   {r.home} — {r.away}
                 </b>
                 <small>
-                  {r.league ?? t.toolbar.football}
-                  {r.lead ? (
+                  {r.league ?? (r.sport === "tennis" ? t.toolbar.tennis : t.toolbar.football)}
+                  {leadOf(r) ? (
                     <>
                       {" · "}
-                      <b>{outcomeLabel(r, r.lead, t.board.draw)}</b>
+                      <b>{leadOf(r)}</b>
                     </>
                   ) : null}
                 </small>
@@ -340,7 +353,7 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
             </span>
             {r.tape ? (
               <span className="v3c-r-tape">
-                <TapeMini points={r.tape.pts.map(([x, v]) => ({ t: x, v }))} fair={r.tape.fair} sealT={r.tape.fairT} label={t.board.tapeAria(r.lead ? outcomeLabel(r, r.lead, t.board.draw) : r.home, price2(r.tape.from), price2(r.tape.to), r.tape.n)} />
+                <TapeMini points={r.tape.pts.map(([x, v]) => ({ t: x, v }))} fair={r.tape.fair} sealT={r.tape.fairT} label={t.board.tapeAria(leadOf(r) ?? r.home, price2(r.tape.from), price2(r.tape.to), r.tape.n)} />
                 <small className="v3c-num" aria-hidden="true">
                   {price2(r.tape.from)} → {price2(r.tape.to)}
                 </small>
@@ -350,6 +363,19 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
             )}
             <span className="v3c-r-price v3c-num">{r.price == null ? "—" : price2(r.price)}</span>
             <span className={r.market == null ? "v3c-r-mk v3c-r-none" : "v3c-r-mk v3c-num"}>{r.market == null ? "—" : <>{pctInt(r.market)}<small>%</small></>}</span>
+            {r.sport === "tennis" ? (
+              <>
+                {/* final3: come la riga tennis della board — Estimate e Gap vuote, su mobile il mercato al posto del gap */}
+                <span className="v3c-r-es" aria-hidden="true" />
+                <span className="v3c-r-gap v3c-g-none v3c-r-tnm">
+                  <span className="v3c-r-tnm-v v3c-num" aria-hidden="true">
+                    {r.market == null ? "—" : `${pctInt(r.market)}%`}
+                    <small>{t.board.market}</small>
+                  </span>
+                </span>
+              </>
+            ) : (
+              <>
             <span className={r.estimate == null ? "v3c-r-es v3c-r-none" : "v3c-r-es v3c-num"}>{r.estimate == null ? "—" : <mark>{pctInt(r.estimate)}<small>%</small></mark>}</span>
             <span className={["v3c-r-gap", "v3c-num", isFlatGap(r.gap) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
               <span>
@@ -362,6 +388,8 @@ function More({ ctx, rows }: { ctx: Ctx; rows: MoreRow[] }) {
                 {r.estimate != null ? <mark>{pctInt(r.estimate)}%</mark> : null}
               </span>
             </span>
+              </>
+            )}
           </Link>
         ))}
       </div>

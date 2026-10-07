@@ -14,6 +14,7 @@ import type { V3BoardResponse, V3LineSeries } from "@/lib/v3c/contracts";
 import { buildLineMovement, isTennisId, type Fixture } from "@/lib/v3c/line-movement-service";
 import { landingBookLinks } from "@/lib/v3c/match-links.server";
 import { findMatch, leadOutcome, readLineEvents } from "@/lib/v3c/match-view";
+import { tennisLead } from "@/lib/v3c/board-view";
 import type { V3cMode } from "@/lib/v3c/mode";
 import { MatchError, MatchSkeleton } from "./MatchStates";
 import { MatchView, type MoreRow } from "./MatchView";
@@ -22,12 +23,26 @@ import { liveSeed } from "@/lib/v3c/live-service.server";
 import { LiveSeedProvider, type LiveSeed } from "../live/LiveBits";
 import { newsEnabled, newsForMatch, type NewsCard } from "@/lib/v3c/news/news.server";
 
-/** Le prossime partite di calcio (non questa), per «More on today’s board». */
-async function moreRows(board: V3BoardResponse, id: string, now: Date, n = 3): Promise<MoreRow[]> {
-  const list = board.matches
-    .filter((m) => m.id !== id && Date.parse(m.kickoff) > now.getTime())
-    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))
-    .slice(0, n);
+/**
+ * Le prossime partite dello STESSO sport (non questa), per «More on today’s board».
+ * final3: sulla pagina tennis erano righe di calcio con stima e gap; ora il tennis mostra
+ * solo righe tennis con il mercato (come la board tennis) e, se non ce ne sono, niente blocco.
+ */
+async function moreRows(board: V3BoardResponse, id: string, now: Date, sport: "football" | "tennis", n = 3): Promise<MoreRow[]> {
+  const next = <T extends { id: string; kickoff: string }>(xs: readonly T[]) =>
+    xs.filter((m) => m.id !== id && Date.parse(m.kickoff) > now.getTime()).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff)).slice(0, n);
+  if (sport === "tennis") {
+    const list = next(board.tennis ?? []);
+    const tapes = await boardTapes([], list);
+    return list.map((m) => {
+      const lead = tennisLead(m);
+      return {
+        sport: "tennis", id: m.id, home: m.player1, away: m.player2, kickoff: m.kickoff, league: m.tournament || null, gap: null,
+        leadName: lead.player, price: lead.market_price, market: lead.market_p, estimate: null, tape: tapes[m.id],
+      };
+    });
+  }
+  const list = next(board.matches);
   // fidelity: le righe come sulla board (prototipo): esito guida, prezzo, mercato, stima e il tape vero
   const tapes = await boardTapes(list, []);
   return list.map((m) => {
@@ -55,7 +70,7 @@ async function MatchBody({ id, fixture }: { id: string; fixture: Fixture | null 
   }
   if (!b.ok) return <MatchError />;
   const found = findMatch(b.data, id);
-  const more = await moreRows(b.data, id, now);
+  const more = await moreRows(b.data, id, now, found ? found.sport : isTennisId(id) ? "tennis" : "football");
   // #REDESIGN-V3C news: notes naming either team (football only; NEWS_FOTMOB_ENABLED). On the
   // chart they are a «news at hh:mm» mark labelled with the source; never a cause.
   let news: NewsCard[] = [];

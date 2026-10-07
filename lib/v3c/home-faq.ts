@@ -27,7 +27,7 @@ export const V3C_HOME_FAQ = {
     ],
     [
       "What’s in a reading, and what does Pro add?",
-      "Three numbers, all of them sealed before kick-off. What the market thinks, which is the odds turned into a percentage with the margin removed. Our estimate: in football that is 70% market and 30% model, and we say so next to it. In tennis we give no estimate of ours, only the market price. And the gap between the two, in points. Pro adds the why: open any match and you see the factors the model actually weighed, like form, expected goals, Elo, serve and return numbers, head-to-head, surface.",
+      "Three numbers, all of them sealed before kick-off. What the market thinks, which is the odds turned into a percentage with the margin removed. Our estimate: in football that is 70% market and 30% model, and we say so next to it. In tennis we give no estimate of ours, only the market price. And the gap between the two, in points. Pro adds the why: open any football match and you see the factors the model actually weighed, like form, expected goals, Elo, head-to-head.",
     ],
     [
       "Which sports do you cover?",
@@ -53,7 +53,7 @@ export const V3C_HOME_FAQ = {
     ],
     [
       "Cosa c’è dentro una lettura, e cosa aggiunge Pro?",
-      "Tre numeri, tutti sigillati prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale senza il margine. La nostra stima: nel calcio è 70% mercato e 30% modello, e lo scriviamo accanto. Nel tennis non diamo una nostra stima, solo il prezzo di mercato. E la distanza fra le due, in punti. Pro aggiunge il perché: apri una partita e vedi i fattori che il modello ha davvero pesato, come forma, gol attesi, Elo, numeri di servizio e risposta, scontri diretti, superficie.",
+      "Tre numeri, tutti sigillati prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale senza il margine. La nostra stima: nel calcio è 70% mercato e 30% modello, e lo scriviamo accanto. Nel tennis non diamo una nostra stima, solo il prezzo di mercato. E la distanza fra le due, in punti. Pro aggiunge il perché: apri una partita di calcio e vedi i fattori che il modello ha davvero pesato, come forma, gol attesi, Elo, scontri diretti.",
     ],
     [
       "Quali sport coprite?",
@@ -79,7 +79,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Was steckt in einer Analyse, und was bringt Pro dazu?",
-        "Drei Zahlen, alle vor dem Anstoß versiegelt. Was der Markt denkt, also die Quote als Prozentwert, ohne Marge. Unsere Schätzung: Im Fußball sind das 70% Markt und 30% Modell, und das schreiben wir dazu. Im Tennis geben wir keine eigene Schätzung, nur die Marktquote. Und der Abstand zwischen beiden, in Punkten. Pro ergänzt das Warum: Öffne ein beliebiges Spiel und du siehst die Faktoren, die das Modell tatsächlich gewichtet hat, etwa Form, erwartete Tore, Elo, Aufschlag- und Returnwerte, direkte Duelle, Belag.",
+        "Drei Zahlen, alle vor dem Anstoß versiegelt. Was der Markt denkt, also die Quote als Prozentwert, ohne Marge. Unsere Schätzung: Im Fußball sind das 70% Markt und 30% Modell, und das schreiben wir dazu. Im Tennis geben wir keine eigene Schätzung, nur die Marktquote. Und der Abstand zwischen beiden, in Punkten. Pro ergänzt das Warum: Öffne ein beliebiges Fußballspiel und du siehst die Faktoren, die das Modell tatsächlich gewichtet hat, etwa Form, erwartete Tore, Elo, direkte Duelle.",
       ],
       [
         "Welche Sportarten deckt ihr ab?",
@@ -105,7 +105,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "¿Qué hay en una lectura y qué añade Pro?",
-        "Tres números, todos sellados antes del inicio. Lo que piensa el mercado, es decir, la cuota convertida en porcentaje sin el margen. Nuestra estimación: en fútbol es 70% mercado y 30% modelo, y lo decimos al lado. En tenis no damos estimación propia, solo la cuota del mercado. Y la diferencia entre ambos, en puntos. Pro añade el porqué: abre cualquier partido y verás los factores que el modelo ha ponderado de verdad, como la forma, los goles esperados, el Elo, los números de saque y resto, los enfrentamientos directos o la superficie.",
+        "Tres números, todos sellados antes del inicio. Lo que piensa el mercado, es decir, la cuota convertida en porcentaje sin el margen. Nuestra estimación: en fútbol es 70% mercado y 30% modelo, y lo decimos al lado. En tenis no damos estimación propia, solo la cuota del mercado. Y la diferencia entre ambos, en puntos. Pro añade el porqué: abre cualquier partido de fútbol y verás los factores que el modelo ha ponderado de verdad, como la forma, los goles esperados, el Elo o los enfrentamientos directos.",
       ],
       [
         "¿Qué deportes cubrís?",
@@ -131,7 +131,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Que contient une lecture, et qu’ajoute Pro ?",
-        "Trois chiffres, tous scellés avant le coup d’envoi. Ce que pense le marché, c’est-à-dire la cote convertie en pourcentage, marge retirée. Notre estimation : en football, c’est 70 % marché et 30 % modèle, et nous l’indiquons à côté. Au tennis, nous ne donnons pas d’estimation, seulement la cote du marché. Et l’écart entre les deux, en points. Pro ajoute le pourquoi : ouvrez n’importe quel match et vous voyez les facteurs que le modèle a réellement pesés, comme la forme, les buts attendus, l’Elo, les chiffres au service et au retour, les confrontations directes, la surface.",
+        "Trois chiffres, tous scellés avant le coup d’envoi. Ce que pense le marché, c’est-à-dire la cote convertie en pourcentage, marge retirée. Notre estimation : en football, c’est 70 % marché et 30 % modèle, et nous l’indiquons à côté. Au tennis, nous ne donnons pas d’estimation, seulement la cote du marché. Et l’écart entre les deux, en points. Pro ajoute le pourquoi : ouvrez n’importe quel match de football et vous voyez les facteurs que le modèle a réellement pesés, comme la forme, les buts attendus, l’Elo, les confrontations directes.",
       ],
       [
         "Quels sports couvrez-vous ?",
@@ -157,7 +157,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Wat zit er in een lezing, en wat voegt Pro toe?",
-        "Drie getallen, allemaal verzegeld vóór de aftrap. Wat de markt denkt: de odds omgezet in een percentage, zonder marge. Onze schatting: in het voetbal is dat 70% markt en 30% model, en dat zeggen we er ook bij. Bij tennis geven we geen eigen schatting, alleen de marktodds. En het verschil tussen de twee, in punten. Pro voegt het waarom toe: open een wedstrijd en je ziet de factoren die het model echt heeft gewogen, zoals vorm, verwachte doelpunten, Elo, service- en returncijfers, onderlinge duels, ondergrond.",
+        "Drie getallen, allemaal verzegeld vóór de aftrap. Wat de markt denkt: de odds omgezet in een percentage, zonder marge. Onze schatting: in het voetbal is dat 70% markt en 30% model, en dat zeggen we er ook bij. Bij tennis geven we geen eigen schatting, alleen de marktodds. En het verschil tussen de twee, in punten. Pro voegt het waarom toe: open een voetbalwedstrijd en je ziet de factoren die het model echt heeft gewogen, zoals vorm, verwachte doelpunten, Elo, onderlinge duels.",
       ],
       [
         "Welke sporten dekken jullie?",
@@ -183,7 +183,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Co jest w analizie i co dodaje Pro?",
-        "Trzy liczby, wszystkie zapieczętowane przed początkiem meczu. Co myśli rynek, czyli kurs zamieniony na procent bez marży. Nasz szacunek: w piłce nożnej to 70% rynek i 30% model, i piszemy to obok. W tenisie nie podajemy własnego szacunku, tylko kurs rynkowy. Oraz różnica między nimi, w punktach. Pro dodaje dlaczego: otwórz dowolny mecz i zobaczysz czynniki, które model faktycznie uwzględnił, takie jak forma, gole oczekiwane, Elo, statystyki serwisu i returnu, bezpośrednie mecze, nawierzchnia.",
+        "Trzy liczby, wszystkie zapieczętowane przed początkiem meczu. Co myśli rynek, czyli kurs zamieniony na procent bez marży. Nasz szacunek: w piłce nożnej to 70% rynek i 30% model, i piszemy to obok. W tenisie nie podajemy własnego szacunku, tylko kurs rynkowy. Oraz różnica między nimi, w punktach. Pro dodaje dlaczego: otwórz dowolny mecz piłkarski i zobaczysz czynniki, które model faktycznie uwzględnił, takie jak forma, gole oczekiwane, Elo, bezpośrednie mecze.",
       ],
       [
         "Jakie sporty obejmujecie?",
@@ -209,7 +209,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "O que há numa leitura, e o que acrescenta o Pro?", // REVIEW-NATIVE
-        "Três números, todos selados antes do início. O que o mercado pensa, ou seja, as odds transformadas em percentagem sem a margem. A nossa estimativa: no futebol é 70% mercado e 30% modelo, e dizemo-lo ao lado. No ténis não damos estimativa nossa, só a odd de mercado. E a diferença entre as duas, em pontos. O Pro acrescenta o porquê: abre qualquer jogo e vês os fatores que o modelo realmente pesou, como forma, golos esperados, Elo, números de serviço e resposta, confrontos diretos, piso.",
+        "Três números, todos selados antes do início. O que o mercado pensa, ou seja, as odds transformadas em percentagem sem a margem. A nossa estimativa: no futebol é 70% mercado e 30% modelo, e dizemo-lo ao lado. No ténis não damos estimativa nossa, só a odd de mercado. E a diferença entre as duas, em pontos. O Pro acrescenta o porquê: abre qualquer jogo de futebol e vês os fatores que o modelo realmente pesou, como forma, golos esperados, Elo, confrontos diretos.",
       ],
       [
         "Que desportos cobrem?",
@@ -235,7 +235,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Что входит в анализ и что добавляет Pro?",
-        "Три числа, и все они зафиксированы до начала матча. Что думает рынок — коэффициенты, переведённые в проценты без маржи. Наша оценка: в футболе это 70% рынок и 30% модель, и мы пишем это рядом. В теннисе мы не даём своей оценки — только рыночный коэффициент. И разрыв между ними, в пунктах. Pro добавляет «почему»: откройте любой матч и увидите факторы, которые модель действительно учла, — форму, ожидаемые голы, Elo, показатели подачи и приёма, личные встречи, покрытие.",
+        "Три числа, и все они зафиксированы до начала матча. Что думает рынок — коэффициенты, переведённые в проценты без маржи. Наша оценка: в футболе это 70% рынок и 30% модель, и мы пишем это рядом. В теннисе мы не даём своей оценки — только рыночный коэффициент. И разрыв между ними, в пунктах. Pro добавляет «почему»: откройте любой футбольный матч и увидите факторы, которые модель действительно учла, — форму, ожидаемые голы, Elo, личные встречи.",
       ],
       [
         "Какие виды спорта вы охватываете?",
@@ -261,7 +261,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Vad ingår i en läsning, och vad lägger Pro till?",
-        "Tre siffror, alla förseglade före avspark. Vad marknaden tror, alltså oddset omvandlat till en procentsats med marginalen borttagen. Vår uppskattning: i fotboll är den 70 % marknad och 30 % modell, och det står bredvid. I tennis ger vi ingen egen uppskattning, bara marknadens odds. Och skillnaden mellan de två, i punkter. Pro lägger till varför: öppna vilken match som helst och du ser faktorerna modellen faktiskt vägde in, som form, förväntade mål, Elo, serve- och retursiffror, inbördes möten, underlag.",
+        "Tre siffror, alla förseglade före avspark. Vad marknaden tror, alltså oddset omvandlat till en procentsats med marginalen borttagen. Vår uppskattning: i fotboll är den 70 % marknad och 30 % modell, och det står bredvid. I tennis ger vi ingen egen uppskattning, bara marknadens odds. Och skillnaden mellan de två, i punkter. Pro lägger till varför: öppna vilken fotbollsmatch som helst och du ser faktorerna modellen faktiskt vägde in, som form, förväntade mål, Elo, inbördes möten.",
       ],
       [
         "Vilka sporter täcker ni?",
@@ -287,7 +287,7 @@ export const V3C_HOME_FAQ = {
       ],
       [
         "Bir okumada ne var, Pro ne ekliyor?",
-        "Üç sayı, hepsi başlamadan önce mühürlü. Piyasanın düşündüğü: oranın marj çıkarılarak yüzdeye çevrilmiş hali. Tahminimiz: futbolda %70 piyasa ve %30 modeldir ve bunu yanında yazarız. Teniste kendi tahminimizi vermiyoruz, yalnızca piyasa oranını. Ve ikisi arasındaki fark, puan olarak. Pro nedenini ekler: herhangi bir maçı aç ve modelin gerçekten tarttığı etkenleri gör; form, beklenen goller, Elo, servis ve karşılama sayıları, ikili rekabet, zemin gibi.",
+        "Üç sayı, hepsi başlamadan önce mühürlü. Piyasanın düşündüğü: oranın marj çıkarılarak yüzdeye çevrilmiş hali. Tahminimiz: futbolda %70 piyasa ve %30 modeldir ve bunu yanında yazarız. Teniste kendi tahminimizi vermiyoruz, yalnızca piyasa oranını. Ve ikisi arasındaki fark, puan olarak. Pro nedenini ekler: herhangi bir futbol maçını aç ve modelin gerçekten tarttığı etkenleri gör; form, beklenen goller, Elo, ikili rekabet gibi.",
       ],
       [
         "Hangi sporları kapsıyorsunuz?",
