@@ -30,6 +30,10 @@ const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 type Fb = {
   id: string; league: string; competition: string; kickoff: number; home: string; away: string;
   odds: [number, number, number]; model: [number, number, number]; sealed: boolean; books: "both" | "tie" | "one" | "none"; history: boolean;
+  /** fixdata: no market stored (prediction_log odds null → «model only») */
+  noMarket?: boolean;
+  /** fixdata: minutes since the last prediction_log snapshot (a rescheduled twin stops being refreshed) */
+  computedAgoMin?: number;
 };
 
 const FOOTBALL: Fb[] = [
@@ -79,16 +83,32 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
   }
 }
 
+// fixdata (#REDESIGN-V3C fixdata): MOCK_FIXDATA=1 adds the QA cases of v3c-final3 — FICTITIOUS numbers shaped on the
+// real rows: an outlier > 25 pp (Cercle–Anderlecht, model 84% vs market 27%), one 15–25 pp, a match started 40 min ago
+// with book prices (no live score), the same match twice (rescheduled: the stale twin 3 days old), a top-league match
+// without market (Liverpool–Man City «model only»), and a top-league / ATP row later than lesser ones (relevance order).
+if (process.env.MOCK_FIXDATA === "1") {
+  const q = (inH: number) => Math.round((now + inH * H) / (15 * 60_000)) * 15 * 60_000;
+  const add = (x: Omit<Fb, "league"> & { league?: string }) => FOOTBALL.push({ league: x.competition, ...x });
+  add({ id: "oddsapi:fx-outlier25", competition: "Belgian Pro League", kickoff: q(3), home: "Cercle Brugge KSV", away: "RSC Anderlecht", odds: [3.6, 3.5, 2.05], model: [0.84, 0.08, 0.08], sealed: true, books: "both", history: false });
+  add({ id: "oddsapi:fx-outlier18", competition: "Eredivisie", kickoff: q(3.5), home: "Ajax", away: "NEC Nijmegen", odds: [1.4, 4.8, 6.8], model: [0.48, 0.28, 0.24], sealed: true, books: "both", history: false });
+  add({ id: "oddsapi:fx-started", competition: "Eredivisie", kickoff: q(-0.75), home: "Feyenoord", away: "FC Twente", odds: [1.7, 3.9, 4.6], model: [0.56, 0.24, 0.2], sealed: true, books: "both", history: false });
+  add({ id: "oddsapi:fx-dup-live", competition: "League of Ireland", kickoff: q(6), home: "Shamrock Rovers", away: "Drogheda United", odds: [1.45, 4.7, 8.2], model: [0.66, 0.2, 0.14], sealed: true, books: "both", history: false });
+  add({ id: "oddsapi:fx-dup-stale", competition: "League of Ireland", kickoff: q(30), home: "Shamrock Rovers", away: "Drogheda United", odds: [1.48, 4.45, 6.21], model: [0.63, 0.21, 0.16], sealed: false, books: "none", history: false, computedAgoMin: 3 * 24 * 60 });
+  add({ id: "560598", competition: "Premier League", kickoff: q(26), home: "Liverpool FC", away: "Manchester City FC", odds: [2.4, 3.6, 2.9], model: [0.42, 0.25, 0.33], sealed: true, books: "none", history: false, noMarket: true });
+  add({ id: "560593", competition: "Premier League", kickoff: q(5), home: "Arsenal FC", away: "Leeds United FC", odds: [1.36, 5.0, 8.0], model: [0.7, 0.18, 0.12], sealed: true, books: "both", history: false });
+}
+
 const fbKey = (f: Fb) => teamPairKey("soccer", f.home, f.away, iso(f.kickoff))!;
 
 function boardSources() {
   return FOOTBALL.map((f) => {
     const mk = devig(f.odds);
-    const p = blend(f.model, mk);
+    const p = f.noMarket ? f.model : blend(f.model, mk);
     return {
       id: f.id, league: f.league, competition: f.competition, kickoff: iso(f.kickoff), home: f.home, away: f.away,
-      computed_at: iso(now - 22 * 60_000),
-      odds_home: f.odds[0], odds_draw: f.odds[1], odds_away: f.odds[2],
+      computed_at: iso(now - (f.computedAgoMin ?? 22) * 60_000),
+      odds_home: f.noMarket ? null : f.odds[0], odds_draw: f.noMarket ? null : f.odds[1], odds_away: f.noMarket ? null : f.odds[2],
       model_p_home: f.model[0], model_p_draw: f.model[1], model_p_away: f.model[2],
       p_home: p[0], p_draw: p[1], p_away: p[2],
       sealed_at: f.sealed ? iso(f.kickoff - 30 * H) : null,
