@@ -218,7 +218,12 @@ export function newsRewriter(env: Env = process.env, fetchImpl: typeof fetch = f
         signal: AbortSignal.timeout(25_000),
         cache: "no-store",
       });
-      if (!res.ok) throw new RewriteError(`http ${res.status}`);
+      if (!res.ok) {
+        // the gateway's error type says what to fix (e.g. 403 customer_verification_required); no secret in it
+        const why = await Promise.resolve().then(() => res.text()).then((x) => x.replace(/\s+/g, " ").slice(0, 200), () => "");
+        console.warn(`[v3c/news rewrite] ${t.kind} http ${res.status}: ${why}`);
+        throw new RewriteError(`http ${res.status}`);
+      }
       const msg = (await res.json()) as { stop_reason?: string; content?: { type: string; text?: string }[] };
       if (msg.stop_reason === "refusal") throw new RewriteError("refusal");
       if (msg.stop_reason === "max_tokens") throw new RewriteError("max_tokens");

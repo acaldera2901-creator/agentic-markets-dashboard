@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/cache", () => ({ unstable_cache: <T extends (...a: never[]) => unknown>(f: T) => f }));
 
-import { buildNews, readSource, resetNewsHealth } from "./news.server";
+import { buildNews, getNews, readSource, resetNewsHealth } from "./news.server";
 import { parseNewsPage } from "./page";
 import { parseRss, type FeedItem } from "./feed";
 import { RewriteError, type AiNote, type Rewriter } from "./rewrite";
@@ -126,5 +126,22 @@ describe("readSource · one GET, robots first, /api refused", () => {
       String(u).endsWith("/robots.txt") ? new Response(robots) : new Response("slow down", { status: 429, headers: { "retry-after": "900" } }),
     );
     expect(await readSource("https://www.fotmob.com/en/news", "page", T)).toMatchObject({ ok: false, error: "http 429", retryAfterS: 900 });
+  });
+});
+
+describe("never at build time", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("`next build` (NEXT_PHASE=phase-production-build): «pending», NO request to FotMob nor to the model", async () => {
+    vi.stubEnv("NEXT_PHASE", "phase-production-build");
+    vi.stubEnv("NEWS_FOTMOB_ENABLED", "1");
+    vi.stubEnv("NEWS_REWRITE_PROVIDER", "gateway");
+    const f = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("", { status: 500 }));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await getNews()).toEqual({ state: "pending" });
+    expect(f).not.toHaveBeenCalled();
   });
 });

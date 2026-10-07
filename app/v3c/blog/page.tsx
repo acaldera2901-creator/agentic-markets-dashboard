@@ -5,6 +5,7 @@
 // intatta. Metadata identici a quelli di oggi (app/v3c/v3c-pages-routes.test.tsx).
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { listPublishedPosts } from "@/lib/blog";
 import { v3cProductOn } from "@/lib/v3c/board-data.server";
@@ -25,8 +26,11 @@ export const metadata: Metadata = {
 export default async function Page() {
   if (!v3cProductOn()) notFound();
   const posts = await listPublishedPosts();
-  // live notes only behind NEWS_FOTMOB_ENABLED (off: no request leaves, page as before).
-  // The page stays ISR (revalidate above); the feed has its own 15-min cache.
+  // live notes only behind NEWS_FOTMOB_ENABLED (off: no request leaves, page as before,
+  // static/ISR with the revalidate above). On: rendered at REQUEST time (connection), so
+  // the rewrite credential (Vercel OIDC, injected only into Functions) is read at runtime
+  // and `next build` never asks FotMob; the feed and the rewrites keep their own caches.
+  if (newsEnabled()) await connection();
   const live = newsEnabled() ? await newsPage() : null;
   return (
     <>

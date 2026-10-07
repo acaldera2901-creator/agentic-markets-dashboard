@@ -236,6 +236,9 @@ export async function buildNews(
 
 const loadNews = cache(async (): Promise<Internal> => {
   if (!newsEnabled()) return { feed: { state: "off" }, items: [] };
+  // `next build` prerendering: no request to FotMob nor to the model (no OIDC there;
+  // a failure would be baked into the HTML). The pages read the news at request time.
+  if (process.env.NEXT_PHASE === "phase-production-build") return { feed: { state: "pending" }, items: [] };
   return buildNews(newsRewriter());
 });
 
