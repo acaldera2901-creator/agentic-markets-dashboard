@@ -356,6 +356,25 @@ function keysIn(sql: string): Set<string> {
   return new Set([...sql.matchAll(/'(\d{4}-\d{2}-\d{2}:[^']+)'/g)].map((x) => x[1]));
 }
 
+// newswatch: INVENTED notes (not FotMob text), teams from the mock board so the links show.
+function newsState() {
+  const mode = process.env.MOCK_NEWS ?? "ok";
+  const ran = mode === "stale" ? now - 3 * H : now - 4 * 60_000;
+  return [{ enabled: mode !== "paused", last_run_at: iso(ran), last_error: null, source_status: "ok" }];
+}
+function newsItems() {
+  const n = (i: number, mins: number, source: string, teams: string[], en: [string, string], it: [string, string]) => ({
+    guid_hash: `mockhash${i}`, source, source_url: `https://www.fotmob.com/news/mock-${i}`, published_at: iso(now - mins * 60_000),
+    rewritten_en: { title: en[0], body: en[1] }, rewritten_it: { title: it[0], body: it[1] }, teams, rewrite_model: "mock · prompt v3", rewritten_at: iso(now - mins * 60_000 + 120_000),
+  });
+  return [
+    n(1, 12, "FotMob", ["Inter"], ["Inter striker back in full training", "The club said he completed the whole session on Tuesday."], ["L’attaccante dell’Inter torna in gruppo", "Il club ha detto che ha svolto tutta la seduta martedì."]),
+    n(2, 47, "SI via FotMob", ["Manchester United", "Tottenham Hotspur"], ["Manchester United name squad for Tottenham trip", "Two academy players travel with the first team."], ["Il Manchester United convoca per la trasferta col Tottenham", "Due giovani del vivaio partono con la prima squadra."]),
+    n(3, 95, "The Analyst via FotMob", [], ["Goals per game reach a ten-year high", "The figure covers the first six rounds of the season."], ["Gol a partita ai massimi da dieci anni", "Il dato riguarda le prime sei giornate della stagione."]),
+    n(4, 180, "FotMob", ["PSV Eindhoven"], ["PSV confirm a muscle injury for their captain", "He is expected to miss the next two league matches."], ["Il PSV conferma un problema muscolare per il capitano", "Dovrebbe saltare le prossime due partite di campionato."]),
+  ];
+}
+
 let writes = 0;
 function answer(sql: string): unknown[] {
   const s = sql.trim();
@@ -378,6 +397,9 @@ function answer(sql: string): unknown[] {
     }
     return posts;
   }
+  // newswatch: the two tables the news watcher writes. MOCK_NEWS=ok (default) | empty | paused | stale.
+  if (s.includes("FROM news_state")) return newsState();
+  if (s.includes("FROM news_items")) return process.env.MOCK_NEWS === "empty" ? [] : newsItems();
   if (s.startsWith("SELECT source_id, source_table, league, starts_at, home_team, away_team")) return liveRows();
   if (s.includes("JOIN u ON u.source_id = pl.match_id")) return boardSources();
   if (s.includes("JOIN tennis_predictions tp")) return tennisSources();
