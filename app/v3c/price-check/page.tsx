@@ -50,7 +50,8 @@ function pcMatches(board: V3BoardResponse, now: Date, max = 80): PcMatch[] {
       // fixdata B5: the model sanity guard travels with the match (no EV/Kelly when it is not «ok»)
       guard: m.model_guard?.level ?? "ok",
       // fixdata2 N3: no estimate travels when the board does not show one (no market, or its fair price far from the best)
-      outcomes: m.outcomes.map((o) => ({ outcome: o.outcome, market_price: o.market_price, estimate_p: estimateShown(m) ? o.estimate_p : null, book_prices: o.book_prices })),
+      // final7: under «Market only» (> 25 pp) the number is the market — no «our estimate» to check a price against
+      outcomes: m.outcomes.map((o) => ({ outcome: o.outcome, market_price: o.market_price, estimate_p: estimateShown(m) && m.model_guard?.level !== "market_only" ? o.estimate_p : null, book_prices: o.book_prices })),
     }));
   const tennis: PcMatch[] = (board.tennis ?? [])
     // fixdata3 R3: a price that may be outdated (stored > 6 h ago, no book prices it now) is not checked against

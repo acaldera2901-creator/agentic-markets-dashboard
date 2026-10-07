@@ -17,7 +17,7 @@ const NOW = new Date("2099-10-10T13:40:00Z");
 const OLD = "2099-10-08T11:32:00.000Z"; // 50:08 before NOW
 
 const side = (s: "p1" | "p2", player: string, mkt: number | null): V3BoardTennisSide => ({
-  side: s, player, market_price: mkt == null ? null : Math.round((1 / mkt) * 100) / 100, market_p: mkt, model_p: null, estimate_p: mkt,
+  side: s, player, market_price: mkt == null ? null : Math.round((1 / mkt) * 100) / 100, market_p: mkt, model_p: null, estimate_p: mkt as number,
   sealed_p: null, market_p_at_seal: null, gap_pp: null, book_prices: [], best_price: null,
 });
 const tn = (over: Partial<V3BoardTennisMatch>, mkt: [number | null, number | null]): V3BoardTennisMatch =>
@@ -92,5 +92,24 @@ describe("«Market only» in football (> 25 pp) carries no estimate text", () =>
     expect(s).toContain("Market only");
     expect(s).not.toContain("Estimate = 70% market + 30% model");
     expect(s).not.toMatch(/estimate as of/i);
+  });
+});
+
+describe("«Market only» in the price check", () => {
+  it("a football match under the 25 pp guard: no «Our estimate», the guard note said", async () => {
+    const { PriceCheck } = await import("./match/PriceCheck");
+    const bp = (price: number) => [{ bookmaker: "fortuneplay", name: "FortunePlay", price, captured_at: "2099-10-10T13:31:00.000Z", source: "live_feed" as const, url: "https://fp.example/x" }];
+    const pc = {
+      id: "oddsapi:fx7", sport: "football" as const, home: "Cercle Brugge KSV", away: "RSC Anderlecht", kickoff: FUTURE, league: "Belgian Pro League", blend: true, links: [], guard: "market_only" as const,
+      outcomes: [
+        { outcome: "home" as const, market_price: 3.6, estimate_p: null, book_prices: bp(3.71) },
+        { outcome: "draw" as const, market_price: 3.5, estimate_p: null, book_prices: bp(3.54) },
+        { outcome: "away" as const, market_price: 2.05, estimate_p: null, book_prices: bp(2.07) },
+      ],
+    };
+    const s = text(renderToStaticMarkup(<PriceCheck matches={[pc]} initialId={pc.id} partners />));
+    expect(s).toContain("Market only: the model differs too much to show");
+    expect(s).not.toMatch(/Our estimate/);
+    expect(s).not.toMatch(/in line with our number/);
   });
 });
