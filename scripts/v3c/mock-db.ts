@@ -188,7 +188,9 @@ type Tn = { id: string; tournament: string | null; kickoff: number; p1: string; 
   /** tennis2: minutes before now of the pre-start Elo snapshot (default 40); partner_tournament behind «Partner feed» */
   eloAgeMin?: number; partnerTournament?: string;
   /** fixdata2: no stored price (model_tempered), the sealed numbers, the pre-start snapshot price, the books' prices */
-  noOdds?: boolean; sealedP?: [number, number]; preOdds?: [number, number]; bookOdds?: [number, number] };
+  noOdds?: boolean; sealedP?: [number, number]; preOdds?: [number, number]; bookOdds?: [number, number];
+  /** fixdata3: minutes since tennis_predictions.computed_at (the stored price's age; default 30) */
+  computedAgoMin?: number };
 const TENNIS: Tn[] = [
   ["ATP Shanghai", "Jannik Sinner", "Alexander Zverev", 3, [1.42, 2.9], [0.66, 0.34], "tennis-elo-v4", true, true],
   ["ATP Shanghai", "Carlos Alcaraz", "Holger Rune", 5, [1.3, 3.6], [0.72, 0.28], "tennis-elo-v4", true, true],
@@ -223,6 +225,25 @@ if (MOCK_FIXDATA2) {
     { id: "tennis:espn:184885:daniel-altmaier:holger-rune", tournament: "ATP Shanghai", kickoff: q(-0.7), p1: "Daniel Altmaier", p2: "Holger Rune", odds: [6.41, 1.16], elo: [0.2872, 0.7128], mv: "elo_surface_v4_features_odds", sealed: false, books: true, preOdds: [2.73, 1.51] },
     { id: "tennis:partner:fx2-rune", tournament: "Partner feed", partnerTournament: "ATP Masters Shanghai - Hard", kickoff: q(-2.2), p1: "Holger Rune", p2: "Daniel Altmaier", odds: [1.32, 2.85], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false },
     { id: "tennis:espn:184354:ann-li:elina-svitolina", tournament: "WTA China Open", kickoff: q(6), p1: "Ann Li", p2: "Elina Svitolina", odds: [45.71, 1.02], bookOdds: [3.35, 1.24], elo: [0.3, 0.7], mv: "elo_surface_v4_features_odds", sealed: false, books: true },
+  );
+}
+// fixdata3 (#REDESIGN-V3C fixdata3): MOCK_FIXDATA3=1 adds the QA-3 cases — FICTITIOUS numbers shaped on the real rows:
+// R2 twins with inverted names (Elo «Bai Zhuoxuan» vs partner «Zhuoxuan Bai»; Elo «Bu Yunchaokete» vs partner
+// «Luca Van Assche – Yunchaokete Bu» 8 h earlier); R3 a stored price 50 h old with no book (→ «may be outdated»), one
+// 30 h old with a book (→ the books' market), and Elo rows with no price at all (→ no market).
+if (process.env.MOCK_FIXDATA3 === "1") {
+  const q = (inH: number) => Math.round((now + inH * H) / (5 * 60_000)) * 5 * 60_000;
+  TENNIS.push(
+    { id: "tennis:espn:185274:bai-zhuoxuan:emerson-jones", tournament: "WTA Suzhou", kickoff: q(9), p1: "Bai Zhuoxuan", p2: "Emerson Jones", odds: [2.2, 1.6], elo: [0.42, 0.58], mv: "elo_surface_v4_features_odds", sealed: false, books: false, noOdds: true, computedAgoMin: 31 * 60 },
+    { id: "tennis:partner:fx3-bai", tournament: "Partner feed", partnerTournament: "WTA Suzhou - Hard", kickoff: q(9), p1: "Zhuoxuan Bai", p2: "Emerson Jones", odds: [2.23, 1.53], bookOdds: [2.3, 1.6], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: true, computedAgoMin: 27 * 60 },
+    { id: "tennis:espn:184868:bu-yunchaokete:luca-van-assche", tournament: "ATP Shanghai", kickoff: q(17), p1: "Bu Yunchaokete", p2: "Luca Van Assche", odds: [1.69, 2.29], elo: [0.6, 0.4], mv: "elo_surface_v4_features_odds", sealed: false, books: false, computedAgoMin: 60 * 60 },
+    { id: "tennis:partner:fx3-bu", tournament: "Partner feed", partnerTournament: "ATP Masters Shanghai - Hard", kickoff: q(9), p1: "Luca Van Assche", p2: "Yunchaokete Bu", odds: [2.25, 1.52], bookOdds: [2.4, 1.55], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: true, computedAgoMin: 27 * 60 },
+    { id: "tennis:espn:fx3-stale", tournament: "ATP Shanghai", kickoff: q(11), p1: "Ugo Humbert", p2: "Arthur Fils", odds: [2.05, 1.78], elo: [0.47, 0.53], mv: "elo_surface_v4_features_odds", sealed: false, books: false, computedAgoMin: 50 * 60 + 7 },
+    { id: "tennis:espn:fx3-books", tournament: "ATP Shanghai", kickoff: q(12), p1: "Lorenzo Sonego", p2: "Tommy Paul", odds: [2.6, 1.5], bookOdds: [2.9, 1.42], elo: [0.4, 0.6], mv: "elo_surface_v4_features_odds", sealed: false, books: true, computedAgoMin: 30 * 60 },
+    // started 35 min ago, the same match twice in /api/v3/live (inverted names): «Live now» must list it once
+    { id: "tennis:espn:184862:michael-zheng:wu-yibing", tournament: "ATP Shanghai", kickoff: q(-0.6), p1: "Wu Yibing", p2: "Michael Zheng", odds: [1.8, 2.0], elo: [0.55, 0.45], mv: "elo_surface_v4_features_odds", sealed: false, books: false, preOdds: [1.8, 2.0] },
+    { id: "tennis:partner:fx3-wu", tournament: "Partner feed", partnerTournament: "ATP Masters Shanghai - Hard", kickoff: q(-0.6), p1: "Michael Zheng", p2: "Yibing Wu", odds: [2.0, 1.8], elo: [0, 0], mv: "partner-market-v1", sealed: false, books: false, computedAgoMin: 20 * 60 },
+    { id: "tennis:espn:fx3-none", tournament: "WTA Wuhan", kickoff: q(13), p1: "Elina Svitolina", p2: "Zheng Qinwen", odds: [1.9, 1.9], elo: [0.5, 0.5], mv: "elo_surface_v4_features_odds", sealed: false, books: false, noOdds: true },
   );
 }
 const tnKey = (t: Tn) => teamPairKey("tennis", t.p1, t.p2, iso(t.kickoff))!;
@@ -327,7 +348,7 @@ function tennisSources() {
     return {
       id: t.id, tournament: t.tournament, kickoff: iso(t.kickoff), player1: t.p1, player2: t.p2,
       p1: t.noOdds ? t.elo[0] : mk[0], p2: t.noOdds ? t.elo[1] : mk[1], odds_p1: t.noOdds ? null : t.odds[0], odds_p2: t.noOdds ? null : t.odds[1], edge: null, model_version: t.mv,
-      computed_at: iso(now - 30 * 60_000), odds_bookmaker: "fortuneplay", surfaced_pick: mk[0] >= mk[1] ? t.p1 : t.p2,
+      computed_at: iso(now - (t.computedAgoMin ?? 30) * 60_000), odds_bookmaker: "fortuneplay", surfaced_pick: mk[0] >= mk[1] ? t.p1 : t.p2,
       model_p1: t.mv === "partner-market-v1" ? null : t.elo[0], model_p2: t.mv === "partner-market-v1" ? null : t.elo[1],
       model_as_of: iso(now - 40 * 60_000),
       sealed_at: t.sealed ? iso(t.kickoff - 20 * H) : null, sealed_p1: t.sealed ? (t.sealedP?.[0] ?? mk[0]) : null, sealed_p2: t.sealed ? (t.sealedP?.[1] ?? mk[1]) : null,

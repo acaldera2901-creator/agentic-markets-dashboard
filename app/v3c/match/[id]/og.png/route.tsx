@@ -10,6 +10,7 @@ import { leadOutcome, outcomeLabel, tennisLead } from "@/lib/v3c/board-view";
 import { fetchFixture, isTennisId } from "@/lib/v3c/line-movement-service";
 import { cleanMatchId, findMatch } from "@/lib/v3c/match-view";
 import { estimateShown } from "@/lib/v3c/fixdata2";
+import { ageHhMm } from "@/lib/v3c/fixdata3";
 import { OG, OG_SIZE, OgFrame, ogAssets } from "../../../_og/og";
 
 // polish-2: route handler (non più `opengraph-image`) così og:image può puntare
@@ -60,7 +61,13 @@ async function view(id: string): Promise<View | null> {
       away: m.player2,
       market: pct(lead.market_p),
       estimate: null,
-      line: `${lead.player} to win. The market price, margin removed.`,
+      // fixdata3 R3: the books' market declared; an old stored price said to be possibly outdated, with its age
+      line:
+        m.market_from === "stale"
+          ? `${lead.player} to win. Market only: price may be outdated (${ageHhMm(m.market_age_min)} old).`
+          : m.market_from === "books"
+            ? `${lead.player} to win. The partner books’ prices, margin removed.`
+            : `${lead.player} to win. The market price, margin removed.`,
     };
   }
   const f = await fetchFixture(id).catch(() => null);

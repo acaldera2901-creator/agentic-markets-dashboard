@@ -85,3 +85,33 @@ to compare», senza stima. **Questo non sostituisce la PROPOSAL**: la stima serv
 modello puro (il blend del pipeline è calcolato senza mercato); il fix vero è a monte.
 
 - **Owner esecuzione:** programmatore (path predictions) · **Serve OK da:** Andrea. Ancora NON eseguita.
+
+---
+
+## Aggiornamento fixdata3 — giro delle 16:01 UTC del 07/10 (solo SELECT, nessuna chiamata a The Odds API)
+
+**Misura (prediction_log, partite con kick-off dal 07/10, partite distinte con quota / partite per giro).**
+
+| Lega | 12:01 | 14:01 | 16:01 |
+|---|---|---|---|
+| SA | 12/14 | 14/14 | **0/14** |
+| PD | 0/15 | 14/15 | 14/15 |
+| BL1 | 0/16 | 14/16 | **0/16** |
+| FL1 | 0/13 | 10/13 | **0/13** |
+| PL | 0/15 | 0/15 | 0/15 |
+
+- **Inter–Parma** (FC Internazionale Milano–Parma Calcio 1913) e **Brest–Angers** (Stade Brestois 29–Angers SCO):
+  quota presente alle 14:01, **null alle 16:01** (e null alle 12:01).
+- Sulla board (QA-3, 16:45–17:20 UTC): 33 partite top senza mercato memorizzato (PL 9, BL1 9, FL1 9, SA 6);
+  **29 leggono il mercato dai book partner** (fixdata2 N3, dichiarato «Market from the partner books' prices»),
+  **4 restano «Model only: no market to compare»** (Augsburg, Rennes, Inter–Parma, Brest–Angers), senza stima.
+
+**Cosa cambia nella diagnosi.** Il vuoto è per **lega intera** e a intermittenza (0 → 14 → 0 a codice invariato),
+non per squadra: è la chiamata `fetchOdds(code)` che torna `[]`, prima ancora del join per nome. L'indagine parallela
+sull'hotfix del matcher (`redesign/proposals/regressione-quote-1607.md`, altro agente) conclude che l'hotfix non ne è la
+causa; questo filone non ha toccato `lib/summer-leagues.ts` né la pipeline di produzione.
+Conseguenza sulla change-spec qui sopra: il **punto 1 (una riga di log per lega in `fetchOdds`: status HTTP, n. eventi,
+`x-requests-remaining`) diventa il primo e unico passo** prima di decidere il rimedio (seriale/retry/ultima quota buona);
+punto 2 solo se il log mostra 429; punto 3 (alias) invariato.
+
+- **Owner esecuzione:** programmatore (path predictions) · **Serve OK da:** Andrea. **Ancora NON eseguita.**

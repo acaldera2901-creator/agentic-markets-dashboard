@@ -53,7 +53,8 @@ function pcMatches(board: V3BoardResponse, now: Date, max = 80): PcMatch[] {
       outcomes: m.outcomes.map((o) => ({ outcome: o.outcome, market_price: o.market_price, estimate_p: estimateShown(m) ? o.estimate_p : null, book_prices: o.book_prices })),
     }));
   const tennis: PcMatch[] = (board.tennis ?? [])
-    .filter((m) => Date.parse(m.kickoff) > now.getTime() && m.sides.every((s) => s.market_price != null))
+    // fixdata3 R3: a price that may be outdated (stored > 6 h ago, no book prices it now) is not checked against
+    .filter((m) => Date.parse(m.kickoff) > now.getTime() && m.market_from !== "stale" && m.sides.every((s) => s.market_price != null))
     .map((m) => ({
       id: m.id,
       sport: "tennis",

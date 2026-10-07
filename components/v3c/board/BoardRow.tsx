@@ -36,6 +36,8 @@ import { sealedBeforeKickoff } from "@/lib/v3c/fixui2";
 import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { estimateShown } from "@/lib/v3c/fixdata2";
 import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
+import { fixdata3CopyFor } from "@/lib/v3c/fixdata3-copy";
+import { ageHhMm } from "@/lib/v3c/fixdata3";
 import "../ui3.css";
 import "../fixdata.css";
 import "../tennis2.css";
@@ -364,13 +366,16 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
   // la home non mostra il gap del tennis (resta il mercato con la stima accanto); il gap vive sulla board e sulla partita
   const noGap = surface === "home";
   const gap = noGap ? null : est.gap;
-  const kindLabel = elo ? t.tennis.eloLabel : t.tennis.marketOnly;
+  // fixdata3 R3: an old stored price no book prices now — said, with its age
+  const x3 = fixdata3CopyFor(locale);
+  const stale = m.market_from === "stale";
+  const kindLabel = elo ? t.tennis.eloLabel : stale ? x3.staleLabel : t.tennis.marketOnly;
   const scaleLabel =
     lead.market_p == null
       ? t.board.noMarket
       : elo
         ? t.tennis.scaleAriaElo(pctInt(lead.market_p), pctInt(est.estimate), gap == null ? null : gapText(gap))
-        : `${t.tennis.scaleAriaMarket(pctInt(lead.market_p))}, ${t.tennis.marketOnly}`;
+        : `${t.tennis.scaleAriaMarket(pctInt(lead.market_p))}, ${kindLabel}`;
   const sideEst = (x: (typeof m.sides)[number]) => tennisEstimateOf(m, x.side);
   const started = hasStarted(m.kickoff, now);
   return (
@@ -489,9 +494,10 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
             {elo ? <span>{t.tennis.blendFact}</span> : null}
             {m.margin_removed != null ? <span>{t.board.margin(`${(m.margin_removed * 100).toFixed(1)}%`)}</span> : null}
             <span>{t.fascia.pricesAsOf(stampLocal(m.market_source?.as_of ?? m.estimate_as_of, tz, locale))}</span>
+            {stale ? <span data-market-from="stale">{x3.priceAge(ageHhMm(m.market_age_min))}</span> : m.market_from === "books" ? <span data-market-from="books">{fixdata2CopyFor(locale).marketFromBooks}</span> : null}
             {elo && m.elo_as_of ? <span>{t.tennis.eloAsOf(stampLocal(m.elo_as_of, tz, locale))}</span> : null}
           </p>
-          <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : t.tennis.noEstimate}</p>
+          <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : stale ? x3.staleNote(ageHhMm(m.market_age_min)) : t.tennis.noEstimate}</p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
               <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))} kickoff={m.kickoff} afterLabel={fixui2CopyFor(locale).loggedLabel} afterTitle={fixui2CopyFor(locale).loggedWhy(stampLocal(m.sealed_at, tz, locale))} />
