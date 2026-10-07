@@ -7,7 +7,7 @@ const query = vi.fn();
 vi.mock("@/lib/db", () => ({ dbQueryStrict: (sql: string) => query(sql) }));
 
 import { getNews, newsTeams, readNews } from "./news.server";
-import { cardFromRow, feedFromTable, ITEMS_SQL, STALE_MS, STATE_SQL, type NewsItemRow, type NewsStateRow } from "./table";
+import { cardFromRow, feedFromTable, ITEMS_SQL, REJECTED_PREFIX, STALE_MS, STATE_SQL, type NewsItemRow, type NewsStateRow } from "./table";
 
 const NOW = Date.parse("2026-10-07T12:00:00Z");
 const iso = (t: number) => new Date(t).toISOString();
@@ -60,6 +60,11 @@ describe("feedFromTable · the page states", () => {
     expect(cardFromRow(row(1, { source_url: "javascript:alert(1)" }))).toBeNull();
     expect(cardFromRow(row(1, { published_at: "nope" }))).toBeNull();
     expect(cardFromRow(row(1, { teams: null as never }))?.teams).toEqual([]);
+  });
+  it("a row refused at re-verification («rejected · …» in rewrite_model) is never shown, nor selected", () => {
+    expect(cardFromRow(row(1, { rewrite_model: `${REJECTED_PREFIX}reverify: scorer invented · haiku · prompt v3` }))).toBeNull();
+    expect(feedFromTable(state(), [row(1, { rewrite_model: `${REJECTED_PREFIX}x` })], NOW).state).toBe("empty");
+    expect(ITEMS_SQL).toContain(`rewrite_model NOT LIKE '${REJECTED_PREFIX}%'`);
   });
 });
 

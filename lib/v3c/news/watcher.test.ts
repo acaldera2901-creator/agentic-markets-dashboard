@@ -242,7 +242,7 @@ describe("watcher · block, backoff, limits", () => {
 
 describe("claude-cli · the local `claude -p`", () => {
   const item = (parseNewsPage(HTML) as { ok: true; items: FeedItem[] }).items[3]; // «United States 1-0 Canada …»
-  const good = { status: "ok", headline_en: "USA edge Canada in a friendly", body_en: "A late goal settled the match.", headline_it: "Gli USA superano il Canada in amichevole", body_it: "Un gol nel finale ha deciso la partita.", teams: ["United States", "Canada", "Brazil"] };
+  const good = { status: "ok", headline_en: "USA edge Canada 1-0 in Minnesota", body_en: "Pochettino's side extended their momentum against their neighbours.", headline_it: "Gli USA superano il Canada 1-0 in Minnesota", body_it: "La squadra di Pochettino prolunga il buon momento contro i vicini.", teams: ["United States", "Canada", "Brazil"] };
   const cli = (o: object) => JSON.stringify({ type: "result", subtype: "success", is_error: false, num_turns: 2, result: JSON.stringify(good), structured_output: good, total_cost_usd: 0.0028, usage: { input_tokens: 1549, output_tokens: 253 }, modelUsage: { "claude-haiku-4-5-20251001": {} }, ...o });
 
   it("args: print mode, haiku, no tools, safe mode, no MCP, no session, JSON schema, no thinking; never an API key", () => {
@@ -262,7 +262,7 @@ describe("claude-cli · the local `claude -p`", () => {
     expect(o.kind).toBe("ok");
     if (o.kind !== "ok") return;
     expect(o.rewritten.teams).toEqual(["United States", "Canada"]);
-    expect(o.rewritten.note.model).toBe("claude-haiku-4-5-20251001 · prompt v3");
+    expect(o.rewritten.note.model).toBe("claude-haiku-4-5-20251001 · prompt v4");
     expect(o.usage).toEqual({ ms: 4242, costUsd: 0.0028, inTokens: 1549, outTokens: 253, model: "claude-haiku-4-5-20251001" });
   });
 
