@@ -201,7 +201,16 @@ export const TRACK_RECORD_BASE_CONDITIONS: readonly string[] = [
   "(is_historical = TRUE OR starts_at < NOW() - INTERVAL '48 hours')",
 ];
 
-type ShownRow = { pick?: string | null; notes?: string | null; competition?: string | null };
+type ShownRow = {
+  pick?: string | null;
+  notes?: string | null;
+  competition?: string | null;
+  /** #LEDGER-SIGILLATA-1007 — impostato SOLO da applySealedGrading (flag
+   *  acceso): la pick viene dal registro sigillato, che sigilla solo pick
+   *  pubblicate sopra floor. Il flag `below_floor` nelle note e' quello della
+   *  servita all'ultimo aggiornamento, non di cio' che e' stato registrato. */
+  ledger_sealed?: boolean;
+};
 
 /**
  * #TRACKREC-REAL-0626 + #WC-FLOOR-0707 — la riga è stata MOSTRATA come pick.
@@ -213,6 +222,7 @@ type ShownRow = { pick?: string | null; notes?: string | null; competition?: str
  */
 export function isShownPick(row: ShownRow): boolean {
   if (!row.pick) return false;
+  if (row.ledger_sealed === true) return true;
   let belowFloor = false;
   try {
     const surface = (JSON.parse(row.notes ?? "{}") as { surface?: { below_floor?: boolean } }).surface;

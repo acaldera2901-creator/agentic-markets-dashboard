@@ -17,11 +17,17 @@ import { gradeTennisPick, tennisWinnerSide } from "@/lib/tennis-settlement";
 import { verifyBearer } from "@/lib/admin-auth";
 import { opsAlert } from "@/lib/ops-alert";
 import {
+  FOOTBALL_LEDGER_MODEL_VERSION,
+  FOOTBALL_LEDGER_SOURCE_TABLE,
   LEDGER_MIRROR_CONFLICT,
   isLedgerFkRejection,
   ledgerMirrorRow,
   sealedOrphansSql,
 } from "@/lib/pick-ledger-mirror";
+import {
+  ledgerSettlementResult,
+  sealedGradingConfig,
+} from "@/lib/ledger-sealed-grading";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -336,6 +342,27 @@ export async function GET(req: NextRequest) {
         if (error) throw error;
         rows.push(...(data ?? []));
       }
+      // #LEDGER-SIGILLATA-1007 — con il flag acceso, la chiusura nel registro
+      // delle partite del periodo si grada sulla pick SIGILLATA. Serve leggerla:
+      // la riga servita porta la pick dell'ultimo sync, non quella registrata.
+      // Flag spento: nessuna lettura, l'esito nel registro resta quello servito.
+      const sealedCfg = sealedGradingConfig();
+      const sealedPicks = new Map<string, { pick: string | null; commence_time: string }>();
+      if (sealedCfg.enabled && rows.length > 0) {
+        const extIds = rows.map((r) => String(r.external_event_id));
+        for (let i = 0; i < extIds.length; i += 150) {
+          const { data, error } = await sb
+            .from("pick_ledger")
+            .select("source_id, pick, commence_time")
+            .eq("source_table", FOOTBALL_LEDGER_SOURCE_TABLE)
+            .eq("model_version", FOOTBALL_LEDGER_MODEL_VERSION)
+            .in("source_id", extIds.slice(i, i + 150));
+          if (error) throw error;
+          for (const l of data ?? []) {
+            sealedPicks.set(String(l.source_id), { pick: l.pick ?? null, commence_time: String(l.commence_time) });
+          }
+        }
+      }
       for (const row of rows) {
         const m = finished.get(String(row.external_event_id));
         if (!m) continue;
@@ -395,10 +422,21 @@ export async function GET(req: NextRequest) {
         // scritti a mano qui, nell'agente Python e nell'adapter che sigilla, e
         // tre copie di una chiave divergono presentandosi come un 23503
         // "atteso".
+        const sealed = sealedPicks.get(String(row.external_event_id));
+        const ledgerResult = ledgerSettlementResult(
+          {
+            servedResult: outcome,
+            sealedPick: sealed?.pick,
+            commenceTime: sealed?.commence_time,
+            homeGoals: m.homeGoals,
+            awayGoals: m.awayGoals,
+          },
+          sealedCfg,
+        );
         const { error: psErr } = await sb.from("pick_settlement").upsert(
           ledgerMirrorRow({
             sourceId: String(row.external_event_id),
-            result: outcome,
+            result: ledgerResult,
             outcome: realized,
             finalScore: `${m.homeGoals}-${m.awayGoals}`,
           }),

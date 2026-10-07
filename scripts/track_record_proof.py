@@ -48,6 +48,8 @@ class LedgerPick:
     confidence: float | None
     odds: float | None
     is_backfill: bool
+    # #LEDGER-SIGILLATA-1007 — serve solo con --sealed-from; export vecchi: None.
+    commence_time: str | None = None
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,7 @@ def load_ledger(path: Path) -> dict[tuple[str, str, str], LedgerPick]:
                 odds=_f(r.get("odds")),
                 is_backfill=str(r.get("is_backfill", "")).strip().lower()
                 in ("true", "t", "1"),
+                commence_time=(r.get("commence_time") or None),
             )
     return picks
 
@@ -173,7 +176,33 @@ def ece(pairs: list[tuple[float, int]], bins: int = 10) -> float:
     return err / total
 
 
-def compute(picks, settlements) -> dict:
+def _sealed_regrade(pk: "LedgerPick", s: "Settlement", sealed_from) -> str | None:
+    """#LEDGER-SIGILLATA-1007 — esito della pick SIGILLATA contro l'esito reale.
+
+    Solo calcio, solo partite con kickoff da ``sealed_from``, solo se la chiusura
+    porta l'esito reale (``outcome``): allora ``won``/``lost`` si ricalcolano
+    dalla pick registrata, e un ``void`` scritto perche' la servita era cambiata
+    (o sparita) torna un esito. Senza ``outcome`` (annullata/rinviata) None:
+    vale la chiusura com'e'. ``sealed_from`` None = comportamento di sempre.
+    """
+    from core.ledger_sealed_grading import (
+        SealedGradingConfig,
+        grade_sealed_pick,
+        in_sealed_cohort,
+    )
+
+    if sealed_from is None or pk.sport != "football" or not pk.pick:
+        return None
+    cfg = SealedGradingConfig(enabled=True, from_dt=sealed_from)
+    if not in_sealed_cohort(pk.commence_time, cfg):
+        return None
+    realized = (s.outcome or "").upper()
+    if realized not in OUTCOME_TO_IDX or s.result == "unresolved":
+        return None
+    return grade_sealed_pick(pk.pick, realized)
+
+
+def compute(picks, settlements, sealed_from=None) -> dict:
     brier_vals: list[float] = []
     cal_pairs: list[tuple[float, int]] = []
     hits = decided = 0
@@ -187,6 +216,14 @@ def compute(picks, settlements) -> dict:
         s = settlements.get(key)
         if s is None:
             continue
+        regraded = _sealed_regrade(pk, s, sealed_from)
+        if regraded is not None:
+            s = Settlement(
+                result=regraded,
+                outcome=s.outcome,
+                closing_odds=s.closing_odds,
+                settled_at=s.settled_at,
+            )
         if s.result == "unresolved":
             unresolved += 1
             continue
@@ -256,7 +293,20 @@ def main(argv: list[str] | None = None) -> int:
         help="forward = look-ahead-proof verified picks (default); backfill = "
         "historical reconstruction; all = both (NEVER publish mixed as verified)",
     )
+    ap.add_argument(
+        "--sealed-from",
+        default=None,
+        help="#LEDGER-SIGILLATA-1007: ISO; per il calcio con kickoff da questa "
+        "data l'esito si ricalcola dalla pick SIGILLATA (default: come prima)",
+    )
     args = ap.parse_args(argv)
+    sealed_from = None
+    if args.sealed_from:
+        from core.ledger_sealed_grading import _parse_iso
+
+        sealed_from = _parse_iso(args.sealed_from)
+        if sealed_from is None:
+            ap.error(f"--sealed-from non e' una data ISO: {args.sealed_from!r}")
 
     picks = load_ledger(args.ledger)
     settlements = load_settlements(args.settlement)
@@ -267,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cohort == "backfill":
         picks = {k: v for k, v in picks.items() if v.is_backfill}
 
-    m = compute(picks, settlements)
+    m = compute(picks, settlements, sealed_from=sealed_from)
     print("=" * 60)
     print(f"#TRACKREC-PROOF-1 (seed={SEED}, deterministic, read-only)")
     print(f"cohort: {args.cohort}")

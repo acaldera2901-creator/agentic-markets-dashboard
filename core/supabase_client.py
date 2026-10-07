@@ -650,6 +650,42 @@ async def fetch_unsettled_unified_predictions(
         return []
 
 
+async def fetch_sealed_football_pick(source_id: str) -> tuple[bool, dict | None]:
+    """#LEDGER-SIGILLATA-1007 — la riga sigillata del calcio per una partita.
+
+    Restituisce ``(ok, riga)``: ``ok`` False quando la lettura NON e' riuscita
+    (rete, 5xx): il chiamante allora NON deve chiudere nulla, perche' scrivere
+    nel registro immutabile l'esito servito al posto di quello sigillato sarebbe
+    definitivo. ``(True, None)`` = nessuna riga sigillata, che e' un fatto.
+    Chiamata solo con LEDGER_SEALED_GRADING acceso.
+    """
+    base = _rest_base()
+    if not base:
+        return False, None
+    params = {
+        "select": "pick,commence_time",
+        "source_table": "eq.match_predictions",
+        "model_version": "eq.football-v4-xg-model",
+        "source_id": f"eq.{source_id}",
+        "limit": "1",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/pick_ledger", params=params, headers=_service_headers()
+            )
+            if resp.status_code != 200:
+                logger.warning(
+                    "sealed pick fetch failed: %s %s", resp.status_code, resp.text[:200]
+                )
+                return False, None
+            rows = resp.json() or []
+            return True, (rows[0] if rows else None)
+    except Exception as exc:
+        logger.warning("sealed pick fetch error: %s", exc)
+        return False, None
+
+
 async def fetch_recent_sport_pairs(sport: str, days: int) -> list[dict] | None:
     """
     Coppie squadra-squadra già pubblicate per uno sport negli ultimi `days`
