@@ -55,8 +55,8 @@ export const SOURCE_NAMES: Record<V3LiveSourceId, string> = { espn: "ESPN", api_
 export type V3LiveItem = (V3LiveFootball | V3LiveTennis) & {
   /** the source event id we matched (audit), prefixed by the source («espn:…», «apif:…», «oddsapi:…») */
   source_id: string;
-  /** how the row was matched: exact source id, or kickoff + names */
-  matched_by: "id" | "names";
+  /** how the row was matched: exact source id, kickoff + names, or (#V3C-LIVEFIX) «slot»: own league's scoreboard, same kick-off, one club equal (live-match.ts matchFootball) */
+  matched_by: "id" | "names" | "slot";
   /** live2: the source this score comes from */
   source: V3LiveSourceId;
   /** live2: when the source last refreshed it (its own timestamp when it gives one, else when we read it) */
