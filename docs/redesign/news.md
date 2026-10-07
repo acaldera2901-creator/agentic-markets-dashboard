@@ -10,15 +10,15 @@ Il RSS `https://www.fotmob.com/topnews/feed?format=rss` porta ~20 articoli edito
 02/10 letto il 07/10): non sono notizie fresche. Le notizie fresche stanno su
 `https://www.fotmob.com/en/news` (`/it/news` incorpora la stessa lista inglese).
 
-**Com'è fatta la pagina (misurato 07/10, GET fra 10:35 e 10:52 UTC):** documento Next.js
+**Com'è fatta la pagina (misurato 07/10, 5 GET fra 10:35 e 11:17 UTC):** documento Next.js
 pages-router; la lista **non** è nel markup HTML ma nel JSON incorporato
 `<script id="__NEXT_DATA__">`, in `props.pageProps.fallback["/api/worldnews?lang=en&page=1"]`:
 20 voci con `id`, `title`, `lead` (solo alcune), `gmtTime` (ISO assoluta), `sourceStr` (FotMob, SI,
 The Analyst), `page.url` (relativa su fotmob.com o assoluta verso l'editore), `imageUrl`,
 `sourceIconUrl`. Nessuna lega/categoria. Leggiamo il JSON dalla pagina scaricata: **mai** `/api`.
 **Freschezza:** voce più recente 6 min, mediana 7,6 h, la più vecchia 14,3 h; 8 voci nelle ultime 2 h
-(≈35–40 al giorno). Fra le letture a 10:35, 10:42, 10:49, 10:52: 0 voci nuove (arrivano a grappoli
-dopo le partite).
+(≈35–40 al giorno). Letture a 10:35, 10:42, 10:49, 10:52: 0 voci nuove; lettura a 11:17: 3 nuove
+(10:51, 11:00, 11:15). Arrivano a grappoli: un rinfresco ogni 10 min basta.
 
 ## Come si accende
 | Variabile (server) | Dove | Effetto |
