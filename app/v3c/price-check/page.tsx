@@ -29,7 +29,8 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 
 /**
  * Le partite non ancora iniziate con tutte le quote di mercato, in ordine di inizio: calcio (1X2, con la
- * stima 70/30) e — ui3 — tennis (vincente, SOLO mercato: nel tennis non diamo la stima, estimate_p null).
+ * stima 70/30) e tennis (vincente; tennis2: la stima basata su Elo — 0,1·Elo + 0,9·mercato, non sigillata — solo
+ * dove estimate_kind è 'elo_blend_unsealed', altrimenti estimate_p null = solo mercato).
  */
 function pcMatches(board: V3BoardResponse, now: Date, max = 80): PcMatch[] {
   const football: PcMatch[] = board.matches
@@ -56,7 +57,14 @@ function pcMatches(board: V3BoardResponse, now: Date, max = 80): PcMatch[] {
       league: m.tournament,
       blend: false,
       links: readBookLinks(m),
-      outcomes: m.sides.map((s) => ({ outcome: s.side === "p1" ? "home" : "away", market_price: s.market_price, estimate_p: null, book_prices: s.book_prices })),
+      tnElo: m.estimate_kind === "elo_blend_unsealed" && m.estimate_p != null,
+      gapHidden: m.estimate_kind === "elo_blend_unsealed" && m.gap_visible !== true,
+      outcomes: m.sides.map((s) => ({
+        outcome: s.side === "p1" ? "home" : "away",
+        market_price: s.market_price,
+        estimate_p: m.estimate_kind === "elo_blend_unsealed" && m.estimate_p ? m.estimate_p[s.side] : null,
+        book_prices: s.book_prices,
+      })),
     }));
   const byKickoff = (a: PcMatch, b: PcMatch) => Date.parse(a.kickoff) - Date.parse(b.kickoff);
   // il calcio tiene le sue `max` righe di sempre; il tennis si aggiunge, non le toglie

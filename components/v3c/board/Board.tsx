@@ -222,22 +222,20 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
             </label>
           </div>
         ) : null}
-        {/* ui3: nel tennis non diamo la stima — la legenda parla di stima e gap solo dove c'è il calcio */}
+        {/* tennis2: stima e gap anche nel tennis (90% mercato + 10% Elo, non sigillata, dove l'Elo è fresco); la legenda dice le due regole */}
         <p className="v3c-explain v3c-legend">
           <span>
             <i className="v3c-key v3c-key-m" aria-hidden="true" />
             {t.toolbar.legendMarket}
           </span>
           {filters.sport !== "tennis" ? (
-            <>
-              <span>
-                <i className="v3c-key v3c-key-e" aria-hidden="true" />
-                {t.toolbar.legendEstimate}
-              </span>
-              <span>{t.toolbar.legendGap}</span>
-            </>
+            <span>
+              <i className="v3c-key v3c-key-e" aria-hidden="true" />
+              {t.toolbar.legendEstimate}
+            </span>
           ) : null}
           {filters.sport !== "football" ? <span>{t.toolbar.legendTennis}</span> : null}
+          <span>{t.toolbar.legendGap}</span>
         </p>
       </div>
 
@@ -257,24 +255,14 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
             {t.board.market}
             <small>{t.board.marketSub}</small>
           </span>
-          {/* ui3: con il solo tennis le colonne Estimate e Gap restano vuote anche nell'intestazione */}
-          {filters.sport === "tennis" ? (
-            <>
-              <span />
-              <span />
-            </>
-          ) : (
-            <>
-              <span className="v3c-lab v3c-ra">
-                {t.board.estimate}
-                <small>{t.board.estimateSub}</small>
-              </span>
-              <span className="v3c-lab v3c-ra">
-                {t.board.gap}
-                <small>{t.board.gapSub}</small>
-              </span>
-            </>
-          )}
+          <span className="v3c-lab v3c-ra">
+            {t.board.estimate}
+            <small>{filters.sport === "tennis" ? t.tennis.estimateSub : t.board.estimateSub}</small>
+          </span>
+          <span className="v3c-lab v3c-ra">
+            {t.board.gap}
+            <small>{t.board.gapSub}</small>
+          </span>
           <span className="v3c-lab v3c-ra">
             {t.board.best}
             <small>{t.board.bestSub}</small>
@@ -309,8 +297,9 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
         )}
       </section>
       <div className="v3c-board-f">
-        {/* ui3: la nota parla del gap, che il tennis non ha */}
         {filters.sport !== "tennis" ? <p className="v3c-fine">{t.board.rowNote}</p> : null}
+        {/* tennis2: l'avvertenza onesta accanto alla stima tennis (≤ 22 parole) */}
+        {filters.sport !== "football" && shown.some((r) => r.kind === "tennis") ? <p className="v3c-fine v3c-tn-caveat">{t.tennis.caveat}</p> : null}
         {!limit && more > 0 ? (
           <span className="v3c-board-showmore">
             <span className="v3c-small">{t.board.shownOf(shown.length, filtered.length)}</span>

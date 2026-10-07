@@ -15,6 +15,7 @@ import { buildLineMovement, isTennisId, type Fixture } from "@/lib/v3c/line-move
 import { landingBookLinks } from "@/lib/v3c/match-links.server";
 import { findMatch, leadOutcome, readLineEvents } from "@/lib/v3c/match-view";
 import { tennisLead } from "@/lib/v3c/board-view";
+import { tennisEstimateOf } from "@/lib/v3c/tennis-estimate";
 import type { V3cMode } from "@/lib/v3c/mode";
 import { MatchError, MatchSkeleton } from "./MatchStates";
 import { MatchView, type MoreRow } from "./MatchView";
@@ -25,8 +26,8 @@ import { newsEnabled, newsForMatch, type NewsCard } from "@/lib/v3c/news/news.se
 
 /**
  * Le prossime partite dello STESSO sport (non questa), per «More on today’s board».
- * final3: sulla pagina tennis erano righe di calcio con stima e gap; ora il tennis mostra
- * solo righe tennis con il mercato (come la board tennis) e, se non ce ne sono, niente blocco.
+ * final3: sulla pagina tennis solo righe tennis (se non ce ne sono, niente blocco).
+ * tennis2: con stima e gap attenuato dove c'è l'Elo fresco, «Market only» altrove.
  */
 async function moreRows(board: V3BoardResponse, id: string, now: Date, sport: "football" | "tennis", n = 3): Promise<MoreRow[]> {
   const next = <T extends { id: string; kickoff: string }>(xs: readonly T[]) =>
@@ -36,9 +37,11 @@ async function moreRows(board: V3BoardResponse, id: string, now: Date, sport: "f
     const tapes = await boardTapes([], list);
     return list.map((m) => {
       const lead = tennisLead(m);
+      // tennis2: stima e gap (attenuato) solo con estimate_kind 'elo_blend_unsealed', come la board tennis
+      const est = tennisEstimateOf(m, lead.side);
       return {
-        sport: "tennis", id: m.id, home: m.player1, away: m.player2, kickoff: m.kickoff, league: m.tournament || null, gap: null,
-        leadName: lead.player, price: lead.market_price, market: lead.market_p, estimate: null, tape: tapes[m.id],
+        sport: "tennis", id: m.id, home: m.player1, away: m.player2, kickoff: m.kickoff, league: m.tournament || null, gap: est.gap,
+        leadName: lead.player, price: lead.market_price, market: lead.market_p, estimate: est.estimate, tnElo: est.kind === "elo_blend_unsealed", tape: tapes[m.id],
       };
     });
   }

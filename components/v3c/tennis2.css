@@ -1,0 +1,52 @@
+/* components/v3c/tennis2.css (#REDESIGN-V3C tennis2) — tennis Market → Estimate → Gap.
+   The tennis estimate is 90% market + 10% our Elo, NOT sealed: it is drawn without the lime
+   highlighter the sealed football estimate carries, and its gap is muted — ink-3, lighter weight,
+   never green/red, never an arrow or a badge. «Market only» rows say so once, in place of the two
+   columns, instead of leaving them empty. Only existing tokens. */
+
+/* the kind of the row, in the line under the players */
+.v3c-tn-kind { color: var(--v3c-ink-3); font-weight: 400; }
+
+/* board row: estimate plain ink, gap muted */
+.v3c-r-es-tn { color: var(--v3c-ink); }
+.v3c-g-tn, .v3c-g-tn small { color: var(--v3c-ink-3); }
+.v3c-r-gap.v3c-g-tn { font-size: 17px; font-weight: 600; }
+.v3c-r-gap.v3c-g-tn > span:first-child { font-weight: 600; }
+.v3c-r-me .v3c-tn-e { color: var(--v3c-ink); }
+
+/* Market only: one label across Estimate + Gap on desktop */
+.v3c-r-tnonly, .v3c-row .v3c-r-tnonly { grid-column: span 2; font: 600 11.5px/1.25 var(--v3c-f-text); color: var(--v3c-ink-3); text-align: right; }
+@media (min-width: 821px) {
+  .v3c-r-tnm { display: none; }
+}
+
+/* row panel with the estimate: Winner · Price · Market · Estimate · Gap */
+.v3c-pn-o-tn5 { max-width: 560px; }
+.v3c-pn-o-tn5 > div { grid-template-columns: minmax(0, 1fr) 64px 72px 72px 72px; }
+/* home: the same without the Gap column */
+.v3c-pn-o-tn4 { max-width: 480px; }
+.v3c-pn-o-tn4 > div { grid-template-columns: minmax(0, 1fr) 64px 72px 72px; }
+
+/* the caveat under the board / on the match page */
+.v3c-tn-caveat { color: var(--v3c-ink-2); }
+
+/* match page: the market → estimate scale with a muted gap, and the five-column table */
+.v3c-gl-tn .v3c-gl-g, .v3c-gl-tn .v3c-gl-g b { color: var(--v3c-ink-3); font-weight: 600; }
+.v3c-gl-tn .v3c-gl-track > b { opacity: .45; }
+/* the tennis estimate point is ink, not the lime of the sealed football estimate */
+.v3c-gl-tn .v3c-gl-track i.v3c-te { background: var(--v3c-ink-2); }
+.v3c-gl-tn .v3c-gl-track i.v3c-te span { color: var(--v3c-ink-2); }
+.v3c-mt-gap.v3c-g-tn .v3c-n-score { color: var(--v3c-ink-3); font-weight: 600; font-size: 48px; }
+.v3c-mt-out-tn5 { --oc: minmax(0, 1fr) 84px 96px 96px 96px; max-width: 720px; }
+.v3c-mt-kind { margin: 6px 0 0; color: var(--v3c-ink-3); }
+
+@media (max-width: 820px) {
+  .v3c-r-gap.v3c-g-tn { font-size: 18px; }
+  .v3c-mt-gap.v3c-g-tn .v3c-n-score { font-size: 34px; }
+  .v3c-pn-o-tn5 > div { grid-template-columns: minmax(0, 1fr) 36px 42px 60px 54px; gap: 0 8px; }
+  .v3c-pn-o-tn4 > div { grid-template-columns: minmax(0, 1fr) 48px 56px 60px; gap: 0 8px; }
+  .v3c-pn-o-tn5 .v3c-num { font-size: 15px; }
+  .v3c-pn-o-tn5 .v3c-lab { font-size: 9px; letter-spacing: 0; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
+  /* the price column is hidden at ≤ 820 px on the match page (.v3c-mt-c-price) */
+  .v3c-mt-out-tn5 { --oc: minmax(0, 1fr) 60px 64px 64px; }
+}
