@@ -111,5 +111,7 @@ describe("«Market only» in the price check", () => {
     expect(s).toContain("Market only: the model differs too much to show");
     expect(s).not.toMatch(/Our estimate/);
     expect(s).not.toMatch(/in line with our number/);
+    expect(s).not.toContain("Estimate: 70% market");
+    expect(s).not.toMatch(/Margin removed Estimate Gap/i); // no estimate column
   });
 });

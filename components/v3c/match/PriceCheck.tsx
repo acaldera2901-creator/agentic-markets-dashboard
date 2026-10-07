@@ -82,7 +82,8 @@ export function PriceCheck({ matches, initialId, partners, landing = [], notList
 
   // la stima (colonne, nastro) nel calcio e nel tennis con l'Elo fresco; verdetto «più alto/più basso» ed EV/Kelly solo nel calcio
   const tnEst = m != null && m.sport === "tennis" && m.tnElo === true && m.outcomes.every((o) => o.estimate_p != null);
-  const withEst = m != null && (m.sport === "football" || tnEst);
+  // final7: under «Market only» there is no estimate of ours — no estimate column, no 70/30 line
+  const withEst = m != null && ((m.sport === "football" && m.guard !== "market_only") || tnEst);
   const tnGapHidden = tnEst && m?.gapHidden === true;
   const labels = m ? (m.sport === "tennis" ? [m.home, m.away] : [m.home, t.board.draw, m.away]) : c.pc.outcomes;
   const parsed = raw.map(parsePrice);
