@@ -178,6 +178,11 @@ export type TennisBoardSourceRow = {
   elo_p2?: number | null;
   elo_as_of?: string | null;
   elo_home?: string | null;
+  /**
+   * fixdata B8: the market of the partner twin this row replaced (board-service), when the row has no
+   * price of its own — shown as the market, never used to say what the served probability IS.
+   */
+  borrowed_market?: { odds_p1: number; odds_p2: number; bookmaker: string | null; as_of: string };
 };
 
 /**
@@ -191,7 +196,11 @@ export function buildTennisBoardMatch(
   history: PartnerPriceRow[] = [],
 ): V3BoardTennisMatch {
   const kind = servedTennisKind(src);
-  const market = market2way(src.odds_p1, src.odds_p2);
+  const own = market2way(src.odds_p1, src.odds_p2);
+  const lent = own ? null : src.borrowed_market ?? null;
+  const market = own ?? (lent ? market2way(lent.odds_p1, lent.odds_p2) : null);
+  const odds1 = own ? src.odds_p1 : (lent?.odds_p1 ?? null);
+  const odds2 = own ? src.odds_p2 : (lent?.odds_p2 ?? null);
   const prices = bookPricesFor({ home: src.player1, away: src.player2 }, partner, now, tennisNorm);
   const hasModel = src.model_p1 != null && src.model_p2 != null;
   // Served probability, exactly as lib/tennis-adapter computes it (same function).
@@ -212,7 +221,7 @@ export function buildTennisBoardMatch(
     return {
       side: s,
       player: s === "p1" ? src.player1 : src.player2,
-      market_price: market ? (s === "p1" ? src.odds_p1 : src.odds_p2) : null,
+      market_price: market ? (s === "p1" ? odds1 : odds2) : null,
       market_p: market ? roundP(market[s]) : null,
       model_p: hasModel ? roundP((s === "p1" ? src.model_p1 : src.model_p2) as number) : null,
       estimate_p: roundP(estimate[s]),
@@ -240,7 +249,7 @@ export function buildTennisBoardMatch(
     is_our_model: isOurModel(kind),
     temperature: src.edge != null ? null : TENNIS_ANCHORED_TAU,
     margin_removed: market ? roundP(market.margin) : null,
-    market_source: market ? { bookmaker: src.odds_bookmaker, as_of: new Date(src.computed_at).toISOString() } : null,
+    market_source: market ? (lent ? { bookmaker: lent.bookmaker, as_of: new Date(lent.as_of).toISOString() } : { bookmaker: src.odds_bookmaker, as_of: new Date(src.computed_at).toISOString() }) : null,
     model_as_of: src.model_as_of ? new Date(src.model_as_of).toISOString() : null,
     estimate_as_of: new Date(src.computed_at).toISOString(),
     sealed_at: src.sealed_at ? new Date(src.sealed_at).toISOString() : null,

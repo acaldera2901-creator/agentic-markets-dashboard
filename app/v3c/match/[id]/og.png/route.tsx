@@ -36,8 +36,9 @@ async function view(id: string): Promise<View | null> {
       home: m.home,
       away: m.away,
       market: pct(lead.market_p),
-      estimate: pct(lead.estimate_p),
-      line: lead.market_p == null ? `${label}. No market price stored: the estimate is the model alone.` : `${label}. Estimate = 0.3 model + 0.7 market${m.sealed_at ? ", sealed before kick-off" : ""}.`,
+      // fixdata B5: the model differs > 25 pp from the market → the card shows the market only, never the estimate
+      estimate: m.model_guard?.level === "market_only" ? null : pct(lead.estimate_p),
+      line: m.model_guard?.level === "market_only" ? `${label}. Market only: the model differs too much to show.` : lead.market_p == null ? `${label}. No market price stored: the estimate is the model alone.` : `${label}. Estimate = 0.3 model + 0.7 market${m.sealed_at ? ", sealed before kick-off" : ""}.`,
     };
   }
   if (found?.sport === "tennis") {

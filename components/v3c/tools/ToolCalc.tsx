@@ -10,7 +10,25 @@ import type { ToolSlug } from "@/lib/tools/registry";
 import type { V3cToolCopy } from "@/lib/i18n/v3c-tools";
 import { fmt } from "@/lib/i18n/v3c-tools";
 import { getBoardSource, matchTitle, sourceFrom, type BoardMatch } from "@/lib/v3c/board-source";
-import { defaultValues, toolDef, valuesFromQuery, type ToolValues } from "@/lib/v3c/tools";
+import { defaultValues, toolDef, valuesFromQuery, type ToolInput, type ToolValues } from "@/lib/v3c/tools";
+import { inputBounds, inputProblem } from "@/lib/v3c/fixdata";
+import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { useV3cLang } from "@/lib/v3c/lang.client";
+import { v3cLocale } from "@/lib/v3c/copy";
+
+/** fixdata M4: why this input is refused, in words (null = fine; an empty optional field is fine). */
+function inputError(i: ToolInput, v: number | null | undefined, raw: string, lang: string): string | null {
+  if (i.optional && raw.trim() === "") return null;
+  if (i.optional && v === 0) return null; // the third price of a two-way market: 0 = none
+  const p = inputProblem(i.kind, v);
+  if (!p) return null;
+  const fc = fixdataCopyFor(lang);
+  if (p === "empty") return fc.toolErrEmpty;
+  if (p === "integer") return fc.toolErrInteger;
+  const nf = new Intl.NumberFormat(v3cLocale(lang), { maximumFractionDigits: 2 });
+  const [lo, hi] = inputBounds(i.kind);
+  return fc.toolErrRange(nf.format(lo), nf.format(hi));
+}
 
 const subscribe = () => () => {};
 const getSearch = () => window.location.search;
@@ -55,6 +73,7 @@ export function ToolCalc({ slug, copy, invalid, live }: Props) {
     setRaw(Object.fromEntries(def.inputs.map((i) => [i.key, next[i.key] == null ? "" : String(next[i.key])])));
   }, [def, search, live]);
 
+  const lang = useV3cLang();
   const results = def.compute(values);
   const [big, ...rest] = results;
   // Senza risultato (input non calcolabile) l'etichetta resta quella del primo
@@ -70,20 +89,31 @@ export function ToolCalc({ slug, copy, invalid, live }: Props) {
   return (
     <>
       <form className="v3c-tf" style={{ "--n": def.inputs.length } as React.CSSProperties} onSubmit={(e) => e.preventDefault()}>
-        {def.inputs.map((i) => (
-          <label key={i.key}>
-            <span className="v3c-lab">{copy.inputs[i.key] ?? i.key}</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="any"
-              name={i.key}
-              value={raw[i.key] ?? ""}
-              onChange={(e) => onChange(i.key, e.target.value)}
-              data-testid={`in-${i.key}`}
-            />
-          </label>
-        ))}
+        {def.inputs.map((i) => {
+          const err = inputError(i, values[i.key], raw[i.key] ?? "", lang);
+          const errId = `err-${slug}-${i.key}`;
+          return (
+            <label key={i.key}>
+              <span className="v3c-lab">{copy.inputs[i.key] ?? i.key}</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="any"
+                name={i.key}
+                value={raw[i.key] ?? ""}
+                onChange={(e) => onChange(i.key, e.target.value)}
+                aria-invalid={err ? true : undefined}
+                aria-describedby={err ? errId : undefined}
+                data-testid={`in-${i.key}`}
+              />
+              {err ? (
+                <small className="v3c-in-err" id={errId} role="alert" data-testid={`err-${i.key}`}>
+                  {err}
+                </small>
+              ) : null}
+            </label>
+          );
+        })}
       </form>
 
       <section className="v3c-tres" aria-live="polite">

@@ -18,6 +18,7 @@
 // in volo, distanziata di MIN_GAP_MS dalla precedente. User-agent
 // identificabile: chi gestisce il widget sa chi siamo e come contattarci.
 import { normName } from "./odds-api";
+import { stampFeedMap } from "@/lib/feed-stamp";
 import { canonicalPlayerKey } from "./tennis-names";
 import { teamPairKey, type PairSport } from "./team-pair-key";
 import type { FpMatch } from "./fortuneplay-live";
@@ -176,6 +177,7 @@ async function refresh(book: AltenarBook, now: number): Promise<Map<string, FpMa
   }
   if (ok === 0) return _cache.get(book.key)?.map ?? map; // all down → last good copy
   _cache.set(book.key, { at: now, map });
+  stampFeedMap(map, now); // fixdata B2: the price time is when the feed was read
   return map;
 }
 

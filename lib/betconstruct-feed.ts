@@ -3,6 +3,7 @@
 // TTL-cache per-book, best-effort: un book che fallisce ritorna mappa vuota
 // e NON rompe gli altri (il live degrada al/ai book disponibili).
 import { parseFortuneplayMatches, type FpMatch } from "./fortuneplay-live";
+import { stampFeedMap } from "@/lib/feed-stamp";
 import { BOOKS, type BookConfig } from "./betconstruct-books";
 
 const PAGE_LIMIT = 50;
@@ -69,6 +70,7 @@ async function _refreshBook(book: BookConfig, now: number): Promise<Map<string, 
       }
     } catch { /* best-effort: la board resta servita dalla sweep principale */ }
     _cache.set(book.key, { at: now, map });
+    stampFeedMap(map, now); // fixdata B2: the price time is when the feed was read
     return map;
   } catch {
     const hit = _cache.get(book.key);

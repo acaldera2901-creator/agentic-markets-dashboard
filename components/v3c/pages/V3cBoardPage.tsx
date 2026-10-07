@@ -27,6 +27,8 @@ import { boardTapes } from "@/lib/v3c/tape-data.server";
 import "@/components/v3c/partners.css";
 import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
 import { liveState } from "@/lib/v3c/board-view";
+import { byRelevance, hasStarted } from "@/lib/v3c/fixdata";
+import { wantsLive } from "@/lib/v3c/live-view";
 
 type Surface = "home" | "predictions";
 
@@ -50,7 +52,8 @@ function forSurface(board: V3BoardResponse, surface: Surface, now: Date): V3Boar
   // home: per ogni filtro sport bastano le prime HOME_ROWS righe (+ il gap più ampio di oggi per la cascata)
   const homeIds = surface === "home" ? homeCut(board, now) : null;
   const keep = (id: string) => surface === "predictions" || (homeIds?.has(id) ?? true);
-  const book = (b: V3BookPrice): V3BookPrice => ({ ...b, captured_at: "" });
+  // fixdata B2: the capture time travels with the first (best) price of each list — the row and its CTA say «price at hh:mm»
+  const book = (b: V3BookPrice, i: number): V3BookPrice => (i === 0 ? b : { ...b, captured_at: "" });
   // F7: `books` (per-partner status) and `partners` are API-only until the UI
   // renders them — 15 entries × every row would add ~300 KB of HTML here.
   const { partners: _partners, ...rest } = board;
@@ -69,14 +72,19 @@ function forSurface(board: V3BoardResponse, surface: Surface, now: Date): V3Boar
   };
 }
 
-/** Gli id che la home spedisce: le prime righe di «tutti», «calcio», «tennis» e il gap più ampio di oggi (UTC). */
+/**
+ * Gli id che la home spedisce: le prime righe di «tutti», «calcio», «tennis» e il gap più ampio di oggi (UTC).
+ * fixdata B1: solo partite non ancora iniziate (quelle iniziate stanno in «Live now»), scelte col criterio
+ * dichiarato in pagina — livello di rilevanza (top campionati, ATP/WTA, altro calcio, altro tennis), poi orario:
+ * lo stesso ordinamento del client (Board.tsx), quindi la home mostra esattamente le righe spedite.
+ */
 function homeCut(board: V3BoardResponse, now: Date): Set<string> {
   const open = (k: string) => Date.parse(k) > now.getTime() - OPEN_AFTER_KICKOFF_MS;
-  const fb = board.matches.filter((m) => open(m.kickoff)).map((m) => ({ id: m.id, k: m.kickoff }));
-  const tn = (board.tennis ?? []).filter((m) => open(m.kickoff)).map((m) => ({ id: `tn:${m.id}`, k: m.kickoff }));
-  const byTime = (a: { k: string }, b: { k: string }) => Date.parse(a.k) - Date.parse(b.k);
+  const upcoming = (k: string) => !hasStarted(k, now);
+  const fb = board.matches.filter((m) => upcoming(m.kickoff)).map((m) => ({ id: m.id, rid: m.id, kickoff: m.kickoff, relevance: m.relevance }));
+  const tn = (board.tennis ?? []).filter((m) => upcoming(m.kickoff)).map((m) => ({ id: m.id, rid: `tn:${m.id}`, kickoff: m.kickoff, relevance: m.relevance }));
   const ids = new Set<string>();
-  for (const list of [[...fb, ...tn].sort(byTime), fb.sort(byTime), tn.sort(byTime)]) for (const x of list.slice(0, HOME_ROWS)) ids.add(x.id);
+  for (const list of [[...fb, ...tn].sort(byRelevance), fb.sort(byRelevance), tn.sort(byRelevance)]) for (const x of list.slice(0, HOME_ROWS)) ids.add(x.rid);
   const today = now.toISOString().slice(0, 10);
   let best: { id: string; g: number } | null = null;
   for (const m of board.matches) {
@@ -113,11 +121,14 @@ async function BoardBlock({ surface, nowIso, sport }: { surface: Surface; nowIso
   if (!b.ok) return <BoardError />;
   const board = forSurface(b.data, surface, new Date(nowIso));
   // final2: the first live read on the server (only around kick-off, ≤ SEED_WAIT_MS): «Live now» and the row scores are in the HTML, no CLS
-  const liveFirst = await liveSeed([...board.matches.map((m) => m.kickoff), ...(board.tennis ?? []).map((m) => m.kickoff)], new Date(nowIso));
+  // fixdata A3: the WHOLE board decides whether to read live scores (the home ships only its next rows, none started)
+  const kickoffs = [...b.data.matches.map((m) => m.kickoff), ...(b.data.tennis ?? []).map((m) => m.kickoff)];
+  const liveFirst = await liveSeed(kickoffs, new Date(nowIso));
+  const liveHint = kickoffs.some((k) => wantsLive(k, new Date(nowIso)));
   const yesterday = y.ok ? { day: y.data.day, football: y.data.football, tennis: y.data.tennis } : null;
   // fidelity: il tape «open → now» di ogni riga, dai dati veri (partner_price_history)
   const tapes = await boardTapes(board.matches, board.tennis ?? []);
-  return <Board tapes={tapes} board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} liveSeed={liveFirst} initialFilters={sport ? { sport } : undefined} />;
+  return <Board tapes={tapes} board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} liveSeed={liveFirst} initialFilters={sport ? { sport } : undefined} liveHint={liveHint} />;
 }
 
 async function BenchBlock({ nowIso }: { nowIso: string }) {

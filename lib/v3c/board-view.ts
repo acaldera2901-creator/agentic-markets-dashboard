@@ -6,6 +6,7 @@
 // partita con il conto alla rovescia → la revisione di ieri.
 import type { Outcome, V3BoardMatch, V3BoardOutcome, V3BoardTennisMatch, V3BoardTennisSide, V3BookPrice } from "./contracts";
 import { FLAT_PP, formatSigned } from "./scale";
+import { byRelevance, hasStarted } from "./fixdata";
 
 export type SportFilter = "all" | "football" | "tennis";
 export type DayFilter = "all" | "next" | string; // "all" | "next" (il primo giorno con righe, risolto dalla board) | YYYY-MM-DD (nel fuso scelto)
@@ -131,10 +132,12 @@ export function topShared(o: { best_price: V3BookPrice | null; book_prices: V3Bo
   return o.book_prices.filter((b) => Math.round(b.price * 100) === Math.round(top.price * 100) && !seen.has(b.bookmaker) && seen.add(b.bookmaker));
 }
 
-export function footballRows(matches: V3BoardMatch[], timeZone?: string): BoardRowVM[] {
+/** fixdata B1: with `now`, a match that has started has no best price (the page may have been open since before the start). */
+export function footballRows(matches: V3BoardMatch[], timeZone?: string, now?: Date): BoardRowVM[] {
   return matches.map((m) => {
     const lead = leadOutcome(m);
-    return { kind: "football", m, lead, others: m.outcomes.filter((o) => o !== lead), best: bestOf(lead), day: dayKey(m.kickoff, timeZone) };
+    const best = now && hasStarted(m.kickoff, now) ? null : bestOf(lead);
+    return { kind: "football", m, lead, others: m.outcomes.filter((o) => o !== lead), best, day: dayKey(m.kickoff, timeZone) };
   });
 }
 
@@ -148,11 +151,34 @@ export function tennisLead(m: V3BoardTennisMatch): V3BoardTennisSide {
   return m.sides.find((x) => x.side === m.focus) ?? m.sides[0];
 }
 
-export function tennisRows(matches: V3BoardTennisMatch[], timeZone?: string): TennisRowVM[] {
+export function tennisRows(matches: V3BoardTennisMatch[], timeZone?: string, now?: Date): TennisRowVM[] {
   return matches.map((m) => {
     const lead = tennisLead(m);
-    return { kind: "tennis", m, lead, best: bestOf(lead), day: dayKey(m.kickoff, timeZone) };
+    const best = now && hasStarted(m.kickoff, now) ? null : bestOf(lead);
+    return { kind: "tennis", m, lead, best, day: dayKey(m.kickoff, timeZone) };
   });
+}
+
+/** fixdata B1: the board order — relevance tier (lib/v3c/fixdata.ts), then kick-off. */
+export function sortByRelevance<T extends BoardRowVM | TennisRowVM>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => byRelevance(a.m, b.m));
+}
+
+/**
+ * fixdata B1: the groups of the board, in order. A match that has started is never in a day group
+ * (that is the pre-match list): «live» when the live feed has its score, «started» otherwise (no
+ * price, no CTA). Days stay chronological; inside a day, relevance tier then kick-off.
+ */
+export function boardGroups<T extends BoardRowVM | TennisRowVM>(rows: T[], now: Date, hasLive: (id: string) => boolean): { day: string; rows: T[] }[] {
+  const started = rows.filter((r) => hasStarted(r.m.kickoff, now));
+  const live = started.filter((r) => hasLive(r.m.id));
+  const rest = started.filter((r) => !hasLive(r.m.id));
+  const days = groupByDay(rows.filter((r) => !hasStarted(r.m.kickoff, now))).map((g) => ({ day: g.day, rows: sortByRelevance(g.rows) }));
+  return [
+    ...(live.length ? [{ day: "live", rows: live }] : []),
+    ...(rest.length ? [{ day: "started", rows: rest }] : []),
+    ...days,
+  ];
 }
 
 export function leagueOf(m: V3BoardMatch): string {

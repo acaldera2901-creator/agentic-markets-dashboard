@@ -110,5 +110,7 @@ export type V3LiveResponse = {
   degraded: boolean;
   /** keyed by board id (match_predictions / tennis_predictions match_id) */
   items: Record<string, V3LiveItem>;
+  /** fixdata (A3): who plays, for every key of `items` — «Live now» lists every live match, not only the rows a page carries */
+  names?: Record<string, { sport: "football" | "tennis"; home: string; away: string; league: string | null }>;
   coverage: { football: V3LiveCoverage; tennis: V3LiveCoverage; failed_feeds: string[] };
 };

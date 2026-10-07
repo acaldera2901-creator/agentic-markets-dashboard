@@ -44,6 +44,8 @@ function pcMatches(board: V3BoardResponse, now: Date, max = 80): PcMatch[] {
       league: m.competition || m.league,
       blend: m.blend != null,
       links: readBookLinks(m),
+      // fixdata B5: the model sanity guard travels with the match (no EV/Kelly when it is not «ok»)
+      guard: m.model_guard?.level ?? "ok",
       outcomes: m.outcomes.map((o) => ({ outcome: o.outcome, market_price: o.market_price, estimate_p: o.estimate_p, book_prices: o.book_prices })),
     }));
   const tennis: PcMatch[] = (board.tennis ?? [])

@@ -51,6 +51,8 @@ import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 import { newsCopyFor } from "@/lib/v3c/news-copy";
 import type { NewsCard } from "@/lib/v3c/news/news.server";
 import { noteText } from "../pages/NewsLive";
+import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { hasStarted, valueToolsAllowed, zoneAbbr } from "@/lib/v3c/fixdata";
 
 const BOOK_NAME: Record<string, string> = { fortuneplay: "FortunePlay", ybets: "YBets" };
 const bookName = (k: string) => BOOK_NAME[k] ?? k;
@@ -417,17 +419,30 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
   const E = pct0(lead.estimate_p);
   const g = lead.edge_pp;
   const dir = g == null ? "flat" : gapDirection(g);
-  const books = bookList(lead.book_prices, [...readBookLinks(m), ...links]);
+  const fc = fixdataCopyFor(lang);
+  // fixdata B1: once the match has started, no book, no best price, no partner button
+  const started = hasStarted(m.kickoff, new Date());
+  const books = started ? [] : bookList(lead.book_prices, [...readBookLinks(m), ...links]);
   const chk = checkedAt(books);
   const prices = m.outcomes.map((o) => o.market_price);
+  // fixdata B5/M5: EV and Kelly only when the model passes the sanity guard, and on the BEST price a book
+  // really offers (with its link), never on the composite «market» price; Kelly as a fraction, no stake in €
+  const bestP = started ? null : bestOf(lead);
+  const valueOk = valueToolsAllowed(m) && bestP != null;
   const strip =
     hasMarket && prices.every((p) => p != null)
       ? toolStrip([
-          { slug: "ev-calculator", values: { price: lead.market_price, prob: E } },
-          { slug: "kelly-criterion", values: { price: lead.market_price, prob: E, bank: 500 } },
+          ...(valueOk
+            ? ([
+                { slug: "ev-calculator", values: { price: bestP!.price, prob: E } },
+                { slug: "kelly-criterion", values: { price: bestP!.price, prob: E, bank: null } },
+              ] as const)
+            : []),
           { slug: "margin-calculator", values: pricesAsInputs(prices) },
         ])
       : null;
+  const guard = m.model_guard?.level ?? "ok";
+  const priceTime = (iso: string) => `${timeHM(iso, ctx.tz, locale)} ${zoneAbbr(iso, ctx.tz, locale)}`.trim();
   const choices: TapeChoice[] = m.outcomes.map((o) => ({ key: o.outcome, label: label(o.outcome), fair: fairPrice(o.estimate_p) }));
   return (
     <>
@@ -456,7 +471,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           <div>
             <span className="v3c-lab">
               {c.estimate}
-              <small>{m.blend ? c.estimateBlend : c.estimateModel}</small>
+              <small>{guard === "market_only" ? t.tennis.marketOnly : m.blend ? c.estimateBlend : c.estimateModel}</small>
             </span>
             <b className="v3c-n-score">
               <mark>
@@ -466,7 +481,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
             </b>
           </div>
           {g != null ? (
-            <div className={["v3c-mt-gap", isFlatGap(g) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
+            <div className={["v3c-mt-gap", isFlatGap(g) || guard !== "ok" ? "v3c-g-flat" : null].filter(Boolean).join(" ")} data-guard={guard}>
               <span className="v3c-lab">
                 {c.gap}
                 <small>{c.gapSub}</small>
@@ -478,7 +493,10 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
             </div>
           ) : null}
         </div>
-        {hasMarket && M != null ? (
+        {hasMarket && M != null && guard === "market_only" ? (
+          // fixdata B5: the estimate shown is the market — no «our estimate» sentence, no blend line, no tape of a gap
+          <p className="v3c-mt-note v3c-guard-note" data-guard={guard}>{fc.marketOnly}</p>
+        ) : hasMarket && M != null ? (
           <>
             <p className="v3c-explain">{c.explain(L, price2(lead.market_price), M, E, Math.abs(g ?? 0).toFixed(1), dir)}</p>
             <p className="v3c-pn-facts v3c-small" style={{ marginTop: 6, display: "flex", gap: "4px 14px", flexWrap: "wrap" }}>
@@ -487,6 +505,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               <span>{t.board.estimateAsOf(sealedStamp(m.estimate_as_of, locale))}</span>
             </p>
             <Nastro market={M} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
+            {guard === "no_value" ? <p className="v3c-mt-note v3c-guard-note" data-guard={guard}>{fc.noValue}</p> : null}
           </>
         ) : (
           <p className="v3c-mt-note">{c.noMarketLong}</p>
@@ -539,7 +558,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
           })}
         </div>
         <p className="v3c-fine" style={{ marginTop: 10 }}>
-          {c.wrongN(E)}
+          {c.wrongN(E)} {g != null ? <span className="v3c-gap-round">{fc.gapRounding}</span> : null}
         </p>
       </section>
 
@@ -567,14 +586,34 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               <SealItem ctx={ctx} n={(summary ? 3 : 2) + (news[0] ? 1 : 0)} sealedAt={m.sealed_at} />
             </ol>
           )}
-          strip={strip ? <ToolStrip title={c.strip(L, price2(lead.market_price))} all={c.allTools} items={strip} lang={lang} /> : null}
+          strip={
+            strip ? (
+              <>
+                <ToolStrip title={c.strip(L, price2(valueOk ? bestP!.price : lead.market_price))} all={c.allTools} items={strip} lang={lang} />
+                {valueOk ? (
+                  <p className="v3c-fine v3c-kelly-note">
+                    {fc.bestBasis(price2(bestP!.price), bestP!.name)} {fc.kellyNote}
+                  </p>
+                ) : guard === "no_value" ? (
+                  <p className="v3c-fine v3c-kelly-note">{fc.noValue}</p>
+                ) : null}
+              </>
+            ) : null
+          }
         />
       </section>
 
       <section className="v3c-mt-step" aria-labelledby="v3c-s3">
         <StepHead n={3} id="v3c-s3" title={c.s3} />
         <div className="v3c-cols v3c-cols-8-4">
-          <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={L} books={books} checked={chk ? timeHM(chk, ctx.tz, locale) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={(iso) => timeHM(iso, ctx.tz, locale)} />
+          {started ? (
+            <section className="v3c-partner v3c-mt-partner" aria-labelledby="v3c-mt-p">
+              <h2 className="v3c-t-sec" id="v3c-mt-p">{fc.startedGroup}</h2>
+              <p className="v3c-fine">{fc.startedNote}</p>
+            </section>
+          ) : (
+            <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={L} books={books} checked={chk ? priceTime(chk) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={priceTime} />
+          )}
           <div className="v3c-mt-side">
             <Link className="v3c-btn v3c-btn-line v3c-btn-s" href={`/price-check?m=${encodeURIComponent(m.id)}`}>
               {c.pcBridge}
@@ -599,7 +638,10 @@ const pctOrDash = (p: number | null | undefined) => (p == null ? "—" : `${pctI
 function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m: V3BoardTennisMatch; series: V3LineSeries[] | null; events: LineEvent[]; partners: boolean; links: V3BookLink[]; more: MoreRow[] }) {
   const { t, c, lang, locale } = ctx;
   const lead: V3BoardTennisSide = tennisLead(m);
-  const books = bookList(lead.book_prices, [...readBookLinks(m), ...links]);
+  // fixdata B1: once the match has started, no book, no best price, no partner button
+  const started = hasStarted(m.kickoff, new Date());
+  const books = started ? [] : bookList(lead.book_prices, [...readBookLinks(m), ...links]);
+  const priceTime = (iso: string) => `${timeHM(iso, ctx.tz, locale)} ${zoneAbbr(iso, ctx.tz, locale)}`.trim();
   const chk = checkedAt(books);
   const sidePrices = m.sides.map((s) => s.market_price ?? bestOf(s)?.price ?? null);
   const leadPrice = sidePrices[m.sides.indexOf(lead)];
@@ -615,6 +657,10 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   const asOf = m.market_source?.as_of ?? m.estimate_as_of;
   const est = tennisEstimateOf(m, lead.side);
   const elo = est.kind === "elo_blend_unsealed" && est.estimate != null && lead.market_p != null;
+  // fixdata B8: a sealed row of OUR model (tempered Elo): the sealed number and its gap against the book before the seal
+  const fc = fixdataCopyFor(lang);
+  // (QA B8: the model_tempered branch only — the ui3 rule «no estimate of ours in tennis» stays for every other kind)
+  const sealedOurs = m.probability_kind === "model_tempered" && m.sealed_at != null && lead.sealed_p != null;
   return (
     <>
       <Head ctx={ctx} tab={c.tabTennis} id={m.id} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
@@ -677,9 +723,50 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
               <Nastro className="v3c-gl-tn" market={pct0(lead.market_p as number)} estimate={pct0(est.estimate as number)} gap={est.gap} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} />
             ) : null}
           </>
-        ) : (
+        ) : sealedOurs ? null : (
           <p className="v3c-mt-note">{t.tennis.noEstimate}</p>
         )}
+        {sealedOurs ? (
+          <div className="v3c-mt-sealed" data-sealed-gap={lead.gap_pp != null ? "yes" : "no"}>
+            <div className="v3c-mt-score">
+              <div>
+                <span className="v3c-lab">
+                  {fc.sealedElo}
+                  <small>{fc.sealedAt(sealedStamp(m.sealed_at as string, locale))}</small>
+                </span>
+                <b className="v3c-n-score">
+                  {pctInt(lead.sealed_p)}
+                  <i>%</i>
+                </b>
+              </div>
+              {lead.gap_pp != null && lead.market_p_at_seal != null && m.gap_market ? (
+                <>
+                  <div>
+                    <span className="v3c-lab">
+                      {c.market}
+                      <small>{fc.marketAtSeal(bookName(m.gap_market.bookmaker), sealedStamp(m.gap_market.captured_at, locale))}</small>
+                    </span>
+                    <b className="v3c-n-score v3c-m">
+                      {pctInt(lead.market_p_at_seal)}
+                      <i>%</i>
+                    </b>
+                  </div>
+                  <div className="v3c-mt-gap v3c-g-tn">
+                    <span className="v3c-lab">
+                      {c.gap}
+                      <small>{c.gapSub}</small>
+                    </span>
+                    <b className="v3c-n-score">
+                      {gapText(lead.gap_pp)}
+                      <i> pp</i>
+                    </b>
+                  </div>
+                </>
+              ) : null}
+            </div>
+            <p className="v3c-fine">{lead.gap_pp != null ? fc.sealedGapNote : m.gap_null_reason}</p>
+          </div>
+        ) : null}
         <div className={["v3c-mt-out", elo ? "v3c-mt-out-tn5" : "v3c-mt-out-tn3"].join(" ")} role="table" aria-label={t.tennis.winner}>
           <div className="v3c-mt-oh" role="row" lang={v3cLang(lang)}>
             <span className="v3c-lab" role="columnheader">
@@ -754,11 +841,12 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
               <li>
                 <span className="k">{summary ? 2 : 1}</span>
                 <div>
-                  <h3>{elo ? c.tnEloWhyTitle : c.tnWhyTitle}</h3>
-                  <p>{elo ? c.tnEloWhyBody : c.tnWhyBody}</p>
+                  {/* fixdata B8: a sealed row of our tempered Elo is not «market only» and its seal is not market-based */}
+                  <h3>{sealedOurs ? fc.sealedElo : elo ? c.tnEloWhyTitle : c.tnWhyTitle}</h3>
+                  <p>{sealedOurs ? fc.sealedGapNote : elo ? c.tnEloWhyBody : c.tnWhyBody}</p>
                 </div>
               </li>
-              <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} tennis />
+              <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} tennis={!sealedOurs} />
             </ol>
           )}
           strip={strip ? <ToolStrip title={c.stripTennis} all={c.allTools} items={strip} lang={lang} /> : null}
@@ -768,7 +856,14 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
       <section className="v3c-mt-step" aria-labelledby="v3c-s3">
         <StepHead n={3} id="v3c-s3" title={c.s3} />
         <div className="v3c-cols v3c-cols-8-4">
-          <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={lead.player} books={books} checked={chk ? timeHM(chk, ctx.tz, locale) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={(iso) => timeHM(iso, ctx.tz, locale)} />
+          {started ? (
+            <section className="v3c-partner v3c-mt-partner" aria-labelledby="v3c-mt-p">
+              <h2 className="v3c-t-sec" id="v3c-mt-p">{fc.startedGroup}</h2>
+              <p className="v3c-fine">{fc.startedNote}</p>
+            </section>
+          ) : (
+            <PartnerBlock id="v3c-mt-p" title={c.bestAmong(books.filter((b) => b.price != null).length)} label={lead.player} books={books} checked={chk ? priceTime(chk) : null} partners={partners} surface="match" c={c} age={t.foot.age} timeOf={priceTime} />
+          )}
           <div className="v3c-mt-side">
             <Link className="v3c-btn v3c-btn-line v3c-btn-s" href={`/price-check?m=${encodeURIComponent(m.id)}`}>
               {c.pcBridge}

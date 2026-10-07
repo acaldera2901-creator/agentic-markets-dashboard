@@ -297,6 +297,8 @@ async function addFallbacks(out: V3LiveResponse, rows: readonly LiveRow[], now: 
     sources,
     degraded: sources.some((x) => x.state === "degraded"),
     items,
+    // fixdata A3: the names of every item, so «Live now» can list every live match (the home ships only its first rows)
+    names: Object.fromEntries(rows.filter((r) => items[r.id]).map((r) => [r.id, { sport: r.sport, home: r.home, away: r.away, league: r.league }])),
     coverage: { ...out.coverage, football: cov, failed_feeds: [...failed] },
   };
 }

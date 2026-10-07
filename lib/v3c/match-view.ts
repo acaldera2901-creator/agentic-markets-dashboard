@@ -8,6 +8,7 @@
 // Dal vecchio sito (MatchDetailSheet/PredictionDetailModal) si prende solo ciò
 // che è dato o funzione: l'ordine dei partner (sortBooksForMenu) e il
 // tracciamento dei click — non il JSX.
+import { inputProblem } from "./fixdata";
 import { bookmakerMargin, noVigProbabilities } from "@/lib/betting-math";
 import { sortBooksForMenu } from "@/lib/partners";
 import { toolPath, type ToolSlug } from "@/lib/tools/registry";
@@ -212,7 +213,8 @@ export type PriceCheck = {
 
 /** null se un prezzo non è una quota decimale > 1. */
 export function checkPrices(prices: readonly (number | null)[], estimates: readonly (number | null)[] = []): PriceCheck | null {
-  if (prices.length < 2 || prices.some((p) => p == null || !Number.isFinite(p) || p <= 1)) return null;
+  // fixdata M4: a price is 1.01–1000 (no 11-digit percentages from 999999999)
+  if (prices.length < 2 || prices.some((p) => inputProblem("price", p) != null)) return null;
   const ps = prices as number[];
   const nv = noVigProbabilities(ps);
   const mg = bookmakerMargin(ps);
@@ -243,7 +245,10 @@ export type StripItem = { slug: ToolSlug; sigla: string; result: ToolResult | nu
 export function toolStrip(items: readonly { slug: ToolSlug; values: ToolValues }[]): StripItem[] {
   return items.map(({ slug, values }) => {
     const def = toolDef(slug);
-    const result = def.compute(values)[0] ?? null;
+    // fixdata B5: Kelly without a bankroll = the fraction only, never a stake in € (the bankroll is the visitor's, in the tool)
+    const noBank = slug === "kelly-criterion" && values.bank == null;
+    const r0 = (noBank ? def.compute({ ...values, bank: 1 }) : def.compute(values))[0] ?? null;
+    const result = r0 && noBank ? { ...r0, value: r0.value.split(" · ")[0] } : r0;
     const sp = new URLSearchParams();
     for (const i of def.inputs) {
       const x = values[i.key];

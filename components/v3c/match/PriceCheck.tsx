@@ -20,11 +20,16 @@ import { PartnerBlock } from "./PartnerBlock";
 import { ToolStrip } from "./ToolStrip";
 import "../tennis2.css";
 import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
+import type { ModelGuardLevel } from "@/lib/v3c/fixdata";
+import { PRICE_MAX, PRICE_MIN, inputProblem, zoneAbbr } from "@/lib/v3c/fixdata";
+import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
 
 /** tennis2: estimate_p nel tennis = la stima basata su Elo (0,1·Elo + 0,9·mercato) dove c'è, altrimenti null (solo mercato). */
 export type PcOutcome = { outcome: Outcome; market_price: number | null; estimate_p: number | null; book_prices: V3BookPrice[] };
 /** tennis2: `tnElo` = partita tennis con estimate_kind 'elo_blend_unsealed'; `gapHidden` = |Elo − mercato| > 25 pp */
-export type PcMatch = { id: string; sport: "football" | "tennis"; home: string; away: string; kickoff: string; league: string | null; blend: boolean; outcomes: PcOutcome[]; links: V3BookLink[]; tnElo?: boolean; gapHidden?: boolean };
+export type PcMatch = { id: string; sport: "football" | "tennis"; home: string; away: string; kickoff: string; league: string | null; blend: boolean; outcomes: PcOutcome[]; links: V3BookLink[]; tnElo?: boolean; gapHidden?: boolean;
+  /** fixdata B5: the model sanity guard of the match (lib/v3c/fixdata.ts); not «ok» → no EV, Kelly or stake */
+  guard?: ModelGuardLevel };
 
 const fmt2 = (n: number | null) => (n == null ? "" : n.toFixed(2));
 
@@ -91,7 +96,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
   const g = chk?.gaps[li] ?? null;
   const strip =
     chk && leadPrice != null
-      ? withEst && !tnEst && E != null
+      ? withEst && !tnEst && E != null && (m?.guard ?? "ok") === "ok"
         ? toolStrip([
             { slug: "ev-calculator", values: { price: leadPrice, prob: E } },
             { slug: "kelly-criterion", values: { price: leadPrice, prob: E, bank } },
@@ -161,7 +166,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
               min="1.01"
               name={`p${i + 1}`}
               value={raw[i] ?? ""}
-              aria-invalid={raw[i]?.trim() !== "" && !(parsePrice(raw[i]) != null && (parsePrice(raw[i]) as number) > 1)}
+              aria-invalid={raw[i]?.trim() !== "" && inputProblem("price", parsePrice(raw[i])) != null}
               onChange={(e) => setRaw((r) => r.map((x, j) => (j === i ? e.target.value : x)))}
             />
           </label>
@@ -170,7 +175,9 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
 
       <section aria-live="polite">
         {!chk ? (
-          <p className="v3c-pc-err">{c.pc.invalid}</p>
+          <p className="v3c-pc-err">
+            {c.pc.invalid} {fixdataCopyFor(lang).toolErrRange(new Intl.NumberFormat(locale).format(PRICE_MIN), new Intl.NumberFormat(locale).format(PRICE_MAX))}
+          </p>
         ) : (
           <>
             {withEst && !tnEst && E != null && g != null ? (
@@ -233,6 +240,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
             {withEst && E != null && !tnGapHidden ? <Nastro className={tnEst ? "v3c-gl-tn" : undefined} market={Math.round(chk.noVig[li])} estimate={E} gap={g} marketLabel={c.market} estimateLabel={c.estimate} inLineLabel={t.board.inLine} gapLabel={t.board.gapWord} /> : null}
             <p className="v3c-fine">{tnEst ? c.pc.fineTennisElo : withEst ? c.pc.fine : m ? c.pc.fineTennis : c.pc.fineNoEst}</p>
             {tnEst ? <p className="v3c-fine v3c-tn-caveat">{tnGapHidden ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat}</p> : null}
+            {m && (m.guard ?? "ok") !== "ok" ? <p className="v3c-fine v3c-guard-note" data-guard={m.guard}>{m.guard === "market_only" ? fixdataCopyFor(lang).marketOnly : fixdataCopyFor(lang).noValue}</p> : null}
           </>
         )}
       </section>
@@ -244,7 +252,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
           items={strip}
           lang={lang}
           bank={
-            withEst && !tnEst && E != null ? (
+            withEst && !tnEst && E != null && (m?.guard ?? "ok") === "ok" ? (
               <label className="v3c-pc-bank">
                 <span className="v3c-lab">{c.pc.bankroll}</span>
                 <input type="number" inputMode="decimal" min="1" step="10" value={bankRaw} onChange={(e) => setBankRaw(e.target.value)} />
@@ -261,7 +269,7 @@ export function PriceCheck({ matches, initialId, partners, landing = [] }: { mat
               {c.pc.youBeat(leadPrice.toFixed(2))}
             </p>
           ) : null}
-          <PartnerBlock id="v3c-pc-p" title={c.pc.partnerTitle} label={labels[li]} books={books} checked={checked ? timeHM(checked, tz, locale) : null} partners={partners} surface="price_check" c={c} age={t.foot.age} timeOf={(iso) => timeHM(iso, tz, locale)} />
+          <PartnerBlock id="v3c-pc-p" title={c.pc.partnerTitle} label={labels[li]} books={books} checked={checked ? `${timeHM(checked, tz, locale)} ${zoneAbbr(checked, tz, locale)}` : null} partners={partners} surface="price_check" c={c} age={t.foot.age} timeOf={(iso) => `${timeHM(iso, tz, locale)} ${zoneAbbr(iso, tz, locale)}`} />
           <p className="v3c-small" style={{ marginTop: 10 }}>
             <Link href={matchHref(m.id)}>{c.pc.openMatch}</Link>
           </p>

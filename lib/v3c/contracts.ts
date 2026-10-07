@@ -16,6 +16,7 @@
 
 import type { BookStatus, PartnerDirEntry } from "@/lib/price-books";
 import type { TennisEstimateKind } from "./tennis-estimate";
+import type { ModelGuard } from "./fixdata";
 
 export type Outcome = "home" | "draw" | "away";
 
@@ -89,6 +90,13 @@ export type V3BoardMatch = {
   outcomes: V3BoardOutcome[];
   /** every partner, with oddsAvailable + reason (F7). Optional in the type for older fixtures; the board always fills it. */
   books?: V3BookStatus[];
+  /** fixdata: 0 top-league football · 1 ATP/WTA · 2 other football · 3 other tennis (lib/v3c/fixdata.ts relevanceTier) */
+  relevance?: number;
+  /**
+   * fixdata (B5): |raw model − market| at its widest outcome. no_value (> 15 pp): no EV, Kelly, stake or edge badge;
+   * market_only (> 25 pp): estimate_p = market_p and edge_pp = 0 («Market only»). model_p keeps the raw model.
+   */
+  model_guard?: ModelGuard;
 };
 
 // ─── tennis (shared by board, record, calibration) ──────────────────────────
@@ -187,6 +195,8 @@ export type V3BoardTennisMatch = {
   gap_pp?: { p1: number; p2: number } | null;
   /** false when |Elo − market| > 25 pp, the Elo is > 6 h old, or the circuit is not covered */
   gap_visible?: boolean;
+  /** fixdata: see V3BoardMatch.relevance */
+  relevance?: number;
 };
 
 export type V3BoardResponse = {

@@ -17,9 +17,9 @@ import {
   dayShort,
   daysOf,
   emptyCascade,
+  boardGroups,
   footballRows,
   gapText,
-  groupByDay,
   dayLong,
   leaguesOf,
   leagueOf,
@@ -47,6 +47,8 @@ import { wantsLive } from "@/lib/v3c/live-view";
 import type { V3LiveResponse } from "@/lib/v3c/live-contract";
 import { useLiveScores } from "../live/useLiveScores";
 import { LiveAnnouncer, LiveNow } from "../live/LiveBits";
+import { fixdataCopyFor } from "@/lib/v3c/fixdata-copy";
+import { byRelevance, hasStarted } from "@/lib/v3c/fixdata";
 
 type Props = {
   /** polish: il server spedisce la board compatta (lib/v3c/board-pack), qui torna identica */
@@ -73,6 +75,8 @@ type Props = {
   yesterday: { day: string; football: V3DaySummary; tennis: V3DaySummary } | null;
   /** fidelity: il tape «open → now» per id partita (solo le righe con ≥ 2 catture vere) */
   tapes?: Record<string, RowTape>;
+  /** fixdata A3: the server saw a match around kick-off on the WHOLE board (the home ships only its first rows): poll /api/v3/live */
+  liveHint?: boolean;
 };
 
 type Row = BoardRowVM | TennisRowVM;
@@ -100,7 +104,7 @@ function useNow(initialIso: string, frozen = false): Date {
   return useMemo(() => new Date(min * 60_000), [min]);
 }
 
-export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow, tapes, liveSeed = null }: Props) {
+export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow, tapes, liveSeed = null, liveHint = false }: Props) {
   const { lang, t } = useV3cCopy();
   const board = useMemo(() => (isPacked(boardIn) ? unpackBoard(boardIn) : boardIn), [boardIn]);
   const locale = v3cLocale(lang);
@@ -115,14 +119,17 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
   const [pages, setPages] = useState(1);
 
   // Le righe: le partite già finite (oltre la finestra live) restano fuori anche se il payload le porta ancora.
+  // fixdata B1: rows built with `now` (a started match has no best price); started first, then day → relevance → kick-off
   const all: Row[] = useMemo(() => {
-    const rows: Row[] = [...footballRows(board.matches, tz), ...tennisRows(board.tennis ?? [], tz)];
-    return rows.sort((a, b) => Date.parse(a.m.kickoff) - Date.parse(b.m.kickoff) || a.m.id.localeCompare(b.m.id));
-  }, [board, tz]);
+    const rows: Row[] = [...footballRows(board.matches, tz, now), ...tennisRows(board.tennis ?? [], tz, now)];
+    const started = (r: Row) => (hasStarted(r.m.kickoff, now) ? 0 : 1);
+    return rows.sort((a, b) => started(a) - started(b) || (started(a) === 0 ? Date.parse(a.m.kickoff) - Date.parse(b.m.kickoff) : a.day.localeCompare(b.day) || byRelevance(a.m, b.m)));
+  }, [board, tz, now]);
+  const fc = fixdataCopyFor(lang);
 
   // livescores: GET /api/v3/live solo se c'è una partita intorno al calcio d'inizio (e mai su /dev/ds)
   const lc = liveCopyFor(lang);
-  const liveOn = !frozenNow && all.some((r) => wantsLive(r.m.kickoff, now));
+  const liveOn = !frozenNow && (liveHint || all.some((r) => wantsLive(r.m.kickoff, now)));
   const names = useMemo(() => new Map(all.map((r) => [r.m.id, sidesOf(r.m)] as const)), [all]);
   const live = useLiveScores(liveOn, (id) => names.get(id) ?? null, lc, liveSeed);
 
@@ -140,20 +147,22 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
   );
   // «Oggi» comprende le partite ancora in corso iniziate ieri sera (ora locale)
   const filtered = useMemo(() => {
+    // fixdata B1: the home lists the next matches only — the started ones are in «Live now» (/api/v3/live) and on /predictions;
+    // the choice is the declared one: relevance tier, then kick-off (the same rule as the server's homeCut)
+    if (limit) return applyFilters(all, effective).filter((r) => !hasStarted(r.m.kickoff, now)).sort((a, b) => byRelevance(a.m, b.m));
     const rows = applyFilters(all, effective);
     if (effective.day !== today) return rows;
     const live = applyFilters(all, { ...effective, day: "all" }).filter((r) => r.day < today && liveState(r.m.kickoff, now).live);
     return [...live, ...rows];
-  }, [all, effective, today, now]);
+  }, [all, effective, today, now, limit]);
   const visible = limit ?? pages * BOARD_PAGE_ROWS;
   const shown = filtered.slice(0, visible);
   const more = Math.min(BOARD_PAGE_ROWS, filtered.length - shown.length);
-  // le partite in corso stanno in testa, in un gruppo loro: «ieri sera» non è un giorno della board
-  const liveRows = shown.filter((r) => liveState(r.m.kickoff, now).live);
-  const groups = [
-    ...(liveRows.length ? [{ day: "live", rows: liveRows }] : []),
-    ...groupByDay(shown.filter((r) => !liveState(r.m.kickoff, now).live)),
-  ];
+  // fixdata B1: le partite iniziate non sono mai nella lista pre-partita: «Live» se la fonte ha il punteggio, «Iniziate» altrimenti
+  const groups = boardGroups(shown, now, (id) => {
+    const it = live.items[id];
+    return !!it && it.state !== "pre";
+  });
   const nFootball = all.filter((r) => r.kind === "football").length;
   const nTennis = all.length - nFootball;
 
@@ -170,7 +179,7 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
     }
   };
 
-  const dayName = (d: string) => (d === "live" ? t.board.liveGroup : d === today ? t.toolbar.today : d === tomorrow ? t.toolbar.tomorrow : dayShort(`${d}T12:00:00Z`, "UTC", locale));
+  const dayName = (d: string) => (d === "live" ? t.board.liveGroup : d === "started" ? fc.startedGroup : d === today ? t.toolbar.today : d === tomorrow ? t.toolbar.tomorrow : dayShort(`${d}T12:00:00Z`, "UTC", locale));
 
   return (
     <div className="v3c-board-w" data-surface={surface}>
@@ -178,7 +187,11 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
         <LiveNow
           c={lc}
           feed={live}
-          rows={all.map((r) => ({ id: r.m.id, sport: r.kind, home: sidesOf(r.m)[0], away: sidesOf(r.m)[1], league: r.kind === "football" ? leagueOf(r.m) : r.m.tournament }))}
+          rows={[
+            ...all.map((r) => ({ id: r.m.id, sport: r.kind, home: sidesOf(r.m)[0], away: sidesOf(r.m)[1], league: r.kind === "football" ? leagueOf(r.m) : r.m.tournament })),
+            // fixdata A3: every live match of /api/v3/live, also those the home does not carry
+            ...Object.entries(live.names ?? {}).filter(([id]) => !names.has(id)).map(([id, n]) => ({ id, sport: n.sport, home: n.home, away: n.away, league: n.league })),
+          ]}
         />
       ) : null}
       <LiveAnnouncer text={live.announce} />
@@ -278,13 +291,14 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
             }} onReset={() => set(DEFAULT_FILTERS)} surface={surface} />
         ) : (
           groups.map((g) => (
-            <div key={g.day} id={g.day === "live" && surface === "predictions" ? "live" : undefined} style={g.day === "live" ? { scrollMarginTop: 24 } : undefined} className="v3c-group" role="group" aria-label={g.day === "live" ? t.board.liveGroup : dayLong(`${g.day}T12:00:00Z`, "UTC", locale)}>
+            <div key={g.day} id={g.day === "live" && surface === "predictions" ? "live" : undefined} style={g.day === "live" ? { scrollMarginTop: 24 } : undefined} className="v3c-group" data-group={g.day === "live" || g.day === "started" ? g.day : "day"} role="group" aria-label={g.day === "live" ? t.board.liveGroup : g.day === "started" ? fc.startedGroup : dayLong(`${g.day}T12:00:00Z`, "UTC", locale)}>
               {groups.length > 1 || surface === "predictions" ? (
                 <div className="v3c-group-h">
                   <h2 className="v3c-t-day">{dayName(g.day)}</h2>
                   <span className="v3c-small">{t.board.group(g.rows.length)}</span>
                 </div>
               ) : null}
+              {g.day === "started" ? <p className="v3c-fine v3c-started-note">{fc.startedNote}</p> : null}
               {g.rows.map((r) =>
                 r.kind === "football" ? (
                   <FootballRow key={r.m.id} live={live.items[r.m.id]} liveLoaded={live.loaded} lc={lc} tape={tapes?.[r.m.id]} r={r} t={t} tz={tz} locale={locale} now={now} open={openId === r.m.id} onToggle={() => setOpenId((o) => (o === r.m.id ? null : r.m.id))} partners={partners} siteOnly={siteOnly} surface={surface} />
@@ -297,6 +311,8 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
         )}
       </section>
       <div className="v3c-board-f">
+        {/* fixdata B1: the order is declared, on the home and on the board */}
+        <p className="v3c-fine v3c-order-note">{limit ? fc.homeOrder : fc.order}</p>
         {filters.sport !== "tennis" ? <p className="v3c-fine">{t.board.rowNote}</p> : null}
         {/* tennis2: l'avvertenza onesta accanto alla stima tennis (≤ 22 parole) */}
         {filters.sport !== "football" && shown.some((r) => r.kind === "tennis") ? <p className="v3c-fine v3c-tn-caveat">{t.tennis.caveat}</p> : null}

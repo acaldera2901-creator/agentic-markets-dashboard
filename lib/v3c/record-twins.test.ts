@@ -38,7 +38,7 @@ describe("dedupeTwinFixtures", () => {
   it(`kickoffs within ${TWIN_KICKOFF_WINDOW_HOURS}h are the same match, beyond are not`, () => {
     const a = row({ source_id: "a" });
     const near = row({ source_id: "b", commence_time: "2026-09-17T03:00:00Z" }); // +5h
-    const far = row({ source_id: "c", commence_time: "2026-09-18T22:00:00Z" }); // +48h (rescheduled / another leg)
+    const far = row({ source_id: "c", commence_time: "2026-09-19T22:00:00Z" }); // +72h: another game (fixdata: the window is 48 h)
     expect(dedupeTwinFixtures([a, near, far]).map((r) => r.source_id).sort()).toEqual(["a", "c"]);
   });
   it("different teams or the reverse fixture are never merged; order is kept", () => {
