@@ -54,9 +54,16 @@ const GLYPH: Record<NavKey, React.ReactNode> = {
   ),
 };
 
-type Props = { current?: NavKey; items?: readonly NavItem[]; className?: string; label?: string };
+type Props = {
+  current?: NavKey;
+  items?: readonly NavItem[];
+  className?: string;
+  label?: string;
+  /** fixui: la sesta voce «More» (components/v3c/guide/MoreMenu), già un <li>. Le cinque restano. */
+  more?: React.ReactNode;
+};
 
-export function BottomNav({ current, items = V3C_NAV, className, label = "Primary (mobile)" }: Props) {
+export function BottomNav({ current, items = V3C_NAV, className, label = "Primary (mobile)", more }: Props) {
   return (
     <nav className={["v3c-bnav", className].filter(Boolean).join(" ")} aria-label={label}>
       <ul>
@@ -70,6 +77,7 @@ export function BottomNav({ current, items = V3C_NAV, className, label = "Primar
             </a>
           </li>
         ))}
+        {more}
       </ul>
     </nav>
   );

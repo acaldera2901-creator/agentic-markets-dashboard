@@ -16,11 +16,15 @@
 // piè), poi l'accesso. Su mobile le cinque voci sono la barra in basso.
 import type { ReactNode } from "react";
 import { LOCALE_NAMES, TOOL_LOCALES, hubPath, toolPath, type ToolLocale, type ToolSlug } from "@/lib/tools/registry";
-import { impressumLine } from "@/lib/legal-entity";
 import type { V3cToolsCopy } from "@/lib/i18n/v3c-tools";
+import CookieBanner from "@/components/CookieBanner";
+import { guideCopyFor } from "@/lib/v3c/guide-copy";
 import { BottomNav, type NavItem, type NavKey } from "./BottomNav";
 import { LangSwitch } from "./LangSwitch";
 import { ThemeToggle } from "./V3cShell";
+import { DocLang } from "./guide/DocLang";
+import { GlossaryDialog, GlossaryLink } from "./guide/Glossary";
+import { MoreMenu } from "./guide/MoreMenu";
 
 export const ROUTES = {
   board: "/",
@@ -66,10 +70,14 @@ export function navItems(c: V3cToolsCopy["nav"], locale: ToolLocale): NavItem[] 
   ];
 }
 
-/** Il lockup ufficiale. `title` = nome accessibile (il link che lo contiene non ha altro testo). */
-export function Lockup({ className, title = "BetRedge" }: { className?: string; title?: string }) {
+/**
+ * Il lockup ufficiale. `title` = nome accessibile; `decorative` quando il nome lo
+ * porta già il link che lo contiene (fixui L2: il nome calcolato del link era «A»,
+ * l'aria-label di un <svg> con <use> esterno non arrivava al link).
+ */
+export function Lockup({ className, title = "BetRedge", decorative = false }: { className?: string; title?: string; decorative?: boolean }) {
   return (
-    <svg className={["v3c-lockup", className].filter(Boolean).join(" ")} viewBox="0 0 1390 459" role="img" aria-label={title}>
+    <svg className={["v3c-lockup", className].filter(Boolean).join(" ")} viewBox="0 0 1390 459" {...(decorative ? { "aria-hidden": true, focusable: "false" } : { role: "img", "aria-label": title })}>
       <use href="/brand/v3c/lockup.svg#lockup" />
     </svg>
   );
@@ -99,8 +107,8 @@ export function TopBar({ current, locale, copy }: TopProps) {
         {copy.skip}
       </a>
       <div className="v3c-wrap">
-        <a className="v3c-logo" href={ROUTES.board}>
-          <Lockup title={copy.brand} />
+        <a className="v3c-logo" href={ROUTES.board} aria-label={copy.brand}>
+          <Lockup decorative />
         </a>
         <nav className="v3c-nav" aria-label={copy.primary}>
           {main.map((n) => (
@@ -154,8 +162,8 @@ export function Footer({ locale, slug, hub, copy }: FootProps) {
       <div className="v3c-wrap">
         <div className="v3c-foot-g">
           <div className="v3c-foot-id">
-            <a className="v3c-logo v3c-logo-foot" href={ROUTES.board}>
-              <Lockup title={n.brand} />
+            <a className="v3c-logo v3c-logo-foot" href={ROUTES.board} aria-label={n.brand}>
+              <Lockup decorative />
             </a>
             <p className="v3c-small v3c-foot-tag">{f.tagline}</p>
             <LangPicker locale={locale} slug={slug} hub={hub} label={n.language} />
@@ -175,6 +183,7 @@ export function Footer({ locale, slug, hub, copy }: FootProps) {
               <li><a href={ROUTES.record}>{n.record}</a></li>
               <li><a href={ROUTES.method}>{f.method}</a></li>
               <li><a href={ROUTES.books}>{n.books}</a></li>
+              <li><GlossaryLink locale={locale} /></li>
             </ul>
           </div>
           <div>
@@ -211,7 +220,11 @@ export function Footer({ locale, slug, hub, copy }: FootProps) {
           <span>{f.blend}</span>
           <span>{f.affiliates}</span>
         </div>
-        <p className="v3c-fine v3c-foot-imp">{impressumLine()}</p>
+        {/* fixui B7: niente indirizzo di corrispondenza (POSITIONING R9) finché il legale non indica
+            l'entità: il marchio e i Termini. lib/legal-entity resta intatto per il sito di oggi e le email. */}
+        <p className="v3c-fine v3c-foot-imp">
+          BetRedge · <a href={ROUTES.terms}>{f.terms}</a>
+        </p>
       </div>
     </footer>
   );
@@ -221,13 +234,39 @@ type FrameProps = { current?: ChromeCurrent; locale: ToolLocale; copy: V3cToolsC
 
 /** Barra in alto + contenuto + piè + barra in basso: l'unico ordine ammesso. */
 export function SiteFrame({ current, locale, copy, slug, hub, children }: FrameProps) {
-  const bottom = current === "news" || current === "pro" || current === "method" ? undefined : current;
+  const secondary = current === "news" || current === "pro" || current === "method";
+  const bottom = secondary ? undefined : current;
+  const g = guideCopyFor(locale);
+  const n = copy.nav;
   return (
     <>
-      <TopBar current={current} locale={locale} copy={copy.nav} />
+      <TopBar current={current} locale={locale} copy={n} />
       {children}
       <Footer locale={locale} slug={slug} hub={hub} copy={copy} />
-      <BottomNav current={bottom} items={navItems(copy.nav, locale)} label={copy.nav.primaryMobile} />
+      {/* fixui M3: il banner cookie della pagina v3c sta QUI, dopo il contenuto e prima della barra in
+          basso: ordine del focus = ordine visivo (sopra la barra, mai sopra il salto al contenuto).
+          Quello del layout radice è nascosto sulle rotte v3c (fixui.css); stesso componente, stessa
+          scelta salvata, stesso evento di consenso. */}
+      <div className="v3c-consent">
+        <CookieBanner />
+      </div>
+      <BottomNav
+        current={bottom}
+        items={navItems(n, locale)}
+        label={n.primaryMobile}
+        more={
+          <MoreMenu label={g.more.label} title={g.more.title} active={secondary}>
+            <ul className="v3c-more-l">
+              <li><a href={ROUTES.news} aria-current={current === "news" ? "page" : undefined}>{n.news}</a></li>
+              <li><a href={ROUTES.method} aria-current={current === "method" ? "page" : undefined}>{n.method}</a></li>
+              <li><a href={ROUTES.pro} aria-current={current === "pro" ? "page" : undefined}>{n.pricing}</a></li>
+            </ul>
+            <LangPicker locale={locale} slug={slug} hub={hub} label={n.language} />
+          </MoreMenu>
+        }
+      />
+      <GlossaryDialog locale={locale} methodHref={ROUTES.method} />
+      <DocLang locale={locale} />
     </>
   );
 }

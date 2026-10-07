@@ -23,13 +23,16 @@ type ModeCtx = { mode: V3cMode; toggle: () => void };
 const ModeContext = createContext<ModeCtx | null>(null);
 
 // document.currentScript è lo <script> stesso; il genitore è il contenitore.
-const BOOT = `(function(){try{var s=document.currentScript,d=s&&s.parentNode;if(!d)return;var q=new URLSearchParams(location.search).get("mode"),m=q||localStorage.getItem("${STORAGE_KEY}");if(m==="dark"||m==="light")d.setAttribute("data-mode",m);}catch(e){}})();`;
+// fixui M10: senza ?mode= né scelta salvata vale la preferenza del sistema (prefers-color-scheme):
+// prima la pagina restava carta anche con l'OS scuro. La scelta manuale (toggle) la batte sempre.
+const BOOT = `(function(){try{var s=document.currentScript,d=s&&s.parentNode;if(!d)return;var q=new URLSearchParams(location.search).get("mode"),m=q||localStorage.getItem("${STORAGE_KEY}");if(m!=="dark"&&m!=="light"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)m="dark";if(m==="dark"||m==="light")d.setAttribute("data-mode",m);}catch(e){}})();`;
 
 function readBrowserMode(): V3cMode | null {
   try {
     const q = new URLSearchParams(window.location.search).get("mode");
     const m = q ?? window.localStorage.getItem(STORAGE_KEY);
-    return m === "dark" || m === "light" ? m : null;
+    if (m === "dark" || m === "light") return m;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : null;
   } catch {
     return null;
   }

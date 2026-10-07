@@ -16,13 +16,15 @@ import "../ui2.css";
 import Link from "next/link";
 import { useV3cLang } from "@/lib/v3c/lang.client";
 import { usePagesCopy } from "@/lib/v3c/pages-copy.client";
-import { hhmmUtc, type CompareRow } from "@/lib/v3c/books";
+import type { CompareRow } from "@/lib/v3c/books";
+import { useLocalTimeZone } from "@/lib/v3c/lang.client";
+import { hmLocal, tzAbbr } from "@/lib/v3c/time-ui";
 import { trackEvent } from "@/lib/track-event";
-import { PARTNERS_SEO_FAQ, PARTNERS_SEO_HEADING, PARTNERS_SEO_INTRO } from "@/app/partners/seo";
+import { V3C_PARTNERS_FAQ as PARTNERS_SEO_FAQ, V3C_PARTNERS_HEADING as PARTNERS_SEO_HEADING, V3C_PARTNERS_INTRO as PARTNERS_SEO_INTRO } from "@/lib/v3c/partners-seo";
 import { Arrow } from "../Arrow";
 import { Fascia } from "../Fascia";
 import { PartnerLogo, needsName } from "../PartnerLogo";
-import { v3cLang } from "@/lib/v3c/copy";
+import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 
 export type BookCard = {
   id: string;
@@ -35,6 +37,8 @@ export type BookCard = {
   onlyIn: string[] | null;
   /** il partner ha un link di registrazione locale in questi paesi */
   localIn: string[] | null;
+  /** fixui A5: perché non avrà mai un prezzo sulla board (stato fisso del catalogo), se lo sappiamo */
+  note?: "region_restricted" | "no_sportsbook" | null;
 };
 
 type Props = {
@@ -90,6 +94,7 @@ const price2 = (n: number) => n.toFixed(2);
 
 export function V3cBooks({ blocked, cards, connected, rows, checkedAt }: Props) {
   const lang = useV3cLang();
+  const tz = useLocalTimeZone();
   const t = usePagesCopy().books;
   const [kind, setKind] = useState<Kind>("all");
   const [q, setQ] = useState("");
@@ -172,7 +177,7 @@ export function V3cBooks({ blocked, cards, connected, rows, checkedAt }: Props) 
                 <dl className="v3c-bks-facts">
                   <div>
                     <dt className="v3c-lab">{t.pricesLab}</dt>
-                    <dd>{b.live ? t.live : t.siteOdds}</dd>
+                    <dd>{b.live ? t.live : b.note === "no_sportsbook" ? t.noSportsbook : b.note === "region_restricted" ? t.regionRestricted : t.siteOdds}</dd>
                   </div>
                   <div>
                     <dt className="v3c-lab">{t.where}</dt>
@@ -239,7 +244,7 @@ export function V3cBooks({ blocked, cards, connected, rows, checkedAt }: Props) 
             </table>
           </div>
         )}
-        {rows.length > 0 && checkedAt ? <p className="v3c-fine v3c-pg-checked">{t.compareChecked(hhmmUtc(checkedAt))}</p> : null}
+        {rows.length > 0 && checkedAt ? <p className="v3c-fine v3c-pg-checked">{t.compareChecked(`${hmLocal(checkedAt, tz, v3cLocale(lang))} ${tzAbbr(tz, v3cLocale(lang))}`)}</p> : null}
       </section>
 
       <aside className="v3c-pg-resp">

@@ -10,6 +10,7 @@ import { TOOL_SLUGS, hubPath, toolPath, type ToolLocale, type ToolSlug } from "@
 import { toolJsonLd } from "@/lib/tools/seo";
 import { getV3cToolsCopy, fmt } from "@/lib/i18n/v3c-tools";
 import { toolBoardSource } from "@/lib/v3c/board-source.server";
+import { getBoard } from "@/lib/v3c/board-data.server";
 import { toolDef, toolPreview } from "@/lib/v3c/tools";
 import { v3cFontClass } from "../fonts";
 import { BenchTool } from "../BenchTool";
@@ -19,6 +20,7 @@ import { V3cShell } from "../V3cShell";
 import { BoardBridge } from "./BoardBridge";
 import { PrefillNote, ToolCalc } from "./ToolCalc";
 import "../v3c.css";
+import "../fixui.css";
 
 /** `**così**` → <strong>: un solo segno, come components/tools/Prose. */
 function withBold(text: string) {
@@ -34,6 +36,12 @@ export async function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: To
   const question = c.questions[def.question].q;
 
   const src = await toolBoardSource();
+  // fixui M2: la sorgente scrive le ore in UTC («15:00 UTC», pagina statica): qui gli ISO veri
+  // (stessa board, cache() per richiesta) così il browser le riscrive nel suo fuso, come la board.
+  const board = src.kind === "live" ? await getBoard() : null;
+  const times = board?.ok
+    ? { asOf: board.data.generated_at, kickoff: Object.fromEntries(board.data.matches.map((x) => [x.id, x.kickoff])) }
+    : undefined;
   const live = src.kind === "live" ? src.matches() : undefined;
   const m = src.matches()[0];
   const ctx = { outcomes: m.outcomes, lead: src.lead(m) };
@@ -61,7 +69,7 @@ export async function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: To
 
         <ToolCalc slug={slug} copy={tc} invalid={c.tool.invalid} live={live} />
 
-        <BoardBridge def={def} column={tc.column} copy={c.tool} src={src} />
+        <BoardBridge def={def} column={tc.column} copy={c.tool} src={src} times={times} locale={locale} />
 
         {/* Il contenuto che la pagina già aveva: la frase chiave, il perché, i numeri, le domande. */}
         <p className="v3c-lede v3c-takeaway">{t.takeaway}</p>

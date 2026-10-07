@@ -4,6 +4,7 @@
 // pagine sotto app/v3c; a flag spento nessuna URL pubblica arriva qui.
 import { useEffect } from "react";
 import "@/components/v3c/v3c.css";
+import "@/components/v3c/fixui.css";
 import { v3cFontClass } from "@/components/v3c/fonts";
 import { V3cChrome } from "@/components/v3c/V3cChrome";
 import { StateArt } from "@/components/v3c/States";

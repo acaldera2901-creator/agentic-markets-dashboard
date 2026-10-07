@@ -40,7 +40,7 @@ const EN = {
   },
   fascia: {
     tab: "Board · football & tennis",
-    tabPredictions: "Predictions · football & tennis",
+    tabPredictions: "Board · football & tennis",  // fixui L5: «Predictions» non è più una categoria (POSITIONING §2)
     matches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
     pricesAsOf: (t: string) => `prices as of ${t}`,
     sealed: "sealed",
@@ -247,7 +247,7 @@ const IT: V3cCopy = {
   nav: { ...EN.nav, board: "Board", tools: "Strumenti", price: "Controllo prezzo", priceShort: "Prezzo", record: "Registro", books: "Book", news: "Notizie", pro: "Pro", primary: "Principale" },
   fascia: {
     tab: "Board · calcio & tennis",
-    tabPredictions: "Previsioni · calcio & tennis",
+    tabPredictions: "Board · calcio & tennis",
     matches: (n) => (n === 1 ? "1 partita" : `${n} partite`),
     pricesAsOf: (t) => `prezzi alle ${t}`,
     sealed: "sigillato",
@@ -459,7 +459,7 @@ const DE: V3cCopy = {
   },
   fascia: {
     tab: "Board · Fußball & Tennis",
-    tabPredictions: "Prognosen · Fußball & Tennis",
+    tabPredictions: "Board · Fußball & Tennis",
     matches: (n: number) => (n === 1 ? "1 Spiel" : `${n} Spiele`),
     pricesAsOf: (t: string) => `Quoten von ${t}`,
     sealed: "versiegelt",
@@ -672,7 +672,7 @@ const ES: V3cCopy = {
   },
   fascia: {
     tab: "Tablero · fútbol y tenis",
-    tabPredictions: "Predicciones · fútbol y tenis",
+    tabPredictions: "Tablero · fútbol y tenis",
     matches: (n: number) => (n === 1 ? "1 partido" : `${n} partidos`),
     pricesAsOf: (t: string) => `cuotas a las ${t}`,
     sealed: "sellado",
@@ -885,7 +885,7 @@ const FR: V3cCopy = {
   },
   fascia: {
     tab: "Tableau · football et tennis",
-    tabPredictions: "Prédictions · football et tennis",
+    tabPredictions: "Tableau · football et tennis",
     matches: (n: number) => (n === 1 ? "1 match" : `${n} matchs`),
     pricesAsOf: (t: string) => `cotes à ${t}`,
     sealed: "scellé",
@@ -1098,7 +1098,7 @@ const NL: V3cCopy = {
   },
   fascia: {
     tab: "Board · voetbal & tennis",
-    tabPredictions: "Voorspellingen · voetbal & tennis",
+    tabPredictions: "Board · voetbal & tennis",
     matches: (n: number) => (n === 1 ? "1 wedstrijd" : `${n} wedstrijden`),
     pricesAsOf: (t: string) => `odds van ${t}`,
     sealed: "verzegeld",
@@ -1311,7 +1311,7 @@ const PL: V3cCopy = {
   },
   fascia: {
     tab: "Tablica · piłka nożna i tenis",
-    tabPredictions: "Prognozy · piłka nożna i tenis",
+    tabPredictions: "Tablica · piłka nożna i tenis",
     matches: (n: number) => (n === 1 ? "1 mecz" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? `${n} mecze` : `${n} meczów`),
     pricesAsOf: (t: string) => `kursy z ${t}`,
     sealed: "zapieczętowane",
@@ -1524,7 +1524,7 @@ const PT: V3cCopy = {
   },
   fascia: {
     tab: "Board · futebol e ténis",
-    tabPredictions: "Previsões · futebol e ténis",
+    tabPredictions: "Board · futebol e ténis",
     matches: (n: number) => (n === 1 ? "1 jogo" : `${n} jogos`),
     pricesAsOf: (t: string) => `odds às ${t}`,
     sealed: "selado",
@@ -1737,7 +1737,7 @@ const RU: V3cCopy = {
   },
   fascia: {
     tab: "Панель · футбол и теннис",
-    tabPredictions: "Прогнозы · футбол и теннис",
+    tabPredictions: "Панель · футбол и теннис",
     matches: (n) => (n === 1 ? "1 матч" : `${n} ${n % 10 === 1 && n % 100 !== 11 ? "матч" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "матча" : "матчей"}`),
     pricesAsOf: (t) => `коэффициенты на ${t}`,
     sealed: "зафиксировано",
@@ -1950,7 +1950,7 @@ const SV: V3cCopy = {
   },
   fascia: {
     tab: "Board · fotboll & tennis",
-    tabPredictions: "Prognoser · fotboll & tennis",
+    tabPredictions: "Board · fotboll & tennis",
     matches: (n: number) => (n === 1 ? "1 match" : `${n} matcher`),
     pricesAsOf: (t: string) => `odds per ${t}`,
     sealed: "förseglad",
@@ -2163,7 +2163,7 @@ const TR: V3cCopy = {
   },
   fascia: {
     tab: "Pano · futbol ve tenis",
-    tabPredictions: "Tahminler · futbol ve tenis",
+    tabPredictions: "Pano · futbol ve tenis",
     matches: (n: number) => (n === 1 ? "1 maç" : `${n} maç`),
     pricesAsOf: (t: string) => `oranlar ${t} itibarıyla`,
     sealed: "mühürlü",

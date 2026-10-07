@@ -18,6 +18,8 @@ import { STATE_COPY } from "@/components/v3c/States";
 import { V3C_TOOLS_COPY } from "@/lib/i18n/v3c-tools";
 import { V3C_LIVE_COPY } from "./live-copy";
 import { V3C_BANNER_COPY } from "./banner-copy";
+import { GUIDE_COPY } from "./guide-copy";
+import { DOC_TITLES } from "./doc-titles";
 
 type Fn = (...a: unknown[]) => unknown;
 const SAMPLE_N = [7301, 7302, 7303, 7304, 7305, 7306];
@@ -109,6 +111,9 @@ const DICTS: { name: string; of: (l: string) => unknown; maxWords: number | null
   { name: "live", of: (l) => V3C_LIVE_COPY[l as never], maxWords: 22 },
   // final3: i banner colore (brand/README §3b) — titolo ≤ 8 parole
   { name: "banner", of: (l) => V3C_BANNER_COPY[l as never], maxWords: 8 },
+  // fixui: orientamento (frase della home, pannello «How to read this page», fuso, «More») e title per lingua
+  { name: "guide", of: (l) => GUIDE_COPY[l as never], maxWords: 22 },
+  { name: "doc-titles", of: (l) => DOC_TITLES[l as never], maxWords: null },
 ];
 
 describe("F10 · le 11 lingue del redesign", () => {

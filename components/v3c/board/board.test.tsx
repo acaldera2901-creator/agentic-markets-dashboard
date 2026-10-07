@@ -120,7 +120,8 @@ describe("Board v3c (F3)", () => {
     const pn = container.querySelector(".v3c-pn") as HTMLElement;
     expect(within(pn).getAllByRole("row")).toHaveLength(4); // intestazione + 3 esiti
     expect(pn.textContent).toContain("estimate = 70% market + 30% model");
-    expect(pn.textContent).toContain("This match entered the public ledger on 9 Oct, 09:02 UTC, before kick-off");
+    // fixui M2: l'ora del sigillo è nel fuso della vista (la sigla la dichiara la nota del fuso), non più «UTC»
+    expect(pn.textContent).toMatch(/This match entered the public ledger on 9 Oct, \d{2}:02, before kick-off/);
     expect(container.querySelectorAll(".v3c-btn-cta")).toHaveLength(1);
     expect(screen.getByRole("link", { name: /Best price on Genoa: 2\.15 at FortunePlay/ })).toHaveAttribute("href", "https://www.fortuneplay.example/m?stag=185731");
   });

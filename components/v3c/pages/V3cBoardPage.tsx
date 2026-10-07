@@ -9,6 +9,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import "@/components/v3c/v3c.css";
+import "@/components/v3c/fixui.css";
 import { v3cFontClass } from "@/components/v3c/fonts";
 import { V3cChrome } from "@/components/v3c/V3cChrome";
 import { Board } from "@/components/v3c/board/Board";
@@ -26,7 +27,9 @@ import { packBoard } from "@/lib/v3c/board-pack";
 import { boardTapes } from "@/lib/v3c/tape-data.server";
 import "@/components/v3c/partners.css";
 import { ColourBanner } from "@/components/v3c/banners/ColourBanner";
-import { liveState } from "@/lib/v3c/board-view";
+import { leadOutcome, liveState, pctInt } from "@/lib/v3c/board-view";
+import { matchHref } from "@/lib/v3c/match-view";
+import { HeroExample, type HeroExampleData } from "@/components/v3c/guide/HeroExample";
 
 type Surface = "home" | "predictions";
 
@@ -140,6 +143,38 @@ async function HomeBannerBlock({ nowIso }: { nowIso: string }) {
   return live ? <ColourBanner theme="live" /> : <ColourBanner theme="record" gen />;
 }
 
+/**
+ * fixui A1: la partita d'esempio sotto la frase della home. Una partita di calcio VERA della board,
+ * non ancora iniziata, con mercato e stima: la prima di oggi (UTC, come il taglio della home),
+ * altrimenti la prossima. Stessi numeri della riga (pctInt, edge_pp, esito guida).
+ */
+async function HeroExampleBlock({ nowIso }: { nowIso: string }) {
+  const b = await getBoard();
+  if (!b.ok) return <HeroExample d={null} />;
+  const now = Date.parse(nowIso);
+  const today = nowIso.slice(0, 10);
+  const ok = b.data.matches
+    .filter((m) => Date.parse(m.kickoff) > now && m.margin_removed != null)
+    .map((m) => ({ m, o: leadOutcome(m) }))
+    .filter(({ o }) => o.market_price != null && o.market_p != null)
+    .sort((a, c) => Date.parse(a.m.kickoff) - Date.parse(c.m.kickoff));
+  const pick = ok.find(({ m }) => m.kickoff.slice(0, 10) === today) ?? ok[0];
+  if (!pick) return <HeroExample d={null} />;
+  const { m, o } = pick;
+  const d: HeroExampleData = {
+    href: matchHref(m.id),
+    home: m.home,
+    away: m.away,
+    outcome: o.outcome,
+    price: o.market_price as number,
+    market: Number(pctInt(o.market_p)),
+    estimate: Number(pctInt(o.estimate_p)),
+    gap: o.edge_pp,
+    today: m.kickoff.slice(0, 10) === today,
+  };
+  return <HeroExample d={d} />;
+}
+
 async function YesterdayBlock() {
   const y = await getYesterday();
   return <Yesterday data={y.ok ? y.data : null} />;
@@ -161,6 +196,11 @@ export async function V3cBoardPage({ surface, searchParams }: { surface: Surface
             </Suspense>
           }
         />
+        {surface === "home" ? (
+          <Suspense fallback={<HeroExample d={null} />}>
+            <HeroExampleBlock nowIso={nowIso} />
+          </Suspense>
+        ) : null}
         <Suspense fallback={<BoardSkeleton rows={surface === "home" ? HOME_ROWS : 10} />}>
           <BoardBlock surface={surface} nowIso={nowIso} sport={surface === "predictions" ? parseSport(sp.sport) : undefined} />
         </Suspense>

@@ -9,10 +9,19 @@ import { matchTitle, type BoardSource } from "@/lib/v3c/board-source";
 import type { ToolDef } from "@/lib/v3c/tools";
 import { ROUTES } from "../Chrome";
 import { Monogrammi } from "../Monogramma";
+import { LocalTime, TzNote } from "../guide/TzNote";
 
-type Props = { def: ToolDef; column?: string; copy: V3cToolsCopy["tool"]; src: BoardSource };
+type Props = {
+  def: ToolDef;
+  column?: string;
+  copy: V3cToolsCopy["tool"];
+  src: BoardSource;
+  /** fixui M2: gli ISO dei prezzi e dei calci d'inizio, per scriverli nel fuso del browser */
+  times?: { asOf: string; kickoff: Record<string, string> };
+  locale?: string;
+};
 
-export function BoardBridge({ def, column, copy, src }: Props) {
+export function BoardBridge({ def, column, copy, src, times, locale }: Props) {
   const sample = src.kind === "sample";
 
   if (!def.column) {
@@ -47,7 +56,15 @@ export function BoardBridge({ def, column, copy, src }: Props) {
           {copy.sameMaths}
         </h2>
         <span className="v3c-small">
-          {fmt(copy.leadAsOf, { asOf: src.pricesAsOf })}
+          {times ? (
+            <>
+              {copy.leadAsOf.split("{asOf}")[0]}
+              <LocalTime iso={times.asOf} fallback={src.pricesAsOf} format="hm" locale={locale} />
+              {copy.leadAsOf.split("{asOf}")[1] ?? ""} · <TzNote locale={locale} />
+            </>
+          ) : (
+            fmt(copy.leadAsOf, { asOf: src.pricesAsOf })
+          )}
           {sample ? (
             <>
               {" "}
@@ -72,9 +89,9 @@ export function BoardBridge({ def, column, copy, src }: Props) {
               <span className="v3c-tb-t">
                 <Monogrammi home={m.home} away={m.away} />
                 <span className="v3c-tb-name">
-                  <b className="v3c-t-row">{matchTitle(m)}</b>
+                  <b className="v3c-t-row" title={matchTitle(m)}>{matchTitle(m)}</b>
                   <small>
-                    {lead.label} · {m.time} {m.day}
+                    {lead.label} · {times?.kickoff[m.id] ? <LocalTime iso={times.kickoff[m.id]} fallback={`${m.time} ${m.day}`} format="day-hm" locale={locale} /> : `${m.time} ${m.day}`}
                   </small>
                 </span>
               </span>
