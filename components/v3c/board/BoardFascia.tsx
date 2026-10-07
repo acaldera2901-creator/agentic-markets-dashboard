@@ -17,7 +17,7 @@ export function BoardFascia({ surface, nowIso, meta }: { surface: "home" | "pred
   const locale = v3cLocale(lang);
   const title = surface === "home" ? dayLong(nowIso, tz, locale) : t.fascia.titlePredictions;
   // fidelity: la home apre con il banner calcio del kit dietro la fascia da regia, la board intera con quello tennis (kit §3)
-  return <Fascia tab={surface === "home" ? t.fascia.tab : t.fascia.tabPredictions} title={title} meta={meta} art={surface === "home" ? <Banner name="hero-football" priority position="64% 38%" /> : <Banner name="hero-tennis" priority position="40% 30%" />} />;
+  return <Fascia tab={surface === "home" ? t.fascia.tab : t.fascia.tabPredictions} title={title} meta={meta} art={surface === "home" ? <Banner name="hero-football" priority /> : <Banner name="hero-tennis" priority />} />;
 }
 
 export type FasciaFacts = { n: number; sealed: number; generatedAt: string; windowDays: number };

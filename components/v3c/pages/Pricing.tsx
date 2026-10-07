@@ -62,7 +62,7 @@ export function V3cPricing({ monthly, annual, rails, promoUntil }: PricingProps)
             <span>{p.metaRest}</span>
           </>
         }
-        art={<Banner name="hero-football" priority position="64% 38%" />}
+        art={<Banner name="hero-football" priority />}
       />
 
       {promoUntil ? <p className="v3c-pg-promo">{p.promo(promoUntil)}</p> : null}
