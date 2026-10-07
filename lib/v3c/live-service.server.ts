@@ -15,6 +15,7 @@ import type { V3LiveResponse } from "./live-contract";
 import { parseEspnSoccer, parseEspnTennis, type EspnSoccerEvent, type EspnTennisMatch } from "./live-espn";
 import { LIVE_LEAD_MIN, LIVE_WINDOW_MIN, buildLive, livePlan, type LiveRow } from "./live-match";
 import { TENNIS_LEDGER_SOURCE_TABLE } from "./tennis";
+import { wantsLive } from "./live-view";
 
 export const LIVE_TTL_MS = 20_000;
 const FETCH_TIMEOUT_MS = 5_000;
@@ -104,6 +105,29 @@ export async function getLive(): Promise<V3LiveResponse> {
       });
   }
   return inflight;
+}
+
+/** final2: how long a page rendered per request waits for the first live read before rendering without it. */
+export const SEED_WAIT_MS = 1_500;
+
+/**
+ * final2: the first live read, done by the page itself (home, board, match are rendered
+ * per request), so the score is already in the HTML and nothing is pushed down when the
+ * browser's first poll lands (CLS). Only when a match is around kick-off (wantsLive);
+ * same shared getLive() cache as the route; slow or failing → null and the browser
+ * reads /api/v3/live as before.
+ */
+export async function liveSeed(kickoffs: readonly string[], now: Date): Promise<V3LiveResponse | null> {
+  if (!kickoffs.some((k) => wantsLive(k, now))) return null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([getLive(), new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), SEED_WAIT_MS); })]);
+  } catch (e) {
+    console.error("[v3c/live seed]", String(e));
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Tests only. */

@@ -18,6 +18,8 @@ import type { V3cMode } from "@/lib/v3c/mode";
 import { MatchError, MatchSkeleton } from "./MatchStates";
 import { MatchView, type MoreRow } from "./MatchView";
 import { boardTapes } from "@/lib/v3c/tape-data.server";
+import { liveSeed } from "@/lib/v3c/live-service.server";
+import { LiveSeedProvider, type LiveSeed } from "../live/LiveBits";
 import { newsEnabled, newsForMatch, type NewsCard } from "@/lib/v3c/news/news.server";
 
 /** Le prossime partite di calcio (non questa), per «More on today’s board». */
@@ -61,10 +63,21 @@ async function MatchBody({ id, fixture }: { id: string; fixture: Fixture | null 
     news = await newsForMatch(found.m.home, found.m.away);
     events = [...events, ...news.map((n) => ({ t: n.t, label: n.source, url: n.url }))].sort((a, b) => a.t - b.t);
   }
-  if (found?.sport === "football") return <MatchView kind="football" m={found.m} series={series} events={events} partners={partners} links={links} more={more} news={news} />;
-  if (found?.sport === "tennis") return <MatchView kind="tennis" m={found.m} series={series} events={events} partners={partners} links={links} more={more} />;
-  if (!fixture) return <MatchError />;
-  return <MatchView kind="off" id={id} sport={isTennisId(id) ? "tennis" : "football"} home={fixture.home} away={fixture.away} kickoff={new Date(fixture.kickoff).toISOString()} series={series} events={events} more={more} />;
+  if (!found && !fixture) return <MatchError />;
+  // final2: the first live read on the server (only around kick-off, ≤ SEED_WAIT_MS) → the scoreboard is in the HTML, no CLS
+  const kickoff = found ? found.m.kickoff : new Date(fixture!.kickoff).toISOString();
+  const seed: LiveSeed = { nowIso: now.toISOString(), data: await liveSeed([kickoff], now) };
+  return (
+    <LiveSeedProvider value={seed}>
+      {found?.sport === "football" ? (
+        <MatchView kind="football" m={found.m} series={series} events={events} partners={partners} links={links} more={more} news={news} />
+      ) : found?.sport === "tennis" ? (
+        <MatchView kind="tennis" m={found.m} series={series} events={events} partners={partners} links={links} more={more} />
+      ) : (
+        <MatchView kind="off" id={id} sport={isTennisId(id) ? "tennis" : "football"} home={fixture!.home} away={fixture!.away} kickoff={kickoff} series={series} events={events} more={more} />
+      )}
+    </LiveSeedProvider>
+  );
 }
 
 export function V3cMatchPage({ id, fixture, mode }: { id: string; fixture: Fixture | null; mode: V3cMode }) {

@@ -4,7 +4,8 @@
 // header. Information only: nothing here touches the estimate, the seal or
 // the record. No item → the honest «score n/a», never a number we made up.
 import Link from "next/link";
-import type { V3LiveItem } from "@/lib/v3c/live-contract";
+import { createContext, useContext } from "react";
+import type { V3LiveItem, V3LiveResponse } from "@/lib/v3c/live-contract";
 import type { V3cLiveCopy } from "@/lib/v3c/live-copy";
 import { liveCopyFor } from "@/lib/v3c/live-copy";
 import { liveBadge, scoreOf, wantsLive, type LiveBadge } from "@/lib/v3c/live-view";
@@ -123,13 +124,25 @@ const EVENT_WORD = (c: V3cLiveCopy, k: string) => (k === "own_goal" ? c.ownGoal 
 /** Server and hydration see the epoch (= not live, nothing rendered); the browser's clock decides after mount. */
 const EPOCH = "1970-01-01T00:00:00Z";
 
+/**
+ * final2: the match page's request time and its first live read (liveSeed, server side).
+ * With it, server and hydration both see the request time and the scoreboard is in the
+ * HTML: no shift when the first poll lands. Without it, the epoch as before.
+ */
+export type LiveSeed = { nowIso: string; data: V3LiveResponse | null };
+const LiveSeedContext = createContext<LiveSeed | null>(null);
+export function LiveSeedProvider({ value, children }: { value: LiveSeed; children: React.ReactNode }) {
+  return <LiveSeedContext.Provider value={value}>{children}</LiveSeedContext.Provider>;
+}
+
 export function MatchLive({ id, kickoff, home, away }: { id: string; kickoff: string; home: string; away: string }) {
   const lang = useV3cLang();
   const tz = useLocalTimeZone();
   const c = liveCopyFor(lang);
-  const now = useMinuteNow(EPOCH);
+  const seed = useContext(LiveSeedContext);
+  const now = useMinuteNow(seed?.nowIso ?? EPOCH);
   const on = wantsLive(kickoff, now);
-  const feed = useLiveScores(on, (x) => (x === id ? [home, away] : null), c);
+  const feed = useLiveScores(on, (x) => (x === id ? [home, away] : null), c, seed?.data ?? null);
   if (!on || !feed.loaded) return null;
   const it = feed.items[id];
   const updated = feed.updatedAt ? c.updated(timeHM(feed.updatedAt, tz, v3cLocale(lang))) : null;

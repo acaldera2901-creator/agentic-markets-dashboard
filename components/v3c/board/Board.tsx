@@ -44,6 +44,7 @@ import "../fidelity.css";
 import { v3cLang, v3cLocale } from "@/lib/v3c/copy";
 import { liveCopyFor } from "@/lib/v3c/live-copy";
 import { wantsLive } from "@/lib/v3c/live-view";
+import type { V3LiveResponse } from "@/lib/v3c/live-contract";
 import { useLiveScores } from "../live/useLiveScores";
 import { LiveAnnouncer, LiveNow } from "../live/LiveBits";
 
@@ -66,6 +67,8 @@ type Props = {
   initialFilters?: Partial<BoardFilters>;
   /** solo /dev/ds: l'ora resta quella del payload d'esempio */
   frozenNow?: boolean;
+  /** final2: the server's first live read (lib/v3c/live-service.server.ts liveSeed): no shift when the first poll lands */
+  liveSeed?: V3LiveResponse | null;
   /** la revisione di ieri, ultimo gradino della cascata */
   yesterday: { day: string; football: V3DaySummary; tennis: V3DaySummary } | null;
   /** fidelity: il tape «open → now» per id partita (solo le righe con ≥ 2 catture vere) */
@@ -97,7 +100,7 @@ function useNow(initialIso: string, frozen = false): Date {
   return useMemo(() => new Date(min * 60_000), [min]);
 }
 
-export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow, tapes }: Props) {
+export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, limit, total, counts, yesterday, initialFilters, frozenNow, tapes, liveSeed = null }: Props) {
   const { lang, t } = useV3cCopy();
   const board = useMemo(() => (isPacked(boardIn) ? unpackBoard(boardIn) : boardIn), [boardIn]);
   const locale = v3cLocale(lang);
@@ -121,7 +124,7 @@ export function Board({ board: boardIn, surface, partners, siteOnly, nowIso, lim
   const lc = liveCopyFor(lang);
   const liveOn = !frozenNow && all.some((r) => wantsLive(r.m.kickoff, now));
   const names = useMemo(() => new Map(all.map((r) => [r.m.id, sidesOf(r.m)] as const)), [all]);
-  const live = useLiveScores(liveOn, (id) => names.get(id) ?? null, lc);
+  const live = useLiveScores(liveOn, (id) => names.get(id) ?? null, lc, liveSeed);
 
   const today = dayKey(now.toISOString(), tz);
   const tomorrow = dayKey(new Date(now.getTime() + 86_400_000).toISOString(), tz);

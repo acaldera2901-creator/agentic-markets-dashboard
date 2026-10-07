@@ -24,8 +24,12 @@ export type LiveFeed = {
 
 const EMPTY: LiveFeed = { items: {}, loaded: false, failed: false, updatedAt: null, announce: "" };
 
-export function useLiveScores(enabled: boolean, names: (id: string) => [string, string] | null, copy: V3cLiveCopy): LiveFeed {
-  const [feed, setFeed] = useState<LiveFeed>(EMPTY);
+/** final2: `initial` = the first read done by the server (liveSeed): shown at once, the next poll comes LIVE_POLL_MS after it. */
+export function useLiveScores(enabled: boolean, names: (id: string) => [string, string] | null, copy: V3cLiveCopy, initial: V3LiveResponse | null = null): LiveFeed {
+  const [seed] = useState(initial);
+  const [feed, setFeed] = useState<LiveFeed>(() =>
+    seed ? { items: seed.items, loaded: true, failed: false, updatedAt: seed.generated_at, announce: "" } : EMPTY,
+  );
 
   const onData = useEffectEvent((prev: Record<string, V3LiveItem> | null, data: V3LiveResponse) => {
     const said = announcements(prev, data.items, names, copy);
@@ -40,9 +44,9 @@ export function useLiveScores(enabled: boolean, names: (id: string) => [string, 
     let timer: number | undefined;
     let ctrl: AbortController | null = null;
     let errors = 0;
-    let lastAt = 0;
+    let lastAt = seed ? Date.parse(seed.generated_at) || 0 : 0;
     let stopped = false;
-    let prev: Record<string, V3LiveItem> | null = null;
+    let prev: Record<string, V3LiveItem> | null = seed?.items ?? null;
 
     const schedule = (ms: number) => {
       window.clearTimeout(timer);
@@ -79,14 +83,14 @@ export function useLiveScores(enabled: boolean, names: (id: string) => [string, 
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
-    schedule(0);
+    schedule(lastAt ? LIVE_POLL_MS - (Date.now() - lastAt) : 0);
     return () => {
       stopped = true;
       window.clearTimeout(timer);
       ctrl?.abort();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [enabled]);
+  }, [enabled, seed]);
 
   return enabled ? feed : EMPTY;
 }

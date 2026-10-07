@@ -17,6 +17,7 @@ import { BoardError, BoardSkeleton } from "@/components/v3c/board/BoardStates";
 import { Bench } from "@/components/v3c/home/Bench";
 import { Faq } from "@/components/v3c/home/Faq";
 import { Yesterday } from "@/components/v3c/home/Yesterday";
+import { liveSeed } from "@/lib/v3c/live-service.server";
 import { getBoard, getYesterday, partnersAllowed } from "@/lib/v3c/board-data.server";
 import type { V3BoardResponse, V3BookPrice } from "@/lib/v3c/contracts";
 import { parseMode } from "@/lib/v3c/mode";
@@ -104,10 +105,12 @@ async function BoardBlock({ surface, nowIso }: { surface: Surface; nowIso: strin
   const [b, y, partners] = await Promise.all([getBoard(), getYesterday(), partnersAllowed()]);
   if (!b.ok) return <BoardError />;
   const board = forSurface(b.data, surface, new Date(nowIso));
+  // final2: the first live read on the server (only around kick-off, ≤ SEED_WAIT_MS): «Live now» and the row scores are in the HTML, no CLS
+  const liveFirst = await liveSeed([...board.matches.map((m) => m.kickoff), ...(board.tennis ?? []).map((m) => m.kickoff)], new Date(nowIso));
   const yesterday = y.ok ? { day: y.data.day, football: y.data.football, tennis: y.data.tennis } : null;
   // fidelity: il tape «open → now» di ogni riga, dai dati veri (partner_price_history)
   const tapes = await boardTapes(board.matches, board.tennis ?? []);
-  return <Board tapes={tapes} board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} />;
+  return <Board tapes={tapes} board={packBoard(board)} surface={surface} partners={partners} siteOnly={partners ? oddsOnSitePartners() : []} nowIso={nowIso} limit={surface === "home" ? HOME_ROWS : undefined} total={b.data.matches.length + (b.data.tennis?.length ?? 0)} counts={surface === "home" ? sportCounts(b.data, new Date(nowIso)) : undefined} yesterday={yesterday} liveSeed={liveFirst} />;
 }
 
 async function BenchBlock({ nowIso }: { nowIso: string }) {
