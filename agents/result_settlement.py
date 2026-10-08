@@ -16,6 +16,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from agents.base import BaseAgent
+from agents.newsports_settlement import settle_newsports_cycle
 from core.db import get_pending_bets_for_settlement, settle_bet, get_cumulative_pnl
 from core.espn_soccer_client import (
     get_match_disposition as espn_get_match_disposition,
@@ -90,6 +91,13 @@ class ResultSettlementAgent(BaseAgent):
                 await self._unified_settlement_cycle()
             except Exception as e:
                 self.logger.error(f"unified settlement cycle error: {e}", exc_info=True)
+            # #NEWSPORTS-SETTLE-LEDGER-1008: MLB/UFC hanno un percorso loro (il
+            # ciclo unified sopra è solo calcio). Zero righe baseball/mma = zero
+            # scritture e zero chiamate esterne: con gli sport dark è inerte.
+            try:
+                await settle_newsports_cycle()
+            except Exception as e:
+                self.logger.error(f"newsports settlement cycle error: {e}", exc_info=True)
             await asyncio.sleep(self.POLL_INTERVAL)
 
     async def _settlement_cycle(self) -> None:

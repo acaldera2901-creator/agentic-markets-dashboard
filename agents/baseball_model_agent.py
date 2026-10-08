@@ -63,7 +63,9 @@ from config.settings import settings
 from core.mlb_stats_client import get_prev_season, get_pitcher_fip, get_schedule, get_standings
 from core.odds_api_client import (consensus_is_fresh, get_h2h_events, market_consensus,
                                    offered_prices)
-from core.supabase_client import fetch_recent_sport_pairs, upsert_unified_rows
+from agents.newsports_settlement import MLB_MODEL_VERSION
+from core.supabase_client import (fetch_recent_sport_pairs, seal_pick_ledger_rows,
+                                  upsert_unified_rows)
 
 # Lab constants (mlb_v2.mjs — do not tune outside the lab ledger).
 HOME_ADV = 0.54
@@ -538,8 +540,14 @@ class BaseballModelAgent(BaseAgent):
 
         # keep_published_at: la riga è riscritta a ogni ciclo della finestra, ma
         # published_at resta la PRIMA pubblicazione (#NEWSPORTS-FIX-REVIEW-1007).
-        written = await upsert_unified_rows(rows, keep_published_at=True) if rows else 0
+        written = await upsert_unified_rows(rows, keep_published_at=True,
+                                            lock_after_start=True) if rows else 0
+        # #NEWSPORTS-SETTLE-LEDGER-1008: sigillo del PRIMO pick in pick_ledger
+        # (ON CONFLICT DO NOTHING). Solo se TUTTE le righe sono state scritte: un
+        # pick sigillato ma mai servito finirebbe nel registro pubblico. Il ciclo
+        # dopo riprova, e i pick già sigillati restano quelli della prima volta.
+        sealed = await seal_pick_ledger_rows(rows, MLB_MODEL_VERSION) if rows and written == len(rows) else 0
         self.logger.info(
-            f"cycle: {len(games)} games, {len(rows)} picks above floor, {written} rows upserted"
+            f"cycle: {len(games)} games, {len(rows)} picks above floor, {written} rows upserted, {sealed} sealed"
         )
         return written

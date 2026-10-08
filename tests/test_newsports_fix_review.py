@@ -103,10 +103,15 @@ def _wire_mlb_cycle(monkeypatch, recent, books=None, game_pk=99):
     async def fetch(_sport, _days):
         return recent
 
+    async def seal(rows, model_version):
+        calls.setdefault("sealed", []).append((len(rows), model_version))
+        return len(rows)
+
     for name, fn in (("get_schedule", schedule), ("get_standings", standings),
                      ("get_prev_season", prev), ("get_h2h_events", h2h),
                      ("get_pitcher_fip", fip), ("upsert_unified_rows", upsert),
-                     ("fetch_recent_sport_pairs", fetch)):
+                     ("fetch_recent_sport_pairs", fetch),
+                     ("seal_pick_ledger_rows", seal)):
         monkeypatch.setattr(mlb, name, fn)
     return calls
 
@@ -215,6 +220,12 @@ def _wire_mma_cycle(monkeypatch, last_update=None):
     monkeypatch.setattr(mma, "get_h2h_events", h2h)
     monkeypatch.setattr(mma, "get_ufc_windows", windows)
     monkeypatch.setattr(mma, "upsert_unified_rows", upsert)
+
+    async def seal(rows, model_version):
+        calls.setdefault("sealed", []).append((len(rows), model_version))
+        return len(rows)
+
+    monkeypatch.setattr(mma, "seal_pick_ledger_rows", seal)
     return calls
 
 
@@ -229,13 +240,13 @@ async def test_mma_cycle_skips_a_stale_consensus(monkeypatch):
 async def test_mma_cycle_upserts_keeping_the_first_published_at(monkeypatch):
     calls = _wire_mma_cycle(monkeypatch)
     assert await mma.MmaModelAgent()._compute_cycle() == 1
-    assert calls["kwargs"] == [{"keep_published_at": True}]
+    assert calls["kwargs"] == [{"keep_published_at": True, "lock_after_start": True}]
 
 
 async def test_mlb_cycle_upserts_keeping_the_first_published_at(monkeypatch):
     calls = _wire_mlb_cycle(monkeypatch, [])
     assert await mlb.BaseballModelAgent()._compute_cycle() == 1
-    assert calls["kwargs"] == [{"keep_published_at": True}]
+    assert calls["kwargs"] == [{"keep_published_at": True, "lock_after_start": True}]
 
 
 def _resp(status, body=None):
@@ -354,3 +365,22 @@ def test_offered_prices_never_returns_a_derived_number():
                          "source": "median", "odds_book": None}, pick_home=True)
     assert px == {"odds": None, "odds_home": None, "odds_away": None,
                   "bookmaker": DERIVED_BOOKMAKER}
+
+
+# ── #NEWSPORTS-SETTLE-LEDGER-1008: sigillo solo se TUTTE le righe sono scritte ─
+
+async def test_mlb_cycle_seals_the_written_picks(monkeypatch):
+    calls = _wire_mlb_cycle(monkeypatch, [])
+    assert await mlb.BaseballModelAgent()._compute_cycle() == 1
+    assert calls["sealed"] == [(1, "mlb-market-anchored-v1")]
+
+
+async def test_mma_cycle_does_not_seal_when_a_write_failed(monkeypatch):
+    calls = _wire_mma_cycle(monkeypatch)
+
+    async def partial(rows, **kw):
+        return 0          # scrittura fallita: un sigillo senza riga servita no
+
+    monkeypatch.setattr(mma, "upsert_unified_rows", partial)
+    assert await mma.MmaModelAgent()._compute_cycle() == 0
+    assert "sealed" not in calls
