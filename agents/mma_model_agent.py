@@ -36,7 +36,8 @@ from agents.base import BaseAgent
 from config.settings import settings
 from core.odds_api_client import (consensus_is_fresh, get_h2h_events, market_consensus,
                                    offered_prices)
-from core.supabase_client import upsert_unified_rows
+from agents.newsports_settlement import UFC_MODEL_VERSION
+from core.supabase_client import seal_pick_ledger_rows, upsert_unified_rows
 
 logger = logging.getLogger("MmaModelAgent")
 
@@ -334,10 +335,16 @@ class MmaModelAgent(BaseAgent):
         # keep_published_at: il bout è riscritto a ogni ciclo della finestra 2-30h,
         # ma published_at resta la PRIMA pubblicazione (#NEWSPORTS-FIX-REVIEW-1007:
         # prima ogni ciclo lo sovrascriveva con `now`).
-        written = await upsert_unified_rows(rows, keep_published_at=True) if rows else 0
+        written = await upsert_unified_rows(rows, keep_published_at=True,
+                                            lock_after_start=True) if rows else 0
+        # #NEWSPORTS-SETTLE-LEDGER-1008: sigillo del PRIMO pick in pick_ledger
+        # (ON CONFLICT DO NOTHING). Solo se TUTTE le righe sono state scritte: un
+        # pick sigillato ma mai servito finirebbe nel registro pubblico. Il ciclo
+        # dopo riprova, e i pick già sigillati restano quelli della prima volta.
+        sealed = await seal_pick_ledger_rows(rows, UFC_MODEL_VERSION) if rows and written == len(rows) else 0
         self.logger.info(
             f"cycle: {len(events)} fights in feed, {len(rows)} picks in window, "
             f"{waiting} candidates waiting (> {MAX_H}h), {dev_cards} on development cards "
-            f"(excluded), {written} rows upserted"
+            f"(excluded), {written} rows upserted, {sealed} sealed"
         )
         return written

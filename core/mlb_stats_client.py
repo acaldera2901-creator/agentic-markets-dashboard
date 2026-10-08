@@ -205,3 +205,16 @@ async def get_final_result(game_pk: int, date_iso: str) -> Optional[dict]:
     if hs is None or as_ is None:
         return None
     return {"home_goals": int(hs), "away_goals": int(as_)}
+
+
+async def get_game_entries(game_pk: int) -> Optional[list[dict]]:
+    """Tutte le voci di calendario di UNA gara, cercata per ``gamePk``
+    (#NEWSPORTS-SETTLE-LEDGER-1008). Per id, non per squadre+data: una
+    doubleheader ha due gamePk con le stesse squadre lo stesso giorno, e una
+    gara rinviata/sospesa può comparire su più date. ``None`` = fonte non
+    raggiungibile (il chiamante riprova), ``[]`` = gara sconosciuta."""
+    data = await _get_json(f"{BASE_URL}/schedule", {"sportId": 1, "gamePk": game_pk})
+    if data is None:
+        return None
+    return [g for d in (data.get("dates") or []) for g in (d.get("games") or [])
+            if g.get("gamePk") == game_pk]
