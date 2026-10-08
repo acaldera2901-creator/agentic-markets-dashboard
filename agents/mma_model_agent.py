@@ -34,7 +34,8 @@ import httpx
 
 from agents.base import BaseAgent
 from config.settings import settings
-from core.odds_api_client import get_h2h_events, market_consensus
+from core.odds_api_client import (consensus_is_fresh, get_h2h_events, market_consensus,
+                                   offered_prices)
 from core.supabase_client import upsert_unified_rows
 
 logger = logging.getLogger("MmaModelAgent")
@@ -195,6 +196,7 @@ def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
     p_home = round(mkt["p_home"], 4)
     pick_home = p_home >= 0.5
     conf = max(p_home, 1 - p_home)
+    px = offered_prices(mkt, pick_home)
     return {
         "sport": "mma",
         "source_table": "ufc_model",
@@ -208,8 +210,8 @@ def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
         "expires_at": ev["commence_time"],
         "pick": "HOME" if pick_home else "AWAY",
         "confidence_score": round(conf * 100),
-        "odds": mkt["odds_home"] if pick_home else mkt["odds_away"],
-        "bookmaker": mkt["source"],
+        "odds": px["odds"],
+        "bookmaker": px["bookmaker"],
         "edge_percent": None,  # market-anchored: no edge claim, ever
         # DARK phase: paper until activation flips the flag chain (deploy-gate).
         "signal_type": "paper",
@@ -219,8 +221,8 @@ def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
             "p_home": p_home,
             "p_draw": None,
             "p_away": round(1 - p_home, 4),
-            "odds_home": mkt["odds_home"],
-            "odds_away": mkt["odds_away"],
+            "odds_home": px["odds_home"],
+            "odds_away": px["odds_away"],
             "mkt_source": mkt["source"],
             "n_books": mkt["n_books"],
             # #NEWSPORTS-QUALITA-1006: quote derivate (mediana pari) e età della quota
@@ -296,6 +298,8 @@ class MmaModelAgent(BaseAgent):
             mkt = market_consensus(ev["books"])
             if not mkt:
                 continue
+            if not consensus_is_fresh(mkt, now, settings.NEWSPORT_ODDS_MAX_AGE_HOURS):
+                continue  # quota stantia o età illeggibile (#NEWSPORTS-FIX-REVIEW-1007)
             conf = max(mkt["p_home"], 1 - mkt["p_home"])
             tier = assign_tier(conf)
             if not tier:
@@ -327,7 +331,10 @@ class MmaModelAgent(BaseAgent):
                 org_verification=verification,
             ))
 
-        written = await upsert_unified_rows(rows) if rows else 0
+        # keep_published_at: il bout è riscritto a ogni ciclo della finestra 2-30h,
+        # ma published_at resta la PRIMA pubblicazione (#NEWSPORTS-FIX-REVIEW-1007:
+        # prima ogni ciclo lo sovrascriveva con `now`).
+        written = await upsert_unified_rows(rows, keep_published_at=True) if rows else 0
         self.logger.info(
             f"cycle: {len(events)} fights in feed, {len(rows)} picks in window, "
             f"{waiting} candidates waiting (> {MAX_H}h), {dev_cards} on development cards "

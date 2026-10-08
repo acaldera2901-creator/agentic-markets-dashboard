@@ -61,7 +61,8 @@ from typing import Any, Dict, List, Optional
 from agents.base import BaseAgent
 from config.settings import settings
 from core.mlb_stats_client import get_prev_season, get_pitcher_fip, get_schedule, get_standings
-from core.odds_api_client import get_h2h_events, market_consensus
+from core.odds_api_client import (consensus_is_fresh, get_h2h_events, market_consensus,
+                                   offered_prices)
 from core.supabase_client import fetch_recent_sport_pairs, upsert_unified_rows
 
 # Lab constants (mlb_v2.mjs — do not tune outside the lab ledger).
@@ -134,20 +135,48 @@ def pair_key(a: str, b: str) -> str:
     return "|".join(sorted([(a or "").strip().lower(), (b or "").strip().lower()]))
 
 
+SOURCE_TABLE = "mlb_model"
+
+
+def is_same_game(row: dict, source_id: str | None) -> bool:
+    """#NEWSPORTS-FIX-REVIEW-1007 — la riga storica è QUESTA stessa gara?
+
+    I cap servono a non prendere due pick CORRELATE (gare diverse della stessa
+    serie, o della stessa squadra). La riga di questa gara già scritta a un
+    ciclo precedente non è un'altra pick: è la pick che il ciclo sta
+    aggiornando verso la chiusura. Senza questa esclusione la gara si
+    auto-bloccava dal secondo ciclo e tier/quota restavano congelati al primo.
+
+    Fail-closed: è "la stessa gara" SOLO con source_id uguale e non vuoto (e
+    source_table, se presente, = mlb_model). Una riga senza id resta nel cap.
+    Il doubleheader ha due gamePk diversi: la seconda gara resta bloccata."""
+    if not source_id:
+        return False
+    rid = row.get("source_id")
+    if rid is None or str(rid) != str(source_id):
+        return False
+    table = row.get("source_table")
+    return table is None or table == SOURCE_TABLE
+
+
 def series_capped(
-    home: str, away: str, now: datetime, recent: List[dict], cap_days: int
+    home: str, away: str, now: datetime, recent: List[dict], cap_days: int,
+    source_id: str | None = None,
 ) -> bool:
     """True se su questa serie è già stata pubblicata una pick entro cap_days.
 
-    `recent` sono le righe già pubblicate per lo sport (home_team, away_team,
-    published_at). Una data illeggibile viene trattata come DENTRO la finestra:
-    fail-closed, perché il costo di una pick in meno è nullo e quello di un
-    campione correlato è un tier che mente.
+    `recent` sono le righe già pubblicate per lo sport (source_table, source_id,
+    home_team, away_team, published_at). Le righe di QUESTA gara (`source_id`)
+    non contano: vedi is_same_game. Una data illeggibile viene trattata come
+    DENTRO la finestra: fail-closed, perché il costo di una pick in meno è nullo
+    e quello di un campione correlato è un tier che mente.
     """
     if cap_days <= 0:
         return False
     key = pair_key(home, away)
     for row in recent:
+        if is_same_game(row, source_id):
+            continue
         if pair_key(row.get("home_team") or "", row.get("away_team") or "") != key:
             continue
         raw = row.get("published_at")
@@ -179,14 +208,17 @@ def picked_teams(row: dict) -> List[str]:
 
 
 def team_capped(team: str, now: datetime, recent: List[dict],
-                cap_days: int = TEAM_CAP_DAYS) -> bool:
+                cap_days: int = TEAM_CAP_DAYS, source_id: str | None = None) -> bool:
     """True se entro cap_days è già stata pubblicata una pick SU `team` (la
     squadra scelta, non l'avversario). Port di recentTeamPicks/CAP_TEAM_DAYS di
-    mlb_v2.mjs v2.3. Data illeggibile = dentro la finestra (fail-closed)."""
+    mlb_v2.mjs v2.3. Data illeggibile = dentro la finestra (fail-closed).
+    Le righe di QUESTA gara (`source_id`) non contano: vedi is_same_game."""
     if cap_days <= 0:
         return False
     key = (team or "").strip().lower()
     for row in recent:
+        if is_same_game(row, source_id):
+            continue
         if key not in picked_teams(row):
             continue
         raw = row.get("published_at")
@@ -243,6 +275,7 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
     p_home = round(mkt["p_home"], 4)
     pick_home = p_home >= 0.5
     conf = max(p_home, 1 - p_home)
+    px = offered_prices(mkt, pick_home)
 
     def run_form(rec: dict) -> Optional[float]:
         g = (rec.get("wins") or 0) + (rec.get("losses") or 0)
@@ -252,7 +285,7 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
 
     return {
         "sport": "baseball",
-        "source_table": "mlb_model",
+        "source_table": SOURCE_TABLE,
         "source_id": str(game["gamePk"]),
         "league": "MLB",
         "competition": f"MLB Regular Season {season}",
@@ -263,8 +296,8 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
         "expires_at": game["gameDate"],
         "pick": "HOME" if pick_home else "AWAY",
         "confidence_score": round(conf * 100),
-        "odds": mkt["odds_home"] if pick_home else mkt["odds_away"],
-        "bookmaker": mkt["source"],
+        "odds": px["odds"],
+        "bookmaker": px["bookmaker"],
         "edge_percent": None,  # market-anchored: no edge claim, ever
         # DARK phase: paper until activation flips the flag chain (deploy-gate).
         "signal_type": "paper",
@@ -274,8 +307,8 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
             "p_home": p_home,
             "p_draw": None,
             "p_away": round(1 - p_home, 4),
-            "odds_home": mkt["odds_home"],
-            "odds_away": mkt["odds_away"],
+            "odds_home": px["odds_home"],
+            "odds_away": px["odds_away"],
             "mkt_source": mkt["source"],
             "n_books": mkt["n_books"],
             # #NEWSPORTS-QUALITA-1006: quote derivate (mediana pari) e età della quota
@@ -416,6 +449,9 @@ class BaseballModelAgent(BaseAgent):
                 mkt = market_consensus(ev["books"])
             if not mkt:
                 continue  # no market probability → nothing to serve (fail-closed)
+            if not consensus_is_fresh(mkt, now, settings.NEWSPORT_ODDS_MAX_AGE_HOURS):
+                continue  # quota stantia o età illeggibile (#NEWSPORTS-FIX-REVIEW-1007)
+            game_id = str(game["gamePk"])
 
             home = game["teams"]["home"]
             away = game["teams"]["away"]
@@ -453,6 +489,7 @@ class BaseballModelAgent(BaseAgent):
             if series_capped(
                 home["team"]["name"], away["team"]["name"], now,
                 recent_pairs + published_this_cycle, cap_days,
+                source_id=game_id,
             ):
                 self.logger.info(
                     "cap serie: pick già presa su %s vs %s, salto",
@@ -465,7 +502,8 @@ class BaseballModelAgent(BaseAgent):
             # Valutato dopo il cap serie e prima di registrare la pick, come nel
             # lab: registrare e poi cadere sul cap bloccherebbe senza aver preso nulla.
             picked = home["team"]["name"] if p_home >= 0.5 else away["team"]["name"]
-            if team_capped(picked, now, recent_pairs + published_this_cycle):
+            if team_capped(picked, now, recent_pairs + published_this_cycle,
+                           source_id=game_id):
                 self.logger.info(
                     "cap squadra: già una pick su %s negli ultimi %d giorni, salto",
                     picked, TEAM_CAP_DAYS,
@@ -484,6 +522,8 @@ class BaseballModelAgent(BaseAgent):
                     flags.append(flag)
 
             published_this_cycle.append({
+                "source_table": SOURCE_TABLE,
+                "source_id": game_id,
                 "home_team": home["team"]["name"],
                 "away_team": away["team"]["name"],
                 "pick": "HOME" if p_home >= 0.5 else "AWAY",
@@ -496,7 +536,9 @@ class BaseballModelAgent(BaseAgent):
                 flags=flags, recs=standings, now_iso=now.isoformat(),
             ))
 
-        written = await upsert_unified_rows(rows) if rows else 0
+        # keep_published_at: la riga è riscritta a ogni ciclo della finestra, ma
+        # published_at resta la PRIMA pubblicazione (#NEWSPORTS-FIX-REVIEW-1007).
+        written = await upsert_unified_rows(rows, keep_published_at=True) if rows else 0
         self.logger.info(
             f"cycle: {len(games)} games, {len(rows)} picks above floor, {written} rows upserted"
         )
