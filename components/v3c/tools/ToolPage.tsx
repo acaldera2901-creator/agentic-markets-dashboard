@@ -63,7 +63,7 @@ export async function V3cToolPage({ slug, locale }: { slug: ToolSlug; locale: To
           meta={
             <>
               <b>{tc.line}</b>
-              <PrefillNote prefilled={c.tool.prefilled} typeYours={c.tool.typeYours} live={live} />
+              <PrefillNote prefilled={c.tool.prefilled} typeYours={c.tool.typeYours} live={live} slug={slug} />
             </>
           }
         />

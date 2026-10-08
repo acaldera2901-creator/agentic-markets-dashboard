@@ -82,6 +82,7 @@ const de: V3cToolsCopy = {
     colPrice: "Quote",
     colEstimate: "Schätzung",
     tapRow: "Tippe auf eine Zeile für die drei Ausgänge, den Quotenverlauf und die beste Quote. Tools haben keinen Partnerlink.",
+    bestPriceNote: "EV und Kelly nutzen die beste Quote eines verlinkten Partner-Buchmachers. Ohne verlinkten Buchmacher kein EV und kein Kelly.",
     pickLegs: "Wähl die Auswahlen vom heutigen Board",
     pickLegsBody: "Acht Spiele, jedes mit Marktwahrscheinlichkeit und unserer Schätzung daneben. Fang beim Abstand an, nicht bei der Quote.",
     sameRatio: "Dieselbe Kennzahl, in unserem Register",

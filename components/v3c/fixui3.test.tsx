@@ -98,7 +98,8 @@ describe("R4 · tools: no amount in € before the visitor types", () => {
     for (const t of TOOLS) if (t.column) expect(JSON.stringify(t.column(ctx)), t.slug).not.toContain("€");
   });
   it("the preview words are translated («at» was English in every language)", () => {
-    expect(toolPreview("ev-calculator", ctx, previewWordsFor("de")).input).toBe("2.15 bei 48%");
+    // fixq Q5: EV reads the best book price (2.20), never the composite 2.15
+    expect(toolPreview("ev-calculator", ctx, previewWordsFor("de")).input).toBe("2.20 bei 48%");
     expect(toolPreview("yield-calculator", ctx, previewWordsFor("it")).input).toBe("es. 200 scommesse · 50");
     for (const l of V3C_LANGS.filter((x) => x !== "en")) expect(FIXUI3_COPY[l].at, l).not.toBe("at");
   });

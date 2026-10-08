@@ -53,14 +53,14 @@ describe("R5 · a price that may be outdated (> 6 h, no book)", () => {
     const s = row(stale);
     expect(s).not.toContain("prices as of");
     expect(s).not.toContain("Price age");
-    expect(s).toContain("Market only: price may be outdated, 50:08 old (hh:mm)");
-    expect(s).toContain("Last stored price, 50:08 old (hh:mm)");
+    expect(s).toContain("Market only: price may be outdated, 50 h old");
+    expect(s).toContain("Last stored price, 50 h old");
   });
   it("page: no «prices as of», the outdated price said with its age", () => {
     const s = page(stale);
     expect(s).not.toContain("prices as of");
     expect(s).not.toContain("Price age");
-    expect(s).toContain("Market only: price may be outdated. Last stored price, 50:08 old (hh:mm).");
+    expect(s).toContain("Market only: price may be outdated. Last stored price, 50 h old.");
   });
   it("a fresh market keeps its «prices as of»", () => {
     const fresh = tn({ market_from: "stored", market_age_min: 9, market_source: { bookmaker: null, as_of: "2099-10-10T13:31:00.000Z" } } as never, [0.46, 0.54]);

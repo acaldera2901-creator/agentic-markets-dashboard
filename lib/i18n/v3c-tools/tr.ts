@@ -81,6 +81,7 @@ const tr: V3cToolsCopy = {
     colPrice: "Oran",
     colEstimate: "Tahmin",
     tapRow: "Üç sonuç, oran geçmişi ve oranın en iyi olduğu yer için bir satıra dokun. Araçlarda ortak bağlantısı yok.",
+    bestPriceNote: "EV ve Kelly, bağlantılı bir ortak bahis sitesinin en iyi oranını kullanır. Bağlantılı site yoksa EV ve Kelly de yok.",
     pickLegs: "Ayakları bugünün panosundan seç",
     pickLegsBody: "Sekiz maç, her biri piyasa olasılığı ve yanında tahminimizle. Orandan değil, farktan başla.",
     sameRatio: "Aynı oran, kayıt defterimizde",

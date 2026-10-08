@@ -41,6 +41,18 @@ export function marketFresh(asOf: string | null | undefined, kickoff: string, no
   return age != null && age <= TENNIS_MARKET_MAX_AGE_H * 60;
 }
 
+const AGE_UNITS: Record<string, [string, string]> = { de: ["Std.", "Min."], pl: ["godz.", "min"], ru: ["ч", "мин"], sv: ["tim", "min"], tr: ["sa", "dk"] };
+
+/**
+ * fixq (QA-4 Q9): the age of a price for people — «22 h», «45 min» (was «21:40 old (hh:mm)»).
+ * Under an hour in minutes, else whole hours (rounded).
+ */
+export function ageHuman(min: number | null | undefined, lang?: string | null): string {
+  if (min == null || !Number.isFinite(min) || min < 0) return "—";
+  const [h, m] = AGE_UNITS[(lang ?? "en").slice(0, 2).toLowerCase()] ?? ["h", "min"];
+  return min < 60 ? `${Math.round(min)} ${m}` : `${Math.round(min / 60)} ${h}`;
+}
+
 /** «52:07» — the age of a price in hours and minutes (hh:mm, hours not capped at 24). */
 export function ageHhMm(min: number | null | undefined): string {
   if (min == null || !Number.isFinite(min) || min < 0) return "—";

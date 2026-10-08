@@ -106,6 +106,8 @@ export type V3cToolsCopy = {
     colPrice: string;
     colEstimate: string;
     tapRow: string;
+    /** fixq (QA-4 Q5): under the EV/Kelly board column — the price is the best linked book, never the composite */
+    bestPriceNote: string;
     pickLegs: string;
     pickLegsBody: string;
     sameRatio: string;

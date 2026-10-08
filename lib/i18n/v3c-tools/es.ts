@@ -82,6 +82,7 @@ const es: V3cToolsCopy = {
     colPrice: "Cuota",
     colEstimate: "Estimación",
     tapRow: "Toca una fila: los tres resultados, el historial de cuotas y la mejor cuota. Las herramientas no llevan enlaces de socios.",
+    bestPriceNote: "EV y Kelly usan la mejor cuota de una casa socia enlazada. Sin casa enlazada, ni EV ni Kelly.",
     pickLegs: "Elige las selecciones del tablero de hoy",
     pickLegsBody: "Ocho partidos, cada uno con una probabilidad de mercado y nuestra estimación al lado. Empieza por la diferencia, no por la cuota.",
     sameRatio: "La misma ratio, en nuestro registro",

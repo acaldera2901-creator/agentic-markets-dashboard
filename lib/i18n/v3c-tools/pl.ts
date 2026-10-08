@@ -82,6 +82,7 @@ const pl: V3cToolsCopy = {
     colPrice: "Kurs",
     colEstimate: "Szacunek",
     tapRow: "Stuknij wiersz: trzy wyniki, historia kursu i gdzie kurs jest najlepszy. Narzędzia nie mają linków partnerskich.",
+    bestPriceNote: "EV i Kelly liczymy po najlepszym kursie bukmachera partnerskiego z linkiem. Bez takiego bukmachera nie ma EV ani Kelly.",
     pickLegs: "Wybierz nogi z dzisiejszej tablicy",
     pickLegsBody: "Osiem meczów, każdy z prawdopodobieństwem rynkowym i obok naszym szacunkiem. Zacznij od różnicy, nie od kursu.",
     sameRatio: "Ten sam wskaźnik, w naszym rejestrze",

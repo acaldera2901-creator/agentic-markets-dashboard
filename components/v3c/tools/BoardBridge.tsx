@@ -49,6 +49,12 @@ export function BoardBridge({ def, column, copy, src, times, locale }: Props) {
   }
 
   const col = def.column;
+  // fixq (QA-4 Q5): EV and Kelly are read at the best linked book price — the price column shows that price
+  const rows = src.matches().map((m) => {
+    const lead = src.lead(m);
+    return { m, lead, c: col({ outcomes: m.outcomes, lead }) };
+  });
+  const onBest = rows.some((r) => r.c.price !== undefined);
   return (
     <section className="v3c-sec v3c-bridge" aria-labelledby="v3c-bridge-h">
       <div className="v3c-sec-h">
@@ -80,10 +86,9 @@ export function BoardBridge({ def, column, copy, src, times, locale }: Props) {
           <span className="v3c-lab v3c-r">{copy.colEstimate}</span>
           <span className="v3c-lab v3c-r">{column}</span>
         </div>
-        {src.matches().map((m) => {
-          const lead = src.lead(m);
-          const c = col({ outcomes: m.outcomes, lead });
+        {rows.map(({ m, lead, c }) => {
           const value = c.value === "none" ? copy.noStake : c.value;
+          const shownPrice = c.price !== undefined ? c.price : lead.price;
           return (
             <a key={m.id} className="v3c-tb-r" href={m.href}>{/* polish: nessun aria-label: il nome accessibile è il testo visibile (Lighthouse label-content-name-mismatch) */}
               <span className="v3c-tb-t">
@@ -95,7 +100,7 @@ export function BoardBridge({ def, column, copy, src, times, locale }: Props) {
                   </small>
                 </span>
               </span>
-              <span className="v3c-r v3c-num">{lead.price.toFixed(2)}</span>
+              <span className="v3c-r v3c-num">{shownPrice == null ? "—" : shownPrice.toFixed(2)}</span>
               <span className="v3c-r v3c-num">
                 <mark>{lead.estimate}%</mark>
               </span>
@@ -104,7 +109,10 @@ export function BoardBridge({ def, column, copy, src, times, locale }: Props) {
           );
         })}
       </div>
-      <p className="v3c-fine v3c-tb-fine">{copy.tapRow}</p>
+      <p className="v3c-fine v3c-tb-fine">
+        {onBest ? <>{copy.bestPriceNote} </> : null}
+        {copy.tapRow}
+      </p>
     </section>
   );
 }

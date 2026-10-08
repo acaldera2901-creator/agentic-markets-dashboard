@@ -189,7 +189,8 @@ describe("Board v3c (F3)", () => {
     expect(row.textContent).not.toMatch(/\+5\.0|71%|pp/);
     fireEvent.click(screen.getByRole("button", { name: /Jannik Sinner – Ben Shelton/ }));
     const pn = container.querySelector('.v3c-row[data-sport="tennis"] .v3c-pn') as HTMLElement;
-    expect(pn.textContent).toContain("The sealed number is market-based, not an estimate of ours");
+    // fixq Q6: a sealed model_tempered row is our Elo — the seal no longer calls it «market-based»
+    expect(pn.textContent).toContain("The sealed number is our Elo model.");
     expect(pn.textContent).not.toMatch(/\+5\.0|Gap = our sealed estimate/);
   });
 

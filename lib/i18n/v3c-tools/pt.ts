@@ -82,6 +82,7 @@ const pt: V3cToolsCopy = {
     colPrice: "Odd",
     colEstimate: "Estimativa",
     tapRow: "Toca numa linha para os três resultados, o histórico de odds e a melhor odd. As ferramentas não têm links de parceiros.",
+    bestPriceNote: "EV e Kelly usam a melhor odd de uma casa parceira com link. Sem casa com link, sem EV nem Kelly.",
     pickLegs: "Escolhe as seleções do board de hoje",
     pickLegsBody: "Oito jogos, cada um com a probabilidade de mercado e a nossa estimativa ao lado. Começa pela diferença, não pela odd.",
     sameRatio: "O mesmo rácio, no nosso registo",

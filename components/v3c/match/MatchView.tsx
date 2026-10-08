@@ -61,7 +61,8 @@ import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { estimateShown } from "@/lib/v3c/fixdata2";
 import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
 import { fixdata3CopyFor } from "@/lib/v3c/fixdata3-copy";
-import { ageHhMm } from "@/lib/v3c/fixdata3";
+import { ageHuman } from "@/lib/v3c/fixdata3";
+import { fixqCopyFor, tennisGapNote } from "@/lib/v3c/fixq-copy";
 import { final7CopyFor } from "@/lib/v3c/final7-copy";
 import { StartedNote } from "./StartedNote";
 
@@ -92,7 +93,7 @@ function useCtx(): Ctx {
 
 // ─── Testa ─────────────────────────────────────────────────────────────────
 
-function Head({ ctx, tab, id, home, away, kickoff, league, sport, sealedAt }: { ctx: Ctx; tab: string; id: string; home: string; away: string; kickoff: string; league: string | null; sport: "football" | "tennis"; sealedAt: string | null }) {
+function Head({ ctx, tab, id, home, away, kickoff, league, sport, sealedAt, sealedModel = false }: { ctx: Ctx; tab: string; id: string; home: string; away: string; kickoff: string; league: string | null; sport: "football" | "tennis"; sealedAt: string | null; /** fixq Q6: the sealed tennis number is our Elo, not the market */ sealedModel?: boolean }) {
   const { c, t, tz, locale, lang } = ctx;
   // Briciola: torneo/campionato se c'è, altrimenti il nome dello sport — mai un trattino.
   const crumb = league?.trim() || t.toolbar[sport];
@@ -125,7 +126,7 @@ function Head({ ctx, tab, id, home, away, kickoff, league, sport, sealedAt }: { 
             {league ? <span>{league}</span> : null}
             {sealedAt ? (
               <span className="v3c-fm-i">
-                <Sigillo sealedAt={sealedAt} tz={tz} locale={locale} label={t.fascia.sealed} title={(sport === "tennis" ? t.tennis.sealedWhy : t.board.sealedWhy)(stampLocal(sealedAt, ctx.tz, locale))} kickoff={kickoff} afterLabel={fixui2CopyFor(lang).loggedLabel} afterTitle={fixui2CopyFor(lang).loggedWhy(stampLocal(sealedAt, ctx.tz, locale))} />
+                <Sigillo sealedAt={sealedAt} tz={tz} locale={locale} label={t.fascia.sealed} title={(sport === "tennis" ? (sealedModel ? fixqCopyFor(lang).sealedWhyModel : t.tennis.sealedWhy) : t.board.sealedWhy)(stampLocal(sealedAt, ctx.tz, locale))} kickoff={kickoff} afterLabel={fixui2CopyFor(lang).loggedLabel} afterTitle={fixui2CopyFor(lang).loggedWhy(stampLocal(sealedAt, ctx.tz, locale))} />
                 <InfoButton term="sealed" label={t.fascia.sealed} />
               </span>
             ) : null}
@@ -289,13 +290,13 @@ function NewsItem({ ctx, n, card }: { ctx: Ctx; n: number; card: NewsCard }) {
   );
 }
 
-function SealItem({ ctx, n, sealedAt, tennis = false, kickoff }: { ctx: Ctx; n: number; sealedAt: string | null; tennis?: boolean; kickoff: string }) {
+function SealItem({ ctx, n, sealedAt, tennis = false, kickoff, elo = false }: { ctx: Ctx; n: number; sealedAt: string | null; tennis?: boolean; kickoff: string; /** fixq Q6: the sealed tennis number is our Elo (hidden by the guard), not the market */ elo?: boolean }) {
   const { c, t, locale, lang } = ctx;
   const x2 = fixui2CopyFor(lang);
   // fixui2 N8: a row dated after kick-off is not «Sealed before kick-off»
   const after = sealedAt != null && !sealedBeforeKickoff(sealedAt, kickoff);
   // ui3: nel tennis il numero sigillato è del mercato, non una nostra stima — lo si dice
-  const body = sealedAt ? (after ? x2.loggedBody : tennis ? c.tnSealBody : c.sealBody)(stampLocal(sealedAt, ctx.tz, locale)) : c.notSealedBody;
+  const body = sealedAt ? (after ? x2.loggedBody : tennis ? (elo ? fixqCopyFor(lang).sealedWhyModel : c.tnSealBody) : c.sealBody)(stampLocal(sealedAt, ctx.tz, locale)) : c.notSealedBody;
   return (
     <li>
       <span className="k">{n}</span>
@@ -487,9 +488,12 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
                   <i>%</i>
                 </b>
               </div>
-              <span className="v3c-mt-arrow" aria-hidden="true">
-                →
-              </span>
+              {/* fixq (QA-4 Q4): no arrow toward an estimate that is not shown */}
+              {showEst ? (
+                <span className="v3c-mt-arrow" aria-hidden="true">
+                  →
+                </span>
+              ) : null}
             </>
           ) : null}
           {showEst ? (
@@ -577,7 +581,7 @@ function Football({ ctx, m, series, events, partners, links, more, news = [] }: 
               <div key={o.outcome} role="row" className={["v3c-mt-or", o === lead ? "v3c-mt-lead" : null].filter(Boolean).join(" ")}>
                 <span role="cell" className="v3c-mt-who">
                   {label(o.outcome)}
-                  <small>{o === lead && o.edge_pp != null ? c.largest : fp ? c.fair(fp.toFixed(2)) : ""}</small>
+                  <small>{showEst && o === lead && o.edge_pp != null ? c.largest : fp ? c.fair(fp.toFixed(2)) : ""}</small>
                 </span>
                 <span role="cell" className="v3c-num v3c-ra v3c-mt-c-price">
                   {price2(o.market_price)}
@@ -730,7 +734,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
   const marketFromNote = m.market_from === "books" && !noMkt ? <span data-market-from="books">{f2.marketFromBooks}</span> : null;
   return (
     <>
-      <Head ctx={ctx} tab={c.tabTennis} id={m.id} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} />
+      <Head ctx={ctx} tab={c.tabTennis} id={m.id} home={m.player1} away={m.player2} kickoff={m.kickoff} league={m.tournament || t.tennis.title} sport="tennis" sealedAt={m.sealed_at} sealedModel={sealedRow} />
       <section className="v3c-mt-step" aria-labelledby="v3c-s1">
         <StepHead n={1} id="v3c-s1" title={elo ? c.s1TennisElo : c.s1Tennis} />
         <div className="v3c-mt-score">
@@ -799,7 +803,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
           </p>
         ) : stale ? (
           <p className="v3c-mt-note" data-market-from="stale">
-            <b>{x3.staleLabel}.</b> {x3.staleNote(ageHhMm(m.market_age_min))}
+            <b>{x3.staleLabel}.</b> {x3.staleNote(ageHuman(m.market_age_min, lang))}
           </p>
         ) : noMkt ? (
           <p className="v3c-mt-note" data-market="none">
@@ -846,7 +850,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
                 </>
               ) : null}
             </div>
-            <p className="v3c-fine" data-guard={sg}>{lead.gap_pp != null ? fc.sealedGapNote : sg === "no_value" ? f2.sealedNoValue : m.gap_null_reason}</p>
+            <p className="v3c-fine" data-guard={sg}>{lead.gap_pp != null ? fc.sealedGapNote : sg === "no_value" ? f2.sealedNoValue : tennisGapNote(m.gap_null_reason, lang, f2.sealedFar)}</p>
           </div>
         ) : null}
         <div className={["v3c-mt-out", elo ? "v3c-mt-out-tn5" : "v3c-mt-out-tn3"].join(" ")} role="table" aria-label={t.tennis.winner}>
@@ -930,7 +934,7 @@ function Tennis({ ctx, m, series, events, partners, links, more }: { ctx: Ctx; m
                   <p>{sealedOurs ? fc.sealedGapNote : elo ? c.tnEloWhyBody : sealedHidden && sg === "no_market" ? f2.modelOnlyNote : noMkt ? x7.noMarketNote : c.tnWhyBody}</p>
                 </div>
               </li>
-              <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} tennis={!sealedOurs} kickoff={m.kickoff} />
+              <SealItem ctx={ctx} n={summary ? 3 : 2} sealedAt={m.sealed_at} tennis={!sealedOurs} elo={sealedHidden} kickoff={m.kickoff} />
             </ol>
           )}
           strip={strip ? <ToolStrip title={c.stripTennis} all={c.allTools} items={strip} lang={lang} /> : null}

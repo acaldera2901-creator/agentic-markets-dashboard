@@ -37,7 +37,8 @@ import { hasStarted, valueToolsAllowed } from "@/lib/v3c/fixdata";
 import { estimateShown } from "@/lib/v3c/fixdata2";
 import { fixdata2CopyFor } from "@/lib/v3c/fixdata2-copy";
 import { fixdata3CopyFor } from "@/lib/v3c/fixdata3-copy";
-import { ageHhMm } from "@/lib/v3c/fixdata3";
+import { ageHuman } from "@/lib/v3c/fixdata3";
+import { fixqCopyFor, sealedOurs } from "@/lib/v3c/fixq-copy";
 import { final7CopyFor } from "@/lib/v3c/final7-copy";
 import "../ui3.css";
 import "../fixdata.css";
@@ -237,13 +238,15 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
   // fixdata2 N3: no market to compare, or an estimate far from the best real price → no estimate on the row
   const showEst = estimateShown(m);
   const f2 = fixdata2CopyFor(locale);
+  const fc = fixdataCopyFor(locale);
+  const guard = m.model_guard?.level ?? "ok";
+  // fixq (QA-4 Q4): why the estimate is hidden — no market, far from the best price, or the model far from the market
+  const hiddenWhy = guard === "no_market" ? f2.modelOnly : m.model_guard?.reason === "price_far" ? f2.priceFar : fc.marketOnly;
   const est = showEst ? lead.estimate_p : null;
   const scaleAria = lead.market_p == null ? (showEst ? t.board.scaleAriaNoMarket(pctInt(lead.estimate_p)) : f2.modelOnly) : t.board.scaleAria(pctInt(lead.market_p), pctInt(est ?? lead.market_p), gapText(g));
   // fixdata B1: a started match has no book, no best price, no partner button
   const started = hasStarted(m.kickoff, now);
   // fixdata B5: model far from the market — no edge badge (neutral gap); > 25 pp «Market only»
-  const fc = fixdataCopyFor(locale);
-  const guard = m.model_guard?.level ?? "ok";
   return (
     <div className={["v3c-row", open ? "v3c-row-open" : null].filter(Boolean).join(" ")} data-sport="football">
       <TimeCell kickoff={m.kickoff} tz={tz} locale={locale} now={now} badge={badge} />
@@ -252,12 +255,13 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
         <span className="v3c-r-name">
           <button type="button" className="v3c-rowlink v3c-t-row" title={match} aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
             {match}
-            <span className="v3c-sr">, {showEst ? t.board.rowAria(leadLabel, price2(lead.market_price), pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g)) : guard === "no_market" ? f2.modelOnly : f2.priceFar}</span>
+            <span className="v3c-sr">, {showEst ? t.board.rowAria(leadLabel, price2(lead.market_price), pctInt(lead.market_p), pctInt(lead.estimate_p), gapText(g)) : hiddenWhy}</span>
           </button>
           <small>
             {badge?.score ? <LiveScoreChip score={badge.score} final={badge.tone === "done"} /> : null}
             {m.competition || m.league || t.toolbar.football} · <b>{leadLabel}</b>
-            {others && g != null ? <span className="v3c-r-others"> · {others}</span> : null}
+            {/* fixq (QA-4 Q4): no other legs' gaps («Draw ±0.0») beside an estimate that is not shown */}
+            {others && g != null && showEst ? <span className="v3c-r-others"> · {others}</span> : null}
           </small>
         </span>
       </span>
@@ -318,7 +322,7 @@ export function FootballRow({ r, t, tz, locale, now, open, onToggle, partners, s
                     {price2(o.market_price)}
                   </span>
                   <span role="cell">
-                    <RowScale market={o.market_p} estimate={showEst ? o.estimate_p : null} label={!showEst ? (o.market_p == null ? f2.modelOnly : f2.priceFar) : o.market_p == null ? t.board.scaleAriaNoMarket(pctInt(o.estimate_p)) : t.board.scaleAria(pctInt(o.market_p), pctInt(o.estimate_p), gapText(o.edge_pp))} />
+                    <RowScale market={o.market_p} estimate={showEst ? o.estimate_p : null} label={!showEst ? (o.market_p == null ? f2.modelOnly : hiddenWhy) : o.market_p == null ? t.board.scaleAriaNoMarket(pctInt(o.estimate_p)) : t.board.scaleAria(pctInt(o.market_p), pctInt(o.estimate_p), gapText(o.edge_pp))} />
                   </span>
                   <span role="cell" className={["v3c-num", "v3c-ra", isFlatGap(o.edge_pp) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
                     {o.edge_pp == null || !showEst ? "—" : `${gapText(o.edge_pp)} pp`}
@@ -376,8 +380,9 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
   const x7 = final7CopyFor(locale);
   const noMkt = lead.market_p == null;
   const sealedNoMkt = noMkt && m.probability_kind === "model_tempered" && m.sealed_at != null && lead.sealed_p != null && m.sealed_guard?.level === "no_market";
-  const kindLabel = noMkt ? (sealedNoMkt ? fixdata2CopyFor(locale).modelOnly : x7.noMarket) : elo ? t.tennis.eloLabel : stale ? x7.staleAged(ageHhMm(m.market_age_min)) : t.tennis.marketOnly;
-  const onlyLabel = noMkt ? x7.noMarket : t.tennis.marketOnly;
+  const kindLabel = noMkt ? (sealedNoMkt ? fixdata2CopyFor(locale).modelOnly : x7.noMarket) : elo ? t.tennis.eloLabel : stale ? x7.staleAged(ageHuman(m.market_age_min, locale)) : t.tennis.marketOnly;
+  // fixq (QA-4 Q6): one label for the row — a sealed Elo with no market reads «Model only» in the gap column too
+  const onlyLabel = noMkt ? (sealedNoMkt ? fixdata2CopyFor(locale).modelOnly : x7.noMarket) : t.tennis.marketOnly;
   const scaleLabel =
     lead.market_p == null
       ? t.board.noMarket
@@ -505,11 +510,11 @@ export function TennisRow({ r, t, tz, locale, now, open, onToggle, partners, sit
             {m.market_from === "books" && !noMkt ? <span data-market-from="books">{fixdata2CopyFor(locale).marketFromBooks}</span> : null}
             {elo && m.elo_as_of ? <span>{t.tennis.eloAsOf(stampLocal(m.elo_as_of, tz, locale))}</span> : null}
           </p>
-          <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : noMkt ? (sealedNoMkt ? fixdata2CopyFor(locale).modelOnlyNote : x7.noMarketNote) : stale ? <span data-market-from="stale">{x3.staleNote(ageHhMm(m.market_age_min))}</span> : t.tennis.noEstimate}</p>
+          <p className="v3c-small v3c-pn-note">{elo ? (est.gap == null && !noGap ? `${t.tennis.caveat} ${t.tennis.gapHidden}.` : t.tennis.caveat) : noMkt ? (sealedNoMkt ? fixdata2CopyFor(locale).modelOnlyNote : x7.noMarketNote) : stale ? <span data-market-from="stale">{x3.staleNote(ageHuman(m.market_age_min, locale))}</span> : t.tennis.noEstimate}</p>
           {m.sealed_at ? (
             <p className="v3c-pn-seal">
-              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={t.tennis.sealedWhy(stampLocal(m.sealed_at, tz, locale))} kickoff={m.kickoff} afterLabel={fixui2CopyFor(locale).loggedLabel} afterTitle={fixui2CopyFor(locale).loggedWhy(stampLocal(m.sealed_at, tz, locale))} />
-              <span className="v3c-small">{(sealedBeforeKickoff(m.sealed_at, m.kickoff) ? t.tennis.sealedWhy : fixui2CopyFor(locale).loggedWhy)(stampLocal(m.sealed_at, tz, locale))}</span>
+              <Sigillo sealedAt={m.sealed_at} tz={tz} locale={locale} label={t.fascia.sealed} title={(sealedOurs(m) ? fixqCopyFor(locale).sealedWhyModel : t.tennis.sealedWhy)(stampLocal(m.sealed_at, tz, locale))} kickoff={m.kickoff} afterLabel={fixui2CopyFor(locale).loggedLabel} afterTitle={fixui2CopyFor(locale).loggedWhy(stampLocal(m.sealed_at, tz, locale))} />
+              <span className="v3c-small">{(sealedBeforeKickoff(m.sealed_at, m.kickoff) ? (sealedOurs(m) ? fixqCopyFor(locale).sealedWhyModel : t.tennis.sealedWhy) : fixui2CopyFor(locale).loggedWhy)(stampLocal(m.sealed_at, tz, locale))}</span>
             </p>
           ) : null}
           <p className="v3c-small">

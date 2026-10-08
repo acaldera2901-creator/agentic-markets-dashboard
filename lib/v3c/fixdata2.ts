@@ -111,10 +111,14 @@ export function fairFarFromBest(outs: readonly { estimate_p: number | null; best
   });
 }
 
-/** Is an estimate (and its fair price) shown at all? Not without a market, not when it is far from the best price. */
+/**
+ * Is an estimate (and its fair price) shown at all? Not without a market, not when it is far from the best price,
+ * and (fixq, QA-4 Q4) not under any «Market only»: when the model is > 25 pp from the market (model_far) the
+ * payload's estimate is the market itself — printing it as «estimate 65%» or «our fair price» would be a lie.
+ */
 export function estimateShown(m: { model_guard?: ModelGuard }): boolean {
   const g = m.model_guard;
-  return !g || (g.level !== "no_market" && g.reason !== "price_far");
+  return !g || (g.level !== "no_market" && g.level !== "market_only" && g.reason !== "price_far");
 }
 
 // ─── N9: the sealed Elo of our tennis model ─────────────────────────────────

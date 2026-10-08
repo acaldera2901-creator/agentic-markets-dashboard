@@ -81,6 +81,7 @@ const en: V3cToolsCopy = {
     colPrice: "Price",
     colEstimate: "Estimate",
     tapRow: "Tap a row for the three outcomes, the price history and where the price is best. Tools carry no partner link.",
+    bestPriceNote: "EV and Kelly use the best price a linked partner book pays. No linked book, no EV or Kelly.",
     pickLegs: "Pick the legs from today’s board",
     pickLegsBody: "Eight matches, each with a market probability and our estimate next to it. Start from the gap, not from the price.",
     sameRatio: "The same ratio, on our record",

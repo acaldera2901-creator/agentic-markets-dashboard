@@ -82,6 +82,7 @@ const sv: V3cToolsCopy = {
     colPrice: "Odds",
     colEstimate: "Uppskattning",
     tapRow: "Tryck på en rad för de tre utfallen, oddshistoriken och var oddset är bäst. Verktygen har inga partnerlänkar.",
+    bestPriceNote: "EV och Kelly använder bästa odds hos en länkad partnerbok. Ingen länkad bok, ingen EV eller Kelly.",
     pickLegs: "Välj delarna från dagens board",
     pickLegsBody: "Åtta matcher, var och en med marknadssannolikhet och vår uppskattning bredvid. Börja från skillnaden, inte från oddset.",
     sameRatio: "Samma kvot, i vårt register",

@@ -10,7 +10,7 @@
 // polish: la sorgente LIVE esiste (liveBoardSource, dalla stessa board di
 // /api/v3/board); la SAMPLE resta solo come ripiego dichiarato a schermo quando
 // la board non risponde o non ha una partita di calcio con un mercato.
-import type { V3BoardResponse } from "./contracts";
+import type { V3BoardResponse, V3BookPrice } from "./contracts";
 import { matchHref } from "./match-view";
 import { estimateShown } from "./fixdata2";
 import { valueToolsAllowed } from "./fixdata";
@@ -30,6 +30,12 @@ export type BoardOutcome = {
   prices: Record<string, number>;
   /** polish: il gap della board (edge_pp, un decimale) — lo stesso numero di board e pagina partita */
   gap?: number | null;
+  /**
+   * fixq (QA-4 Q5): the best price a partner book really pays, WITH its link (the board's best_price), for EV
+   * and Kelly — never the composite «price». null = no linked book: no EV, no Kelly. Absent (SAMPLE) = the
+   * highest of `prices`.
+   */
+  best?: number | null;
 };
 
 export type BoardMatch = {
@@ -113,6 +119,12 @@ export function sourceFrom(kind: BoardSource["kind"], pricesAsOf: string, boardH
   };
 }
 
+/** fixq (QA-4 Q5): the best real price with a link, as the match page reads it (bestOf), else null. */
+function linkedBest(o: { best_price: V3BookPrice | null; book_prices: V3BookPrice[] }): number | null {
+  const b = o.best_price ?? o.book_prices[0] ?? null;
+  return b && b.url && Number.isFinite(b.price) && b.price > 1 ? b.price : null;
+}
+
 const hhmmUtc = (iso: string) => `${iso.slice(11, 16)} UTC`;
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -146,6 +158,7 @@ export function liveBoardMatches(board: Pick<V3BoardResponse, "matches">, now: D
           estimate: Math.round(o.estimate_p * 100),
           prices: Object.fromEntries(o.book_prices.map((b) => [b.bookmaker, b.price])),
           gap: o.edge_pp,
+          best: linkedBest(o),
         })),
         href: matchHref(m.id),
       };

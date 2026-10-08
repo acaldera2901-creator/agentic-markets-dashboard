@@ -23,6 +23,8 @@ type Props = {
 export function Nastro({ market, estimate, marketLabel = "Market", estimateLabel = "Estimate", className, gap, inLineLabel = "in line", gapLabel = "gap" }: Props) {
   const w = scaleWindow(market, estimate);
   const g = gap != null && Number.isFinite(gap) ? Math.round(gap * 10) / 10 : gapPp(market, estimate);
+  // fixq (QA-4 Q9): the exact gap is written exactly as beside it (gapText → toFixed(1)): a table «+4.0» never meets a bar «+4.1»
+  const gText = gap != null && Number.isFinite(gap) ? formatSigned(gap, 1) : formatSigned(g);
   const lo = Math.min(market, estimate);
   const hi = Math.max(market, estimate);
   const pct = (v: number) => `${positionIn(v, w).toFixed(2)}%`;
@@ -49,7 +51,7 @@ export function Nastro({ market, estimate, marketLabel = "Market", estimateLabel
       <div className="v3c-gl-k" aria-hidden="true">
         <span>{w.lo}%</span>
         <span className={["v3c-gl-g", isFlat(g) ? "v3c-g-flat" : null].filter(Boolean).join(" ")}>
-          {isFlat(g) ? inLineLabel : gapLabel} <b>{formatSigned(g)} pp</b>
+          {isFlat(g) ? inLineLabel : gapLabel} <b>{gText} pp</b>
         </span>
         <span>{w.hi}%</span>
       </div>

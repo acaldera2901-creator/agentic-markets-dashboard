@@ -121,6 +121,17 @@ if (process.env.MOCK_FIXUI2 === "1") {
   FOOTBALL.push({ id: "oddsapi:fx2-guarded-first", league: "Serie A", competition: "Serie A", kickoff: q(1), home: "Como", away: "Cagliari", odds: [2.2, 3.3, 3.4], model: [0.62, 0.2, 0.18], sealed: true, books: "both", history: false });
 }
 
+// fixq (#REDESIGN-V3C fixq): MOCK_FIXQ=1 adds the QA-4 cases — FICTITIOUS numbers shaped on the real rows:
+// Q4 Napoli (no stored odds, books ≈ 1.46, raw model ≈ 36 pp away → «Market only», model_far); Q5 Heidenheim (stored
+// composite 1.94, best linked book ≈ 1.82, guard ok) as the FIRST football match, so it leads the tools' board table.
+if (process.env.MOCK_FIXQ === "1") {
+  const q = (inH: number) => Math.round((now + inH * H) / (15 * 60_000)) * 15 * 60_000;
+  FOOTBALL.push(
+    { id: "fxq-napoli", league: "Serie A", competition: "Serie A", kickoff: q(2), home: "SSC Napoli", away: "Genoa CFC", odds: [1.42, 4.5, 6.7], model: [0.3, 0.33, 0.37], sealed: true, books: "both", history: true, noMarket: true },
+    { id: "fxq-heidenheim", league: "Bundesliga", competition: "Bundesliga", kickoff: q(0.75), home: "1. FC Heidenheim 1846", away: "FC Augsburg", odds: [1.94, 3.6, 4.2], bookOdds: [1.77, 3.55, 4.1], model: [0.6, 0.22, 0.18], sealed: true, books: "both", history: false },
+  );
+}
+
 const fbKey = (f: Fb) => teamPairKey("soccer", f.home, f.away, iso(f.kickoff))!;
 
 function boardSources() {

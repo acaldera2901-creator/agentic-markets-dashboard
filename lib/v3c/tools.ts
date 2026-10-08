@@ -58,6 +58,8 @@ export type ToolResult = {
   market?: boolean;
   /** Variabili per l'etichetta («Fair price at {prob}%»). */
   vars?: Record<string, string>;
+  /** fixq (QA-4 Q5): the price this board column was computed on, when it is not the row's price (null = none). */
+  price?: number | null;
 };
 
 export type ToolPreview = { input: string; output: string; flat?: boolean; market?: boolean };
@@ -68,8 +70,8 @@ export const PREVIEW_WORDS_EN: PreviewWords = { at: "at", on: "on", bets: "bets"
 
 /** Il contesto di board da cui un tool si precompila: l'esito guida e i prezzi del mercato. */
 export type BoardCtx = {
-  outcomes: readonly Pick<BoardOutcome, "price" | "estimate" | "market" | "prices">[];
-  lead: Pick<BoardOutcome, "price" | "estimate" | "market" | "prices" | "label">;
+  outcomes: readonly Pick<BoardOutcome, "price" | "estimate" | "market" | "prices" | "best">[];
+  lead: Pick<BoardOutcome, "price" | "estimate" | "market" | "prices" | "label" | "best">;
 };
 
 export type ToolDef = {
@@ -127,6 +129,16 @@ function marketFromCtx(ctx: BoardCtx): ToolValues {
 export function bestPriceOf(o: Pick<BoardOutcome, "price" | "prices">): number {
   const vals = Object.values(o.prices ?? {});
   return vals.length ? Math.max(...vals) : o.price;
+}
+
+/**
+ * fixq (QA-4 Q5): the price EV and Kelly are computed on — the best price a partner book really pays with its link
+ * (as on the match page), never the composite reference price. null = no linked book → no EV, no Kelly.
+ */
+export function valuePriceOf(o: Pick<BoardOutcome, "prices" | "best">): number | null {
+  if (o.best !== undefined) return o.best;
+  const vals = Object.values(o.prices ?? {}).filter((p) => Number.isFinite(p) && p > 1);
+  return vals.length ? Math.max(...vals) : null;
 }
 
 // ── Gli 11 tool ──────────────────────────────────────────────────────────────
@@ -257,10 +269,13 @@ export const TOOLS: readonly ToolDef[] = [
       ];
     },
     previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("price", v.price) && validInput("percent", v.prob) ? `${dec(v.price)} ${w.at} ${v.prob}%` : "—"),
-    fromBoard: (ctx) => ({ price: ctx.lead.price, prob: ctx.lead.estimate }),
+    // fixq (QA-4 Q5): on the best linked book price, never the composite; no linked book → no EV
+    fromBoard: (ctx) => ({ price: valuePriceOf(ctx.lead), prob: ctx.lead.estimate }),
     column(ctx) {
-      const e = (expectedValue({ probability: ctx.lead.estimate / 100, decimal: ctx.lead.price, stake: 1 })?.evPercent ?? 0);
-      return { key: "evAt", value: signedPct(e), flat: Math.abs(e) < 1 };
+      const p = valuePriceOf(ctx.lead);
+      if (p == null) return { key: "evAt", value: "—", flat: true, price: null };
+      const e = (expectedValue({ probability: ctx.lead.estimate / 100, decimal: p, stake: 1 })?.evPercent ?? 0);
+      return { key: "evAt", value: signedPct(e), flat: Math.abs(e) < 1, price: p };
     },
     bridge: "board",
   },
@@ -291,10 +306,13 @@ export const TOOLS: readonly ToolDef[] = [
       ];
     },
     previewInput: (v, w = PREVIEW_WORDS_EN) => (validInput("price", v.price) && validInput("percent", v.prob) ? `${dec(v.price)} ${w.at} ${v.prob}%` : "—"),
-    fromBoard: (ctx) => ({ price: ctx.lead.price, prob: ctx.lead.estimate, bank: null }),
+    // fixq (QA-4 Q5): on the best linked book price, never the composite; no linked book → no Kelly
+    fromBoard: (ctx) => ({ price: valuePriceOf(ctx.lead), prob: ctx.lead.estimate, bank: null }),
     column(ctx) {
-      const f = (kelly({ probability: ctx.lead.estimate / 100, decimal: ctx.lead.price, bankroll: 1, fraction: 1 })?.fullKelly ?? 0) * 100;
-      return f <= 0 ? { key: "kellyAt", value: "none", flat: true } : { key: "kellyAt", value: pct(f) };
+      const p = valuePriceOf(ctx.lead);
+      if (p == null) return { key: "kellyAt", value: "—", flat: true, price: null };
+      const f = (kelly({ probability: ctx.lead.estimate / 100, decimal: p, bankroll: 1, fraction: 1 })?.fullKelly ?? 0) * 100;
+      return f <= 0 ? { key: "kellyAt", value: "none", flat: true, price: p } : { key: "kellyAt", value: pct(f), price: p };
     },
     bridge: "board",
   },

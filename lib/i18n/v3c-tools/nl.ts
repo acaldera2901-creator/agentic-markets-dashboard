@@ -81,6 +81,7 @@ const nl: V3cToolsCopy = {
     colPrice: "Odds",
     colEstimate: "Schatting",
     tapRow: "Tik op een rij voor de drie uitkomsten, het oddsverloop en waar de odds het best zijn. Tools hebben geen partnerlink.",
+    bestPriceNote: "EV en Kelly gebruiken de beste odds van een gekoppelde partnerbookmaker. Geen gekoppelde bookmaker, geen EV of Kelly.",
     pickLegs: "Kies de selecties van het board van vandaag",
     pickLegsBody: "Acht wedstrijden, elk met een marktkans en onze schatting ernaast. Begin bij het verschil, niet bij de odd.",
     sameRatio: "Dezelfde verhouding, op ons register",

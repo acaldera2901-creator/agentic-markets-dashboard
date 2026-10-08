@@ -81,6 +81,7 @@ const fr: V3cToolsCopy = {
     colPrice: "Cote",
     colEstimate: "Estimation",
     tapRow: "Touchez une ligne pour les trois issues, l’historique des cotes et la meilleure cote. Les outils n’ont aucun lien partenaire.",
+    bestPriceNote: "EV et Kelly utilisent la meilleure cote d’un bookmaker partenaire lié. Sans bookmaker lié, ni EV ni Kelly.",
     pickLegs: "Choisissez les sélections dans le tableau du jour",
     pickLegsBody: "Huit matchs, chacun avec une probabilité du marché et notre estimation à côté. Partez de l’écart, pas de la cote.",
     sameRatio: "Le même ratio, sur notre registre",

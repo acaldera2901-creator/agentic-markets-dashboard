@@ -82,6 +82,7 @@ const it: V3cToolsCopy = {
     colPrice: "Quota",
     colEstimate: "Stima",
     tapRow: "Tocca una riga: i tre esiti, lo storico della quota, dove la quota è migliore. Nessun link ai partner.",
+    bestPriceNote: "EV e Kelly usano il miglior prezzo di un book partner con link. Senza book collegato, niente EV né Kelly.",
     pickLegs: "Scegli le gambe dalla board di oggi",
     pickLegsBody: "Otto partite, ognuna con la probabilità di mercato e la nostra stima accanto. Parti dal gap, non dalla quota.",
     sameRatio: "Lo stesso rapporto, sul nostro registro",

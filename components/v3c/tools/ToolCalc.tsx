@@ -145,13 +145,16 @@ export function ToolCalc({ slug, copy, invalid, live, locale }: Props) {
 }
 
 /** Nella fascia: «prefilled from … » se la query indica un esito della board, altrimenti «type your numbers». */
-export function PrefillNote({ prefilled, typeYours, live }: { prefilled: string; typeYours: string; live?: readonly BoardMatch[] }) {
+export function PrefillNote({ prefilled, typeYours, live, slug }: { prefilled: string; typeYours: string; live?: readonly BoardMatch[]; slug?: ToolSlug }) {
   const search = useSearch();
   const board = search ? boardFromSearch(search, live) : null;
   if (!board) return <span>{typeYours}</span>;
   // «prefilled from {match} · {outcome} {price}»: la partita è un link, il resto testo.
   const [before, after = ""] = prefilled.split("{match}");
-  const vars = { outcome: board.outcome.label, price: board.outcome.price.toFixed(2) };
+  // fixq (QA-4 Q5): the price the calculator was really filled with (EV/Kelly: the best linked book, maybe none)
+  const filled = slug ? toolDef(slug).fromBoard({ outcomes: board.match.outcomes, lead: board.outcome }) : {};
+  const p = "price" in filled ? filled.price : board.outcome.price;
+  const vars = { outcome: board.outcome.label, price: p == null ? "—" : p.toFixed(2) };
   return (
     <span data-testid="prefill-note">
       {fmt(before, vars)}
