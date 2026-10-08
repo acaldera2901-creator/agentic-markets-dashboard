@@ -1,0 +1,477 @@
+/* components/classic/classic-lobby.css — filone «classic», lobby (#CLASSIC-LOBBY-1008)
+ *
+ * Tutto sotto il prefisso `brc-` (cercato con grep l'8/10: zero usi altrove),
+ * importato SOLO da ClassicLobby.tsx, che si monta solo a flag acceso.
+ *
+ * Regola del filone: NESSUNA CORNICE. Niente border, niente box-shadow,
+ * niente outline decorativi. I blocchi si separano con:
+ *   - lo spazio (8 dentro un gruppo, 16 fra gruppi vicini, 32 fra blocchi);
+ *   - due toni di fondo: pagina `--am-bg` < barra/intestazioni `--am-panel`
+ *     < stato attivo `--am-royal` (il blu vuol dire «sei qui»);
+ *   - la lastra blu della scheda.
+ * L'anello di focus resta: non è una cornice, è accessibilità.
+ *
+ * Accento razionato: il lime è dei NOSTRI numeri (sulla scheda) — qui non
+ * compare mai. Il giallo `--am-live` solo per «live». Il royal solo per lo
+ * stato selezionato.
+ */
+
+.brc-lobby {
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-5);
+  padding: var(--am-s-5) var(--am-s-4) var(--am-s-7);
+  min-width: 0;
+}
+
+.brc-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.brc-lobby :is(button, a, input):focus-visible {
+  outline: 2px solid var(--am-royal-t);
+  outline-offset: 2px;
+}
+
+/* ── 1 · banner ────────────────────────────────────────────────────────── */
+.brc-banners__row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--am-s-4);
+}
+.brc-banner {
+  position: relative;
+  /* Proporzione FISSA della foto attesa (1200×600): la scatola è la stessa
+     col segnaposto e con l'immagine → nessuno spostamento quando arriva. */
+  aspect-ratio: 2 / 1;
+  border-radius: var(--am-r-card);
+  overflow: hidden;
+  background: #102b63;
+  isolation: isolate;
+}
+.brc-banner__media { position: absolute; inset: 0; display: block; }
+/* Una velatura navy da sinistra: il testo resta leggibile su QUALSIASI foto
+   arrivi nello slot (anche se il soggetto sconfina a sinistra), e sul
+   telefono, dove la colonna di testo occupa più della metà. */
+.brc-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(7,19,41,0.82) 0%, rgba(7,19,41,0.55) 45%, rgba(7,19,41,0) 70%);
+}
+.brc-banner__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: -2;
+  transition: transform 320ms cubic-bezier(.2,.7,.2,1);
+}
+.brc-banner:hover .brc-banner__art { transform: scale(1.03); }
+.brc-banner__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 6px;
+  padding: var(--am-s-4) var(--am-s-5) var(--am-s-4);
+  /* Il testo sta sempre sulla metà scura dell'arte: colori fissi, non del
+     tema (in chiaro il fondo del banner resta navy). */
+  color: #EDEFF2;
+  max-width: 52%;
+}
+.brc-banner__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-weight: 400;
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.brc-banner__sub {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  color: #dce8fb;
+}
+.brc-banner__cta {
+  margin-top: 4px;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: #EDEFF2;
+  text-decoration: none;
+  border-radius: var(--am-r-ctl);
+}
+/* Il link si allarga a tutto il banner: si clicca ovunque, ma il nome
+   accessibile resta il verbo del link. */
+.brc-banner__cta::after { content: ""; position: absolute; inset: 0; }
+.brc-banner__cta:hover { text-decoration: underline; text-underline-offset: 3px; }
+.brc-banner:has(.brc-banner__cta:focus-visible) { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.brc-banner__cta:focus-visible { outline: none; }
+
+/* ── 2 · tab + ricerca ─────────────────────────────────────────────────── */
+.brc-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--am-s-3);
+  padding: 4px;
+  background: var(--am-panel-2);
+  border-radius: var(--am-r-card);
+  /* Il primo blocco dopo i banner si stacca meno degli altri: la barra e la
+     striscia sport sono UN comando, non due sezioni. */
+  margin-top: var(--am-s-2);
+}
+.brc-tabs {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.brc-tabs::-webkit-scrollbar { display: none; }
+.brc-tab {
+  flex: none;
+  height: 44px;
+  padding: 0 var(--am-s-4);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--am-muted);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.brc-tab:hover { color: var(--am-text); background: var(--am-panel-3); }
+.brc-tab[aria-selected="true"] { background: var(--am-royal); color: #fff; }
+
+.brc-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  flex: 0 1 320px;
+  min-width: 200px;
+  height: 44px;
+  padding: 0 var(--am-s-2) 0 var(--am-s-3);
+  background: var(--am-inset);
+  border-radius: 8px;
+  color: var(--am-muted);
+}
+.brc-search:focus-within { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.brc-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+}
+.brc-search__input::placeholder { color: var(--am-muted-2); }
+.brc-lobby .brc-search__input:focus-visible { outline: none; }
+.brc-search__input::-webkit-search-cancel-button { display: none; }
+.brc-search__clear {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--am-muted);
+  cursor: pointer;
+}
+.brc-search__clear:hover { color: var(--am-text); background: var(--am-panel-2); }
+
+/* ── 3 · striscia sport ────────────────────────────────────────────────── */
+.brc-sports {
+  display: flex;
+  gap: var(--am-s-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-top: calc(var(--am-s-2) - var(--am-s-5));
+}
+.brc-sports::-webkit-scrollbar { display: none; }
+.brc-sport {
+  flex: none;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--am-s-2);
+  align-items: center;
+  justify-items: start;
+  min-width: 112px;
+  padding: 10px var(--am-s-4) 10px var(--am-s-3);
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--am-muted);
+  cursor: pointer;
+  text-align: left;
+}
+.brc-sport__icon { grid-row: 1 / 3; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--am-panel-2); }
+.brc-sport__label { font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; color: var(--am-text); }
+.brc-sport__n { font-family: var(--am-font-num); font-size: 12px; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
+.brc-sport:hover { background: var(--am-panel-2); }
+.brc-sport[aria-pressed="true"] { background: var(--am-panel-2); }
+.brc-sport[aria-pressed="true"] .brc-sport__icon { background: var(--am-royal); color: #fff; }
+
+/* ── sezioni ───────────────────────────────────────────────────────────── */
+.brc-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-6);
+  min-width: 0;
+}
+.brc-sec { display: flex; flex-direction: column; gap: var(--am-s-4); min-width: 0; }
+.brc-sec__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--am-s-4);
+}
+.brc-sec__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--am-text);
+}
+.brc-sec__hint {
+  margin: 6px 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--am-muted);
+  max-width: 72ch;
+}
+
+/* ── 4 · carosello ─────────────────────────────────────────────────────── */
+.brc-rail-nav { display: flex; gap: 4px; flex: none; }
+.brc-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  cursor: pointer;
+}
+.brc-icon-btn:hover { background: var(--am-panel-3); }
+.brc-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--am-s-2);
+  display: grid;
+  grid-auto-flow: column;
+  /* 3,3 schede visibili a 1440: il bordo tagliato della quarta dice «si
+     scorre» meglio di qualunque freccia. */
+  grid-auto-columns: minmax(280px, calc((100% - 3 * var(--am-s-4)) / 3.3));
+  gap: var(--am-s-4);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--am-panel-3) transparent;
+}
+.brc-rail__item { scroll-snap-align: start; display: flex; min-width: 0; }
+.brc-rail__item > * { flex: 1; min-width: 0; }
+
+/* Lo scheletro del carosello: lastre vuote all'altezza di una scheda (251 px
+   misurati a 1440, 261 a 390). Nessuna animazione: un caricamento che
+   lampeggia è rumore, e dura meno di un secondo. */
+.brc-slab { display: block; width: 100%; min-height: 251px; border-radius: var(--am-r-card); background: var(--am-panel-2); }
+.brc-rail--skeleton { overflow: hidden; }
+
+/* ── griglie di schede ─────────────────────────────────────────────────── */
+.brc-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--am-s-4);
+}
+.brc-grid > li { display: flex; min-width: 0; }
+.brc-grid > li > * { flex: 1; min-width: 0; }
+
+/* ── 6 · categorie ─────────────────────────────────────────────────────── */
+.brc-when { display: flex; flex-wrap: wrap; gap: var(--am-s-2); }
+.brc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.brc-chip:hover { background: var(--am-panel-3); }
+.brc-chip[aria-pressed="true"] { background: var(--am-royal); color: #fff; }
+.brc-chip__n { font-family: var(--am-font-num); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.brc-sport-block { display: flex; flex-direction: column; gap: var(--am-s-2); }
+.brc-sport-block + .brc-sport-block { margin-top: var(--am-s-5); }
+.brc-sport-block__title {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  margin: 0 0 var(--am-s-1);
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--am-muted);
+}
+.brc-count {
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--am-muted-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.brc-group { display: flex; flex-direction: column; }
+.brc-group[data-open="true"] { padding-bottom: var(--am-s-4); }
+.brc-group__h { margin: 0; font-size: inherit; font-weight: inherit; }
+.brc-group__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-height: 52px;
+  padding: 10px var(--am-s-4);
+  border: 0;
+  border-radius: 10px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  text-align: left;
+  cursor: pointer;
+}
+.brc-group__toggle:hover { background: var(--am-panel-3); }
+.brc-group[data-open="true"] .brc-group__toggle { margin-bottom: var(--am-s-3); }
+.brc-group__titles { display: flex; align-items: baseline; gap: var(--am-s-3); min-width: 0; }
+.brc-group__name { font-family: var(--am-font-ui); font-size: 15px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brc-group__meta { font-family: var(--am-font-ui); font-size: 12px; color: var(--am-muted); white-space: nowrap; }
+.brc-group__counts { margin-left: auto; display: inline-flex; align-items: center; gap: var(--am-s-3); flex: none; }
+.brc-group__chev { flex: none; color: var(--am-muted); transition: transform 160ms ease; }
+.brc-group[data-open="false"] .brc-group__chev { transform: rotate(-90deg); }
+
+.brc-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--am-live);
+}
+.brc-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+.brc-empty {
+  margin: 0;
+  padding: var(--am-s-5) var(--am-s-4);
+  border-radius: 10px;
+  background: var(--am-panel-2);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  color: var(--am-muted);
+}
+.brc-more { margin: 0; font-family: var(--am-font-ui); font-size: 13px; color: var(--am-muted); }
+.brc-link {
+  border: 0;
+  padding: 4px 2px;
+  background: none;
+  color: var(--am-royal-t);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--am-r-ctl);
+}
+.brc-link:hover { text-decoration: underline; }
+
+/* Finché il board non è arrivato, il pannello tiene l'altezza: ciò che lo
+   segue (fascia Pro, FAQ) resta sotto la piega e non salta all'arrivo dei
+   dati (CLS). */
+.brc-lobby[data-loading="true"] .brc-panel { min-height: 110vh; }
+
+/* ── telefono ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .brc-lobby { gap: var(--am-s-4); padding: var(--am-s-4) var(--am-s-3) var(--am-s-7); }
+  /* I banner scorrono: una colonna all'86%, la successiva si affaccia. La
+     proporzione resta 2:1 → l'altezza non dipende dal contenuto. */
+  .brc-banners__row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 90%;
+    gap: var(--am-s-3);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--am-s-3));
+    padding-inline: var(--am-s-3);
+    scroll-padding-inline: var(--am-s-3);
+  }
+  .brc-banners__row::-webkit-scrollbar { display: none; }
+  /* Sul telefono 16:10 (consegna 800×500): a 2:1 la scatola era 267×133 e il
+     titolo su due righe più il sottotitolo non ci stavano. Sempre fissa → CLS 0. */
+  .brc-banner { scroll-snap-align: start; aspect-ratio: 16 / 10; }
+  .brc-banner::before { background: linear-gradient(90deg, rgba(7,19,41,0.9) 0%, rgba(7,19,41,0.75) 60%, rgba(7,19,41,0.2) 100%); }
+  .brc-banner__text { max-width: 72%; padding: var(--am-s-3) var(--am-s-4); gap: 4px; }
+  .brc-banner__title { font-size: 20px; }
+  .brc-banner__sub { font-size: 12px; }
+
+  .brc-bar { flex-direction: column; align-items: stretch; gap: 4px; margin-top: 0; }
+  .brc-tab { padding: 0 var(--am-s-3); font-size: 13px; }
+  .brc-search { flex: none; min-width: 0; }
+  .brc-sports { margin-top: 0; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); }
+  .brc-sport { min-width: 0; }
+
+  .brc-sec__title { font-size: 22px; }
+  .brc-rail { grid-auto-columns: 86%; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); scroll-padding-inline: var(--am-s-3); }
+  .brc-rail-nav { display: none; }
+  .brc-slab { min-height: 261px; }
+  .brc-grid { grid-template-columns: minmax(0, 1fr); }
+  .brc-group__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
+  .brc-group__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brc-banner__art, .brc-group__chev { transition: none; }
+  .brc-banner:hover .brc-banner__art { transform: none; }
+}
