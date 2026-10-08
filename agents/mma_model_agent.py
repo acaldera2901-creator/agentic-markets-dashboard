@@ -34,7 +34,8 @@ import httpx
 
 from agents.base import BaseAgent
 from config.settings import settings
-from core.odds_api_client import consensus_is_fresh, get_h2h_events, market_consensus
+from core.odds_api_client import (consensus_is_fresh, get_h2h_events, market_consensus,
+                                   offered_prices)
 from core.supabase_client import upsert_unified_rows
 
 logger = logging.getLogger("MmaModelAgent")
@@ -195,6 +196,7 @@ def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
     p_home = round(mkt["p_home"], 4)
     pick_home = p_home >= 0.5
     conf = max(p_home, 1 - p_home)
+    px = offered_prices(mkt, pick_home)
     return {
         "sport": "mma",
         "source_table": "ufc_model",
@@ -208,8 +210,8 @@ def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
         "expires_at": ev["commence_time"],
         "pick": "HOME" if pick_home else "AWAY",
         "confidence_score": round(conf * 100),
-        "odds": mkt["odds_home"] if pick_home else mkt["odds_away"],
-        "bookmaker": mkt["source"],
+        "odds": px["odds"],
+        "bookmaker": px["bookmaker"],
         "edge_percent": None,  # market-anchored: no edge claim, ever
         # DARK phase: paper until activation flips the flag chain (deploy-gate).
         "signal_type": "paper",
@@ -219,8 +221,8 @@ def build_unified_row(*, ev: dict, mkt: dict, tier: str, ufc_event: str,
             "p_home": p_home,
             "p_draw": None,
             "p_away": round(1 - p_home, 4),
-            "odds_home": mkt["odds_home"],
-            "odds_away": mkt["odds_away"],
+            "odds_home": px["odds_home"],
+            "odds_away": px["odds_away"],
             "mkt_source": mkt["source"],
             "n_books": mkt["n_books"],
             # #NEWSPORTS-QUALITA-1006: quote derivate (mediana pari) e età della quota

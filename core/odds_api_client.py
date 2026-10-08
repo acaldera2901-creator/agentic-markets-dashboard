@@ -400,6 +400,28 @@ def market_consensus(books: List[Dict]) -> Optional[Dict]:
     })
 
 
+DERIVED_BOOKMAKER = "consensus (derived, not offered)"
+
+
+def offered_prices(mkt: Dict, pick_home: bool) -> Dict:
+    """Prezzi da scrivere nella riga unified (#NEWSPORTS-FIX-REVIEW-1007).
+
+    Con ``odds_derived`` (mediana pari) nessun book quota quel numero: prima
+    finiva comunque nella colonna top-level ``odds`` e in ``notes.odds_*``,
+    e ``/api/v2/predictions`` passa ``notes`` al client senza il mascheramento
+    di ``/api/newsports``. Qui il prezzo derivato non esce MAI: odds e
+    odds_home/odds_away = None, ``bookmaker`` dichiara che non è un'offerta
+    (la colonna è NOT NULL). La probabilità resta in ``p_home``: è lei
+    l'informazione, il prezzo derivato non aggiunge nulla (probability-neutral).
+    """
+    if mkt.get("odds_derived"):
+        return {"odds": None, "odds_home": None, "odds_away": None,
+                "bookmaker": DERIVED_BOOKMAKER}
+    return {"odds": mkt["odds_home"] if pick_home else mkt["odds_away"],
+            "odds_home": mkt["odds_home"], "odds_away": mkt["odds_away"],
+            "bookmaker": mkt.get("odds_book") or mkt["source"]}
+
+
 def consensus_is_fresh(mkt: Dict, now: datetime, max_age_hours: float) -> bool:
     """#NEWSPORTS-FIX-REVIEW-1007 — il consenso è abbastanza recente da pubblicarlo?
 

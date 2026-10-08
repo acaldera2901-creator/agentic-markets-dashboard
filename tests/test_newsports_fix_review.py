@@ -295,3 +295,62 @@ async def test_upsert_default_is_unchanged_for_football():
     assert client.patch.await_count == 1
     assert "published_at=" not in client.patch.await_args.args[0]
     assert client.patch.await_args.kwargs["json"]["published_at"] == ROW["published_at"]
+
+
+# ── 5. quota derivata: mai nella riga, per NESSUN consumatore ─────────────────
+# La PR copriva solo /api/newsports. La stessa quota restava nella colonna
+# top-level `odds` (bookmaker="median") e in notes.odds_*, e /api/v2/predictions
+# passa `notes` al client senza mascheramento. Ora il prezzo derivato non esce.
+from core.odds_api_client import DERIVED_BOOKMAKER, market_consensus, offered_prices
+
+_EVEN = [_book("a", 1.50, 2.70), _book("b", 1.55, 2.55),
+         _book("c", 1.60, 2.45), _book("d", 1.65, 2.35)]
+
+
+def _mlb_row(mkt):
+    game = {"gamePk": 777, "gameDate": "2026-10-07T23:10:00Z",
+            "teams": {"home": {"team": {"id": 1, "name": DODGERS}},
+                      "away": {"team": {"id": 2, "name": PADRES}}}}
+    return mlb.build_unified_row(game=game, mkt=mkt, p_model=0.6, tier="standard",
+                                 season=2026, sp_home=None, sp_away=None,
+                                 fip_home=4.0, fip_away=4.0, flags=[], recs={},
+                                 now_iso=_iso(NOW))
+
+
+def _mma_row(mkt):
+    ev = {"event_id": "ufc-1", "home_team": "Fighter A", "away_team": "Fighter B",
+          "commence_time": "2026-10-10T23:00:00Z", "books": []}
+    return mma.build_unified_row(ev=ev, mkt=mkt, tier="standard", ufc_event="UFC 333",
+                                 hours_to_fight=10.0, flags=[], now_iso=_iso(NOW),
+                                 org_verification="bout_in_card")
+
+
+def test_even_median_row_carries_no_derived_price_anywhere():
+    mkt = market_consensus(_EVEN)
+    assert mkt["odds_derived"] is True            # premessa: mediana pari = derivata
+    for row in (_mlb_row(mkt), _mma_row(mkt)):
+        notes = json.loads(row["notes"])
+        assert row["odds"] is None
+        assert row["bookmaker"] == DERIVED_BOOKMAKER   # colonna NOT NULL: dichiarata, non vuota
+        assert notes["odds_home"] is None and notes["odds_away"] is None
+        assert notes["odds_derived"] is True
+        assert notes["p_home"] == round(mkt["p_home"], 4)   # probabilità invariata
+
+
+def test_real_book_price_is_kept_with_the_book_that_quotes_it():
+    odd = market_consensus(_EVEN[:3])              # n dispari: riga reale del book "b"
+    pin = market_consensus(_EVEN + [_book("pinnacle", 1.58, 2.50)])
+    for mkt, book in ((odd, "b"), (pin, "pinnacle")):
+        assert mkt["odds_derived"] is False
+        for row in (_mlb_row(mkt), _mma_row(mkt)):
+            notes = json.loads(row["notes"])
+            assert row["odds"] == (mkt["odds_home"] if notes["p_home"] >= 0.5 else mkt["odds_away"])
+            assert row["bookmaker"] == book
+            assert (notes["odds_home"], notes["odds_away"]) == (mkt["odds_home"], mkt["odds_away"])
+
+
+def test_offered_prices_never_returns_a_derived_number():
+    px = offered_prices({"odds_derived": True, "odds_home": 1.6, "odds_away": 2.4,
+                         "source": "median", "odds_book": None}, pick_home=True)
+    assert px == {"odds": None, "odds_home": None, "odds_away": None,
+                  "bookmaker": DERIVED_BOOKMAKER}

@@ -61,7 +61,8 @@ from typing import Any, Dict, List, Optional
 from agents.base import BaseAgent
 from config.settings import settings
 from core.mlb_stats_client import get_prev_season, get_pitcher_fip, get_schedule, get_standings
-from core.odds_api_client import consensus_is_fresh, get_h2h_events, market_consensus
+from core.odds_api_client import (consensus_is_fresh, get_h2h_events, market_consensus,
+                                   offered_prices)
 from core.supabase_client import fetch_recent_sport_pairs, upsert_unified_rows
 
 # Lab constants (mlb_v2.mjs — do not tune outside the lab ledger).
@@ -274,6 +275,7 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
     p_home = round(mkt["p_home"], 4)
     pick_home = p_home >= 0.5
     conf = max(p_home, 1 - p_home)
+    px = offered_prices(mkt, pick_home)
 
     def run_form(rec: dict) -> Optional[float]:
         g = (rec.get("wins") or 0) + (rec.get("losses") or 0)
@@ -294,8 +296,8 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
         "expires_at": game["gameDate"],
         "pick": "HOME" if pick_home else "AWAY",
         "confidence_score": round(conf * 100),
-        "odds": mkt["odds_home"] if pick_home else mkt["odds_away"],
-        "bookmaker": mkt["source"],
+        "odds": px["odds"],
+        "bookmaker": px["bookmaker"],
         "edge_percent": None,  # market-anchored: no edge claim, ever
         # DARK phase: paper until activation flips the flag chain (deploy-gate).
         "signal_type": "paper",
@@ -305,8 +307,8 @@ def build_unified_row(*, game: dict, mkt: dict, p_model: float, tier: str,
             "p_home": p_home,
             "p_draw": None,
             "p_away": round(1 - p_home, 4),
-            "odds_home": mkt["odds_home"],
-            "odds_away": mkt["odds_away"],
+            "odds_home": px["odds_home"],
+            "odds_away": px["odds_away"],
             "mkt_source": mkt["source"],
             "n_books": mkt["n_books"],
             # #NEWSPORTS-QUALITA-1006: quote derivate (mediana pari) e età della quota
