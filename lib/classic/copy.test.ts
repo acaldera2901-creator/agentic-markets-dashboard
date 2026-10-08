@@ -18,6 +18,11 @@ describe("classic copy", () => {
       }
     }
   });
+  it("#CLASSIC-FIX1-1008: la riga di «No price yet» sta in 22 parole in ogni lingua", () => {
+    for (const l of CLASSIC_LANGS) for (const k of ["noPriceNote", "noPriceTennisNote"] as const) {
+      expect(CLASSIC_COPY[l][k].split(/\s+/).length, `${l}.${k}`).toBeLessThanOrEqual(22);
+    }
+  });
   it("nessuna parola vietata", () => {
     for (const l of CLASSIC_LANGS) for (const v of Object.values(CLASSIC_COPY[l])) expect(BANNED.test(v), `${l}: ${v}`).toBe(false);
   });

@@ -19,6 +19,8 @@ export type ClassicPrices = {
   geoCountry: string;
   tz: string | undefined;
   tennisComputedAt: string | null;
+  /** #CLASSIC-FIX1-1008 — `oldest_computed_at` di /api/predictions: l'età che vale per ogni riga di calcio. */
+  footballOldestAt?: string | null;
 };
 
 const EMPTY: ClassicPrices = { fpOdds: {}, fpIndex: new Map(), booksBlocked: true, geoCountry: "", tz: undefined, tennisComputedAt: null };
@@ -28,9 +30,9 @@ export function useClassicPrices(): ClassicPrices {
   return useContext(Ctx);
 }
 
-export function ClassicPricesProvider({ fpOdds, booksBlocked, geoCountry, tz, tennisComputedAt, children }: Omit<ClassicPrices, "fpIndex"> & { children: ReactNode }) {
+export function ClassicPricesProvider({ fpOdds, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt = null, children }: Omit<ClassicPrices, "fpIndex"> & { children: ReactNode }) {
   const fpIndex = useMemo(() => indicizzaPerGiorno(fpOdds), [fpOdds]);
-  const value = useMemo(() => ({ fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt }), [fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt]);
+  const value = useMemo(() => ({ fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt }), [fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

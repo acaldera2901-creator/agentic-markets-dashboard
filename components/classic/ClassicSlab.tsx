@@ -22,11 +22,10 @@ import { formatPct, splitLiveScore } from "@/lib/ui/prediction-card";
 import type { PredictionCardProps } from "@/components/ui/PredictionCard";
 import { useClassicPrices } from "@/components/classic/ClassicContext";
 import { classicCopy, fill } from "@/lib/classic/copy";
-import { classicFootballView, classicTennisView, footballBooks, tennisBooks, type ClassicLanding, type ClassicView } from "@/lib/classic/card-view";
+import { classicFootballView, classicTennisView, footballBooks, tennisBooks, tennisOddsFor, type ClassicLanding, type ClassicView } from "@/lib/classic/card-view";
 import { MODEL_WEIGHT, hasStarted } from "@/lib/classic/guard";
 import { TENNIS_ELO_WEIGHT } from "@/lib/classic/tennis-estimate";
 import { abbinaQuotaPartner } from "@/lib/fp-odds-join";
-import { teamPairKey } from "@/lib/team-pair-key";
 import { landingPartnersFor } from "@/lib/affiliate";
 import { PARTNERS, partnerLogoByName, sortBooksForMenu } from "@/lib/partners";
 import { trackEvent } from "@/lib/track-event";
@@ -90,9 +89,9 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
   if (raw?.sport === "football") {
     const fp = abbinaQuotaPartner(data.home, data.away, data.startsAt, prices.fpOdds, prices.fpIndex).quota;
     const books = prices.booksBlocked ? [] : footballBooks(fp, data.home, data.away);
-    view = classicFootballView({ started, est: raw.est, odds: raw.odds, leadIdx: raw.leadIdx, estLead: raw.estLead, oddsLead: raw.oddsLead, books, landing, labels: ["1", "X", "2"] });
+    view = classicFootballView({ started, est: raw.est, odds: raw.odds, leadIdx: raw.leadIdx, estLead: raw.estLead, oddsLead: raw.oddsLead, books, landing, labels: ["1", "X", "2"], modelAsOf: prices.footballOldestAt ?? null, now });
   } else if (raw?.sport === "tennis") {
-    const fp = prices.fpOdds[teamPairKey("tennis", data.home, data.away, data.startsAt) ?? ""];
+    const fp = tennisOddsFor(prices.fpOdds, data.home, data.away, data.startsAt);
     const books = prices.booksBlocked ? [] : tennisBooks(fp, data.home, data.away);
     view = classicTennisView({
       started, modelVersion: raw.modelVersion, tournament: raw.tournament, player1: data.home, player2: data.away,
@@ -106,14 +105,21 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
   // scheda dice solo ciò che sa: stima o mercato, nessuno scarto.
   const kind = view?.kind ?? (data.probabilitySource === "market" ? "market_only" : "estimate");
   const big = view ? view.bigPct : data.modelPct;
+  const noPrice = kind === "no_price";
+  const fromPartners = view?.marketFrom === "partners";
   const isOurs = kind === "estimate" || kind === "protected" || kind === "elo_blend" || kind === "model_only";
   const bigLabel =
     kind === "market_only" ? c.marketOnly
     : kind === "model_only" ? c.modelOnly
     : kind === "elo_blend" ? c.eloBased
+    : noPrice ? c.noPrice
     : c.ourEstimate;
   const infoText =
-    kind === "elo_blend" ? fill(c.eloNote, { e: Math.round(TENNIS_ELO_WEIGHT * 100), k: Math.round((1 - TENNIS_ELO_WEIGHT) * 100) })
+    noPrice ? (data.sport === "tennis" ? c.noPriceTennisNote : c.noPriceNote)
+    : kind === "market_only" && view?.priceFar ? c.marketOnlyFarNote
+    // #CLASSIC-FIX1-1008 — senza quote servite la stima del calcio è il modello da solo (nessun blend)
+    : (kind === "estimate" || kind === "protected") && fromPartners ? c.partnerMarketInfo
+    : kind === "elo_blend" ? fill(c.eloNote, { e: Math.round(TENNIS_ELO_WEIGHT * 100), k: Math.round((1 - TENNIS_ELO_WEIGHT) * 100) })
     : kind === "market_only" ? (data.sport === "tennis" ? (raw?.sport === "tennis" && raw.modelVersion === "partner-market-v1" ? c.partnerMarketNote : c.marketOnlyTennisNote) : c.marketOnlyNote)
     : kind === "model_only" ? c.modelOnlyNote
     : fill(c.blendInfo, { m: Math.round(MODEL_WEIGHT * 100), k: Math.round((1 - MODEL_WEIGHT) * 100) });
@@ -196,6 +202,12 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
           : <span className="cl-pick-v" title={data.pick ?? undefined}>{data.pick ?? "—"}</span>}
       </p>
 
+      {noPrice ? (
+        <div className="cl-read" data-testid="classic-noprice">
+          <p className="cl-noprice">{c.noPrice}</p>
+          <p className="cl-noprice-why">{infoText}</p>
+        </div>
+      ) : (<>
       <div className="cl-read">
         <p className="cl-big" data-ours={isOurs || undefined} data-testid="classic-big">
           <span className="cl-big-n">{formatPct(big)}</span>
@@ -223,11 +235,13 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
         </p>
       </div>
       <p id={infoId} className="cl-infotext" hidden={!infoOpen} data-testid="classic-info">{infoText}</p>
+      </>)}
 
-      {(gapText || note) && (
+      {(gapText || note || fromPartners) && (
         <div className="cl-gapline">
           {gapText && <p className="cl-gap" data-sign={gap == null ? undefined : gap > 0 ? "pos" : gap < 0 ? "neg" : "zero"} data-testid="classic-gap">{gapText}</p>}
           {note && <p className="cl-note"><strong>{c.protectedTag}</strong></p>}
+          {fromPartners && <p className="cl-origin" data-testid="classic-origin">{c.partnerMarket}</p>}
         </div>
       )}
 

@@ -177,6 +177,10 @@ html[data-frames="off"] .cl-infotext[hidden] { display: none; }
 html[data-frames="off"] .cl-gapline { display: grid; gap: 4px; }
 html[data-frames="off"] .cl-gap { margin: 0; font-size: 13px; color: var(--am-text); font-variant-numeric: tabular-nums; }
 html[data-frames="off"] .cl-note { margin: 0; font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-amber); }
+/* #CLASSIC-FIX1-1008 — l'origine del mercato ricavato dai book; «No price yet» senza numero */
+html[data-frames="off"] .cl-origin { margin: 0; font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cl-ink-2); }
+html[data-frames="off"] .cl-noprice { grid-column: 1 / -1; grid-row: 1; margin: 0; font: 400 34px/1 var(--am-font-display); letter-spacing: 0.005em; color: var(--cl-ink-2); }
+html[data-frames="off"] .cl-noprice-why { grid-column: 1 / -1; grid-row: 2; margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--cl-ink-2); }
 
 /* le quote: un vassoio di tono più scuro in fondo alla lastra (niente filo) */
 html[data-frames="off"] .cl-odds {

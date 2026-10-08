@@ -74,6 +74,22 @@ export function saneMarketSet(prices: readonly (number | null | undefined)[]): p
   return m != null && m >= MARGIN_MIN && m <= MARGIN_MAX;
 }
 
+// ─── N3 (fixdata2.ts): il prezzo equo contro il miglior prezzo reale ─────────
+
+/** Il prezzo equo della stima (1/p) più lontano di così dal miglior prezzo reale → nessuna stima, «Market only». */
+export const FAIR_VS_BEST_MAX = 0.25;
+/** La regola legge gli esiti da questa stima in su (prezzo equo ≤ 10): sui longshot il margine pesa troppo. */
+export const FAIR_CHECK_MIN_P = 0.1;
+
+/**
+ * fairFarFromBest di fixdata2.ts per UN esito (quello mostrato, accanto al bottone partner):
+ * true se |1/stima − miglior prezzo| / miglior prezzo > 25%. Senza prezzo o sotto il 10%: false.
+ */
+export function fairFarFromBest(estimateP: number | null | undefined, bestPrice: number | null | undefined): boolean {
+  if (estimateP == null || !(estimateP >= FAIR_CHECK_MIN_P && estimateP < 1) || bestPrice == null || !(bestPrice > 1)) return false;
+  return Math.abs(1 / estimateP - bestPrice) / bestPrice > FAIR_VS_BEST_MAX;
+}
+
 // ─── Il modello grezzo, ricavato (vedi IL LIMITE in testa) ──────────────────
 
 /** Margine 1X2 di riserva per de-viggare una quota sola (righe chiuse senza quote partner). */

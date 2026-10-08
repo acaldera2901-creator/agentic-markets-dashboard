@@ -10219,6 +10219,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [tennisBets, setTennisBets] = useState<TennisBet[]>([]);
   const [tennisBetSummary, setTennisBetSummary] = useState<TennisBetSummary | null>(null);
   const [computedAt, setComputedAt] = useState<string | null>(null);
+  // #CLASSIC-FIX1-1008 — l'età che vale per ogni riga (la Slab: «Model only» solo se ≤ 6 h)
+  const [predOldestAt, setPredOldestAt] = useState<string | null>(null);
   const [historyV2, setHistoryV2] = useState<V2HistoryRow[]>([]);
   const [historyV2Stats, setHistoryV2Stats] = useState<V2HistoryStats | null>(null);
   const [historyV2Loading, setHistoryV2Loading] = useState(false);
@@ -10639,6 +10641,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         setPredictions(live);
         setPredFallback(isOffSeason);
         setComputedAt(data.computed_at ?? null);
+        setPredOldestAt(data.oldest_computed_at ?? null);
         setPredStale(data.is_stale ?? false);
       } else if (resp.status === 401 || resp.status === 403) {
         setPredictions([]);
@@ -10906,7 +10909,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     <LiveTennisCtx.Provider value={liveTennisMap}>
     <GeoCountryCtx.Provider value={geoCountry}>
     {/* #CLASSIC-CARD-1008 — quote, geo, fuso per la scheda Slab; a flag spento è un frammento. */}
-    <ClassicPricesScope enabled={CLASSIC} fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt}>
+    <ClassicPricesScope enabled={CLASSIC} fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt} footballOldestAt={predOldestAt}>
     <main className="portal-root mc-scene-stadium" data-mc-ground>
       {/* #UI-MACHINA-0802 — la scena del fondo cinematico: fissa, sfocata,
           sotto la velatura di [data-mc-ground]::after. Decorazione pura, fuori

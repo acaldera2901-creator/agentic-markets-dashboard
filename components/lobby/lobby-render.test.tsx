@@ -13,6 +13,19 @@ import { MatchDetailSheet } from "@/components/MatchDetailSheet";
 import { fromDeskFootball, type DeskFootballRow } from "@/lib/ui/desk-card";
 import { buildLobbySections, lobbyKey } from "@/lib/ui/lobby";
 import { footballWhyReasons } from "@/lib/ui/why-reasons";
+import { CLASSIC } from "@/lib/classic/flag";
+
+// #CLASSIC-FIX1-1008 — a flag acceso la card è la Slab: 1.92/3.60/5.00 non è un
+// mercato possibile (margine −0,1%, N10), e fuori dal desk l'età del numero non
+// si conosce → «No price yet», nessun numero (lib/classic/card-view.ts).
+const expectOurNumberOrNoPrice = () => {
+  if (CLASSIC) {
+    expect(screen.getByTestId("classic-noprice")).toHaveTextContent("No price yet");
+    expect(screen.queryByText("64")).not.toBeInTheDocument();
+  } else {
+    expect(screen.getByText("64")).toBeInTheDocument();
+  }
+};
 
 const row: DeskFootballRow = {
   match_id: "m1", league: "PL", league_name: "Premier League",
@@ -47,7 +60,7 @@ describe("card della lobby", () => {
   it("una card chiusa mostra la nostra percentuale ma non il pick", () => {
     const data = fromDeskFootball({ ...row, locked: true }, { winLabel: "to win" });
     render(<PredictionCard data={data} variant="premiumLocked" href="/x" />);
-    expect(screen.getByText("64")).toBeInTheDocument();
+    expectOurNumberOrNoPrice();
     expect(screen.queryByText("Arsenal to win")).not.toBeInTheDocument();
     expect(screen.getByText("Pro pick")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Unlock full analysis/i })).toBeInTheDocument();
@@ -56,7 +69,7 @@ describe("card della lobby", () => {
   it("senza quota di mercato la card non promette un edge che non ha", () => {
     const data = fromDeskFootball({ ...row, odds_home: null }, { winLabel: "to win" });
     render(<PredictionCard data={data} href="/x" />);
-    expect(screen.getByText("64")).toBeInTheDocument();
+    expectOurNumberOrNoPrice();
     expect(screen.queryByText("High edge")).not.toBeInTheDocument();
   });
 });

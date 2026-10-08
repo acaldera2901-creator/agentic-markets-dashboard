@@ -49,6 +49,13 @@ export type ClassicCopy = {
   whereDiffers: string;
   whereDiffersHint: string;
   draw: string;
+  // #CLASSIC-FIX1-1008
+  noPrice: string;
+  noPriceNote: string;
+  noPriceTennisNote: string;
+  partnerMarket: string;
+  partnerMarketInfo: string;
+  marketOnlyFarNote: string;
 };
 
 const en: ClassicCopy = {
@@ -82,6 +89,12 @@ const en: ClassicCopy = {
   whereDiffers: "Where our estimate differs most",
   whereDiffersHint: "Matches yet to start where our estimate and the market disagree, within our 15-point protection. A reading, not a recommendation.",
   draw: "Draw",
+  noPrice: "No price yet",
+  noPriceNote: "No number yet: no market price matches this pick, and our model reading is too old to show alone.",
+  noPriceTennisNote: "No number yet: no market price for this match, and we never show our tennis Elo without one.",
+  partnerMarket: "Market from partner prices",
+  partnerMarketInfo: "Our model alone (no stored market to blend), read against a market rebuilt from partner prices: each book de-vigged, then averaged.",
+  marketOnlyFarNote: "Our number's fair price is more than 25% from the best partner price, so we show the market.",
 };
 
 const it: ClassicCopy = {
@@ -115,6 +128,12 @@ const it: ClassicCopy = {
   whereDiffers: "Dove la nostra stima si discosta di più",
   whereDiffersHint: "Partite non ancora iniziate in cui la nostra stima e il mercato non coincidono, entro la protezione dei 15 punti. Una lettura, non un consiglio.",
   draw: "Pareggio",
+  noPrice: "Nessun prezzo per ora",
+  noPriceNote: "Nessun numero per ora: nessun prezzo di mercato corrisponde a questa pick e la lettura del modello è troppo vecchia.",
+  noPriceTennisNote: "Nessun numero per ora: nessun prezzo di mercato per questa partita, e il nostro Elo del tennis non si mostra mai senza.",
+  partnerMarket: "Mercato dai prezzi dei partner",
+  partnerMarketInfo: "Solo il nostro modello (nessun mercato registrato da fondere), letto contro un mercato ricostruito dai prezzi dei partner: margine tolto per book, poi media.",
+  marketOnlyFarNote: "Il prezzo equo del nostro numero dista più del 25% dal miglior prezzo partner: mostriamo il mercato.",
 };
 
 const es: ClassicCopy = {
@@ -148,6 +167,12 @@ const es: ClassicCopy = {
   whereDiffers: "Donde nuestra estimación más se aleja",
   whereDiffersHint: "Partidos por empezar en los que nuestra estimación y el mercado no coinciden, dentro de nuestra protección de 15 puntos. Una lectura, no una recomendación.",
   draw: "Empate",
+  noPrice: "Aún sin precio",
+  noPriceNote: "Aún sin número: ningún precio de mercado corresponde a este pick y la lectura del modelo es demasiado antigua para mostrarla sola.",
+  noPriceTennisNote: "Aún sin número: no hay precio de mercado para este partido y nunca mostramos nuestro Elo de tenis sin él.",
+  partnerMarket: "Mercado según precios de socios",
+  partnerMarketInfo: "Solo nuestro modelo (sin mercado guardado con el que mezclar), frente a un mercado reconstruido con precios de socios: margen quitado por casa, luego promedio.",
+  marketOnlyFarNote: "El precio justo de nuestro número está a más del 25% del mejor precio de socio: mostramos el mercado.",
 };
 
 const fr: ClassicCopy = {
@@ -181,6 +206,12 @@ const fr: ClassicCopy = {
   whereDiffers: "Là où notre estimation s'écarte le plus",
   whereDiffersHint: "Matchs à venir où notre estimation et le marché divergent, dans notre protection de 15 points. Une lecture, pas une recommandation.",
   draw: "Match nul",
+  noPrice: "Pas encore de prix",
+  noPriceNote: "Pas encore de chiffre : aucun prix de marché ne correspond à ce pick, et la lecture du modèle est trop ancienne.",
+  noPriceTennisNote: "Pas encore de chiffre : aucun prix de marché pour ce match, et notre Elo tennis n'est jamais affiché sans lui.",
+  partnerMarket: "Marché issu des prix partenaires",
+  partnerMarketInfo: "Notre modèle seul (aucun marché enregistré à mélanger), lu face à un marché reconstruit à partir des prix partenaires : marge retirée par bookmaker, puis moyenne.",
+  marketOnlyFarNote: "Le prix juste de notre chiffre est à plus de 25 % du meilleur prix partenaire : nous affichons le marché.",
 };
 
 const de: ClassicCopy = {
@@ -214,6 +245,12 @@ const de: ClassicCopy = {
   whereDiffers: "Wo unsere Schätzung am stärksten abweicht",
   whereDiffersHint: "Noch nicht begonnene Spiele, bei denen unsere Schätzung und der Markt auseinanderliegen, innerhalb unseres 15-Punkte-Schutzes. Eine Einordnung, keine Empfehlung.",
   draw: "Unentschieden",
+  noPrice: "Noch kein Preis",
+  noPriceNote: "Noch keine Zahl: Kein Marktpreis passt zu diesem Pick, und unsere Modell-Einschätzung ist zu alt, um allein zu stehen.",
+  noPriceTennisNote: "Noch keine Zahl: kein Marktpreis für dieses Match, und unser Tennis-Elo erscheint nie ohne einen.",
+  partnerMarket: "Markt aus Partnerpreisen",
+  partnerMarketInfo: "Nur unser Modell (kein gespeicherter Markt zum Mischen), gelesen gegen einen aus Partnerpreisen gebauten Markt: Marge je Buchmacher entfernt, dann gemittelt.",
+  marketOnlyFarNote: "Der faire Preis unserer Zahl liegt mehr als 25 % vom besten Partnerpreis entfernt: Wir zeigen den Markt.",
 };
 
 const pt: ClassicCopy = {
@@ -247,6 +284,12 @@ const pt: ClassicCopy = {
   whereDiffers: "Onde a nossa estimativa mais se afasta",
   whereDiffersHint: "Jogos por começar em que a nossa estimativa e o mercado divergem, dentro da nossa proteção de 15 pontos. Uma leitura, não uma recomendação.",
   draw: "Empate",
+  noPrice: "Ainda sem preço",
+  noPriceNote: "Ainda sem número: nenhum preço de mercado corresponde a este pick e a leitura do modelo é antiga demais para aparecer sozinha.",
+  noPriceTennisNote: "Ainda sem número: não há preço de mercado para este jogo, e nunca mostramos o nosso Elo de ténis sem ele.",
+  partnerMarket: "Mercado a partir de preços de parceiros",
+  partnerMarketInfo: "Só o nosso modelo (sem mercado registado para combinar), lido contra um mercado refeito com preços de parceiros: margem retirada por casa, depois média.",
+  marketOnlyFarNote: "O preço justo do nosso número está a mais de 25% do melhor preço de parceiro: mostramos o mercado.",
 };
 
 const nl: ClassicCopy = {
@@ -280,6 +323,12 @@ const nl: ClassicCopy = {
   whereDiffers: "Waar onze schatting het meest afwijkt",
   whereDiffersHint: "Nog niet begonnen wedstrijden waarin onze schatting en de markt verschillen, binnen onze bescherming van 15 punten. Een lezing, geen advies.",
   draw: "Gelijkspel",
+  noPrice: "Nog geen prijs",
+  noPriceNote: "Nog geen getal: geen marktprijs past bij deze pick, en onze modellezing is te oud om alleen te tonen.",
+  noPriceTennisNote: "Nog geen getal: geen marktprijs voor deze wedstrijd, en ons tennis-Elo tonen we nooit zonder.",
+  partnerMarket: "Markt uit partnerprijzen",
+  partnerMarketInfo: "Alleen ons model (geen opgeslagen markt om mee te mengen), gelezen tegen een markt opgebouwd uit partnerprijzen: marge per bookmaker eraf, dan gemiddeld.",
+  marketOnlyFarNote: "De faire prijs van ons getal ligt meer dan 25% van de beste partnerprijs: we tonen de markt.",
 };
 
 const pl: ClassicCopy = {
@@ -313,6 +362,12 @@ const pl: ClassicCopy = {
   whereDiffers: "Gdzie nasze oszacowanie najbardziej się różni",
   whereDiffersHint: "Mecze przed startem, w których nasze oszacowanie i rynek się różnią, w granicach naszej 15-punktowej ochrony. Odczyt, nie rekomendacja.",
   draw: "Remis",
+  noPrice: "Jeszcze bez ceny",
+  noPriceNote: "Jeszcze bez liczby: żadna cena rynkowa nie pasuje do tego typu, a odczyt modelu jest zbyt stary, by stać sam.",
+  noPriceTennisNote: "Jeszcze bez liczby: brak ceny rynkowej dla tego meczu, a naszego Elo tenisowego nigdy nie pokazujemy bez niej.",
+  partnerMarket: "Rynek z cen partnerów",
+  partnerMarketInfo: "Tylko nasz model (brak zapisanego rynku do połączenia), czytany wobec rynku odtworzonego z cen partnerów: marża usunięta dla każdego bukmachera, potem średnia.",
+  marketOnlyFarNote: "Uczciwa cena naszej liczby różni się o ponad 25% od najlepszej ceny partnera: pokazujemy rynek.",
 };
 
 const tr: ClassicCopy = {
@@ -346,6 +401,12 @@ const tr: ClassicCopy = {
   whereDiffers: "Tahminimizin en çok ayrıştığı yerler",
   whereDiffersHint: "Tahminimizle piyasanın ayrıştığı, henüz başlamamış maçlar; 15 puanlık korumamızın içinde. Bir okuma, tavsiye değil.",
   draw: "Beraberlik",
+  noPrice: "Henüz fiyat yok",
+  noPriceNote: "Henüz sayı yok: bu seçimle eşleşen piyasa fiyatı yok ve model okumamız tek başına gösterilemeyecek kadar eski.",
+  noPriceTennisNote: "Henüz sayı yok: bu maç için piyasa fiyatı yok ve tenis Elo'muzu asla fiyatsız göstermiyoruz.",
+  partnerMarket: "Partner fiyatlarından piyasa",
+  partnerMarketInfo: "Yalnızca modelimiz (karıştırılacak kayıtlı piyasa yok), partner fiyatlarından yeniden kurulan piyasaya karşı okunur: her sitenin marjı çıkarılır, sonra ortalama alınır.",
+  marketOnlyFarNote: "Sayımızın adil fiyatı en iyi partner fiyatından %25'ten fazla uzak: piyasayı gösteriyoruz.",
 };
 
 const sv: ClassicCopy = {
@@ -379,6 +440,12 @@ const sv: ClassicCopy = {
   whereDiffers: "Där vår uppskattning skiljer sig mest",
   whereDiffersHint: "Matcher som inte har börjat där vår uppskattning och marknaden skiljer sig åt, inom vårt skydd på 15 punkter. En läsning, inte en rekommendation.",
   draw: "Oavgjort",
+  noPrice: "Inget pris än",
+  noPriceNote: "Ingen siffra än: inget marknadspris matchar det här spelet, och vår modelläsning är för gammal för att stå ensam.",
+  noPriceTennisNote: "Ingen siffra än: inget marknadspris för matchen, och vår tennis-Elo visas aldrig utan ett.",
+  partnerMarket: "Marknad från partnerpriser",
+  partnerMarketInfo: "Bara vår modell (ingen sparad marknad att blanda), läst mot en marknad byggd av partnerpriser: marginalen borttagen per spelbolag, sedan medelvärde.",
+  marketOnlyFarNote: "Vår siffras rättvisa pris ligger mer än 25 % från bästa partnerpriset: vi visar marknaden.",
 };
 
 const ru: ClassicCopy = {
@@ -412,6 +479,12 @@ const ru: ClassicCopy = {
   whereDiffers: "Где наша оценка расходится сильнее всего",
   whereDiffersHint: "Матчи до начала, где наша оценка и рынок расходятся, в пределах нашей защиты в 15 пунктов. Чтение, а не рекомендация.",
   draw: "Ничья",
+  noPrice: "Цены пока нет",
+  noPriceNote: "Числа пока нет: ни одна рыночная цена не подходит к этому выбору, а показание модели слишком старое, чтобы стоять отдельно.",
+  noPriceTennisNote: "Числа пока нет: для этого матча нет рыночной цены, а наш теннисный Elo без неё мы не показываем.",
+  partnerMarket: "Рынок по ценам партнёров",
+  partnerMarketInfo: "Только наша модель (нет сохранённого рынка для смешивания) против рынка, собранного из цен партнёров: маржа снята у каждой конторы, затем среднее.",
+  marketOnlyFarNote: "Справедливая цена нашего числа отличается от лучшей цены партнёра более чем на 25%: показываем рынок.",
 };
 
 export const CLASSIC_COPY: Record<ClassicLang, ClassicCopy> = { en, it, es, fr, de, pt, nl, pl, tr, sv, ru };
