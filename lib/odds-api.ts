@@ -88,18 +88,57 @@ function bestPrice(events: OddsEvent[], homeNorm: string, awayNorm: string, mark
   return best;
 }
 
+// #ODDS-LOG-1008: one log line per league call, so a league that comes back
+// empty says why (HTTP status, exception, non-JSON, 0 events). Observability
+// only: return values and control flow are unchanged. Never log the URL, the
+// query string or the key: The Odds API takes it as `apiKey=` in the query.
+function scrubError(e: unknown, apiKey: string | undefined): string {
+  let msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+  if (apiKey) msg = msg.split(apiKey).join("***");
+  msg = msg
+    .replace(/https?:\/\/\S+/gi, "<url>")
+    .replace(/apiKey=[^&\s]*/gi, "apiKey=***")
+    .replace(/\s+/g, " ");
+  return msg.slice(0, 160);
+}
+
+function logOdds(
+  league: string,
+  sportKey: string | undefined,
+  outcome: string,
+  fields: Record<string, string | number | null | undefined> = {},
+): void {
+  const parts = [`[odds-api ${league}]`, `sport=${sportKey ?? "-"}`, `outcome=${outcome}`];
+  for (const [k, v] of Object.entries(fields)) parts.push(`${k}=${v ?? "-"}`);
+  const line = parts.join(" ");
+  if (outcome === "ok") console.log(line);
+  else console.warn(line);
+}
+
 export async function fetchOdds(league: string): Promise<OddsResult[]> {
   const apiKey = process.env.ODDS_API_KEY;
   const sportKey = SPORT_KEYS[league];
-  if (!apiKey || !sportKey) return [];
+  if (!apiKey || !sportKey) {
+    logOdds(league, sportKey, apiKey ? "skipped_no_sport_key" : "skipped_no_key");
+    return [];
+  }
 
   // #ODDS-QUOTA-GUARD: sotto la riserva NON chiamiamo /odds — proteggiamo il
   // budget condiviso (tennis/Python) dal drain del path football, che prima
   // girava senza tracker. Il football degrada a stime-modello (odds/edge null),
   // nessuna quota inventata.
-  if (!oddsBudgetOk()) return [];
+  if (!oddsBudgetOk()) {
+    logOdds(league, sportKey, "skipped_budget");
+    return [];
+  }
 
   const summer = isSummerLeague(league);
+  const t0 = Date.now();
+  let status: number | null = null;
+  let remaining: string | null = null;
+  let used: string | null = null;
+  let retried422 = 0;
+  let stage = "fetch";
   try {
     const url = new URL(`${BASE}/sports/${sportKey}/odds`);
     url.searchParams.set("apiKey", apiKey);
@@ -123,13 +162,22 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
     let r = await fetch(url.toString(), { cache: "no-store" });
     observeRemaining(r.headers.get("x-requests-remaining"));
     if (r.status === 422) {
+      retried422 = 1;
       url.searchParams.set("markets", "h2h,totals");
       r = await fetch(url.toString(), { cache: "no-store" });
       observeRemaining(r.headers.get("x-requests-remaining"));
     }
-    if (!r.ok) return [];
+    status = r.status;
+    remaining = r.headers.get("x-requests-remaining");
+    used = r.headers.get("x-requests-used");
+    if (!r.ok) {
+      logOdds(league, sportKey, "http_error", { status, retried422, remaining, used, ms: Date.now() - t0 });
+      return [];
+    }
 
+    stage = "json";
     const events = await r.json() as OddsEvent[];
+    stage = "parse";
 
     const results: OddsResult[] = [];
     for (const ev of events) {
@@ -179,8 +227,14 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
         extra,
       });
     }
+    logOdds(league, sportKey, events.length ? "ok" : "empty", {
+      status, events: events.length, results: results.length, retried422, remaining, used, ms: Date.now() - t0,
+    });
     return results;
-  } catch {
+  } catch (e) {
+    logOdds(league, sportKey, stage === "json" ? "non_json" : "exception", {
+      status, stage, retried422, remaining, used, ms: Date.now() - t0, err: scrubError(e, apiKey),
+    });
     return [];
   }
 }
