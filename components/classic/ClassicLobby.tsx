@@ -32,9 +32,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEvent } from "react";
 import type { LobbyItem, LobbySectionId } from "@/lib/ui/lobby";
 import {
-  applySportFilter, applyTab, differsMostItems, featuredItems, groupBySportLeague, matchesDateFilter, matchesQuery,
+  dedupeLobby, differsMostItems, featuredItems, groupBySportLeague, matchesDateFilter, matchesQuery, scopeLobby,
   UNNAMED_LEAGUE, type DateFilter, type LeagueCountry, type LobbyTab, type SportFilter,
 } from "@/lib/classic/lobby-model";
+import { differsBy, footballBooks } from "@/lib/classic/card-view";
+import { abbinaQuotaPartner } from "@/lib/fp-odds-join";
+import { useClassicPrices } from "@/components/classic/ClassicContext";
 import { classicCopy, fill, type ClassicCopy } from "@/lib/classic/lobby-copy";
 import { ClassicBanners, type ClassicBanner } from "@/components/classic/ClassicBanners";
 import { IconChevronDown, IconChevronRight, IconClose, IconFootball, IconSearch, IconStar, IconTennis } from "@/components/ui/icons";
@@ -132,30 +135,18 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   }, [nowProp]);
   const now = nowProp ?? tick;
 
-  const all = useMemo(() => [...football, ...tennis], [football, tennis]);
+  // #CLASSIC-FIX2-1008 (A1) — una riga per partita: coppia non ordinata ±48 h (tennis ±36 h).
+  const all = useMemo(() => dedupeLobby([...football, ...tennis]), [football, tennis]);
   const searched = useMemo(() => all.filter((it) => matchesQuery(it, query)), [all, query]);
 
-  // I contatori della striscia contano ciò che la tab attiva mostrerebbe: su
-  // In-Play «Football 120» accanto a due partite in gioco era un numero che
-  // non corrisponde a niente di visibile.
-  const sportCounts = useMemo(() => {
-    const inTab = applyTab(searched, tab, now);
-    return {
-      popular: tab === "all" ? inTab.length : applySportFilter(inTab, "popular").length,
-      football: inTab.filter((it) => it.data.sport === "football").length,
-      tennis: inTab.filter((it) => it.data.sport === "tennis").length,
-    };
-  }, [searched, tab, now]);
-
-  // «All Sports» è l'elenco intero: lì il filtro «Popular» (solo leghe top)
-  // non restringe — altrimenti la tab che promette tutto ne nasconderebbe metà.
-  const sportScoped = useMemo(
-    () => (tab === "all" && sport === "popular" ? searched : applySportFilter(searched, sport)),
-    [searched, sport, tab],
-  );
-  const hiddenByPopular = sport === "popular" && tab !== "all" ? searched.length - sportScoped.length : 0;
-
-  const tabScoped = useMemo(() => applyTab(sportScoped, tab, now), [sportScoped, tab, now]);
+  // I contatori della striscia contano ciò che la tab attiva mostrerebbe, con
+  // LO STESSO filtro della lista (#CLASSIC-FIX2-1008 A3: scopeLobby). «All
+  // Sports» è l'elenco intero: lì «Popular» non restringe.
+  const scoped = useMemo(() => scopeLobby(searched, tab, sport, now), [searched, tab, sport, now]);
+  const sportCounts = scoped.counts;
+  const hiddenByPopular = tab !== "all" ? scoped.hidden : 0;
+  const tabScoped = scoped.list;
+  const sportScoped = tabScoped;
   const dateFilterOn = tab === "featured" || tab === "all";
   const listed = useMemo(
     () => (dateFilterOn ? tabScoped.filter((it) => matchesDateFilter(it, when, tz, now)) : tabScoped),
@@ -164,7 +155,17 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   const blocks = useMemo(() => groupBySportLeague(listed), [listed]);
 
   const featured = useMemo(() => (tab === "featured" ? featuredItems(sportScoped, now) : []), [tab, sportScoped, now]);
-  const differs = useMemo(() => (tab === "featured" ? differsMostItems(sportScoped, now) : []), [tab, sportScoped, now]);
+  // #CLASSIC-FIX2-1008 (M2) — lo scarto della fascia è quello che la scheda mostra: con le
+  // stesse quote partner della Slab (nessuna, dove i link sono bloccati).
+  const prices = useClassicPrices();
+  const differs = useMemo(() => {
+    if (tab !== "featured") return [];
+    const gapOf = (it: LobbyItem) => {
+      const fp = prices.booksBlocked ? null : abbinaQuotaPartner(it.data.home, it.data.away, it.data.startsAt, prices.fpOdds, prices.fpIndex).quota;
+      return differsBy(it.data, footballBooks(fp, it.data.home, it.data.away));
+    };
+    return differsMostItems(sportScoped, now, undefined, gapOf);
+  }, [tab, sportScoped, now, prices]);
 
   const whenCounts = useMemo(() => ({
     all: tabScoped.length,
@@ -200,7 +201,12 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
     toggled[groupId] ?? (indexInSport < OPEN_PER_SPORT || query.trim() !== "");
 
   const sportLabel = (s: string) => (s === "football" ? copy.football : s === "tennis" ? copy.tennis : s);
-  const tzName = tzAbbr(tz, lang, now);
+  // #CLASSIC-FIX2-1008 (QA M1, React #418) — la sigla del fuso dipende dall'orologio del
+  // browser: il server (UTC su Vercel) scriveva «Times in UTC», il client «CEST» → testo
+  // diverso all'idratazione. Si scrive solo dopo il montaggio, come ClassicTzNote.
+  const [tzName, setTzName] = useState<string | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- il fuso del client esiste solo dopo il montaggio
+  useEffect(() => setTzName(tzAbbr(tz, lang, now)), [tz, lang, now]);
 
   const bannerList: ClassicBanner[] = [
     { id: "board", title: copy.b1Title, sub: copy.b1Sub, cta: copy.b1Cta, ...banners.board },
@@ -347,7 +353,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
           <header className="brc-sec__head">
             <div>
               <h2 id="brc-leagues-h" className="brc-sec__title">{copy.leaguesTitle}</h2>
-              <p className="brc-sec__hint">{copy.leaguesHint} {fill(copy.timesIn, { tz: tzName })}.</p>
+              <p className="brc-sec__hint">{copy.leaguesHint}{tzName && <> {fill(copy.timesIn, { tz: tzName })}.</>}</p>
             </div>
           </header>
 

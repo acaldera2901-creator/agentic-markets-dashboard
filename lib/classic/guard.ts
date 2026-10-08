@@ -131,8 +131,8 @@ export const PAIR_TWIN_WINDOW_H = 48;
  * dato (il chiamante decide la priorità: la riga del board così com'è arriva).
  * `norm` normalizza un nome (normName per il calcio, playerKey per il tennis).
  */
-export function dedupeByPair<T>(rows: readonly T[], pick: (r: T) => { a: string; b: string; at: string }, norm: (n: string) => string): T[] {
-  const windowMs = PAIR_TWIN_WINDOW_H * 3_600_000;
+export function dedupeByPair<T>(rows: readonly T[], pick: (r: T) => { a: string; b: string; at: string }, norm: (n: string) => string, windowH: number = PAIR_TWIN_WINDOW_H): T[] {
+  const windowMs = windowH * 3_600_000;
   const seen = new Map<string, number[]>();
   const out: T[] = [];
   for (const r of rows) {

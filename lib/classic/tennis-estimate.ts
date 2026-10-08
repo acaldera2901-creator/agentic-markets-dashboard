@@ -125,11 +125,24 @@ export function orientElo(r: TennisEstimateInput): { p1: number; p2: number } | 
 }
 
 /**
+ * #CLASSIC-FIX2-1008 (QA A2) — an ISO timestamp WITHOUT a zone is UTC. /api/tennis serves
+ * `computed_at` as «2026-10-08T12:01:00.492886» (no «Z»): `Date.parse` reads that as the
+ * visitor's local time, so Tokyo saw 0 «Elo-based» cards and New York stretched the 6 h
+ * window by 4 h. Here the same string is the same instant in every time zone.
+ */
+export function parseUtcMs(iso: string | null | undefined): number {
+  if (!iso) return NaN;
+  const s = iso.trim();
+  const naive = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s);
+  return Date.parse(naive ? `${s.replace(" ", "T")}Z` : s);
+}
+
+/**
  * The displayed tennis estimate of one board row. `now` dates the Elo snapshot.
  */
 export function tennisEstimate(r: TennisEstimateInput, now: Date): TennisEstimate {
   const elo = orientElo(r);
-  const t = r.elo_as_of ? Date.parse(r.elo_as_of) : NaN;
+  const t = parseUtcMs(r.elo_as_of);
   const age = Number.isFinite(t) ? Math.max(0, Math.round((now.getTime() - t) / 60_000)) : null;
   const asOf = Number.isFinite(t) ? new Date(t).toISOString() : null;
   const eloOut = elo ? { p1: roundP(elo.p1), p2: roundP(elo.p2) } : null;

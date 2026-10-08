@@ -17,6 +17,34 @@ import type { LobbyItem } from "@/lib/ui/lobby";
 import { startingSoonLabel } from "@/lib/ui/lobby";
 import { MARKET_BLEND_ALPHA } from "@/lib/poisson-model";
 import { differsBy as slabDiffersBy } from "@/lib/classic/card-view";
+import { dedupeByPair, PAIR_TWIN_WINDOW_H } from "@/lib/classic/guard";
+import { playerKey } from "@/lib/classic/fixdata3";
+import { normName } from "@/lib/odds-api";
+
+// ─── Una riga per partita (REGOLE-CLASSIC: coppia non ordinata ±48 h) ──────
+
+/** Tennis: ±36 h, come lib/classic/tennis-estimate dedupeTennisRows — l'orario del feed
+ *  partner è spesso un segnaposto a ore di distanza dall'inizio vero. */
+export const TENNIS_TWIN_WINDOW_H = 36;
+
+/**
+ * #CLASSIC-FIX2-1008 (QA A1) — la stessa partita due volte con orari e numeri in conflitto
+ * (Mertens–Swiatek ESPN 13:00 e feed partner 05:00; Shamrock–Drogheda gio e ven). Coppia NON
+ * ordinata, calcio ±48 h, tennis ±36 h, anche fra righe ESPN e righe del feed partner.
+ * Si tiene la riga ESPN/Elo (torneo e orario veri) davanti a quella del feed partner;
+ * a parità, la prima nell'ordine del board. L'ordine d'uscita resta quello d'entrata.
+ * Limite: fra due righe dello stesso feed non c'è un dato che dica quale orario è vero.
+ */
+export function dedupeLobby(items: readonly LobbyItem[]): LobbyItem[] {
+  const isPartner = (it: LobbyItem) => it.data.sport === "tennis" && it.data.probabilitySource === "market";
+  const ranked = items.map((it, i) => ({ it, i })).sort((a, b) => Number(isPartner(a.it)) - Number(isPartner(b.it)) || a.i - b.i);
+  const pick = ({ it }: { it: LobbyItem }) => ({ a: it.data.home, b: it.data.away, at: it.data.startsAt });
+  const kept = new Set<string>([
+    ...dedupeByPair(ranked.filter((r) => r.it.data.sport === "tennis"), pick, playerKey, TENNIS_TWIN_WINDOW_H),
+    ...dedupeByPair(ranked.filter((r) => r.it.data.sport !== "tennis"), pick, normName, PAIR_TWIN_WINDOW_H),
+  ].map((r) => r.it.key));
+  return items.filter((it) => kept.has(it.key));
+}
 
 // ─── Leghe: paese e rango ───────────────────────────────────────────────────
 
@@ -269,7 +297,16 @@ export function estimatedRawGapPp(it: LobbyItem): number | null {
  *  cui scarto grezzo stimato resta entro 15 punti. Ordinate per |scarto
  *  servito| decrescente — è il numero che la scheda mostra, quindi l'ordine
  *  che l'utente può verificare a occhio. */
-export function differsMostItems(items: readonly LobbyItem[], now: number = Date.now(), cap: number = DIFFERS_CAP): LobbyItem[] {
+export function differsMostItems(
+  items: readonly LobbyItem[],
+  now: number = Date.now(),
+  cap: number = DIFFERS_CAP,
+  /** #CLASSIC-FIX2-1008 (QA M2) — |scarto| che la scheda MOSTRA (con le quote partner del
+   *  desk, come la Slab); null = fuori. Senza, quello sui soli numeri serviti. */
+  gapOf: (it: LobbyItem) => number | null = (it) => slabDiffersBy(it.data),
+): LobbyItem[] {
+  const gaps = new Map<string, number>();
+  const shownGap = (it: LobbyItem) => gaps.get(it.key) ?? Math.abs(it.data.edgePct ?? 0);
   return items
     // Solo calcio. Il «nostro» numero del tennis oggi è un Elo temperato, non
     // sigillato (REGOLE-CLASSIC: tennis «Market only» o «Elo-based, not
@@ -278,18 +315,27 @@ export function differsMostItems(items: readonly LobbyItem[], now: number = Date
     // senza questo filtro la fascia era 6 su 6 tennis Elo.
     .filter((it) => it.data.sport === "football")
     .filter((it) => !it.data.isLive && startMs(it) > now)
-    .filter((it) => it.data.edgePct != null && Number.isFinite(it.data.edgePct))
     .filter((it) => {
       // #CLASSIC-INT-1008 — con i numeri grezzi della riga (a flag acceso li
       // porta lib/ui/desk-card) decide la STESSA protezione della scheda Slab
       // (lib/classic/card-view differsBy: «estimate», guard ok ≤ 15 pp): così
       // nella fascia non entra mai una scheda che poi si dichiara protetta.
       // Senza, la stima per inversione del blend qui sopra.
-      if (it.data.classic) return slabDiffersBy(it.data) != null;
+      if (it.data.classic) {
+        const g = gapOf(it);
+        if (g == null) return false;
+        gaps.set(it.key, g);
+        return true;
+      }
+      // Senza i numeri grezzi serve l'edge servito. Con, no: una riga chiusa senza quota
+      // servita ha edgePct null e il mercato dai book partner (Lens–Lione, QA M2).
+      if (it.data.edgePct == null || !Number.isFinite(it.data.edgePct)) return false;
       const g = estimatedRawGapPp(it);
       return g != null && g <= DIFFERS_MAX_RAW_GAP_PP;
     })
-    .sort((a, b) => Math.abs(b.data.edgePct ?? 0) - Math.abs(a.data.edgePct ?? 0) || startMs(a) - startMs(b))
+    // #CLASSIC-FIX2-1008 (QA M2) — l'ordine è lo scarto MOSTRATO dalla scheda, non edgePct
+    // (quota grezza, senza le quote partner): prima 3,9 · 2,3 · 4,1, e Lens +12,5 fuori.
+    .sort((a, b) => shownGap(b) - shownGap(a) || startMs(a) - startMs(b))
     .slice(0, cap);
 }
 
@@ -310,6 +356,24 @@ export function applyTab(items: readonly LobbyItem[], tab: LobbyTab, now: number
   if (tab === "inplay") return items.filter((it) => it.data.isLive);
   if (tab === "soon") return items.filter((it) => !it.data.isLive && startingSoonLabel(it.data.startsAt, now) != null);
   return [...items];
+}
+
+/**
+ * #CLASSIC-FIX2-1008 (QA A3) — contatori della striscia sport e lista con LO STESSO filtro,
+ * nello stesso ordine (prima la tab, poi lo sport): «Starting Soon» diceva «Popular 20» e
+ * mostrava «Nothing kicks off» perché il contatore filtrava la tab prima delle leghe top e
+ * la lista il contrario. Su «All Sports» Popular non restringe (la tab promette tutto).
+ * `hidden` = quante righe della tab Popular lascia fuori (la riga «N more in other leagues»).
+ */
+export function scopeLobby(items: readonly LobbyItem[], tab: LobbyTab, sport: SportFilter, now: number = Date.now()) {
+  const inTab = applyTab(items, tab, now);
+  const scope = (s: SportFilter) => (tab === "all" && s === "popular" ? inTab : applySportFilter(inTab, s));
+  const list = scope(sport);
+  return {
+    list,
+    counts: { popular: scope("popular").length, football: scope("football").length, tennis: scope("tennis").length },
+    hidden: sport === "popular" ? inTab.length - list.length : 0,
+  };
 }
 
 export function matchesQuery(it: LobbyItem, q: string): boolean {

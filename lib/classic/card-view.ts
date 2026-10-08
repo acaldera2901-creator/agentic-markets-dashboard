@@ -46,7 +46,7 @@ import {
 } from "./guard";
 import { market1x2, market2way } from "./prob";
 import { isFlat } from "./scale";
-import { TENNIS_ELO_MAX_AGE_MIN, tennisEstimate } from "./tennis-estimate";
+import { TENNIS_ELO_MAX_AGE_MIN, parseUtcMs, tennisEstimate } from "./tennis-estimate";
 import { playerKey, tennisPairId } from "./fixdata3";
 import { teamPairKey } from "@/lib/team-pair-key";
 import { noVigProbabilities } from "@/lib/betting-math";
@@ -141,7 +141,7 @@ function bestLinkedPrice(books: readonly ClassicBook[], idx: number): number | n
 
 /** Il numero ha al più MODEL_ALONE_MAX_AGE_MIN minuti? Senza data: no. */
 export function freshEnough(asOf: string | null | undefined, now: Date): boolean {
-  const t = asOf ? Date.parse(asOf) : NaN;
+  const t = parseUtcMs(asOf);
   return Number.isFinite(t) && (now.getTime() - t) / 60_000 <= MODEL_ALONE_MAX_AGE_MIN;
 }
 
@@ -338,7 +338,17 @@ export function classicTennisView(i: ClassicTennisInput): ClassicView {
   // il mercato del lato mostrato: quote servite, altrimenti i book partner
   let mLead: number | null = null;
   let from: ClassicMarketFrom = null;
-  if (open) {
+  if (partnerRow) {
+    // #CLASSIC-FIX2-1008 (QA B1) — la riga partner È il mercato de-viggato col margine
+    // VERO dei book (/api/tennis model_prob, partner-market-v1): mai 1/quota/1,05, che
+    // con un margine reale ~10% gonfiava il favorito di 2–4 punti (Mertens–Swiatek 81
+    // invece di 77,8). Senza quel numero, il de-vig per book come nel calcio.
+    if (shown != null) { mLead = shown; from = "served"; }
+    else {
+      const bm = bookImpliedMarket(books, 2);
+      if (bm) { idx = idx ?? (bm[0] >= bm[1] ? 0 : 1); mLead = bm[idx]; from = "partners"; }
+    }
+  } else if (open) {
     const served = i.odds && saneMarketSet(i.odds as number[]) ? market2way(i.odds[0], i.odds[1]) : null;
     const bm = served ? null : bookImpliedMarket(books, 2);
     const mkt = served ? [served.p1, served.p2] : bm;
@@ -353,7 +363,6 @@ export function classicTennisView(i: ClassicTennisInput): ClassicView {
       if (bm && k != null) { mLead = bm[k]; idx = k; from = "partners"; }
     }
   }
-  if (partnerRow && shown != null && mLead == null) { mLead = shown; from = "served"; } // la riga partner È il mercato de-viggato
 
   const chips = open ? chipsFor(books, idx as number, landing) : [];
   const cells = open ? [] : cellsFor(books, labels);
@@ -443,10 +452,15 @@ export function tennisBooks(fp: FpLike | null | undefined, player1: string, play
  * Si calcola sui numeri serviti (senza le quote partner, che la lista non ha):
  * sulle righe aperte è identico alla scheda; sulle chiuse il margine è quello di riserva.
  */
-export function differsBy(data: { sport: string; startsAt: string; isLive: boolean; classic?: { sport: string } & Record<string, unknown> }): number | null {
+export function differsBy(
+  data: { sport: string; startsAt: string; isLive: boolean; classic?: { sport: string } & Record<string, unknown> },
+  /** #CLASSIC-FIX2-1008 — i book partner della riga (footballBooks), come li vede la scheda: senza,
+   *  una riga chiusa col mercato solo dai partner (Lens–Lione +12,5) restava fuori dalla fascia. */
+  books: readonly ClassicBook[] = [],
+): number | null {
   const raw = data.classic as Parameters<typeof classicFootballView>[0] & { sport: string } | undefined;
   if (!raw || raw.sport !== "football" || data.isLive) return null;
-  const v = classicFootballView({ ...raw, started: false, books: [] });
+  const v = classicFootballView({ ...raw, started: false, books });
   return v.kind === "estimate" && v.gapPp != null && !v.flat ? Math.abs(v.gapPp) : null;
 }
 

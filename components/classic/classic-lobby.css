@@ -116,7 +116,13 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   overflow: hidden;
+  /* #CLASSIC-FIX2-1008 (QA M3) — nella colonna flessibile il sottotitolo si
+     schiacciava sotto i link (russo e spagnolo «record»: tagliato a metà riga,
+     senza puntini). Non si restringe: i testi sono corti apposta (lobby-copy). */
+  flex-shrink: 0;
 }
+/* la freccia non va a capo da sola */
+.brc-banner__cta, .brc-banner__more { white-space: nowrap; }
 .brc-banner[data-photo]::before {
   background: linear-gradient(90deg, rgba(7,19,41,0.85) 0%, rgba(7,19,41,0.5) 38%, rgba(7,19,41,0) 55%);
 }
@@ -488,6 +494,23 @@
    dati (CLS). */
 .brc-lobby[data-loading="true"] .brc-panel { min-height: 110vh; }
 
+/* ── tablet ────────────────────────────────────────────────────────────── */
+/* #CLASSIC-FIX2-1008 (QA M3) — fra 641 e 1365 px tre banner 2:1 in fila sono
+   alti 120–210 px: titolo e sottotitolo uscivano dal fondo (misurato a 768,
+   1024 e 1280 in 5 lingue). Qui scorrono come sul telefono, larghi almeno 460 px. */
+@media (min-width: 641px) and (max-width: 1365px) {
+  .brc-banners__row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: max(460px, 48%);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .brc-banners__row::-webkit-scrollbar { display: none; }
+  .brc-banner { scroll-snap-align: start; }
+}
+
 /* ── telefono ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .brc-lobby { gap: var(--am-s-4); padding: var(--am-s-4) var(--am-s-3) var(--am-s-7); }
@@ -537,6 +560,14 @@
   .brc-grid { grid-template-columns: minmax(0, 1fr); }
   .brc-group__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
   .brc-group__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+/* #CLASSIC-FIX2-1008 (QA M3) — sotto i 380 px la colonna del testo al 54% è
+   ~175 px: francese, spagnolo e russo uscivano dal fondo. Un po' più larga e
+   il titolo un punto più piccolo; il soggetto della foto resta a destra. */
+@media (max-width: 380px) {
+  .brc-banner[data-photo] .brc-banner__text { max-width: 62%; }
+  .brc-banner[data-photo] .brc-banner__title { font-size: 17px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

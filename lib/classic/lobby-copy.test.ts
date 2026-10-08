@@ -32,6 +32,14 @@ describe("lobby-copy (classic)", () => {
     for (const s of Object.values(CLASSIC_COPY.en)) expect(s).not.toMatch(BANNED);
   });
 
+  it("#CLASSIC-FIX2-1008 (QA M3): banner subtitles fit the 40% text column — ≤ 55 characters", () => {
+    // measured with Playwright at 1440/1366/1024/768/430/390/360 in en/it/es/fr/ru: longer ones were clipped
+    for (const lang of CLASSIC_LANGS) {
+      const t = CLASSIC_COPY[lang];
+      for (const k of ["b1Sub", "b2Sub", "b3Sub"] as const) expect(t[k].length, `${lang}.${k}`).toBeLessThanOrEqual(55);
+    }
+  });
+
   it("falls back to English and fills placeholders", () => {
     expect(classicCopy("xx")).toBe(CLASSIC_COPY.en);
     expect(fill("Matches: {n}", { n: 3 })).toBe("Matches: 3");
