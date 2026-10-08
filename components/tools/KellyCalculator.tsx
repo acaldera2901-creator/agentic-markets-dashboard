@@ -8,6 +8,7 @@ import { kelly, parseOdds } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, Segmented, num, parseAmount, parsePercent, pct, signedPct, toneOf } from "./parts";
 import { Meter } from "./Meter";
+import { CLASSIC } from "@/lib/classic/flag";
 
 const FRACTIONS: Record<string, number> = { full: 1, half: 0.5, quarter: 0.25 };
 
@@ -15,18 +16,25 @@ export function KellyCalculator({ copy, dash }: { copy: ToolCopy; dash: string }
   const L = copy.labels;
   const [odds, setOdds] = useState("2.10");
   const [prob, setProb] = useState("52");
-  const [bankroll, setBankroll] = useState("1000");
+  // #CLASSIC-CARD-1008 — niente importi da una cassa di default: a flag acceso il
+  // campo parte vuoto, e lo stake si scrive solo con la cassa che l'utente digita.
+  const [bankroll, setBankroll] = useState(CLASSIC ? "" : "1000");
   const [fractionId, setFractionId] = useState("full");
 
   const result = useMemo(() => {
     const decimal = parseOdds(odds, "decimal");
     const probability = parsePercent(prob);
-    const bank = parseAmount(bankroll);
+    const typed = parseAmount(bankroll);
+    // classic: senza cassa le percentuali si calcolano su 1 e lo stake resta il trattino
+    const bank = typed ?? (CLASSIC && bankroll.trim() === "" ? 1 : null);
     if (decimal === null || probability === null || bank === null) return null;
-    return kelly({ probability, decimal, bankroll: bank, fraction: FRACTIONS[fractionId] });
+    const r = kelly({ probability, decimal, bankroll: bank, fraction: FRACTIONS[fractionId] });
+    if (!r) return r;
+    const stake: number | null = CLASSIC && typed === null ? null : r.stake;
+    return { ...r, stake };
   }, [odds, prob, bankroll, fractionId]);
 
-  const noEdge = result !== null && result.stake === 0;
+  const noEdge = result != null && (CLASSIC ? result.stakeFraction === 0 : result.stake === 0);
   // Traccia = Kelly PIENO. Le tacche a ¼ e ½ rendono visibile il messaggio della
   // pagina: quasi nessuno dovrebbe stare in fondo alla barra.
   const share = result && result.fullKelly > 0 ? result.stakeFraction / result.fullKelly : null;

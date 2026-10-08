@@ -16,6 +16,7 @@ import { bankrollPlan, parseCount } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, num, parseAmount, parsePercent, pct } from "./parts";
 import { Meter, type MeterSegment } from "./Meter";
+import { CLASSIC } from "@/lib/classic/flag";
 
 // Stessa soglia dello stake calculator, e nessuna delle due la nasconde: sopra
 // il 5% per unità la serie negativa ordinaria si porta via metà della cassa.
@@ -26,7 +27,7 @@ export function BankrollCalculator({ copy, dash }: { copy: ToolCopy; dash: strin
   const L = copy.labels;
   // Default 2.000 / 2% / 10: l'esempio lavorato della pagina — unità 40, serie
   // da 400, drawdown 20%, cassa che copre 50 giocate perse consecutive.
-  const [bankroll, setBankroll] = useState("2000");
+  const [bankroll, setBankroll] = useState(CLASSIC ? "" : "2000"); // #CLASSIC-CARD-1008: nessuna cassa di default
   const [unitPercent, setUnitPercent] = useState("2");
   const [streak, setStreak] = useState("10");
 

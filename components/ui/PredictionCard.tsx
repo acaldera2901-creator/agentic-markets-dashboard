@@ -38,6 +38,8 @@ import { WatchlistButton } from "@/components/ui/WatchlistButton";
 import { IconArrow, IconCheck, IconClock, IconEdge, IconLock, IconStar } from "@/components/ui/icons";
 import { EDGE_HIGH_PP, formatPct, splitLiveScore, type PredictionCardData } from "@/lib/ui/prediction-card";
 import type { Lang } from "@/lib/house-banners";
+import { CLASSIC } from "@/lib/classic/flag";
+import { ClassicSlab } from "@/components/classic/ClassicSlab";
 
 function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T {
   return v[lang];
@@ -122,7 +124,13 @@ function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): 
   return null;
 }
 
-export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className, lang = "en", included }: PredictionCardProps) {
+export function PredictionCard(props: PredictionCardProps) {
+  // #CLASSIC-CARD-1008 — a flag di build acceso, la scheda Slab (stesse props).
+  if (CLASSIC) return <ClassicSlab {...props} />;
+  return <PredictionCardCurrent {...props} />;
+}
+
+function PredictionCardCurrent({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className, lang = "en", included }: PredictionCardProps) {
   const locked = variant === "premiumLocked" || data.locked === true;
   // Una card chiusa non è mai «inclusa», qualunque cosa dica il chiamante.
   const inc = !!included && !locked;

@@ -17,6 +17,7 @@
 import { displayTournament, probabilitySourceOf } from "@/lib/partner-market";
 import type { PredictionCardData } from "@/lib/ui/prediction-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
+import { CLASSIC } from "@/lib/classic/flag";
 
 /** Il sottoinsieme di `Prediction` (calcio) che serve alla card.
  *
@@ -176,6 +177,12 @@ export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {
     explanation: row.explanation ?? null,
     locked: opts.locked ?? row.locked ?? false,
     quotaBorrowed: row.quota_borrowed === true,
+    // #CLASSIC-CARD-1008 — i numeri grezzi della riga, per la scheda Slab (solo a flag acceso).
+    ...(CLASSIC ? {
+      classic: hasTriple
+        ? { sport: "football" as const, est: [row.p_home, row.p_draw, row.p_away] as [number | null | undefined, number | null | undefined, number | null | undefined], odds: [row.odds_home, row.odds_draw, row.odds_away] as [number | null | undefined, number | null | undefined, number | null | undefined], leadIdx: (key === "HOME" ? 0 : key === "DRAW" ? 1 : 2) as 0 | 1 | 2 }
+        : { sport: "football" as const, estLead: num(row.model_prob), oddsLead: num(row.market_odds) },
+    } : {}),
   };
 }
 
@@ -212,5 +219,11 @@ export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): 
     locked: opts.locked ?? row.locked ?? false,
     quotaBorrowed: row.quota_borrowed === true,
     probabilitySource: probabilitySourceOf(row.model),
+    // #CLASSIC-CARD-1008 — vedi fromDeskFootball.
+    ...(CLASSIC ? {
+      classic: hasPair
+        ? { sport: "tennis" as const, modelVersion: row.model ?? null, tournament: row.tournament, p: [row.p1, row.p2] as [number | null | undefined, number | null | undefined], odds: [row.odds_p1, row.odds_p2] as [number | null | undefined, number | null | undefined], leadIdx: (key === "P1" ? 0 : 1) as 0 | 1 }
+        : { sport: "tennis" as const, modelVersion: row.model ?? null, tournament: row.tournament, pLead: num(row.model_prob), oddsLead: num(row.market_odds) },
+    } : {}),
   };
 }

@@ -43,6 +43,11 @@ import { getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { abbinaQuotaPartner, indicizzaPerGiorno } from "@/lib/fp-odds-join";
+import { CLASSIC } from "@/lib/classic/flag";
+import { ClassicPricesScope } from "@/components/classic/ClassicContext";
+import { ClassicTzNote } from "@/components/classic/ClassicTzNote";
+import { classicCopy } from "@/lib/classic/copy";
+import { differsBy as classicDiffersBy, sheetValueAllowed as classicSheetValueAllowed } from "@/lib/classic/card-view";
 import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
@@ -5548,7 +5553,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       if (k && k === fp.awayKey) return fp.oddsAway;
       return null;
     };
-    const pv = (v: number | null) => (v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
+    // #CLASSIC-CARD-1008 — i tag «+X%» solo con la protezione ok (lib/classic/card-view.ts).
+    const valueOk = !CLASSIC || classicSheetValueAllowed(cardData, fp);
+    const pv = (v: number | null) => (valueOk && v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
     const groups: MdsGroup[] = [];
 
     // Esito 1X2
@@ -5684,6 +5691,8 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         pick: cardData.pick,
         modelPct: cardData.modelPct,
         confidence: cardData.confidence,
+        // #CLASSIC-CARD-1008 — il numero è 30% modello + 70% mercato: si chiama stima.
+        ...(CLASSIC ? { probabilityLabel: classicCopy(lang).ourEstimate } : {}),
       },
       why: footballWhyReasons({
         home: p.home_team, away: p.away_team,
@@ -5738,7 +5747,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         // regola standing e' esplicita: sotto il floor il pick non deve MAI
         // riemergere come value, perche' l'edge di mercato da solo non basta
         // quando il modello non ha un favorito.
-        value: !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+        value: valueOk && !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
@@ -5999,7 +6008,9 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       if (k && k === fp.awayKey) return fp.oddsAway;
       return null;
     };
-    const pv = (v: number | null) => (v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
+    // #CLASSIC-CARD-1008 — tennis: lo scarto Elo non è mai un segnale di valore.
+    const valueOk = !CLASSIC;
+    const pv = (v: number | null) => (valueOk && v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
     const esito: Array<{ key: "P1" | "P2"; sel: string; prob: number }> = [
       { key: "P1", sel: m.player1, prob: m.p1 },
       { key: "P2", sel: m.player2, prob: m.p2 },
@@ -6069,7 +6080,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
         quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
         // #FLOOR-VALUE-0821 — sotto il floor NIENTE value (vedi il calcio).
-        value: !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+        value: valueOk && !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
@@ -8751,6 +8762,8 @@ function HomeLobby({
       tennis: tennisItems,
       saved: watchSaved,
       fullSportLists: view === "football" || view === "tennis",
+      // #CLASSIC-CARD-1008 — una fascia sola, protetta (lib/classic/card-view.ts differsBy)
+      differsBy: CLASSIC ? (it) => classicDiffersBy(it.data) : undefined,
     }),
     [footballItems, tennisItems, watchSaved, view],
   );
@@ -9352,8 +9365,8 @@ function HomeLobby({
         </div>
       )}
       <LobbySection
-        title={it ? copy.it : copy.en}
-        hint={(it ? copy.hintIt : copy.hintEn) || null}
+        title={CLASSIC && sec.id === "top" ? classicCopy(lang).whereDiffers : it ? copy.it : copy.en}
+        hint={(CLASSIC && sec.id === "top" ? classicCopy(lang).whereDiffersHint : it ? copy.hintIt : copy.hintEn) || null}
         count={isSport ? total : null}
         action={more && seeAllView ? (
           <button
@@ -9526,7 +9539,10 @@ function HomeLobby({
           fascia Pro; sulla Home `sectionTop` è null e non rende nulla. */}
       {sectionTop}
       {/* Round 8: il titolo tipografico apre la Home, sopra il rail. */}
-      {homeHeadline}
+      {/* #CLASSIC-CARD-1008 — il fuso degli orari, una volta per vista. Nello
+          STESSO slot del titolo: a flag spento i figli di .br-lobby restano
+          quelli di main (uno slot in più rimontava la fascia Pro sotto). */}
+      {CLASSIC ? <>{homeHeadline}<ClassicTzNote lang={lang} /></> : homeHeadline}
       {/* Round 7: il rail del riferimento — hero verticale a sinistra (26%),
           le card vere del board nella colonna accanto. */}
       {hero && sideSection ? (
@@ -10823,6 +10839,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
     <GeoCountryCtx.Provider value={geoCountry}>
+    {/* #CLASSIC-CARD-1008 — quote, geo, fuso per la scheda Slab; a flag spento è un frammento. */}
+    <ClassicPricesScope enabled={CLASSIC} fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt}>
     <main className="portal-root mc-scene-stadium" data-mc-ground>
       {/* #UI-MACHINA-0802 — la scena del fondo cinematico: fissa, sfocata,
           sotto la velatura di [data-mc-ground]::after. Decorazione pura, fuori
@@ -11445,6 +11463,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         })}
       </nav>
     </main>
+    </ClassicPricesScope>
     </GeoCountryCtx.Provider>
     </LiveTennisCtx.Provider>
     </LiveCtx.Provider>
