@@ -56,6 +56,11 @@ export type ClassicLobbyProps = {
   tail?: ReactNode;
   /** Per i test: l'ora «adesso». */
   now?: number;
+  /** #CLASSIC-INT-1008 — la ricerca è controllata dal desk (la stessa query
+   *  della topbar, che sulla Home a flag acceso non c'è): una sola fonte.
+   *  Senza, la lobby tiene la sua (test, uso isolato). */
+  query?: string;
+  onQueryChange?: (q: string) => void;
 };
 
 /** Quanti gruppi di lega restano aperti per sport al primo render. Il resto è
@@ -91,12 +96,27 @@ const TABS: { id: LobbyTab; key: keyof ClassicCopy }[] = [
   { id: "all", key: "tabAll" },
 ];
 
-export function ClassicLobby({ lang, tz, football, tennis, loading = false, renderCard, banners, tail, now: nowProp }: ClassicLobbyProps) {
+export function ClassicLobby({ lang, tz, football, tennis, loading = false, renderCard, banners, tail, now: nowProp, query: queryProp, onQueryChange }: ClassicLobbyProps) {
   const copy = classicCopy(lang);
   const [tab, setTab] = useState<LobbyTab>("featured");
   const [sport, setSport] = useState<SportFilter>("popular");
   const [when, setWhen] = useState<DateFilter>("all");
-  const [query, setQuery] = useState("");
+  const [ownQuery, setOwnQuery] = useState("");
+  const controlled = onQueryChange != null;
+  const query = controlled ? (queryProp ?? "") : ownQuery;
+  const setQuery = controlled ? onQueryChange : setOwnQuery;
+  // Chi scrive nella topbar da un'altra tab viene portato sulla Home (page.tsx),
+  // dove quel campo non c'è: il campo si smonta e il fuoco cade sul <body>.
+  // Qui lo si riprende, così si continua a scrivere senza perdere il filo. Un
+  // ritorno alla Home da un clic in nav lascia il fuoco sul bottone: niente furto.
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    const el = searchRef.current;
+    if (el && el.value && document.activeElement === document.body) {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
+  }, []);
   // Aperto/chiuso deciso dall'utente, per id di gruppo. Chi non c'è segue la
   // regola di default (i primi OPEN_PER_SPORT aperti).
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
@@ -185,7 +205,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   const bannerList: ClassicBanner[] = [
     { id: "board", title: copy.b1Title, sub: copy.b1Sub, cta: copy.b1Cta, ...banners.board },
     { id: "live", title: copy.b2Title, sub: copy.b2Sub, cta: copy.b2Cta, ...banners.live },
-    { id: "record", title: copy.b3Title, sub: copy.b3Sub, cta: copy.b3Cta, ...banners.record },
+    { id: "record", title: copy.b3Title, sub: copy.b3Sub, cta: copy.b3Cta, more: { href: "/tools", label: copy.b3Tools }, ...banners.record },
   ];
 
   const emptyText = loading ? copy.loading
@@ -226,6 +246,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
           <label className="brc-sr" htmlFor="brc-search-input">{copy.searchLabel}</label>
           <input
             id="brc-search-input"
+            ref={searchRef}
             type="search"
             className="brc-search__input"
             placeholder={copy.searchPlaceholder}

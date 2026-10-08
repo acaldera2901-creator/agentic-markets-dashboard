@@ -8606,6 +8606,7 @@ function HomeLobby({
   isLoggedIn,
   onRegister,
   boardLoading = false,
+  onQueryChange,
 }: {
   view: DeskView;
   /** #RESTYLING-0921 round 7 — chi ha già il Pro non vede la pubblicità del
@@ -8618,6 +8619,9 @@ function HomeLobby({
   onRegister: () => void;
   /** #CLASSIC-LOBBY-1008 — il board è in volo. Solo la lobby classic lo usa. */
   boardLoading?: boolean;
+  /** #CLASSIC-INT-1008 — la ricerca della barra delle tab scrive nella STESSA
+   *  query della topbar (una sola fonte). Solo la lobby classic lo usa. */
+  onQueryChange?: (q: string) => void;
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   query: string;
@@ -9475,17 +9479,26 @@ function HomeLobby({
         football={footballItems}
         tennis={tennisItems}
         loading={boardLoading && footballItems.length === 0 && tennisItems.length === 0}
+        query={query}
+        onQueryChange={onQueryChange}
         renderCard={renderCard}
         banners={{
+          // #CLASSIC-INT-1008 — le foto approvate da Andrea (public/images/classic/,
+          // AVIF/WebP accanto ai PNG, ripiego SVG). Board → foto «prices».
           board: {
+            image: { src: "/images/classic/prices-1280.png", srcSm: "/images/classic/prices-800.png", fallback: "/images/classic/prices.svg" },
             href: `${TAB_PATHS.bets}?sport=football`,
             onClick: (ev) => { ev.preventDefault(); trackEvent("card_open", { meta: { surface: "classic-banner", section: "board" } }); onSeeAll("football"); },
           },
           live: {
+            image: { src: "/images/classic/live-1280.png", srcSm: "/images/classic/live-800.png", fallback: "/images/classic/live.svg" },
             href: `${TAB_PATHS.bets}?view=live`,
             onClick: (ev) => { ev.preventDefault(); trackEvent("card_open", { meta: { surface: "classic-banner", section: "live" } }); onSeeAll("live"); },
           },
-          record: { href: TAB_PATHS.history },
+          record: {
+            image: { src: "/images/classic/record-1280.png", srcSm: "/images/classic/record-800.png", fallback: "/images/classic/record.svg" },
+            href: TAB_PATHS.history,
+          },
         }}
         tail={<>{!isPro && proBand}{faq}</>}
       />
@@ -9709,6 +9722,7 @@ function UnifiedBetsTab({
   isLoggedIn,
   tennisIsPlaceholder,
   boardLoading,
+  onQueryChange,
   onBannerCta,
   hitRate,
   liveStrip,
@@ -9739,6 +9753,8 @@ function UnifiedBetsTab({
   tennisIsPlaceholder?: boolean;
   /** #CLASSIC-LOBBY-1008 — il board è in volo (solo la lobby classic lo legge). */
   boardLoading?: boolean;
+  /** #CLASSIC-INT-1008 — vedi HomeLobby.onQueryChange. */
+  onQueryChange?: (q: string) => void;
   onBannerCta?: (href: string) => boolean;
   hitRate?: PaywallHitRate | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
@@ -9837,6 +9853,7 @@ function UnifiedBetsTab({
           isLoggedIn={isLoggedIn}
           onRegister={onRegister}
           boardLoading={boardLoading}
+          onQueryChange={onQueryChange}
         />
         {autoOpenKey && (
           <MatchDetailHost
@@ -10990,6 +11007,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             {/* #RESTYLING-0921 — Search e Watchlist stanno a DESTRA, accanto
                 all'account: sono strumenti dell'utente, non destinazioni. La
                 ricerca filtra la lobby mentre si scrive, su tutte le viste. */}
+            {/* #CLASSIC-INT-1008 — a flag acceso, sulla Home la ricerca è UNA:
+                quella nella barra delle tab della lobby classic, che scrive in
+                questa stessa `lobbyQuery`. Qui sparisce solo sulla Home. */}
+            {!(CLASSIC && tab === "bets" && deskView === "home") && (
             <label className="br-search">
               <IconSearch size={14} stroke={2} />
               <input
@@ -11019,6 +11040,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 aria-label={pick5(uiLanguage, { it: "Cerca una partita", en: "Search a match", es: "Buscar un partido", fr: "Chercher un match", ru: "Найти матч" })}
               />
             </label>
+            )}
 
             <button
               type="button"
@@ -11356,6 +11378,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               boardLoading={predLoading || tennisLoading}
+              onQueryChange={CLASSIC ? setLobbyQuery : undefined}
               hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
                 ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown } : null}
               view={deskView}

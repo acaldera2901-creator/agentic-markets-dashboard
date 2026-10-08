@@ -15,9 +15,22 @@
 // (aspect-ratio fisso → CLS 0 in entrambi i casi).
 
 import Link from "next/link";
-import type { MouseEvent, ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
-export type ClassicBannerImage = { src: string; srcSm?: string; alt?: string };
+/** #CLASSIC-INT-1008 — le foto approvate (public/images/classic/, 16:9).
+ *  `src` è il PNG grande (1280×720), `srcSm` il PNG piccolo (800×450): gli
+ *  AVIF e WebP stanno accanto con lo stesso nome, e il <picture> li offre in
+ *  quell'ordine. `fallback` è il ripiego SVG a codice: se la foto non arriva
+ *  (errore di rete, formato), la scatola mostra lui invece di un buco. */
+export type ClassicBannerImage = { src: string; srcSm?: string; fallback?: string; alt?: string };
+
+/** I banner sono 3 colonne da ~1/3 della pagina su desktop, uno al 90% sul telefono. */
+const BANNER_SIZES = "(max-width: 640px) 90vw, 33vw";
+
+function srcSetFor(img: ClassicBannerImage, ext: "avif" | "webp" | "png"): string {
+  const swap = (u: string) => u.replace(/\.png$/, `.${ext}`);
+  return [img.srcSm ? `${swap(img.srcSm)} 800w` : null, `${swap(img.src)} 1280w`].filter(Boolean).join(", ");
+}
 
 export type ClassicBanner = {
   id: "board" | "live" | "record";
@@ -29,6 +42,8 @@ export type ClassicBanner = {
    *  L'href resta vero per il tasto centrale e la condivisione. */
   onClick?: (ev: MouseEvent<HTMLAnchorElement>) => void;
   image?: ClassicBannerImage;
+  /** #CLASSIC-INT-1008 — un secondo link, piccolo (il banner «record» porta anche a /tools). */
+  more?: { href: string; label: string };
 };
 
 /** Il fondo a codice. viewBox 1200×600 = la proporzione della foto attesa. */
@@ -92,15 +107,52 @@ function Placeholder({ id }: { id: ClassicBanner["id"] }) {
 }
 
 export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; label: string }) {
+  // Le foto che non sono arrivate passano al ripiego SVG. L'errore può
+  // scattare PRIMA dell'idratazione (l'<img> arriva nell'HTML del server e
+  // React non c'era ancora ad ascoltare): al montaggio si guarda lo stato vero.
+  const [failed, setFailed] = useState<Record<string, boolean>>({});
+  const rowRef = useRef<HTMLUListElement | null>(null);
+  useEffect(() => {
+    const broken: Record<string, boolean> = {};
+    rowRef.current?.querySelectorAll<HTMLImageElement>("img.brc-banner__art").forEach((img) => {
+      if (img.complete && img.naturalWidth === 0) broken[img.dataset.banner ?? ""] = true;
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- legge lo stato del DOM (errori avvenuti prima dell'idratazione): non esiste in render
+    if (Object.keys(broken).length) setFailed((f) => ({ ...f, ...broken }));
+  }, []);
   return (
     <nav className="brc-banners" aria-label={label}>
-      <ul className="brc-banners__row">
-        {banners.map((b) => (
-          <li key={b.id} className="brc-banner" data-banner={b.id}>
-            {b.image ? (
+      <ul className="brc-banners__row" ref={rowRef}>
+        {banners.map((b, i) => (
+          <li
+            key={b.id}
+            className="brc-banner"
+            data-banner={b.id}
+            data-photo={b.image && !failed[b.id] ? "" : undefined}
+          >
+            {b.image && failed[b.id] && b.image.fallback ? (
+              // eslint-disable-next-line @next/next/no-img-element -- SVG statico, ripiego
+              <img className="brc-banner__art" src={b.image.fallback} alt="" width={1280} height={720} />
+            ) : b.image && !failed[b.id] ? (
               <picture className="brc-banner__media">
-                {b.image.srcSm && <source media="(max-width: 640px)" srcSet={b.image.srcSm} />}
-                <img className="brc-banner__art" src={b.image.src} alt={b.image.alt ?? ""} width={1200} height={600} loading="eager" decoding="async" />
+                <source type="image/avif" srcSet={srcSetFor(b.image, "avif")} sizes={BANNER_SIZES} />
+                <source type="image/webp" srcSet={srcSetFor(b.image, "webp")} sizes={BANNER_SIZES} />
+                <img
+                  className="brc-banner__art"
+                  src={b.image.src}
+                  srcSet={srcSetFor(b.image, "png")}
+                  sizes={BANNER_SIZES}
+                  alt={b.image.alt ?? ""}
+                  width={1280}
+                  height={720}
+                  // il primo è sopra la piega a ogni larghezza; gli altri due, sul
+                  // telefono, sono fuori schermo nel carosello
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : undefined}
+                  decoding="async"
+                  data-banner={b.id}
+                  onError={() => setFailed((f) => ({ ...f, [b.id]: true }))}
+                />
               </picture>
             ) : (
               <Placeholder id={b.id} />
@@ -110,11 +162,14 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
               <p className="brc-banner__sub">{b.sub}</p>
               {/* Tutto il banner è cliccabile (il link si allarga con ::after),
                   ma il nome accessibile resta il verbo del link, non il paragrafo. */}
+              <p className="brc-banner__links">
               {b.href.startsWith("/") && !b.onClick ? (
                 <Link className="brc-banner__cta" href={b.href}>{b.cta} <span aria-hidden="true">→</span></Link>
               ) : (
                 <a className="brc-banner__cta" href={b.href} onClick={b.onClick}>{b.cta} <span aria-hidden="true">→</span></a>
               )}
+              {b.more && <Link className="brc-banner__more" href={b.more.href}>{b.more.label} <span aria-hidden="true">→</span></Link>}
+              </p>
             </div>
           </li>
         ))}

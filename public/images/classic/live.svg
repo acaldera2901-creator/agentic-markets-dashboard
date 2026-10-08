@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#071329"/><stop offset=".45" stop-color="#071329"/><stop offset="1" stop-color="#0D2343"/></linearGradient>
+    <linearGradient id="sl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C8FF00" stop-opacity="0"/><stop offset="1" stop-color="#C8FF00"/></linearGradient>
+    <linearGradient id="ss" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#81D9FF" stop-opacity="0"/><stop offset="1" stop-color="#81D9FF"/></linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <!-- campo da tennis radente -->
+  <path d="M600 560 L1240 560 L1180 470 L700 470 Z" fill="#145AFF" fill-opacity=".35"/>
+  <g fill="none" stroke="#EDEFF2" stroke-opacity=".6" stroke-width="3">
+    <path d="M600 560 L700 470 M1240 560 L1180 470 M650 515 L1210 515 M940 470 L940 560"/>
+  </g>
+  <path d="M700 470 L1180 470" stroke="#81D9FF" stroke-opacity=".5" stroke-width="2"/>
+  <!-- linee di velocità -->
+  <g stroke-linecap="round">
+    <rect x="560" y="318" width="330" height="8" rx="4" fill="url(#sl)"/>
+    <rect x="620" y="346" width="280" height="6" rx="3" fill="url(#ss)"/>
+    <rect x="520" y="372" width="370" height="10" rx="5" fill="url(#sl)"/>
+    <rect x="660" y="400" width="230" height="5" rx="2.5" fill="url(#ss)"/>
+    <rect x="600" y="294" width="250" height="4" rx="2" fill="url(#ss)"/>
+  </g>
+  <!-- pallina -->
+  <circle cx="950" cy="350" r="62" fill="#C8FF00"/>
+  <path d="M902 312 Q950 350 902 390 M998 310 Q950 350 998 392" fill="none" stroke="#071329" stroke-width="5" stroke-linecap="round"/>
+  <!-- battito -->
+  <path d="M1040 230 L1080 230 L1094 206 L1110 254 L1124 230 L1170 230" fill="none" stroke="#C8FF00" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

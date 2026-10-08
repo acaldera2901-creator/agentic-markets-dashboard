@@ -18,6 +18,8 @@ export type ClassicCopy = {
   b1Title: string; b1Sub: string; b1Cta: string;
   b2Title: string; b2Sub: string; b2Cta: string;
   b3Title: string; b3Sub: string; b3Cta: string;
+  /** #CLASSIC-INT-1008 — il secondo link del banner «record»: /tools. */
+  b3Tools: string;
   tabsLabel: string;
   tabFeatured: string; tabInPlay: string; tabSoon: string; tabAll: string;
   searchLabel: string; searchPlaceholder: string; clearSearch: string;
@@ -44,6 +46,7 @@ const en: ClassicCopy = {
   b3Title: "Our track record",
   b3Sub: "Every settled reading, won or lost, on one public page.",
   b3Cta: "See the record",
+  b3Tools: "Free tools",
   tabsLabel: "Browse matches",
   tabFeatured: "Featured", tabInPlay: "In-Play", tabSoon: "Starting Soon", tabAll: "All Sports",
   searchLabel: "Search matches", searchPlaceholder: "Team, player or league", clearSearch: "Clear search",
@@ -79,6 +82,7 @@ const it: ClassicCopy = {
   b3Title: "Il nostro storico",
   b3Sub: "Ogni lettura chiusa, vinta o persa, su una pagina pubblica.",
   b3Cta: "Vedi lo storico",
+  b3Tools: "Strumenti gratuiti",
   tabsLabel: "Sfoglia le partite",
   tabFeatured: "In evidenza", tabInPlay: "In gioco", tabSoon: "A breve", tabAll: "Tutti gli sport",
   searchLabel: "Cerca partite", searchPlaceholder: "Squadra, giocatore o lega", clearSearch: "Cancella ricerca",
@@ -114,6 +118,7 @@ const es: ClassicCopy = {
   b3Title: "Nuestro historial",
   b3Sub: "Cada lectura cerrada, ganada o perdida, en una página pública.",
   b3Cta: "Ver el historial",
+  b3Tools: "Herramientas gratis",
   tabsLabel: "Explorar partidos",
   tabFeatured: "Destacados", tabInPlay: "En juego", tabSoon: "Empiezan pronto", tabAll: "Todos los deportes",
   searchLabel: "Buscar partidos", searchPlaceholder: "Equipo, jugador o liga", clearSearch: "Borrar búsqueda",
@@ -149,6 +154,7 @@ const fr: ClassicCopy = {
   b3Title: "Notre historique",
   b3Sub: "Chaque lecture clôturée, gagnée ou perdue, sur une page publique.",
   b3Cta: "Voir l’historique",
+  b3Tools: "Outils gratuits",
   tabsLabel: "Parcourir les matchs",
   tabFeatured: "À la une", tabInPlay: "En cours", tabSoon: "Bientôt", tabAll: "Tous les sports",
   searchLabel: "Rechercher des matchs", searchPlaceholder: "Équipe, joueur ou ligue", clearSearch: "Effacer la recherche",
@@ -184,6 +190,7 @@ const de: ClassicCopy = {
   b3Title: "Unsere Bilanz",
   b3Sub: "Jede abgerechnete Einschätzung, gewonnen oder verloren, öffentlich auf einer Seite.",
   b3Cta: "Bilanz ansehen",
+  b3Tools: "Kostenlose Tools",
   tabsLabel: "Spiele durchsuchen",
   tabFeatured: "Empfohlen", tabInPlay: "Laufend", tabSoon: "Beginnt bald", tabAll: "Alle Sportarten",
   searchLabel: "Spiele suchen", searchPlaceholder: "Team, Spieler oder Liga", clearSearch: "Suche löschen",
@@ -219,6 +226,7 @@ const pt: ClassicCopy = {
   b3Title: "O nosso histórico",
   b3Sub: "Cada leitura fechada, ganha ou perdida, numa página pública.",
   b3Cta: "Ver o histórico",
+  b3Tools: "Ferramentas grátis",
   tabsLabel: "Explorar jogos",
   tabFeatured: "Destaques", tabInPlay: "Em jogo", tabSoon: "Começam em breve", tabAll: "Todos os desportos",
   searchLabel: "Pesquisar jogos", searchPlaceholder: "Equipa, jogador ou liga", clearSearch: "Limpar pesquisa",
@@ -254,6 +262,7 @@ const nl: ClassicCopy = {
   b3Title: "Ons trackrecord",
   b3Sub: "Elke afgesloten lezing, gewonnen of verloren, op één openbare pagina.",
   b3Cta: "Bekijk het record",
+  b3Tools: "Gratis tools",
   tabsLabel: "Wedstrijden bekijken",
   tabFeatured: "Uitgelicht", tabInPlay: "Bezig", tabSoon: "Begint zo", tabAll: "Alle sporten",
   searchLabel: "Wedstrijden zoeken", searchPlaceholder: "Team, speler of competitie", clearSearch: "Zoekopdracht wissen",
@@ -289,6 +298,7 @@ const pl: ClassicCopy = {
   b3Title: "Nasza historia wyników",
   b3Sub: "Każda rozliczona analiza, wygrana lub przegrana, na jednej publicznej stronie.",
   b3Cta: "Zobacz historię",
+  b3Tools: "Darmowe narzędzia",
   tabsLabel: "Przeglądaj mecze",
   tabFeatured: "Wyróżnione", tabInPlay: "W trakcie", tabSoon: "Wkrótce", tabAll: "Wszystkie sporty",
   searchLabel: "Szukaj meczów", searchPlaceholder: "Drużyna, zawodnik lub liga", clearSearch: "Wyczyść wyszukiwanie",
@@ -324,6 +334,7 @@ const tr: ClassicCopy = {
   b3Title: "Geçmiş sonuçlarımız",
   b3Sub: "Sonuçlanan her okuma, kazanılan ya da kaybedilen, tek açık sayfada.",
   b3Cta: "Sonuçları gör",
+  b3Tools: "Ücretsiz araçlar",
   tabsLabel: "Maçlara göz at",
   tabFeatured: "Öne çıkanlar", tabInPlay: "Oynanıyor", tabSoon: "Yakında başlıyor", tabAll: "Tüm sporlar",
   searchLabel: "Maç ara", searchPlaceholder: "Takım, oyuncu veya lig", clearSearch: "Aramayı temizle",
@@ -359,6 +370,7 @@ const sv: ClassicCopy = {
   b3Title: "Vår historik",
   b3Sub: "Varje avgjord läsning, vunnen eller förlorad, på en öppen sida.",
   b3Cta: "Se historiken",
+  b3Tools: "Gratis verktyg",
   tabsLabel: "Bläddra bland matcher",
   tabFeatured: "Utvalda", tabInPlay: "Pågår", tabSoon: "Börjar snart", tabAll: "Alla sporter",
   searchLabel: "Sök matcher", searchPlaceholder: "Lag, spelare eller liga", clearSearch: "Rensa sökning",
@@ -394,6 +406,7 @@ const ru: ClassicCopy = {
   b3Title: "Наша история",
   b3Sub: "Каждый рассчитанный прогноз, выигрыш или проигрыш, на одной открытой странице.",
   b3Cta: "Смотреть историю",
+  b3Tools: "Бесплатные инструменты",
   tabsLabel: "Просмотр матчей",
   tabFeatured: "Избранное", tabInPlay: "В игре", tabSoon: "Скоро начало", tabAll: "Все виды спорта",
   searchLabel: "Поиск матчей", searchPlaceholder: "Команда, игрок или лига", clearSearch: "Очистить поиск",

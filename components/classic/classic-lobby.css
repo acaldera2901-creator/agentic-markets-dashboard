@@ -95,6 +95,39 @@
   color: #EDEFF2;
   max-width: 52%;
 }
+/* ── #CLASSIC-INT-1008 · le foto approvate ─────────────────────────────────
+   Foto 16:9 (soggetto fra il 48 e l'80% della larghezza) in una scatola 2:1
+   (16:10 sul telefono), `cover` al centro: provato sui ritagli in
+   redesign/classic/banners/_check. Il testo HTML sta nel 40% sinistro, su un
+   velo navy che non arriva al soggetto. Se la foto non arriva, il ripiego
+   SVG (ClassicBanners) prende il suo posto e la scatola perde [data-photo]. */
+.brc-banner[data-photo] .brc-banner__text { max-width: 40%; }
+/* nel 40% il titolo grande andava su tre righe e toccava il bordo alto (1440):
+   la misura del brief banner, clamp(20, 2vw, 26) */
+.brc-banner[data-photo] .brc-banner__title { font-size: clamp(20px, 2vw, 26px); }
+/* Le lingue lunghe (russo: Anton non ha il cirillico, ripiega su un font più
+   largo) nel 40% uscivano dall'alto della scatola, titolo compreso. Il
+   sottotitolo si ferma a 4 righe (3 sul telefono), i due link stanno sulla stessa riga quando
+   c'è posto, e se proprio non basta il blocco si allinea in alto (`safe`):
+   si perde la coda, mai il titolo. */
+.brc-banner[data-photo] .brc-banner__text { justify-content: safe flex-end; }
+.brc-banner[data-photo] .brc-banner__sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.brc-banner[data-photo]::before {
+  background: linear-gradient(90deg, rgba(7,19,41,0.85) 0%, rgba(7,19,41,0.5) 38%, rgba(7,19,41,0) 55%);
+}
+/* Il banner «record» ha il fondo navy pieno, cioè il colore della pagina: la
+   scatola sparirebbe. Si posa sul pannello (#0D2343, `--am-panel` del tema
+   scuro, fisso perché il banner resta navy anche in chiaro) e la foto vi si
+   fonde con `lighten`: il navy della foto lascia vedere il pannello, il
+   disegno resta com'è. Niente velo (lo riporterebbe al navy), niente cornice. */
+.brc-banner[data-photo][data-banner="record"] { background-color: #0D2343; }
+.brc-banner[data-photo][data-banner="record"]::before { display: none; }
+.brc-banner[data-photo][data-banner="record"] .brc-banner__art { mix-blend-mode: lighten; }
 .brc-banner__title {
   margin: 0;
   font-family: var(--am-font-display);
@@ -126,6 +159,28 @@
 .brc-banner__cta:hover { text-decoration: underline; text-underline-offset: 3px; }
 .brc-banner:has(.brc-banner__cta:focus-visible) { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
 .brc-banner__cta:focus-visible { outline: none; }
+.brc-banner__links { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 14px; row-gap: 2px; }
+.brc-banner__links .brc-banner__cta { margin-top: 0; }
+/* con DUE link (banner «record») il primo non si allarga a tutto il banner:
+   coprirebbe il secondo, e i due bersagli si sovrapporrebbero (WCAG 2.5.8) */
+.brc-banner:has(.brc-banner__more) .brc-banner__cta::after { display: none; }
+.brc-banner:has(.brc-banner__more) .brc-banner__cta { display: inline-block; line-height: 24px; }
+/* il secondo link sta SOPRA il ::after del primo (che copre tutto il banner) */
+.brc-banner__more {
+  position: relative;
+  z-index: 1;
+  /* bersaglio ≥ 24 px (WCAG 2.5.8): accanto al link che copre tutto il banner */
+  display: inline-block;
+  line-height: 24px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: #dce8fb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: var(--am-r-ctl);
+}
+.brc-banner__more:hover { color: #EDEFF2; }
 
 /* ── 2 · tab + ricerca ─────────────────────────────────────────────────── */
 .brc-bar {
@@ -304,10 +359,13 @@
 .brc-rail__item { scroll-snap-align: start; display: flex; min-width: 0; }
 .brc-rail__item > * { flex: 1; min-width: 0; }
 
-/* Lo scheletro del carosello: lastre vuote all'altezza di una scheda (251 px
-   misurati a 1440, 261 a 390). Nessuna animazione: un caricamento che
-   lampeggia è rumore, e dura meno di un secondo. */
-.brc-slab { display: block; width: 100%; min-height: 251px; border-radius: var(--am-r-card); background: var(--am-panel-2); }
+/* Lo scheletro del carosello: lastre vuote all'altezza di una scheda. Con la
+   scheda Slab (#CLASSIC-INT-1008) la fila del carosello misura 478 px a 1440 e
+   488 a 390 (dati veri dell'8/10: la fila prende l'altezza della scheda più
+   alta, quella con stima, mercato, prezzi per esito e bottone partner).
+   Nessuna animazione: un caricamento che lampeggia è rumore, e dura meno di un
+   secondo. */
+.brc-slab { display: block; width: 100%; min-height: 478px; border-radius: var(--am-r-card); background: var(--am-panel-2); }
 .brc-rail--skeleton { overflow: hidden; }
 
 /* ── griglie di schede ─────────────────────────────────────────────────── */
@@ -455,6 +513,16 @@
   .brc-banner__text { max-width: 72%; padding: var(--am-s-3) var(--am-s-4); gap: 4px; }
   .brc-banner__title { font-size: 20px; }
   .brc-banner__sub { font-size: 12px; }
+  /* #CLASSIC-INT-1008 — con la foto, sul telefono (scatola ~330×206) il 40% è
+     ~130 px: il titolo andava su quattro righe e usciva dall'alto. Qui il
+     testo prende il 54% su un velo più lungo; il soggetto della foto sta fra
+     il 48 e l'80% e resta visibile a destra. */
+  .brc-banner[data-photo] .brc-banner__text { max-width: 54%; }
+  .brc-banner[data-photo]::before {
+    background: linear-gradient(90deg, rgba(7,19,41,0.9) 0%, rgba(7,19,41,0.7) 48%, rgba(7,19,41,0) 70%);
+  }
+  .brc-banner[data-photo] .brc-banner__title { font-size: 18px; }
+  .brc-banner[data-photo] .brc-banner__sub { -webkit-line-clamp: 3; }
 
   .brc-bar { flex-direction: column; align-items: stretch; gap: 4px; margin-top: 0; }
   .brc-tab { padding: 0 var(--am-s-3); font-size: 13px; }
@@ -465,7 +533,7 @@
   .brc-sec__title { font-size: 22px; }
   .brc-rail { grid-auto-columns: 86%; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); scroll-padding-inline: var(--am-s-3); }
   .brc-rail-nav { display: none; }
-  .brc-slab { min-height: 261px; }
+  .brc-slab { min-height: 488px; }
   .brc-grid { grid-template-columns: minmax(0, 1fr); }
   .brc-group__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
   .brc-group__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
