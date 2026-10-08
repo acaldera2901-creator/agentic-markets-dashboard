@@ -76,6 +76,11 @@ const nextConfig: NextConfig = {
   // scroll. Supported in this Next version (config-schema: experimental
   // .scrollRestoration). Presentational only.
   experimental: { scrollRestoration: true },
+  // #CLASSIC-LOBBY-1008 — il flag del filone «classic» è SEMPRE definito a
+  // build time ("" se non impostato). Una variabile NEXT_PUBLIC_ non definita
+  // non viene inlinata: resta un `process.env.X` a runtime e il bundler non
+  // può togliere il ramo spento (misurato: il CSS `brc-` finiva nel build OFF).
+  env: { NEXT_PUBLIC_CLASSIC: process.env.NEXT_PUBLIC_CLASSIC ?? "" },
   // #CONVERSION-ROUTES-0916: le due rotte di prodotto prendono il nome che la
   // home usa già (Weekly Model Case, Build a Probability View). La rotta vecchia
   // NON resta come pagina: un redirect permanente (Next risponde 308, che i

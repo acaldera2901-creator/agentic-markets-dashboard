@@ -76,6 +76,15 @@ import { UpcomingList, type UpcomingRow } from "@/components/lobby/UpcomingList"
 import { ProBand } from "@/components/lobby/ProBand";
 import { PageHeadline } from "@/components/lobby/PageHeadline";
 import { SportHero } from "@/components/lobby/SportHero";
+// #CLASSIC-LOBBY-1008 — la lobby «classic» (stile Roobet), solo a build con
+// NEXT_PUBLIC_CLASSIC=1. Import DINAMICO dentro la condizione: a flag spento
+// l'espressione è `"" === "1" ? … : null`, il bundler toglie l'import e né il
+// componente né il suo CSS entrano nel build (con un import statico Turbopack
+// li teneva: misurato, `brc-` nei chunk del build OFF). SSR acceso: nessun
+// lampo di caricamento a flag acceso.
+const ClassicLobby = process.env.NEXT_PUBLIC_CLASSIC === "1"
+  ? dynamic(() => import("@/components/classic/ClassicLobby").then((m) => m.ClassicLobby))
+  : null;
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
@@ -8596,6 +8605,7 @@ function HomeLobby({
   onGoPro,
   isLoggedIn,
   onRegister,
+  boardLoading = false,
 }: {
   view: DeskView;
   /** #RESTYLING-0921 round 7 — chi ha già il Pro non vede la pubblicità del
@@ -8606,6 +8616,8 @@ function HomeLobby({
   isLoggedIn: boolean;
   /** Apre la registrazione in-place (la CTA del riquadro di ieri). */
   onRegister: () => void;
+  /** #CLASSIC-LOBBY-1008 — il board è in volo. Solo la lobby classic lo usa. */
+  boardLoading?: boolean;
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   query: string;
@@ -9447,6 +9459,39 @@ function HomeLobby({
     />
   );
 
+  // ── #CLASSIC-LOBBY-1008: la Home «classic» (stile Roobet) ──────────────
+  //
+  // Solo con NEXT_PUBLIC_CLASSIC=1 a build time, e solo sulla Home: Live,
+  // Calcio, Tennis e Watchlist restano le viste di oggi. Gli stessi dati
+  // (footballItems/tennisItems, già filtrati da finestra di mercato e ricerca
+  // della barra alta), la stessa scheda (`renderCard`: gating, watchlist,
+  // apertura della scheda partita). Chiude con la fascia Pro (non ai Pro) e
+  // la FAQ, che "/" deve rendere perché il suo JSON-LD resti legittimo.
+  if (ClassicLobby && view === "home") {
+    return (
+      <ClassicLobby
+        lang={lang}
+        tz={tz}
+        football={footballItems}
+        tennis={tennisItems}
+        loading={boardLoading && footballItems.length === 0 && tennisItems.length === 0}
+        renderCard={renderCard}
+        banners={{
+          board: {
+            href: `${TAB_PATHS.bets}?sport=football`,
+            onClick: (ev) => { ev.preventDefault(); trackEvent("card_open", { meta: { surface: "classic-banner", section: "board" } }); onSeeAll("football"); },
+          },
+          live: {
+            href: `${TAB_PATHS.bets}?view=live`,
+            onClick: (ev) => { ev.preventDefault(); trackEvent("card_open", { meta: { surface: "classic-banner", section: "live" } }); onSeeAll("live"); },
+          },
+          record: { href: TAB_PATHS.history },
+        }}
+        tail={<>{!isPro && proBand}{faq}</>}
+      />
+    );
+  }
+
   if (shown.length === 0) {
     // #RESTYLING-0921 round 12 — IL SALTO DELLA HOME AL CARICAMENTO.
     //
@@ -9663,6 +9708,7 @@ function UnifiedBetsTab({
   isProClient,
   isLoggedIn,
   tennisIsPlaceholder,
+  boardLoading,
   onBannerCta,
   hitRate,
   liveStrip,
@@ -9691,6 +9737,8 @@ function UnifiedBetsTab({
   isProClient?: boolean;
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
+  /** #CLASSIC-LOBBY-1008 — il board è in volo (solo la lobby classic lo legge). */
+  boardLoading?: boolean;
   onBannerCta?: (href: string) => boolean;
   hitRate?: PaywallHitRate | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
@@ -9788,6 +9836,7 @@ function UnifiedBetsTab({
           onGoPro={onGoPro}
           isLoggedIn={isLoggedIn}
           onRegister={onRegister}
+          boardLoading={boardLoading}
         />
         {autoOpenKey && (
           <MatchDetailHost
@@ -11306,6 +11355,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isProClient={!!clientProfile && profileHasPremium(clientProfile)}
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
+              boardLoading={predLoading || tennisLoading}
               hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
                 ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown } : null}
               view={deskView}
