@@ -1,7 +1,7 @@
 // #CLASSIC-CARD-1008 — la scheda Slab decide cosa può dire. Righe vere del board
 // (now/data/joined-football.json, letto l'08/10 14:43 CEST), nessuna rete, nessun DB.
 import { describe, expect, it } from "vitest";
-import { classicFootballView, classicTennisView, differsBy as differsByOf, footballBooks, tennisBooks, type ClassicBook } from "./card-view";
+import { classicFootballView, classicTennisView, differsBy as differsByOf, sheetValueAllowed, footballBooks, tennisBooks, type ClassicBook } from "./card-view";
 import { dedupeByPair, devigOne, modelGuard, rawModelFromEstimate, saneMarketSet, tzAbbr } from "./guard";
 import { normName } from "@/lib/odds-api";
 import { playerKey } from "./fixdata3";
@@ -164,5 +164,16 @@ describe("la fascia «differs most» e la scheda dicono la stessa cosa", () => {
       const inBand = (card.kind === "estimate" && !card.flat);
       expect(differsByOf(data) != null, `${est}@${odds}`).toBe(inBand);
     }
+  });
+});
+
+describe("scheda partita: i tag «+X%» seguono la protezione", () => {
+  const fpOf = (prices: [number, number, number]) => ({ homeKey: normName("H"), awayKey: normName("A"), oddsHome: prices[0], oddsDraw: prices[1], oddsAway: prices[2], matchUrl: "u" });
+  it("Como ok → sì; Bolton protetta e Villa Market only → no; tennis → mai", () => {
+    const row = (est: [number, number, number], odds: [number, number, number]) => ({ sport: "football", home: "H", away: "A", classic: { sport: "football", est, odds, leadIdx: 0 } });
+    expect(sheetValueAllowed(row([0.41, 0.27, 0.32], [2.57, 3.55, 2.7]), fpOf([2.51, 3.57, 2.69]))).toBe(true);
+    expect(sheetValueAllowed(row([0.392, 0.28, 0.328], [2.84, 3.4, 2.6]), fpOf([2.78, 3.34, 2.56]))).toBe(false);
+    expect(sheetValueAllowed(row([0.462, 0.27, 0.268], [2.66, 3.5, 2.6]), fpOf([2.65, 3.51, 2.58]))).toBe(false);
+    expect(sheetValueAllowed({ sport: "tennis", home: "a", away: "b", classic: { sport: "tennis" } }, null)).toBe(false);
   });
 });

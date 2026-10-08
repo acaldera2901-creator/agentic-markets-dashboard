@@ -151,7 +151,9 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
           {data.league && <span className="cl-league" title={data.league}>{data.league}</span>}
         </p>
         <p className="cl-when">
-          {live ? <LiveBadge minute={data.liveMinute} /> : data.kickoffLabel ? <span>{data.kickoffLabel}</span> : null}
+          {live ? <LiveBadge minute={data.liveMinute} />
+            : data.kickoffLabel ? <span>{started ? fill(c.kickoffAt, { t: data.kickoffLabel }) : data.kickoffLabel}</span>
+            : null}
           {live && data.liveScoreLabel && !score && <span className="cl-scoreraw">{data.liveScoreLabel}</span>}
           {timeBadge && (
             <span className="cl-tag" data-kind={timeBadge.kind}>

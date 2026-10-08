@@ -254,3 +254,11 @@ html[data-frames="off"] .cl-chip .cl-logo[data-wordmark] { height: 16px; max-wid
 /* filetti disegnati con uno pseudo-elemento (non con border): li spegne a mano */
 html[data-frames="off"] .pdm-panel::before { display: none; }
 html[data-frames="off"] .pdm-panel { border-radius: var(--am-r-card); }
+/* I «solo bordo» che contengono TESTO (avvertenze, stati vuoti, esiti) non si
+   schiariscono: scendono nel tono recessed del sistema (--am-inset). Il bianco al
+   7% sotto un testo --am-muted-2 lo portava a 4,3:1 (Lighthouse su /tools/kelly). */
+html[data-frames="off"] :is(.tl-caveat, .betslip-empty, .br-empty, .client-status-card.good, .client-status-card.warn, .live-score-bar.finished, .support-ticket-summary, .sponsor-label, .lp-term-tag) {
+  /* !important: la lista di §A.4 ha un :is() con selettori a tre classi, che
+     porta la sua specificità sopra questa regola */
+  background-color: var(--am-inset) !important;
+}
