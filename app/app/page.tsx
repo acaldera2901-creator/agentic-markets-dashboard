@@ -9539,9 +9539,10 @@ function HomeLobby({
           fascia Pro; sulla Home `sectionTop` è null e non rende nulla. */}
       {sectionTop}
       {/* Round 8: il titolo tipografico apre la Home, sopra il rail. */}
-      {homeHeadline}
-      {/* #CLASSIC-CARD-1008 — il fuso degli orari, una volta per vista. */}
-      {CLASSIC && <ClassicTzNote lang={lang} />}
+      {/* #CLASSIC-CARD-1008 — il fuso degli orari, una volta per vista. Nello
+          STESSO slot del titolo: a flag spento i figli di .br-lobby restano
+          quelli di main (uno slot in più rimontava la fascia Pro sotto). */}
+      {CLASSIC ? <>{homeHeadline}<ClassicTzNote lang={lang} /></> : homeHeadline}
       {/* Round 7: il rail del riferimento — hero verticale a sinistra (26%),
           le card vere del board nella colonna accanto. */}
       {hero && sideSection ? (
