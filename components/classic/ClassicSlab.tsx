@@ -132,8 +132,10 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
 
   const surface = "card";
   const cta = view?.cta ?? null;
-  // il bottone partner è lime solo quando la protezione è ok (mockup A); neutro altrimenti
-  const ctaTone = view?.valueAllowed ? "primary" : "neutral";
+  // #CLASSIC-INT-1008 — decisione di Andrea (08/10): il bottone partner è lime
+  // su TUTTE le partite pre-match, anche Market only e protette. `cta` è già
+  // null a partita iniziata (card-view `finish`), quindi lime = pre-match.
+  const ctaTone = "primary";
 
   return (
     <article

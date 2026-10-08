@@ -262,3 +262,15 @@ html[data-frames="off"] :is(.tl-caveat, .betslip-empty, .br-empty, .client-statu
      porta la sua specificità sopra questa regola */
   background-color: var(--am-inset) !important;
 }
+/* #CLASSIC-INT-1008 — la Slab nel carosello della lobby (colonna da 280 px a
+   1440): tre caselle 1·X·2 in ~228 px non tengono etichetta + logo + prezzo, e
+   l'etichetta «1/X/2» spariva tagliata a zero. Sotto i 250 px di fila, con tre
+   esiti, cade il logo (il nome del book resta nel title della casella e nel
+   bottone): l'etichetta non si stringe mai. */
+html[data-frames="off"] .cl-cells-l { container-type: inline-size; }
+html[data-frames="off"] .cl-cell-k, html[data-frames="off"] .cl-cell-p { flex: none; }
+/* fra etichetta e prezzo, a cedere spazio è il logo (anche con «17.00» a 3 cifre) */
+html[data-frames="off"] .cl-cell .cl-logo { flex: 0 1 18px; min-width: 0; }
+@container (max-width: 250px) {
+  html[data-frames="off"] .cl-cells-l:has(> :nth-child(3)) .cl-cell .cl-logo { display: none; }
+}

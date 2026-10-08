@@ -16,6 +16,7 @@
 import type { LobbyItem } from "@/lib/ui/lobby";
 import { startingSoonLabel } from "@/lib/ui/lobby";
 import { MARKET_BLEND_ALPHA } from "@/lib/poisson-model";
+import { differsBy as slabDiffersBy } from "@/lib/classic/card-view";
 
 // ─── Leghe: paese e rango ───────────────────────────────────────────────────
 
@@ -279,6 +280,12 @@ export function differsMostItems(items: readonly LobbyItem[], now: number = Date
     .filter((it) => !it.data.isLive && startMs(it) > now)
     .filter((it) => it.data.edgePct != null && Number.isFinite(it.data.edgePct))
     .filter((it) => {
+      // #CLASSIC-INT-1008 — con i numeri grezzi della riga (a flag acceso li
+      // porta lib/ui/desk-card) decide la STESSA protezione della scheda Slab
+      // (lib/classic/card-view differsBy: «estimate», guard ok ≤ 15 pp): così
+      // nella fascia non entra mai una scheda che poi si dichiara protetta.
+      // Senza, la stima per inversione del blend qui sopra.
+      if (it.data.classic) return slabDiffersBy(it.data) != null;
       const g = estimatedRawGapPp(it);
       return g != null && g <= DIFFERS_MAX_RAW_GAP_PP;
     })
