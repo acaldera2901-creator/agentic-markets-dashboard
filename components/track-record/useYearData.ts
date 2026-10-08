@@ -27,6 +27,8 @@ export type YearStats = {
   interval_95?: { low: number; high: number } | null;
   // #SPLIT-0201 — la stessa popolazione per fonte (modello / quote del partner).
   by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
+  // #COPY-LEDGER-1007 — presente solo con il grading sigillato acceso lato server.
+  sealed_grading?: { from?: string | null } | null;
 } | null;
 
 export type YearData = { stats: YearStats; segments?: Segment[] };

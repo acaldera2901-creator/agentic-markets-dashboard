@@ -2,7 +2,7 @@
 
 import { useYearData, type YearStats } from "./useYearData";
 import { headlineFigure } from "@/lib/track-record";
-import { sourceBreakdownLine } from "@/lib/track-record-copy";
+import { sourceBreakdownLine, sealedPopulationNote } from "@/lib/track-record-copy";
 
 // #HISTORY-TRIM-0626: sintesi del track record LIVE (tutte le pick reali, nessun
 // filtro anno). Mostra hit-rate / pick decise / vinte; ROI·CLV ancora in arrivo.
@@ -38,6 +38,8 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
   // sua scomposizione per fonte quando l'API la manda.
   const h = headlineFigure(s);
   const decided = h.won + h.lost;
+  // #COPY-LEDGER-1007 — solo se il server dichiara il grading sigillato attivo.
+  const sealedNote = sealedPopulationNote(lang, s);
 
   return (
     <section className="tr-hero tr-card">
@@ -59,6 +61,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
                   : ""}
               </div>
               {h.breakdown && <div className="tr-note">{sourceBreakdownLine(lang, h.breakdown)}</div>}
+              {sealedNote && <div className="tr-note tr-sealed-note">{sealedNote}</div>}
             </div>
             <div className="tr-card">
               <div className="tr-big">{decided}</div>
