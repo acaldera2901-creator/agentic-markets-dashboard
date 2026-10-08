@@ -106,7 +106,30 @@ export type PredictionCardData = {
   /** #COERENZA-1001 — «market» quando la probabilità è la quota de-viggata
    *  del partner e non il nostro modello: la card la etichetta per quello che è. */
   probabilitySource?: ProbabilitySource;
+  /** #CLASSIC-CARD-1008 — i numeri della riga per la scheda Slab. Solo con
+   *  NEXT_PUBLIC_CLASSIC=1 (lib/ui/desk-card.ts): a flag spento non esiste. */
+  classic?: ClassicRowInput;
 };
+
+export type ClassicRowInput =
+  | {
+      sport: "football";
+      est?: [number | null | undefined, number | null | undefined, number | null | undefined];
+      odds?: [number | null | undefined, number | null | undefined, number | null | undefined];
+      leadIdx?: 0 | 1 | 2;
+      estLead?: number | null;
+      oddsLead?: number | null;
+    }
+  | {
+      sport: "tennis";
+      modelVersion: string | null;
+      tournament: string | null;
+      p?: [number | null | undefined, number | null | undefined];
+      odds?: [number | null | undefined, number | null | undefined];
+      leadIdx?: 0 | 1;
+      pLead?: number | null;
+      oddsLead?: number | null;
+    };
 
 function toPct(prob: number | null): number | null {
   return prob == null ? null : prob * 100;
