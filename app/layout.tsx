@@ -7,6 +7,9 @@ import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
 import "./design-system.css"; // #RESTYLING-0921 — componenti br-*, solo token --am-*
+import "./classic.generated.css"; // #CLASSIC-CARD-1008 — generato da scripts/classic/gen-frames.mjs
+import "./classic.css"; // #CLASSIC-CARD-1008 — agisce SOLO sotto html[data-frames="off"] (flag di build)
+import { CLASSIC } from "@/lib/classic/flag";
 
 // #RESTYLING-0921 round 7 — i tre font del riferimento, misurati sul sito di
 // Codex, non scelti a gusto: Manrope per il corpo (era Hanken Grotesk),
@@ -134,7 +137,7 @@ const serviceJsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
+    <html lang="en" data-theme="dark" data-frames={CLASSIC ? "off" : undefined} className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
       <head>
         <script
           type="application/ld+json"
