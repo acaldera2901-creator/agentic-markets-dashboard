@@ -7,14 +7,17 @@ import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
 import "./design-system.css"; // #RESTYLING-0921 — componenti br-*, solo token --am-*
-import dynamic from "next/dynamic";
+import { lazy } from "react";
 import { CLASSIC } from "@/lib/classic/flag";
 
 // #CLASSIC-CARD-1008 / #CLASSIC-INT-1008 — i CSS del filone «classic» solo a
 // build con NEXT_PUBLIC_CLASSIC=1. Il confronto va scritto per esteso (non
 // `CLASSIC`): solo così il bundler vede `"" === "1"` e toglie l'import.
+// #CLASSIC-PARITY-1008 — `lazy` di React, non `next/dynamic`: l'import di
+// next/dynamic resta nel bundle anche a flag spento e porta nel chunk del
+// layout di OGNI pagina il suo runtime client (BailoutToCSR, PreloadChunks).
 const ClassicStyles = process.env.NEXT_PUBLIC_CLASSIC === "1"
-  ? dynamic(() => import("@/components/classic/ClassicStyles"))
+  ? lazy(() => import("@/components/classic/ClassicStyles"))
   : null;
 
 // #RESTYLING-0921 round 7 — i tre font del riferimento, misurati sul sito di

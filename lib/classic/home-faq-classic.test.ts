@@ -1,8 +1,12 @@
 // #CLASSIC-INT-1008 — la FAQ della Home a flag acceso: stesse domande, tre
 // risposte riscritte sui fatti della scheda Slab, nessuna frase falsa sul live.
 import { describe, expect, it } from "vitest";
-import { HOME_FAQ, HOME_FAQ_ACTIVE, HOME_FAQ_CLASSIC } from "@/lib/home-faq";
+import { HOME_FAQ, homeFaq } from "@/lib/home-faq";
+import { homeFaqActive, homeFaqClassicAll } from "@/lib/classic/home-faq";
 import { CLASSIC } from "@/lib/classic/flag";
+
+const HOME_FAQ_CLASSIC = homeFaqClassicAll();
+const HOME_FAQ_ACTIVE = homeFaqActive();
 
 describe("home FAQ (classic)", () => {
   it("keeps every question and changes only answers 2, 4 and 6", () => {
@@ -24,5 +28,8 @@ describe("home FAQ (classic)", () => {
 
   it("follows the build flag: main FAQ when off, classic when on", () => {
     expect(HOME_FAQ_ACTIVE).toBe(CLASSIC ? HOME_FAQ_CLASSIC : HOME_FAQ);
+    // #CLASSIC-PARITY-1008 — e la FAQ che la Home rende segue la stessa scelta.
+    expect(homeFaq("en")).toBe(HOME_FAQ_ACTIVE.en);
+    expect(homeFaq("de")).toBe(HOME_FAQ_ACTIVE.en);
   });
 });

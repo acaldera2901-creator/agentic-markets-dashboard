@@ -81,6 +81,12 @@ const nextConfig: NextConfig = {
   // non viene inlinata: resta un `process.env.X` a runtime e il bundler non
   // può togliere il ramo spento (misurato: il CSS `brc-` finiva nel build OFF).
   env: { NEXT_PUBLIC_CLASSIC: process.env.NEXT_PUBLIC_CLASSIC ?? "" },
+  // #CLASSIC-PARITY-1008 — lo stesso flag come identificatore libero
+  // (lib/classic/build-flag.d.ts), per i moduli condivisi col sito di main.
+  // Misurato: ogni modulo client che nomina `process.env.X` riceve da Turbopack
+  // l'import del polyfill di `process`, anche quando X è inlinato; con
+  // `__CLASSIC_BUILD__` a flag spento il modulo esce identico a quello di main.
+  compiler: { define: { __CLASSIC_BUILD__: process.env.NEXT_PUBLIC_CLASSIC === "1" } },
   // #CONVERSION-ROUTES-0916: le due rotte di prodotto prendono il nome che la
   // home usa già (Weekly Model Case, Build a Probability View). La rotta vecchia
   // NON resta come pagina: un redirect permanente (Next risponde 308, che i

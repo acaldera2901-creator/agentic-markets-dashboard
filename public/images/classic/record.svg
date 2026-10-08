@@ -11,7 +11,7 @@
   <path d="M960 230 C1010 230 1020 160 1050 160 C1080 160 1090 230 1140 230" fill="none" stroke="#81D9FF" stroke-width="3"/>
   <path d="M700 260 A70 70 0 0 1 840 260" fill="none" stroke="#81D9FF" stroke-width="3"/>
   <path d="M770 260 L770 250" stroke="#81D9FF" stroke-width="3"/>
-  <path d="M1080 470 l30 52 h-60 z" fill="none" stroke="#81D9FF" stroke-width="3"/>
+  <path d="M1080 470 l30 52 l-60 0 z" fill="none" stroke="#81D9FF" stroke-width="3"/>
   <g stroke="#C8FF00" stroke-width="3"><path d="M1050 300 l14 14 m0 -14 l-14 14"/><path d="M700 180 l12 12 m0 -12 l-12 12"/></g>
   <!-- nastro -->
   <path d="M900 400 L860 560 L892 538 L912 574 L948 420 Z" fill="#81D9FF"/>

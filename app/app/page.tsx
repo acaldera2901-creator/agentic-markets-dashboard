@@ -43,11 +43,6 @@ import { getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { abbinaQuotaPartner, indicizzaPerGiorno } from "@/lib/fp-odds-join";
-import { CLASSIC } from "@/lib/classic/flag";
-import { ClassicPricesScope } from "@/components/classic/ClassicContext";
-import { ClassicTzNote } from "@/components/classic/ClassicTzNote";
-import { classicCopy } from "@/lib/classic/copy";
-import { differsBy as classicDiffersBy, sheetValueAllowed as classicSheetValueAllowed } from "@/lib/classic/card-view";
 import { fpEdge } from "@/lib/fortuneplay-live";
 import { normName } from "@/lib/odds-api";
 import { canonicalPlayerKey } from "@/lib/tennis-names";
@@ -83,8 +78,20 @@ import { SportHero } from "@/components/lobby/SportHero";
 // li teneva: misurato, `brc-` nei chunk del build OFF). SSR acceso: nessun
 // lampo di caricamento a flag acceso.
 const ClassicLobby = process.env.NEXT_PUBLIC_CLASSIC === "1"
-  ? dynamic(() => import("@/components/classic/ClassicLobby").then((m) => m.ClassicLobby))
+  ? dynamic(() => import("@/components/classic/ClassicLobbyInDesk").then((m) => m.ClassicLobbyInDesk))
   : null;
+// #CLASSIC-PARITY-1008 — il resto del filone classic che il desk usa, caricato
+// con un `require` nella STESSA condizione: a flag spento il bundler non lo
+// segue e questo modulo resta quello di main (gli import statici di prima
+// portavano flag, copy e card-view nel chunk di ogni pagina del desk). Ogni uso
+// qui sotto sta in un ramo `process.env.NEXT_PUBLIC_CLASSIC === "1"` scritto per
+// esteso, che a flag spento il minificatore toglie.
+// Il tipo dichiara il modulo anche a flag spento (dove vale null) perché ogni
+// uso è dentro quel ramo: così i componenti si scrivono come JSX (<CL.X />).
+const CL = (process.env.NEXT_PUBLIC_CLASSIC === "1"
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? require("@/components/classic/desk")
+  : null) as typeof import("@/components/classic/desk");
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
@@ -5563,7 +5570,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       return null;
     };
     // #CLASSIC-CARD-1008 — i tag «+X%» solo con la protezione ok (lib/classic/card-view.ts).
-    const valueOk = !CLASSIC || classicSheetValueAllowed(cardData, fp);
+    const valueOk = !(process.env.NEXT_PUBLIC_CLASSIC === "1") || CL.sheetValueAllowed(cardData, fp);
     const pv = (v: number | null) => (valueOk && v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
     const groups: MdsGroup[] = [];
 
@@ -5683,7 +5690,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
     //    legge solo `confidence_score`, non ne mostra nessuna.
     // L'hero sotto (flag/quota/value) resta dov'è: la testa lo sostituisce.
     const whyLang: WhyLang = lang === "it" ? "it" : "en";
-    return {
+    const sheet: MdsData = {
       league: p.league_name || p.league,
       when: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
       home: p.home_team, away: p.away_team,
@@ -5700,8 +5707,6 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         pick: cardData.pick,
         modelPct: cardData.modelPct,
         confidence: cardData.confidence,
-        // #CLASSIC-CARD-1008 — il numero è 30% modello + 70% mercato: si chiama stima.
-        ...(CLASSIC ? { probabilityLabel: classicCopy(lang).ourEstimate } : {}),
       },
       why: footballWhyReasons({
         home: p.home_team, away: p.away_team,
@@ -5789,6 +5794,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         selMany: pick5(lang, { it: "{n} selezioni", en: "{n} selections", es: "{n} selecciones", fr: "{n} sélections", ru: "{n} выборов" }),
       },
     };
+    // #CLASSIC-CARD-1008 — il numero è 30% modello + 70% mercato: si chiama stima.
+    if (process.env.NEXT_PUBLIC_CLASSIC === "1" && sheet.head) sheet.head.probabilityLabel = CL.classicCopy(lang).ourEstimate;
+    return sheet;
   })();
 
   // Detail modal: la card della griglia è una sintesi compatta; il click la
@@ -6018,7 +6026,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       return null;
     };
     // #CLASSIC-CARD-1008 — tennis: lo scarto Elo non è mai un segnale di valore.
-    const valueOk = !CLASSIC;
+    const valueOk = !(process.env.NEXT_PUBLIC_CLASSIC === "1");
     const pv = (v: number | null) => (valueOk && v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
     const esito: Array<{ key: "P1" | "P2"; sel: string; prob: number }> = [
       { key: "P1", sel: m.player1, prob: m.p1 },
@@ -8605,8 +8613,6 @@ function HomeLobby({
   onGoPro,
   isLoggedIn,
   onRegister,
-  boardLoading = false,
-  onQueryChange,
 }: {
   view: DeskView;
   /** #RESTYLING-0921 round 7 — chi ha già il Pro non vede la pubblicità del
@@ -8617,11 +8623,6 @@ function HomeLobby({
   isLoggedIn: boolean;
   /** Apre la registrazione in-place (la CTA del riquadro di ieri). */
   onRegister: () => void;
-  /** #CLASSIC-LOBBY-1008 — il board è in volo. Solo la lobby classic lo usa. */
-  boardLoading?: boolean;
-  /** #CLASSIC-INT-1008 — la ricerca della barra delle tab scrive nella STESSA
-   *  query della topbar (una sola fonte). Solo la lobby classic lo usa. */
-  onQueryChange?: (q: string) => void;
   predictions: Prediction[];
   tennisMatches: TennisMatch[];
   query: string;
@@ -8773,14 +8774,24 @@ function HomeLobby({
   // intero, non l'assaggio da sei — è lì che ora vivono tutte le predizioni di
   // quello sport, visto che «Esplora tutto» non esiste più.
   const sections = useMemo(
-    () => buildLobbySections({
-      football: footballItems,
-      tennis: tennisItems,
-      saved: watchSaved,
-      fullSportLists: view === "football" || view === "tennis",
+    () => {
       // #CLASSIC-CARD-1008 — una fascia sola, protetta (lib/classic/card-view.ts differsBy)
-      differsBy: CLASSIC ? (it) => classicDiffersBy(it.data) : undefined,
-    }),
+      if (process.env.NEXT_PUBLIC_CLASSIC === "1") {
+        return CL.buildClassicLobbySections({
+          football: footballItems,
+          tennis: tennisItems,
+          saved: watchSaved,
+          fullSportLists: view === "football" || view === "tennis",
+          differsBy: (it) => CL.differsBy(it.data),
+        });
+      }
+      return buildLobbySections({
+        football: footballItems,
+        tennis: tennisItems,
+        saved: watchSaved,
+        fullSportLists: view === "football" || view === "tennis",
+      });
+    },
     [footballItems, tennisItems, watchSaved, view],
   );
 
@@ -9381,8 +9392,8 @@ function HomeLobby({
         </div>
       )}
       <LobbySection
-        title={CLASSIC && sec.id === "top" ? classicCopy(lang).whereDiffers : it ? copy.it : copy.en}
-        hint={(CLASSIC && sec.id === "top" ? classicCopy(lang).whereDiffersHint : it ? copy.hintIt : copy.hintEn) || null}
+        title={process.env.NEXT_PUBLIC_CLASSIC === "1" && sec.id === "top" ? CL.classicCopy(lang).whereDiffers : it ? copy.it : copy.en}
+        hint={(process.env.NEXT_PUBLIC_CLASSIC === "1" && sec.id === "top" ? CL.classicCopy(lang).whereDiffersHint : it ? copy.hintIt : copy.hintEn) || null}
         count={isSport ? total : null}
         action={more && seeAllView ? (
           <button
@@ -9471,16 +9482,14 @@ function HomeLobby({
   // della barra alta), la stessa scheda (`renderCard`: gating, watchlist,
   // apertura della scheda partita). Chiude con la fascia Pro (non ai Pro) e
   // la FAQ, che "/" deve rendere perché il suo JSON-LD resti legittimo.
-  if (ClassicLobby && view === "home") {
+  if (process.env.NEXT_PUBLIC_CLASSIC === "1" && ClassicLobby && view === "home") {
     return (
       <ClassicLobby
         lang={lang}
         tz={tz}
         football={footballItems}
         tennis={tennisItems}
-        loading={boardLoading && footballItems.length === 0 && tennisItems.length === 0}
         query={query}
-        onQueryChange={onQueryChange}
         renderCard={renderCard}
         banners={{
           // #CLASSIC-INT-1008 — le foto approvate da Andrea (public/images/classic/,
@@ -9600,7 +9609,7 @@ function HomeLobby({
       {/* #CLASSIC-CARD-1008 — il fuso degli orari, una volta per vista. Nello
           STESSO slot del titolo: a flag spento i figli di .br-lobby restano
           quelli di main (uno slot in più rimontava la fascia Pro sotto). */}
-      {CLASSIC ? <>{homeHeadline}<ClassicTzNote lang={lang} /></> : homeHeadline}
+      {process.env.NEXT_PUBLIC_CLASSIC === "1" ? <>{homeHeadline}<CL.ClassicTzNote lang={lang} /></> : homeHeadline}
       {/* Round 7: il rail del riferimento — hero verticale a sinistra (26%),
           le card vere del board nella colonna accanto. */}
       {hero && sideSection ? (
@@ -9721,8 +9730,6 @@ function UnifiedBetsTab({
   isProClient,
   isLoggedIn,
   tennisIsPlaceholder,
-  boardLoading,
-  onQueryChange,
   onBannerCta,
   hitRate,
   liveStrip,
@@ -9751,10 +9758,6 @@ function UnifiedBetsTab({
   isProClient?: boolean;
   isLoggedIn: boolean;
   tennisIsPlaceholder?: boolean;
-  /** #CLASSIC-LOBBY-1008 — il board è in volo (solo la lobby classic lo legge). */
-  boardLoading?: boolean;
-  /** #CLASSIC-INT-1008 — vedi HomeLobby.onQueryChange. */
-  onQueryChange?: (q: string) => void;
   onBannerCta?: (href: string) => boolean;
   hitRate?: PaywallHitRate | null;
   /** La striscia dei match in corso, resa DENTRO il board (#LIVE-STRIP-GIU-0910). */
@@ -9852,8 +9855,6 @@ function UnifiedBetsTab({
           onGoPro={onGoPro}
           isLoggedIn={isLoggedIn}
           onRegister={onRegister}
-          boardLoading={boardLoading}
-          onQueryChange={onQueryChange}
         />
         {autoOpenKey && (
           <MatchDetailHost
@@ -10220,7 +10221,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [tennisBetSummary, setTennisBetSummary] = useState<TennisBetSummary | null>(null);
   const [computedAt, setComputedAt] = useState<string | null>(null);
   // #CLASSIC-FIX1-1008 — l'età che vale per ogni riga (la Slab: «Model only» solo se ≤ 6 h)
-  const [predOldestAt, setPredOldestAt] = useState<string | null>(null);
+  // #CLASSIC-PARITY-1008 — lo stato esiste solo a flag acceso: la condizione è
+  // una costante di BUILD (sempre lo stesso ramo in ogni render), e a flag
+  // spento il minificatore toglie tutto, così il desk resta quello di main.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const predOldest = process.env.NEXT_PUBLIC_CLASSIC === "1" ? useState<string | null>(null) : null;
   const [historyV2, setHistoryV2] = useState<V2HistoryRow[]>([]);
   const [historyV2Stats, setHistoryV2Stats] = useState<V2HistoryStats | null>(null);
   const [historyV2Loading, setHistoryV2Loading] = useState(false);
@@ -10641,7 +10646,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         setPredictions(live);
         setPredFallback(isOffSeason);
         setComputedAt(data.computed_at ?? null);
-        setPredOldestAt(data.oldest_computed_at ?? null);
+        if (process.env.NEXT_PUBLIC_CLASSIC === "1") predOldest![1](data.oldest_computed_at ?? null);
         setPredStale(data.is_stale ?? false);
       } else if (resp.status === 401 || resp.status === 403) {
         setPredictions([]);
@@ -10902,14 +10907,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     },
   ];
 
-  return (
+  const desk = (
     <LanguageCtx.Provider value={uiLanguage}>
     <TzCtx.Provider value={userTz}>
     <LiveCtx.Provider value={liveScores}>
     <LiveTennisCtx.Provider value={liveTennisMap}>
     <GeoCountryCtx.Provider value={geoCountry}>
-    {/* #CLASSIC-CARD-1008 — quote, geo, fuso per la scheda Slab; a flag spento è un frammento. */}
-    <ClassicPricesScope enabled={CLASSIC} fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt} footballOldestAt={predOldestAt}>
     <main className="portal-root mc-scene-stadium" data-mc-ground>
       {/* #UI-MACHINA-0802 — la scena del fondo cinematico: fissa, sfocata,
           sotto la velatura di [data-mc-ground]::after. Decorazione pura, fuori
@@ -11013,7 +11016,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             {/* #CLASSIC-INT-1008 — a flag acceso, sulla Home la ricerca è UNA:
                 quella nella barra delle tab della lobby classic, che scrive in
                 questa stessa `lobbyQuery`. Qui sparisce solo sulla Home. */}
-            {!(CLASSIC && tab === "bets" && deskView === "home") && (
+            {!(process.env.NEXT_PUBLIC_CLASSIC === "1" && tab === "bets" && deskView === "home") && (
             <label className="br-search">
               <IconSearch size={14} stroke={2} />
               <input
@@ -11380,8 +11383,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isProClient={!!clientProfile && profileHasPremium(clientProfile)}
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
-              boardLoading={predLoading || tennisLoading}
-              onQueryChange={CLASSIC ? setLobbyQuery : undefined}
               hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
                 ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown } : null}
               view={deskView}
@@ -11539,11 +11540,22 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         })}
       </nav>
     </main>
-    </ClassicPricesScope>
     </GeoCountryCtx.Provider>
     </LiveTennisCtx.Provider>
     </LiveCtx.Provider>
     </TzCtx.Provider>
     </LanguageCtx.Provider>
   );
+  // #CLASSIC-CARD-1008 — quote, geo, fuso per la scheda Slab, e (#CLASSIC-INT-1008)
+  // board in volo + ricerca condivisa per la lobby classic. #CLASSIC-PARITY-1008 —
+  // il provider avvolge il desk SOLO nel ramo del flag: a flag spento resta
+  // `return desk`, che il minificatore riporta al `return (…)` di main.
+  if (process.env.NEXT_PUBLIC_CLASSIC === "1") {
+    return (
+      <CL.ClassicPricesScope enabled fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt} footballOldestAt={predOldest![0]} boardLoading={predLoading || tennisLoading} onQueryChange={setLobbyQuery}>
+        {desk}
+      </CL.ClassicPricesScope>
+    );
+  }
+  return desk;
 }

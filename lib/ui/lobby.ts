@@ -127,41 +127,11 @@ export type BuildLobbyInput = {
    *  sarebbe una riga irraggiungibile. Le fasce curate (top/soon/edge)
    *  restano cappate: quelle sono una selezione, non un elenco. */
   fullSportLists?: boolean;
-  /** #CLASSIC-CARD-1008 — solo con NEXT_PUBLIC_CLASSIC=1 (lo passa il desk).
-   *  «Top opportunities» e «High edge» diventano UNA fascia, «Where our estimate
-   *  differs most»: dentro solo le righe che la protezione lascia passare
-   *  (modello grezzo ≤ 15 pp dal mercato, lib/classic/card-view.ts), ordinate
-   *  per |scarto|. La funzione torna |scarto| in pp, o null = fuori. */
-  differsBy?: (it: LobbyItem) => number | null;
 };
 
 /** Le sezioni della lobby, nell'ordine del brief, GIÀ private di quelle vuote. */
-export function buildLobbySections({ football, tennis, saved, now = Date.now(), fullSportLists = false, differsBy }: BuildLobbyInput): LobbySection[] {
+export function buildLobbySections({ football, tennis, saved, now = Date.now(), fullSportLists = false }: BuildLobbyInput): LobbySection[] {
   const all = [...football, ...tennis];
-
-  if (differsBy) {
-    const live = all.filter((it) => it.data.isLive).sort(byKickoffAsc);
-    const scored = all
-      .filter((it) => !it.data.isLive && new Date(it.data.startsAt).getTime() > now)
-      .map((it) => ({ it, d: differsBy(it) }))
-      .filter((x): x is { it: LobbyItem; d: number } => x.d != null)
-      .sort((a, b) => b.d - a.d)
-      .slice(0, LOBBY_ROW_CAP)
-      .map((x) => x.it);
-    const soon = all
-      .filter((it) => !it.data.isLive && startingSoonLabel(it.data.startsAt, now) != null)
-      .sort(byKickoffAsc)
-      .slice(0, LOBBY_ROW_CAP);
-    const watchlist = saved && saved.size > 0 ? all.filter((it) => saved.has(it.key)).sort(byKickoffAsc) : [];
-    return ([
-      { id: "top", items: scored },
-      { id: "live", items: live },
-      { id: "soon", items: soon },
-      { id: "football", items: fullSportLists ? football : football.slice(0, LOBBY_ROW_CAP) },
-      { id: "tennis", items: fullSportLists ? tennis : tennis.slice(0, LOBBY_ROW_CAP) },
-      { id: "watchlist", items: watchlist },
-    ] as LobbySection[]).filter((sec) => sec.items.length > 0);
-  }
 
   const live = all.filter((it) => it.data.isLive).sort(byKickoffAsc);
 

@@ -28,7 +28,7 @@
 //                       file quando su "/" stava la landing, e vale ancora.
 import type { Metadata } from "next";
 import { JsonLd, faqJsonLd } from "@/components/seo/json-ld";
-import { HOME_FAQ_ACTIVE } from "@/lib/home-faq";
+import { homeFaqActive } from "@/lib/classic/home-faq";
 import Dashboard from "./app/page";
 
 export const metadata: Metadata = {
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <>
-      <JsonLd data={faqJsonLd(HOME_FAQ_ACTIVE.en.map(([q, a]) => [q, a]), "en")} />
+      <JsonLd data={faqJsonLd(homeFaqActive().en.map(([q, a]) => [q, a]), "en")} />
       <Dashboard initialTab="bets" />
     </>
   );

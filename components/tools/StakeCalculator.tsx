@@ -14,7 +14,6 @@ import { parseOdds, stakeForTarget } from "@/lib/betting-math";
 import type { ToolCopy } from "@/lib/tools/copy";
 import { Field, Readout, num, parseAmount, pct } from "./parts";
 import { Meter, type MeterSegment } from "./Meter";
-import { CLASSIC } from "@/lib/classic/flag";
 
 // Soglia del verdetto, la stessa del bankroll calculator: sopra il 5% di cassa
 // per giocata una serie negativa ordinaria diventa un problema. Non è nascosta —
@@ -28,7 +27,7 @@ export function StakeCalculator({ copy, dash }: { copy: ToolCopy; dash: string }
   // subito il caso di cui parla il testo.
   const [odds, setOdds] = useState("2.50");
   const [target, setTarget] = useState("100");
-  const [bankroll, setBankroll] = useState(CLASSIC ? "" : "1000"); // #CLASSIC-CARD-1008: nessuna cassa di default
+  const [bankroll, setBankroll] = useState(__CLASSIC_BUILD__ ? "" : "1000"); // #CLASSIC-CARD-1008: nessuna cassa di default
 
   const result = useMemo(() => {
     const decimal = parseOdds(odds, "decimal");
