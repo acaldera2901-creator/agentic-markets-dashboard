@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifyAdminToken } from "@/lib/admin-session";
+import { GROWTH_COOKIE, canViewGrowth } from "@/lib/growth-access";
 import {
   type Family,
   type KpiStatus,
@@ -175,9 +175,8 @@ const fmtUsd = (n: number) => `$${n.toLocaleString("it-IT", { minimumFractionDig
 export default async function GrowthPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   // Defense in depth: middleware.ts already gates /admin/*, but this page
   // renders data server-side, so it re-checks the session itself.
-  const secret = process.env.ADMIN_SECRET;
-  const token = (await cookies()).get("admin_token")?.value;
-  if (!secret || !(await verifyAdminToken(token, secret))) redirect("/admin/login");
+  const jar = await cookies();
+  if (!(await canViewGrowth(jar.get("admin_token")?.value, jar.get(GROWTH_COOKIE)?.value))) redirect("/admin/login");
 
   const w = parseWindow((await searchParams).w);
   const W = windowLabel(w);

@@ -45,14 +45,15 @@ async function hmacKey(secret: string, usage: KeyUsage): Promise<CryptoKey> {
 /** Issue an admin session token valid for maxAgeSeconds (default 8h). */
 export async function issueAdminToken(
   secret: string,
-  maxAgeSeconds = 60 * 60 * 8
+  maxAgeSeconds = 60 * 60 * 8,
+  prefix = SESSION_PREFIX
 ): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + maxAgeSeconds;
   const key = await hmacKey(secret, "sign");
   const sig = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(SESSION_PREFIX + exp)
+    new TextEncoder().encode(prefix + exp)
   );
   return `${exp}.${b64url(sig)}`;
 }
@@ -60,7 +61,8 @@ export async function issueAdminToken(
 /** Verify token shape, signature and expiry. Fail-closed on any anomaly. */
 export async function verifyAdminToken(
   token: string | null | undefined,
-  secret: string
+  secret: string,
+  prefix = SESSION_PREFIX
 ): Promise<boolean> {
   if (!token || !secret) return false;
   const dot = token.indexOf(".");
@@ -76,7 +78,7 @@ export async function verifyAdminToken(
       "HMAC",
       key,
       sig.buffer.slice(sig.byteOffset, sig.byteOffset + sig.byteLength) as ArrayBuffer,
-      new TextEncoder().encode(SESSION_PREFIX + expStr)
+      new TextEncoder().encode(prefix + expStr)
     );
   } catch {
     return false;
