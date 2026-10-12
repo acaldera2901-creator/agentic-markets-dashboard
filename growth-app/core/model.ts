@@ -88,7 +88,7 @@ const numOrNull = (v: unknown): number | null => (v === null || v === undefined 
 /** Scalar query: exactly one row, or it is a failure — never a silent 0. */
 function one(r: Result<Row[]>): Result<Row> {
   if (!r.ok) return r;
-  if (r.data.length !== 1) return { ok: false, error: `lettura fallita (attesa 1 riga, ricevute ${r.data.length})` };
+  if (r.data.length !== 1) return { ok: false, error: `read failed (expected 1 row, got ${r.data.length})` };
   return { ok: true, data: r.data[0] };
 }
 
@@ -98,7 +98,7 @@ function toNums(r: Result<Row>): Result<Record<string, number>> {
   for (const [k, v] of Object.entries(r.data)) {
     const n = num(v);
     // A non-numeric value here means the source is broken: fail loud.
-    if (!Number.isFinite(n)) return { ok: false, error: `valore non numerico in ${k}` };
+    if (!Number.isFinite(n)) return { ok: false, error: `non-numeric value in ${k}` };
     out[k] = n;
   }
   return { ok: true, data: out };
@@ -110,7 +110,7 @@ function mapRows<T>(r: Result<Row[]>, f: (row: Row) => T): Result<T[]> {
 
 /** An older snapshot (rows, not matches) has no `matches`: that is a failed read, never a 0. */
 function toCalibration(r: Row): Result<Calibration> {
-  if (r.matches === undefined || r.market_matches === undefined) return { ok: false, error: "calibrazione nel formato vecchio (righe, non partite)" };
+  if (r.matches === undefined || r.market_matches === undefined) return { ok: false, error: "calibration in the old format (rows, not matches)" };
   return {
     ok: true,
     data: {
@@ -126,7 +126,7 @@ function toCalibration(r: Row): Result<Calibration> {
 
 export function normalize(w: GrowthWindow, raw: RawResults, extras: RawExtras): GrowthData {
   for (const k of [...SCALAR_KEYS, ...LIST_KEYS]) {
-    if (!raw[k]) throw new Error(`RawResults senza la query ${k}`);
+    if (!raw[k]) throw new Error(`RawResults without the ${k} query`);
   }
   const freshness = one(raw.freshness);
   const calibration = one(raw.calibration);

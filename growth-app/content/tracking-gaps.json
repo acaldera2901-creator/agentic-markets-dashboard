@@ -1,142 +1,142 @@
 [
   {
     "id": "G01",
-    "title": "Nessun id utente stabile negli events",
-    "problem": "events ha solo session_id, che cambia a ogni tab/sessione ed esiste solo con il consenso cookie. Non si può dire chi torna né cosa fa un utente nel tempo.",
+    "title": "No stable user id in events",
+    "problem": "events only has session_id, which changes with every tab/session and exists only with cookie consent. We cannot tell who comes back or what a user does over time.",
     "priority": "P0",
-    "unlocks": ["WAA (utenti attivi settimanali)", "Retention D7 / D30 / M3", "Utenti di ritorno", "3 analisi / settimana"],
+    "unlocks": ["WAA (weekly active users)", "Retention D7 / D30 / M3", "Returning users", "3 analyses / week"],
     "owner": "Calde",
-    "status": "aperto",
-    "tiles": ["Card aperte per sessione"],
-    "dependsOn": "id utente pseudonimo stabile negli events per gli utenti loggati (#1). Nessuna dipendenza esterna; tocca il beacon del prodotto, quindi passa da una PR."
+    "status": "open",
+    "tiles": ["Cards opened per session"],
+    "dependsOn": "a stable pseudonymous user id in events for logged-in users (#1). No external dependency; it touches the product beacon, so it goes through a PR."
   },
   {
     "id": "G02",
-    "title": "«Analisi» non definita né tracciata per utente",
-    "problem": "La North Star di attivazione parla di analisi, ma non c'è una definizione scritta. Oggi esiste solo card_open, anonimo (senza utente).",
+    "title": "«Analysis» neither defined nor tracked per user",
+    "problem": "The activation North Star talks about analyses, but there is no written definition. Today only card_open exists, and it is anonymous (no user).",
     "priority": "P0",
-    "unlocks": ["3 analisi / settimana", "Tasso di attivazione"],
-    "owner": "Steve (definizione) + Calde (evento)",
-    "status": "aperto",
-    "tiles": ["Card aperte per sessione"],
-    "dependsOn": "G01 + definizione scritta di «analisi» (Steve) + evento analysis_viewed (#2) nell'allowlist degli eventi del prodotto (lib/analytics-events.ts)."
+    "unlocks": ["3 analyses / week", "Activation rate"],
+    "owner": "Steve (definition) + Calde (event)",
+    "status": "open",
+    "tiles": ["Cards opened per session"],
+    "dependsOn": "G01 + a written definition of «analysis» (Steve) + an analysis_viewed event (#2) in the product's event allowlist (lib/analytics-events.ts)."
   },
   {
     "id": "G03",
-    "title": "Revenue senza importi utilizzabili",
-    "problem": "events.value è sempre 0. Stripe non salva importi nel DB. Shopify ha gli importi ma non normalizzati per periodo e valuta. MRR e ARPU oggi non esistono.",
+    "title": "Revenue without usable amounts",
+    "problem": "events.value is always 0. Stripe stores no amounts in the DB. Shopify has the amounts but not normalized by period and currency. MRR and ARPU do not exist today.",
     "priority": "P0",
-    "unlocks": ["MRR", "ARPU", "Revenue per canale"],
+    "unlocks": ["MRR", "ARPU", "Revenue per channel"],
     "owner": "Andrea",
-    "status": "aperto",
-    "dependsOn": "revenue module (#4): importo, periodo e valuta per ogni abbonamento, da tutti i canali. Shopify oggi salva l'importo ma non la valuta del negozio."
+    "status": "open",
+    "dependsOn": "revenue module (#4): amount, period and currency for every subscription, from every channel. Shopify stores the amount today but not the store currency."
   },
   {
     "id": "G04",
-    "title": "Watchlist solo nel browser, alert utente inesistenti",
-    "problem": "La watchlist vive nel localStorage e non genera eventi. La funzione alert per l'utente non esiste.",
+    "title": "Watchlist only in the browser, no user alerts",
+    "problem": "The watchlist lives in localStorage and generates no events. The user alert feature does not exist.",
     "priority": "P2",
-    "unlocks": ["Watchlist create", "Primo alert impostato", "Alert aperti"],
-    "owner": "Calde (evento watchlist) + Tommy (feature alert)",
-    "status": "aperto"
+    "unlocks": ["Watchlists created", "First alert set", "Alerts opened"],
+    "owner": "Calde (watchlist event) + Tommy (alert feature)",
+    "status": "open"
   },
   {
     "id": "G05",
-    "title": "Tag ?src= non distribuiti sui canali",
-    "problem": "I link di IG, TikTok, X, Reddit, email e creator non portano un ?src= coerente. Non c'è un segmento «organico» pronto. Search Console non è integrata. Nello snapshot del 05/10 (30 giorni), 387 sessioni su 400 risultano «(nessuna fonte)».",
+    "title": "?src= tags not rolled out on the channels",
+    "problem": "The IG, TikTok, X, Reddit, email and creator links do not carry a consistent ?src=. There is no ready «organic» segment. Search Console is not integrated. In the Oct 5 snapshot (30 days), 387 sessions out of 400 show as «(no source)».",
     "priority": "P1",
-    "unlocks": ["Sessioni per canale", "Signup per canale", "Cohort notes per canale", "Traffico organico"],
-    "owner": "Steve (tag sui canali) + Calde (Search Console)",
-    "status": "aperto",
-    "tiles": ["Sessioni"],
-    "dependsOn": "tag ?src= sui link dei canali (Steve) + accesso a Search Console (vedi Accessi e fonti) per la parte organica."
+    "unlocks": ["Sessions per channel", "Signups per channel", "Cohort notes per channel", "Organic traffic"],
+    "owner": "Steve (tags on the channels) + Calde (Search Console)",
+    "status": "open",
+    "tiles": ["Sessions"],
+    "dependsOn": "?src= tags on the channel links (Steve) + access to Search Console (see Access and sources) for the organic part."
   },
   {
     "id": "G06",
-    "title": "CAC: nessuna spesa marketing per canale",
-    "problem": "Non è registrato da nessuna parte quanto spendiamo per canale: ads, creator, affiliate.",
+    "title": "CAC: no marketing spend per channel",
+    "problem": "How much we spend per channel is not recorded anywhere: ads, creators, affiliates.",
     "priority": "P1",
-    "unlocks": ["CAC per canale", "Payback"],
+    "unlocks": ["CAC per channel", "Payback"],
     "owner": "Andrea",
-    "status": "aperto"
+    "status": "open"
   },
   {
     "id": "G07",
-    "title": "Revenue affiliate: solo i click",
-    "problem": "Registriamo partner_click, ma conversioni e commissioni stanno sui portali delle reti affiliate e non arrivano nel DB.",
+    "title": "Affiliate revenue: clicks only",
+    "problem": "We record partner_click, but conversions and commissions sit on the affiliate networks' portals and never reach the DB.",
     "priority": "P2",
-    "unlocks": ["Revenue affiliate per utente", "Revenue affiliate per partner"],
+    "unlocks": ["Affiliate revenue per user", "Affiliate revenue per partner"],
     "owner": "Tommy",
-    "status": "aperto"
+    "status": "open"
   },
   {
     "id": "G08",
-    "title": "Churn senza storico",
-    "problem": "Il cron declassa gli abbonamenti scaduti ma non registra lo storico. Manca la base dei paganti a inizio periodo, quindi c'è solo il conteggio delle scadenze (PROXY).",
+    "title": "Churn without history",
+    "problem": "The cron downgrades expired subscriptions but does not record the history. The paying base at the start of the period is missing, so there is only the count of expiries (PROXY).",
     "priority": "P1",
-    "unlocks": ["Churn rate", "Retention paganti"],
+    "unlocks": ["Churn rate", "Paying retention"],
     "owner": "Calde",
-    "status": "aperto",
-    "tiles": ["Abbonamenti pagati scaduti"],
-    "dependsOn": "log di churn: tabella storica degli stati abbonamento (attivato, rinnovato, scaduto, rimborsato) scritta dal cron subscriptions e dai webhook di pagamento. È una migration sul DB di produzione: PROPOSAL + APPROVE di Andrea."
+    "status": "open",
+    "tiles": ["Lapsed paid subscriptions"],
+    "dependsOn": "churn log: a historical table of subscription states (activated, renewed, expired, refunded) written by the subscriptions cron and by the payment webhooks. It is a migration on the production DB: PROPOSAL + APPROVE by Andrea."
   },
   {
     "id": "G09",
-    "title": "Uptime e latenza quote non misurati, alert operativi muti",
-    "problem": "Nessun monitor esterno registra lo storico della disponibilità. Abbiamo solo l'età dell'ultima quota, non il ritardo rispetto al bookmaker. Senza ALERT_WEBHOOK_URL gli alert operativi non arrivano a nessuno.",
+    "title": "Uptime and odds latency not measured, operational alerts silent",
+    "problem": "No external monitor records the availability history. We only have the age of the last odds, not the delay against the bookmaker. Without ALERT_WEBHOOK_URL the operational alerts reach nobody.",
     "priority": "P2",
-    "unlocks": ["Uptime %", "Latenza quote", "Tempo di reazione agli incidenti"],
+    "unlocks": ["Uptime %", "Odds latency", "Incident response time"],
     "owner": "Calde",
-    "status": "aperto",
-    "tiles": ["Freschezza quote"],
-    "dependsOn": "misura di latenza: il collettore delle quote deve salvare il timestamp della quota alla fonte (bookmaker/API) accanto a captured_at. Per l'uptime: un monitor esterno con storico."
+    "status": "open",
+    "tiles": ["Odds freshness"],
+    "dependsOn": "latency measurement: the odds collector has to store the odds timestamp at the source (bookmaker/API) next to captured_at. For uptime: an external monitor with history."
   },
   {
     "id": "G10",
-    "title": "Accuratezza del tracking non verificata",
-    "problem": "Nessun job confronta gli events con le fonti esterne. Si perdono dati senza che nessuno se ne accorga: rate limit, allowlist degli eventi, consenso. Tra il 36% e il 56% dei page_view non ha sessione.",
+    "title": "Tracking accuracy not verified",
+    "problem": "No job compares events with the external sources. Data gets lost without anyone noticing: rate limits, the event allowlist, consent. Between 36% and 56% of page_views have no session.",
     "priority": "P1",
-    "unlocks": ["Accuratezza del tracking", "Fiducia in tutti i KPI da events"],
+    "unlocks": ["Tracking accuracy", "Trust in every KPI from events"],
     "owner": "Calde",
-    "status": "aperto"
+    "status": "open"
   },
   {
     "id": "G11",
-    "title": "Nessun trial nel prodotto",
-    "problem": "Il prodotto non ha un trial, quindi la conversione trial→paid non entra nei KPI.",
+    "title": "No trial in the product",
+    "problem": "The product has no trial, so the trial→paid conversion is not part of the KPIs.",
     "priority": "P2",
     "unlocks": ["Trial → paid"],
     "owner": "Andrea",
-    "status": "aperto"
+    "status": "open"
   },
   {
     "id": "G12",
-    "title": "Conteggio paganti inquinato da account comp/team",
-    "problem": "I profili con piano pagato includono account dati a mano (manual, referral), del team e di test: il 07/10 3 dei 4 «paganti verificati» erano account nostri e nessuno aveva un pagamento esterno registrato. Dalla v7 la dashboard conta «Clienti esterni paganti» escludendo l'elenco di id di content/internal-accounts.json (generato in locale, da rigenerare quando nasce un account del team) e i piani senza nessun ordine pagato. Resta manuale: il prodotto non marca gli account interni.",
+    "title": "Paying count polluted by comp/team accounts",
+    "problem": "Profiles on a paid plan include accounts granted by hand (manual, referral), team accounts and test accounts: on Oct 7, 3 of the 4 «verified paying» were our own accounts and none had an external payment recorded. Since v7 the dashboard counts «External paying customers» excluding the list of ids in content/internal-accounts.json (generated locally, to be regenerated when a team account is created) and the plans without any paid order. It stays manual: the product does not flag internal accounts.",
     "priority": "P1",
-    "unlocks": ["Clienti esterni paganti", "Free → paid"],
+    "unlocks": ["External paying customers", "Free → paid"],
     "owner": "Calde",
-    "status": "mitigato"
+    "status": "mitigated"
   },
   {
     "id": "G13",
-    "title": "Sessioni senza consenso non contate",
-    "problem": "Senza consenso cookie il beacon parte senza session_id, quindi quelle visite non diventano sessioni. Snapshot del 06/10: 440 page_view su 625 senza sessione negli ultimi 7 giorni (70%), 1.459 su 3.201 negli ultimi 30 (46%). Vercel Web Analytics non colma il buco: si carica anch'esso solo col consenso (components/VercelAnalytics.tsx).",
+    "title": "Sessions without consent not counted",
+    "problem": "Without cookie consent the beacon fires without a session_id, so those visits do not become sessions. Oct 6 snapshot: 440 page_views out of 625 without a session in the last 7 days (70%), 1,459 out of 3,201 in the last 30 (46%). Vercel Web Analytics does not fill the hole: it also loads only with consent (components/VercelAnalytics.tsx).",
     "priority": "P1",
     "unlocks": ["Organic sessions", "Tool sessions", "Match page sessions", "Visitor → signup"],
-    "owner": "Calde (tecnico) + legale-compliance (base giuridica)",
-    "status": "aperto",
-    "tiles": ["Sessioni", "Sessioni /tools", "Sessioni /predictions"],
-    "dependsOn": "conteggio delle sessioni senza cookie lato server (es. hash giornaliero non persistente), solo dopo parere di legale-compliance su ePrivacy/GDPR. Per la sola parte organica, i clic di Search Console sono un controllo indipendente che non dipende dal consenso."
+    "owner": "Calde (technical) + legale-compliance (legal basis)",
+    "status": "open",
+    "tiles": ["Sessions", "/tools sessions", "/predictions sessions"],
+    "dependsOn": "a server-side count of sessions without cookies (e.g. a non-persistent daily hash), only after legale-compliance's opinion on ePrivacy/GDPR. For the organic part alone, Search Console clicks are an independent check that does not depend on consent."
   },
   {
     "id": "G14",
-    "title": "Nessun flag interno nel prodotto: il traffico del team non si può separare",
-    "problem": "Gli events non dicono se una visita, un click o un signup viene da noi. L'audit del 07/10 stima che una parte grande delle sessioni, delle card aperte e dei click partner sia del team, ma la stima si basa sul paese, che non è un criterio accettato per escludere traffico. Oggi la dashboard può solo avvertire («Non fidarti di») ed escludere le fonti di test esplicite (pr-check, qa, localhost…), non il team.",
+    "title": "No internal flag in the product: team traffic cannot be separated",
+    "problem": "Events do not say whether a visit, a click or a signup comes from us. The Oct 7 audit estimates that a large part of the sessions, opened cards and partner clicks is the team's, but the estimate is based on country, which is not an accepted criterion for excluding traffic. Today the dashboard can only warn («Don't trust») and exclude the explicit test sources (pr-check, qa, localhost…), not the team.",
     "priority": "P1",
-    "unlocks": ["Sessioni senza il team", "Click partner senza il team", "Accuratezza del tracking"],
+    "unlocks": ["Sessions without the team", "Partner clicks without the team", "Tracking accuracy"],
     "owner": "Calde",
-    "status": "aperto",
-    "dependsOn": "un flag interno impostato dal prodotto per gli account del team (es. cookie o campo meta.internal sul beacon quando l'utente loggato è nell'elenco interni) e scritto negli events; per i visitatori non loggati, un toggle «sono del team» sulle pagine. Dipende da G01 (id utente negli events) per legare il flag all'account; tocca il beacon del prodotto, quindi passa da una PR."
+    "status": "open",
+    "dependsOn": "an internal flag set by the product for team accounts (e.g. a cookie or a meta.internal field on the beacon when the logged-in user is in the internal list) and written to events; for logged-out visitors, an «I am on the team» toggle on the pages. It depends on G01 (user id in events) to tie the flag to the account; it touches the product beacon, so it goes through a PR."
   }
 ]

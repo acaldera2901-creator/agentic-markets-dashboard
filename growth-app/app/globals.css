@@ -240,7 +240,7 @@ code {
 :root:not([data-theme="dark"]) .g-theme button[data-v="light"],
 :root[data-theme="dark"] .g-theme button[data-v="dark"] { background: var(--ink); color: var(--bg); }
 
-/* ── «perché ▸»: opens in line, native disclosure ───────────────────────── */
+/* ── «why ▸»: opens in line, native disclosure ───────────────────────── */
 .g-why > summary {
   list-style: none;
   cursor: pointer;

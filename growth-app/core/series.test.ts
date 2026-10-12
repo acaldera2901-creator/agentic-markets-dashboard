@@ -57,19 +57,19 @@ describe("days without data", () => {
 
   it("a failed query leaves its metrics empty (null), never 0", () => {
     const s = normalizeSeries(
-      { seriesEvents: { ok: false, error: "lettura fallita" }, seriesProfiles: ok([]), seriesOrders: ok([]), seriesHuman: ok([]) },
+      { seriesEvents: { ok: false, error: "read failed" }, seriesProfiles: ok([]), seriesOrders: ok([]), seriesHuman: ok([]) },
       asOf,
     );
     expect(s.values.page_views).toBeNull();
     expect(s.values.client_error).toBeNull();
-    expect(s.errors.sessions).toBe("lettura fallita");
+    expect(s.errors.sessions).toBe("read failed");
     expect(s.values.new_profiles).not.toBeNull();
   });
 
   it("a day outside the expected range fails the metric instead of being dropped", () => {
     const s = normalizeSeries({ seriesEvents: ok([]), seriesProfiles: ok([{ day: "2026-10-05", new_profiles: 3 }]), seriesOrders: ok([]), seriesHuman: ok([]) }, asOf);
     expect(s.values.new_profiles).toBeNull(); // 5 Oct is "today" for this asOf
-    expect(s.errors.new_profiles).toMatch(/giorno inatteso/);
+    expect(s.errors.new_profiles).toMatch(/unexpected day/);
   });
 });
 

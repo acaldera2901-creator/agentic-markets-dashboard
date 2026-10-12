@@ -26,11 +26,11 @@ describe("internal accounts list", () => {
 
   it("rejects e-mails, malformed ids and unknown reasons before any SQL is built", () => {
     expect(() => validateInternal(file({ accounts: [{ id: U1, reason: "team-plan" }], rules: ["a@b.c"] }))).toThrow(/@/);
-    expect(() => validateInternal(file({ accounts: [{ id: "1'; DROP TABLE x;--", reason: "team-plan" }] }))).toThrow(/id profilo/);
-    expect(() => validateInternal(file({ accounts: [{ id: U1, reason: "amico" }] }))).toThrow(/motivo/);
-    expect(() => validateInternal(file({ orders: [{ table: "profiles", id: U1, reason: "internal-account" }] }))).toThrow(/tabella/);
-    expect(() => validateInternal(file({ orders: [{ table: "shopify_events", id: "1 OR 1=1", reason: "internal-account" }] }))).toThrow(/ordine/);
-    expect(() => validateInternal(file({ accounts: [{ id: U1, reason: "team-plan" }], paidPlanNoPayment: [{ id: U1, reason: "no-paid-order" }] }))).toThrow(/sia interno/);
+    expect(() => validateInternal(file({ accounts: [{ id: "1'; DROP TABLE x;--", reason: "team-plan" }] }))).toThrow(/profile id/);
+    expect(() => validateInternal(file({ accounts: [{ id: U1, reason: "amico" }] }))).toThrow(/reason/);
+    expect(() => validateInternal(file({ orders: [{ table: "profiles", id: U1, reason: "internal-account" }] }))).toThrow(/order table/);
+    expect(() => validateInternal(file({ orders: [{ table: "shopify_events", id: "1 OR 1=1", reason: "internal-account" }] }))).toThrow(/order id/);
+    expect(() => validateInternal(file({ accounts: [{ id: U1, reason: "team-plan" }], paidPlanNoPayment: [{ id: U1, reason: "no-paid-order" }] }))).toThrow(/both internal/);
     expect(() => validateInternal({})).toThrow(/schema/);
   });
 
@@ -42,7 +42,7 @@ describe("internal accounts list", () => {
 
   it("counts per reason, never ids", () => {
     const c = countByReason(file({ accounts: [{ id: U1, reason: "team-plan" }, { id: U2, reason: "maven-domain" }], orders: [{ table: "paygate_orders", id: U1, reason: "internal-account" }] }) as never);
-    expect(c).toEqual({ "account:team-plan": 1, "account:maven-domain": 1, "ordine:paygate_orders:internal-account": 1 });
+    expect(c).toEqual({ "account:team-plan": 1, "account:maven-domain": 1, "order:paygate_orders:internal-account": 1 });
     expect(JSON.stringify(c)).not.toContain(U1);
   });
 
@@ -161,14 +161,14 @@ describe("internal/test sources — one rule, never the country", () => {
 describe("dead sources and missing KPIs", () => {
   it("error_patterns_log is no longer read: it is MANCA with what it needs", () => {
     expect(buildSql("7d").freshness).not.toContain("error_patterns_log");
-    const m = MISSING_KPIS.find((x) => x.label === "Pattern di errore server");
-    expect(m?.why).toMatch(/non alimentata/);
+    const m = MISSING_KPIS.find((x) => x.label === "Server error patterns");
+    expect(m?.why).toMatch(/never fed/);
     expect(m?.needs).toBeTruthy();
   });
   it("Free → paid is listed as not measured, with what it needs and an owner", () => {
     const m = MISSING_KPIS.find((x) => x.label === "Free → paid");
     expect(m?.family).toBe("revenue");
-    expect(m?.needs).toMatch(/cliente esterno pagante/);
+    expect(m?.needs).toMatch(/external paying customer/);
     expect(m?.needs).toMatch(/G01/);
     expect(m?.owner).toBe("Calde");
   });
@@ -177,7 +177,7 @@ describe("dead sources and missing KPIs", () => {
 describe("known synthetic / own days (audit 07/10)", () => {
   it("annotates the audited days, nothing else", () => {
     expect(knownNoise("signup_started", "2026-10-06")).toMatch(/04:09/);
-    expect(knownNoise("sessions", "2026-09-24")).toMatch(/sintetiche/);
+    expect(knownNoise("sessions", "2026-09-24")).toMatch(/synthetic/);
     expect(knownNoise("signup_started", "2026-10-05")).toBeNull();
     expect(knownNoise("new_profiles", "2026-10-06")).toBeNull();
     for (const k of KNOWN_NOISE) expect(k.day).toMatch(/^\d{4}-\d{2}-\d{2}$/);

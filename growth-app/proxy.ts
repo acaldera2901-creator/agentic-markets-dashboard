@@ -7,9 +7,9 @@ export async function proxy(request: NextRequest) {
   const verdict = await checkBasicAuth(request.headers.get("authorization"), process.env.GROWTH_PASSWORD);
   if (verdict === "ok") return NextResponse.next();
   if (verdict === "missing-config") {
-    return new NextResponse("Accesso non configurato: manca GROWTH_PASSWORD (min 12 caratteri).", { status: 503 });
+    return new NextResponse("Access not configured: GROWTH_PASSWORD is missing (min 12 characters).", { status: 503 });
   }
-  return new NextResponse("Password richiesta.", {
+  return new NextResponse("Password required.", {
     status: 401,
     headers: { "WWW-Authenticate": 'Basic realm="BetRedge Growth", charset="UTF-8"' },
   });

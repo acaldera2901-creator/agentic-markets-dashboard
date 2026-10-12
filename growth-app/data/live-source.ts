@@ -23,10 +23,10 @@ export const LIVE_CACHE_TTL_S = 120;
 /** The repo .env keeps DATABASE_URL in SQLAlchemy form; postgres.js needs plain libpq. */
 export function normalizeDbUrl(raw: string | undefined): string {
   const url = (raw ?? "").trim().replace(/^["']|["']$/g, "");
-  if (!url) throw new Error("DATABASE_URL assente");
+  if (!url) throw new Error("DATABASE_URL missing");
   const m = url.match(/^postgres(?:ql)?\+(?:asyncpg|psycopg2?|psycopg):\/\//);
   if (m) return "postgresql://" + url.slice(m[0].length);
-  if (!/^postgres(ql)?:\/\//.test(url)) throw new Error("DATABASE_URL: schema non riconosciuto");
+  if (!/^postgres(ql)?:\/\//.test(url)) throw new Error("DATABASE_URL: unrecognized scheme");
   return url;
 }
 
@@ -49,7 +49,7 @@ async function readOnly(sql: Sql, query: string): Promise<Result<Row[]>> {
     return { ok: true, data: rows.map((r) => ({ ...r })) };
   } catch (e) {
     console.error("[growth/live] query failed:", e instanceof Error ? e.message : String(e));
-    return { ok: false, error: "lettura fallita" };
+    return { ok: false, error: "read failed" };
   }
 }
 
@@ -137,7 +137,7 @@ export function liveSource(url: string): GrowthSource {
         const [raw, extras] = await Promise.all([readRaw(sql, w), readExtras(sql, w, asOf)]);
         return {
           data: normalize(w, raw, extras),
-          meta: { kind: "live", asOf, origin: "database di produzione, lettura diretta (sola lettura)", cacheTtlS: LIVE_CACHE_TTL_S },
+          meta: { kind: "live", asOf, origin: "production database, direct read (read-only)", cacheTtlS: LIVE_CACHE_TTL_S },
         };
       });
     },

@@ -25,7 +25,7 @@ async function main() {
       schema: 1,
       generatedAt: new Date().toISOString(),
       dbNow,
-      origin: "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
+      origin: "BetRedge production database, read in read-only mode (aggregates only)",
       windows,
       series,
       chain,

@@ -3,7 +3,7 @@
 // Measured 06/10: one live page load = 20 read-only transactions of ~100 ms,
 // latency-bound, queued on a small pool. Within the TTL the same window is
 // served from memory: the page still shows the instant of the read (meta.asOf),
-// so "ultimo aggiornamento" never lies. Each window is its own key. Concurrent
+// so "Read at" never lies. Each window is its own key. Concurrent
 // misses share one read. A failed load, or one the caller marks as not
 // cacheable (a query in ERRORE), is never kept: the next request reads again.
 // Per server instance only: a new serverless instance starts empty.

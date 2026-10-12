@@ -11,19 +11,19 @@ import { SERIES_HISTORY_DAYS, type SeriesQueryKey } from "./sql";
 export type RawSeries = Record<SeriesQueryKey, Result<Row[]>>;
 
 /** Error for a read the source never performed (distinct from a failed one). */
-export const MISSING_READ = "lettura mancante in questa sorgente";
+export const MISSING_READ = "read not performed by this source";
 
 export const SERIES_METRICS = [
-  { key: "probably_human", label: "Page view probabilmente umani", query: "seriesHuman" },
-  { key: "page_views", label: "Page view (grezzi)", query: "seriesEvents" },
-  { key: "page_views_no_country", label: "Page view senza paese", query: "seriesHuman" },
-  { key: "sessions", label: "Sessioni con consenso", query: "seriesEvents" },
-  { key: "signup_started", label: "Signup avviati", query: "seriesEvents" },
-  { key: "signup_completed", label: "Signup completati", query: "seriesEvents" },
-  { key: "new_profiles", label: "Nuovi profili", query: "seriesProfiles" },
-  { key: "partner_click", label: "Click partner", query: "seriesEvents" },
-  { key: "client_error", label: "Errori client", query: "seriesEvents" },
-  { key: "paid_orders", label: "Ordini pagati", query: "seriesOrders" },
+  { key: "probably_human", label: "Probably human page views", query: "seriesHuman" },
+  { key: "page_views", label: "Page views (raw)", query: "seriesEvents" },
+  { key: "page_views_no_country", label: "Page views without country", query: "seriesHuman" },
+  { key: "sessions", label: "Consented sessions", query: "seriesEvents" },
+  { key: "signup_started", label: "Signups started", query: "seriesEvents" },
+  { key: "signup_completed", label: "Signups completed", query: "seriesEvents" },
+  { key: "new_profiles", label: "New profiles", query: "seriesProfiles" },
+  { key: "partner_click", label: "Partner clicks", query: "seriesEvents" },
+  { key: "client_error", label: "Client errors", query: "seriesEvents" },
+  { key: "paid_orders", label: "Paid orders", query: "seriesOrders" },
 ] as const satisfies readonly { key: string; label: string; query: SeriesQueryKey }[];
 
 export type SeriesMetric = (typeof SERIES_METRICS)[number]["key"];
@@ -48,7 +48,7 @@ const ROME_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", ye
 /** Calendar date in Europe/Rome of an instant, as YYYY-MM-DD. */
 export function romeDate(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) throw new Error(`data non valida: ${iso}`);
+  if (Number.isNaN(d.getTime())) throw new Error(`invalid date: ${iso}`);
   return ROME_DATE.format(d);
 }
 
@@ -75,9 +75,9 @@ function fill(r: Result<Row[]>, days: string[], col: string): Result<number[]> {
   for (const row of r.data) {
     const i = idx.get(String(row.day));
     // A day outside the expected range means the source and the page disagree on "today": fail loud.
-    if (i === undefined) return { ok: false, error: `giorno inatteso ${String(row.day)}` };
+    if (i === undefined) return { ok: false, error: `unexpected day ${String(row.day)}` };
     const v = Number(row[col]);
-    if (!Number.isFinite(v)) return { ok: false, error: `valore non numerico in ${col}` };
+    if (!Number.isFinite(v)) return { ok: false, error: `non-numeric value in ${col}` };
     out[i] = v;
   }
   return { ok: true, data: out };
@@ -114,7 +114,7 @@ export interface Comparison {
 
 /** Last `n` days vs the `n` days before them (same length). */
 export function compare(v: number[], n: number): Comparison {
-  if (v.length < 2 * n) throw new Error(`servono ${2 * n} giorni, ricevuti ${v.length}`);
+  if (v.length < 2 * n) throw new Error(`${2 * n} days needed, got ${v.length}`);
   const cur = v.slice(v.length - n);
   const prev = v.slice(v.length - 2 * n, v.length - n);
   const current = cur.reduce((a, b) => a + b, 0);
@@ -133,16 +133,16 @@ export function compare(v: number[], n: number): Comparison {
 
 /**
  * Days the audit of 07/10 found driven by our own or synthetic events. NOTHING is
- * removed from any count: these anomalies only stop leading «Cosa è cambiato»
+ * removed from any count: these anomalies only stop leading «What changed»
  * and carry the note, so they are not read as growth.
  */
 export const KNOWN_NOISE: readonly { day: string; metrics: readonly SeriesMetric[]; note: string }[] = [
-  { day: "2026-10-06", metrics: ["signup_started"], note: "raffica sintetica di signup avviati alle 04:09 (senza paese né sessione)" },
-  { day: "2026-10-06", metrics: ["page_views", "page_views_no_country"], note: "page view senza paese della stessa notte (04h)" },
-  { day: "2026-09-24", metrics: ["sessions", "page_views", "page_views_no_country"], note: "sessioni sintetiche 10:30–11:03, senza paese" },
-  { day: "2026-09-21", metrics: ["signup_started", "signup_completed", "new_profiles"], note: "signup di test del team" },
-  { day: "2026-10-01", metrics: ["partner_click"], note: "click partner probabilmente del team" },
-  { day: "2026-10-06", metrics: ["partner_click"], note: "click partner probabilmente del team" },
+  { day: "2026-10-06", metrics: ["signup_started"], note: "synthetic burst of signups started at 04:09 (no country, no session)" },
+  { day: "2026-10-06", metrics: ["page_views", "page_views_no_country"], note: "page views without country from the same night (04h)" },
+  { day: "2026-09-24", metrics: ["sessions", "page_views", "page_views_no_country"], note: "synthetic sessions 10:30–11:03, no country" },
+  { day: "2026-09-21", metrics: ["signup_started", "signup_completed", "new_profiles"], note: "team test signups" },
+  { day: "2026-10-01", metrics: ["partner_click"], note: "partner clicks probably by the team" },
+  { day: "2026-10-06", metrics: ["partner_click"], note: "partner clicks probably by the team" },
 ];
 
 /** The audit note for a metric on a day, or null. */

@@ -34,7 +34,7 @@ function ProgressTile({ href, title, count, total, note }: { href: string; title
           <span className="g-meta font-normal"> / {fmtInt(total)}</span>
         </span>
       </div>
-      <div className="g-bar" role="img" aria-label={`${count} su ${total}`}>
+      <div className="g-bar" role="img" aria-label={`${count} of ${total}`}>
         <span style={{ width: `${total ? (count / total) * 100 : 0}%` }} />
       </div>
       <div className="g-meta mt-1.5">{note}</div>
@@ -53,7 +53,7 @@ function Section({ id, title, file, intro, children, aside }: { id: string; titl
       </div>
       <p className="g-caveat">{intro}</p>
       <p className="g-meta">
-        Si modifica in <code className="break-all">{file}</code> con un commit: questa pagina non salva nulla.
+        Edited in <code className="break-all">{file}</code> with a commit: this page saves nothing.
       </p>
       {children}
     </section>
@@ -71,7 +71,7 @@ function GapRow({ g }: { g: TrackingGap }) {
             {g.title}
           </span>
           <span className="g-meta block">
-            sblocca {g.unlocks.length} KPI · owner: {g.owner}
+            unlocks {g.unlocks.length} {g.unlocks.length === 1 ? "KPI" : "KPIs"} · owner: {g.owner}
           </span>
         </span>
         <span className="c-s justify-self-end md:justify-self-start">
@@ -80,16 +80,16 @@ function GapRow({ g }: { g: TrackingGap }) {
           </span>
         </span>
         <span className="c-w md:w-[220px] w-full">
-          <Stepper steps={GAP_STATUSES} current={g.status} label="stato" />
+          <Stepper steps={GAP_STATUSES} current={g.status} label="status" />
         </span>
         <span className="c-c g-why-cta">
-          dettagli <span className="g-caret" aria-hidden="true">▸</span>
+          details <span className="g-caret" aria-hidden="true">▸</span>
         </span>
       </summary>
       <div className="g-why-body flex flex-col gap-2">
         <p className="g-ink">{g.problem}</p>
         <div>
-          <b>KPI sbloccati</b>
+          <b>KPIs unlocked</b>
           <ul className="list-disc pl-5">
             {g.unlocks.map((k) => (
               <li key={k}>{k}</li>
@@ -98,16 +98,16 @@ function GapRow({ g }: { g: TrackingGap }) {
         </div>
         {g.tiles && (
           <p>
-            <b>Rende reali le card Proxy:</b> {g.tiles.join(" · ")}
+            <b>Makes these Proxy cards real:</b> {g.tiles.join(" · ")}
           </p>
         )}
         {g.dependsOn && (
           <p>
-            <b>Dipende da:</b> {g.dependsOn}
+            <b>Depends on:</b> {g.dependsOn}
           </p>
         )}
         <p>
-          <b>Owner suggerito:</b> {g.owner} · <b>stato:</b> {g.status} (si cambia nel campo <code>status</code> di content/tracking-gaps.json)
+          <b>Suggested owner:</b> {g.owner} · <b>status:</b> {g.status} (changed in the <code>status</code> field of content/tracking-gaps.json)
         </p>
       </div>
     </details>
@@ -115,9 +115,9 @@ function GapRow({ g }: { g: TrackingGap }) {
 }
 
 const EXPERIMENT_COLUMNS: { title: string; statuses: readonly Experiment["status"][]; empty: string }[] = [
-  { title: "Proposti", statuses: ["proposto"], empty: "Nessuna proposta." },
-  { title: "In corso", statuses: ["in corso"], empty: "Nessun esperimento in corso." },
-  { title: "Decisi", statuses: ["scale", "fix", "kill"], empty: "Nessuna decisione ancora: la prima la scrive Steve nel memo." },
+  { title: "Proposed", statuses: ["proposed"], empty: "No proposals." },
+  { title: "In progress", statuses: ["in progress"], empty: "No experiment in progress." },
+  { title: "Decided", statuses: ["scale", "fix", "kill"], empty: "No decision yet: Steve writes the first one in the memo." },
 ];
 
 function ExperimentCard({ e }: { e: Experiment }) {
@@ -130,21 +130,21 @@ function ExperimentCard({ e }: { e: Experiment }) {
       </div>
       <p className="g-label">{e.hypothesis}</p>
       {e.note && <p className="g-meta">{e.note}</p>}
-      <Why label="KPI, durata e soglia">
+      <Why label="KPI, duration and threshold">
         <p>
           <b>KPI target:</b> {e.kpiTarget}
         </p>
         <p>
-          <b>Fonte dato:</b> {e.dataSource}
+          <b>Data source:</b> {e.dataSource}
         </p>
         <p>
-          <b>Durata:</b> {e.duration}
+          <b>Duration:</b> {e.duration}
         </p>
         <p>
-          <b>Soglia di decisione:</b> {e.decisionThreshold}
+          <b>Decision threshold:</b> {e.decisionThreshold}
         </p>
         <p className="mt-1">
-          <b>Stato:</b> {e.status} — stati possibili: {EXPERIMENT_STATUSES.join(" → ")}
+          <b>Status:</b> {e.status} — possible statuses: {EXPERIMENT_STATUSES.join(" → ")}
         </p>
       </Why>
     </article>
@@ -154,31 +154,31 @@ function ExperimentCard({ e }: { e: Experiment }) {
 // One operational block per source: what, which role, how to grant, who, how to check.
 function AccessCard({ s }: { s: AccessSource }) {
   return (
-    <article id={`accesso-${s.id}`} className="g-card p-4 flex flex-col gap-3 min-w-0">
+    <article id={`access-${s.id}`} className="g-card p-4 flex flex-col gap-3 min-w-0">
       <h3 className="g-label">{s.tool}</h3>
       <div className="max-w-[320px]">
-        <Stepper steps={ACCESS_STATUSES} current={s.status} label="accesso" />
+        <Stepper steps={ACCESS_STATUSES} current={s.status} label="access" />
       </div>
       <dl className="flex flex-col gap-2.5 text-[14px]">
         <div>
-          <dt className="g-eyebrow">Cosa si legge</dt>
+          <dt className="g-eyebrow">What you read there</dt>
           <dd className="g-caveat max-w-none break-words">{s.reads}</dd>
         </div>
         <div>
-          <dt className="g-eyebrow">Ruolo minimo da chiedere</dt>
+          <dt className="g-eyebrow">Minimum role to ask for</dt>
           <dd className="break-words">{s.role}</dd>
         </div>
-        <Why label="passi, chi lo concede, come si verifica">
+        <Why label="steps, who grants it, how to check it">
           <ol className="list-decimal pl-5 flex flex-col gap-1">
             {s.steps.map((step) => (
               <li key={step}>{step}</li>
             ))}
           </ol>
           <p className="mt-2">
-            <b>Chi lo concede:</b> {s.owner}
+            <b>Who grants it:</b> {s.owner}
           </p>
           <p>
-            <b>Come si verifica:</b> {s.verify}
+            <b>How to check it:</b> {s.verify}
           </p>
         </Why>
       </dl>
@@ -202,12 +202,12 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
             <span className="inline-flex" style={{ color: "var(--lockup-ink)" }}>
               <Lockup className="h-8 w-auto" />
             </span>
-            <span className="g-eyebrow">Growth · lavoro</span>
+            <span className="g-eyebrow">Growth · work</span>
           </div>
           <div className="ml-auto flex items-center gap-4">
             {dashboardHref && (
               <a href={dashboardHref} className="text-[14px] font-semibold whitespace-nowrap inline-flex items-center min-h-[44px]">
-                ← Numeri
+                ← Numbers
               </a>
             )}
             <ThemeToggle />
@@ -218,35 +218,35 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
       <main className="g-wrap">
         <div className="flex flex-col gap-10 py-6 pb-16 max-w-[1200px]">
           <div className="flex flex-col gap-3">
-            <h1 className="g-h g-h--page">Lavoro Growth</h1>
+            <h1 className="g-h g-h--page">Growth work</h1>
             <p className="g-caveat">
-              Lo spazio di lavoro di Steve: cosa non si misura ancora, cosa testiamo, cosa decidiamo ogni settimana, dove si leggono i dati. Il contenuto è
-              versionato nel repo e si aggiorna con un commit: questa pagina non salva nulla. Istruzioni in <code>growth-app/content/README.md</code>.
+              Steve&apos;s workspace: what is not measured yet, what we test, what we decide every week, where the data is read. The content is
+              versioned in the repo and updated with a commit: this page saves nothing. Instructions in <code>growth-app/content/README.md</code>.
             </p>
           </div>
 
-          <nav aria-label="Avanzamento" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <nav aria-label="Progress" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             <ProgressTile
               href="#gap"
               title="Tracking gaps"
-              count={gapCount("chiuso")}
+              count={gapCount("closed")}
               total={gaps.length}
-              note={`chiusi · ${fmtInt(gapCount("in corso"))} in corso · ${fmtInt(gapCount("mitigato"))} mitigati · ${fmtInt(gapCount("aperto"))} aperti`}
+              note={`closed · ${fmtInt(gapCount("in progress"))} in progress · ${fmtInt(gapCount("mitigated"))} mitigated · ${fmtInt(gapCount("open"))} open`}
             />
             <ProgressTile
-              href="#esperimenti"
-              title="Esperimenti"
+              href="#experiments"
+              title="Experiments"
               count={decided}
               total={experiments.length}
-              note={`decisi · ${fmtInt(expCount("in corso"))} in corso · ${fmtInt(expCount("proposto"))} proposti`}
+              note={`decided · ${fmtInt(expCount("in progress"))} in progress · ${fmtInt(expCount("proposed"))} proposed`}
             />
-            <ProgressTile href="#memo" title="Memo settimanale" count={memos.length} total={Math.max(memos.length, 1)} note={memos.length === 0 ? "scritti · nessuno ancora: il primo lo scrive Steve" : `scritti · ultimo: ${memos[0].file}`} />
+            <ProgressTile href="#memo" title="Weekly memo" count={memos.length} total={Math.max(memos.length, 1)} note={memos.length === 0 ? "written · none yet: Steve writes the first one" : `written · latest: ${memos[0].file}`} />
             <ProgressTile
-              href="#accessi"
-              title="Accessi e fonti"
-              count={accessCount("verificato")}
+              href="#access"
+              title="Access and sources"
+              count={accessCount("verified")}
               total={sources.length}
-              note={`verificati · ${fmtInt(accessCount("concesso"))} concessi · ${fmtInt(accessCount("da concedere"))} da concedere`}
+              note={`verified · ${fmtInt(accessCount("granted"))} granted · ${fmtInt(accessCount("to grant"))} to grant`}
             />
           </nav>
 
@@ -254,10 +254,10 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
             id="gap"
             title="Tracking gaps"
             file="content/tracking-gaps.json"
-            intro="Cosa oggi non si può misurare, quali KPI sblocca chiuderlo e chi dovrebbe farlo. Priorità e owner sono proposte da confermare; lo stato avanza aperto → in corso → mitigato → chiuso."
+            intro="What cannot be measured today, which KPIs closing it unlocks and who should do it. Priority and owner are proposals to be confirmed; the status moves open → in progress → mitigated → closed."
             aside={
               <span className="g-caveat">
-                {fmtInt(gaps.length - gapCount("chiuso"))} non chiusi su {fmtInt(gaps.length)}
+                {fmtInt(gaps.length - gapCount("closed"))} not closed of {fmtInt(gaps.length)}
               </span>
             }
           >
@@ -266,8 +266,8 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
                 <span>Id</span>
                 <span>Gap</span>
                 <span>Prior.</span>
-                <span>Stato</span>
-                <span className="text-right">dettagli</span>
+                <span>Status</span>
+                <span className="text-right">details</span>
               </div>
               {sorted.map((g) => (
                 <GapRow key={g.id} g={g} />
@@ -276,10 +276,10 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
           </Section>
 
           <Section
-            id="esperimenti"
-            title="Backlog esperimenti"
+            id="experiments"
+            title="Experiment backlog"
             file="content/experiments.json"
-            intro="Ogni esperimento ha una soglia scritta prima di partire. I numeri di partenza vengono dallo snapshot reale del 05/10, ma gli esperimenti sono esempi da validare con Steve. Un esperimento è proposto, in corso o deciso (scale / fix / kill): nessuno stato di dato, perché non è un numero."
+            intro="Every experiment has a threshold written before it starts. The starting numbers come from the real snapshot of Oct 5, but the experiments are examples to validate with Steve. An experiment is proposed, in progress or decided (scale / fix / kill): no data status, because it is not a number."
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
               {EXPERIMENT_COLUMNS.map((col) => {
@@ -298,13 +298,13 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
 
           <Section
             id="memo"
-            title="Memo settimanale — scale / fix / kill"
-            file="content/memo/AAAA-Www.md"
-            intro="Una pagina a settimana con le tre domande: cosa funziona, cosa no, cosa testiamo. Copia il template in un nuovo file con il numero della settimana (es. 2026-W41.md) e committalo."
+            title="Weekly memo — scale / fix / kill"
+            file="content/memo/YYYY-Www.md"
+            intro="One page a week with the three questions: what works, what does not, what we test. Copy the template into a new file named with the week number (e.g. 2026-W41.md) and commit it."
           >
             {memos.length === 0 ? (
               <p className="g-caveat flex items-center gap-2">
-                <LockIcon /> Nessun memo ancora: il primo lo scrive Steve.
+                <LockIcon /> No memo yet: Steve writes the first one.
               </p>
             ) : (
               memos.map((m) => (
@@ -323,20 +323,20 @@ export function WorkPage({ content, dashboardHref }: { content: WorkContent; /**
           </Section>
 
           <Section
-            id="accessi"
-            title="Accessi e fonti"
+            id="access"
+            title="Access and sources"
             file="content/sources.json"
-            intro="Per ogni fonte: cosa si legge, il ruolo minimo da chiedere, i passi per concederlo, chi lo concede e il numero che prova che funziona. Lo stato passa a «concesso» quando l'owner ha fatto i passi, a «verificato» quando il numero torna."
+            intro="For each source: what you read there, the minimum role to ask for, the steps to grant it, who grants it and the number that proves it works. The status moves to «granted» when the owner has done the steps, to «verified» when the number matches."
             aside={
               <span className="g-caveat">
-                {fmtInt(accessCount("verificato"))} verificati · {fmtInt(accessCount("concesso"))} concessi · {fmtInt(accessCount("da concedere"))} da concedere
+                {fmtInt(accessCount("verified"))} verified · {fmtInt(accessCount("granted"))} granted · {fmtInt(accessCount("to grant"))} to grant
               </span>
             }
           >
             <div className="g-card g-card--flat p-4 text-[14px] max-w-[80ch]">
-              <b>Privilegio minimo.</b> Sempre un invito nominativo a Steve con il ruolo più basso che basta per leggere. Mai password condivise, mai account admin,
-              mai il login principale di un servizio. Dove il nome del ruolo o il percorso non è certo, c&apos;è scritto «da verificare nell&apos;interfaccia»: lo
-              controlla chi concede, non si indovina. Un accesso che non serve più si revoca.
+              <b>Least privilege.</b> Always a personal invite to Steve with the lowest role that is enough to read. Never shared passwords, never admin accounts,
+              never the main login of a service. Where the role name or the path is not certain, it says «to be checked in the interface»: whoever grants it
+              checks it, nobody guesses. An access that is no longer needed is revoked.
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {sources.map((s) => (

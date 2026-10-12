@@ -21,7 +21,7 @@ const THEME_SCRIPT = `try{var t=localStorage.getItem("growth-theme");if(t==="dar
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it" className={`${display.variable} ${text.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${text.variable}`} suppressHydrationWarning>
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {children}

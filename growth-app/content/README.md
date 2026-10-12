@@ -1,40 +1,40 @@
-# Come si aggiorna la pagina /lavoro (per Steve)
+# How to update the /lavoro (Work) page (for Steve)
 
-La pagina **/lavoro** non ha un database: mostra i file di questa cartella.
-Per cambiarla modifichi un file, fai un commit e, al deploy successivo, la pagina
-si aggiorna. Dalla pagina non si salva nulla.
+The **/lavoro** page has no database: it shows the files in this folder.
+To change it you edit a file, make a commit and, at the next deploy, the page
+updates. Nothing is saved from the page.
 
-| Sezione della pagina | File da modificare |
+| Page section | File to edit |
 |---|---|
 | Tracking gaps | `tracking-gaps.json` |
-| Backlog esperimenti | `experiments.json` |
-| Memo settimanale | un file nuovo in `memo/` (es. `memo/2026-W41.md`) |
-| Accessi e fonti | `sources.json` |
+| Experiment backlog | `experiments.json` |
+| Weekly memo | a new file in `memo/` (e.g. `memo/2026-W41.md`) |
+| Access and sources | `sources.json` |
 
-## Il modo più semplice: da GitHub nel browser
+## The simplest way: from GitHub in the browser
 
-1. Apri il file su GitHub, nel branch della dashboard, e clicca la matita (Edit).
-2. Modifica il testo. Nei `.json` lascia invariate virgolette, virgole e parentesi.
-3. «Commit changes» → scegli «Create a new branch» e apri una PR. Il merge lo fa Andrea o Calde.
+1. Open the file on GitHub, on the dashboard branch, and click the pencil (Edit).
+2. Edit the text. In the `.json` files leave quotes, commas and brackets as they are.
+3. «Commit changes» → choose «Create a new branch» and open a PR. Andrea or Calde merges it.
 
-## Le regole dei campi (se sbagli, la build si ferma e dice dove)
+## Field rules (if you get one wrong, the build stops and says where)
 
-- **tracking-gaps.json** — `priority`: `P0` | `P1` | `P2`. `status`: `aperto` | `in corso` | `mitigato` | `chiuso`.
-  `owner` e `unlocks` (i KPI che il gap sblocca) non possono essere vuoti. Gli `id` (G01, G02 …) non si ripetono.
-  Un gap chiuso non si cancella: si mette `"status": "chiuso"`, così resta la storia.
-- **experiments.json** — tutti i campi sono obbligatori: `hypothesis`, `kpiTarget`, `dataSource`, `duration`,
-  `decisionThreshold`. `status`: `proposto` | `in corso` | `scale` | `fix` | `kill`. La soglia si scrive **prima** di partire.
-  I tre esperimenti E01–E03 sono esempi con numeri reali dello snapshot del 05/10: tienili, modificali o mettili in `kill`.
-- **memo/** — copia `memo/_template.md` in `memo/AAAA-Www.md` (anno e numero della settimana ISO, es. `2026-W41.md`).
-  I memo compaiono dal più recente. Il template non compare come memo.
-  Il memo si vede come testo semplice: la formattazione markdown non viene interpretata.
-- **sources.json** — un blocco per fonte: `reads`, `role` (il ruolo minimo, mai admin né password condivise),
-  `steps` (passi per concederlo), `owner` (chi lo concede), `verify` (il numero che prova che funziona), `status`:
-  `da concedere` → `concesso` (l'owner ha fatto i passi) → `verificato` (il numero torna). Si parte sempre da `da concedere`.
-- **tracking-gaps.json** — `tiles` (facoltativo) elenca le tile PROXY che il gap rende reali, `dependsOn` da cosa dipende.
+- **tracking-gaps.json** — `priority`: `P0` | `P1` | `P2`. `status`: `open` | `in progress` | `mitigated` | `closed`.
+  `owner` and `unlocks` (the KPIs the gap unlocks) cannot be empty. The `id`s (G01, G02 …) do not repeat.
+  A closed gap is not deleted: set `"status": "closed"`, so the history stays.
+- **experiments.json** — every field is required: `hypothesis`, `kpiTarget`, `dataSource`, `duration`,
+  `decisionThreshold`. `status`: `proposed` | `in progress` | `scale` | `fix` | `kill`. The threshold is written **before** starting.
+  The three experiments E01–E03 are examples with real numbers from the Oct 5 snapshot: keep them, edit them or set them to `kill`.
+- **memo/** — copy `memo/_template.md` to `memo/YYYY-Www.md` (year and ISO week number, e.g. `2026-W41.md`).
+  Memos appear newest first. The template does not appear as a memo.
+  The memo is shown as plain text: markdown formatting is not interpreted.
+- **sources.json** — one block per source: `reads`, `role` (the minimum role, never admin nor shared passwords),
+  `steps` (steps to grant it), `owner` (who grants it), `verify` (the number that proves it works), `status`:
+  `to grant` → `granted` (the owner did the steps) → `verified` (the number matches). It always starts from `to grant`.
+- **tracking-gaps.json** — `tiles` (optional) lists the PROXY tiles the gap makes real, `dependsOn` what it depends on.
 
-## Controllo prima del commit (se lavori in locale)
+## Check before committing (if you work locally)
 
 ```bash
-cd growth-app && npm test      # dice quale campo di quale riga è sbagliato
+cd growth-app && npm test      # says which field of which row is wrong
 ```

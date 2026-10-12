@@ -1,7 +1,7 @@
-// «Dati che non abbiamo ancora»: every MISSING_KPIS entry, grouped by the
+// «Data we do not have yet»: every MISSING_KPIS entry, grouped by the
 // tracking gap (content/tracking-gaps.json) whose `unlocks` names it, with
 // what it takes and who unblocks it. A KPI never sits in the place of a
-// number here: no 0, no dash, a lock and the words «non misurato».
+// number here: no 0, no dash, a lock and the words «not measured».
 
 import { type Family, MISSING_KPIS, type MissingKpi } from "@/core/kpi";
 import type { TrackingGap } from "../work/content";
@@ -48,32 +48,32 @@ export function groupByGap(gaps: TrackingGap[], missing: MissingKpi[] = MISSING_
 
 export function MissingData({ gaps, workHref }: { gaps: TrackingGap[]; workHref?: string }) {
   const groups = groupByGap(gaps);
-  const closed = gaps.filter((g) => g.status === "chiuso").length;
-  const mitigated = gaps.filter((g) => g.status === "mitigato").length;
-  const inProgress = gaps.filter((g) => g.status === "in corso").length;
+  const closed = gaps.filter((g) => g.status === "closed").length;
+  const mitigated = gaps.filter((g) => g.status === "mitigated").length;
+  const inProgress = gaps.filter((g) => g.status === "in progress").length;
   return (
-    <section aria-labelledby="mancanti" className="flex flex-col gap-4">
+    <section aria-labelledby="missing" className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
         <div className="lg:col-span-8 flex flex-col gap-2">
-          <SectionTitle id="mancanti" title={`Dati che non abbiamo ancora · ${MISSING_KPIS.length} KPI`} />
+          <SectionTitle id="missing" title={`Data we do not have yet · ${MISSING_KPIS.length} KPIs`} />
           <p className="g-caveat">
-            Nessuno di questi ha un numero: non sono 0, non sono trattini. Ogni riga dice cosa serve e chi lo sblocca; il lavoro per chiuderli è in{" "}
-            {workHref ? <a href={`${workHref}#gap`}>Lavoro → Tracking gaps</a> : "Lavoro → Tracking gaps"}.
+            None of these has a number: they are not 0, they are not dashes. Each row says what it needs and who unblocks it; the work to close them is in{" "}
+            {workHref ? <a href={`${workHref}#gap`}>Work → Tracking gaps</a> : "Work → Tracking gaps"}.
           </p>
         </div>
         <div className="g-card lg:col-span-4 p-4">
           <div className="g-label">
-            Gap di tracking: {fmtInt(closed)} {closed === 1 ? "chiuso" : "chiusi"} su {fmtInt(gaps.length)}
+            Tracking gaps: {fmtInt(closed)} closed of {fmtInt(gaps.length)}
           </div>
-          <div className="g-bar" role="img" aria-label={`${closed} gap chiusi su ${gaps.length}`}>
+          <div className="g-bar" role="img" aria-label={`${closed} gaps closed of ${gaps.length}`}>
             <span style={{ width: `${gaps.length ? (closed / gaps.length) * 100 : 0}%` }} />
           </div>
           <div className="g-meta mt-2">
-            {fmtInt(inProgress)} in corso · {fmtInt(mitigated)} {mitigated === 1 ? "mitigato" : "mitigati"} · {fmtInt(gaps.length - closed - mitigated - inProgress)} aperti
+            {fmtInt(inProgress)} in progress · {fmtInt(mitigated)} mitigated · {fmtInt(gaps.length - closed - mitigated - inProgress)} open
             {workHref && (
               <>
                 {" "}
-                · <a href={`${workHref}#gap`}>Apri in Lavoro →</a>
+                · <a href={`${workHref}#gap`}>Open in Work →</a>
               </>
             )}
           </div>
@@ -83,12 +83,12 @@ export function MissingData({ gaps, workHref }: { gaps: TrackingGap[]; workHref?
       <div className="g-card overflow-hidden">
         <div className="hidden md:grid grid-cols-[minmax(0,1.4fr)_130px_120px_minmax(0,1.6fr)] gap-3 px-4 py-2 g-meta">
           <span>KPI</span>
-          <span>Sezione</span>
-          <span>Stato</span>
-          <span>Cosa serve · chi sblocca</span>
+          <span>Section</span>
+          <span>Status</span>
+          <span>What it needs · who unblocks it</span>
         </div>
         {groups.map((g, gi) => (
-          <div key={g.gap?.id ?? "senza-gap"} className={gi > 0 ? "g-rule" : ""}>
+          <div key={g.gap?.id ?? "no-gap"} className={gi > 0 ? "g-rule" : ""}>
             <div className="g-card--flat px-4 py-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
               {g.gap ? (
                 <>
@@ -98,18 +98,18 @@ export function MissingData({ gaps, workHref }: { gaps: TrackingGap[]; workHref?
                   <span className="g-prio" data-p={g.gap.priority}>
                     {g.gap.priority}
                   </span>
-                  <span className="g-meta">sblocca: {g.gap.owner}</span>
+                  <span className="g-meta">unblocks: {g.gap.owner}</span>
                   <span className="g-meta">· {g.gap.status}</span>
                   {workHref && (
                     <a className="g-meta" href={`${workHref}#${g.gap.id}`}>
-                      dettagli in Lavoro →
+                      details in Work →
                     </a>
                   )}
                 </>
               ) : (
                 <>
-                  <span className="g-h g-h--mini">Senza un gap in Lavoro</span>
-                  <span className="g-meta">il KPI è nel PDF ma nessun gap di tracking lo elenca ancora</span>
+                  <span className="g-h g-h--mini">Without a gap in Work</span>
+                  <span className="g-meta">the KPI is in the PDF but no tracking gap lists it yet</span>
                 </>
               )}
             </div>
@@ -129,8 +129,8 @@ export function MissingData({ gaps, workHref }: { gaps: TrackingGap[]; workHref?
                     <Chip mark="MANCA" />
                   </span>
                   <span className="g-caveat max-w-none">
-                    {m.needs} · <span className="g-ink">sblocca: {m.owner}</span>
-                    <span className="block g-meta">Perché manca: {m.why}.</span>
+                    {m.needs} · <span className="g-ink">unblocks: {m.owner}</span>
+                    <span className="block g-meta">Why it is missing: {m.why}.</span>
                   </span>
                 </li>
               ))}

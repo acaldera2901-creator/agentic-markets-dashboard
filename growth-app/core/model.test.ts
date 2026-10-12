@@ -28,8 +28,8 @@ describe("normalize — absence is never a 0", () => {
   });
 
   it("a failed read stays a failure", () => {
-    const d = normalize("7d", raw({ revenue: { ok: false, error: "lettura fallita" } }), EXTRAS);
-    expect(d.revenue).toEqual({ ok: false, error: "lettura fallita" });
+    const d = normalize("7d", raw({ revenue: { ok: false, error: "read failed" } }), EXTRAS);
+    expect(d.revenue).toEqual({ ok: false, error: "read failed" });
   });
 
   it("a non-numeric value fails loud instead of becoming NaN or 0", () => {
@@ -37,7 +37,7 @@ describe("normalize — absence is never a 0", () => {
     expect(d.traffic.ok).toBe(false);
   });
 
-  it("null ages and null Brier stay null (rendered n/d), real zeros stay zeros", () => {
+  it("null ages and null Brier stay null (rendered n/a), real zeros stay zeros", () => {
     const d = normalize("7d", raw(), EXTRAS);
     expect(d.freshness.ok && d.freshness.data.odds_age_s).toBeNull();
     expect(d.calibration.ok && d.calibration.data.brier).toBeNull();
@@ -82,14 +82,14 @@ describe("normalize — series and chain live in GrowthData, absence is ERRORE",
   });
 
   it("one failed series query nulls only its metrics", () => {
-    const d = normalize("7d", raw(), { ...EXTRAS, series: { ...SERIES, seriesProfiles: { ok: false, error: "lettura fallita" } } });
+    const d = normalize("7d", raw(), { ...EXTRAS, series: { ...SERIES, seriesProfiles: { ok: false, error: "read failed" } } });
     expect(d.trends.values.new_profiles).toBeNull();
-    expect(d.trends.errors.new_profiles).toBe("lettura fallita");
+    expect(d.trends.errors.new_profiles).toBe("read failed");
     expect(d.trends.values.page_views).not.toBeNull();
   });
 
   it("a missing or failed chain is a failure, not an empty list", () => {
     expect(normalize("7d", raw(), { ...EXTRAS, chain: undefined }).chain).toEqual({ ok: false, error: MISSING_READ });
-    expect(normalize("7d", raw(), { ...EXTRAS, chain: { ok: false, error: "lettura fallita" } }).chain).toEqual({ ok: false, error: "lettura fallita" });
+    expect(normalize("7d", raw(), { ...EXTRAS, chain: { ok: false, error: "read failed" } }).chain).toEqual({ ok: false, error: "read failed" });
   });
 });

@@ -59,7 +59,7 @@ describe("hasFailedRead (what the live cache refuses to keep)", () => {
   it("a complete load is cacheable; one failed query or one failed series is not", async () => {
     const { data } = await snapshotSource().load("7d");
     expect(hasFailedRead(data)).toBe(false);
-    expect(hasFailedRead({ ...data, partners: { ok: false, error: "lettura fallita" } })).toBe(true);
-    expect(hasFailedRead({ ...data, trends: { ...data.trends, errors: { page_views: "lettura fallita" } } })).toBe(true);
+    expect(hasFailedRead({ ...data, partners: { ok: false, error: "read failed" } })).toBe(true);
+    expect(hasFailedRead({ ...data, trends: { ...data.trends, errors: { page_views: "read failed" } } })).toBe(true);
   });
 });

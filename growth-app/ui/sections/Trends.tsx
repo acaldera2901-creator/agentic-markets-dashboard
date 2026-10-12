@@ -17,7 +17,7 @@ function Sparkline({ values, days, flagged }: { values: number[]; days: string[]
   const y = (v: number) => H - P - (v / max) * (H - 2 * P);
   const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`andamento, massimo ${fmtInt(max)}`} className="overflow-visible">
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`trend, maximum ${fmtInt(max)}`} className="overflow-visible">
       <line x1={P} x2={W - P} y1={H - P} y2={H - P} className="g-spark-base" strokeWidth={1} />
       <polyline points={pts} fill="none" className="g-spark-line" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
       {values.map((v, i) => (
@@ -25,7 +25,7 @@ function Sparkline({ values, days, flagged }: { values: number[]; days: string[]
           {flagged.has(i) && <circle cx={x(i)} cy={y(v)} r={4.5} className="g-spark-ring" strokeWidth={2} />}
           {/* invisible, larger hit target for the native tooltip */}
           <circle cx={x(i)} cy={y(v)} r={6} fill="transparent">
-            <title>{`${fmtDay(days[i])}: ${fmtInt(v)}${flagged.has(i) ? " — anomalia" : ""}`}</title>
+            <title>{`${fmtDay(days[i])}: ${fmtInt(v)}${flagged.has(i) ? " — anomaly" : ""}`}</title>
           </circle>
         </g>
       ))}
@@ -36,8 +36,8 @@ function Sparkline({ values, days, flagged }: { values: number[]; days: string[]
 function AnomalyNote({ a, noise }: { a: Anomaly; noise: string | null }) {
   return (
     <li className="g-anom text-[12px] font-medium">
-      {a.z > 0 ? "▲" : "▼"} {fmtDay(a.day)}: {fmtInt(a.value)} <span className="g-muted font-normal">(media {ANOMALY_BASELINE_DAYS}g prima {a.mean.toFixed(1)} ± {a.sd.toFixed(1)}, {a.z > 0 ? "+" : ""}
-      {a.z.toFixed(1)}σ){noise && <> · non è crescita: {noise} (audit 07/10, non escluso dai conteggi)</>}</span>
+      {a.z > 0 ? "▲" : "▼"} {fmtDay(a.day)}: {fmtInt(a.value)} <span className="g-muted font-normal">(mean of the {ANOMALY_BASELINE_DAYS}d before {a.mean.toFixed(1)} ± {a.sd.toFixed(1)}, {a.z > 0 ? "+" : ""}
+      {a.z.toFixed(1)}σ){noise && <> · not growth: {noise} (Oct 7 audit, not excluded from the counts)</>}</span>
     </li>
   );
 }
@@ -60,44 +60,44 @@ export function Trends({ data }: { data: GrowthData }) {
   const spike = raw !== null && noCountry !== null ? noCountrySpike(noCountry, raw) : null;
 
   return (
-    <section aria-labelledby="andamento" className="flex flex-col gap-3">
-      <SectionTitle id="andamento" title="Andamento giornaliero" hint={`ultimi ${n} giorni interi vs i ${n} precedenti`} />
+    <section aria-labelledby="trends" className="flex flex-col gap-3">
+      <SectionTitle id="trends" title="Daily trends" hint={`last ${n} full days vs the previous ${n}`} />
       <p className="text-[14px] flex flex-wrap items-center gap-x-2 gap-y-1">
         <span>
-          Page view ultimi {n}g: <span className="g-num g-num--sm">{human === null ? "n/d" : fmtInt(human)}</span> probabilmente umani
+          Page views, last {n}d: <span className="g-num g-num--sm">{human === null ? "n/a" : fmtInt(human)}</span> probably human
         </span>
         <Chip mark="EST" />
-        <span className="g-muted">· {raw === null ? "n/d" : fmtInt(raw)} grezzi</span>
+        <span className="g-muted">· {raw === null ? "n/a" : fmtInt(raw)} raw</span>
         <Chip mark="LIVE" />
       </p>
-      <p className="g-meta" data-sub="margine stima">
-        Margine della stima: {HUMAN_ESTIMATE_MARGIN}.
+      <p className="g-meta" data-sub="estimate margin">
+        Margin of the estimate: {HUMAN_ESTIMATE_MARGIN}.
       </p>
       {spike?.spike && (
         <div role="alert" className="g-card px-4 py-3 text-[14px]" style={{ borderLeft: "4px solid var(--anomaly)" }}>
-          <span className="g-anom">▲</span> Picco anomalo, controllare prima di leggere i totali: {pct(spike.share!)} dei page view degli ultimi {n} giorni è senza paese (soglia{" "}
+          <span className="g-anom">▲</span> Anomalous spike, check before reading the totals: {pct(spike.share!)} of the page views of the last {n} days have no country (threshold{" "}
           {pct(NO_COUNTRY_SPIKE_SHARE)}).
         </div>
       )}
-      <Why label="perché e come si legge">
-        I page view grezzi contengono anche crawler, job sintetici e traffico senza paese: per le persone leggi la riga «probabilmente umani» (STIMATO, stesso criterio
-        della card in Acquisition: {HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}). Il grezzo resta accanto. Giorni di calendario nel fuso
-        Europe/Rome, dal {fmtDay(shown[0])} al {fmtDay(shown[shown.length - 1])}; oggi è escluso perché parziale. Un giorno senza eventi vale 0 solo se la lettura è
-        riuscita: se la query fallisce la riga resta vuota. Con un periodo precedente sotto {SMALL_SAMPLE_BASE} eventi c&apos;è solo il delta assoluto (campione
-        piccolo). <b>Anomalia</b> = giorno oltre {ANOMALY_SIGMA} deviazioni standard (σ) dalla media dei {ANOMALY_BASELINE_DAYS} giorni prima, solo con ≥
-        {ANOMALY_BASELINE_DAYS} giorni di storia dal primo dato registrato; σ è la deviazione standard campionaria di quei {ANOMALY_BASELINE_DAYS} giorni, z = (valore −
-        media) / σ.
+      <Why label="why, and how to read it">
+        Raw page views also contain crawlers, synthetic jobs and traffic without country: for people read the «probably human» row (ESTIMATED, same criterion
+        as the card in Acquisition: {HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}). The raw number stays next to it. Calendar days in the
+        Europe/Rome time zone, from {fmtDay(shown[0])} to {fmtDay(shown[shown.length - 1])}; today is excluded because partial. A day without events is 0 only if the read
+        succeeded: if the query fails the row stays empty. With a previous period below {SMALL_SAMPLE_BASE} events there is only the absolute delta (small
+        sample). <b>Anomaly</b> = a day beyond {ANOMALY_SIGMA} standard deviations (σ) from the mean of the {ANOMALY_BASELINE_DAYS} days before, only with ≥
+        {ANOMALY_BASELINE_DAYS} days of history since the first recorded value; σ is the sample standard deviation of those {ANOMALY_BASELINE_DAYS} days, z = (value −
+        mean) / σ.
       </Why>
       <div className="g-card p-4 g-scroll">
         <table className="g-table">
           <thead>
             <tr>
-              <th>Metrica</th>
-              <th className="r">Ultimi {n}g</th>
-              <th className="r">{n}g prima</th>
+              <th>Metric</th>
+              <th className="r">Last {n}d</th>
+              <th className="r">{n}d before</th>
               <th className="r">Delta</th>
-              <th>Andamento</th>
-              <th>Note</th>
+              <th>Trend</th>
+              <th>Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -105,20 +105,20 @@ export function Trends({ data }: { data: GrowthData }) {
               <tr key={m.key}>
                 <td className="whitespace-nowrap">
                   <span className="g-ink">{m.label}</span>
-                  {m.key === "sessions" && <div className="g-meta">somma delle sessioni di ogni giorno</div>}
+                  {m.key === "sessions" && <div className="g-meta">sum of each day&apos;s sessions</div>}
                   {m.key === "probably_human" && (
                     <div className="g-meta">
-                      <Chip mark="EST" /> esclusi senza paese, paesi senza sessioni, raffiche
+                      <Chip mark="EST" /> excluded: no country, countries without sessions, bursts
                     </div>
                   )}
                   {m.key === "page_views" && (
                     <div className="g-meta">
-                      <Chip mark="LIVE" /> crawler e senza paese inclusi
+                      <Chip mark="LIVE" /> crawlers and no-country included
                     </div>
                   )}
-                  {m.key === "page_views_no_country" && <div className="g-meta">test locali, job sintetici o crawler</div>}
-                  {m.key === "client_error" && <div className="g-meta">doppioni identici entro {CLIENT_ERROR_DEDUP_SECONDS} s contati una volta</div>}
-                  {m.key === "paid_orders" && <div className="g-meta">esclusi gli ordini degli account interni/test</div>}
+                  {m.key === "page_views_no_country" && <div className="g-meta">local tests, synthetic jobs or crawlers</div>}
+                  {m.key === "client_error" && <div className="g-meta">identical duplicates within {CLIENT_ERROR_DEDUP_SECONDS} s counted once</div>}
+                  {m.key === "paid_orders" && <div className="g-meta">orders from internal/test accounts excluded</div>}
                 </td>
                 {v && c ? (
                   <>
@@ -140,14 +140,14 @@ export function Trends({ data }: { data: GrowthData }) {
                     <td className="min-w-[180px]">
                       {c.smallSample && (
                         <div className="g-meta">
-                          campione piccolo (base {fmtInt(c.previous)} &lt; {SMALL_SAMPLE_BASE}): niente %
+                          small sample (base {fmtInt(c.previous)} &lt; {SMALL_SAMPLE_BASE}): no %
                         </div>
                       )}
-                      {c.partialHistory && <div className="g-meta">il periodo precedente comincia prima del primo dato registrato</div>}
+                      {c.partialHistory && <div className="g-meta">the previous period starts before the first recorded value</div>}
                       {an.length > 0 && (
                         <details className="g-why">
                           <summary>
-                            <span className="g-anom">▲ {an.length === 1 ? "1 anomalia" : `${an.length} anomalie`}</span> <span className="g-caret" aria-hidden="true">▸</span>
+                            <span className="g-anom">▲ {an.length === 1 ? "1 anomaly" : `${an.length} anomalies`}</span> <span className="g-caret" aria-hidden="true">▸</span>
                           </summary>
                           <ul className="g-why-body flex flex-col gap-1">
                             {an.map((a) => (
@@ -160,7 +160,7 @@ export function Trends({ data }: { data: GrowthData }) {
                   </>
                 ) : (
                   <td colSpan={5} className="text-[12px]" style={{ color: "var(--s-err)" }}>
-                    <Chip mark="ERRORE" /> Lettura fallita ({s.errors[m.key] ?? "errore"}) — serie vuota, nessun valore sostituito con 0.
+                    <Chip mark="ERRORE" /> Read failed ({s.errors[m.key] ?? "error"}) — empty series, no value replaced with 0.
                   </td>
                 )}
               </tr>
@@ -170,13 +170,13 @@ export function Trends({ data }: { data: GrowthData }) {
       </div>
       <details className="g-card g-why p-4">
         <summary>
-          Tabella giorno per giorno <span className="g-caret" aria-hidden="true">▸</span>
+          Day-by-day table <span className="g-caret" aria-hidden="true">▸</span>
         </summary>
         <div className="g-scroll mt-3">
           <table className="g-table text-[12px] g-tab">
             <thead>
               <tr>
-                <th>Giorno</th>
+                <th>Day</th>
                 {SERIES_METRICS.map((m) => (
                   <th key={m.key} className="r">
                     {m.label}

@@ -114,7 +114,7 @@ describe("funnel ratios", () => {
     expect(formatAge(null)).toBeNull();
     expect(formatAge(125)).toBe("2m");
     expect(formatAge(3 * 3600 + 5 * 60)).toBe("3h 05m");
-    expect(formatAge(2 * 86400 + 3600)).toBe("2g 1h");
+    expect(formatAge(2 * 86400 + 3600)).toBe("2d 1h");
   });
 });
 
@@ -152,11 +152,11 @@ describe("proxy audit (06/10)", () => {
       for (const g of t.gaps) expect(g).toMatch(/^G\d{2}$/);
     }
     expect(PROXY_TILES.map((t) => t.label).sort()).toEqual(
-      ["Abbonamenti pagati scaduti", "Card aperte per sessione", "Freschezza quote", "Sessioni", "Sessioni /predictions", "Sessioni /tools"],
+      ["/predictions sessions", "/tools sessions", "Cards opened per session", "Lapsed paid subscriptions", "Odds freshness", "Sessions"],
     );
   });
 
   it("an unknown PROXY label fails loud instead of rendering without its caveat", () => {
-    expect(() => proxyTile("Paganti (incl. comp)")).toThrow(/PROXY_TILES/);
+    expect(() => proxyTile("Paying (incl. comps)")).toThrow(/PROXY_TILES/);
   });
 });

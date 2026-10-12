@@ -17,13 +17,13 @@ export const TEAM_HANDLES = ["calde", "mavenagency", "tommy"];
 export const MIN_LIST_PRICE_USD = 14.99;
 
 export const RULES_TEXT = [
-  `team-plan: plan ${INTERNAL_PLANS.join("/")} o plan_source ${INTERNAL_PLAN_SOURCES.join("/")}`,
-  `maven-domain: e-mail del dominio ${MAVEN_DOMAINS.join(", ")}`,
-  `team-handle: la parte prima della chiocciola contiene ${TEAM_HANDLES.join(", ")}`,
-  `test-orders: ha generato un ordine Paygate/PayPal sotto il prezzo di listino più basso ($${MIN_LIST_PRICE_USD})`,
-  "ordini: internal-account = ordine di un account interno (collegato per identificativo); test-price = ordine Paygate/PayPal sotto listino di chiunque",
-  `${NO_PAYMENT_REASON}: profilo esterno con piano base/premium da canale a pagamento ma nessun ordine pagato registrato (Paygate/PayPal con paid_at, Shopify orders/paid; Stripe solo con stripe_subscription_id)`,
-  "un account ha un solo motivo: il primo che vale, in quest'ordine",
+  `team-plan: plan ${INTERNAL_PLANS.join("/")} or plan_source ${INTERNAL_PLAN_SOURCES.join("/")}`,
+  `maven-domain: e-mail on the ${MAVEN_DOMAINS.join(", ")} domain`,
+  `team-handle: the part before the at sign contains ${TEAM_HANDLES.join(", ")}`,
+  `test-orders: generated a Paygate/PayPal order below the lowest list price ($${MIN_LIST_PRICE_USD})`,
+  "orders: internal-account = order from an internal account (linked by identifier); test-price = Paygate/PayPal order below list price from anyone",
+  `${NO_PAYMENT_REASON}: external profile with a base/premium plan from a paid channel but no paid order recorded (Paygate/PayPal with paid_at, Shopify orders/paid; Stripe only with stripe_subscription_id)`,
+  "an account has only one reason: the first that applies, in this order",
 ];
 
 export interface ProfileIn {

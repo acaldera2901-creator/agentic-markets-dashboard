@@ -19,17 +19,17 @@ import { buildSeriesSql } from "./sql";
 
 describe("ratios are never shown above 100%", () => {
   const why = "click > aperture: tracking incompleto";
-  it("17 click on 15 opens → n/d with the reason, no percentage", () => {
-    expect(formatShare(17, 15, why)).toBe(`n/d (${why})`);
+  it("17 click on 15 opens → n/a with the reason, no percentage", () => {
+    expect(formatShare(17, 15, why)).toBe(`n/a (${why})`);
     expect(formatShare(17, 15, why)).not.toMatch(/%/);
   });
   it("exactly 100% and below are shown", () => {
     expect(formatShare(15, 15, why)).toBe("100%");
     expect(formatShare(3, 15, why)).toBe("20%");
   });
-  it("denominator 0 → n/d, never 0% or Infinity", () => {
-    expect(formatShare(0, 0, why)).toBe("n/d");
-    expect(formatShare(5, 0, why)).toBe("n/d");
+  it("denominator 0 → n/a, never 0% or Infinity", () => {
+    expect(formatShare(0, 0, why)).toBe("n/a");
+    expect(formatShare(5, 0, why)).toBe("n/a");
   });
 });
 
@@ -48,7 +48,7 @@ describe("no-country spike (> 30%)", () => {
     expect(noCountrySpike(0, 0)).toEqual({ share: null, spike: false });
   });
   it("the label no longer blames only local tests", () => {
-    expect(HUMAN_FILTER_CRITERIA[0]).toMatch(/^senza paese: test locali, job sintetici o crawler \(causa non determinabile dai dati/);
+    expect(HUMAN_FILTER_CRITERIA[0]).toMatch(/^no country: local tests, synthetic jobs or crawlers \(cause not determinable from the data/);
   });
 });
 
@@ -92,7 +92,7 @@ describe("Brier reference", () => {
   it("1/3 to each outcome, summed over the 3 outcomes = 0.667", () => {
     const uniform = (2 / 3) ** 2 + 2 * (1 / 3) ** 2;
     expect(BRIER_UNIFORM_3WAY).toBeCloseTo(uniform, 12);
-    expect(BRIER_UNIFORM_3WAY.toLocaleString("it-IT", { maximumFractionDigits: 3 })).toBe("0,667");
+    expect(BRIER_UNIFORM_3WAY.toLocaleString("en-US", { maximumFractionDigits: 3 })).toBe("0.667");
   });
 });
 

@@ -31,9 +31,9 @@ function apply(next: Theme) {
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribe, read, serverSnapshot);
   return (
-    <div className="g-theme" role="group" aria-label="Tema">
+    <div className="g-theme" role="group" aria-label="Theme">
       <button type="button" data-v="light" aria-pressed={theme === "light"} onClick={() => apply("light")}>
-        Carta
+        Paper
       </button>
       <button type="button" data-v="dark" aria-pressed={theme === "dark"} onClick={() => apply("dark")}>
         Navy

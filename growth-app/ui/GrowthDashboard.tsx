@@ -36,7 +36,7 @@ import type { Calibration, GrowthData, Result, SourceMeta } from "@/core/model";
 import { CLIENT_ERROR_DEDUP_SECONDS } from "@/core/sql";
 import gapsJson from "@/content/tracking-gaps.json";
 import { Lockup } from "./brand/Lockup";
-import { Chip, LockIcon, MARK_LABEL, type Mark, SectionTitle, Why, fmtInt } from "./primitives";
+import { Chip, LOCALE, LockIcon, MARK_LABEL, type Mark, SectionTitle, Why, fmtInt, sourceLabel } from "./primitives";
 import { Channels } from "./sections/Channels";
 import { FAMILY_ID, FAMILY_LABEL, MissingData } from "./sections/MissingData";
 import { Today } from "./sections/Today";
@@ -49,7 +49,7 @@ export interface GrowthDashboardProps {
   meta: SourceMeta;
   /** URL for the same dashboard on another window, e.g. (w) => `?w=${w}`. */
   hrefFor: (w: GrowthWindow) => string;
-  /** Optional link to the work page (/lavoro in the standalone app); omitted → no link. */
+  /** Optional link to the work page (/lavoro in the standalone app, titled «Work»); omitted → no link. */
   workHref?: string;
 }
 
@@ -58,9 +58,9 @@ export interface GrowthDashboardProps {
 interface TileProps {
   label: string;
   status: KpiStatus;
-  /** Badge text instead of the status name (e.g. STIMATO on a PROXY estimate). */
+  /** Badge text instead of the status name (e.g. ESTIMATED on a PROXY estimate). */
   badge?: string;
-  /** null for LIVE/PROXY means "not computable" (denominator 0, empty table) — rendered as n/d, never 0. */
+  /** null for LIVE/PROXY means "not computable" (denominator 0, empty table) — rendered as n/a, never 0. */
   value?: string | null;
   sub?: string;
   window: string;
@@ -70,7 +70,7 @@ interface TileProps {
 }
 
 function errorTile(label: string, window: string): TileProps {
-  return { label, status: "ERRORE", window, caveat: "La query è fallita: riprova a ricaricare. Il valore non viene sostituito con 0." };
+  return { label, status: "ERRORE", window, caveat: "The query failed: try reloading. The value is not replaced with 0." };
 }
 
 /** Build a tile from a query result; a failed read becomes an ERRORE tile. */
@@ -83,7 +83,7 @@ function proxy<T>(label: string, window: string, r: Result<T>, build: (d: T) => 
   if (!r.ok) return errorTile(label, window);
   const p = proxyTile(label);
   const t = build(r.data);
-  return { label, window, status: "PROXY", ...t, caveat: `Approssima «${p.pdfKpi}». ${t.caveat}`, needs: `${p.needs} — ${p.gaps.join(", ")} in /lavoro`, owner: p.owner };
+  return { label, window, status: "PROXY", ...t, caveat: `Approximates «${p.pdfKpi}». ${t.caveat}`, needs: `${p.needs} — ${p.gaps.join(", ")} in Work`, owner: p.owner };
 }
 
 /** A field a query should return; absent (older snapshot) → the tile is ERRORE, never 0. */
@@ -92,7 +92,7 @@ const has = (o: Record<string, number>, ...keys: string[]) => keys.every((k) => 
 const ENTRY_ROWS_SHOWN = 20;
 
 function entriesTile(d: GrowthData, window: string): TileProps {
-  return fromResult(d.entries, "Ingressi con fonte", window, (rows) => {
+  return fromResult(d.entries, "Entries with a source", window, (rows) => {
     const { external, internal } = splitEntries(rows);
     const withSource = external.reduce((s, r) => s + r.entries, 0);
     const pv = d.traffic.ok ? d.traffic.data.page_views : null;
@@ -102,10 +102,10 @@ function entriesTile(d: GrowthData, window: string): TileProps {
       value: fmtInt(withSource),
       sub:
         (noSource === null
-          ? "page view senza fonte: n/d (lettura dei page view fallita)"
-          : `page view senza nessuna fonte: ${fmtInt(noSource)} su ${fmtInt(pv!)} (${formatPct(ratio(noSource, pv!), 0) ?? "n/d"})`) +
-        ` · interni (esclusi): ${fmtInt(internal)}`,
-      caveat: `Page view d'ingresso con utm_source, src, crm, ref o referrer esterno (ridotto al dominio), registrati anche senza consenso. Conta pagine d'ingresso, non persone: una ricarica conta due volte, crawler inclusi. Esclusi gli ingressi interni/test: ${INTERNAL_REFERRER_RULE}. La quota senza fonte è sui page view, non sugli ingressi: un ingresso diretto non si distingue da una pagina successiva (il tracker non marca l'ingresso), quindi è un limite superiore.`,
+          ? "page views without a source: n/a (the page view read failed)"
+          : `page views with no source at all: ${fmtInt(noSource)} of ${fmtInt(pv!)} (${formatPct(ratio(noSource, pv!), 0) ?? "n/a"})`) +
+        ` · internal (excluded): ${fmtInt(internal)}`,
+      caveat: `Entry page views with utm_source, src, crm, ref or an external referrer (cut to the domain), recorded even without consent. It counts entry pages, not people: a reload counts twice, crawlers included. Internal/test entries are excluded: ${INTERNAL_REFERRER_RULE}. The no-source share is on page views, not on entries: a direct entry cannot be told apart from a later page (the tracker does not mark the entry), so it is an upper bound.`,
     };
   });
 }
@@ -117,7 +117,7 @@ function topEntries(all: Result<EntryRow[]>): Result<EntryRow[]> {
   const rest = r.data.slice(ENTRY_ROWS_SHOWN - 1);
   return {
     ok: true,
-    data: [...r.data.slice(0, ENTRY_ROWS_SHOWN - 1), { source: `(altre ${rest.length} fonti)`, entries: rest.reduce((s, x) => s + x.entries, 0) }],
+    data: [...r.data.slice(0, ENTRY_ROWS_SHOWN - 1), { source: `(${rest.length} other sources)`, entries: rest.reduce((s, x) => s + x.entries, 0) }],
   };
 }
 
@@ -130,61 +130,61 @@ function topSources(all: Result<SourceRow[]>): Result<SourceRow[]> {
   const ext = splitFolded(all.data, (r) => r.source, (r) => r.sessions).external;
   if (ext.length <= SOURCE_ROWS_SHOWN) return { ok: true, data: ext };
   const rest = ext.slice(SOURCE_ROWS_SHOWN - 1);
-  return { ok: true, data: [...ext.slice(0, SOURCE_ROWS_SHOWN - 1), { source: `(altre ${rest.length} fonti)`, sessions: rest.reduce((s, x) => s + x.sessions, 0) }] };
+  return { ok: true, data: [...ext.slice(0, SOURCE_ROWS_SHOWN - 1), { source: `(${rest.length} other sources)`, sessions: rest.reduce((s, x) => s + x.sessions, 0) }] };
 }
 
-/** The «interni/test (esclusi)» line under a per-source table: its count and the rule. */
+/** The «internal/test (excluded)» line under a per-source table: its count and the rule. */
 function InternalFooter({ n }: { n: number }) {
   return (
     <div className="g-rule pt-2" data-internal-row>
       <div className="flex justify-between text-[14px] g-muted">
-        <span>interni/test (esclusi)</span>
+        <span>internal/test (excluded)</span>
         <span className="g-tab">{fmtInt(n)}</span>
       </div>
-      <div className="g-meta">Non sommati sopra: {INTERNAL_REFERRER_RULE}.</div>
+      <div className="g-meta">Not added above: {INTERNAL_REFERRER_RULE}.</div>
     </div>
   );
 }
 
-const fmtUsd = (n: number) => `$${n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmtUsd = (n: number) => `$${n.toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const CAL_WINDOW = "tutte le partite chiuse · ultimo pronostico prima del calcio d'inizio";
-const fmtDec = (x: number, digits = 4) => x.toLocaleString("it-IT", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const CAL_WINDOW = "all closed matches · last prediction before kickoff";
+const fmtDec = (x: number, digits = 4) => x.toLocaleString(LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-/** Model vs market on the SAME matches, both numbers or n/d. */
+/** Model vs market on the SAME matches, both numbers or n/a. */
 function marketLine(c: Calibration): string {
-  if (c.market_matches === 0 || c.brier_same === null || c.brier_market === null) return "mercato: n/d (nessuna partita con le probabilità di mercato)";
-  return `sulle ${fmtInt(c.market_matches)} partite con quote: modello ${fmtDec(c.brier_same)}, mercato ${fmtDec(c.brier_market)}`;
+  if (c.market_matches === 0 || c.brier_same === null || c.brier_market === null) return "market: n/a (no match with market probabilities)";
+  return `on the ${fmtInt(c.market_matches)} matches with odds: model ${fmtDec(c.brier_same)}, market ${fmtDec(c.brier_market)}`;
 }
 
 /** Plain statement of the comparison, never a claim: it says who is lower, nothing more. */
 function verdict(c: Calibration): string {
-  if (c.brier_same === null || c.brier_market === null) return "Il confronto col mercato non è calcolabile.";
-  if (c.brier_same > c.brier_market) return "Sulle stesse partite il modello NON fa meglio del mercato (il suo Brier è più alto).";
-  if (c.brier_same < c.brier_market) return "Sulle stesse partite il Brier del modello è più basso di quello del mercato: è una misura interna, non una prova di vantaggio economico.";
-  return "Sulle stesse partite modello e mercato hanno lo stesso Brier.";
+  if (c.brier_same === null || c.brier_market === null) return "The comparison with the market cannot be computed.";
+  if (c.brier_same > c.brier_market) return "On the same matches the model does NOT do better than the market (its Brier is higher).";
+  if (c.brier_same < c.brier_market) return "On the same matches the model's Brier is lower than the market's: it is an internal measure, not proof of an economic edge.";
+  return "On the same matches model and market have the same Brier.";
 }
 
 // ─── Rendering pieces ───────────────────────────────────────────────────────
 
-/** The chip a tile wears: PROXY with the STIMATO badge is the estimate mark. */
-const markOf = (t: TileProps): Mark => (t.status === "PROXY" && t.badge === "STIMATO" ? "EST" : t.status);
+/** The chip a tile wears: PROXY with the ESTIMATED badge is the estimate mark. */
+const markOf = (t: TileProps): Mark => (t.status === "PROXY" && t.badge === "ESTIMATED" ? "EST" : t.status);
 
 const ERR_STYLE: CSSProperties = { color: "var(--s-err)" };
 
 function ValueLine({ t, size }: { t: TileProps; size: "lg" | "md" | "sm" }) {
   if (t.status === "ERRORE") {
     return (
-      <span className="text-[14px] font-semibold" style={ERR_STYLE} data-kpi={t.label} data-value="lettura fallita">
-        Lettura fallita — nessun valore mostrato
+      <span className="text-[14px] font-semibold" style={ERR_STYLE} data-kpi={t.label} data-value="read failed">
+        Read failed — no value shown
       </span>
     );
   }
   if (t.value === null || t.value === undefined) {
     return (
-      <span data-kpi={t.label} data-value="n/d">
-        <span className={`g-num g-num--${size === "lg" ? "md" : "sm"}`}>n/d</span>
-        <span className="g-meta block">non calcolabile: niente su cui dividere</span>
+      <span data-kpi={t.label} data-value="n/a">
+        <span className={`g-num g-num--${size === "lg" ? "md" : "sm"}`}>n/a</span>
+        <span className="g-meta block">not computable: nothing to divide by</span>
       </span>
     );
   }
@@ -205,15 +205,15 @@ function CaveatBody({ t }: { t: TileProps }) {
       )}
       <p>{t.caveat}</p>
       <p className="mt-1">
-        <b>Finestra:</b> {t.window}
+        <b>Window:</b> {t.window}
       </p>
       {t.needs && (
         <p className="mt-1">
-          <b>Serve:</b> {t.needs}
+          <b>Needs:</b> {t.needs}
           {t.owner && (
             <>
               {" "}
-              · <b>sblocca:</b> {t.owner}
+              · <b>unblocks:</b> {t.owner}
             </>
           )}
         </p>
@@ -222,7 +222,7 @@ function CaveatBody({ t }: { t: TileProps }) {
   );
 }
 
-/** One of the six big KPI: number, mark, the raw count next to the estimate, «perché ▸». */
+/** One of the six big KPI: number, mark, the raw count next to the estimate, «why ▸». */
 function PrimaryCard({ t, pair }: { t: TileProps; pair?: TileProps }) {
   return (
     <article className="g-card p-4 flex flex-col gap-2 min-w-0">
@@ -239,7 +239,7 @@ function PrimaryCard({ t, pair }: { t: TileProps; pair?: TileProps }) {
         </div>
         {pair && (
           <div className="flex flex-col gap-1 pl-4" style={{ borderLeft: "1px solid var(--line)" }}>
-            <span className="g-meta">grezzi</span>
+            <span className="g-meta">raw</span>
             <ValueLine t={pair} size="md" />
             <span>
               <Chip mark={markOf(pair)} />
@@ -254,7 +254,7 @@ function PrimaryCard({ t, pair }: { t: TileProps; pair?: TileProps }) {
       )}
       {pair?.sub && (
         <p className="g-meta" data-sub={pair.label}>
-          grezzi: {pair.sub}
+          raw: {pair.sub}
         </p>
       )}
       <Why>
@@ -275,11 +275,11 @@ function SecondaryRows({ tiles, missing }: { tiles: TileProps[]; missing: string
   return (
     <div className="g-card g-rows py-2">
       <div className="g-rows-head">
-        <span>Metrica</span>
-        <span>Valore</span>
-        <span>Stato</span>
-        <span>Finestra</span>
-        <span className="text-right">perché</span>
+        <span>Metric</span>
+        <span>Value</span>
+        <span>Status</span>
+        <span>Window</span>
+        <span className="text-right">why</span>
       </div>
       {tiles.map((t) => (
         <details key={t.label} className="g-row">
@@ -300,7 +300,7 @@ function SecondaryRows({ tiles, missing }: { tiles: TileProps[]; missing: string
             </span>
             <span className="c-w g-meta">{t.window}</span>
             <span className="c-c g-why-cta">
-              perché <span className="g-caret" aria-hidden="true">▸</span>
+              why <span className="g-caret" aria-hidden="true">▸</span>
             </span>
           </summary>
           <div className="g-why-body">
@@ -313,7 +313,7 @@ function SecondaryRows({ tiles, missing }: { tiles: TileProps[]; missing: string
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-h-[44px] px-[14px] py-1.5 text-[14px] g-muted">
             <LockIcon className="shrink-0" />
             <span>
-              Non misurato in questa sezione: {missing.join(" · ")} → <a href="#mancanti">Dati che non abbiamo ancora</a>
+              Not measured in this section: {missing.join(" · ")} → <a href="#missing">Data we do not have yet</a>
             </span>
           </div>
         </div>
@@ -349,7 +349,7 @@ function SmallTable<T>({
       <Why>{caveat}</Why>
       {!rows.ok ? (
         <p className="text-[14px]" style={ERR_STYLE}>
-          Lettura fallita — nessun valore mostrato
+          Read failed — no value shown
         </p>
       ) : rows.data.length === 0 ? (
         <p className="text-[14px] g-muted">{empty}</p>
@@ -387,15 +387,15 @@ function missingLabels(family: Family): string[] {
 }
 
 /** The six KPI that open the page; the raw page views ride inside the estimate's card. */
-const PRIMARY = ["Page view probabilmente umani", "Sessioni", "Signup completati", "Nuovi profili", "Clienti esterni paganti", "Incassato esterno Paygate + PayPal"] as const;
-const PAIRED = "Page view (grezzi)";
+const PRIMARY = ["Probably human page views", "Sessions", "Signups completed", "New profiles", "External paying customers", "External revenue Paygate + PayPal"] as const;
+const PAIRED = "Page views (raw)";
 
 const FAMILY_HINT: Record<Family, string> = {
-  acquisition: "da dove arrivano",
-  activation: "chi si iscrive e inizia a usarlo",
-  revenue: "chi paga e quanto",
-  retention: "chi resta",
-  quality: "il prodotto regge?",
+  acquisition: "where they come from",
+  activation: "who signs up and starts using it",
+  revenue: "who pays and how much",
+  retention: "who stays",
+  quality: "does the product hold up?",
 };
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -404,112 +404,113 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
   const w = d.window;
   const W = windowLabel(w);
   const isSnapshot = meta.kind === "snapshot";
-  const NOW = isSnapshot ? "al momento dello snapshot" : "adesso (istantanea)";
-  const ALL = "da sempre (cumulato)";
+  const NOW = isSnapshot ? "at the time of the snapshot" : "now (point in time)";
+  const ALL = "all time (cumulative)";
 
-  const updated = new Date(meta.asOf).toLocaleString("it-IT", { timeZone: "Europe/Rome", dateStyle: "short", timeStyle: "medium" });
-  const updatedTime = new Date(meta.asOf).toLocaleTimeString("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit" });
+  // Same time zone as before (Europe/Rome, the team's day and the «Today» window), English format, 24-hour clock.
+  const updated = new Date(meta.asOf).toLocaleString(LOCALE, { timeZone: "Europe/Rome", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+  const updatedTime = new Date(meta.asOf).toLocaleTimeString(LOCALE, { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
   // Share of page_views without session_id in THIS window (measured, not assumed).
   const noSessShare = d.traffic.ok ? formatPct(ratio(d.traffic.data.page_views_no_session, d.traffic.data.page_views), 0) : null;
   // Page views without country in THIS window: above NO_COUNTRY_SPIKE_SHARE the totals are flagged.
   const spike = d.humanTraffic.ok ? noCountrySpike(d.humanTraffic.data.excl_no_country, d.humanTraffic.data.page_views) : null;
-  const sessCaveat = `Solo traffico con consenso GDPR: ${noSessShare ?? "una parte"} dei page_view nella finestra non ha session_id e non è contato qui.`;
+  const sessCaveat = `GDPR-consented traffic only: ${noSessShare ?? "a share"} of the page_views in the window have no session_id and are not counted here.`;
 
-  // ── Conteggi delle fasi (was «Funnel»: same four counts, no arrows, no rates) ──
+  // ── Stage counts (was «Funnel»: same four counts, no arrows, no rates) ──
   const { traffic, funnelEvents, newProfiles, revenue: rev, shopify } = d;
   const funnelOk = traffic.ok && funnelEvents.ok && newProfiles.ok && rev.ok && shopify.ok;
   const funnelSteps =
     traffic.ok && funnelEvents.ok && newProfiles.ok && rev.ok && shopify.ok
       ? [
-          { label: "Visitatori", value: traffic.data.sessions, unit: "sessioni con consenso" },
-          { label: "Signup avviati", value: funnelEvents.data.signup_started, unit: "eventi signup_started" },
-          { label: "Profili creati", value: newProfiles.data.new_profiles, unit: "righe profiles (DB)" },
-          { label: "Ordini pagati", value: rev.data.orders_w + shopify.data.orders_w, unit: "Paygate + PayPal + Shopify" },
+          { label: "Visitors", value: traffic.data.sessions, unit: "consented sessions" },
+          { label: "Signups started", value: funnelEvents.data.signup_started, unit: "signup_started events" },
+          { label: "Profiles created", value: newProfiles.data.new_profiles, unit: "profiles rows (DB)" },
+          { label: "Paid orders", value: rev.data.orders_w + shopify.data.orders_w, unit: "Paygate + PayPal + Shopify" },
         ]
       : [];
 
   // ── Acquisition ──
   const acquisition: TileProps[] = [
-    fromResult(d.humanTraffic, "Page view probabilmente umani", W, (h) => ({
+    fromResult(d.humanTraffic, "Probably human page views", W, (h) => ({
       status: "PROXY",
-      badge: "STIMATO",
+      badge: "ESTIMATED",
       value: fmtInt(h.probably_human),
-      sub: `su ${fmtInt(h.page_views)} grezzi · esclusi: ${fmtInt(h.excl_no_country)} senza paese, ${fmtInt(h.excl_country)} da paesi senza sessioni, ${fmtInt(h.excl_burst)} in raffica · margine ampio: audit 07/10 109–310 a 7g, 685–2.148 a 30g`,
-      caveat: `STIMATO, non misurato: nei dati non c'è user-agent, quindi «non umano» è dedotto, mai osservato. Criterio (classi esclusive, in quest'ordine): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Margine: ${HUMAN_ESTIMATE_MARGIN}. Il traffico probabilmente del team non è escluso. Il numero grezzo resta accanto, «Page view (grezzi)».`,
-      needs: "user-agent letto (senza salvarlo) e filtro bot in /api/track — leva 2 di #SESSIONI-1006",
+      sub: `of ${fmtInt(h.page_views)} raw · excluded: ${fmtInt(h.excl_no_country)} without country, ${fmtInt(h.excl_country)} from countries without sessions, ${fmtInt(h.excl_burst)} in bursts · wide margin: Oct 7 audit 109–310 over 7d, 685–2,148 over 30d`,
+      caveat: `ESTIMATED, not measured: the data has no user-agent, so «not human» is deduced, never observed. Criterion (exclusive classes, in this order): ${HUMAN_FILTER_CRITERIA.map((c, i) => `${i + 1}) ${c}`).join("; ")}. Margin: ${HUMAN_ESTIMATE_MARGIN}. Traffic probably from the team is not excluded. The raw number stays next to it, «Page views (raw)».`,
+      needs: "user-agent read (without storing it) and a bot filter in /api/track — lever 2 of #SESSIONI-1006",
       owner: "Calde",
     })),
-    fromResult(d.traffic, "Page view (grezzi)", W, (t) => ({
+    fromResult(d.traffic, "Page views (raw)", W, (t) => ({
       status: "LIVE",
       value: fmtInt(t.page_views),
-      sub: `${fmtInt(t.page_views_no_session)} senza session_id (${noSessShare ?? "n/d"})${spike?.share != null ? ` · ${formatPct(spike.share, 0)} senza paese` : ""}`,
-      caveat: "Tutti i page_view registrati, con e senza consenso: crawler, job sintetici e traffico senza paese inclusi. Il numero da leggere per le persone è «Page view probabilmente umani» (STIMATO).",
+      sub: `${fmtInt(t.page_views_no_session)} without session_id (${noSessShare ?? "n/a"})${spike?.share != null ? ` · ${formatPct(spike.share, 0)} without country` : ""}`,
+      caveat: "Every recorded page_view, with and without consent: crawlers, synthetic jobs and traffic without country included. The number to read for people is «Probably human page views» (ESTIMATED).",
     })),
     entriesTile(d, W),
-    proxy("Sessioni", W, d.traffic, (t) => ({ value: fmtInt(t.sessions), caveat: `Tutte le fonti, non solo l'organico. ${sessCaveat}` })),
-    proxy("Sessioni /tools", W, d.traffic, (t) => ({
+    proxy("Sessions", W, d.traffic, (t) => ({ value: fmtInt(t.sessions), caveat: `All sources, not just organic. ${sessCaveat}` })),
+    proxy("/tools sessions", W, d.traffic, (t) => ({
       value: fmtInt(t.tools_sessions),
-      caveat: `Sessioni con almeno un page_view su /tools* (anche con prefisso lingua). ${sessCaveat}`,
+      caveat: `Sessions with at least one page_view on /tools* (language prefix included). ${sessCaveat}`,
     })),
-    proxy("Sessioni /predictions", W, d.traffic, (t) => ({
+    proxy("/predictions sessions", W, d.traffic, (t) => ({
       value: fmtInt(t.predictions_sessions),
-      caveat: `Sessioni con almeno un page_view su /predictions* (anche con prefisso lingua): è la lista dei pronostici, il prodotto non ha pagine partita separate. ${sessCaveat}`,
+      caveat: `Sessions with at least one page_view on /predictions* (language prefix included): it is the predictions list, the product has no separate match pages. ${sessCaveat}`,
     })),
-    fromResult(d.newProfiles, "Nuovi signup con referral", W, (p) => ({
+    fromResult(d.newProfiles, "New signups with referral", W, (p) => ({
       status: "LIVE",
       value: fmtInt(p.referred),
-      sub: `su ${fmtInt(p.new_profiles)} nuovi profili`,
-      caveat: "Profili creati nella finestra con referred_by valorizzato (creator / invito).",
+      sub: `of ${fmtInt(p.new_profiles)} new profiles`,
+      caveat: "Profiles created in the window with referred_by set (creator / invite).",
     })),
   ];
 
   // ── Activation ──
   const activation: TileProps[] = [
-    fromResult(d.newProfiles, "Nuovi profili", W, (p) => ({
+    fromResult(d.newProfiles, "New profiles", W, (p) => ({
       status: "LIVE",
       value: fmtInt(p.new_profiles),
-      caveat: "Righe create in profiles nella finestra. Include eventuali account di test del team.",
+      caveat: "Rows created in profiles in the window. Includes any team test accounts.",
     })),
-    fromResult(d.newProfiles, "Account attivati", W, (p) => ({
+    fromResult(d.newProfiles, "Activated accounts", W, (p) => ({
       status: "LIVE",
       value: p.new_profiles > 0 ? `${fmtInt(p.activated)} / ${fmtInt(p.new_profiles)}` : null,
       sub: formatPct(ratio(p.activated, p.new_profiles), 0) ?? undefined,
-      caveat: "Profili creati nella finestra con activated_at valorizzato (link di attivazione cliccato).",
+      caveat: "Profiles created in the window with activated_at set (activation link clicked).",
     })),
     d.newProfiles.ok && has(d.newProfiles.data, "signups")
       ? {
-          label: "Signup completati",
+          label: "Signups completed",
           status: "LIVE",
           value: fmtInt(d.newProfiles.data.signups),
           window: W,
           sub: d.funnelEvents.ok
             ? has(d.funnelEvents.data, "signup_started_no_session")
-              ? `tracking client: ${fmtInt(d.funnelEvents.data.signup_completed)} eventi signup_completed, ${fmtInt(d.funnelEvents.data.signup_started)} signup_started (${fmtInt(d.funnelEvents.data.signup_started_no_session)} senza sessione)`
-              : "eventi di tracking: lettura nel formato vecchio, n/d"
-            : "eventi di tracking: lettura fallita",
-          caveat: "Profili creati dal form di registrazione nella finestra (unico inserimento che registra l'accettazione dei termini; esclusi gli account creati a mano). Gli eventi client possono perdersi o duplicarsi: qui servono solo a misurare il tracking.",
+              ? `client tracking: ${fmtInt(d.funnelEvents.data.signup_completed)} signup_completed events, ${fmtInt(d.funnelEvents.data.signup_started)} signup_started (${fmtInt(d.funnelEvents.data.signup_started_no_session)} without session)`
+              : "tracking events: read in the old format, n/a"
+            : "tracking events: read failed",
+          caveat: "Profiles created by the registration form in the window (the only insert that records acceptance of the terms; accounts created by hand are excluded). Client events can get lost or duplicated: here they only measure the tracking.",
         }
-      : errorTile("Signup completati", W),
-    fromResult(d.funnelEvents, "Pop-up iscrizione", W, (f) => ({
+      : errorTile("Signups completed", W),
+    fromResult(d.funnelEvents, "Signup pop-up", W, (f) => ({
       status: "LIVE",
-      value: `${fmtInt(f.popup_shown)} mostrati`,
-      sub: `${fmtInt(f.popup_cta)} click CTA · ${fmtInt(f.popup_dismissed)} chiusi`,
-      caveat: "Eventi signup_popup_*: misurano il pop-up, non le iscrizioni che ne derivano.",
+      value: `${fmtInt(f.popup_shown)} shown`,
+      sub: `${fmtInt(f.popup_cta)} CTA clicks · ${fmtInt(f.popup_dismissed)} dismissed`,
+      caveat: "signup_popup_* events: they measure the pop-up, not the signups that come from it.",
     })),
-    fromResult(d.funnelEvents, "Intento d'acquisto", W, (f) => ({
+    fromResult(d.funnelEvents, "Purchase intent", W, (f) => ({
       status: "LIVE",
       value: `${fmtInt(f.plan_view)} → ${fmtInt(f.plan_cta_click)} → ${fmtInt(f.checkout_opened)}`,
       sub: "plan_view → plan_cta_click → checkout_opened",
-      caveat: "Conteggi di eventi, non di persone: una persona può generarne più d'uno.",
+      caveat: "Event counts, not people: one person can generate more than one.",
     })),
     d.funnelEvents.ok && !has(d.funnelEvents.data, "card_open_with_session")
-      ? errorTile("Card aperte per sessione", W)
-      : proxy("Card aperte per sessione", W, d.funnelEvents, (f) => ({
+      ? errorTile("Cards opened per session", W)
+      : proxy("Cards opened per session", W, d.funnelEvents, (f) => ({
           value: f.card_open_sessions > 0 ? fmtDec(f.card_open_with_session / f.card_open_sessions, 1) : null,
-          sub: `${fmtInt(f.card_open_with_session)} card_open con sessione in ${fmtInt(f.card_open_sessions)} sessioni · ${fmtInt(f.card_open - f.card_open_with_session)} senza sessione esclusi`,
+          sub: `${fmtInt(f.card_open_with_session)} card_open with a session in ${fmtInt(f.card_open_sessions)} sessions · ${fmtInt(f.card_open - f.card_open_with_session)} without session excluded`,
           caveat:
-            "Engagement anonimo, non per utente: card_open con sessione diviso le sessioni che ne hanno aperta almeno una. Numeratore e denominatore hanno la stessa base (solo sessioni con consenso): le card aperte senza sessione non si possono attribuire a nessuna sessione e restano fuori. Parte delle sessioni è probabilmente del team (audit 07/10), non esclusa.",
+            "Anonymous engagement, not per user: card_open with a session divided by the sessions that opened at least one. Numerator and denominator share the same base (consented sessions only): cards opened without a session cannot be attributed to any session and stay out. Part of the sessions is probably the team's (Oct 7 audit), not excluded.",
         })),
   ];
 
@@ -520,130 +521,130 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
   const revenue: TileProps[] = [
     paying
       ? {
-          label: "Clienti esterni paganti",
+          label: "External paying customers",
           status: "LIVE",
           value: fmtInt(paying.external),
-          sub: `a parte, non contati: ${fmtInt(paying.internalWithPlan)} account interni/test con piano (di cui ${fmtInt(paying.internalAdminFull)} admin_full) · ${fmtInt(paying.comp)} omaggi/manuali/senza fonte · ${fmtInt(paying.externalNoPayment)} con piano da canale a pagamento ma nessun ordine pagato registrato · ${fmtInt(paying.expiredNotSwept)} scaduti non ancora declassati`,
-          window: `${NOW} · stato di tutti i profili`,
+          sub: `apart, not counted: ${fmtInt(paying.internalWithPlan)} internal/test accounts with a plan (of which ${fmtInt(paying.internalAdminFull)} admin_full) · ${fmtInt(paying.comp)} comps/manual/no source · ${fmtInt(paying.externalNoPayment)} with a plan from a paid channel but no paid order recorded · ${fmtInt(paying.expiredNotSwept)} expired, not yet downgraded`,
+          window: `${NOW} · state of all profiles`,
           caveat:
-            "Profili esterni (non nell'elenco interni/test) con piano base/premium da un canale a pagamento (Paygate, PayPal, Shopify, Stripe), non scaduto e con almeno un ordine pagato registrato. È lo stato attuale di tutti i profili, non i profili creati nella finestra (quelli sono la colonna «Paganti esterni (oggi)» della Catena). Account interni/test = elenco di id in content/internal-accounts.json, generato in locale da scripts/internal-accounts.ts: un account nuovo del team resta esterno finché l'elenco non viene rigenerato.",
+            "External profiles (not in the internal/test list) with a base/premium plan from a paid channel (Paygate, PayPal, Shopify, Stripe), not expired and with at least one paid order recorded. It is the current state of all profiles, not the profiles created in the window (those are the «External paying (today)» column of the Chain). Internal/test accounts = list of ids in content/internal-accounts.json, generated locally by scripts/internal-accounts.ts: a new team account stays external until the list is regenerated.",
         }
-      : errorTile("Clienti esterni paganti", NOW),
+      : errorTile("External paying customers", NOW),
     paying
       ? {
           label: "Free",
           status: "LIVE",
           value: fmtInt(paying.free),
-          sub: `di cui ${fmtInt(paying.freeInternal)} account interni/test · ${fmtInt(paying.team)} account team (admin_full) non inclusi`,
+          sub: `of which ${fmtInt(paying.freeInternal)} internal/test accounts · ${fmtInt(paying.team)} team accounts (admin_full) not included`,
           window: NOW,
-          caveat: "Profili con plan = free, account interni/test inclusi (contati a parte nel sottotitolo).",
+          caveat: "Profiles with plan = free, internal/test accounts included (counted apart in the subtitle).",
         }
       : errorTile("Free", NOW),
     revOk && d.revenue.ok
       ? {
-          label: "Incassato esterno Paygate + PayPal",
+          label: "External revenue Paygate + PayPal",
           status: "LIVE",
           value: fmtUsd(d.revenue.data.usd_w),
           window: W,
-          sub: `${fmtInt(d.revenue.data.orders_w)} ordini esterni nella finestra · a parte, interni/test: ${fmtUsd(d.revenue.data.internal_usd_w)} (${fmtInt(d.revenue.data.internal_orders_w)} ordini)`,
-          caveat: "Somma amount_usd degli ordini con paid_at nella finestra, esclusi gli ordini degli account interni/test (elenco di id in content/internal-accounts.json). Stripe non salva importi nel DB: escluso. Shopify a parte: valuta ignota.",
+          sub: `${fmtInt(d.revenue.data.orders_w)} external orders in the window · apart, internal/test: ${fmtUsd(d.revenue.data.internal_usd_w)} (${fmtInt(d.revenue.data.internal_orders_w)} orders)`,
+          caveat: "Sum of amount_usd of the orders with paid_at in the window, excluding orders from internal/test accounts (list of ids in content/internal-accounts.json). Stripe stores no amounts in the DB: excluded. Shopify apart: unknown currency.",
         }
-      : errorTile("Incassato esterno Paygate + PayPal", W),
+      : errorTile("External revenue Paygate + PayPal", W),
     revOk && d.revenue.ok
       ? {
-          label: "Incassato esterno Paygate + PayPal (totale)",
+          label: "External revenue Paygate + PayPal (total)",
           status: "LIVE",
           value: fmtUsd(d.revenue.data.usd_all),
           window: ALL,
-          sub: `${fmtInt(d.revenue.data.orders_all)} ordini esterni pagati · ${fmtInt(d.revenue.data.granted_unpaid)} accessi esterni concessi senza pagamento, non sommati`,
-          caveat: "Stessa regola della torre (paid_at valorizzato), esclusi gli ordini degli account interni/test, che sono nella riga «Cassa interna/test».",
+          sub: `${fmtInt(d.revenue.data.orders_all)} external paid orders · ${fmtInt(d.revenue.data.granted_unpaid)} external accesses granted without payment, not added`,
+          caveat: "Same rule as the control tower (paid_at set), excluding orders from internal/test accounts, which are in the «Internal/test cash» row.",
         }
-      : errorTile("Incassato esterno Paygate + PayPal (totale)", ALL),
+      : errorTile("External revenue Paygate + PayPal (total)", ALL),
     revOk && d.revenue.ok
       ? {
-          label: "Cassa interna/test Paygate + PayPal (totale)",
+          label: "Internal/test cash Paygate + PayPal (total)",
           status: "LIVE",
           value: fmtUsd(d.revenue.data.internal_usd_all),
           window: ALL,
-          sub: `${fmtInt(d.revenue.data.internal_orders_all)} ordini pagati da account interni/test · ${fmtInt(d.revenue.data.internal_granted_unpaid)} accessi concessi senza pagamento`,
-          caveat: "Pagamenti di prova del team (prezzi sotto listino, stesso account): non sono ricavi e non entrano in nessun totale. Mostrati solo perché non spariscano.",
+          sub: `${fmtInt(d.revenue.data.internal_orders_all)} orders paid by internal/test accounts · ${fmtInt(d.revenue.data.internal_granted_unpaid)} accesses granted without payment`,
+          caveat: "Team test payments (prices below list, same account): they are not revenue and do not enter any total. Shown only so they do not disappear.",
         }
-      : errorTile("Cassa interna/test Paygate + PayPal (totale)", ALL),
+      : errorTile("Internal/test cash Paygate + PayPal (total)", ALL),
     d.shopify.ok && has(d.shopify.data, "refunds_w", "refunds_all", "internal_orders_all")
       ? {
-          label: "Ordini Shopify pagati",
+          label: "Paid Shopify orders",
           status: "LIVE",
           value: fmtInt(d.shopify.data.orders_w),
           window: W,
-          sub: `${fmtInt(d.shopify.data.refunds_w)} rimborsi nella finestra · da sempre: ${fmtInt(d.shopify.data.orders_all)} ordini, ${fmtInt(d.shopify.data.refunds_all)} rimborsi · importo ${d.shopify.data.amount_w.toLocaleString("it-IT", { minimumFractionDigits: 2 })} nella finestra, valuta ignota · ${fmtInt(d.shopify.data.internal_orders_all)} ordini interni/test esclusi`,
-          caveat: "Un ordine orders/paid per order id (il webhook scarta le ripetizioni), esclusi gli ordini degli account interni/test. Rimborsi = eventi refunds/create, contati a parte e non sottratti. Valuta ignota: il DB non registra la valuta del negozio, quindi l'importo non si somma agli USD.",
+          sub: `${fmtInt(d.shopify.data.refunds_w)} refunds in the window · all time: ${fmtInt(d.shopify.data.orders_all)} orders, ${fmtInt(d.shopify.data.refunds_all)} refunds · amount ${d.shopify.data.amount_w.toLocaleString(LOCALE, { minimumFractionDigits: 2 })} in the window, unknown currency · ${fmtInt(d.shopify.data.internal_orders_all)} internal/test orders excluded`,
+          caveat: "One orders/paid order per order id (the webhook drops repeats), excluding orders from internal/test accounts. Refunds = refunds/create events, counted apart and not subtracted. Unknown currency: the DB does not record the store currency, so the amount is not added to the USD.",
         }
-      : errorTile("Ordini Shopify pagati", W),
+      : errorTile("Paid Shopify orders", W),
     revOk && d.revenue.ok
       ? {
-          label: "Quota annuale",
+          label: "Annual share",
           status: "LIVE",
-          value: d.revenue.data.orders_all < MIN_ORDERS_FOR_SHARE ? "n/d" : formatPct(ratio(d.revenue.data.annual_all, d.revenue.data.orders_all), 0),
+          value: d.revenue.data.orders_all < MIN_ORDERS_FOR_SHARE ? "n/a" : formatPct(ratio(d.revenue.data.annual_all, d.revenue.data.orders_all), 0),
           window: ALL,
           sub:
             d.revenue.data.orders_all < MIN_ORDERS_FOR_SHARE
-              ? `campione di ${fmtInt(d.revenue.data.orders_all)} ordini esterni pagati, sotto ${MIN_ORDERS_FOR_SHARE}: nessuna percentuale`
-              : `${fmtInt(d.revenue.data.annual_all)} annuali su ${fmtInt(d.revenue.data.orders_all)} ordini esterni pagati`,
-          caveat: `Solo Paygate e PayPal (period), esclusi gli ordini degli account interni/test. Shopify e Stripe non registrano il periodo qui. Con meno di ${MIN_ORDERS_FOR_SHARE} ordini esterni la quota non dice nulla: n/d.`,
+              ? `sample of ${fmtInt(d.revenue.data.orders_all)} external paid orders, below ${MIN_ORDERS_FOR_SHARE}: no percentage`
+              : `${fmtInt(d.revenue.data.annual_all)} annual of ${fmtInt(d.revenue.data.orders_all)} external paid orders`,
+          caveat: `Paygate and PayPal only (period), excluding orders from internal/test accounts. Shopify and Stripe do not record the period here. With fewer than ${MIN_ORDERS_FOR_SHARE} external orders the share says nothing: n/a.`,
         }
-      : errorTile("Quota annuale", ALL),
-    fromResult(d.funnelEvents, "Click partner (affiliate)", W, (f) => ({
+      : errorTile("Annual share", ALL),
+    fromResult(d.funnelEvents, "Partner clicks (affiliate)", W, (f) => ({
       status: "LIVE",
       value: fmtInt(f.partner_click),
-      sub: `${fmtInt(f.partner_menu_open)} aperture menu · click/aperture: ${formatShare(f.partner_click, f.partner_menu_open, "click > aperture: tracking incompleto")}`,
-      caveat: "Solo click in uscita: le conversioni del partner non tornano a noi. I click possono arrivare anche fuori dal menu (o l'apertura non essere registrata), quindi il rapporto click/aperture non viene mai mostrato sopra il 100%: in quel caso è n/d.",
+      sub: `${fmtInt(f.partner_menu_open)} menu opens · clicks/opens: ${formatShare(f.partner_click, f.partner_menu_open, "clicks > opens: incomplete tracking")}`,
+      caveat: "Outbound clicks only: partner conversions do not come back to us. Clicks can also come from outside the menu (or the open may not be recorded), so the clicks/opens ratio is never shown above 100%: in that case it is n/a.",
     })),
   ];
 
   // ── Retention ──
   const retention: TileProps[] = [
-    proxy("Abbonamenti pagati scaduti", W, d.lapsed, (l) => ({
+    proxy("Lapsed paid subscriptions", W, d.lapsed, (l) => ({
       value: fmtInt(Number(l.lapsed)),
-      caveat: "Profili da canale a pagamento con plan_expires_at nella finestra e non rinnovati, esclusi gli account interni/test. È un conteggio di scadenze, non un churn rate.",
+      caveat: "Profiles from a paid channel with plan_expires_at in the window and not renewed, excluding internal/test accounts. It is a count of expiries, not a churn rate.",
     })),
   ];
 
   // ── Product quality ──
   const quality: TileProps[] = [
-    fromResult(d.calibration, "Brier (servito)", CAL_WINDOW, (c) => ({
+    fromResult(d.calibration, "Brier (served)", CAL_WINDOW, (c) => ({
       status: "LIVE",
       value: c.brier === null ? null : fmtDec(c.brier),
-      sub: `${fmtInt(c.matches)} partite chiuse, un pronostico per partita · ${marketLine(c)} · riferimento «1/3 a ogni esito» = ${fmtDec(BRIER_UNIFORM_3WAY, 3)} · più basso è meglio`,
-      caveat: `Dato interno di qualità, non un claim di marketing. Per ogni partita chiusa conta solo l'ultimo pronostico calcolato prima del calcio d'inizio (prediction_log ne salva decine per partita: contarli tutti pesava di più le partite aggiornate più spesso). Brier = somma dei quadrati degli errori sui 3 esiti (casa/pareggio/trasferta), scala 0–2, poi la media sulle partite. Il mercato (probabilità di mercato salvate col pronostico) è misurato sulle stesse partite in cui esiste. ${verdict(c)} Non dipende dalla finestra selezionata.`,
+      sub: `${fmtInt(c.matches)} closed matches, one prediction per match · ${marketLine(c)} · «1/3 to each outcome» reference = ${fmtDec(BRIER_UNIFORM_3WAY, 3)} · lower is better`,
+      caveat: `Internal quality figure, not a marketing claim. For each closed match only the last prediction computed before kickoff counts (prediction_log stores dozens per match: counting them all gave more weight to the matches updated more often). Brier = sum of the squared errors over the 3 outcomes (home/draw/away), 0–2 scale, then the mean over the matches. The market (market probabilities stored with the prediction) is measured on the same matches where it exists. ${verdict(c)} It does not depend on the selected window.`,
     })),
-    fromResult(d.calibration, "ECE (servito)", CAL_WINDOW, (c) => ({
+    fromResult(d.calibration, "ECE (served)", CAL_WINDOW, (c) => ({
       status: "LIVE",
       value: c.ece === null ? null : fmtDec(c.ece),
-      sub: `errore di calibrazione medio, 10 bin · ${fmtInt(c.matches)} partite, un pronostico per partita`,
-      caveat: "Media su casa/pareggio/trasferta di |probabilità prevista − frequenza osservata|, sullo stesso pronostico per partita del Brier (l'ultimo prima del calcio d'inizio).",
+      sub: `mean calibration error, 10 bins · ${fmtInt(c.matches)} matches, one prediction per match`,
+      caveat: "Mean over home/draw/away of |predicted probability − observed frequency|, on the same one prediction per match as the Brier (the last one before kickoff).",
     })),
-    proxy("Freschezza quote", NOW, d.freshness, (f) => ({
+    proxy("Odds freshness", NOW, d.freshness, (f) => ({
       value: formatAge(f.odds_age_s),
-      sub: "età dell'ultima quota salvata",
-      caveat: "Freschezza, non latenza: dice quando abbiamo salvato l'ultima quota, non quanto siamo in ritardo sul bookmaker.",
+      sub: "age of the last saved odds",
+      caveat: "Freshness, not latency: it says when we saved the last odds, not how far behind the bookmaker we are.",
     })),
-    fromResult(d.freshness, "Freschezza predizioni calcio", NOW, (f) => ({
+    fromResult(d.freshness, "Football predictions freshness", NOW, (f) => ({
       status: "LIVE",
       value: formatAge(f.football_age_s),
-      caveat: "Età dell'ultimo computed_at in match_predictions (soglia torre: 4h).",
+      caveat: "Age of the latest computed_at in match_predictions (control tower threshold: 4h).",
     })),
-    fromResult(d.freshness, "Freschezza predizioni tennis", NOW, (f) => ({
+    fromResult(d.freshness, "Tennis predictions freshness", NOW, (f) => ({
       status: "LIVE",
       value: formatAge(f.tennis_age_s),
-      caveat: "Età dell'ultimo computed_at in tennis_predictions (soglia torre: 6h).",
+      caveat: "Age of the latest computed_at in tennis_predictions (control tower threshold: 6h).",
     })),
     d.funnelEvents.ok && !has(d.funnelEvents.data, "client_error_dedup")
-      ? errorTile("Errori client", W)
-      : fromResult(d.funnelEvents, "Errori client", W, (f) => ({
+      ? errorTile("Client errors", W)
+      : fromResult(d.funnelEvents, "Client errors", W, (f) => ({
           status: "LIVE",
           value: fmtInt(f.client_error_dedup),
-          sub: `${fmtInt(f.client_error)} eventi grezzi · ${fmtInt(f.client_error - f.client_error_dedup)} doppioni entro ${CLIENT_ERROR_DEDUP_SECONDS} s non contati`,
-          caveat: `Eventi client_error dal boundary globale, deduplicati: due errori identici (stessa sessione — o entrambi senza sessione —, stesso messaggio, digest e pagina) a ${CLIENT_ERROR_DEDUP_SECONDS} secondi o meno uno dall'altro contano una volta sola (il boundary li invia spesso due volte). Include crawler e bot: è un conteggio di errori, non di utenti colpiti.`,
+          sub: `${fmtInt(f.client_error)} raw events · ${fmtInt(f.client_error - f.client_error_dedup)} duplicates within ${CLIENT_ERROR_DEDUP_SECONDS} s not counted`,
+          caveat: `client_error events from the global boundary, deduplicated: two identical errors (same session — or both without a session —, same message, digest and page) ${CLIENT_ERROR_DEDUP_SECONDS} seconds or less apart count once (the boundary often sends them twice). Includes crawlers and bots: it is a count of errors, not of affected users.`,
         })),
   ];
 
@@ -664,20 +665,20 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
   // The work content is versioned in content/: read here only to group the
   // missing KPI by gap and to count the open gaps in the bar (no I/O at runtime).
   const gaps = validateGaps(gapsJson);
-  const openGaps = gaps.filter((g) => g.status !== "chiuso").length;
+  const openGaps = gaps.filter((g) => g.status !== "closed").length;
 
   const serviceLine = isSnapshot
-    ? `Snapshot del ${updated} (Roma) · non live · le finestre contano all’indietro da quell’istante`
-    : `Letto alle ${updatedTime} (Roma)${meta.cacheTtlS ? ` · la stessa lettura vale ${meta.cacheTtlS / 60} min` : " · letto a questo caricamento"}`;
+    ? `Snapshot of ${updated} (Rome time) · not live · the windows count back from that moment`
+    : `Read at ${updatedTime} (Rome time)${meta.cacheTtlS ? ` · the same read is valid for ${meta.cacheTtlS / 60} min` : " · read on this page load"}`;
 
   const navItems: { href: string; label: string; n?: number }[] = [
-    { href: "#oggi", label: "Oggi in 30 secondi" },
-    { href: "#conteggi", label: "Conteggi delle fasi" },
-    { href: "#principali", label: "KPI principali", n: primary.length },
+    { href: "#today", label: "Today in 30 seconds" },
+    { href: "#stage-counts", label: "Stage counts" },
+    { href: "#main-kpis", label: "Main KPIs", n: primary.length },
     ...families.map((f) => ({ href: `#${FAMILY_ID[f.family]}`, label: FAMILY_LABEL[f.family], n: f.tiles.length })),
-    { href: "#canali", label: "Canali" },
-    { href: "#andamento", label: "Andamento" },
-    { href: "#mancanti", label: "Dati che non abbiamo ancora", n: MISSING_KPIS.length },
+    { href: "#channels", label: "Channels" },
+    { href: "#trends", label: "Trends" },
+    { href: "#missing", label: "Data we do not have yet", n: MISSING_KPIS.length },
   ];
 
   return (
@@ -685,35 +686,37 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
       <header className="g-wrap">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
           <div className="flex items-center gap-3 order-1">
-            <a href={hrefFor(w)} aria-label="BetRedge Growth, torna in cima" className="inline-flex" style={{ color: "var(--lockup-ink)" }}>
+            <a href={hrefFor(w)} aria-label="BetRedge Growth, back to top" className="inline-flex" style={{ color: "var(--lockup-ink)" }}>
               <Lockup className="h-8 w-auto" />
             </a>
-            <span className="g-eyebrow hidden sm:inline">Growth · sola lettura</span>
+            <span className="g-eyebrow hidden sm:inline">Growth · read only</span>
           </div>
           <div className="flex flex-col gap-1 order-3 md:order-2 basis-full md:basis-auto">
-            <nav className="g-seg" aria-label="Finestra temporale">
+            <nav className="g-seg" aria-label="Time window">
               {WINDOWS.map((x) => (
                 <a key={x.key} href={hrefFor(x.key)} aria-current={x.key === w ? "page" : undefined}>
                   {x.label}
                 </a>
               ))}
             </nav>
-            <span className="g-meta hidden md:block">Oggi = giorno di Roma fino alle {updatedTime} · 7 e 30 giorni = all’indietro da quell’istante</span>
+            <span className="g-meta hidden md:block">Today = Rome calendar day up to {updatedTime} · 7 and 30 days = back from that moment</span>
           </div>
           <p role="status" className="g-meta order-4 md:order-3 basis-full md:basis-auto md:max-w-[34ch]">
             {serviceLine}
             {!isSnapshot && (
               <>
                 {" "}
-                · <a href={hrefFor(w)}>ricarica</a>
+                · <a href={hrefFor(w)}>reload</a>
               </>
             )}
           </p>
           <div className="ml-auto flex items-center gap-4 order-2 md:order-4">
             {workHref && (
               <a href={workHref} className="text-[14px] font-semibold whitespace-nowrap inline-flex items-center min-h-[44px]">
-                Lavoro · {fmtInt(openGaps)}
-                <span className="hidden sm:inline"> gap aperti</span> →
+                {/* flex container: plain spaces at the edge of an item collapse, hence the no-break spaces */}
+                Work · {fmtInt(openGaps)}
+                <span className="hidden sm:inline">{"\u00a0"}open gaps</span>
+                {"\u00a0"}→
               </a>
             )}
             <ThemeToggle />
@@ -723,7 +726,7 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
 
       <div className="g-wrap">
         <div className="g-body">
-          <nav className="g-nav g-nav--side" aria-label="Sezioni">
+          <nav className="g-nav g-nav--side" aria-label="Sections">
             {navItems.map((i) => (
               <a key={i.href} href={i.href}>
                 {i.label}
@@ -740,9 +743,9 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
           </nav>
           <details className="g-why md:hidden -mb-2">
             <summary>
-              Vai a una sezione <span className="g-caret" aria-hidden="true">▸</span>
+              Go to a section <span className="g-caret" aria-hidden="true">▸</span>
             </summary>
-            <nav className="g-nav g-why-body" aria-label="Sezioni">
+            <nav className="g-nav g-why-body" aria-label="Sections">
               {navItems.map((i) => (
                 <a key={i.href} href={i.href}>
                   {i.label}
@@ -760,16 +763,16 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
               noSessShare={noSessShare}
               snapshotLabel={isSnapshot ? updated : undefined}
               missingCount={MISSING_KPIS.length}
-              missingHref="#mancanti"
+              missingHref="#missing"
             />
 
-            <section aria-labelledby="conteggi" className="flex flex-col gap-3">
-              <SectionTitle id="conteggi" title="Conteggi delle fasi" hint={`unità diverse, utenti non collegati · ${W}`}>
+            <section aria-labelledby="stage-counts" className="flex flex-col gap-3">
+              <SectionTitle id="stage-counts" title="Stage counts" hint={`different units, users not linked · ${W}`}>
                 <Chip mark="PROXY" />
               </SectionTitle>
               {!funnelOk ? (
                 <div className="g-card p-4 text-[14px]" style={ERR_STYLE}>
-                  <Chip mark="ERRORE" /> Lettura dei conteggi fallita — nessun valore mostrato.
+                  <Chip mark="ERRORE" /> Reading the counts failed — no value shown.
                 </div>
               ) : (
                 <div className="g-card p-4 flex flex-col gap-3">
@@ -788,33 +791,33 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
                       </div>
                     ))}
                   </div>
-                  <Why label="perché non è un funnel">
-                    I passi hanno unità diverse (sessioni con consenso → eventi → righe DB → ordini) e non sono legati alla stessa persona: nessuna freccia e nessuna
-                    percentuale di conversione, un passo può essere più grande del precedente senza che sia un errore. {sessCaveat} Gli ordini contano anche rinnovi di
-                    clienti già esistenti; Stripe non registra ordini con importo nel DB. Le conversioni torneranno quando esisterà un id utente stabile (G01 in Lavoro).
+                  <Why label="why it is not a funnel">
+                    The steps have different units (consented sessions → events → DB rows → orders) and are not tied to the same person: no arrows and no
+                    conversion percentage, a step can be bigger than the previous one without it being an error. {sessCaveat} Orders also count renewals by
+                    existing customers; Stripe records no orders with an amount in the DB. Conversions will come back when a stable user id exists (G01 in Work).
                   </Why>
                 </div>
               )}
             </section>
 
-            <section aria-labelledby="principali" className="flex flex-col gap-3">
-              <SectionTitle id="principali" title="KPI principali" hint={`i sei numeri da cui partire · ${W}`} />
-              <Why label="legenda degli stati">
+            <section aria-labelledby="main-kpis" className="flex flex-col gap-3">
+              <SectionTitle id="main-kpis" title="Main KPIs" hint={`the six numbers to start from · ${W}`} />
+              <Why label="status legend">
                 <ul className="flex flex-col gap-1.5">
                   <li>
-                    <Chip mark="LIVE" /> {MARK_LABEL.LIVE}: contato dal DB, significa quello che dice l’etichetta.
+                    <Chip mark="LIVE" /> {MARK_LABEL.LIVE}: counted from the DB, it means what the label says.
                   </li>
                   <li>
-                    <Chip mark="PROXY" /> {MARK_LABEL.PROXY}: contato dal DB, ma approssima il KPI: «perché ▸» dice come e cosa lo renderà reale.
+                    <Chip mark="PROXY" /> {MARK_LABEL.PROXY}: counted from the DB, but it approximates the KPI: «why ▸» says how and what will make it real.
                   </li>
                   <li>
-                    <Chip mark="EST" /> {MARK_LABEL.EST}: dedotto con un criterio dichiarato, mai osservato; il grezzo resta sempre accanto.
+                    <Chip mark="EST" /> {MARK_LABEL.EST}: deduced with a declared criterion, never observed; the raw number always stays next to it.
                   </li>
                   <li>
-                    <Chip mark="ERRORE" /> {MARK_LABEL.ERRORE}: la lettura è fallita; il valore manca, non è sostituito con 0.
+                    <Chip mark="ERRORE" /> {MARK_LABEL.ERRORE}: the read failed; the value is missing, it is not replaced with 0.
                   </li>
                   <li>
-                    <Chip mark="MANCA" />: il dato non esiste ancora in nessuna fonte; mai nella posizione di un numero, elencato in «Dati che non abbiamo ancora».
+                    <Chip mark="MANCA" />: the data does not exist yet in any source; never in the place of a number, listed in «Data we do not have yet».
                   </li>
                 </ul>
               </Why>
@@ -832,64 +835,64 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
                   title={FAMILY_LABEL[family]}
                   hint={
                     family === "acquisition" && d.humanTraffic.ok
-                      ? `${FAMILY_HINT[family]} · ${W}: ${fmtInt(d.humanTraffic.data.probably_human)} page view probabilmente umani (≈ Stimato) · ${fmtInt(d.humanTraffic.data.page_views)} grezzi (● Contato)`
+                      ? `${FAMILY_HINT[family]} · ${W}: ${fmtInt(d.humanTraffic.data.probably_human)} probably human page views (≈ Estimated) · ${fmtInt(d.humanTraffic.data.page_views)} raw (● Counted)`
                       : FAMILY_HINT[family]
                   }
                 />
                 <SecondaryRows tiles={tiles.filter((t) => !isPrimary(t))} missing={missingLabels(family)} />
-                {tiles.filter((t) => !isPrimary(t)).length === 0 && <p className="g-meta">Tutti i KPI misurati di questa sezione sono fra i principali.</p>}
+                {tiles.filter((t) => !isPrimary(t)).length === 0 && <p className="g-meta">All the measured KPIs of this section are among the main ones.</p>}
               </section>
             ))}
 
-            <section aria-labelledby="canali" className="flex flex-col gap-3">
-              <SectionTitle id="canali" title="Canali" hint={`fonti, ingressi, sessioni e signup · ${W} · ogni tabella dichiara la sua unità`} />
+            <section aria-labelledby="channels" className="flex flex-col gap-3">
+              <SectionTitle id="channels" title="Channels" hint={`sources, entries, sessions and signups · ${W} · each table states its unit`} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <SmallTable
-                  title="Ingressi per fonte"
+                  title="Entries by source"
                   mark="LIVE"
-                  caveat="Page view d'ingresso per fonte (utm_source, poi src/crm/ref/referrer), con e senza consenso. Pagine d'ingresso, non persone; crawler inclusi, fonti interne/test escluse (riga sotto). Referrer ridotti al dominio, codici referral mascherati."
+                  caveat="Entry page views by source (utm_source, then src/crm/ref/referrer), with and without consent. Entry pages, not people; crawlers included, internal/test sources excluded (row below). Referrers cut to the domain, referral codes masked."
                   rows={topEntries(d.entries)}
-                  cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Ingressi", get: (r) => fmtInt(Number(r.entries)), right: true }]}
-                  empty="Nessun page view d'ingresso con fonte nella finestra."
+                  cols={[{ h: "Source", get: (r) => sourceLabel(r.source) }, { h: "Entries", get: (r) => fmtInt(Number(r.entries)), right: true }]}
+                  empty="No entry page view with a source in the window."
                   footer={d.entries.ok && <InternalFooter n={splitEntries(d.entries.data).internal} />}
                 />
                 <SmallTable
-                  title="Sessioni per fonte"
+                  title="Sessions by source"
                   mark="PROXY"
-                  caveat={`Una fonte per sessione (utm_source, poi src/crm/ref/referrer del page_view d'ingresso). ${sessCaveat} Top ${SOURCE_ROWS_SHOWN}, il resto in una riga. «(nessuna fonte)» è una riga esplicita, non una voce nascosta. Fonti interne/test escluse con la stessa regola degli ingressi (riga sotto).`}
+                  caveat={`One source per session (utm_source, then src/crm/ref/referrer of the entry page_view). ${sessCaveat} Top ${SOURCE_ROWS_SHOWN}, the rest in one row. «(no source)» is an explicit row, not a hidden entry. Internal/test sources excluded with the same rule as the entries (row below).`}
                   rows={topSources(d.sources)}
-                  cols={[{ h: "Fonte", get: (r) => r.source }, { h: "Sessioni", get: (r) => fmtInt(Number(r.sessions)), right: true }]}
-                  empty="Nessuna sessione con consenso nella finestra."
+                  cols={[{ h: "Source", get: (r) => sourceLabel(r.source) }, { h: "Sessions", get: (r) => fmtInt(Number(r.sessions)), right: true }]}
+                  empty="No consented session in the window."
                   footer={d.sources.ok && <InternalFooter n={splitFolded(d.sources.data, (r) => r.source, (r) => r.sessions).internal} />}
                 />
                 <SmallTable
-                  title="Nuovi signup per canale"
+                  title="New signups by channel"
                   mark="LIVE"
-                  caveat="profiles.acquisition dei profili creati nella finestra. «(non registrata)» = profilo senza dato di acquisizione: il prodotto la salva solo con il consenso ai cookie, quindi un signup senza consenso resta così (e così sono i profili creati prima che l'attribuzione esistesse). Fonti interne/test escluse con la stessa regola degli ingressi (riga sotto)."
+                  caveat="profiles.acquisition of the profiles created in the window. «(not recorded)» = profile without acquisition data: the product stores it only with cookie consent, so a signup without consent stays like that (and so are the profiles created before attribution existed). Internal/test sources excluded with the same rule as the entries (row below)."
                   rows={d.channels.ok ? { ok: true, data: splitFolded(d.channels.data, (r) => r.channel, (r) => r.n).external } : d.channels}
-                  cols={[{ h: "Canale", get: (r) => r.channel }, { h: "Signup", get: (r) => fmtInt(Number(r.n)), right: true }]}
-                  empty="Nessun nuovo profilo nella finestra."
+                  cols={[{ h: "Channel", get: (r) => sourceLabel(r.channel) }, { h: "Signups", get: (r) => fmtInt(Number(r.n)), right: true }]}
+                  empty="No new profile in the window."
                   footer={d.channels.ok && <InternalFooter n={splitFolded(d.channels.data, (r) => r.channel, (r) => r.n).internal} />}
                 />
                 <SmallTable
-                  title="Widget sui siti partner"
+                  title="Widget on partner sites"
                   mark="LIVE"
-                  caveat="widget_view / widget_click per host dichiarato dal widget. Esclusi localhost e anteprime *.vercel.app."
+                  caveat="widget_view / widget_click by host declared by the widget. localhost and *.vercel.app previews excluded."
                   rows={d.widget}
                   cols={[
                     { h: "Host", get: (r) => r.host },
-                    { h: "View", get: (r) => fmtInt(Number(r.views)), right: true },
-                    { h: "Click", get: (r) => fmtInt(Number(r.clicks)), right: true },
+                    { h: "Views", get: (r) => fmtInt(Number(r.views)), right: true },
+                    { h: "Clicks", get: (r) => fmtInt(Number(r.clicks)), right: true },
                   ]}
-                  empty="Nessuna visualizzazione del widget nella finestra."
+                  empty="No widget view in the window."
                 />
                 <SmallTable
-                  title="Click per partner"
+                  title="Clicks by partner"
                   mark="LIVE"
-                  caveat="Eventi partner_click per partner_id nella finestra. Top 10."
+                  caveat="partner_click events by partner_id in the window. Top 10."
                   rows={d.partners}
-                  cols={[{ h: "Partner", get: (r) => r.partner_id }, { h: "Click", get: (r) => fmtInt(Number(r.clicks)), right: true }]}
-                  empty="Nessun click partner nella finestra."
+                  cols={[{ h: "Partner", get: (r) => r.partner_id }, { h: "Clicks", get: (r) => fmtInt(Number(r.clicks)), right: true }]}
+                  empty="No partner click in the window."
                 />
               </div>
               <Channels data={d} />
@@ -901,12 +904,12 @@ export function GrowthDashboard({ data: d, meta, hrefFor, workHref }: GrowthDash
 
             {spike?.spike && d.humanTraffic.ok && (
               <p className="g-meta sr-only">
-                Picco anomalo: {formatPct(spike.share, 0)} dei page view ({W}) è senza paese, soglia {formatPct(NO_COUNTRY_SPIKE_SHARE, 0)}.
+                Anomalous spike: {formatPct(spike.share, 0)} of the page views ({W}) have no country, threshold {formatPct(NO_COUNTRY_SPIKE_SHARE, 0)}.
               </p>
             )}
 
             <p className="g-meta pb-6">
-              Fonte: {meta.origin}. Solo aggregati, nessun dato personale (referrer ridotti al dominio, codici referral mascherati). Definizioni in core/sql.ts.
+              Source: {meta.origin}. Aggregates only, no personal data (referrers cut to the domain, referral codes masked). Definitions in core/sql.ts.
             </p>
           </main>
         </div>

@@ -9,10 +9,10 @@ import experimentsJson from "@/content/experiments.json";
 import sourcesJson from "@/content/sources.json";
 
 export const PRIORITIES = ["P0", "P1", "P2"] as const;
-export const GAP_STATUSES = ["aperto", "in corso", "mitigato", "chiuso"] as const;
-export const EXPERIMENT_STATUSES = ["proposto", "in corso", "scale", "fix", "kill"] as const;
-/** An access goes da concedere → concesso (the owner did it) → verificato (the check number matched). */
-export const ACCESS_STATUSES = ["da concedere", "concesso", "verificato"] as const;
+export const GAP_STATUSES = ["open", "in progress", "mitigated", "closed"] as const;
+export const EXPERIMENT_STATUSES = ["proposed", "in progress", "scale", "fix", "kill"] as const;
+/** An access goes to grant → granted (the owner did it) → verified (the check number matched). */
+export const ACCESS_STATUSES = ["to grant", "granted", "verified"] as const;
 
 export interface TrackingGap {
   id: string;
@@ -46,7 +46,7 @@ export interface AccessSource {
   reads: string;
   /** The minimum read-only role to ask for — never admin, never a shared login. */
   role: string;
-  /** Exact steps for whoever grants it. Unknown paths say «da verificare nell'interfaccia». */
+  /** Exact steps for whoever grants it. Unknown paths say «to be checked in the interface». */
   steps: string[];
   /** Who grants the access. */
   owner: string;
@@ -67,32 +67,32 @@ function fail(file: string, where: string, msg: string): never {
 }
 
 function requireStrings(file: string, where: string, row: Record<string, unknown>, keys: string[]) {
-  for (const k of keys) if (!nonEmpty(row[k])) fail(file, where, `campo «${k}» mancante o vuoto`);
+  for (const k of keys) if (!nonEmpty(row[k])) fail(file, where, `field «${k}» missing or empty`);
 }
 
 function requireUniqueIds(file: string, rows: { id: string }[]) {
   const seen = new Set<string>();
   for (const r of rows) {
-    if (seen.has(r.id)) fail(file, r.id, "id duplicato");
+    if (seen.has(r.id)) fail(file, r.id, "duplicate id");
     seen.add(r.id);
   }
 }
 
 export function validateGaps(raw: unknown): TrackingGap[] {
   const file = "tracking-gaps.json";
-  if (!Array.isArray(raw) || raw.length === 0) fail(file, "radice", "serve una lista non vuota");
+  if (!Array.isArray(raw) || raw.length === 0) fail(file, "root", "a non-empty list is required");
   raw.forEach((row: Record<string, unknown>, i) => {
-    const where = nonEmpty(row.id) ? row.id : `riga ${i + 1}`;
+    const where = nonEmpty(row.id) ? row.id : `row ${i + 1}`;
     requireStrings(file, where, row, ["id", "title", "problem", "owner"]);
-    if (!PRIORITIES.includes(row.priority as never)) fail(file, where, `priority deve essere ${PRIORITIES.join("/")}`);
-    if (!GAP_STATUSES.includes(row.status as never)) fail(file, where, `status deve essere uno fra: ${GAP_STATUSES.join(", ")}`);
+    if (!PRIORITIES.includes(row.priority as never)) fail(file, where, `priority must be ${PRIORITIES.join("/")}`);
+    if (!GAP_STATUSES.includes(row.status as never)) fail(file, where, `status must be one of: ${GAP_STATUSES.join(", ")}`);
     if (!Array.isArray(row.unlocks) || row.unlocks.length === 0 || !row.unlocks.every(nonEmpty)) {
-      fail(file, where, "unlocks deve elencare almeno un KPI sbloccato");
+      fail(file, where, "unlocks must list at least one unlocked KPI");
     }
     if (row.tiles !== undefined && (!Array.isArray(row.tiles) || row.tiles.length === 0 || !row.tiles.every(nonEmpty))) {
-      fail(file, where, "tiles, se presente, deve elencare almeno una tile");
+      fail(file, where, "tiles, if present, must list at least one tile");
     }
-    if (row.dependsOn !== undefined && !nonEmpty(row.dependsOn)) fail(file, where, "dependsOn, se presente, non può essere vuoto");
+    if (row.dependsOn !== undefined && !nonEmpty(row.dependsOn)) fail(file, where, "dependsOn, if present, cannot be empty");
   });
   requireUniqueIds(file, raw as TrackingGap[]);
   return raw as TrackingGap[];
@@ -100,11 +100,11 @@ export function validateGaps(raw: unknown): TrackingGap[] {
 
 export function validateExperiments(raw: unknown): Experiment[] {
   const file = "experiments.json";
-  if (!Array.isArray(raw)) fail(file, "radice", "serve una lista");
+  if (!Array.isArray(raw)) fail(file, "root", "a list is required");
   raw.forEach((row: Record<string, unknown>, i) => {
-    const where = nonEmpty(row.id) ? row.id : `riga ${i + 1}`;
+    const where = nonEmpty(row.id) ? row.id : `row ${i + 1}`;
     requireStrings(file, where, row, ["id", "hypothesis", "kpiTarget", "dataSource", "duration", "decisionThreshold"]);
-    if (!EXPERIMENT_STATUSES.includes(row.status as never)) fail(file, where, `status deve essere uno fra: ${EXPERIMENT_STATUSES.join(", ")}`);
+    if (!EXPERIMENT_STATUSES.includes(row.status as never)) fail(file, where, `status must be one of: ${EXPERIMENT_STATUSES.join(", ")}`);
   });
   requireUniqueIds(file, raw as Experiment[]);
   return raw as Experiment[];
@@ -112,12 +112,12 @@ export function validateExperiments(raw: unknown): Experiment[] {
 
 export function validateSources(raw: unknown): AccessSource[] {
   const file = "sources.json";
-  if (!Array.isArray(raw) || raw.length === 0) fail(file, "radice", "serve una lista non vuota");
+  if (!Array.isArray(raw) || raw.length === 0) fail(file, "root", "a non-empty list is required");
   raw.forEach((row: Record<string, unknown>, i) => {
-    const where = nonEmpty(row.id) ? row.id : `riga ${i + 1}`;
+    const where = nonEmpty(row.id) ? row.id : `row ${i + 1}`;
     requireStrings(file, where, row, ["id", "tool", "reads", "role", "owner", "verify"]);
-    if (!ACCESS_STATUSES.includes(row.status as never)) fail(file, where, `status deve essere uno fra: ${ACCESS_STATUSES.join(", ")}`);
-    if (!Array.isArray(row.steps) || row.steps.length === 0 || !row.steps.every(nonEmpty)) fail(file, where, "steps deve elencare almeno un passo");
+    if (!ACCESS_STATUSES.includes(row.status as never)) fail(file, where, `status must be one of: ${ACCESS_STATUSES.join(", ")}`);
+    if (!Array.isArray(row.steps) || row.steps.length === 0 || !row.steps.every(nonEmpty)) fail(file, where, "steps must list at least one step");
   });
   requireUniqueIds(file, raw as AccessSource[]);
   return raw as AccessSource[];
@@ -126,7 +126,7 @@ export function validateSources(raw: unknown): AccessSource[] {
 const MEMO_DIR = path.join(process.cwd(), "content", "memo");
 const TEMPLATE = "_template.md";
 
-/** Memos are content/memo/AAAA-Www.md, newest first. The template is not a memo. */
+/** Memos are content/memo/YYYY-Www.md, newest first. The template is not a memo. */
 export function loadMemos(dir = MEMO_DIR): Memo[] {
   return readdirSync(dir)
     .filter((f) => f.endsWith(".md") && f !== TEMPLATE && f !== "README.md")

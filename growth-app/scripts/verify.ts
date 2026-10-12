@@ -98,7 +98,7 @@ function checks(): Check[] {
       { metric: "Sessioni (con consenso)", window: w, page: v(d.traffic, (t) => t.sessions), sql: `SELECT count(*) FROM (SELECT DISTINCT session_id FROM events WHERE event_type='page_view' AND session_id IS NOT NULL AND ${between("created_at", w)}) s` },
       { metric: "Signup avviati (eventi)", window: w, page: v(d.funnelEvents, (f) => f.signup_started), sql: `SELECT count(*) FROM events WHERE event_type='signup_started' AND ${between("created_at", w)}` },
       { metric: "Signup completati (eventi)", window: w, page: v(d.funnelEvents, (f) => f.signup_completed), sql: `SELECT count(*) FROM events WHERE event_type='signup_completed' AND ${between("created_at", w)}` },
-      { metric: "Nuovi profili", window: w, page: v(d.newProfiles, (p) => p.new_profiles), sql: `SELECT count(*) FROM profiles WHERE ${between("created_at", w)}` },
+      { metric: "New profiles", window: w, page: v(d.newProfiles, (p) => p.new_profiles), sql: `SELECT count(*) FROM profiles WHERE ${between("created_at", w)}` },
       // count(col) counts non-NULL values: a different formulation from FILTER (WHERE … IS NOT NULL).
       { metric: "Signup completati (profili dal form)", window: w, page: v(d.newProfiles, (p) => p.signups), sql: `SELECT count(tos_accepted_at) FROM profiles WHERE ${between("created_at", w)}` },
       { metric: "Ordini Shopify pagati", window: w, page: v(d.shopify, (s) => s.orders_w), sql: `SELECT count(DISTINCT event_id) FROM shopify_events WHERE event_type='orders/paid' AND ${between("processed_at", w)}` },

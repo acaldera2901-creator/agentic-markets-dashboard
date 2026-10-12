@@ -1,32 +1,32 @@
 [
   {
     "id": "E01",
-    "hypothesis": "Se ogni link dei canali che controlliamo (bio IG/TikTok/X, post Reddit, email) porta un ?src= coerente, la quota di sessioni con una fonte nota sale abbastanza da leggere i canali.",
-    "kpiTarget": "Sessioni con fonte nota / sessioni totali: da 13/400 (3%, snapshot 05/10, 30 giorni) a ≥ 30%",
-    "dataSource": "Dashboard → «Fonti delle sessioni» (query sources, events page_view con session_id)",
-    "duration": "14 giorni da quando tutti i link sono taggati",
-    "decisionThreshold": "≥ 30% → scale: tag obbligatorio su ogni nuovo link. 10–30% → fix: trovare i link non taggati. < 10% → il problema è la perdita di sessioni (G10), non i tag",
-    "status": "proposto",
-    "note": "esempio da validare con Steve"
+    "hypothesis": "If every link on the channels we control (IG/TikTok/X bio, Reddit posts, email) carries a consistent ?src=, the share of sessions with a known source rises enough to read the channels.",
+    "kpiTarget": "Sessions with a known source / total sessions: from 13/400 (3%, Oct 5 snapshot, 30 days) to ≥ 30%",
+    "dataSource": "Dashboard → «Sessions by source» (sources query, page_view events with session_id)",
+    "duration": "14 days from when all the links are tagged",
+    "decisionThreshold": "≥ 30% → scale: tag mandatory on every new link. 10–30% → fix: find the untagged links. < 10% → the problem is the loss of sessions (G10), not the tags",
+    "status": "proposed",
+    "note": "example to validate with Steve"
   },
   {
     "id": "E02",
-    "hypothesis": "Se la pagina piani rende più chiaro cosa si ottiene, più visitatori cliccano la CTA di un piano.",
-    "kpiTarget": "plan_cta_click / plan_view: da 4/126 (3,2%, snapshot 05/10, 30 giorni) a ≥ 6%",
-    "dataSource": "Dashboard → funnel (eventi plan_view, plan_cta_click, checkout_opened)",
-    "duration": "Prima/dopo, 4 settimane per lato: con questi volumi un A/B test non ha potenza statistica. Minimo 120 plan_view per lato",
-    "decisionThreshold": "≥ 6% con almeno 120 plan_view → scale. 3–6% → fix (cambiare un altro elemento). ≤ 3% → kill della variante",
-    "status": "proposto",
-    "note": "esempio da validare con Steve"
+    "hypothesis": "If the plans page makes clearer what you get, more visitors click a plan's CTA.",
+    "kpiTarget": "plan_cta_click / plan_view: from 4/126 (3.2%, Oct 5 snapshot, 30 days) to ≥ 6%",
+    "dataSource": "Dashboard → funnel (plan_view, plan_cta_click, checkout_opened events)",
+    "duration": "Before/after, 4 weeks per side: with these volumes an A/B test has no statistical power. At least 120 plan_view per side",
+    "decisionThreshold": "≥ 6% with at least 120 plan_view → scale. 3–6% → fix (change another element). ≤ 3% → kill the variant",
+    "status": "proposed",
+    "note": "example to validate with Steve"
   },
   {
     "id": "E03",
-    "hypothesis": "Se si toglie attrito al form di registrazione (meno campi o un passaggio in meno), una quota maggiore di chi inizia completa la registrazione.",
-    "kpiTarget": "signup_completed / signup_started: da 24/66 (36%, snapshot 05/10, 30 giorni) a ≥ 50%",
-    "dataSource": "Dashboard → funnel (signup_started, signup_completed) e, come controllo, nuovi profili in profiles",
-    "duration": "Prima/dopo, 4 settimane per lato. Minimo 60 signup_started per lato",
-    "decisionThreshold": "≥ 50% e nuovi profili coerenti → scale. 36–50% → fix. Nessun miglioramento → kill. Attenzione: 52 dei 66 signup non hanno sessione, quindi il dato va confrontato con profiles",
-    "status": "proposto",
-    "note": "esempio da validare con Steve"
+    "hypothesis": "If friction is removed from the registration form (fewer fields or one step less), a larger share of those who start it complete the registration.",
+    "kpiTarget": "signup_completed / signup_started: from 24/66 (36%, Oct 5 snapshot, 30 days) to ≥ 50%",
+    "dataSource": "Dashboard → funnel (signup_started, signup_completed) and, as a check, new profiles in profiles",
+    "duration": "Before/after, 4 weeks per side. At least 60 signup_started per side",
+    "decisionThreshold": "≥ 50% and consistent new profiles → scale. 36–50% → fix. No improvement → kill. Careful: 52 of the 66 signups have no session, so the figure has to be compared with profiles",
+    "status": "proposed",
+    "note": "example to validate with Steve"
   }
 ]

@@ -59,26 +59,26 @@ function fail(msg: string): never {
  */
 export function validateInternal(raw: unknown): InternalLists {
   const f = raw as Partial<InternalAccountsFile> | null;
-  if (!f || f.schema !== 1) fail("schema sconosciuto");
-  if (!f.generatedAt || Number.isNaN(Date.parse(f.generatedAt))) fail("generatedAt mancante");
-  if (!Array.isArray(f.accounts) || !Array.isArray(f.orders) || !Array.isArray(f.paidPlanNoPayment)) fail("accounts/orders/paidPlanNoPayment mancanti");
-  if (JSON.stringify(f).includes("@")) fail("contiene una @: nel file vanno solo id e motivi, mai e-mail");
+  if (!f || f.schema !== 1) fail("unknown schema");
+  if (!f.generatedAt || Number.isNaN(Date.parse(f.generatedAt))) fail("generatedAt missing");
+  if (!Array.isArray(f.accounts) || !Array.isArray(f.orders) || !Array.isArray(f.paidPlanNoPayment)) fail("accounts/orders/paidPlanNoPayment missing");
+  if (JSON.stringify(f).includes("@")) fail("contains an @: the file holds only ids and reasons, never e-mails");
   const out: InternalLists = { generatedAt: f.generatedAt, accounts: [], paidPlanNoPayment: [], orders: { paygate_orders: [], paypal_orders: [], shopify_events: [] } };
   for (const a of f.accounts) {
-    if (!UUID.test(a.id)) fail(`id profilo non valido: ${a.id}`);
-    if (!(ACCOUNT_REASONS as readonly string[]).includes(a.reason)) fail(`motivo sconosciuto: ${a.reason}`);
+    if (!UUID.test(a.id)) fail(`invalid profile id: ${a.id}`);
+    if (!(ACCOUNT_REASONS as readonly string[]).includes(a.reason)) fail(`unknown reason: ${a.reason}`);
     out.accounts.push(a.id);
   }
   for (const a of f.paidPlanNoPayment) {
-    if (!UUID.test(a.id)) fail(`id profilo non valido: ${a.id}`);
-    if (a.reason !== NO_PAYMENT_REASON) fail(`motivo sconosciuto: ${a.reason}`);
-    if (out.accounts.includes(a.id)) fail(`profilo sia interno sia senza pagamento: ${a.id}`);
+    if (!UUID.test(a.id)) fail(`invalid profile id: ${a.id}`);
+    if (a.reason !== NO_PAYMENT_REASON) fail(`unknown reason: ${a.reason}`);
+    if (out.accounts.includes(a.id)) fail(`profile both internal and without payment: ${a.id}`);
     out.paidPlanNoPayment.push(a.id);
   }
   for (const o of f.orders) {
-    if (!(ORDER_TABLES as readonly string[]).includes(o.table)) fail(`tabella ordini sconosciuta: ${o.table}`);
-    if (!(ORDER_REASONS as readonly string[]).includes(o.reason)) fail(`motivo ordine sconosciuto: ${o.reason}`);
-    if (!(o.table === "shopify_events" ? SHOPIFY_ID : UUID).test(o.id)) fail(`id ordine non valido: ${o.id}`);
+    if (!(ORDER_TABLES as readonly string[]).includes(o.table)) fail(`unknown order table: ${o.table}`);
+    if (!(ORDER_REASONS as readonly string[]).includes(o.reason)) fail(`unknown order reason: ${o.reason}`);
+    if (!(o.table === "shopify_events" ? SHOPIFY_ID : UUID).test(o.id)) fail(`invalid order id: ${o.id}`);
     out.orders[o.table].push(o.id);
   }
   return out;
@@ -87,7 +87,7 @@ export function validateInternal(raw: unknown): InternalLists {
 /** A SQL array literal of already-validated ids; empty list → an empty typed array (matches nothing). */
 export function sqlIdArray(ids: string[], type: "uuid" | "text"): string {
   const pattern = type === "uuid" ? UUID : SHOPIFY_ID;
-  for (const id of ids) if (!pattern.test(id)) throw new Error(`id non valido per SQL: ${id}`);
+  for (const id of ids) if (!pattern.test(id)) throw new Error(`invalid id for SQL: ${id}`);
   return `ARRAY[${ids.map((i) => `'${i}'`).join(",")}]::${type}[]`;
 }
 
@@ -96,7 +96,7 @@ export function countByReason(f: InternalAccountsFile): Record<string, number> {
   const out: Record<string, number> = {};
   const inc = (k: string) => (out[k] = (out[k] ?? 0) + 1);
   for (const a of f.accounts) inc(`account:${a.reason}`);
-  for (const o of f.orders) inc(`ordine:${o.table}:${o.reason}`);
-  for (const p of f.paidPlanNoPayment) inc(`piano-senza-pagamento:${p.reason}`);
+  for (const o of f.orders) inc(`order:${o.table}:${o.reason}`);
+  for (const p of f.paidPlanNoPayment) inc(`plan-without-payment:${p.reason}`);
   return out;
 }

@@ -13,9 +13,9 @@ export const BURST_MIN = 8;
 export const BURST_SLOT_SECONDS = 600;
 
 export const HUMAN_FILTER_CRITERIA = [
-  "senza paese: test locali, job sintetici o crawler (causa non determinabile dai dati; nessun header geo di Vercel) — tutti, con o senza sessione",
-  `senza sessione e da un paese che nella diagnosi del 06/10 non aveva nessuna sessione (${NO_SESSION_COUNTRIES.join(", ")}) — lista fissa, un umano da quei paesi senza consenso viene escluso anche lui`,
-  `senza sessione e dentro una raffica: almeno ${BURST_MIN} page view senza sessione dallo stesso paese nella stessa fascia fissa di ${BURST_SLOT_SECONDS / 60} minuti`,
+  "no country: local tests, synthetic jobs or crawlers (cause not determinable from the data; no Vercel geo header) — all of them, with or without a session",
+  `no session and from a country that had no session at all in the Oct 6 diagnosis (${NO_SESSION_COUNTRIES.join(", ")}) — fixed list, a human from those countries without consent is excluded too`,
+  `no session and inside a burst: at least ${BURST_MIN} page views without a session from the same country in the same fixed ${BURST_SLOT_SECONDS / 60}-minute slot`,
 ] as const;
 
 /** Page views grouped by (country, 10-minute slot); counts split by session presence. */
@@ -83,8 +83,11 @@ const INTERNAL_REFERRER_RES = [/^betredge-studio[^.]*\.(?:[^.]+\.)*chatgpt\.site
 /** utm_source / src / crm values that only our tests use (case-insensitive, exact). */
 export const INTERNAL_SOURCE_VALUES = ["pr-check", "test123", "qa", "3dcoldmail"] as const;
 export const INTERNAL_REFERRER_RULE =
-  "interni/test = utm_source, src o crm uguale a pr-check, test123, qa o 3Dcoldmail (link di prova o rotti), oppure referrer localhost/127.x, betredge-studio*.….chatgpt.site (anteprime del nostro studio) o betredge*.vercel.app (deploy e preview dei progetti betredge); il referrer conta solo quando l'ingresso non ha utm/src/crm/ref. Il paese non è mai un criterio";
-/** The single label every internal/test source is folded into (no host, so no personal name). */
+  "internal/test = utm_source, src or crm equal to pr-check, test123, qa or 3Dcoldmail (test or broken links), or referrer localhost/127.x, betredge-studio*.….chatgpt.site (previews from our studio) or betredge*.vercel.app (deploys and previews of the betredge projects); the referrer counts only when the entry has no utm/src/crm/ref. Country is never a criterion";
+/**
+ * The single label every internal/test source is folded into (no host, so no personal name).
+ * A DATA key (stored in the snapshot): the UI shows it through sourceLabel() in ui/primitives.tsx.
+ */
 export const INTERNAL_ENTRY_LABEL = "(interni/test, esclusi)";
 
 export function isInternalReferrer(host: string): boolean {
@@ -131,7 +134,7 @@ export interface EntryMeta {
  * alternative criteria on the same data (consented + country … this page's rule).
  * Historical: dated, never recomputed — it says how wide the uncertainty is.
  */
-export const HUMAN_ESTIMATE_MARGIN = "con criteri alternativi l'audit del 07/10 ha ottenuto 109–310 a 7 giorni e 685–2.148 a 30 giorni (il valore di questa pagina è il massimo): la stima può essere fino a circa 3 volte troppo alta";
+export const HUMAN_ESTIMATE_MARGIN = "with alternative criteria the Oct 7 audit got 109–310 over 7 days and 685–2,148 over 30 days (this page's value is the maximum): the estimate can be up to about 3 times too high";
 
 /**
  * Source label of an entry page view (same precedence as the `sources` query),

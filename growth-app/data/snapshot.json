@@ -2,7 +2,7 @@
   "schema": 1,
   "generatedAt": "2026-10-07T08:49:21.215Z",
   "dbNow": "2026-10-07T08:49:16.058Z",
-  "origin": "database di produzione BetRedge, letto in sola lettura (solo aggregati)",
+  "origin": "BetRedge production database, read in read-only mode (aggregates only)",
   "windows": {
     "today": {
       "traffic": {

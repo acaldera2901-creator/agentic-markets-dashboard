@@ -1,28 +1,28 @@
-# Memo settimanale — settimana AAAA-Www
+# Weekly memo — week YYYY-Www
 
-Autore: · Periodo: dal GG/MM al GG/MM · Numeri letti da: dashboard (snapshot del … / live)
+Author: · Period: from MMM D to MMM D · Numbers read from: dashboard (snapshot of … / live)
 
-Regole: ogni affermazione cita un numero della dashboard o di una fonte in «Accessi e fonti», con la finestra.
-Se un numero è PROXY o MANCA, scrivilo. Massimo una pagina.
+Rules: every statement cites a number from the dashboard or from a source in «Access and sources», with the window.
+If a number is PROXY or not measured, say so. One page at most.
 
-## 1. Cosa funziona → SCALE
+## 1. What works → SCALE
 
-- Cosa: …
-  Numero: … (finestra …, fonte …)
-  Decisione: cosa facciamo di più, chi lo fa, entro quando
+- What: …
+  Number: … (window …, source …)
+  Decision: what we do more of, who does it, by when
 
-## 2. Cosa non funziona → FIX o KILL
+## 2. What does not work → FIX or KILL
 
-- Cosa: …
-  Numero: … (finestra …, fonte …)
-  Decisione: FIX (cosa si cambia) oppure KILL (cosa si smette di fare), chi, entro quando
+- What: …
+  Number: … (window …, source …)
+  Decision: FIX (what changes) or KILL (what we stop doing), who, by when
 
-## 3. Cosa testiamo la prossima settimana
+## 3. What we test next week
 
-- Esperimento: id dal backlog (es. E01) o nuovo, da aggiungere a content/experiments.json
-  Soglia di decisione: …
-  Cosa serve per partire: …
+- Experiment: id from the backlog (e.g. E01) or new, to be added to content/experiments.json
+  Decision threshold: …
+  What it takes to start: …
 
-## Tracking gaps toccati
+## Tracking gaps touched
 
-- Gap aperti che hanno impedito una lettura questa settimana (id da content/tracking-gaps.json): …
+- Open gaps that prevented a reading this week (ids from content/tracking-gaps.json): …

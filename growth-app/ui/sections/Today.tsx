@@ -1,5 +1,5 @@
-// «Oggi in 30 secondi»: what changed (the top rows of the deltas and anomalies
-// that core/series already computes for Andamento) and what not to trust in
+// «Today in 30 seconds»: what changed (the top rows of the deltas and anomalies
+// that core/series already computes for Trends) and what not to trust in
 // this window. No new number is computed here: every figure is one that the
 // page shows elsewhere, brought to the top.
 
@@ -12,7 +12,7 @@ import { Chip, type Mark, fmtDay, fmtInt, fmtSigned } from "../primitives";
 
 const SHOWN = 4;
 
-/** The series mark follows the tile it feeds: the estimate is ≈, consented sessions approximate «Sessioni» (◐), the rest is counted. */
+/** The series mark follows the tile it feeds: the estimate is ≈, consented sessions approximate «Sessions» (◐), the rest is counted. */
 const SERIES_MARK: Partial<Record<SeriesMetric, Mark>> = { probably_human: "EST", sessions: "PROXY" };
 
 export interface TodayProps {
@@ -60,7 +60,7 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
   const ranked = [...rows].sort((a, b) => topZ(b) - topZ(a) || Math.abs(b.delta) - Math.abs(a.delta) || b.current - a.current).slice(0, SHOWN);
   const anomalyCount = rows.reduce((k, r) => k + r.an.length, 0);
 
-  // «Non fidarti di»: the limits that invalidate a plain reading of this window.
+  // «Don't trust»: the limits that invalidate a plain reading of this window.
   const spike = data.humanTraffic.ok ? noCountrySpike(data.humanTraffic.data.excl_no_country, data.humanTraffic.data.page_views) : null;
   const warnings: { glyph: "▲" | "△" | "·"; text: ReactNode }[] = [];
   if (spike?.spike && data.humanTraffic.ok) {
@@ -68,58 +68,58 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
       glyph: "▲",
       text: (
         <>
-          <b>{formatPct(spike.share, 0)} dei page view ({windowLabel}) è senza paese</b> ({fmtInt(data.humanTraffic.data.excl_no_country)} su{" "}
-          {fmtInt(data.humanTraffic.data.page_views)}, soglia {formatPct(NO_COUNTRY_SPIKE_SHARE, 0)}): leggi «probabilmente umani», non i grezzi. Senza paese = test
-          locali, job sintetici o crawler, causa non determinabile dai dati.
+          <b>{formatPct(spike.share, 0)} of the page views ({windowLabel}) have no country</b> ({fmtInt(data.humanTraffic.data.excl_no_country)} of{" "}
+          {fmtInt(data.humanTraffic.data.page_views)}, threshold {formatPct(NO_COUNTRY_SPIKE_SHARE, 0)}): read «probably human», not the raw numbers. No country = local
+          tests, synthetic jobs or crawlers, cause not determinable from the data.
         </>
       ),
     });
   }
   if (errorCount > 0) {
-    warnings.push({ glyph: "△", text: <><b>{errorCount} {errorCount === 1 ? "lettura fallita" : "letture fallite"}</b> in pagina: il valore manca, non è stato sostituito con 0.</> });
+    warnings.push({ glyph: "△", text: <><b>{errorCount} {errorCount === 1 ? "failed read" : "failed reads"}</b> on the page: the value is missing, it was not replaced with 0.</> });
   }
   if (failed > 0) {
-    warnings.push({ glyph: "△", text: <><b>{failed} serie giornaliere non lette</b>: le righe di Andamento restano vuote, non a 0.</> });
+    warnings.push({ glyph: "△", text: <><b>{failed} daily series not read</b>: their Trends rows stay empty, not at 0.</> });
   }
   if (noSessShare !== null) {
     warnings.push({
       glyph: "·",
-      text: <><b>{noSessShare} dei page view ({windowLabel}) non ha session_id</b>: sessioni, fonti delle sessioni e signup per fonte contano solo il traffico con consenso.</>,
+      text: <><b>{noSessShare} of the page views ({windowLabel}) have no session_id</b>: sessions, session sources and signups by source count only consented traffic.</>,
     });
   }
   warnings.push({
     glyph: "▲",
     text: (
         <>
-          <b>Parte del traffico e degli eventi è probabilmente nostro o sintetico</b> (audit del 07/10): sessioni, card e click partner del team, la raffica
-          sintetica di signup avviati del 06/10 alle 04:09, le sessioni sintetiche del 24/09, i signup di test del 21/09. Nessuno è escluso dai conteggi: un
-          picco in quei giorni non è crescita.
+          <b>Part of the traffic and of the events is probably ours or synthetic</b> (Oct 7 audit): team sessions, cards and partner clicks, the synthetic
+          burst of signups started on Oct 6 at 04:09, the synthetic sessions of Sep 24, the test signups of Sep 21. None of them is excluded from the counts: a
+          spike on those days is not growth.
         </>
     ),
   });
-  warnings.push({ glyph: "·", text: <><b>Conteggi delle fasi</b>: unità diverse per passo, nessuna conversione calcolabile.</> });
+  warnings.push({ glyph: "·", text: <><b>Stage counts</b>: different units per step, no conversion can be computed.</> });
   if (ranked.some((r) => r.smallSample)) {
-    warnings.push({ glyph: "·", text: <>Periodo precedente sotto {SMALL_SAMPLE_BASE} eventi su alcune righe: solo il delta assoluto, niente percentuale.</> });
+    warnings.push({ glyph: "·", text: <>Previous period below {SMALL_SAMPLE_BASE} events on some rows: absolute delta only, no percentage.</> });
   }
   if (snapshotLabel) {
-    warnings.push({ glyph: "·", text: <><b>Numeri fermi allo snapshot del {snapshotLabel}</b>: ricaricare non li aggiorna.</> });
+    warnings.push({ glyph: "·", text: <><b>Numbers frozen at the snapshot of {snapshotLabel}</b>: reloading does not update them.</> });
   }
 
   return (
-    <section aria-labelledby="oggi" className="flex flex-col gap-4">
-      <h2 id="oggi" className="g-h g-h--page">
-        {data.window === "today" ? "Oggi" : windowLabel} in 30 secondi
+    <section aria-labelledby="today" className="flex flex-col gap-4">
+      <h2 id="today" className="g-h g-h--page">
+        {data.window === "today" ? "Today" : windowLabel} in 30 seconds
       </h2>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="g-card lg:col-span-7 p-4 flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <h3 className="g-h g-h--card">Cosa è cambiato</h3>
+            <h3 className="g-h g-h--card">What changed</h3>
             <span className="g-meta">
-              ultimi {n} giorni interi vs i {n} precedenti · oggi escluso perché parziale
+              last {n} full days vs the previous {n} · today excluded because partial
             </span>
           </div>
           {ranked.length === 0 ? (
-            <p className="g-caveat">Nessuna serie giornaliera letta: niente da confrontare (nessun valore sostituito con 0).</p>
+            <p className="g-caveat">No daily series read: nothing to compare (no value replaced with 0).</p>
           ) : (
             <ol className="flex flex-col">
               {ranked.map((r) => (
@@ -142,14 +142,14 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
                         {(r.pct * 100).toFixed(0)}%)
                       </span>
                     )}
-                    <span> vs {fmtInt(r.previous)} prima</span>
-                    {r.smallSample && <span> · base &lt; {SMALL_SAMPLE_BASE}, niente %</span>}
+                    <span> vs {fmtInt(r.previous)} before</span>
+                    {r.smallSample && <span> · base &lt; {SMALL_SAMPLE_BASE}, no %</span>}
                     {r.an.map((a) => {
                       const noise = knownNoise(r.key, a.day);
                       return (
                         <span key={a.day} className={noise ? "g-muted block" : "g-anom block"} data-noise={noise ? a.day : undefined}>
-                          {a.z > 0 ? "▲" : "▼"} anomalia {fmtDay(a.day)} · {a.z > 0 ? "+" : ""}
-                          {a.z.toFixed(1)}σ{noise && <> · non è crescita: {noise}</>}
+                          {a.z > 0 ? "▲" : "▼"} anomaly {fmtDay(a.day)} · {a.z > 0 ? "+" : ""}
+                          {a.z.toFixed(1)}σ{noise && <> · not growth: {noise}</>}
                         </span>
                       );
                     })}
@@ -162,12 +162,12 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
             </ol>
           )}
           <p className="g-meta">
-            Le stesse righe, con l&apos;andamento giorno per giorno, in <a href="#andamento">Andamento</a>. Anomalia = oltre 2σ dalla media dei 14 giorni prima.
+            The same rows, with the day-by-day trend, in <a href="#trends">Trends</a>. Anomaly = beyond 2σ from the mean of the 14 days before.
           </p>
         </div>
-        <aside className="g-card lg:col-span-5 p-4 flex flex-col gap-3" style={{ borderLeft: "4px solid var(--anomaly)" }} aria-labelledby="non-fidarti">
-          <h3 id="non-fidarti" className="g-h g-h--card">
-            Non fidarti di
+        <aside className="g-card lg:col-span-5 p-4 flex flex-col gap-3" style={{ borderLeft: "4px solid var(--anomaly)" }} aria-labelledby="dont-trust">
+          <h3 id="dont-trust" className="g-h g-h--card">
+            Don&apos;t trust
           </h3>
           <ul className="flex flex-col gap-2.5">
             {warnings.map((w, i) => (
@@ -183,10 +183,10 @@ export function Today({ data, windowLabel, errorCount, noSessShare, snapshotLabe
           </ul>
           <p className="g-rule pt-3 mt-auto text-[14px]">
             <span className="font-semibold">
-              {anomalyCount} {anomalyCount === 1 ? "anomalia" : "anomalie"} negli ultimi {n} giorni
+              {anomalyCount} {anomalyCount === 1 ? "anomaly" : "anomalies"} in the last {n} days
             </span>
             <span className="g-muted"> · </span>
-            <a href={missingHref}>{missingCount} KPI non misurati →</a>
+            <a href={missingHref}>{missingCount} KPIs not measured →</a>
           </p>
         </aside>
       </div>

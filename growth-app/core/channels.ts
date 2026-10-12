@@ -23,7 +23,11 @@ const COUNTS = ["sessions", "signup_started", "signup_completed", "profiles", "p
 /** Below this many signups a source shows counts only, no percentages. */
 export const MIN_SIGNUPS_FOR_PCT = 5;
 
-/** Labels that are not a traffic source but a hole in the attribution, shown last. */
+/**
+ * Labels that are not a traffic source but a hole in the attribution, shown last.
+ * These strings are DATA keys (written by core/sql.ts and stored in the snapshot):
+ * the UI shows them in English through sourceLabel() in ui/primitives.tsx.
+ */
 export const UNATTRIBUTED = new Set([
   "(non registrata)",
   "(signup senza sessione)",
@@ -53,7 +57,7 @@ export function normalizeChain(r: Result<Row[]>): Result<ChainRow[]> {
     const c = { source: String(row.source) } as ChainRow;
     for (const k of COUNTS) {
       const v = Number(row[k]);
-      if (!Number.isFinite(v)) return { ok: false, error: `valore non numerico in ${k}` };
+      if (!Number.isFinite(v)) return { ok: false, error: `non-numeric value in ${k}` };
       c[k] = v;
     }
     out.push(c);

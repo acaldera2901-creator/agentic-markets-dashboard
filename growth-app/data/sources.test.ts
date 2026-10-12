@@ -21,7 +21,7 @@ describe("snapshot source", () => {
   });
 
   it("rejects a malformed snapshot instead of rendering zeros", () => {
-    expect(() => snapshotSource({ schema: 1, dbNow: "2026-10-05T00:00:00Z", windows: {} })).toThrow(/finestra/);
+    expect(() => snapshotSource({ schema: 1, dbNow: "2026-10-05T00:00:00Z", windows: {} })).toThrow(/window/);
     expect(() => snapshotSource({})).toThrow(/schema/);
   });
 
@@ -72,7 +72,7 @@ describe("live source config", () => {
   it("accepts the repo's SQLAlchemy-style URL", () => {
     expect(normalizeDbUrl("postgresql+asyncpg://u:p@h:5432/db")).toBe("postgresql://u:p@h:5432/db");
     expect(normalizeDbUrl('"postgres://u:p@h/db"')).toBe("postgres://u:p@h/db");
-    expect(() => normalizeDbUrl("")).toThrow(/assente/);
-    expect(() => normalizeDbUrl("mysql://x")).toThrow(/schema/);
+    expect(() => normalizeDbUrl("")).toThrow(/missing/);
+    expect(() => normalizeDbUrl("mysql://x")).toThrow(/scheme/);
   });
 });

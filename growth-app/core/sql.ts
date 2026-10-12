@@ -296,7 +296,7 @@ export function buildSeriesSql(internal: InternalLists = EMPTY_INTERNAL): Record
     seriesProfiles: `SELECT ${romeDay("created_at")} AS day, count(*)::int AS new_profiles
       FROM profiles WHERE ${seriesRange("created_at")} GROUP BY 1 ORDER BY 1`,
 
-    // Same scope as the funnel's "Ordini pagati": Paygate + PayPal (paid_at) + Shopify orders/paid,
+    // Same scope as the stage counts' "Paid orders": Paygate + PayPal (paid_at) + Shopify orders/paid,
     // orders of internal/test accounts excluded (#GROWTH-V7).
     seriesOrders: `SELECT day, count(*)::int AS paid_orders FROM (
         SELECT ${romeDay("paid_at")} AS day FROM paygate_orders WHERE paid_at IS NOT NULL AND NOT id = ANY(${I.paygate}) AND ${seriesRange("paid_at")}
@@ -333,7 +333,7 @@ export function buildSeriesSql(internal: InternalLists = EMPTY_INTERNAL): Record
  *  - profiles / paying: profiles.acquisition (NULL when the signup happened
  *    without cookie consent, and for profiles older than the attribution →
  *    "(non registrata)"). paying = external paying customers today (the same
- *    rule as the «Clienti esterni paganti» tile) among profiles created in the window.
+ *    rule as the «External paying customers» tile) among profiles created in the window.
  * Internal/test sources are folded into one excluded row by core/channels.ts
  * (core/estimate.ts foldInternal, on the RAW label).
  * Referrer labels carry the raw host: core/channels.ts coarsens them to the

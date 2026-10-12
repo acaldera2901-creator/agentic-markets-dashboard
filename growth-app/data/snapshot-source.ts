@@ -5,10 +5,10 @@ import type { GrowthSource, SnapshotFile } from "./source";
 
 export function assertSnapshot(f: unknown): SnapshotFile {
   const s = f as Partial<SnapshotFile> | null;
-  if (!s || s.schema !== 1) throw new Error("snapshot: schema sconosciuto");
-  if (!s.dbNow || Number.isNaN(Date.parse(s.dbNow))) throw new Error("snapshot: dbNow mancante");
+  if (!s || s.schema !== 1) throw new Error("snapshot: unknown schema");
+  if (!s.dbNow || Number.isNaN(Date.parse(s.dbNow))) throw new Error("snapshot: dbNow missing");
   for (const { key } of WINDOWS) {
-    if (!s.windows?.[key]) throw new Error(`snapshot: finestra ${key} mancante`);
+    if (!s.windows?.[key]) throw new Error(`snapshot: window ${key} missing`);
   }
   return s as SnapshotFile;
 }
@@ -19,7 +19,7 @@ export function snapshotSource(file: unknown = snapshotJson): GrowthSource {
   return {
     async load(w) {
       return {
-        // Older snapshots lack series/chain: normalize() turns that into ERRORE, never 0.
+        // Older snapshots lack series/chain: normalize() turns that into ERRORE (shown as Error), never 0.
         data: normalize(w, snap.windows[w], { asOf: snap.dbNow, series: snap.series, chain: snap.chain?.[w] }),
         meta: { kind: "snapshot", asOf: snap.dbNow, origin: snap.origin },
       };
