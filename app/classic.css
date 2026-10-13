@@ -162,10 +162,10 @@ html[data-frames="off"] .cl-sr { position: absolute; width: 1px; height: 1px; ov
 html[data-frames="off"] .cl-head {
   position: relative;
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px;
-  margin: 0; padding: 0 26px; min-width: 0; min-height: 24px;
-  font-family: var(--am-font-ui); font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--cl-ink-2);
+  margin: 0; padding: 0 26px 0 6px; min-width: 0; min-height: 24px; /* a destra il posto della stella */
+  font-family: var(--am-font-ui); font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--cl-ink-2);
 }
-html[data-frames="off"] .cl-meta { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+html[data-frames="off"] .cl-meta { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
 html[data-frames="off"] .cl-league { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-frames="off"] .cl-dot { color: var(--cl-ink-3); }
 html[data-frames="off"] .cl-when { white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -225,7 +225,14 @@ html[data-frames="off"] .cl-info {
 }
 html[data-frames="off"] .cl-info:hover, html[data-frames="off"] .cl-info[aria-expanded="true"] { background: rgba(214, 228, 255, 0.28); }
 html[data-frames="off"] .cl-info:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
-html[data-frames="off"] .cl-infotext { margin: -2px 0 0; padding: 8px 10px; border-radius: 6px; background: rgba(5, 15, 34, 0.45); font-size: 12px; line-height: 1.45; color: var(--am-text); }
+/* round 3 (QA): la «i» apre un riquadro SOPRA la scheda, ancorato sopra il piede:
+   come riga in più allungava la scheda e, nel carosello, tutte le altre con lei */
+html[data-frames="off"] .cl-slab { position: relative; }
+html[data-frames="off"] .cl-infotext {
+  position: absolute; z-index: 2; left: 10px; right: 10px; bottom: 50px; max-height: calc(100% - 60px); overflow: auto;
+  margin: 0; padding: 8px 10px; border-radius: 6px; background: #071A3A; box-shadow: 0 6px 18px rgba(5, 15, 34, 0.5);
+  font-size: 12px; line-height: 1.45; color: var(--am-text);
+}
 html[data-frames="off"] .cl-infotext[hidden] { display: none; }
 
 /* 4 · il piede, una riga: chip della pick (o i tre partner) · CTA */
@@ -265,10 +272,18 @@ html[data-frames="off"] .cl-partner .cl-logo { width: 16px; height: 16px; max-wi
 /* nel ripiego l'avviso sta su due righe strette («PUBBL. · 18+» in 26 px): così
    la CTA della scheda chiusa tiene due righe, non tre, anche a 280 px */
 html[data-frames="off"] .cl-partners > .cl-odd-ad { display: inline-block; width: 32px; white-space: normal; font-size: 7.5px; line-height: 1.25; text-align: left; margin-left: 2px; }
+/* round 3 (QA): nel piede della scheda l'avviso sta su UNA riga sotto i loghi, così
+   a destra resta posto per «lucchetto + Sblocca l'analisi ↗» su una riga sola (280 px) */
+html[data-frames="off"] .cl-foot .cl-partners { display: inline-grid; grid-template-columns: repeat(3, 24px); gap: 2px; justify-items: center; }
+html[data-frames="off"] .cl-foot .cl-partners[data-n="2"] { grid-template-columns: repeat(2, 24px); }
+html[data-frames="off"] .cl-foot .cl-partners[data-n="1"] { grid-template-columns: 24px; }
+html[data-frames="off"] .cl-foot .cl-partner { width: 24px; height: 24px; }
+html[data-frames="off"] .cl-foot .cl-partners > .cl-odd-ad { grid-column: 1 / -1; width: auto; margin: 0; white-space: nowrap; font-size: 7px; line-height: 1; letter-spacing: 0.02em; }
 html[data-frames="off"] .cl-foot .cl-open { flex: 1 1 auto; justify-content: flex-end; }
 html[data-frames="off"] .cl-open {
   display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 30px; padding: 4px 6px; margin-left: auto;
   color: var(--am-text); text-decoration: none; font: 700 13px/1.2 var(--am-font-ui); text-align: right; border-radius: 6px; min-width: 0;
+  white-space: nowrap; /* round 3 (QA): il lucchetto resta attaccato al testo, una riga */
 }
 html[data-frames="off"] .cl-open:hover { text-decoration: underline; text-underline-offset: 3px; }
 html[data-frames="off"] .cl-open[data-locked] { color: var(--am-lime); }
@@ -279,6 +294,11 @@ html[data-frames="off"] .cl-tznote { margin: -20px 0 12px; font-family: var(--am
 @media (max-width: 640px) {
   html[data-frames="off"] .cl-odd, html[data-frames="off"] .cl-open, html[data-frames="off"] .cl-partner { min-height: 36px; }
   html[data-frames="off"] .cl-big-n { font-size: 34px; }
+  /* sul telefono la scheda è larga (92%): loghi del ripiego a 32 px, bersaglio pieno */
+  html[data-frames="off"] .cl-foot .cl-partners { grid-template-columns: repeat(3, 32px); }
+  html[data-frames="off"] .cl-foot .cl-partners[data-n="2"] { grid-template-columns: repeat(2, 32px); }
+  html[data-frames="off"] .cl-foot .cl-partners[data-n="1"] { grid-template-columns: 32px; }
+  html[data-frames="off"] .cl-foot .cl-partner { width: 32px; height: 32px; min-height: 32px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-frames="off"] .cl-slab * { transition: none !important; }
