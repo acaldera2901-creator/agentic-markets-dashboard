@@ -260,7 +260,7 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
           {locked && <IconLock size={13} />}
           {/* testo e freccia in UN nodo: a 390, se il testo va a capo, icona e
               freccia non si aprono ai due lati della CTA */}
-          <span>{ctaText} <span aria-hidden="true">↗</span></span>
+          <span>{ctaText}&nbsp;<span aria-hidden="true">↗</span></span>
         </Link>
         <span className="cl-foot-r">
           {onToggleWatchlist && <WatchlistButton saved={!!saved} onToggle={onToggleWatchlist} />}
