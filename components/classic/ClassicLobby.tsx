@@ -100,12 +100,12 @@ function tzAbbr(tz: string, lang: string, now: number): string {
 
 // #CLASSIC-ASSET-1013 — le icone del rail sono il set 3D di casa (ClassicIcon):
 // la bandierina lime = in evidenza, il fulmine = live, l'orologio = a breve,
-// il tabellone = tutto il board.
+// la casa = tutto il board (QA BUG-3: il tabellone a 20 px sembrava un barile).
 const TABS: { id: LobbyTab; key: keyof ClassicCopy; icon: ReactNode }[] = [
   { id: "featured", key: "tabFeatured", icon: <ClassicIcon name="market-soft" /> },
   { id: "inplay", key: "tabInPlay", icon: <ClassicIcon name="classic-live" /> },
   { id: "soon", key: "tabSoon", icon: <ClassicIcon name="menu-history" /> },
-  { id: "all", key: "tabAll", icon: <ClassicIcon name="classic-board" /> },
+  { id: "all", key: "tabAll", icon: <ClassicIcon name="classic-home" /> },
 ];
 
 /** Sport → icona 3D. Il calcio è il pallone già in prod (menu-prediction), il

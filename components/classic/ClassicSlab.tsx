@@ -213,9 +213,15 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
     >
       {/* 1 · competizione · ora, la watchlist a destra */}
       <p className="cl-head">
-        <span className="cl-meta">
+        {/* #CLASSIC-ASSET-1013 (QA BUG-1) — un torneo lungo («Dongfeng Voyah Wuhan
+            Open») accanto all'ora finiva in «Dongfeng Voyah W…»: la parte che lo
+            identifica sparisce. Oltre 17 caratteri (≈ lo spazio che resta accanto a
+            «mer 14 ott, 05:00» in una scheda da 280 px) nome e ora vanno su due
+            righe, senza il punto. Soglia sul testo, non misurata: uguale sul
+            server e sul client. */}
+        <span className="cl-meta" data-stack={(data.league?.length ?? 0) > 17 || undefined}>
           {data.league && <span className="cl-league" title={data.league}>{data.league}</span>}
-          {data.league && (live || data.kickoffLabel) && <span className="cl-dot" aria-hidden="true">·</span>}
+          {data.league && (live || data.kickoffLabel) && (data.league.length <= 17) && <span className="cl-dot" aria-hidden="true">·</span>}
           {live ? <LiveBadge minute={data.liveMinute} />
             : data.kickoffLabel ? <span className="cl-when">{started ? fill(c.kickoffAt, { t: data.kickoffLabel }) : data.kickoffLabel}</span>
             : null}
