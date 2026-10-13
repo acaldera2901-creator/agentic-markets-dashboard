@@ -16,9 +16,9 @@
 | Serving route (dark, `NEWSPORT_SERVE_ENABLED`) | `app/api/newsports/route.ts` | ✅ done |
 | Why builders + board UI (5 languages) | `app/app/page.tsx`, `lib/why-text.ts` | ⏳ next tranche — see worklist below |
 | Ingestion module (Andrea's answer 2026-07-05: Python agents) | `agents/baseball_model_agent.py`, `agents/mma_model_agent.py`, `core/mlb_stats_client.py`, `core/odds_api_client.py` (`get_h2h_events`/`market_consensus` + MLB/UFC SPORT_KEYS), `run.py` (flag-gated registration) | ✅ done — DARK (`NEWSPORT_*_AGENT_ENABLED=false`); exact port of the validated lab harnesses (mlb_v2/ufc_v2) incl. every audit rule; 41 unit tests |
-| Settlement | rides the existing unified settlement via the new MLB/UFC `SPORT_KEYS` entries (odds-api scores); `core/mlb_stats_client.get_final_result` available as MLB-native source | ⏳ verify at activation (needs live rows) |
+| Settlement + sealed ledger (#NEWSPORTS-SETTLE-LEDGER-1008) | `agents/newsports_settlement.py` (own cycle: the unified one is football-only), MLB by `gamePk` via statsapi, UFC by event id via odds-api `/scores`; first pick sealed in `pick_ledger` (`seal_pick_ledger_rows`), rows locked after start (`lock_after_start`) | ✅ code done, tested — ⏳ at activation: one real `/scores?sport=mma_mixed_martial_arts` call to confirm the `scores` shape; flip policy (served pick may change before start, ledger keeps the first) to confirm |
 | Sportsbook bet-link plumbing (`BetSport`+`PairSport` unions, feed `SPORTS` set) | `lib/sportsbooks/types.ts`, `lib/team-pair-key.ts`, `lib/fortuneplay-live.ts` | ✅ done — coverage CONFIRMED by Andrea 2026-07-05 (feed live: MLB 35 matches/81 markets, UFC 32 matches). Coverage-agnostic: CTA only when the match is in the feed. Residual: Tommy's affiliate deep-link OK for baseball/mma |
-| Settlement | `agents/result_settlement.py` | ⏳ with ingestion module |
+| Settlement | `agents/result_settlement.py` → `settle_newsports_cycle()` | ✅ wired (inert with zero baseball/mma rows) |
 
 ## Sport naming (canonical)
 

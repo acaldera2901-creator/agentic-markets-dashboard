@@ -481,7 +481,8 @@ async def log_prediction_snapshot(
         logger.warning("prediction_log snapshot failed (non-fatal): %s", exc)
 
 
-async def upsert_unified_rows(rows: list[dict], *, keep_published_at: bool = False) -> int:
+async def upsert_unified_rows(rows: list[dict], *, keep_published_at: bool = False,
+                              lock_after_start: bool = False) -> int:
     """
     Upsert pre-built unified_predictions rows via PostgREST.
 
@@ -501,6 +502,12 @@ async def upsert_unified_rows(rows: list[dict], *, keep_published_at: bool = Fal
     ``published_at`` NULL lo riceve dal secondo PATCH (altrimenti resterebbe
     invisibile: /api/newsports serve solo published_at IS NOT NULL); il POST di
     una riga nuova lo porta sempre. Default False: il calcio resta invariato.
+
+    ``lock_after_start`` (#NEWSPORTS-SETTLE-LEDGER-1008, MLB/UFC): i PATCH
+    toccano solo righe con ``starts_at`` nel futuro e senza esito, come il
+    ``WHERE settled_at IS NULL`` dell'upsert del calcio. Una riga iniziata o
+    regolata non si riscrive più: se il PATCH non trova nulla, il POST urta
+    l'indice unico (409) e la riga resta com'era — che è il punto.
     """
     base = _rest_base()
     if not base:
@@ -522,6 +529,10 @@ async def upsert_unified_rows(rows: list[dict], *, keep_published_at: bool = Fal
                         f"{base}/unified_predictions"
                         f"?source_table=eq.{source_table}&source_id=eq.{source_id}"
                     )
+                    if lock_after_start:
+                        now_q = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                        key_filter += f"&starts_at=gt.{now_q}&result=is.null"
+
                     if keep_published_at and row.get("published_at"):
                         # Riga già pubblicata: aggiorna tutto TRANNE published_at.
                         resp = await client.patch(
@@ -561,6 +572,11 @@ async def upsert_unified_rows(rows: list[dict], *, keep_published_at: bool = Fal
                     )
                     if resp.status_code in (200, 201, 204):
                         written += 1
+                    elif lock_after_start and resp.status_code == 409:
+                        logger.info(
+                            "unified upsert: %s/%s bloccata (iniziata o regolata), non riscritta",
+                            source_table, source_id,
+                        )
                     else:
                         logger.warning(
                             "unified upsert POST failed: %s %s",
@@ -1277,3 +1293,156 @@ async def settle_shadow_eval_row(
         return False
 
 
+
+
+# ── #NEWSPORTS-SETTLE-LEDGER-1008: settlement e registro sigillato MLB/UFC ────
+# Prima di qui nessun percorso regolava le righe baseball/mma (ogni fetch del
+# settlement filtra sport=football) e nessuna finiva nel registro immutabile
+# `pick_ledger`: la riga servita veniva riscritta a ogni ciclo senza traccia.
+
+NEWSPORT_SPORTS = ("baseball", "mma")
+
+
+async def fetch_unsettled_newsports_rows(
+    cutoff_minutes: int = 180, limit: int = 50
+) -> list[dict] | None:
+    """Righe MLB/UFC iniziate da almeno ``cutoff_minutes`` e ancora senza esito.
+
+    ``None`` = lettura fallita (il chiamante non fa nulla), ``[]`` = niente da
+    regolare. Stessa forma di fetch_recent_sport_pairs: un errore non si
+    traveste da "vuoto".
+    """
+    base = _rest_base()
+    if not base:
+        return None
+    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=cutoff_minutes)).isoformat()
+    params = {
+        "select": ("id,sport,league,home_team,away_team,pick,starts_at,"
+                   "source_table,source_id"),
+        "sport": f"in.({','.join(NEWSPORT_SPORTS)})",
+        "result": "is.null",
+        "starts_at": f"lt.{cutoff}",
+        "order": "starts_at.asc",
+        "limit": str(limit),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/unified_predictions", params=params, headers=_service_headers()
+            )
+            if resp.status_code != 200:
+                logger.warning("newsports unsettled fetch failed: %s %s",
+                               resp.status_code, resp.text[:200])
+                return None
+            return resp.json() or []
+    except Exception as exc:
+        logger.warning("newsports unsettled fetch error: %s", exc)
+        return None
+
+
+async def fetch_sealed_pick(
+    source_table: str, source_id: str, model_version: str
+) -> tuple[bool, dict | None]:
+    """La riga sigillata di ``pick_ledger`` per una chiave. ``(False, None)`` =
+    lettura fallita: il chiamante NON regola niente in quel ciclo, perché il
+    registro è immutabile e un esito scritto sul pick sbagliato è definitivo."""
+    base = _rest_base()
+    if not base:
+        return False, None
+    params = {
+        "select": "pick,commence_time,captured_at",
+        "source_table": f"eq.{source_table}",
+        "source_id": f"eq.{source_id}",
+        "model_version": f"eq.{model_version}",
+        "limit": "1",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{base}/pick_ledger", params=params, headers=_service_headers()
+            )
+            if resp.status_code != 200:
+                logger.warning("sealed pick fetch failed: %s %s",
+                               resp.status_code, resp.text[:200])
+                return False, None
+            rows = resp.json() or []
+            return True, (rows[0] if rows else None)
+    except Exception as exc:
+        logger.warning("sealed pick fetch error: %s", exc)
+        return False, None
+
+
+def ledger_row_from_unified(row: dict, model_version: str) -> dict | None:
+    """Riga ``pick_ledger`` dalla riga unified appena pubblicata. ``None`` se il
+    pick non è più sigillabile (evento già iniziato: il CHECK no-lookahead
+    la rifiuterebbe comunque) o la riga non ha la chiave."""
+    if not row.get("source_table") or not row.get("source_id"):
+        return None
+    try:
+        starts = datetime.fromisoformat(str(row["starts_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return None
+    if starts <= datetime.now(timezone.utc):
+        return None
+    try:
+        notes = json.loads(row.get("notes") or "{}")
+    except (TypeError, ValueError):
+        notes = {}
+    conf = row.get("confidence_score")
+    return {
+        "source_table": row["source_table"],
+        "source_id": str(row["source_id"]),
+        "model_version": model_version,
+        "sport": row.get("sport"),
+        "league": row.get("league"),
+        "competition": row.get("competition"),
+        "home_team": row.get("home_team"),
+        "away_team": row.get("away_team"),
+        "market": "H2H",
+        "pick": row.get("pick"),
+        "p_home": notes.get("p_home"),
+        "p_draw": None,
+        "p_away": notes.get("p_away"),
+        "confidence": (conf / 100.0) if isinstance(conf, (int, float)) else None,
+        # quota derivata = None già nella riga (offered_prices): mai sigillata
+        "odds": row.get("odds"),
+        "bookmaker": row.get("bookmaker"),
+        "anchor_source": notes.get("mkt_source"),
+        "is_paper": row.get("signal_type", "paper") == "paper",
+        "signal_type": row.get("signal_type", "paper"),
+        "commence_time": row["starts_at"],
+    }
+
+
+async def seal_pick_ledger_rows(rows: list[dict], model_version: str) -> int:
+    """Sigilla in ``pick_ledger`` il PRIMO pick pubblicato per ogni chiave.
+
+    INSERT ... ON CONFLICT DO NOTHING sul vincolo (source_table, source_id,
+    model_version): i cicli successivi non toccano il sigillo, quindi se la
+    riga servita cambia pick resta la prova di cosa era uscito prima. Il CHECK
+    ``captured_at < commence_time`` lo garantisce lato DB. Fail-soft: un
+    registro che non scrive non blocca la pubblicazione (stessa regola del
+    calcio e del tennis), ma lo dice nel log. Ritorna le righe inviate con
+    successo (i duplicati ignorati contano come successo: il sigillo esiste).
+    """
+    base = _rest_base()
+    if not base:
+        return 0
+    payload = [r for r in (ledger_row_from_unified(x, model_version) for x in rows) if r]
+    if not payload:
+        return 0
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{base}/pick_ledger?on_conflict=source_table,source_id,model_version",
+                json=payload,
+                headers={**_service_headers(),
+                         "Prefer": "resolution=ignore-duplicates,return=minimal"},
+            )
+            if resp.status_code in (200, 201, 204):
+                return len(payload)
+            logger.warning("pick_ledger seal failed: %s %s", resp.status_code, resp.text[:200])
+            return 0
+    except Exception as exc:
+        logger.warning("pick_ledger seal error: %s", exc)
+        return 0
