@@ -1,13 +1,28 @@
 "use client";
-// components/classic/ClassicSlab.tsx — #CLASSIC-CARD-1008 · Fase B, direzione A «Slab»
+// components/classic/ClassicSlab.tsx — #CLASSIC-CARD-1008 · #CLASSIC-ROOBET-1013
 //
-// La scheda prediction di oggi senza nessuna cornice: la lastra blu sul navy fa
-// da contenitore, dentro raggruppa lo spazio e UN filo sottile separa la lettura
-// dall'azione. Un solo numero grande (la stima, o il mercato quando è solo
-// mercato), il mercato piccolo accanto, lo scarto col segno solo dove è
-// legittimo, il blend dichiarato dietro una «i». Sotto, le quote dei partner e
-// il bottone col link affiliato vero (deep-link del book, tracciato come nella
-// scheda partita: `partner_click`). Partita iniziata: niente prezzi, niente bottone.
+// La scheda prediction nella forma del Design Review del 12/10 (PDF, direzione
+// scelta da Andrea), dall'alto:
+//   1. una riga: «Competizione · Oggi 19:00» (live: il badge LIVE al posto dell'ora);
+//   2. l'arena: un pannello azzurro più chiaro con i due stemmi, i nomi e «VS»
+//      (live: il punteggio al posto del «VS»);
+//   3. il modulo scuro: PICK + esito a sinistra, il numero grande in lime a
+//      destra con la sua etichetta ONESTA (stima / solo mercato / Elo / solo
+//      modello — le regole di REGOLE-CLASSIC non cambiano, cambia la forma);
+//   4. una riga quieta di contesto: mercato, scarto col segno, protezione, origine;
+//   5. il piede: a sinistra il chip «esito · logo partner · quota» della MIGLIOR
+//      quota disponibile per la pick (link affiliato vero, tracciato
+//      `partner_click`) — l'unica differenza dal PDF, decisa da Andrea il 13/10 —
+//      al centro «Vedi l'analisi ↗», a destra la watchlist.
+// Bordi sottili bianco-freddo (non lime), come il PDF: qui la regola «niente
+// cornici» dell'8/10 è superata dalla decisione del 12/10, SOLO sulla scheda.
+//
+// Cosa NON c'è più rispetto alla Slab dell'8/10: il vassoio delle quote con il
+// bottone lime «Scommetti su X» (lo sostituisce il chip), l'indicatore di
+// confidenza (`extra`: il PDF non lo prevede, e la scheda deve restare bassa).
+// Il chip su una riga CHIUSA mostrerebbe l'esito (1/X/2) e cioè la pick che il
+// Pro compra: lì stanno le migliori quote per OGNI esito, che non lo rivelano —
+// la stessa regola del vassoio di prima. Partita iniziata: nessun prezzo.
 //
 // Rende la STESSA interfaccia di PredictionCard (props identiche): la sceglie
 // PredictionCard quando NEXT_PUBLIC_CLASSIC=1, così ogni chiamante — lobby,
@@ -17,36 +32,21 @@ import { useId, useState } from "react";
 import { Crest } from "@/components/ui/Crest";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
-import { IconArrow, IconCheck, IconClock, IconLock, IconStar } from "@/components/ui/icons";
+import { IconCheck, IconClock, IconLock, IconStar } from "@/components/ui/icons";
 import { formatPct, splitLiveScore } from "@/lib/ui/prediction-card";
 import type { PredictionCardProps } from "@/components/ui/PredictionCard";
 import { useClassicPrices } from "@/components/classic/ClassicContext";
-import { classicCopy, fill } from "@/lib/classic/copy";
-import { classicFootballView, classicTennisView, footballBooks, tennisBooks, tennisOddsFor, type ClassicLanding, type ClassicView } from "@/lib/classic/card-view";
+import { classicCopy, fill, type ClassicCopy } from "@/lib/classic/copy";
+import { classicViewFor, readLabel, type ClassicCell, type ClassicView } from "@/lib/classic/card-view";
 import { MODEL_WEIGHT, hasStarted } from "@/lib/classic/guard";
 import { TENNIS_ELO_WEIGHT } from "@/lib/classic/tennis-estimate";
-import { abbinaQuotaPartner } from "@/lib/fp-odds-join";
-import { landingPartnersFor } from "@/lib/affiliate";
-import { PARTNERS, partnerLogoByName, sortBooksForMenu } from "@/lib/partners";
+import { PARTNERS, partnerLogoByName } from "@/lib/partners";
 import { trackEvent } from "@/lib/track-event";
-
-const SPORT_LABEL: Record<string, string> = { football: "Football", tennis: "Tennis" };
-// I partner solo-landing che atterrano su una superficie di scommessa (Beazt e
-// Wildz aprono la lobby del casinò: lib/affiliate.ts) — al più uno, in coda ai chip.
-const CASINO_LANDING = /^(beazt|wildz)$/i;
 
 function useMountedNow(): Date {
   // Una sola lettura dell'orologio per scheda, al montaggio (render puro).
   const [now] = useState(() => new Date());
   return now;
-}
-
-function Score({ cells, testId }: { cells: string[]; testId: string }) {
-  return (
-    <span className="cl-score" data-testid={testId} aria-hidden="true">
-      {cells.map((c, i) => <span key={i}>{c === "" ? "–" : c}</span>)}
-    </span>
-  );
 }
 
 /** Il logo del partner. Un wordmark (YBets, BetScore) dice già il nome: allora
@@ -56,17 +56,49 @@ function isWordmark(name: string): boolean {
   return !!p?.logo && p.logoShape !== "emblem";
 }
 
-function PartnerLogo({ name, labelled = false }: { name: string; labelled?: boolean }) {
+export function PartnerLogo({ name, labelled = false }: { name: string; labelled?: boolean }) {
   const src = partnerLogoByName(name);
   // eslint-disable-next-line @next/next/no-img-element
-  return src ? <img src={src} alt={labelled ? name : ""} className="cl-logo" data-wordmark={isWordmark(name) || undefined} loading="lazy" height={18} /> : <span className="cl-logo cl-logo--txt" aria-hidden="true">{name.slice(0, 2)}</span>;
+  return src ? <img src={src} alt={labelled ? name : ""} className="cl-logo" data-wordmark={isWordmark(name) || undefined} loading="lazy" height={16} /> : <span className="cl-logo cl-logo--txt" aria-hidden="true">{name.slice(0, 2)}</span>;
 }
 
-function track(name: string, surface: string) {
+export function trackPartner(name: string, surface: string) {
   trackEvent("partner_click", { partner_id: name, meta: { surface } });
 }
 
-export function ClassicSlab({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, className, lang = "en", included }: PredictionCardProps) {
+/**
+ * Il chip «esito · logo · quota»: la forma del mockup di Andrea (13/10). Un link
+ * affiliato vero (deep-link del book, `rel=sponsored`), con il nome del book nel
+ * title e nel nome accessibile. `pick` = è l'esito della pick (lime sul prezzo).
+ */
+export function OddsChip({ cell, surface, c, pick }: { cell: ClassicCell; surface: string; c: ClassicCopy; pick?: boolean }) {
+  return (
+    <a
+      className="cl-odd"
+      data-pick={pick || undefined}
+      href={cell.url}
+      target="_blank"
+      rel="nofollow sponsored noopener noreferrer"
+      title={`${cell.bookName} · ${c.ad}`}
+      aria-label={`${cell.label} ${cell.price.toFixed(2)} · ${cell.bookName} · ${c.ad}`}
+      onClick={() => trackPartner(cell.bookName, surface)}
+    >
+      <span className="cl-odd-k">{cell.label}</span>
+      <PartnerLogo name={cell.bookName} />
+      <span className="cl-odd-p">{cell.price.toFixed(2)}</span>
+    </a>
+  );
+}
+
+/** Il chip della pick: il miglior prezzo con link sul lato della pick (riga aperta). */
+export function pickCell(view: ClassicView | null, labels: readonly string[], leadIdx: number | null | undefined): ClassicCell | null {
+  if (!view || leadIdx == null) return null;
+  const best = view.chips.find((ch) => ch.price != null && ch.url);
+  if (!best || best.price == null) return null;
+  return { label: labels[leadIdx] ?? "", price: best.price, bookKey: best.key, bookName: best.name, url: best.url };
+}
+
+export function ClassicSlab({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, className, lang = "en", included }: PredictionCardProps) {
   const c = classicCopy(lang);
   const prices = useClassicPrices();
   const now = useMountedNow();
@@ -80,26 +112,9 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
   const started = live || hasStarted(data.startsAt, now);
   const score = live ? splitLiveScore(data.liveScoreLabel) : null;
 
-  // ── le quote partner di questa partita (dalla mappa che il desk ha già) ──
-  const landing: ClassicLanding[] = prices.booksBlocked
-    ? []
-    : sortBooksForMenu(landingPartnersFor(prices.geoCountry).filter((l) => !CASINO_LANDING.test(l.name))).slice(0, 1);
+  // ── la lettura (lib/classic/card-view): stima, mercato, protezione, prezzi ──
+  const { view, labels, leadIdx } = classicViewFor(data, prices, started, now);
   const raw = data.classic;
-  let view: ClassicView | null = null;
-  if (raw?.sport === "football") {
-    const fp = abbinaQuotaPartner(data.home, data.away, data.startsAt, prices.fpOdds, prices.fpIndex).quota;
-    const books = prices.booksBlocked ? [] : footballBooks(fp, data.home, data.away);
-    view = classicFootballView({ started, est: raw.est, odds: raw.odds, leadIdx: raw.leadIdx, estLead: raw.estLead, oddsLead: raw.oddsLead, books, landing, labels: ["1", "X", "2"], modelAsOf: prices.footballOldestAt ?? null, now });
-  } else if (raw?.sport === "tennis") {
-    const fp = tennisOddsFor(prices.fpOdds, data.home, data.away, data.startsAt);
-    const books = prices.booksBlocked ? [] : tennisBooks(fp, data.home, data.away);
-    view = classicTennisView({
-      started, modelVersion: raw.modelVersion, tournament: raw.tournament, player1: data.home, player2: data.away,
-      p: raw.p, odds: raw.odds, leadIdx: raw.leadIdx, pLead: raw.pLead, oddsLead: raw.oddsLead,
-      eloAsOf: prices.tennisComputedAt, now, books, landing,
-      labels: ["1", "2"], // 1 = il primo nome sopra, 2 = il secondo: come l'1X2 del calcio
-    });
-  }
 
   // senza i numeri grezzi (un chiamante che non passa da lib/ui/desk-card) la
   // scheda dice solo ciò che sa: stima o mercato, nessuno scarto.
@@ -108,12 +123,7 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
   const noPrice = kind === "no_price";
   const fromPartners = view?.marketFrom === "partners";
   const isOurs = kind === "estimate" || kind === "protected" || kind === "elo_blend" || kind === "model_only";
-  const bigLabel =
-    kind === "market_only" ? c.marketOnly
-    : kind === "model_only" ? c.modelOnly
-    : kind === "elo_blend" ? c.eloBased
-    : noPrice ? c.noPrice
-    : c.ourEstimate;
+  const bigLabel = readLabel(kind, c);
   const infoText =
     noPrice ? (data.sport === "tennis" ? c.noPriceTennisNote : c.noPriceNote)
     : kind === "market_only" && view?.priceFar ? c.marketOnlyFarNote
@@ -128,20 +138,19 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
     : view?.flat ? c.inLine
     : gap > 0 ? fill(c.gapAbove, { n: Math.abs(gap).toFixed(1) })
     : fill(c.gapBelow, { n: Math.abs(gap).toFixed(1) });
-  const note = kind === "protected" ? c.protectedNote : null;
+  const note = kind === "protected" ? c.protectedTag : null;
+  const marketText = view?.marketPct != null && kind !== "market_only" ? `${c.market} ${formatPct(view.marketPct)}%` : null;
 
-  const ctaText = locked
-    ? ({ it: "Sblocca l'analisi completa", en: "Unlock full analysis", es: "Desbloquea el análisis completo", fr: "Débloquer l'analyse complète", ru: "Открыть полный анализ" } as Record<string, string>)[lang] ?? "Unlock full analysis"
-    : ({ it: "Vedi l'analisi", en: "View analysis", es: "Ver análisis", fr: "Voir l'analyse", ru: "Смотреть анализ" } as Record<string, string>)[lang] ?? "View analysis";
+  const ctaText = locked ? c.unlockAnalysis : c.viewAnalysis;
   // il badge di valore non esiste più: resta solo ciò che dice il TEMPO (Starting soon) o la vetrina
   const timeBadge = badge && badge.kind !== "high-edge" ? badge : null;
 
   const surface = "card";
-  const cta = view?.cta ?? null;
-  // #CLASSIC-INT-1008 — decisione di Andrea (08/10): il bottone partner è lime
-  // su TUTTE le partite pre-match, anche Market only e protette. `cta` è già
-  // null a partita iniziata (card-view `finish`), quindi lime = pre-match.
-  const ctaTone = "primary";
+  // Il piede: riga aperta → UN chip, il miglior prezzo della pick; riga chiusa →
+  // il miglior prezzo per OGNI esito (non rivela la pick). Partita iniziata →
+  // niente (card-view `finish` svuota chip e celle).
+  const chip = !locked && !prices.booksBlocked ? pickCell(view, labels, leadIdx) : null;
+  const cells = locked && !prices.booksBlocked && view ? view.cells : [];
 
   return (
     <article
@@ -153,169 +162,109 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
       data-kind={kind}
       data-testid="classic-slab"
     >
-      <header className="cl-head">
-        <p className="cl-meta">
-          <span className="cl-sport" data-sport={data.sport}>{SPORT_LABEL[data.sport] ?? data.sport}</span>
+      {/* 1 · competizione · ora */}
+      <p className="cl-head">
+        <span className="cl-meta">
           {data.league && <span className="cl-league" title={data.league}>{data.league}</span>}
-        </p>
-        <p className="cl-when">
+          {data.league && (live || data.kickoffLabel) && <span className="cl-dot" aria-hidden="true">·</span>}
           {live ? <LiveBadge minute={data.liveMinute} />
-            : data.kickoffLabel ? <span>{started ? fill(c.kickoffAt, { t: data.kickoffLabel }) : data.kickoffLabel}</span>
+            : data.kickoffLabel ? <span className="cl-when">{started ? fill(c.kickoffAt, { t: data.kickoffLabel }) : data.kickoffLabel}</span>
             : null}
-          {live && data.liveScoreLabel && !score && <span className="cl-scoreraw">{data.liveScoreLabel}</span>}
-          {timeBadge && (
-            <span className="cl-tag" data-kind={timeBadge.kind}>
-              {timeBadge.kind === "starting-soon" ? <IconClock size={11} stroke={2} /> : <IconStar size={11} stroke={2} />}
-              {timeBadge.label ?? (timeBadge.kind === "starting-soon" ? "Starting soon" : "Featured")}
-            </span>
-          )}
-          {inc && (
-            <span className="cl-tag" data-kind="included" data-testid="card-included" data-borrowed={borrowed || undefined}>
-              <IconCheck size={10} stroke={2.5} />
-              {borrowed
-                ? ({ it: "Nella quota di oggi", en: "In your daily quota", es: "En tu cuota de hoy", fr: "Dans votre quota du jour", ru: "В квоте на сегодня" } as Record<string, string>)[lang] ?? "In your daily quota"
-                : ({ it: "Inclusa oggi", en: "Included today", es: "Incluida hoy", fr: "Incluse aujourd'hui", ru: "Доступно сегодня" } as Record<string, string>)[lang] ?? "Included today"}
-            </span>
-          )}
-        </p>
-      </header>
-
-      <h3 className="cl-teams">
-        <span className="cl-team">
-          <Crest team={data.home} sport={data.sport} size={22} role="home" />
-          <span className="cl-name" title={data.home}>{data.home}</span>
-          {score && <Score cells={score.home} testId="score-home" />}
         </span>
-        <span className="cl-vs">vs</span>
-        <span className="cl-team">
-          <Crest team={data.away} sport={data.sport} size={22} role="away" />
-          <span className="cl-name" title={data.away}>{data.away}</span>
-          {score && <Score cells={score.away} testId="score-away" />}
-        </span>
-        {score && <span className="cl-vs">Live score {data.liveScoreLabel}</span>}
-      </h3>
-
-      <p className="cl-pick">
-        <span className="cl-k">Pick</span>
-        {locked
-          ? <span className="cl-pick-v" data-locked="true"><IconLock size={12} stroke={2} />Pro pick</span>
-          : <span className="cl-pick-v" title={data.pick ?? undefined}>{data.pick ?? "—"}</span>}
+        {timeBadge && (
+          <span className="cl-tag" data-kind={timeBadge.kind}>
+            {timeBadge.kind === "starting-soon" ? <IconClock size={11} stroke={2} /> : <IconStar size={11} stroke={2} />}
+            {timeBadge.label ?? (timeBadge.kind === "starting-soon" ? c.startingSoon : "Featured")}
+          </span>
+        )}
+        {inc && (
+          <span className="cl-tag" data-kind="included" data-testid="card-included" data-borrowed={borrowed || undefined}>
+            <IconCheck size={10} stroke={2.5} />
+            {borrowed ? c.inQuota : c.includedToday}
+          </span>
+        )}
       </p>
 
-      {noPrice ? (
-        <div className="cl-read" data-testid="classic-noprice">
-          <p className="cl-noprice">{c.noPrice}</p>
-          <p className="cl-noprice-why">{infoText}</p>
-        </div>
-      ) : (<>
-      <div className="cl-read">
-        <p className="cl-big" data-ours={isOurs || undefined} data-testid="classic-big">
-          <span className="cl-big-n">{formatPct(big)}</span>
-          {big != null && <span className="cl-big-pc">%</span>}
+      {/* 2 · l'arena: stemmi, nomi, VS (o il punteggio) */}
+      <h3 className="cl-arena">
+        <span className="cl-team" data-role="home">
+          <Crest team={data.home} sport={data.sport} size={44} role="home" className="cl-crest" />
+          <span className="cl-name" title={data.home}>{data.home}</span>
+        </span>
+        <span className="cl-mid" aria-hidden={score ? undefined : "true"}>
+          {score ? (
+            <span className="cl-score" data-testid="score-live">
+              <span>{score.home.map((x) => (x === "" ? "–" : x)).join(" ")}</span>
+              <span>{score.away.map((x) => (x === "" ? "–" : x)).join(" ")}</span>
+            </span>
+          ) : <span className="cl-vs">vs</span>}
+        </span>
+        <span className="cl-team" data-role="away">
+          <Crest team={data.away} sport={data.sport} size={44} role="away" className="cl-crest" />
+          <span className="cl-name" title={data.away}>{data.away}</span>
+        </span>
+        {score && <span className="cl-sr">Live score {data.liveScoreLabel}</span>}
+        {!score && <span className="cl-sr">vs</span>}
+      </h3>
+
+      {/* 3 · il modulo: pick a sinistra, numero a destra */}
+      <div className="cl-pickmod">
+        <p className="cl-pick">
+          <span className="cl-k">{c.pick}</span>
+          {locked
+            ? <span className="cl-pick-v" data-locked="true"><IconLock size={12} stroke={2} />{c.proPick}</span>
+            : <span className="cl-pick-v" title={data.pick ?? undefined}>{data.pick ?? "—"}</span>}
         </p>
-        {view?.marketPct != null && kind !== "market_only" && (
-          <p className="cl-mkt" data-testid="classic-market">
-            <span className="cl-mkt-n">{formatPct(view.marketPct)}<span className="cl-mkt-pc">%</span></span>
-            <span className="cl-k">{c.market}</span>
+        <div className="cl-read" data-testid={noPrice ? "classic-noprice" : undefined}>
+          <p className="cl-big" data-ours={(isOurs && !noPrice) || undefined} data-testid="classic-big">
+            <span className="cl-big-n">{noPrice ? "—" : formatPct(big)}</span>
+            {!noPrice && big != null && <span className="cl-big-pc">%</span>}
           </p>
-        )}
-        <p className="cl-label">
-          <span>{bigLabel}</span>
-          <button
-            type="button"
-            className="cl-info"
-            aria-expanded={infoOpen}
-            aria-controls={infoId}
-            aria-label={c.infoLabel}
-            title={c.infoLabel}
-            onClick={() => setInfoOpen((o) => !o)}
-          >
-            i
-          </button>
-        </p>
+          <p className="cl-label">
+            <span>{noPrice ? c.noPrice : bigLabel}</span>
+            <button
+              type="button"
+              className="cl-info"
+              aria-expanded={infoOpen}
+              aria-controls={infoId}
+              aria-label={c.infoLabel}
+              title={c.infoLabel}
+              onClick={() => setInfoOpen((o) => !o)}
+            >
+              i
+            </button>
+          </p>
+        </div>
       </div>
       <p id={infoId} className="cl-infotext" hidden={!infoOpen} data-testid="classic-info">{infoText}</p>
-      </>)}
 
-      {(gapText || note || fromPartners) && (
-        <div className="cl-gapline">
-          {gapText && <p className="cl-gap" data-sign={gap == null ? undefined : gap > 0 ? "pos" : gap < 0 ? "neg" : "zero"} data-testid="classic-gap">{gapText}</p>}
-          {note && <p className="cl-note"><strong>{c.protectedTag}</strong></p>}
-          {fromPartners && <p className="cl-origin" data-testid="classic-origin">{c.partnerMarket}</p>}
-        </div>
+      {/* 4 · il contesto, in una riga quieta */}
+      {(marketText || gapText || note || fromPartners || noPrice) && (
+        <p className="cl-gapline">
+          {noPrice && <span className="cl-noprice-why">{infoText}</span>}
+          {marketText && <span className="cl-mkt" data-testid="classic-market">{marketText}</span>}
+          {gapText && <span className="cl-gap" data-sign={gap == null ? undefined : gap > 0 ? "pos" : gap < 0 ? "neg" : "zero"} data-testid="classic-gap">{gapText}</span>}
+          {note && <span className="cl-note">{note}</span>}
+          {fromPartners && <span className="cl-origin" data-testid="classic-origin">{c.partnerMarket}</span>}
+        </p>
       )}
 
-      {extra}
-
-      {/* le quote: sotto il filo, la parte «azione» della lastra */}
-      {view && !prices.booksBlocked && (
-        <div className="cl-odds" data-testid="classic-odds">
-          {view.started ? (
-            <p className="cl-odds-note">{c.pricesRemoved}</p>
-          ) : view.chips.length > 0 ? (
-            <ul className="cl-chips" aria-label={c.bestPrices}>
-              {view.chips.map((ch) => (
-                <li key={ch.key}>
-                  <a
-                    className="cl-chip"
-                    data-best={ch.best || undefined}
-                    href={ch.url}
-                    target="_blank"
-                    rel="nofollow sponsored noopener noreferrer"
-                    onClick={() => track(ch.name, surface)}
-                  >
-                    <PartnerLogo name={ch.name} labelled={isWordmark(ch.name)} />
-                    {!isWordmark(ch.name) && <span className="cl-chip-name">{ch.name}</span>}
-                    {ch.price != null
-                      ? <span className="cl-chip-p">{ch.price.toFixed(2)}</span>
-                      : <span className="cl-chip-site">{c.oddsOnPartnerSite}</span>}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : view.cells.length > 0 ? (
-            <div className="cl-cells">
-              <span className="cl-k">{c.bestPrices}</span>
-              <ul className="cl-cells-l">
-                {view.cells.map((cell) => (
-                  <li key={cell.label} className="cl-cell" title={cell.bookName}>
-                    <span className="cl-cell-k">{cell.label}</span>
-                    <PartnerLogo name={cell.bookName} />
-                    <span className="cl-cell-p">{cell.price.toFixed(2)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="cl-odds-note">{c.noPartnerPrice}</p>
-          )}
-          {cta && (
-            <a
-              className="cl-bet"
-              data-tone={ctaTone}
-              href={cta.url}
-              target="_blank"
-              rel="nofollow sponsored noopener noreferrer"
-              onClick={() => track(cta.name, surface)}
-              data-testid="classic-bet"
-            >
-              <span>{fill(c.betAt, { book: cta.name })}{cta.price != null ? ` · ${cta.price.toFixed(2)}` : ""}</span>
-              <span aria-hidden="true">↗</span>
-              <span className="cl-ad">{c.ad}</span>
-            </a>
-          )}
-        </div>
-      )}
-
-      <footer className="cl-foot">
-        <span className="cl-foot-l">
-          {onToggleWatchlist && <WatchlistButton saved={!!saved} onToggle={onToggleWatchlist} />}
+      {/* 5 · il piede: chip della miglior quota · CTA · watchlist */}
+      <footer className="cl-foot" data-cells={cells.length > 1 || undefined}>
+        <span className="cl-foot-l" data-testid="classic-odds">
+          {chip && <OddsChip cell={chip} surface={surface} c={c} pick />}
+          {cells.map((cell) => <OddsChip key={cell.label} cell={cell} surface={surface} c={c} />)}
+          {(chip || cells.length > 0) && <span className="cl-ad" aria-hidden="true">{c.ad}</span>}
         </span>
         <Link href={href} className="cl-open" data-locked={locked || undefined} onClick={onOpen} aria-label={`${ctaText}: ${data.home} vs ${data.away}`}>
           {locked && <IconLock size={13} />}
-          {ctaText}
-          {!locked && <IconArrow size={13} />}
+          {/* testo e freccia in UN nodo: a 390, se il testo va a capo, icona e
+              freccia non si aprono ai due lati della CTA */}
+          <span>{ctaText} <span aria-hidden="true">↗</span></span>
         </Link>
+        <span className="cl-foot-r">
+          {onToggleWatchlist && <WatchlistButton saved={!!saved} onToggle={onToggleWatchlist} />}
+        </span>
       </footer>
     </article>
   );

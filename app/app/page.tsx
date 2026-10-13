@@ -9491,6 +9491,21 @@ function HomeLobby({
         tennis={tennisItems}
         query={query}
         renderCard={renderCard}
+        // #CLASSIC-ROOBET-1013 — la riga per lega: la stessa rotta, lo stesso
+        // gating e la stessa apertura in pagina di `renderCard`, senza la scheda.
+        rowLink={(item) => {
+          const locked = item.data.locked === true;
+          return {
+            href: `${TAB_PATHS.bets}?match=${encodeURIComponent(item.key)}`,
+            locked,
+            onOpen: (ev) => {
+              ev.preventDefault();
+              if (locked) { onGate?.(); return; }
+              trackEvent("card_open", { meta: { surface: "lobby-row", section: "leagues", sport: item.data.sport } });
+              onOpenMatch(item.key);
+            },
+          };
+        }}
         banners={{
           // #CLASSIC-INT-1008 — le foto approvate da Andrea (public/images/classic/,
           // AVIF/WebP accanto ai PNG, ripiego SVG). Board → foto «prices».

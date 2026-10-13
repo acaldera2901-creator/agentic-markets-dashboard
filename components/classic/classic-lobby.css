@@ -105,6 +105,16 @@
 /* nel 40% il titolo grande andava su tre righe e toccava il bordo alto (1440):
    la misura del brief banner, clamp(20, 2vw, 26) */
 .brc-banner[data-photo] .brc-banner__title { font-size: clamp(20px, 2vw, 26px); }
+/* #CLASSIC-ROOBET-1013 — con Fira Sans Condensed in tondo (più largo dell'Anton
+   maiuscolo) il titolo nel 40% andava su quattro righe e usciva dalla scatola
+   a 1440: un corpo in meno e il sottotitolo a tre righe. */
+html[data-frames="off"] .brc-banner[data-photo] .brc-banner__title { font-size: clamp(17px, 1.45vw, 21px); line-height: 1.08; }
+html[data-frames="off"] .brc-banner[data-photo] .brc-banner__sub { -webkit-line-clamp: 3; }
+html[data-frames="off"] .brc-banner__title { text-transform: none; font-weight: 700; letter-spacing: -0.01em; line-height: 1.08; }
+/* con Plex la CTA «Vedi le partite live →» misura 151 px nel 40% (143) a 1440:
+   può andare a capo; i due link del banner «record» stanno in 22 px di riga */
+html[data-frames="off"] .brc-banner__cta { white-space: normal; }
+html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta, .brc-banner__more) { line-height: 22px; }
 /* Le lingue lunghe (russo: Anton non ha il cirillico, ripiega su un font più
    largo) nel 40% uscivano dall'alto della scatola, titolo compreso. Il
    sottotitolo si ferma a 4 righe (3 sul telefono), i due link stanno sulla stessa riga quando
@@ -494,6 +504,95 @@
    dati (CLS). */
 .brc-lobby[data-loading="true"] .brc-panel { min-height: 110vh; }
 
+/* ── 0 · il rail sinistro e il layout a due colonne (#CLASSIC-ROOBET-1013) ──
+   Roobet: 250 px di rail su un pannello, il resto è la pagina. Qui il rail
+   compare da 1200 px in su; sotto, tab e striscia sport fanno lo stesso lavoro
+   e il desk ha già la barra in basso. Il rail è «sticky» ma non più alto della
+   finestra: scorre con la pagina quando è più lungo. */
+.brc-main { display: flex; flex-direction: column; gap: var(--am-s-5); min-width: 0; }
+.brc-side { display: none; }
+@media (min-width: 1200px) {
+  .brc-lobby { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--am-s-5); align-items: start; }
+  .brc-side {
+    display: flex; flex-direction: column; gap: var(--am-s-2);
+    position: sticky; top: var(--am-s-4); max-height: calc(100vh - var(--am-s-6));
+    overflow-y: auto; scrollbar-width: none;
+    padding: var(--am-s-3) var(--am-s-2);
+    border-radius: var(--am-r-card); background: var(--am-panel);
+  }
+  .brc-side::-webkit-scrollbar { display: none; }
+}
+.brc-side__h {
+  display: flex; align-items: center; gap: 8px; margin: var(--am-s-2) 0 2px; padding: 0 10px;
+  font-family: var(--am-font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted);
+}
+.brc-side__h:first-child { margin-top: 0; }
+.brc-side__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.brc-side__item {
+  width: 100%; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 10px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--am-text);
+  font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; text-align: left; text-decoration: none; cursor: pointer;
+}
+.brc-side__item > svg { flex: none; color: var(--am-muted); }
+.brc-side__item > span:first-of-type { flex: 1; min-width: 0; }
+.brc-side__item:hover { background: var(--am-panel-2); }
+.brc-side__item[aria-current="true"] { background: var(--am-royal); color: #fff; }
+.brc-side__item[aria-current="true"] > svg, .brc-side__item[aria-current="true"] .brc-count { color: #fff; }
+.brc-side__n { margin-left: auto; }
+
+/* ── 3b · i chip delle leghe (la fila «Premier League · LaLiga · Serie A») ── */
+.brc-leagues { display: flex; gap: var(--am-s-2); overflow-x: auto; scrollbar-width: none; margin-top: calc(var(--am-s-2) - var(--am-s-5)); padding-bottom: 2px; }
+.brc-leagues::-webkit-scrollbar { display: none; }
+.brc-leagues .brc-chip { flex: none; }
+/* la sigla del paese: un piccolo testo mono, al posto della bandierina */
+.brc-chip__cc { font-family: var(--am-font-num); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--am-muted); }
+.brc-chip[aria-pressed="true"] .brc-chip__cc { color: rgba(255, 255, 255, 0.75); }
+
+/* ── 6b · le righe per lega (la lista di Roobet) ───────────────────────── */
+/* l'intestazione del mercato («1X2» · «Winner») a destra, sulla riga del titolo,
+   fra i contatori e il chevron: nel flusso, così non copre «N live» */
+.brc-group__mkt {
+  flex: none; margin-left: var(--am-s-4); min-width: 84px; text-align: right;
+  font-family: var(--am-font-num); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted);
+}
+.brc-list { display: grid; gap: var(--am-s-2); }
+.brc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.brc-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--am-s-3);
+  padding: 8px 12px 8px 8px; border-radius: 10px; background: var(--am-panel);
+}
+.brc-row:hover { background: var(--am-panel-2); }
+.brc-row__main {
+  display: grid; grid-template-columns: 112px minmax(0, 1fr) auto auto; align-items: center; gap: var(--am-s-3);
+  min-width: 0; min-height: 52px; padding: 2px 4px; border-radius: 8px; color: var(--am-text); text-decoration: none;
+}
+.brc-row__when { font-family: var(--am-font-ui); font-size: 12px; font-weight: 500; color: var(--am-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.brc-row__when .br-live { font-size: 11px; }
+.brc-row__teams { display: grid; gap: 4px; min-width: 0; }
+.brc-row__team { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-width: 0; font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; line-height: 1.2; }
+.brc-row__crest { width: 20px; height: 20px; object-fit: contain; }
+.brc-row__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brc-row__score { font-family: var(--am-font-num); font-size: 13px; font-weight: 700; color: var(--am-live); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* il nostro numero: piccolo, con l'etichetta onesta sotto; lime solo se è nostro */
+.brc-row__est { display: grid; justify-items: end; gap: 1px; min-width: 52px; color: var(--am-text); }
+.brc-row__est[data-ours] .brc-row__est-n { color: var(--am-lime); }
+.brc-row__est-n { font: 700 17px/1 var(--cl-font-prob, var(--am-font-ui)); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.brc-row__est-pc { font-size: 11px; margin-left: 1px; }
+.brc-row__est-k { display: inline-flex; align-items: center; gap: 3px; font-family: var(--am-font-num); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--am-muted-2); white-space: nowrap; }
+.brc-row__chev { flex: none; color: var(--am-muted-2); }
+.brc-row__main:hover .brc-row__chev { color: var(--am-text); }
+/* la colonna del mercato: una casella per esito, larghezze uguali */
+.brc-row__mkt { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(84px, 1fr); gap: 6px; }
+.brc-row__mkt .cl-odd { justify-content: space-between; height: 36px; padding: 0 10px 0 8px; background: var(--am-panel-2); }
+.brc-row:hover .brc-row__mkt .cl-odd { background: var(--am-panel-3); }
+.brc-row__mkt .cl-odd:hover { background: var(--am-royal-dim); }
+.brc-row__nomkt { display: inline-flex; align-items: center; min-height: 36px; padding: 0 10px; font-family: var(--am-font-ui); font-size: 12px; color: var(--am-muted-2); white-space: nowrap; }
+.brc-seeall {
+  justify-self: center; min-height: 36px; padding: 0 var(--am-s-4); border: 0; border-radius: 8px;
+  background: var(--am-panel); color: var(--am-text); font-family: var(--am-font-ui); font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.brc-seeall:hover { background: var(--am-panel-2); }
+
 /* ── tablet ────────────────────────────────────────────────────────────── */
 /* #CLASSIC-FIX2-1008 (QA M3) — fra 641 e 1365 px tre banner 2:1 in fila sono
    alti 120–210 px: titolo e sottotitolo uscivano dal fondo (misurato a 768,
@@ -560,6 +659,18 @@
   .brc-grid { grid-template-columns: minmax(0, 1fr); }
   .brc-group__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
   .brc-group__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .brc-leagues { margin-top: 0; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); }
+  /* la riga sul telefono (Roobet): ora e squadre sopra, le caselle del mercato
+     sotto a tutta larghezza, il numero accanto alle squadre */
+  .brc-row { grid-template-columns: minmax(0, 1fr); gap: var(--am-s-2); padding: 8px; }
+  .brc-row__main { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: auto auto; min-height: 0; }
+  .brc-row__when { grid-column: 1 / -1; grid-row: 1; }
+  .brc-row__teams { grid-column: 1; grid-row: 2; }
+  .brc-row__est { grid-column: 2; grid-row: 2; }
+  .brc-row__chev { grid-column: 3; grid-row: 2; }
+  .brc-row__mkt { grid-auto-columns: minmax(0, 1fr); }
+  .brc-row__mkt .cl-odd { padding: 0 8px 0 6px; }
+  .brc-group__mkt { display: none; }
 }
 
 /* #CLASSIC-FIX2-1008 (QA M3) — sotto i 380 px la colonna del testo al 54% è

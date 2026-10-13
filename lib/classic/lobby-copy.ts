@@ -33,6 +33,14 @@ export type ClassicCopy = {
   emptyLive: string; emptySoon: string; emptySearch: string; emptyFilter: string; loading: string;
   england: string; scotland: string; international: string;
   otherLeagues: string; otherTournaments: string;
+  // #CLASSIC-ROOBET-1013 — rail sinistro, chip delle leghe, righe per lega.
+  sideLabel: string; sideBoard: string; sideMore: string; sideLive: string; sideRecord: string; sidePartners: string;
+  leaguesLabel: string; chipAll: string;
+  /** {n} = partite della lega */
+  seeAll: string; showLess: string;
+  mkt1x2: string; mktWinner: string; openMatch: string; bestOdds: string;
+  /** l'etichetta corta sotto il numero di una riga: stima / mercato / modello / Elo */
+  rowEstimate: string; rowMarket: string; rowModel: string; rowElo: string;
 };
 
 const en: ClassicCopy = {
@@ -69,6 +77,24 @@ const en: ClassicCopy = {
   loading: "Loading today’s board…",
   england: "England", scotland: "Scotland", international: "International",
   otherLeagues: "Other leagues", otherTournaments: "Other tournaments",
+  sideLabel: "Sections",
+  sideBoard: "Board",
+  sideMore: "More",
+  sideLive: "Live scores",
+  sideRecord: "Track record",
+  sidePartners: "Partners",
+  leaguesLabel: "Leagues",
+  chipAll: "All",
+  seeAll: "See all {n}",
+  showLess: "Show less",
+  mkt1x2: "1X2",
+  mktWinner: "Winner",
+  openMatch: "Open match",
+  bestOdds: "Best price per outcome",
+  rowEstimate: "Estimate",
+  rowMarket: "Market",
+  rowModel: "Model",
+  rowElo: "Elo",
 };
 
 const it: ClassicCopy = {
@@ -105,6 +131,24 @@ const it: ClassicCopy = {
   loading: "Carico il board di oggi…",
   england: "Inghilterra", scotland: "Scozia", international: "Internazionale",
   otherLeagues: "Altre leghe", otherTournaments: "Altri tornei",
+  sideLabel: "Sezioni",
+  sideBoard: "Board",
+  sideMore: "Altro",
+  sideLive: "Punteggi live",
+  sideRecord: "Storico",
+  sidePartners: "Partner",
+  leaguesLabel: "Leghe",
+  chipAll: "Tutte",
+  seeAll: "Vedi tutte ({n})",
+  showLess: "Mostra meno",
+  mkt1x2: "1X2",
+  mktWinner: "Vincente",
+  openMatch: "Apri la partita",
+  bestOdds: "Miglior quota per esito",
+  rowEstimate: "Stima",
+  rowMarket: "Mercato",
+  rowModel: "Modello",
+  rowElo: "Elo",
 };
 
 const es: ClassicCopy = {
@@ -141,6 +185,24 @@ const es: ClassicCopy = {
   loading: "Cargando el board de hoy…",
   england: "Inglaterra", scotland: "Escocia", international: "Internacional",
   otherLeagues: "Otras ligas", otherTournaments: "Otros torneos",
+  sideLabel: "Secciones",
+  sideBoard: "Tablero",
+  sideMore: "Más",
+  sideLive: "Marcadores en vivo",
+  sideRecord: "Historial",
+  sidePartners: "Partners",
+  leaguesLabel: "Ligas",
+  chipAll: "Todas",
+  seeAll: "Ver todas ({n})",
+  showLess: "Mostrar menos",
+  mkt1x2: "1X2",
+  mktWinner: "Ganador",
+  openMatch: "Abrir partido",
+  bestOdds: "Mejor cuota por resultado",
+  rowEstimate: "Estimación",
+  rowMarket: "Mercado",
+  rowModel: "Modelo",
+  rowElo: "Elo",
 };
 
 const fr: ClassicCopy = {
@@ -177,6 +239,24 @@ const fr: ClassicCopy = {
   loading: "Chargement du board du jour…",
   england: "Angleterre", scotland: "Écosse", international: "International",
   otherLeagues: "Autres ligues", otherTournaments: "Autres tournois",
+  sideLabel: "Sections",
+  sideBoard: "Tableau",
+  sideMore: "Plus",
+  sideLive: "Scores en direct",
+  sideRecord: "Historique",
+  sidePartners: "Partenaires",
+  leaguesLabel: "Ligues",
+  chipAll: "Toutes",
+  seeAll: "Voir tout ({n})",
+  showLess: "Voir moins",
+  mkt1x2: "1X2",
+  mktWinner: "Vainqueur",
+  openMatch: "Ouvrir le match",
+  bestOdds: "Meilleure cote par issue",
+  rowEstimate: "Estimation",
+  rowMarket: "Marché",
+  rowModel: "Modèle",
+  rowElo: "Elo",
 };
 
 const de: ClassicCopy = {
@@ -213,6 +293,24 @@ const de: ClassicCopy = {
   loading: "Das heutige Board wird geladen…",
   england: "England", scotland: "Schottland", international: "International",
   otherLeagues: "Weitere Ligen", otherTournaments: "Weitere Turniere",
+  sideLabel: "Bereiche",
+  sideBoard: "Board",
+  sideMore: "Mehr",
+  sideLive: "Live-Ergebnisse",
+  sideRecord: "Bilanz",
+  sidePartners: "Partner",
+  leaguesLabel: "Ligen",
+  chipAll: "Alle",
+  seeAll: "Alle anzeigen ({n})",
+  showLess: "Weniger anzeigen",
+  mkt1x2: "1X2",
+  mktWinner: "Sieger",
+  openMatch: "Spiel öffnen",
+  bestOdds: "Beste Quote je Ausgang",
+  rowEstimate: "Schätzung",
+  rowMarket: "Markt",
+  rowModel: "Modell",
+  rowElo: "Elo",
 };
 
 const pt: ClassicCopy = {
@@ -249,6 +347,24 @@ const pt: ClassicCopy = {
   loading: "A carregar o board de hoje…",
   england: "Inglaterra", scotland: "Escócia", international: "Internacional",
   otherLeagues: "Outras ligas", otherTournaments: "Outros torneios",
+  sideLabel: "Seções",
+  sideBoard: "Quadro",
+  sideMore: "Mais",
+  sideLive: "Placares ao vivo",
+  sideRecord: "Histórico",
+  sidePartners: "Parceiros",
+  leaguesLabel: "Ligas",
+  chipAll: "Todas",
+  seeAll: "Ver todas ({n})",
+  showLess: "Mostrar menos",
+  mkt1x2: "1X2",
+  mktWinner: "Vencedor",
+  openMatch: "Abrir partida",
+  bestOdds: "Melhor cotação por resultado",
+  rowEstimate: "Estimativa",
+  rowMarket: "Mercado",
+  rowModel: "Modelo",
+  rowElo: "Elo",
 };
 
 const nl: ClassicCopy = {
@@ -285,6 +401,24 @@ const nl: ClassicCopy = {
   loading: "Board van vandaag laden…",
   england: "Engeland", scotland: "Schotland", international: "Internationaal",
   otherLeagues: "Overige competities", otherTournaments: "Overige toernooien",
+  sideLabel: "Secties",
+  sideBoard: "Bord",
+  sideMore: "Meer",
+  sideLive: "Live-standen",
+  sideRecord: "Resultaten",
+  sidePartners: "Partners",
+  leaguesLabel: "Competities",
+  chipAll: "Alle",
+  seeAll: "Alles tonen ({n})",
+  showLess: "Minder tonen",
+  mkt1x2: "1X2",
+  mktWinner: "Winnaar",
+  openMatch: "Wedstrijd openen",
+  bestOdds: "Beste notering per uitkomst",
+  rowEstimate: "Schatting",
+  rowMarket: "Markt",
+  rowModel: "Model",
+  rowElo: "Elo",
 };
 
 const pl: ClassicCopy = {
@@ -321,6 +455,24 @@ const pl: ClassicCopy = {
   loading: "Ładowanie dzisiejszego boardu…",
   england: "Anglia", scotland: "Szkocja", international: "Międzynarodowe",
   otherLeagues: "Inne ligi", otherTournaments: "Inne turnieje",
+  sideLabel: "Sekcje",
+  sideBoard: "Tablica",
+  sideMore: "Więcej",
+  sideLive: "Wyniki na żywo",
+  sideRecord: "Historia",
+  sidePartners: "Partnerzy",
+  leaguesLabel: "Ligi",
+  chipAll: "Wszystkie",
+  seeAll: "Zobacz wszystkie ({n})",
+  showLess: "Pokaż mniej",
+  mkt1x2: "1X2",
+  mktWinner: "Zwycięzca",
+  openMatch: "Otwórz mecz",
+  bestOdds: "Najlepszy kurs na wynik",
+  rowEstimate: "Szacunek",
+  rowMarket: "Rynek",
+  rowModel: "Model",
+  rowElo: "Elo",
 };
 
 const tr: ClassicCopy = {
@@ -357,6 +509,24 @@ const tr: ClassicCopy = {
   loading: "Bugünün board’u yükleniyor…",
   england: "İngiltere", scotland: "İskoçya", international: "Uluslararası",
   otherLeagues: "Diğer ligler", otherTournaments: "Diğer turnuvalar",
+  sideLabel: "Bölümler",
+  sideBoard: "Panel",
+  sideMore: "Daha fazla",
+  sideLive: "Canlı skorlar",
+  sideRecord: "Geçmiş",
+  sidePartners: "Partnerler",
+  leaguesLabel: "Ligler",
+  chipAll: "Tümü",
+  seeAll: "Tümünü gör ({n})",
+  showLess: "Daha az göster",
+  mkt1x2: "1X2",
+  mktWinner: "Kazanan",
+  openMatch: "Maçı aç",
+  bestOdds: "Sonuç başına en iyi oran",
+  rowEstimate: "Tahmin",
+  rowMarket: "Piyasa",
+  rowModel: "Model",
+  rowElo: "Elo",
 };
 
 const sv: ClassicCopy = {
@@ -393,6 +563,24 @@ const sv: ClassicCopy = {
   loading: "Laddar dagens board…",
   england: "England", scotland: "Skottland", international: "Internationellt",
   otherLeagues: "Övriga ligor", otherTournaments: "Övriga turneringar",
+  sideLabel: "Sektioner",
+  sideBoard: "Tavla",
+  sideMore: "Mer",
+  sideLive: "Liveresultat",
+  sideRecord: "Facit",
+  sidePartners: "Partners",
+  leaguesLabel: "Ligor",
+  chipAll: "Alla",
+  seeAll: "Visa alla ({n})",
+  showLess: "Visa färre",
+  mkt1x2: "1X2",
+  mktWinner: "Vinnare",
+  openMatch: "Öppna matchen",
+  bestOdds: "Bästa odds per utfall",
+  rowEstimate: "Skattning",
+  rowMarket: "Marknad",
+  rowModel: "Modell",
+  rowElo: "Elo",
 };
 
 const ru: ClassicCopy = {
@@ -429,6 +617,24 @@ const ru: ClassicCopy = {
   loading: "Загружаем сегодняшний борд…",
   england: "Англия", scotland: "Шотландия", international: "Международные",
   otherLeagues: "Другие лиги", otherTournaments: "Другие турниры",
+  sideLabel: "Разделы",
+  sideBoard: "Борд",
+  sideMore: "Ещё",
+  sideLive: "Live-счёт",
+  sideRecord: "История",
+  sidePartners: "Партнёры",
+  leaguesLabel: "Лиги",
+  chipAll: "Все",
+  seeAll: "Показать все ({n})",
+  showLess: "Свернуть",
+  mkt1x2: "1X2",
+  mktWinner: "Победитель",
+  openMatch: "Открыть матч",
+  bestOdds: "Лучший коэффициент на исход",
+  rowEstimate: "Оценка",
+  rowMarket: "Рынок",
+  rowModel: "Модель",
+  rowElo: "Elo",
 };
 
 export const CLASSIC_COPY: Record<ClassicLang, ClassicCopy> = { en, it, es, fr, de, pt, nl, pl, tr, sv, ru };

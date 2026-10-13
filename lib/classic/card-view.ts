@@ -30,7 +30,10 @@
 // i chip mostrano il miglior prezzo per OGNI esito (1·X·2), che non lo rivela.
 // Partita iniziata: nessun prezzo pre-match e nessun bottone.
 import { normName } from "@/lib/odds-api";
-import { stessaSquadra } from "@/lib/fp-odds-join";
+import { abbinaQuotaPartner, stessaSquadra } from "@/lib/fp-odds-join";
+import { landingPartnersFor } from "@/lib/affiliate";
+import { sortBooksForMenu } from "@/lib/partners";
+import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { PARTNER_MARKET_MODEL } from "@/lib/partner-market";
 import {
   DEFAULT_1X2_MARGIN,
@@ -164,6 +167,12 @@ function chipsFor(books: readonly ClassicBook[], idx: number, landing: readonly 
     .filter((x, i, arr) => arr.findIndex((y) => y.name === x.name) === i && !withPrice.some((w) => w.name === x.name))
     .map((x) => ({ ...x, price: null, best: false }));
   return [...withPrice, ...noPrice].slice(0, max);
+}
+
+/** #CLASSIC-ROOBET-1013 — il miglior prezzo con link per ogni esito (le celle 1·X·2
+ *  della scheda chiusa e della colonna mercato delle righe per lega). Tutti o nessuno. */
+export function bestCells(books: readonly ClassicBook[], labels: readonly string[]): ClassicCell[] {
+  return cellsFor(books, labels);
 }
 
 function cellsFor(books: readonly ClassicBook[], labels: readonly string[]): ClassicCell[] {
@@ -440,6 +449,69 @@ export function tennisBooks(fp: FpLike | null | undefined, player1: string, play
   if (!straight && !swapped) return [];
   const list: BookOddsLike[] = fp.books?.length ? fp.books : [{ key: "fortuneplay", name: "FortunePlay", oddsHome: fp.oddsHome, oddsDraw: null, oddsAway: fp.oddsAway, matchUrl: fp.matchUrl }];
   return list.map((b) => ({ key: b.key, name: b.name, url: b.matchUrl, prices: straight ? [b.oddsHome, b.oddsAway] : [b.oddsAway, b.oddsHome] }));
+}
+
+// ─── La lettura di una riga, dal contesto del desk (#CLASSIC-ROOBET-1013) ────
+//
+// Scheda e riga per lega leggono la STESSA vista: qui sta il pezzo che prima
+// viveva dentro ClassicSlab (quote partner della partita, book allineati agli
+// esiti, landing al più uno). `prices` è il contesto di ClassicContext.
+
+type PricesLike = {
+  fpOdds: Record<string, FpOddsEntry>;
+  fpIndex: Map<string, FpOddsEntry[]>;
+  booksBlocked: boolean;
+  geoCountry: string;
+  tennisComputedAt: string | null;
+  footballOldestAt?: string | null;
+};
+type RowDataLike = {
+  sport: string; home: string; away: string; startsAt: string;
+  classic?: { sport: string } & Record<string, unknown>;
+};
+
+// I partner solo-landing che atterrano su una superficie di scommessa (Beazt e
+// Wildz aprono la lobby del casinò: lib/affiliate.ts) — al più uno, in coda ai chip.
+const CASINO_LANDING = /^(beazt|wildz)$/i;
+
+export function classicViewFor(
+  data: RowDataLike,
+  prices: PricesLike,
+  started: boolean,
+  now: Date,
+): { view: ClassicView | null; labels: readonly string[]; leadIdx: number | null } {
+  const raw = data.classic as (({ sport: "football" } & ClassicFootballInput) | ({ sport: "tennis" } & Omit<ClassicTennisInput, "started" | "now" | "books" | "player1" | "player2" | "eloAsOf">)) | undefined;
+  const landing: ClassicLanding[] = prices.booksBlocked
+    ? []
+    : sortBooksForMenu(landingPartnersFor(prices.geoCountry).filter((l) => !CASINO_LANDING.test(l.name))).slice(0, 1);
+  if (raw?.sport === "football") {
+    const labels = ["1", "X", "2"] as const;
+    const fp = abbinaQuotaPartner(data.home, data.away, data.startsAt, prices.fpOdds, prices.fpIndex).quota;
+    const books = prices.booksBlocked ? [] : footballBooks(fp, data.home, data.away);
+    const view = classicFootballView({ started, est: raw.est, odds: raw.odds, leadIdx: raw.leadIdx, estLead: raw.estLead, oddsLead: raw.oddsLead, books, landing, labels, modelAsOf: prices.footballOldestAt ?? null, now });
+    return { view, labels, leadIdx: raw.leadIdx ?? null };
+  }
+  if (raw?.sport === "tennis") {
+    const labels = ["1", "2"] as const; // 1 = il primo nome sopra, 2 = il secondo: come l'1X2 del calcio
+    const fp = tennisOddsFor(prices.fpOdds, data.home, data.away, data.startsAt);
+    const books = prices.booksBlocked ? [] : tennisBooks(fp, data.home, data.away);
+    const view = classicTennisView({
+      started, modelVersion: raw.modelVersion, tournament: raw.tournament, player1: data.home, player2: data.away,
+      p: raw.p, odds: raw.odds, leadIdx: raw.leadIdx, pLead: raw.pLead, oddsLead: raw.oddsLead,
+      eloAsOf: prices.tennisComputedAt, now, books, landing, labels,
+    });
+    return { view, labels, leadIdx: raw.leadIdx ?? null };
+  }
+  return { view: null, labels: [], leadIdx: null };
+}
+
+/** L'etichetta ONESTA del numero grande, per tipo di lettura (scheda e righe). */
+export function readLabel(kind: ClassicKind, c: { ourEstimate: string; marketOnly: string; modelOnly: string; eloBased: string; noPrice: string }): string {
+  return kind === "market_only" ? c.marketOnly
+    : kind === "model_only" ? c.modelOnly
+    : kind === "elo_blend" ? c.eloBased
+    : kind === "no_price" ? c.noPrice
+    : c.ourEstimate;
 }
 
 // ─── «Where our estimate differs most» (ex Top opportunities / High edge) ────

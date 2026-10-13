@@ -1,38 +1,36 @@
 "use client";
-// components/classic/ClassicLobby.tsx — filone «classic», lobby (#CLASSIC-LOBBY-1008)
+// components/classic/ClassicLobby.tsx — filone «classic», lobby (#CLASSIC-LOBBY-1008 · #CLASSIC-ROOBET-1013)
 //
-// La Home in stile Roobet — la STRUTTURA, non il brand. Dall'alto:
-//   1. tre banner (i nostri tre ingressi: board, live, storico);
+// La Home con la STRUTTURA di Roobet — presa per intero, decisione di Andrea
+// del 13/10 — ma coi dati, i token, il logo e i banner BetRedge. Dall'alto:
+//   0. il rail sinistro: sezioni del board, sport, altre destinazioni (desktop);
+//   1. tre banner affiancati (i nostri tre ingressi: board, live, storico);
 //   2. la barra di tab (Featured · In-Play · Starting Soon · All Sports) con la
-//      ricerca a destra;
-//   3. la striscia degli sport (Popular, Football, Tennis: quelli che il
-//      prodotto serve, niente sport finti per riempire la riga);
-//   4. la fascia «in evidenza», un carosello orizzontale di schede;
-//   5. «Where our estimate differs most» (l'ex «Top opportunities», con la
-//      protezione dei 15 punti);
-//   6. le partite per CATEGORIA: sport → lega, gruppi ripiegabili.
+//      ricerca a destra, e sotto la riga delle icone sport;
+//   3. la fila di chip delle leghe presenti oggi (Premier League, Serie A…);
+//   4. «Featured»: un carosello orizzontale di schede (scroll-snap, frecce);
+//   5. «Where our estimate differs most»: lo STESSO carosello (novità rispetto a
+//      Roobet, voluta da Andrea), con lo stesso trattamento delle schede;
+//   6. l'elenco per lega: titolo di lega ripiegabile, righe partita con ora e
+//      squadre a sinistra, colonna 1X2 a destra con la miglior quota partner per
+//      esito, «See all» in fondo a ogni lega.
 //
-// SEPARAZIONE SENZA CORNICI. Nessun bordo, nessuna ombra: i blocchi si
-// staccano con lo spazio e con due toni di fondo (pagina `--am-bg` < barra e
-// intestazioni di lega `--am-panel`), e la scheda è la lastra blu. È la
-// regola 1 di REGOLE-CLASSIC.md e il modo in cui Roobet e Stake separano.
+// SEPARAZIONE SENZA CORNICI (REGOLE-CLASSIC 1): la lobby si stacca con lo
+// spazio e con due toni di fondo (pagina `--am-bg` < barra, rail e intestazioni
+// `--am-panel`). L'unico bordo è quello sottile bianco-freddo della scheda,
+// deciso col PDF del 12/10.
 //
-// RAIL SINISTRO (stile Stake) — NON c'è, per scelta: la barra alta del sito
-// ha già Home · Live · Football · Tennis · Tools, e questa lobby aggiunge tab
-// e striscia sport. Un rail sarebbe la QUARTA via parallela per la stessa
-// scelta con due soli sport: è esattamente ciò che refs/STRUTTURA-BIG.md (f)
-// segnala come confuso su Stake.
-//
-// LA SCHEDA. Non è di questo file: arriva da `renderCard`, cioè la funzione
-// della lobby di oggi (app/app/page.tsx → HomeLobby) che monta PredictionCard
-// con il suo gating, la watchlist e l'apertura della scheda partita. È il
-// punto di unione con il filone `card` (direzione A «Slab»): quando la card
-// cambia, qui non cambia niente.
+// LA SCHEDA non è di questo file: arriva da `renderCard`, cioè la funzione della
+// lobby di oggi (app/app/page.tsx → HomeLobby) che monta PredictionCard con il
+// suo gating, la watchlist e l'apertura della scheda partita. Le RIGHE per lega
+// invece sono qui (ClassicRow): il desk passa solo `rowLink` — dove porta la
+// riga, se è chiusa, cosa succede al clic — così gating e tracking restano suoi.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEvent, type MouseEvent } from "react";
+import Link from "next/link";
 import type { LobbyItem, LobbySectionId } from "@/lib/ui/lobby";
 import {
-  dedupeLobby, differsMostItems, featuredItems, groupBySportLeague, matchesDateFilter, matchesQuery, scopeLobby,
+  dedupeLobby, differsMostItems, featuredItems, groupBySportLeague, leagueChips, matchesDateFilter, matchesQuery, ROWS_PER_LEAGUE, scopeLobby,
   UNNAMED_LEAGUE, type DateFilter, type LeagueCountry, type LobbyTab, type SportFilter,
 } from "@/lib/classic/lobby-model";
 import { differsBy, footballBooks } from "@/lib/classic/card-view";
@@ -40,8 +38,11 @@ import { abbinaQuotaPartner } from "@/lib/fp-odds-join";
 import { useClassicPrices } from "@/components/classic/ClassicContext";
 import { classicCopy, fill, type ClassicCopy } from "@/lib/classic/lobby-copy";
 import { ClassicBanners, type ClassicBanner } from "@/components/classic/ClassicBanners";
-import { IconChevronDown, IconChevronRight, IconClose, IconFootball, IconSearch, IconStar, IconTennis } from "@/components/ui/icons";
+import { ClassicRow, type ClassicRowLink } from "@/components/classic/ClassicRow";
+import { IconChevronDown, IconChevronRight, IconClock, IconClose, IconExplore, IconFootball, IconHome, IconLedger, IconLive, IconSearch, IconStar, IconTennis, IconTools } from "@/components/ui/icons";
 import "./classic-lobby.css";
+
+type BannerSlot = Pick<ClassicBanner, "href" | "onClick" | "image">;
 
 export type ClassicLobbyProps = {
   lang: string;
@@ -54,7 +55,11 @@ export type ClassicLobbyProps = {
   /** La scheda di oggi (HomeLobby.renderCard). Il secondo argomento è la
    *  fascia di provenienza: decide il badge «Starts in…» e il tracking. */
   renderCard: (item: LobbyItem, section: LobbySectionId) => ReactNode;
-  banners: { board: Pick<ClassicBanner, "href" | "onClick" | "image">; live: Pick<ClassicBanner, "href" | "onClick" | "image">; record: Pick<ClassicBanner, "href" | "onClick" | "image"> };
+  /** #CLASSIC-ROOBET-1013 — la riga per lega: dove porta, se è chiusa, cosa fa
+   *  al clic. Lo decide il desk (gating, modal in pagina, tracking). Senza
+   *  (test, uso isolato) la riga è un link alla rotta della partita. */
+  rowLink?: (item: LobbyItem) => ClassicRowLink;
+  banners: { board: BannerSlot; live: BannerSlot; record: BannerSlot };
   /** Ciò che chiude la Home (fascia Pro, FAQ): lo decide il desk. */
   tail?: ReactNode;
   /** Per i test: l'ora «adesso». */
@@ -68,7 +73,7 @@ export type ClassicLobbyProps = {
 
 /** Quanti gruppi di lega restano aperti per sport al primo render. Il resto è
  *  una pila di intestazioni — nome, paese, contatore — che si scorre in un
- *  colpo d'occhio e si apre a richiesta (Stake fa lo stesso nel rail). */
+ *  colpo d'occhio e si apre a richiesta (Roobet fa lo stesso). */
 const OPEN_PER_SPORT = 3;
 
 function countryLabel(c: LeagueCountry | null, lang: string, copy: ClassicCopy): string | null {
@@ -92,18 +97,67 @@ function tzAbbr(tz: string, lang: string, now: number): string {
   }
 }
 
-const TABS: { id: LobbyTab; key: keyof ClassicCopy }[] = [
-  { id: "featured", key: "tabFeatured" },
-  { id: "inplay", key: "tabInPlay" },
-  { id: "soon", key: "tabSoon" },
-  { id: "all", key: "tabAll" },
+const TABS: { id: LobbyTab; key: keyof ClassicCopy; icon: ReactNode }[] = [
+  { id: "featured", key: "tabFeatured", icon: <IconStar size={16} /> },
+  { id: "inplay", key: "tabInPlay", icon: <IconLive size={16} /> },
+  { id: "soon", key: "tabSoon", icon: <IconClock size={16} /> },
+  { id: "all", key: "tabAll", icon: <IconExplore size={16} /> },
 ];
 
-export function ClassicLobby({ lang, tz, football, tennis, loading = false, renderCard, banners, tail, now: nowProp, query: queryProp, onQueryChange }: ClassicLobbyProps) {
+/** Il carosello: schede affiancate, scroll-snap, frecce di una «pagina» sul
+ *  desktop, swipe sul telefono. Featured e «differs most» lo condividono. */
+function Rail({ id, title, hint, items, section, renderCard, copy, testId, busy }: {
+  id: string; title: string; hint: string; items: LobbyItem[]; section: (it: LobbyItem) => LobbySectionId;
+  renderCard: ClassicLobbyProps["renderCard"]; copy: ClassicCopy; testId: string; busy?: boolean;
+}) {
+  const railRef = useRef<HTMLUListElement | null>(null);
+  const scrollRail = (dir: 1 | -1) => {
+    const el = railRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: reduce ? "auto" : "smooth" });
+  };
+  return (
+    <section className="brc-sec" aria-labelledby={`${id}-h`} aria-busy={busy || undefined} data-testid={testId}>
+      <header className="brc-sec__head">
+        <div>
+          <h2 id={`${id}-h`} className="brc-sec__title">{title}</h2>
+          <p className="brc-sec__hint">{hint}</p>
+        </div>
+        {!busy && (
+          <div className="brc-rail-nav">
+            <button type="button" className="brc-icon-btn" onClick={() => scrollRail(-1)} aria-label={copy.prev}>
+              <IconChevronRight size={18} style={{ transform: "scaleX(-1)" }} />
+            </button>
+            <button type="button" className="brc-icon-btn" onClick={() => scrollRail(1)} aria-label={copy.next}>
+              <IconChevronRight size={18} />
+            </button>
+          </div>
+        )}
+      </header>
+      {busy ? (
+        // Mentre il board è in volo la fascia c'è già, con quattro lastre vuote
+        // all'altezza di una scheda: quando arrivano i dati niente sotto si sposta.
+        <ul className="brc-rail brc-rail--skeleton" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => <li key={i} className="brc-rail__item"><span className="brc-slab" /></li>)}
+        </ul>
+      ) : (
+        <ul className="brc-rail" ref={railRef}>
+          {items.map((it) => (
+            <li key={it.key} className="brc-rail__item">{renderCard(it, section(it))}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export function ClassicLobby({ lang, tz, football, tennis, loading = false, renderCard, rowLink, banners, tail, now: nowProp, query: queryProp, onQueryChange }: ClassicLobbyProps) {
   const copy = classicCopy(lang);
   const [tab, setTab] = useState<LobbyTab>("featured");
   const [sport, setSport] = useState<SportFilter>("popular");
   const [when, setWhen] = useState<DateFilter>("all");
+  const [league, setLeague] = useState<string | null>(null);
   const [ownQuery, setOwnQuery] = useState("");
   const controlled = onQueryChange != null;
   const query = controlled ? (queryProp ?? "") : ownQuery;
@@ -123,6 +177,8 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   // Aperto/chiuso deciso dall'utente, per id di gruppo. Chi non c'è segue la
   // regola di default (i primi OPEN_PER_SPORT aperti).
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
+  // «See all» per lega: le righe oltre ROWS_PER_LEAGUE si aprono a richiesta.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   // «Adesso» si fissa al montaggio e si aggiorna ogni minuto: `Date.now()`
   // dentro un useMemo è impuro (il compilatore React lo rifiuta) e farebbe
@@ -148,11 +204,17 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   const tabScoped = scoped.list;
   const sportScoped = tabScoped;
   const dateFilterOn = tab === "featured" || tab === "all";
-  const listed = useMemo(
+  const dated = useMemo(
     () => (dateFilterOn ? tabScoped.filter((it) => matchesDateFilter(it, when, tz, now)) : tabScoped),
     [tabScoped, dateFilterOn, when, tz, now],
   );
+  // i chip delle leghe si calcolano PRIMA del filtro di lega: il chip attivo
+  // resta visibile, e «All» dice quante righe ci sono in tutto
+  const chips = useMemo(() => leagueChips(groupBySportLeague(dated)), [dated]);
+  const leagueOn = league != null && chips.some((ch) => ch.id === league);
+  const listed = useMemo(() => (leagueOn ? dated.filter((it) => `${it.data.sport}:${it.data.league?.trim() || UNNAMED_LEAGUE}` === league) : dated), [dated, leagueOn, league]);
   const blocks = useMemo(() => groupBySportLeague(listed), [listed]);
+  const liveTotal = useMemo(() => searched.filter((it) => it.data.isLive).length, [searched]);
 
   const featured = useMemo(() => (tab === "featured" ? featuredItems(sportScoped, now) : []), [tab, sportScoped, now]);
   // #CLASSIC-FIX2-1008 (M2) — lo scarto della fascia è quello che la scheda mostra: con le
@@ -188,17 +250,8 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
     tabRefs.current[j]?.focus();
   };
 
-  // ── Carosello: frecce che scorrono di una «pagina» ──────────────────────
-  const railRef = useRef<HTMLUListElement | null>(null);
-  const scrollRail = (dir: 1 | -1) => {
-    const el = railRef.current;
-    if (!el) return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: reduce ? "auto" : "smooth" });
-  };
-
   const isOpen = (groupId: string, indexInSport: number) =>
-    toggled[groupId] ?? (indexInSport < OPEN_PER_SPORT || query.trim() !== "");
+    toggled[groupId] ?? (indexInSport < OPEN_PER_SPORT || query.trim() !== "" || leagueOn);
 
   const sportLabel = (s: string) => (s === "football" ? copy.football : s === "tennis" ? copy.tennis : s);
   // #CLASSIC-FIX2-1008 (QA M1, React #418) — la sigla del fuso dipende dall'orologio del
@@ -220,10 +273,50 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
     : tab === "soon" ? copy.emptySoon
     : copy.emptyFilter;
 
-  const sectionFor = (s: string): LobbySectionId => (tab === "soon" ? "soon" : s === "tennis" ? "tennis" : "football");
+  const linkFor = (it: LobbyItem): ClassicRowLink => rowLink ? rowLink(it) : { href: `/predictions?match=${encodeURIComponent(it.key)}`, locked: it.data.locked === true };
+  const pickTab = (t: LobbyTab) => { setTab(t); setLeague(null); };
+  const pickSport = (s: SportFilter) => { setSport(s); setLeague(null); };
+  const liveSide = (ev: MouseEvent<HTMLAnchorElement>) => banners.live.onClick?.(ev);
 
   return (
     <div className="brc-lobby" data-testid="classic-lobby" data-loading={loading}>
+      {/* ── 0 · il rail sinistro (desktop): sezioni, sport, altre destinazioni ── */}
+      <nav className="brc-side" aria-label={copy.sideLabel}>
+        <p className="brc-side__h"><IconHome size={16} />{copy.sideBoard}</p>
+        <ul className="brc-side__list">
+          {TABS.map((t) => (
+            <li key={t.id}>
+              <button type="button" className="brc-side__item" aria-current={tab === t.id ? "true" : undefined} onClick={() => pickTab(t.id)}>
+                {t.icon}<span>{copy[t.key]}</span>
+                {t.id === "inplay" && liveTotal > 0 && <span className="brc-live brc-side__n">{liveTotal}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="brc-side__h"><IconExplore size={16} />{copy.sportsLabel}</p>
+        <ul className="brc-side__list">
+          {([
+            { id: "popular", label: copy.popular, icon: <IconStar size={16} />, n: sportCounts.popular },
+            { id: "football", label: copy.football, icon: <IconFootball size={16} />, n: sportCounts.football },
+            { id: "tennis", label: copy.tennis, icon: <IconTennis size={16} />, n: sportCounts.tennis },
+          ] as const).map((s) => (
+            <li key={s.id}>
+              <button type="button" className="brc-side__item" aria-current={sport === s.id ? "true" : undefined} onClick={() => pickSport(s.id)}>
+                {s.icon}<span>{s.label}</span><span className="brc-count brc-side__n">{loading ? "–" : s.n}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="brc-side__h"><IconLedger size={16} />{copy.sideMore}</p>
+        <ul className="brc-side__list">
+          <li><a className="brc-side__item" href={banners.live.href} onClick={liveSide}><IconLive size={16} /><span>{copy.sideLive}</span></a></li>
+          <li><Link className="brc-side__item" href={banners.record.href}><IconLedger size={16} /><span>{copy.sideRecord}</span></Link></li>
+          <li><Link className="brc-side__item" href="/tools"><IconTools size={16} /><span>{copy.b3Tools}</span></Link></li>
+          <li><Link className="brc-side__item" href="/partners"><IconExplore size={16} /><span>{copy.sidePartners}</span></Link></li>
+        </ul>
+      </nav>
+
+      <div className="brc-main">
       <ClassicBanners banners={bannerList} label={copy.bannersLabel} />
 
       {/* ── 2 · tab + ricerca ─────────────────────────────────────────── */}
@@ -240,7 +333,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
               aria-controls="brc-panel"
               tabIndex={tab === t.id ? 0 : -1}
               className="brc-tab"
-              onClick={() => setTab(t.id)}
+              onClick={() => pickTab(t.id)}
               onKeyDown={(ev) => onTabKey(ev, i)}
             >
               {copy[t.key]}
@@ -281,7 +374,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
             type="button"
             className="brc-sport"
             aria-pressed={sport === s.id}
-            onClick={() => setSport(s.id)}
+            onClick={() => pickSport(s.id)}
           >
             <span className="brc-sport__icon">{s.icon}</span>
             <span className="brc-sport__label">{s.label}</span>
@@ -290,65 +383,35 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
         ))}
       </div>
 
+      {/* ── 3b · i chip delle leghe di oggi ────────────────────────────── */}
+      {chips.length > 0 && (
+        <div className="brc-leagues" role="group" aria-label={copy.leaguesLabel} data-testid="classic-league-chips">
+          <button type="button" className="brc-chip" aria-pressed={!leagueOn} onClick={() => setLeague(null)}>
+            {copy.chipAll}<span className="brc-chip__n">{dated.length}</span>
+          </button>
+          {chips.map((ch) => (
+            <button key={ch.id} type="button" className="brc-chip" aria-pressed={leagueOn && league === ch.id} onClick={() => setLeague(leagueOn && league === ch.id ? null : ch.id)}>
+              {ch.code && <span className="brc-chip__cc" aria-hidden="true">{ch.code}</span>}
+              {ch.league}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div id="brc-panel" role="tabpanel" aria-labelledby={`brc-tab-${tab}`} className="brc-panel">
-        {/* ── 4 · in evidenza ──────────────────────────────────────────── */}
-        {/* Mentre il board è in volo la fascia c'è già, con la sua intestazione
-            e quattro lastre vuote all'altezza di una scheda: quando arrivano i
-            dati le schede prendono il loro posto e niente sotto si sposta
-            (misurato: senza, CLS 0,14 a 1440). */}
-        {loading && tab === "featured" && (
-          <section className="brc-sec" aria-labelledby="brc-featured-h" aria-busy="true">
-            <header className="brc-sec__head">
-              <div>
-                <h2 id="brc-featured-h" className="brc-sec__title">{copy.featuredTitle}</h2>
-                <p className="brc-sec__hint">{copy.featuredHint}</p>
-              </div>
-            </header>
-            <ul className="brc-rail brc-rail--skeleton" aria-hidden="true">
-              {[0, 1, 2, 3].map((i) => <li key={i} className="brc-rail__item"><span className="brc-slab" /></li>)}
-            </ul>
-          </section>
-        )}
-        {featured.length > 0 && (
-          <section className="brc-sec" aria-labelledby="brc-featured-h">
-            <header className="brc-sec__head">
-              <div>
-                <h2 id="brc-featured-h" className="brc-sec__title">{copy.featuredTitle}</h2>
-                <p className="brc-sec__hint">{copy.featuredHint}</p>
-              </div>
-              <div className="brc-rail-nav">
-                <button type="button" className="brc-icon-btn" onClick={() => scrollRail(-1)} aria-label={copy.prev}>
-                  <IconChevronRight size={18} style={{ transform: "scaleX(-1)" }} />
-                </button>
-                <button type="button" className="brc-icon-btn" onClick={() => scrollRail(1)} aria-label={copy.next}>
-                  <IconChevronRight size={18} />
-                </button>
-              </div>
-            </header>
-            <ul className="brc-rail" ref={railRef} data-testid="classic-featured">
-              {featured.map((it) => (
-                <li key={it.key} className="brc-rail__item">{renderCard(it, it.data.isLive ? "live" : "top")}</li>
-              ))}
-            </ul>
-          </section>
+        {/* ── 4 · in evidenza: carosello ──────────────────────────────── */}
+        {tab === "featured" && (loading || featured.length > 0) && (
+          <Rail id="brc-featured" title={copy.featuredTitle} hint={copy.featuredHint} items={featured} busy={loading}
+            section={(it) => (it.data.isLive ? "live" : "top")} renderCard={renderCard} copy={copy} testId="classic-featured" />
         )}
 
-        {/* ── 5 · dove la stima si discosta di più ─────────────────────── */}
+        {/* ── 5 · dove la stima si discosta di più: lo stesso carosello ── */}
         {differs.length > 0 && (
-          <section className="brc-sec" aria-labelledby="brc-differs-h" data-testid="classic-differs">
-            <header className="brc-sec__head">
-              <div>
-                <h2 id="brc-differs-h" className="brc-sec__title">{copy.differsTitle}</h2>
-                <p className="brc-sec__hint">{copy.differsHint}</p>
-              </div>
-            </header>
-            <ul className="brc-grid">
-              {differs.map((it) => <li key={it.key}>{renderCard(it, "top")}</li>)}
-            </ul>
-          </section>
+          <Rail id="brc-differs" title={copy.differsTitle} hint={copy.differsHint} items={differs}
+            section={() => "top"} renderCard={renderCard} copy={copy} testId="classic-differs" />
         )}
 
-        {/* ── 6 · per categoria: sport → lega ──────────────────────────── */}
+        {/* ── 6 · per lega: intestazione ripiegabile, righe, «See all» ── */}
         <section className="brc-sec brc-sec--leagues" aria-labelledby="brc-leagues-h">
           <header className="brc-sec__head">
             <div>
@@ -382,6 +445,9 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
                 const regionId = `brc-g-${g.id.replace(/[^a-z0-9]+/gi, "-")}`;
                 const country = countryLabel(g.country, lang, copy);
                 const meta = [country, g.circuit].filter(Boolean).join(" · ");
+                const full = expanded[g.id] === true;
+                const rows = full ? g.items : g.items.slice(0, ROWS_PER_LEAGUE);
+                const more = g.items.length - rows.length;
                 return (
                   <div key={g.id} className="brc-group" data-open={open}>
                     <h4 className="brc-group__h">
@@ -402,13 +468,22 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
                           {g.liveCount > 0 && <span className="brc-live">{fill(copy.liveN, { n: g.liveCount })}</span>}
                           <span className="brc-count" aria-label={fill(copy.matchesN, { n: g.items.length })}>{g.items.length}</span>
                         </span>
+                        {/* l'intestazione della colonna mercato (Roobet: «1x2» sulla riga del titolo) */}
+                        {open && <span className="brc-group__mkt" aria-hidden="true">{g.sport === "tennis" ? copy.mktWinner : copy.mkt1x2}</span>}
                         <IconChevronDown size={16} className="brc-group__chev" />
                       </button>
                     </h4>
                     {open && (
-                      <ul id={regionId} className="brc-grid">
-                        {g.items.map((it) => <li key={it.key}>{renderCard(it, sectionFor(g.sport))}</li>)}
-                      </ul>
+                      <div id={regionId} className="brc-list">
+                        <ul className="brc-rows">
+                          {rows.map((it) => <ClassicRow key={it.key} item={it} link={linkFor(it)} lang={lang} tz={tz} now={now} copy={copy} />)}
+                        </ul>
+                        {(more > 0 || full) && (
+                          <button type="button" className="brc-seeall" aria-expanded={full} aria-controls={regionId} onClick={() => setExpanded((s) => ({ ...s, [g.id]: !full }))}>
+                            {full ? copy.showLess : fill(copy.seeAll, { n: g.items.length })}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 );
@@ -419,13 +494,14 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
           {hiddenByPopular > 0 && !loading && (
             <p className="brc-more">
               {fill(copy.moreInAll, { n: hiddenByPopular })}{" "}
-              <button type="button" className="brc-link" onClick={() => { setTab("all"); }}>{copy.seeAllSports} →</button>
+              <button type="button" className="brc-link" onClick={() => { pickTab("all"); }}>{copy.seeAllSports} →</button>
             </p>
           )}
         </section>
       </div>
 
       {tail}
+      </div>
     </div>
   );
 }
