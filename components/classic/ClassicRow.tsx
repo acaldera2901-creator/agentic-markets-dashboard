@@ -113,7 +113,9 @@ export function ClassicRow({ item, link, lang, tz, now, copy }: Props) {
             // #CLASSIC-ROOBET-1013 round 2 — senza prezzo partner, o a partita
             // iniziata: i loghi di tre partner con il link di atterraggio
             ? <PartnerFallback surface="lobby-row" c={c} lang={lang} />
-            : <span className="brc-row__nomkt">{started ? c.pricesRemoved : c.noPartnerPrice}</span>}
+            // round 3 — geo non ancora nota (bloccata di default, paese ""): niente
+            // testo, invece di un «Nessun prezzo partner» falso su ogni riga.
+            : <span className="brc-row__nomkt">{started ? c.pricesRemoved : prices.booksBlocked && !prices.geoCountry ? null : c.noPartnerPrice}</span>}
       </span>
     </li>
   );

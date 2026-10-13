@@ -116,7 +116,8 @@ describe("ClassicLobby", () => {
     expect(within(row).getByRole("link", { name: /Open match/ })).toHaveAttribute("href", "/x");
     // senza quote partner la colonna non inventa un prezzo (la prima riga è live: «prices removed»)
     expect(within(row).getByText("Prices removed at the start")).toBeInTheDocument();
-    expect(screen.getAllByText("No partner price").length).toBeGreaterThan(0);
+    // senza provider la geo non è nota: nessun «No partner price» falso (round 3)
+    expect(screen.queryAllByText("No partner price")).toHaveLength(0);
   });
 
   it("search filters every block and says so when nothing matches", () => {
