@@ -20,6 +20,17 @@ type Props = {
 export function Crest({ team, sport, size = 44, className, role = "home", totem }: Props) {
   const url = crestUrl(team, sport);
   if (url) {
+    // #CLASSIC-ASSET-1013 — le foto dei tennisti (TheSportsDB «cutout») sono a
+    // figura intera su 160 px: a 44 px il volto misura 10 px, a 20 non esiste.
+    // Il ritaglio sul volto lo fa il CSS (.br-crest-photo: tondo, foto al 200%
+    // ancorata in alto), così un giocatore si riconosce come uno stemma.
+    if (sport.toLowerCase() === "tennis") {
+      return (
+        <span className={["br-crest-photo", className].filter(Boolean).join(" ")} style={{ width: size, height: size }} role="img" aria-label={team ?? ""}>
+          <img src={url} alt="" width={size} height={size} loading="lazy" decoding="async" />
+        </span>
+      );
+    }
     return <img src={url} alt={team ?? ""} width={size} height={size} className={className} />;
   }
   if (totem) {

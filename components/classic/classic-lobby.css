@@ -303,12 +303,21 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
   cursor: pointer;
   text-align: left;
 }
-.brc-sport__icon { grid-row: 1 / 3; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--am-panel-2); }
+/* #CLASSIC-ASSET-1013 — l'icona è un oggetto 3D con la sua ombra: niente disco
+   sotto (sarebbe una cornice). Lo stato premuto lo dice il fondo del bottone,
+   in royal velato: il royal pieno dei tab resta ai controlli di solo testo —
+   sotto un'icona royal la cancellerebbe. */
+.brc-sport__icon { grid-row: 1 / 3; display: grid; place-items: center; width: 36px; height: 36px; }
 .brc-sport__label { font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; color: var(--am-text); }
 .brc-sport__n { font-family: var(--am-font-num); font-size: 12px; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
 .brc-sport:hover { background: var(--am-panel-2); }
-.brc-sport[aria-pressed="true"] { background: var(--am-panel-2); }
-.brc-sport[aria-pressed="true"] .brc-sport__icon { background: var(--am-royal); color: #fff; }
+.brc-sport[aria-pressed="true"] { background: var(--am-royal-dim); }
+.brc-sport[aria-pressed="true"] .brc-sport__n { color: var(--am-muted); }
+.brc-sport .brc-ico { transition: transform 160ms ease; }
+.brc-sport:hover .brc-ico { transform: translateY(-1px); }
+
+/* le icone 3D (ClassicIcon): PNG trasparente, misura dal chiamante, mai stirate */
+.brc-ico { display: block; flex: none; object-fit: contain; user-select: none; }
 
 /* ── sezioni ───────────────────────────────────────────────────────────── */
 .brc-panel {
@@ -536,7 +545,10 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 .brc-side__item > svg { flex: none; color: var(--am-muted); }
 .brc-side__item > span:first-of-type { flex: 1; min-width: 0; }
 .brc-side__item:hover { background: var(--am-panel-2); }
-.brc-side__item[aria-current="true"] { background: var(--am-royal); color: #fff; }
+/* #CLASSIC-ASSET-1013 — con le icone 3D royal la voce attiva non è più royal
+   pieno (l'icona sparirebbe nel fondo): royal velato + testo bianco, lo stesso
+   «sei qui» della nav in alto (.br-nav__item[aria-current]) */
+.brc-side__item[aria-current="true"] { background: var(--am-royal-dim); color: #fff; }
 .brc-side__item[aria-current="true"] > svg, .brc-side__item[aria-current="true"] .brc-count { color: #fff; }
 .brc-side__n { margin-left: auto; }
 
@@ -571,6 +583,9 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 .brc-row__teams { display: grid; gap: 4px; min-width: 0; }
 .brc-row__team { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-width: 0; font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; line-height: 1.2; }
 .brc-row__crest { width: 20px; height: 20px; object-fit: contain; }
+/* #CLASSIC-ASSET-1013 — il tennista ritagliato sul volto (Crest → .br-crest-photo)
+   anche nella riga: a 20 px la figura intera era una macchia */
+.brc-row__crest.br-crest-photo { border-radius: 50%; }
 .brc-row__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brc-row__score { font-family: var(--am-font-num); font-size: 13px; font-weight: 700; color: var(--am-live); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* il nostro numero: piccolo, con l'etichetta onesta sotto; lime solo se è nostro */

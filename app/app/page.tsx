@@ -10973,7 +10973,21 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 sempre — ma un <img> display:none il browser lo SCARICA lo stesso.
                 Misurato @390 sul preview: 590 KB per pagina, il 30% di tutto il
                 payload di immagini, per un elemento che non può accendersi. */}
-            <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            {/* #CLASSIC-ASSET-1013 — il raster ufficiale scalato (LANCZOS) a 2x/3x
+                della misura resa (h 30 → 182×60 / 273×90) invece del PNG da 1390 px:
+                stesso marchio, 20–36 KB. Sotto i 641 px il lockup sarebbe largo
+                91 px: la regola 2 del marchio (lockup ≥ 120 px, sotto solo il
+                monogramma) dice monogramma, e il <picture> lo serve. */}
+            <picture>
+              <source media="(max-width: 640px)" srcSet="/logos/betredge-monogram-white.svg" />
+              <img
+                className="brand-logo-dark"
+                src="/logos/betredge-header-white@2x.png"
+                srcSet="/logos/betredge-header-white@2x.png 2x, /logos/betredge-header-white@3x.png 3x"
+                alt="BetrEdge"
+                style={{ height: 30, width: "auto" }}
+              />
+            </picture>
           </Link>
 
           {/* ── Nav primaria — #RESTYLING-0921 ──────────────────────────────

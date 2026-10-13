@@ -192,6 +192,20 @@ html[data-frames="off"] .cl-arena {
 html[data-frames="off"] .cl-team { display: grid; justify-items: center; gap: 6px; min-width: 0; text-align: center; }
 html[data-frames="off"] .cl-crest { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(5, 15, 34, 0.35)); }
 html[data-frames="off"] .cl-team .br-crest { background: rgba(5, 15, 34, 0.35); border: 0; border-radius: 10px; }
+/* il tennista senza foto: iniziali nel tondo, la stessa forma del ritratto accanto */
+html[data-frames="off"] .br-crest[data-sport="tennis"] { border-radius: 50%; }
+/* #CLASSIC-ASSET-1013 — il tennista come stemma: tondo (la foto non ha la
+   sagoma di uno scudo, il cerchio è la forma del ritratto), foto al 200% con
+   il bordo alto allineato in alto → il volto, che nei cutout sta nel primo
+   terzo, cade al centro. Fondo navy velato come il quadratino delle iniziali. */
+html[data-frames="off"] .br-crest-photo {
+  position: relative; display: inline-block; overflow: hidden; flex: none;
+  border-radius: 50%; background: rgba(5, 15, 34, 0.35);
+}
+html[data-frames="off"] .br-crest-photo > img {
+  position: absolute; top: 0; left: 50%; width: 200%; height: 200%; max-width: none;
+  transform: translateX(-50%); object-fit: cover; object-position: 50% 0;
+}
 /* due righe di posto, sempre: l'altezza della scheda non dipende dal nome */
 html[data-frames="off"] .cl-name {
   max-width: 100%; min-height: 2.4em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
@@ -219,11 +233,13 @@ html[data-frames="off"] .cl-big-n { font: 700 32px/0.95 var(--cl-font-prob); let
 html[data-frames="off"] .cl-big-pc { font: 700 18px/1 var(--cl-font-prob); margin-left: 1px; }
 html[data-frames="off"] .cl-label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 10.5px; line-height: 1.2; color: var(--cl-ink-3); white-space: nowrap; }
 html[data-frames="off"] .cl-label[data-kind="protected"] > span { color: var(--am-amber); }
+/* #CLASSIC-ASSET-1013 — la «i» è l'icona info della firma (SVG inline, il cerchio
+   è già nel segno): il bottone non disegna più un secondo cerchio di fondo */
 html[data-frames="off"] .cl-info {
-  display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%;
-  background: rgba(214, 228, 255, 0.14); color: var(--am-text); font: italic 700 11px/1 Georgia, "Times New Roman", serif; cursor: pointer;
+  display: inline-grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--cl-ink-2); cursor: pointer;
 }
-html[data-frames="off"] .cl-info:hover, html[data-frames="off"] .cl-info[aria-expanded="true"] { background: rgba(214, 228, 255, 0.28); }
+html[data-frames="off"] .cl-info:hover, html[data-frames="off"] .cl-info[aria-expanded="true"] { color: var(--am-text); background: rgba(214, 228, 255, 0.14); }
 html[data-frames="off"] .cl-info:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
 /* round 3 (QA): la «i» apre un riquadro SOPRA la scheda, ancorato sopra il piede:
    come riga in più allungava la scheda e, nel carosello, tutte le altre con lei */

@@ -17,8 +17,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 
-/** #CLASSIC-INT-1008 — le foto approvate (public/images/classic/, 16:9).
- *  `src` è il PNG grande (1280×720), `srcSm` il PNG piccolo (800×450): gli
+/** #CLASSIC-INT-1008 → #CLASSIC-ASSET-1013 — le foto approvate (public/images/classic/),
+ *  tagliate alla misura della scatola: 2:1 sul desktop, 16:10 sul telefono.
+ *  `src` è il PNG grande (1280×640), `srcSm` il PNG piccolo (800×500): gli
  *  AVIF e WebP stanno accanto con lo stesso nome, e il <picture> li offre in
  *  quell'ordine. `fallback` è il ripiego SVG a codice: se la foto non arriva
  *  (errore di rete, formato), la scatola mostra lui invece di un buco. */
@@ -132,7 +133,7 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
           >
             {b.image && failed[b.id] && b.image.fallback ? (
               // eslint-disable-next-line @next/next/no-img-element -- SVG statico, ripiego
-              <img className="brc-banner__art" src={b.image.fallback} alt="" width={1280} height={720} />
+              <img className="brc-banner__art" src={b.image.fallback} alt="" width={1280} height={640} />
             ) : b.image && !failed[b.id] ? (
               <picture className="brc-banner__media">
                 <source type="image/avif" srcSet={srcSetFor(b.image, "avif")} sizes={BANNER_SIZES} />
@@ -144,7 +145,7 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
                   sizes={BANNER_SIZES}
                   alt={b.image.alt ?? ""}
                   width={1280}
-                  height={720}
+                  height={640}
                   // il primo è sopra la piega a ogni larghezza; gli altri due, sul
                   // telefono, sono fuori schermo nel carosello
                   loading={i === 0 ? "eager" : "lazy"}

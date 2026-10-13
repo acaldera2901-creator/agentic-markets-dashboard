@@ -281,7 +281,14 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
               title={c.infoLabel}
               onClick={() => setInfoOpen((o) => !o)}
             >
-              i
+              {/* #CLASSIC-ASSET-1013 — l'icona «info» della firma di casa (griglia 24,
+                  tratto 1,75, punte piatte): asset-classic-final/icons/svg/info.svg, inline
+                  per prendere currentColor. Prima era una «i» in Georgia corsivo. */}
+              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="butt" strokeLinejoin="miter" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="8.5" />
+                <path d="M12 11v5.5" />
+                <path d="M10.9 7.1h2.2v2.2h-2.2z" fill="currentColor" stroke="none" />
+              </svg>
             </button>
           </p>
         </div>

@@ -39,7 +39,8 @@ import { useClassicPrices } from "@/components/classic/ClassicContext";
 import { classicCopy, fill, type ClassicCopy } from "@/lib/classic/lobby-copy";
 import { ClassicBanners, type ClassicBanner } from "@/components/classic/ClassicBanners";
 import { ClassicRow, type ClassicRowLink } from "@/components/classic/ClassicRow";
-import { IconChevronDown, IconChevronRight, IconClock, IconClose, IconExplore, IconFootball, IconHome, IconLedger, IconLive, IconSearch, IconStar, IconTennis, IconTools } from "@/components/ui/icons";
+import { IconChevronDown, IconChevronRight, IconClose, IconSearch } from "@/components/ui/icons";
+import { ClassicIcon } from "@/components/classic/ClassicIcon";
 import "./classic-lobby.css";
 
 type BannerSlot = Pick<ClassicBanner, "href" | "onClick" | "image">;
@@ -97,12 +98,19 @@ function tzAbbr(tz: string, lang: string, now: number): string {
   }
 }
 
+// #CLASSIC-ASSET-1013 — le icone del rail sono il set 3D di casa (ClassicIcon):
+// la bandierina lime = in evidenza, il fulmine = live, l'orologio = a breve,
+// il tabellone = tutto il board.
 const TABS: { id: LobbyTab; key: keyof ClassicCopy; icon: ReactNode }[] = [
-  { id: "featured", key: "tabFeatured", icon: <IconStar size={16} /> },
-  { id: "inplay", key: "tabInPlay", icon: <IconLive size={16} /> },
-  { id: "soon", key: "tabSoon", icon: <IconClock size={16} /> },
-  { id: "all", key: "tabAll", icon: <IconExplore size={16} /> },
+  { id: "featured", key: "tabFeatured", icon: <ClassicIcon name="market-soft" /> },
+  { id: "inplay", key: "tabInPlay", icon: <ClassicIcon name="classic-live" /> },
+  { id: "soon", key: "tabSoon", icon: <ClassicIcon name="menu-history" /> },
+  { id: "all", key: "tabAll", icon: <ClassicIcon name="classic-board" /> },
 ];
+
+/** Sport → icona 3D. Il calcio è il pallone già in prod (menu-prediction), il
+ *  tennis la pallina e «popolari» la stella, fatte nello stesso stile. */
+const SPORT_ICON = { popular: "classic-popular", football: "menu-prediction", tennis: "classic-tennis" } as const;
 
 /** Il carosello: schede affiancate, scroll-snap, frecce di una «pagina» sul
  *  desktop, swipe sul telefono. Featured e «differs most» lo condividono. */
@@ -282,7 +290,9 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
     <div className="brc-lobby" data-testid="classic-lobby" data-loading={loading}>
       {/* ── 0 · il rail sinistro (desktop): sezioni, sport, altre destinazioni ── */}
       <nav className="brc-side" aria-label={copy.sideLabel}>
-        <p className="brc-side__h"><IconHome size={16} />{copy.sideBoard}</p>
+        {/* le intestazioni sono etichette in maiuscoletto: senza icona, l'icona
+            sta sulle voci (destinazioni), non sui titoli di gruppo */}
+        <p className="brc-side__h">{copy.sideBoard}</p>
         <ul className="brc-side__list">
           {TABS.map((t) => (
             <li key={t.id}>
@@ -293,26 +303,26 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
             </li>
           ))}
         </ul>
-        <p className="brc-side__h"><IconExplore size={16} />{copy.sportsLabel}</p>
+        <p className="brc-side__h">{copy.sportsLabel}</p>
         <ul className="brc-side__list">
           {([
-            { id: "popular", label: copy.popular, icon: <IconStar size={16} />, n: sportCounts.popular },
-            { id: "football", label: copy.football, icon: <IconFootball size={16} />, n: sportCounts.football },
-            { id: "tennis", label: copy.tennis, icon: <IconTennis size={16} />, n: sportCounts.tennis },
+            { id: "popular", label: copy.popular, n: sportCounts.popular },
+            { id: "football", label: copy.football, n: sportCounts.football },
+            { id: "tennis", label: copy.tennis, n: sportCounts.tennis },
           ] as const).map((s) => (
             <li key={s.id}>
               <button type="button" className="brc-side__item" aria-current={sport === s.id ? "true" : undefined} onClick={() => pickSport(s.id)}>
-                {s.icon}<span>{s.label}</span><span className="brc-count brc-side__n">{loading ? "–" : s.n}</span>
+                <ClassicIcon name={SPORT_ICON[s.id]} /><span>{s.label}</span><span className="brc-count brc-side__n">{loading ? "–" : s.n}</span>
               </button>
             </li>
           ))}
         </ul>
-        <p className="brc-side__h"><IconLedger size={16} />{copy.sideMore}</p>
+        <p className="brc-side__h">{copy.sideMore}</p>
         <ul className="brc-side__list">
-          <li><a className="brc-side__item" href={banners.live.href} onClick={liveSide}><IconLive size={16} /><span>{copy.sideLive}</span></a></li>
-          <li><Link className="brc-side__item" href={banners.record.href}><IconLedger size={16} /><span>{copy.sideRecord}</span></Link></li>
-          <li><Link className="brc-side__item" href="/tools"><IconTools size={16} /><span>{copy.b3Tools}</span></Link></li>
-          <li><Link className="brc-side__item" href="/partners"><IconExplore size={16} /><span>{copy.sidePartners}</span></Link></li>
+          <li><a className="brc-side__item" href={banners.live.href} onClick={liveSide}><ClassicIcon name="classic-live" /><span>{copy.sideLive}</span></a></li>
+          <li><Link className="brc-side__item" href={banners.record.href}><ClassicIcon name="market-result" /><span>{copy.sideRecord}</span></Link></li>
+          <li><Link className="brc-side__item" href="/tools"><ClassicIcon name="menu-tools" /><span>{copy.b3Tools}</span></Link></li>
+          <li><Link className="brc-side__item" href="/partners"><ClassicIcon name="menu-partner" /><span>{copy.sidePartners}</span></Link></li>
         </ul>
       </nav>
 
@@ -365,9 +375,9 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
       {/* ── 3 · striscia sport ─────────────────────────────────────────── */}
       <div className="brc-sports" role="group" aria-label={copy.sportsLabel}>
         {([
-          { id: "popular", label: copy.popular, icon: <IconStar size={20} />, n: sportCounts.popular },
-          { id: "football", label: copy.football, icon: <IconFootball size={20} />, n: sportCounts.football },
-          { id: "tennis", label: copy.tennis, icon: <IconTennis size={20} />, n: sportCounts.tennis },
+          { id: "popular", label: copy.popular, n: sportCounts.popular },
+          { id: "football", label: copy.football, n: sportCounts.football },
+          { id: "tennis", label: copy.tennis, n: sportCounts.tennis },
         ] as const).map((s) => (
           <button
             key={s.id}
@@ -376,7 +386,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
             aria-pressed={sport === s.id}
             onClick={() => pickSport(s.id)}
           >
-            <span className="brc-sport__icon">{s.icon}</span>
+            <span className="brc-sport__icon"><ClassicIcon name={SPORT_ICON[s.id]} size={32} /></span>
             <span className="brc-sport__label">{s.label}</span>
             <span className="brc-sport__n">{loading ? "–" : s.n}</span>
           </button>
@@ -436,7 +446,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
           ) : blocks.map((block) => (
             <div key={block.sport} className="brc-sport-block">
               <h3 className="brc-sport-block__title">
-                {block.sport === "tennis" ? <IconTennis size={18} /> : <IconFootball size={18} />}
+                <ClassicIcon name={block.sport === "tennis" ? "classic-tennis" : "menu-prediction"} size={20} />
                 {sportLabel(block.sport)}
                 <span className="brc-count">{block.count}</span>
               </h3>
