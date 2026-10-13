@@ -21,7 +21,7 @@ import { IconChevronRight, IconLock } from "@/components/ui/icons";
 import type { LobbyItem } from "@/lib/ui/lobby";
 import { formatPct, splitLiveScore } from "@/lib/ui/prediction-card";
 import { useClassicPrices } from "@/components/classic/ClassicContext";
-import { OddsChip } from "@/components/classic/ClassicSlab";
+import { OddsChip, PartnerFallback, fallbackPartners } from "@/components/classic/ClassicSlab";
 import { classicCopy as cardCopy } from "@/lib/classic/copy";
 import { bestCells, classicViewFor, footballBooks, tennisBooks, tennisOddsFor } from "@/lib/classic/card-view";
 import { hasStarted } from "@/lib/classic/guard";
@@ -71,6 +71,7 @@ export function ClassicRow({ item, link, lang, tz, now, copy }: Props) {
       cells = bestCells(tennisBooks(tennisOddsFor(prices.fpOdds, d.home, d.away, d.startsAt), d.home, d.away), labels);
     }
   }
+  const fallback = fallbackPartners(prices).length > 0;
   const when = rowWhen(d.startsAt, tz, lang, now, { today: copy.fToday, tomorrow: copy.fTomorrow });
   const title = `${d.home} vs ${d.away}`;
 
@@ -101,10 +102,18 @@ export function ClassicRow({ item, link, lang, tz, now, copy }: Props) {
         )}
         <IconChevronRight size={16} className="brc-row__chev" />
       </Link>
-      <span className="brc-row__mkt" aria-label={copy.bestOdds}>
+      <span className="brc-row__mkt" aria-label={copy.bestOdds} data-fallback={cells.length === 0 && fallback ? "" : undefined}>
         {cells.length > 0
-          ? cells.map((cell, i) => <OddsChip key={cell.label} cell={cell} surface="lobby-row" c={c} pick={!link.locked && leadIdx === i} />)
-          : <span className="brc-row__nomkt">{started ? c.pricesRemoved : c.noPartnerPrice}</span>}
+          ? <>
+              {cells.map((cell, i) => <OddsChip key={cell.label} cell={cell} surface="lobby-row" c={c} pick={!link.locked && leadIdx === i} />)}
+              {/* «AD·18+» una volta per riga, non dentro ognuna delle tre caselle (a 390 non ci stava) */}
+              <span className="cl-odd-ad brc-row__ad" aria-hidden="true">{c.ad}</span>
+            </>
+          : fallback
+            // #CLASSIC-ROOBET-1013 round 2 — senza prezzo partner, o a partita
+            // iniziata: i loghi di tre partner con il link di atterraggio
+            ? <PartnerFallback surface="lobby-row" c={c} lang={lang} />
+            : <span className="brc-row__nomkt">{started ? c.pricesRemoved : c.noPartnerPrice}</span>}
       </span>
     </li>
   );

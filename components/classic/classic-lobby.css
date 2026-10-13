@@ -19,8 +19,9 @@
 .brc-lobby {
   display: flex;
   flex-direction: column;
-  gap: var(--am-s-5);
-  padding: var(--am-s-5) var(--am-s-4) var(--am-s-7);
+  gap: var(--am-s-4);
+  /* round 2 — gli unici vuoti ammessi sono i margini laterali del sito */
+  padding: var(--am-s-4) var(--am-s-4) var(--am-s-5);
   min-width: 0;
 }
 
@@ -313,10 +314,10 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 .brc-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--am-s-6);
+  gap: var(--am-s-5);
   min-width: 0;
 }
-.brc-sec { display: flex; flex-direction: column; gap: var(--am-s-4); min-width: 0; }
+.brc-sec { display: flex; flex-direction: column; gap: var(--am-s-3); min-width: 0; }
 .brc-sec__head {
   display: flex;
   align-items: flex-end;
@@ -381,7 +382,7 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
    alta, quella con stima, mercato, prezzi per esito e bottone partner).
    Nessuna animazione: un caricamento che lampeggia è rumore, e dura meno di un
    secondo. */
-.brc-slab { display: block; width: 100%; min-height: 478px; border-radius: var(--am-r-card); background: var(--am-panel-2); }
+.brc-slab { display: block; width: 100%; min-height: 292px; border-radius: var(--am-r-card); background: var(--am-panel-2); }
 .brc-rail--skeleton { overflow: hidden; }
 
 /* ── griglie di schede ─────────────────────────────────────────────────── */
@@ -509,18 +510,17 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
    compare da 1200 px in su; sotto, tab e striscia sport fanno lo stesso lavoro
    e il desk ha già la barra in basso. Il rail è «sticky» ma non più alto della
    finestra: scorre con la pagina quando è più lungo. */
-.brc-main { display: flex; flex-direction: column; gap: var(--am-s-5); min-width: 0; }
+.brc-main { display: flex; flex-direction: column; gap: var(--am-s-4); min-width: 0; }
 .brc-side { display: none; }
 @media (min-width: 1200px) {
-  .brc-lobby { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--am-s-5); align-items: start; }
+  /* round 2 — nessun vuoto nel layout: il rail è un pannello alto quanto la
+     pagina (come su Roobet), non una scatola corta con il buio sotto */
+  .brc-lobby { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--am-s-4); align-items: stretch; }
   .brc-side {
     display: flex; flex-direction: column; gap: var(--am-s-2);
-    position: sticky; top: var(--am-s-4); max-height: calc(100vh - var(--am-s-6));
-    overflow-y: auto; scrollbar-width: none;
     padding: var(--am-s-3) var(--am-s-2);
     border-radius: var(--am-r-card); background: var(--am-panel);
   }
-  .brc-side::-webkit-scrollbar { display: none; }
 }
 .brc-side__h {
   display: flex; align-items: center; gap: 8px; margin: var(--am-s-2) 0 2px; padding: 0 10px;
@@ -586,6 +586,12 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 .brc-row__mkt .cl-odd { justify-content: space-between; height: 36px; padding: 0 10px 0 8px; background: var(--am-panel-2); }
 .brc-row:hover .brc-row__mkt .cl-odd { background: var(--am-panel-3); }
 .brc-row__mkt .cl-odd:hover { background: var(--am-royal-dim); }
+/* round 2 — nelle tre caselle della riga l'«AD·18+» sta UNA volta, in coda;
+   la colonna è un flex che va a capo, così la riga dell'avviso sta sotto */
+.brc-row__mkt { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 6px; }
+.brc-row__mkt .cl-odd { flex: 1 1 84px; max-width: 128px; }
+.brc-row__mkt .cl-odd .cl-odd-ad { display: none; }
+.brc-row__ad { flex-basis: 100%; text-align: right; white-space: nowrap; }
 .brc-row__nomkt { display: inline-flex; align-items: center; min-height: 36px; padding: 0 10px; font-family: var(--am-font-ui); font-size: 12px; color: var(--am-muted-2); white-space: nowrap; }
 .brc-seeall {
   justify-self: center; min-height: 36px; padding: 0 var(--am-s-4); border: 0; border-radius: 8px;
@@ -653,9 +659,11 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
   .brc-sport { min-width: 0; }
 
   .brc-sec__title { font-size: 22px; }
-  .brc-rail { grid-auto-columns: 86%; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); scroll-padding-inline: var(--am-s-3); }
+  /* round 2 — 92%: a 86% la scheda era 267 px e il piede (tre partner + CTA)
+     andava su due righe; a 286 px «Sblocca l'analisi ↗» sta su una */
+  .brc-rail { grid-auto-columns: 92%; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); scroll-padding-inline: var(--am-s-3); }
   .brc-rail-nav { display: none; }
-  .brc-slab { min-height: 488px; }
+  .brc-slab { min-height: 300px; }
   .brc-grid { grid-template-columns: minmax(0, 1fr); }
   .brc-group__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
   .brc-group__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
@@ -668,8 +676,7 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
   .brc-row__teams { grid-column: 1; grid-row: 2; }
   .brc-row__est { grid-column: 2; grid-row: 2; }
   .brc-row__chev { grid-column: 3; grid-row: 2; }
-  .brc-row__mkt { grid-auto-columns: minmax(0, 1fr); }
-  .brc-row__mkt .cl-odd { padding: 0 8px 0 6px; }
+  .brc-row__mkt .cl-odd { flex: 1 1 0; max-width: none; padding: 0 8px 0 6px; }
   .brc-group__mkt { display: none; }
 }
 

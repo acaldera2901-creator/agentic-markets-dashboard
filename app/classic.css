@@ -136,32 +136,33 @@ html[data-frames="off"] :is(.br-sec__title, .br-hero__title, .brc-sec__title, .b
 }
 html[data-frames="off"] :is(.br-card__model-n, .br-sporthero__stat-n) { font-family: var(--cl-font-prob); font-weight: 700; }
 
-/* ═══ Fase B · la scheda (components/classic/ClassicSlab.tsx) ═══════════════════
-   #CLASSIC-ROOBET-1013 — la forma del Design Review del 12/10: una scatola navy
-   con bordo sottile bianco-freddo (NON lime: il lime è solo del numero), dentro
-   l'arena azzurra con gli stemmi, il modulo scuro con pick e numero, il piede con
-   chip quota · CTA · watchlist. Gerarchia da quattro leve: dimensione (numero 34 >
-   nomi 15 > pick 16 > etichette 10,5), peso, colore (lime una volta sola) e tono
-   di fondo (arena chiara > scheda > modulo scuro). Griglia a 4 px. */
+/* ═══ Fase B · la scheda (components/classic/ClassicSlab.tsx) — round 2 (13/10) ═══
+   La forma del mockup di Andrea: quattro blocchi, NESSUNA cornice, altezza
+   uniforme e zero spazio vuoto. La separazione la fanno i toni di fondo —
+   arena azzurra > scheda navy > modulo scuro — e lo spazio. Gerarchia da
+   quattro leve (numero 32 > pick 16 > nomi 15 > etichette 10,5; peso; lime una
+   volta sola, sul numero nostro e sul prezzo della pick; tono di fondo).
+   Griglia a 4 px. I nomi hanno SEMPRE due righe di posto: così ogni scheda è
+   alta uguale e in un carosello non resta un vuoto fra modulo e piede. */
 html[data-frames="off"] .cl-slab {
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--cl-edge);
+  gap: 8px;
+  padding: 10px;
+  border: 0;
   border-radius: var(--am-r-card);
   background: #0F2A55;
   box-shadow: none;
-  --cl-edge: rgba(214, 228, 255, 0.34);   /* il filo bianco-freddo del PDF */
-  --cl-edge-2: rgba(214, 228, 255, 0.22);
-  --cl-ink-2: #C9D8F2;                     /* 7,9:1 sul navy della scheda */
-  --cl-ink-3: #A9C0E8;                     /* 5,6:1 */
+  --cl-ink-2: #C9D8F2;   /* 7,9:1 sul navy della scheda */
+  --cl-ink-3: #A9C0E8;   /* 5,6:1 */
 }
-html[data-frames="off"] .cl-slab:hover { border-color: rgba(214, 228, 255, 0.5); box-shadow: none; }
+html[data-frames="off"] .cl-slab:hover,
+html[data-frames="off"] .cl-slab:focus-within { border: 0; box-shadow: none; background: #11305F; }
 html[data-frames="off"] .cl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* 1 · competizione · ora: una riga centrata, le linguette accanto */
+/* 1 · competizione · ora, centrata; linguette accanto; watchlist a destra */
 html[data-frames="off"] .cl-head {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px;
-  margin: 0; min-width: 0; min-height: 20px;
+  position: relative;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px;
+  margin: 0; padding: 0 26px; min-width: 0; min-height: 24px;
   font-family: var(--am-font-ui); font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--cl-ink-2);
 }
 html[data-frames="off"] .cl-meta { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
@@ -176,82 +177,70 @@ html[data-frames="off"] .cl-tag {
 }
 html[data-frames="off"] .cl-tag[data-kind="starting-soon"] { color: var(--am-live); }
 html[data-frames="off"] .cl-tag[data-kind="included"] { color: var(--am-lime); }
+html[data-frames="off"] .cl-watch { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: inline-flex; }
+html[data-frames="off"] .cl-slab .br-watch { width: 24px; height: 24px; border: 0; background: transparent; color: var(--cl-ink-3); }
+html[data-frames="off"] .cl-slab .br-watch:hover { color: var(--am-text); background: rgba(214, 228, 255, 0.12); }
 
-/* 2 · l'arena: il pannello azzurro luminoso con stemmi, nomi, VS */
+/* 2 · l'arena: il pannello azzurro con stemmi, nomi, VS */
 html[data-frames="off"] .cl-arena {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 8px;
-  margin: 0; padding: 14px 10px 12px;
-  border: 1px solid rgba(214, 228, 255, 0.45); border-radius: 10px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 6px;
+  margin: 0; padding: 12px 8px 10px;
+  border: 0; border-radius: 10px;
   background: linear-gradient(180deg, #3272DE 0%, #2458B8 100%);
   font: 700 15px/1.2 var(--am-font-ui); color: #FFFFFF;
 }
-html[data-frames="off"] .cl-team { display: grid; justify-items: center; gap: 8px; min-width: 0; text-align: center; }
+html[data-frames="off"] .cl-team { display: grid; justify-items: center; gap: 6px; min-width: 0; text-align: center; }
 html[data-frames="off"] .cl-crest { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(5, 15, 34, 0.35)); }
-html[data-frames="off"] .cl-team .br-crest { background: rgba(5, 15, 34, 0.35); border-radius: 10px; }
+html[data-frames="off"] .cl-team .br-crest { background: rgba(5, 15, 34, 0.35); border: 0; border-radius: 10px; }
+/* due righe di posto, sempre: l'altezza della scheda non dipende dal nome */
 html[data-frames="off"] .cl-name {
-  max-width: 100%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  max-width: 100%; min-height: 2.4em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
   overflow-wrap: anywhere;
 }
-/* la colonna di mezzo: un filo verticale sopra e sotto il «VS» (il PDF) */
-html[data-frames="off"] .cl-mid { align-self: stretch; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; gap: 6px; padding: 0 6px; min-width: 28px; }
+/* la colonna di mezzo: un filo verticale sopra e sotto il «VS» (il mockup) */
+html[data-frames="off"] .cl-mid { align-self: stretch; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; gap: 6px; padding: 0 4px; min-width: 24px; }
 html[data-frames="off"] .cl-mid::before, html[data-frames="off"] .cl-mid::after { content: ""; width: 1px; min-height: 10px; background: rgba(255, 255, 255, 0.28); }
 html[data-frames="off"] .cl-vs { font-family: var(--am-font-num); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #DCE8FB; }
 html[data-frames="off"] .cl-score { display: grid; gap: 2px; justify-items: center; font: 700 16px/1.1 var(--am-font-num); color: var(--am-live); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* 3 · il modulo scuro: pick a sinistra, numero a destra */
 html[data-frames="off"] .cl-pickmod {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px;
-  padding: 10px 14px; border: 1px solid var(--cl-edge-2); border-radius: 10px; background: #0A1D42;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 8px 12px; border: 0; border-radius: 10px; background: #0A1D42;
 }
 html[data-frames="off"] .cl-pick { display: grid; gap: 2px; margin: 0; min-width: 0; color: var(--am-text); }
 html[data-frames="off"] .cl-k { font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cl-ink-3); font-weight: 600; }
 html[data-frames="off"] .cl-pick-v { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 700; line-height: 1.25; }
 html[data-frames="off"] .cl-pick-v[data-locked] { color: var(--cl-ink-2); font-weight: 600; }
-html[data-frames="off"] .cl-read { display: grid; justify-items: end; gap: 2px; padding-left: 14px; border-left: 1px solid rgba(255, 255, 255, 0.2); min-width: 0; }
+html[data-frames="off"] .cl-read { display: grid; justify-items: end; gap: 2px; padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, 0.16); min-width: 0; }
 html[data-frames="off"] .cl-big { margin: 0; display: flex; align-items: baseline; line-height: 0.95; color: var(--am-text); white-space: nowrap; }
 html[data-frames="off"] .cl-big[data-ours] { color: var(--am-lime); }
-html[data-frames="off"] .cl-big-n { font: 700 34px/0.95 var(--cl-font-prob); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-big-pc { font: 700 20px/1 var(--cl-font-prob); margin-left: 1px; }
+html[data-frames="off"] .cl-big-n { font: 700 32px/0.95 var(--cl-font-prob); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+html[data-frames="off"] .cl-big-pc { font: 700 18px/1 var(--cl-font-prob); margin-left: 1px; }
 html[data-frames="off"] .cl-label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 10.5px; line-height: 1.2; color: var(--cl-ink-3); white-space: nowrap; }
+html[data-frames="off"] .cl-label[data-kind="protected"] > span { color: var(--am-amber); }
 html[data-frames="off"] .cl-info {
   display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%;
   background: rgba(214, 228, 255, 0.14); color: var(--am-text); font: italic 700 11px/1 Georgia, "Times New Roman", serif; cursor: pointer;
 }
 html[data-frames="off"] .cl-info:hover, html[data-frames="off"] .cl-info[aria-expanded="true"] { background: rgba(214, 228, 255, 0.28); }
 html[data-frames="off"] .cl-info:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
-html[data-frames="off"] .cl-infotext { margin: -4px 0 0; padding: 8px 10px; border-radius: 6px; background: rgba(5, 15, 34, 0.45); font-size: 12.5px; line-height: 1.45; color: var(--am-text); }
+html[data-frames="off"] .cl-infotext { margin: -2px 0 0; padding: 8px 10px; border-radius: 6px; background: rgba(5, 15, 34, 0.45); font-size: 12px; line-height: 1.45; color: var(--am-text); }
 html[data-frames="off"] .cl-infotext[hidden] { display: none; }
 
-/* 4 · il contesto: una riga quieta, separata da punti */
-html[data-frames="off"] .cl-gapline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: -2px 2px 0; font-size: 12px; line-height: 1.4; color: var(--cl-ink-2); font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-gapline > * + *::before { content: "·"; margin-right: 8px; color: var(--cl-ink-3); }
-html[data-frames="off"] .cl-gap { color: var(--am-text); }
-html[data-frames="off"] .cl-note { font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--am-amber); }
-html[data-frames="off"] .cl-origin { font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; }
-html[data-frames="off"] .cl-noprice-why { flex: 1 1 100%; }
-
-/* 5 · il piede: chip della miglior quota · CTA · watchlist, sopra un filo */
+/* 4 · il piede, una riga: chip della pick (o i tre partner) · CTA */
 html[data-frames="off"] .cl-foot {
-  margin-top: auto; padding-top: 10px; border-top: 1px solid var(--cl-edge-2);
-  /* chip · CTA · watchlist: la CTA sta al centro dello spazio che resta, mai
-     sopra ai vicini (a 390 il titolo lungo «Sblocca l'analisi completa»
-     copriva la watchlist con tre colonne 1fr·auto·1fr) */
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 40px;
+  margin-top: auto; padding: 0; border: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px;
 }
-html[data-frames="off"] .cl-foot-l { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; justify-self: start; }
+/* il lato sinistro non si stringe mai: a cedere è la CTA, che va a capo */
+html[data-frames="off"] .cl-foot-l { display: inline-flex; align-items: center; flex: none; min-width: max-content; }
+html[data-frames="off"] .cl-partners { flex: none; }
 html[data-frames="off"] .cl-foot-l:empty { display: none; }
-html[data-frames="off"] .cl-foot-r { display: inline-flex; justify-self: end; }
-html[data-frames="off"] .cl-foot-l:empty + .cl-open { grid-column: 1 / 3; }
-/* tre celle (riga chiusa): prendono la riga intera sopra la CTA */
-html[data-frames="off"] .cl-foot[data-cells] { grid-template-columns: minmax(0, 1fr) auto; }
-html[data-frames="off"] .cl-foot[data-cells] .cl-foot-l { grid-column: 1 / -1; }
-html[data-frames="off"] .cl-foot[data-cells] .cl-open { grid-column: 1; }
-html[data-frames="off"] .cl-foot[data-cells] .cl-foot-r { grid-column: 2; }
-html[data-frames="off"] .cl-slab:focus-within { border-width: 1px; border-color: rgba(214, 228, 255, 0.6); }
 /* il chip «1 · logo · 3.53» (mockup 13/10): etichetta dell'esito, logo in un
-   riquadro, quota in monospace; il prezzo della pick è l'unico lime del piede */
+   riquadro, quota in monospace; «AD·18+» minuscolo dentro al chip */
 html[data-frames="off"] .cl-odd {
-  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px 0 7px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px 0 7px; border: 0; border-radius: 6px;
   background: rgba(214, 228, 255, 0.1); color: var(--am-text); text-decoration: none; white-space: nowrap;
 }
 html[data-frames="off"] .cl-odd:hover { background: rgba(214, 228, 255, 0.18); }
@@ -259,30 +248,42 @@ html[data-frames="off"] .cl-odd:focus-visible { outline: 2px solid var(--am-text
 html[data-frames="off"] .cl-odd-k { font: 700 11px/1 var(--am-font-num); color: var(--cl-ink-2); min-width: 8px; text-align: center; }
 html[data-frames="off"] .cl-odd-p { font: 700 13px/1 var(--am-font-num); font-variant-numeric: tabular-nums; }
 html[data-frames="off"] .cl-odd[data-pick] .cl-odd-p { color: var(--am-lime); }
+html[data-frames="off"] .cl-odd-ad { font: 600 8px/1 var(--am-font-num); letter-spacing: 0.06em; color: var(--cl-ink-3); margin-left: 2px; white-space: nowrap; }
 /* i loghi in /public/logos sono emblemi (FortunePlay) e wordmark (YBets): nel
    chip c'è posto per un quadrato 16×16 — del wordmark si vede il marchio a sinistra */
 html[data-frames="off"] .cl-logo { height: 16px; width: 16px; max-width: 16px; object-fit: cover; object-position: left center; border-radius: 3px; flex: none; }
 html[data-frames="off"] .cl-logo--txt { display: inline-grid; place-items: center; background: var(--cl-tone-2); font: 700 8px/1 var(--am-font-num); color: var(--am-text); text-transform: uppercase; }
-html[data-frames="off"] .cl-ad { font: 600 9px/1 var(--am-font-num); letter-spacing: 0.08em; color: var(--cl-ink-3); }
+/* il ripiego: tre partner, un logo ciascuno, link di atterraggio affiliato */
+html[data-frames="off"] .cl-partners { display: inline-flex; align-items: center; gap: 3px; }
+html[data-frames="off"] .cl-partner {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 6px;
+  background: rgba(214, 228, 255, 0.1); text-decoration: none;
+}
+html[data-frames="off"] .cl-partner:hover { background: rgba(214, 228, 255, 0.18); }
+html[data-frames="off"] .cl-partner:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
+html[data-frames="off"] .cl-partner .cl-logo { width: 16px; height: 16px; max-width: 16px; }
+/* nel ripiego l'avviso sta su due righe strette («PUBBL. · 18+» in 26 px): così
+   la CTA della scheda chiusa tiene due righe, non tre, anche a 280 px */
+html[data-frames="off"] .cl-partners > .cl-odd-ad { display: inline-block; width: 32px; white-space: normal; font-size: 7.5px; line-height: 1.25; text-align: left; margin-left: 2px; }
+html[data-frames="off"] .cl-foot .cl-open { flex: 1 1 auto; justify-content: flex-end; }
 html[data-frames="off"] .cl-open {
-  display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 32px; padding: 6px 8px;
-  color: var(--am-text); text-decoration: none; font: 700 13px/1.2 var(--am-font-ui); text-align: center; border-radius: 6px;
-  justify-self: center; min-width: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 30px; padding: 4px 6px; margin-left: auto;
+  color: var(--am-text); text-decoration: none; font: 700 13px/1.2 var(--am-font-ui); text-align: right; border-radius: 6px; min-width: 0;
 }
 html[data-frames="off"] .cl-open:hover { text-decoration: underline; text-underline-offset: 3px; }
 html[data-frames="off"] .cl-open[data-locked] { color: var(--am-lime); }
 html[data-frames="off"] .cl-open:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
-html[data-frames="off"] .cl-slab .br-watch { background: transparent; }
 
 html[data-frames="off"] .cl-tznote { margin: -20px 0 12px; font-family: var(--am-font-num); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted); }
 
 @media (max-width: 640px) {
-  html[data-frames="off"] .cl-odd, html[data-frames="off"] .cl-open { min-height: 40px; }
-  html[data-frames="off"] .cl-big-n { font-size: 36px; }
+  html[data-frames="off"] .cl-odd, html[data-frames="off"] .cl-open, html[data-frames="off"] .cl-partner { min-height: 36px; }
+  html[data-frames="off"] .cl-big-n { font-size: 34px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-frames="off"] .cl-slab * { transition: none !important; }
 }
+
 /* Un bordo trasparente lascia vedere lo sfondo che c'è SOTTO di lui: con
    l'origine di default (padding-box) un gradiente si ripete nel bordo e disegna
    un filo di un altro colore — una cornice fantasma. Dall'angolo del bordo,
