@@ -1,6 +1,10 @@
-// Mappa dei crest reali. Vuota in SP0: la fonte (licenza/asset pipeline) è
-// una questione aperta risolta a monte. Popolare qui non cambia i consumer.
-const CREST_MAP: Record<string, string> = {};
+// Mappa dei crest reali. #CLASSIC-ROOBET-1013 — popolata da
+// scripts/crests/import-crests.mjs (TheSportsDB; licenza: decisione di Andrea,
+// fonti per file in scripts/crests/sources.json). Chi non è in mappa cade sul
+// quadratino con le iniziali di <Crest>.
+import CREST_MAP from "./crest-map.json";
+
+const MAP: Record<string, string> = CREST_MAP;
 
 function key(team: string, sport: string): string {
   return `${sport.toLowerCase()}:${team.trim().toLowerCase()}`;
@@ -8,5 +12,5 @@ function key(team: string, sport: string): string {
 
 export function crestUrl(team: string | null, sport: string): string | null {
   if (!team) return null;
-  return CREST_MAP[key(team, sport)] ?? null;
+  return MAP[key(team, sport)] ?? null;
 }

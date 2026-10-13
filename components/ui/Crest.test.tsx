@@ -8,6 +8,20 @@ describe("crestUrl", () => {
     expect(crestUrl("Inter", "football")).toBeNull();
     expect(crestUrl(null, "football")).toBeNull();
   });
+
+  // #CLASSIC-ROOBET-1013 — la mappa importata (scripts/crests/import-crests.mjs).
+  it("nome servito dall'API → file in public/crests, chiave insensibile a maiuscole e spazi", () => {
+    expect(crestUrl("Arsenal FC", "football")).toBe("/crests/football/arsenal-fc.webp");
+    expect(crestUrl("  arsenal fc ", "Football")).toBe("/crests/football/arsenal-fc.webp");
+  });
+
+  it("ogni voce della mappa punta a un file che esiste (mai un <img> rotto)", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const map = (await import("@/lib/ui/crest-map.json")).default as Record<string, string>;
+    const missing = Object.values(map).filter((u) => !fs.existsSync(path.join(process.cwd(), "public", u)));
+    expect(missing).toEqual([]);
+  });
 });
 
 // #RESTYLING-0921 round 7 — senza crest con licenza il default NON è più il
