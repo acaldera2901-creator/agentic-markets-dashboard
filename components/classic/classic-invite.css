@@ -41,7 +41,10 @@
   gap: var(--am-s-1);
   max-width: 76ch;
   padding: var(--am-s-3) var(--am-s-4);
-  border: 1.5px dashed var(--am-amber);
+  /* #CLASSIC-COVERAGE-1014 — era una cornice ambra tratteggiata: sul sito classic
+     non ci sono fili. Il segnale «dati d'esempio» lo dà il fondo ambra al 12%. */
+  border: 0;
+  background: rgba(251, 191, 36, 0.12);
   border-radius: var(--am-r-card-sm);
 }
 .cli-preview__t { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.35; }

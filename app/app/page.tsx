@@ -11247,7 +11247,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   nessun heading che lo porti, e una pagina senza h1 è una
                   regressione SEO (#SEO-PACK-0810). */}
               {!(tab === "bets" && (deskView === "home" || deskView === "football" || deskView === "tennis")) && (
-                <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+                <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? (CLASSIC && tab === "invita" ? pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" }) : tNav.nav_predictions)}</h1>
               )}
               {/* #BOARD-HEAD-0910 — Andrea, 10/09: «togli questa parte».
                   Sulla BOARD il sottotitolo non si rende piu': era due righe di
