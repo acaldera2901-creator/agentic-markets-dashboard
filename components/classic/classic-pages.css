@@ -211,3 +211,64 @@ html[data-frames="off"] :is(.book-main, .book-content) :is(h1, h2) { text-transf
    è più largo della finestra (374 px, per la sfocatura) e allargava la pagina.
    Lo si taglia alla radice: è decorazione, non contenuto. */
 html[data-frames="off"] .wc-root { overflow-x: clip; }
+
+/* ═══ /how-it-works (landing) — #CLASSIC-COVERAGE-1014 ═══════════════════════
+   Testata propria nascosta (c'è la barra del sito); la barra sport non è più un
+   dock fisso (a 1440×900 copriva il paragrafo e spingeva la CTA sotto la piega):
+   sta nel flusso, sotto il carosello. */
+html[data-frames="off"] .lp > .lp-nav { display: none; }
+html[data-frames="off"] .hv3 { padding-bottom: 0; }
+html[data-frames="off"] .hv3 .v-sportnav-wrap {
+  position: static;
+  background: none;
+  border: 0;
+  padding: var(--am-s-4) var(--am-s-5) 0;
+  justify-content: flex-start;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+html[data-frames="off"] .hv3 .v-sportnav-wrap::before { content: none; }
+html[data-frames="off"] .hv3 .v-sportnav { padding: 0; width: 100%; }
+html[data-frames="off"] .hv3 .v-sportbtn {
+  min-height: 44px;
+  padding: 0 var(--am-s-4);
+  border: 0;
+  border-radius: var(--am-r-card-sm);
+  background: var(--cl-tone);
+  box-shadow: none;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-frames="off"] .hv3 .v-sportbtn:hover { background: var(--cl-tone-2); box-shadow: none; }
+/* il nastro: «LIVE» non è vero (sono righe d'esempio) e si sovrapponeva alla
+   prima riga; l'etichetta dice cosa sono e la pista parte dopo di lei */
+html[data-frames="off"] .hv3 .v-tape { border: 0; background: var(--am-panel); border-radius: var(--am-r-card-sm); margin-inline: var(--am-s-5); }
+html[data-frames="off"] .hv3 .v-tape::before {
+  content: "Edge tape · sample data";
+  padding: 0 var(--am-s-4);
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  background: linear-gradient(90deg, var(--am-panel) 82%, transparent);
+}
+html[data-frames="off"] .hv3 .v-tape-track { padding-left: 230px; font-family: var(--am-font-ui); font-size: 12.5px; }
+@media (max-width: 640px) {
+  html[data-frames="off"] .hv3 .v-sportnav-wrap { padding: var(--am-s-3) var(--am-s-3) 0; }
+  html[data-frames="off"] .hv3 .v-tape { margin-inline: var(--am-s-3); }
+  html[data-frames="off"] .hv3 .v-tape-track { padding-left: 196px; }
+}
+/* maiuscolo spaziato → tondo, come il resto del sito classic (round 3, 14/10) */
+html[data-frames="off"]:root .hv3 *:not(input):not(select):not(textarea) { text-transform: none; }
+html[data-frames="off"] .hv3 :is(.v-kick, .v-btn, .v-scan-head, .v-scan-head *, .v-scan-cols span, .lab, .pk, .name, .cl-k, .cl-vs, .tag-ex, .best, li) { letter-spacing: 0.01em; }
+html[data-frames="off"] .hv3 .v-btn { font-family: var(--am-font-ui); font-weight: 700; border-radius: var(--am-r-card-sm); border: 0; }
+html[data-frames="off"] .hv3 .v-btn--primary { background: var(--am-coral); color: #0A1B35; }
+html[data-frames="off"] .hv3 .v-btn--secondary, html[data-frames="off"] .hv3 .v-btn--utility { background: var(--cl-tone); color: var(--am-text); }
+/* la CTA del primo blocco sta sopra la piega a 1440×900: carosello, barra e nastro
+   restano, ma il titolo scende di corpo e il blocco perde l'aria in testa */
+html[data-frames="off"] .hv3 .v-hero { padding-top: var(--am-s-5); padding-bottom: var(--am-s-6); }
+html[data-frames="off"] .hv3 .v-hero h1 { font-size: clamp(34px, 3.9vw, 52px); line-height: 1.02; }
+html[data-frames="off"] .hv3 .v-hero .lede { font-size: 16px; margin-top: var(--am-s-3); }

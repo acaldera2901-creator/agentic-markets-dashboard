@@ -18,6 +18,8 @@ import { pickCampaign } from "@/lib/house-banners";
 import LangDropdown from "@/components/LangDropdown";
 import { IconSignIn, IconRegister } from "@/components/ui/icons";
 import { SiteFooter } from "@/components/SiteFooter";
+import ClassicChrome from "@/components/classic/ClassicChrome"; // #CLASSIC-COVERAGE-1014
+import { CLASSIC } from "@/lib/classic/flag";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { LiveChat } from "@/components/LiveChat";
 import { HomeAuthModal, type HomeAuthIntent } from "@/components/auth/HomeAuthModal";
@@ -741,6 +743,19 @@ export default function LandingPage() {
   const t = COPY[lang];
   const v = V3[lang];
 
+  // #CLASSIC-COVERAGE-1014 — la lingua scelta nella barra del sito (ClassicChrome)
+  // arriva qui come evento: senza, la barra diceva «IT» e la pagina restava in EN.
+  useEffect(() => {
+    if (!CLASSIC) return;
+    const sync = () => {
+      try {
+        const sl = localStorage.getItem("agentic-lang");
+        if (sl && (LANGS as string[]).includes(sl)) setLang(sl as Lang);
+      } catch { /* storage off */ }
+    };
+    window.addEventListener("agentic-lang-change", sync);
+    return () => window.removeEventListener("agentic-lang-change", sync);
+  }, []);
   const selectLang = (next: Lang) => {
     setLang(next);
     try { localStorage.setItem("agentic-lang", next); } catch {}
@@ -772,6 +787,11 @@ export default function LandingPage() {
           <span>&nbsp;{inviteDays} {v.inviteBody}</span>
         </div>
       )}
+
+      {/* #CLASSIC-COVERAGE-1014 — a flag acceso la testata è la stessa delle altre
+          pagine fuori dal desk (nav del sito); la propria (.lp-nav) si nasconde
+          da CSS. Le CTA della pagina aprono ancora la sua modale di accesso. */}
+      {CLASSIC && <ClassicChrome syncHtmlLang />}
 
       {/* ── Topnav ─────────────────────────────────────────────── */}
       <header className="lp-nav">
