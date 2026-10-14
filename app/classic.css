@@ -107,6 +107,12 @@ html[data-frames="off"] .reset-card { filter: none; }
 /* la cornice di pagina (.book-main) era il contenitore di tutto: senza il filo
    resta il suo fondo, ma il margine diventa spazio vero, non una linea. */
 html[data-frames="off"] .book-main { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* round 4 (QA BUG-001) — `overflow: hidden` fa di .book-main un contenitore di
+   scorrimento (che non scorre): il rail `sticky` si incollava a LUI, non alla
+   finestra (top −223 dopo 400 px). `clip` taglia uguale ma non crea un
+   contenitore di scorrimento → lo sticky torna alla finestra. I caroselli hanno
+   il loro overflow-x: auto e non cambiano. */
+html[data-frames="off"] .book-main { overflow: clip; }
 
 /* ═══ Fase C · la tipografia del PDF (#CLASSIC-ROOBET-1013, Design Review 12/10, opzione C)
    Fira Sans Condensed per hero e titoli, IBM Plex Sans per navigazione, testo,
@@ -136,6 +142,21 @@ html[data-frames="off"] :is(.btn-primary, .btn-secondary) { font-family: var(--a
 html[data-frames="off"] .reg-nudge :is(.btn-primary, .btn-secondary) { font-size: 13px !important; padding: 6px 12px !important; }
 /* sul telefono la lobby ha 12 px di margine: la striscia si allinea a quelli */
 @media (max-width: 640px) { html[data-frames="off"] .reg-nudge { margin-inline: var(--am-s-3); } }
+/* round 4 (QA INFO-005) — footer e barra dei cookie sono GLOBALI (SiteFooter,
+   CookieBanner, con il mono nel CSS e in stile inline): qui cambiano solo sotto
+   il flag. Plex 12,5 nel footer; nella barra 12 px con !important contro
+   l'inline, e sul telefono i bottoni scendono sotto il testo (niente float):
+   il testo non si avvolge più intorno a loro. */
+html[data-frames="off"] .site-footer { font-family: var(--am-font-ui); font-size: 12.5px; }
+html[data-frames="off"] .cookie-consent p { font-family: var(--am-font-ui) !important; font-size: 12px !important; line-height: 1.4 !important; }
+html[data-frames="off"] .cookie-consent-actions button { font-family: var(--am-font-ui) !important; }
+@media (max-width: 640px) {
+  /* flex (non flow-root+float) così vale l'`order: 2` dei bottoni: testo prima,
+     bottoni sotto a destra, nessun avvolgimento */
+  html[data-frames="off"] .cookie-consent { display: flex !important; flex-wrap: wrap; row-gap: 8px; padding: 10px 16px !important; }
+  html[data-frames="off"] .cookie-consent p { flex: 1 1 100% !important; }
+  html[data-frames="off"] .cookie-consent-actions { float: none; margin: 0 0 0 auto; }
+}
 /* Anton aveva un peso solo (400) e viveva in MAIUSCOLO con interlinea 0,9. Fira
    Condensed ha pesi veri e le minuscole: i titoli tornano in tondo, grassetto,
    con un'interlinea che non tagli ascendenti e discendenti (l'elenco è quello
@@ -256,7 +277,12 @@ html[data-frames="off"] .cl-read { display: grid; justify-items: end; gap: 2px; 
    resta la «i» che spiega il perché; il modulo tiene l'altezza del numero
    (min-height) così le schede restano alte uguali */
 html[data-frames="off"] .cl-pickmod { min-height: 62px; }
-html[data-frames="off"] .cl-read--none { align-content: center; }
+/* round 4 (QA BUG-003): senza numero il divisorio restava orfano accanto alla
+   «i» — via il filo e il rientro, la «i» da sola a destra, altezza invariata */
+html[data-frames="off"] .cl-read--none { align-content: center; border-left: 0; padding-left: 0; }
+/* round 4 (QA INFO-006): «Pick Pro» ereditava Manrope dal .br-card: la scheda
+   intera parla Plex, come il resto del filone */
+html[data-frames="off"] .cl-slab { font-family: var(--am-font-ui); }
 html[data-frames="off"] .cl-big { margin: 0; display: flex; align-items: baseline; line-height: 0.95; color: var(--am-text); white-space: nowrap; }
 html[data-frames="off"] .cl-big[data-ours] { color: var(--am-lime); }
 html[data-frames="off"] .cl-big-n { font: 700 32px/0.95 var(--cl-font-prob); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
