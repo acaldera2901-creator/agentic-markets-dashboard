@@ -155,11 +155,19 @@ html[data-frames="off"] .cookie-consent-actions button { font-family: var(--am-f
    in ui-monospace nel CSS globale: Plex, solo sotto il flag */
 html[data-frames="off"] .am-bottomnav :is(.bn, .bn *) { font-family: var(--am-font-ui); }
 @media (max-width: 640px) {
-  /* flex (non flow-root+float) così vale l'`order: 2` dei bottoni: testo prima,
-     bottoni sotto a destra, nessun avvolgimento */
-  html[data-frames="off"] .cookie-consent { display: flex !important; flex-wrap: wrap; row-gap: 8px; padding: 10px 16px !important; }
-  html[data-frames="off"] .cookie-consent p { flex: 1 1 100% !important; }
-  html[data-frames="off"] .cookie-consent-actions { float: none; margin: 0 0 0 auto; }
+  /* flex (non flow-root+float) così vale l'`order: 2` dei bottoni: testo a
+     sinistra, bottoni AFFIANCATI a destra, nessun avvolgimento.
+     BUG-A (QA 14/10): con testo e bottoni su due righe la barra era alta 121 px
+     e su /plans copriva la CTA «Inizia con Pro». Su una riga sola l'altezza la
+     fanno i bottoni (44 px di bersaglio, mobile.css §9) + 12 di padding.
+     Il link Privacy perde il min-height:44 di mobile.css (inline-flex alzava la
+     riga di testo a 44) ma tiene lo stesso bersaglio col padding verticale
+     compensato da margine negativo: area toccabile alta 44, riga alta 17.
+     Consenso, copy e simmetria dei due tasti invariati. */
+  html[data-frames="off"] .cookie-consent { display: flex !important; flex-wrap: nowrap !important; gap: 10px !important; padding: 6px 12px !important; }
+  html[data-frames="off"] .cookie-consent p { flex: 1 1 auto !important; min-width: 0 !important; }
+  html[data-frames="off"] .cookie-consent p a { display: inline; min-height: 0; padding-block: 14px; margin-block: -14px; }
+  html[data-frames="off"] .cookie-consent-actions { float: none; margin: 0; flex-shrink: 0; }
 }
 /* Anton aveva un peso solo (400) e viveva in MAIUSCOLO con interlinea 0,9. Fira
    Condensed ha pesi veri e le minuscole: i titoli tornano in tondo, grassetto,
