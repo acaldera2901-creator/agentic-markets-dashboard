@@ -1171,6 +1171,10 @@ export default function LandingPage() {
       {/* ── House billboard (#HOUSE-BANNERS-1) — creatività house reali, tenuto ── */}
       {(() => {
         const camp = pickCampaign("landing", "anon");
+        // #CLASSIC-COVERAGE-1014 — il billboard è un creativo col testo inglese cotto
+        // nei pixel (creativeFor lo risolve anche senza `creative`): fuori dall'inglese,
+        // a flag acceso, la pagina chiude senza (le sue CTA e il footer bastano).
+        if (CLASSIC && lang !== "en") return null;
         return camp ? (
           <section className="lp-house">
             <HouseBanner campaign={camp} lang={lang} />
