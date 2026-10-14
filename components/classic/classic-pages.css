@@ -249,23 +249,30 @@ html[data-frames="off"] .hv3 .v-sportbtn {
   text-transform: none;
 }
 html[data-frames="off"] .hv3 .v-sportbtn:hover { background: var(--cl-tone-2); box-shadow: none; }
-/* il nastro: «LIVE» non è vero (sono righe d'esempio) e si sovrapponeva alla
-   prima riga; l'etichetta dice cosa sono e la pista parte dopo di lei */
+/* il nastro: «LIVE» non è vero (sono righe d'esempio) e l'etichetta si
+   sovrapponeva alla prima riga. Etichetta = data-label (tradotta nel TSX), larga
+   fissa e opaca; la pista parte DOPO di lei e il testo che scorre sfuma sotto
+   gli ultimi 24 px invece di attaccarsi alla scritta. */
 html[data-frames="off"] .hv3 .v-tape { border: 0; background: var(--am-panel); border-radius: var(--am-r-card-sm); margin-inline: var(--am-s-5); }
 html[data-frames="off"] .hv3 .v-tape::before {
-  content: "Edge tape · sample data";
-  padding: 0 var(--am-s-4);
+  content: attr(data-label);
+  width: 208px;
+  box-sizing: border-box;
+  padding: 0 24px 0 var(--am-s-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--am-font-ui);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0;
-  background: linear-gradient(90deg, var(--am-panel) 82%, transparent);
+  background: linear-gradient(90deg, var(--am-panel) calc(100% - 24px), transparent);
 }
-html[data-frames="off"] .hv3 .v-tape-track { padding-left: 230px; font-family: var(--am-font-ui); font-size: 12.5px; }
+html[data-frames="off"] .hv3 .v-tape-track { padding-left: 224px; font-family: var(--am-font-ui); font-size: 12.5px; }
 @media (max-width: 640px) {
   html[data-frames="off"] .hv3 .v-sportnav-wrap { padding: var(--am-s-3) var(--am-s-3) 0; }
   html[data-frames="off"] .hv3 .v-tape { margin-inline: var(--am-s-3); }
-  html[data-frames="off"] .hv3 .v-tape-track { padding-left: 196px; }
+  html[data-frames="off"] .hv3 .v-tape-track { padding-left: 224px; }
 }
 /* maiuscolo spaziato → tondo, come il resto del sito classic (round 3, 14/10) */
 html[data-frames="off"]:root .hv3 *:not(input):not(select):not(textarea) { text-transform: none; }
@@ -288,3 +295,21 @@ html[data-frames="off"] :is(.wg-frame-wrap, .wg-code, .wg-note) { border: 0; }
 html[data-frames="off"] .wg-code-head { border-bottom: 0; }
 html[data-frames="off"] .wg-code { background: rgba(5, 15, 34, 0.6); }
 html[data-frames="off"] .wg-note { background: var(--am-panel-2); }
+
+/* CTA del primo blocco sopra la piega a 1100×800 e sopra la tab bar mobile (y=784
+   a 390×844): il nastro è decorazione (aria-hidden) e sul telefono si toglie; sopra,
+   meno aria fra carosello, barra, nastro e titolo. */
+html[data-frames="off"] .hv3 .v-tape { margin-top: var(--am-s-3); }
+html[data-frames="off"] .hv3 .v-hero { padding-top: var(--am-s-4); padding-bottom: var(--am-s-5); }
+html[data-frames="off"] .hv3 .v-hero .v-kick { margin-bottom: 0; }
+html[data-frames="off"] .hv3 .v-hero h1 { margin-top: var(--am-s-2); }
+html[data-frames="off"] .hv3 .v-hero .v-hero-note { margin-top: var(--am-s-2); }
+@media (max-width: 1200px) {
+  html[data-frames="off"] .hv3 .v-hero h1 { font-size: clamp(32px, 3.6vw, 44px); }
+  html[data-frames="off"] .hv3 .v-hero .lede { font-size: 15px; margin-top: var(--am-s-2); line-height: 1.45; }
+}
+@media (max-width: 640px) {
+  html[data-frames="off"] .hv3 .v-tape { display: none; }
+  html[data-frames="off"] .hv3 .v-hero h1 { font-size: 30px; }
+}
+html[data-frames="off"] .hv3 .lp-carousel-eyebrow { letter-spacing: 0.01em; font-family: var(--am-font-ui); font-size: 12px; font-weight: 600; }

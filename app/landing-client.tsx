@@ -40,6 +40,8 @@ const TennisMatchCard = dynamic(
 );
 
 type Lang = "it" | "en" | "es" | "fr" | "ru";
+// #CLASSIC-COVERAGE-1014 — etichetta del nastro (a flag acceso, via data-label → CSS attr())
+const TAPE_LABEL: Record<Lang, string> = { it: "Edge · dati d’esempio", en: "Edge · sample data", es: "Edge · datos de ejemplo", fr: "Edge · données d’exemple", ru: "Edge · примеры данных" };
 const LANGS: Lang[] = ["en", "it", "es", "fr", "ru"];
 
 const COPY = {
@@ -363,6 +365,38 @@ function rowFromPrediction(p: PredApiRow): ScanRow | null {
 }
 // Righe esempio del terminale — illustrano il FORMATO, marcate "esempio" in UI.
 // Non sono claim sui risultati: matchup neutri, edge plausibili decrescenti.
+// #CLASSIC-COVERAGE-1014 — il sito classic non scrive in MAIUSCOLO: stringhe come
+// «MOTORE DI PROBABILITÀ · NON UN BOOKMAKER» o «COME SI LEGGE UNA SCHEDA» sono
+// maiuscole nel SORGENTE (text-transform non le toglie). A flag acceso si passano
+// in «Prima maiuscola, resto minuscolo»; le sigle di 2-3 lettere (PRO, FAQ, 18+)
+// e le stringhe non tutte maiuscole restano com'erano. A flag spento: identità.
+const soften = (() => {
+  const cache = new WeakMap<object, unknown>();
+  const one = (s: string) => (s.length > 3 && /[A-ZÀ-Ú]/.test(s) && s === s.toUpperCase()
+    ? s.charAt(0) + s.slice(1).toLowerCase() : s);
+  const walk = (x: unknown): unknown => {
+    if (typeof x === "string") return one(x);
+    if (Array.isArray(x)) return x.map(walk);
+    if (x && typeof x === "object") {
+      const hit = cache.get(x as object); if (hit) return hit;
+      const out: Record<string, unknown> = {};
+      for (const [k, val] of Object.entries(x as Record<string, unknown>)) out[k] = walk(val);
+      cache.set(x as object, out); return out;
+    }
+    return x; // funzioni e numeri invariati
+  };
+  return <T,>(x: T): T => (CLASSIC ? (walk(x) as T) : x);
+})();
+
+// Etichette dello scanner (a flag acceso, nella lingua della pagina; a flag spento restano quelle inglesi)
+const SCAN_L: Record<Lang, { head: string; scanning: (n: number) => string; football: string; tennis: string; wc: string; won: string; lost: string; mdl: string; mkt: string; foot: [string, string, string] }> = {
+  it: { head: "Edge scanner", scanning: (n) => `Analisi di ${n} partite`, football: "Calcio", tennis: "Tennis", wc: "Mondiali", won: "Vinta", lost: "Persa", mdl: "Mod.", mkt: "Mer.", foot: ["Edge = probabilità del modello − probabilità implicita del mercato. Sotto la nostra soglia di confidenza mostriamo", "«nessun favorito chiaro»", "invece di forzare una pick."] },
+  en: { head: "Edge scanner", scanning: (n) => `Scanning ${n} fixtures`, football: "Football", tennis: "Tennis", wc: "World Cup", won: "Won", lost: "Lost", mdl: "Mdl", mkt: "Mkt", foot: ["Edge = model probability − market-implied probability. Below our confidence floor we show", "“no clear favourite”", "instead of forcing a pick."] },
+  es: { head: "Edge scanner", scanning: (n) => `Analizando ${n} partidos`, football: "Fútbol", tennis: "Tenis", wc: "Mundial", won: "Ganada", lost: "Perdida", mdl: "Mod.", mkt: "Mer.", foot: ["Edge = probabilidad del modelo − probabilidad implícita del mercado. Bajo nuestro umbral de confianza mostramos", "«sin favorito claro»", "en vez de forzar una pick."] },
+  fr: { head: "Edge scanner", scanning: (n) => `Analyse de ${n} matchs`, football: "Football", tennis: "Tennis", wc: "Coupe du monde", won: "Gagnée", lost: "Perdue", mdl: "Mod.", mkt: "Mar.", foot: ["Edge = probabilité du modèle − probabilité implicite du marché. Sous notre seuil de confiance nous affichons", "« pas de favori clair »", "au lieu de forcer un pick."] },
+  ru: { head: "Edge scanner", scanning: (n) => `Анализ ${n} матчей`, football: "Футбол", tennis: "Теннис", wc: "ЧМ", won: "Выиграно", lost: "Проиграно", mdl: "Мод.", mkt: "Рын.", foot: ["Edge = вероятность модели − вероятность рынка. Ниже нашего порога уверенности мы показываем", "«нет явного фаворита»", "вместо вынужденного пика."] },
+};
+
 const SCAN_EXAMPLE_ROWS: ScanRow[] = [
   { match: "Brazil–Argentina", glyph: "trophy", model: 49, market: 42, edge: 7.1 },
   { match: "Inter–Napoli", glyph: "ball", model: 54, market: 48, edge: 6.2 },
@@ -740,8 +774,9 @@ export default function LandingPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const t = COPY[lang];
-  const v = V3[lang];
+  const t = soften(COPY[lang]);
+  const v = soften(V3[lang]);
+  const sl = SCAN_L[lang];
 
   // #CLASSIC-COVERAGE-1014 — la lingua scelta nella barra del sito (ClassicChrome)
   // arriva qui come evento: senza, la barra diceva «IT» e la pagina restava in EN.
@@ -863,7 +898,7 @@ export default function LandingPage() {
           </Link>
           <Link href="/predictions?sport=all" className="v-sportbtn v-sportbtn--live">
             <span className="dot" aria-hidden="true" />
-            LIVE
+            {CLASSIC ? "Live" : "LIVE"}
           </Link>
         </div>
       </nav>
@@ -875,7 +910,7 @@ export default function LandingPage() {
 
       {/* ── Edge tape (marquee decorativo, aria-hidden) — dati esempio (stesso set
            FTC-safe del terminale), mai spacciati per claim reali. ── */}
-      <div className="v-tape" aria-hidden="true">
+      <div className="v-tape" aria-hidden="true" data-label={CLASSIC ? TAPE_LABEL[lang] : undefined}>
         <div className="v-tape-track">
           {[...SCAN_EXAMPLE_ROWS, ...SCAN_EXAMPLE_ROWS].map((r, i) => (
             <span key={i}><em>{r.match}</em> · model {r.model} · mkt {r.market} · <span className="up">+{r.edge.toFixed(1)}</span></span>
@@ -907,16 +942,16 @@ export default function LandingPage() {
         </div>
         <figure className="v-scan" aria-label="Edge Scanner">
           <figcaption className="v-scan-head">
-            <span className="live"><span className="v-pulse" />EDGE SCANNER</span>
-            <span>· {scanLive ? t.waScanLive.toUpperCase() : t.waScanExample.toUpperCase()}</span>
-            <span className="tag">{scanLive && scanCounts ? `SCANNING ${scanCounts.events} FIXTURES` : t.waScanning.toUpperCase()}</span>
+            <span className="live"><span className="v-pulse" />{CLASSIC ? sl.head : "EDGE SCANNER"}</span>
+            <span>· {CLASSIC ? (scanLive ? t.waScanLive : t.waScanExample) : (scanLive ? t.waScanLive.toUpperCase() : t.waScanExample.toUpperCase())}</span>
+            <span className="tag">{CLASSIC ? (scanLive && scanCounts ? sl.scanning(scanCounts.events) : t.waScanning) : (scanLive && scanCounts ? `SCANNING ${scanCounts.events} FIXTURES` : t.waScanning.toUpperCase())}</span>
           </figcaption>
-          <div className="v-scan-cols"><span>{t.waColMatch}</span><span>Mdl</span><span>Mkt</span><span>{t.waReadEdge}</span><span /></div>
+          <div className="v-scan-cols"><span>{t.waColMatch}</span><span>{CLASSIC ? sl.mdl : "Mdl"}</span><span>{CLASSIC ? sl.mkt : "Mkt"}</span><span>{t.waReadEdge}</span><span /></div>
           {scanLive ? (
             <div className="v-scan-row">
               <span className="fx">
                 <SportIcon sport={scanLive.glyph === "trophy" ? "worldcup" : scanLive.glyph === "tball" ? "tennis" : "football"} size={16} variant="sm" />
-                <span className="nm">{scanLive.match}<small>{scanLive.glyph === "trophy" ? "WORLD CUP" : scanLive.glyph === "tball" ? "TENNIS" : "FOOTBALL"}</small></span>
+                <span className="nm">{scanLive.match}<small>{scanLive.glyph === "trophy" ? (CLASSIC ? sl.wc : "WORLD CUP") : scanLive.glyph === "tball" ? (CLASSIC ? sl.tennis : "TENNIS") : (CLASSIC ? sl.football : "FOOTBALL")}</small></span>
               </span>
               <span className="md">{scanLive.model}</span>
               <span className="mk">{scanLive.market}</span>
@@ -928,7 +963,7 @@ export default function LandingPage() {
             <div className="v-scan-row" key={r.match}>
               <span className="fx">
                 <SportIcon sport={r.glyph === "trophy" ? "worldcup" : r.glyph === "tball" ? "tennis" : "football"} size={16} variant="sm" />
-                <span className="nm">{r.match}<small>{r.glyph === "trophy" ? "WORLD CUP" : r.glyph === "tball" ? "TENNIS" : "FOOTBALL"}</small></span>
+                <span className="nm">{r.match}<small>{r.glyph === "trophy" ? (CLASSIC ? sl.wc : "WORLD CUP") : r.glyph === "tball" ? (CLASSIC ? sl.tennis : "TENNIS") : (CLASSIC ? sl.football : "FOOTBALL")}</small></span>
                 <span className="tag-ex">{t.waTagExample}</span>
               </span>
               <span className="md">{r.model}</span>
@@ -938,7 +973,7 @@ export default function LandingPage() {
             </div>
           ))}
           <div className="v-scan-foot">
-            <b>{scanLive && scanCounts ? t.waFootEvents(scanCounts.events, scanCounts.withEdge) + " · " : ""}Edge = model probability − market-implied probability. Below our confidence floor we show</b> <span style={{ color: "var(--v-muted)" }}>&ldquo;no clear favourite&rdquo;</span> <b>instead of forcing a pick.</b>
+            <b>{scanLive && scanCounts ? t.waFootEvents(scanCounts.events, scanCounts.withEdge) + " · " : ""}{CLASSIC ? sl.foot[0] : "Edge = model probability − market-implied probability. Below our confidence floor we show"}</b> <span style={{ color: "var(--v-muted)" }}>{CLASSIC ? sl.foot[1] : <>&ldquo;no clear favourite&rdquo;</>}</span> <b>{CLASSIC ? sl.foot[2] : "instead of forcing a pick."}</b>
           </div>
         </figure>
       </div>
@@ -1009,7 +1044,7 @@ export default function LandingPage() {
                 {proofRows.map((r, i) => (
                   <div className="v-wrow" key={i}>
                     <span className="fx">{r.name}{r.comp ? <span className="sp">{r.comp}</span> : null}</span>
-                    <span className={`res ${r.result}`}>{r.result === "won" ? "WON" : "LOST"}</span>
+                    <span className={`res ${r.result}`}>{r.result === "won" ? (CLASSIC ? sl.won : "WON") : (CLASSIC ? sl.lost : "LOST")}</span>
                   </div>
                 ))}
               </>

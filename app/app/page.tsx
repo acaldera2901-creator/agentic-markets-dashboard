@@ -4681,7 +4681,25 @@ function ClientAuthModal({
   // sul BODY: un utente da tastiera/screen reader non sapeva che il muro c'era).
   const dialogRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
-    if (CLASSIC) dialogRef.current?.querySelector<HTMLElement>("input")?.focus();
+    if (!CLASSIC) return;
+    dialogRef.current?.querySelector<HTMLElement>("input")?.focus();
+    // Focus trap: Tab / Shift+Tab girano dentro il dialog (aria-modal da solo non
+    // basta: il browser lascia uscire il focus sulla pagina dietro). Il listener sta
+    // sul documento, così vale anche se il focus è finito sul body (clic sullo sfondo).
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const root = dialogRef.current;
+      if (!root) return;
+      const f = Array.from(root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter((el) => el.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      const a = document.activeElement;
+      const inside = !!a && root.contains(a);
+      if (e.shiftKey && (!inside || a === first)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (!inside || a === last)) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [mode, forgot]);
   // #SIGNUP-GATE: legal-age + ToS acceptance are mandatory before a profile is created.
   const [ageOk, setAgeOk] = useState(false);
@@ -4950,7 +4968,7 @@ function ClientAuthModal({
             accedere resta intrappolato (niente Esc, niente clic fuori). La porta è
             la home, che è pubblica. Solo sul muro e solo a flag acceso. */}
         {CLASSIC && !dismissible && (
-          <a href="/" className="auth-wall-back">{it ? "← Torna alla home" : "← Back to the board"}</a>
+          <Link href="/" className="auth-wall-back">{it ? "← Torna alla home" : "← Back to the board"}</Link>
         )}
       </form>
     </div>
