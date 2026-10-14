@@ -16,18 +16,20 @@
 // della famiglia passa per due variabili scritte su :root — le stesse che
 // app/classic.css legge per sovrascrivere --am-font-ui / --am-font-display.
 //
-// ZT Nature Black (solo il numero grande della probabilità) NON è in repo e i
-// diritti webfont non sono confermati (il PDF lo segna come check pre-release):
-// il numero usa Plex Sans 700 come ripiego dichiarato — nessun font scaricato.
-import { Fira_Sans_Condensed, IBM_Plex_Sans } from "next/font/google";
+// Il numero grande della probabilità usa Mona Sans 900 a larghezza 112 (OFL 1.1,
+// asse wdth) AL POSTO di ZT Nature Black, che non è in repo e non ha diritti
+// webfont confermati (check pre-release del PDF). Se arriva la licenza di ZT
+// Nature, si rimette in testa a --cl-font-prob in app/classic.css.
+import { Fira_Sans_Condensed, IBM_Plex_Sans, Mona_Sans } from "next/font/google";
 import "@/app/classic.generated.css"; // generato da scripts/classic/gen-frames.mjs
 import "@/app/classic.css"; // agisce SOLO sotto html[data-frames="off"]
 
 const fira = Fira_Sans_Condensed({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["500", "600", "700"], display: "swap" });
 const plex = IBM_Plex_Sans({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["400", "500", "600", "700"], display: "swap" });
+const mona = Mona_Sans({ subsets: ["latin"], axes: ["wdth"], display: "swap" });
 
 export default function ClassicStyles() {
   return (
-    <style data-classic-fonts="">{`html[data-frames="off"]{--cl-font-head:${fira.style.fontFamily};--cl-font-ui:${plex.style.fontFamily};}`}</style>
+    <style data-classic-fonts="">{`html[data-frames="off"]{--cl-font-head:${fira.style.fontFamily};--cl-font-ui:${plex.style.fontFamily};--cl-font-prob-face:${mona.style.fontFamily};}`}</style>
   );
 }

@@ -119,14 +119,15 @@ html[data-frames="off"] .book-main { overflow: clip; }
    controlli e scheda. I nomi delle famiglie arrivano da ClassicStyles.tsx
    (next/font, caricato SOLO a flag acceso) nelle variabili --cl-font-head e
    --cl-font-ui; qui si rimappano i token del sistema, così ogni pagina cliente
-   cambia voce in un colpo solo. ZT Nature Black (solo il numero grande della
-   probabilità) non è in repo e i diritti webfont non sono confermati: il numero
-   cade su Plex 700 — ripiego dichiarato, nessun font scaricato a caso. */
+   cambia voce in un colpo solo. Il numero grande della
+   probabilità usa Mona Sans 900 a larghezza 112 (OFL, --cl-font-prob-face) al
+   posto di ZT Nature Black, che non ha diritti webfont confermati: se arriva la
+   licenza, ZT Nature si rimette in testa a --cl-font-prob. */
 html[data-frames="off"] {
   --am-font-ui: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
   --am-font-display: var(--cl-font-head, var(--font-anton)), var(--font-tech), sans-serif;
   --am-font-hud: var(--cl-font-head, var(--font-tech)), sans-serif;
-  --cl-font-prob: "ZT Nature", "ZT Nature Black", var(--cl-font-ui, var(--font-display)), sans-serif;
+  --cl-font-prob: var(--cl-font-prob-face), var(--cl-font-ui, var(--font-display)), sans-serif;
   /* round 3 (Andrea, 14/10): via il monospace da etichette (PICK, PUBBL. · 18+,
      sigle INT/DE), contatori e quote — Plex ha i tabulari (font-variant-numeric
      resta dov'è), e l'opzione C di Michele è «due famiglie», non tre */
@@ -171,7 +172,7 @@ html[data-frames="off"] :is(.br-sec__title, .br-hero__title, .brc-sec__title, .b
   letter-spacing: -0.01em;
   line-height: 1.05;
 }
-html[data-frames="off"] :is(.br-card__model-n, .br-sporthero__stat-n) { font-family: var(--cl-font-prob); font-weight: 700; }
+html[data-frames="off"] :is(.br-card__model-n, .br-sporthero__stat-n) { font-family: var(--cl-font-prob); font-weight: 900; font-stretch: 112%; }
 
 /* ═══ Fase B · la scheda (components/classic/ClassicSlab.tsx) — round 2 (13/10) ═══
    La forma del mockup di Andrea: quattro blocchi, NESSUNA cornice, altezza
@@ -288,8 +289,8 @@ html[data-frames="off"] .cl-read--none { align-content: center; border-left: 0; 
 html[data-frames="off"] .cl-slab { font-family: var(--am-font-ui); }
 html[data-frames="off"] .cl-big { margin: 0; display: flex; align-items: baseline; line-height: 0.95; color: var(--am-text); white-space: nowrap; }
 html[data-frames="off"] .cl-big[data-ours] { color: var(--am-lime); }
-html[data-frames="off"] .cl-big-n { font: 700 32px/0.95 var(--cl-font-prob); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-big-pc { font: 700 18px/1 var(--cl-font-prob); margin-left: 1px; }
+html[data-frames="off"] .cl-big-n { font: 900 32px/0.95 var(--cl-font-prob); font-stretch: 112%; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+html[data-frames="off"] .cl-big-pc { font: 900 18px/1 var(--cl-font-prob); font-stretch: 112%; margin-left: 1px; }
 html[data-frames="off"] .cl-label { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin: 0; font-size: 10.5px; line-height: 1.2; color: var(--cl-ink-3); text-align: right; }
 html[data-frames="off"] .cl-label > span { min-width: 0; }
 html[data-frames="off"] .cl-label[data-kind="protected"] > span { color: var(--am-amber); }
