@@ -11117,8 +11117,28 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   // mentre si cerca un'altra squadra dà zero risultati e sembra
                   // un guasto.
                   if (ev.target.value && tab !== "bets") {
-                    setTab("bets");
-                    setDeskView("home");
+                    if (CLASSIC) {
+                      // #CLASSIC-COVERAGE-1014 — «Sinner» → «inner» (5 prove su 12, riprodotto).
+                      // Il cambio di tab è un render pesante che smonta QUESTO campo: React
+                      // ripristinava il suo valore controllato prima del commit, la «S» tornava
+                      // vuota e la «i» successiva la sostituiva. Prima si lascia committare la
+                      // lettera (render leggero), poi si cambia vista; la lobby classic
+                      // riprende il focus al mount (ClassicLobby) e con il rAF qui sotto.
+                      setTimeout(() => {
+                        setTab("bets");
+                        setDeskView("home");
+                        let tries = 0;
+                        const refocus = () => {
+                          const el = document.getElementById("brc-search-input") as HTMLInputElement | null;
+                          if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+                          else if (++tries < 40) requestAnimationFrame(refocus);
+                        };
+                        requestAnimationFrame(refocus);
+                      }, 0);
+                    } else {
+                      setTab("bets");
+                      setDeskView("home");
+                    }
                   }
                 }}
                 /* #MOBILE-NAV-0924 — il suggerimento si accorcia. Era una frase
