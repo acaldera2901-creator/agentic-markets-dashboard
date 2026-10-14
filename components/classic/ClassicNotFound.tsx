@@ -10,6 +10,7 @@ import ClassicChrome from "./ClassicChrome";
 export default function ClassicNotFound() {
   const [it, setIt] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- la lingua sta in localStorage: non esiste lato server
     try { setIt(localStorage.getItem("agentic-lang") === "it"); } catch { /* storage off → en */ }
   }, []);
   return (
