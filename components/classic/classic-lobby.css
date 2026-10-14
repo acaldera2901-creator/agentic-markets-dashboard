@@ -716,6 +716,20 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
   .brc-banner[data-photo] .brc-banner__title { font-size: 17px; }
 }
 
+/* #CLASSIC-ASSET-1013 round 5 (QA BUG-1) — a 1440, coi 32 px di margine e di
+   gutter del round 3, il banner è 344×172 e il 40% meno il padding (16+24)
+   lasciava 90 px di testo: «Apri il board →» usciva dal fondo di 21 px. Da 1366
+   in su il testo prende il 48% con 16 px di padding per lato (133 px di riga:
+   «Vedi le partite live →» sta su due righe di parole, la freccia attaccata) e
+   fino a 1600 il sottotitolo si ferma a due righe. Il soggetto della foto sta
+   dal 50% in poi: il velo copre fino al 55%, il testo finisce al 43%. */
+@media (min-width: 1366px) {
+  html[data-frames="off"] .brc-banner[data-photo] .brc-banner__text { max-width: 48%; padding: 14px 16px; gap: 4px; }
+}
+@media (min-width: 1366px) and (max-width: 1600px) {
+  html[data-frames="off"] .brc-banner[data-photo] .brc-banner__sub { -webkit-line-clamp: 2; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brc-banner__art, .brc-group__chev { transition: none; }
   .brc-banner:hover .brc-banner__art { transform: none; }

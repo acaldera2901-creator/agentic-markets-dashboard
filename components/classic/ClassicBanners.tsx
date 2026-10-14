@@ -164,12 +164,15 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
               {/* Tutto il banner è cliccabile (il link si allarga con ::after),
                   ma il nome accessibile resta il verbo del link, non il paragrafo. */}
               <p className="brc-banner__links">
+              {/* #CLASSIC-ASSET-1013 round 5 (QA BUG-1): spazio unificatore (NBSP)
+                  prima della freccia — la CTA può andare a capo fra le parole,
+                  mai lasciando la freccia sola sulla riga dopo */}
               {b.href.startsWith("/") && !b.onClick ? (
-                <Link className="brc-banner__cta" href={b.href}>{b.cta} <span aria-hidden="true">→</span></Link>
+                <Link className="brc-banner__cta" href={b.href}>{b.cta}{"\u00A0"}<span aria-hidden="true">→</span></Link>
               ) : (
-                <a className="brc-banner__cta" href={b.href} onClick={b.onClick}>{b.cta} <span aria-hidden="true">→</span></a>
+                <a className="brc-banner__cta" href={b.href} onClick={b.onClick}>{b.cta}{"\u00A0"}<span aria-hidden="true">→</span></a>
               )}
-              {b.more && <Link className="brc-banner__more" href={b.more.href}>{b.more.label} <span aria-hidden="true">→</span></Link>}
+              {b.more && <Link className="brc-banner__more" href={b.more.href}>{b.more.label}{"\u00A0"}<span aria-hidden="true">→</span></Link>}
               </p>
             </div>
           </li>

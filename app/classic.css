@@ -150,6 +150,9 @@ html[data-frames="off"] .reg-nudge :is(.btn-primary, .btn-secondary) { font-size
 html[data-frames="off"] .site-footer { font-family: var(--am-font-ui); font-size: 12.5px; }
 html[data-frames="off"] .cookie-consent p { font-family: var(--am-font-ui) !important; font-size: 12px !important; line-height: 1.4 !important; }
 html[data-frames="off"] .cookie-consent-actions button { font-family: var(--am-font-ui) !important; }
+/* round 5 (QA BUG-2): le etichette della barra in basso (Home · Live · …) erano
+   in ui-monospace nel CSS globale: Plex, solo sotto il flag */
+html[data-frames="off"] .am-bottomnav :is(.bn, .bn *) { font-family: var(--am-font-ui); }
 @media (max-width: 640px) {
   /* flex (non flow-root+float) così vale l'`order: 2` dei bottoni: testo prima,
      bottoni sotto a destra, nessun avvolgimento */
