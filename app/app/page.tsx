@@ -9429,15 +9429,19 @@ function HomeLobby({
       >
         {classicGrouped ? (
           // Nei gruppi il confine aperte/chiuse non è più uno solo: la riga
-          // della quota sta UNA volta, sopra le leghe. I banner di casa della
-          // griglia piatta (uno ogni sei schede) qui non hanno uno slot:
-          // dove metterli fra le leghe lo decide Andrea.
+          // della quota sta UNA volta, sopra le leghe. Il banner di casa è UNO
+          // (Andrea 14/10): il primo creativo della griglia piatta (gridFeed,
+          // già scelto per sport), in una riga sua fra la 2ª e la 3ª lega.
           <CL.ClassicLeagueGroups
             items={items}
             lang={lang}
             forceOpen={!!q || competitionFilter !== "all"}
             renderCard={(item) => renderCard(item, sec.id)}
             lead={quotaRow}
+            ad={gridFeed[0] ? (
+              <HouseBanner key={`house-league-${sec.id}-${gridFeed[0].id}`} campaign={gridFeed[0]} lang={lang} inGrid />
+            ) : undefined}
+            adBackdrop={gridFeed[0]?.creative?.sm}
           />
         ) : (() => {
           // La griglia si richiude da sé: i banner sono INSERITI nel flatMap,

@@ -1,7 +1,7 @@
 // components/classic/ClassicLeagueGroups.test.tsx — #CLASSIC-PAGES-1014
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { ClassicLeagueGroups } from "./ClassicLeagueGroups";
+import { ClassicLeagueGroups, adSlotAfter } from "./ClassicLeagueGroups";
 import { CARDS_PER_LEAGUE } from "@/lib/classic/league-groups";
 import type { LobbyItem } from "@/lib/ui/lobby";
 
@@ -108,6 +108,39 @@ describe("ClassicLeagueGroups", () => {
     expect(names[0]).toContain("WTA Wuhan");
     expect(names[0]).toContain("WTA");
     expect(names[1]).toContain("Altri tornei");
+  });
+
+  it("one house banner: between the 2nd and 3rd league, after the last when fewer than three, never one per league", () => {
+    const kidsOf = (c: HTMLElement) => Array.from(c.querySelector(".clg")!.children).map((el) => el.getAttribute("data-testid"));
+    const ad = <p>ad one</p>;
+    // four leagues: one banner, right after the second group
+    const r1 = render(<ClassicLeagueGroups items={items} lang="en" renderCard={() => null} ad={ad} adBackdrop="/x.jpg" />);
+    expect(kidsOf(r1.container)).toEqual(["classic-league-group", "classic-league-group", "classic-league-ad", "classic-league-group", "classic-league-group"]);
+    expect(r1.getByTestId("classic-league-ad").textContent).toBe("ad one");
+    expect(r1.getByTestId("classic-league-ad").getAttribute("style")).toContain('url("/x.jpg")');
+    r1.unmount();
+    // ten leagues: still one
+    const ten = Array.from({ length: 10 }, (_, i) => item({ league: `League ${i}` }));
+    const r2 = render(<ClassicLeagueGroups items={ten} lang="en" renderCard={() => null} ad={ad} />);
+    const k2 = kidsOf(r2.container);
+    expect(k2.filter((k) => k === "classic-league-ad")).toHaveLength(1);
+    expect(k2.indexOf("classic-league-ad")).toBe(2);
+    r2.unmount();
+    // two leagues / one league: one banner, after the last
+    const r3 = render(<ClassicLeagueGroups items={[item({ league: "Serie A" }), item({ league: "La Liga" })]} lang="en" renderCard={() => null} ad={ad} />);
+    expect(kidsOf(r3.container)).toEqual(["classic-league-group", "classic-league-group", "classic-league-ad"]);
+    r3.unmount();
+    const r4 = render(<ClassicLeagueGroups items={[item({ league: "Serie A" })]} lang="en" renderCard={() => null} ad={ad} />);
+    expect(kidsOf(r4.container)).toEqual(["classic-league-group", "classic-league-ad"]);
+    r4.unmount();
+    // no ad passed → no slot
+    const r5 = render(<ClassicLeagueGroups items={items} lang="en" renderCard={() => null} />);
+    expect(r5.container.querySelector("[data-testid=classic-league-ad]")).toBeNull();
+    r5.unmount();
+  });
+
+  it("adSlotAfter", () => {
+    expect([0, 1, 2, 3, 12].map(adSlotAfter)).toEqual([-1, 0, 1, 1, 1]);
   });
 
   it("renders the lead above the groups", () => {

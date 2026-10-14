@@ -19,7 +19,7 @@
 // altrettanti landmark (la pratica ARIA lo sconsiglia oltre i sei). Resta
 // `aria-expanded` + `aria-controls` sul bottone, e la tastiera: frecce su/giù,
 // Home/End fra le intestazioni.
-import { useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import type { LobbyItem } from "@/lib/ui/lobby";
 import { classicCopy, fill } from "@/lib/classic/lobby-copy";
 import { countryLabel, UNNAMED_LEAGUE } from "@/lib/classic/lobby-model";
@@ -39,9 +39,24 @@ export type ClassicLeagueGroupsProps = {
   forceOpen?: boolean;
   /** Ciò che sta sopra i gruppi (la riga della quota «incluse oggi»). */
   lead?: ReactNode;
+  /** UN banner di casa (HouseBanner, già montato da chi conosce audience e
+   *  sport) in una riga sua, a tutta larghezza: vedi adSlotAfter. */
+  ad?: ReactNode;
+  /** L'immagine del creativo, per il fondo della fascia (sfocato e scurito):
+   *  il creativo è 16:9, la fascia no — il fondo è lo stesso stadio allungato,
+   *  non un colore inventato. Senza, la fascia è il pannello del tema. */
+  adBackdrop?: string;
 };
 
-export function ClassicLeagueGroups({ items, lang, renderCard, forceOpen = false, lead }: ClassicLeagueGroupsProps) {
+/** Dopo quale lega (indice 0-based) sta il banner di casa — Andrea 14/10: UNO
+ *  per pagina, mai uno per lega. Fra la 2ª e la 3ª (sotto i due gruppi aperti
+ *  di default); con meno di tre leghe, dopo l'ultima. Nessuna lega → nessuno. */
+export function adSlotAfter(nGroups: number): number {
+  if (nGroups <= 0) return -1;
+  return nGroups >= 3 ? 1 : nGroups - 1;
+}
+
+export function ClassicLeagueGroups({ items, lang, renderCard, forceOpen = false, lead, ad, adBackdrop }: ClassicLeagueGroupsProps) {
   const copy = classicCopy(lang);
   const baseId = useId();
   const groups = useMemo(() => groupLeagues(items), [items]);
@@ -52,6 +67,8 @@ export function ClassicLeagueGroups({ items, lang, renderCard, forceOpen = false
   // «Vedi tutte» per gruppo: le schede oltre CARDS_PER_LEAGUE si aprono a richiesta.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const headRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const adAfter = ad ? adSlotAfter(groups.length) : -1;
 
   const isOpen = (id: string) => toggled[id] ?? (forceOpen || defaults.has(id));
 
@@ -81,7 +98,8 @@ export function ClassicLeagueGroups({ items, lang, renderCard, forceOpen = false
         const more = g.items.length - shown.length;
         const name = g.league === UNNAMED_LEAGUE ? (g.sport === "tennis" ? copy.otherTournaments : copy.otherLeagues) : g.league;
         return (
-          <section key={g.id} className="clg-g" data-open={open} data-testid="classic-league-group" aria-labelledby={headId}>
+          <Fragment key={g.id}>
+          <section className="clg-g" data-open={open} data-testid="classic-league-group" aria-labelledby={headId}>
             <h3 className="clg-g__h">
               <button
                 type="button"
@@ -123,6 +141,16 @@ export function ClassicLeagueGroups({ items, lang, renderCard, forceOpen = false
               </div>
             )}
           </section>
+          {gi === adAfter && (
+            <div
+              className="clg-ad"
+              data-testid="classic-league-ad"
+              style={adBackdrop ? ({ "--clg-ad-bg": `url("${adBackdrop}")` } as CSSProperties) : undefined}
+            >
+              {ad}
+            </div>
+          )}
+          </Fragment>
         );
       })}
     </div>
