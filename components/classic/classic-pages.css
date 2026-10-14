@@ -194,6 +194,9 @@ html[data-frames="off"] .auth-modal .auth-wall-back { justify-self: center; colo
 /* ── desk: ricerca della barra e titoli di pagina ───────────────────────── */
 /* «Cerca ur»: a 8ch il segnaposto si tagliava sulle tab che non sono la Home.
    Il posto c'è da 1280 in su (la nav è centrata e lascia ~200 px per lato). */
+@media (min-width: 1024px) {
+  html[data-frames="off"] .br-navright .br-search input { width: 14ch; font-size: 12px; }
+}
 @media (min-width: 1280px) {
   html[data-frames="off"] .br-navright .br-search input { width: 16ch; }
 }
@@ -272,3 +275,13 @@ html[data-frames="off"] .hv3 .v-btn--secondary, html[data-frames="off"] .hv3 .v-
 html[data-frames="off"] .hv3 .v-hero { padding-top: var(--am-s-5); padding-bottom: var(--am-s-6); }
 html[data-frames="off"] .hv3 .v-hero h1 { font-size: clamp(34px, 3.9vw, 52px); line-height: 1.02; }
 html[data-frames="off"] .hv3 .v-hero .lede { font-size: 16px; margin-top: var(--am-s-3); }
+
+/* il pulsante «Contattaci» (✉) stava sopra l'angolo del muro di accesso a 390/360:
+   mentre il dialog è aperto la pagina non è usabile, e il contatto non serve */
+html[data-frames="off"] body:has(.auth-modal-backdrop) .br-chatfb { display: none; }
+
+/* ── /widget: le tre scatole con filo → lastre, come da regola classic ───── */
+html[data-frames="off"] :is(.wg-frame-wrap, .wg-code, .wg-note) { border: 0; }
+html[data-frames="off"] .wg-code-head { border-bottom: 0; }
+html[data-frames="off"] .wg-code { background: rgba(5, 15, 34, 0.6); }
+html[data-frames="off"] .wg-note { background: var(--am-panel-2); }

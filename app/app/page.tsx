@@ -134,15 +134,15 @@ const BASE_TRANSLATIONS = {
     preaccess_base_desc: "BetRedge Pro: tennis live, football research e Model Edges",
     preaccess_premium_desc: "Accessi avanzati riservati al team interno",
     // Auth modal
-    auth_eyebrow: "Client access",
+    auth_eyebrow: "Accesso clienti",
     auth_login_title: "Login BetRedge",
     auth_create_title: "Crea il tuo profilo BetRedge",
     auth_login_sub: "Accedi con l'email usata per il tuo profilo cliente.",
     auth_create_sub: "Crea il profilo, poi scegli BetRedge Pro per sbloccare i dati.",
     auth_name_label: "Nome", auth_name_placeholder: "Il tuo nome",
     auth_not_found: "Profilo non trovato. Crea un profilo cliente per continuare.",
-    auth_create_btn: "Continue to plans",
-    auth_footer: "BetRedge Pro si paga con carta (un abbonamento che si rinnova ogni mese o ogni anno finché non lo disdici) o in crypto (pagamento singolo, 30 giorni, nessun rinnovo). I dati prediction restano bloccati finché il piano non è attivo.",
+    auth_create_btn: "Continua verso i piani",
+    auth_footer: "BetRedge Pro si paga con carta (un abbonamento che si rinnova ogni mese o ogni anno finché non lo disdici) o in crypto (pagamento singolo, 30 giorni, nessun rinnovo). I dati delle previsioni restano bloccati finché il piano non è attivo.",
     auth_pw_placeholder_new: "Almeno 8 caratteri",
     auth_err_wrongpw: "Email o password errata.", auth_err_noaccount: "Nessun account con questa email. Registrati.",
     auth_err_exists: "Account già esistente — accedi.", auth_err_founder: "Questo profilo richiede founder access.",
@@ -4677,6 +4677,12 @@ function ClientAuthModal({
   const [forgot, setForgot] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  // #CLASSIC-COVERAGE-1014 — all'apertura il focus entra nel dialog (prima restava
+  // sul BODY: un utente da tastiera/screen reader non sapeva che il muro c'era).
+  const dialogRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (CLASSIC) dialogRef.current?.querySelector<HTMLElement>("input")?.focus();
+  }, [mode, forgot]);
   // #SIGNUP-GATE: legal-age + ToS acceptance are mandatory before a profile is created.
   const [ageOk, setAgeOk] = useState(false);
   const [tosOk, setTosOk] = useState(false);
@@ -4807,7 +4813,7 @@ function ClientAuthModal({
   if (forgot) {
     return (
       <div className="auth-modal-backdrop">
-        <form className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": it ? "Recupera la password" : "Recover your password" } : {})} onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
+        <form ref={dialogRef} className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": it ? "Recupera la password" : "Recover your password" } : {})} onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
           {dismissible && (
             <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
               style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
@@ -4848,7 +4854,7 @@ function ClientAuthModal({
 
   return (
     <div className="auth-modal-backdrop">
-      <form className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": mode === "login" ? t.auth_login_title : t.auth_create_title } : {})}
+      <form ref={dialogRef} className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": mode === "login" ? t.auth_login_title : t.auth_create_title } : {})}
         onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
         {dismissible && (
           <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
