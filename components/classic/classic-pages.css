@@ -12,10 +12,14 @@
 
 html[data-frames="off"] {
   --font-mono: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
+  /* Manrope: `--font-display` lo leggono bottoni, input e titoli di decine di
+     regole di globals.css con il nome scritto in chiaro (non passano da
+     --am-font-ui). Si rimappa la sorgente: tutto il sito sotto flag è Plex. */
+  --font-display: var(--cl-font-ui, "IBM Plex Sans"), ui-sans-serif, system-ui, sans-serif;
 }
 /* machina.css (registro «carta»: privacy, terms, partner, widget, World Cup)
    porta due famiglie scritte per esteso: Manrope e JetBrains Mono. Stessi token */
-html[data-frames="off"] {
+html[data-frames="off"]:root :is([data-mc-ground], [data-mc]) {
   --fd: var(--am-font-ui);
   --fm: var(--am-font-ui);
 }
@@ -144,3 +148,45 @@ html[data-frames="off"] .chamfer[style*="--surf"] {
   clip-path: none;
   border-radius: var(--am-r-card);
 }
+
+/* ── 404 ─────────────────────────────────────────────────────────────────── */
+html[data-frames="off"] .cl-nf { min-height: 100dvh; background: var(--am-bg); color: var(--am-text); font-family: var(--am-font-ui); }
+html[data-frames="off"] .cl-nf-main { max-width: 640px; margin: 0; padding: clamp(48px, 12vh, 120px) var(--am-s-6) var(--am-s-8, 64px); display: grid; gap: var(--am-s-3); justify-items: start; }
+html[data-frames="off"] .cl-nf-code { margin: 0; font-family: var(--cl-font-prob); font-weight: 900; font-stretch: 112%; font-size: clamp(72px, 14vw, 128px); line-height: 0.9; color: var(--am-coral); }
+html[data-frames="off"] .cl-nf h1 { margin: 0; font-family: var(--am-font-display); font-weight: 700; font-size: clamp(30px, 4.4vw, 42px); line-height: 1.05; letter-spacing: -0.01em; text-wrap: balance; }
+html[data-frames="off"] .cl-nf-sub { margin: 0; max-width: 44ch; font-size: 16px; line-height: 1.5; color: var(--am-muted); }
+html[data-frames="off"] .cl-nf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--am-s-4); margin-top: var(--am-s-2); }
+html[data-frames="off"] .cl-nf-cta { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--am-s-5); border-radius: 8px; background: var(--am-coral); color: #0A1B35; font-weight: 700; text-decoration: none; }
+html[data-frames="off"] .cl-nf-link { color: var(--am-text); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── banner cookie: i due tasti parlano come il resto (stile inline → !important).
+   Restano simmetrici (stessa forma, stessa misura): cambia solo il tono del testo. */
+html[data-frames="off"] .cookie-consent-actions button {
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: var(--cl-tone-2) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+html[data-frames="off"] .cookie-consent { background: #0A1B35 !important; border-top: 0 !important; }
+html[data-frames="off"] .cookie-consent-actions button:first-child { color: #D6E2F5 !important; }
+html[data-frames="off"] .cookie-consent-actions button:last-child { color: var(--am-coral) !important; }
+
+/* ── muro di accesso del desk (ClientAuthModal): la lastra navy, la voce del desk ── */
+html[data-frames="off"] .auth-modal {
+  border: 0;
+  border-radius: var(--am-r-card);
+  background: #0F2A55;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+html[data-frames="off"] .auth-modal h3 { font-family: var(--am-font-display); font-weight: 700; letter-spacing: -0.01em; }
+html[data-frames="off"]:root .auth-modal .auth-modal-head .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: var(--am-muted); }
+html[data-frames="off"] .auth-modal label > span { font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+html[data-frames="off"] .auth-modal input:not([type="checkbox"]):not([type="radio"]) { border: 0; background: rgba(5, 15, 34, 0.6); }
+html[data-frames="off"] .auth-modal button { border: 0; color: #0A1B35; }
+html[data-frames="off"] .auth-modal button:disabled { opacity: 1; background: var(--cl-tone-2); color: var(--am-muted); }
+html[data-frames="off"] .auth-modal .auth-mode-switch button.is-active { background: var(--am-royal-dim); }
+html[data-frames="off"]:root .auth-modal .auth-modal-head .eyebrow::before { content: none; }
+html[data-frames="off"] .auth-modal .auth-wall-back { justify-self: center; color: var(--am-muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; padding: var(--am-s-2); }

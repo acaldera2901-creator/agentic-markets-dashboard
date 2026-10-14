@@ -101,6 +101,7 @@ import { buildTeamNews } from "@/lib/ui/team-news"; // #INFORTUNI-1001
 import { tennisLiveScoreLabel } from "@/lib/ui/tennis-live-score"; // #LIVE-INVERTED-1007
 import { displayTournament, probabilityLabel, probabilitySourceOf } from "@/lib/partner-market"; // #COERENZA-1001
 import { useWatchlist } from "@/lib/watchlist";
+import { CLASSIC } from "@/lib/classic/flag"; // #CLASSIC-COVERAGE-1014
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
 // fuori dal bundle iniziale di /app. MatchDetailSheet = solo all'apertura scheda
@@ -4806,7 +4807,7 @@ function ClientAuthModal({
   if (forgot) {
     return (
       <div className="auth-modal-backdrop">
-        <form className="auth-modal" onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
+        <form className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": it ? "Recupera la password" : "Recover your password" } : {})} onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
           {dismissible && (
             <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
               style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
@@ -4847,7 +4848,7 @@ function ClientAuthModal({
 
   return (
     <div className="auth-modal-backdrop">
-      <form className="auth-modal"
+      <form className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": mode === "login" ? t.auth_login_title : t.auth_create_title } : {})}
         onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
         {dismissible && (
           <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
@@ -4939,6 +4940,12 @@ function ClientAuthModal({
         )}
         <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : t.auth_create_btn)}</button>
         <p>{t.auth_footer}</p>
+        {/* #CLASSIC-COVERAGE-1014 — il muro non ha ×: senza una porta chi non vuole
+            accedere resta intrappolato (niente Esc, niente clic fuori). La porta è
+            la home, che è pubblica. Solo sul muro e solo a flag acceso. */}
+        {CLASSIC && !dismissible && (
+          <a href="/" className="auth-wall-back">{it ? "← Torna alla home" : "← Back to the board"}</a>
+        )}
       </form>
     </div>
   );
