@@ -341,6 +341,19 @@ export function differsMostItems(
 
 // ─── Righe per lega e chip delle leghe (#CLASSIC-ROOBET-1013) ──────────────
 
+/** Il paese di una lega, scritto: le tre chiavi non-ISO (Inghilterra, Scozia,
+ *  Internazionale) dalla copy, il resto da Intl nella lingua dell'utente.
+ *  #CLASSIC-PAGES-1014 — qui e non nella lobby: lo usano anche le pagine sport. */
+export function countryLabel(c: LeagueCountry | null, lang: string, copy: { england: string; scotland: string; international: string }): string | null {
+  if (!c) return null;
+  if ("key" in c) return copy[c.key];
+  try {
+    return new Intl.DisplayNames([lang, "en"], { type: "region" }).of(c.iso) ?? c.iso;
+  } catch {
+    return c.iso;
+  }
+}
+
 /** La sigla corta del paese per il chip della lega («ENG», «ITA», «INT»):
  *  l'ISO-2 che Intl conosce resta a due lettere; le tre chiavi senza ISO hanno
  *  la loro. Un testo, non una bandierina: i glifi emoji non rendono uguali

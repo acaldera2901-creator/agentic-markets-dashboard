@@ -1,0 +1,109 @@
+/* components/classic/classic-leagues.css — #CLASSIC-PAGES-1014
+   I gruppi per lega delle pagine sport (ClassicLeagueGroups). Stessi toni del
+   gruppo della Home (.brc-group): intestazione su --am-panel-2, niente cornici,
+   la separazione la fanno i fondi e lo spazio. Il foglio è suo, non quello
+   della lobby: la pagina sport si raggiunge anche senza che la Home classic
+   sia mai stata montata. */
+
+.clg { display: flex; flex-direction: column; gap: var(--am-s-2); min-width: 0; }
+.clg > .br-quota { margin-bottom: var(--am-s-2); }
+
+.clg-g { display: flex; flex-direction: column; min-width: 0; }
+/* un gruppo aperto si stacca dal prossimo con lo spazio, non con una riga */
+.clg-g[data-open="true"] { padding-bottom: var(--am-s-5); }
+.clg-g__h { margin: 0; font-size: inherit; font-weight: inherit; }
+.clg-g__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-height: 56px;
+  padding: 10px var(--am-s-4);
+  border: 0;
+  border-radius: 10px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  text-align: left;
+  cursor: pointer;
+}
+.clg-g__toggle:hover { background: var(--am-panel-3); }
+.clg-g__toggle:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.clg-g[data-open="true"] .clg-g__toggle { margin-bottom: var(--am-s-4); }
+.clg-g__titles { display: flex; align-items: baseline; gap: var(--am-s-3); min-width: 0; }
+/* la lega nel volto dei titoli (Fira Sans Condensed sotto il flag): è la voce
+   della pagina, le schede dentro parlano in Plex */
+.clg-g__name {
+  font-family: var(--am-font-display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clg-g__meta { font-family: var(--am-font-ui); font-size: 13px; color: var(--am-muted); white-space: nowrap; }
+.clg-g__counts { margin-left: auto; display: inline-flex; align-items: center; gap: var(--am-s-4); flex: none; }
+.clg-g__n { font-family: var(--am-font-num); font-size: 13px; font-weight: 500; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
+.clg-live { display: inline-flex; align-items: center; gap: 6px; font-family: var(--am-font-num); font-size: 12px; font-weight: 600; color: var(--am-live); }
+.clg-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.clg-g__chev { flex: none; color: var(--am-muted); transition: transform 160ms ease; }
+.clg-g[data-open="false"] .clg-g__chev { transform: rotate(-90deg); }
+
+.clg-g__body { display: grid; gap: var(--am-s-4); }
+/* la griglia: colonne da 300 px (quattro a 1440), le schede della fila alla
+   stessa altezza — le stesse misure della griglia della Home */
+.clg-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--am-s-4);
+}
+.clg-cards > li { display: flex; min-width: 0; }
+.clg-cards > li > * { flex: 1; min-width: 0; }
+.clg-more {
+  justify-self: center;
+  min-height: 36px;
+  padding: 0 var(--am-s-4);
+  border: 0;
+  border-radius: 8px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.clg-more:hover { background: var(--am-panel-3); }
+.clg-more:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+
+/* ── telefono: l'intestazione a tutta larghezza, le schede in swipe ─────── */
+@media (max-width: 640px) {
+  .clg-g__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
+  .clg-g__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .clg-g__name { font-size: 18px; white-space: normal; }
+  .clg-g__counts { gap: var(--am-s-3); }
+  /* un carosello che sborda nei margini della pagina: il bordo tagliato della
+     seconda scheda dice «si scorre» (stessa misura del carosello della Home) */
+  .clg-cards {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 92%;
+    gap: var(--am-s-3);
+    margin-inline: calc(-1 * var(--am-s-3));
+    padding: 0 var(--am-s-3) var(--am-s-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--am-s-3);
+    scrollbar-width: none;
+  }
+  .clg-cards::-webkit-scrollbar { display: none; }
+  .clg-cards > li { scroll-snap-align: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clg-g__chev { transition: none; }
+}

@@ -30,8 +30,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEven
 import Link from "next/link";
 import type { LobbyItem, LobbySectionId } from "@/lib/ui/lobby";
 import {
-  dedupeLobby, differsMostItems, featuredItems, groupBySportLeague, leagueChips, matchesDateFilter, matchesQuery, ROWS_PER_LEAGUE, scopeLobby,
-  UNNAMED_LEAGUE, type DateFilter, type LeagueCountry, type LobbyTab, type SportFilter,
+  countryLabel, dedupeLobby, differsMostItems, featuredItems, groupBySportLeague, leagueChips, matchesDateFilter, matchesQuery, ROWS_PER_LEAGUE, scopeLobby,
+  UNNAMED_LEAGUE, type DateFilter, type LobbyTab, type SportFilter,
 } from "@/lib/classic/lobby-model";
 import { differsBy, footballBooks } from "@/lib/classic/card-view";
 import { abbinaQuotaPartner } from "@/lib/fp-odds-join";
@@ -76,16 +76,6 @@ export type ClassicLobbyProps = {
  *  una pila di intestazioni — nome, paese, contatore — che si scorre in un
  *  colpo d'occhio e si apre a richiesta (Roobet fa lo stesso). */
 const OPEN_PER_SPORT = 3;
-
-function countryLabel(c: LeagueCountry | null, lang: string, copy: ClassicCopy): string | null {
-  if (!c) return null;
-  if ("key" in c) return copy[c.key];
-  try {
-    return new Intl.DisplayNames([lang, "en"], { type: "region" }).of(c.iso) ?? c.iso;
-  } catch {
-    return c.iso;
-  }
-}
 
 /** La sigla del fuso («CEST», «GMT+2»), per dichiarare UN fuso per la vista. */
 function tzAbbr(tz: string, lang: string, now: number): string {
