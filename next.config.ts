@@ -80,7 +80,9 @@ const nextConfig: NextConfig = {
   // build time ("" se non impostato). Una variabile NEXT_PUBLIC_ non definita
   // non viene inlinata: resta un `process.env.X` a runtime e il bundler non
   // può togliere il ramo spento (misurato: il CSS `brc-` finiva nel build OFF).
-  env: { NEXT_PUBLIC_CLASSIC: process.env.NEXT_PUBLIC_CLASSIC ?? "" },
+  // #CLASSIC-INVITE-1014 — stessa regola per il flag dell'anteprima Affiliati v2
+  // (solo Preview, mai Production): definito sempre, così il ramo spento sparisce.
+  env: { NEXT_PUBLIC_CLASSIC: process.env.NEXT_PUBLIC_CLASSIC ?? "", NEXT_PUBLIC_AFFILIATE_V2: process.env.NEXT_PUBLIC_AFFILIATE_V2 ?? "" },
   // #CLASSIC-PARITY-1008 — lo stesso flag come identificatore libero
   // (lib/classic/build-flag.d.ts), per i moduli condivisi col sito di main.
   // Misurato: ogni modulo client che nomina `process.env.X` riceve da Turbopack

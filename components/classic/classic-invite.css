@@ -1,0 +1,313 @@
+/* components/classic/classic-invite.css — #CLASSIC-INVITE-1014 · la tab Invita a flag acceso.
+   Caricato SOLO da ClassicInvite.tsx, che il desk monta solo a build con
+   NEXT_PUBLIC_CLASSIC=1: a flag spento questo foglio non entra nel build.
+
+   Stesso vocabolario di classic-plans.css: un punto focale (il pannello del
+   link, panel-2, l'unica CTA lime), il resto in toni più quieti (panel, poi
+   niente fondo); nessuna cornice, separano i toni e lo spazio; griglia a 4 px
+   (--am-s-*); Fira Condensed solo su titolo, numeri dei passi e importi, Plex
+   per tutto il resto; nessun mono. L'ANTEPRIMA si riconosce dalla FORMA, non
+   dal colore: banner con filetto tratteggiato, etichette «Esempio» tratteggiate.
+   Gli stati dello storico: parola + forma (tratteggio = in attesa, pieno =
+   pagato, barrato = stornato), mai solo colore. Tutto in token: chiaro e scuro. */
+
+.cli {
+  display: grid;
+  gap: var(--am-s-5);
+  max-width: 1120px;
+  margin: 0;
+  padding: var(--am-s-2) 0 var(--am-s-6);
+  font-family: var(--am-font-ui);
+  color: var(--am-text);
+}
+
+/* ── testata ─────────────────────────────────────────────────────────── */
+.cli-head { display: grid; gap: var(--am-s-3); }
+.cli-headline {
+  margin: 0;
+  max-width: 24ch;
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: clamp(30px, 3.6vw, 46px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.cli-lede { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.5; color: var(--am-muted); text-wrap: pretty; }
+
+/* ── il banner dell'anteprima: filetto tratteggiato, si legge anche in grigio ── */
+.cli-preview {
+  display: grid;
+  gap: var(--am-s-1);
+  max-width: 76ch;
+  padding: var(--am-s-3) var(--am-s-4);
+  border: 1.5px dashed var(--am-amber);
+  border-radius: var(--am-r-card-sm);
+}
+.cli-preview__t { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.35; }
+.cli-preview__b { margin: 0; font-size: 14px; line-height: 1.5; color: var(--am-muted); }
+
+/* ── titoli di sezione, testi di servizio ───────────────────────────── */
+.cli-h {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.cli-h4 { margin: 0; font-size: 15px; font-weight: 700; }
+.cli-muted { margin: 0; font-size: 14px; line-height: 1.5; color: var(--am-muted); text-wrap: pretty; }
+.cli-small { font-size: 13px; color: var(--am-muted-2); }
+.cli-label { font-size: 13px; font-weight: 600; color: var(--am-muted); }
+.cli-err { margin: 0; font-size: 14px; color: var(--am-negative); }
+.cli-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ── la coppia in alto: link (7) e passi (5) ─────────────────────────── */
+.cli-top { display: grid; gap: var(--am-s-4); align-items: start; }
+@media (min-width: 900px) {
+  .cli-top { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--am-s-5); }
+}
+
+.cli-link {
+  display: grid;
+  gap: var(--am-s-4);
+  padding: var(--am-s-5) var(--am-s-4);
+  border-radius: var(--am-r-card);
+  background: var(--am-panel-2);
+}
+@media (min-width: 640px) { .cli-link { padding: var(--am-s-6) var(--am-s-5); } }
+
+.cli-anon, .cli-claim, .cli-have { display: grid; gap: var(--am-s-3); }
+.cli-anon__t { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.35; max-width: 32ch; }
+.cli-actions { display: grid; gap: var(--am-s-2); }
+@media (min-width: 640px) { .cli-actions { grid-template-columns: auto auto; justify-content: start; } }
+
+.cli-input {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 var(--am-s-3);
+  border: 1px solid var(--am-line-2);
+  border-radius: var(--am-r-ctl);
+  background: var(--am-inset);
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+  font-size: 16px; /* ≥16: iOS non zooma al focus */
+  font-variant-numeric: tabular-nums;
+}
+.cli-input:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.cli-input--code { text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.cli-input:disabled { color: var(--am-muted-2); cursor: not-allowed; opacity: 1; border-style: dashed; }
+.cli-url { font-size: 15px; text-overflow: ellipsis; }
+.cli-code { margin: 0; font-size: 14px; }
+.cli-code strong { font-weight: 700; letter-spacing: 0.04em; }
+
+.cli-cta {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 var(--am-s-5);
+  border: 0;
+  border-radius: var(--am-r-ctl);
+  background: var(--am-edge);
+  color: var(--am-edge-ink);
+  font-family: var(--am-font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+@media (min-width: 640px) { .cli-cta { width: auto; } }
+.cli-cta:hover:not(:disabled) { filter: brightness(1.06); }
+.cli-cta:active:not(:disabled) { transform: translateY(1px); }
+.cli-cta:focus-visible { outline: 2px solid var(--am-text); outline-offset: 3px; }
+.cli-cta:disabled { background: var(--am-panel-3); color: var(--am-muted); cursor: not-allowed; }
+.cli-cta--ghost { background: var(--am-panel-3); color: var(--am-text); min-height: 44px; font-size: 15px; }
+.cli-cta--ghost:hover:not(:disabled) { filter: brightness(1.12); }
+.cli-cta--ghost:disabled { background: transparent; border: 1px dashed var(--am-line-2); color: var(--am-muted-2); }
+@media (prefers-reduced-motion: reduce) { .cli-cta { transition: none; } .cli-cta:active:not(:disabled) { transform: none; } }
+
+/* ── i tre passi: numeri grandi in Fira, nessuna card a icona ────────── */
+.cli-how { display: grid; gap: var(--am-s-4); padding: var(--am-s-2) 0; }
+@media (min-width: 900px) { .cli-how { padding: var(--am-s-6) 0 0; } }
+.cli-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--am-s-4); }
+.cli-steps li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 2px var(--am-s-3);
+  align-items: baseline;
+}
+.cli-steps__n {
+  grid-row: 1 / span 2;
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--am-royal-t);
+  font-variant-numeric: tabular-nums;
+}
+.cli-steps strong { font-size: 15px; font-weight: 700; line-height: 1.35; }
+.cli-steps span:not(.cli-steps__n) { grid-column: 2; font-size: 14px; line-height: 1.45; color: var(--am-muted); }
+
+/* ── blocchi sotto: panel quieto, testata con etichetta a destra ─────── */
+.cli-block {
+  display: grid;
+  gap: var(--am-s-4);
+  align-content: start;
+  padding: var(--am-s-5) var(--am-s-4);
+  border-radius: var(--am-r-card-sm);
+  background: var(--am-panel);
+  min-width: 0;
+}
+@media (min-width: 640px) { .cli-block { padding: var(--am-s-5); } }
+.cli-block__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--am-s-3); flex-wrap: wrap; }
+.cli-pair { display: grid; gap: var(--am-s-4); }
+@media (min-width: 900px) { .cli-pair { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--am-s-5); } }
+
+/* «Esempio»: tratteggio + parola. Si distingue dal dato reale anche in grigio. */
+.cli-sample {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--am-s-2);
+  border: 1.5px dashed var(--am-amber);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--am-text);
+}
+.cli-net { font-size: 13px; font-weight: 600; color: var(--am-muted); }
+
+/* ── KPI: numeri reali, una riga che avvolge ─────────────────────────── */
+.cli-kpis { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--am-s-4) var(--am-s-3); }
+@media (min-width: 640px) { .cli-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.cli-pair .cli-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cli-kpis div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cli-kpis dt { order: 2; font-size: 13px; color: var(--am-muted); }
+.cli-kpis dd {
+  order: 1;
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.cli-kpis dd.cli-kpis__note { order: 3; font-family: var(--am-font-ui); font-weight: 400; font-size: 12px; line-height: 1.3; color: var(--am-muted-2); }
+
+/* ── v1: i premi, lista nuda ─────────────────────────────────────────── */
+.cli-rewards { display: grid; gap: var(--am-s-3); padding-top: var(--am-s-4); border-top: 1px solid var(--am-line); }
+.cli-rewards__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--am-s-3); flex-wrap: wrap; }
+.cli-tiers { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--am-s-2); }
+.cli-tiers li { display: grid; grid-template-columns: 16px 96px minmax(0, 1fr); gap: var(--am-s-2); font-size: 14px; color: var(--am-muted); }
+.cli-tiers li[data-reached="1"] { color: var(--am-text); font-weight: 600; }
+.cli-tiers__mark { color: var(--am-royal-t); }
+.cli-foot { display: grid; gap: var(--am-s-2); max-width: 70ch; }
+.cli-foot p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--am-muted-2); }
+
+/* ── v2: il flusso delle commissioni, tre celle con freccia ──────────── */
+.cli-flow { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--am-s-4); }
+@media (min-width: 640px) { .cli-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--am-s-3); } }
+.cli-flow li { display: grid; gap: 4px; align-content: start; position: relative; min-width: 0; }
+@media (min-width: 640px) {
+  .cli-flow li + li { padding-left: var(--am-s-4); border-left: 1px solid var(--am-line); }
+}
+.cli-flow__l { font-size: 13px; font-weight: 600; color: var(--am-muted); }
+.cli-flow__v {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  color: var(--am-muted);
+}
+.cli-flow li[data-focus="1"] .cli-flow__v { font-size: 36px; color: var(--am-text); }
+.cli-flow__n { font-size: 13px; line-height: 1.4; color: var(--am-muted-2); }
+
+/* ── v2: il wallet, disabilitato ─────────────────────────────────────── */
+.cli-wallet__row { display: grid; gap: var(--am-s-2); }
+@media (min-width: 640px) {
+  .cli-wallet__row { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+  .cli-wallet__row .cli-label { grid-column: 1 / -1; }
+}
+.cli-warn {
+  margin: 0;
+  max-width: 72ch;
+  padding-left: var(--am-s-3);
+  border-left: 3px solid var(--am-amber);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── v2: lo storico. Tabella ≥640, righe impilate sotto ──────────────── */
+.cli-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.cli-table th {
+  padding: 0 var(--am-s-3) var(--am-s-2) 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+  border-bottom: 1px solid var(--am-line);
+}
+.cli-table td { padding: var(--am-s-3) var(--am-s-3) var(--am-s-3) 0; border-bottom: 1px solid var(--am-line); color: var(--am-muted); }
+.cli-table td[data-k="who"] { color: var(--am-text); }
+.cli-table .cli-num { text-align: right; }
+.cli-table td[data-k="amount"] strong { color: var(--am-text); font-weight: 700; }
+.cli-table tr[data-state="void"] td[data-k="amount"] strong { text-decoration: line-through; color: var(--am-muted-2); }
+@media (max-width: 639px) {
+  .cli-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .cli-table, .cli-table tbody { display: block; }
+  .cli-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px var(--am-s-3);
+    padding: var(--am-s-3) 0;
+    border-bottom: 1px solid var(--am-line);
+  }
+  .cli-table td { padding: 0; border: 0; }
+  .cli-table td[data-k="who"] { grid-column: 1; grid-row: 1; }
+  .cli-table td[data-k="amount"] { grid-column: 2; grid-row: 1; }
+  .cli-table td[data-k="event"] { grid-column: 1; grid-row: 2; font-size: 13px; }
+  .cli-table td[data-k="state"] { grid-column: 2; grid-row: 2; text-align: right; }
+  .cli-table td[data-k="date"] { grid-column: 1; grid-row: 3; font-size: 13px; color: var(--am-muted-2); }
+  .cli-table td[data-k="base"] { display: none; }
+}
+
+.cli-st {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 var(--am-s-2);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--am-text);
+}
+.cli-st[data-state="hold"] { border: 1px dashed var(--am-line-2); color: var(--am-muted); }
+.cli-st[data-state="payable"] { background: var(--am-royal-dim); }
+.cli-st[data-state="paid"] { background: var(--am-panel-3); }
+.cli-st[data-state="void"] { border: 1px solid var(--am-negative-b); color: var(--am-negative); text-decoration: line-through; }
+
+/* ── v2: le regole, una lista che si legge ───────────────────────────── */
+.cli-rules { background: transparent; padding-left: 0; padding-right: 0; }
+.cli-rules ul { margin: 0; padding: 0 0 0 1.1em; display: grid; gap: var(--am-s-2); max-width: 78ch; }
+.cli-rules li { font-size: 14.5px; line-height: 1.5; color: var(--am-muted); }
+.cli-rules li::marker { color: var(--am-muted-2); }
+.cli-terms { margin: 0; font-size: 13.5px; color: var(--am-muted-2); }
+.cli-terms a { color: var(--am-royal-t); font-weight: 600; text-underline-offset: 3px; }
+.cli-terms a:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; border-radius: 2px; }
+
+/* la testa del desk sopra la pagina: «Invite» diventa il kicker della testata
+   (stessa regola della pagina piani) */
+html[data-frames="off"] .book-main:has(.cli) .am-deskhead h1 {
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
