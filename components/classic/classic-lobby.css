@@ -140,14 +140,9 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 .brc-banner[data-photo]::before {
   background: linear-gradient(90deg, rgba(7,19,41,0.85) 0%, rgba(7,19,41,0.5) 38%, rgba(7,19,41,0) 55%);
 }
-/* Il banner «record» ha il fondo navy pieno, cioè il colore della pagina: la
-   scatola sparirebbe. Si posa sul pannello (#0D2343, `--am-panel` del tema
-   scuro, fisso perché il banner resta navy anche in chiaro) e la foto vi si
-   fonde con `lighten`: il navy della foto lascia vedere il pannello, il
-   disegno resta com'è. Niente velo (lo riporterebbe al navy), niente cornice. */
-.brc-banner[data-photo][data-banner="record"] { background-color: #0D2343; }
-.brc-banner[data-photo][data-banner="record"]::before { display: none; }
-.brc-banner[data-photo][data-banner="record"] .brc-banner__art { mix-blend-mode: lighten; }
+/* #CLASSIC-INSIEME-1014 — le tre foto v2 (asset-classic-final/banners-v2) hanno
+   lo stesso fondo quasi nero e opaco: il «record» non ha più bisogno del
+   pannello #0D2343 né di `lighten`, e prende lo stesso velo degli altri due. */
 .brc-banner__title {
   margin: 0;
   font-family: var(--am-font-display);
