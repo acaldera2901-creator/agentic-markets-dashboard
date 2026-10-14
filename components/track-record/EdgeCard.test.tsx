@@ -41,3 +41,22 @@ it("senza by_source (risposta vecchia): il totale come oggi, nessuna riga del pa
   expect(container.querySelector(".tr-big")?.textContent).toBe("66.7%");
   expect(container.textContent).not.toContain("partner");
 });
+
+// #COPY-LEDGER-1007 — la nota sul cambio di popolazione segue il server.
+it("flag spento: markup identico, nessuna nota", () => {
+  yearData.current = { stats: base };
+  const off = render(<EdgeCard lang="it" />).container.innerHTML;
+  expect(off).not.toContain("tr-sealed-note");
+  expect(off).not.toContain("calcio d'inizio");
+  // `sealed_grading` assente o null producono lo stesso markup
+  yearData.current = { stats: { ...base, sealed_grading: null } };
+  expect(render(<EdgeCard lang="it" />).container.innerHTML).toBe(off);
+});
+
+it("flag acceso: nota nella lingua con la data del server", () => {
+  yearData.current = { stats: { ...base, sealed_grading: { from: "2026-10-26T00:00:00.000Z" } } };
+  const it_ = render(<EdgeCard lang="it" />).container;
+  expect(it_.querySelector(".tr-sealed-note")?.textContent).toMatch(/^Dal 26\/10\/2026 il track record conta solo/);
+  const en = render(<EdgeCard lang="en" />).container;
+  expect(en.querySelector(".tr-sealed-note")?.textContent).toMatch(/^From 26 October 2026, the track record/);
+});
