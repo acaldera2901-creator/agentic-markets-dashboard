@@ -388,6 +388,27 @@ const soften = (() => {
   return <T,>(x: T): T => (CLASSIC ? (walk(x) as T) : x);
 })();
 
+// #CLASSIC-COVERAGE-1014 — in italiano i prezzi si scrivono «14,99», non «14.99»: il
+// popup della Home già lo faceva, la landing no. Solo nei TESTI della landing a flag
+// acceso (non tocca importi né piani: cambia solo il separatore mostrato).
+const itNums = (() => {
+  const cache = new WeakMap<object, unknown>();
+  const one = (s: string) => s.replace(/(\d)\.(\d{2})(?!\d)/g, "$1,$2");
+  const walk = (x: unknown): unknown => {
+    if (typeof x === "string") return one(x);
+    if (Array.isArray(x)) return x.map(walk);
+    if (x && typeof x === "object") {
+      const hit = cache.get(x as object); if (hit) return hit;
+      const out: Record<string, unknown> = {};
+      for (const [k, val] of Object.entries(x as Record<string, unknown>)) out[k] = walk(val);
+      cache.set(x as object, out); return out;
+    }
+    return x;
+  };
+  return <T,>(x: T, lang: string): T => (CLASSIC && lang === "it" ? (walk(x) as T) : x);
+})();
+const priceText = (n: number | string, lang: string) => (CLASSIC && lang === "it" ? String(n).replace(".", ",") : String(n));
+
 // Etichette dello scanner (a flag acceso, nella lingua della pagina; a flag spento restano quelle inglesi)
 const SCAN_L: Record<Lang, { head: string; scanning: (n: number) => string; football: string; tennis: string; wc: string; won: string; lost: string; mdl: string; mkt: string; foot: [string, string, string] }> = {
   it: { head: "Edge scanner", scanning: (n) => `Analisi di ${n} partite`, football: "Calcio", tennis: "Tennis", wc: "Mondiali", won: "Vinta", lost: "Persa", mdl: "Mod.", mkt: "Mer.", foot: ["Edge = probabilità del modello − probabilità implicita del mercato. Sotto la nostra soglia di confidenza mostriamo", "«nessun favorito chiaro»", "invece di forzare una pick."] },
@@ -774,8 +795,8 @@ export default function LandingPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const t = soften(COPY[lang]);
-  const v = soften(V3[lang]);
+  const t = itNums(soften(COPY[lang]), lang);
+  const v = itNums(soften(V3[lang]), lang);
   const sl = SCAN_L[lang];
 
   // #CLASSIC-COVERAGE-1014 — la lingua scelta nella barra del sito (ClassicChrome)
@@ -1089,13 +1110,13 @@ export default function LandingPage() {
             <button type="button" className="v-btn v-btn--utility" style={{ alignSelf: "flex-start" }} onClick={() => setAuthModal("create")}>{v.pcCtaFree}</button>
           </div>
           <div className="v-tier">
-            <div className="name">{v.pcBase}</div><div className="price">${PUBLIC_PAID_PLANS.base.amountUsdt}<small>{v.pcMo}</small></div>
+            <div className="name">{v.pcBase}</div><div className="price">${priceText(PUBLIC_PAID_PLANS.base.amountUsdt, lang)}<small>{v.pcMo}</small></div>
             <p className="tag">{v.pcBaseTag}</p>
             <ul>{v.pcBaseList.map((li) => <li key={li}>{li}</li>)}</ul>
             <Link href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcCtaBase}</Link>
           </div>
           <div className="v-tier pro">
-            <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${PUBLIC_PAID_PLANS.premium.amountUsdt}<small>{v.pcMo}</small></div>
+            <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${priceText(PUBLIC_PAID_PLANS.premium.amountUsdt, lang)}<small>{v.pcMo}</small></div>
             <p className="tag">{v.pcProTag}</p>
             <ul>{v.pcProList.map((li) => <li key={li}>{li}</li>)}</ul>
             <Link href="/plans" className="v-btn v-btn--primary" style={{ alignSelf: "flex-start" }}>{v.pcCtaPro}</Link>
