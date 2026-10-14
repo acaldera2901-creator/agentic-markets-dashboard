@@ -194,11 +194,14 @@ html[data-frames="off"] .auth-modal .auth-wall-back { justify-self: center; colo
 /* ── desk: ricerca della barra e titoli di pagina ───────────────────────── */
 /* «Cerca ur»: a 8ch il segnaposto si tagliava sulle tab che non sono la Home.
    Il posto c'è da 1280 in su (la nav è centrata e lascia ~200 px per lato). */
+/* Il campo è type="search": Chrome riserva ~19 px a destra per il tasto «cancella»
+   anche a campo vuoto, quindi il segnaposto FR (111 px di testo) veniva tagliato
+   in un campo da 120. Misurato a schermo con il testo vero in tutte e 5 le lingue
+   del desk (le altre 9 ricadono sull'inglese): sul tasto si rinuncia, Esc cancella. */
 @media (min-width: 1024px) {
-  html[data-frames="off"] .br-navright .br-search input { width: 14ch; font-size: 12px; }
-}
-@media (min-width: 1280px) {
-  html[data-frames="off"] .br-navright .br-search input { width: 16ch; }
+  html[data-frames="off"]:root .br-navright .br-search input { width: 120px; }
+  html[data-frames="off"] .br-navright .br-search input::-webkit-search-cancel-button,
+  html[data-frames="off"] .br-navright .br-search input::-webkit-search-decoration { -webkit-appearance: none; display: none; }
 }
 /* i titoli delle viste del desk (History, Leaderboard…) erano in maiuscolo */
 html[data-frames="off"] :is(.book-main, .book-content) :is(h1, h2) { text-transform: none; }
