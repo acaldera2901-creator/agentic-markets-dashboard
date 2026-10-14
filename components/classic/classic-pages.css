@@ -23,7 +23,7 @@ html[data-frames="off"]:root :is([data-mc-ground], [data-mc]) {
   --fd: var(--am-font-ui);
   --fm: var(--am-font-ui);
 }
-html[data-frames="off"] [data-mc-ground] :is(h1, h2, .wc-section-title) {
+html[data-frames="off"] :is([data-mc-ground], .wc-root) :is(h1, h2, .wc-section-title) {
   font-family: var(--am-font-display);
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -206,3 +206,8 @@ html[data-frames="off"] :is(.book-main, .book-content) :is(h1, h2) { text-transf
 @media (max-width: 640px) {
   html[data-frames="off"] .brc-banner__age { bottom: auto; top: 8px; }
 }
+
+/* World Cup a 360 (2 px di scroll orizzontale): lo sfondo `.bgfix` della scena
+   è più largo della finestra (374 px, per la sfocatura) e allargava la pagina.
+   Lo si taglia alla radice: è decorazione, non contenuto. */
+html[data-frames="off"] .wc-root { overflow-x: clip; }
