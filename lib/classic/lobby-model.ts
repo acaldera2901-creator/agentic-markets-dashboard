@@ -339,6 +339,57 @@ export function differsMostItems(
     .slice(0, cap);
 }
 
+// ─── Righe per lega e chip delle leghe (#CLASSIC-ROOBET-1013) ──────────────
+
+/** La sigla corta del paese per il chip della lega («ENG», «ITA», «INT»):
+ *  l'ISO-2 che Intl conosce resta a due lettere; le tre chiavi senza ISO hanno
+ *  la loro. Un testo, non una bandierina: i glifi emoji non rendono uguali
+ *  ovunque e un'icona per paese sarebbe un asset in più da licenziare. */
+export function countryCode(c: LeagueCountry | null): string | null {
+  if (!c) return null;
+  if ("iso" in c) return c.iso.toUpperCase();
+  return c.key === "england" ? "ENG" : c.key === "scotland" ? "SCO" : "INT";
+}
+
+export type LeagueChip = { id: string; sport: string; league: string; code: string | null; n: number };
+
+/** I chip sopra l'elenco: le leghe presenti nella lista corrente (già filtrata
+ *  per tab, sport e ricerca), nell'ordine dei gruppi — tier, poi orario. Una
+ *  lega sola non è una scelta: niente chip. Le righe senza lega non hanno chip. */
+export function leagueChips(blocks: readonly SportBlock[], max = 12): LeagueChip[] {
+  const out: LeagueChip[] = [];
+  for (const b of blocks) {
+    for (const g of b.groups) {
+      if (g.league === UNNAMED_LEAGUE) continue;
+      out.push({ id: g.id, sport: g.sport, league: g.league, code: countryCode(g.country), n: g.items.length });
+    }
+  }
+  out.sort((a, b) => leagueTier(a.sport, a.league) - leagueTier(b.sport, b.league) || b.n - a.n || a.league.localeCompare(b.league));
+  return out.length > 1 ? out.slice(0, max) : [];
+}
+
+/** Quante righe di una lega si vedono prima di «See all». */
+export const ROWS_PER_LEAGUE = 5;
+
+/** L'ora di una riga, come la scrive Roobet: «Today, 21:00» · «Tomorrow, 13:30»
+ *  · «17 Oct, 16:00», nel fuso dell'utente e nella sua lingua. */
+export function rowWhen(startsAt: string, tz: string, lang: string, now: number, words: { today: string; tomorrow: string }): string | null {
+  const t = new Date(startsAt).getTime();
+  if (!Number.isFinite(t)) return null;
+  let time: string;
+  let day: string;
+  try {
+    time = new Intl.DateTimeFormat(lang === "en" ? "en-GB" : lang, { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(t);
+    const k = dayKey(t, tz);
+    day = k === dayKey(now, tz) ? words.today
+      : k === dayKey(now + 86_400_000, tz) ? words.tomorrow
+      : new Intl.DateTimeFormat(lang === "en" ? "en-GB" : lang, { timeZone: tz, day: "numeric", month: "short" }).format(t);
+  } catch {
+    return null;
+  }
+  return `${day}, ${time}`;
+}
+
 // ─── Tab, sport, ricerca ───────────────────────────────────────────────────
 
 export type LobbyTab = "featured" | "inplay" | "soon" | "all";

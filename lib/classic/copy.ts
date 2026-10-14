@@ -56,6 +56,15 @@ export type ClassicCopy = {
   partnerMarket: string;
   partnerMarketInfo: string;
   marketOnlyFarNote: string;
+  // #CLASSIC-ROOBET-1013 — la scheda del PDF (12/10): CTA, pick chiuso, linguette.
+  // Prima erano mappe inline a 5 lingue dentro ClassicSlab; qui sono 11 come il resto.
+  viewAnalysis: string;
+  unlockAnalysis: string;
+  proPick: string;
+  includedToday: string;
+  inQuota: string;
+  startingSoon: string;
+  pick: string;
 };
 
 const en: ClassicCopy = {
@@ -95,6 +104,13 @@ const en: ClassicCopy = {
   partnerMarket: "Market from partner prices",
   partnerMarketInfo: "Our model alone (no stored market to blend), read against a market rebuilt from partner prices: each book de-vigged, then averaged.",
   marketOnlyFarNote: "Our number's fair price is more than 25% from the best partner price, so we show the market.",
+  viewAnalysis: "View analysis",
+  unlockAnalysis: "Unlock analysis",
+  proPick: "Pro pick",
+  includedToday: "Included today",
+  inQuota: "In your daily quota",
+  startingSoon: "Starting soon",
+  pick: "Pick",
 };
 
 const it: ClassicCopy = {
@@ -134,6 +150,13 @@ const it: ClassicCopy = {
   partnerMarket: "Mercato dai prezzi dei partner",
   partnerMarketInfo: "Solo il nostro modello (nessun mercato registrato da fondere), letto contro un mercato ricostruito dai prezzi dei partner: margine tolto per book, poi media.",
   marketOnlyFarNote: "Il prezzo equo del nostro numero dista più del 25% dal miglior prezzo partner: mostriamo il mercato.",
+  viewAnalysis: "Vedi l’analisi",
+  unlockAnalysis: "Sblocca l’analisi",
+  proPick: "Pick Pro",
+  includedToday: "Inclusa oggi",
+  inQuota: "Nella quota di oggi",
+  startingSoon: "A breve",
+  pick: "Pick",
 };
 
 const es: ClassicCopy = {
@@ -173,6 +196,13 @@ const es: ClassicCopy = {
   partnerMarket: "Mercado según precios de socios",
   partnerMarketInfo: "Solo nuestro modelo (sin mercado guardado con el que mezclar), frente a un mercado reconstruido con precios de socios: margen quitado por casa, luego promedio.",
   marketOnlyFarNote: "El precio justo de nuestro número está a más del 25% del mejor precio de socio: mostramos el mercado.",
+  viewAnalysis: "Ver análisis",
+  unlockAnalysis: "Desbloquea el análisis",
+  proPick: "Pick Pro",
+  includedToday: "Incluida hoy",
+  inQuota: "En tu cuota de hoy",
+  startingSoon: "Empieza pronto",
+  pick: "Pick",
 };
 
 const fr: ClassicCopy = {
@@ -212,6 +242,13 @@ const fr: ClassicCopy = {
   partnerMarket: "Marché issu des prix partenaires",
   partnerMarketInfo: "Notre modèle seul (aucun marché enregistré à mélanger), lu face à un marché reconstruit à partir des prix partenaires : marge retirée par bookmaker, puis moyenne.",
   marketOnlyFarNote: "Le prix juste de notre chiffre est à plus de 25 % du meilleur prix partenaire : nous affichons le marché.",
+  viewAnalysis: "Voir l’analyse",
+  unlockAnalysis: "Débloquer l’analyse",
+  proPick: "Pick Pro",
+  includedToday: "Incluse aujourd’hui",
+  inQuota: "Dans votre quota du jour",
+  startingSoon: "Bientôt",
+  pick: "Pick",
 };
 
 const de: ClassicCopy = {
@@ -251,6 +288,13 @@ const de: ClassicCopy = {
   partnerMarket: "Markt aus Partnerpreisen",
   partnerMarketInfo: "Nur unser Modell (kein gespeicherter Markt zum Mischen), gelesen gegen einen aus Partnerpreisen gebauten Markt: Marge je Buchmacher entfernt, dann gemittelt.",
   marketOnlyFarNote: "Der faire Preis unserer Zahl liegt mehr als 25 % vom besten Partnerpreis entfernt: Wir zeigen den Markt.",
+  viewAnalysis: "Analyse ansehen",
+  unlockAnalysis: "Analyse freischalten",
+  proPick: "Pro-Pick",
+  includedToday: "Heute enthalten",
+  inQuota: "In deinem Tageskontingent",
+  startingSoon: "Beginnt bald",
+  pick: "Pick",
 };
 
 const pt: ClassicCopy = {
@@ -290,6 +334,13 @@ const pt: ClassicCopy = {
   partnerMarket: "Mercado a partir de preços de parceiros",
   partnerMarketInfo: "Só o nosso modelo (sem mercado registado para combinar), lido contra um mercado refeito com preços de parceiros: margem retirada por casa, depois média.",
   marketOnlyFarNote: "O preço justo do nosso número está a mais de 25% do melhor preço de parceiro: mostramos o mercado.",
+  viewAnalysis: "Ver análise",
+  unlockAnalysis: "Desbloquear análise",
+  proPick: "Pick Pro",
+  includedToday: "Incluída hoje",
+  inQuota: "Na sua cota de hoje",
+  startingSoon: "Começa em breve",
+  pick: "Pick",
 };
 
 const nl: ClassicCopy = {
@@ -329,6 +380,13 @@ const nl: ClassicCopy = {
   partnerMarket: "Markt uit partnerprijzen",
   partnerMarketInfo: "Alleen ons model (geen opgeslagen markt om mee te mengen), gelezen tegen een markt opgebouwd uit partnerprijzen: marge per bookmaker eraf, dan gemiddeld.",
   marketOnlyFarNote: "De faire prijs van ons getal ligt meer dan 25% van de beste partnerprijs: we tonen de markt.",
+  viewAnalysis: "Analyse bekijken",
+  unlockAnalysis: "Analyse ontgrendelen",
+  proPick: "Pro-pick",
+  includedToday: "Vandaag inbegrepen",
+  inQuota: "In je dagquotum",
+  startingSoon: "Begint zo",
+  pick: "Pick",
 };
 
 const pl: ClassicCopy = {
@@ -368,6 +426,13 @@ const pl: ClassicCopy = {
   partnerMarket: "Rynek z cen partnerów",
   partnerMarketInfo: "Tylko nasz model (brak zapisanego rynku do połączenia), czytany wobec rynku odtworzonego z cen partnerów: marża usunięta dla każdego bukmachera, potem średnia.",
   marketOnlyFarNote: "Uczciwa cena naszej liczby różni się o ponad 25% od najlepszej ceny partnera: pokazujemy rynek.",
+  viewAnalysis: "Zobacz analizę",
+  unlockAnalysis: "Odblokuj analizę",
+  proPick: "Pick Pro",
+  includedToday: "Dziś w pakiecie",
+  inQuota: "W dzisiejszym limicie",
+  startingSoon: "Wkrótce",
+  pick: "Pick",
 };
 
 const tr: ClassicCopy = {
@@ -407,6 +472,13 @@ const tr: ClassicCopy = {
   partnerMarket: "Partner fiyatlarından piyasa",
   partnerMarketInfo: "Yalnızca modelimiz (karıştırılacak kayıtlı piyasa yok), partner fiyatlarından yeniden kurulan piyasaya karşı okunur: her sitenin marjı çıkarılır, sonra ortalama alınır.",
   marketOnlyFarNote: "Sayımızın adil fiyatı en iyi partner fiyatından %25'ten fazla uzak: piyasayı gösteriyoruz.",
+  viewAnalysis: "Analizi gör",
+  unlockAnalysis: "Analizi aç",
+  proPick: "Pro seçim",
+  includedToday: "Bugün dahil",
+  inQuota: "Günlük kotanda",
+  startingSoon: "Yakında başlıyor",
+  pick: "Seçim",
 };
 
 const sv: ClassicCopy = {
@@ -446,6 +518,13 @@ const sv: ClassicCopy = {
   partnerMarket: "Marknad från partnerpriser",
   partnerMarketInfo: "Bara vår modell (ingen sparad marknad att blanda), läst mot en marknad byggd av partnerpriser: marginalen borttagen per spelbolag, sedan medelvärde.",
   marketOnlyFarNote: "Vår siffras rättvisa pris ligger mer än 25 % från bästa partnerpriset: vi visar marknaden.",
+  viewAnalysis: "Se analysen",
+  unlockAnalysis: "Lås upp analysen",
+  proPick: "Pro-pick",
+  includedToday: "Ingår idag",
+  inQuota: "I din dagskvot",
+  startingSoon: "Börjar snart",
+  pick: "Pick",
 };
 
 const ru: ClassicCopy = {
@@ -485,6 +564,13 @@ const ru: ClassicCopy = {
   partnerMarket: "Рынок по ценам партнёров",
   partnerMarketInfo: "Только наша модель (нет сохранённого рынка для смешивания) против рынка, собранного из цен партнёров: маржа снята у каждой конторы, затем среднее.",
   marketOnlyFarNote: "Справедливая цена нашего числа отличается от лучшей цены партнёра более чем на 25%: показываем рынок.",
+  viewAnalysis: "Смотреть анализ",
+  unlockAnalysis: "Открыть анализ",
+  proPick: "Pro-пик",
+  includedToday: "Доступно сегодня",
+  inQuota: "В квоте на сегодня",
+  startingSoon: "Скоро начало",
+  pick: "Пик",
 };
 
 export const CLASSIC_COPY: Record<ClassicLang, ClassicCopy> = { en, it, es, fr, de, pt, nl, pl, tr, sv, ru };

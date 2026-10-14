@@ -23,6 +23,7 @@ import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #P
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 import { storageGet, storageSet } from "@/lib/safe-storage";
+import { useBrowserTimeZone } from "@/lib/ui/use-browser-tz";
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
@@ -9491,6 +9492,21 @@ function HomeLobby({
         tennis={tennisItems}
         query={query}
         renderCard={renderCard}
+        // #CLASSIC-ROOBET-1013 — la riga per lega: la stessa rotta, lo stesso
+        // gating e la stessa apertura in pagina di `renderCard`, senza la scheda.
+        rowLink={(item) => {
+          const locked = item.data.locked === true;
+          return {
+            href: `${TAB_PATHS.bets}?match=${encodeURIComponent(item.key)}`,
+            locked,
+            onOpen: (ev) => {
+              ev.preventDefault();
+              if (locked) { onGate?.(); return; }
+              trackEvent("card_open", { meta: { surface: "lobby-row", section: "leagues", sport: item.data.sport } });
+              onOpenMatch(item.key);
+            },
+          };
+        }}
         banners={{
           // #CLASSIC-INT-1008 — le foto approvate da Andrea (public/images/classic/,
           // AVIF/WebP accanto ai PNG, ripiego SVG). Board → foto «prices».
@@ -9993,14 +10009,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     } catch { /* href non parsabile: lascia fare al <Link> */ }
     return false;
   };
-  const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
-    // #STORAGE-CRASH-0813: questa lettura girava NUDA dentro l'inizializzatore,
-    // cioe' durante il render: dove lo storage e' vietato (Safari privato,
-    // browser interni delle app, cookie bloccati) lanciava e portava l'INTERO
-    // desk nel boundary globale. Riprodotto con Playwright, stack alla mano.
-    const stored = storageGet("agentic-lang") as Lang | null;
-    return stored && LANGUAGES.includes(stored) ? stored : "en";
-  });
+  // #HYDRATION-418-1014: il primo render e' "en" sia sul server sia nel client.
+  // Leggere qui la lingua salvata dava "en" in SSR e "it" all'idratazione:
+  // React #418 (aria-label della nav diverso) e albero rigenerato. La lingua
+  // salvata la applica l'effect di #GEO-LANG-0821 subito dopo il mount.
+  const [uiLanguage, setUiLanguage] = useState<Lang>("en");
   const selectLanguage = (next: Lang) => {
     if (next === uiLanguage) return;
     setUiLanguage(next);
@@ -10237,7 +10250,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [liveTennis, setLiveTennis] = useState<LiveTennisMatch[]>([]);
   const [lastUpdate, setLastUpdate] = useState("");
-  const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
+  const userTz = useBrowserTimeZone(); // #HYDRATION-418-1014: SSR e idratazione vedono lo stesso fuso
   // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
   // nel root layout (con il path), per ogni rotta. Tenerlo qui lo raddoppiava su /app.
   // #PLAN-VIEW-PLAN-0928: aspetta authChecked, così il piano letto è quello
@@ -10266,15 +10279,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // DICHIARATA, non una deduzione dal paese. Regola in lib/pick-language.ts.
   useEffect(() => {
     const stored = storageGet("agentic-lang"); // #STORAGE-CRASH-0813
-    if (stored && LANGUAGES.includes(stored as Lang)) return;
+    // #HYDRATION-418-1014: anche la lingua salvata si applica qui, dopo il mount.
+    const saved = stored && LANGUAGES.includes(stored as Lang) ? (stored as Lang) : null;
     const preferite = [
       ...(typeof navigator !== "undefined" ? navigator.languages ?? [] : []),
       typeof navigator !== "undefined" ? navigator.language ?? "" : "",
     ];
-    const detected = pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang;
+    const detected = saved ?? (pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator.languages non esiste lato server, e #STORAGE-CRASH-0813 dice che leggere lo storage fuori da un effect schianta Safari privato
     setUiLanguage(detected);
-    storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
+    if (!saved) storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -10958,7 +10972,21 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 sempre — ma un <img> display:none il browser lo SCARICA lo stesso.
                 Misurato @390 sul preview: 590 KB per pagina, il 30% di tutto il
                 payload di immagini, per un elemento che non può accendersi. */}
-            <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            {/* #CLASSIC-ASSET-1013 — il raster ufficiale scalato (LANCZOS) a 2x/3x
+                della misura resa (h 30 → 182×60 / 273×90) invece del PNG da 1390 px:
+                stesso marchio, 20–36 KB. Sotto i 641 px il lockup sarebbe largo
+                91 px: la regola 2 del marchio (lockup ≥ 120 px, sotto solo il
+                monogramma) dice monogramma, e il <picture> lo serve. */}
+            <picture>
+              <source media="(max-width: 640px)" srcSet="/logos/betredge-monogram-white.svg" />
+              <img
+                className="brand-logo-dark"
+                src="/logos/betredge-header-white@2x.png"
+                srcSet="/logos/betredge-header-white@2x.png 2x, /logos/betredge-header-white@3x.png 3x"
+                alt="BetrEdge"
+                style={{ height: 30, width: "auto" }}
+              />
+            </picture>
           </Link>
 
           {/* ── Nav primaria — #RESTYLING-0921 ──────────────────────────────

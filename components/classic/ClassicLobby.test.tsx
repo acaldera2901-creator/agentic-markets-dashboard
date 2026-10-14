@@ -76,10 +76,48 @@ describe("ClassicLobby", () => {
     expect(screen.getByRole("tab", { name: "In-Play" })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByText("Featured matches")).toBeNull();
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getAllByRole("article")).toHaveLength(1);
+    // #CLASSIC-ROOBET-1013 — per lega si rendono RIGHE (ClassicRow), non schede
+    expect(within(panel).getAllByTestId("classic-row")).toHaveLength(1);
+    expect(within(panel).getByTestId("classic-row")).toHaveAttribute("data-live", "true");
     renderCard.mockClear();
     fireEvent.click(screen.getByRole("tab", { name: "Starting Soon" }));
-    expect(renderCard.mock.calls.every(([, s]) => s === "soon")).toBe(true);
+    // la fascia «soon» non ha caroselli: nessuna scheda, solo righe
+    expect(renderCard).not.toHaveBeenCalled();
+    expect(within(screen.getByRole("tabpanel")).getAllByTestId("classic-row").length).toBeGreaterThan(0);
+  });
+
+  it("#CLASSIC-ROOBET-1013: league chips filter the list; «See all» opens the rows beyond five", () => {
+    const many = Array.from({ length: 7 }, (_, i) => item({ league: "Serie A", startsAt: h(2 + i) }));
+    setup({ football: [...football, ...many] });
+    const chips = screen.getByTestId("classic-league-chips");
+    expect(within(chips).getAllByRole("button").map((b) => b.textContent)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^All/), expect.stringMatching(/Serie A$/), expect.stringMatching(/Premier League$/)]),
+    );
+    const serieAGroup = () => document.getElementById("brc-g-football-Serie-A")!;
+    expect(within(serieAGroup()).getAllByTestId("classic-row")).toHaveLength(5);
+    fireEvent.click(within(serieAGroup()).getByRole("button", { name: /See all 9/ }));
+    expect(within(serieAGroup()).getAllByTestId("classic-row")).toHaveLength(9);
+    fireEvent.click(within(chips).getByRole("button", { name: /Serie A/ }));
+    expect(Array.from(document.querySelectorAll(".brc-group__name")).map((n) => n.textContent)).toEqual(["Serie A"]);
+    fireEvent.click(within(chips).getByRole("button", { name: /^All/ }));
+    expect(document.querySelectorAll(".brc-group__name").length).toBeGreaterThan(1);
+  });
+
+  it("#CLASSIC-ROOBET-1013: the left rail lists sections and sports, and the row links where the desk says", () => {
+    const rowLink = vi.fn(() => ({ href: "/x", locked: true }));
+    setup({ rowLink });
+    const side = screen.getByRole("navigation", { name: "Sections" });
+    expect(within(side).getAllByRole("button").map((b) => b.textContent)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^Featured/), expect.stringMatching(/^In-Play/), expect.stringMatching(/^Football/), expect.stringMatching(/^Tennis/)]),
+    );
+    expect(within(side).getByRole("link", { name: /Track record/ })).toHaveAttribute("href", "/history");
+    const row = screen.getAllByTestId("classic-row")[0];
+    expect(row).toHaveAttribute("data-locked", "true");
+    expect(within(row).getByRole("link", { name: /Open match/ })).toHaveAttribute("href", "/x");
+    // senza quote partner la colonna non inventa un prezzo (la prima riga è live: «prices removed»)
+    expect(within(row).getByText("Prices removed at the start")).toBeInTheDocument();
+    // senza provider la geo non è nota: nessun «No partner price» falso (round 3)
+    expect(screen.queryAllByText("No partner price")).toHaveLength(0);
   });
 
   it("search filters every block and says so when nothing matches", () => {
@@ -96,7 +134,7 @@ describe("ClassicLobby", () => {
     fireEvent.click(screen.getByRole("tab", { name: "All Sports" }));
     fireEvent.click(screen.getByRole("button", { name: /Tomorrow/ }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getAllByRole("article").map((a) => a.textContent)).toEqual([`Home 5 – Away 5`]);
+    expect(within(panel).getAllByTestId("classic-row").map((r) => r.querySelectorAll(".brc-row__name")[0].textContent)).toEqual([`Home 5`]);
   });
 
   it("arrow keys move between tabs", () => {

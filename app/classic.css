@@ -107,154 +107,286 @@ html[data-frames="off"] .reset-card { filter: none; }
 /* la cornice di pagina (.book-main) era il contenitore di tutto: senza il filo
    resta il suo fondo, ma il margine diventa spazio vero, non una linea. */
 html[data-frames="off"] .book-main { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* round 4 (QA BUG-001) — `overflow: hidden` fa di .book-main un contenitore di
+   scorrimento (che non scorre): il rail `sticky` si incollava a LUI, non alla
+   finestra (top −223 dopo 400 px). `clip` taglia uguale ma non crea un
+   contenitore di scorrimento → lo sticky torna alla finestra. I caroselli hanno
+   il loro overflow-x: auto e non cambiano. */
+html[data-frames="off"] .book-main { overflow: clip; }
 
-/* ═══ Fase B · la scheda «Slab» (components/classic/ClassicSlab.tsx) ═══════════
-   La lastra blu (.br-card: gradiente 130° #155ce3→#102b63) è l'unico contenitore.
-   Dentro: lo spazio raggruppa, il vassoio delle quote è un TONO più scuro (non un
-   filo), e il lime sta solo sul numero che è nostro e sosteniamo. Anton per il
-   numero, JetBrains Mono per le intestazioni, Manrope per il testo: i tre di oggi. */
+/* ═══ Fase C · la tipografia del PDF (#CLASSIC-ROOBET-1013, Design Review 12/10, opzione C)
+   Fira Sans Condensed per hero e titoli, IBM Plex Sans per navigazione, testo,
+   controlli e scheda. I nomi delle famiglie arrivano da ClassicStyles.tsx
+   (next/font, caricato SOLO a flag acceso) nelle variabili --cl-font-head e
+   --cl-font-ui; qui si rimappano i token del sistema, così ogni pagina cliente
+   cambia voce in un colpo solo. ZT Nature Black (solo il numero grande della
+   probabilità) non è in repo e i diritti webfont non sono confermati: il numero
+   cade su Plex 700 — ripiego dichiarato, nessun font scaricato a caso. */
+html[data-frames="off"] {
+  --am-font-ui: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
+  --am-font-display: var(--cl-font-head, var(--font-anton)), var(--font-tech), sans-serif;
+  --am-font-hud: var(--cl-font-head, var(--font-tech)), sans-serif;
+  --cl-font-prob: "ZT Nature", "ZT Nature Black", var(--cl-font-ui, var(--font-display)), sans-serif;
+  /* round 3 (Andrea, 14/10): via il monospace da etichette (PICK, PUBBL. · 18+,
+     sigle INT/DE), contatori e quote — Plex ha i tabulari (font-variant-numeric
+     resta dov'è), e l'opzione C di Michele è «due famiglie», non tre */
+  --am-font-num: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
+}
+html[data-frames="off"] body { font-family: var(--am-font-ui); }
+/* round 3 — la striscia «Registrati per salvare…» e i suoi due bottoni: Plex
+   in tondo (erano `font-mono` + bottoni maiuscoli spaziati in mono); i bottoni
+   hanno il corpo in stile inline nel monolite → !important come in §A.3.
+   Stessi margini laterali della lobby (32 px), così la CTA non tocca il bordo. */
+html[data-frames="off"] .reg-nudge { font-family: var(--am-font-ui); font-size: 13px; margin-inline: var(--am-s-6); }
+html[data-frames="off"] :is(.btn-primary, .btn-secondary) { font-family: var(--am-font-ui); text-transform: none; letter-spacing: 0; }
+html[data-frames="off"] .reg-nudge :is(.btn-primary, .btn-secondary) { font-size: 13px !important; padding: 6px 12px !important; }
+/* sul telefono la lobby ha 12 px di margine: la striscia si allinea a quelli */
+@media (max-width: 640px) { html[data-frames="off"] .reg-nudge { margin-inline: var(--am-s-3); } }
+/* round 4 (QA INFO-005) — footer e barra dei cookie sono GLOBALI (SiteFooter,
+   CookieBanner, con il mono nel CSS e in stile inline): qui cambiano solo sotto
+   il flag. Plex 12,5 nel footer; nella barra 12 px con !important contro
+   l'inline, e sul telefono i bottoni scendono sotto il testo (niente float):
+   il testo non si avvolge più intorno a loro. */
+html[data-frames="off"] .site-footer { font-family: var(--am-font-ui); font-size: 12.5px; }
+html[data-frames="off"] .cookie-consent p { font-family: var(--am-font-ui) !important; font-size: 12px !important; line-height: 1.4 !important; }
+html[data-frames="off"] .cookie-consent-actions button { font-family: var(--am-font-ui) !important; }
+/* round 5 (QA BUG-2): le etichette della barra in basso (Home · Live · …) erano
+   in ui-monospace nel CSS globale: Plex, solo sotto il flag */
+html[data-frames="off"] .am-bottomnav :is(.bn, .bn *) { font-family: var(--am-font-ui); }
+@media (max-width: 640px) {
+  /* flex (non flow-root+float) così vale l'`order: 2` dei bottoni: testo prima,
+     bottoni sotto a destra, nessun avvolgimento */
+  html[data-frames="off"] .cookie-consent { display: flex !important; flex-wrap: wrap; row-gap: 8px; padding: 10px 16px !important; }
+  html[data-frames="off"] .cookie-consent p { flex: 1 1 100% !important; }
+  html[data-frames="off"] .cookie-consent-actions { float: none; margin: 0 0 0 auto; }
+}
+/* Anton aveva un peso solo (400) e viveva in MAIUSCOLO con interlinea 0,9. Fira
+   Condensed ha pesi veri e le minuscole: i titoli tornano in tondo, grassetto,
+   con un'interlinea che non tagli ascendenti e discendenti (l'elenco è quello
+   delle 17 regole che usano --am-font-display in design-system.css). */
+html[data-frames="off"] :is(.br-sec__title, .br-hero__title, .brc-sec__title, .brc-banner__title, .br-yr__title, .sport-band.br-band h2, .book-main-head h2, .am-history .hh h2, .br-promo__title, .tl-head h1, .tl-cta h2, .br-sporthero__title, .br-hp__title, .br-raildeep__h, .br-headline__title, .br-nudge__title, .br-field__name) {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+html[data-frames="off"] :is(.br-card__model-n, .br-sporthero__stat-n) { font-family: var(--cl-font-prob); font-weight: 700; }
+
+/* ═══ Fase B · la scheda (components/classic/ClassicSlab.tsx) — round 2 (13/10) ═══
+   La forma del mockup di Andrea: quattro blocchi, NESSUNA cornice, altezza
+   uniforme e zero spazio vuoto. La separazione la fanno i toni di fondo —
+   arena azzurra > scheda navy > modulo scuro — e lo spazio. Gerarchia da
+   quattro leve (numero 32 > pick 16 > nomi 15 > etichette 10,5; peso; lime una
+   volta sola, sul numero nostro e sul prezzo della pick; tono di fondo).
+   Griglia a 4 px. I nomi hanno SEMPRE due righe di posto: così ogni scheda è
+   alta uguale e in un carosello non resta un vuoto fra modulo e piede. */
 html[data-frames="off"] .cl-slab {
-  gap: 12px;
-  padding: 16px;
+  gap: 8px;
+  padding: 10px;
+  border: 0;
   border-radius: var(--am-r-card);
-  /* il bianco al 7% non regge sul blu acceso: sulla lastra il tono è navy velato */
-  --cl-ink-2: #dce8fb;          /* 4,6:1 sull'estremo chiaro del gradiente */
+  background: #0F2A55;
+  box-shadow: none;
+  --cl-ink-2: #C9D8F2;   /* 7,9:1 sul navy della scheda */
+  --cl-ink-3: #A9C0E8;   /* 5,6:1 */
 }
-html[data-frames="off"] .cl-slab:hover { box-shadow: none; }
+html[data-frames="off"] .cl-slab:hover,
+html[data-frames="off"] .cl-slab:focus-within { border: 0; box-shadow: none; background: #11305F; }
+html[data-frames="off"] .cl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-html[data-frames="off"] .cl-head { display: grid; gap: 4px; min-width: 0; }
-html[data-frames="off"] .cl-meta,
-html[data-frames="off"] .cl-when {
-  display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0;
-  font-family: var(--am-font-num); font-size: 11px; line-height: 1.3;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--cl-ink-2);
+/* 1 · competizione · ora, centrata; linguette accanto; watchlist a destra */
+html[data-frames="off"] .cl-head {
+  position: relative;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px;
+  margin: 0; padding: 0 26px 0 6px; min-width: 0; min-height: 24px; /* a destra il posto della stella */
+  font-family: var(--am-font-ui); font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--cl-ink-2);
 }
-html[data-frames="off"] .cl-sport { display: inline-flex; align-items: center; gap: 7px; color: var(--am-text); font-weight: 700; flex: none; }
-html[data-frames="off"] .cl-sport::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--am-lime); }
-html[data-frames="off"] .cl-sport[data-sport="tennis"]::before { background: var(--am-live); }
+html[data-frames="off"] .cl-meta { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+/* torneo lungo: nome sopra (per intero, ellissi solo oltre la larghezza della
+   scheda), ora sotto — vedi ClassicSlab (QA BUG-1) */
+html[data-frames="off"] .cl-meta[data-stack] { flex-direction: column; gap: 1px; }
+html[data-frames="off"] .cl-meta[data-stack] .cl-league { max-width: 100%; }
 html[data-frames="off"] .cl-league { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html[data-frames="off"] .cl-when { flex-wrap: wrap; row-gap: 4px; }
+html[data-frames="off"] .cl-dot { color: var(--cl-ink-3); }
+html[data-frames="off"] .cl-when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+html[data-frames="off"] .cl-head .br-live { font-size: 11px; }
 html[data-frames="off"] .cl-tag {
-  display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: var(--am-r-chip);
-  background: var(--cl-tone-slab); color: var(--am-text); letter-spacing: 0.1em; font-size: 10px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: var(--am-r-chip);
+  background: rgba(5, 15, 34, 0.45); color: var(--am-text);
+  font-family: var(--am-font-num); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; line-height: 1.3;
 }
 html[data-frames="off"] .cl-tag[data-kind="starting-soon"] { color: var(--am-live); }
 html[data-frames="off"] .cl-tag[data-kind="included"] { color: var(--am-lime); }
-html[data-frames="off"] .cl-scoreraw { color: var(--am-live); }
+html[data-frames="off"] .cl-watch { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: inline-flex; }
+html[data-frames="off"] .cl-slab .br-watch { width: 24px; height: 24px; border: 0; background: transparent; color: var(--cl-ink-3); }
+html[data-frames="off"] .cl-slab .br-watch:hover { color: var(--am-text); background: rgba(214, 228, 255, 0.12); }
 
-html[data-frames="off"] .cl-teams { display: grid; gap: 6px; margin: 2px 0 0; font: 500 17px/1.25 var(--am-font-ui); color: var(--am-text); }
-html[data-frames="off"] .cl-team { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
-html[data-frames="off"] .cl-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html[data-frames="off"] .cl-score { display: inline-flex; gap: 10px; font: 400 20px/1 var(--am-font-display); color: var(--am-live); font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-vs { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
-html[data-frames="off"] .cl-pick { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 13px; color: var(--am-text); min-width: 0; }
-html[data-frames="off"] .cl-k { font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cl-ink-2); font-weight: 600; }
-html[data-frames="off"] .cl-pick-v { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-html[data-frames="off"] .cl-pick-v[data-locked] { color: var(--cl-ink-2); font-weight: 500; }
-
-/* la lettura: un numero grande, il mercato accanto, l'etichetta con la «i» sotto */
-html[data-frames="off"] .cl-read {
-  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 20px; align-items: end; margin-top: 2px;
+/* 2 · l'arena: il pannello azzurro con stemmi, nomi, VS */
+html[data-frames="off"] .cl-arena {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 6px;
+  margin: 0; padding: 12px 8px 10px;
+  border: 0; border-radius: 10px;
+  background: linear-gradient(180deg, #3272DE 0%, #2458B8 100%);
+  font: 700 15px/1.2 var(--am-font-ui); color: #FFFFFF;
 }
-html[data-frames="off"] .cl-big { grid-column: 1; grid-row: 1; margin: 0; display: flex; align-items: baseline; line-height: 0.9; color: var(--am-text); }
+html[data-frames="off"] .cl-team { display: grid; justify-items: center; gap: 6px; min-width: 0; text-align: center; }
+html[data-frames="off"] .cl-crest { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(5, 15, 34, 0.35)); }
+html[data-frames="off"] .cl-team .br-crest { background: rgba(5, 15, 34, 0.35); border: 0; border-radius: 10px; }
+/* il tennista senza foto: iniziali nel tondo, la stessa forma del ritratto accanto */
+html[data-frames="off"] .br-crest[data-sport="tennis"] { border-radius: 50%; }
+/* #CLASSIC-ASSET-1013 — il tennista come stemma: tondo (la foto non ha la
+   sagoma di uno scudo, il cerchio è la forma del ritratto), foto al 200% con
+   il bordo alto allineato in alto → il volto, che nei cutout sta nel primo
+   terzo, cade al centro. Fondo navy velato come il quadratino delle iniziali. */
+html[data-frames="off"] .br-crest-photo {
+  position: relative; display: inline-block; overflow: hidden; flex: none;
+  border-radius: 50%; background: rgba(5, 15, 34, 0.35);
+}
+html[data-frames="off"] .br-crest-photo > img {
+  position: absolute; top: 0; left: 50%; width: 200%; height: 200%; max-width: none;
+  transform: translateX(-50%); object-fit: cover; object-position: 50% 0;
+}
+/* due righe di posto, sempre: l'altezza della scheda non dipende dal nome */
+html[data-frames="off"] .cl-name {
+  max-width: 100%; min-height: 2.4em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  overflow-wrap: anywhere;
+}
+/* la colonna di mezzo: un filo verticale sopra e sotto il «VS» (il mockup) */
+html[data-frames="off"] .cl-mid { align-self: stretch; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; gap: 6px; padding: 0 4px; min-width: 24px; }
+html[data-frames="off"] .cl-mid::before, html[data-frames="off"] .cl-mid::after { content: ""; width: 1px; min-height: 10px; background: rgba(255, 255, 255, 0.28); }
+html[data-frames="off"] .cl-vs { font-family: var(--am-font-num); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #DCE8FB; }
+html[data-frames="off"] .cl-score { display: grid; gap: 2px; justify-items: center; font: 700 16px/1.1 var(--am-font-num); color: var(--am-live); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 3 · il modulo scuro: pick a sinistra, numero a destra */
+html[data-frames="off"] .cl-pickmod {
+  /* round 3 — la colonna di destra è `fit-content(64%)`, non `auto`: con `auto`
+     la traccia si misura sul max-content dell'etichetta (un `max-width` in %
+     sull'elemento è ciclico e non conta) e «Protetta · nessun segnale di
+     valore» spingeva la pick a «🔒 Pi». A sinistra almeno 84 px: «🔒 Pick Pro». */
+  display: grid; grid-template-columns: minmax(84px, 1fr) fit-content(64%); align-items: center; gap: 10px;
+  padding: 8px 12px; border: 0; border-radius: 10px; background: #0A1D42;
+}
+html[data-frames="off"] .cl-pick { display: grid; gap: 2px; margin: 0; min-width: 0; color: var(--am-text); }
+html[data-frames="off"] .cl-k { font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cl-ink-3); font-weight: 600; }
+html[data-frames="off"] .cl-pick-v { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 700; line-height: 1.25; }
+html[data-frames="off"] .cl-pick-v[data-locked] { color: var(--cl-ink-2); font-weight: 600; }
+/* round 3 (Andrea, 14/10) — la colonna di destra non ruba più tutto lo spazio:
+   con «Protetta · nessun segnale di valore» in una riga sola la pick diventava
+   «🔒 Pi». Al massimo il 64%, l'etichetta va a capo (allineata a destra), a
+   sinistra restano ≥ 85 px per «🔒 Pick Pro». */
+html[data-frames="off"] .cl-read { display: grid; justify-items: end; gap: 2px; padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, 0.16); min-width: 0; justify-self: end; }
+/* senza prezzo (round 3): niente trattino e niente «Nessun prezzo per ora» —
+   resta la «i» che spiega il perché; il modulo tiene l'altezza del numero
+   (min-height) così le schede restano alte uguali */
+html[data-frames="off"] .cl-pickmod { min-height: 62px; }
+/* round 4 (QA BUG-003): senza numero il divisorio restava orfano accanto alla
+   «i» — via il filo e il rientro, la «i» da sola a destra, altezza invariata */
+html[data-frames="off"] .cl-read--none { align-content: center; border-left: 0; padding-left: 0; }
+/* round 4 (QA INFO-006): «Pick Pro» ereditava Manrope dal .br-card: la scheda
+   intera parla Plex, come il resto del filone */
+html[data-frames="off"] .cl-slab { font-family: var(--am-font-ui); }
+html[data-frames="off"] .cl-big { margin: 0; display: flex; align-items: baseline; line-height: 0.95; color: var(--am-text); white-space: nowrap; }
 html[data-frames="off"] .cl-big[data-ours] { color: var(--am-lime); }
-html[data-frames="off"] .cl-big-n { font: 400 54px/0.9 var(--am-font-display); letter-spacing: 0.005em; font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-big-pc { font: 400 24px/1 var(--am-font-display); margin-left: 2px; }
-html[data-frames="off"] .cl-mkt { grid-column: 2; grid-row: 1; margin: 0 0 3px; display: grid; gap: 4px; justify-items: start; }
-html[data-frames="off"] .cl-mkt-n { font: 400 28px/0.9 var(--am-font-display); color: var(--am-text); font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-mkt-pc { font-size: 15px; margin-left: 1px; }
-html[data-frames="off"] .cl-label { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 8px; margin: 8px 0 0; font-size: 13px; color: var(--cl-ink-2); }
+html[data-frames="off"] .cl-big-n { font: 700 32px/0.95 var(--cl-font-prob); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+html[data-frames="off"] .cl-big-pc { font: 700 18px/1 var(--cl-font-prob); margin-left: 1px; }
+html[data-frames="off"] .cl-label { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin: 0; font-size: 10.5px; line-height: 1.2; color: var(--cl-ink-3); text-align: right; }
+html[data-frames="off"] .cl-label > span { min-width: 0; }
+html[data-frames="off"] .cl-label[data-kind="protected"] > span { color: var(--am-amber); }
+/* #CLASSIC-ASSET-1013 — la «i» è l'icona info della firma (SVG inline, il cerchio
+   è già nel segno): il bottone non disegna più un secondo cerchio di fondo */
 html[data-frames="off"] .cl-info {
-  display: inline-grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%;
-  background: var(--cl-tone-slab); color: var(--am-text); font: italic 700 12px/1 Georgia, "Times New Roman", serif; cursor: pointer;
+  display: inline-grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--cl-ink-2); cursor: pointer;
 }
-html[data-frames="off"] .cl-info:hover, html[data-frames="off"] .cl-info[aria-expanded="true"] { background: rgba(5, 15, 34, 0.55); }
+html[data-frames="off"] .cl-info:hover, html[data-frames="off"] .cl-info[aria-expanded="true"] { color: var(--am-text); background: rgba(214, 228, 255, 0.14); }
 html[data-frames="off"] .cl-info:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
-html[data-frames="off"] .cl-infotext { margin: -4px 0 0; padding: 8px 10px; border-radius: 6px; background: var(--cl-tone-slab); font-size: 12.5px; line-height: 1.45; color: var(--am-text); }
+/* round 3 (QA): la «i» apre un riquadro SOPRA la scheda, ancorato sopra il piede:
+   come riga in più allungava la scheda e, nel carosello, tutte le altre con lei */
+html[data-frames="off"] .cl-slab { position: relative; }
+/* QA BUG-4 (390): ancorato solo in basso, con un testo corto lasciava spuntare
+   «PICK» e la cima del numero: ora copre tutto fra il bordo alto e il piede */
+html[data-frames="off"] .cl-infotext {
+  position: absolute; z-index: 2; top: 10px; left: 10px; right: 10px; bottom: 50px; overflow: auto;
+  margin: 0; padding: 8px 10px; border-radius: 6px; background: #071A3A; box-shadow: 0 6px 18px rgba(5, 15, 34, 0.5);
+  font-size: 12px; line-height: 1.45; color: var(--am-text);
+}
 html[data-frames="off"] .cl-infotext[hidden] { display: none; }
 
-html[data-frames="off"] .cl-gapline { display: grid; gap: 4px; }
-html[data-frames="off"] .cl-gap { margin: 0; font-size: 13px; color: var(--am-text); font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-note { margin: 0; font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-amber); }
-/* #CLASSIC-FIX1-1008 — l'origine del mercato ricavato dai book; «No price yet» senza numero */
-html[data-frames="off"] .cl-origin { margin: 0; font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cl-ink-2); }
-html[data-frames="off"] .cl-noprice { grid-column: 1 / -1; grid-row: 1; margin: 0; font: 400 34px/1 var(--am-font-display); letter-spacing: 0.005em; color: var(--cl-ink-2); }
-html[data-frames="off"] .cl-noprice-why { grid-column: 1 / -1; grid-row: 2; margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--cl-ink-2); }
-
-/* le quote: un vassoio di tono più scuro in fondo alla lastra (niente filo) */
-html[data-frames="off"] .cl-odds {
-  margin-top: auto; display: grid; gap: 10px; padding: 10px; border-radius: 8px; background: var(--cl-tone-slab);
+/* 4 · il piede, una riga: chip della pick (o i tre partner) · CTA */
+html[data-frames="off"] .cl-foot {
+  margin-top: auto; padding: 0; border: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px;
 }
-html[data-frames="off"] .cl-odds-note { margin: 0; font-size: 12.5px; color: var(--cl-ink-2); }
-html[data-frames="off"] .cl-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-html[data-frames="off"] .cl-chip {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 5px 9px 5px 6px; border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08); color: var(--am-text); text-decoration: none; font-size: 12px; line-height: 1;
+/* il lato sinistro non si stringe mai: a cedere è la CTA, che va a capo */
+html[data-frames="off"] .cl-foot-l { display: inline-flex; align-items: center; flex: none; min-width: max-content; }
+html[data-frames="off"] .cl-partners { flex: none; }
+html[data-frames="off"] .cl-foot-l:empty { display: none; }
+/* il chip «1 · logo · 3.53» (mockup 13/10): etichetta dell'esito, logo in un
+   riquadro, quota in monospace; «AD·18+» minuscolo dentro al chip */
+html[data-frames="off"] .cl-odd {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px 0 7px; border: 0; border-radius: 6px;
+  background: rgba(214, 228, 255, 0.1); color: var(--am-text); text-decoration: none; white-space: nowrap;
 }
-html[data-frames="off"] .cl-chip:hover { background: rgba(255, 255, 255, 0.14); }
-html[data-frames="off"] .cl-chip:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
-html[data-frames="off"] .cl-chip[data-best] { background: rgba(200, 255, 0, 0.16); }
-html[data-frames="off"] .cl-chip-name { white-space: nowrap; }
-html[data-frames="off"] .cl-chip-p { font: 700 14px/1 var(--am-font-num); font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-chip[data-best] .cl-chip-p { color: var(--am-lime); }
-html[data-frames="off"] .cl-chip-site { font-size: 11px; color: var(--cl-ink-2); white-space: nowrap; }
-/* i loghi in /public/logos sono emblemi (FortunePlay) e wordmark (YBets): una
-   casella alta 18, larghezza libera fino a 44, nessun fondo che li incornici */
-html[data-frames="off"] .cl-logo { height: 18px; width: auto; max-width: 44px; object-fit: contain; flex: none; }
-html[data-frames="off"] .cl-logo--txt { display: inline-grid; place-items: center; width: 18px; border-radius: 4px; background: var(--cl-tone-2); font: 700 9px/1 var(--am-font-num); color: var(--am-text); text-transform: uppercase; }
-html[data-frames="off"] .cl-cells { display: grid; gap: 6px; }
-html[data-frames="off"] .cl-cells-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; }
-html[data-frames="off"] .cl-cell { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); min-width: 0; }
-html[data-frames="off"] .cl-cell-k { font: 700 11px/1 var(--am-font-num); color: var(--cl-ink-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-html[data-frames="off"] .cl-cell-p { margin-left: auto; font: 700 13px/1 var(--am-font-num); color: var(--am-text); font-variant-numeric: tabular-nums; }
-html[data-frames="off"] .cl-bet {
-  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border-radius: 6px;
-  background: rgba(255, 255, 255, 0.14); color: var(--am-text); text-decoration: none; font: 700 13.5px/1.1 var(--am-font-ui);
+html[data-frames="off"] .cl-odd:hover { background: rgba(214, 228, 255, 0.18); }
+html[data-frames="off"] .cl-odd:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
+html[data-frames="off"] .cl-odd-k { font: 700 11px/1 var(--am-font-num); color: var(--cl-ink-2); min-width: 8px; text-align: center; }
+html[data-frames="off"] .cl-odd-p { font: 700 13px/1 var(--am-font-num); font-variant-numeric: tabular-nums; }
+html[data-frames="off"] .cl-odd[data-pick] .cl-odd-p { color: var(--am-lime); }
+html[data-frames="off"] .cl-odd-ad { font: 600 8px/1 var(--am-font-num); letter-spacing: 0.06em; color: var(--cl-ink-3); margin-left: 2px; white-space: nowrap; }
+/* i loghi in /public/logos sono emblemi (FortunePlay) e wordmark (YBets): nel
+   chip c'è posto per un quadrato 16×16 — del wordmark si vede il marchio a sinistra */
+html[data-frames="off"] .cl-logo { height: 16px; width: 16px; max-width: 16px; object-fit: cover; object-position: left center; border-radius: 3px; flex: none; }
+html[data-frames="off"] .cl-logo--txt { display: inline-grid; place-items: center; background: var(--cl-tone-2); font: 700 8px/1 var(--am-font-num); color: var(--am-text); text-transform: uppercase; }
+/* il ripiego: tre partner, un logo ciascuno, link di atterraggio affiliato */
+html[data-frames="off"] .cl-partners { display: inline-flex; align-items: center; gap: 3px; }
+html[data-frames="off"] .cl-partner {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 6px;
+  background: rgba(214, 228, 255, 0.1); text-decoration: none;
 }
-html[data-frames="off"] .cl-bet:hover { background: rgba(255, 255, 255, 0.2); }
-html[data-frames="off"] .cl-bet[data-tone="primary"] { background: var(--am-lime); color: var(--am-lime-ink); }
-html[data-frames="off"] .cl-bet[data-tone="primary"]:hover { filter: brightness(1.06); }
-html[data-frames="off"] .cl-bet:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
-html[data-frames="off"] .cl-ad { font: 600 10px/1 var(--am-font-num); letter-spacing: 0.1em; opacity: 0.8; }
-
-html[data-frames="off"] .cl-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; }
-html[data-frames="off"] .cl-odds + .cl-foot { margin-top: 0; }
-html[data-frames="off"] .cl-read ~ .cl-foot:not(.cl-odds + .cl-foot) { margin-top: auto; }
-html[data-frames="off"] .cl-foot-l { display: inline-flex; }
+html[data-frames="off"] .cl-partner:hover { background: rgba(214, 228, 255, 0.18); }
+html[data-frames="off"] .cl-partner:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
+html[data-frames="off"] .cl-partner .cl-logo { width: 16px; height: 16px; max-width: 16px; }
+/* nel ripiego l'avviso sta su due righe strette («PUBBL. · 18+» in 26 px): così
+   la CTA della scheda chiusa tiene due righe, non tre, anche a 280 px */
+html[data-frames="off"] .cl-partners > .cl-odd-ad { display: inline-block; width: 32px; white-space: normal; font-size: 7.5px; line-height: 1.25; text-align: left; margin-left: 2px; }
+/* round 3 (QA): nel piede della scheda l'avviso sta su UNA riga sotto i loghi, così
+   a destra resta posto per «lucchetto + Sblocca l'analisi ↗» su una riga sola (280 px) */
+html[data-frames="off"] .cl-foot .cl-partners { display: inline-grid; grid-template-columns: repeat(3, 24px); gap: 2px; justify-items: center; }
+html[data-frames="off"] .cl-foot .cl-partners[data-n="2"] { grid-template-columns: repeat(2, 24px); }
+html[data-frames="off"] .cl-foot .cl-partners[data-n="1"] { grid-template-columns: 24px; }
+html[data-frames="off"] .cl-foot .cl-partner { width: 24px; height: 24px; }
+html[data-frames="off"] .cl-foot .cl-partners > .cl-odd-ad { grid-column: 1 / -1; width: auto; margin: 0; white-space: nowrap; font-size: 7px; line-height: 1; letter-spacing: 0.02em; }
+html[data-frames="off"] .cl-foot .cl-open { flex: 1 1 auto; justify-content: flex-end; }
 html[data-frames="off"] .cl-open {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 0; margin-left: auto;
-  color: var(--am-text); text-decoration: none; font: 600 13px/1 var(--am-font-ui);
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 30px; padding: 4px 6px; margin-left: auto;
+  color: var(--am-text); text-decoration: none; font: 700 13px/1.2 var(--am-font-ui); text-align: right; border-radius: 6px; min-width: 0;
+  white-space: nowrap; /* round 3 (QA): il lucchetto resta attaccato al testo, una riga */
 }
 html[data-frames="off"] .cl-open:hover { text-decoration: underline; text-underline-offset: 3px; }
 html[data-frames="off"] .cl-open[data-locked] { color: var(--am-lime); }
 html[data-frames="off"] .cl-open:focus-visible { outline: 2px solid var(--am-text); outline-offset: 2px; }
 
-html[data-frames="off"] .cl-tznote { margin: 0 0 12px; font-family: var(--am-font-num); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted); }
+html[data-frames="off"] .cl-tznote { margin: -20px 0 12px; font-family: var(--am-font-num); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted); }
 
 @media (max-width: 640px) {
-  html[data-frames="off"] .cl-big-n { font-size: 50px; }
-  html[data-frames="off"] .cl-bet, html[data-frames="off"] .cl-chip, html[data-frames="off"] .cl-open { min-height: 40px; }
+  html[data-frames="off"] .cl-odd, html[data-frames="off"] .cl-open, html[data-frames="off"] .cl-partner { min-height: 36px; }
+  html[data-frames="off"] .cl-big-n { font-size: 34px; }
+  /* sul telefono la scheda è larga (92%): loghi del ripiego a 32 px, bersaglio pieno */
+  html[data-frames="off"] .cl-foot .cl-partners { grid-template-columns: repeat(3, 32px); }
+  html[data-frames="off"] .cl-foot .cl-partners[data-n="2"] { grid-template-columns: repeat(2, 32px); }
+  html[data-frames="off"] .cl-foot .cl-partners[data-n="1"] { grid-template-columns: 32px; }
+  html[data-frames="off"] .cl-foot .cl-partner { width: 32px; height: 32px; min-height: 32px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-frames="off"] .cl-slab * { transition: none !important; }
 }
-/* nella casella del prezzo per esito c'è posto solo per l'emblema: del wordmark
-   (YBets) si vede il quadrato a sinistra, che è il suo marchio */
-html[data-frames="off"] .cl-cell .cl-logo { width: 18px; max-width: 18px; object-fit: cover; object-position: left center; border-radius: 3px; }
-html[data-frames="off"] .cl-tznote { margin-top: -20px; }
+
 /* Un bordo trasparente lascia vedere lo sfondo che c'è SOTTO di lui: con
    l'origine di default (padding-box) un gradiente si ripete nel bordo e disegna
    un filo di un altro colore — una cornice fantasma. Dall'angolo del bordo,
    lo sfondo è uno solo. */
 html[data-frames="off"] *, html[data-frames="off"] *::before, html[data-frames="off"] *::after { background-origin: border-box; }
-/* bottone partner sulle schede strette (5 per riga in «Starting soon»): il nome
-   non si spezza; se non c'è posto, AD · 18+ va a capo, intero */
-html[data-frames="off"] .cl-bet { flex-wrap: wrap; row-gap: 2px; text-align: center; }
-html[data-frames="off"] .cl-bet > span { white-space: nowrap; }
-html[data-frames="off"] .cl-chip { max-width: 100%; }
-html[data-frames="off"] .cl-chip-site { white-space: normal; line-height: 1.2; }
-html[data-frames="off"] .cl-chip .cl-logo[data-wordmark] { height: 16px; max-width: 64px; }
 /* filetti disegnati con uno pseudo-elemento (non con border): li spegne a mano */
 html[data-frames="off"] .pdm-panel::before { display: none; }
 html[data-frames="off"] .pdm-panel { border-radius: var(--am-r-card); }
@@ -265,16 +397,4 @@ html[data-frames="off"] :is(.tl-caveat, .betslip-empty, .br-empty, .client-statu
   /* !important: la lista di §A.4 ha un :is() con selettori a tre classi, che
      porta la sua specificità sopra questa regola */
   background-color: var(--am-inset) !important;
-}
-/* #CLASSIC-INT-1008 — la Slab nel carosello della lobby (colonna da 280 px a
-   1440): tre caselle 1·X·2 in ~228 px non tengono etichetta + logo + prezzo, e
-   l'etichetta «1/X/2» spariva tagliata a zero. Sotto i 250 px di fila, con tre
-   esiti, cade il logo (il nome del book resta nel title della casella e nel
-   bottone): l'etichetta non si stringe mai. */
-html[data-frames="off"] .cl-cells-l { container-type: inline-size; }
-html[data-frames="off"] .cl-cell-k, html[data-frames="off"] .cl-cell-p { flex: none; }
-/* fra etichetta e prezzo, a cedere spazio è il logo (anche con «17.00» a 3 cifre) */
-html[data-frames="off"] .cl-cell .cl-logo { flex: 0 1 18px; min-width: 0; }
-@container (max-width: 250px) {
-  html[data-frames="off"] .cl-cells-l:has(> :nth-child(3)) .cl-cell .cl-logo { display: none; }
 }
