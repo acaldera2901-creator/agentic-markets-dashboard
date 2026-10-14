@@ -149,6 +149,12 @@
 .clg-g[data-open="false"] + .clg-ad { margin-top: var(--am-s-5); }
 /* chiuso con la × (HouseBanner rende null): via anche la fascia, niente buco */
 .clg-ad:not(:has(.house-banner)) { display: none; }
+/* #CLASSIC-COVERAGE-1014 — la fascia era larga come la lista e il creativo (16:9,
+   272 di altezza = 484 di larghezza) ne occupava un terzo, con il resto di
+   sfocato: sembrava un banner rotto. La fascia ora è larga quanto il creativo,
+   centrata fra le leghe; il fondo sfocato non serve più. */
+.clg-ad:has(.hb-cr-baked) { width: fit-content; max-width: 100%; margin-inline: auto; }
+.clg-ad:has(.hb-cr-baked)::before { content: none; }
 .clg-ad .house-banner.hb-cr-baked {
   position: static;
   display: block;

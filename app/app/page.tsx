@@ -9446,9 +9446,13 @@ function HomeLobby({
             renderCard={(item) => renderCard(item, sec.id)}
             lead={quotaRow}
             ad={gridFeed[0] ? (
-              <HouseBanner key={`house-league-${sec.id}-${gridFeed[0].id}`} campaign={gridFeed[0]} lang={lang} inGrid />
+              // #CLASSIC-COVERAGE-1014 — i creativi «cotti» hanno il testo dentro i
+              // pixel, in inglese: su una pagina in italiano (o es/fr/ru) il banner
+              // di casa era l'unica scritta in un'altra lingua. Fuori dall'inglese si
+              // rende la versione a testo del banner (copyFor la traduce).
+              <HouseBanner key={`house-league-${sec.id}-${gridFeed[0].id}`} campaign={lang !== "en" && gridFeed[0].creative ? { ...gridFeed[0], creative: undefined } : gridFeed[0]} lang={lang} inGrid />
             ) : undefined}
-            adBackdrop={gridFeed[0]?.creative?.sm}
+            adBackdrop={lang === "en" ? gridFeed[0]?.creative?.sm : undefined}
           />
         ) : (() => {
           // La griglia si richiude da sé: i banner sono INSERITI nel flatMap,
