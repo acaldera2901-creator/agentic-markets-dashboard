@@ -11251,8 +11251,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   L'`h1` resta: e' l'unico heading della pagina prodotto
                   (#SEO-PACK-0810) e togliersi un h1 e' una regressione SEO. */}
               {/* #CLASSIC-PLANS-1014 — a flag acceso la pagina piani porta il suo
-                  messaggio (ClassicPlans): qui niente seconda riga su Base. */}
-              {tab !== "bets" && !(process.env.NEXT_PUBLIC_CLASSIC === "1" && tab === "plans") && (
+                  messaggio (ClassicPlans): qui niente seconda riga su Base.
+                  #CLASSIC-INVITE-1014 — idem per Invita (ClassicInvite). */}
+              {tab !== "bets" && !(process.env.NEXT_PUBLIC_CLASSIC === "1" && (tab === "plans" || tab === "invita")) && (
               <p className="am-sub">
                 {tab === "plans" ? (
                   /* #PLANS-HOOK-C-0928: coerente con l'hero dei piani («quanto a fondo
@@ -11475,7 +11476,21 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           {/* #REFERRAL-PANEL: la vecchia AccountTab (dove era finita per errore la
               sezione Invita) non è più montata dopo #UI-ACCOUNT-DROPDOWN-0623 →
               il pannello referral vive su una tab dedicata, raggiungibile. */}
-          {tab === "invita" && <ReferralPanel />}
+          {/* #CLASSIC-INVITE-1014 — a flag acceso la tab è ClassicInvite: stesse
+              API di ReferralPanel (stats/claim), nessuna nuova. La parte Affiliati
+              v2 (importi, wallet, storico: dati di ESEMPIO) solo con il secondo
+              flag di build NEXT_PUBLIC_AFFILIATE_V2=1, che vive solo in Preview.
+              A flag spento resta ReferralPanel, intero. */}
+          {tab === "invita" && (process.env.NEXT_PUBLIC_CLASSIC === "1" ? (
+            <CL.ClassicInvite
+              lang={uiLanguage}
+              v2={process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"}
+              onSignIn={() => openAuth("login")}
+              onRegister={() => openAuth("create")}
+            />
+          ) : (
+            <ReferralPanel />
+          ))}
           {tab === "history" && (
             <TrackRecordView rows={historyV2} lang={uiLanguage === "it" ? "it" : "en"} />
           )}
