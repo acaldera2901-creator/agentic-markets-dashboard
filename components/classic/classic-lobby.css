@@ -202,6 +202,89 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 }
 .brc-banner__more:hover { color: #EDEFF2; }
 
+/* ── 1b · lo stile dei banner di casa (#CLASSIC-BANNER-1014, Andrea 14/10) ──
+   I tre ingressi parlano la lingua dei creativi di casa (#RESTYLING-0921,
+   `public/banners/andrea-picks/*`) che la stessa persona vede fra le leghe:
+   - headline MAIUSCOLA condensata in due toni: crema + l'ultima parola nel
+     giallo→lime del brand, col punto finale (`Headline` in ClassicBanners);
+   - sottotitolo in tondo, chiaro, corto;
+   - UNA CTA a pillola lime con inchiostro scuro e chevron, maiuscola
+     condensata — il lime qui è la CTA (e l'accento della headline, come nei
+     creativi), nient'altro; il secondo link del «record» resta testo;
+   - «18+» piccolo nell'angolo basso a destra;
+   - velo quasi nero da sinistra invece del navy (il fondo dei creativi).
+   Cosa NON si porta: il logo (l'header 60 px sopra lo porta già, tre lockup in
+   fila sarebbero rumore), la × (non è pubblicità: chiuderli toglierebbe gli
+   ingressi), il glow della CTA (regola del filone: niente box-shadow).
+   Colori fissi, non del tema: il banner resta scuro anche in chiaro, e
+   `--am-lime-ink` in chiaro è bianco.
+   Il titolo passa da `.brc-banners`: la regola dei titoli di app/classic.css
+   (`:is(… .am-history .hh h2 …)`) pesa 0,3,2 e arriva dopo — misurato col CDP. */
+html[data-frames="off"] .brc-banners .brc-banner .brc-banner__title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  line-height: 0.96;
+  color: #F4EEDF;
+}
+.brc-banner__accent {
+  background: linear-gradient(90deg, #FFE818 0%, #C8FF00 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* forced-colors / niente clip: torna al lime pieno */
+}
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .brc-banner__accent { background: none; color: #C8FF00; }
+}
+@media (forced-colors: active) { .brc-banner__accent { background: none; color: CanvasText; } }
+.brc-banner__sub { color: #E4E9F2; }
+html[data-frames="off"] .brc-banner .brc-banner__cta,
+.brc-banner .brc-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 28px;
+  margin-top: 4px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: #C8FF00;
+  color: #0B1400;
+  font-family: var(--am-font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 140ms ease;
+}
+.brc-banner .brc-banner__cta:hover { text-decoration: none; background: #D8FF4D; }
+.brc-banner__chev { flex: none; margin-left: 2px; }
+.brc-banner__more .brc-banner__chev { width: 6px; height: 9px; margin-left: 1px; }
+/* il focus della CTA resta quello del banner intero (anello royal) */
+.brc-banner:has(.brc-banner__more) .brc-banner__cta { line-height: 1; }
+html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta, .brc-banner__more) { line-height: 1; }
+html[data-frames="off"] .brc-banner:has(.brc-banner__more) .brc-banner__more { line-height: 24px; }
+.brc-banner__links { align-items: center; column-gap: 12px; }
+.brc-banner .brc-banner__more { display: inline-flex; align-items: center; white-space: nowrap; color: #E4E9F2; }
+.brc-banner__age {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(244, 238, 223, 0.78);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+.brc-banner[data-photo]::before {
+  background: linear-gradient(90deg, rgba(4,8,18,0.9) 0%, rgba(4,8,18,0.6) 38%, rgba(4,8,18,0) 55%);
+}
+
 /* ── 2 · tab + ricerca ─────────────────────────────────────────────────── */
 .brc-bar {
   display: flex;
@@ -675,7 +758,8 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
      il 48 e l'80% e resta visibile a destra. */
   .brc-banner[data-photo] .brc-banner__text { max-width: 54%; }
   .brc-banner[data-photo]::before {
-    background: linear-gradient(90deg, rgba(7,19,41,0.9) 0%, rgba(7,19,41,0.7) 48%, rgba(7,19,41,0) 70%);
+    /* #CLASSIC-BANNER-1014 — il quasi nero dei creativi di casa, non il navy */
+    background: linear-gradient(90deg, rgba(4,8,18,0.92) 0%, rgba(4,8,18,0.72) 48%, rgba(4,8,18,0) 70%);
   }
   .brc-banner[data-photo] .brc-banner__title { font-size: 18px; }
   .brc-banner[data-photo] .brc-banner__sub { -webkit-line-clamp: 3; }
@@ -714,6 +798,10 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 @media (max-width: 380px) {
   .brc-banner[data-photo] .brc-banner__text { max-width: 62%; }
   .brc-banner[data-photo] .brc-banner__title { font-size: 17px; }
+  /* #CLASSIC-BANNER-1014 — con la CTA a pillola (28 px) il «record» a 360 in
+     francese e spagnolo perdeva il secondo link sotto il fondo: due righe di
+     sottotitolo invece di tre, solo dove ci sono due link. */
+  html[data-frames="off"] .brc-banner[data-photo]:has(.brc-banner__more) .brc-banner__sub { -webkit-line-clamp: 2; }
 }
 
 /* #CLASSIC-ASSET-1013 round 5 (QA BUG-1) — a 1440, coi 32 px di margine e di

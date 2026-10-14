@@ -107,6 +107,24 @@ function Placeholder({ id }: { id: ClassicBanner["id"] }) {
   );
 }
 
+/** Ultima parola in accento, punto finale (se il titolo non ne ha già uno). */
+function Headline({ text }: { text: string }) {
+  const t = text.trim();
+  const cut = t.lastIndexOf(" ");
+  const end = /[.!?…]$/.test(t) ? "" : ".";
+  if (cut < 0) return <span className="brc-banner__accent">{t}{end}</span>;
+  return <>{t.slice(0, cut)} <span className="brc-banner__accent">{t.slice(cut + 1)}{end}</span></>;
+}
+
+/** Il chevron della CTA dei banner di casa (al posto della freccia). */
+function Chevron() {
+  return (
+    <svg className="brc-banner__chev" viewBox="0 0 8 12" width="7" height="11" aria-hidden="true" focusable="false">
+      <path d="M1.5 1.5 6 6l-4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; label: string }) {
   // Le foto che non sono arrivate passano al ripiego SVG. L'errore può
   // scattare PRIMA dell'idratazione (l'<img> arriva nell'HTML del server e
@@ -159,7 +177,11 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
               <Placeholder id={b.id} />
             )}
             <div className="brc-banner__text">
-              <h2 className="brc-banner__title">{b.title}</h2>
+              {/* #CLASSIC-BANNER-1014 — la headline dei banner di casa: maiuscolo
+                  condensato in due toni, l'ultima parola nel giallo→lime e il punto
+                  finale («TRACK RECORD. CHECK THE HISTORY.»). La regola è di
+                  layout, non di copy: vale uguale nelle 11 lingue. */}
+              <h2 className="brc-banner__title"><Headline text={b.title} /></h2>
               <p className="brc-banner__sub">{b.sub}</p>
               {/* Tutto il banner è cliccabile (il link si allarga con ::after),
                   ma il nome accessibile resta il verbo del link, non il paragrafo. */}
@@ -168,13 +190,15 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
                   prima della freccia — la CTA può andare a capo fra le parole,
                   mai lasciando la freccia sola sulla riga dopo */}
               {b.href.startsWith("/") && !b.onClick ? (
-                <Link className="brc-banner__cta" href={b.href}>{b.cta}{"\u00A0"}<span aria-hidden="true">→</span></Link>
+                <Link className="brc-banner__cta" href={b.href}>{b.cta}{"\u00A0"}<Chevron /></Link>
               ) : (
-                <a className="brc-banner__cta" href={b.href} onClick={b.onClick}>{b.cta}{"\u00A0"}<span aria-hidden="true">→</span></a>
+                <a className="brc-banner__cta" href={b.href} onClick={b.onClick}>{b.cta}{"\u00A0"}<Chevron /></a>
               )}
-              {b.more && <Link className="brc-banner__more" href={b.more.href}>{b.more.label}{"\u00A0"}<span aria-hidden="true">→</span></Link>}
+              {b.more && <Link className="brc-banner__more" href={b.more.href}>{b.more.label}{"\u00A0"}<Chevron /></Link>}
               </p>
             </div>
+            {/* il «18+» dei banner di casa, nell'angolo basso a destra */}
+            <span className="brc-banner__age">18+</span>
           </li>
         ))}
       </ul>
