@@ -44,7 +44,7 @@ export default function PartnersPage() {
     <div className="min-h-screen font-mono mc-scene-stadium" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
-      <ClassicChrome />
+      <ClassicChrome syncHtmlLang />
       {geo === "allowed" ? (
         <PartnersShowcase lang={lang} country={country} />
       ) : geo === "blocked" ? (

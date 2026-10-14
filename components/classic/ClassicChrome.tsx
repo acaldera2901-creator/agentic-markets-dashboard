@@ -11,19 +11,26 @@ import SiteTopbar from "@/components/world-cup/SiteTopbar";
 import { chromeNav } from "@/lib/tools/registry";
 import { CLASSIC } from "@/lib/classic/flag";
 
-type L = "it" | "en";
+type L = "it" | "en" | "es" | "fr" | "ru";
+const LANGS: readonly string[] = ["it", "en", "es", "fr", "ru"];
 
-export default function ClassicChrome({ lang: forced }: { lang?: L }) {
+// `syncHtmlLang`: per le pagine il cui TESTO segue la lingua scelta (partner,
+// community, weekly case): <html lang> era "en" anche con la pagina in italiano.
+// Le pagine solo-inglese (legali, guide) NON lo passano: lì "en" è giusto.
+export default function ClassicChrome({ lang: forced, syncHtmlLang = false }: { lang?: L; syncHtmlLang?: boolean }) {
   const [stored, setStored] = useState<L>("en");
   useEffect(() => {
     const read = () => {
-      try { setStored(localStorage.getItem("agentic-lang") === "it" ? "it" : "en"); } catch { /* storage off → en */ }
+      try { const v = localStorage.getItem("agentic-lang") ?? ""; setStored((LANGS.includes(v) ? v : "en") as L); } catch { /* storage off → en */ }
     };
     read();
     window.addEventListener("agentic-lang-change", read);
     return () => window.removeEventListener("agentic-lang-change", read);
   }, []);
-  if (!CLASSIC) return null;
   const lang = forced ?? stored;
+  useEffect(() => {
+    if (CLASSIC && syncHtmlLang) document.documentElement.lang = lang;
+  }, [lang, syncHtmlLang]);
+  if (!CLASSIC) return null;
   return <SiteTopbar backHref="/" backLabel="Board" lang={lang} nav={chromeNav(lang)} />;
 }

@@ -351,7 +351,7 @@ export default function WeeklyPickPage() {
     <main className="wp-page mc-scene-court" data-mc-ground>
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
-      <ClassicChrome />
+      <ClassicChrome syncHtmlLang />
       <SportGlyphSprite />
       <nav className="wp-nav">
         <Link href="/" className="wp-back">{t.back}</Link>
