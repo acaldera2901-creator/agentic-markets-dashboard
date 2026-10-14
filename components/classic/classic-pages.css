@@ -1,0 +1,50 @@
+/* components/classic/classic-pages.css — #CLASSIC-COVERAGE-1014
+   Le pagine FUORI dal desk (legali, guide, blog, partner, widget, community…)
+   a flag acceso. Caricato da ClassicStyles, quindi solo a build con
+   NEXT_PUBLIC_CLASSIC=1; ogni regola vive sotto html[data-frames="off"].
+
+   Decisione unica: queste pagine parlano come il desk. Plex per tutto, Fira
+   Condensed sui titoli, lastre navy senza filo, lime una volta per schermata.
+   Il monospace delle etichette (round 3, Andrea 14/10) esce anche da qui: si
+   rimappa il token `--font-mono`, che le utility `font-mono` e un centinaio
+   di regole di globals.css leggono — un colpo, tutte le pagine. Resta mono solo
+   dove è codice vero (code/pre/kbd). */
+
+html[data-frames="off"] {
+  --font-mono: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
+}
+html[data-frames="off"] :is(code, pre, kbd, samp) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ── foglio legale (privacy, terms): una lastra di lettura ─────────────── */
+html[data-frames="off"] .legal-sheet {
+  clip-path: none;
+  filter: none;
+  box-shadow: none;
+  border-radius: var(--am-r-card);
+  background: var(--am-panel);
+  max-width: 44rem;
+  font-family: var(--am-font-ui);
+}
+html[data-frames="off"] .legal-sheet::before,
+html[data-frames="off"] .legal-sheet::after { content: none; }
+html[data-frames="off"] .legal-sheet h1 {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+html[data-frames="off"] .legal-sheet h2 {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+  text-transform: none;
+  letter-spacing: 0;
+}
+html[data-frames="off"] .legal-sheet :is(p, li) { font-size: 14px; line-height: 1.65; }
+html[data-frames="off"] .legal-sheet a:not([class*="uppercase"]) { color: var(--am-text); }
+html[data-frames="off"] .legal-sheet a[class*="uppercase"] { text-transform: none; letter-spacing: 0; font-size: 13px; }
+html[data-frames="off"] .legal-sheet p[class*="text-[11px]"] { font-size: 13px; }

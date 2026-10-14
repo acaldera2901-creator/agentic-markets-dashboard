@@ -23,6 +23,7 @@
 import { Fira_Sans_Condensed, IBM_Plex_Sans, Mona_Sans } from "next/font/google";
 import "@/app/classic.generated.css"; // generato da scripts/classic/gen-frames.mjs
 import "@/app/classic.css"; // agisce SOLO sotto html[data-frames="off"]
+import "./classic-pages.css"; // #CLASSIC-COVERAGE-1014 — le pagine fuori dal desk
 
 const fira = Fira_Sans_Condensed({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["500", "600", "700"], display: "swap" });
 const plex = IBM_Plex_Sans({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["400", "500", "600", "700"], display: "swap" });
