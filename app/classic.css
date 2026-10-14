@@ -398,3 +398,11 @@ html[data-frames="off"] :is(.tl-caveat, .betslip-empty, .br-empty, .client-statu
      porta la sua specificità sopra questa regola */
   background-color: var(--am-inset) !important;
 }
+
+/* ── #CLASSIC-PAGES-1014 · le viste del desk (Calcio, Tennis, Live, Watchlist) ──
+   Lo stesso respiro ai lati della Home classic (round 3: 32 px da 641 px in su).
+   Sul telefono resta il gutter del sistema (12 px): i gruppi per lega stanno a
+   tutta larghezza e il carosello delle schede sborda nei margini. */
+@media (min-width: 641px) {
+  html[data-frames="off"] .br-lobby { padding-inline: var(--am-s-6); }
+}

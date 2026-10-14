@@ -9356,6 +9356,26 @@ function HomeLobby({
     // Tennis come VISTA, non come fascia curata della Home: lì `sec.id` può
     // valere "football"/"tennis" ma è l'assaggio da sei, non ha filtri).
     const showFilters = isSport && view === sec.id;
+    // #CLASSIC-PAGES-1014 — a flag acceso l'elenco intero dello sport non è una
+    // griglia di tutte le schede ma GRUPPI per lega (ClassicLeagueGroups): la
+    // stessa scheda, lo stesso gating, la stessa barra dei filtri qui sopra.
+    const classicGrouped = process.env.NEXT_PUBLIC_CLASSIC === "1" && showFilters;
+    // #INCLUDED-TODAY-0928 — la riga della quota: solo sull'elenco intero
+    // (Calcio/Tennis come vista), dove #UNLOCKED-FIRST-0831 garantisce
+    // che le aperte stiano davanti e quindi il confine è UNO. Sulle
+    // fasce curate della Home l'ordine è un altro e la riga mentirebbe.
+    // Conta ciò che si vede (dopo i filtri): numeri veri, non la quota
+    // nominale del piano. Anonimo (zero aperte) e Pro (zero coperte)
+    // non hanno confine e non vedono la riga.
+    const nIncluded = showFilters && !isPro ? items.filter((it) => it.data.locked !== true).length : 0;
+    const quota = nIncluded > 0 && nIncluded < items.length ? quotaRuleCopy(lang, nIncluded, items.length - nIncluded) : null;
+    const quotaRow = quota ? (
+      <div key={`quota-${sec.id}`} className="br-quota" role="separator" aria-label={`${quota.yours}. ${quota.more}.`} data-testid="quota-rule">
+        <span className="br-quota__yours"><IconCheck size={11} stroke={2.5} />{quota.yours}</span>
+        <i className="br-quota__rule" aria-hidden="true" />
+        <button type="button" className="br-quota__more" onClick={onGoPro}>{quota.more}<IconArrow size={12} /></button>
+      </div>
+    ) : null;
     return (
       <>
       {showFilters && (
@@ -9405,33 +9425,35 @@ function HomeLobby({
             {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
           </button>
         ) : null}
+        plain={classicGrouped || undefined}
       >
-        {(() => {
+        {classicGrouped ? (
+          // Nei gruppi il confine aperte/chiuse non è più uno solo: la riga
+          // della quota sta UNA volta, sopra le leghe. Il banner di casa è UNO
+          // (Andrea 14/10): il primo creativo della griglia piatta (gridFeed,
+          // già scelto per sport), in una riga sua fra la 2ª e la 3ª lega.
+          <CL.ClassicLeagueGroups
+            items={items}
+            lang={lang}
+            forceOpen={!!q || competitionFilter !== "all"}
+            renderCard={(item) => renderCard(item, sec.id)}
+            lead={quotaRow}
+            ad={gridFeed[0] ? (
+              <HouseBanner key={`house-league-${sec.id}-${gridFeed[0].id}`} campaign={gridFeed[0]} lang={lang} inGrid />
+            ) : undefined}
+            adBackdrop={gridFeed[0]?.creative?.sm}
+          />
+        ) : (() => {
           // La griglia si richiude da sé: i banner sono INSERITI nel flatMap,
           // non nascosti con `display:none`, quindi senza di loro non resta
           // nessun posto vuoto da colmare.
           const pool = isSport ? gridFeed : [];
           const cap2 = Math.min(pool.length, GRID_TILES_MAX);
           let placed = 0;
-          // #INCLUDED-TODAY-0928 — la riga della quota: solo sull'elenco intero
-          // (Calcio/Tennis come vista), dove #UNLOCKED-FIRST-0831 garantisce
-          // che le aperte stiano davanti e quindi il confine è UNO. Sulle
-          // fasce curate della Home l'ordine è un altro e la riga mentirebbe.
-          // Conta ciò che si vede (dopo i filtri): numeri veri, non la quota
-          // nominale del piano. Anonimo (zero aperte) e Pro (zero coperte)
-          // non hanno confine e non vedono la riga.
-          const nIncluded = showFilters && !isPro ? items.filter((it) => it.data.locked !== true).length : 0;
-          const quota = nIncluded > 0 && nIncluded < items.length ? quotaRuleCopy(lang, nIncluded, items.length - nIncluded) : null;
           return items.flatMap((item, i) => {
             const out: React.ReactNode[] = [];
-            if (quota && item.data.locked === true && i > 0 && items[i - 1].data.locked !== true) {
-              out.push(
-                <div key={`quota-${sec.id}`} className="br-quota" role="separator" aria-label={`${quota.yours}. ${quota.more}.`} data-testid="quota-rule">
-                  <span className="br-quota__yours"><IconCheck size={11} stroke={2.5} />{quota.yours}</span>
-                  <i className="br-quota__rule" aria-hidden="true" />
-                  <button type="button" className="br-quota__more" onClick={onGoPro}>{quota.more}<IconArrow size={12} /></button>
-                </div>,
-              );
+            if (quotaRow && item.data.locked === true && i > 0 && items[i - 1].data.locked !== true) {
+              out.push(quotaRow);
             }
             out.push(renderCard(item, sec.id));
             // `i < items.length - 1`: mai come ultimo elemento della fascia —

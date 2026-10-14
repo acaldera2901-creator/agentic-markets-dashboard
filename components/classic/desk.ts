@@ -8,3 +8,5 @@ export { ClassicTzNote } from "@/components/classic/ClassicTzNote";
 export { classicCopy } from "@/lib/classic/copy";
 export { differsBy, sheetValueAllowed } from "@/lib/classic/card-view";
 export { buildClassicLobbySections } from "@/lib/classic/lobby-sections";
+// #CLASSIC-PAGES-1014 — le pagine sport (Calcio, Tennis…) per lega, con le schede dentro
+export { ClassicLeagueGroups } from "@/components/classic/ClassicLeagueGroups";
