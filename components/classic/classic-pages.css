@@ -199,3 +199,10 @@ html[data-frames="off"] .auth-modal .auth-wall-back { justify-self: center; colo
 }
 /* i titoli delle viste del desk (History, Leaderboard…) erano in maiuscolo */
 html[data-frames="off"] :is(.book-main, .book-content) :is(h1, h2) { text-transform: none; }
+
+/* ── banner home sul telefono: il «18+» in alto a destra ────────────────────
+   In basso a destra stava sopra il pallone della foto del calcio (360×740). In
+   alto a destra c'è il cielo dello stadio in tutte e tre le foto. */
+@media (max-width: 640px) {
+  html[data-frames="off"] .brc-banner__age { bottom: auto; top: 8px; }
+}
