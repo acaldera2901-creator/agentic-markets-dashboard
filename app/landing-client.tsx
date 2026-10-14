@@ -410,12 +410,12 @@ const itNums = (() => {
 const priceText = (n: number | string, lang: string) => (CLASSIC && lang === "it" ? String(n).replace(".", ",") : String(n));
 
 // Etichette dello scanner (a flag acceso, nella lingua della pagina; a flag spento restano quelle inglesi)
-const SCAN_L: Record<Lang, { head: string; scanning: (n: number) => string; football: string; tennis: string; wc: string; won: string; lost: string; mdl: string; mkt: string; foot: [string, string, string] }> = {
-  it: { head: "Edge scanner", scanning: (n) => `Analisi di ${n} partite`, football: "Calcio", tennis: "Tennis", wc: "Mondiali", won: "Vinta", lost: "Persa", mdl: "Mod.", mkt: "Mer.", foot: ["Edge = probabilità del modello − probabilità implicita del mercato. Sotto la nostra soglia di confidenza mostriamo", "«nessun favorito chiaro»", "invece di forzare una pick."] },
-  en: { head: "Edge scanner", scanning: (n) => `Scanning ${n} fixtures`, football: "Football", tennis: "Tennis", wc: "World Cup", won: "Won", lost: "Lost", mdl: "Mdl", mkt: "Mkt", foot: ["Edge = model probability − market-implied probability. Below our confidence floor we show", "“no clear favourite”", "instead of forcing a pick."] },
-  es: { head: "Edge scanner", scanning: (n) => `Analizando ${n} partidos`, football: "Fútbol", tennis: "Tenis", wc: "Mundial", won: "Ganada", lost: "Perdida", mdl: "Mod.", mkt: "Mer.", foot: ["Edge = probabilidad del modelo − probabilidad implícita del mercado. Bajo nuestro umbral de confianza mostramos", "«sin favorito claro»", "en vez de forzar una pick."] },
-  fr: { head: "Edge scanner", scanning: (n) => `Analyse de ${n} matchs`, football: "Football", tennis: "Tennis", wc: "Coupe du monde", won: "Gagnée", lost: "Perdue", mdl: "Mod.", mkt: "Mar.", foot: ["Edge = probabilité du modèle − probabilité implicite du marché. Sous notre seuil de confiance nous affichons", "« pas de favori clair »", "au lieu de forcer un pick."] },
-  ru: { head: "Edge scanner", scanning: (n) => `Анализ ${n} матчей`, football: "Футбол", tennis: "Теннис", wc: "ЧМ", won: "Выиграно", lost: "Проиграно", mdl: "Мод.", mkt: "Рын.", foot: ["Edge = вероятность модели − вероятность рынка. Ниже нашего порога уверенности мы показываем", "«нет явного фаворита»", "вместо вынужденного пика."] },
+const SCAN_L: Record<Lang, { head: string; scanning: (n: number) => string; football: string; tennis: string; wc: string; won: string; lost: string; mdl: string; mkt: string; tm: string; tk: string; foot: [string, string, string] }> = {
+  it: { head: "Edge scanner", scanning: (n) => `Analisi di ${n} partite`, football: "Calcio", tennis: "Tennis", wc: "Mondiali", won: "Vinta", lost: "Persa", mdl: "Mod.", mkt: "Mer.", tm: "modello", tk: "mercato", foot: ["Edge = probabilità del modello − probabilità implicita del mercato. Sotto la nostra soglia di confidenza mostriamo", "«nessun favorito chiaro»", "invece di forzare una pick."] },
+  en: { head: "Edge scanner", scanning: (n) => `Scanning ${n} fixtures`, football: "Football", tennis: "Tennis", wc: "World Cup", won: "Won", lost: "Lost", mdl: "Mdl", mkt: "Mkt", tm: "model", tk: "mkt", foot: ["Edge = model probability − market-implied probability. Below our confidence floor we show", "“no clear favourite”", "instead of forcing a pick."] },
+  es: { head: "Edge scanner", scanning: (n) => `Analizando ${n} partidos`, football: "Fútbol", tennis: "Tenis", wc: "Mundial", won: "Ganada", lost: "Perdida", mdl: "Mod.", mkt: "Mer.", tm: "modelo", tk: "merc.", foot: ["Edge = probabilidad del modelo − probabilidad implícita del mercado. Bajo nuestro umbral de confianza mostramos", "«sin favorito claro»", "en vez de forzar una pick."] },
+  fr: { head: "Edge scanner", scanning: (n) => `Analyse de ${n} matchs`, football: "Football", tennis: "Tennis", wc: "Coupe du monde", won: "Gagnée", lost: "Perdue", mdl: "Mod.", mkt: "Mar.", tm: "modèle", tk: "marché", foot: ["Edge = probabilité du modèle − probabilité implicite du marché. Sous notre seuil de confiance nous affichons", "« pas de favori clair »", "au lieu de forcer un pick."] },
+  ru: { head: "Edge scanner", scanning: (n) => `Анализ ${n} матчей`, football: "Футбол", tennis: "Теннис", wc: "ЧМ", won: "Выиграно", lost: "Проиграно", mdl: "Мод.", mkt: "Рын.", tm: "модель", tk: "рынок", foot: ["Edge = вероятность модели − вероятность рынка. Ниже нашего порога уверенности мы показываем", "«нет явного фаворита»", "вместо вынужденного пика."] },
 };
 
 const SCAN_EXAMPLE_ROWS: ScanRow[] = [
@@ -934,7 +934,7 @@ export default function LandingPage() {
       <div className="v-tape" aria-hidden="true" data-label={CLASSIC ? TAPE_LABEL[lang] : undefined}>
         <div className="v-tape-track">
           {[...SCAN_EXAMPLE_ROWS, ...SCAN_EXAMPLE_ROWS].map((r, i) => (
-            <span key={i}><em>{r.match}</em> · model {r.model} · mkt {r.market} · <span className="up">+{r.edge.toFixed(1)}</span></span>
+            <span key={i}><em>{r.match}</em> · {CLASSIC ? sl.tm : "model"} {r.model} · {CLASSIC ? sl.tk : "mkt"} {r.market} · <span className="up">+{r.edge.toFixed(1)}</span></span>
           ))}
         </div>
       </div>
