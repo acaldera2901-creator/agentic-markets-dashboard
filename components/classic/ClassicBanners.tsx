@@ -25,12 +25,24 @@ import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "re
  *  (errore di rete, formato), la scatola mostra lui invece di un buco. */
 export type ClassicBannerImage = { src: string; srcSm?: string; fallback?: string; alt?: string };
 
-/** I banner sono 3 colonne da ~1/3 della pagina su desktop, uno al 90% sul telefono. */
-const BANNER_SIZES = "(max-width: 640px) 90vw, 33vw";
-
-function srcSetFor(img: ClassicBannerImage, ext: "avif" | "webp" | "png"): string {
-  const swap = (u: string) => u.replace(/\.png$/, `.${ext}`);
-  return [img.srcSm ? `${swap(img.srcSm)} 800w` : null, `${swap(img.src)} 1280w`].filter(Boolean).join(", ");
+/** #CLASSIC-COVERAGE-1014 — art direction vera. Prima un solo srcset con 800w
+ *  (16:10, il ritaglio del telefono) e 1280w (2:1): a 1440 la scatola è ~345 px
+ *  e `sizes` 33vw dà 475 px → il browser sceglieva l'800w, cioè il ritaglio
+ *  SBAGLIATO, poi tagliato di nuovo da `cover`. Ora il telefono (≤640) ha il suo
+ *  <source media> con il 16:10, e sopra c'è solo il 2:1. */
+const PHONE_MQ = "(max-width: 640px)";
+const DESK_MQ = "(min-width: 641px)";
+function swapExt(u: string, ext: "avif" | "webp" | "png"): string {
+  return u.replace(/\.png$/, `.${ext}`);
+}
+function sourcesFor(img: ClassicBannerImage, ext: "avif" | "webp"): ReactNode {
+  const type = `image/${ext}`;
+  return (
+    <>
+      {img.srcSm && <source media={PHONE_MQ} type={type} srcSet={swapExt(img.srcSm, ext)} />}
+      <source media={img.srcSm ? DESK_MQ : undefined} type={type} srcSet={swapExt(img.src, ext)} />
+    </>
+  );
 }
 
 export type ClassicBanner = {
@@ -154,13 +166,12 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
               <img className="brc-banner__art" src={b.image.fallback} alt="" width={1280} height={640} />
             ) : b.image && !failed[b.id] ? (
               <picture className="brc-banner__media">
-                <source type="image/avif" srcSet={srcSetFor(b.image, "avif")} sizes={BANNER_SIZES} />
-                <source type="image/webp" srcSet={srcSetFor(b.image, "webp")} sizes={BANNER_SIZES} />
+                {sourcesFor(b.image, "avif")}
+                {sourcesFor(b.image, "webp")}
+                {b.image.srcSm && <source media={PHONE_MQ} srcSet={b.image.srcSm} />}
                 <img
                   className="brc-banner__art"
                   src={b.image.src}
-                  srcSet={srcSetFor(b.image, "png")}
-                  sizes={BANNER_SIZES}
                   alt={b.image.alt ?? ""}
                   width={1280}
                   height={640}
