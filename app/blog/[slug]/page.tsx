@@ -13,6 +13,7 @@ import { getPublishedPost, listPublishedPosts, sanitizeBlogHtml, metaTitleOf, fo
 // verso le altre guide, i calcolatori e i due pillar. La riga guide del
 // footer è ciò che collega ogni guida a tutte le altre.
 import { SiteFooter } from "@/components/SiteFooter";
+import ClassicChrome from "@/components/classic/ClassicChrome";
 
 export const revalidate = 600;
 export const dynamicParams = true;
@@ -55,6 +56,7 @@ export default async function BlogPostPage(
 
   return (
     <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      <ClassicChrome />
       <JsonLd
         data={articleJsonLd({
           title: post.title,

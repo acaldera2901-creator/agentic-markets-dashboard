@@ -9,6 +9,7 @@ import { JsonLd, breadcrumbJsonLd, faqJsonLd } from "@/components/seo/json-ld";
 // #SEO-ORPHANS-0908: questa pagina non aveva footer — usciva solo verso
 // /predictions ed era un vicolo cieco per lettore e crawler.
 import { SiteFooter } from "@/components/SiteFooter";
+import ClassicChrome from "@/components/classic/ClassicChrome";
 
 export const metadata: Metadata = {
   title: "AI Football Predictions: How the Model Reaches a Number | BetRedge",
@@ -38,6 +39,7 @@ const FAQ: Array<[string, string]> = [
 export default function AiFootballPredictionsPage() {
   return (
     <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      <ClassicChrome />
       <JsonLd data={breadcrumbJsonLd([["AI Football Predictions", "/ai-football-predictions"]])} />
       <JsonLd data={faqJsonLd(FAQ)} />
       <main className="mx-auto max-w-3xl px-6 py-12" style={{ lineHeight: 1.7 }}>

@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import ClassicChrome from "@/components/classic/ClassicChrome";
 import { GlyphLock } from "@/components/ui/glyphs"; // #UI-MACHINA-0802
 
 type SlipSelection = {
@@ -190,6 +191,7 @@ export default function CommunityPage() {
     <main className="min-h-screen mc-scene-court" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-text)" }}>
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
+      <ClassicChrome />
       <header
         className="px-6 py-4 flex items-center justify-between border-b"
         style={{ borderColor: "var(--am-line)" }}

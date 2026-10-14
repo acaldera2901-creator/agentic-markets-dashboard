@@ -13,6 +13,17 @@
 html[data-frames="off"] {
   --font-mono: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
 }
+/* machina.css (registro «carta»: privacy, terms, partner, widget, World Cup)
+   porta due famiglie scritte per esteso: Manrope e JetBrains Mono. Stessi token */
+html[data-frames="off"] {
+  --fd: var(--am-font-ui);
+  --fm: var(--am-font-ui);
+}
+html[data-frames="off"] [data-mc-ground] :is(h1, h2, .wc-section-title) {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
 html[data-frames="off"] :is(code, pre, kbd, samp) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -48,3 +59,88 @@ html[data-frames="off"] .legal-sheet :is(p, li) { font-size: 14px; line-height: 
 html[data-frames="off"] .legal-sheet a:not([class*="uppercase"]) { color: var(--am-text); }
 html[data-frames="off"] .legal-sheet a[class*="uppercase"] { text-transform: none; letter-spacing: 0; font-size: 13px; }
 html[data-frames="off"] .legal-sheet p[class*="text-[11px]"] { font-size: 13px; }
+
+/* ── il namespace --v-* (landing /how-it-works, /widget): stessi valori del desk ──
+   Le due palette parallele (--v-* e --am-*) erano un verde e un lime diversi:
+   sotto il flag la landing legge i token del desk, così non si dipinge da sola. */
+html[data-frames="off"] .hv3 {
+  --v-bg: var(--am-bg); --v-bg2: var(--am-bg-2);
+  --v-panel: var(--am-panel); --v-panel2: var(--am-panel-2); --v-panel3: #163663;
+  --v-line: transparent; --v-line2: transparent;
+  --v-text: var(--am-text); --v-muted: var(--am-muted); --v-muted2: var(--am-muted-2);
+  --v-coral: var(--am-coral); --v-coral2: var(--am-coral); --v-coral-ink: #0A1B35;
+  --v-glow: transparent; --v-coral-dim: rgba(200, 255, 0, 0.1); --v-coral-b: transparent;
+  --v-cobalt: var(--am-royal); --v-cobalt2: #6B9BFF; --v-cobalt-soft: var(--am-royal-dim);
+  --v-btn-radius: 8px;
+  --v-sans: var(--am-font-ui);
+  --v-mono: var(--am-font-ui);
+  font-family: var(--am-font-ui);
+}
+html[data-frames="off"] .hv3 :is(h1, h2) {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+html[data-frames="off"] .hv3 .v-kick { letter-spacing: 0.06em; }
+/* la testata propria di queste pagine cede il posto alla barra del sito */
+html[data-frames="off"] :is(.wg-nav, .wp-nav, .partners-back) { display: none; }
+
+/* ── pagine-guida e blog (ai-*-predictions, blog): titoli del desk ───────── */
+html[data-frames="off"] main.max-w-3xl :is(h1, h2) {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+}
+html[data-frames="off"] main.max-w-3xl h1 { font-size: clamp(30px, 4.4vw, 42px); }
+html[data-frames="off"] main.max-w-3xl :is(p, li) { font-size: 16px; }
+html[data-frames="off"] main.max-w-3xl p[class*="uppercase"] { text-transform: none; letter-spacing: 0.02em; font-size: 14px; font-weight: 600; }
+html[data-frames="off"] .seo-prose :is(h1, h2) { font-family: var(--am-font-display); font-weight: 700; letter-spacing: -0.01em; }
+
+/* ── /partners: lastre, non schede incorniciate ─────────────────────────── */
+html[data-frames="off"] .partners-page { max-width: 1040px; }
+html[data-frames="off"] .partners-title {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: clamp(34px, 5vw, 48px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+}
+html[data-frames="off"] .partners-hero { text-align: left; }
+html[data-frames="off"] .partners-subtitle { margin-inline: 0; font-size: 16px; line-height: 1.5; max-width: 56ch; }
+html[data-frames="off"] .partners-label {
+  font-family: var(--am-font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  color: var(--am-text);
+  border: 0;
+  padding-bottom: 0;
+}
+html[data-frames="off"] .partners-page .partner-card {
+  border: 0;
+  border-radius: var(--am-r-card);
+  background: #0F2A55;
+  box-shadow: none;
+  transition: background-color 0.15s;
+}
+html[data-frames="off"] .partners-page .partner-card:hover { transform: none; box-shadow: none; background: #163663; }
+html[data-frames="off"] .partners-page .partner-logo-wrap { border: 0; border-radius: var(--am-r-card-sm); background: rgba(5, 15, 34, 0.5); }
+html[data-frames="off"] .partners-page .partner-cta { text-transform: none; letter-spacing: 0; font-size: 14px; }
+html[data-frames="off"] .partners-page .partner-name { font-size: 16px; }
+html[data-frames="off"] .partners-page .partner-tagline { font-size: 14px; }
+
+/* ── reset password: una lastra, la voce del desk ───────────────────────── */
+html[data-frames="off"] .reset-card { background: var(--am-panel); }
+html[data-frames="off"] main:has(> .reset-card) { font-family: var(--am-font-ui) !important; }
+html[data-frames="off"] .reset-card h1 { font-family: var(--am-font-display); font-weight: 700; font-size: 26px !important; }
+
+/* il banner «incluso nel piano» di /community: era un olivo in cornice smussata;
+   è una lastra del desk (il fondo lo scrive uno stile inline → !important) */
+html[data-frames="off"] .chamfer[style*="--surf"] {
+  --surf: var(--am-panel-2) !important;
+  --bcol: transparent !important;
+  clip-path: none;
+  border-radius: var(--am-r-card);
+}
