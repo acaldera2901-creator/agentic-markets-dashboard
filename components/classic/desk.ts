@@ -5,6 +5,7 @@
 // a flag spento questo file (e quello che importa) non entra nel build.
 export { ClassicPricesScope } from "@/components/classic/ClassicContext";
 export { ClassicTzNote } from "@/components/classic/ClassicTzNote";
+export { ClassicPlans } from "@/components/classic/ClassicPlans"; // #CLASSIC-PLANS-1014
 export { classicCopy } from "@/lib/classic/copy";
 export { differsBy, sheetValueAllowed } from "@/lib/classic/card-view";
 export { buildClassicLobbySections } from "@/lib/classic/lobby-sections";

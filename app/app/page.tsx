@@ -11250,7 +11250,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   che e' una dichiarazione di compliance e non si tocca.
                   L'`h1` resta: e' l'unico heading della pagina prodotto
                   (#SEO-PACK-0810) e togliersi un h1 e' una regressione SEO. */}
-              {tab !== "bets" && (
+              {/* #CLASSIC-PLANS-1014 — a flag acceso la pagina piani porta il suo
+                  messaggio (ClassicPlans): qui niente seconda riga su Base. */}
+              {tab !== "bets" && !(process.env.NEXT_PUBLIC_CLASSIC === "1" && tab === "plans") && (
               <p className="am-sub">
                 {tab === "plans" ? (
                   /* #PLANS-HOOK-C-0928: coerente con l'hero dei piani («quanto a fondo
@@ -11449,14 +11451,27 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           )}
           {/* #UI-ACCOUNT-DROPDOWN-0623: la tab "Plans" rende direttamente PlansTab.
               L'account (profilo/preferenze/logout) è nel dropdown dal pill. */}
-          {tab === "plans" && (
+          {/* #CLASSIC-PLANS-1014 — a flag acceso la pagina piani è ClassicPlans
+              (due piani, Free e Pro); stessi gestori di pagamento e attivazione,
+              nessuna logica nuova. A flag spento resta PlansTab, intera. */}
+          {tab === "plans" && (process.env.NEXT_PUBLIC_CLASSIC === "1" ? (
+            <CL.ClassicPlans
+              profile={clientProfile}
+              lang={uiLanguage}
+              onOpenDesk={() => setTab("bets")}
+              onPaymentSubmit={submitCryptoPayment}
+              onActivateFree={activateFreePlan}
+              footnote={tNav.plans_footnote}
+              promo={<LaunchPromoBanner />}
+            />
+          ) : (
             <PlansTab
               profile={clientProfile}
               onOpenDesk={() => setTab("bets")}
               onPaymentSubmit={submitCryptoPayment}
               onActivateFree={activateFreePlan}
             />
-          )}
+          ))}
           {/* #REFERRAL-PANEL: la vecchia AccountTab (dove era finita per errore la
               sezione Invita) non è più montata dopo #UI-ACCOUNT-DROPDOWN-0623 →
               il pannello referral vive su una tab dedicata, raggiungibile. */}
