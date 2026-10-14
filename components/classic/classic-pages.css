@@ -189,7 +189,7 @@ html[data-frames="off"] .auth-modal button { border: 0; color: #0A1B35; }
 html[data-frames="off"] .auth-modal button:disabled { opacity: 1; background: var(--cl-tone-2); color: var(--am-muted); }
 html[data-frames="off"] .auth-modal .auth-mode-switch button.is-active { background: var(--am-royal-dim); }
 html[data-frames="off"]:root .auth-modal .auth-modal-head .eyebrow::before { content: none; }
-html[data-frames="off"] .auth-modal .auth-wall-back { justify-self: center; color: var(--am-muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; padding: var(--am-s-2); }
+html[data-frames="off"] .auth-modal button.auth-wall-back { background: none; min-height: 0; justify-self: center; color: var(--am-muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; padding: var(--am-s-2); }
 
 /* ── desk: ricerca della barra e titoli di pagina ───────────────────────── */
 /* «Cerca ur»: a 8ch il segnaposto si tagliava sulle tab che non sono la Home.

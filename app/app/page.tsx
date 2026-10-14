@@ -4967,8 +4967,11 @@ function ClientAuthModal({
         {/* #CLASSIC-COVERAGE-1014 — il muro non ha ×: senza una porta chi non vuole
             accedere resta intrappolato (niente Esc, niente clic fuori). La porta è
             la home, che è pubblica. Solo sul muro e solo a flag acceso. */}
+        {/* navigazione vera (ricarica su «/»): con <Link> la home e la tab montano lo stesso
+            Dashboard, `tab` restava «history/leaderboard» e l'effetto URL↔tab riscriveva
+            la barra, riportando sul muro (8 casi su 8). */}
         {CLASSIC && !dismissible && (
-          <Link href="/" className="auth-wall-back">{it ? "← Torna alla home" : "← Back to the board"}</Link>
+          <button type="button" className="auth-wall-back" onClick={() => { window.location.assign("/"); }}>{it ? "← Torna alla home" : "← Back to the board"}</button>
         )}
       </form>
     </div>
