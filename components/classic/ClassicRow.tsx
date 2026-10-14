@@ -114,8 +114,10 @@ export function ClassicRow({ item, link, lang, tz, now, copy }: Props) {
             // iniziata: i loghi di tre partner con il link di atterraggio
             ? <PartnerFallback surface="lobby-row" c={c} lang={lang} />
             // round 3 — geo non ancora nota (bloccata di default, paese ""): niente
-            // testo, invece di un «Nessun prezzo partner» falso su ogni riga.
-            : <span className="brc-row__nomkt">{started ? c.pricesRemoved : prices.booksBlocked && !prices.geoCountry ? null : c.noPartnerPrice}</span>}
+            // testo. #CLASSIC-ASSET-1013 round 3 (Andrea, 14/10): niente «Nessun
+            // prezzo partner» mai — la colonna resta vuota; resta solo «quote
+            // rimosse» a partita iniziata, che dice un fatto.
+            : <span className="brc-row__nomkt">{started ? c.pricesRemoved : null}</span>}
       </span>
     </li>
   );

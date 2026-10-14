@@ -17,10 +17,14 @@ import { CLASSIC } from "@/lib/classic/flag";
 
 // #CLASSIC-FIX1-1008 — a flag acceso la card è la Slab: 1.92/3.60/5.00 non è un
 // mercato possibile (margine −0,1%, N10), e fuori dal desk l'età del numero non
-// si conosce → «No price yet», nessun numero (lib/classic/card-view.ts).
+// si conosce → nessun numero (lib/classic/card-view.ts). #CLASSIC-ASSET-1013
+// round 3: nessun «—» e nessun «No price yet» — resta solo la «i».
 const expectOurNumberOrNoPrice = () => {
   if (CLASSIC) {
-    expect(screen.getByTestId("classic-noprice")).toHaveTextContent("No price yet");
+    const none = screen.getByTestId("classic-noprice");
+    expect(none).not.toHaveTextContent("No price yet");
+    expect(none).not.toHaveTextContent("—");
+    expect(none.querySelector(".cl-info")).not.toBeNull();
     expect(screen.queryByText("64")).not.toBeInTheDocument();
   } else {
     expect(screen.getByText("64")).toBeInTheDocument();

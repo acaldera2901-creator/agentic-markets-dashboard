@@ -271,13 +271,18 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
             ? <span className="cl-pick-v" data-locked="true"><IconLock size={12} stroke={2} />{c.proPick}</span>
             : <span className="cl-pick-v" title={data.pick ?? undefined}>{data.pick ?? "—"}</span>}
         </p>
-        <div className="cl-read" data-testid={noPrice ? "classic-noprice" : undefined}>
-          <p className="cl-big" data-ours={(isOurs && !noPrice) || undefined} data-testid="classic-big">
-            <span className="cl-big-n">{noPrice ? "—" : formatPct(big)}</span>
-            {!noPrice && big != null && <span className="cl-big-pc">%</span>}
-          </p>
+        {/* round 3 (Andrea, 14/10): senza prezzo niente «—» grande e niente
+            «Nessun prezzo per ora» — il numero non c'è e basta; resta la «i»,
+            che spiega perché (c.noPriceNote). Mai una quota inventata. */}
+        <div className={noPrice ? "cl-read cl-read--none" : "cl-read"} data-testid={noPrice ? "classic-noprice" : undefined}>
+          {!noPrice && (
+            <p className="cl-big" data-ours={isOurs || undefined} data-testid="classic-big">
+              <span className="cl-big-n">{formatPct(big)}</span>
+              {big != null && <span className="cl-big-pc">%</span>}
+            </p>
+          )}
           <p className="cl-label" data-kind={kind}>
-            <span>{noPrice ? c.noPrice : bigLabel}</span>
+            {!noPrice && <span>{bigLabel}</span>}
             <button
               type="button"
               className="cl-info"

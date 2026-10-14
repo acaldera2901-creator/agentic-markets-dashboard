@@ -20,8 +20,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--am-s-4);
-  /* round 2 — gli unici vuoti ammessi sono i margini laterali del sito */
-  padding: var(--am-s-4) var(--am-s-4) var(--am-s-5);
+  /* round 2 — gli unici vuoti ammessi sono i margini laterali del sito.
+     #CLASSIC-ASSET-1013 round 3 (Andrea, screenshot 14/10): più respiro ai
+     lati — 32 px invece di 16, così CTA della striscia e frecce del carosello
+     non toccano il bordo della pagina. */
+  padding: var(--am-s-4) var(--am-s-6) var(--am-s-5);
   min-width: 0;
 }
 
@@ -283,7 +286,9 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
   gap: var(--am-s-2);
   overflow-x: auto;
   scrollbar-width: none;
-  margin-top: calc(var(--am-s-2) - var(--am-s-5));
+  /* round 3 — il gap di .brc-main è 16: qui 8 netti (barra e striscia sono un
+     comando solo); prima era 0 e i chip sotto sembravano coperti */
+  margin-top: calc(-1 * var(--am-s-2));
 }
 .brc-sports::-webkit-scrollbar { display: none; }
 .brc-sport {
@@ -325,6 +330,9 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
   flex-direction: column;
   gap: var(--am-s-5);
   min-width: 0;
+  /* round 3 — 24 netti fra i chip delle leghe e «Partite in evidenza»: i
+     filtri sono un gruppo, il titolo ne apre un altro */
+  margin-top: var(--am-s-2);
 }
 .brc-sec { display: flex; flex-direction: column; gap: var(--am-s-3); min-width: 0; }
 .brc-sec__head {
@@ -522,13 +530,17 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 .brc-main { display: flex; flex-direction: column; gap: var(--am-s-4); min-width: 0; }
 .brc-side { display: none; }
 @media (min-width: 1200px) {
-  /* round 2 — nessun vuoto nel layout: il rail è un pannello alto quanto la
-     pagina (come su Roobet), non una scatola corta con il buio sotto */
-  .brc-lobby { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--am-s-4); align-items: stretch; }
+  /* round 3 (Andrea, 14/10) — inverte il round 2 punto 11: il pannello del rail
+     si chiude sotto l'ultima voce («Partner») e resta sticky sotto la topbar
+     (60 px) mentre la pagina scorre; se è più alto della finestra scorre da sé.
+     Gutter rail ↔ contenuto 32 px. */
+  .brc-lobby { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--am-s-6); align-items: start; }
   .brc-side {
     display: flex; flex-direction: column; gap: var(--am-s-2);
     padding: var(--am-s-3) var(--am-s-2);
     border-radius: var(--am-r-card); background: var(--am-panel);
+    position: sticky; top: calc(60px + var(--am-s-3));
+    max-height: calc(100vh - 60px - var(--am-s-5)); overflow-y: auto; scrollbar-width: thin;
   }
 }
 .brc-side__h {
@@ -553,7 +565,8 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta,
 .brc-side__n { margin-left: auto; }
 
 /* ── 3b · i chip delle leghe (la fila «Premier League · LaLiga · Serie A») ── */
-.brc-leagues { display: flex; gap: var(--am-s-2); overflow-x: auto; scrollbar-width: none; margin-top: calc(var(--am-s-2) - var(--am-s-5)); padding-bottom: 2px; }
+/* round 3 — 16 netti dalla striscia sport (prima 0: «Tutte 102» sembrava coperto) */
+.brc-leagues { display: flex; gap: var(--am-s-2); overflow-x: auto; scrollbar-width: none; margin-top: 0; padding-bottom: 2px; }
 .brc-leagues::-webkit-scrollbar { display: none; }
 .brc-leagues .brc-chip { flex: none; }
 /* la sigla del paese: un piccolo testo mono, al posto della bandierina */

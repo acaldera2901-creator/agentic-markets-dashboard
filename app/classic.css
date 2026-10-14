@@ -121,8 +121,21 @@ html[data-frames="off"] {
   --am-font-display: var(--cl-font-head, var(--font-anton)), var(--font-tech), sans-serif;
   --am-font-hud: var(--cl-font-head, var(--font-tech)), sans-serif;
   --cl-font-prob: "ZT Nature", "ZT Nature Black", var(--cl-font-ui, var(--font-display)), sans-serif;
+  /* round 3 (Andrea, 14/10): via il monospace da etichette (PICK, PUBBL. · 18+,
+     sigle INT/DE), contatori e quote — Plex ha i tabulari (font-variant-numeric
+     resta dov'è), e l'opzione C di Michele è «due famiglie», non tre */
+  --am-font-num: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
 }
 html[data-frames="off"] body { font-family: var(--am-font-ui); }
+/* round 3 — la striscia «Registrati per salvare…» e i suoi due bottoni: Plex
+   in tondo (erano `font-mono` + bottoni maiuscoli spaziati in mono); i bottoni
+   hanno il corpo in stile inline nel monolite → !important come in §A.3.
+   Stessi margini laterali della lobby (32 px), così la CTA non tocca il bordo. */
+html[data-frames="off"] .reg-nudge { font-family: var(--am-font-ui); font-size: 13px; margin-inline: var(--am-s-6); }
+html[data-frames="off"] :is(.btn-primary, .btn-secondary) { font-family: var(--am-font-ui); text-transform: none; letter-spacing: 0; }
+html[data-frames="off"] .reg-nudge :is(.btn-primary, .btn-secondary) { font-size: 13px !important; padding: 6px 12px !important; }
+/* sul telefono la lobby ha 12 px di margine: la striscia si allinea a quelli */
+@media (max-width: 640px) { html[data-frames="off"] .reg-nudge { margin-inline: var(--am-s-3); } }
 /* Anton aveva un peso solo (400) e viveva in MAIUSCOLO con interlinea 0,9. Fira
    Condensed ha pesi veri e le minuscole: i titoli tornano in tondo, grassetto,
    con un'interlinea che non tagli ascendenti e discendenti (l'elenco è quello
@@ -223,19 +236,33 @@ html[data-frames="off"] .cl-score { display: grid; gap: 2px; justify-items: cent
 
 /* 3 · il modulo scuro: pick a sinistra, numero a destra */
 html[data-frames="off"] .cl-pickmod {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  /* round 3 — la colonna di destra è `fit-content(64%)`, non `auto`: con `auto`
+     la traccia si misura sul max-content dell'etichetta (un `max-width` in %
+     sull'elemento è ciclico e non conta) e «Protetta · nessun segnale di
+     valore» spingeva la pick a «🔒 Pi». A sinistra almeno 84 px: «🔒 Pick Pro». */
+  display: grid; grid-template-columns: minmax(84px, 1fr) fit-content(64%); align-items: center; gap: 10px;
   padding: 8px 12px; border: 0; border-radius: 10px; background: #0A1D42;
 }
 html[data-frames="off"] .cl-pick { display: grid; gap: 2px; margin: 0; min-width: 0; color: var(--am-text); }
 html[data-frames="off"] .cl-k { font-family: var(--am-font-num); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cl-ink-3); font-weight: 600; }
 html[data-frames="off"] .cl-pick-v { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 700; line-height: 1.25; }
 html[data-frames="off"] .cl-pick-v[data-locked] { color: var(--cl-ink-2); font-weight: 600; }
-html[data-frames="off"] .cl-read { display: grid; justify-items: end; gap: 2px; padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, 0.16); min-width: 0; }
+/* round 3 (Andrea, 14/10) — la colonna di destra non ruba più tutto lo spazio:
+   con «Protetta · nessun segnale di valore» in una riga sola la pick diventava
+   «🔒 Pi». Al massimo il 64%, l'etichetta va a capo (allineata a destra), a
+   sinistra restano ≥ 85 px per «🔒 Pick Pro». */
+html[data-frames="off"] .cl-read { display: grid; justify-items: end; gap: 2px; padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, 0.16); min-width: 0; justify-self: end; }
+/* senza prezzo (round 3): niente trattino e niente «Nessun prezzo per ora» —
+   resta la «i» che spiega il perché; il modulo tiene l'altezza del numero
+   (min-height) così le schede restano alte uguali */
+html[data-frames="off"] .cl-pickmod { min-height: 62px; }
+html[data-frames="off"] .cl-read--none { align-content: center; }
 html[data-frames="off"] .cl-big { margin: 0; display: flex; align-items: baseline; line-height: 0.95; color: var(--am-text); white-space: nowrap; }
 html[data-frames="off"] .cl-big[data-ours] { color: var(--am-lime); }
 html[data-frames="off"] .cl-big-n { font: 700 32px/0.95 var(--cl-font-prob); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 html[data-frames="off"] .cl-big-pc { font: 700 18px/1 var(--cl-font-prob); margin-left: 1px; }
-html[data-frames="off"] .cl-label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 10.5px; line-height: 1.2; color: var(--cl-ink-3); white-space: nowrap; }
+html[data-frames="off"] .cl-label { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin: 0; font-size: 10.5px; line-height: 1.2; color: var(--cl-ink-3); text-align: right; }
+html[data-frames="off"] .cl-label > span { min-width: 0; }
 html[data-frames="off"] .cl-label[data-kind="protected"] > span { color: var(--am-amber); }
 /* #CLASSIC-ASSET-1013 — la «i» è l'icona info della firma (SVG inline, il cerchio
    è già nel segno): il bottone non disegna più un secondo cerchio di fondo */

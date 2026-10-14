@@ -35,10 +35,13 @@ describe("ClassicRow — market column", () => {
     expect(screen.queryByTestId("classic-partners")).toBeNull();
   });
 
-  it("geo known and blocked: says there is no partner price, links nothing", () => {
+  // #CLASSIC-ASSET-1013 round 3 (Andrea, 14/10): niente «No partner price» — la
+  // colonna resta vuota, nessun link partner, nessuna quota inventata.
+  it("geo known and blocked: the market column stays empty, links nothing", () => {
     mount(true, "IT");
-    expect(screen.getByText("No partner price")).toBeInTheDocument();
+    expect(screen.queryByText("No partner price")).toBeNull();
     expect(screen.queryByTestId("classic-partners")).toBeNull();
+    expect(screen.queryAllByRole("link", { name: /partner/i })).toHaveLength(0);
   });
 
   it("geo open, no partner price for the match: three partner logos", () => {
