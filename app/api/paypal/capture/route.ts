@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { captureOrder, evaluateCapture } from "@/lib/paypal";
 import { activatePaypalPlan } from "@/lib/plan-grant";
+import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -75,5 +76,14 @@ export async function POST(req: Request) {
   }
   await dbExecute("UPDATE paypal_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
   console.log(`[paypal/capture] GRANT order=${order.id} plan=${granted.plan} amount_usd=${String(order.amount_usd)}`);
+  // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op). Stessa
+  // ref del webhook: lo UNIQUE deduplica le due strade.
+  scheduleAffiliateCommission({
+    identifier: order.identifier,
+    rail: "paypal",
+    paymentRef: order.id,
+    grossUsd: order.amount_usd,
+    paidAt: new Date(),
+  });
   return NextResponse.json({ ok: true, granted: true });
 }
