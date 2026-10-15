@@ -390,6 +390,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
 
           <div className="aff-kv">
             <span className="aff-k">1 · Importo da inviare (USDT, 2 decimali)</span>
+            <span className="aff-small" data-testid="exact-amount"><strong>Invia l&apos;importo ESATTO.</strong> Anche 0,01 in meno viene rifiutato (importo troppo basso).</span>
             <div className="aff-row">
               <span className="aff-amt">{p.amount_usd.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <button type="button" className="aff-mini" onClick={() => amt.copy(p.amount_usd.toFixed(2))}>Copia importo</button>
@@ -422,6 +423,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             <div className="aff-kv">
               <span className="aff-k">Hash registrato</span>
               <ExplorerLink href={p.explorer_url} text={p.tx_hash} sr="apre l'explorer in una nuova scheda" />
+              {p.tx_from && <span className="aff-small" data-testid="tx-from">Mittente registrato: <span className="aff-addr">{p.tx_from}</span></span>}
               {p.status === "submitted" && p.tx_nonce != null && <span className="aff-small">Nonce registrato: {p.tx_nonce}{p.tx_block != null ? ` · blocco ${p.tx_block}` : ""} (serve se devi sostituire la transazione dal wallet di uscita)</span>}
               {p.status === "paid" && p.paid_at && <span className="aff-small">Pagato il {dateTime(p.paid_at, "it")}{p.amount_coin != null ? ` · ricevuti ${p.amount_coin} USDT` : ""}</span>}
             </div>
@@ -472,7 +474,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
         <aside className="aff-block">
           <h2 className="aff-h">Esiti possibili</h2>
           <ul className="aff-outc">
-            <li><strong><StateChip chip={payoutChip("paid", IT)} /> Tutto coerente</strong><span>Token, mittente, destinatario, importo (almeno il 99% del dovuto) e conferme (30 su Polygon). L&apos;importo ricevuto è letto dalla rete.</span></li>
+            <li><strong><StateChip chip={payoutChip("paid", IT)} /> Tutto coerente</strong><span>Token, mittente, destinatario, importo esatto (non meno del dovuto) e conferme (30 su Polygon). L&apos;importo ricevuto è letto dalla rete.</span></li>
             <li><strong><StateChip chip={payoutChip("submitted", IT)} /> Poche conferme</strong><span>Transazione trovata ma con meno conferme del richiesto. Resta Inviato, con il pulsante «Riverifica».</span></li>
             <li><strong><StateChip chip={payoutChip("created", IT)} /> Hash rifiutato</strong><span>Con il motivo: destinatario diverso · token diverso · mittente diverso dal wallet di uscita · importo troppo basso · hash non trovato · hash già usato per questo destinatario · formato non valido. Un hash sbagliato non si registra mai.</span></li>
             <li><strong><StateChip chip={payoutChip("cancelled", IT)} /> Da «in preparazione», o da «Inviato» a certe condizioni</strong><span>Un payout Inviato si annulla solo se la transazione è fallita o non potrà più essere minata (nonce consumato e finalizzato), dopo almeno 30 minuti dalla registrazione. Con una transazione valida o ancora in attesa non si annulla.</span></li>

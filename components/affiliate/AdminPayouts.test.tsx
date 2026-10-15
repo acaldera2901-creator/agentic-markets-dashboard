@@ -161,6 +161,18 @@ describe("registra tx", () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("63.40"));
   });
 
+  it("importo ESATTO dichiarato nel passo 1; amount_too_low ha un motivo leggibile", async () => {
+    setup({}, (url) => url.endsWith("/tx") ? { status: 422, body: { outcome: "rejected", reason: "amount_too_low" } } : undefined);
+    await openTx();
+    expect(screen.getByTestId("exact-amount").textContent).toMatch(/Invia l'importo ESATTO.*0,01 in meno viene rifiutato/);
+    fireEvent.change(screen.getByLabelText(/Incolla l.hash/), { target: { value: TX } });
+    fireEvent.click(within(screen.getByTestId("tx-confirm")).getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registra e verifica" }));
+    const t = (await screen.findByTestId("tx-result")).textContent!;
+    expect(t).toMatch(/inferiore al dovuto \(anche di 0,01\): serve l'importo ESATTO/);
+    expect(t).toMatch(/resta com'era/);
+  });
+
   it("«Registra e verifica» resta spento finché non c'è la conferma obbligatoria e l'hash", async () => {
     setup();
     await openTx();
@@ -238,7 +250,7 @@ describe("registra tx", () => {
       const o = extra(url, method);
       if (o) return o;
       if (url.startsWith("/api/admin/affiliate/payouts?") || url === "/api/admin/affiliate/payouts") return { status: 200, body: adminSent };
-      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, tx_nonce: 42, tx_block: 1234567, affiliate_status: sentAffStatus, explorer_url: `https://x/tx/${TX}` }, payout_from: ADMIN.payout_from } };
+      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, tx_nonce: 42, tx_block: 1234567, tx_from: ADMIN.payout_from, affiliate_status: sentAffStatus, explorer_url: `https://x/tx/${TX}` }, payout_from: ADMIN.payout_from } };
       return undefined;
     });
   };
@@ -288,9 +300,10 @@ describe("registra tx", () => {
     ["tx_not_droppable", "nonce_not_consumed", /sostituire la tx bloccata dal wallet di uscita \(stesso nonce\) e aspettare che sia finalizzata/],
     ["tx_not_droppable", "tx_pending", /ancora in attesa sulla rete/],
     ["tx_not_droppable", "tx_on_chain", /ancora valida sulla rete/],
-    ["tx_not_droppable", "not_finalized", /non è ancora finalizzato/],
+    ["tx_not_droppable", "not_finalized", /aspetta la finalizzazione/],
     ["tx_not_droppable", "transfer_found", /La tx risulta sulla rete: non si annulla/],
     ["block_unknown", undefined, /blocco dell'invio/],
+    ["from_unknown", undefined, /mittente della tx non è registrato: il server non annulla, gestiscilo a mano/],
   ])("annullo di submitted rifiutato: %s %s → testo dedicato, mai «pagare di nuovo»", async (error, reason, re) => {
     sentSetup((url, method) => url.endsWith("/cancel") && method === "POST" ? { status: 409, body: { error, reason } } : undefined);
     await openSent();
@@ -316,6 +329,7 @@ describe("registra tx", () => {
     sentSetup(() => undefined);
     await openSent();
     expect(screen.getByText(/Nonce registrato: 42 · blocco 1234567/)).toBeTruthy();
+    expect(screen.getByTestId("tx-from").textContent).toContain(ADMIN.payout_from);
     expect(screen.getByTestId("affiliate-status").textContent).toMatch(/SOSPESO.*puoi riverificare/);
     expect((screen.getByRole("button", { name: "Riverifica" }) as HTMLButtonElement).disabled).toBe(false);
     sentAffStatus = "active";

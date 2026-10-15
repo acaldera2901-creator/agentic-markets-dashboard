@@ -156,6 +156,8 @@ describe("admin: testi", () => {
     }
     expect(txFailText({ error: "nonce_unknown" })).toMatch(/nonce/);
     expect(txFailText({ error: "block_unknown" })).toMatch(/blocco/);
+    expect(txFailText({ error: "from_unknown" })).toMatch(/mittente/);
+    expect(TX_REJECT_TEXT.amount_too_low).toMatch(/0,01.*ESATTO/);
     expect(txFailText({ error: "hash_already_used", dropped: true })).toMatch(/annullato perché la transazione era sparita/);
     expect(txFailText({ error: "hash_already_used" })).toMatch(/già stato usato/);
     expect(txFailText({ error: "tx_not_droppable", reason: "boh" })).not.toMatch(/boh/);

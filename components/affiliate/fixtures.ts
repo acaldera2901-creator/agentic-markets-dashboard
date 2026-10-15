@@ -87,5 +87,5 @@ export const ADMIN: AdminMonth = {
 export const ADMIN_PAYOUT = {
   id: 11, affiliate_id: 3, affiliate_code: "ESEMPIO-C", affiliate_status: "active", payee: { name: "G. Ferri", country: "IT" },
   period_month: "2026-10-01", amount_usd: 63.4, coin: "USDT", network: "polygon", to_address: "0x58cde39f41b702ac6d85e1f39b27c4d0e5b2a014",
-  amount_coin: null, tx_hash: null, explorer_url: null, status: "created", created_at: "2026-10-15T09:00:00Z", submitted_at: null, paid_at: null, cancel_code: null, cancel_reason: null,
+  amount_coin: null, tx_hash: null, tx_nonce: null, tx_block: null, tx_from: null, explorer_url: null, status: "created", created_at: "2026-10-15T09:00:00Z", submitted_at: null, paid_at: null, cancel_code: null, cancel_reason: null,
 };
