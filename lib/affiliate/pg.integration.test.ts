@@ -16,7 +16,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 const URL_ = process.env.AFFILIATE_PG_TEST_URL;
 
-const h = vi.hoisted(() => ({ sql: null as null | import("postgres").Sql, chainTo: "", chainAmount: 0 }));
+const h = vi.hoisted(() => ({ sql: null as null | import("postgres").Sql, chainTo: "", chainAmount: 0, screen: "none" as "none" | "clear" }));
 
 vi.mock("@/lib/auth", () => ({
   getSessionPlan: async (r: Request) => {
@@ -35,12 +35,22 @@ vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
     jsonRpc: () => async (method: string) => {
       if (method === "eth_chainId") return "0x89";
       if (method === "eth_blockNumber") return "0xf42a4";
+      if (method === "eth_getBlockByNumber") return { number: "0xf42a0" };
       return {
         status: "0x1",
         blockNumber: "0xf4240",
         logs: [{ address: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", topics: [real.TRANSFER_TOPIC, pad("0x1111111111111111111111111111111111111111"), pad(h.chainTo)], data: `0x${(h.chainAmount * 1e6).toString(16).padStart(64, "0")}` }],
       };
     },
+  };
+});
+// Nessun provider di screening reale: di default come in prod (not_screened);
+// gli scenari payout accendono un provider finto «clear».
+vi.mock("@/lib/affiliate/screening", async (orig) => {
+  const real = await orig<typeof import("@/lib/affiliate/screening")>();
+  return {
+    ...real,
+    screenPayoutAddress: async () => (h.screen === "clear" ? { kind: "clear", provider: "test" } : { kind: "not_screened" }),
   };
 });
 vi.mock("@/lib/email", async (orig) => ({
@@ -88,7 +98,7 @@ const A2 = "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359";
 function req(url: string, method: string, who: string | null, body?: unknown) {
   return new Request(`https://x${url}`, {
     method,
-    headers: { "x-forwarded-for": `10.9.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`, ...(who ? { "x-test-who": who } : {}) },
+    headers: { origin: "https://x", "x-forwarded-for": `10.9.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`, ...(who ? { "x-test-who": who } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
@@ -134,6 +144,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   });
   beforeEach(async () => {
     vi.resetModules();
+    h.screen = "none";
     vi.stubEnv("AFFILIATE_MODE", "shadow");
     vi.stubEnv("AFFILIATE_TERMS_VERSION", "2026-11-v1");
     vi.stubEnv("AFFILIATE_PAYOUTS", "live");
@@ -238,6 +249,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   // ── PR-9: payout admin ─────────────────────────────────────────────────────
   /** Alice iscritta, wallet screenato e fuori cooldown, 60 $ maturati. */
   async function payableAlice(address = A1) {
+    h.screen = "clear";
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
     await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
@@ -312,6 +324,28 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: "1" }) });
     expect(t.status).toBe(409);
     expect(await t.json()).toEqual({ error: "cancelled", cancel_code: "wallet_changed" });
+  });
+
+  it("PR-9 senza provider di screening: la creazione è rifiutata anche se il wallet risulta clear (QA F13)", async () => {
+    await payableAlice();
+    h.screen = "none";
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const r = await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    expect(await r.json()).toMatchObject({ error: "not_screened", affiliate_id: 1 });
+    const [n] = await h.sql!`SELECT count(*)::int AS n FROM affiliate_payouts`;
+    expect(n.n).toBe(0);
+  });
+
+  it("PR-9 sospensione dopo la creazione: payout annullato dal trigger, tx rifiutata (QA F4)", async () => {
+    await payableAlice();
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await h.sql!`UPDATE affiliates SET status = 'suspended'`;
+    h.chainTo = A1;
+    h.chainAmount = 60;
+    const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: "1" }) });
+    expect(await t.json()).toEqual({ error: "cancelled", cancel_code: "affiliate_suspended" });
   });
 
   it("PR-9 suspended: non pagabile, la creazione è rifiutata", async () => {
