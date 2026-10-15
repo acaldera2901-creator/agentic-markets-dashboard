@@ -68,7 +68,7 @@ export function AdminPayouts() {
     if (res.ok && res.data?.ok !== false) {
       setMsg({ kind: "ok", text: `Creati ${chosen.length} payout per ${money(chosenCents / 100)}. Ora vanno inviati a mano e registrati con l'hash.` });
     } else {
-      setMsg({ kind: "err", text: res.status === 0 ? CREATE_ERROR_TEXT["create failed"] : createErrorText(res.data, money) });
+      setMsg({ kind: "err", text: res.status === 0 ? CREATE_ERROR_TEXT["create failed"] : createErrorText(res.data, money, (aid) => data.rows.find((r) => r.affiliate_id === aid)?.code) });
     }
     await load(data.month); // sempre rileggere: l'elenco che vedi deve essere quello del server
   };
@@ -209,7 +209,7 @@ function Row({ r, d, canPick, picked, onPick, onOpen }: {
 
   let stateCell: React.ReactNode;
   if (p && (p.status === "created" || p.status === "submitted" || p.status === "paid" || p.status === "cancelled")) {
-    stateCell = <><StateChip chip={payoutChip(p.status, IT)} />{(p as { overpaid?: boolean }).overpaid && <span className="aff-sub">importo superiore al dovuto</span>}</>;
+    stateCell = <StateChip chip={payoutChip(p.status, IT)} />;
   } else if (r.eligible) stateCell = <span className="aff-st" data-state="none">Da preparare</span>;
   else if (r.reasons.includes("below_threshold")) stateCell = <span className="aff-st" data-state="none">Sotto {Number.isInteger(d.min_payout_usd) ? d.min_payout_usd : d.min_payout_usd.toFixed(2)} $</span>;
   else stateCell = <span className="aff-st" data-state="none">Non pagabile ora</span>;
@@ -266,9 +266,10 @@ function Row({ r, d, canPick, picked, onPick, onOpen }: {
 // ── Registrazione dell'hash (SPEC §4.2) ──────────────────────────────────────
 
 function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => void }) {
-  const [p, setP] = useState<(AdminPayout & { overpaid?: boolean }) | null>(null);
+  const [p, setP] = useState<AdminPayout | null>(null);
+  // `overpaid` arriva solo nell'esito di /tx e /verify (non in GET): resta per la sessione del pannello
+  const [overpaid, setOverpaid] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [canCancelSent, setCanCancelSent] = useState(false);
   const [from, setFrom] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [hash, setHash] = useState("");
@@ -291,7 +292,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
 
   const outcome = (o: TxOutcome | { error?: string } | null, status: number) => {
     if (o && "outcome" in o) {
-      if (o.outcome === "rejected" && (o.reason === "not_found" || o.reason === "tx_failed")) setCanCancelSent(true);
+      if (o.outcome !== "rejected" && (o as { overpaid?: boolean }).overpaid) setOverpaid(true);
       if (o.outcome === "paid") {
         const conf = o.confirmations != null ? ` · ${o.confirmations} conferme` : "";
         setResult({ kind: "paid", text: `Verificato sulla rete: token, mittente = wallet di uscita, destinatario = indirizzo del payout${o.amount_coin && Number.isFinite(Number(o.amount_coin)) ? ` · ${Number(o.amount_coin).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT` : ""}${conf}. Il payout è Pagato; l'affiliato riceve l'email con il link all'explorer.` });
@@ -312,7 +313,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
     // Rilettura prima di scrivere: un cambio wallet annulla il payout, ma l'admin può
     // aver già copiato l'indirizzo vecchio e inviato. Si registra solo se stato e
     // indirizzo sono ancora quelli che l'admin ha davanti.
-    const fresh = await api<{ payout: AdminPayout & { overpaid?: boolean } }>(`/api/admin/affiliate/payouts/${id}`);
+    const fresh = await api<{ payout: AdminPayout }>(`/api/admin/affiliate/payouts/${id}`);
     const f = fresh.data?.payout;
     if (!fresh.ok || !f) {
       setBusy(false);
@@ -341,7 +342,9 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
     setBusy(false);
     if (res.ok) {
       setCancelling(false);
-      setResult({ kind: "error", text: "Payout annullato. Le commissioni sono tornate maturate; l'affiliato ha ricevuto un'email generica." });
+      setResult({ kind: "error", text: p?.status === "submitted"
+        ? "Payout annullato: la transazione risulta sparita o fallita sulla rete. Le commissioni sono tornate maturate; l'affiliato ha ricevuto un'email generica."
+        : "Payout annullato. Le commissioni sono tornate maturate; l'affiliato ha ricevuto un'email generica." });
       await load();
     } else setResult({ kind: "error", text: txErrorText(res.data?.error) });
   };
@@ -354,7 +357,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
   const editable = p.status === "created";
   const affOk = p.affiliate_status === "active";
   const canSubmit = editable && !off && affOk && confirmed && hash.trim().length > 0 && !busy;
-  const canCancel = editable || (p.status === "submitted" && canCancelSent);
+  const canCancel = editable || p.status === "submitted";
   return (
     <>
       <header className="aff-head">
@@ -375,7 +378,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
               {!affOk && " · non inviare e non registrare: se i fondi sono già partiti, gestiscili a mano."}
             </p>
           </div>
-          {p.overpaid && (
+          {overpaid && (
             <div className="aff-banner" role="status" data-testid="overpaid"><p><strong>Importo ricevuto superiore al dovuto</strong> di oltre l&apos;1%. Nessuna azione automatica: verifica a mano sulla rete.</p></div>
           )}
 
@@ -454,9 +457,9 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
           <div className="aff-actions">
             {editable && <button type="button" className="aff-cta" onClick={() => register(false)} disabled={!canSubmit}>{busy ? "Verifico…" : "Registra e verifica"}</button>}
             {p.status === "submitted" && <button type="button" className="aff-cta" onClick={() => register(true)} disabled={busy || off}>{busy ? "Verifico…" : "Riverifica"}</button>}
-            {canCancel && !cancelling && <button type="button" className="aff-cta aff-cta--text" onClick={() => setCancelling(true)}>Annulla payout</button>}
+            {canCancel && !cancelling && <button type="button" className="aff-cta aff-cta--text" onClick={() => setCancelling(true)}>{p.status === "submitted" ? "Annulla payout (prima riverifica sulla rete)" : "Annulla payout"}</button>}
           </div>
-          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash sempre; con hash inviato solo dopo una riverifica che dice «hash non trovato» o «transazione fallita». Richiede un motivo; le commissioni tornano maturate.</p>}
+          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash si annulla subito. Con un hash già registrato il server prima riverifica la transazione sulla rete: annulla solo se risulta sparita o fallita e sono passati almeno 30 minuti dalla registrazione; se la transazione è valida risponde di no (annullare farebbe ripagare lo stesso importo). Richiede un motivo.</p>}
         </div>
 
         <aside className="aff-block">

@@ -46,6 +46,7 @@ export function commissionChip(r: CommissionLike, c: AffCopy, lang: AffLang): Ch
 export function cancelText(code: string | null, c: AffCopy): string {
   if (code === "wallet_changed") return c.pay.cancelWalletChanged;
   if (code === "wallet_removed") return c.pay.cancelWalletRemoved;
+  if (code === "affiliate_suspended") return c.pay.cancelSuspended;
   if (code === "tx_dropped") return c.pay.cancelTxDropped;
   return c.pay.cancelAdmin; // admin_cancelled e qualunque codice nuovo: generico, mai il testo libero
 }

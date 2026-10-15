@@ -26,6 +26,7 @@ const CODE: Record<string, WalletErrKey> = {
   zero_address: "zero_address",
   last6_mismatch: "last6_mismatch",
   address_blocked: "address_blocked",
+  address_not_allowed: "address_not_allowed",
   coin_not_enabled: "rail_not_enabled",
   network_not_enabled: "rail_not_enabled",
   unsupported_coin: "rail_not_enabled",

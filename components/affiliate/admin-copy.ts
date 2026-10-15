@@ -41,9 +41,14 @@ export const TX_ERROR_TEXT: Record<string, string> = {
   cancelled: "Il payout è annullato: se i fondi sono già partiti va gestito a mano.",
   not_found: "Payout non trovato.",
   not_submitted: "Si può riverificare solo un payout inviato.",
-  not_cancellable: "Si annulla solo un payout in preparazione, senza hash.",
+  not_cancellable: "Questo payout non si può annullare in questo stato.",
   reason_required: "Il motivo è obbligatorio (da 3 a 500 caratteri).",
-  verifier_unavailable: "Il verificatore non risponde. Il payout non è cambiato: riprova.",
+  verifier_unavailable: "Il verificatore on-chain non risponde: non so se la transazione esiste (non è «hash non trovato»). Il payout non è cambiato: riprova più tardi.",
+  tx_on_chain: "La transazione risulta ancora valida sulla rete: il payout non si annulla (le commissioni tornerebbero pagabili). Usa «Riverifica» finché non è Pagato.",
+  tx_not_droppable: "La riverifica non dice che la transazione è sparita o fallita: il payout non si annulla.",
+  too_recent: "Sono passati meno di 30 minuti dalla registrazione dell'hash: riprova dopo.",
+  affiliate_not_active: "L'affiliato non è attivo: non si registra niente. Se i fondi sono già partiti, gestiscili a mano.",
+  "origin not allowed": "Richiesta bloccata (origine non ammessa). Ricarica la pagina admin.",
   payouts_off: "I payout non sono attivi (AFFILIATE_PAYOUTS=off): non si registra niente.",
   payout_from_not_configured: "Il wallet di uscita non è configurato.",
   record_failed: "Non sono riuscito a registrare. Il payout non è cambiato: riprova.",
@@ -63,14 +68,20 @@ export const CREATE_ERROR_TEXT: Record<string, string> = {
   invalid_ids: "Selezione non valida.",
   invalid_expected_total: "Totale non valido.",
   no_ids: "Nessun affiliato selezionato.",
+  address_not_allowed: "Un destinatario ha un indirizzo non ammesso (es. un wallet di BetRedge o un contratto). Non è stato creato niente.",
+  address_blocked: "Un destinatario non passa più il controllo dell'indirizzo. Non è stato creato niente.",
+  not_screened: "Un destinatario non ha un controllo dell'indirizzo valido (nessun provider). Non è stato creato niente.",
+  screening_unavailable: "Il controllo degli indirizzi non risponde. Non è stato creato niente: riprova.",
   unknown_affiliate: "Un affiliato selezionato non esiste più. Non è stato creato niente: rileggi l'elenco.",
   not_eligible: "Alcuni affiliati non sono più pagabili. Non è stato creato niente: rileggi l'elenco.",
   "create failed": "Non sono riuscito a creare. Non è stato creato niente: riprova.",
 };
 
 /** `total_mismatch`: mostra la differenza, non crea (SPEC §4.1). `fmt` formatta i dollari. */
-export function createErrorText(data: { error?: unknown; expected?: unknown; actual?: unknown } | null, fmt: (n: number) => string): string {
+export function createErrorText(data: { error?: unknown; expected?: unknown; actual?: unknown; affiliate_id?: unknown } | null, fmt: (n: number) => string, codeOf?: (id: number) => string | undefined): string {
   const code = typeof data?.error === "string" ? data.error : "";
+  const who = typeof data?.affiliate_id === "number" ? codeOf?.(data.affiliate_id) : undefined;
+  if (who && ["address_not_allowed", "address_blocked", "not_screened"].includes(code)) return `${who}: ${CREATE_ERROR_TEXT[code]}`;
   if (code === "total_mismatch") {
     const exp = Number(data?.expected);
     const act = Number(data?.actual);

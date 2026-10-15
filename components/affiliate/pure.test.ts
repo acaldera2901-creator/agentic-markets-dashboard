@@ -15,6 +15,7 @@ describe("mappa errori wallet (SPEC-ui §3.3, 1:1 con il backend)", () => {
     ["invalid_checksum", "address", "invalid_checksum", "addr"],
     ["zero_address", "address", "zero_address", "addr"],
     ["address_blocked", "address", "address_blocked", "addr"],
+    ["address_not_allowed", "address", "address_not_allowed", "addr"],
     ["coin_not_enabled", "address", "rail_not_enabled", "addr"],
     ["network_not_enabled", "address", "rail_not_enabled", "addr"],
     ["unsupported_pair", "address", "rail_not_enabled", "addr"],
@@ -50,6 +51,7 @@ describe("mappa errori wallet (SPEC-ui §3.3, 1:1 con il backend)", () => {
     expect(keys(AFF_COPY.en).sort()).toEqual(keys(AFF_COPY.it).sort());
   });
   it("il testo per lo screening non spiega il motivo", () => {
+    expect(AFF_COPY.it.walletErr.address_not_allowed).not.toMatch(/BetRedge|contratt|denylist/i);
     expect(AFF_COPY.it.walletErr.address_blocked).not.toMatch(/sanzion|lista|rischio/i);
     expect(AFF_COPY.en.walletErr.address_blocked).not.toMatch(/sanction|list|risk/i);
   });
@@ -98,6 +100,8 @@ describe("mappa stati (parola + forma, ogni stato)", () => {
     expect(cancelText("wallet_removed", c)).toMatch(/rimosso il wallet/);
     expect(cancelText("admin_cancelled", c)).toMatch(/Annullato da noi/);
     expect(cancelText("tx_dropped", c)).toMatch(/non è andato a buon fine/);
+    expect(cancelText("affiliate_suspended", c)).toMatch(/sospesi per una verifica/);
+    expect(cancelText("affiliate_suspended", AFF_COPY.en)).toMatch(/paused for a review/);
     expect(cancelText("qualunque", c)).toMatch(/Annullato da noi/);
   });
 });

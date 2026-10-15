@@ -88,6 +88,32 @@ describe("lista del mese", () => {
     await waitFor(() => expect(calls.filter((c) => c.method === "GET").length).toBeGreaterThanOrEqual(2));
   });
 
+  it.each([
+    ["address_blocked", /ESEMPIO-B: Un destinatario non passa più il controllo/],
+    ["not_screened", /ESEMPIO-B: Un destinatario non ha un controllo/],
+    ["address_not_allowed", /ESEMPIO-B: Un destinatario ha un indirizzo non ammesso/],
+  ])("409 %s alla creazione: dice quale affiliato, non crea, rilegge", async (error, re) => {
+    mock((url, method) => method === "POST" ? { status: 409, body: { error, affiliate_id: 2 } } : list()(url));
+    render(<AdminPayouts />);
+    await screen.findByText("ESEMPIO-A");
+    fireEvent.click(screen.getByRole("button", { name: "Crea 2 payout" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(re);
+  });
+
+  it("409 not_eligible e 503 screening_unavailable alla creazione", async () => {
+    mock((url, method) => method === "POST" ? { status: 409, body: { ok: false, error: "not_eligible", items: [] } } : list()(url));
+    const a = render(<AdminPayouts />);
+    await screen.findByText("ESEMPIO-A");
+    fireEvent.click(screen.getByRole("button", { name: "Crea 2 payout" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/non sono più pagabili/);
+    a.unmount();
+    mock((url, method) => method === "POST" ? { status: 503, body: { error: "screening_unavailable", affiliate_id: 1 } } : list()(url));
+    render(<AdminPayouts />);
+    await screen.findByText("ESEMPIO-A");
+    fireEvent.click(screen.getByRole("button", { name: "Crea 2 payout" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/controllo degli indirizzi non risponde/);
+  });
+
   it("mese passato: sola lettura", async () => {
     mock(list({ month: "2026-09" }));
     render(<AdminPayouts />);
@@ -194,20 +220,70 @@ describe("registra tx", () => {
     expect(calls.find((c) => c.url.endsWith("/cancel"))?.body).toEqual({ reason: "wallet errato" });
   });
 
-  it("submitted: Riverifica; annullo offerto solo dopo un not_found/tx_failed; overpaid con copy neutro", async () => {
+  const sentSetup = (extra: (url: string, method: string) => R) => {
     const adminSent = { ...ADMIN, rows: ADMIN.rows.map((r) => (r.payout ? { ...r, payout: { ...r.payout, status: "submitted" } } : r)) };
     mock((url, method) => {
+      const o = extra(url, method);
+      if (o) return o;
       if (url.startsWith("/api/admin/affiliate/payouts?") || url === "/api/admin/affiliate/payouts") return { status: 200, body: adminSent };
-      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, explorer_url: `https://x/tx/${TX}`, overpaid: true }, payout_from: ADMIN.payout_from } };
-      if (url.endsWith("/verify")) return { status: 422, body: { outcome: "rejected", reason: "not_found" } };
+      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, explorer_url: `https://x/tx/${TX}` }, payout_from: ADMIN.payout_from } };
       return undefined;
     });
+  };
+  const openSent = async () => {
     render(<AdminPayouts />);
     fireEvent.click(await screen.findByRole("button", { name: "Apri · riverifica" }));
-    expect((await screen.findByTestId("overpaid")).textContent).toMatch(/superiore al dovuto/);
-    expect(screen.queryByRole("button", { name: "Annulla payout" })).toBeNull();
+    await screen.findByText("Hash registrato");
+  };
+
+  it("submitted: il bottone Annulla dice che prima si riverifica; il server decide (tx valida → 409, mai «paga di nuovo»)", async () => {
+    sentSetup((url, method) => url.endsWith("/cancel") && method === "POST" ? { status: 409, body: { error: "tx_on_chain", outcome: "paid" } } : undefined);
+    await openSent();
+    expect(document.body.textContent).toMatch(/il server prima riverifica la transazione sulla rete/);
+    expect(document.body.textContent).toMatch(/almeno 30 minuti/);
+    fireEvent.click(screen.getByRole("button", { name: /prima riverifica sulla rete/ }));
+    fireEvent.change(screen.getByLabelText(/Motivo dell.annullo/), { target: { value: "tx sparita" } });
+    fireEvent.click(screen.getByRole("button", { name: "Conferma annullo" }));
+    const t = (await screen.findByTestId("tx-result")).textContent!;
+    expect(t).toMatch(/ancora valida sulla rete/);
+    expect(t).not.toMatch(/paga(re)? di nuovo|ripaga(re)? lo stesso|riprova a pagare/i);
+  });
+
+  it("submitted: tx sparita → annullo riuscito con testo dedicato", async () => {
+    sentSetup((url, method) => url.endsWith("/cancel") && method === "POST" ? { status: 200, body: { ok: true, cancel_code: "tx_dropped", onchain: "not_found" } } : undefined);
+    await openSent();
+    fireEvent.click(screen.getByRole("button", { name: /prima riverifica sulla rete/ }));
+    fireEvent.change(screen.getByLabelText(/Motivo dell.annullo/), { target: { value: "tx sparita" } });
+    fireEvent.click(screen.getByRole("button", { name: "Conferma annullo" }));
+    expect((await screen.findByTestId("tx-result")).textContent).toMatch(/sparita o fallita sulla rete/);
+  });
+
+  it("503 «verificatore non disponibile» è distinto da «hash non trovato»; too_recent ha il suo testo", async () => {
+    sentSetup((url, method) => url.endsWith("/verify") && method === "POST" ? { status: 503, body: { error: "verifier_unavailable" } } : url.endsWith("/cancel") && method === "POST" ? { status: 409, body: { ok: false, error: "too_recent" } } : undefined);
+    await openSent();
     fireEvent.click(screen.getByRole("button", { name: "Riverifica" }));
-    await screen.findByText(/Hash non trovato sulla rete/);
-    expect(screen.getByRole("button", { name: "Annulla payout" })).toBeTruthy();
+    const t = (await screen.findByTestId("tx-result")).textContent!;
+    expect(t).toMatch(/non risponde/);
+    expect(t).not.toMatch(/Hash non trovato sulla rete/);
+    fireEvent.click(screen.getByRole("button", { name: /prima riverifica sulla rete/ }));
+    fireEvent.change(screen.getByLabelText(/Motivo dell.annullo/), { target: { value: "tx sparita" } });
+    fireEvent.click(screen.getByRole("button", { name: "Conferma annullo" }));
+    await waitFor(() => expect(screen.getByTestId("tx-result").textContent).toMatch(/meno di 30 minuti/));
+  });
+
+  it("overpaid (dall'esito di verify): avviso neutro, nessuna azione automatica", async () => {
+    sentSetup((url, method) => url.endsWith("/verify") && method === "POST" ? { status: 200, body: { outcome: "submitted", payout_id: 11, confirmations: 12, required: 30, overpaid: true } } : undefined);
+    await openSent();
+    fireEvent.click(screen.getByRole("button", { name: "Riverifica" }));
+    expect((await screen.findByTestId("overpaid")).textContent).toMatch(/superiore al dovuto.*Nessuna azione automatica/);
+  });
+
+  it("registra: affiliate_not_active dal DB → messaggio, niente registrato", async () => {
+    setup({}, (url) => url.endsWith("/tx") ? { status: 409, body: { error: "affiliate_not_active", affiliate_status: "suspended" } } : undefined);
+    await openTx();
+    fireEvent.change(screen.getByLabelText(/Incolla l.hash/), { target: { value: TX } });
+    fireEvent.click(within(screen.getByTestId("tx-confirm")).getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registra e verifica" }));
+    expect((await screen.findByTestId("tx-result")).textContent).toMatch(/L'affiliato non è attivo/);
   });
 });

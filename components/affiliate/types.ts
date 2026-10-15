@@ -51,6 +51,6 @@ export type AdminMonth = {
 };
 
 export type TxOutcome =
-  | { outcome: "paid"; payout_id: number; confirmations?: number; amount_coin?: string; explorer_url?: string; already?: boolean }
-  | { outcome: "submitted"; payout_id: number; confirmations: number; required?: number; amount_coin?: string; explorer_url?: string }
+  | { outcome: "paid"; payout_id: number; confirmations?: number; amount_coin?: string; explorer_url?: string; already?: boolean; overpaid?: boolean }
+  | { outcome: "submitted"; payout_id: number; confirmations: number; required?: number; amount_coin?: string; explorer_url?: string; overpaid?: boolean }
   | { outcome: "rejected"; reason: string };

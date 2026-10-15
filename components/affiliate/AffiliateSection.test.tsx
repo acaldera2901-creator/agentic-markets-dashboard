@@ -289,6 +289,7 @@ describe("wallet in due passi", () => {
   it.each([
     ["invalid_checksum", "address", /Maiuscole e minuscole non corrispondono/],
     ["address_blocked", "address", /Non possiamo usare questo indirizzo/],
+    ["address_not_allowed", "address", /non può ricevere i pagamenti/],
     ["last6_mismatch", "last6", /ultime 6 cifre non coincidono/],
     ["invalid_legal_name", "payee_legal_name", /nome legale/],
   ])("errore del server %s (campo %s) → torna al passo 1 col messaggio sul campo", async (error, field, re) => {
