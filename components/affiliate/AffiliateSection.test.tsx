@@ -1,6 +1,7 @@
 // components/affiliate/AffiliateSection.test.tsx — #AFFILIATE-V2-UI-1015
 // Pannello utente con fetch finta: stati della pagina, iscrizione, wallet in due
 // passi con gli errori del server mappati, a11y di base (label, aria-invalid).
+import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
 import { AffiliateSection } from "./AffiliateSection";
@@ -127,6 +128,14 @@ describe("iscrizione", () => {
     const input = (await screen.findByLabelText("Il tuo codice")) as HTMLInputElement;
     expect(input.readOnly).toBe(true);
     expect(input.value).toBe("GIA");
+  });
+});
+
+describe("React StrictMode (dev: mount, unmount, remount)", () => {
+  it("la pagina esce da «caricamento» anche dopo il doppio mount", async () => {
+    mockFetch(me(ME));
+    render(<StrictMode><AffiliateSection lang="it" /></StrictMode>);
+    expect(await screen.findByText("Il tuo link")).toBeTruthy();
   });
 });
 

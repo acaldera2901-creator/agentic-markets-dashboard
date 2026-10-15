@@ -53,7 +53,8 @@ export function AffiliateSection({ lang, termsHref = "/terms", privacyHref = "/p
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [busyRemove, setBusyRemove] = useState(false);
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  // StrictMode (dev) monta, smonta e rimonta: il flag va riarmato a ogni mount
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const load = useCallback(async () => {
     const res = await api<MeResponse>("/api/affiliate/me");

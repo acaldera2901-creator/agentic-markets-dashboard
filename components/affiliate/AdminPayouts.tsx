@@ -460,7 +460,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             {p.status === "submitted" && <button type="button" className="aff-cta" onClick={() => register(true)} disabled={busy || off}>{busy ? "Verifico…" : "Riverifica"}</button>}
             {canCancel && !cancelling && <button type="button" className="aff-cta aff-cta--text" onClick={() => setCancelling(true)}>{p.status === "submitted" ? "Annulla payout (il server controlla la rete)" : "Annulla payout"}</button>}
           </div>
-          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash si annulla subito. Con un hash già registrato il server controlla la rete: annulla solo se la transazione è fallita o non potrà più essere minata (nonce già consumato e finalizzato) e sono passati almeno 30 minuti dalla registrazione. Se la transazione è bloccata, prima va sostituita dal wallet di uscita (stesso nonce) e va atteso che sia finalizzata. Altrimenti il payout resta com'è. Richiede un motivo.</p>}
+          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash si annulla subito. Con un hash già registrato il server controlla la rete: annulla solo se la transazione è fallita o non potrà più essere minata (nonce già consumato e finalizzato) e sono passati almeno 30 minuti dalla registrazione. Se la transazione è bloccata, prima va sostituita dal wallet di uscita (stesso nonce) e va atteso che sia finalizzata. Altrimenti il payout resta com&apos;è. Richiede un motivo.</p>}
         </div>
 
         <aside className="aff-block">
