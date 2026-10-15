@@ -1,0 +1,151 @@
+// lib/affiliate/payout-verify.ts — #AFFILIATE-V2-CRYPTO-1007 PR-9
+// Verifica on-chain di un payout affiliato in USCITA, PER HASH.
+//
+// Perché non `checkIncoming` (lib/crypto-verify.ts): quella legge `tokentx`
+// dell'indirizzo, che restituisce la prima pagina — un indirizzo di exchange ha
+// migliaia di tx e la nostra potrebbe non esserci. Qui si chiede la ricevuta
+// della tx indicata (eth_getTransactionReceipt) e si leggono i suoi log
+// `Transfer`: nessuna paginazione, nessuna ambiguità.
+//
+// Cosa deve essere vero per `paid` (PROPOSAL-crypto-payout §3.4):
+//  · tx riuscita (status 0x1) sulla catena giusta (chainId 137);
+//  · log Transfer del contratto del token atteso (USDT Polygon dal catalogo);
+//  · mittente del Transfer = wallet di uscita (AFFILIATE_PAYOUT_FROM, D2);
+//  · destinatario = `to_address` copiato alla creazione del payout;
+//  · importo ≥ 99 % del dovuto (stessa tolleranza di lib/crypto-verify.ts);
+//  · conferme ≥ MIN_CONFIRMATIONS.polygon (30). Meno → `submitted`, si riverifica.
+// Fail-closed: un RPC che non risponde, risponde con un errore o sulla catena
+// sbagliata → VerifierUnavailableError, e il payout non cambia stato. Nota
+// misurata: publicnode risponde con un ERRORE (non `null`) a un hash che non
+// conosce, quindi lì «hash inesistente» e «RPC giù» si vedono uguali — entrambi
+// lasciano il payout com'è.
+
+import { catalogCoin, MIN_CONFIRMATIONS } from "@/lib/crypto-coins";
+import { isPaidEnough } from "@/lib/crypto-verify";
+import type { PayoutCoin, PayoutNetwork } from "./wallet";
+
+export const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+const POLYGON_CHAIN_ID = BigInt(137);
+
+export type RejectReason =
+  | "network_not_supported"
+  | "not_found"
+  | "tx_failed"
+  | "wrong_token"
+  | "wrong_recipient"
+  | "wrong_sender"
+  | "amount_too_low";
+
+export type PayoutTxVerdict =
+  | { outcome: "paid"; amountCoin: string; confirmations: number }
+  | { outcome: "submitted"; amountCoin: string; confirmations: number; required: number }
+  | { outcome: "rejected"; reason: RejectReason };
+
+export class VerifierUnavailableError extends Error {}
+
+export type Rpc = (method: string, params: unknown[]) => Promise<unknown>;
+
+/** Client JSON-RPC minimale. Ogni anomalia → VerifierUnavailableError. */
+export function jsonRpc(url: string, fetchImpl: typeof fetch = fetch, timeoutMs = 15_000): Rpc {
+  let id = 0;
+  return async (method, params) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetchImpl(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }),
+        signal: ctrl.signal,
+        cache: "no-store",
+      });
+      if (!res.ok) throw new VerifierUnavailableError(`rpc ${method} http ${res.status}`);
+      const body = (await res.json()) as { result?: unknown; error?: { message?: string } };
+      if (body.error) throw new VerifierUnavailableError(`rpc ${method} error: ${body.error.message ?? "?"}`);
+      if (!("result" in body)) throw new VerifierUnavailableError(`rpc ${method} malformed response`);
+      return body.result;
+    } catch (e) {
+      if (e instanceof VerifierUnavailableError) throw e;
+      throw new VerifierUnavailableError(`rpc ${method} unreachable: ${String(e)}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
+
+type Log = { address?: string; topics?: string[]; data?: string; removed?: boolean };
+type Receipt = { status?: string; blockNumber?: string; logs?: Log[] };
+
+function hexToBig(h: unknown): bigint {
+  if (typeof h !== "string" || !/^0x[0-9a-fA-F]*$/.test(h)) {
+    throw new VerifierUnavailableError(`malformed hex ${String(h).slice(0, 20)}`);
+  }
+  return h === "0x" ? BigInt(0) : BigInt(h);
+}
+
+/** Topic indicizzato (32 byte) → indirizzo minuscolo 0x + 40 hex. */
+function topicAddress(t: string | undefined): string {
+  return typeof t === "string" && t.length === 66 ? `0x${t.slice(26).toLowerCase()}` : "";
+}
+
+/** Unità minime → stringa decimale esatta (niente float). */
+export function formatUnits(raw: bigint, decimals: number): string {
+  const s = raw.toString().padStart(decimals + 1, "0");
+  return decimals === 0 ? s : `${s.slice(0, -decimals)}.${s.slice(-decimals)}`;
+}
+
+export type PayoutTxCheck = {
+  network: PayoutNetwork;
+  coin: PayoutCoin;
+  txHash: string;
+  /** Wallet di uscita (AFFILIATE_PAYOUT_FROM). */
+  from: string;
+  /** `affiliate_payouts.to_address`. */
+  to: string;
+  amountUsd: number;
+};
+
+export async function verifyPayoutTx(c: PayoutTxCheck, rpc: Rpc): Promise<PayoutTxVerdict> {
+  // Unica rete con un verificatore (D1). Tron resta nello schema, non qui.
+  if (c.network !== "polygon") return { outcome: "rejected", reason: "network_not_supported" };
+  const token = catalogCoin(`polygon-${c.coin.toLowerCase()}`);
+  if (!token) return { outcome: "rejected", reason: "network_not_supported" };
+
+  // Un RPC configurato sulla catena sbagliata darebbe «non trovato» a ogni hash
+  // vero, o peggio confermerebbe tx di un'altra catena: si controlla sempre.
+  if (hexToBig(await rpc("eth_chainId", [])) !== POLYGON_CHAIN_ID) {
+    throw new VerifierUnavailableError("rpc is not Polygon PoS (chainId != 137)");
+  }
+
+  const receipt = (await rpc("eth_getTransactionReceipt", [c.txHash])) as Receipt | null;
+  if (receipt == null) return { outcome: "rejected", reason: "not_found" };
+  if (typeof receipt !== "object" || !Array.isArray(receipt.logs)) {
+    throw new VerifierUnavailableError("malformed receipt");
+  }
+  if (receipt.status !== "0x1") return { outcome: "rejected", reason: "tx_failed" };
+
+  const contract = token.contract.toLowerCase();
+  const from = c.from.toLowerCase();
+  const to = c.to.toLowerCase();
+  const transfers = receipt.logs.filter(
+    (l) => !l.removed && Array.isArray(l.topics) && l.topics.length === 3 && String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC,
+  );
+  const ofToken = transfers.filter((l) => String(l.address ?? "").toLowerCase() === contract);
+  if (ofToken.length === 0) return { outcome: "rejected", reason: "wrong_token" };
+  const toRecipient = ofToken.filter((l) => topicAddress(l.topics![2]) === to);
+  if (toRecipient.length === 0) return { outcome: "rejected", reason: "wrong_recipient" };
+  const fromUs = toRecipient.filter((l) => topicAddress(l.topics![1]) === from);
+  if (fromUs.length === 0) return { outcome: "rejected", reason: "wrong_sender" };
+
+  const raw = fromUs.reduce((acc, l) => acc + hexToBig(l.data), BigInt(0));
+  const amountCoin = formatUnits(raw, token.decimals);
+  if (!isPaidEnough(Number(amountCoin), c.amountUsd)) return { outcome: "rejected", reason: "amount_too_low" };
+
+  const head = hexToBig(await rpc("eth_blockNumber", []));
+  const block = hexToBig(receipt.blockNumber);
+  const confirmations = head >= block ? Number(head - block) + 1 : 0;
+  const required = MIN_CONFIRMATIONS.polygon;
+  return confirmations >= required
+    ? { outcome: "paid", amountCoin, confirmations }
+    : { outcome: "submitted", amountCoin, confirmations, required };
+}
