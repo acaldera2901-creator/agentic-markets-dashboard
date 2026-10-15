@@ -10,19 +10,55 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isAdminAuthorized } from "@/lib/admin-auth";
 import { dbQuery, dbQueryStrict } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { affiliateConfig, affiliatePolygonRpcUrl, affiliatePayoutsMode, payoutConfig } from "./config";
-import { payoutPaidEmail, type Mail } from "./emails";
+import { opsAlert } from "@/lib/ops-alert";
+import {
+  affiliateConfig,
+  affiliatePayoutMinRatio,
+  affiliatePolygonRpcUrl,
+  affiliatePayoutsMode,
+  payoutConfig,
+  payoutDeniedAddresses,
+} from "./config";
+import { payoutCancelledEmail, payoutPaidEmail, type Mail } from "./emails";
+import { ScreeningUnavailableError, screenPayoutAddress } from "./screening";
 import { jsonRpc, verifyPayoutTx, VerifierUnavailableError, type Rpc } from "./payout-verify";
 import { affiliateRpc } from "./rpc";
 import { explorerTxUrl, maskAddress, normalizeTxHash, type PayoutCoin, type PayoutNetwork } from "./wallet";
 
 // ── Guardia admin (stesso schema di app/api/admin/activations) ──────────────
 
-/** null = passa. Mutating: blocca anche le chiamate cross-site (CSRF via cookie admin). */
+/** Origini ammesse per una scrittura admin dal browser: quella della richiesta
+ *  stessa e, se configurato, il sito pubblico (NEXT_PUBLIC_SITE_URL). */
+function allowedOrigins(req: Request): Set<string> {
+  const out = new Set<string>([new URL(req.url).origin]);
+  try {
+    const site = process.env.NEXT_PUBLIC_SITE_URL;
+    if (site) out.add(new URL(site).origin);
+  } catch {
+    /* env malformata: resta solo l'origine della richiesta */
+  }
+  return out;
+}
+
+/**
+ * null = passa. Scritture: blocco cross-site come activations e, in più (QA
+ * F10), confronto ESATTO dell'header Origin quando l'auth è il cookie admin:
+ * `sec-fetch-site` lo mandano solo i browser recenti, Origin sì su ogni POST.
+ * Le chiamate server-to-server con `Authorization: Bearer <ADMIN_SECRET>` non
+ * portano un cookie, quindi non sono un vettore CSRF e non hanno Origin.
+ */
 export async function adminGuard(req: NextRequest, mutating: boolean): Promise<NextResponse | null> {
   if (!(await isAdminAuthorized(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (mutating && req.headers.get("sec-fetch-site") === "cross-site") {
+  if (!mutating) return null;
+  if (req.headers.get("sec-fetch-site") === "cross-site") {
     return NextResponse.json({ error: "cross-site request blocked" }, { status: 403 });
+  }
+  const bearer = (req.headers.get("authorization") ?? "").startsWith("Bearer ");
+  if (!bearer) {
+    const origin = req.headers.get("origin");
+    if (!origin || !allowedOrigins(req).has(origin)) {
+      return NextResponse.json({ error: "origin not allowed" }, { status: 403 });
+    }
   }
   return null;
 }
@@ -305,6 +341,7 @@ export async function registerPayoutTx(
     verdict = await verifyPayoutTx(
       { network: payout.network, coin: payout.coin, txHash: hash, from, to: payout.to_address, amountUsd: payout.amount_usd },
       rpc,
+      { minRatio: affiliatePayoutMinRatio() },
     );
   } catch (e) {
     if (e instanceof VerifierUnavailableError) {
@@ -318,6 +355,12 @@ export async function registerPayoutTx(
     return NextResponse.json({ outcome: "rejected", reason: verdict.reason }, { status: 422 });
   }
 
+  if (verdict.overpaid) {
+    // QA F3: i fondi sono partiti (si registra), ma è un errore di invio da guardare.
+    await opsAlert("affiliate-payouts", [
+      `overpaid payout=${payout.id} due=${payout.amount_usd} sent=${verdict.amountCoin} ${payout.coin} to=${maskAddress(payout.to_address)} tx=${hash}`,
+    ]);
+  }
   const paid = verdict.outcome === "paid";
   const res = await affiliateRpc<{ ok: boolean; error?: string; status?: string; became_paid?: boolean }>(
     "affiliate_payout_record_tx",
@@ -345,6 +388,90 @@ export async function registerPayoutTx(
     confirmations: verdict.confirmations,
     required: verdict.outcome === "submitted" ? verdict.required : undefined,
     amount_coin: verdict.amountCoin,
+    overpaid: verdict.overpaid,
     explorer_url: explorerTxUrl(payout.network, hash),
   });
+}
+
+// ── Controlli sui destinatari alla creazione (QA F6, F13) ───────────────────
+
+/**
+ * Prima di congelare importi: ogni affiliato selezionato e pagabile ha un
+ * destinatario fuori dalla denylist, e lo screening si RIFÀ adesso (non basta
+ * quello della registrazione del wallet). Fail-closed: senza provider il
+ * risultato è `not_screened` e non si crea niente; provider giù → 503.
+ * null = tutti ok. Chi non è pagabile lo rifiuta comunque la funzione SQL.
+ */
+export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Promise<NextResponse | null> {
+  const deny = payoutDeniedAddresses();
+  for (const id of ids) {
+    const row = rows.find((r) => r.affiliate_id === id);
+    if (!row || !row.eligible || !row.wallet || !row.wallet.network) continue;
+    if (deny.has(row.wallet.address.toLowerCase())) {
+      return NextResponse.json({ error: "address_not_allowed", affiliate_id: id }, { status: 409 });
+    }
+    let s;
+    try {
+      s = await screenPayoutAddress(row.wallet.network, row.wallet.address);
+    } catch (e) {
+      if (e instanceof ScreeningUnavailableError) {
+        console.error(`[affiliate/payouts] screening unavailable affiliate=${id}:`, e.message);
+        return NextResponse.json({ error: "screening_unavailable", affiliate_id: id }, { status: 503 });
+      }
+      throw e;
+    }
+    if (s.kind !== "clear") {
+      console.warn(`[affiliate/payouts] recipient ${s.kind} affiliate=${id} to=${row.wallet.address_masked}`);
+      return NextResponse.json(
+        { error: s.kind === "blocked" ? "address_blocked" : "not_screened", affiliate_id: id },
+        { status: 409 },
+      );
+    }
+  }
+  return null;
+}
+
+// ── Tx sparita: submitted → cancelled (QA F2) ───────────────────────────────
+
+/**
+ * Annulla un payout `submitted` SOLO se la riverifica on-chain dell'hash
+ * registrato dice not_found o tx_failed. Una tx ancora valida non si annulla
+ * mai (le commissioni tornerebbero pagabili: doppio pagamento). Nota: publicnode
+ * risponde con un ERRORE a un hash ignoto, quindi lì not_found diventa 503 e il
+ * drop richiede un RPC che risponda `null` (AFFILIATE_POLYGON_RPC_URL).
+ */
+export async function dropSubmittedPayout(
+  payout: AdminPayout,
+  reason: string,
+  rpc: Rpc = jsonRpc(affiliatePolygonRpcUrl()),
+): Promise<NextResponse> {
+  const from = payoutConfig().payoutFrom;
+  if (!from || !payout.tx_hash) return NextResponse.json({ error: "payout_from_not_configured" }, { status: 503 });
+  let verdict;
+  try {
+    verdict = await verifyPayoutTx(
+      { network: payout.network, coin: payout.coin, txHash: payout.tx_hash, from, to: payout.to_address, amountUsd: payout.amount_usd },
+      rpc,
+      { minRatio: affiliatePayoutMinRatio() },
+    );
+  } catch (e) {
+    if (e instanceof VerifierUnavailableError) {
+      return NextResponse.json({ error: "verifier_unavailable" }, { status: 503 });
+    }
+    throw e;
+  }
+  if (verdict.outcome !== "rejected") {
+    return NextResponse.json({ error: "tx_on_chain", outcome: verdict.outcome }, { status: 409 });
+  }
+  if (verdict.reason !== "not_found" && verdict.reason !== "tx_failed") {
+    return NextResponse.json({ error: "tx_not_droppable", reason: verdict.reason }, { status: 409 });
+  }
+  const res = await affiliateRpc("affiliate_payout_drop_tx", { p_id: payout.id, p_reason: reason });
+  if (!res.ok) return NextResponse.json(res, { status: 409 });
+  console.warn(`[affiliate/payouts] tx dropped payout=${payout.id} onchain=${verdict.reason}`);
+  await notifyAffiliate(
+    payout.affiliate_identifier,
+    payoutCancelledEmail({ lang: await mailLangOf(payout.affiliate_identifier), amountUsd: payout.amount_usd }),
+  );
+  return NextResponse.json({ ok: true, payout_id: payout.id, cancel_code: "tx_dropped", onchain: verdict.reason });
 }

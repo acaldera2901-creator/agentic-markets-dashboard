@@ -8,6 +8,8 @@ const dbQueryStrict = vi.fn();
 const dbQuery = vi.fn();
 const affiliateRpc = vi.fn();
 const sendEmail = vi.fn();
+const opsAlert = vi.fn();
+const screenPayoutAddress = vi.fn();
 const rpcCalls: string[] = [];
 let chain: { receipt?: unknown; head?: number; down?: boolean };
 
@@ -15,6 +17,11 @@ vi.mock("@/lib/admin-auth", () => ({ isAdminAuthorized }));
 vi.mock("@/lib/db", () => ({ dbQueryStrict, dbQuery, dbExecute: vi.fn(), getSupabaseAdminClient: vi.fn() }));
 vi.mock("@/lib/affiliate/rpc", () => ({ affiliateRpc }));
 vi.mock("@/lib/email", async (orig) => ({ ...(await orig<typeof import("@/lib/email")>()), sendEmail }));
+vi.mock("@/lib/ops-alert", () => ({ opsAlert }));
+vi.mock("@/lib/affiliate/screening", async (orig) => ({
+  ...(await orig<typeof import("@/lib/affiliate/screening")>()),
+  screenPayoutAddress,
+}));
 vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
   const real = await orig<typeof import("@/lib/affiliate/payout-verify")>();
   return {
@@ -25,6 +32,7 @@ vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
       if (chain.down) throw new real.VerifierUnavailableError("rpc down");
       if (method === "eth_chainId") return "0x89";
       if (method === "eth_blockNumber") return `0x${(chain.head ?? 1_000_100).toString(16)}`;
+      if (method === "eth_getBlockByNumber") return { number: `0x${((chain.head ?? 1_000_100) - 2).toString(16)}` };
       if (method === "eth_getTransactionReceipt") return chain.receipt === undefined ? receiptOk() : chain.receipt;
       throw new Error(method);
     },
@@ -45,11 +53,13 @@ function receiptOk(amount = 60, to = TO) {
   };
 }
 
-type PayoutFixture = { status: string; tx_hash: string | null; cancel_code?: string | null };
+type PayoutFixture = { status: string; tx_hash: string | null; cancel_code?: string | null; affiliate_status?: string };
 let payout: PayoutFixture | null;
 
 function req(url: string, method = "GET", body?: unknown, headers: Record<string, string> = {}) {
-  return new Request(`https://x${url}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) }) as unknown as NextRequest;
+  // Il browser dell'admin manda sempre Origin su una POST same-origin.
+  const h = method === "GET" ? headers : { origin: "https://x", ...headers };
+  return new Request(`https://x${url}`, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }) as unknown as NextRequest;
 }
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 const month = () => new Date().toISOString().slice(0, 7);
@@ -80,6 +90,7 @@ beforeEach(() => {
   });
   dbQuery.mockResolvedValue([{ language: "en" }]);
   affiliateRpc.mockResolvedValue({ ok: true, status: "paid", became_paid: true });
+  screenPayoutAddress.mockResolvedValue({ kind: "clear", provider: "test" });
   sendEmail.mockResolvedValue(undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -197,7 +208,7 @@ describe("POST [id]/tx — verifica per hash", () => {
     const r = await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1.toUpperCase().replace("0X", "") }), params("7"));
     expect(r.status).toBe(200);
     expect(await r.json()).toMatchObject({ outcome: "paid", confirmations: 101, amount_coin: "60.000000" });
-    expect(rpcCalls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_blockNumber"]);
+    expect(rpcCalls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_blockNumber", "eth_getBlockByNumber"]);
     expect(affiliateRpc).toHaveBeenCalledWith("affiliate_payout_record_tx", { p_id: 7, p_tx_hash: H1, p_paid: true, p_amount_coin: "60.000000" });
     expect(sendEmail).toHaveBeenCalledTimes(1);
     expect(sendEmail.mock.calls[0][0]).toMatchObject({ to: "ann@x.io", subject: "Payout sent" });
@@ -295,5 +306,112 @@ describe("POST [id]/cancel", () => {
     const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "errore" }), params("7"));
     expect(r.status).toBe(409);
     expect(sendEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("QA F10: Origin esatto sulle scritture admin", () => {
+  it("Origin diverso o assente con cookie admin → 403; Bearer server-to-server passa", async () => {
+    const P = (await list()).POST;
+    const body = { month: month(), ids: [1], expected_total: "54.00" };
+    expect((await P(req("/p", "POST", body, { origin: "https://evil.example" }))).status).toBe(403);
+    expect((await P(req("/p", "POST", body, { origin: "https://x.evil" }))).status).toBe(403);
+    const noOrigin = new Request("https://x/p", { method: "POST", body: JSON.stringify(body) }) as unknown as NextRequest;
+    expect((await P(noOrigin)).status).toBe(403);
+    expect((await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "xyz" }, { origin: "null" }), params("7"))).status).toBe(403);
+    expect(affiliateRpc).not.toHaveBeenCalled();
+    affiliateRpc.mockResolvedValueOnce({ ok: true, created: [] });
+    const bearer = new Request("https://x/p", { method: "POST", headers: { authorization: "Bearer s" }, body: JSON.stringify(body) }) as unknown as NextRequest;
+    expect((await P(bearer)).status).toBe(200);
+  });
+});
+
+describe("QA F13 + F6 alla creazione", () => {
+  it("rifà lo screening degli indirizzi selezionati: bloccato → 409, niente creato", async () => {
+    screenPayoutAddress.mockResolvedValueOnce({ kind: "blocked", provider: "p" });
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    expect(r.status).toBe(409);
+    expect(await r.json()).toMatchObject({ error: "address_blocked", affiliate_id: 1 });
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("nessun provider (not_screened) → 409 not_screened: fail-closed anche alla creazione", async () => {
+    screenPayoutAddress.mockResolvedValueOnce({ kind: "not_screened" });
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    expect(await r.json()).toMatchObject({ error: "not_screened", affiliate_id: 1 });
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("provider giù → 503, niente creato", async () => {
+    const { ScreeningUnavailableError } = await import("@/lib/affiliate/screening");
+    screenPayoutAddress.mockRejectedValueOnce(new ScreeningUnavailableError("down"));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    expect(r.status).toBe(503);
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("destinatario in denylist (es. diventato AFFILIATE_PAYOUT_FROM) → 409", async () => {
+    vi.stubEnv("PAYGATE_PAYOUT_WALLET", TO);
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    expect(await r.json()).toMatchObject({ error: "address_not_allowed", affiliate_id: 1 });
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("QA F3: pagamento eccessivo", () => {
+  it("paid ma overpaid:true + opsAlert, senza indirizzo intero", async () => {
+    chain.receipt = receiptOk(10_000);
+    const r = await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1 }), params("7"));
+    expect(await r.json()).toMatchObject({ outcome: "paid", overpaid: true, amount_coin: "10000.000000" });
+    expect(opsAlert).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(opsAlert.mock.calls[0])).not.toContain(TO);
+  });
+  it("importo giusto: nessun alert", async () => {
+    await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1 }), params("7"));
+    expect(opsAlert).not.toHaveBeenCalled();
+  });
+});
+
+describe("QA F4: affiliato non attivo", () => {
+  it("GET [id] espone lo stato dell'affiliato", async () => {
+    payout = { status: "created", tx_hash: null, affiliate_status: "suspended" } as PayoutFixture;
+    const body = await (await (await one()).GET(req("/p/7"), params("7"))).json();
+    expect(body.payout.affiliate_status).toBe("suspended");
+  });
+  it("record_tx rifiuta (DB: affiliate_not_active) → 409, nessuna email", async () => {
+    affiliateRpc.mockResolvedValueOnce({ ok: false, error: "affiliate_not_active", affiliate_status: "suspended" });
+    const r = await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1 }), params("7"));
+    expect(r.status).toBe(409);
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("QA F2: tx sparita, submitted → cancelled", () => {
+  it("riverifica dice not_found → drop via RPC, righe tornano payable, email generica", async () => {
+    payout = { status: "submitted", tx_hash: H1 };
+    chain.receipt = null;
+    affiliateRpc.mockResolvedValueOnce({ ok: true, affiliate_id: 1, dropped_tx_hash: H1 });
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "tx sparita dopo reorg" }), params("7"));
+    expect(r.status).toBe(200);
+    expect(await r.json()).toMatchObject({ ok: true, cancel_code: "tx_dropped", onchain: "not_found" });
+    expect(affiliateRpc).toHaveBeenCalledWith("affiliate_payout_drop_tx", { p_id: 7, p_reason: "tx sparita dopo reorg" });
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+  });
+  it("tx fallita on-chain → drop", async () => {
+    payout = { status: "submitted", tx_hash: H1 };
+    chain.receipt = { status: "0x0", blockNumber: "0xf4240", logs: [] };
+    affiliateRpc.mockResolvedValueOnce({ ok: true });
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "tx revertita" }), params("7"));
+    expect(await r.json()).toMatchObject({ onchain: "tx_failed" });
+  });
+  it("tx ancora valida on-chain → 409, NON si annulla (sarebbe un doppio pagamento)", async () => {
+    payout = { status: "submitted", tx_hash: H1 };
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "voglio annullare" }), params("7"));
+    expect(r.status).toBe(409);
+    expect(await r.json()).toMatchObject({ error: "tx_on_chain" });
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("RPC giù → 503, niente annullato", async () => {
+    payout = { status: "submitted", tx_hash: H1 };
+    chain.down = true;
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "boh boh" }), params("7"));
+    expect(r.status).toBe(503);
+    expect(affiliateRpc).not.toHaveBeenCalled();
   });
 });
