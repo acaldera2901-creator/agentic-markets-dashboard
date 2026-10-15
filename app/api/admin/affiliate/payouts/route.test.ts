@@ -11,6 +11,7 @@ const sendEmail = vi.fn();
 const opsAlert = vi.fn();
 const screenPayoutAddress = vi.fn();
 const rpcCalls: string[] = [];
+const rpcArgs: { method: string; params: unknown[] }[] = [];
 let chain: { receipt?: unknown; head?: number; down?: boolean; tx?: unknown; finalizedNonce?: number; logs?: unknown[] };
 
 vi.mock("@/lib/admin-auth", () => ({ isAdminAuthorized }));
@@ -27,8 +28,9 @@ vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
   return {
     ...real,
     // RPC finto con la forma reale delle risposte Polygon; nessuna chiamata di rete.
-    jsonRpc: () => async (method: string) => {
+    jsonRpc: () => async (method: string, params: unknown[]) => {
       rpcCalls.push(method);
+      rpcArgs.push({ method, params });
       if (chain.down) throw new real.VerifierUnavailableError("rpc down");
       if (method === "eth_chainId") return "0x89";
       if (method === "eth_blockNumber") return `0x${(chain.head ?? 1_000_100).toString(16)}`;
@@ -56,7 +58,7 @@ function receiptOk(amount = 60, to = TO) {
   };
 }
 
-type PayoutFixture = { status: string; tx_hash: string | null; cancel_code?: string | null; affiliate_status?: string; tx_nonce?: number | null; tx_block?: number | null };
+type PayoutFixture = { status: string; tx_hash: string | null; cancel_code?: string | null; affiliate_status?: string; tx_nonce?: number | null; tx_block?: number | null; tx_from?: string | null };
 let payout: PayoutFixture | null;
 
 function req(url: string, method = "GET", body?: unknown, headers: Record<string, string> = {}) {
@@ -71,6 +73,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
   rpcCalls.length = 0;
+  rpcArgs.length = 0;
   chain = {};
   vi.stubEnv("AFFILIATE_PAYOUTS", "live");
   vi.stubEnv("AFFILIATE_PAYOUT_FROM", FROM);
@@ -212,7 +215,7 @@ describe("POST [id]/tx — verifica per hash", () => {
     expect(r.status).toBe(200);
     expect(await r.json()).toMatchObject({ outcome: "paid", confirmations: 101, amount_coin: "60.000000" });
     expect(rpcCalls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_getTransactionByHash", "eth_blockNumber", "eth_getBlockByNumber"]);
-    expect(affiliateRpc).toHaveBeenCalledWith("affiliate_payout_record_tx", { p_id: 7, p_tx_hash: H1, p_paid: true, p_amount_coin: "60.000000", p_nonce: 7, p_block: 1_000_000 });
+    expect(affiliateRpc).toHaveBeenCalledWith("affiliate_payout_record_tx", { p_id: 7, p_tx_hash: H1, p_paid: true, p_amount_coin: "60.000000", p_nonce: 7, p_block: 1_000_000, p_from: FROM });
     expect(sendEmail).toHaveBeenCalledTimes(1);
     expect(sendEmail.mock.calls[0][0]).toMatchObject({ to: "ann@x.io", subject: "Payout sent" });
     expect(sendEmail.mock.calls[0][0].text).toContain(`https://polygon.blockscout.com/tx/${H1}`);
@@ -386,7 +389,7 @@ describe("QA F4: affiliato non attivo", () => {
 });
 
 describe("QA F2 + N1: tx sparita, submitted → cancelled solo con nonce consumato", () => {
-  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000 };
+  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000, tx_from: FROM };
   it("ricevuta null, tx sconosciuta, nonce consumato al finalized → drop, email generica", async () => {
     payout = { ...sub };
     chain.receipt = null;
@@ -450,7 +453,7 @@ describe("QA N1: hash scartato riusato", () => {
 });
 
 describe("QA R1–R3", () => {
-  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000 };
+  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000, tx_from: FROM };
   it("R1: tx firmata da un altro indirizzo → registrata con nonce null e segnalata", async () => {
     chain.tx = { nonce: "0x0", from: "0x9999999999999999999999999999999999999999" };
     const r = await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1 }), params("7"));
@@ -480,5 +483,42 @@ describe("QA R1–R3", () => {
     const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "sembra sparita" }), params("7"));
     expect(await r.json()).toEqual({ error: "block_unknown" });
     expect(rpcCalls).toEqual([]);
+  });
+});
+
+describe("QA S3: rotazione di AFFILIATE_PAYOUT_FROM", () => {
+  const OLD = "0x3333333333333333333333333333333333333333";
+  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000, tx_from: OLD };
+  it("il drop usa il mittente REGISTRATO per log e nonce, anche se l'env ora punta altrove", async () => {
+    payout = { ...sub };
+    chain.receipt = null;
+    chain.tx = null;
+    chain.finalizedNonce = 8;
+    affiliateRpc.mockResolvedValueOnce({ ok: true });
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "tx sparita" }), params("7"));
+    expect(r.status).toBe(200);
+    const logs = rpcArgs.find((a) => a.method === "eth_getLogs")!.params[0] as { topics: string[] };
+    expect(logs.topics[1]).toBe(pad(OLD));
+    expect(rpcArgs.find((a) => a.method === "eth_getTransactionCount")!.params[0]).toBe(OLD);
+  });
+  it("funziona anche con AFFILIATE_PAYOUT_FROM non più configurato", async () => {
+    vi.stubEnv("AFFILIATE_PAYOUT_FROM", "");
+    payout = { ...sub };
+    chain.receipt = null;
+    chain.tx = null;
+    chain.finalizedNonce = 8;
+    affiliateRpc.mockResolvedValueOnce({ ok: true });
+    expect((await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "tx sparita" }), params("7"))).status).toBe(200);
+  });
+  it("mittente non registrato → 409 from_unknown senza rete", async () => {
+    payout = { ...sub, tx_from: null };
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "tx sparita" }), params("7"));
+    expect(await r.json()).toEqual({ error: "from_unknown" });
+    expect(rpcCalls).toEqual([]);
+  });
+  it("GET [id] espone tx_from", async () => {
+    payout = { ...sub };
+    const body = await (await (await one()).GET(req("/p/7"), params("7"))).json();
+    expect(body.payout.tx_from).toBe(OLD);
   });
 });

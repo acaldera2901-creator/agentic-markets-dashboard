@@ -23,10 +23,12 @@ const transfer = (o: { token?: string; from?: string; to?: string; amount?: numb
 // Il log di fee che Polygon aggiunge a ogni tx (contratto 0x…1010): va ignorato.
 const FEE_LOG = { address: "0x0000000000000000000000000000000000001010", topics: ["0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63", pad(FROM), pad(OTHER)], data: "0x" + "0".repeat(64) };
 
-function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?: string; finalized?: number | null; tx?: unknown; finalizedNonce?: number; logs?: unknown[]; logsDown?: boolean } = {}): Rpc & { calls: string[] } {
+function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?: string; finalized?: number | null; tx?: unknown; finalizedNonce?: number; logs?: unknown[]; logsDown?: boolean } = {}): Rpc & { calls: string[]; args: { method: string; params: unknown[] }[] } {
   const calls: string[] = [];
-  const fn = (async (method: string) => {
+  const args: { method: string; params: unknown[] }[] = [];
+  const fn = (async (method: string, params: unknown[]) => {
     calls.push(method);
+    args.push({ method, params });
     if (method === "eth_chainId") return o.chainId ?? "0x89";
     if (method === "eth_blockNumber") return `0x${(o.head ?? 1_000_100).toString(16)}`;
     if (method === "eth_getTransactionByHash") return o.tx === undefined ? { hash: HASH, nonce: "0x7", from: FROM } : o.tx;
@@ -45,8 +47,9 @@ function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?
         : o.receipt;
     }
     throw new Error(`unexpected ${method}`);
-  }) as unknown as Rpc & { calls: string[] };
+  }) as unknown as Rpc & { calls: string[]; args: typeof args };
   fn.calls = calls;
+  fn.args = args;
   return fn;
 }
 
@@ -56,7 +59,7 @@ const receipt = (logs: unknown[], status = "0x1") => ({ status, blockNumber: "0x
 describe("verifyPayoutTx", () => {
   it("tutto giusto, ≥30 conferme → paid con l'importo letto dalla catena", async () => {
     const rpc = fakeRpc();
-    await expect(verifyPayoutTx(check, rpc)).resolves.toEqual({ outcome: "paid", amountCoin: "60.000000", confirmations: 101, overpaid: false, nonce: 7, block: 1_000_000, txFromMismatch: false });
+    await expect(verifyPayoutTx(check, rpc)).resolves.toEqual({ outcome: "paid", amountCoin: "60.000000", confirmations: 101, overpaid: false, nonce: 7, block: 1_000_000, txFromMismatch: false, txFrom: FROM });
     // Per hash: nessuna chiamata a liste/tokentx paginati.
     expect(rpc.calls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_getTransactionByHash", "eth_blockNumber", "eth_getBlockByNumber"]);
   });
@@ -75,6 +78,7 @@ describe("verifyPayoutTx", () => {
       nonce: 7,
       block: 1_000_000,
       txFromMismatch: false,
+      txFrom: FROM,
     });
   });
 
@@ -94,8 +98,16 @@ describe("verifyPayoutTx", () => {
     });
   }
 
-  it("99 % esatto passa; più Transfer verso lo stesso destinatario si sommano", async () => {
-    await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 59.4 })]) }))).resolves.toMatchObject({ outcome: "paid" });
+  it("default 100 % (decisione di Andrea 15/10): 99,999999 su 100 rifiutato, 100,00 ok", async () => {
+    const c100 = { ...check, amountUsd: 100 };
+    await expect(verifyPayoutTx(c100, fakeRpc({ receipt: receipt([transfer({ amount: 99.999999 })]) }))).resolves.toEqual({
+      outcome: "rejected",
+      reason: "amount_too_low",
+    });
+    await expect(verifyPayoutTx(c100, fakeRpc({ receipt: receipt([transfer({ amount: 100 })]) }))).resolves.toMatchObject({ outcome: "paid", overpaid: false });
+  });
+  it("99 % passa solo se configurato (env 0.9–1); più Transfer verso lo stesso destinatario si sommano", async () => {
+    await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 59.4 })]) }), { minRatio: 0.99 })).resolves.toMatchObject({ outcome: "paid" });
     await expect(
       verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 30 }), transfer({ amount: 30 }), transfer({ to: OTHER, amount: 500 })]) })),
     ).resolves.toMatchObject({ outcome: "paid", amountCoin: "60.000000" });
@@ -115,8 +127,8 @@ describe("verifyPayoutTx", () => {
     });
     await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 60.6 })]) }))).resolves.toMatchObject({ overpaid: false });
   });
-  it("soglia al ribasso configurabile (AFFILIATE_PAYOUT_MIN_RATIO): 1.00 rifiuta 59.40", async () => {
-    await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 59.4 })]) }), { minRatio: 1 })).resolves.toEqual({
+  it("soglia al ribasso di default (1.00) rifiuta 59.40 su 60", async () => {
+    await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 59.4 })]) }))).resolves.toEqual({
       outcome: "rejected",
       reason: "amount_too_low",
     });
@@ -189,6 +201,26 @@ describe("QA N1: nonce e drop di una tx sparita", () => {
   });
 
   const drop = { txHash: HASH, from: FROM, to: TO, coin: "USDT" as const, nonce: 7, block: 1_000_000 };
+  it("QA S1: i log si cercano da tx_block − 1000 (reinclusione più in basso dopo un riorg)", async () => {
+    const rpc = fakeRpc({ receipt: null, tx: null, finalizedNonce: 8 });
+    await checkDroppable(drop, rpc);
+    const first = rpc.args.find((a) => a.method === "eth_getLogs")!.params[0] as { fromBlock: string };
+    expect(Number(first.fromBlock)).toBe(1_000_000 - 1_000);
+  });
+  it("QA S2: tx_block oltre il finalized → not_finalized, senza log né nonce", async () => {
+    const rpc = fakeRpc({ receipt: null, tx: null, finalizedNonce: 8, finalized: 999_000 });
+    await expect(checkDroppable(drop, rpc)).resolves.toEqual({ droppable: false, reason: "not_finalized" });
+    expect(rpc.calls).not.toContain("eth_getLogs");
+    expect(rpc.calls).not.toContain("eth_getTransactionCount");
+  });
+  it("QA S3: log e nonce si leggono sul mittente REGISTRATO (from), non su un'altra env", async () => {
+    const OLD = "0x3333333333333333333333333333333333333333";
+    const rpc = fakeRpc({ receipt: null, tx: null, finalizedNonce: 8 });
+    await checkDroppable({ ...drop, from: OLD }, rpc);
+    const logs = rpc.args.find((a) => a.method === "eth_getLogs")!.params[0] as { topics: string[] };
+    expect(logs.topics[1]).toBe(`0x${"0".repeat(24)}${OLD.slice(2)}`);
+    expect(rpc.args.find((a) => a.method === "eth_getTransactionCount")!.params[0]).toBe(OLD);
+  });
   it("ricevuta null, tx sconosciuta, nessun Transfer nei log, nonce consumato al finalized → droppable not_found", async () => {
     const rpc = fakeRpc({ receipt: null, tx: null, finalizedNonce: 8 });
     await expect(checkDroppable(drop, rpc)).resolves.toEqual({ droppable: true, onchain: "not_found" });

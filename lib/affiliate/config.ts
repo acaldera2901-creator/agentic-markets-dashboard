@@ -217,12 +217,12 @@ export function affiliatePayoutsMode(env: Env = process.env): PayoutsMode {
 
 /**
  * QA F3 — tolleranza al RIBASSO sull'importo ricevuto on-chain: paid se
- * ricevuto ≥ dovuto × ratio. Default 0.99 (la stessa di lib/crypto-verify.ts,
- * nata per chi incolla l'importo a mano). Andrea valuta se portarla a 1 (≥100 %):
- * per questo è una env e non una costante. Ammessi solo valori in [0.9, 1];
- * fuori range o malformato → 0.99.
+ * ricevuto ≥ dovuto × ratio. Default 1 = si paga il 100 % (decisione di Andrea,
+ * 15/10/2026: l'admin invia l'importo esatto, non c'è un utente che arrotonda).
+ * Resta una env per poterla abbassare senza deploy: ammessi solo valori in
+ * [0.9, 1]; fuori range o malformato → 1 (il valore più prudente).
  */
-export const DEFAULT_PAYOUT_MIN_RATIO = 0.99;
+export const DEFAULT_PAYOUT_MIN_RATIO = 1;
 export function affiliatePayoutMinRatio(env: Env = process.env): number {
   const raw = (env.AFFILIATE_PAYOUT_MIN_RATIO ?? "").trim();
   if (raw === "") return DEFAULT_PAYOUT_MIN_RATIO;
