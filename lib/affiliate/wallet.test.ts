@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   base58Decode,
   explorerTxUrl,
+  isValidEip55,
   isValidTronAddress,
   maskAddress,
   normalizeTxHash,
@@ -111,6 +112,51 @@ describe("validatePayoutWallet", () => {
       ok: false,
       reason: "unsupported_coin",
     });
+  });
+});
+
+// Vettori ufficiali di EIP-55 (eips.ethereum.org/EIPS/eip-55, "Test Cases").
+const EIP55_MIXED = [
+  "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed",
+  "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359",
+  "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB",
+  "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb",
+];
+
+/** Inverte maiuscola/minuscola della prima lettera hex dopo `0x`. */
+function flipFirstLetter(a: string): string {
+  const i = [...a].findIndex((c, k) => k > 1 && /[a-f]/i.test(c));
+  const c = a[i];
+  return a.slice(0, i) + (c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()) + a.slice(i + 1);
+}
+
+describe("isValidEip55 (PR-5, @noble/hashes)", () => {
+  it("accetta i vettori ufficiali a maiuscole miste", () => {
+    for (const a of EIP55_MIXED) expect(isValidEip55(a)).toBe(true);
+  });
+
+  it("tutto minuscolo / tutto maiuscolo: nessun checksum dichiarato, passa", () => {
+    expect(isValidEip55(EIP55_MIXED[0].toLowerCase())).toBe(true);
+    expect(isValidEip55(`0x${EIP55_MIXED[0].slice(2).toUpperCase()}`)).toBe(true);
+  });
+
+  it("una sola lettera col caso sbagliato → checksum non valido", () => {
+    for (const a of EIP55_MIXED) expect(isValidEip55(flipFirstLetter(a))).toBe(false);
+  });
+
+  it("validatePayoutWallet → invalid_checksum su Polygon a maiuscole miste sbagliate", () => {
+    expect(
+      validatePayoutWallet({ coin: "USDT", network: "polygon", address: flipFirstLetter(EIP55_MIXED[1]) })
+    ).toEqual({ ok: false, reason: "invalid_checksum" });
+    expect(validatePayoutWallet({ coin: "USDT", network: "polygon", address: EIP55_MIXED[1] })).toMatchObject({
+      ok: true,
+      address: EIP55_MIXED[1],
+    });
+  });
+
+  it("formato sbagliato → false, senza eccezioni", () => {
+    expect(isValidEip55("0x123")).toBe(false);
+    expect(isValidEip55("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")).toBe(false);
   });
 });
 

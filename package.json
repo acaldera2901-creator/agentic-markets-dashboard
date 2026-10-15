@@ -14,6 +14,7 @@
     "seo:lastmod": "tsx scripts/seo/lastmod.ts"
   },
   "dependencies": {
+    "@noble/hashes": "2.0.1",
     "@supabase/supabase-js": "^2.106.1",
     "@vercel/analytics": "^2.0.1",
     "lucide-react": "^1.14.0",

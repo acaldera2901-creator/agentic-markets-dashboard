@@ -9,6 +9,7 @@
 // Per AFFILIATE_MODE il default è `off`, quindi un refuso spegne il ledger invece
 // di accenderlo.
 
+import { catalogContracts } from "@/lib/crypto-coins";
 import { PAYOUT_COINS, PAYOUT_NETWORKS, type PayoutCoin, type PayoutNetwork } from "./wallet";
 
 export type AffiliateMode = "off" | "shadow" | "live";
@@ -75,6 +76,17 @@ function maxMonths(raw: string | undefined, fallback: number | null): number | n
   return Number.isInteger(n) && n >= 0 ? n : fallback;
 }
 
+/**
+ * AFFILIATE_MODE governa il LEDGER e l'iscrizione, NON i payout (QA F12):
+ *  · off    → nessuna riga nel ledger; /join e PUT /wallet chiusi (403).
+ *  · shadow → righe `shadow`; /join e PUT /wallet APERTI, ma solo se c'è anche
+ *             AFFILIATE_TERMS_VERSION (senza T&C pubblicati l'iscrizione resta
+ *             chiusa: è quello il secondo interruttore, voluto, non un altro flag).
+ *  · live   → righe `pending` che maturano.
+ * I payout admin li accende/spegne SOLO AFFILIATE_PAYOUTS (affiliatePayoutsMode):
+ * con AFFILIATE_MODE=off e AFFILIATE_PAYOUTS=live un payout già maturato si può
+ * ancora creare e registrare. Per fermare i soldi in uscita: AFFILIATE_PAYOUTS=off.
+ */
 export function affiliateMode(env: Env = process.env): AffiliateMode {
   const m = (env.AFFILIATE_MODE ?? "").trim().toLowerCase();
   return m === "shadow" || m === "live" ? m : "off";
@@ -179,4 +191,33 @@ export function payoutConfig(env: Env = process.env): PayoutConfig {
     kycAtWallet: kycFlag(env.AFFILIATE_KYC_AT_WALLET, d.KYC_AT_WALLET),
     payoutFrom: payoutFromAddress(env),
   };
+}
+
+// ── T&C affiliati (PR-5) ──────────────────────────────────────────────────────
+/**
+ * Versione dei T&C affiliati in vigore, da `AFFILIATE_TERMS_VERSION`. Nessun
+ * default: i T&C non sono pubblicati e una versione inventata registrerebbe un
+ * consenso a un testo che non esiste. Senza env l'iscrizione è chiusa (null).
+ * La stessa versione copre la terza spunta (clausole onerose) e le
+ * autodichiarazioni D3 al wallet: è un solo documento.
+ */
+export function affiliateTermsVersion(env: Env = process.env): string | null {
+  const v = (env.AFFILIATE_TERMS_VERSION ?? "").trim();
+  return /^[A-Za-z0-9._-]{1,40}$/.test(v) ? v : null;
+}
+
+// ── Denylist dei destinatari (QA F6) ─────────────────────────────────────────
+/** Indirizzi che non possono MAI ricevere un payout: i nostri wallet (uscita e
+ *  incassi: un payout verso di loro è un giro a vuoto o un errore), i contratti
+ *  dei token del catalogo e l'indirizzo di burn 0x…dEaD (fondi persi). L'indirizzo
+ *  zero lo rifiuta già validatePayoutWallet. Letti GREZZI dalle env: vale anche se
+ *  AFFILIATE_PAYOUT_FROM è stato scartato da payoutConfig. Minuscoli. */
+export function payoutDeniedAddresses(env: Env = process.env): Set<string> {
+  const out = new Set<string>(catalogContracts());
+  out.add("0x000000000000000000000000000000000000dead");
+  for (const k of ["AFFILIATE_PAYOUT_FROM", "PAYGATE_PAYOUT_WALLET"]) {
+    const v = (env[k] ?? "").trim().toLowerCase();
+    if (/^0x[0-9a-f]{40}$/.test(v)) out.add(v);
+  }
+  return out;
 }
