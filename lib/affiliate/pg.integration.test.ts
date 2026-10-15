@@ -36,7 +36,7 @@ vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
       if (method === "eth_chainId") return "0x89";
       if (method === "eth_blockNumber") return "0xf42a4";
       if (method === "eth_getBlockByNumber") return { number: "0xf42a0" };
-      if (method === "eth_getTransactionByHash") return { nonce: "0x2a" };
+      if (method === "eth_getTransactionByHash") return { nonce: "0x2a", from: "0x1111111111111111111111111111111111111111" };
       return {
         status: "0x1",
         blockNumber: "0xf4240",
@@ -284,8 +284,9 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await t.json()).toMatchObject({ outcome: "paid" });
     const panel = await (await me.GET(req("/api/affiliate/me", "GET", "alice@x.io"))).json();
     expect(panel.payouts[0]).toMatchObject({ status: "paid", amount_coin: 60, tx_hash: H });
-    const [nonce] = await h.sql!`SELECT tx_nonce FROM affiliate_payouts`;
+    const [nonce] = await h.sql!`SELECT tx_nonce, tx_block FROM affiliate_payouts`;
     expect(Number(nonce.tx_nonce)).toBe(42); // QA N1: nonce letto on-chain e salvato
+    expect(Number(nonce.tx_block)).toBe(1_000_000); // QA R3: blocco di registrazione
     expect(panel.ledger).toMatchObject({ paid: 60, payable: 0, in_payout: 0 });
   });
 
