@@ -180,3 +180,16 @@ export function payoutConfig(env: Env = process.env): PayoutConfig {
     payoutFrom: payoutFromAddress(env),
   };
 }
+
+// ── T&C affiliati (PR-5) ──────────────────────────────────────────────────────
+/**
+ * Versione dei T&C affiliati in vigore, da `AFFILIATE_TERMS_VERSION`. Nessun
+ * default: i T&C non sono pubblicati e una versione inventata registrerebbe un
+ * consenso a un testo che non esiste. Senza env l'iscrizione è chiusa (null).
+ * La stessa versione copre la terza spunta (clausole onerose) e le
+ * autodichiarazioni D3 al wallet: è un solo documento.
+ */
+export function affiliateTermsVersion(env: Env = process.env): string | null {
+  const v = (env.AFFILIATE_TERMS_VERSION ?? "").trim();
+  return /^[A-Za-z0-9._-]{1,40}$/.test(v) ? v : null;
+}

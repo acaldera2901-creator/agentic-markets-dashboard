@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { affiliateConfig, affiliateMode, AFFILIATE_DEFAULTS, payoutConfig } from "./config";
+import { affiliateConfig, affiliateMode, affiliateTermsVersion, AFFILIATE_DEFAULTS, payoutConfig } from "./config";
 import { validatePayoutWallet } from "./wallet";
 
 const POLY = "0x1111111111111111111111111111111111111111";
@@ -140,5 +140,18 @@ describe("affiliate config: i default approvati (#AFFILIATE-V2-0930)", () => {
     expect(affiliateMode({ AFFILIATE_MODE: "on" })).toBe("off");
     expect(affiliateMode({ AFFILIATE_MODE: "true" })).toBe("off");
     expect(affiliateMode({ AFFILIATE_MODE: "" })).toBe("off");
+  });
+});
+
+describe("affiliateTermsVersion (PR-5)", () => {
+  it("senza env: nessuna versione → iscrizione chiusa", () => {
+    expect(affiliateTermsVersion({})).toBeNull();
+    expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: "  " })).toBeNull();
+  });
+  it("versione valida, spazi tolti", () => {
+    expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: " 2026-11-v1 " })).toBe("2026-11-v1");
+  });
+  it("valore malformato → null, non un testo arbitrario nel registro dei consensi", () => {
+    expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: "v1; DROP TABLE" })).toBeNull();
   });
 });
