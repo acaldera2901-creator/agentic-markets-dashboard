@@ -3,7 +3,7 @@
 // (rilevata il 15/10/2026 su publicnode: status, blockNumber, logs con
 // address/topics/data/removed).
 import { describe, expect, it, vi } from "vitest";
-import { formatUnits, jsonRpc, TRANSFER_TOPIC, verifyPayoutTx, VerifierUnavailableError, type Rpc } from "./payout-verify";
+import { checkDroppable, formatUnits, jsonRpc, TRANSFER_TOPIC, verifyPayoutTx, VerifierUnavailableError, type Rpc } from "./payout-verify";
 
 const USDT = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f";
 const USDC = "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359";
@@ -23,12 +23,14 @@ const transfer = (o: { token?: string; from?: string; to?: string; amount?: numb
 // Il log di fee che Polygon aggiunge a ogni tx (contratto 0x…1010): va ignorato.
 const FEE_LOG = { address: "0x0000000000000000000000000000000000001010", topics: ["0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63", pad(FROM), pad(OTHER)], data: "0x" + "0".repeat(64) };
 
-function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?: string; finalized?: number | null } = {}): Rpc & { calls: string[] } {
+function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?: string; finalized?: number | null; tx?: unknown; finalizedNonce?: number } = {}): Rpc & { calls: string[] } {
   const calls: string[] = [];
   const fn = (async (method: string) => {
     calls.push(method);
     if (method === "eth_chainId") return o.chainId ?? "0x89";
     if (method === "eth_blockNumber") return `0x${(o.head ?? 1_000_100).toString(16)}`;
+    if (method === "eth_getTransactionByHash") return o.tx === undefined ? { hash: HASH, nonce: "0x7", from: FROM } : o.tx;
+    if (method === "eth_getTransactionCount") return `0x${(o.finalizedNonce ?? 0).toString(16)}`;
     if (method === "eth_getBlockByNumber") {
       if (o.finalized === null) return null;
       return { number: `0x${(o.finalized ?? (o.head ?? 1_000_100) - 2).toString(16)}` };
@@ -50,9 +52,9 @@ const receipt = (logs: unknown[], status = "0x1") => ({ status, blockNumber: "0x
 describe("verifyPayoutTx", () => {
   it("tutto giusto, ≥30 conferme → paid con l'importo letto dalla catena", async () => {
     const rpc = fakeRpc();
-    await expect(verifyPayoutTx(check, rpc)).resolves.toEqual({ outcome: "paid", amountCoin: "60.000000", confirmations: 101, overpaid: false });
+    await expect(verifyPayoutTx(check, rpc)).resolves.toEqual({ outcome: "paid", amountCoin: "60.000000", confirmations: 101, overpaid: false, nonce: 7 });
     // Per hash: nessuna chiamata a liste/tokentx paginati.
-    expect(rpc.calls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_blockNumber", "eth_getBlockByNumber"]);
+    expect(rpc.calls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_getTransactionByHash", "eth_blockNumber", "eth_getBlockByNumber"]);
   });
 
   it("indirizzo in maiuscole/minuscole diverse: confronto case-insensitive", async () => {
@@ -66,6 +68,7 @@ describe("verifyPayoutTx", () => {
       confirmations: 12,
       required: 30,
       overpaid: false,
+      nonce: 7,
     });
   });
 
@@ -156,5 +159,38 @@ describe("formatUnits", () => {
     expect(formatUnits(BigInt(60_000_000), 6)).toBe("60.000000");
     expect(formatUnits(BigInt(1), 6)).toBe("0.000001");
     expect(formatUnits(BigInt("123456789012345678901"), 18)).toBe("123.456789012345678901");
+  });
+});
+
+describe("QA N1: nonce e drop di una tx sparita", () => {
+  it("la verifica restituisce il nonce della tx; tx illeggibile → fail-closed", async () => {
+    await expect(verifyPayoutTx(check, fakeRpc({ tx: null }))).rejects.toBeInstanceOf(VerifierUnavailableError);
+    await expect(verifyPayoutTx(check, fakeRpc({ tx: { nonce: "zz" } }))).rejects.toBeInstanceOf(VerifierUnavailableError);
+  });
+  const drop = { txHash: HASH, from: FROM, nonce: 7 };
+  it("ricevuta null, tx sconosciuta, nonce consumato al finalized → droppable not_found", async () => {
+    await expect(checkDroppable(drop, fakeRpc({ receipt: null, tx: null, finalizedNonce: 8 }))).resolves.toEqual({ droppable: true, onchain: "not_found" });
+  });
+  it("ricevuta null ma nonce NON ancora consumato (nodo in ritardo, mempool) → nonce_not_consumed", async () => {
+    await expect(checkDroppable(drop, fakeRpc({ receipt: null, tx: null, finalizedNonce: 7 }))).resolves.toEqual({ droppable: false, reason: "nonce_not_consumed" });
+  });
+  it("ricevuta null ma la tx è ancora conosciuta (pending) → tx_pending", async () => {
+    await expect(checkDroppable(drop, fakeRpc({ receipt: null, finalizedNonce: 8 }))).resolves.toEqual({ droppable: false, reason: "tx_pending" });
+  });
+  it("tx riuscita → tx_on_chain (mai annullare: doppio pagamento)", async () => {
+    await expect(checkDroppable(drop, fakeRpc({ finalizedNonce: 8 }))).resolves.toEqual({ droppable: false, reason: "tx_on_chain" });
+  });
+  it("tx fallita in un blocco finalizzato → droppable tx_failed; non ancora finalizzato → not_finalized", async () => {
+    const failed = { status: "0x0", blockNumber: "0xf4240", logs: [] };
+    await expect(checkDroppable(drop, fakeRpc({ receipt: failed }))).resolves.toEqual({ droppable: true, onchain: "tx_failed" });
+    await expect(checkDroppable(drop, fakeRpc({ receipt: failed, finalized: 999_999 }))).resolves.toEqual({ droppable: false, reason: "not_finalized" });
+  });
+  it("nonce del wallet non leggibile → VerifierUnavailableError (fail-closed)", async () => {
+    const rpc = (async (m: string) => {
+      if (m === "eth_chainId") return "0x89";
+      if (m === "eth_getTransactionReceipt" || m === "eth_getTransactionByHash") return null;
+      throw new VerifierUnavailableError("count unavailable");
+    }) as Rpc;
+    await expect(checkDroppable(drop, rpc)).rejects.toBeInstanceOf(VerifierUnavailableError);
   });
 });

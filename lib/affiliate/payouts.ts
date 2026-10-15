@@ -21,7 +21,7 @@ import {
 } from "./config";
 import { payoutCancelledEmail, payoutPaidEmail, type Mail } from "./emails";
 import { ScreeningUnavailableError, screenPayoutAddress } from "./screening";
-import { jsonRpc, verifyPayoutTx, VerifierUnavailableError, type Rpc } from "./payout-verify";
+import { checkDroppable, jsonRpc, verifyPayoutTx, VerifierUnavailableError, type Rpc } from "./payout-verify";
 import { affiliateRpc } from "./rpc";
 import { explorerTxUrl, maskAddress, normalizeTxHash, type PayoutCoin, type PayoutNetwork } from "./wallet";
 
@@ -231,6 +231,7 @@ export type AdminPayout = {
   to_address: string;
   amount_coin: number | null;
   tx_hash: string | null;
+  tx_nonce: number | null;
   explorer_url: string | null;
   status: "created" | "submitted" | "paid" | "cancelled";
   created_at: string;
@@ -249,7 +250,7 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     `SELECT p.id, p.affiliate_id, a.identifier AS affiliate_identifier, a.code AS affiliate_code,
             a.status AS affiliate_status, a.payee_legal_name AS payee_name, a.payee_country,
             p.period_month::text AS period_month, p.amount_usd, p.coin, p.network, p.to_address,
-            p.amount_coin, p.tx_hash, p.status, p.created_at::text AS created_at,
+            p.amount_coin, p.tx_hash, p.tx_nonce, p.status, p.created_at::text AS created_at,
             p.submitted_at::text AS submitted_at, p.paid_at::text AS paid_at, p.cancel_code, p.cancel_reason
        FROM affiliate_payouts p JOIN affiliates a ON a.id = p.affiliate_id
       WHERE p.id = $1`,
@@ -271,6 +272,7 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     to_address: r.to_address,
     amount_coin: r.amount_coin != null ? Number(r.amount_coin) : null,
     tx_hash: r.tx_hash,
+    tx_nonce: r.tx_nonce != null ? Number(r.tx_nonce) : null,
     explorer_url: r.tx_hash ? explorerTxUrl(r.network, r.tx_hash) : null,
     status: r.status,
     created_at: r.created_at,
@@ -362,11 +364,18 @@ export async function registerPayoutTx(
     ]);
   }
   const paid = verdict.outcome === "paid";
-  const res = await affiliateRpc<{ ok: boolean; error?: string; status?: string; became_paid?: boolean }>(
+  const res = await affiliateRpc<{ ok: boolean; error?: string; status?: string; became_paid?: boolean; dropped?: boolean }>(
     "affiliate_payout_record_tx",
-    { p_id: payout.id, p_tx_hash: hash, p_paid: paid, p_amount_coin: verdict.amountCoin },
+    { p_id: payout.id, p_tx_hash: hash, p_paid: paid, p_amount_coin: verdict.amountCoin, p_nonce: verdict.nonce },
   );
-  if (!res.ok) return NextResponse.json({ error: res.error ?? "record_failed" }, { status: 409 });
+  if (!res.ok) {
+    if (res.error === "hash_already_used" && res.dropped) {
+      // QA N1: qualcuno sta registrando un hash già scartato da un drop.
+      await opsAlert("affiliate-payouts", [`dropped tx hash re-submitted payout=${payout.id} tx=${hash}`]);
+      return NextResponse.json({ error: "hash_already_used", dropped: true }, { status: 409 });
+    }
+    return NextResponse.json({ error: res.error ?? "record_failed" }, { status: 409 });
+  }
 
   if (res.became_paid) {
     const explorer = explorerTxUrl(payout.network, hash);
@@ -431,14 +440,15 @@ export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Pr
   return null;
 }
 
-// ── Tx sparita: submitted → cancelled (QA F2) ───────────────────────────────
+// ── Tx sparita: submitted → cancelled (QA F2 + N1) ──────────────────────────
 
 /**
- * Annulla un payout `submitted` SOLO se la riverifica on-chain dell'hash
- * registrato dice not_found o tx_failed. Una tx ancora valida non si annulla
- * mai (le commissioni tornerebbero pagabili: doppio pagamento). Nota: publicnode
- * risponde con un ERRORE a un hash ignoto, quindi lì not_found diventa 503 e il
- * drop richiede un RPC che risponda `null` (AFFILIATE_POLYGON_RPC_URL).
+ * Annulla un payout `submitted` SOLO se la tx non potrà più essere minata
+ * (checkDroppable): fallita in un blocco finalizzato, oppure sconosciuta E col
+ * nonce registrato già consumato al blocco `finalized`. Una ricevuta null da
+ * sola non basta (doppio pagamento). Nonce non registrato → 409 nonce_unknown;
+ * RPC che non risponde → 503. Regola operativa: prima del drop l'admin
+ * sostituisce/consuma il nonce bloccato e aspetta che sia finalizzato.
  */
 export async function dropSubmittedPayout(
   payout: AdminPayout,
@@ -447,31 +457,25 @@ export async function dropSubmittedPayout(
 ): Promise<NextResponse> {
   const from = payoutConfig().payoutFrom;
   if (!from || !payout.tx_hash) return NextResponse.json({ error: "payout_from_not_configured" }, { status: 503 });
+  if (payout.tx_nonce == null) return NextResponse.json({ error: "nonce_unknown" }, { status: 409 });
   let verdict;
   try {
-    verdict = await verifyPayoutTx(
-      { network: payout.network, coin: payout.coin, txHash: payout.tx_hash, from, to: payout.to_address, amountUsd: payout.amount_usd },
-      rpc,
-      { minRatio: affiliatePayoutMinRatio() },
-    );
+    verdict = await checkDroppable({ txHash: payout.tx_hash, from, nonce: payout.tx_nonce }, rpc);
   } catch (e) {
     if (e instanceof VerifierUnavailableError) {
       return NextResponse.json({ error: "verifier_unavailable" }, { status: 503 });
     }
     throw e;
   }
-  if (verdict.outcome !== "rejected") {
-    return NextResponse.json({ error: "tx_on_chain", outcome: verdict.outcome }, { status: 409 });
-  }
-  if (verdict.reason !== "not_found" && verdict.reason !== "tx_failed") {
+  if (!verdict.droppable) {
     return NextResponse.json({ error: "tx_not_droppable", reason: verdict.reason }, { status: 409 });
   }
   const res = await affiliateRpc("affiliate_payout_drop_tx", { p_id: payout.id, p_reason: reason });
   if (!res.ok) return NextResponse.json(res, { status: 409 });
-  console.warn(`[affiliate/payouts] tx dropped payout=${payout.id} onchain=${verdict.reason}`);
+  console.warn(`[affiliate/payouts] tx dropped payout=${payout.id} onchain=${verdict.onchain}`);
   await notifyAffiliate(
     payout.affiliate_identifier,
     payoutCancelledEmail({ lang: await mailLangOf(payout.affiliate_identifier), amountUsd: payout.amount_usd }),
   );
-  return NextResponse.json({ ok: true, payout_id: payout.id, cancel_code: "tx_dropped", onchain: verdict.reason });
+  return NextResponse.json({ ok: true, payout_id: payout.id, cancel_code: "tx_dropped", onchain: verdict.onchain });
 }

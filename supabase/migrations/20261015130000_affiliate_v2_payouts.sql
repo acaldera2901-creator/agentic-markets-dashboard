@@ -2,7 +2,7 @@
 --
 -- Spec: artifacts/affiliate-v2/PROPOSAL-crypto-payout.md §3.4, SPEC-ui.md §4,
 -- §12. Si appoggia a 20261007120000 (#482) e 20261015120000 (PR-5).
--- Contenuto: una colonna (affiliate_payouts.dropped_tx_hash), cinque funzioni,
+-- Contenuto: due colonne (affiliate_payouts.dropped_tx_hash, tx_nonce), cinque funzioni,
 -- un trigger (sospensione → annullo dei payout in preparazione).
 --
 -- NON si applica da sola: workflow_dispatch con `approved_sha`. Idempotente
@@ -25,6 +25,12 @@
 -- cancel_code = 'tx_dropped'. Sta qui e non in tx_hash perché il CHECK di #482
 -- vieta un hash su un annullato: così #482 resta intatta e l'hash resta a registro.
 ALTER TABLE public.affiliate_payouts ADD COLUMN IF NOT EXISTS dropped_tx_hash text;
+
+-- Nonce della tx di uscita (dal wallet AFFILIATE_PAYOUT_FROM), letto on-chain alla
+-- registrazione dell'hash (QA N1). Serve al drop: una tx «sparita» si può
+-- annullare solo se il suo nonce risulta già consumato da un'altra tx
+-- finalizzata, cioè quando non può più essere minata.
+ALTER TABLE public.affiliate_payouts ADD COLUMN IF NOT EXISTS tx_nonce bigint;
 
 -- ── Chi è pagabile, e perché no ──────────────────────────────────────────────
 -- Unica fonte delle regole di eleggibilità: la legge la pagina admin (anteprima)
@@ -212,11 +218,15 @@ $$;
 --  · cancelled → mai (il CHECK vieta un hash su un annullato)
 -- Lo UNIQUE (network, tx_hash, to_address) rende `hash_already_used` un hash
 -- già usato per lo stesso destinatario.
+-- Firma cambiata (QA N1: + p_nonce): la vecchia, se c'è, va tolta, altrimenti
+-- resterebbero due overload.
+DROP FUNCTION IF EXISTS public.affiliate_payout_record_tx(bigint, text, boolean, numeric);
 CREATE OR REPLACE FUNCTION public.affiliate_payout_record_tx(
   p_id           bigint,
   p_tx_hash      text,
   p_paid         boolean,
-  p_amount_coin  numeric
+  p_amount_coin  numeric,
+  p_nonce        bigint
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SET search_path = public
@@ -242,10 +252,16 @@ BEGIN
     END IF;
     RETURN jsonb_build_object('ok', false, 'error', 'already_paid');
   END IF;
-  -- QA F4: un affiliato sospeso/chiuso non riceve una registrazione di pagamento
-  -- (riattivarlo è una decisione umana, poi si riverifica).
-  IF v_astatus <> 'active' THEN
+  -- QA F4 + N2: un affiliato sospeso/chiuso non avvia un pagamento
+  -- (created → submitted/paid bloccato). Un payout già `submitted` invece ha i
+  -- fondi già partiti: submitted → paid con lo stesso hash resta ammesso,
+  -- altrimenti un affiliato chiuso dopo l'invio non avrebbe mai il suo `paid`.
+  IF p.status = 'created' AND v_astatus <> 'active' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'affiliate_not_active', 'affiliate_status', v_astatus);
+  END IF;
+  -- QA N1: un hash scartato da un drop non si riusa su nessun payout.
+  IF EXISTS (SELECT 1 FROM affiliate_payouts x WHERE x.network = p.network AND x.dropped_tx_hash = p_tx_hash) THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'hash_already_used', 'dropped', true);
   END IF;
   IF p.status = 'submitted' AND p.tx_hash <> p_tx_hash THEN
     RETURN jsonb_build_object('ok', false, 'error', 'hash_mismatch');
@@ -257,7 +273,8 @@ BEGIN
            submitted_at = COALESCE(submitted_at, now()),
            status = CASE WHEN p_paid THEN 'paid' ELSE 'submitted' END,
            paid_at = CASE WHEN p_paid THEN now() END,
-           amount_coin = p_amount_coin
+           amount_coin = p_amount_coin,
+           tx_nonce = COALESCE(p_nonce, tx_nonce)
      WHERE id = p_id;
   EXCEPTION WHEN unique_violation THEN
     RETURN jsonb_build_object('ok', false, 'error', 'hash_already_used');
@@ -312,7 +329,13 @@ $$;
 -- codice PRIMA di chiamare qui (solo esiti not_found / tx_failed: rotta
 -- [id]/cancel); qui le guardie di stato: solo da `submitted`, solo se la tx è
 -- registrata da almeno 30 minuti (una tx appena trasmessa può non essere ancora
--- visibile a un nodo: annullarla e ripagare sarebbe un doppio pagamento).
+-- visibile a un nodo: annullarla e ripagare sarebbe un doppio pagamento), solo
+-- con il nonce registrato (QA N1). Il codice, prima di chiamare qui, verifica che
+-- quel nonce del wallet di uscita sia già CONSUMATO al blocco finalized.
+-- REGOLA OPERATIVA: prima di chiedere un drop, l'admin sostituisce/consuma il
+-- nonce della tx bloccata (es. invio di 0 a se stesso con lo stesso nonce e gas
+-- più alto) e aspetta che sia finalizzato. Finché il nonce è libero, la tx
+-- originale può ancora essere minata e il drop è rifiutato.
 CREATE OR REPLACE FUNCTION public.affiliate_payout_drop_tx(p_id bigint, p_reason text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -336,6 +359,10 @@ BEGIN
   END IF;
   IF p.submitted_at > now() - interval '30 minutes' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'too_recent');
+  END IF;
+  -- QA N1: senza il nonce non si può dimostrare che la tx non verrà più minata.
+  IF p.tx_nonce IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'nonce_unknown');
   END IF;
 
   UPDATE affiliate_payouts
@@ -372,12 +399,12 @@ CREATE TRIGGER trg_affiliates_status_cancel_payouts
 
 REVOKE EXECUTE ON FUNCTION public.affiliate_payout_rows(date, numeric, boolean, text[], text[]) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_create_payouts(bigint[], date, numeric, numeric, boolean, text[], text[], text) FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric, bigint) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_cancel_payout(bigint, text) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_payout_drop_tx(bigint, text) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_on_status_change() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.affiliate_payout_rows(date, numeric, boolean, text[], text[]) TO service_role;
 GRANT EXECUTE ON FUNCTION public.affiliate_create_payouts(bigint[], date, numeric, numeric, boolean, text[], text[], text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric) TO service_role;
+GRANT EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric, bigint) TO service_role;
 GRANT EXECUTE ON FUNCTION public.affiliate_cancel_payout(bigint, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.affiliate_payout_drop_tx(bigint, text) TO service_role;

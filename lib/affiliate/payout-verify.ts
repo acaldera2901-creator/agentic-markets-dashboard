@@ -40,8 +40,8 @@ export type RejectReason =
   | "amount_too_low";
 
 export type PayoutTxVerdict =
-  | { outcome: "paid"; amountCoin: string; confirmations: number; overpaid: boolean }
-  | { outcome: "submitted"; amountCoin: string; confirmations: number; required: number; overpaid: boolean }
+  | { outcome: "paid"; amountCoin: string; confirmations: number; overpaid: boolean; nonce: number }
+  | { outcome: "submitted"; amountCoin: string; confirmations: number; required: number; overpaid: boolean; nonce: number }
   | { outcome: "rejected"; reason: RejectReason };
 
 export class VerifierUnavailableError extends Error {}
@@ -155,6 +155,11 @@ export async function verifyPayoutTx(
   if (!(c.amountUsd > 0) || raw < minUnits) return { outcome: "rejected", reason: "amount_too_low" };
   const overpaid = raw > maxUnits;
 
+  // QA N1: il nonce della tx si registra, serve a un eventuale drop futuro.
+  const tx = (await rpc("eth_getTransactionByHash", [c.txHash])) as { nonce?: unknown } | null;
+  if (!tx || typeof tx !== "object") throw new VerifierUnavailableError("tx not readable for its nonce");
+  const nonce = Number(hexToBig(tx.nonce));
+
   const head = hexToBig(await rpc("eth_blockNumber", []));
   const block = hexToBig(receipt.blockNumber);
   const confirmations = head >= block ? Number(head - block) + 1 : 0;
@@ -163,6 +168,50 @@ export async function verifyPayoutTx(
   const finalized = hexToBig(fin.number);
   const required = MIN_CONFIRMATIONS.polygon;
   return confirmations >= required && block <= finalized
-    ? { outcome: "paid", amountCoin, confirmations, overpaid }
-    : { outcome: "submitted", amountCoin, confirmations, required, overpaid };
+    ? { outcome: "paid", amountCoin, confirmations, overpaid, nonce }
+    : { outcome: "submitted", amountCoin, confirmations, required, overpaid, nonce };
+}
+
+// ── Drop di una tx sparita (QA N1) ───────────────────────────────────────────
+
+export type DropVerdict =
+  | { droppable: true; onchain: "not_found" | "tx_failed" }
+  | { droppable: false; reason: "tx_on_chain" | "tx_pending" | "nonce_not_consumed" | "not_finalized" };
+
+async function finalizedBlock(rpc: Rpc): Promise<bigint> {
+  const fin = (await rpc("eth_getBlockByNumber", ["finalized", false])) as { number?: unknown } | null;
+  if (!fin || typeof fin !== "object") throw new VerifierUnavailableError("finalized block not available");
+  return hexToBig(fin.number);
+}
+
+/**
+ * Una tx `submitted` si può annullare SOLO se non potrà più essere minata:
+ *  · fallita (status 0x0) in un blocco già finalizzato; oppure
+ *  · sconosciuta (ricevuta e tx entrambe null) E il nonce registrato del wallet
+ *    di uscita risulta già consumato al blocco `finalized` (eth_getTransactionCount
+ *    > nonce): un'altra tx con quel nonce è definitiva, la nostra non può più
+ *    entrare. Una ricevuta null da sola NON basta (nodo in ritardo, indice
+ *    potato, tx uscita per reorg e rimminabile → doppio pagamento).
+ * Ogni dato mancante → VerifierUnavailableError (fail-closed).
+ * Regola operativa: prima di un drop si sostituisce/consuma il nonce bloccato.
+ */
+export async function checkDroppable(
+  c: { txHash: string; from: string; nonce: number },
+  rpc: Rpc,
+): Promise<DropVerdict> {
+  if (hexToBig(await rpc("eth_chainId", [])) !== POLYGON_CHAIN_ID) {
+    throw new VerifierUnavailableError("rpc is not Polygon PoS (chainId != 137)");
+  }
+  const receipt = (await rpc("eth_getTransactionReceipt", [c.txHash])) as Receipt | null;
+  if (receipt != null) {
+    if (typeof receipt !== "object") throw new VerifierUnavailableError("malformed receipt");
+    if (receipt.status === "0x1") return { droppable: false, reason: "tx_on_chain" };
+    return hexToBig(receipt.blockNumber) <= (await finalizedBlock(rpc))
+      ? { droppable: true, onchain: "tx_failed" }
+      : { droppable: false, reason: "not_finalized" };
+  }
+  const tx = await rpc("eth_getTransactionByHash", [c.txHash]);
+  if (tx != null) return { droppable: false, reason: "tx_pending" };
+  const used = hexToBig(await rpc("eth_getTransactionCount", [c.from, "finalized"]));
+  return used > BigInt(c.nonce) ? { droppable: true, onchain: "not_found" } : { droppable: false, reason: "nonce_not_consumed" };
 }
