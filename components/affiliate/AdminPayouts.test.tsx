@@ -343,6 +343,20 @@ describe("registra tx", () => {
     expect(screen.getByRole("button", { name: "Riverifica" })).toBeTruthy(); // la registrazione è avvenuta comunque
   });
 
+  it("from_unknown (409) su «Riverifica» e su «Registra e verifica»: stesso testo neutro, payout invariato", async () => {
+    sentSetup((url, method) => url.endsWith("/verify") && method === "POST" ? { status: 409, body: { error: "from_unknown" } } : undefined);
+    await openSent();
+    fireEvent.click(screen.getByRole("button", { name: "Riverifica" }));
+    expect((await screen.findByTestId("tx-result")).textContent).toMatch(/mittente della tx non è registrato: il server non annulla, gestiscilo a mano/);
+    cleanup();
+    setup({}, (url) => url.endsWith("/tx") ? { status: 409, body: { error: "from_unknown" } } : undefined);
+    await openTx();
+    fireEvent.change(screen.getByLabelText(/Incolla l.hash/), { target: { value: TX } });
+    fireEvent.click(within(screen.getByTestId("tx-confirm")).getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registra e verifica" }));
+    expect((await screen.findByTestId("tx-result")).textContent).toMatch(/mittente della tx non è registrato/);
+  });
+
   it("overpaid (dall'esito di verify): avviso neutro, nessuna azione automatica", async () => {
     sentSetup((url, method) => url.endsWith("/verify") && method === "POST" ? { status: 200, body: { outcome: "submitted", payout_id: 11, confirmations: 12, required: 30, overpaid: true } } : undefined);
     await openSent();
