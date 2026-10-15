@@ -150,6 +150,17 @@ describe("registra tx", () => {
     expect(screen.getByTestId("affiliate-status").textContent).toMatch(/attivo/);
   });
 
+  it("importo: a schermo con la virgola italiana, micro-etichetta «copia: 63.40» col punto, e il valore copiato è col punto", async () => {
+    setup();
+    const writeText = vi.fn(async () => {});
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    await openTx();
+    expect(screen.getByText("63,40")).toBeTruthy();
+    expect(screen.getByTestId("copy-hint").textContent).toMatch(/^copia: 63\.40/);
+    fireEvent.click(screen.getByRole("button", { name: "Copia importo" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("63.40"));
+  });
+
   it("«Registra e verifica» resta spento finché non c'è la conferma obbligatoria e l'hash", async () => {
     setup();
     await openTx();

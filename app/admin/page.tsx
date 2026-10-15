@@ -360,7 +360,7 @@ export default function AdminPage() {
       </header>
 
       {/* Nav */}
-      <nav className="border-b border-gray-800 px-6 flex gap-1">
+      <nav className="border-b border-gray-800 px-6 flex gap-1 overflow-x-auto">
         {([...(["overview", "profiles", "events", "notifications"] as const), ...(AdminPayouts ? (["payouts"] as const) : [])]).map((s) => (
           <button
             key={s}

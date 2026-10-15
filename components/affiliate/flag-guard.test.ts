@@ -30,6 +30,8 @@ describe("flag NEXT_PUBLIC_AFFILIATE_V2", () => {
     expect(admin).not.toMatch(/^import .* from "@\/components\/affiliate/m);
     expect(admin).toMatch(/\.\.\.\(AdminPayouts \? \(\["payouts"\] as const\) : \[\]\)/);
     expect(admin).toMatch(/\(\["overview", "profiles", "events", "notifications"\] as const\)/);
+    // unico ritocco alla nav esistente (approvato): scorrimento orizzontale, nessun overflow di pagina
+    expect(admin).toMatch(/<nav className="border-b border-gray-800 px-6 flex gap-1 overflow-x-auto">/);
   });
 
   it("nessun altro modulo importa i componenti affiliate (a parte i loro test)", () => {

@@ -394,7 +394,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
               <span className="aff-amt">{p.amount_usd.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <button type="button" className="aff-mini" onClick={() => amt.copy(p.amount_usd.toFixed(2))}>Copia importo</button>
             </div>
-            <span className="aff-small">Si copia con il punto ({p.amount_usd.toFixed(2)}), come lo vogliono i wallet.</span>
+            <span className="aff-small" data-testid="copy-hint">copia: {p.amount_usd.toFixed(2)} (con il punto, pronto da incollare nel wallet)</span>
             <span className="aff-small aff-live" role="status" aria-live="polite">{amt.msg}</span>
           </div>
 
