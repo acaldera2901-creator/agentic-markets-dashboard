@@ -1,7 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
+
+// #AFFILIATE-V2-UI-1015 — sezione «Payout affiliati»: solo a build con
+// NEXT_PUBLIC_AFFILIATE_V2=1 (confronto per esteso + lazy: a flag spento l'import
+// sparisce dal build e l'admin resta identico).
+const AdminPayouts = process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"
+  ? lazy(() => import("@/components/affiliate/AdminPayouts").then((m) => ({ default: m.AdminPayouts })))
+  : null;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -148,7 +155,7 @@ export default function AdminPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [section, setSection] = useState<"overview" | "profiles" | "events" | "notifications">("overview");
+  const [section, setSection] = useState<"overview" | "profiles" | "events" | "notifications" | "payouts">("overview");
   const [activationBusy, setActivationBusy] = useState<string | null>(null);
   const [activationResult, setActivationResult] = useState("");
   const [profileBusy, setProfileBusy] = useState<string | null>(null);
@@ -353,8 +360,8 @@ export default function AdminPage() {
       </header>
 
       {/* Nav */}
-      <nav className="border-b border-gray-800 px-6 flex gap-1">
-        {(["overview", "profiles", "events", "notifications"] as const).map((s) => (
+      <nav className="border-b border-gray-800 px-6 flex gap-1 overflow-x-auto">
+        {([...(["overview", "profiles", "events", "notifications"] as const), ...(AdminPayouts ? (["payouts"] as const) : [])]).map((s) => (
           <button
             key={s}
             onClick={() => setSection(s)}
@@ -364,7 +371,7 @@ export default function AdminPage() {
                 : "border-transparent text-gray-500 hover:text-gray-300"
             }`}
           >
-            {s}
+            {s === "payouts" ? "Payout affiliati" : s}
           </button>
         ))}
         <Link
@@ -697,6 +704,12 @@ export default function AdminPage() {
               </table>
             </div>
           </Card>
+        )}
+
+        {section === "payouts" && AdminPayouts && (
+          <div style={{ background: "var(--am-bg)", color: "var(--am-text)", borderRadius: 12, padding: 24 }}>
+            <Suspense fallback={null}><AdminPayouts /></Suspense>
+          </div>
         )}
 
         {/* ── NOTIFICATIONS ── */}
