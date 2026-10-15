@@ -28,3 +28,20 @@ describe("walletChangedEmail", () => {
     expect(b.text).not.toContain("cancelled before sending");
   });
 });
+
+describe("email payout (PR-9)", () => {
+  it("pagamento inviato: importo, coin letti dalla catena e link explorer, 5 lingue", async () => {
+    const { payoutPaidEmail } = await import("./emails");
+    for (const lang of ["it", "en", "es", "fr", "ru"]) {
+      const m = payoutPaidEmail({ lang, amountUsd: 60, amountCoin: "60.000000", coin: "USDT", explorerUrl: "https://polygon.blockscout.com/tx/0xab" });
+      expect(m.text).toContain("https://polygon.blockscout.com/tx/0xab");
+      expect(m.text).toContain("60.00 USDT");
+    }
+  });
+  it("payout annullato: generico, senza motivo", async () => {
+    const { payoutCancelledEmail } = await import("./emails");
+    const m = payoutCancelledEmail({ lang: "en", amountUsd: 55 });
+    expect(m.subject).toBe("Payout cancelled before sending");
+    expect(m.text).toContain("$55.00");
+  });
+});
