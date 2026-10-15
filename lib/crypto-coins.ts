@@ -69,6 +69,14 @@ export function enabledCoins(): CryptoCoin[] {
   return CATALOG.filter((c) => wanted.includes(c.id));
 }
 
+// #AFFILIATE-V2-CRYPTO-1007 PR-9: il token di un payout affiliato in USCITA
+// (contratto + decimali) si legge dal catalogo, NON dalla allowlist degli
+// incassi: spegnere una moneta in entrata non deve cambiare la verifica di un
+// pagamento già fatto.
+export function catalogCoin(id: string): CryptoCoin | null {
+  return CATALOG.find((c) => c.id === id) ?? null;
+}
+
 export function findCoin(id: unknown): CryptoCoin | null {
   if (typeof id !== "string") return null;
   return enabledCoins().find((c) => c.id === id) ?? null;

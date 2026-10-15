@@ -127,3 +127,91 @@ export function walletChangedEmail(opts: {
   parts.push(t.notYou(ACCOUNT_CONTACT_EMAIL));
   return build(lang, opts.removed ? t.subjRemoved : t.subjChanged, parts);
 }
+
+// ── Pagamento inviato / payout annullato (PR-9) ──────────────────────────────
+
+function fmtUsd(n: number, lang: MailLang): string {
+  return new Intl.NumberFormat(LOCALE[lang], { style: "currency", currency: "USD" }).format(n);
+}
+
+const PAYOUT: Record<
+  MailLang,
+  {
+    subjPaid: string;
+    paid: (usd: string, coin: string) => string;
+    link: (url: string) => string;
+    subjCancelled: string;
+    cancelled: (usd: string) => string;
+    contact: (m: string) => string;
+  }
+> = {
+  it: {
+    subjPaid: "Pagamento inviato",
+    paid: (u, c) => `Ti abbiamo inviato ${u}: sono arrivati ${c} sul wallet che hai registrato, verificati sulla rete.`,
+    link: (url) => `Puoi controllare la transazione da te sull'explorer: ${url}`,
+    subjCancelled: "Pagamento annullato prima dell'invio",
+    cancelled: (u) =>
+      `Il pagamento di ${u} che era in preparazione è stato annullato da noi prima dell'invio. Nessun importo è partito: è tornato tra le commissioni maturate e ripartirà con il prossimo pagamento.`,
+    contact: (m) => `Per qualsiasi domanda scrivici a ${m}.`,
+  },
+  en: {
+    subjPaid: "Payout sent",
+    paid: (u, c) => `We've sent you ${u}: ${c} arrived on the wallet you registered, verified on the network.`,
+    link: (url) => `You can check the transaction yourself on the explorer: ${url}`,
+    subjCancelled: "Payout cancelled before sending",
+    cancelled: (u) =>
+      `The ${u} payout that was in preparation was cancelled by us before sending. Nothing was sent: the amount went back to your earned commissions and will go out with the next payout.`,
+    contact: (m) => `For any question, write to us at ${m}.`,
+  },
+  es: {
+    subjPaid: "Pago enviado",
+    paid: (u, c) => `Te hemos enviado ${u}: han llegado ${c} al wallet que registraste, verificados en la red.`,
+    link: (url) => `Puedes comprobar la transacción tú mismo en el explorador: ${url}`,
+    subjCancelled: "Pago cancelado antes del envío",
+    cancelled: (u) =>
+      `El pago de ${u} que estaba en preparación lo cancelamos antes del envío. No se ha enviado nada: el importe ha vuelto a tus comisiones disponibles y saldrá con el próximo pago.`,
+    contact: (m) => `Para cualquier duda, escríbenos a ${m}.`,
+  },
+  fr: {
+    subjPaid: "Paiement envoyé",
+    paid: (u, c) => `Nous vous avons envoyé ${u} : ${c} sont arrivés sur le wallet que vous avez enregistré, vérifiés sur le réseau.`,
+    link: (url) => `Vous pouvez vérifier la transaction vous-même sur l'explorateur : ${url}`,
+    subjCancelled: "Paiement annulé avant l'envoi",
+    cancelled: (u) =>
+      `Le paiement de ${u} en préparation a été annulé par nos soins avant l'envoi. Rien n'a été envoyé : le montant est revenu dans vos commissions acquises et partira avec le prochain paiement.`,
+    contact: (m) => `Pour toute question, écrivez-nous à ${m}.`,
+  },
+  ru: {
+    subjPaid: "Выплата отправлена",
+    paid: (u, c) => `Мы отправили вам ${u}: ${c} поступили на зарегистрированный вами кошелёк, подтверждено в сети.`,
+    link: (url) => `Проверить транзакцию можно самостоятельно в обозревателе: ${url}`,
+    subjCancelled: "Выплата отменена до отправки",
+    cancelled: (u) =>
+      `Выплата ${u}, которая готовилась, отменена нами до отправки. Ничего не отправлено: сумма вернулась в начисленные комиссии и уйдёт со следующей выплатой.`,
+    contact: (m) => `По любым вопросам пишите нам на ${m}.`,
+  },
+};
+
+export function payoutPaidEmail(opts: {
+  lang: string | null | undefined;
+  amountUsd: number;
+  amountCoin: string;
+  coin: string;
+  explorerUrl: string;
+}): Mail {
+  const lang = resolveMailLang(opts.lang);
+  const t = PAYOUT[lang];
+  const coin = `${Number(opts.amountCoin).toFixed(2)} ${opts.coin}`;
+  return build(lang, t.subjPaid, [
+    t.paid(fmtUsd(opts.amountUsd, lang), coin),
+    t.link(opts.explorerUrl),
+    t.contact(ACCOUNT_CONTACT_EMAIL),
+  ]);
+}
+
+/** Il testo è generico di proposito: il motivo libero dell'admin non esce mai. */
+export function payoutCancelledEmail(opts: { lang: string | null | undefined; amountUsd: number }): Mail {
+  const lang = resolveMailLang(opts.lang);
+  const t = PAYOUT[lang];
+  return build(lang, t.subjCancelled, [t.cancelled(fmtUsd(opts.amountUsd, lang)), t.contact(ACCOUNT_CONTACT_EMAIL)]);
+}

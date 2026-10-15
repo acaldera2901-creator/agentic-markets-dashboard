@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { affiliateConfig, affiliateMode, affiliateTermsVersion, AFFILIATE_DEFAULTS, payoutConfig } from "./config";
+import {
+  affiliateConfig,
+  affiliateMode,
+  affiliatePayoutMinRatio,
+  affiliatePayoutsMode,
+  affiliatePolygonRpcUrl,
+  affiliateTermsVersion,
+  AFFILIATE_DEFAULTS,
+  DEFAULT_POLYGON_RPC_URL,
+  payoutConfig,
+} from "./config";
 import { validatePayoutWallet } from "./wallet";
 
 const POLY = "0x1111111111111111111111111111111111111111";
@@ -153,5 +163,27 @@ describe("affiliateTermsVersion (PR-5)", () => {
   });
   it("valore malformato → null, non un testo arbitrario nel registro dei consensi", () => {
     expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: "v1; DROP TABLE" })).toBeNull();
+  });
+});
+
+describe("payout admin config (PR-9)", () => {
+  it("AFFILIATE_PAYOUTS: solo 'live' accende, default e refusi = off", () => {
+    expect(affiliatePayoutsMode({})).toBe("off");
+    expect(affiliatePayoutsMode({ AFFILIATE_PAYOUTS: " LIVE " })).toBe("live");
+    for (const v of ["on", "true", "1", "liv", "shadow"]) expect(affiliatePayoutsMode({ AFFILIATE_PAYOUTS: v })).toBe("off");
+  });
+  it("RPC Polygon: solo https, altrimenti il default", () => {
+    expect(affiliatePolygonRpcUrl({})).toBe(DEFAULT_POLYGON_RPC_URL);
+    expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "https://rpc.example/x" })).toBe("https://rpc.example/x");
+    expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "http://rpc.example" })).toBe(DEFAULT_POLYGON_RPC_URL);
+    expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "nonsense" })).toBe(DEFAULT_POLYGON_RPC_URL);
+  });
+});
+
+describe("AFFILIATE_PAYOUT_MIN_RATIO (QA F3)", () => {
+  it("default 1 (100 %, decisione di Andrea 15/10), ammessi solo valori in [0.9, 1], fuori range → 1", () => {
+    expect(affiliatePayoutMinRatio({})).toBe(1);
+    expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: "0.99" })).toBe(0.99);
+    for (const v of ["0.5", "1.1", "abc", "-1"]) expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: v })).toBe(1);
   });
 });
