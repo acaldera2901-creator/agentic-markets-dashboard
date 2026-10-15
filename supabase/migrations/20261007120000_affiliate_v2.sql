@@ -42,8 +42,21 @@ CREATE TABLE IF NOT EXISTS public.affiliates (
   age_confirmed_at    timestamptz  NOT NULL,
   -- Niente colonne di payout qui: il wallet sta in affiliate_wallets (storico
   -- dei cambi), il blocco dei pagamenti è `status = 'suspended'`.
+  --
+  -- D3 (KYC minimo alla registrazione del wallet: nome legale + paese ISO-3166
+  -- alpha-2 + autodichiarazione "non sanzionato, responsabile delle mie tasse").
+  -- Default RACCOMANDATO, non deciso: le colonne sono nullable e l'obbligo lo
+  -- applica il codice (AFFILIATE_KYC_AT_WALLET), così spegnerlo non chiede una
+  -- migration. Un documento d'identità sopra soglia è fuori da qui (fiscalista).
+  payee_legal_name    text         CHECK (payee_legal_name IS NULL
+                                          OR LENGTH(TRIM(payee_legal_name)) BETWEEN 2 AND 200),
+  payee_country       text         CHECK (payee_country IS NULL OR payee_country ~ '^[A-Z]{2}$'),
+  payee_declared_at   timestamptz,
   created_at          timestamptz  NOT NULL DEFAULT now(),
-  updated_at          timestamptz  NOT NULL DEFAULT now()
+  updated_at          timestamptz  NOT NULL DEFAULT now(),
+  -- L'autodichiarazione vale solo insieme ai dati che dichiara.
+  CHECK (payee_declared_at IS NULL
+         OR (payee_legal_name IS NOT NULL AND payee_country IS NOT NULL))
 );
 
 -- ── affiliate_clicks: solo metrica, nessun valore in chiaro ─────────────────

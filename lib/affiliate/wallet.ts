@@ -33,7 +33,9 @@ export type WalletVerdict =
         | "unsupported_pair"
         | "invalid_format"
         | "invalid_checksum"
-        | "zero_address";
+        | "zero_address"
+        | "coin_not_enabled"
+        | "network_not_enabled";
     };
 
 const TRON_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
@@ -75,7 +77,10 @@ export function isValidTronAddress(address: string): boolean {
   return Buffer.from(raw.subarray(21)).equals(check);
 }
 
-export function validatePayoutWallet(input: WalletInput): WalletVerdict {
+/** Coin/reti accese oggi (D1/D5, da `payoutConfig()`). Senza: tutto ciò che lo schema ammette. */
+export type EnabledRails = { coins: readonly PayoutCoin[]; networks: readonly PayoutNetwork[] };
+
+export function validatePayoutWallet(input: WalletInput, enabled?: EnabledRails): WalletVerdict {
   const coin = typeof input.coin === "string" ? input.coin.trim().toUpperCase() : "";
   const network = typeof input.network === "string" ? input.network.trim().toLowerCase() : "";
   const address = typeof input.address === "string" ? input.address.trim() : "";
@@ -84,6 +89,10 @@ export function validatePayoutWallet(input: WalletInput): WalletVerdict {
   if (!(PAYOUT_NETWORKS as readonly string[]).includes(network)) return { ok: false, reason: "unsupported_network" };
   // Circle ha ritirato USDC da Tron.
   if (coin === "USDC" && network === "tron") return { ok: false, reason: "unsupported_pair" };
+  if (enabled && !(enabled.coins as readonly string[]).includes(coin)) return { ok: false, reason: "coin_not_enabled" };
+  if (enabled && !(enabled.networks as readonly string[]).includes(network)) {
+    return { ok: false, reason: "network_not_enabled" };
+  }
 
   if (network === "tron") {
     if (!TRON_RE.test(address)) return { ok: false, reason: "invalid_format" };

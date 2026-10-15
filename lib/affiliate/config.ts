@@ -9,6 +9,8 @@
 // Per AFFILIATE_MODE il default è `off`, quindi un refuso spegne il ledger invece
 // di accenderlo.
 
+import { PAYOUT_COINS, PAYOUT_NETWORKS, type PayoutCoin, type PayoutNetwork } from "./wallet";
+
 export type AffiliateMode = "off" | "shadow" | "live";
 
 export const AFFILIATE_DEFAULTS = {
@@ -89,5 +91,92 @@ export function affiliateConfig(env: Env = process.env): AffiliateConfig {
     minPayoutUsd: usd(env.AFFILIATE_MIN_PAYOUT_USD, d.MIN_PAYOUT_USD),
     attributionWindowDays: days(env.AFFILIATE_ATTRIBUTION_WINDOW_DAYS, d.ATTRIBUTION_WINDOW_DAYS),
     mode: affiliateMode(env),
+  };
+}
+
+// ── Payout crypto: D1–D5 (PROPOSAL-crypto-payout.md §8) ──────────────────────
+// I default sono le RACCOMANDAZIONI della PROPOSAL, NON decisioni: Andrea ha
+// chiesto di rivederle (15/10/2026). Per questo stanno in env e non nel codice:
+// cambiare una scelta = cambiare una env, non una migration. Lo schema
+// (affiliate_wallets / affiliate_payouts) ammette già tutte le alternative.
+// Separato da affiliateConfig: i payout non esistono finché PR-9 non è live.
+
+export type NetworkFeePayer = "betredge" | "affiliate";
+
+export const PAYOUT_DEFAULTS = {
+  /** D1 — reti accese al lancio. Raccomandato: solo Polygon (Tron solo col suo verificatore). */
+  NETWORKS: ["polygon"] as PayoutNetwork[],
+  /** D5 — coin accese. Raccomandato: solo USDT (USDC per chi è in UE/MiCA, su richiesta). */
+  COINS: ["USDT"] as PayoutCoin[],
+  /** D4 — chi paga la fee di rete. Raccomandato: BetRedge (su Polygon sono centesimi). */
+  NETWORK_FEE_PAYER: "betredge" as NetworkFeePayer,
+  /** D3 — KYC minimo (nome legale + paese + autodichiarazione) alla registrazione del wallet. */
+  KYC_AT_WALLET: true,
+} as const;
+
+export type PayoutConfig = {
+  networks: PayoutNetwork[];
+  coins: PayoutCoin[];
+  networkFeePayer: NetworkFeePayer;
+  kycAtWallet: boolean;
+  /** D2 — indirizzo PUBBLICO del wallet di uscita (mai chiavi). `null` = non configurato. */
+  payoutFrom: string | null;
+};
+
+/** CSV filtrato sulla lista ammessa dallo schema; vuoto o tutto invalido = default. */
+function csvList<T extends string>(
+  raw: string | undefined,
+  allowed: readonly T[],
+  fallback: readonly T[],
+  norm: (s: string) => string,
+): T[] {
+  if (raw == null || raw.trim() === "") return [...fallback];
+  const picked = raw
+    .split(",")
+    .map((s) => norm(s.trim()))
+    .filter((s): s is T => (allowed as readonly string[]).includes(s));
+  const unique = [...new Set(picked)];
+  return unique.length > 0 ? unique : [...fallback];
+}
+
+/** Fail-safe verso il più prudente: solo "0"/"false"/"off" spengono il KYC. */
+function kycFlag(raw: string | undefined, fallback: boolean): boolean {
+  if (raw == null || raw.trim() === "") return fallback;
+  const t = raw.trim().toLowerCase();
+  if (t === "0" || t === "false" || t === "off") return false;
+  if (t === "1" || t === "true" || t === "on") return true;
+  return fallback;
+}
+
+/**
+ * D2 — il default raccomandato è un wallet DEDICATO ai payout: se
+ * AFFILIATE_PAYOUT_FROM coincide col wallet degli incassi PayGate (che
+ * esporrebbe agli affiliati tutti gli incassi on-chain) vale come non
+ * configurato. Se Andrea decide di riusarlo, si toglie questo controllo.
+ * Solo formato EVM: è l'unica rete con un verificatore on-chain nel repo.
+ */
+function payoutFromAddress(env: Env): string | null {
+  const raw = (env.AFFILIATE_PAYOUT_FROM ?? "").trim();
+  if (!/^0x[0-9a-fA-F]{40}$/.test(raw)) return null;
+  if (/^0x0{40}$/i.test(raw)) return null;
+  const treasury = (env.PAYGATE_PAYOUT_WALLET ?? "").trim().toLowerCase();
+  if (treasury !== "" && raw.toLowerCase() === treasury) return null;
+  return raw;
+}
+
+export function payoutConfig(env: Env = process.env): PayoutConfig {
+  const d = PAYOUT_DEFAULTS;
+  let coins = csvList(env.AFFILIATE_PAYOUT_COINS, PAYOUT_COINS, d.COINS, (s) => s.toUpperCase());
+  const networks = csvList(env.AFFILIATE_PAYOUT_NETWORKS, PAYOUT_NETWORKS, d.NETWORKS, (s) => s.toLowerCase());
+  // USDC esiste solo su Polygon: con Tron unica rete accesa resta solo USDT.
+  if (!networks.includes("polygon")) coins = coins.filter((c) => c !== "USDC");
+  if (coins.length === 0) coins = ["USDT"];
+  const fee = (env.AFFILIATE_NETWORK_FEE_PAYER ?? "").trim().toLowerCase();
+  return {
+    networks,
+    coins,
+    networkFeePayer: fee === "betredge" || fee === "affiliate" ? fee : d.NETWORK_FEE_PAYER,
+    kycAtWallet: kycFlag(env.AFFILIATE_KYC_AT_WALLET, d.KYC_AT_WALLET),
+    payoutFrom: payoutFromAddress(env),
   };
 }
