@@ -46,6 +46,7 @@ export const TX_ERROR_TEXT: Record<string, string> = {
   verifier_unavailable: "Il verificatore on-chain non risponde: non so se la transazione esiste (non è «hash non trovato»). Il payout non è cambiato: riprova più tardi.",
   tx_on_chain: "La transazione risulta ancora valida sulla rete: il payout non si annulla e resta com'è. Usa «Riverifica» finché non è Pagato.",
   tx_not_droppable: "Il server non può annullare questo payout adesso: la transazione potrebbe ancora essere minata. Il payout resta com'è.",
+  block_unknown: "Per questo payout non è registrato il blocco dell'invio: il server non può verificare che la transazione sia sparita, quindi non annulla. Il payout resta com'è; se serve, gestiscilo a mano.",
   nonce_unknown: "Per questo payout non è registrato il nonce dell'invio: il server non può verificare che la transazione sia davvero sparita, quindi non annulla. Il payout resta com'è; se serve, gestiscilo a mano.",
   too_recent: "Sono passati meno di 30 minuti dalla registrazione dell'hash: riprova dopo.",
   affiliate_not_active: "L'affiliato non è attivo: non si registra niente. Se i fondi sono già partiti, gestiscili a mano.",
@@ -62,6 +63,7 @@ export const NOT_DROPPABLE_TEXT: Record<string, string> = {
   tx_on_chain: "La transazione risulta ancora valida sulla rete: il payout non si annulla e resta com'è.",
   tx_pending: "La transazione è ancora in attesa sulla rete e potrebbe essere minata: il payout non si annulla e resta com'è. Riverifica più tardi.",
   nonce_not_consumed: "Per annullare devi prima sostituire la tx bloccata dal wallet di uscita (stesso nonce) e aspettare che sia finalizzata. Il payout resta com'è.",
+  transfer_found: "La tx risulta sulla rete: non si annulla. Il payout resta com'è.",
   not_finalized: "Il blocco non è ancora finalizzato: aspetta e riprova. Il payout resta com'è.",
 };
 

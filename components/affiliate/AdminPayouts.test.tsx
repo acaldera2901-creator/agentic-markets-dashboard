@@ -227,7 +227,7 @@ describe("registra tx", () => {
       const o = extra(url, method);
       if (o) return o;
       if (url.startsWith("/api/admin/affiliate/payouts?") || url === "/api/admin/affiliate/payouts") return { status: 200, body: adminSent };
-      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, tx_nonce: 42, affiliate_status: sentAffStatus, explorer_url: `https://x/tx/${TX}` }, payout_from: ADMIN.payout_from } };
+      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, tx_nonce: 42, tx_block: 1234567, affiliate_status: sentAffStatus, explorer_url: `https://x/tx/${TX}` }, payout_from: ADMIN.payout_from } };
       return undefined;
     });
   };
@@ -278,6 +278,8 @@ describe("registra tx", () => {
     ["tx_not_droppable", "tx_pending", /ancora in attesa sulla rete/],
     ["tx_not_droppable", "tx_on_chain", /ancora valida sulla rete/],
     ["tx_not_droppable", "not_finalized", /non è ancora finalizzato/],
+    ["tx_not_droppable", "transfer_found", /La tx risulta sulla rete: non si annulla/],
+    ["block_unknown", undefined, /blocco dell'invio/],
   ])("annullo di submitted rifiutato: %s %s → testo dedicato, mai «pagare di nuovo»", async (error, reason, re) => {
     sentSetup((url, method) => url.endsWith("/cancel") && method === "POST" ? { status: 409, body: { error, reason } } : undefined);
     await openSent();
@@ -302,10 +304,18 @@ describe("registra tx", () => {
     sentAffStatus = "suspended";
     sentSetup(() => undefined);
     await openSent();
-    expect(screen.getByText(/Nonce registrato: 42/)).toBeTruthy();
+    expect(screen.getByText(/Nonce registrato: 42 · blocco 1234567/)).toBeTruthy();
     expect(screen.getByTestId("affiliate-status").textContent).toMatch(/SOSPESO.*puoi riverificare/);
     expect((screen.getByRole("button", { name: "Riverifica" }) as HTMLButtonElement).disabled).toBe(false);
     sentAffStatus = "active";
+  });
+
+  it("tx_from_mismatch (dall'esito di verify): avviso «non potrà essere annullato automaticamente»", async () => {
+    sentSetup((url, method) => url.endsWith("/verify") && method === "POST" ? { status: 200, body: { outcome: "submitted", payout_id: 11, confirmations: 12, required: 30, tx_from_mismatch: true } } : undefined);
+    await openSent();
+    fireEvent.click(screen.getByRole("button", { name: "Riverifica" }));
+    expect((await screen.findByTestId("from-mismatch")).textContent).toMatch(/Tx non firmata dal wallet di uscita.*non potrà essere annullato automaticamente/);
+    expect(screen.getByRole("button", { name: "Riverifica" })).toBeTruthy(); // la registrazione è avvenuta comunque
   });
 
   it("overpaid (dall'esito di verify): avviso neutro, nessuna azione automatica", async () => {

@@ -269,6 +269,8 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
   const [p, setP] = useState<AdminPayout | null>(null);
   // `overpaid` arriva solo nell'esito di /tx e /verify (non in GET): resta per la sessione del pannello
   const [overpaid, setOverpaid] = useState(false);
+  // `tx_from_mismatch` (esito di /tx e /verify): la registrazione avviene comunque
+  const [fromMismatch, setFromMismatch] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [from, setFrom] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
@@ -293,6 +295,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
   const outcome = (o: TxOutcome | { error?: string } | null, status: number) => {
     if (o && "outcome" in o) {
       if (o.outcome !== "rejected" && (o as { overpaid?: boolean }).overpaid) setOverpaid(true);
+      if (o.outcome !== "rejected" && (o as { tx_from_mismatch?: boolean }).tx_from_mismatch) setFromMismatch(true);
       if (o.outcome === "paid") {
         const conf = o.confirmations != null ? ` · ${o.confirmations} conferme` : "";
         setResult({ kind: "paid", text: `Verificato sulla rete: token, mittente = wallet di uscita, destinatario = indirizzo del payout${o.amount_coin && Number.isFinite(Number(o.amount_coin)) ? ` · ${Number(o.amount_coin).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT` : ""}${conf}. Il payout è Pagato; l'affiliato riceve l'email con il link all'explorer.` });
@@ -378,6 +381,9 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
               {!affOk && (p.status === "submitted" ? " · l'invio è già partito: puoi riverificare la transazione per chiuderla come Pagata, ma non fare nuovi invii." : " · non inviare e non registrare: se i fondi sono già partiti, gestiscili a mano.")}
             </p>
           </div>
+          {fromMismatch && (
+            <div className="aff-banner" role="status" data-testid="from-mismatch"><p><strong>Tx non firmata dal wallet di uscita:</strong> questo pagamento non potrà essere annullato automaticamente.</p></div>
+          )}
           {overpaid && (
             <div className="aff-banner" role="status" data-testid="overpaid"><p><strong>Importo ricevuto superiore al dovuto</strong> di oltre l&apos;1%. Nessuna azione automatica: verifica a mano sulla rete.</p></div>
           )}
@@ -416,7 +422,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             <div className="aff-kv">
               <span className="aff-k">Hash registrato</span>
               <ExplorerLink href={p.explorer_url} text={p.tx_hash} sr="apre l'explorer in una nuova scheda" />
-              {p.status === "submitted" && p.tx_nonce != null && <span className="aff-small">Nonce registrato: {p.tx_nonce} (serve se devi sostituire la transazione dal wallet di uscita)</span>}
+              {p.status === "submitted" && p.tx_nonce != null && <span className="aff-small">Nonce registrato: {p.tx_nonce}{p.tx_block != null ? ` · blocco ${p.tx_block}` : ""} (serve se devi sostituire la transazione dal wallet di uscita)</span>}
               {p.status === "paid" && p.paid_at && <span className="aff-small">Pagato il {dateTime(p.paid_at, "it")}{p.amount_coin != null ? ` · ricevuti ${p.amount_coin} USDT` : ""}</span>}
             </div>
           )}

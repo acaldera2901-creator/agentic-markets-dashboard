@@ -149,12 +149,13 @@ describe("admin: testi", () => {
     expect(txErrorText("zzz")).not.toMatch(/zzz/);
   });
   it("txFailText: ogni reason di tx_not_droppable, nonce_unknown, hash scartato; mai «pagare di nuovo»", () => {
-    for (const reason of ["tx_on_chain", "tx_pending", "nonce_not_consumed", "not_finalized"]) {
+    for (const reason of ["tx_on_chain", "tx_pending", "nonce_not_consumed", "not_finalized", "transfer_found"]) {
       const t = txFailText({ error: "tx_not_droppable", reason });
       expect(t).toMatch(/\S/);
       expect(t).not.toMatch(/pagare di nuovo|paga di nuovo|ripaga/i);
     }
     expect(txFailText({ error: "nonce_unknown" })).toMatch(/nonce/);
+    expect(txFailText({ error: "block_unknown" })).toMatch(/blocco/);
     expect(txFailText({ error: "hash_already_used", dropped: true })).toMatch(/annullato perché la transazione era sparita/);
     expect(txFailText({ error: "hash_already_used" })).toMatch(/già stato usato/);
     expect(txFailText({ error: "tx_not_droppable", reason: "boh" })).not.toMatch(/boh/);
