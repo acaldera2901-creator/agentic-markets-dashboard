@@ -35,7 +35,7 @@ function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?
         : o.receipt;
     }
     throw new Error(`unexpected ${method}`);
-  }) as Rpc & { calls: string[] };
+  }) as unknown as Rpc & { calls: string[] };
   fn.calls = calls;
   return fn;
 }
