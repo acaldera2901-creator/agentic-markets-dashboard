@@ -1,8 +1,15 @@
--- #AFFILIATE-V2-0930 — PR-1: le sei tabelle del programma affiliati a commissione.
+-- #AFFILIATE-V2-0930 — PR-1: le sette tabelle del programma affiliati a commissione.
 --
--- SOLO ADDITIVA: sei tabelle nuove, nessuna tabella esistente toccata, nessun
+-- SOLO ADDITIVA: sette tabelle nuove, nessuna tabella esistente toccata, nessun
 -- dato scritto. Il vecchio referral a giorni PRO (`referral_rewards`) resta com'è.
--- Spec: artifacts/affiliate-v2/PROPOSAL-tecnica.md §4.1 (APPROVE #AFFILIATE-V2-0930).
+-- Spec: artifacts/affiliate-v2/PROPOSAL-tecnica.md §4.1 (APPROVE #AFFILIATE-V2-0930),
+-- rivista da PROPOSAL-crypto-payout.md (decisione di Andrea 2026-10-07: payout
+-- SOLO in crypto, niente provider terzo).
+--
+-- Timestamp 20261007120000 (era 20260930200000): `supabase db push` rifiuta una
+-- migration più vecchia dell'ultima già applicata in remoto, e su main c'è già
+-- 20261003090000. Va riallineato di nuovo se al momento dell'apply ce n'è una più
+-- recente.
 --
 -- NON si applica da sola: le migration partono solo a mano, via workflow_dispatch
 -- con `approved_sha` (.github/workflows/supabase-migrations.yml).
@@ -11,7 +18,7 @@
 -- e NESSUNA policy, deliberatamente. Si leggono e si scrivono solo dal server
 -- (service_role / exec_sql). Una policy aggiunta qui APRIREBBE un accesso.
 --
--- Importi in numeric(12,2) USD. Rollback: DROP delle sei tabelle, possibile solo
+-- Importi in numeric(12,2) USD. Rollback: DROP delle sette tabelle, possibile solo
 -- finché `affiliate_commissions` non contiene righe `paid` — da lì in poi è un
 -- registro contabile e non si cancella.
 
@@ -33,10 +40,8 @@ CREATE TABLE IF NOT EXISTS public.affiliates (
   terms_version       text         NOT NULL,
   terms_accepted_at   timestamptz  NOT NULL,
   age_confirmed_at    timestamptz  NOT NULL,
-  payout_provider     text,
-  payout_recipient_id text,
-  payout_status       text         DEFAULT 'none'
-                        CHECK (payout_status IN ('none','pending_kyc','verified','blocked')),
+  -- Niente colonne di payout qui: il wallet sta in affiliate_wallets (storico
+  -- dei cambi), il blocco dei pagamenti è `status = 'suspended'`.
   created_at          timestamptz  NOT NULL DEFAULT now(),
   updated_at          timestamptz  NOT NULL DEFAULT now()
 );
@@ -72,19 +77,98 @@ CREATE TABLE IF NOT EXISTS public.affiliate_attributions (
 CREATE INDEX IF NOT EXISTS idx_affiliate_attributions_affiliate
   ON public.affiliate_attributions (affiliate_id);
 
--- ── affiliate_payouts: i batch verso il provider ────────────────────────────
--- Creata prima del ledger solo per ordine di lettura: il ledger ne tiene l'id
--- (payout_id) senza FK, come da spec.
-CREATE TABLE IF NOT EXISTS public.affiliate_payouts (
-  id                   bigserial      PRIMARY KEY,
-  affiliate_id         bigint         NOT NULL,
-  amount_usd           numeric(12,2)  NOT NULL CHECK (amount_usd > 0),
-  provider             text           NOT NULL,
-  provider_payment_id  text           UNIQUE,
-  status               text           CHECK (status IN ('created','submitted','paid','failed','returned')),
-  created_at           timestamptz    NOT NULL DEFAULT now(),
-  settled_at           timestamptz
+-- ── affiliate_wallets: dove l'affiliato vuole essere pagato (solo crypto) ────
+-- Append-only: cambiare wallet = revocare la riga attiva e inserirne una nuova,
+-- così lo storico dei cambi resta (serve all'antifrode e alle contestazioni).
+-- Il formato per rete lo controlla il CHECK; il checksum (base58check Tron) lo
+-- controlla lib/affiliate/wallet.ts prima dell'INSERT. Le due liste coin/network
+-- devono restare uguali a PAYOUT_COINS / PAYOUT_NETWORKS in quel file.
+CREATE TABLE IF NOT EXISTS public.affiliate_wallets (
+  id               bigserial    PRIMARY KEY,
+  affiliate_id     bigint       NOT NULL REFERENCES public.affiliates(id),
+  coin             text         NOT NULL CHECK (coin IN ('USDT','USDC')),
+  network          text         NOT NULL CHECK (network IN ('polygon','tron')),
+  address          text         NOT NULL,
+  created_at       timestamptz  NOT NULL DEFAULT now(),
+  -- HMAC come affiliate_clicks: chi ha cambiato il wallet, senza IP in chiaro.
+  created_ip_hash  text,
+  -- Anti account-takeover: un wallet appena inserito non riceve pagamenti prima
+  -- di questa data (created_at + cooldown, deciso dal codice).
+  usable_after     timestamptz  NOT NULL,
+  revoked_at       timestamptz,
+  CHECK (usable_after >= created_at),
+  CHECK (revoked_at IS NULL OR revoked_at >= created_at),
+  -- Circle ha ritirato USDC da Tron: la combinazione non esiste.
+  CHECK (NOT (coin = 'USDC' AND network = 'tron')),
+  CHECK (
+       (network = 'tron'    AND address ~ '^T[1-9A-HJ-NP-Za-km-z]{33}$')
+    OR (network = 'polygon' AND address ~ '^0x[0-9a-fA-F]{40}$'
+                            AND LOWER(address) <> '0x0000000000000000000000000000000000000000')
+  )
 );
+
+-- Un solo wallet attivo per affiliato.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_affiliate_wallets_one_active
+  ON public.affiliate_wallets (affiliate_id)
+  WHERE revoked_at IS NULL;
+
+-- Antifrode: lo stesso indirizzo su due affiliati è un segnale (multi-account),
+-- non un divieto — per questo indice semplice e non UNIQUE.
+CREATE INDEX IF NOT EXISTS idx_affiliate_wallets_network_address
+  ON public.affiliate_wallets (network, LOWER(address));
+
+-- ── affiliate_payouts: un pagamento on-chain eseguito a mano dall'admin ──────
+-- Ciclo: created (righe del ledger → in_payout) → submitted (tx hash registrato,
+-- conferme on-chain in attesa) → paid (verificato on-chain; righe → paid).
+-- cancelled solo PRIMA che esista una tx: le righe tornano payable.
+-- Creata prima del ledger perché il ledger la referenzia (payout_id).
+CREATE TABLE IF NOT EXISTS public.affiliate_payouts (
+  id               bigserial      PRIMARY KEY,
+  affiliate_id     bigint         NOT NULL REFERENCES public.affiliates(id),
+  -- Il mese di competenza, sempre il primo del mese.
+  period_month     date           NOT NULL
+                     CHECK (period_month = date_trunc('month', period_month)::date),
+  amount_usd       numeric(12,2)  NOT NULL CHECK (amount_usd > 0),
+  coin             text           NOT NULL CHECK (coin IN ('USDT','USDC')),
+  network          text           NOT NULL CHECK (network IN ('polygon','tron')),
+  wallet_id        bigint         NOT NULL REFERENCES public.affiliate_wallets(id),
+  -- Copia dell'indirizzo al momento del pagamento: il wallet può cambiare
+  -- dopo, il pagamento resta dov'è andato.
+  to_address       text           NOT NULL,
+  -- Quanto è partito davvero on-chain (letto dalla verifica, non digitato).
+  amount_coin      numeric(20,6),
+  network_fee_usd  numeric(12,4),
+  -- Minuscolo: Tron = 64 hex, EVM = 0x + 64 hex.
+  tx_hash          text,
+  status           text           NOT NULL DEFAULT 'created'
+                     CHECK (status IN ('created','submitted','paid','cancelled')),
+  created_by       text           NOT NULL,
+  created_at       timestamptz    NOT NULL DEFAULT now(),
+  submitted_at     timestamptz,
+  paid_at          timestamptz,
+  cancelled_at     timestamptz,
+  cancel_reason    text,
+  CHECK (tx_hash IS NULL
+         OR (network = 'tron'    AND tx_hash ~ '^[0-9a-f]{64}$')
+         OR (network = 'polygon' AND tx_hash ~ '^0x[0-9a-f]{64}$')),
+  CHECK (status NOT IN ('submitted','paid') OR (tx_hash IS NOT NULL AND submitted_at IS NOT NULL)),
+  CHECK (status <> 'paid' OR (paid_at IS NOT NULL AND amount_coin IS NOT NULL)),
+  CHECK (status <> 'cancelled' OR (tx_hash IS NULL AND cancelled_at IS NOT NULL))
+);
+
+-- Un pagamento per affiliato per mese (gli annullati non contano).
+CREATE UNIQUE INDEX IF NOT EXISTS uq_affiliate_payouts_one_per_month
+  ON public.affiliate_payouts (affiliate_id, period_month)
+  WHERE status <> 'cancelled';
+
+-- Una tx non paga due volte lo stesso indirizzo. Con `to_address` nella chiave
+-- una futura multi-send (una tx, N destinatari) non richiede una migration.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_affiliate_payouts_tx_recipient
+  ON public.affiliate_payouts (network, tx_hash, LOWER(to_address))
+  WHERE tx_hash IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_affiliate_payouts_status
+  ON public.affiliate_payouts (status, period_month);
 
 -- ── affiliate_commissions: il ledger, append-only ───────────────────────────
 CREATE TABLE IF NOT EXISTS public.affiliate_commissions (
@@ -115,7 +199,7 @@ CREATE TABLE IF NOT EXISTS public.affiliate_commissions (
   paid_at              timestamptz    NOT NULL,
   payable_after        timestamptz    NOT NULL,
   reverses_id          bigint         REFERENCES public.affiliate_commissions(id),
-  payout_id            bigint,
+  payout_id            bigint         REFERENCES public.affiliate_payouts(id),
   created_at           timestamptz    NOT NULL DEFAULT now(),
   -- La redelivery di un webhook o un reconcile cron non scrivono mai due volte.
   -- `rail_event_ref` nella chiave: la redelivery dello STESSO rimborso è un
@@ -169,22 +253,24 @@ CREATE INDEX IF NOT EXISTS idx_affiliate_payer_fingerprints_kind_value
 ALTER TABLE public.affiliates                   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_clicks             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_attributions       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.affiliate_wallets            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_payouts            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_commissions        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_payer_fingerprints ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.affiliates, public.affiliate_clicks, public.affiliate_attributions,
-              public.affiliate_payouts, public.affiliate_commissions,
+              public.affiliate_wallets, public.affiliate_payouts, public.affiliate_commissions,
               public.affiliate_payer_fingerprints
   FROM anon, authenticated;
 
 GRANT SELECT, INSERT, UPDATE, DELETE
    ON public.affiliates, public.affiliate_clicks, public.affiliate_attributions,
-      public.affiliate_payouts, public.affiliate_commissions,
+      public.affiliate_wallets, public.affiliate_payouts, public.affiliate_commissions,
       public.affiliate_payer_fingerprints
    TO service_role;
 
 GRANT USAGE, SELECT
    ON SEQUENCE public.affiliates_id_seq, public.affiliate_clicks_id_seq,
-               public.affiliate_payouts_id_seq, public.affiliate_commissions_id_seq
+               public.affiliate_wallets_id_seq, public.affiliate_payouts_id_seq,
+               public.affiliate_commissions_id_seq
    TO service_role;
