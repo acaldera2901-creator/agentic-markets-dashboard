@@ -5,6 +5,7 @@
 // gambling → il consumo è SEMPRE geo-gated fail-closed (vedi /api/geo-books).
 import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS, landingUrlOf } from "@/lib/affiliate";
 import { BOOKS } from "@/lib/betconstruct-books";
+import { hrefFor } from "@/lib/affiliate-networks";
 
 export type PartnerCategory = "sportsbook" | "casino";
 export type Partner = {
@@ -171,12 +172,21 @@ export const PARTNERS: Partner[] = [
 // #PARTNER-BETWINNER-0924: torna a SCARTARE qualcuno, ma solo chi non ha proprio un
 // link da aprire in quel paese (oggi il solo BetWinner, fuori dalle sue 9 geo). Per
 // tutti gli altri niente cambia: hanno `url`, quindi l'elenco è lo stesso ovunque.
+// #POSTBACK-1014: `url` is now the href (/go/<id> for network partners, see
+// lib/affiliate-networks); the real link of a geo is `targetUrlFor`, which /go opens.
 export function partnersFor(country: string | null | undefined): ResolvedPartner[] {
-  const cc = (country ?? "").trim().toUpperCase();
   return PARTNERS.flatMap((p) => {
-    const url = (cc ? p.geoUrls?.[cc] : undefined) ?? p.url;
-    return url ? [{ ...p, url }] : [];
+    const url = targetUrlFor(p.id, country);
+    return url ? [{ ...p, url: hrefFor(p.id, url) }] : [];
   });
+}
+
+// #POSTBACK-1014 — the real tracking link of a partner in a geo: the local mid if
+// there is one, otherwise the default. undefined = no link to open there.
+export function targetUrlFor(id: string, country: string | null | undefined): string | undefined {
+  const cc = (country ?? "").trim().toUpperCase();
+  const p = PARTNERS.find((x) => x.id === id);
+  return p && ((cc ? p.geoUrls?.[cc] : undefined) ?? p.url);
 }
 
 // #BET-DROPDOWN-1: il menu "Piazza la scommessa" nella scheda partita riceve i
