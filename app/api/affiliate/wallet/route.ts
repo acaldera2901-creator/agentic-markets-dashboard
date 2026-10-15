@@ -19,7 +19,7 @@ import { getSessionPlan } from "@/lib/auth";
 import { dbQuery } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { affiliateMode, affiliateTermsVersion, payoutConfig } from "@/lib/affiliate/config";
+import { affiliateMode, affiliateTermsVersion, payoutConfig, payoutDeniedAddresses } from "@/lib/affiliate/config";
 import {
   affiliateIdentifier,
   hashIp,
@@ -144,6 +144,7 @@ export async function PUT(req: Request) {
   const network = body.network ?? (pc.networks.length === 1 ? pc.networks[0] : undefined);
   const verdict = validatePayoutWallet({ coin, network, address: body.address }, pc);
   if (!verdict.ok) return fail(verdict.reason, 422, "address");
+  if (payoutDeniedAddresses().has(verdict.address.toLowerCase())) return fail("address_not_allowed", 422, "address");
 
   if (body.last6 !== undefined) {
     const last6 = typeof body.last6 === "string" ? body.last6.trim().toLowerCase() : "";
@@ -155,7 +156,9 @@ export async function PUT(req: Request) {
 
   let legalName: string | null = null;
   let country: string | null = null;
-  const declared = body.declarations?.sanctions === true && body.declarations?.tax === true;
+  // Le dichiarazioni D3 si registrano solo col KYC acceso: senza nome/paese il
+  // CHECK di affiliates le rifiuterebbe (QA F8: era un 500).
+  const declared = pc.kycAtWallet && body.declarations?.sanctions === true && body.declarations?.tax === true;
   if (pc.kycAtWallet) {
     legalName = cleanLegalName(body.payee_legal_name);
     if (!legalName) return fail("invalid_legal_name", 422, "payee_legal_name");
