@@ -11,7 +11,7 @@ const sendEmail = vi.fn();
 const opsAlert = vi.fn();
 const screenPayoutAddress = vi.fn();
 const rpcCalls: string[] = [];
-let chain: { receipt?: unknown; head?: number; down?: boolean; tx?: unknown; finalizedNonce?: number };
+let chain: { receipt?: unknown; head?: number; down?: boolean; tx?: unknown; finalizedNonce?: number; logs?: unknown[] };
 
 vi.mock("@/lib/admin-auth", () => ({ isAdminAuthorized }));
 vi.mock("@/lib/db", () => ({ dbQueryStrict, dbQuery, dbExecute: vi.fn(), getSupabaseAdminClient: vi.fn() }));
@@ -33,7 +33,8 @@ vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
       if (method === "eth_chainId") return "0x89";
       if (method === "eth_blockNumber") return `0x${(chain.head ?? 1_000_100).toString(16)}`;
       if (method === "eth_getBlockByNumber") return { number: `0x${((chain.head ?? 1_000_100) - 2).toString(16)}` };
-      if (method === "eth_getTransactionByHash") return chain.tx === undefined ? { nonce: "0x7" } : chain.tx;
+      if (method === "eth_getTransactionByHash") return chain.tx === undefined ? { nonce: "0x7", from: FROM } : chain.tx;
+      if (method === "eth_getLogs") return chain.logs ?? [];
       if (method === "eth_getTransactionCount") return `0x${(chain.finalizedNonce ?? 0).toString(16)}`;
       if (method === "eth_getTransactionReceipt") return chain.receipt === undefined ? receiptOk() : chain.receipt;
       throw new Error(method);
@@ -55,7 +56,7 @@ function receiptOk(amount = 60, to = TO) {
   };
 }
 
-type PayoutFixture = { status: string; tx_hash: string | null; cancel_code?: string | null; affiliate_status?: string; tx_nonce?: number | null };
+type PayoutFixture = { status: string; tx_hash: string | null; cancel_code?: string | null; affiliate_status?: string; tx_nonce?: number | null; tx_block?: number | null };
 let payout: PayoutFixture | null;
 
 function req(url: string, method = "GET", body?: unknown, headers: Record<string, string> = {}) {
@@ -211,7 +212,7 @@ describe("POST [id]/tx — verifica per hash", () => {
     expect(r.status).toBe(200);
     expect(await r.json()).toMatchObject({ outcome: "paid", confirmations: 101, amount_coin: "60.000000" });
     expect(rpcCalls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_getTransactionByHash", "eth_blockNumber", "eth_getBlockByNumber"]);
-    expect(affiliateRpc).toHaveBeenCalledWith("affiliate_payout_record_tx", { p_id: 7, p_tx_hash: H1, p_paid: true, p_amount_coin: "60.000000", p_nonce: 7 });
+    expect(affiliateRpc).toHaveBeenCalledWith("affiliate_payout_record_tx", { p_id: 7, p_tx_hash: H1, p_paid: true, p_amount_coin: "60.000000", p_nonce: 7, p_block: 1_000_000 });
     expect(sendEmail).toHaveBeenCalledTimes(1);
     expect(sendEmail.mock.calls[0][0]).toMatchObject({ to: "ann@x.io", subject: "Payout sent" });
     expect(sendEmail.mock.calls[0][0].text).toContain(`https://polygon.blockscout.com/tx/${H1}`);
@@ -385,7 +386,7 @@ describe("QA F4: affiliato non attivo", () => {
 });
 
 describe("QA F2 + N1: tx sparita, submitted → cancelled solo con nonce consumato", () => {
-  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7 };
+  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000 };
   it("ricevuta null, tx sconosciuta, nonce consumato al finalized → drop, email generica", async () => {
     payout = { ...sub };
     chain.receipt = null;
@@ -445,5 +446,39 @@ describe("QA N1: hash scartato riusato", () => {
     expect(r.status).toBe(409);
     expect(await r.json()).toEqual({ error: "hash_already_used", dropped: true });
     expect(opsAlert).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("QA R1–R3", () => {
+  const sub = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000 };
+  it("R1: tx firmata da un altro indirizzo → registrata con nonce null e segnalata", async () => {
+    chain.tx = { nonce: "0x0", from: "0x9999999999999999999999999999999999999999" };
+    const r = await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1 }), params("7"));
+    expect(await r.json()).toMatchObject({ outcome: "paid", tx_from_mismatch: true });
+    expect(affiliateRpc.mock.calls[0][1]).toMatchObject({ p_nonce: null, p_block: 1_000_000 });
+  });
+  it("R2: ricevuta con status «0x01» al drop → 503, niente annullato", async () => {
+    payout = { ...sub };
+    chain.receipt = { status: "0x01", blockNumber: "0xf4240", logs: [] };
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "boh boh" }), params("7"));
+    expect(r.status).toBe(503);
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("R3: indice potato ma il Transfer è nei log → 409 transfer_found, niente annullato", async () => {
+    payout = { ...sub };
+    chain.receipt = null;
+    chain.tx = null;
+    chain.finalizedNonce = 8;
+    chain.logs = [{ address: USDT, topics: [], data: "0x", transactionHash: H1 }];
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "sembra sparita" }), params("7"));
+    expect(r.status).toBe(409);
+    expect(await r.json()).toEqual({ error: "tx_not_droppable", reason: "transfer_found" });
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("R3: blocco di registrazione assente → 409 block_unknown senza rete", async () => {
+    payout = { ...sub, tx_block: null };
+    const r = await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "sembra sparita" }), params("7"));
+    expect(await r.json()).toEqual({ error: "block_unknown" });
+    expect(rpcCalls).toEqual([]);
   });
 });

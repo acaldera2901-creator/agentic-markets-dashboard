@@ -232,6 +232,7 @@ export type AdminPayout = {
   amount_coin: number | null;
   tx_hash: string | null;
   tx_nonce: number | null;
+  tx_block: number | null;
   explorer_url: string | null;
   status: "created" | "submitted" | "paid" | "cancelled";
   created_at: string;
@@ -250,7 +251,7 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     `SELECT p.id, p.affiliate_id, a.identifier AS affiliate_identifier, a.code AS affiliate_code,
             a.status AS affiliate_status, a.payee_legal_name AS payee_name, a.payee_country,
             p.period_month::text AS period_month, p.amount_usd, p.coin, p.network, p.to_address,
-            p.amount_coin, p.tx_hash, p.tx_nonce, p.status, p.created_at::text AS created_at,
+            p.amount_coin, p.tx_hash, p.tx_nonce, p.tx_block, p.status, p.created_at::text AS created_at,
             p.submitted_at::text AS submitted_at, p.paid_at::text AS paid_at, p.cancel_code, p.cancel_reason
        FROM affiliate_payouts p JOIN affiliates a ON a.id = p.affiliate_id
       WHERE p.id = $1`,
@@ -273,6 +274,7 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     amount_coin: r.amount_coin != null ? Number(r.amount_coin) : null,
     tx_hash: r.tx_hash,
     tx_nonce: r.tx_nonce != null ? Number(r.tx_nonce) : null,
+    tx_block: r.tx_block != null ? Number(r.tx_block) : null,
     explorer_url: r.tx_hash ? explorerTxUrl(r.network, r.tx_hash) : null,
     status: r.status,
     created_at: r.created_at,
@@ -363,10 +365,15 @@ export async function registerPayoutTx(
       `overpaid payout=${payout.id} due=${payout.amount_usd} sent=${verdict.amountCoin} ${payout.coin} to=${maskAddress(payout.to_address)} tx=${hash}`,
     ]);
   }
+  if (verdict.txFromMismatch) {
+    // QA R1: Transfer dal nostro wallet ma tx firmata da altri (Safe/relayer):
+    // si registra, senza nonce → un drop futuro resta impossibile.
+    console.warn(`[affiliate/payouts] tx not signed by the payout wallet payout=${payout.id} tx=${hash}: nonce not stored`);
+  }
   const paid = verdict.outcome === "paid";
   const res = await affiliateRpc<{ ok: boolean; error?: string; status?: string; became_paid?: boolean; dropped?: boolean }>(
     "affiliate_payout_record_tx",
-    { p_id: payout.id, p_tx_hash: hash, p_paid: paid, p_amount_coin: verdict.amountCoin, p_nonce: verdict.nonce },
+    { p_id: payout.id, p_tx_hash: hash, p_paid: paid, p_amount_coin: verdict.amountCoin, p_nonce: verdict.nonce, p_block: verdict.block },
   );
   if (!res.ok) {
     if (res.error === "hash_already_used" && res.dropped) {
@@ -398,6 +405,7 @@ export async function registerPayoutTx(
     required: verdict.outcome === "submitted" ? verdict.required : undefined,
     amount_coin: verdict.amountCoin,
     overpaid: verdict.overpaid,
+    tx_from_mismatch: verdict.txFromMismatch,
     explorer_url: explorerTxUrl(payout.network, hash),
   });
 }
@@ -444,8 +452,9 @@ export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Pr
 
 /**
  * Annulla un payout `submitted` SOLO se la tx non potrà più essere minata
- * (checkDroppable): fallita in un blocco finalizzato, oppure sconosciuta E col
- * nonce registrato già consumato al blocco `finalized`. Una ricevuta null da
+ * (checkDroppable): fallita in un blocco finalizzato, oppure sconosciuta E senza
+ * Transfer nei log del token dal blocco di registrazione E col nonce registrato
+ * già consumato al blocco `finalized`. Una ricevuta null da
  * sola non basta (doppio pagamento). Nonce non registrato → 409 nonce_unknown;
  * RPC che non risponde → 503. Regola operativa: prima del drop l'admin
  * sostituisce/consuma il nonce bloccato e aspetta che sia finalizzato.
@@ -458,9 +467,13 @@ export async function dropSubmittedPayout(
   const from = payoutConfig().payoutFrom;
   if (!from || !payout.tx_hash) return NextResponse.json({ error: "payout_from_not_configured" }, { status: 503 });
   if (payout.tx_nonce == null) return NextResponse.json({ error: "nonce_unknown" }, { status: 409 });
+  if (payout.tx_block == null) return NextResponse.json({ error: "block_unknown" }, { status: 409 });
   let verdict;
   try {
-    verdict = await checkDroppable({ txHash: payout.tx_hash, from, nonce: payout.tx_nonce }, rpc);
+    verdict = await checkDroppable(
+      { txHash: payout.tx_hash, from, to: payout.to_address, coin: payout.coin, nonce: payout.tx_nonce, block: payout.tx_block },
+      rpc,
+    );
   } catch (e) {
     if (e instanceof VerifierUnavailableError) {
       return NextResponse.json({ error: "verifier_unavailable" }, { status: 503 });
