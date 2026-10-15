@@ -181,9 +181,9 @@ describe("payout admin config (PR-9)", () => {
 });
 
 describe("AFFILIATE_PAYOUT_MIN_RATIO (QA F3)", () => {
-  it("default 0.99, ammessi solo valori in [0.9, 1]", () => {
-    expect(affiliatePayoutMinRatio({})).toBe(0.99);
-    expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: "1" })).toBe(1);
-    for (const v of ["0.5", "1.1", "abc", "-1"]) expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: v })).toBe(0.99);
+  it("default 1 (100 %, decisione di Andrea 15/10), ammessi solo valori in [0.9, 1], fuori range → 1", () => {
+    expect(affiliatePayoutMinRatio({})).toBe(1);
+    expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: "0.99" })).toBe(0.99);
+    for (const v of ["0.5", "1.1", "abc", "-1"]) expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: v })).toBe(1);
   });
 });
