@@ -15,7 +15,7 @@
 //  · shadow → calcola e scrive righe `status='shadow'`: non maturano, non si
 //    pagano, non si convertono mai (decisione D10). live → righe `pending`.
 //
-// Idempotenza e corse: le garantisce il DB (migration 20260930200000).
+// Idempotenza e corse: le garantisce il DB (migration 20261007120000).
 //  · `uq_affiliate_commissions_one_positive_per_payment` → una sola riga
 //    positiva per rail + pagamento: redelivery, PayPal capture+webhook, reconcile.
 //  · `uq_affiliate_commissions_referred_index` → due pagamenti concorrenti dello
