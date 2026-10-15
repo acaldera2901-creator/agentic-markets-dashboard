@@ -44,7 +44,7 @@ export const TX_ERROR_TEXT: Record<string, string> = {
   not_cancellable: "Questo payout non si può annullare in questo stato.",
   reason_required: "Il motivo è obbligatorio (da 3 a 500 caratteri).",
   verifier_unavailable: "Il verificatore on-chain non risponde: non so se la transazione esiste (non è «hash non trovato»). Il payout non è cambiato: riprova più tardi.",
-  tx_on_chain: "La transazione risulta ancora valida sulla rete: il payout non si annulla (le commissioni tornerebbero pagabili). Usa «Riverifica» finché non è Pagato.",
+  tx_on_chain: "La transazione risulta ancora valida sulla rete: il payout non si annulla e resta com'è. Usa «Riverifica» finché non è Pagato.",
   tx_not_droppable: "La riverifica non dice che la transazione è sparita o fallita: il payout non si annulla.",
   too_recent: "Sono passati meno di 30 minuti dalla registrazione dell'hash: riprova dopo.",
   affiliate_not_active: "L'affiliato non è attivo: non si registra niente. Se i fondi sono già partiti, gestiscili a mano.",

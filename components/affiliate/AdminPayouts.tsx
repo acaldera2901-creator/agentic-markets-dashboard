@@ -459,7 +459,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             {p.status === "submitted" && <button type="button" className="aff-cta" onClick={() => register(true)} disabled={busy || off}>{busy ? "Verifico…" : "Riverifica"}</button>}
             {canCancel && !cancelling && <button type="button" className="aff-cta aff-cta--text" onClick={() => setCancelling(true)}>{p.status === "submitted" ? "Annulla payout (prima riverifica sulla rete)" : "Annulla payout"}</button>}
           </div>
-          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash si annulla subito. Con un hash già registrato il server prima riverifica la transazione sulla rete: annulla solo se risulta sparita o fallita e sono passati almeno 30 minuti dalla registrazione; se la transazione è valida risponde di no (annullare farebbe ripagare lo stesso importo). Richiede un motivo.</p>}
+          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash si annulla subito. Con un hash già registrato il server prima riverifica la transazione sulla rete: annulla solo se risulta sparita o fallita e sono passati almeno 30 minuti dalla registrazione; se la transazione è valida risponde di no e il payout resta com'è. Richiede un motivo.</p>}
         </div>
 
         <aside className="aff-block">
@@ -468,7 +468,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             <li><strong><StateChip chip={payoutChip("paid", IT)} /> Tutto coerente</strong><span>Token, mittente, destinatario, importo (almeno il 99% del dovuto) e conferme (30 su Polygon). L&apos;importo ricevuto è letto dalla rete.</span></li>
             <li><strong><StateChip chip={payoutChip("submitted", IT)} /> Poche conferme</strong><span>Transazione trovata ma con meno conferme del richiesto. Resta Inviato, con il pulsante «Riverifica».</span></li>
             <li><strong><StateChip chip={payoutChip("created", IT)} /> Hash rifiutato</strong><span>Con il motivo: destinatario diverso · token diverso · mittente diverso dal wallet di uscita · importo troppo basso · hash non trovato · hash già usato per questo destinatario · formato non valido. Un hash sbagliato non si registra mai.</span></li>
-            <li><strong><StateChip chip={payoutChip("cancelled", IT)} /> Solo da «in preparazione»</strong><span>Il database vieta di annullare un payout con una transazione.</span></li>
+            <li><strong><StateChip chip={payoutChip("cancelled", IT)} /> Da «in preparazione», o da «Inviato» a certe condizioni</strong><span>Un payout Inviato si annulla solo se la riverifica sulla rete dice che la transazione è sparita o fallita, e dopo almeno 30 minuti dalla registrazione. Con una transazione valida non si annulla.</span></li>
           </ul>
         </aside>
       </section>
