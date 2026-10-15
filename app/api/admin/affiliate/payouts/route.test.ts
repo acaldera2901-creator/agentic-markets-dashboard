@@ -50,11 +50,11 @@ const USDT = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f";
 const H1 = `0x${"a1".repeat(32)}`;
 const H2 = `0x${"b2".repeat(32)}`;
 const pad = (a: string) => `0x${"0".repeat(24)}${a.slice(2).toLowerCase()}`;
-function receiptOk(amount = 60, to = TO) {
+function receiptOk(amount = 60, to = TO, from = FROM) {
   return {
     status: "0x1",
     blockNumber: `0x${(1_000_000).toString(16)}`,
-    logs: [{ address: USDT, topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", pad(FROM), pad(to)], data: `0x${(amount * 1e6).toString(16).padStart(64, "0")}` }],
+    logs: [{ address: USDT, topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", pad(from), pad(to)], data: `0x${(amount * 1e6).toString(16).padStart(64, "0")}` }],
   };
 }
 
@@ -281,8 +281,8 @@ describe("POST [id]/tx — verifica per hash", () => {
 });
 
 describe("POST [id]/verify — Riverifica", () => {
-  it("submitted → rilegge l'hash registrato", async () => {
-    payout = { status: "submitted", tx_hash: H1 };
+  it("submitted → rilegge l'hash registrato (col mittente registrato)", async () => {
+    payout = { status: "submitted", tx_hash: H1, tx_from: FROM };
     const r = await (await verify()).POST(req("/p/7/verify", "POST"), params("7"));
     expect(await r.json()).toMatchObject({ outcome: "paid" });
     expect(affiliateRpc.mock.calls[0][1]).toMatchObject({ p_tx_hash: H1, p_paid: true });
@@ -520,5 +520,44 @@ describe("QA S3: rotazione di AFFILIATE_PAYOUT_FROM", () => {
     payout = { ...sub };
     const body = await (await (await one()).GET(req("/p/7"), params("7"))).json();
     expect(body.payout.tx_from).toBe(OLD);
+  });
+});
+
+describe("Gate A fix payouts.ts:342 — riverifica dopo la rotazione di AFFILIATE_PAYOUT_FROM", () => {
+  const OLD = "0x3333333333333333333333333333333333333333";
+  const NEW = "0x4444444444444444444444444444444444444444";
+  it("submitted registrato da OLD, env ora NEW: la riverifica usa tx_from e arriva a paid", async () => {
+    vi.stubEnv("AFFILIATE_PAYOUT_FROM", NEW);
+    payout = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000, tx_from: OLD };
+    chain.receipt = receiptOk(60, TO, OLD);
+    chain.tx = { nonce: "0x7", from: OLD };
+    affiliateRpc.mockResolvedValueOnce({ ok: true, status: "paid", became_paid: true });
+    const r = await (await verify()).POST(req("/p/7/verify", "POST"), params("7"));
+    expect(await r.json()).toMatchObject({ outcome: "paid", tx_from_mismatch: false });
+    expect(affiliateRpc.mock.calls[0][1]).toMatchObject({ p_from: OLD, p_nonce: 7, p_paid: true });
+  });
+  it("stessa cosa con AFFILIATE_PAYOUT_FROM non più configurato", async () => {
+    vi.stubEnv("AFFILIATE_PAYOUT_FROM", "");
+    payout = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000, tx_from: OLD };
+    chain.receipt = receiptOk(60, TO, OLD);
+    chain.tx = { nonce: "0x7", from: OLD };
+    const r = await (await verify()).POST(req("/p/7/verify", "POST"), params("7"));
+    expect(await r.json()).toMatchObject({ outcome: "paid" });
+  });
+  it("payout created: il mittente atteso resta il wallet di uscita ATTUALE (Transfer da OLD → wrong_sender)", async () => {
+    vi.stubEnv("AFFILIATE_PAYOUT_FROM", NEW);
+    payout = { status: "created", tx_hash: null };
+    chain.receipt = receiptOk(60, TO, OLD);
+    chain.tx = { nonce: "0x7", from: OLD };
+    const r = await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1 }), params("7"));
+    expect(await r.json()).toEqual({ outcome: "rejected", reason: "wrong_sender" });
+    expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("submitted senza tx_from registrato → 409 from_unknown, nessuna chiamata di rete", async () => {
+    payout = { status: "submitted", tx_hash: H1, tx_nonce: 7, tx_block: 1_000_000, tx_from: null };
+    const r = await (await verify()).POST(req("/p/7/verify", "POST"), params("7"));
+    expect(r.status).toBe(409);
+    expect(await r.json()).toEqual({ error: "from_unknown" });
+    expect(rpcCalls).toEqual([]);
   });
 });

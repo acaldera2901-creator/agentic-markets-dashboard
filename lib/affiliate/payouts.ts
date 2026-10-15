@@ -339,8 +339,22 @@ export async function registerPayoutTx(
     return NextResponse.json({ error: "hash_mismatch" }, { status: 409 });
   }
 
-  const from = payoutConfig().payoutFrom;
-  if (!from) return NextResponse.json({ error: "payout_from_not_configured" }, { status: 503 });
+  // Mittente atteso del Transfer (fix gate A, ex payouts.ts:342):
+  //  · payout `created` → il wallet di uscita ATTUALE (l'admin invia adesso);
+  //  · payout `submitted` → il mittente REGISTRATO della tx (`tx_from`), non l'env:
+  //    dopo una rotazione di AFFILIATE_PAYOUT_FROM la riverifica deve ancora
+  //    poter portare a `paid` una tx partita dal vecchio wallet. Senza tx_from →
+  //    fail-closed. Limite: una tx `submitted` NON firmata dal wallet di uscita
+  //    (Safe/relayer, QA R1) ha tx_from = il firmatario e la riverifica dà
+  //    wrong_sender: resta `submitted` e si gestisce a mano (con D2 = EOA non accade).
+  let from: string | null;
+  if (payout.status === "submitted") {
+    from = payout.tx_from;
+    if (!from) return NextResponse.json({ error: "from_unknown" }, { status: 409 });
+  } else {
+    from = payoutConfig().payoutFrom;
+    if (!from) return NextResponse.json({ error: "payout_from_not_configured" }, { status: 503 });
+  }
 
   let verdict;
   try {
