@@ -11,7 +11,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
-import { CREATE_ERROR_TEXT, createErrorText, nextMonth, prevMonth, reasonText, TX_REJECT_TEXT, txErrorText } from "./admin-copy";
+import { CREATE_ERROR_TEXT, createErrorText, nextMonth, prevMonth, reasonText, TX_REJECT_TEXT, txErrorText, txFailText } from "./admin-copy";
 import { addressGroups, dateTime, monthLabel, shortDate, usd } from "./format";
 import { AFF_COPY } from "./copy";
 import { CheckIcon, ExplorerLink, StateChip, useCopy } from "./ui";
@@ -302,7 +302,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
         setResult({ kind: "rejected", text: `Hash rifiutato: ${TX_REJECT_TEXT[o.reason] ?? "motivo non riconosciuto"} Il payout resta com'era.` });
       }
     } else {
-      setResult({ kind: "error", text: status === 0 ? txErrorText(null) : txErrorText(o && "error" in o ? o.error : null) });
+      setResult({ kind: "error", text: status === 0 ? txErrorText(null) : txFailText(o as { error?: unknown; dropped?: unknown } | null) });
     }
   };
 
@@ -338,15 +338,15 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
     if (busy) return;
     if (reason.trim().length < 3) return setResult({ kind: "error", text: txErrorText("reason_required") });
     setBusy(true);
-    const res = await api<{ ok?: boolean; error?: string }>(`/api/admin/affiliate/payouts/${id}/cancel`, { method: "POST", body: JSON.stringify({ reason: reason.trim() }) });
+    const res = await api<{ ok?: boolean; error?: string; reason?: string }>(`/api/admin/affiliate/payouts/${id}/cancel`, { method: "POST", body: JSON.stringify({ reason: reason.trim() }) });
     setBusy(false);
     if (res.ok) {
       setCancelling(false);
       setResult({ kind: "error", text: p?.status === "submitted"
-        ? "Payout annullato: la transazione risulta sparita o fallita sulla rete. Le commissioni sono tornate maturate; l'affiliato ha ricevuto un'email generica."
+        ? "Payout annullato: il server ha verificato che la transazione non potrà più essere minata. Le commissioni sono tornate maturate; l'affiliato ha ricevuto un'email generica."
         : "Payout annullato. Le commissioni sono tornate maturate; l'affiliato ha ricevuto un'email generica." });
       await load();
-    } else setResult({ kind: "error", text: txErrorText(res.data?.error) });
+    } else setResult({ kind: "error", text: txFailText(res.data) });
   };
 
   const back = <div><button type="button" className="aff-linkbtn" onClick={onBack}>← Torna al mese</button></div>;
@@ -375,7 +375,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
           <div className={affOk ? "aff-wstate" : "aff-banner"} data-s={affOk ? "active" : "blocked"} role={affOk ? undefined : "alert"} data-testid="affiliate-status">
             <p style={{ margin: 0 }}>
               <strong>Affiliato: {p.affiliate_status === "active" ? "attivo" : p.affiliate_status === "suspended" ? "SOSPESO" : p.affiliate_status === "terminated" ? "USCITO dal programma" : p.affiliate_status}</strong>
-              {!affOk && " · non inviare e non registrare: se i fondi sono già partiti, gestiscili a mano."}
+              {!affOk && (p.status === "submitted" ? " · l'invio è già partito: puoi riverificare la transazione per chiuderla come Pagata, ma non fare nuovi invii." : " · non inviare e non registrare: se i fondi sono già partiti, gestiscili a mano.")}
             </p>
           </div>
           {overpaid && (
@@ -416,6 +416,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             <div className="aff-kv">
               <span className="aff-k">Hash registrato</span>
               <ExplorerLink href={p.explorer_url} text={p.tx_hash} sr="apre l'explorer in una nuova scheda" />
+              {p.status === "submitted" && p.tx_nonce != null && <span className="aff-small">Nonce registrato: {p.tx_nonce} (serve se devi sostituire la transazione dal wallet di uscita)</span>}
               {p.status === "paid" && p.paid_at && <span className="aff-small">Pagato il {dateTime(p.paid_at, "it")}{p.amount_coin != null ? ` · ricevuti ${p.amount_coin} USDT` : ""}</span>}
             </div>
           )}
@@ -457,9 +458,9 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
           <div className="aff-actions">
             {editable && <button type="button" className="aff-cta" onClick={() => register(false)} disabled={!canSubmit}>{busy ? "Verifico…" : "Registra e verifica"}</button>}
             {p.status === "submitted" && <button type="button" className="aff-cta" onClick={() => register(true)} disabled={busy || off}>{busy ? "Verifico…" : "Riverifica"}</button>}
-            {canCancel && !cancelling && <button type="button" className="aff-cta aff-cta--text" onClick={() => setCancelling(true)}>{p.status === "submitted" ? "Annulla payout (prima riverifica sulla rete)" : "Annulla payout"}</button>}
+            {canCancel && !cancelling && <button type="button" className="aff-cta aff-cta--text" onClick={() => setCancelling(true)}>{p.status === "submitted" ? "Annulla payout (il server controlla la rete)" : "Annulla payout"}</button>}
           </div>
-          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash si annulla subito. Con un hash già registrato il server prima riverifica la transazione sulla rete: annulla solo se risulta sparita o fallita e sono passati almeno 30 minuti dalla registrazione; se la transazione è valida risponde di no e il payout resta com'è. Richiede un motivo.</p>}
+          {(editable || p.status === "submitted") && <p className="aff-small" style={{ margin: 0 }}>«Annulla payout»: senza hash si annulla subito. Con un hash già registrato il server controlla la rete: annulla solo se la transazione è fallita o non potrà più essere minata (nonce già consumato e finalizzato) e sono passati almeno 30 minuti dalla registrazione. Se la transazione è bloccata, prima va sostituita dal wallet di uscita (stesso nonce) e va atteso che sia finalizzata. Altrimenti il payout resta com'è. Richiede un motivo.</p>}
         </div>
 
         <aside className="aff-block">
@@ -468,7 +469,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             <li><strong><StateChip chip={payoutChip("paid", IT)} /> Tutto coerente</strong><span>Token, mittente, destinatario, importo (almeno il 99% del dovuto) e conferme (30 su Polygon). L&apos;importo ricevuto è letto dalla rete.</span></li>
             <li><strong><StateChip chip={payoutChip("submitted", IT)} /> Poche conferme</strong><span>Transazione trovata ma con meno conferme del richiesto. Resta Inviato, con il pulsante «Riverifica».</span></li>
             <li><strong><StateChip chip={payoutChip("created", IT)} /> Hash rifiutato</strong><span>Con il motivo: destinatario diverso · token diverso · mittente diverso dal wallet di uscita · importo troppo basso · hash non trovato · hash già usato per questo destinatario · formato non valido. Un hash sbagliato non si registra mai.</span></li>
-            <li><strong><StateChip chip={payoutChip("cancelled", IT)} /> Da «in preparazione», o da «Inviato» a certe condizioni</strong><span>Un payout Inviato si annulla solo se la riverifica sulla rete dice che la transazione è sparita o fallita, e dopo almeno 30 minuti dalla registrazione. Con una transazione valida non si annulla.</span></li>
+            <li><strong><StateChip chip={payoutChip("cancelled", IT)} /> Da «in preparazione», o da «Inviato» a certe condizioni</strong><span>Un payout Inviato si annulla solo se la transazione è fallita o non potrà più essere minata (nonce consumato e finalizzato), dopo almeno 30 minuti dalla registrazione. Con una transazione valida o ancora in attesa non si annulla.</span></li>
           </ul>
         </aside>
       </section>

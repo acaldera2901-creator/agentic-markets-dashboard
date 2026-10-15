@@ -5,7 +5,7 @@ import { AFF_COPY, affLang, fill } from "./copy";
 import { checkAddressLocal, last6Matches, looksLikeTron, mapWalletError } from "./errors";
 import { addressGroups, monthLabel, shortHash, usd } from "./format";
 import { cancelText, commissionChip, payoutChip } from "./status";
-import { createErrorText, nextMonth, prevMonth, reasonText, txErrorText, TX_REJECT_TEXT } from "./admin-copy";
+import { createErrorText, nextMonth, prevMonth, reasonText, txErrorText, txFailText, TX_REJECT_TEXT } from "./admin-copy";
 
 const A = "0x4b1e9a07c3d85f2e6a90b7c14d3e58f20a6c91d7";
 
@@ -147,6 +147,17 @@ describe("admin: testi", () => {
   it("errori tx: neutro sul sconosciuto, mai il codice grezzo", () => {
     expect(txErrorText("hash_already_used")).toMatch(/già stato usato/);
     expect(txErrorText("zzz")).not.toMatch(/zzz/);
+  });
+  it("txFailText: ogni reason di tx_not_droppable, nonce_unknown, hash scartato; mai «pagare di nuovo»", () => {
+    for (const reason of ["tx_on_chain", "tx_pending", "nonce_not_consumed", "not_finalized"]) {
+      const t = txFailText({ error: "tx_not_droppable", reason });
+      expect(t).toMatch(/\S/);
+      expect(t).not.toMatch(/pagare di nuovo|paga di nuovo|ripaga/i);
+    }
+    expect(txFailText({ error: "nonce_unknown" })).toMatch(/nonce/);
+    expect(txFailText({ error: "hash_already_used", dropped: true })).toMatch(/annullato perché la transazione era sparita/);
+    expect(txFailText({ error: "hash_already_used" })).toMatch(/già stato usato/);
+    expect(txFailText({ error: "tx_not_droppable", reason: "boh" })).not.toMatch(/boh/);
   });
   it("total_mismatch mostra la differenza", () => {
     const t = createErrorText({ error: "total_mismatch", expected: "349.20", actual: "412.60" }, (n) => usd(n, "it"));

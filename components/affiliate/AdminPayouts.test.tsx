@@ -220,13 +220,14 @@ describe("registra tx", () => {
     expect(calls.find((c) => c.url.endsWith("/cancel"))?.body).toEqual({ reason: "wallet errato" });
   });
 
+  let sentAffStatus = "active";
   const sentSetup = (extra: (url: string, method: string) => R) => {
     const adminSent = { ...ADMIN, rows: ADMIN.rows.map((r) => (r.payout ? { ...r, payout: { ...r.payout, status: "submitted" } } : r)) };
     mock((url, method) => {
       const o = extra(url, method);
       if (o) return o;
       if (url.startsWith("/api/admin/affiliate/payouts?") || url === "/api/admin/affiliate/payouts") return { status: 200, body: adminSent };
-      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, explorer_url: `https://x/tx/${TX}` }, payout_from: ADMIN.payout_from } };
+      if (url === "/api/admin/affiliate/payouts/11" && method === "GET") return { status: 200, body: { payout: { ...ADMIN_PAYOUT, status: "submitted", tx_hash: TX, tx_nonce: 42, affiliate_status: sentAffStatus, explorer_url: `https://x/tx/${TX}` }, payout_from: ADMIN.payout_from } };
       return undefined;
     });
   };
@@ -239,9 +240,9 @@ describe("registra tx", () => {
   it("submitted: il bottone Annulla dice che prima si riverifica; il server decide (tx valida → 409, mai «paga di nuovo»)", async () => {
     sentSetup((url, method) => url.endsWith("/cancel") && method === "POST" ? { status: 409, body: { error: "tx_on_chain", outcome: "paid" } } : undefined);
     await openSent();
-    expect(document.body.textContent).toMatch(/il server prima riverifica la transazione sulla rete/);
+    expect(document.body.textContent).toMatch(/il server controlla la rete/);
     expect(document.body.textContent).toMatch(/almeno 30 minuti/);
-    fireEvent.click(screen.getByRole("button", { name: /prima riverifica sulla rete/ }));
+    fireEvent.click(screen.getByRole("button", { name: /il server controlla la rete/ }));
     fireEvent.change(screen.getByLabelText(/Motivo dell.annullo/), { target: { value: "tx sparita" } });
     fireEvent.click(screen.getByRole("button", { name: "Conferma annullo" }));
     const t = (await screen.findByTestId("tx-result")).textContent!;
@@ -252,10 +253,10 @@ describe("registra tx", () => {
   it("submitted: tx sparita → annullo riuscito con testo dedicato", async () => {
     sentSetup((url, method) => url.endsWith("/cancel") && method === "POST" ? { status: 200, body: { ok: true, cancel_code: "tx_dropped", onchain: "not_found" } } : undefined);
     await openSent();
-    fireEvent.click(screen.getByRole("button", { name: /prima riverifica sulla rete/ }));
+    fireEvent.click(screen.getByRole("button", { name: /il server controlla la rete/ }));
     fireEvent.change(screen.getByLabelText(/Motivo dell.annullo/), { target: { value: "tx sparita" } });
     fireEvent.click(screen.getByRole("button", { name: "Conferma annullo" }));
-    expect((await screen.findByTestId("tx-result")).textContent).toMatch(/sparita o fallita sulla rete/);
+    expect((await screen.findByTestId("tx-result")).textContent).toMatch(/non potrà più essere minata/);
   });
 
   it("503 «verificatore non disponibile» è distinto da «hash non trovato»; too_recent ha il suo testo", async () => {
@@ -265,10 +266,46 @@ describe("registra tx", () => {
     const t = (await screen.findByTestId("tx-result")).textContent!;
     expect(t).toMatch(/non risponde/);
     expect(t).not.toMatch(/Hash non trovato sulla rete/);
-    fireEvent.click(screen.getByRole("button", { name: /prima riverifica sulla rete/ }));
+    fireEvent.click(screen.getByRole("button", { name: /il server controlla la rete/ }));
     fireEvent.change(screen.getByLabelText(/Motivo dell.annullo/), { target: { value: "tx sparita" } });
     fireEvent.click(screen.getByRole("button", { name: "Conferma annullo" }));
     await waitFor(() => expect(screen.getByTestId("tx-result").textContent).toMatch(/meno di 30 minuti/));
+  });
+
+  it.each([
+    ["nonce_unknown", undefined, /nonce dell'invio/],
+    ["tx_not_droppable", "nonce_not_consumed", /sostituire la tx bloccata dal wallet di uscita \(stesso nonce\) e aspettare che sia finalizzata/],
+    ["tx_not_droppable", "tx_pending", /ancora in attesa sulla rete/],
+    ["tx_not_droppable", "tx_on_chain", /ancora valida sulla rete/],
+    ["tx_not_droppable", "not_finalized", /non è ancora finalizzato/],
+  ])("annullo di submitted rifiutato: %s %s → testo dedicato, mai «pagare di nuovo»", async (error, reason, re) => {
+    sentSetup((url, method) => url.endsWith("/cancel") && method === "POST" ? { status: 409, body: { error, reason } } : undefined);
+    await openSent();
+    fireEvent.click(screen.getByRole("button", { name: /il server controlla la rete/ }));
+    fireEvent.change(screen.getByLabelText(/Motivo dell.annullo/), { target: { value: "tx bloccata" } });
+    fireEvent.click(screen.getByRole("button", { name: "Conferma annullo" }));
+    const t = (await screen.findByTestId("tx-result")).textContent!;
+    expect(t).toMatch(re);
+    expect(t).not.toMatch(/pagare di nuovo|paga di nuovo|ripaga|rifai il pagamento/i);
+  });
+
+  it("hash_already_used con dropped:true → «appartiene a un pagamento annullato»", async () => {
+    setup({}, (url) => url.endsWith("/tx") ? { status: 409, body: { error: "hash_already_used", dropped: true } } : undefined);
+    await openTx();
+    fireEvent.change(screen.getByLabelText(/Incolla l.hash/), { target: { value: TX } });
+    fireEvent.click(within(screen.getByTestId("tx-confirm")).getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Registra e verifica" }));
+    expect((await screen.findByTestId("tx-result")).textContent).toMatch(/appartiene a un pagamento annullato perché la transazione era sparita/);
+  });
+
+  it("submitted: il nonce registrato è visibile; affiliato sospeso NON blocca Riverifica (può diventare Pagato)", async () => {
+    sentAffStatus = "suspended";
+    sentSetup(() => undefined);
+    await openSent();
+    expect(screen.getByText(/Nonce registrato: 42/)).toBeTruthy();
+    expect(screen.getByTestId("affiliate-status").textContent).toMatch(/SOSPESO.*puoi riverificare/);
+    expect((screen.getByRole("button", { name: "Riverifica" }) as HTMLButtonElement).disabled).toBe(false);
+    sentAffStatus = "active";
   });
 
   it("overpaid (dall'esito di verify): avviso neutro, nessuna azione automatica", async () => {
