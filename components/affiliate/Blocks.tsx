@@ -159,7 +159,9 @@ export function WalletCard({ c, lang, wallet, payee, onAdd, onChange, soft }: {
       {extra}
     </div>
   );
-  const payeeLine = payee.name ? fill(w.payee, { name: payee.name, country: payee.country ?? "" }).replace(/ · \.$/, ".") : null;
+  let country = payee.country ?? "";
+  try { country = payee.country ? new Intl.DisplayNames([lang], { type: "region" }).of(payee.country) ?? payee.country : ""; } catch { /* resta il codice */ }
+  const payeeLine = payee.name ? fill(w.payee, { name: payee.name, country }).replace(/ · \.$/, ".") : null;
   return (
     <section className="aff-block aff-wcard" aria-labelledby="aff-t-wal">
       <div className="aff-block__head">

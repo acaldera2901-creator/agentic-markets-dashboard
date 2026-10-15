@@ -138,7 +138,7 @@ describe("dashboard", () => {
     expect(screen.getByText("$41,98")).toBeTruthy();
     expect(screen.getAllByText("$23,39").length).toBeGreaterThan(0);
     expect(screen.getAllByText("−$6,00").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Intestato a A\. Bianchi · IT/)).toBeTruthy();
+    expect(screen.getByText(/Intestato a A\. Bianchi · Italia/)).toBeTruthy();
     expect(screen.queryByText(/Esempio/)).toBeNull();
     const link = screen.getByRole("textbox", { name: "Il tuo link" }) as HTMLInputElement;
     expect(link.value).toMatch(/\/r\/ESEMPIO$/);

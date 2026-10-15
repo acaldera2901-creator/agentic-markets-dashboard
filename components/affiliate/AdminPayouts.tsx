@@ -294,7 +294,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
       if (o.outcome === "rejected" && (o.reason === "not_found" || o.reason === "tx_failed")) setCanCancelSent(true);
       if (o.outcome === "paid") {
         const conf = o.confirmations != null ? ` · ${o.confirmations} conferme` : "";
-        setResult({ kind: "paid", text: `Verificato sulla rete: token, mittente = wallet di uscita, destinatario = indirizzo del payout${o.amount_coin ? ` · ${o.amount_coin} USDT` : ""}${conf}. Il payout è Pagato; l'affiliato riceve l'email con il link all'explorer.` });
+        setResult({ kind: "paid", text: `Verificato sulla rete: token, mittente = wallet di uscita, destinatario = indirizzo del payout${o.amount_coin && Number.isFinite(Number(o.amount_coin)) ? ` · ${Number(o.amount_coin).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT` : ""}${conf}. Il payout è Pagato; l'affiliato riceve l'email con il link all'explorer.` });
       } else if (o.outcome === "submitted") {
         setResult({ kind: "submitted", text: `Transazione trovata con ${o.confirmations} conferme${o.required ? ` su ${o.required}` : ""}. Resta Inviato: usa «Riverifica» tra qualche minuto.` });
       } else {

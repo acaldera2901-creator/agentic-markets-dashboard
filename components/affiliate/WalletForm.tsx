@@ -34,7 +34,7 @@ const NETWORK_LABEL: Record<string, string> = { polygon: "Polygon (PoS)", tron: 
 type Errors = Partial<Record<WalletFieldId, WalletErrKey>>;
 const ORDER: WalletFieldId[] = ["name", "country", "addr", "last6", "netack", "sanc", "tax"];
 const FIELD_LABEL = (c: AffCopy, f: WalletFieldId): string =>
-  ({ name: c.wallet.fName, country: c.wallet.fCountry, addr: c.wallet.fAddr, last6: c.wallet.fLast6, netack: c.wallet.cNet, sanc: c.wallet.cSanc, tax: c.wallet.cTax })[f];
+  ({ name: c.wallet.fName, country: c.wallet.fCountry, addr: c.wallet.fAddr, last6: c.wallet.fLast6, netack: c.wallet.cNet, sanc: c.wallet.cSanc, tax: c.wallet.cTax })[f].replace(/\.$/, "");
 
 function FieldErr({ id, text }: { id: string; text: string | null }) {
   return text ? (
