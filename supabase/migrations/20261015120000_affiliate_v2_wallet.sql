@@ -72,16 +72,20 @@ BEGIN
     ALTER TABLE public.affiliate_wallets ADD CONSTRAINT affiliate_wallets_clear_needs_time
       CHECK (screening_result <> 'clear' OR (screened_at IS NOT NULL AND screening_provider IS NOT NULL));
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_payouts_cancel_code') THEN
-    ALTER TABLE public.affiliate_payouts ADD CONSTRAINT affiliate_payouts_cancel_code
-      CHECK (cancel_code IS NULL OR cancel_code IN
-             ('wallet_changed','wallet_removed','admin_cancelled','affiliate_suspended','tx_dropped'));
-  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_payouts_cancelled_has_code') THEN
     ALTER TABLE public.affiliate_payouts ADD CONSTRAINT affiliate_payouts_cancelled_has_code
       CHECK ((status = 'cancelled') = (cancel_code IS NOT NULL));
   END IF;
 END $$;
+
+-- Lista dei codici: DROP + ADD a ogni apply (QA N3), non «se assente». Un DB che
+-- ha già una versione precedente di questo file (lista a 3 codici) altrimenti
+-- terrebbe il vincolo vecchio e la sospensione di un affiliato con un payout in
+-- preparazione fallirebbe. Le righe esistenti hanno solo codici della lista.
+ALTER TABLE public.affiliate_payouts DROP CONSTRAINT IF EXISTS affiliate_payouts_cancel_code;
+ALTER TABLE public.affiliate_payouts ADD CONSTRAINT affiliate_payouts_cancel_code
+  CHECK (cancel_code IS NULL OR cancel_code IN
+         ('wallet_changed','wallet_removed','admin_cancelled','affiliate_suspended','tx_dropped'));
 
 -- ── profiles: codice referral univoco (QA F11) ───────────────────────────────
 -- Il codice dell'affiliato È profiles.referral_code: l'iscrizione si affida al suo
