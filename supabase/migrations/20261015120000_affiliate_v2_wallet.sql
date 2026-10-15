@@ -74,13 +74,25 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_payouts_cancel_code') THEN
     ALTER TABLE public.affiliate_payouts ADD CONSTRAINT affiliate_payouts_cancel_code
-      CHECK (cancel_code IS NULL OR cancel_code IN ('wallet_changed','wallet_removed','admin_cancelled'));
+      CHECK (cancel_code IS NULL OR cancel_code IN
+             ('wallet_changed','wallet_removed','admin_cancelled','affiliate_suspended','tx_dropped'));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_payouts_cancelled_has_code') THEN
     ALTER TABLE public.affiliate_payouts ADD CONSTRAINT affiliate_payouts_cancelled_has_code
       CHECK ((status = 'cancelled') = (cancel_code IS NOT NULL));
   END IF;
 END $$;
+
+-- ── profiles: codice referral univoco (QA F11) ───────────────────────────────
+-- Il codice dell'affiliato È profiles.referral_code: l'iscrizione si affida al suo
+-- UNIQUE per perdere le corse. In prod l'indice esiste già (verificato in sola
+-- lettura il 15/10/2026: uq_profiles_referral_code su UPPER(referral_code),
+-- parziale, 0 duplicati) ma nessuna migration del repo lo crea: un ambiente
+-- ricostruito dalle migration ne sarebbe privo. Stesso nome e stessa
+-- definizione → in prod è un no-op.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_profiles_referral_code
+  ON public.profiles (UPPER(referral_code))
+  WHERE referral_code IS NOT NULL;
 
 -- ── Annullo dei payout in preparazione (interno) ─────────────────────────────
 -- Solo `created`: un payout con un tx hash non si annulla mai (CHECK di #482).

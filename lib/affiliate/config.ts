@@ -9,6 +9,7 @@
 // Per AFFILIATE_MODE il default è `off`, quindi un refuso spegne il ledger invece
 // di accenderlo.
 
+import { catalogContracts } from "@/lib/crypto-coins";
 import { PAYOUT_COINS, PAYOUT_NETWORKS, type PayoutCoin, type PayoutNetwork } from "./wallet";
 
 export type AffiliateMode = "off" | "shadow" | "live";
@@ -75,6 +76,17 @@ function maxMonths(raw: string | undefined, fallback: number | null): number | n
   return Number.isInteger(n) && n >= 0 ? n : fallback;
 }
 
+/**
+ * AFFILIATE_MODE governa il LEDGER e l'iscrizione, NON i payout (QA F12):
+ *  · off    → nessuna riga nel ledger; /join e PUT /wallet chiusi (403).
+ *  · shadow → righe `shadow`; /join e PUT /wallet APERTI, ma solo se c'è anche
+ *             AFFILIATE_TERMS_VERSION (senza T&C pubblicati l'iscrizione resta
+ *             chiusa: è quello il secondo interruttore, voluto, non un altro flag).
+ *  · live   → righe `pending` che maturano.
+ * I payout admin li accende/spegne SOLO AFFILIATE_PAYOUTS (affiliatePayoutsMode):
+ * con AFFILIATE_MODE=off e AFFILIATE_PAYOUTS=live un payout già maturato si può
+ * ancora creare e registrare. Per fermare i soldi in uscita: AFFILIATE_PAYOUTS=off.
+ */
 export function affiliateMode(env: Env = process.env): AffiliateMode {
   const m = (env.AFFILIATE_MODE ?? "").trim().toLowerCase();
   return m === "shadow" || m === "live" ? m : "off";
@@ -203,6 +215,25 @@ export function affiliatePayoutsMode(env: Env = process.env): PayoutsMode {
   return (env.AFFILIATE_PAYOUTS ?? "").trim().toLowerCase() === "live" ? "live" : "off";
 }
 
+/**
+ * QA F3 — tolleranza al RIBASSO sull'importo ricevuto on-chain: paid se
+ * ricevuto ≥ dovuto × ratio. Default 0.99 (la stessa di lib/crypto-verify.ts,
+ * nata per chi incolla l'importo a mano). Andrea valuta se portarla a 1 (≥100 %):
+ * per questo è una env e non una costante. Ammessi solo valori in [0.9, 1];
+ * fuori range o malformato → 0.99.
+ */
+export const DEFAULT_PAYOUT_MIN_RATIO = 0.99;
+export function affiliatePayoutMinRatio(env: Env = process.env): number {
+  const raw = (env.AFFILIATE_PAYOUT_MIN_RATIO ?? "").trim();
+  if (raw === "") return DEFAULT_PAYOUT_MIN_RATIO;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0.9 && n <= 1 ? n : DEFAULT_PAYOUT_MIN_RATIO;
+}
+
+/** QA F3 — oltre questo rapporto il pagamento è comunque `paid` (i fondi sono
+ *  partiti) ma segnalato come `overpaid`, con alert ops: è un errore di invio. */
+export const PAYOUT_OVERPAY_RATIO = 1.01;
+
 /** RPC JSON di Polygon per la verifica dei payout PER HASH (eth_getTransactionReceipt).
  *  Default publicnode: misurato il 15/10/2026, risponde a receipt e blockNumber
  *  senza key (Blockscout era dietro una challenge Cloudflare dalla nostra rete).
@@ -218,4 +249,20 @@ export function affiliatePolygonRpcUrl(env: Env = process.env): string {
     /* malformato → default */
   }
   return DEFAULT_POLYGON_RPC_URL;
+}
+
+// ── Denylist dei destinatari (QA F6) ─────────────────────────────────────────
+/** Indirizzi che non possono MAI ricevere un payout: i nostri wallet (uscita e
+ *  incassi: un payout verso di loro è un giro a vuoto o un errore), i contratti
+ *  dei token del catalogo e l'indirizzo di burn 0x…dEaD (fondi persi). L'indirizzo
+ *  zero lo rifiuta già validatePayoutWallet. Letti GREZZI dalle env: vale anche se
+ *  AFFILIATE_PAYOUT_FROM è stato scartato da payoutConfig. Minuscoli. */
+export function payoutDeniedAddresses(env: Env = process.env): Set<string> {
+  const out = new Set<string>(catalogContracts());
+  out.add("0x000000000000000000000000000000000000dead");
+  for (const k of ["AFFILIATE_PAYOUT_FROM", "PAYGATE_PAYOUT_WALLET"]) {
+    const v = (env[k] ?? "").trim().toLowerCase();
+    if (/^0x[0-9a-f]{40}$/.test(v)) out.add(v);
+  }
+  return out;
 }

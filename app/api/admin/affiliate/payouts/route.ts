@@ -15,6 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { affiliatePayoutsMode, payoutConfig } from "@/lib/affiliate/config";
 import {
   adminGuard,
+  checkRecipients,
   currentMonth,
   eligibilityParams,
   loadMonthRows,
@@ -79,6 +80,9 @@ export async function POST(req: NextRequest) {
   const p = eligibilityParams();
   let res;
   try {
+    // QA F6 + F13: denylist e screening rifatto sugli indirizzi di questo lotto.
+    const blocked = await checkRecipients(await loadMonthRows(m.period), ids);
+    if (blocked) return blocked;
     res = await affiliateRpc("affiliate_create_payouts", {
       p_ids: ids,
       p_period: m.period,

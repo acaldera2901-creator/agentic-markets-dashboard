@@ -12,8 +12,11 @@
 //  · log Transfer del contratto del token atteso (USDT Polygon dal catalogo);
 //  · mittente del Transfer = wallet di uscita (AFFILIATE_PAYOUT_FROM, D2);
 //  · destinatario = `to_address` copiato alla creazione del payout;
-//  · importo ≥ 99 % del dovuto (stessa tolleranza di lib/crypto-verify.ts);
-//  · conferme ≥ MIN_CONFIRMATIONS.polygon (30). Meno → `submitted`, si riverifica.
+//  · importo ≥ dovuto × AFFILIATE_PAYOUT_MIN_RATIO (default 0.99, QA F3); oltre
+//    il 101 % resta `paid` ma con `overpaid: true` (alert a valle);
+//  · conferme ≥ MIN_CONFIRMATIONS.polygon (30) E blocco ≤ `finalized` (QA F9:
+//    un riorg sotto il blocco finalizzato non è più possibile). Altrimenti
+//    `submitted`, si riverifica. `finalized` non disponibile → fail-closed.
 // Fail-closed: un RPC che non risponde, risponde con un errore o sulla catena
 // sbagliata → VerifierUnavailableError, e il payout non cambia stato. Nota
 // misurata: publicnode risponde con un ERRORE (non `null`) a un hash che non
@@ -21,7 +24,7 @@
 // lasciano il payout com'è.
 
 import { catalogCoin, MIN_CONFIRMATIONS } from "@/lib/crypto-coins";
-import { isPaidEnough } from "@/lib/crypto-verify";
+import { DEFAULT_PAYOUT_MIN_RATIO, PAYOUT_OVERPAY_RATIO } from "./config";
 import type { PayoutCoin, PayoutNetwork } from "./wallet";
 
 export const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
@@ -37,8 +40,8 @@ export type RejectReason =
   | "amount_too_low";
 
 export type PayoutTxVerdict =
-  | { outcome: "paid"; amountCoin: string; confirmations: number }
-  | { outcome: "submitted"; amountCoin: string; confirmations: number; required: number }
+  | { outcome: "paid"; amountCoin: string; confirmations: number; overpaid: boolean }
+  | { outcome: "submitted"; amountCoin: string; confirmations: number; required: number; overpaid: boolean }
   | { outcome: "rejected"; reason: RejectReason };
 
 export class VerifierUnavailableError extends Error {}
@@ -105,7 +108,12 @@ export type PayoutTxCheck = {
   amountUsd: number;
 };
 
-export async function verifyPayoutTx(c: PayoutTxCheck, rpc: Rpc): Promise<PayoutTxVerdict> {
+export async function verifyPayoutTx(
+  c: PayoutTxCheck,
+  rpc: Rpc,
+  opts: { minRatio?: number } = {},
+): Promise<PayoutTxVerdict> {
+  const minRatio = opts.minRatio ?? DEFAULT_PAYOUT_MIN_RATIO;
   // Unica rete con un verificatore (D1). Tron resta nello schema, non qui.
   if (c.network !== "polygon") return { outcome: "rejected", reason: "network_not_supported" };
   const token = catalogCoin(`polygon-${c.coin.toLowerCase()}`);
@@ -139,13 +147,22 @@ export async function verifyPayoutTx(c: PayoutTxCheck, rpc: Rpc): Promise<Payout
 
   const raw = fromUs.reduce((acc, l) => acc + hexToBig(l.data), BigInt(0));
   const amountCoin = formatUnits(raw, token.decimals);
-  if (!isPaidEnough(Number(amountCoin), c.amountUsd)) return { outcome: "rejected", reason: "amount_too_low" };
+  // Confronto in unità minime (interi): niente errori di virgola mobile ai bordi.
+  const unit = BigInt(10) ** BigInt(token.decimals);
+  const dueUnits = BigInt(Math.round(c.amountUsd * 100)) * unit / BigInt(100);
+  const minUnits = (dueUnits * BigInt(Math.round(minRatio * 10_000))) / BigInt(10_000);
+  const maxUnits = (dueUnits * BigInt(Math.round(PAYOUT_OVERPAY_RATIO * 10_000))) / BigInt(10_000);
+  if (!(c.amountUsd > 0) || raw < minUnits) return { outcome: "rejected", reason: "amount_too_low" };
+  const overpaid = raw > maxUnits;
 
   const head = hexToBig(await rpc("eth_blockNumber", []));
   const block = hexToBig(receipt.blockNumber);
   const confirmations = head >= block ? Number(head - block) + 1 : 0;
+  const fin = (await rpc("eth_getBlockByNumber", ["finalized", false])) as { number?: unknown } | null;
+  if (!fin || typeof fin !== "object") throw new VerifierUnavailableError("finalized block not available");
+  const finalized = hexToBig(fin.number);
   const required = MIN_CONFIRMATIONS.polygon;
-  return confirmations >= required
-    ? { outcome: "paid", amountCoin, confirmations }
-    : { outcome: "submitted", amountCoin, confirmations, required };
+  return confirmations >= required && block <= finalized
+    ? { outcome: "paid", amountCoin, confirmations, overpaid }
+    : { outcome: "submitted", amountCoin, confirmations, required, overpaid };
 }

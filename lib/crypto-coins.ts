@@ -87,3 +87,9 @@ export function findCoin(id: unknown): CryptoCoin | null {
 export function isCryptoDirectConfigured(): boolean {
   return Boolean(process.env.PAYGATE_PAYOUT_WALLET) && enabledCoins().length > 0;
 }
+
+// #AFFILIATE-V2-CRYPTO-1007 PR-5 (QA F6): i contratti dei token non sono mai un
+// destinatario valido di un payout (fondi inviati lì sono persi).
+export function catalogContracts(): string[] {
+  return CATALOG.map((c) => c.contract.toLowerCase());
+}
