@@ -193,3 +193,29 @@ export function affiliateTermsVersion(env: Env = process.env): string | null {
   const v = (env.AFFILIATE_TERMS_VERSION ?? "").trim();
   return /^[A-Za-z0-9._-]{1,40}$/.test(v) ? v : null;
 }
+
+// ── Payout admin (PR-9) ───────────────────────────────────────────────────────
+export type PayoutsMode = "off" | "live";
+
+/** AFFILIATE_PAYOUTS: solo "live" accende creazione e registrazione dei payout.
+ *  Default e qualsiasi refuso = "off" (il rollback senza toccare i dati). */
+export function affiliatePayoutsMode(env: Env = process.env): PayoutsMode {
+  return (env.AFFILIATE_PAYOUTS ?? "").trim().toLowerCase() === "live" ? "live" : "off";
+}
+
+/** RPC JSON di Polygon per la verifica dei payout PER HASH (eth_getTransactionReceipt).
+ *  Default publicnode: misurato il 15/10/2026, risponde a receipt e blockNumber
+ *  senza key (Blockscout era dietro una challenge Cloudflare dalla nostra rete).
+ *  Solo https. Un RPC che mente può solo far segnare `paid` per errore, non
+ *  muovere fondi: il server non firma niente. */
+export const DEFAULT_POLYGON_RPC_URL = "https://polygon-bor-rpc.publicnode.com";
+
+export function affiliatePolygonRpcUrl(env: Env = process.env): string {
+  const raw = (env.AFFILIATE_POLYGON_RPC_URL ?? "").trim();
+  try {
+    if (raw && new URL(raw).protocol === "https:") return raw;
+  } catch {
+    /* malformato → default */
+  }
+  return DEFAULT_POLYGON_RPC_URL;
+}

@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { affiliateConfig, affiliateMode, affiliateTermsVersion, AFFILIATE_DEFAULTS, payoutConfig } from "./config";
+import {
+  affiliateConfig,
+  affiliateMode,
+  affiliatePayoutsMode,
+  affiliatePolygonRpcUrl,
+  affiliateTermsVersion,
+  AFFILIATE_DEFAULTS,
+  DEFAULT_POLYGON_RPC_URL,
+  payoutConfig,
+} from "./config";
 import { validatePayoutWallet } from "./wallet";
 
 const POLY = "0x1111111111111111111111111111111111111111";
@@ -153,5 +162,19 @@ describe("affiliateTermsVersion (PR-5)", () => {
   });
   it("valore malformato → null, non un testo arbitrario nel registro dei consensi", () => {
     expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: "v1; DROP TABLE" })).toBeNull();
+  });
+});
+
+describe("payout admin config (PR-9)", () => {
+  it("AFFILIATE_PAYOUTS: solo 'live' accende, default e refusi = off", () => {
+    expect(affiliatePayoutsMode({})).toBe("off");
+    expect(affiliatePayoutsMode({ AFFILIATE_PAYOUTS: " LIVE " })).toBe("live");
+    for (const v of ["on", "true", "1", "liv", "shadow"]) expect(affiliatePayoutsMode({ AFFILIATE_PAYOUTS: v })).toBe("off");
+  });
+  it("RPC Polygon: solo https, altrimenti il default", () => {
+    expect(affiliatePolygonRpcUrl({})).toBe(DEFAULT_POLYGON_RPC_URL);
+    expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "https://rpc.example/x" })).toBe("https://rpc.example/x");
+    expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "http://rpc.example" })).toBe(DEFAULT_POLYGON_RPC_URL);
+    expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "nonsense" })).toBe(DEFAULT_POLYGON_RPC_URL);
   });
 });
