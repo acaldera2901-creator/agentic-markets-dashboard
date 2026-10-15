@@ -233,6 +233,7 @@ export type AdminPayout = {
   tx_hash: string | null;
   tx_nonce: number | null;
   tx_block: number | null;
+  tx_from: string | null;
   explorer_url: string | null;
   status: "created" | "submitted" | "paid" | "cancelled";
   created_at: string;
@@ -251,7 +252,7 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     `SELECT p.id, p.affiliate_id, a.identifier AS affiliate_identifier, a.code AS affiliate_code,
             a.status AS affiliate_status, a.payee_legal_name AS payee_name, a.payee_country,
             p.period_month::text AS period_month, p.amount_usd, p.coin, p.network, p.to_address,
-            p.amount_coin, p.tx_hash, p.tx_nonce, p.tx_block, p.status, p.created_at::text AS created_at,
+            p.amount_coin, p.tx_hash, p.tx_nonce, p.tx_block, p.tx_from, p.status, p.created_at::text AS created_at,
             p.submitted_at::text AS submitted_at, p.paid_at::text AS paid_at, p.cancel_code, p.cancel_reason
        FROM affiliate_payouts p JOIN affiliates a ON a.id = p.affiliate_id
       WHERE p.id = $1`,
@@ -275,6 +276,7 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     tx_hash: r.tx_hash,
     tx_nonce: r.tx_nonce != null ? Number(r.tx_nonce) : null,
     tx_block: r.tx_block != null ? Number(r.tx_block) : null,
+    tx_from: r.tx_from ?? null,
     explorer_url: r.tx_hash ? explorerTxUrl(r.network, r.tx_hash) : null,
     status: r.status,
     created_at: r.created_at,
@@ -373,7 +375,7 @@ export async function registerPayoutTx(
   const paid = verdict.outcome === "paid";
   const res = await affiliateRpc<{ ok: boolean; error?: string; status?: string; became_paid?: boolean; dropped?: boolean }>(
     "affiliate_payout_record_tx",
-    { p_id: payout.id, p_tx_hash: hash, p_paid: paid, p_amount_coin: verdict.amountCoin, p_nonce: verdict.nonce, p_block: verdict.block },
+    { p_id: payout.id, p_tx_hash: hash, p_paid: paid, p_amount_coin: verdict.amountCoin, p_nonce: verdict.nonce, p_block: verdict.block, p_from: verdict.txFrom },
   );
   if (!res.ok) {
     if (res.error === "hash_already_used" && res.dropped) {
@@ -464,10 +466,13 @@ export async function dropSubmittedPayout(
   reason: string,
   rpc: Rpc = jsonRpc(affiliatePolygonRpcUrl()),
 ): Promise<NextResponse> {
-  const from = payoutConfig().payoutFrom;
-  if (!from || !payout.tx_hash) return NextResponse.json({ error: "payout_from_not_configured" }, { status: 503 });
+  if (!payout.tx_hash) return NextResponse.json({ error: "not_submitted" }, { status: 409 });
   if (payout.tx_nonce == null) return NextResponse.json({ error: "nonce_unknown" }, { status: 409 });
   if (payout.tx_block == null) return NextResponse.json({ error: "block_unknown" }, { status: 409 });
+  // QA S3: log e nonce sul mittente REGISTRATO della tx, non sull'env corrente:
+  // dopo una rotazione di AFFILIATE_PAYOUT_FROM il vecchio payout resta gestibile.
+  const from = payout.tx_from;
+  if (!from) return NextResponse.json({ error: "from_unknown" }, { status: 409 });
   let verdict;
   try {
     verdict = await checkDroppable(

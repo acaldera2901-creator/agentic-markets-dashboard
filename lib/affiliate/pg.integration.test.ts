@@ -284,7 +284,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await t.json()).toMatchObject({ outcome: "paid" });
     const panel = await (await me.GET(req("/api/affiliate/me", "GET", "alice@x.io"))).json();
     expect(panel.payouts[0]).toMatchObject({ status: "paid", amount_coin: 60, tx_hash: H });
-    const [nonce] = await h.sql!`SELECT tx_nonce, tx_block FROM affiliate_payouts`;
+    const [nonce] = await h.sql!`SELECT tx_nonce, tx_block, tx_from FROM affiliate_payouts`;
+    expect(nonce.tx_from).toBe("0x1111111111111111111111111111111111111111"); // QA S3
     expect(Number(nonce.tx_nonce)).toBe(42); // QA N1: nonce letto on-chain e salvato
     expect(Number(nonce.tx_block)).toBe(1_000_000); // QA R3: blocco di registrazione
     expect(panel.ledger).toMatchObject({ paid: 60, payable: 0, in_payout: 0 });
