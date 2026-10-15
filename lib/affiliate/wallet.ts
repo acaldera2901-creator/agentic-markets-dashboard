@@ -5,14 +5,17 @@
 // `affiliate_wallets` e `affiliate_payouts` (migration 20261007120000): il DB
 // rifiuta comunque un valore fuori lista, qui si dà un errore leggibile prima.
 //
-// Limite dichiarato: per Polygon (EVM) si controlla solo il formato, NON il
-// checksum EIP-55, perché richiede keccak-256 e né Node (misurato: OpenSSL 3.5
-// non lo espone) né le dipendenze del repo lo hanno. Un refuso in un indirizzo
-// tutto minuscolo passa. Upgrade: aggiungere `@noble/hashes` (keccak_256) e
-// verificare EIP-55 quando l'indirizzo è a maiuscole miste. Mitigazione già
-// prevista nel flusso: doppia digitazione nel pannello + verifica on-chain.
+// Polygon (EVM): formato + checksum EIP-55 (keccak-256 da `@noble/hashes`, PR-5:
+// Node/OpenSSL 3.5 non espone keccak). EIP-55 vale solo su un indirizzo a
+// maiuscole MISTE: uno tutto minuscolo (o tutto maiuscolo) non porta checksum per
+// definizione dello standard, quindi passa col solo formato. Limite che resta:
+// un refuso in un indirizzo tutto minuscolo non si vede qui. Mitigazioni nel
+// flusso: conferma delle ultime 6 cifre nel pannello + verifica on-chain del
+// destinatario prima di `paid`.
 
 import { createHash } from "node:crypto";
+import { keccak_256 } from "@noble/hashes/sha3.js";
+import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 import { EXPLORER_BASE } from "@/lib/crypto-coins";
 
 export const PAYOUT_COINS = ["USDT", "USDC"] as const;
@@ -80,6 +83,23 @@ export function isValidTronAddress(address: string): boolean {
 /** Coin/reti accese oggi (D1/D5, da `payoutConfig()`). Senza: tutto ciò che lo schema ammette. */
 export type EnabledRails = { coins: readonly PayoutCoin[]; networks: readonly PayoutNetwork[] };
 
+/** EIP-55: la i-esima lettera hex è maiuscola sse il nibble i di
+ *  keccak256(indirizzo minuscolo senza 0x) è ≥ 8. Solo a maiuscole miste: tutto
+ *  minuscolo / tutto maiuscolo = nessun checksum dichiarato → true. */
+export function isValidEip55(address: string): boolean {
+  if (!EVM_RE.test(address)) return false;
+  const body = address.slice(2);
+  if (body === body.toLowerCase() || body === body.toUpperCase()) return true;
+  const hash = bytesToHex(keccak_256(utf8ToBytes(body.toLowerCase())));
+  for (let i = 0; i < 40; i++) {
+    const c = body[i];
+    if (c >= "0" && c <= "9") continue;
+    const upper = Number.parseInt(hash[i], 16) >= 8;
+    if (upper !== (c === c.toUpperCase())) return false;
+  }
+  return true;
+}
+
 export function validatePayoutWallet(input: WalletInput, enabled?: EnabledRails): WalletVerdict {
   const coin = typeof input.coin === "string" ? input.coin.trim().toUpperCase() : "";
   const network = typeof input.network === "string" ? input.network.trim().toLowerCase() : "";
@@ -100,6 +120,7 @@ export function validatePayoutWallet(input: WalletInput, enabled?: EnabledRails)
   } else {
     if (!EVM_RE.test(address)) return { ok: false, reason: "invalid_format" };
     if (address.toLowerCase() === EVM_ZERO) return { ok: false, reason: "zero_address" };
+    if (!isValidEip55(address)) return { ok: false, reason: "invalid_checksum" };
   }
   return { ok: true, coin: coin as PayoutCoin, network: network as PayoutNetwork, address };
 }
