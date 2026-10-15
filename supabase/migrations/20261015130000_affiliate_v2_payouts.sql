@@ -2,7 +2,7 @@
 --
 -- Spec: artifacts/affiliate-v2/PROPOSAL-crypto-payout.md §3.4, SPEC-ui.md §4,
 -- §12. Si appoggia a 20261007120000 (#482) e 20261015120000 (PR-5).
--- Contenuto: due colonne (affiliate_payouts.dropped_tx_hash, tx_nonce), cinque funzioni,
+-- Contenuto: tre colonne (affiliate_payouts.dropped_tx_hash, tx_nonce, tx_block), cinque funzioni,
 -- un trigger (sospensione → annullo dei payout in preparazione).
 --
 -- NON si applica da sola: workflow_dispatch con `approved_sha`. Idempotente
@@ -31,6 +31,9 @@ ALTER TABLE public.affiliate_payouts ADD COLUMN IF NOT EXISTS dropped_tx_hash te
 -- annullare solo se il suo nonce risulta già consumato da un'altra tx
 -- finalizzata, cioè quando non può più essere minata.
 ALTER TABLE public.affiliate_payouts ADD COLUMN IF NOT EXISTS tx_nonce bigint;
+-- Blocco in cui la tx risultava minata alla registrazione (QA R3): da lì in poi
+-- il drop cerca nei log del token un Transfer dal wallet di uscita al destinatario.
+ALTER TABLE public.affiliate_payouts ADD COLUMN IF NOT EXISTS tx_block bigint;
 
 -- ── Chi è pagabile, e perché no ──────────────────────────────────────────────
 -- Unica fonte delle regole di eleggibilità: la legge la pagina admin (anteprima)
@@ -221,12 +224,16 @@ $$;
 -- Firma cambiata (QA N1: + p_nonce): la vecchia, se c'è, va tolta, altrimenti
 -- resterebbero due overload.
 DROP FUNCTION IF EXISTS public.affiliate_payout_record_tx(bigint, text, boolean, numeric);
+DROP FUNCTION IF EXISTS public.affiliate_payout_record_tx(bigint, text, boolean, numeric, bigint);
+-- p_nonce è NULL quando la tx non l'ha firmata il wallet di uscita (QA R1):
+-- in quel caso il drop resta impossibile.
 CREATE OR REPLACE FUNCTION public.affiliate_payout_record_tx(
   p_id           bigint,
   p_tx_hash      text,
   p_paid         boolean,
   p_amount_coin  numeric,
-  p_nonce        bigint
+  p_nonce        bigint,
+  p_block        bigint
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SET search_path = public
@@ -274,7 +281,8 @@ BEGIN
            status = CASE WHEN p_paid THEN 'paid' ELSE 'submitted' END,
            paid_at = CASE WHEN p_paid THEN now() END,
            amount_coin = p_amount_coin,
-           tx_nonce = COALESCE(p_nonce, tx_nonce)
+           tx_nonce = p_nonce,
+           tx_block = COALESCE(p_block, tx_block)
      WHERE id = p_id;
   EXCEPTION WHEN unique_violation THEN
     RETURN jsonb_build_object('ok', false, 'error', 'hash_already_used');
@@ -364,6 +372,9 @@ BEGIN
   IF p.tx_nonce IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'nonce_unknown');
   END IF;
+  IF p.tx_block IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'block_unknown');
+  END IF;
 
   UPDATE affiliate_payouts
      SET status = 'cancelled', cancelled_at = now(), cancel_code = 'tx_dropped',
@@ -399,12 +410,12 @@ CREATE TRIGGER trg_affiliates_status_cancel_payouts
 
 REVOKE EXECUTE ON FUNCTION public.affiliate_payout_rows(date, numeric, boolean, text[], text[]) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_create_payouts(bigint[], date, numeric, numeric, boolean, text[], text[], text) FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric, bigint) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric, bigint, bigint) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_cancel_payout(bigint, text) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_payout_drop_tx(bigint, text) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.affiliate_on_status_change() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.affiliate_payout_rows(date, numeric, boolean, text[], text[]) TO service_role;
 GRANT EXECUTE ON FUNCTION public.affiliate_create_payouts(bigint[], date, numeric, numeric, boolean, text[], text[], text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric, bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.affiliate_payout_record_tx(bigint, text, boolean, numeric, bigint, bigint) TO service_role;
 GRANT EXECUTE ON FUNCTION public.affiliate_cancel_payout(bigint, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.affiliate_payout_drop_tx(bigint, text) TO service_role;
