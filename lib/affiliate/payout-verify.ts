@@ -12,7 +12,7 @@
 //  · log Transfer del contratto del token atteso (USDT Polygon dal catalogo);
 //  · mittente del Transfer = wallet di uscita (AFFILIATE_PAYOUT_FROM, D2);
 //  · destinatario = `to_address` copiato alla creazione del payout;
-//  · importo ≥ dovuto × AFFILIATE_PAYOUT_MIN_RATIO (default 0.99, QA F3); oltre
+//  · importo ≥ dovuto × AFFILIATE_PAYOUT_MIN_RATIO (default 1 = 100 %); oltre
 //    il 101 % resta `paid` ma con `overpaid: true` (alert a valle);
 //  · conferme ≥ MIN_CONFIRMATIONS.polygon (30) E blocco ≤ `finalized` (QA F9:
 //    un riorg sotto il blocco finalizzato non è più possibile). Altrimenti
@@ -40,8 +40,8 @@ export type RejectReason =
   | "amount_too_low";
 
 export type PayoutTxVerdict =
-  | { outcome: "paid"; amountCoin: string; confirmations: number; overpaid: boolean; nonce: number | null; block: number; txFromMismatch: boolean }
-  | { outcome: "submitted"; amountCoin: string; confirmations: number; required: number; overpaid: boolean; nonce: number | null; block: number; txFromMismatch: boolean }
+  | { outcome: "paid"; amountCoin: string; confirmations: number; overpaid: boolean; nonce: number | null; block: number; txFromMismatch: boolean; txFrom: string }
+  | { outcome: "submitted"; amountCoin: string; confirmations: number; required: number; overpaid: boolean; nonce: number | null; block: number; txFromMismatch: boolean; txFrom: string }
   | { outcome: "rejected"; reason: RejectReason };
 
 export class VerifierUnavailableError extends Error {}
@@ -165,7 +165,10 @@ export async function verifyPayoutTx(
   // di un altro mittente (Safe, relayer, transferFrom) col Transfer dal nostro
   // wallet ha il nonce di QUEL mittente: salvarlo renderebbe possibile un drop
   // sbagliato. Allora nonce = null → drop impossibile (fail-closed), segnalato.
-  const txFromMismatch = String(tx.from ?? "").toLowerCase() !== from;
+  // QA S3: il mittente reale si registra (tx_from): il drop lo userà anche dopo
+  // una rotazione di AFFILIATE_PAYOUT_FROM.
+  const txFrom = String(tx.from ?? "").toLowerCase();
+  const txFromMismatch = txFrom !== from;
   const nonce = txFromMismatch ? null : txNonce;
 
   const head = hexToBig(await rpc("eth_blockNumber", []));
@@ -176,8 +179,8 @@ export async function verifyPayoutTx(
   const finalized = hexToBig(fin.number);
   const required = MIN_CONFIRMATIONS.polygon;
   return confirmations >= required && block <= finalized
-    ? { outcome: "paid", amountCoin, confirmations, overpaid, nonce, block: Number(block), txFromMismatch }
-    : { outcome: "submitted", amountCoin, confirmations, required, overpaid, nonce, block: Number(block), txFromMismatch };
+    ? { outcome: "paid", amountCoin, confirmations, overpaid, nonce, block: Number(block), txFromMismatch, txFrom }
+    : { outcome: "submitted", amountCoin, confirmations, required, overpaid, nonce, block: Number(block), txFromMismatch, txFrom };
 }
 
 // ── Drop di una tx sparita (QA N1, R1–R3) ────────────────────────────────────
@@ -197,13 +200,18 @@ async function finalizedBlock(rpc: Rpc): Promise<bigint> {
  *  drop si rifiuta (fail-closed): oltre quella distanza va fatto a mano. */
 const LOG_WINDOW = BigInt(10_000);
 const MAX_LOG_WINDOWS = 100;
+/** QA S1: dopo un riorg la stessa tx può essere reinclusa in un blocco PIÙ BASSO
+ *  di quello visto alla registrazione: la ricerca parte 1.000 blocchi prima
+ *  (~30 minuti su Polygon, ben oltre la profondità dei riorg osservati). */
+export const DROP_LOG_MARGIN_BLOCKS = 1_000;
 
 /**
  * Una tx `submitted` si può annullare SOLO se non potrà più essere minata:
  *  · fallita (status "0x0", nient'altro: QA R2) in un blocco già finalizzato; oppure
- *  · sconosciuta (ricevuta e tx entrambe null) E nessun Transfer del token dal
- *    wallet di uscita al destinatario nei log, dal blocco di registrazione al
- *    `finalized` (QA R3: un nodo con l'indice delle tx potato risponde null anche
+ *  · sconosciuta (ricevuta e tx entrambe null), blocco di registrazione già
+ *    finalizzato (QA S2), nessun Transfer del token da `from` (il mittente
+ *    REGISTRATO, QA S3) al destinatario nei log, da blocco di registrazione −
+ *    DROP_LOG_MARGIN_BLOCKS (QA S1) al `finalized` (QA R3: un nodo con l'indice delle tx potato risponde null anche
  *    per una tx minata, e il suo nonce risulta «consumato» dalla tx stessa: i log
  *    del contratto invece restano) E il nonce registrato del wallet di uscita
  *    risulta consumato al blocco `finalized`.
@@ -236,8 +244,12 @@ export async function checkDroppable(
   if (tx != null) return { droppable: false, reason: "tx_pending" };
 
   const fin = await finalizedBlock(rpc);
+  // QA S2: finché il blocco di registrazione non è finalizzato, il nonce
+  // «consumato» non prova niente: si aspetta.
+  if (BigInt(c.block) > fin) return { droppable: false, reason: "not_finalized" };
   const pad = (a: string) => `0x${"0".repeat(24)}${a.slice(2).toLowerCase()}`;
-  let start = BigInt(c.block);
+  const margin = BigInt(DROP_LOG_MARGIN_BLOCKS);
+  let start = BigInt(c.block) > margin ? BigInt(c.block) - margin : BigInt(0);
   for (let i = 0; start <= fin; i++) {
     if (i >= MAX_LOG_WINDOWS) throw new VerifierUnavailableError("log range too large for an automatic drop");
     const end = start + LOG_WINDOW - BigInt(1) < fin ? start + LOG_WINDOW - BigInt(1) : fin;
