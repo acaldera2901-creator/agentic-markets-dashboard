@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   affiliateConfig,
   affiliateMode,
+  affiliatePayoutMinRatio,
   affiliatePayoutsMode,
   affiliatePolygonRpcUrl,
   affiliateTermsVersion,
@@ -176,5 +177,13 @@ describe("payout admin config (PR-9)", () => {
     expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "https://rpc.example/x" })).toBe("https://rpc.example/x");
     expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "http://rpc.example" })).toBe(DEFAULT_POLYGON_RPC_URL);
     expect(affiliatePolygonRpcUrl({ AFFILIATE_POLYGON_RPC_URL: "nonsense" })).toBe(DEFAULT_POLYGON_RPC_URL);
+  });
+});
+
+describe("AFFILIATE_PAYOUT_MIN_RATIO (QA F3)", () => {
+  it("default 0.99, ammessi solo valori in [0.9, 1]", () => {
+    expect(affiliatePayoutMinRatio({})).toBe(0.99);
+    expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: "1" })).toBe(1);
+    for (const v of ["0.5", "1.1", "abc", "-1"]) expect(affiliatePayoutMinRatio({ AFFILIATE_PAYOUT_MIN_RATIO: v })).toBe(0.99);
   });
 });

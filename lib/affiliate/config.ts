@@ -215,6 +215,25 @@ export function affiliatePayoutsMode(env: Env = process.env): PayoutsMode {
   return (env.AFFILIATE_PAYOUTS ?? "").trim().toLowerCase() === "live" ? "live" : "off";
 }
 
+/**
+ * QA F3 — tolleranza al RIBASSO sull'importo ricevuto on-chain: paid se
+ * ricevuto ≥ dovuto × ratio. Default 0.99 (la stessa di lib/crypto-verify.ts,
+ * nata per chi incolla l'importo a mano). Andrea valuta se portarla a 1 (≥100 %):
+ * per questo è una env e non una costante. Ammessi solo valori in [0.9, 1];
+ * fuori range o malformato → 0.99.
+ */
+export const DEFAULT_PAYOUT_MIN_RATIO = 0.99;
+export function affiliatePayoutMinRatio(env: Env = process.env): number {
+  const raw = (env.AFFILIATE_PAYOUT_MIN_RATIO ?? "").trim();
+  if (raw === "") return DEFAULT_PAYOUT_MIN_RATIO;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0.9 && n <= 1 ? n : DEFAULT_PAYOUT_MIN_RATIO;
+}
+
+/** QA F3 — oltre questo rapporto il pagamento è comunque `paid` (i fondi sono
+ *  partiti) ma segnalato come `overpaid`, con alert ops: è un errore di invio. */
+export const PAYOUT_OVERPAY_RATIO = 1.01;
+
 /** RPC JSON di Polygon per la verifica dei payout PER HASH (eth_getTransactionReceipt).
  *  Default publicnode: misurato il 15/10/2026, risponde a receipt e blockNumber
  *  senza key (Blockscout era dietro una challenge Cloudflare dalla nostra rete).

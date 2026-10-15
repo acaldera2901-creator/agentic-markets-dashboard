@@ -23,12 +23,16 @@ const transfer = (o: { token?: string; from?: string; to?: string; amount?: numb
 // Il log di fee che Polygon aggiunge a ogni tx (contratto 0x…1010): va ignorato.
 const FEE_LOG = { address: "0x0000000000000000000000000000000000001010", topics: ["0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63", pad(FROM), pad(OTHER)], data: "0x" + "0".repeat(64) };
 
-function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?: string } = {}): Rpc & { calls: string[] } {
+function fakeRpc(o: { receipt?: unknown; head?: number; block?: number; chainId?: string; finalized?: number | null } = {}): Rpc & { calls: string[] } {
   const calls: string[] = [];
   const fn = (async (method: string) => {
     calls.push(method);
     if (method === "eth_chainId") return o.chainId ?? "0x89";
     if (method === "eth_blockNumber") return `0x${(o.head ?? 1_000_100).toString(16)}`;
+    if (method === "eth_getBlockByNumber") {
+      if (o.finalized === null) return null;
+      return { number: `0x${(o.finalized ?? (o.head ?? 1_000_100) - 2).toString(16)}` };
+    }
     if (method === "eth_getTransactionReceipt") {
       return o.receipt === undefined
         ? { status: "0x1", blockNumber: `0x${(o.block ?? 1_000_000).toString(16)}`, logs: [FEE_LOG, transfer()] }
@@ -46,9 +50,9 @@ const receipt = (logs: unknown[], status = "0x1") => ({ status, blockNumber: "0x
 describe("verifyPayoutTx", () => {
   it("tutto giusto, ≥30 conferme → paid con l'importo letto dalla catena", async () => {
     const rpc = fakeRpc();
-    await expect(verifyPayoutTx(check, rpc)).resolves.toEqual({ outcome: "paid", amountCoin: "60.000000", confirmations: 101 });
+    await expect(verifyPayoutTx(check, rpc)).resolves.toEqual({ outcome: "paid", amountCoin: "60.000000", confirmations: 101, overpaid: false });
     // Per hash: nessuna chiamata a liste/tokentx paginati.
-    expect(rpc.calls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_blockNumber"]);
+    expect(rpc.calls).toEqual(["eth_chainId", "eth_getTransactionReceipt", "eth_blockNumber", "eth_getBlockByNumber"]);
   });
 
   it("indirizzo in maiuscole/minuscole diverse: confronto case-insensitive", async () => {
@@ -61,6 +65,7 @@ describe("verifyPayoutTx", () => {
       amountCoin: "60.000000",
       confirmations: 12,
       required: 30,
+      overpaid: false,
     });
   });
 
@@ -85,6 +90,27 @@ describe("verifyPayoutTx", () => {
     await expect(
       verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 30 }), transfer({ amount: 30 }), transfer({ to: OTHER, amount: 500 })]) })),
     ).resolves.toMatchObject({ outcome: "paid", amountCoin: "60.000000" });
+  });
+
+  it("QA F9: 30 conferme ma blocco non ancora finalized → submitted", async () => {
+    await expect(verifyPayoutTx(check, fakeRpc({ finalized: 999_999 }))).resolves.toMatchObject({ outcome: "submitted", confirmations: 101 });
+  });
+  it("QA F9: finalized non disponibile → VerifierUnavailableError (fail-closed)", async () => {
+    await expect(verifyPayoutTx(check, fakeRpc({ finalized: null }))).rejects.toBeInstanceOf(VerifierUnavailableError);
+  });
+  it("QA F3: importo oltre il 101 % → paid ma overpaid:true (10.000 USDT su 60 $)", async () => {
+    await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 10_000 })]) }))).resolves.toMatchObject({
+      outcome: "paid",
+      amountCoin: "10000.000000",
+      overpaid: true,
+    });
+    await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 60.6 })]) }))).resolves.toMatchObject({ overpaid: false });
+  });
+  it("soglia al ribasso configurabile (AFFILIATE_PAYOUT_MIN_RATIO): 1.00 rifiuta 59.40", async () => {
+    await expect(verifyPayoutTx(check, fakeRpc({ receipt: receipt([transfer({ amount: 59.4 })]) }), { minRatio: 1 })).resolves.toEqual({
+      outcome: "rejected",
+      reason: "amount_too_low",
+    });
   });
 
   it("Tron: nessun verificatore → rejected, nessuna chiamata", async () => {
