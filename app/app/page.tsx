@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, Fragment } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, Fragment, lazy, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
@@ -7712,6 +7712,14 @@ type ReferralTierStat = {
   grantsRoom: boolean;
 };
 
+// #AFFILIATE-V2-UI-1015 — il pannello Affiliati v2 entra SOLO a build con
+// NEXT_PUBLIC_AFFILIATE_V2=1. Il confronto è scritto per esteso e il modulo è
+// `lazy`: a flag spento il bundler toglie l'import (e il suo CSS), e ReferralPanel
+// resta esattamente quello di prima.
+const AffiliateSection = process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"
+  ? lazy(() => import("@/components/affiliate/AffiliateSection").then((m) => ({ default: m.AffiliateSection })))
+  : null;
+
 function ReferralPanel() {
   const lang = useLang();
   // #REFERRAL-HARDENING: il codice ora si CLAIMA una volta sola sul profilo
@@ -11324,7 +11332,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           {/* #REFERRAL-PANEL: la vecchia AccountTab (dove era finita per errore la
               sezione Invita) non è più montata dopo #UI-ACCOUNT-DROPDOWN-0623 →
               il pannello referral vive su una tab dedicata, raggiungibile. */}
-          {tab === "invita" && <ReferralPanel />}
+          {tab === "invita" && (AffiliateSection ? (
+            <Suspense fallback={null}><AffiliateSection lang={uiLanguage} /></Suspense>
+          ) : <ReferralPanel />)}
           {tab === "history" && (
             <TrackRecordView rows={historyV2} lang={uiLanguage === "it" ? "it" : "en"} />
           )}
