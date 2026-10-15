@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS, LANDING_PARTNERS, landingPartnersFor, landingUrlOf } from "@/lib/affiliate";
+import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS, LANDING_PARTNERS, landingPartnersFor, landingTargetsFor, landingUrlOf, slugOf } from "@/lib/affiliate";
 
 // #PARTNERS-VELOBET-CASEA — questi sono i partner "solo landing" che finiscono nel
 // menu "Piazza la scommessa" della scheda partita (football/tennis/World Cup).
@@ -21,14 +21,14 @@ describe("landingPartnersFor(country)", () => {
   // finisce dentro il tag di attribuzione: incollato con le graffe, il partner
   // riceverebbe "{sub_id_1}" come sorgente. Nessun link deve contenerne.
   it("nessun link contiene macro della rete non risolti", () => {
-    for (const p of landingPartnersFor("NO")) {
+    for (const p of landingTargetsFor("NO")) {
       expect(p.url, `${p.name} ha un macro non risolto`).not.toMatch(/[{}]|%7B|%7D/i);
     }
   });
 
   it("Casea compare solo in NO/CH/FI, col mid di quel paese", () => {
     for (const [cc, url] of Object.entries(CASEA_GEO_URLS)) {
-      const casea = landingPartnersFor(cc).find((p) => p.name === "Casea");
+      const casea = landingTargetsFor(cc).find((p) => p.name === "Casea");
       expect(casea, `Casea manca in ${cc}`).toBeDefined();
       expect(casea?.url).toBe(url);
     }
@@ -40,7 +40,7 @@ describe("landingPartnersFor(country)", () => {
   // ci sia, e che il link sia esattamente il fallback e non un mid a caso.
   it("Casea compare anche fuori NO/CH/FI e a geo ignota, col fallback dichiarato", () => {
     for (const cc of ["AT", "IE", "DK", "CA", "GB", "IT", "ES", "", null, undefined]) {
-      const casea = landingPartnersFor(cc).find((p) => p.name === "Casea");
+      const casea = landingTargetsFor(cc).find((p) => p.name === "Casea");
       expect(casea, `Casea manca in ${String(cc)}`).toBeDefined();
       expect(casea?.url, `fallback sbagliato in ${String(cc)}`).toBe(CASEA_FALLBACK_URL);
     }
@@ -69,7 +69,7 @@ describe("landingPartnersFor(country)", () => {
   it("i partner a link unico compaiono in OGNI geo, con l'unico link della rete", () => {
     for (const cc of ["NO", "DE", "AT", "CH", "IT", "ES", "FI", "CA", "GB", "", null, undefined]) {
       for (const p of GEO_LANDING_PARTNERS) {
-        const found = landingPartnersFor(cc).find((x) => x.name === p.name);
+        const found = landingTargetsFor(cc).find((x) => x.name === p.name);
         expect(found, `${p.name} manca in ${String(cc)}`).toBeDefined();
         expect(found?.url).toBe(p.url);
       }
@@ -105,7 +105,7 @@ describe("landingPartnersFor(country)", () => {
   });
 
   it("ogni voce ha un url https e un nome non vuoto", () => {
-    for (const p of landingPartnersFor("CH")) {
+    for (const p of landingTargetsFor("CH")) {
       expect(p.url).toMatch(/^https:\/\//);
       expect(p.name.length).toBeGreaterThan(0);
     }
@@ -115,6 +115,23 @@ describe("landingPartnersFor(country)", () => {
     const { partnerLogoByName } = await import("@/lib/partners");
     for (const p of landingPartnersFor("NO")) {
       expect(partnerLogoByName(p.name), `nessun logo per ${p.name}`).toMatch(/^\/logos\//);
+    }
+  });
+
+  // #POSTBACK-1014 — the menu hands out /go/<id>; the link above (landingTargetsFor)
+  // is what /go must open. These two have to be the SAME link /go resolves via
+  // lib/partners, in every geo, or the menu and the redirect would diverge.
+  it("ogni voce del menu passa da /go/<id> e /go apre lo stesso link del menu", async () => {
+    const { PARTNERS, targetUrlFor } = await import("@/lib/partners");
+    const ids = PARTNERS.map((p) => p.id);
+    for (const cc of ["NO", "CH", "FI", "IT", "", null]) {
+      const hrefs = landingPartnersFor(cc);
+      for (const [i, t] of landingTargetsFor(cc).entries()) {
+        const id = slugOf(t.name);
+        expect(ids, `${t.name} -> ${id} non è nel catalogo`).toContain(id);
+        expect(hrefs[i]).toEqual({ name: t.name, url: `/go/${id}` });
+        expect(targetUrlFor(id, cc), `${t.name} in ${String(cc)}`).toBe(t.url);
+      }
     }
   });
 });

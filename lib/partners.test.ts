@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BET_MENU_ORDER, PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu } from "@/lib/partners";
+import { BET_MENU_ORDER, PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu, targetUrlFor } from "@/lib/partners";
 import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS } from "@/lib/affiliate";
 
 const LANGS = ["it", "en", "es", "fr", "ru"] as const;
@@ -44,7 +44,7 @@ describe("partners catalog", () => {
       for (const [cc, url] of Object.entries(CASEA_GEO_URLS)) {
         const casea = partnersFor(cc).find((p) => p.id === "casea");
         expect(casea, `Casea manca in ${cc}`).toBeDefined();
-        expect(casea?.url).toBe(url);
+        expect(targetUrlFor("casea", cc)).toBe(url);
       }
       // i 3 mid sono diversi tra loro: sono campagne SEO per paese, non un alias
       expect(new Set(Object.values(CASEA_GEO_URLS)).size).toBe(Object.keys(CASEA_GEO_URLS).length);
@@ -54,13 +54,13 @@ describe("partners catalog", () => {
       for (const cc of ["AT", "IE", "DK", "CA", "us", "IT", "ES", "", null, undefined]) {
         const casea = partnersFor(cc).find((p) => p.id === "casea");
         expect(casea, `Casea manca in ${String(cc)}`).toBeDefined();
-        expect(casea?.url, `fallback sbagliato in ${String(cc)}`).toBe(CASEA_FALLBACK_URL);
+        expect(targetUrlFor("casea", cc), `fallback sbagliato in ${String(cc)}`).toBe(CASEA_FALLBACK_URL);
       }
     });
 
     it("il paese è case/space-insensitive (l'header arriva già ISO-2, ma non ci fidiamo)", () => {
-      expect(partnersFor(" no ").find((p) => p.id === "casea")?.url).toBe(CASEA_GEO_URLS.NO);
-      expect(partnersFor("no").find((p) => p.id === "casea")?.url).toBe(CASEA_GEO_URLS.NO);
+      expect(targetUrlFor("casea", " no ")).toBe(CASEA_GEO_URLS.NO);
+      expect(targetUrlFor("casea", "no")).toBe(CASEA_GEO_URLS.NO);
     });
 
     // Il caso della richiesta di Andrea scritto per nome: una geo mai coperta dal
@@ -83,7 +83,7 @@ describe("partners catalog", () => {
       for (const [cc, url] of Object.entries(BETWINNER_GEO_URLS)) {
         const bw = partnersFor(cc).find((p) => p.id === "betwinner");
         expect(bw, `BetWinner manca in ${cc}`).toBeDefined();
-        expect(bw?.url, `link sbagliato in ${cc}`).toBe(url);
+        expect(targetUrlFor("betwinner", cc), `link sbagliato in ${cc}`).toBe(url);
       }
       expect(Object.keys(BETWINNER_GEO_URLS).sort())
         .toEqual(["AR", "BR", "CO", "ID", "IN", "KE", "MX", "MY", "NG"]);
@@ -100,7 +100,7 @@ describe("partners catalog", () => {
         expect(idsIn(cc), `BetWinner non dovrebbe esserci in ${String(cc)}`).not.toContain("betwinner");
       }
       // case/space-insensitive anche per lui: l'header arriva ISO-2, ma non ci fidiamo
-      expect(partnersFor(" in ").find((p) => p.id === "betwinner")?.url).toBe(BETWINNER_GEO_URLS.IN);
+      expect(targetUrlFor("betwinner", " in ")).toBe(BETWINNER_GEO_URLS.IN);
     });
 
     it("i quattro ex NO+DACH sono in vetrina in ogni geo, con l'unico link della rete", () => {
@@ -108,14 +108,26 @@ describe("partners catalog", () => {
         for (const p of GEO_LANDING_PARTNERS) {
           const found = partnersFor(cc).find((x) => x.name === p.name);
           expect(found, `${p.name} manca in vetrina (${cc})`).toBeDefined();
-          expect(found?.url, `${p.name} con un link diverso dal menu (${cc})`).toBe(p.url);
+          expect(targetUrlFor(found!.id, cc), `${p.name} con un link diverso dal menu (${cc})`).toBe(p.url);
         }
       }
     });
 
     it("ogni partner risolto ha un url https (niente stringhe vuote in uscita)", () => {
       for (const cc of ["NO", "IT", ""]) {
-        for (const p of partnersFor(cc)) expect(p.url, `${p.id} in "${cc}"`).toMatch(/^https:\/\//);
+        for (const p of partnersFor(cc)) expect(targetUrlFor(p.id, cc), `${p.id} in "${cc}"`).toMatch(/^https:\/\//);
+      }
+    });
+
+    // #POSTBACK-1014 — la vetrina e il footer aprono /go/<id> per chi ha una rete
+    // affiliata (che registra il click e fa 302 al link vero) e il link diretto per
+    // chi non ce l'ha (slotsbonus).
+    it("gli href sono /go/<id> per i partner di rete e diretti per slotsbonus", () => {
+      for (const cc of ["NO", "IT", "NG", ""]) {
+        for (const p of partnersFor(cc)) {
+          if (p.id === "slotsbonus") expect(p.url).toBe(targetUrlFor("slotsbonus", cc));
+          else expect(p.url, `${p.id} in "${cc}"`).toBe(`/go/${p.id}`);
+        }
       }
     });
   });

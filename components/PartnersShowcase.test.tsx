@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PartnersShowcase } from "@/components/PartnersShowcase";
+import { targetUrlFor } from "@/lib/partners";
 
 describe("PartnersShowcase", () => {
   it("renders every partner name and an affiliate link with the safe rel", () => {
@@ -11,8 +12,8 @@ describe("PartnersShowcase", () => {
     expect(screen.getByText("FeliceBet")).toBeTruthy();
     expect(screen.getByText("VeloBet")).toBeTruthy();
     expect(screen.getByText("GG.BET")).toBeTruthy();
-    const links = screen.getAllByRole("link").filter((a) =>
-      (a as HTMLAnchorElement).href.startsWith("https://"));
+    // #POSTBACK-1014: network partners link to /go/<id> (relative), so every card counts.
+    const links = Array.from(document.querySelectorAll("a.partner-card"));
     expect(links.length).toBeGreaterThanOrEqual(7);
     for (const a of links) {
       const rel = (a as HTMLAnchorElement).getAttribute("rel") || "";
@@ -34,20 +35,24 @@ describe("PartnersShowcase", () => {
 
   // #GEO-PARTNERS-ALWAYS-0917 / #CASEA-ALWAYS-0917 (17/09, Andrea): la vetrina non
   // nasconde più nessuno. La griglia Casino ha lo stesso numero di card con o senza
-  // country; a cambiare è SOLO l'href di Casea, l'unica con un mid per paese.
+  // country; a cambiare è SOLO il link di Casea, l'unica con un mid per paese.
+  // #POSTBACK-1014: l'href è /go/casea in ogni geo; il mid lo sceglie /go con lo
+  // stesso targetUrlFor, quindi la metà "per paese" si verifica lì.
   it("ha le stesse card in ogni geo: cambia solo il link di Casea", () => {
     const hrefCasea = (c: HTMLElement) =>
       (Array.from(c.querySelectorAll("a.partner-card")).find(
-        (a) => a.textContent?.includes("Casea")) as HTMLAnchorElement | undefined)?.href;
+        (a) => a.textContent?.includes("Casea")) as HTMLAnchorElement | undefined)?.getAttribute("href");
     const casinoCards = (c: HTMLElement) =>
       c.querySelectorAll(".partners-grid")[1].querySelectorAll(".partner-card").length;
 
     const { container: senza } = render(<PartnersShowcase lang="en" />);
     // fuori dai tre paesi di Casea: la card c'è, col fallback svizzero dichiarato
-    expect(hrefCasea(senza)).toBe("https://csa.lynmonkel.com/?mid=383451_2222327");
+    expect(hrefCasea(senza)).toBe("/go/casea");
+    expect(targetUrlFor("casea", "")).toBe("https://csa.lynmonkel.com/?mid=383451_2222327");
 
     const { container: conNo } = render(<PartnersShowcase lang="en" country="NO" />);
-    expect(hrefCasea(conNo)).toBe("https://csa.lynmonkel.com/?mid=383451_2222324");
+    expect(hrefCasea(conNo)).toBe("/go/casea");
+    expect(targetUrlFor("casea", "NO")).toBe("https://csa.lynmonkel.com/?mid=383451_2222324");
     expect(casinoCards(conNo)).toBe(casinoCards(senza));
   });
 
@@ -69,7 +74,8 @@ describe("PartnersShowcase", () => {
     const card = Array.from(conIn.querySelectorAll("a.partner-card")).find(
       (a) => a.textContent?.includes("BetWinner")) as HTMLAnchorElement | undefined;
     expect(card, "BetWinner manca in vetrina (IN)").toBeTruthy();
-    expect(card?.href).toBe("https://bwref-dfsm2e1i.com/3aME?p=%2Fregistration%2F");
+    expect(card?.getAttribute("href")).toBe("/go/betwinner");
+    expect(targetUrlFor("betwinner", "IN")).toBe("https://bwref-dfsm2e1i.com/3aME?p=%2Fregistration%2F");
     expect(card?.querySelector("img")?.getAttribute("src")).toContain("betwinner.svg");
 
     const has = (c: HTMLElement) => Array.from(c.querySelectorAll("a.partner-card"))
@@ -80,17 +86,21 @@ describe("PartnersShowcase", () => {
     expect(has(senza), "BetWinner non dovrebbe comparire a geo ignota").toBe(false);
   });
 
+  // #POSTBACK-1014: la card apre /go/betwinner in ogni sua geo; il tracker del
+  // mercato lo sceglie /go con targetUrlFor (lo stesso header paese).
   it("i 7 mercati che condividono il tracker aprono lo stesso link", () => {
     const href = (cc: string) => {
       const { container } = render(<PartnersShowcase lang="en" country={cc} />);
       return (Array.from(container.querySelectorAll("a.partner-card")).find(
-        (a) => a.textContent?.includes("BetWinner")) as HTMLAnchorElement | undefined)?.href;
+        (a) => a.textContent?.includes("BetWinner")) as HTMLAnchorElement | undefined)?.getAttribute("href");
     };
     const atteso = "https://bwredir.com/3aME?p=%2Fregistration%2F";
     for (const cc of ["NG", "KE", "AR", "MX", "CO", "ID", "MY"]) {
-      expect(href(cc), `link sbagliato in ${cc}`).toBe(atteso);
+      expect(href(cc), `href sbagliato in ${cc}`).toBe("/go/betwinner");
+      expect(targetUrlFor("betwinner", cc), `link sbagliato in ${cc}`).toBe(atteso);
     }
-    expect(href("BR")).toBe("https://gbaodm2hp.com/3aME?p=%2Fregistration%2F");
+    expect(href("BR")).toBe("/go/betwinner");
+    expect(targetUrlFor("betwinner", "BR")).toBe("https://gbaodm2hp.com/3aME?p=%2Fregistration%2F");
   });
 
   it("shows the localized title in Italian", () => {
@@ -144,17 +154,23 @@ describe("PartnersShowcase — tracking del click affiliato", () => {
     expect(sessionStorage.getItem("am_sid")).toBeNull();
   });
 
-  // Il vincolo del gate: gli href sono i link affiliati con i parametri delle
-  // reti dentro. Il beacon non li tocca e non passa da nessun hop server-side.
-  it("non cambia l'href del partner ne' lo fa passare da un nostro endpoint", () => {
+  // Il vincolo del gate. #MIS-B (21/09) diceva «nessun hop server-side»; è SOSTITUITO
+  // da #POSTBACK-1014 (Andrea, 15/10, opzione A): i partner di rete passano da
+  // /go/<id> (registra il click e fa 302 al link vero), slotsbonus resta diretto, e
+  // il beacon continua a non toccare l'href al click e a non passare da /api/.
+  it("l'href non cambia al click: /go/<id> per i partner di rete, diretto per slotsbonus", () => {
     render(<PartnersShowcase lang="en" country="IT" />);
-    const card = Array.from(document.querySelectorAll("a.partner-card")).find(
-      (a) => a.textContent?.includes("YBets")) as HTMLAnchorElement;
-    const before = card.getAttribute("href");
-    fireEvent.click(card);
-    expect(card.getAttribute("href")).toBe(before);
-    expect(before).toMatch(/^https:\/\//);
-    expect(before).not.toContain("/api/");
+    const cards = Array.from(document.querySelectorAll("a.partner-card")) as HTMLAnchorElement[];
+    const byName = (n: string) => cards.find((a) => a.textContent?.includes(n))!;
+    for (const [name, expected] of [["YBets", "/go/ybets"], ["slotsbonus", targetUrlFor("slotsbonus", "IT")]] as const) {
+      const card = byName(name);
+      const before = card.getAttribute("href");
+      fireEvent.click(card);
+      expect(card.getAttribute("href"), name).toBe(before);
+      expect(before, name).toBe(expected);
+      expect(before, name).not.toContain("/api/");
+    }
+    expect(byName("slotsbonus").getAttribute("href")).toMatch(/^https:\/\//);
   });
 
   it("il link resta cliccabile anche se il beacon fallisce", () => {

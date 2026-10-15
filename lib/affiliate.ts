@@ -1,3 +1,5 @@
+import { hrefFor } from "@/lib/affiliate-networks";
+
 // Affiliate scaffolding. Real partner links/odds arrive once bookmaker deals are
 // signed (Andrea/Maven). Until then a single placeholder partner is emitted from
 // env so the UI + revenue plumbing exist. NEVER fabricates an "edge".
@@ -186,9 +188,19 @@ export function landingUrlOf(name: string): string | undefined {
 // NON è più fail-closed: #GEO-PARTNERS-ALWAYS-0917 ha tolto il filtro geo ai quattro
 // NO+DACH e #CASEA-ALWAYS-0917 ha dato a Casea un fallback. Geo ignota o scoperta →
 // l'elenco è comunque completo, solo con il link di default di Casea.
-export function landingPartnersFor(country: string | null | undefined): LandingPartner[] {
+// #POSTBACK-1014: `landingTargetsFor` keeps the REAL tracking links (what /go opens);
+// `landingPartnersFor` hands out the hrefs, i.e. /go/<id> for every network partner.
+export function landingTargetsFor(country: string | null | undefined): LandingPartner[] {
   const cc = (country ?? "").trim().toUpperCase();
   const casea = (cc ? CASEA_GEO_URLS[cc] : undefined) ?? CASEA_FALLBACK_URL;
   const n1 = GEO_LANDING_PARTNERS.map(({ name, url }) => ({ name, url }));
   return [...LANDING_PARTNERS, ...n1, { name: "Casea", url: casea }];
+}
+
+// Menu names -> lib/partners ids ("GG.BET" -> ggbet, "N1 Bet" -> n1bet). A test
+// asserts every menu name maps to a catalog id, so this cannot drift silently.
+export const slugOf = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+export function landingPartnersFor(country: string | null | undefined): LandingPartner[] {
+  return landingTargetsFor(country).map(({ name, url }) => ({ name, url: hrefFor(slugOf(name), url) }));
 }

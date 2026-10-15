@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/admin", "/reset-password"],
+        disallow: ["/api/", "/admin", "/reset-password", "/go/"],
       },
     ],
     sitemap: "https://www.betredge.com/sitemap.xml",
