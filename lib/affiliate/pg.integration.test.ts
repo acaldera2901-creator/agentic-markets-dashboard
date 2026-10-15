@@ -12,7 +12,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 const URL_ = process.env.AFFILIATE_PG_TEST_URL;
 
-const h = vi.hoisted(() => ({ sql: null as null | import("postgres").Sql }));
+const h = vi.hoisted(() => ({ sql: null as null | import("postgres").Sql, chainTo: "", chainAmount: 0 }));
 
 vi.mock("@/lib/auth", () => ({
   getSessionPlan: async (r: Request) => {
@@ -20,6 +20,25 @@ vi.mock("@/lib/auth", () => ({
     return who ? { identifier: who, plan: "free" } : null;
   },
 }));
+vi.mock("@/lib/admin-auth", () => ({ isAdminAuthorized: async () => true }));
+// Catena finta (nessuna rete): una ricevuta USDT valida dal wallet di uscita al
+// destinatario indicato in h.chainTo, con 101 conferme.
+vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
+  const real = await orig<typeof import("@/lib/affiliate/payout-verify")>();
+  const pad = (a: string) => `0x${"0".repeat(24)}${a.slice(2).toLowerCase()}`;
+  return {
+    ...real,
+    jsonRpc: () => async (method: string) => {
+      if (method === "eth_chainId") return "0x89";
+      if (method === "eth_blockNumber") return "0xf42a4";
+      return {
+        status: "0x1",
+        blockNumber: "0xf4240",
+        logs: [{ address: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", topics: [real.TRANSFER_TOPIC, pad("0x1111111111111111111111111111111111111111"), pad(h.chainTo)], data: `0x${(h.chainAmount * 1e6).toString(16).padStart(64, "0")}` }],
+      };
+    },
+  };
+});
 vi.mock("@/lib/email", async (orig) => ({
   ...(await orig<typeof import("@/lib/email")>()),
   sendEmail: vi.fn(async () => undefined),
@@ -32,14 +51,18 @@ vi.mock("@/lib/db", async () => {
   };
   return {
     interpolate,
-    dbQuery: run,
+    // Come in produzione: dbQuery inghiotte l'errore e restituisce [].
+    dbQuery: (q: string, params: unknown[] = []) => run(q, params).catch(() => []),
     dbQueryStrict: run,
     dbExecute: run,
     getSupabaseAdminClient: () => ({
       rpc: async (fn: string, args: Record<string, unknown>) => {
         try {
-          const named = Object.keys(args).map((k, i) => `${k} => $${i + 1}`).join(", ");
-          const call = interpolate(`SELECT ${fn}(${named}) AS r`, Object.values(args));
+          // Come PostgREST: gli array JSON diventano array Postgres.
+          const lit = (v: unknown): string =>
+            Array.isArray(v) ? `ARRAY[${v.map(lit).join(",")}]` : interpolate("$1", [v]);
+          const named = Object.entries(args).map(([k, v]) => `${k} => ${lit(v)}`).join(", ");
+          const call = `SELECT ${fn}(${named}) AS r`;
           const rows = await h.sql!.unsafe(call);
           return { data: rows[0].r, error: null };
         } catch (e) {
@@ -82,7 +105,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await sql.unsafe(`
       CREATE TABLE IF NOT EXISTS profiles (
         identifier text PRIMARY KEY, referral_code text, referred_by text, language text,
-        updated_at timestamptz);
+        updated_at timestamptz, created_at timestamptz DEFAULT now());
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
       CREATE UNIQUE INDEX IF NOT EXISTS profiles_refcode_upper ON profiles (UPPER(referral_code));
       CREATE OR REPLACE FUNCTION public.exec_sql(query text) RETURNS jsonb LANGUAGE plpgsql AS $$
       DECLARE result jsonb;
@@ -104,6 +128,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.resetModules();
     vi.stubEnv("AFFILIATE_MODE", "shadow");
     vi.stubEnv("AFFILIATE_TERMS_VERSION", "2026-11-v1");
+    vi.stubEnv("AFFILIATE_PAYOUTS", "live");
+    vi.stubEnv("AFFILIATE_PAYOUT_FROM", "0x1111111111111111111111111111111111111111");
     await h.sql!.unsafe(`
       TRUNCATE affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
                affiliate_clicks, affiliates, profiles RESTART IDENTITY CASCADE;
@@ -183,5 +209,93 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(panel.payouts[0]).toMatchObject({ status: "cancelled", cancel_code: "wallet_changed" });
     expect(panel.ledger).toMatchObject({ payable: 60, in_payout: 0 });
     expect(panel.commissions.items[0]).toMatchObject({ referred: "c***@g***.com", status: "payable" });
+  });
+
+  // ── PR-9: payout admin ─────────────────────────────────────────────────────
+  /** Alice iscritta, wallet screenato e fuori cooldown, 60 $ maturati. */
+  async function payableAlice(address = A1) {
+    const join = await import("@/app/api/affiliate/join/route");
+    const wallet = await import("@/app/api/affiliate/wallet/route");
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(address)));
+    await h.sql!.unsafe(`
+      UPDATE affiliate_wallets SET created_at = now() - interval '10 days', usable_after = now() - interval '7 days',
+             screening_result = 'clear', screened_at = now(), screening_provider = 'test';
+      INSERT INTO affiliate_commissions(affiliate_id, referred_identifier, rail, rail_payment_ref, kind, gross_usd, net_usd, rate, amount_usd, renewal_index, status, paid_at, payable_after)
+        VALUES (1, 'carla.verdi@gmail.com', 'paygate', 'o1', 'first', 300, 300, 0.2, 60, 0, 'payable', now() - interval '90 days', now() - interval '30 days');`);
+  }
+  const month = () => new Date().toISOString().slice(0, 7);
+  const H = `0x${"c3".repeat(32)}`;
+
+  it("PR-9 end-to-end: lista → crea → tx verificata → paid, e l'affiliato lo vede", async () => {
+    await payableAlice();
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    const me = await import("@/app/api/affiliate/me/route");
+    const list = await (await admin.GET(req(`/api/admin/affiliate/payouts?month=${month()}`, "GET", null) as never)).json();
+    expect(list.rows[0]).toMatchObject({ code: "ALICE", eligible: true, balance_usd: 60, wallet: { address: A1 } });
+    expect(list.summary).toMatchObject({ eligible_count: 1, eligible_total_usd: 60 });
+
+    const created = await admin.POST(req("/api/admin/affiliate/payouts", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    expect(created.status).toBe(200);
+    const [p] = await h.sql!`SELECT id, status, to_address FROM affiliate_payouts`;
+    expect(p).toMatchObject({ status: "created", to_address: A1 });
+
+    h.chainTo = A1;
+    h.chainAmount = 60;
+    const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: String(p.id) }) });
+    expect(await t.json()).toMatchObject({ outcome: "paid" });
+    const panel = await (await me.GET(req("/api/affiliate/me", "GET", "alice@x.io"))).json();
+    expect(panel.payouts[0]).toMatchObject({ status: "paid", amount_coin: 60, tx_hash: H });
+    expect(panel.ledger).toMatchObject({ paid: 60, payable: 0, in_payout: 0 });
+  });
+
+  it("PR-9 corsa: due «Crea payout» concorrenti → uno solo creato", async () => {
+    await payableAlice();
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const body = { month: month(), ids: [1], expected_total: "60.00" };
+    const [a, b] = await Promise.all([
+      admin.POST(req("/x", "POST", null, body) as never),
+      admin.POST(req("/x", "POST", null, body) as never),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    const [n] = await h.sql!`SELECT count(*)::int AS n FROM affiliate_payouts`;
+    expect(n.n).toBe(1);
+  });
+
+  it("PR-9 tx verso il destinatario sbagliato: rifiutato, payout resta created", async () => {
+    await payableAlice();
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    h.chainTo = A2;
+    h.chainAmount = 60;
+    const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: "1" }) });
+    expect(await t.json()).toEqual({ outcome: "rejected", reason: "wrong_recipient" });
+    const [p] = await h.sql!`SELECT status, tx_hash FROM affiliate_payouts`;
+    expect(p).toEqual({ status: "created", tx_hash: null });
+  });
+
+  it("PR-9 cambio wallet dopo la creazione: payout annullato, la tx sul vecchio indirizzo non si registra", async () => {
+    await payableAlice();
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    const wallet = await import("@/app/api/affiliate/wallet/route");
+    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A2)));
+    h.chainTo = A1;
+    h.chainAmount = 60;
+    const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: "1" }) });
+    expect(t.status).toBe(409);
+    expect(await t.json()).toEqual({ error: "cancelled", cancel_code: "wallet_changed" });
+  });
+
+  it("PR-9 suspended: non pagabile, la creazione è rifiutata", async () => {
+    await payableAlice();
+    await h.sql!`UPDATE affiliates SET status = 'suspended'`;
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const r = await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    expect(r.status).toBe(409);
+    expect(await r.json()).toMatchObject({ error: "not_eligible", items: [{ affiliate_id: 1, reasons: ["suspended"] }] });
   });
 });
