@@ -195,6 +195,34 @@ describe("PUT: validazione (il server è l'arbitro)", () => {
     expect(res.status).toBe(200);
     expect(affiliateRpc.mock.calls[0][1]).toMatchObject({ p_require_kyc: false, p_legal_name: null, p_declared: false });
   });
+
+  it("KYC spento + dichiarazioni inviate comunque: NON registrate (QA F8: altrimenti 500 sul CHECK)", async () => {
+    vi.stubEnv("AFFILIATE_KYC_AT_WALLET", "off");
+    const { PUT } = await load();
+    const res = await PUT(req("PUT", "alice@x.io", good({ payee_legal_name: undefined, payee_country: undefined })));
+    expect(res.status).toBe(200);
+    expect(affiliateRpc.mock.calls[0][1]).toMatchObject({ p_declared: false, p_declarations_version: null });
+  });
+});
+
+describe("PUT: denylist destinatari (QA F6)", () => {
+  const cases: [string, string, Record<string, string>][] = [
+    ["wallet di uscita", "0x1111111111111111111111111111111111111111", { AFFILIATE_PAYOUT_FROM: "0x1111111111111111111111111111111111111111" }],
+    ["wallet incassi PayGate", "0x72e348d948e984c7d57d8ccb93fdd52710e47fa2", { PAYGATE_PAYOUT_WALLET: "0x72E348D948E984C7D57D8CCB93FDD52710E47FA2" }],
+    ["contratto USDT Polygon", "0xc2132d05d31c914a87c6611c10748aeb04b58e8f", {}],
+    ["contratto USDC Base (catalogo)", "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", {}],
+    ["burn 0x…dEaD", "0x000000000000000000000000000000000000dEaD", {}],
+  ];
+  for (const [name, address, env] of cases) {
+    it(`${name} → address_not_allowed, niente salvato`, async () => {
+      for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
+      const { PUT } = await load();
+      const res = await PUT(req("PUT", "alice@x.io", good({ address, last6: address.slice(-6) })));
+      expect(res.status).toBe(422);
+      expect((await res.json()).error).toBe("address_not_allowed");
+      expect(affiliateRpc).not.toHaveBeenCalled();
+    });
+  }
 });
 
 describe("PUT: screening fail-closed", () => {

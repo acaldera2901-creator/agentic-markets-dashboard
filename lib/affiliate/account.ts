@@ -280,7 +280,7 @@ type PayoutRow = {
   status: "created" | "submitted" | "paid" | "cancelled";
   tx_hash: string | null;
   paid_at: string | null;
-  cancel_code: "wallet_changed" | "wallet_removed" | "admin_cancelled" | null;
+  cancel_code: "wallet_changed" | "wallet_removed" | "admin_cancelled" | "affiliate_suspended" | "tx_dropped" | null;
 };
 
 export type PayoutView = {

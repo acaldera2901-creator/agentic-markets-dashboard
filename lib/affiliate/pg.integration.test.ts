@@ -6,6 +6,10 @@
 // stessa funzione di produzione e la RPC di Supabase con una SELECT sulla
 // funzione. In CI la variabile non c'è e il file si salta.
 //   AFFILIATE_PG_TEST_URL=postgres://postgres@127.0.0.1:54331/postgres npx vitest run lib/affiliate/pg.integration.test.ts
+// Il DB deve essere vuoto e usa e getta (initdb). I ruoli anon / authenticated /
+// service_role che le migration nominano nei GRANT/REVOKE li crea il test se
+// mancano; `profiles` è uno stub con le sole colonne lette qui (l'indice UNIQUE
+// sul codice lo porta la migration, come in produzione).
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -103,11 +107,15 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     h.sql = postgres(URL_!, { max: 4, onnotice: () => {} });
     const sql = h.sql;
     await sql.unsafe(`
+      DO $r$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon; END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated; END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN CREATE ROLE service_role; END IF;
+      END $r$;
       CREATE TABLE IF NOT EXISTS profiles (
         identifier text PRIMARY KEY, referral_code text, referred_by text, language text,
         updated_at timestamptz, created_at timestamptz DEFAULT now());
       ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
-      CREATE UNIQUE INDEX IF NOT EXISTS profiles_refcode_upper ON profiles (UPPER(referral_code));
       CREATE OR REPLACE FUNCTION public.exec_sql(query text) RETURNS jsonb LANGUAGE plpgsql AS $$
       DECLARE result jsonb;
       BEGIN
@@ -178,6 +186,22 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(del.status).toBe(404); // Bob non ha wallet; quello di Alice resta
     const [n] = await h.sql!`SELECT count(*)::int AS n FROM affiliate_wallets w JOIN affiliates a ON a.id = w.affiliate_id WHERE a.code = 'ALICE' AND w.revoked_at IS NULL`;
     expect(n.n).toBe(1);
+  });
+
+  it("indice UNIQUE sul codice referral: lo porta la migration (in prod esiste già, fuori dal repo)", async () => {
+    const [i] = await h.sql!`SELECT indexdef FROM pg_indexes WHERE indexname = 'uq_profiles_referral_code'`;
+    expect(i.indexdef).toContain("upper(referral_code)");
+  });
+
+  it("KYC spento + dichiarazioni inviate: salva (QA F8, prima 500 sul CHECK)", async () => {
+    vi.stubEnv("AFFILIATE_KYC_AT_WALLET", "off");
+    const join = await import("@/app/api/affiliate/join/route");
+    const wallet = await import("@/app/api/affiliate/wallet/route");
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    const { payee_legal_name: _n, payee_country: _c, ...rest } = walletBody(A1);
+    void _n; void _c;
+    const put = await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", rest));
+    expect(put.status).toBe(200);
   });
 
   it("suspended: PUT rifiutato, nessuna riga scritta", async () => {
