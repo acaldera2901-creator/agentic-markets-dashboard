@@ -245,13 +245,38 @@ export const FEATURED_CAP = 10;
  *  delle leghe top (tier 1). Se oggi il tier 1 non gioca, si scende al 2, poi
  *  a tutto: la fascia non resta vuota per un criterio troppo stretto, e non
  *  si riempie di Veikkausliiga quando gioca la Serie A. */
-export function featuredItems(items: readonly LobbyItem[], now: number = Date.now(), cap: number = FEATURED_CAP): LobbyItem[] {
-  const eligible = items.filter((it) => it.data.isLive || startMs(it) > now);
-  for (const maxTier of [1, 2, Number.POSITIVE_INFINITY]) {
-    const pool = eligible.filter((it) => leagueTier(it.data.sport, it.data.league) <= maxTier);
-    if (pool.length >= Math.min(4, eligible.length)) return [...pool].sort(byLiveThenKickoff).slice(0, cap);
+/** Editorial order, not a comparison of prediction accuracy across sports.
+ * Preserve the ranking within each sport; start each cycle with two tennis matches. */
+export function mixSports(items: readonly LobbyItem[], cap: number): LobbyItem[] {
+  const tennis = items.filter(it => it.data.sport === "tennis");
+  const other = items.filter(it => it.data.sport !== "tennis");
+  const out: LobbyItem[] = [];
+  let t = 0, f = 0;
+  while (out.length < cap && (t < tennis.length || f < other.length)) {
+    for (const sport of ["tennis", "tennis", "other"]) {
+      if (out.length >= cap) break;
+      if (sport === "tennis" && t < tennis.length) out.push(tennis[t++]);
+      if (sport === "other" && f < other.length) out.push(other[f++]);
+    }
   }
-  return [];
+  return out;
+}
+
+export function featuredItems(items: readonly LobbyItem[], now: number = Date.now(), cap: number = FEATURED_CAP, prioritizeIncluded = false): LobbyItem[] {
+  const eligible = items.filter((it) => it.data.isLive || startMs(it) > now);
+  const selected: LobbyItem[] = [];
+  // Choose tiers independently: a full football pool must never erase tennis.
+  for (const sport of ["tennis", "football"]) {
+    const sportRows = eligible.filter(it => it.data.sport === sport);
+    for (const maxTier of [1, 2, Number.POSITIVE_INFINITY]) {
+      const pool = sportRows.filter(it => leagueTier(it.data.sport, it.data.league) <= maxTier);
+      if (pool.length >= Math.min(4, sportRows.length)) { selected.push(...pool); break; }
+    }
+  }
+  const included = prioritizeIncluded ? eligible.filter(it => it.data.locked === false) : [];
+  const keys = new Set(included.map(it => it.key));
+  const first = mixSports([...included].sort(byLiveThenKickoff), cap);
+  return [...first, ...mixSports(selected.filter(it => !keys.has(it.key)).sort(byLiveThenKickoff), cap - first.length)];
 }
 
 // ─── «Where our estimate differs most» ─────────────────────────────────────
@@ -307,13 +332,7 @@ export function differsMostItems(
 ): LobbyItem[] {
   const gaps = new Map<string, number>();
   const shownGap = (it: LobbyItem) => gaps.get(it.key) ?? Math.abs(it.data.edgePct ?? 0);
-  return items
-    // Solo calcio. Il «nostro» numero del tennis oggi è un Elo temperato, non
-    // sigillato (REGOLE-CLASSIC: tennis «Market only» o «Elo-based, not
-    // sealed», filone F gated): metterlo in vetrina come disaccordo col
-    // mercato è proprio la promessa che la review toglie. Misurato l'8/10:
-    // senza questo filtro la fascia era 6 su 6 tennis Elo.
-    .filter((it) => it.data.sport === "football")
+  const eligible = items
     .filter((it) => !it.data.isLive && startMs(it) > now)
     .filter((it) => {
       // #CLASSIC-INT-1008 — con i numeri grezzi della riga (a flag acceso li
@@ -329,14 +348,21 @@ export function differsMostItems(
       }
       // Senza i numeri grezzi serve l'edge servito. Con, no: una riga chiusa senza quota
       // servita ha edgePct null e il mercato dai book partner (Lens–Lione, QA M2).
+      // Tennis requires the actual displayed, freshness-checked view.
+      if (it.data.sport !== "football") return false;
       if (it.data.edgePct == null || !Number.isFinite(it.data.edgePct)) return false;
       const g = estimatedRawGapPp(it);
       return g != null && g <= DIFFERS_MAX_RAW_GAP_PP;
     })
     // #CLASSIC-FIX2-1008 (QA M2) — l'ordine è lo scarto MOSTRATO dalla scheda, non edgePct
     // (quota grezza, senza le quote partner): prima 3,9 · 2,3 · 4,1, e Lens +12,5 fuori.
-    .sort((a, b) => shownGap(b) - shownGap(a) || startMs(a) - startMs(b))
-    .slice(0, cap);
+    .sort((a, b) => {
+      // Elo comparisons are observational: never rank tennis by its gap.
+      if (a.data.sport === "tennis" && b.data.sport === "tennis") return byLiveThenKickoff(a, b);
+      if (a.data.sport !== b.data.sport) return a.data.sport.localeCompare(b.data.sport);
+      return shownGap(b) - shownGap(a) || startMs(a) - startMs(b);
+    });
+  return mixSports(eligible, cap);
 }
 
 // ─── Righe per lega e chip delle leghe (#CLASSIC-ROOBET-1013) ──────────────
@@ -412,7 +438,11 @@ export type SportFilter = "popular" | "football" | "tennis";
  *  n'è nessuna, tutto: il filtro non deve svuotare la pagina. */
 export function applySportFilter(items: readonly LobbyItem[], s: SportFilter): LobbyItem[] {
   if (s === "football" || s === "tennis") return items.filter((it) => it.data.sport === s);
-  const top = items.filter((it) => leagueTier(it.data.sport, it.data.league) <= 2);
+  const gated = items.some(it => it.data.locked === true);
+  const sportsWithTop = new Set(items.filter(it => leagueTier(it.data.sport, it.data.league) <= 2).map(it => it.data.sport));
+  const top = items.filter((it) => leagueTier(it.data.sport, it.data.league) <= 2
+    || (gated && it.data.locked === false)
+    || !sportsWithTop.has(it.data.sport));
   return top.length > 0 ? top : [...items];
 }
 

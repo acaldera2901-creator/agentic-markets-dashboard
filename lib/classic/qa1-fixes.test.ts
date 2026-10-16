@@ -145,10 +145,10 @@ describe("A3 · contatore e lista della striscia sport usano lo stesso filtro", 
       }
     }
   });
-  it("Featured · Popular restringe alle leghe top e dice quante ne lascia fuori, della stessa tab", () => {
+  it("Featured · Popular uses top leagues per sport without dropping all tennis", () => {
     const s = scopeLobby(rows, "featured", "popular", T0);
-    expect(s.list.map((r) => r.data.home)).toEqual(["Inter"]);
-    expect(s.hidden).toBe(20);
+    expect(s.list.map((r) => r.data.home)).toEqual(["Inter", ...rows.filter(r => r.data.sport === "tennis").map(r => r.data.home)]);
+    expect(s.hidden).toBe(1);
   });
 });
 

@@ -103,6 +103,36 @@ describe("estimatedRawGapPp / differsMostItems", () => {
 });
 
 describe("featuredItems", () => {
+  it("comparison rail mixes eligible sports but keeps tennis chronological, never ordered by Elo gap", () => {
+    const t1 = item({ sport: "tennis", league: "ATP", startsAt: h(1), classic: { sport: "tennis", modelVersion: "elo", tournament: "ATP" } });
+    const t2 = item({ sport: "tennis", league: "WTA", startsAt: h(2), classic: { sport: "tennis", modelVersion: "elo", tournament: "ATP" } });
+    const f = item({ league: "Serie A", classic: { sport: "football" } });
+    const market = item({ sport: "tennis", league: "ITF", classic: { sport: "tennis", modelVersion: "elo", tournament: "ATP" } });
+    const gap = (r: LobbyItem) => r === market ? null : r === t1 ? 0.2 : 4;
+    expect(differsMostItems([f, t2, market, t1], NOW, 6, gap)).toEqual([t1, t2, f]);
+  });
+  it("opens with tennis without losing football, including lower-tier tennis", () => {
+    const football = Array.from({ length: 12 }, () => item({ league: "Serie A", locked: false }));
+    const tennis = Array.from({ length: 4 }, () => item({ sport: "tennis", league: "ITF Example", locked: false }));
+    const result = featuredItems([...football, ...tennis], NOW);
+    expect(result.slice(0, 3).map(r => r.data.sport)).toEqual(["tennis", "tennis", "football"]);
+    expect(result).toHaveLength(10);
+    expect(new Set(result.map(r => r.key)).size).toBe(10);
+  });
+
+  it("Free puts all six server-unlocked matches first without unlocking anything", () => {
+    const open = ["football", "tennis"].flatMap(sport => Array.from({ length: 3 }, () => item({ sport, league: "ITF Example", locked: false, startsAt: h(10) })));
+    const closed = Array.from({ length: 12 }, () => item({ league: "Serie A", locked: true, startsAt: h(1) }));
+    const result = featuredItems([...closed, ...open], NOW, 10, true);
+    expect(new Set(result.slice(0, 6).map(r => r.key))).toEqual(new Set(open.map(r => r.key)));
+    expect(result.slice(6).every(r => r.data.locked)).toBe(true);
+    expect(closed.every(r => r.data.locked)).toBe(true);
+  });
+
+  it("Pro does not apply Free priorities or a three-per-sport selection cap", () => {
+    const rows = Array.from({ length: 8 }, (_, i) => item({ sport: "tennis", league: "ATP Tokyo", locked: false, startsAt: h(i + 1) }));
+    expect(featuredItems(rows, NOW)).toEqual(rows);
+  });
   it("prefers live, then next kick-offs, in tier-1 leagues", () => {
     const rows = [
       item({ league: "Veikkausliiga", startsAt: h(0.2) }),

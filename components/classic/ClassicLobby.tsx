@@ -36,8 +36,9 @@ import {
   countryLabel, dedupeLobby, differsMostItems, featuredItems, groupBySportLeague, leagueChips, matchesDateFilter, matchesQuery, ROWS_PER_LEAGUE, scopeLobby,
   UNNAMED_LEAGUE, type DateFilter, type LobbyTab, type SportFilter,
 } from "@/lib/classic/lobby-model";
-import { differsBy, footballBooks } from "@/lib/classic/card-view";
-import { abbinaQuotaPartner } from "@/lib/fp-odds-join";
+import { classicViewFor } from "@/lib/classic/card-view";
+import { comparisonGap } from "@/lib/classic/lobby-comparison";
+import { discoveryCopy } from "@/lib/classic/discovery-copy";
 import { useClassicPrices } from "@/components/classic/ClassicContext";
 import { classicCopy, fill, type ClassicCopy } from "@/lib/classic/lobby-copy";
 import { ClassicBanners, type ClassicBanner } from "@/components/classic/ClassicBanners";
@@ -230,15 +231,15 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   },[reportNavigation,tab,sport,loading,liveTotal,sportCounts.popular,sportCounts.football,sportCounts.tennis]);
   useEffect(()=>()=>reportNavigation?.(null),[reportNavigation]);
 
-  const featured = useMemo(() => (tab === "featured" ? featuredItems(sportScoped, now) : []), [tab, sportScoped, now]);
+  const prices = useClassicPrices();
+  const discovery = discoveryCopy(lang);
+  const featured = useMemo(() => (tab === "featured" ? featuredItems(sportScoped, now, undefined, prices.freePlan) : []), [tab, sportScoped, now, prices.freePlan]);
   // #CLASSIC-FIX2-1008 (M2) — lo scarto della fascia è quello che la scheda mostra: con le
   // stesse quote partner della Slab (nessuna, dove i link sono bloccati).
-  const prices = useClassicPrices();
   const differs = useMemo(() => {
     if (tab !== "featured") return [];
     const gapOf = (it: LobbyItem) => {
-      const fp = prices.booksBlocked ? null : abbinaQuotaPartner(it.data.home, it.data.away, it.data.startsAt, prices.fpOdds, prices.fpIndex).quota;
-      return differsBy(it.data, footballBooks(fp, it.data.home, it.data.away));
+      return comparisonGap(classicViewFor(it.data, prices, false, new Date(now)).view);
     };
     return differsMostItems(sportScoped, now, undefined, gapOf);
   }, [tab, sportScoped, now, prices]);
@@ -417,13 +418,13 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
       <div id="brc-panel" role="tabpanel" aria-labelledby={`brc-tab-${tab}`} className="brc-panel">
         {/* ── 4 · in evidenza: carosello ──────────────────────────────── */}
         {tab === "featured" && (loading || featured.length > 0) && (
-          <Rail id="brc-featured" title={copy.featuredTitle} hint={copy.featuredHint} items={featured} busy={loading}
+          <Rail id="brc-featured" title={copy.featuredTitle} hint={prices.freePlan ? discovery.free : discovery.featured} items={featured} busy={loading}
             section={(it) => (it.data.isLive ? "live" : "top")} renderCard={renderCard} copy={copy} testId="classic-featured" />
         )}
 
         {/* ── 5 · dove la stima si discosta di più: lo stesso carosello ── */}
         {differs.length > 0 && (
-          <Rail id="brc-differs" title={copy.differsTitle} hint={copy.differsHint} items={differs}
+          <Rail id="brc-differs" title={copy.differsTitle} hint={discovery.comparison} items={differs}
             section={() => "top"} renderCard={renderCard} copy={copy} testId="classic-differs" />
         )}
 

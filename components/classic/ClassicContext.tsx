@@ -13,6 +13,8 @@ import type { FpOddsEntry } from "@/lib/fortuneplay-board";
 import { indicizzaPerGiorno } from "@/lib/fp-odds-join";
 
 export type ClassicPrices = {
+  /** Presentation only; access is always decided by the API. */
+  freePlan?: boolean;
   fpOdds: Record<string, FpOddsEntry>;
   fpIndex: Map<string, FpOddsEntry[]>;
   booksBlocked: boolean;
@@ -36,9 +38,9 @@ export function useClassicPrices(): ClassicPrices {
   return useContext(Ctx);
 }
 
-export function ClassicPricesProvider({ fpOdds, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt = null, boardLoading = false, onQueryChange, children }: Omit<ClassicPrices, "fpIndex"> & { children: ReactNode }) {
+export function ClassicPricesProvider({ fpOdds, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt = null, boardLoading = false, freePlan = false, onQueryChange, children }: Omit<ClassicPrices, "fpIndex"> & { children: ReactNode }) {
   const fpIndex = useMemo(() => indicizzaPerGiorno(fpOdds), [fpOdds]);
-  const value = useMemo(() => ({ fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt, boardLoading, onQueryChange }), [fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt, boardLoading, onQueryChange]);
+  const value = useMemo(() => ({ fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt, boardLoading, freePlan, onQueryChange }), [fpOdds, fpIndex, booksBlocked, geoCountry, tz, tennisComputedAt, footballOldestAt, boardLoading, freePlan, onQueryChange]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
