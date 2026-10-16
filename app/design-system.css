@@ -4103,11 +4103,11 @@ a.br-field:hover .br-field__img, button.br-field:hover .br-field__img { transfor
   line-height: 1.5;
   color: var(--nudge-ink-2);
 }
-/* La mini tabella dei tre piani: celle su un velo bianco al 5% separate da
+/* La mini tabella dei due piani (Free · Pro; Base non si presenta più): celle su un velo bianco al 5% separate da
    1px di linea (gap sul colore di bordo), nessun bordo colorato, nessun badge. */
 .br-nudge__plans {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1px;
   margin: var(--am-s-4) 0 0;
   padding: 0;
