@@ -85,7 +85,7 @@ describe("invite copy (classic)", () => {
   it("la soglia dell'esempio è quella del backend v2 proposto (MIN_PAYOUT_USD=50), se il file esiste", () => {
     let src = "";
     try { src = readFileSync("lib/affiliate/config.ts", "utf8"); } catch { /* backend v2 non mergiato: niente da confrontare */ }
-    if (src) expect(src).toMatch(/MIN_PAYOUT_USD\s*=\s*50\b/);
+    if (src) expect(src).toMatch(/MIN_PAYOUT_USD\s*[:=]\s*50\b/); // main defines it as an object key
     expect(INVITE_SAMPLE.threshold).toBe(50);
   });
 

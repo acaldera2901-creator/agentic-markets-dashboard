@@ -31,7 +31,8 @@ describe("ClassicSlab (round 2)", () => {
     const list = fallbackPartners({ booksBlocked: false, geoCountry: "DE" });
     expect(list.length).toBeGreaterThanOrEqual(3);
     expect(list[0].name).toBe("FortunePlay");
-    expect(list.every((p) => p.url.startsWith("https://"))).toBe(true);
+    // #POSTBACK-1014 (main): network partners go through the tracked /go/<id> redirect
+    expect(list.every((p) => p.url.startsWith("https://") || p.url.startsWith("/go/"))).toBe(true);
   });
 
   it("pickCell: the best linked price on the pick side, or null", () => {

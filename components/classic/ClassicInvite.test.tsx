@@ -148,7 +148,8 @@ describe("desk: parità a flag spento", () => {
 
   it("la tab invita rende ClassicInvite SOLO nel ramo del flag classic, altrimenti ReferralPanel", () => {
     expect(page).toMatch(
-      /\{tab === "invita" && \(process\.env\.NEXT_PUBLIC_CLASSIC === "1" \? \(\s*<CL\.ClassicInvite[\s\S]*?\/>\s*\) : \(\s*<ReferralPanel \/>\s*\)\)\}/,
+      // #CLASSIC-RELEASE-1016: the `else` is main's branch (AffiliateSection under its own flag, else ReferralPanel)
+      /\{tab === "invita" && \(process\.env\.NEXT_PUBLIC_CLASSIC === "1" \? \(\s*<CL\.ClassicInvite[\s\S]*?\/>\s*\) : AffiliateSection \? \([\s\S]*?\) : <ReferralPanel \/>\)\}/,
     );
     // nessun altro montaggio, nessun import statico del componente nel desk
     expect(page.match(/<CL\.ClassicInvite\b/g)?.length).toBe(1); // un solo montaggio
@@ -157,7 +158,7 @@ describe("desk: parità a flag spento", () => {
 
   it("il flag v2 si legge solo dentro il ramo classic", () => {
     const uses = page.match(/NEXT_PUBLIC_AFFILIATE_V2/g) ?? [];
-    expect(uses.length).toBe(2); // commento + prop v2
+    expect(uses.length).toBe(4); // commento + prop v2, più commento + lazy di AffiliateSection (main, #AFFILIATE-V2-UI-1015)
     expect(page).toMatch(/v2=\{process\.env\.NEXT_PUBLIC_AFFILIATE_V2 === "1"\}/);
   });
 
