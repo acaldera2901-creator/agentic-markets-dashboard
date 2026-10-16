@@ -9159,8 +9159,8 @@ function HomeLobby({
         }),
       }}
       image={view === "football"
-        ? { src: "/images/hero/section-football-wide.jpg", srcSm: "/images/hero/section-football-wide-800.jpg" }
-        : { src: "/images/hero/section-tennis-wide.jpg", srcSm: "/images/hero/section-tennis-wide-800.jpg" }}
+        ? { src: "/images/hero/section-football-wide.jpg?v=5f646741ac4e", srcSm: "/images/hero/section-football-wide-800.jpg?v=6d5b08b212a9" }
+        : { src: "/images/hero/section-tennis-wide.jpg?v=6830bab23595", srcSm: "/images/hero/section-tennis-wide-800.jpg?v=bb598854afc9" }}
     />
   );
 
