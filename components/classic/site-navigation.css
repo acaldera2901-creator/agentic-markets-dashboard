@@ -1,0 +1,16 @@
+/* Reuse the original lobby grid, rail geometry and typography on every page. */
+.br-site-frame, .br-site-content { min-width: 0; }
+.br-site-page > .br-site-content { min-width: 0; isolation: isolate; }
+.br-site-sidebar { z-index: 1; }
+.br-site-sidebar a:focus-visible { outline: 2px solid #81a6ff; outline-offset: -2px; }
+.br-site-count { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--am-muted); }
+/* Narrow screens keep the original header/account dimensions. The complete
+   navigation remains available in a scrolling row rather than a fixed overlay. */
+@media (max-width: 1199px) {
+ .br-site-frame .brc-lobby > .br-site-sidebar { display: flex; flex-direction: row; align-items: center; gap: var(--am-s-2); overflow-x: auto; padding: var(--am-s-2); border-radius: var(--am-r-card); background: var(--am-panel); }
+ .br-site-sidebar .brc-side__h { display: none; }
+ .br-site-sidebar .brc-side__list { display: flex; flex: none; }
+ .br-site-sidebar .brc-side__item { white-space: nowrap; }
+}
+.br-site-frame .am-topbar .br-site-primary { display: flex; overflow-x: auto !important; overflow-y: hidden !important; min-width: 0; max-width: 100%; }
+.br-site-primary .br-nav__item { flex-shrink: 0; }

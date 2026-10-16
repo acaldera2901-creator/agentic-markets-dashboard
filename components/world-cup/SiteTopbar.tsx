@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages -- A document navigation resets desk-local filters even when the current URL is already /. */
 "use client";
 // Site chrome for the World Cup hub. The real topbar lives inside the home
 // monolith (app/page.tsx) and is wired to client state — it can't be lifted
@@ -11,6 +12,9 @@
 // been logged out. On mount we ask GET /api/auth (same call the home makes)
 // and render the real state.
 import Link from "next/link";
+import {useSiteNavigation} from "@/components/classic/SiteNavigationContext";
+import {ClassicPrimaryNav} from "@/components/classic/ClassicPrimaryNav";
+import {CLASSIC} from "@/lib/classic/flag";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
 import LangDropdown from "@/components/LangDropdown";
@@ -38,13 +42,15 @@ function readLang(): SiteLang {
   return s === "en" || s === "es" || s === "fr" || s === "ru" ? s : "it";
 }
 
-export default function SiteTopbar({
+function SiteTopbarContent({
   backHref = "/",
+  globalNavigation = false,
   backLabel = "Board",
   hideLang = false,
   lang: langOverride,
   nav,
 }: {
+  globalNavigation?: boolean;
   backHref?: string;
   backLabel?: string;
   hideLang?: boolean;
@@ -157,17 +163,17 @@ export default function SiteTopbar({
     <header className="am-topbar">
       <div className="am-topbar-in">
         <div className="am-brandmark">
-          <Link href="/" className="wc-topbar-home" aria-label="BetrEdge">
+          <a href="/" className="wc-topbar-home" aria-label="BetrEdge — home">
             {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: resta il solo bianco. Il tema è
                 statico e scuro (vedi la nota qui sopra, riga 129), quindi il gemello
                 nero era `display: none` per sempre — e un <img> display:none il
                 browser lo scarica comunque: 590 KB a pagina, misurati. */}
             <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
-          </Link>
-          {!nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
+          </a>
+          {!globalNavigation && !nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
         </div>
 
-        {nav && (
+        {CLASSIC ? <ClassicPrimaryNav lang={lang} active={pathname.startsWith("/tools")?"tools":""}/> : nav && (
           <nav className="br-nav" aria-label={lang === "it" ? "Navigazione principale" : "Primary"}>
             {nav.map((n) => (
               <Link
@@ -218,4 +224,10 @@ export default function SiteTopbar({
       </div>
     </header>
   );
+}
+
+export default function SiteTopbar(props:React.ComponentProps<typeof SiteTopbarContent>){
+ const shared=useSiteNavigation();
+ if(shared&&!props.globalNavigation)return null;
+ return <SiteTopbarContent {...props}/>;
 }

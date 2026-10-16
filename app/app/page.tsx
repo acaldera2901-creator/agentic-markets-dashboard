@@ -1,5 +1,7 @@
+/* eslint-disable @next/next/no-html-link-for-pages -- A document navigation resets desk-local filters even when the current URL is already /. */
 "use client";
 
+import {SitePageNavigation} from "@/components/classic/SiteNavigationContext";
 import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, Fragment, lazy, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -101,6 +103,7 @@ import { buildTeamNews } from "@/lib/ui/team-news"; // #INFORTUNI-1001
 import { tennisLiveScoreLabel } from "@/lib/ui/tennis-live-score"; // #LIVE-INVERTED-1007
 import { displayTournament, probabilityLabel, probabilitySourceOf } from "@/lib/partner-market"; // #COERENZA-1001
 import { useWatchlist } from "@/lib/watchlist";
+import {ClassicPrimaryNav} from "@/components/classic/ClassicPrimaryNav";
 import { CLASSIC } from "@/lib/classic/flag"; // #CLASSIC-COVERAGE-1014
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
@@ -9156,8 +9159,8 @@ function HomeLobby({
         }),
       }}
       image={view === "football"
-        ? { src: "/images/hero/section-football-wide.jpg", srcSm: "/images/hero/section-football-wide-800.jpg" }
-        : { src: "/images/hero/section-tennis-wide.jpg", srcSm: "/images/hero/section-tennis-wide-800.jpg" }}
+        ? { src: "/images/hero/section-football-wide.jpg?v=5f646741ac4e", srcSm: "/images/hero/section-football-wide-800.jpg?v=6d5b08b212a9" }
+        : { src: "/images/hero/section-tennis-wide.jpg?v=6830bab23595", srcSm: "/images/hero/section-tennis-wide-800.jpg?v=bb598854afc9" }}
     />
   );
 
@@ -11040,7 +11043,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       {/* ── Topbar (sleek-coral redesign — logo + topnav + theme/account/lang) ── */}
       <header className="am-topbar">
         <div className="am-topbar-in">
-          <Link href="/" className="am-brandmark" aria-label="BetrEdge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
+          <a href="/" className="am-brandmark" aria-label="BetrEdge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
             {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: erano due <img> che si scambiavano
                 via CSS su `data-theme`. Il gemello nero è stato tolto: `data-theme`
                 lo scrive statico il server a "dark" (app/layout.tsx) e nessun codice
@@ -11063,7 +11066,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 style={{ height: 30, width: "auto" }}
               />
             </picture>
-          </Link>
+          </a>
 
           {/* ── Nav primaria — #RESTYLING-0921 ──────────────────────────────
               Home/Discover · Live · Football · Tennis · Tools. Cinque voci,
@@ -11071,6 +11074,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               Creator Picks, Weekly e la lingua sono passate nel menu Account:
               erano sette voci di servizio in mezzo a quelle che portano a una
               partita, e occupavano insieme la topnav E la rail laterale. */}
+          {CLASSIC ? <ClassicPrimaryNav lang={uiLanguage} active={tab === "bets" ? deskView : ""}/> : (
           <nav className="br-nav" aria-label={pick5(uiLanguage, { it: "Navigazione principale", en: "Primary navigation", es: "Navegación principal", fr: "Navigation principale", ru: "Основная навигация" })}>
             {/* Round 3: icona 18px prima della label. Il Live si dice con il
                 suo segno (IconLive), non con un puntino giallo — un secondo
@@ -11112,6 +11116,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               {pick5(uiLanguage, { it: "Strumenti", en: "Tools", es: "Herramientas", fr: "Outils", ru: "Инструменты" })}
             </Link>
           </nav>
+          )}
 
           <div className="am-topright br-navright">
             {/* #RESTYLING-0921 — Search e Watchlist stanno a DESTRA, accanto
@@ -11264,6 +11269,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           le schede bet, non come bande chrome. */}
 
       {/* ── 3-column layout ── */}
+      <SitePageNavigation disabled={tab === "bets" && deskView === "home"}>
       <div className="portal-columns">
 
         {/* ── Desk (nav + content) ── */}
@@ -11594,6 +11600,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         </div>{/* end portal-desk */}
 
       </div>{/* end portal-columns */}
+      </SitePageNavigation>
 
       {/* #BANNERS-IN-GRID: rimossa la banda house billboard full-width in fondo (bottom),
           i banner house vivono ora solo intercalati tra le schede bet. */}
