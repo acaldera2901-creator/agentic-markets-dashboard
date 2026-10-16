@@ -1,0 +1,344 @@
+/* components/classic/classic-pages.css — #CLASSIC-COVERAGE-1014
+   Le pagine FUORI dal desk (legali, guide, blog, partner, widget, community…)
+   a flag acceso. Caricato da ClassicStyles, quindi solo a build con
+   NEXT_PUBLIC_CLASSIC=1; ogni regola vive sotto html[data-frames="off"].
+
+   Decisione unica: queste pagine parlano come il desk. Plex per tutto, Fira
+   Condensed sui titoli, lastre navy senza filo, lime una volta per schermata.
+   Il monospace delle etichette (round 3, Andrea 14/10) esce anche da qui: si
+   rimappa il token `--font-mono`, che le utility `font-mono` e un centinaio
+   di regole di globals.css leggono — un colpo, tutte le pagine. Resta mono solo
+   dove è codice vero (code/pre/kbd). */
+
+html[data-frames="off"] {
+  --font-mono: var(--cl-font-ui, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
+  /* Manrope: `--font-display` lo leggono bottoni, input e titoli di decine di
+     regole di globals.css con il nome scritto in chiaro (non passano da
+     --am-font-ui). Si rimappa la sorgente: tutto il sito sotto flag è Plex. */
+  --font-display: var(--cl-font-ui, "IBM Plex Sans"), ui-sans-serif, system-ui, sans-serif;
+}
+/* machina.css (registro «carta»: privacy, terms, partner, widget, World Cup)
+   porta due famiglie scritte per esteso: Manrope e JetBrains Mono. Stessi token */
+html[data-frames="off"]:root :is([data-mc-ground], [data-mc]) {
+  --fd: var(--am-font-ui);
+  --fm: var(--am-font-ui);
+}
+html[data-frames="off"] :is([data-mc-ground], .wc-root) :is(h1, h2, .wc-section-title) {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+html[data-frames="off"] :is(code, pre, kbd, samp) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ── foglio legale (privacy, terms): una lastra di lettura ─────────────── */
+html[data-frames="off"] .legal-sheet {
+  clip-path: none;
+  filter: none;
+  box-shadow: none;
+  border-radius: var(--am-r-card);
+  background: var(--am-panel);
+  max-width: 44rem;
+  font-family: var(--am-font-ui);
+}
+html[data-frames="off"] .legal-sheet::before,
+html[data-frames="off"] .legal-sheet::after { content: none; }
+html[data-frames="off"] .legal-sheet h1 {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+html[data-frames="off"] .legal-sheet h2 {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+  text-transform: none;
+  letter-spacing: 0;
+}
+html[data-frames="off"] .legal-sheet :is(p, li) { font-size: 14px; line-height: 1.65; }
+html[data-frames="off"] .legal-sheet a:not([class*="uppercase"]) { color: var(--am-text); }
+html[data-frames="off"] .legal-sheet a[class*="uppercase"] { text-transform: none; letter-spacing: 0; font-size: 13px; }
+html[data-frames="off"] .legal-sheet p[class*="text-[11px]"] { font-size: 13px; }
+
+/* ── il namespace --v-* (landing /how-it-works, /widget): stessi valori del desk ──
+   Le due palette parallele (--v-* e --am-*) erano un verde e un lime diversi:
+   sotto il flag la landing legge i token del desk, così non si dipinge da sola. */
+html[data-frames="off"] .hv3 {
+  --v-bg: var(--am-bg); --v-bg2: var(--am-bg-2);
+  --v-panel: var(--am-panel); --v-panel2: var(--am-panel-2); --v-panel3: #163663;
+  --v-line: transparent; --v-line2: transparent;
+  --v-text: var(--am-text); --v-muted: var(--am-muted); --v-muted2: var(--am-muted-2);
+  --v-coral: var(--am-coral); --v-coral2: var(--am-coral); --v-coral-ink: #0A1B35;
+  --v-glow: transparent; --v-coral-dim: rgba(200, 255, 0, 0.1); --v-coral-b: transparent;
+  --v-cobalt: var(--am-royal); --v-cobalt2: #6B9BFF; --v-cobalt-soft: var(--am-royal-dim);
+  --v-btn-radius: 8px;
+  --v-sans: var(--am-font-ui);
+  --v-mono: var(--am-font-ui);
+  font-family: var(--am-font-ui);
+}
+html[data-frames="off"] .hv3 :is(h1, h2) {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+html[data-frames="off"] .hv3 .v-kick { letter-spacing: 0.06em; }
+/* la testata propria di queste pagine cede il posto alla barra del sito */
+html[data-frames="off"] :is(.wg-nav, .wp-nav, .partners-back) { display: none; }
+
+/* ── pagine-guida e blog (ai-*-predictions, blog): titoli del desk ───────── */
+html[data-frames="off"] main.max-w-3xl :is(h1, h2) {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+}
+html[data-frames="off"] main.max-w-3xl h1 { font-size: clamp(30px, 4.4vw, 42px); }
+html[data-frames="off"] main.max-w-3xl :is(p, li) { font-size: 16px; }
+html[data-frames="off"] main.max-w-3xl p[class*="uppercase"] { text-transform: none; letter-spacing: 0.02em; font-size: 14px; font-weight: 600; }
+html[data-frames="off"] .seo-prose :is(h1, h2) { font-family: var(--am-font-display); font-weight: 700; letter-spacing: -0.01em; }
+
+/* ── /partners: lastre, non schede incorniciate ─────────────────────────── */
+html[data-frames="off"] .partners-page { max-width: 1040px; }
+html[data-frames="off"] .partners-title {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: clamp(34px, 5vw, 48px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+}
+html[data-frames="off"] .partners-hero { text-align: left; }
+html[data-frames="off"] .partners-subtitle { margin-inline: 0; font-size: 16px; line-height: 1.5; max-width: 56ch; }
+html[data-frames="off"] .partners-label {
+  font-family: var(--am-font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  text-transform: none;
+  color: var(--am-text);
+  border: 0;
+  padding-bottom: 0;
+}
+html[data-frames="off"] .partners-page .partner-card {
+  border: 0;
+  border-radius: var(--am-r-card);
+  background: #0F2A55;
+  box-shadow: none;
+  transition: background-color 0.15s;
+}
+html[data-frames="off"] .partners-page .partner-card:hover { transform: none; box-shadow: none; background: #163663; }
+html[data-frames="off"] .partners-page .partner-logo-wrap { border: 0; border-radius: var(--am-r-card-sm); background: rgba(5, 15, 34, 0.5); }
+html[data-frames="off"] .partners-page .partner-cta { text-transform: none; letter-spacing: 0; font-size: 14px; }
+html[data-frames="off"] .partners-page .partner-name { font-size: 16px; }
+html[data-frames="off"] .partners-page .partner-tagline { font-size: 14px; }
+
+/* ── reset password: una lastra, la voce del desk ───────────────────────── */
+html[data-frames="off"] .reset-card { background: var(--am-panel); }
+html[data-frames="off"] main:has(> .reset-card) { font-family: var(--am-font-ui) !important; }
+html[data-frames="off"] .reset-card h1 { font-family: var(--am-font-display); font-weight: 700; font-size: 26px !important; }
+
+/* il banner «incluso nel piano» di /community: era un olivo in cornice smussata;
+   è una lastra del desk (il fondo lo scrive uno stile inline → !important) */
+html[data-frames="off"] .chamfer[style*="--surf"] {
+  --surf: var(--am-panel-2) !important;
+  --bcol: transparent !important;
+  clip-path: none;
+  border-radius: var(--am-r-card);
+}
+
+/* ── 404 ─────────────────────────────────────────────────────────────────── */
+html[data-frames="off"] .cl-nf { min-height: 100dvh; background: var(--am-bg); color: var(--am-text); font-family: var(--am-font-ui); }
+html[data-frames="off"] .cl-nf-main { max-width: 640px; margin: 0; padding: clamp(48px, 12vh, 120px) var(--am-s-6) var(--am-s-8, 64px); display: grid; gap: var(--am-s-3); justify-items: start; }
+html[data-frames="off"] .cl-nf-code { margin: 0; font-family: var(--cl-font-prob); font-weight: 900; font-stretch: 112%; font-size: clamp(72px, 14vw, 128px); line-height: 0.9; color: var(--am-coral); }
+html[data-frames="off"] .cl-nf h1 { margin: 0; font-family: var(--am-font-display); font-weight: 700; font-size: clamp(30px, 4.4vw, 42px); line-height: 1.05; letter-spacing: -0.01em; text-wrap: balance; }
+html[data-frames="off"] .cl-nf-sub { margin: 0; max-width: 44ch; font-size: 16px; line-height: 1.5; color: var(--am-muted); }
+html[data-frames="off"] .cl-nf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--am-s-4); margin-top: var(--am-s-2); }
+html[data-frames="off"] .cl-nf-cta { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--am-s-5); border-radius: 8px; background: var(--am-coral); color: #0A1B35; font-weight: 700; text-decoration: none; }
+html[data-frames="off"] .cl-nf-link { color: var(--am-text); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── banner cookie: i due tasti parlano come il resto (stile inline → !important).
+   Restano simmetrici (stessa forma, stessa misura): cambia solo il tono del testo. */
+html[data-frames="off"] .cookie-consent-actions button {
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: var(--cl-tone-2) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+html[data-frames="off"] .cookie-consent { background: #0A1B35 !important; border-top: 0 !important; }
+html[data-frames="off"] .cookie-consent-actions button:first-child { color: #D6E2F5 !important; }
+html[data-frames="off"] .cookie-consent-actions button:last-child { color: var(--am-coral) !important; }
+
+/* ── muro di accesso del desk (ClientAuthModal): la lastra navy, la voce del desk ── */
+html[data-frames="off"] .auth-modal {
+  border: 0;
+  border-radius: var(--am-r-card);
+  background: #0F2A55;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+html[data-frames="off"] .auth-modal h3 { font-family: var(--am-font-display); font-weight: 700; letter-spacing: -0.01em; }
+html[data-frames="off"]:root .auth-modal .auth-modal-head .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: var(--am-muted); }
+html[data-frames="off"] .auth-modal label > span { font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+html[data-frames="off"] .auth-modal input:not([type="checkbox"]):not([type="radio"]) { border: 0; background: rgba(5, 15, 34, 0.6); }
+html[data-frames="off"] .auth-modal button { border: 0; color: #0A1B35; }
+html[data-frames="off"] .auth-modal button:disabled { opacity: 1; background: var(--cl-tone-2); color: var(--am-muted); }
+html[data-frames="off"] .auth-modal .auth-mode-switch button.is-active { background: var(--am-royal-dim); }
+html[data-frames="off"]:root .auth-modal .auth-modal-head .eyebrow::before { content: none; }
+html[data-frames="off"] .auth-modal button.auth-wall-back { background: none; min-height: 0; justify-self: center; color: var(--am-muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; padding: var(--am-s-2); }
+
+/* ── desk: ricerca della barra e titoli di pagina ───────────────────────── */
+/* «Cerca ur»: a 8ch il segnaposto si tagliava sulle tab che non sono la Home.
+   Il posto c'è da 1280 in su (la nav è centrata e lascia ~200 px per lato). */
+/* Il campo è type="search": Chrome riserva ~19 px a destra per il tasto «cancella»
+   anche a campo vuoto, quindi il segnaposto FR (111 px di testo) veniva tagliato
+   in un campo da 120. Misurato a schermo con il testo vero in tutte e 5 le lingue
+   del desk (le altre 9 ricadono sull'inglese): sul tasto si rinuncia, Esc cancella. */
+@media (min-width: 1024px) {
+  html[data-frames="off"]:root .br-navright .br-search input { width: 120px; }
+  html[data-frames="off"] .br-navright .br-search input::-webkit-search-cancel-button,
+  html[data-frames="off"] .br-navright .br-search input::-webkit-search-decoration { -webkit-appearance: none; display: none; }
+}
+/* i titoli delle viste del desk (History, Leaderboard…) erano in maiuscolo */
+html[data-frames="off"] :is(.book-main, .book-content) :is(h1, h2) { text-transform: none; }
+
+/* ── banner home sul telefono: il «18+» in alto a destra ────────────────────
+   In basso a destra stava sopra il pallone della foto del calcio (360×740). In
+   alto a destra c'è il cielo dello stadio in tutte e tre le foto. */
+@media (max-width: 640px) {
+  html[data-frames="off"] .brc-banner__age { bottom: auto; top: 8px; }
+}
+
+/* World Cup a 360 (2 px di scroll orizzontale): lo sfondo `.bgfix` della scena
+   è più largo della finestra (374 px, per la sfocatura) e allargava la pagina.
+   Lo si taglia alla radice: è decorazione, non contenuto. */
+html[data-frames="off"] .wc-root { overflow-x: clip; }
+
+/* ═══ /how-it-works (landing) — #CLASSIC-COVERAGE-1014 ═══════════════════════
+   Testata propria nascosta (c'è la barra del sito); la barra sport non è più un
+   dock fisso (a 1440×900 copriva il paragrafo e spingeva la CTA sotto la piega):
+   sta nel flusso, sotto il carosello. */
+html[data-frames="off"] .lp > .lp-nav { display: none; }
+html[data-frames="off"] .hv3 { padding-bottom: 0; }
+html[data-frames="off"] .hv3 .v-sportnav-wrap {
+  position: static;
+  background: none;
+  border: 0;
+  padding: var(--am-s-4) var(--am-s-5) 0;
+  justify-content: flex-start;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+html[data-frames="off"] .hv3 .v-sportnav-wrap::before { content: none; }
+html[data-frames="off"] .hv3 .v-sportnav { padding: 0; width: 100%; }
+html[data-frames="off"] .hv3 .v-sportbtn {
+  min-height: 44px;
+  padding: 0 var(--am-s-4);
+  border: 0;
+  border-radius: var(--am-r-card-sm);
+  background: var(--cl-tone);
+  box-shadow: none;
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-frames="off"] .hv3 .v-sportbtn:hover { background: var(--cl-tone-2); box-shadow: none; }
+/* il nastro: «LIVE» non è vero (sono righe d'esempio) e l'etichetta si
+   sovrapponeva alla prima riga. Etichetta = data-label (tradotta nel TSX), larga
+   fissa e opaca; la pista parte DOPO di lei e il testo che scorre sfuma sotto
+   gli ultimi 24 px invece di attaccarsi alla scritta. */
+html[data-frames="off"] .hv3 .v-tape { border: 0; background: var(--am-panel); border-radius: var(--am-r-card-sm); margin-inline: var(--am-s-5); }
+html[data-frames="off"] .hv3 .v-tape::before {
+  content: attr(data-label);
+  width: 208px;
+  box-sizing: border-box;
+  padding: 0 24px 0 var(--am-s-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  background: linear-gradient(90deg, var(--am-panel) calc(100% - 24px), transparent);
+}
+html[data-frames="off"] .hv3 .v-tape-track { padding-left: 224px; font-family: var(--am-font-ui); font-size: 12.5px; }
+@media (max-width: 640px) {
+  html[data-frames="off"] .hv3 .v-sportnav-wrap { padding: var(--am-s-3) var(--am-s-3) 0; }
+  html[data-frames="off"] .hv3 .v-tape { margin-inline: var(--am-s-3); }
+  html[data-frames="off"] .hv3 .v-tape-track { padding-left: 224px; }
+}
+/* maiuscolo spaziato → tondo, come il resto del sito classic (round 3, 14/10) */
+html[data-frames="off"]:root .hv3 *:not(input):not(select):not(textarea) { text-transform: none; }
+html[data-frames="off"] .hv3 :is(.v-kick, .v-btn, .v-scan-head, .v-scan-head *, .v-scan-cols span, .lab, .pk, .name, .cl-k, .cl-vs, .tag-ex, .best, li) { letter-spacing: 0.01em; }
+html[data-frames="off"] .hv3 .v-btn { font-family: var(--am-font-ui); font-weight: 700; border-radius: var(--am-r-card-sm); border: 0; }
+html[data-frames="off"] .hv3 .v-btn--primary { background: var(--am-coral); color: #0A1B35; }
+html[data-frames="off"] .hv3 .v-btn--secondary, html[data-frames="off"] .hv3 .v-btn--utility { background: var(--cl-tone); color: var(--am-text); }
+/* la CTA del primo blocco sta sopra la piega a 1440×900: carosello, barra e nastro
+   restano, ma il titolo scende di corpo e il blocco perde l'aria in testa */
+html[data-frames="off"] .hv3 .v-hero { padding-top: var(--am-s-5); padding-bottom: var(--am-s-6); }
+html[data-frames="off"] .hv3 .v-hero h1 { font-size: clamp(34px, 3.9vw, 52px); line-height: 1.02; }
+html[data-frames="off"] .hv3 .v-hero .lede { font-size: 16px; margin-top: var(--am-s-3); }
+
+/* il pulsante «Contattaci» (✉) stava sopra l'angolo del muro di accesso a 390/360:
+   mentre il dialog è aperto la pagina non è usabile, e il contatto non serve */
+html[data-frames="off"] body:has(.auth-modal-backdrop) .br-chatfb { display: none; }
+
+/* ── /widget: le tre scatole con filo → lastre, come da regola classic ───── */
+html[data-frames="off"] :is(.wg-frame-wrap, .wg-code, .wg-note) { border: 0; }
+html[data-frames="off"] .wg-code-head { border-bottom: 0; }
+html[data-frames="off"] .wg-code { background: rgba(5, 15, 34, 0.6); }
+html[data-frames="off"] .wg-note { background: var(--am-panel-2); }
+
+/* CTA del primo blocco sopra la piega a 1100×800 e sopra la tab bar mobile (y=784
+   a 390×844): il nastro è decorazione (aria-hidden) e sul telefono si toglie; sopra,
+   meno aria fra carosello, barra, nastro e titolo. */
+html[data-frames="off"] .hv3 .v-tape { margin-top: var(--am-s-3); }
+html[data-frames="off"] .hv3 .v-hero { padding-top: var(--am-s-4); padding-bottom: var(--am-s-5); }
+html[data-frames="off"] .hv3 .v-hero .v-kick { margin-bottom: 0; }
+html[data-frames="off"] .hv3 .v-hero h1 { margin-top: var(--am-s-2); }
+html[data-frames="off"] .hv3 .v-hero .v-hero-note { margin-top: var(--am-s-2); }
+@media (max-width: 1200px) {
+  html[data-frames="off"] .hv3 .v-hero h1 { font-size: clamp(32px, 3.6vw, 44px); }
+  html[data-frames="off"] .hv3 .v-hero .lede { font-size: 15px; margin-top: var(--am-s-2); line-height: 1.45; }
+}
+@media (max-width: 640px) {
+  html[data-frames="off"] .hv3 .v-tape { display: none; }
+  html[data-frames="off"] .hv3 .v-hero h1 { font-size: 30px; }
+}
+html[data-frames="off"] .hv3 .lp-carousel-eyebrow { letter-spacing: 0.01em; font-family: var(--am-font-ui); font-size: 12px; font-weight: 600; }
+
+/* 360×740: la CTA restava 35 px sotto la tab bar. Sui telefoni bassi il paragrafo
+   d'apertura si ferma a due righe (il testo intero sta più sotto nella pagina). */
+@media (max-width: 400px) and (max-height: 780px) {
+  html[data-frames="off"] .hv3 .v-hero .lede { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  html[data-frames="off"] .hv3 .v-hero h1 { font-size: 28px; }
+}
+
+/* «Contattaci» (.br-chatfb, nostro: appare solo se Tawk non carica entro 6 s) era un
+   pill di 121 px su desktop e copriva il valore +5.4 dello scanner a 1100. Sotto
+   flag è sempre un'icona tonda da 44 px (la scritta resta per gli screen reader),
+   come già sul telefono; la finestra del suo nome accessibile non cambia. */
+html[data-frames="off"] .br-chatfb {
+  right: 12px;
+  gap: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+  font-size: 18px;
+}
+html[data-frames="off"] .br-chatfb .br-chatfb__t {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* «MOSTRA» / «NASCONDI» nel campo password del muro: maiuscolo e spaziato scritti nello
+   stile inline del bottone → !important. Tondo, come ogni controllo del desk. */
+html[data-frames="off"] .auth-modal button[aria-pressed] { text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; font-weight: 600 !important; }

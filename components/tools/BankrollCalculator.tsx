@@ -26,7 +26,7 @@ export function BankrollCalculator({ copy, dash }: { copy: ToolCopy; dash: strin
   const L = copy.labels;
   // Default 2.000 / 2% / 10: l'esempio lavorato della pagina — unità 40, serie
   // da 400, drawdown 20%, cassa che copre 50 giocate perse consecutive.
-  const [bankroll, setBankroll] = useState("2000");
+  const [bankroll, setBankroll] = useState(__CLASSIC_BUILD__ ? "" : "2000"); // #CLASSIC-CARD-1008: nessuna cassa di default
   const [unitPercent, setUnitPercent] = useState("2");
   const [streak, setStreak] = useState("10");
 

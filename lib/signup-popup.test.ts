@@ -14,7 +14,6 @@ import {
   signupPopupAudience, signupPopupEligible,
   signupPopupPlanRows, usdLabel,
 } from "./signup-popup";
-import { PUBLIC_PAID_PLANS } from "./commercial-plan";
 import { showcaseAllowance } from "./access-projection";
 
 const DAY = 86_400_000;
@@ -107,19 +106,15 @@ describe("i tre piani: numeri dal codice, non dal brief", () => {
     expect(showcaseAllowance("base")).toBe(7);
     expect(showcaseAllowance("premium")).toBe(Infinity);
     const rows = signupPopupPlanRows("it");
-    expect(rows.map((r) => r.key)).toEqual(["free", "base", "pro"]);
+    expect(rows.map((r) => r.key)).toEqual(["free", "pro"]);
     expect(rows[0].allowance).toBe("3 letture/giorno per sport");
-    expect(rows[1].allowance).toBe("7 letture/giorno per sport");
-    expect(rows[2].allowance).toBe("Tutto il board");
+    expect(rows[1].allowance).toBe("Tutto il board");
     for (const r of rows) expect(r.allowance).not.toMatch(/14/);
   });
   it("mensile sempre presente; il giorno è accessorio e mai da solo", () => {
-    const [free, base, pro] = signupPopupPlanRows("it");
+    const [free, pro] = signupPopupPlanRows("it");
     expect(free.price).toBe("$0");
     expect(free.perDay).toBe("");
-    expect(base.price).toBe(`$${PUBLIC_PAID_PLANS.base.amountUsdt.toFixed(2).replace(".", ",")}`);
-    expect(base.per).toBe("/mese");
-    expect(base.perDay.replace(/\u00a0/g, " ")).toBe("≈ $0,50 al giorno");
     expect(pro.price).toBe("$29,99");
     expect(pro.perDay.replace(/\u00a0/g, " ")).toBe("≈ $1 al giorno");
   });
@@ -131,8 +126,8 @@ describe("i tre piani: numeri dal codice, non dal brief", () => {
     expect(usdLabel(14.99, "en")).toBe("$14.99");
     expect(usdLabel(14.99, "es")).toBe("$14,99");
     expect(usdLabel(14.99, "fr")).toBe("14,99 $");
-    expect(signupPopupPlanRows("en")[1].perDay.replace(/\u00a0/g, " ")).toBe("≈ $0.50 a day");
-    expect(signupPopupPlanRows("fr")[2].perDay.replace(/\u00a0/g, " ")).toBe("≈ 1 $ par jour");
+    expect(signupPopupPlanRows("en")[1].perDay.replace(/\u00a0/g, " ")).toBe("≈ $1 a day");
+    expect(signupPopupPlanRows("fr")[1].perDay.replace(/\u00a0/g, " ")).toBe("≈ 1 $ par jour");
   });
 });
 
@@ -142,9 +137,8 @@ describe("copy: cinque lingue, niente pressione", () => {
     for (const l of langs) {
       const c = SIGNUP_POPUP_COPY[l];
       expect(c.titleAnon).toMatch(new RegExp(`\\b${showcaseAllowance("free")}\\b`));
-      expect(c.bodyFree(5, showcaseAllowance("base"))).toMatch(/5/);
-      expect(c.bodyFree(5, showcaseAllowance("base"))).toMatch(/7/);
-      expect(c.bodyFree(null, 7)).not.toMatch(/null|undefined/);
+      expect(c.bodyFree(5)).toMatch(/5/);
+      expect(c.bodyFree(null)).not.toMatch(/null|undefined/);
       // Il separatore delle migliaia è della lingua (it/es: nessuno sotto le
       // cinque cifre; fr/ru: spazio stretto U+202F): conta che il numero ci sia.
       expect(c.proof(1234)).toMatch(/1[\s.,  ]?234/);
@@ -161,12 +155,12 @@ describe("copy: cinque lingue, niente pressione", () => {
     for (const l of langs) {
       const c = SIGNUP_POPUP_COPY[l];
       expect(c.bodyAnon, l).not.toMatch(/edge|эдж/i);
-      expect(c.bodyFree(5, 7), l).not.toMatch(/edge|эдж/i);
+      expect(c.bodyFree(5), l).not.toMatch(/edge|эдж/i);
       expect(c.titleAnon + c.titleFree + c.titleBase + c.bodyBase(5), l).not.toMatch(/edge|эдж/i);
     }
   });
   it("nessun countdown, «solo oggi», «più scelto» o confirmshaming", () => {
-    const all = langs.flatMap((l) => Object.values(SIGNUP_POPUP_COPY[l]).map((v) => (typeof v === "function" ? v(3, 7) : v)));
+    const all = langs.flatMap((l) => Object.values(SIGNUP_POPUP_COPY[l]).map((v) => (typeof v === "function" ? v(3) : v)));
     const banned = /solo oggi|only today|scade|expires|più scelto|most popular|preferisco perdere|rather lose|ultimi posti|hurry|affrettati/i;
     for (const s of all) expect(s, s).not.toMatch(banned);
   });

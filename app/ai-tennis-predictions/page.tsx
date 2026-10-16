@@ -8,6 +8,7 @@ import Link from "next/link";
 import { JsonLd, breadcrumbJsonLd, faqJsonLd } from "@/components/seo/json-ld";
 // #SEO-ORPHANS-0908: come il gemello calcio, la pagina non aveva footer.
 import { SiteFooter } from "@/components/SiteFooter";
+import ClassicChrome from "@/components/classic/ClassicChrome";
 
 export const metadata: Metadata = {
   title: "AI Tennis Predictions: Probabilities, Not Tips | BetRedge",
@@ -37,6 +38,7 @@ const FAQ: Array<[string, string]> = [
 export default function AiTennisPredictionsPage() {
   return (
     <div className="min-h-screen font-mono" style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      <ClassicChrome />
       <JsonLd data={breadcrumbJsonLd([["AI Tennis Predictions", "/ai-tennis-predictions"]])} />
       <JsonLd data={faqJsonLd(FAQ)} />
       <main className="mx-auto max-w-3xl px-6 py-12" style={{ lineHeight: 1.7 }}>

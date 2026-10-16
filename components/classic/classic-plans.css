@@ -1,0 +1,222 @@
+/* components/classic/classic-plans.css — #CLASSIC-PLANS-1014 · la pagina piani a flag acceso.
+   Caricato SOLO da ClassicPlans.tsx, che il desk monta solo a build con
+   NEXT_PUBLIC_CLASSIC=1: a flag spento questo foglio non entra nel build.
+
+   Decisioni: un punto focale (il pannello Pro, l'unico con la CTA lime), il Free
+   come colonna quieta a destra (sotto, sul telefono); nessuna cornice, la
+   separazione la fanno i toni (panel-2 > panel > navy) e lo spazio; griglia a
+   4 px (token --am-s-*); testata allineata a sinistra con la misura in ch;
+   Fira Condensed solo su titolo e prezzo, Plex per tutto il resto; il lime una
+   volta sola per schermata; il check in royal che scrive (non lime: non è una
+   CTA). Tutto in token: regge in chiaro e in scuro. */
+
+.clp {
+  display: grid;
+  gap: var(--am-s-5);
+  /* a sinistra, sullo stesso filo del kicker «Plans» del desk: la pagina è
+     una colonna di lettura, non un blocco centrato */
+  max-width: 1120px;
+  margin: 0;
+  padding: var(--am-s-2) 0 var(--am-s-6);
+  font-family: var(--am-font-ui);
+  color: var(--am-text);
+}
+
+/* ── testata: un messaggio solo ───────────────────────────────────────── */
+.clp-head { display: grid; gap: var(--am-s-3); }
+.clp-headline {
+  margin: 0;
+  max-width: 22ch;
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: clamp(30px, 3.6vw, 46px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.clp-lede {
+  margin: 0;
+  max-width: 56ch;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--am-muted);
+  text-wrap: pretty;
+}
+
+/* ── i due pannelli ───────────────────────────────────────────────────── */
+.clp-grid { display: grid; gap: var(--am-s-4); align-items: start; }
+@media (min-width: 900px) {
+  .clp-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--am-s-5); }
+}
+
+.clp-pro {
+  display: grid;
+  gap: var(--am-s-4);
+  padding: var(--am-s-5) var(--am-s-4);
+  border-radius: var(--am-r-card);
+  background: var(--am-panel-2);
+}
+@media (min-width: 640px) { .clp-pro { padding: var(--am-s-6) var(--am-s-5); } }
+/* sul telefono la CTA sale subito sotto il prezzo (la pagina deve far comprare
+   in un gesto: il titolo ha già detto l'argomento); le quattro righe seguono
+   per chi scorre. Solo ordine visivo: nessun elemento focalizzabile cambia posto */
+@media (max-width: 639px) {
+  .clp-pro__top { order: 1; }
+  .clp-price { order: 2; }
+  .clp-annual { order: 3; }
+  .clp-buy, .clp-state { order: 4; }
+  .clp-rows { order: 5; }
+  .clp-shared { order: 6; }
+}
+
+.clp-free {
+  display: grid;
+  gap: var(--am-s-3);
+  padding: var(--am-s-5) var(--am-s-4);
+  border-radius: var(--am-r-card-sm);
+  background: var(--am-panel);
+}
+@media (min-width: 640px) { .clp-free { padding: var(--am-s-5); } }
+
+.clp-pro__top { display: flex; align-items: center; gap: var(--am-s-3); }
+.clp-pro__ico { flex: none; }
+.clp-tag {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
+.clp-name {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+/* ── il prezzo: numero grande, periodicità accanto, annuale sotto in prosa ── */
+.clp-price { margin: 0; display: flex; align-items: baseline; gap: var(--am-s-2); flex-wrap: wrap; }
+.clp-price__n {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: clamp(44px, 5vw, 60px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.clp-price__per { font-size: 16px; font-weight: 500; color: var(--am-muted); }
+.clp-annual { margin: calc(-1 * var(--am-s-2)) 0 0; max-width: 46ch; font-size: 13.5px; line-height: 1.5; color: var(--am-muted); }
+
+/* ── le quattro righe: cosa apre Pro, e sotto cosa fa Free sulla stessa cosa ── */
+.clp-rows { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--am-s-3); }
+.clp-rows li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 2px var(--am-s-3);
+  align-items: start;
+}
+.clp-check { grid-row: 1 / span 2; margin-top: 1px; color: var(--am-royal-t); }
+.clp-rows strong { font-size: 15px; font-weight: 600; line-height: 1.35; }
+.clp-rows span { grid-column: 2; font-size: 13px; line-height: 1.4; color: var(--am-muted-2); }
+
+/* ── l'acquisto: CTA, nota, fatturazione ─────────────────────────────── */
+.clp-buy { display: grid; gap: var(--am-s-2); }
+.clp-note {
+  margin: 0 0 var(--am-s-1);
+  padding: var(--am-s-3) var(--am-s-4);
+  border-radius: var(--am-r-card-sm);
+  background: var(--am-royal-dim);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.clp-cta {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 var(--am-s-4);
+  border: 0;
+  border-radius: var(--am-r-ctl);
+  background: var(--am-edge);
+  color: var(--am-edge-ink);
+  font-family: var(--am-font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+.clp-cta:hover:not(:disabled) { filter: brightness(1.06); }
+.clp-cta:active:not(:disabled) { transform: translateY(1px); }
+.clp-cta:focus-visible { outline: 2px solid var(--am-text); outline-offset: 3px; }
+.clp-cta:disabled { background: var(--am-panel-3); color: var(--am-muted); cursor: not-allowed; }
+.clp-cta__price { font-weight: 600; font-variant-numeric: tabular-nums; }
+.clp-cta--ghost { background: var(--am-panel-3); color: var(--am-text); min-height: 44px; font-size: 15px; }
+.clp-cta--ghost:hover:not(:disabled) { filter: brightness(1.12); }
+.clp-cta--ghost:disabled { background: transparent; color: var(--am-muted-2); }
+@media (prefers-reduced-motion: reduce) { .clp-cta { transition: none; } .clp-cta:active:not(:disabled) { transform: none; } }
+
+.clp-next { margin: 0; font-size: 13px; color: var(--am-muted-2); }
+.clp-billing { margin: var(--am-s-1) 0 0; font-size: 13px; line-height: 1.5; color: var(--am-muted); text-wrap: pretty; }
+.clp-state {
+  margin: 0;
+  padding: var(--am-s-3) var(--am-s-4);
+  border-radius: var(--am-r-card-sm);
+  background: var(--am-royal-dim);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.clp-state strong { font-weight: 700; }
+.clp-shared { margin: 0; font-size: 13px; line-height: 1.5; color: var(--am-muted-2); }
+
+/* ── il Free, quieto ──────────────────────────────────────────────────── */
+.clp-free__top { display: grid; gap: var(--am-s-1); }
+.clp-free__price { margin: 0; font-size: 14px; color: var(--am-muted); }
+.clp-free__price span {
+  font-family: var(--am-font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--am-text);
+  margin-right: 4px;
+}
+.clp-free__desc { margin: 0; font-size: 14px; line-height: 1.5; color: var(--am-muted); }
+.clp-free__included { margin: 0; font-size: 14px; color: var(--am-muted-2); }
+
+/* ── coda: la riga nuda del disclaimer, e il link al board ───────────── */
+.clp-foot { margin: 0; max-width: 64ch; font-size: 12.5px; line-height: 1.5; color: var(--am-muted-2); }
+.clp-board {
+  justify-self: start;
+  margin: calc(-1 * var(--am-s-3)) 0 0;
+  padding: var(--am-s-2) 0;
+  border: 0;
+  background: none;
+  color: var(--am-royal-t);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s;
+}
+.clp-board:hover { text-decoration-color: currentColor; }
+.clp-board:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; border-radius: 2px; }
+
+/* la testa del desk sopra la pagina piani: «Plans» diventa il kicker della
+   testata, non un secondo titolo grande (il titolo vero è .clp-headline) */
+html[data-frames="off"] .book-main:has(.clp) .am-deskhead h1 {
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--am-muted-2);
+}
