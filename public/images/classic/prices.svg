@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#071329"/><stop offset=".45" stop-color="#071329"/><stop offset="1" stop-color="#102B63"/></linearGradient>
+    <radialGradient id="lt" cx=".72" cy=".1" r=".6"><stop offset="0" stop-color="#155CE3" stop-opacity=".55"/><stop offset="1" stop-color="#155CE3" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect width="1280" height="720" fill="url(#lt)"/>
+  <!-- campo in prospettiva -->
+  <g fill="none" stroke="#81D9FF" stroke-opacity=".55" stroke-width="3">
+    <path d="M560 600 L1240 600"/>
+    <path d="M640 600 L760 430 L1080 430 L1180 600"/>
+    <path d="M760 600 L815 520 L1025 520 L1070 600"/>
+    <path d="M840 430 Q920 470 1000 430"/>
+  </g>
+  <!-- porta -->
+  <g fill="none" stroke="#EDEFF2" stroke-width="7" stroke-linecap="square">
+    <path d="M815 520 L815 330 L1025 330 L1025 520"/>
+  </g>
+  <g stroke="#6EA4FF" stroke-opacity=".35" stroke-width="1.5">
+    <path d="M845 330V520M875 330V520M905 330V520M935 330V520M965 330V520M995 330V520"/>
+    <path d="M815 360H1025M815 392H1025M815 424H1025M815 456H1025M815 488H1025"/>
+  </g>
+  <path d="M815 520 L1025 520" stroke="#C8FF00" stroke-width="5"/>
+  <!-- pallone -->
+  <circle cx="935" cy="430" r="30" fill="#EDEFF2"/>
+  <circle cx="935" cy="430" r="30" fill="none" stroke="#0D2343" stroke-width="3"/>
+</svg>

@@ -10,6 +10,7 @@ import { listPublishedPosts, formatPostDate } from "@/lib/blog";
 // #SEO-ORPHANS-0908: l'indice non usciva verso i tool né verso i due pillar,
 // e non aveva footer. Le guide spiegano i conti che i calcolatori fanno.
 import { SiteFooter } from "@/components/SiteFooter";
+import ClassicChrome from "@/components/classic/ClassicChrome";
 
 export const revalidate = 600;
 
@@ -25,6 +26,7 @@ export default async function BlogIndexPage() {
 
   return (
     <div className="min-h-screen font-mono mc-scene-court" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
+      <ClassicChrome />
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
       <JsonLd data={breadcrumbJsonLd([["Blog", "/blog"]])} />

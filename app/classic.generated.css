@@ -1,0 +1,3501 @@
+/* app/classic.generated.css — GENERATO da scripts/classic/gen-frames.mjs. NON EDITARE A MANO.
+   #CLASSIC-CARD-1008 · Fase A: ogni cornice del sito, spenta sotto html[data-frames="off"].
+   Conteggio: FRAME 559 · KEEP_MARK 10 · KEEP_SHAPE 18 · KEEP_FIELD 22 · KEEP_FOCUS 60 · KEEP_ROW 17.
+   Le eccezioni (focus, campi, righe, forme, segni di stato) e il perché: docs/redesign/classic-frames.md. */
+
+/* app/globals.css:393 · FRAME */
+html[data-frames="off"] .book-topbar {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:487 · FRAME */
+html[data-frames="off"] .topbar-stats span,
+html[data-frames="off"] .topbar-stats strong,
+html[data-frames="off"] .book-head-kpis span,
+html[data-frames="off"] .board-chips span {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:504 · FRAME */
+html[data-frames="off"] .client-access-button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:542 · FRAME */
+html[data-frames="off"] .sports-rail,
+html[data-frames="off"] .book-main,
+html[data-frames="off"] .betslip,
+html[data-frames="off"] .glass-card,
+html[data-frames="off"] .lp-term {
+  --_fe: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:599 · FRAME */
+html[data-frames="off"] .glass-card:hover {
+  --_fe: transparent;
+  box-shadow: none;
+}
+
+/* app/globals.css:637 · FRAME */
+html[data-frames="off"] .rail-item,
+html[data-frames="off"] .rail-refresh {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:673 · FRAME */
+html[data-frames="off"] .rail-item.is-active {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:679 · FRAME */
+html[data-frames="off"] .rail-item.is-active.green {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:685 · FRAME */
+html[data-frames="off"] .rail-item.is-active.amber {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:691 · FRAME */
+html[data-frames="off"] .rail-refresh {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:706 · FRAME */
+html[data-frames="off"] .rail-note {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:755 · FRAME */
+html[data-frames="off"] .board-subhead span {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:776 · FRAME */
+html[data-frames="off"] .desk-status-pill {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:814 · FRAME */
+html[data-frames="off"] .sports-filter-bar {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:837 · FRAME */
+html[data-frames="off"] .segmented-filter {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:848 · FRAME */
+html[data-frames="off"] .segmented-filter button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:866 · FRAME */
+html[data-frames="off"] .segmented-filter button.is-active {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:933 · FRAME */
+html[data-frames="off"] .client-summary-strip > div,
+html[data-frames="off"] .client-status-card,
+html[data-frames="off"] .client-callout,
+html[data-frames="off"] .client-system-list > div {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:975 · FRAME */
+html[data-frames="off"] .portfolio-hero,
+html[data-frames="off"] .portfolio-balance,
+html[data-frames="off"] .portfolio-panel {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1016 · FRAME */
+html[data-frames="off"] .portfolio-hero button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1070 · FRAME */
+html[data-frames="off"] .portfolio-stat-strip {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:1083 · FRAME */
+html[data-frames="off"] .portfolio-stat-strip div + div {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:1130 · FRAME */
+html[data-frames="off"] .portfolio-panel-head > span {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1144 · FRAME */
+html[data-frames="off"] .portfolio-panel-head > span.is-positive {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1150 · FRAME */
+html[data-frames="off"] .portfolio-panel-head > span.is-negative {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1189 · FRAME */
+html[data-frames="off"] .allocation-bars div {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1263 · FRAME */
+html[data-frames="off"] .plans-hero,
+html[data-frames="off"] .plan-card,
+html[data-frames="off"] .plan-flow {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:1308 · FRAME */
+html[data-frames="off"] .plans-hero button,
+html[data-frames="off"] .plan-action {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1334 · FRAME */
+html[data-frames="off"] .plan-card.is-premium {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:1355 · FRAME */
+html[data-frames="off"] .plan-card-head > span {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1371 · FRAME */
+html[data-frames="off"] .is-premium .plan-card-head > span {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1381 · FRAME */
+html[data-frames="off"] .plan-core-line {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1411 · FRAME */
+html[data-frames="off"] .plan-feature-list li {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1457 · FRAME */
+html[data-frames="off"] .plan-action.is-premium {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1471 · FRAME */
+html[data-frames="off"] .plan-flow div {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1524 · FRAME */
+html[data-frames="off"] .locked-overlay {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:1567 · FRAME */
+html[data-frames="off"] .locked-overlay button,
+html[data-frames="off"] .auth-modal button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1593 · FRAME */
+html[data-frames="off"] .auth-modal {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:1655 · FRAME */
+html[data-frames="off"] .auth-mode-switch {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1681 · FRAME */
+html[data-frames="off"] .auth-mode-switch button.is-active {
+  border-color: transparent !important;
+  border-width: 0 !important;
+}
+
+/* app/globals.css:1687 · FRAME */
+html[data-frames="off"] .auth-error {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1721 · FRAME */
+html[data-frames="off"] .public-entry-header {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1751 · FRAME */
+html[data-frames="off"] .public-entry-actions button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1762 · FRAME */
+html[data-frames="off"] .public-entry-actions button:last-child {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1804 · FRAME */
+html[data-frames="off"] .preaccess-hero {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1876 · FRAME */
+html[data-frames="off"] .preaccess-actions button:first-child {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1882 · FRAME */
+html[data-frames="off"] .preaccess-actions button:last-child {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1900 · FRAME */
+html[data-frames="off"] .preaccess-grid > div {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1944 · FRAME */
+html[data-frames="off"] .preaccess-plan-strip button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1957 · FRAME */
+html[data-frames="off"] .preaccess-plan-strip button:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:1982 · FRAME */
+html[data-frames="off"] .public-sponsor-strip {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2035 · FRAME */
+html[data-frames="off"] .public-homepage .preaccess-actions button:nth-child(2) {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2041 · FRAME */
+html[data-frames="off"] .public-homepage .preaccess-actions button:nth-child(3) {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2047 · FRAME */
+html[data-frames="off"] .desk-preview {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2072 · FRAME */
+html[data-frames="off"] .desk-preview-head strong {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2088 · FRAME */
+html[data-frames="off"] .desk-preview-board div {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2142 · FRAME */
+html[data-frames="off"] .public-section,
+html[data-frames="off"] .sponsor-slot,
+html[data-frames="off"] .support-hub {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2171 · FRAME */
+html[data-frames="off"] .access-level-grid article {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2203 · FRAME */
+html[data-frames="off"] .access-level-grid article button,
+html[data-frames="off"] .support-hub button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2221 · FRAME */
+html[data-frames="off"] .public-history-stats div,
+html[data-frames="off"] .public-old-bets > div {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2278 · FRAME */
+html[data-frames="off"] .future-sports-grid button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2314 · FRAME */
+html[data-frames="off"] .sponsor-slot em {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2363 · FRAME */
+html[data-frames="off"] .support-ticket-summary {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2393 · FRAME */
+html[data-frames="off"] .faq-grid article {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2407 · FRAME */
+html[data-frames="off"] .risk-disclaimer {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2482 · FRAME */
+html[data-frames="off"] .profile-card,
+html[data-frames="off"] .upgrade-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:2499 · FRAME */
+html[data-frames="off"] .profile-avatar {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2531 · FRAME */
+html[data-frames="off"] .profile-card button,
+html[data-frames="off"] .upgrade-card button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2543 · FRAME */
+html[data-frames="off"] .profile-card button:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2548 · FRAME */
+html[data-frames="off"] .upgrade-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:2557 · FRAME */
+html[data-frames="off"] .upgrade-card button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2572 · FRAME */
+html[data-frames="off"] .client-area-hero,
+html[data-frames="off"] .client-account-summary {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:2605 · FRAME */
+html[data-frames="off"] .client-area-hero button,
+html[data-frames="off"] .client-area-footer button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2647 · FRAME */
+html[data-frames="off"] .client-account-kpis article {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2672 · FRAME */
+html[data-frames="off"] .client-account-note {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2699 · FRAME */
+html[data-frames="off"] .client-dashboard-overview > div {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2733 · FRAME */
+html[data-frames="off"] .client-dashboard-section + .client-dashboard-section {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:2755 · FRAME */
+html[data-frames="off"] .client-dashboard-section-head > span {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2819 · FRAME */
+html[data-frames="off"] .bets-filter-bar {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2871 · FRAME */
+html[data-frames="off"] .crypto-pay-box {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2912 · FRAME */
+html[data-frames="off"] .wallet-line code {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2942 · FRAME */
+html[data-frames="off"] .crypto-pay-box button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2953 · FRAME */
+html[data-frames="off"] .price-line {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:2981 · FRAME */
+html[data-frames="off"] .settings-panel,
+html[data-frames="off"] .settings-empty {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:3012 · FRAME */
+html[data-frames="off"] .settings-panel-head > span {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3046 · FRAME */
+html[data-frames="off"] .settings-notification-list button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3060 · FRAME */
+html[data-frames="off"] .settings-notification-list button.is-on {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3077 · FRAME */
+html[data-frames="off"] .settings-save,
+html[data-frames="off"] .settings-empty button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3109 · FRAME */
+html[data-frames="off"] .market-section {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3116 · FRAME */
+html[data-frames="off"] .market-section-title {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:3148 · FRAME */
+html[data-frames="off"] .market-section-title .mst-glyph {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:3165 · FRAME */
+html[data-frames="off"] .featured {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:3228 · FRAME */
+html[data-frames="off"] .featured .edge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3246 · FRAME */
+html[data-frames="off"] .featured .edge.is-extreme {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3255 · FRAME */
+html[data-frames="off"] .featured .featured-unlock {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3281 · FRAME */
+html[data-frames="off"] .featured .why .line {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+@media (max-width: 760px) {
+/* app/globals.css:3294 · FRAME */
+html[data-frames="off"] .featured .why {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+}
+
+/* app/globals.css:3368 · FRAME */
+html[data-frames="off"] .odds-button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3396 · FRAME */
+html[data-frames="off"] .odds-button:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:3402 · FRAME */
+html[data-frames="off"] .odds-button.is-value {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3439 · FRAME */
+html[data-frames="off"] .betslip-head button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3449 · FRAME */
+html[data-frames="off"] .betslip-empty {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3559 · FRAME */
+html[data-frames="off"] .place-live {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3571 · FRAME */
+html[data-frames="off"] .place-live:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:3576 · FRAME */
+html[data-frames="off"] .place-live.is-review {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3582 · FRAME */
+html[data-frames="off"] .place-live.is-review:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:3586 · FRAME */
+html[data-frames="off"] .place-live.is-disabled {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3641 · FRAME */
+html[data-frames="off"] .client-status-card.good {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3645 · FRAME */
+html[data-frames="off"] .client-status-card.warn {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3684 · FRAME */
+html[data-frames="off"] .command-metric,
+html[data-frames="off"] .kpi-card {
+  border-color: transparent;
+  border-width: 0;
+}
+
+@media (max-width: 620px) {
+/* app/globals.css:3861 · FRAME */
+html[data-frames="off"] .portfolio-stat-strip div,
+html[data-frames="off"] .portfolio-stat-strip div + div {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+}
+
+/* app/globals.css:3886 · FRAME */
+html[data-frames="off"] .premium-gate-card {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3918 · FRAME */
+html[data-frames="off"] .premium-gate-card button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3938 · FRAME */
+html[data-frames="off"] .checkout-wallet-block {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3962 · FRAME */
+html[data-frames="off"] .checkout-address code {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:3974 · FRAME */
+html[data-frames="off"] .checkout-address button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4009 · FRAME */
+html[data-frames="off"] .checkout-steps > div > span:first-child {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4058 · FRAME */
+html[data-frames="off"] .pending-payment-view .pending-tx {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4075 · FRAME */
+html[data-frames="off"] .pending-payment-view button {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4095 · FRAME */
+html[data-frames="off"] .portal-top-banner {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:4106 · FRAME */
+html[data-frames="off"] .am-topbar {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:4176 · FRAME */
+html[data-frames="off"] .am-tt {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:4206 · FRAME */
+html[data-frames="off"] .am-acct {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:4221 · FRAME */
+html[data-frames="off"] .am-acct .plan {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4234 · FRAME */
+html[data-frames="off"] .am-auth-secondary {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:4246 · FRAME */
+html[data-frames="off"] .am-auth-secondary:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4247 · FRAME */
+html[data-frames="off"] .am-auth-primary {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4261 · FRAME */
+html[data-frames="off"] .am-iconbtn {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:4292 · FRAME */
+html[data-frames="off"] .portal-ad-col {
+  border-right-color: transparent;
+  border-right-width: 0;
+}
+
+/* app/globals.css:4305 · FRAME */
+html[data-frames="off"] .portal-ad-col.right {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:4310 · FRAME */
+html[data-frames="off"] .portal-ad-slot {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4361 · FRAME */
+html[data-frames="off"] .portal-bottom-banner {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:4371 · FRAME */
+html[data-frames="off"] .sponsor-label {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4388 · FRAME */
+html[data-frames="off"] .btn-primary,
+html[data-frames="off"] .btn-secondary,
+html[data-frames="off"] .btn-ghost,
+html[data-frames="off"] .btn-danger {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4432 · FRAME */
+html[data-frames="off"] .btn-primary {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4437 · FRAME */
+html[data-frames="off"] .btn-primary:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:4441 · FRAME */
+html[data-frames="off"] .btn-secondary {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4446 · FRAME */
+html[data-frames="off"] .btn-secondary:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:4461 · FRAME */
+html[data-frames="off"] .btn-danger {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4466 · FRAME */
+html[data-frames="off"] .btn-danger:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4468 · FRAME */
+html[data-frames="off"] .lang-toggle {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4483 · FRAME */
+html[data-frames="off"] .theme-toggle {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4498 · FRAME */
+html[data-frames="off"] .theme-toggle:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4527 · FRAME */
+html[data-frames="off"] .account-help-acc {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4569 · FRAME */
+html[data-frames="off"] .plan-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:4580 · FRAME */
+html[data-frames="off"] .plan-card.featured {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:4585 · FRAME */
+html[data-frames="off"] .plan-btn {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4598 · FRAME */
+html[data-frames="off"] .plan-btn.primary {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4604 · FRAME */
+html[data-frames="off"] .plan-btn.active {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4619 · FRAME */
+html[data-frames="off"] .partner-card {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4633 · FRAME */
+html[data-frames="off"] .assist-card {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4643 · FRAME */
+html[data-frames="off"] .faq-item {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4658 · FRAME */
+html[data-frames="off"] .promo-strip {
+  border-top-color: transparent;
+  border-top-width: 0;
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:4740 · FRAME */
+html[data-frames="off"] .partner-section {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:4753 · FRAME */
+html[data-frames="off"] .bets-auth-gate {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4774 · FRAME */
+html[data-frames="off"] .extra-markets {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:4800 · FRAME */
+html[data-frames="off"] .extra-market-pill.high {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4801 · FRAME */
+html[data-frames="off"] .extra-market-pill.mid {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4802 · FRAME */
+html[data-frames="off"] .extra-market-pill.low {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4807 · FRAME */
+html[data-frames="off"] .operators-collab {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4827 · FRAME */
+html[data-frames="off"] .operators-sent {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4886 · FRAME */
+html[data-frames="off"] .live-score-bar {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4899 · FRAME */
+html[data-frames="off"] .live-score-bar.live {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4900 · FRAME */
+html[data-frames="off"] .live-score-bar.paused {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4901 · FRAME */
+html[data-frames="off"] .live-score-bar.finished {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4947 · FRAME */
+html[data-frames="off"] .plan-lock-badge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4963 · FRAME */
+html[data-frames="off"] .plan-upgrade-nudge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:4998 · FRAME */
+html[data-frames="off"] .free-paywall {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5026 · FRAME */
+html[data-frames="off"] .free-paywall .fp-cta {
+  box-shadow: none;
+}
+
+/* app/globals.css:5041 · FRAME */
+html[data-frames="off"] .deep-analysis-panel {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5057 · FRAME */
+html[data-frames="off"] .da-badge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5113 · FRAME */
+html[data-frames="off"] .da-market-pill {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5122 · FRAME */
+html[data-frames="off"] .da-market-pill.value {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5127 · FRAME */
+html[data-frames="off"] .da-research {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:5158 · FRAME */
+html[data-frames="off"] .card-lock-overlay {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5169 · FRAME */
+html[data-frames="off"] .card-lock-overlay:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5185 · FRAME */
+html[data-frames="off"] .bonus-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5197 · FRAME */
+html[data-frames="off"] .bonus-cta:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5213 · FRAME */
+html[data-frames="off"] .rg-footer {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:5225 · FRAME */
+html[data-frames="off"] .deep-analysis-locked {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5249 · FRAME */
+html[data-frames="off"] .plan-lock-badge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5255 · FRAME */
+html[data-frames="off"] .plan-upgrade-nudge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5268 · FRAME */
+html[data-frames="off"] .da-market-pill {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5270 · FRAME */
+html[data-frames="off"] .deep-analysis-locked {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5273 · FRAME */
+html[data-frames="off"] .rg-footer {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:5288 · FRAME */
+html[data-frames="off"] .wc-topbar-back {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5305 · FRAME */
+html[data-frames="off"] .wc-topbar-back:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5350 · FRAME */
+html[data-frames="off"] .wc-countdown-cell {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5388 · FRAME */
+html[data-frames="off"] .wc-hub-hero {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:5395 · FRAME */
+html[data-frames="off"] .wc-hero-glyph {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5418 · FRAME */
+html[data-frames="off"] .wc-aside-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5457 · FRAME */
+html[data-frames="off"] .wc-ref-tabs {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5463 · FRAME */
+html[data-frames="off"] .wc-ref-tab {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:5492 · FRAME */
+html[data-frames="off"] .wc-group-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5500 · FRAME */
+html[data-frames="off"] .wc-group-card:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5536 · FRAME */
+html[data-frames="off"] .wc-stage-filter {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5542 · FRAME */
+html[data-frames="off"] .wc-stage-filter button {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:5557 · FRAME */
+html[data-frames="off"] .wc-fixture-row {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5569 · FRAME */
+html[data-frames="off"] .wc-fixture-row:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5604 · FRAME */
+html[data-frames="off"] .wc-squad-chip {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5619 · FRAME */
+html[data-frames="off"] .wc-squad-chip:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5644 · FRAME */
+html[data-frames="off"] .wc-place-bet {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5651 · FRAME */
+html[data-frames="off"] .wc-place-bet:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:5661 · FRAME */
+html[data-frames="off"] .wc-stat {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5688 · FRAME */
+html[data-frames="off"] .wc-roster-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5718 · FRAME */
+html[data-frames="off"] .wc-timeline-entry {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5735 · FRAME */
+html[data-frames="off"] .wc-winner-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5767 · FRAME */
+html[data-frames="off"] .wc-aside-card,
+html[data-frames="off"] .wc-group-card,
+html[data-frames="off"] .wc-roster-card,
+html[data-frames="off"] .wc-winner-card {
+  --_fe: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:5804 · FRAME */
+html[data-frames="off"] .wc-group-card:hover {
+  --_fe: transparent;
+  box-shadow: none;
+}
+
+/* app/globals.css:5820 · FRAME */
+html[data-frames="off"] .wc-countdown-cell::before,
+html[data-frames="off"] .wc-countdown-cell::after,
+html[data-frames="off"] .wc-hero-glyph::before,
+html[data-frames="off"] .wc-hero-glyph::after {
+  clip-path: none;
+}
+
+/* app/globals.css:5856 · FRAME */
+html[data-frames="off"] .sport-band .glyph {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:5926 · FRAME */
+html[data-frames="off"] .am-grid > .house-banner.hb-cr-grid {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6008 · FRAME */
+html[data-frames="off"] .pred {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6017 · FRAME */
+html[data-frames="off"] .pred:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6045 · FRAME */
+html[data-frames="off"] .pred .scorebar {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6069 · FRAME */
+html[data-frames="off"] .pred .goals-block {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6085 · FRAME */
+html[data-frames="off"] .pred .gs-block {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6173 · FRAME */
+html[data-frames="off"] .pred .edge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6181 · FRAME */
+html[data-frames="off"] .pred .edge.flat {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6185 · FRAME */
+html[data-frames="off"] .pred .edge.model {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6192 · FRAME */
+html[data-frames="off"] .pred .mvm .col {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6207 · FRAME */
+html[data-frames="off"] .pred .mvm .col.model {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6222 · FRAME */
+html[data-frames="off"] .pred .v2r {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:6266 · FRAME */
+html[data-frames="off"] .pred .v2r-val {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6270 · FRAME */
+html[data-frames="off"] .pred .v2r-val.is-extreme {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6282 · FRAME */
+html[data-frames="off"] .pred .fp-odds-row .fp-edge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6289 · FRAME */
+html[data-frames="off"] .pred .why-box {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6313 · FRAME */
+html[data-frames="off"] .pred .why {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:6331 · FRAME */
+html[data-frames="off"] .pred .why .why-body {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:6336 · FRAME */
+html[data-frames="off"] .pred .act {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:6348 · FRAME */
+html[data-frames="off"] .pred .act .gate {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6355 · FRAME */
+html[data-frames="off"] .pred .act .betbtn {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6361 · FRAME */
+html[data-frames="off"] .pred .act .betbtn:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6366 · FRAME */
+html[data-frames="off"] .pred .lock-overlay {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6375 · FRAME */
+html[data-frames="off"] .pred .nudge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6408 · FRAME */
+html[data-frames="off"] .rail-item {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6427 · FRAME */
+html[data-frames="off"] .rail-item.is-active,
+html[data-frames="off"] .rail-item.is-active.green,
+html[data-frames="off"] .rail-item.is-active.amber {
+  box-shadow: none;
+}
+
+/* app/globals.css:6437 · FRAME */
+html[data-frames="off"] .sports-rail .rail-refresh {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6462 · FRAME */
+html[data-frames="off"] .am-kpi {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6502 · FRAME */
+html[data-frames="off"] .chamfer::before,
+html[data-frames="off"] .chamfer::after,
+html[data-frames="off"] .chamfer-sm::before,
+html[data-frames="off"] .chamfer-sm::after {
+  clip-path: none;
+}
+
+/* app/globals.css:6532 · FRAME */
+html[data-frames="off"] .edge-chamfer {
+  --bcol: transparent;
+}
+
+/* app/globals.css:6537 · FRAME */
+html[data-frames="off"] .edge-chamfer > .featured {
+  clip-path: none;
+}
+
+/* app/globals.css:6671 · FRAME */
+html[data-frames="off"] .wp-promo {
+  clip-path: none;
+}
+
+/* app/globals.css:6709 · FRAME */
+html[data-frames="off"] .am-ticker {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6714 · FRAME */
+html[data-frames="off"] .am-ticker .t-lab {
+  border-right-color: transparent;
+  border-right-width: 0;
+}
+
+/* app/globals.css:6727 · FRAME */
+html[data-frames="off"] .am-ticker .ti {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:6745 · FRAME */
+html[data-frames="off"] .am-seg {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6749 · FRAME */
+html[data-frames="off"] .am-seg button {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:6780 · FRAME */
+html[data-frames="off"] .am-filters .am-seg {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6785 · FRAME */
+html[data-frames="off"] .am-filters .am-seg button {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:6794 · FRAME */
+html[data-frames="off"] .am-filters .am-seg button.on {
+  box-shadow: none;
+}
+
+/* app/globals.css:6912 · FRAME */
+html[data-frames="off"] .am-htable-wrap {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6956 · FRAME */
+html[data-frames="off"] .ad-banner {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:6973 · FRAME */
+html[data-frames="off"] .ad-banner-age {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6974 · FRAME */
+html[data-frames="off"] .ad-banner-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:6990 · FRAME */
+html[data-frames="off"] .house-banner {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7139 · FRAME */
+html[data-frames="off"] .hb-chip {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7150 · FRAME */
+html[data-frames="off"] .hb-ticker {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:7180 · FRAME */
+html[data-frames="off"] .hb-mini {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7199 · FRAME */
+html[data-frames="off"] .am-surface {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:7208 · FRAME */
+html[data-frames="off"] .am-surface:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7210 · FRAME */
+html[data-frames="off"] .am-surface-inset {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:7268 · FRAME */
+html[data-frames="off"] .mb-group-head .mb-glyph {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:7295 · FRAME */
+html[data-frames="off"] .mb-row:hover:not(.is-disabled) {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7296 · FRAME */
+html[data-frames="off"] .mb-row.is-selected {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7303 · FRAME */
+html[data-frames="off"] .mb-row-glyph {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7337 · FRAME */
+html[data-frames="off"] .mb-check {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7344 · FRAME */
+html[data-frames="off"] .mb-row.is-selected .mb-check {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7393 · FRAME */
+html[data-frames="off"] .mb-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7441 · FRAME */
+html[data-frames="off"] .mb-cta:hover,
+html[data-frames="off"] .free-paywall .fp-cta:hover,
+html[data-frames="off"] .featured .featured-unlock:hover,
+html[data-frames="off"] .upgrade-card button:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:7581 · FRAME */
+html[data-frames="off"] .place-bet-dropdown {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7621 · FRAME */
+html[data-frames="off"] .lp-invite {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:7636 · FRAME */
+html[data-frames="off"] .lp-nav {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:7660 · FRAME */
+html[data-frames="off"] .lp-nav-link {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7668 · FRAME */
+html[data-frames="off"] .lp-nav-link:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:7670 · FRAME */
+html[data-frames="off"] .lp-nav-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7679 · FRAME */
+html[data-frames="off"] .lp-nav-cta:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:7682 · FRAME */
+html[data-frames="off"] .lp-lang {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7693 · FRAME */
+html[data-frames="off"] .lang-dd-trigger[aria-expanded="true"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7694 · FRAME */
+html[data-frames="off"] .lang-dd-menu {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:7711 · FRAME */
+html[data-frames="off"] .lang-dd-item[aria-selected="true"] .lang-dd-code {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7712 · FRAME */
+html[data-frames="off"] .lang-dd-code {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7754 · FRAME */
+html[data-frames="off"] .lp-pill {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:7800 · FRAME */
+html[data-frames="off"] .lp-carousel-art {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7845 · FRAME */
+html[data-frames="off"] .lp-carousel-creative {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7899 · FRAME */
+html[data-frames="off"] .lp-sport {
+  box-shadow: none;
+}
+
+/* app/globals.css:7910 · FRAME */
+html[data-frames="off"] .lp-sport-well {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7925 · FRAME */
+html[data-frames="off"] .lp-sport:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:7929 · FRAME */
+html[data-frames="off"] .lp-sport:hover .lp-sport-well {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7934 · FRAME */
+html[data-frames="off"] .lp-sport-feat {
+  box-shadow: none;
+}
+
+/* app/globals.css:7939 · FRAME */
+html[data-frames="off"] .lp-sport-feat .lp-sport-well {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:7942 · FRAME */
+html[data-frames="off"] .lp-sport-feat:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:7946 · FRAME */
+html[data-frames="off"] .lp-sport-feat:hover .lp-sport-well {
+  border-color: transparent;
+  border-width: 0;
+}
+
+@media (max-width: 640px) {
+/* app/globals.css:7974 · FRAME */
+html[data-frames="off"] .lp-sport {
+  box-shadow: none;
+}
+}
+
+/* app/globals.css:8069 · FRAME */
+html[data-frames="off"] .lp-btn-coral {
+  box-shadow: none;
+}
+
+/* app/globals.css:8070 · FRAME */
+html[data-frames="off"] .lp-btn-cobalt {
+  box-shadow: none;
+}
+
+/* app/globals.css:8096 · FRAME */
+html[data-frames="off"] .lp-card {
+  clip-path: none;
+}
+
+/* app/globals.css:8118 · FRAME */
+html[data-frames="off"] .lp-card::before {
+  clip-path: none;
+}
+
+/* app/globals.css:8224 · FRAME */
+html[data-frames="off"] .lp-card-btn {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8231 · FRAME */
+html[data-frames="off"] .lp-card-btn.coral {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8232 · FRAME */
+html[data-frames="off"] .lp-card-btn.coral:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:8234 · FRAME */
+html[data-frames="off"] .lp-card-btn.cobalt-outline {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8235 · FRAME */
+html[data-frames="off"] .lp-card-btn.cobalt-outline:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8241 · FRAME */
+html[data-frames="off"] .lp-phone {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:8280 · FRAME */
+html[data-frames="off"] .lp-kpis {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:8302 · FRAME */
+html[data-frames="off"] .lp-what-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8312 · FRAME */
+html[data-frames="off"] .lp-what-cta:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:8343 · FRAME */
+html[data-frames="off"] .lp-term-top {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:8370 · FRAME */
+html[data-frames="off"] .lp-term-head {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:8389 · FRAME */
+html[data-frames="off"] .lp-term-tag {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8403 · FRAME */
+html[data-frames="off"] .lp-term-foot {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:8463 · FRAME */
+html[data-frames="off"] .lp-foot {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:8474 · FRAME */
+html[data-frames="off"] .site-footer {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:8515 · FRAME */
+html[data-frames="off"] .site-footer-18 {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8531 · FRAME */
+html[data-frames="off"] .acct-menu {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:8543 · FRAME */
+html[data-frames="off"] .acct-menu-badge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8547 · FRAME */
+html[data-frames="off"] .acct-menu-plan {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8567 · FRAME */
+html[data-frames="off"] .acct-menu-foot {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:8570 · FRAME */
+html[data-frames="off"] .acct-menu-logout {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8571 · FRAME */
+html[data-frames="off"] .acct-menu-logout:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8591 · FRAME */
+html[data-frames="off"] .site-footer-social-link,
+html[data-frames="off"] .site-footer-social-icon {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8601 · FRAME */
+html[data-frames="off"] .site-footer-social-link:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8611 · FRAME */
+html[data-frames="off"] .site-footer-partner-logo {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8734 · FRAME */
+html[data-frames="off"] .am-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:8746 · FRAME */
+html[data-frames="off"] .am-card-glow {
+  border-color: transparent;
+  border-width: 0;
+}
+
+@media (max-width: 900px) {
+/* app/globals.css:8793 · FRAME */
+html[data-frames="off"] .am-bottomnav {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+}
+
+@media (max-width: 900px) {
+/* app/globals.css:8827 · FRAME */
+html[data-frames="off"] .mb-entry {
+  border-color: transparent;
+  border-width: 0;
+}
+}
+
+@media (max-width: 900px) {
+/* app/globals.css:8845 · FRAME */
+html[data-frames="off"] .am-feat-tile {
+  border-color: transparent;
+  border-width: 0;
+}
+}
+
+@media (max-width: 900px) {
+/* app/globals.css:8852 · FRAME */
+html[data-frames="off"] .am-feat-tile:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+}
+
+/* app/globals.css:8870 · FRAME */
+html[data-frames="off"] .pred.is-clickable:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:8871 · FRAME */
+html[data-frames="off"] .pred .pred-more {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:8905 · FRAME */
+html[data-frames="off"] .card > .pred {
+  --_pe: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:8973 · FRAME */
+html[data-frames="off"] .card > .pred:hover {
+  --_pe: transparent;
+  box-shadow: none;
+}
+
+/* app/globals.css:8979 · FRAME */
+html[data-frames="off"] .card > .pred.is-clickable:hover {
+  --_pe: transparent;
+  box-shadow: none;
+}
+
+/* app/globals.css:9001 · FRAME */
+html[data-frames="off"] .pdm-panel {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:9023 · FRAME */
+html[data-frames="off"] .pdm-head {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9040 · FRAME */
+html[data-frames="off"] .pdm-close {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9047 · FRAME */
+html[data-frames="off"] .pdm-close:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9061 · FRAME */
+html[data-frames="off"] .mds-hero {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9071 · FRAME */
+html[data-frames="off"] .mds-flagtag {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9081 · FRAME */
+html[data-frames="off"] .mds-val {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9082 · FRAME */
+html[data-frames="off"] .mds-grp {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9091 · FRAME */
+html[data-frames="off"] .mds-src.us {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9092 · FRAME */
+html[data-frames="off"] .mds-src.est {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9094 · FRAME */
+html[data-frames="off"] .mds-chip {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9095 · FRAME */
+html[data-frames="off"] .mds-chip:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9098 · FRAME */
+html[data-frames="off"] .mds-chip.rec {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9099 · FRAME */
+html[data-frames="off"] .mds-chip.on {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9129 · FRAME */
+html[data-frames="off"] .mds-betbar {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9137 · FRAME */
+html[data-frames="off"] .mds-rm {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9139 · FRAME */
+html[data-frames="off"] .mds-rm:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9161 · FRAME */
+html[data-frames="off"] .mds-bmenu {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:9191 · FRAME */
+html[data-frames="off"] .pdm-soon {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9202 · FRAME */
+html[data-frames="off"] .pdm-soon-tag {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9239 · FRAME */
+html[data-frames="off"] .wp-nav {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9260 · FRAME */
+html[data-frames="off"] .wp-retry {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9266 · FRAME */
+html[data-frames="off"] .wp-retry:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:9275 · FRAME */
+html[data-frames="off"] .wp-slip {
+  --_fe: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:9282 · FRAME */
+html[data-frames="off"] .wp-slip-top {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9300 · FRAME */
+html[data-frames="off"] .wp-leg-sport {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9323 · FRAME */
+html[data-frames="off"] .wp-slip-foot {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9338 · FRAME */
+html[data-frames="off"] .wp-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9345 · FRAME */
+html[data-frames="off"] .wp-cta:hover:not(:disabled) {
+  box-shadow: none;
+}
+
+/* app/globals.css:9352 · FRAME */
+html[data-frames="off"] .wp-cta-2 {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9353 · FRAME */
+html[data-frames="off"] .wp-cta-2:hover:not(:disabled) {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9365 · FRAME */
+html[data-frames="off"] .wp-hist-card {
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:9389 · FRAME */
+html[data-frames="off"] .wp-foot {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9411 · FRAME */
+html[data-frames="off"] .wp-d-pick {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9418 · FRAME */
+html[data-frames="off"] .wp-d-prob {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9425 · FRAME */
+html[data-frames="off"] .wp-d-chip {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9469 · FRAME */
+html[data-frames="off"] .wp-acard {
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:9473 · FRAME */
+html[data-frames="off"] .wp-acard-top {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9519 · FRAME */
+html[data-frames="off"] .wp-hero .lp-kpis {
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:9545 · FRAME */
+html[data-frames="off"] .plans-hero,
+html[data-frames="off"] .plan-flow,
+html[data-frames="off"] .plans-grid-3 > .plan-card,
+html[data-frames="off"] .mb-slip-col > .am-surface,
+html[data-frames="off"] .legal-sheet,
+html[data-frames="off"] .reset-card {
+  --_pe: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+/* app/globals.css:9566 · FRAME */
+html[data-frames="off"] .plans-grid-3 > .plan-card.is-premium,
+html[data-frames="off"] .mb-slip-col > .am-surface[style] {
+  --_pe: transparent;
+}
+
+/* app/globals.css:9571 · FRAME */
+html[data-frames="off"] .plans-hero {
+  --_pe: transparent;
+}
+
+/* app/globals.css:9572 · FRAME */
+html[data-frames="off"] .plans-hero[style] {
+  --_pe: transparent;
+}
+
+/* app/globals.css:9637 · FRAME */
+html[data-frames="off"] .plans-hero button:hover:not(:disabled),
+html[data-frames="off"] .plan-action:hover:not(:disabled),
+html[data-frames="off"] .plans-grid-3 .crypto-pay-box button:not(:disabled):hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:9696 · FRAME */
+html[data-frames="off"] .hv3 .v-btn {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9700 · FRAME */
+html[data-frames="off"] .hv3 .v-btn--primary {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9701 · FRAME */
+html[data-frames="off"] .hv3 .v-btn--primary:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:9702 · FRAME */
+html[data-frames="off"] .hv3 .v-btn--secondary {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9703 · FRAME */
+html[data-frames="off"] .hv3 .v-btn--secondary:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9704 · FRAME */
+html[data-frames="off"] .hv3 .v-btn--utility {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9705 · FRAME */
+html[data-frames="off"] .hv3 .v-btn--utility:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:9710 · FRAME */
+html[data-frames="off"] .hv3 .trust-chip {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9718 · FRAME */
+html[data-frames="off"] .hv3 .v-tape {
+  border-top-color: transparent;
+  border-top-width: 0;
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9739 · FRAME */
+html[data-frames="off"] .hv3 .v-scan {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:9742 · FRAME */
+html[data-frames="off"] .hv3 .v-scan-head {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9748 · FRAME */
+html[data-frames="off"] .hv3 .v-scan-cols {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9756 · FRAME */
+html[data-frames="off"] .hv3 .v-scan-row .tag-ex {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9762 · FRAME */
+html[data-frames="off"] .hv3 .v-sec {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9768 · FRAME */
+html[data-frames="off"] .hv3 .v-flow {
+  border-top-color: transparent;
+  border-top-width: 0;
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+@media (max-width:480px) {
+/* app/globals.css:9775 · FRAME */
+html[data-frames="off"] .hv3 .v-flow .fs {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+}
+
+/* app/globals.css:9781 · FRAME */
+html[data-frames="off"] .hv3 .v-notes .row {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9782 · FRAME */
+html[data-frames="off"] .hv3 .v-notes .row:last-child {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9789 · FRAME */
+html[data-frames="off"] .hv3 .v-anat-card-skel {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:9800 · FRAME */
+html[data-frames="off"] .hv3 .v-wall-head {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9801 · FRAME */
+html[data-frames="off"] .hv3 .v-wrow {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9812 · FRAME */
+html[data-frames="off"] .hv3 .v-suite {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9813 · FRAME */
+html[data-frames="off"] .hv3 .v-prow {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9834 · FRAME */
+html[data-frames="off"] .hv3 .v-guides {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9835 · FRAME */
+html[data-frames="off"] .hv3 .v-grow {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9854 · FRAME */
+html[data-frames="off"] .hv3 .v-guides-see a {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9855 · FRAME */
+html[data-frames="off"] .hv3 .v-guides-see a:hover {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9865 · FRAME */
+html[data-frames="off"] .hv3 .v-tiers {
+  border-top-color: transparent;
+  border-top-width: 0;
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9866 · FRAME */
+html[data-frames="off"] .hv3 .v-tier {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:9868 · FRAME */
+html[data-frames="off"] .hv3 .v-tier.pro {
+  box-shadow: none;
+}
+
+@media (max-width:760px) {
+/* app/globals.css:9877 · FRAME */
+html[data-frames="off"] .hv3 .v-tier {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+}
+
+/* app/globals.css:9880 · FRAME */
+html[data-frames="off"] .hv3 .v-final {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9898 · FRAME */
+html[data-frames="off"] .hv3 .v-strip {
+  border-top-color: transparent;
+  border-top-width: 0;
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9922 · FRAME */
+html[data-frames="off"] .hv3 .v-b2b {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9926 · FRAME */
+html[data-frames="off"] .hv3 .v-faq {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:9927 · FRAME */
+html[data-frames="off"] .hv3 .v-faq .row {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:9991 · FRAME */
+html[data-frames="off"] .hv3 .av-modal {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:10001 · FRAME */
+html[data-frames="off"] .hv3 .av-status {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10007 · FRAME */
+html[data-frames="off"] .hv3 .av-close {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10011 · FRAME */
+html[data-frames="off"] .hv3 .av-close:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10015 · FRAME */
+html[data-frames="off"] .hv3 .av-tabs {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10016 · FRAME */
+html[data-frames="off"] .hv3 .av-tab {
+  border-right-color: transparent;
+  border-right-width: 0;
+}
+
+/* app/globals.css:10023 · FRAME */
+html[data-frames="off"] .hv3 .av-tab.is-active {
+  box-shadow: none;
+}
+
+/* app/globals.css:10057 · FRAME */
+html[data-frames="off"] .hv3 .av-consents {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:10069 · FRAME */
+html[data-frames="off"] .hv3 .av-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10074 · FRAME */
+html[data-frames="off"] .hv3 .av-cta:hover:not(:disabled) {
+  box-shadow: none;
+}
+
+/* app/globals.css:10078 · FRAME */
+html[data-frames="off"] .hv3 .av-error {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10079 · FRAME */
+html[data-frames="off"] .hv3 .av-info {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10128 · FRAME */
+html[data-frames="off"] .hv3 .v-sportbtn {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:10136 · FRAME */
+html[data-frames="off"] .hv3 .v-sportbtn:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+@media (max-width:640px) {
+/* app/globals.css:10152 · FRAME */
+html[data-frames="off"] .hv3 .v-sportnav-wrap {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+}
+
+/* app/globals.css:10179 · FRAME */
+html[data-frames="off"] .partners-label {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10185 · FRAME */
+html[data-frames="off"] .partners-page .partner-card {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10186 · FRAME */
+html[data-frames="off"] .partners-page .partner-card:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:10191 · FRAME */
+html[data-frames="off"] .partners-page .partner-logo-wrap {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10207 · FRAME */
+html[data-frames="off"] .partners-page .partner-card-featured {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10208 · FRAME */
+html[data-frames="off"] .partners-page .partner-card-featured .partner-logo-wrap {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10243 · FRAME */
+html[data-frames="off"] .tl-head {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10248 · FRAME */
+html[data-frames="off"] .tl-eyebrow .tl-free {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10258 · FRAME */
+html[data-frames="off"] .tl-panel {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10264 · FRAME */
+html[data-frames="off"] .tl-panel-title--sub {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:10284 · FRAME */
+html[data-frames="off"] .tl-seg {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10286 · FRAME */
+html[data-frames="off"] .tl-seg-btn {
+  border-right-color: transparent;
+  border-right-width: 0;
+}
+
+/* app/globals.css:10301 · FRAME */
+html[data-frames="off"] .tl-btn {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10302 · FRAME */
+html[data-frames="off"] .tl-btn:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10303 · FRAME */
+html[data-frames="off"] .tl-btn-ghost {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10305 · FRAME */
+html[data-frames="off"] .tl-btn-ghost:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10309 · FRAME */
+html[data-frames="off"] .tl-out {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10315 · FRAME */
+html[data-frames="off"] .tl-out.is-strong {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10321 · FRAME */
+html[data-frames="off"] .tl-verdict.is-warn {
+  border-left-color: transparent;
+  border-left-width: 0;
+}
+
+/* app/globals.css:10322 · FRAME */
+html[data-frames="off"] .tl-caveat {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10329 · FRAME */
+html[data-frames="off"] .tl-table-head {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10339 · FRAME */
+html[data-frames="off"] .tl-formula {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10359 · FRAME */
+html[data-frames="off"] .tl-card {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10362 · FRAME */
+html[data-frames="off"] .tl-card:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/globals.css:10371 · FRAME */
+html[data-frames="off"] .tl-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10381 · FRAME */
+html[data-frames="off"] .tl-cta-btn:hover {
+  box-shadow: none;
+}
+
+/* app/globals.css:10390 · FRAME */
+html[data-frames="off"] .tl-tg a {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10394 · FRAME */
+html[data-frames="off"] .tl-tg a:hover {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/globals.css:10397 · FRAME */
+html[data-frames="off"] .tl-others a {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10399 · FRAME */
+html[data-frames="off"] .tl-others a:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10403 · FRAME */
+html[data-frames="off"] .tl-langs a {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10406 · FRAME */
+html[data-frames="off"] .tl-langs a:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10407 · FRAME */
+html[data-frames="off"] .tl-langs a[aria-current="true"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10434 · FRAME */
+html[data-frames="off"] .tl-example {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/globals.css:10443 · FRAME */
+html[data-frames="off"] .tl-example-note {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/globals.css:10472 · FRAME */
+html[data-frames="off"] .tl-meter {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:52 · FRAME */
+html[data-frames="off"] .br-chip[data-kind="sport"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:104 · FRAME */
+html[data-frames="off"] .br-badge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:155 · FRAME */
+html[data-frames="off"] .br-watch {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:168 · FRAME */
+html[data-frames="off"] .br-watch:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:169 · FRAME */
+html[data-frames="off"] .br-watch[aria-pressed="true"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:177 · FRAME */
+html[data-frames="off"] .br-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:209 · FRAME */
+html[data-frames="off"] .br-cta[data-tone="unlock"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:222 · FRAME */
+html[data-frames="off"] .br-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:257 · FRAME */
+html[data-frames="off"] .br-card:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:266 · FRAME */
+html[data-frames="off"] .br-card:has(.br-badge[data-kind="high-edge"]) {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:286 · FRAME */
+html[data-frames="off"] .br-card[data-included="true"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:289 · FRAME */
+html[data-frames="off"] .br-card[data-included="true"]:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:292 · FRAME */
+html[data-frames="off"] .br-card[data-included="true"]:has(.br-badge[data-kind="high-edge"]) {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:382 · FRAME */
+html[data-frames="off"] .br-yr {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:441 · FRAME */
+html[data-frames="off"] .br-yr .br-card {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:669 · FRAME */
+html[data-frames="off"] .br-card[data-variant="featured"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:684 · FRAME */
+html[data-frames="off"] .br-card__media::after {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/design-system.css:715 · FRAME */
+html[data-frames="off"] .br-mh {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/design-system.css:816 · FRAME */
+html[data-frames="off"] .br-mh__pick {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:883 · FRAME */
+html[data-frames="off"] .br-sec__head {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* app/design-system.css:1075 · FRAME */
+html[data-frames="off"] .br-empty {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1147 · FRAME */
+html[data-frames="off"] .br-watchnav {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1163 · FRAME */
+html[data-frames="off"] .br-watchnav:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1164 · FRAME */
+html[data-frames="off"] .br-watchnav[aria-current="page"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1176 · FRAME */
+html[data-frames="off"] .br-acct-links {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/design-system.css:1248 · FRAME */
+html[data-frames="off"] .br-md__numbers {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1281 · FRAME */
+html[data-frames="off"] .br-md__h--markets {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/design-system.css:1314 · FRAME */
+html[data-frames="off"] .br-md__formres > i {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1330 · FRAME */
+html[data-frames="off"] .br-md__formres > i[data-r="W"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1331 · FRAME */
+html[data-frames="off"] .br-md__formres > i[data-r="L"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1356 · FRAME */
+html[data-frames="off"] .br-md__locked {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1419 · FRAME */
+html[data-frames="off"] .br-hero {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:1609 · FRAME */
+html[data-frames="off"] .br-hero__cta {
+  border-color: transparent;
+  border-width: 0;
+  clip-path: none;
+}
+
+/* app/design-system.css:1633 · FRAME */
+html[data-frames="off"] .br-hero__cta[data-tone="ghost"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1639 · FRAME */
+html[data-frames="off"] .br-hero__cta[data-tone="ghost"]:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1644 · FRAME */
+html[data-frames="off"] .br-hero__aside {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/design-system.css:1689 · FRAME */
+html[data-frames="off"] .br-tile {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1705 · FRAME */
+html[data-frames="off"] a.br-tile:hover,
+html[data-frames="off"] button.br-tile:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:1708 · FRAME */
+html[data-frames="off"] .br-tile[aria-current="true"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1712 · FRAME */
+html[data-frames="off"] .br-tile__icon {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1766 · FRAME */
+html[data-frames="off"] .br-promo {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1781 · FRAME */
+html[data-frames="off"] .br-promo:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:1783 · FRAME */
+html[data-frames="off"] .br-promo__icon {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1802 · FRAME */
+html[data-frames="off"] .br-chatfb {
+  box-shadow: none;
+}
+
+/* app/design-system.css:1967 · FRAME */
+html[data-frames="off"] .sports-filter-bar.br-filters {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1977 · FRAME */
+html[data-frames="off"] .br-filters .am-seg {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:1991 · FRAME */
+html[data-frames="off"] .br-filters .am-seg button.on {
+  box-shadow: none;
+}
+
+/* app/design-system.css:2089 · FRAME */
+html[data-frames="off"] .book-empty.br-board-empty {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:2200 · FRAME */
+html[data-frames="off"] .br-edgeday > .featured {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2270 · FRAME */
+html[data-frames="off"] .br-edgeday .featured .edge {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:2284 · FRAME */
+html[data-frames="off"] .br-edgeday .featured .featured-unlock {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:2317 · FRAME */
+html[data-frames="off"] .br-promo {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2332 · FRAME */
+html[data-frames="off"] .br-promo:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2389 · FRAME */
+html[data-frames="off"] .wp-promo {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2397 · FRAME */
+html[data-frames="off"] .wp-promo:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2473 · FRAME */
+html[data-frames="off"] .tl-eyebrow .tl-free {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:2481 · FRAME */
+html[data-frames="off"] .tl-card {
+  box-shadow: none;
+}
+
+/* app/design-system.css:2482 · FRAME */
+html[data-frames="off"] .tl-card:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2500 · FRAME */
+html[data-frames="off"] .tl-cta {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:2522 · FRAME */
+html[data-frames="off"] .tl-promo {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2533 · FRAME */
+html[data-frames="off"] .tl-promo:hover {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2727 · FRAME */
+html[data-frames="off"] .br-sporthero {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:2825 · FRAME */
+html[data-frames="off"] .br-sporthero__stat {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:2932 · FRAME */
+html[data-frames="off"] .br-crest {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:2978 · FRAME */
+html[data-frames="off"] .br-hp {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3061 · FRAME */
+html[data-frames="off"] .br-raildeep {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3103 · FRAME */
+html[data-frames="off"] .br-field {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3139 · FRAME */
+html[data-frames="off"] a.br-field:hover,
+html[data-frames="off"] button.br-field:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3162 · FRAME */
+html[data-frames="off"] .br-field__icon {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:3198 · FRAME */
+html[data-frames="off"] .br-field__go b {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3212 · FRAME */
+html[data-frames="off"] .br-field__soon {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3244 · FRAME */
+html[data-frames="off"] .br-dd {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3255 · FRAME */
+html[data-frames="off"] .br-dd:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:3294 · FRAME */
+html[data-frames="off"] .br-rows {
+  border-color: transparent;
+  border-width: 0;
+}
+
+@media (max-width: 640px) {
+/* app/design-system.css:3788 · FRAME */
+html[data-frames="off"] .am-topbar-in .br-nav__item {
+  border-color: transparent;
+  border-width: 0;
+}
+}
+
+@media (max-width: 640px) {
+/* app/design-system.css:3798 · FRAME */
+html[data-frames="off"] .am-topbar-in .br-nav__item[aria-current="page"] {
+  border-color: transparent;
+  border-width: 0;
+}
+}
+
+/* app/design-system.css:3974 · FRAME */
+html[data-frames="off"] .br-nudge {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* app/design-system.css:4039 · FRAME */
+html[data-frames="off"] .br-nudge__x {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:4059 · FRAME */
+html[data-frames="off"] .br-nudge__x:hover {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:4085 · FRAME */
+html[data-frames="off"] .br-nudge__plans {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* app/design-system.css:4167 · FRAME */
+html[data-frames="off"] .br-nudge__actions .br-cta[data-tone="quiet"] {
+  border-color: transparent;
+  border-width: 0;
+}
+
+@media (max-width: 640px) {
+/* app/mobile.css:302 · FRAME */
+html[data-frames="off"] .mob-board-toggle {
+  border-color: transparent;
+  border-width: 0;
+}
+}
+
+/* components/track-record/TrackRecordView.tsx:20 · FRAME */
+html[data-frames="off"] .tr-root .tr-card {
+  border-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* components/track-record/TrackRecordView.tsx:21 · FRAME */
+html[data-frames="off"] .tr-root .tr-pill {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:22 · FRAME */
+html[data-frames="off"] .tr-root .tr-pill.c {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:24 · FRAME */
+html[data-frames="off"] .tr-root .tr-pill.btn.on {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:32 · FRAME */
+html[data-frames="off"] .tr-root .tr-seg {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:42 · FRAME */
+html[data-frames="off"] .tr-root .tr-lrow {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:48 · FRAME */
+html[data-frames="off"] .tr-root .tr-tag.w {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:49 · FRAME */
+html[data-frames="off"] .tr-root .tr-tag.l {
+  border-color: transparent;
+  border-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:50 · FRAME */
+html[data-frames="off"] .tr-root .tr-expand {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* components/track-record/TrackRecordView.tsx:52 · FRAME */
+html[data-frames="off"] .tr-root .tr-glock {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* components/seo/SeoProse.tsx:7 · FRAME */
+html[data-frames="off"] .seo-prose .seo-faq {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+
+/* app/blog/[slug]/page.tsx:13 · FRAME */
+html[data-frames="off"] .blog-content th,
+html[data-frames="off"] .blog-content td {
+  border-color: transparent;
+  border-width: 0;
+}

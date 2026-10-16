@@ -1,6 +1,6 @@
 # Product tracking integration — 16 October 2026
 
-Prepared on `feat/backoffice-tracking-1016` in the isolated product checkout, based on production `26fdd583`. This document describes prepared code, not an activated integration. No product migration, deployment, merge, push, provider configuration or real email was performed.
+Prepared on `feat/backoffice-tracking-1016` in the isolated product checkout, originally based on production `26fdd583`, now locally integrated with Classic/main `50580d5ec6a8c006be37b6a58b1c73ad14aa485e`. This document describes prepared code, not an activated integration. No product migration, deployment, main-branch change, push, provider configuration or real email was performed. The merge is confined to this isolated feature branch.
 
 ## What is implemented
 
@@ -23,7 +23,7 @@ Before enabling any writer:
 1. Review and separately approve the product migration against the installed BO foundation and observed product schema. Apply it once through the approved migration process; verify the new functions/privileges read-only.
 2. Review the privacy/consent mode change, dedicated session collection and retention periods. Confirm the named environment flags and disclosure before collection. Dedicated analytics signing material must not reuse customer/operator auth secrets.
 3. Run the affected unit/integration fixtures, build and authenticated preview QA against an isolated DB. Reconcile primary profile/order counts independently. Never point `TRACK_ALLOW_WRITE=1` at shared production data for QA.
-4. Recompare the actual approved Classic/main SHA, apply/review the Classic overlay if appropriate, and rerun integration tests before merging. This branch does not contain an automatic merge/rebase of the still-open Classic PR.
+4. Review the integrated Classic/main `50580d5e` changes and rerun affected tests if main advances before merging. The overlay is now applied to real Classic source in this isolated feature branch.
 5. Enable approved flags deliberately and monitor logs/source completeness. Provider webhook setup is a separate explicit action; no Resend webhook or campaign was configured here.
 
 | Environment name | Default / requirement |
@@ -45,15 +45,17 @@ Before enabling any writer:
 
 Rollback: disable the additive writer flags and restore the prior product deployment. Keep additive tables/functions for review and recovery; do not DROP recently collected data as a rollback shortcut. Existing customer/operator session cookies and partner redirect identifiers are not shared with the backoffice.
 
-## Classic source review
+## Classic source integration
 
-Compared touched files with Classic PR #534 head `3930728ba47ac8dba56eaebe20c72fd5ea7db56e`. Only overlapping modified source file is `app/privacy/page.tsx`: Classic adds `ClassicChrome`, while this branch adds consent controls and conditional disclosures. Preserve both during the eventual reviewed integration.
+Classic/main `50580d5ec6a8c006be37b6a58b1c73ad14aa485e` is merged into this isolated feature branch. The privacy page retains both ClassicChrome and consent controls/disclosures. The reviewed `classic-3930728-tracking.patch` applied cleanly to that source. Its import-before-`use client` ordering was corrected in the integrated ClassicLobby so its client boundary remains valid.
 
-The latest Classic source already retains root `PageViewTracker`/`CookieBanner`, product card/nav events and `ClassicSlab` partner click events. Its new `ClassicBanners` lacks impression/click measurements. The complete SHA-bound `classic-3930728-tracking.patch` adds 50%-qualified, once-per-mount impressions with `viewability='50pct-v1'`, click events preserving existing handlers, preview suppression and lobby tab/sport events. It is delivered as an **unapplied overlay**, not silently merged into this production-based checkout.
+Classic banners now emit 50%-qualified once-per-mount impressions with `viewability='50pct-v1'` and CTA/more-link clicks while retaining existing custom navigation handlers. Explicit banner previews suppress these events; server production gates continue protecting preview deployments. Lobby tab/sport selections now emit the prepared events. New collection flags remain off by default.
 
-`lib/classic-tracking-overlay.test.tsx` applies the patch to an isolated synthetic checkout of that exact source SHA, then executes the patched banner component with mocked measurement/navigation. It verifies the 49%/50% threshold, deduplication, preview behavior and callback preservation. When the source commit is absent from a shallow clone, this dedicated overlay test skips and requires fetching the documented source commit before it can verify the overlay; this is not an integrated Classic build/browser certification.
+`lib/classic-tracking-overlay.test.tsx` now imports the actual integrated component instead of applying a patch to a synthetic checkout. It cannot skip due to a missing historical Git object. ClassicLobby tests verify measurement and retained selection behavior. The historical patch remains only an audit artifact; do not reapply it to the integrated branch.
 
 ## Verification and candid limits
+
+- Integrated Classic follow-up: focused suite 32 files / 310 passing tests; Classic component suite 7 files / 47 passing with both local default and Classic-enabled test configuration; TypeScript and affected-file ESLint pass. Webpack builds pass with both default local flags and command-scoped `NEXT_PUBLIC_CLASSIC=1` (173 static pages each). No environment file or deployed setting changed.
 
 - Tests use synthetic data and mocked providers/DBs or in-memory PGlite only. PGlite replays the migration twice, verifies business dedup/rollback, signed-session binding refusal/revocation, both deterministic insert/revoke interleavings, out-of-order email correlation, unsubscribe, retention dry/live behavior and denied anon privileges.
 - Real route tests prove successful payment responses precede analytics work and telemetry failure does not roll back grants; failed grants emit no purchase event. Redirect regression cases preserve partner URL bytes/click-ID forwarding while preview performs no click persistence.

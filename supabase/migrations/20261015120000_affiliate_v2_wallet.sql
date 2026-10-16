@@ -93,10 +93,21 @@ ALTER TABLE public.affiliate_payouts ADD CONSTRAINT affiliate_payouts_cancel_cod
 -- lettura il 15/10/2026: uq_profiles_referral_code su UPPER(referral_code),
 -- parziale, 0 duplicati) ma nessuna migration del repo lo crea: un ambiente
 -- ricostruito dalle migration ne sarebbe privo. Stesso nome e stessa
--- definizione → in prod è un no-op.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_profiles_referral_code
-  ON public.profiles (UPPER(referral_code))
-  WHERE referral_code IS NOT NULL;
+-- definizione.
+-- Gate B hardening (qa-andrea, 15/10): NON `CREATE INDEX IF NOT EXISTS`, che su
+-- un indice già presente prende comunque uno ShareLock su profiles fino al
+-- COMMIT (bloccherebbe signup, login e grant per tutta la transazione
+-- dell'apply). Si controlla pg_indexes e si crea solo se manca: in prod nessun
+-- lock su profiles.
+-- Presuppone public.profiles: nessuna migration del repo la crea (è nello schema
+-- di prod da prima della storia delle migration); su un DB vuoto va creata prima.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes
+                  WHERE schemaname = 'public' AND indexname = 'uq_profiles_referral_code') THEN
+    EXECUTE 'CREATE UNIQUE INDEX uq_profiles_referral_code ON public.profiles (UPPER(referral_code)) WHERE referral_code IS NOT NULL';
+  END IF;
+END $$;
 
 -- ── Annullo dei payout in preparazione (interno) ─────────────────────────────
 -- Solo `created`: un payout con un tx hash non si annulla mai (CHECK di #482).
@@ -239,6 +250,15 @@ BEGIN
                             'cancelled_payout_ids', to_jsonb(v_cancelled));
 END;
 $$;
+
+-- ── Sequence: niente a anon/authenticated (gate B hardening) ────────────────
+-- Su Supabase i default privileges danno le sequence nuove anche a anon e
+-- authenticated: con la sola GRANT di #482 a service_role restavano leggibili e
+-- avanzabili (nextval) con la chiave pubblica. Revoca esplicita, idempotente.
+REVOKE ALL ON SEQUENCE public.affiliates_id_seq, public.affiliate_clicks_id_seq,
+                       public.affiliate_wallets_id_seq, public.affiliate_payouts_id_seq,
+                       public.affiliate_commissions_id_seq
+  FROM anon, authenticated;
 
 -- ── Accesso: solo service_role (come claim_*_order, 20260713150003) ──────────
 REVOKE EXECUTE ON FUNCTION public.affiliate_cancel_created_payouts(bigint, text, text) FROM PUBLIC, anon, authenticated;

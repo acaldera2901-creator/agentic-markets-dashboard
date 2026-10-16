@@ -23,6 +23,7 @@ import { goalPickSide, scorerPickEligible } from "@/lib/pick-eligibility"; // #P
 import { currentRefCode, writeRefCode } from "@/lib/referral-code";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 import { storageGet, storageSet } from "@/lib/safe-storage";
+import { useBrowserTimeZone } from "@/lib/ui/use-browser-tz";
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
 import { getAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
@@ -71,6 +72,27 @@ import { UpcomingList, type UpcomingRow } from "@/components/lobby/UpcomingList"
 import { ProBand } from "@/components/lobby/ProBand";
 import { PageHeadline } from "@/components/lobby/PageHeadline";
 import { SportHero } from "@/components/lobby/SportHero";
+// #CLASSIC-LOBBY-1008 — la lobby «classic» (stile Roobet), solo a build con
+// NEXT_PUBLIC_CLASSIC=1. Import DINAMICO dentro la condizione: a flag spento
+// l'espressione è `"" === "1" ? … : null`, il bundler toglie l'import e né il
+// componente né il suo CSS entrano nel build (con un import statico Turbopack
+// li teneva: misurato, `brc-` nei chunk del build OFF). SSR acceso: nessun
+// lampo di caricamento a flag acceso.
+const ClassicLobby = process.env.NEXT_PUBLIC_CLASSIC === "1"
+  ? dynamic(() => import("@/components/classic/ClassicLobbyInDesk").then((m) => m.ClassicLobbyInDesk))
+  : null;
+// #CLASSIC-PARITY-1008 — il resto del filone classic che il desk usa, caricato
+// con un `require` nella STESSA condizione: a flag spento il bundler non lo
+// segue e questo modulo resta quello di main (gli import statici di prima
+// portavano flag, copy e card-view nel chunk di ogni pagina del desk). Ogni uso
+// qui sotto sta in un ramo `process.env.NEXT_PUBLIC_CLASSIC === "1"` scritto per
+// esteso, che a flag spento il minificatore toglie.
+// Il tipo dichiara il modulo anche a flag spento (dove vale null) perché ogni
+// uso è dentro quel ramo: così i componenti si scrivono come JSX (<CL.X />).
+const CL = (process.env.NEXT_PUBLIC_CLASSIC === "1"
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? require("@/components/classic/desk")
+  : null) as typeof import("@/components/classic/desk");
 import { fromDeskFootball, fromDeskTennis } from "@/lib/ui/desk-card";
 import { footballWhyReasons, tennisWhyReasons, type WhyLang } from "@/lib/ui/why-reasons";
 import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type LobbyItem, type LobbySectionId, type LobbySection as LobbySectionData } from "@/lib/ui/lobby";
@@ -79,6 +101,7 @@ import { buildTeamNews } from "@/lib/ui/team-news"; // #INFORTUNI-1001
 import { tennisLiveScoreLabel } from "@/lib/ui/tennis-live-score"; // #LIVE-INVERTED-1007
 import { displayTournament, probabilityLabel, probabilitySourceOf } from "@/lib/partner-market"; // #COERENZA-1001
 import { useWatchlist } from "@/lib/watchlist";
+import { CLASSIC } from "@/lib/classic/flag"; // #CLASSIC-COVERAGE-1014
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
 // fuori dal bundle iniziale di /app. MatchDetailSheet = solo all'apertura scheda
@@ -111,15 +134,15 @@ const BASE_TRANSLATIONS = {
     preaccess_base_desc: "BetRedge Pro: tennis live, football research e Model Edges",
     preaccess_premium_desc: "Accessi avanzati riservati al team interno",
     // Auth modal
-    auth_eyebrow: "Client access",
+    auth_eyebrow: "Accesso clienti",
     auth_login_title: "Login BetRedge",
     auth_create_title: "Crea il tuo profilo BetRedge",
     auth_login_sub: "Accedi con l'email usata per il tuo profilo cliente.",
     auth_create_sub: "Crea il profilo, poi scegli BetRedge Pro per sbloccare i dati.",
     auth_name_label: "Nome", auth_name_placeholder: "Il tuo nome",
     auth_not_found: "Profilo non trovato. Crea un profilo cliente per continuare.",
-    auth_create_btn: "Continue to plans",
-    auth_footer: "BetRedge Pro è crypto-only. I dati prediction restano bloccati finché il piano non è attivo.",
+    auth_create_btn: "Continua verso i piani",
+    auth_footer: "BetRedge Pro si paga con carta (un abbonamento che si rinnova ogni mese o ogni anno finché non lo disdici) o in crypto (pagamento singolo, 30 giorni, nessun rinnovo). I dati delle previsioni restano bloccati finché il piano non è attivo.",
     auth_pw_placeholder_new: "Almeno 8 caratteri",
     auth_err_wrongpw: "Email o password errata.", auth_err_noaccount: "Nessun account con questa email. Registrati.",
     auth_err_exists: "Account già esistente — accedi.", auth_err_founder: "Questo profilo richiede founder access.",
@@ -385,7 +408,7 @@ const BASE_TRANSLATIONS = {
     auth_name_label: "Name", auth_name_placeholder: "Your name",
     auth_not_found: "Profile not found. Create a client profile to continue.",
     auth_create_btn: "Continue to plans",
-    auth_footer: "BetRedge Pro is crypto-only. Prediction data stays locked until the plan is active.",
+    auth_footer: "BetRedge Pro is paid by card (a subscription that renews every month or every year until you cancel it) or in crypto (one payment, 30 days, no renewal). Prediction data stays locked until the plan is active.",
     auth_pw_placeholder_new: "At least 8 characters",
     auth_err_wrongpw: "Wrong email or password.", auth_err_noaccount: "No account for this email. Sign up.",
     auth_err_exists: "Account already exists — log in.", auth_err_founder: "This profile requires founder access.",
@@ -648,7 +671,7 @@ const EXTRA_TRANSLATIONS = {
     auth_name_label: "Nombre", auth_name_placeholder: "Tu nombre",
     auth_not_found: "Perfil no encontrado. Crea un perfil de cliente para continuar.",
     auth_create_btn: "Continuar a planes",
-    auth_footer: "BetRedge Pro es solo cripto. Los datos de predicción permanecen bloqueados hasta que el plan esté activo.",
+    auth_footer: "BetRedge Pro se paga con tarjeta (una suscripción que se renueva cada mes o cada año hasta que la canceles) o en crypto (pago único, 30 días, sin renovación). Los datos de predicción permanecen bloqueados hasta que el plan esté activo.",
     auth_pw_placeholder_new: "Al menos 8 caracteres",
     auth_err_wrongpw: "Email o contraseña incorrectos.", auth_err_noaccount: "No hay cuenta con este email. Regístrate.",
     auth_err_exists: "La cuenta ya existe — inicia sesión.", auth_err_founder: "Este perfil requiere acceso de founder.",
@@ -907,7 +930,7 @@ const EXTRA_TRANSLATIONS = {
     auth_name_label: "Nom", auth_name_placeholder: "Ton nom",
     auth_not_found: "Profil introuvable. Crée un profil client pour continuer.",
     auth_create_btn: "Continuer vers les plans",
-    auth_footer: "BetRedge Pro est crypto uniquement. Les données de prédiction restent verrouillées tant que le plan n'est pas actif.",
+    auth_footer: "BetRedge Pro se paie par carte (un abonnement qui se renouvelle chaque mois ou chaque année jusqu’à ce que vous l’annuliez) ou en crypto (paiement unique, 30 jours, sans renouvellement). Les données de prédiction restent verrouillées tant que le plan n'est pas actif.",
     auth_pw_placeholder_new: "Au moins 8 caractères",
     auth_err_wrongpw: "Email ou mot de passe incorrect.", auth_err_noaccount: "Aucun compte pour cet email. Inscris-toi.",
     auth_err_exists: "Le compte existe déjà — connecte-toi.", auth_err_founder: "Ce profil requiert un accès founder.",
@@ -1166,7 +1189,7 @@ const EXTRA_TRANSLATIONS = {
     auth_name_label: "Имя", auth_name_placeholder: "Твоё имя",
     auth_not_found: "Профиль не найден. Создай профиль клиента, чтобы продолжить.",
     auth_create_btn: "Перейти к планам",
-    auth_footer: "BetRedge Pro — только крипта. Данные прогнозов остаются заблокированными, пока план не активен.",
+    auth_footer: "BetRedge Pro оплачивается картой (подписка продлевается каждый месяц или каждый год, пока вы её не отмените) или в крипто (разовый платёж, 30 дней, без продления). Данные прогнозов остаются заблокированными, пока план не активен.",
     auth_pw_placeholder_new: "Минимум 8 символов",
     auth_err_wrongpw: "Неверный email или пароль.", auth_err_noaccount: "Нет аккаунта с этим email. Зарегистрируйся.",
     auth_err_exists: "Аккаунт уже существует — войди.", auth_err_founder: "Этот профиль требует founder-доступа.",
@@ -4660,6 +4683,30 @@ function ClientAuthModal({
   const [forgot, setForgot] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  // #CLASSIC-COVERAGE-1014 — all'apertura il focus entra nel dialog (prima restava
+  // sul BODY: un utente da tastiera/screen reader non sapeva che il muro c'era).
+  const dialogRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!CLASSIC) return;
+    dialogRef.current?.querySelector<HTMLElement>("input")?.focus();
+    // Focus trap: Tab / Shift+Tab girano dentro il dialog (aria-modal da solo non
+    // basta: il browser lascia uscire il focus sulla pagina dietro). Il listener sta
+    // sul documento, così vale anche se il focus è finito sul body (clic sullo sfondo).
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const root = dialogRef.current;
+      if (!root) return;
+      const f = Array.from(root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter((el) => el.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      const a = document.activeElement;
+      const inside = !!a && root.contains(a);
+      if (e.shiftKey && (!inside || a === first)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (!inside || a === last)) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mode, forgot]);
   // #SIGNUP-GATE: legal-age + ToS acceptance are mandatory before a profile is created.
   const [ageOk, setAgeOk] = useState(false);
   const [tosOk, setTosOk] = useState(false);
@@ -4790,7 +4837,7 @@ function ClientAuthModal({
   if (forgot) {
     return (
       <div className="auth-modal-backdrop">
-        <form className="auth-modal" onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
+        <form ref={dialogRef} className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": it ? "Recupera la password" : "Recover your password" } : {})} onSubmit={(e) => { e.preventDefault(); submitForgot(); }} style={{ position: "relative" }}>
           {dismissible && (
             <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
               style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none",
@@ -4831,7 +4878,7 @@ function ClientAuthModal({
 
   return (
     <div className="auth-modal-backdrop">
-      <form className="auth-modal"
+      <form ref={dialogRef} className="auth-modal" {...(CLASSIC ? { role: "dialog", "aria-modal": true, "aria-label": mode === "login" ? t.auth_login_title : t.auth_create_title } : {})}
         onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ position: "relative" }}>
         {dismissible && (
           <button type="button" onClick={onClose} aria-label={it ? "Chiudi" : "Close"}
@@ -4923,6 +4970,15 @@ function ClientAuthModal({
         )}
         <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : t.auth_create_btn)}</button>
         <p>{t.auth_footer}</p>
+        {/* #CLASSIC-COVERAGE-1014 — il muro non ha ×: senza una porta chi non vuole
+            accedere resta intrappolato (niente Esc, niente clic fuori). La porta è
+            la home, che è pubblica. Solo sul muro e solo a flag acceso. */}
+        {/* navigazione vera (ricarica su «/»): con <Link> la home e la tab montano lo stesso
+            Dashboard, `tab` restava «history/leaderboard» e l'effetto URL↔tab riscriveva
+            la barra, riportando sul muro (8 casi su 8). */}
+        {CLASSIC && !dismissible && (
+          <button type="button" className="auth-wall-back" onClick={() => { window.location.assign("/"); }}>{it ? "← Torna alla home" : "← Back to the board"}</button>
+        )}
       </form>
     </div>
   );
@@ -5554,7 +5610,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       if (k && k === fp.awayKey) return fp.oddsAway;
       return null;
     };
-    const pv = (v: number | null) => (v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
+    // #CLASSIC-CARD-1008 — i tag «+X%» solo con la protezione ok (lib/classic/card-view.ts).
+    const valueOk = !(process.env.NEXT_PUBLIC_CLASSIC === "1") || CL.sheetValueAllowed(cardData, fp);
+    const pv = (v: number | null) => (valueOk && v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
     const groups: MdsGroup[] = [];
 
     // Esito 1X2
@@ -5673,7 +5731,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
     //    legge solo `confidence_score`, non ne mostra nessuna.
     // L'hero sotto (flag/quota/value) resta dov'è: la testa lo sostituisce.
     const whyLang: WhyLang = lang === "it" ? "it" : "en";
-    return {
+    const sheet: MdsData = {
       league: p.league_name || p.league,
       when: fmtKickoff(p.kickoff, lang, tz, p.enrichment?.time_confirmed),
       home: p.home_team, away: p.away_team,
@@ -5744,7 +5802,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         // regola standing e' esplicita: sotto il floor il pick non deve MAI
         // riemergere come value, perche' l'edge di mercato da solo non basta
         // quando il modello non ha un favorito.
-        value: !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+        value: valueOk && !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
@@ -5777,6 +5835,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
         selMany: pick5(lang, { it: "{n} selezioni", en: "{n} selections", es: "{n} selecciones", fr: "{n} sélections", ru: "{n} выборов" }),
       },
     };
+    // #CLASSIC-CARD-1008 — il numero è 30% modello + 70% mercato: si chiama stima.
+    if (process.env.NEXT_PUBLIC_CLASSIC === "1" && sheet.head) sheet.head.probabilityLabel = CL.classicCopy(lang).ourEstimate;
+    return sheet;
   })();
 
   // Detail modal: la card della griglia è una sintesi compatta; il click la
@@ -6005,7 +6066,9 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
       if (k && k === fp.awayKey) return fp.oddsAway;
       return null;
     };
-    const pv = (v: number | null) => (v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
+    // #CLASSIC-CARD-1008 — tennis: lo scarto Elo non è mai un segnale di valore.
+    const valueOk = !(process.env.NEXT_PUBLIC_CLASSIC === "1");
+    const pv = (v: number | null) => (valueOk && v != null && v > 0 ? `+${(v * 100).toFixed(0)}%` : null);
     const esito: Array<{ key: "P1" | "P2"; sel: string; prob: number }> = [
       { key: "P1", sel: m.player1, prob: m.p1 },
       { key: "P2", sel: m.player2, prob: m.p2 },
@@ -6075,7 +6138,7 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
         quotaLabel: pick5(lang, { it: "Quota FortunePlay", en: "FortunePlay odds", es: "Cuota FortunePlay", fr: "Cote FortunePlay", ru: "Коэф. FortunePlay" }),
         quota: fpPickOdds != null ? fpPickOdds.toFixed(2) : null,
         // #FLOOR-VALUE-0821 — sotto il floor NIENTE value (vedi il calcio).
-        value: !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
+        value: valueOk && !belowFloor && fpValue != null && fpValue > 0 ? `value ${(fpValue * 100).toFixed(1)}%` : null,
       },
       groups,
       matchUrl: fp?.matchUrl || FORTUNEPLAY_BET_URL,
@@ -8760,12 +8823,24 @@ function HomeLobby({
   // intero, non l'assaggio da sei — è lì che ora vivono tutte le predizioni di
   // quello sport, visto che «Esplora tutto» non esiste più.
   const sections = useMemo(
-    () => buildLobbySections({
-      football: footballItems,
-      tennis: tennisItems,
-      saved: watchSaved,
-      fullSportLists: view === "football" || view === "tennis",
-    }),
+    () => {
+      // #CLASSIC-CARD-1008 — una fascia sola, protetta (lib/classic/card-view.ts differsBy)
+      if (process.env.NEXT_PUBLIC_CLASSIC === "1") {
+        return CL.buildClassicLobbySections({
+          football: footballItems,
+          tennis: tennisItems,
+          saved: watchSaved,
+          fullSportLists: view === "football" || view === "tennis",
+          differsBy: (it) => CL.differsBy(it.data),
+        });
+      }
+      return buildLobbySections({
+        football: footballItems,
+        tennis: tennisItems,
+        saved: watchSaved,
+        fullSportLists: view === "football" || view === "tennis",
+      });
+    },
     [footballItems, tennisItems, watchSaved, view],
   );
 
@@ -9329,6 +9404,26 @@ function HomeLobby({
     // Tennis come VISTA, non come fascia curata della Home: lì `sec.id` può
     // valere "football"/"tennis" ma è l'assaggio da sei, non ha filtri).
     const showFilters = isSport && view === sec.id;
+    // #CLASSIC-PAGES-1014 — a flag acceso l'elenco intero dello sport non è una
+    // griglia di tutte le schede ma GRUPPI per lega (ClassicLeagueGroups): la
+    // stessa scheda, lo stesso gating, la stessa barra dei filtri qui sopra.
+    const classicGrouped = process.env.NEXT_PUBLIC_CLASSIC === "1" && showFilters;
+    // #INCLUDED-TODAY-0928 — la riga della quota: solo sull'elenco intero
+    // (Calcio/Tennis come vista), dove #UNLOCKED-FIRST-0831 garantisce
+    // che le aperte stiano davanti e quindi il confine è UNO. Sulle
+    // fasce curate della Home l'ordine è un altro e la riga mentirebbe.
+    // Conta ciò che si vede (dopo i filtri): numeri veri, non la quota
+    // nominale del piano. Anonimo (zero aperte) e Pro (zero coperte)
+    // non hanno confine e non vedono la riga.
+    const nIncluded = showFilters && !isPro ? items.filter((it) => it.data.locked !== true).length : 0;
+    const quota = nIncluded > 0 && nIncluded < items.length ? quotaRuleCopy(lang, nIncluded, items.length - nIncluded) : null;
+    const quotaRow = quota ? (
+      <div key={`quota-${sec.id}`} className="br-quota" role="separator" aria-label={`${quota.yours}. ${quota.more}.`} data-testid="quota-rule">
+        <span className="br-quota__yours"><IconCheck size={11} stroke={2.5} />{quota.yours}</span>
+        <i className="br-quota__rule" aria-hidden="true" />
+        <button type="button" className="br-quota__more" onClick={onGoPro}>{quota.more}<IconArrow size={12} /></button>
+      </div>
+    ) : null;
     return (
       <>
       {showFilters && (
@@ -9366,8 +9461,8 @@ function HomeLobby({
         </div>
       )}
       <LobbySection
-        title={it ? copy.it : copy.en}
-        hint={(it ? copy.hintIt : copy.hintEn) || null}
+        title={process.env.NEXT_PUBLIC_CLASSIC === "1" && sec.id === "top" ? CL.classicCopy(lang).whereDiffers : it ? copy.it : copy.en}
+        hint={(process.env.NEXT_PUBLIC_CLASSIC === "1" && sec.id === "top" ? CL.classicCopy(lang).whereDiffersHint : it ? copy.hintIt : copy.hintEn) || null}
         count={isSport ? total : null}
         action={more && seeAllView ? (
           <button
@@ -9378,33 +9473,39 @@ function HomeLobby({
             {pick5(lang, { it: "Vedi tutte", en: "See all", es: "Ver todas", fr: "Tout voir", ru: "Показать все" })} →
           </button>
         ) : null}
+        plain={classicGrouped || undefined}
       >
-        {(() => {
+        {classicGrouped ? (
+          // Nei gruppi il confine aperte/chiuse non è più uno solo: la riga
+          // della quota sta UNA volta, sopra le leghe. Il banner di casa è UNO
+          // (Andrea 14/10): il primo creativo della griglia piatta (gridFeed,
+          // già scelto per sport), in una riga sua fra la 2ª e la 3ª lega.
+          <CL.ClassicLeagueGroups
+            items={items}
+            lang={lang}
+            forceOpen={!!q || competitionFilter !== "all"}
+            renderCard={(item) => renderCard(item, sec.id)}
+            lead={quotaRow}
+            ad={gridFeed[0] ? (
+              // #CLASSIC-COVERAGE-1014 — i creativi «cotti» hanno il testo dentro i
+              // pixel, in inglese: su una pagina in italiano (o es/fr/ru) il banner
+              // di casa era l'unica scritta in un'altra lingua. Fuori dall'inglese si
+              // rende la versione a testo del banner (copyFor la traduce).
+              <HouseBanner key={`house-league-${sec.id}-${gridFeed[0].id}`} campaign={lang !== "en" && gridFeed[0].creative ? { ...gridFeed[0], creative: undefined } : gridFeed[0]} lang={lang} inGrid />
+            ) : undefined}
+            adBackdrop={lang === "en" ? gridFeed[0]?.creative?.sm : undefined}
+          />
+        ) : (() => {
           // La griglia si richiude da sé: i banner sono INSERITI nel flatMap,
           // non nascosti con `display:none`, quindi senza di loro non resta
           // nessun posto vuoto da colmare.
           const pool = isSport ? gridFeed : [];
           const cap2 = Math.min(pool.length, GRID_TILES_MAX);
           let placed = 0;
-          // #INCLUDED-TODAY-0928 — la riga della quota: solo sull'elenco intero
-          // (Calcio/Tennis come vista), dove #UNLOCKED-FIRST-0831 garantisce
-          // che le aperte stiano davanti e quindi il confine è UNO. Sulle
-          // fasce curate della Home l'ordine è un altro e la riga mentirebbe.
-          // Conta ciò che si vede (dopo i filtri): numeri veri, non la quota
-          // nominale del piano. Anonimo (zero aperte) e Pro (zero coperte)
-          // non hanno confine e non vedono la riga.
-          const nIncluded = showFilters && !isPro ? items.filter((it) => it.data.locked !== true).length : 0;
-          const quota = nIncluded > 0 && nIncluded < items.length ? quotaRuleCopy(lang, nIncluded, items.length - nIncluded) : null;
           return items.flatMap((item, i) => {
             const out: React.ReactNode[] = [];
-            if (quota && item.data.locked === true && i > 0 && items[i - 1].data.locked !== true) {
-              out.push(
-                <div key={`quota-${sec.id}`} className="br-quota" role="separator" aria-label={`${quota.yours}. ${quota.more}.`} data-testid="quota-rule">
-                  <span className="br-quota__yours"><IconCheck size={11} stroke={2.5} />{quota.yours}</span>
-                  <i className="br-quota__rule" aria-hidden="true" />
-                  <button type="button" className="br-quota__more" onClick={onGoPro}>{quota.more}<IconArrow size={12} /></button>
-                </div>,
-              );
+            if (quotaRow && item.data.locked === true && i > 0 && items[i - 1].data.locked !== true) {
+              out.push(quotaRow);
             }
             out.push(renderCard(item, sec.id));
             // `i < items.length - 1`: mai come ultimo elemento della fascia —
@@ -9447,6 +9548,61 @@ function HomeLobby({
       })}
     />
   );
+
+  // ── #CLASSIC-LOBBY-1008: la Home «classic» (stile Roobet) ──────────────
+  //
+  // Solo con NEXT_PUBLIC_CLASSIC=1 a build time, e solo sulla Home: Live,
+  // Calcio, Tennis e Watchlist restano le viste di oggi. Gli stessi dati
+  // (footballItems/tennisItems, già filtrati da finestra di mercato e ricerca
+  // della barra alta), la stessa scheda (`renderCard`: gating, watchlist,
+  // apertura della scheda partita). Chiude con la fascia Pro (non ai Pro) e
+  // la FAQ, che "/" deve rendere perché il suo JSON-LD resti legittimo.
+  if (process.env.NEXT_PUBLIC_CLASSIC === "1" && ClassicLobby && view === "home") {
+    return (
+      <ClassicLobby
+        lang={lang}
+        tz={tz}
+        football={footballItems}
+        tennis={tennisItems}
+        query={query}
+        renderCard={renderCard}
+        // #CLASSIC-ROOBET-1013 — la riga per lega: la stessa rotta, lo stesso
+        // gating e la stessa apertura in pagina di `renderCard`, senza la scheda.
+        rowLink={(item) => {
+          const locked = item.data.locked === true;
+          return {
+            href: `${TAB_PATHS.bets}?match=${encodeURIComponent(item.key)}`,
+            locked,
+            onOpen: (ev) => {
+              ev.preventDefault();
+              if (locked) { onGate?.(); return; }
+              trackEvent("card_open", { meta: { surface: "lobby-row", section: "leagues", sport: item.data.sport } });
+              onOpenMatch(item.key);
+            },
+          };
+        }}
+        banners={{
+          // #CLASSIC-INT-1008 — le foto approvate da Andrea (public/images/classic/,
+          // AVIF/WebP accanto ai PNG, ripiego SVG). Board → foto «prices».
+          board: {
+            image: { src: "/images/classic/prices-1280.png", srcSm: "/images/classic/prices-800.png", fallback: "/images/classic/prices.svg" },
+            href: `${TAB_PATHS.bets}?sport=football`,
+            onClick: (ev) => { ev.preventDefault(); trackEvent("card_open", { meta: { surface: "classic-banner", section: "board" } }); onSeeAll("football"); },
+          },
+          live: {
+            image: { src: "/images/classic/live-1280.png", srcSm: "/images/classic/live-800.png", fallback: "/images/classic/live.svg" },
+            href: `${TAB_PATHS.bets}?view=live`,
+            onClick: (ev) => { ev.preventDefault(); trackEvent("card_open", { meta: { surface: "classic-banner", section: "live" } }); onSeeAll("live"); },
+          },
+          record: {
+            image: { src: "/images/classic/record-1280.png", srcSm: "/images/classic/record-800.png", fallback: "/images/classic/record.svg" },
+            href: TAB_PATHS.history,
+          },
+        }}
+        tail={<>{!isPro && proBand}{faq}</>}
+      />
+    );
+  }
 
   if (shown.length === 0) {
     // #RESTYLING-0921 round 12 — IL SALTO DELLA HOME AL CARICAMENTO.
@@ -9540,7 +9696,10 @@ function HomeLobby({
           fascia Pro; sulla Home `sectionTop` è null e non rende nulla. */}
       {sectionTop}
       {/* Round 8: il titolo tipografico apre la Home, sopra il rail. */}
-      {homeHeadline}
+      {/* #CLASSIC-CARD-1008 — il fuso degli orari, una volta per vista. Nello
+          STESSO slot del titolo: a flag spento i figli di .br-lobby restano
+          quelli di main (uno slot in più rimontava la fascia Pro sotto). */}
+      {process.env.NEXT_PUBLIC_CLASSIC === "1" ? <>{homeHeadline}<CL.ClassicTzNote lang={lang} /></> : homeHeadline}
       {/* Round 7: il rail del riferimento — hero verticale a sinistra (26%),
           le card vere del board nella colonna accanto. */}
       {hero && sideSection ? (
@@ -9924,14 +10083,11 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     } catch { /* href non parsabile: lascia fare al <Link> */ }
     return false;
   };
-  const [uiLanguage, setUiLanguage] = useState<Lang>(() => {
-    // #STORAGE-CRASH-0813: questa lettura girava NUDA dentro l'inizializzatore,
-    // cioe' durante il render: dove lo storage e' vietato (Safari privato,
-    // browser interni delle app, cookie bloccati) lanciava e portava l'INTERO
-    // desk nel boundary globale. Riprodotto con Playwright, stack alla mano.
-    const stored = storageGet("agentic-lang") as Lang | null;
-    return stored && LANGUAGES.includes(stored) ? stored : "en";
-  });
+  // #HYDRATION-418-1014: il primo render e' "en" sia sul server sia nel client.
+  // Leggere qui la lingua salvata dava "en" in SSR e "it" all'idratazione:
+  // React #418 (aria-label della nav diverso) e albero rigenerato. La lingua
+  // salvata la applica l'effect di #GEO-LANG-0821 subito dopo il mount.
+  const [uiLanguage, setUiLanguage] = useState<Lang>("en");
   const selectLanguage = (next: Lang) => {
     if (next === uiLanguage) return;
     setUiLanguage(next);
@@ -10151,6 +10307,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [tennisBets, setTennisBets] = useState<TennisBet[]>([]);
   const [tennisBetSummary, setTennisBetSummary] = useState<TennisBetSummary | null>(null);
   const [computedAt, setComputedAt] = useState<string | null>(null);
+  // #CLASSIC-FIX1-1008 — l'età che vale per ogni riga (la Slab: «Model only» solo se ≤ 6 h)
+  // #CLASSIC-PARITY-1008 — lo stato esiste solo a flag acceso: la condizione è
+  // una costante di BUILD (sempre lo stesso ramo in ogni render), e a flag
+  // spento il minificatore toglie tutto, così il desk resta quello di main.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const predOldest = process.env.NEXT_PUBLIC_CLASSIC === "1" ? useState<string | null>(null) : null;
   const [historyV2, setHistoryV2] = useState<V2HistoryRow[]>([]);
   const [historyV2Stats, setHistoryV2Stats] = useState<V2HistoryStats | null>(null);
   const [historyV2Loading, setHistoryV2Loading] = useState(false);
@@ -10162,7 +10324,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const [liveScores, setLiveScores] = useState<Record<string, LiveScore>>({});
   const [liveTennis, setLiveTennis] = useState<LiveTennisMatch[]>([]);
   const [lastUpdate, setLastUpdate] = useState("");
-  const [userTz] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome");
+  const userTz = useBrowserTimeZone(); // #HYDRATION-418-1014: SSR e idratazione vedono lo stesso fuso
   // #FUNNEL-MEAS-0813: page_view rimosso da qui — ora lo emette PageViewTracker
   // nel root layout (con il path), per ogni rotta. Tenerlo qui lo raddoppiava su /app.
   // #PLAN-VIEW-PLAN-0928: aspetta authChecked, così il piano letto è quello
@@ -10191,15 +10353,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // DICHIARATA, non una deduzione dal paese. Regola in lib/pick-language.ts.
   useEffect(() => {
     const stored = storageGet("agentic-lang"); // #STORAGE-CRASH-0813
-    if (stored && LANGUAGES.includes(stored as Lang)) return;
+    // #HYDRATION-418-1014: anche la lingua salvata si applica qui, dopo il mount.
+    const saved = stored && LANGUAGES.includes(stored as Lang) ? (stored as Lang) : null;
     const preferite = [
       ...(typeof navigator !== "undefined" ? navigator.languages ?? [] : []),
       typeof navigator !== "undefined" ? navigator.language ?? "" : "",
     ];
-    const detected = pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang;
+    const detected = saved ?? (pickLanguage(preferite, LANGUAGES as readonly string[]) as Lang);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator.languages non esiste lato server, e #STORAGE-CRASH-0813 dice che leggere lo storage fuori da un effect schianta Safari privato
     setUiLanguage(detected);
-    storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
+    if (!saved) storageSet("agentic-lang", detected); // #STORAGE-CRASH-0813
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -10571,6 +10734,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         setPredictions(live);
         setPredFallback(isOffSeason);
         setComputedAt(data.computed_at ?? null);
+        if (process.env.NEXT_PUBLIC_CLASSIC === "1") predOldest![1](data.oldest_computed_at ?? null);
         setPredStale(data.is_stale ?? false);
       } else if (resp.status === 401 || resp.status === 403) {
         setPredictions([]);
@@ -10833,7 +10997,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     },
   ];
 
-  return (
+  const desk = (
     <LanguageCtx.Provider value={uiLanguage}>
     <TzCtx.Provider value={userTz}>
     <LiveCtx.Provider value={liveScores}>
@@ -10884,7 +11048,21 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 sempre — ma un <img> display:none il browser lo SCARICA lo stesso.
                 Misurato @390 sul preview: 590 KB per pagina, il 30% di tutto il
                 payload di immagini, per un elemento che non può accendersi. */}
-            <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            {/* #CLASSIC-ASSET-1013 — il raster ufficiale scalato (LANCZOS) a 2x/3x
+                della misura resa (h 30 → 182×60 / 273×90) invece del PNG da 1390 px:
+                stesso marchio, 20–36 KB. Sotto i 641 px il lockup sarebbe largo
+                91 px: la regola 2 del marchio (lockup ≥ 120 px, sotto solo il
+                monogramma) dice monogramma, e il <picture> lo serve. */}
+            <picture>
+              <source media="(max-width: 640px)" srcSet="/logos/betredge-monogram-white.svg" />
+              <img
+                className="brand-logo-dark"
+                src="/logos/betredge-header-white@2x.png"
+                srcSet="/logos/betredge-header-white@2x.png 2x, /logos/betredge-header-white@3x.png 3x"
+                alt="BetrEdge"
+                style={{ height: 30, width: "auto" }}
+              />
+            </picture>
           </Link>
 
           {/* ── Nav primaria — #RESTYLING-0921 ──────────────────────────────
@@ -10939,6 +11117,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             {/* #RESTYLING-0921 — Search e Watchlist stanno a DESTRA, accanto
                 all'account: sono strumenti dell'utente, non destinazioni. La
                 ricerca filtra la lobby mentre si scrive, su tutte le viste. */}
+            {/* #CLASSIC-INT-1008 — a flag acceso, sulla Home la ricerca è UNA:
+                quella nella barra delle tab della lobby classic, che scrive in
+                questa stessa `lobbyQuery`. Qui sparisce solo sulla Home. */}
+            {!(process.env.NEXT_PUBLIC_CLASSIC === "1" && tab === "bets" && deskView === "home") && (
             <label className="br-search">
               <IconSearch size={14} stroke={2} />
               <input
@@ -10951,8 +11133,28 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   // mentre si cerca un'altra squadra dà zero risultati e sembra
                   // un guasto.
                   if (ev.target.value && tab !== "bets") {
-                    setTab("bets");
-                    setDeskView("home");
+                    if (CLASSIC) {
+                      // #CLASSIC-COVERAGE-1014 — «Sinner» → «inner» (5 prove su 12, riprodotto).
+                      // Il cambio di tab è un render pesante che smonta QUESTO campo: React
+                      // ripristinava il suo valore controllato prima del commit, la «S» tornava
+                      // vuota e la «i» successiva la sostituiva. Prima si lascia committare la
+                      // lettera (render leggero), poi si cambia vista; la lobby classic
+                      // riprende il focus al mount (ClassicLobby) e con il rAF qui sotto.
+                      setTimeout(() => {
+                        setTab("bets");
+                        setDeskView("home");
+                        let tries = 0;
+                        const refocus = () => {
+                          const el = document.getElementById("brc-search-input") as HTMLInputElement | null;
+                          if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+                          else if (++tries < 40) requestAnimationFrame(refocus);
+                        };
+                        requestAnimationFrame(refocus);
+                      }, 0);
+                    } else {
+                      setTab("bets");
+                      setDeskView("home");
+                    }
                   }
                 }}
                 /* #MOBILE-NAV-0924 — il suggerimento si accorcia. Era una frase
@@ -10968,6 +11170,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 aria-label={pick5(uiLanguage, { it: "Cerca una partita", en: "Search a match", es: "Buscar un partido", fr: "Chercher un match", ru: "Найти матч" })}
               />
             </label>
+            )}
 
             <button
               type="button"
@@ -11111,7 +11314,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   nessun heading che lo porti, e una pagina senza h1 è una
                   regressione SEO (#SEO-PACK-0810). */}
               {!(tab === "bets" && (deskView === "home" || deskView === "football" || deskView === "tennis")) && (
-                <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? tNav.nav_predictions}</h1>
+                <h1>{tab === "bets" ? deskHeading : navItems.find((n) => n.tab === tab)?.label ?? (CLASSIC && tab === "invita" ? pick5(uiLanguage, { it: "Invita", en: "Invite", es: "Invitar", fr: "Inviter", ru: "Пригласить" }) : tNav.nav_predictions)}</h1>
               )}
               {/* #BOARD-HEAD-0910 — Andrea, 10/09: «togli questa parte».
                   Sulla BOARD il sottotitolo non si rende piu': era due righe di
@@ -11121,7 +11324,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   che e' una dichiarazione di compliance e non si tocca.
                   L'`h1` resta: e' l'unico heading della pagina prodotto
                   (#SEO-PACK-0810) e togliersi un h1 e' una regressione SEO. */}
-              {tab !== "bets" && (
+              {/* #CLASSIC-PLANS-1014 — a flag acceso la pagina piani porta il suo
+                  messaggio (ClassicPlans): qui niente seconda riga su Base.
+                  #CLASSIC-INVITE-1014 — idem per Invita (ClassicInvite). */}
+              {tab !== "bets" && !(process.env.NEXT_PUBLIC_CLASSIC === "1" && (tab === "plans" || tab === "invita")) && (
               <p className="am-sub">
                 {tab === "plans" ? (
                   /* #PLANS-HOOK-C-0928: coerente con l'hero dei piani («quanto a fondo
@@ -11321,18 +11527,43 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           )}
           {/* #UI-ACCOUNT-DROPDOWN-0623: la tab "Plans" rende direttamente PlansTab.
               L'account (profilo/preferenze/logout) è nel dropdown dal pill. */}
-          {tab === "plans" && (
+          {/* #CLASSIC-PLANS-1014 — a flag acceso la pagina piani è ClassicPlans
+              (due piani, Free e Pro); stessi gestori di pagamento e attivazione,
+              nessuna logica nuova. A flag spento resta PlansTab, intera. */}
+          {tab === "plans" && (process.env.NEXT_PUBLIC_CLASSIC === "1" ? (
+            <CL.ClassicPlans
+              profile={clientProfile}
+              lang={uiLanguage}
+              onOpenDesk={() => setTab("bets")}
+              onPaymentSubmit={submitCryptoPayment}
+              onActivateFree={activateFreePlan}
+              footnote={tNav.plans_footnote}
+              promo={<LaunchPromoBanner />}
+            />
+          ) : (
             <PlansTab
               profile={clientProfile}
               onOpenDesk={() => setTab("bets")}
               onPaymentSubmit={submitCryptoPayment}
               onActivateFree={activateFreePlan}
             />
-          )}
+          ))}
           {/* #REFERRAL-PANEL: la vecchia AccountTab (dove era finita per errore la
               sezione Invita) non è più montata dopo #UI-ACCOUNT-DROPDOWN-0623 →
               il pannello referral vive su una tab dedicata, raggiungibile. */}
-          {tab === "invita" && (AffiliateSection ? (
+          {/* #CLASSIC-INVITE-1014 — a flag acceso la tab è ClassicInvite: stesse
+              API di ReferralPanel (stats/claim), nessuna nuova. La parte Affiliati
+              v2 (importi, wallet, storico: dati di ESEMPIO) solo con il secondo
+              flag di build NEXT_PUBLIC_AFFILIATE_V2=1, che vive solo in Preview.
+              A flag spento resta il ramo di main (AffiliateSection o ReferralPanel). */}
+          {tab === "invita" && (process.env.NEXT_PUBLIC_CLASSIC === "1" ? (
+            <CL.ClassicInvite
+              lang={uiLanguage}
+              v2={process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"}
+              onSignIn={() => openAuth("login")}
+              onRegister={() => openAuth("create")}
+            />
+          ) : AffiliateSection ? (
             <Suspense fallback={null}><AffiliateSection lang={uiLanguage} /></Suspense>
           ) : <ReferralPanel />)}
           {tab === "history" && (
@@ -11470,4 +11701,16 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     </TzCtx.Provider>
     </LanguageCtx.Provider>
   );
+  // #CLASSIC-CARD-1008 — quote, geo, fuso per la scheda Slab, e (#CLASSIC-INT-1008)
+  // board in volo + ricerca condivisa per la lobby classic. #CLASSIC-PARITY-1008 —
+  // il provider avvolge il desk SOLO nel ramo del flag: a flag spento resta
+  // `return desk`, che il minificatore riporta al `return (…)` di main.
+  if (process.env.NEXT_PUBLIC_CLASSIC === "1") {
+    return (
+      <CL.ClassicPricesScope enabled fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt} footballOldestAt={predOldest![0]} boardLoading={predLoading || tennisLoading} onQueryChange={setLobbyQuery}>
+        {desk}
+      </CL.ClassicPricesScope>
+    );
+  }
+  return desk;
 }

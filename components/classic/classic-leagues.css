@@ -1,0 +1,184 @@
+/* components/classic/classic-leagues.css — #CLASSIC-PAGES-1014
+   I gruppi per lega delle pagine sport (ClassicLeagueGroups). Stessi toni del
+   gruppo della Home (.brc-group): intestazione su --am-panel-2, niente cornici,
+   la separazione la fanno i fondi e lo spazio. Il foglio è suo, non quello
+   della lobby: la pagina sport si raggiunge anche senza che la Home classic
+   sia mai stata montata. */
+
+.clg { display: flex; flex-direction: column; gap: var(--am-s-2); min-width: 0; }
+.clg > .br-quota { margin-bottom: var(--am-s-2); }
+
+.clg-g { display: flex; flex-direction: column; min-width: 0; }
+/* un gruppo aperto si stacca dal prossimo con lo spazio, non con una riga */
+.clg-g[data-open="true"] { padding-bottom: var(--am-s-5); }
+.clg-g__h { margin: 0; font-size: inherit; font-weight: inherit; }
+.clg-g__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-height: 56px;
+  padding: 10px var(--am-s-4);
+  border: 0;
+  border-radius: 10px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  text-align: left;
+  cursor: pointer;
+}
+.clg-g__toggle:hover { background: var(--am-panel-3); }
+.clg-g__toggle:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.clg-g[data-open="true"] .clg-g__toggle { margin-bottom: var(--am-s-4); }
+.clg-g__titles { display: flex; align-items: baseline; gap: var(--am-s-3); min-width: 0; }
+/* la lega nel volto dei titoli (Fira Sans Condensed sotto il flag): è la voce
+   della pagina, le schede dentro parlano in Plex */
+.clg-g__name {
+  font-family: var(--am-font-display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clg-g__meta { font-family: var(--am-font-ui); font-size: 13px; color: var(--am-muted); white-space: nowrap; }
+.clg-g__counts { margin-left: auto; display: inline-flex; align-items: center; gap: var(--am-s-4); flex: none; }
+.clg-g__n { font-family: var(--am-font-num); font-size: 13px; font-weight: 500; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
+.clg-live { display: inline-flex; align-items: center; gap: 6px; font-family: var(--am-font-num); font-size: 12px; font-weight: 600; color: var(--am-live); }
+.clg-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.clg-g__chev { flex: none; color: var(--am-muted); transition: transform 160ms ease; }
+.clg-g[data-open="false"] .clg-g__chev { transform: rotate(-90deg); }
+
+.clg-g__body { display: grid; gap: var(--am-s-4); }
+/* la griglia: colonne da 300 px (quattro a 1440), le schede della fila alla
+   stessa altezza — le stesse misure della griglia della Home */
+.clg-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--am-s-4);
+}
+.clg-cards > li { display: flex; min-width: 0; }
+.clg-cards > li > * { flex: 1; min-width: 0; }
+.clg-more {
+  justify-self: center;
+  min-height: 36px;
+  padding: 0 var(--am-s-4);
+  border: 0;
+  border-radius: 8px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.clg-more:hover { background: var(--am-panel-3); }
+.clg-more:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+
+/* ── telefono: l'intestazione a tutta larghezza, le schede in swipe ─────── */
+@media (max-width: 640px) {
+  .clg-g__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
+  .clg-g__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .clg-g__name { font-size: 18px; white-space: normal; }
+  .clg-g__counts { gap: var(--am-s-3); }
+  /* un carosello che sborda nei margini della pagina: il bordo tagliato della
+     seconda scheda dice «si scorre» (stessa misura del carosello della Home) */
+  .clg-cards {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 92%;
+    gap: var(--am-s-3);
+    margin-inline: calc(-1 * var(--am-s-3));
+    padding: 0 var(--am-s-3) var(--am-s-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--am-s-3);
+    scrollbar-width: none;
+  }
+  .clg-cards::-webkit-scrollbar { display: none; }
+  .clg-cards > li { scroll-snap-align: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clg-g__chev { transition: none; }
+}
+
+/* ── il banner di casa fra le leghe (#CLASSIC-PAGES-1014, Andrea 14/10) ──────
+   UNO per pagina, in una riga sua a tutta larghezza (la larghezza della colonna
+   delle leghe, quindi lo stesso gutter delle intestazioni). È lo stesso tile del
+   creativo cotto della griglia (#RESTYLING-0921 · HouseBanner inGrid,
+   `.hb-cr-baked`: un link con l'immagine, la × per chiuderlo).
+
+   IL FORMATO. I creativi esistono solo 16:9 (1120×630, headline/logo/«18+»
+   cotti dal 15% al 90%): stirati a tutta riga a 1440 sarebbero alti ~770 px,
+   ritagliati in fascia perderebbero il testo. Quindi la FASCIA è larga quanto
+   la riga e alta quanto una scheda (~272 px), il creativo ci sta INTERO a
+   sinistra (dove partono le schede), e il resto della fascia è lo stesso
+   stadio del creativo, sfocato e scurito — continuazione dell'immagine, non un
+   colore inventato. Quando ci sarà un formato largo (≈5:1) basta togliere il
+   fondo e dare all'immagine `width: 100%`. Sul telefono la fascia non serve:
+   il 16:9 intero a tutta larghezza è già la misura giusta. */
+.clg-ad {
+  --clg-ad-h: 272px;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-width: 0;
+  height: var(--clg-ad-h);
+  margin-bottom: var(--am-s-5);
+  border-radius: 10px;
+  background: var(--am-panel-2);
+}
+.clg-ad::before {
+  content: "";
+  position: absolute;
+  inset: -48px;
+  z-index: -1;
+  background: var(--clg-ad-bg, none) center / cover no-repeat;
+  /* scuro e spento: è una superficie, non una seconda immagine che chiede
+     attenzione accanto al creativo */
+  filter: blur(32px) brightness(0.36) saturate(0.85);
+}
+/* stessa aria sopra e sotto: un gruppo aperto ha già il suo padding-bottom,
+   uno chiuso no — senza questo il banner si incollerebbe all'intestazione */
+.clg-g[data-open="false"] + .clg-ad { margin-top: var(--am-s-5); }
+/* chiuso con la × (HouseBanner rende null): via anche la fascia, niente buco */
+.clg-ad:not(:has(.house-banner)) { display: none; }
+/* #CLASSIC-COVERAGE-1014 — la fascia era larga come la lista e il creativo (16:9,
+   272 di altezza = 484 di larghezza) ne occupava un terzo, con il resto di
+   sfocato: sembrava un banner rotto. La fascia ora è larga quanto il creativo,
+   centrata fra le leghe; il fondo sfocato non serve più. */
+.clg-ad:has(.hb-cr-baked) { width: fit-content; max-width: 100%; margin-inline: auto; }
+.clg-ad:has(.hb-cr-baked)::before { content: none; }
+.clg-ad .house-banner.hb-cr-baked {
+  position: static;
+  display: block;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.clg-ad .house-banner.hb-cr-baked > a { display: block; height: 100%; }
+.clg-ad .house-banner.hb-cr-baked .hb-cr-img { display: block; width: 100%; height: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+/* la × resta quella del creativo (scrim .72 di globals, ≥5.5:1), ancorata
+   all'angolo in alto a destra della FASCIA: lontana dalla headline e dal «18+».
+   `absolute` anche sotto i 640px, dove mobile.css la rimette in flusso
+   (`position: relative` per l'area da 44px) e finirebbe sotto l'immagine. */
+.clg-ad .house-banner.hb-cr-baked .hb-x { position: absolute; }
+@media (max-width: 640px) {
+  .clg-ad { height: auto; background: none; }
+  .clg-ad::before { content: none; }
+  .clg-ad .house-banner.hb-cr-baked { position: relative; width: 100%; height: auto; }
+  .clg-ad .house-banner.hb-cr-baked > a { height: auto; }
+  .clg-ad .house-banner.hb-cr-baked .hb-cr-img { height: auto; }
+}

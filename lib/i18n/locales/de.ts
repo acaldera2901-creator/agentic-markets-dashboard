@@ -22,7 +22,7 @@ const de: Record<string, string> = {
   auth_name_label: "Name", auth_name_placeholder: "Dein Name",
   auth_not_found: "Profil nicht gefunden. Erstelle ein Kundenprofil, um fortzufahren.",
   auth_create_btn: "Weiter zu den Tarifen",
-  auth_footer: "BetRedge Pro ist ausschließlich per Krypto zahlbar. Prognosedaten bleiben gesperrt, bis der Tarif aktiv ist.",
+  auth_footer: "BetRedge Pro zahlst du per Karte (ein Abo, das sich jeden Monat oder jedes Jahr verlängert, bis du es kündigst) oder in Krypto (Einmalzahlung, 30 Tage, keine Verlängerung). Prognosedaten bleiben gesperrt, bis der Tarif aktiv ist.",
   auth_pw_placeholder_new: "Mindestens 8 Zeichen",
   auth_err_wrongpw: "Falsche E-Mail oder falsches Passwort.", auth_err_noaccount: "Kein Konto für diese E-Mail. Registriere dich.",
   auth_err_exists: "Konto existiert bereits — melde dich an.", auth_err_founder: "Dieses Profil erfordert Founder-Zugang.",

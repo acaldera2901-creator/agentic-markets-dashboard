@@ -139,5 +139,11 @@ export type FaqLang = keyof typeof HOME_FAQ;
 
 /** Lingue senza traduzione propria ricadono su EN (stessa regola della copy v3). */
 export function homeFaq(lang: string): readonly FaqItem[] {
-  return (Object.hasOwn(HOME_FAQ, lang) ? HOME_FAQ[lang as FaqLang] : HOME_FAQ.en);
+  // #CLASSIC-INT-1008 — a flag acceso tre risposte cambiano (lib/classic/home-faq.ts).
+  // #CLASSIC-PARITY-1008 — `require` nel ramo del flag, in un'espressione: a
+  // flag spento il ramo è morto e la funzione resta quella di main.
+  return __CLASSIC_BUILD__
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    ? (require("@/lib/classic/home-faq") as typeof import("@/lib/classic/home-faq")).homeFaqClassic(lang)
+    : (Object.hasOwn(HOME_FAQ, lang) ? HOME_FAQ[lang as FaqLang] : HOME_FAQ.en);
 }

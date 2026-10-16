@@ -29,6 +29,7 @@ npx vitest run \
   lib/paygate-settle.test.ts \
   lib/email-sender-split.test.ts \
   lib/classic-tracking-overlay.test.tsx \
+  components/classic/ClassicLobby.test.tsx \
   components/CookiePreferences.test.tsx \
   components/CookieBanner.test.tsx \
   components/PageViewTracker.test.tsx \

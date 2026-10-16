@@ -39,6 +39,17 @@ import { IconArrow, IconCheck, IconClock, IconEdge, IconLock, IconStar } from "@
 import { EDGE_HIGH_PP, formatPct, splitLiveScore, type PredictionCardData } from "@/lib/ui/prediction-card";
 import type { Lang } from "@/lib/house-banners";
 
+// #CLASSIC-CARD-1008 — a flag di build acceso, la scheda Slab (stesse props).
+// #CLASSIC-PARITY-1008 — `require` dentro un'espressione sul flag scritto per
+// esteso, non un import in testa: a flag spento il bundler non lo segue, il
+// minificatore toglie il ramo e il modulo resta quello di main (l'import
+// statico portava la Slab e i suoi moduli nel chunk di ogni pagina con una
+// card). Il flag è `__CLASSIC_BUILD__` (lib/classic/build-flag.d.ts).
+const ClassicSlab = __CLASSIC_BUILD__
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? (require("@/components/classic/ClassicSlab") as typeof import("@/components/classic/ClassicSlab")).ClassicSlab
+  : null;
+
 function pick5<T>(lang: Lang, v: { it: T; en: T; es: T; fr: T; ru: T }): T {
   return v[lang];
 }
@@ -123,6 +134,9 @@ function deriveBadge(data: PredictionCardData, variant: PredictionCardVariant): 
 }
 
 export function PredictionCard({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, extra, media, className, lang = "en", included }: PredictionCardProps) {
+  if (ClassicSlab) {
+    return <ClassicSlab data={data} variant={variant} href={href} badge={badge} saved={saved} onToggleWatchlist={onToggleWatchlist} onOpen={onOpen} extra={extra} media={media} className={className} lang={lang} included={included} />;
+  }
   const locked = variant === "premiumLocked" || data.locked === true;
   // Una card chiusa non è mai «inclusa», qualunque cosa dica il chiamante.
   const inc = !!included && !locked;
