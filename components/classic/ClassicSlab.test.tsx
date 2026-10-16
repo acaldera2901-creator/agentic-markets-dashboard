@@ -26,6 +26,15 @@ function mount(d: PredictionCardData, blocked = false) {
 }
 
 describe("ClassicSlab (round 2)", () => {
+  it("uses a discreet FREE badge only for included, unlocked Free picks", () => {
+    const { rerender } = render(<ClassicPricesProvider freePlan fpOdds={{}} booksBlocked geoCountry="" tz="UTC" tennisComputedAt={null}><ClassicSlab data={data()} included href="/m/1" /></ClassicPricesProvider>);
+    expect(screen.getByTestId("card-included")).toHaveTextContent("FREE");
+    rerender(<ClassicPricesProvider freePlan fpOdds={{}} booksBlocked geoCountry="" tz="UTC" tennisComputedAt={null}><ClassicSlab data={data({ locked: true })} included href="/m/1" /></ClassicPricesProvider>);
+    expect(screen.queryByTestId("card-included")).toBeNull();
+    rerender(<ClassicPricesProvider freePlan={false} fpOdds={{}} booksBlocked geoCountry="" tz="UTC" tennisComputedAt={null}><ClassicSlab data={data()} href="/m/1" /></ClassicPricesProvider>);
+    expect(screen.queryByText("FREE")).toBeNull();
+    expect(screen.getByRole("link", { name: /View analysis/ })).toBeInTheDocument();
+  });
   it("fallbackPartners: nothing when the geo is blocked; at least three partners otherwise, sportsbooks first", () => {
     expect(fallbackPartners({ booksBlocked: true, geoCountry: "DE" })).toEqual([]);
     const list = fallbackPartners({ booksBlocked: false, geoCountry: "DE" });

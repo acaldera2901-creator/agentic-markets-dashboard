@@ -11702,7 +11702,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // `return desk`, che il minificatore riporta al `return (…)` di main.
   if (process.env.NEXT_PUBLIC_CLASSIC === "1") {
     return (
-      <CL.ClassicPricesScope enabled fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt} footballOldestAt={predOldest![0]} boardLoading={predLoading || tennisLoading} onQueryChange={setLobbyQuery}>
+      <CL.ClassicPricesScope enabled freePlan={hasSession && clientProfile?.plan === "free"} fpOdds={fpOdds} booksBlocked={booksBlocked} geoCountry={geoCountry} tz={userTz} tennisComputedAt={tennisComputedAt} footballOldestAt={predOldest![0]} boardLoading={predLoading || tennisLoading} onQueryChange={setLobbyQuery}>
         {desk}
       </CL.ClassicPricesScope>
     );

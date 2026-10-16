@@ -235,7 +235,7 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
         {inc && (
           <span className="cl-tag" data-kind="included" data-testid="card-included" data-borrowed={borrowed || undefined}>
             <IconCheck size={10} stroke={2.5} />
-            {borrowed ? c.inQuota : c.includedToday}
+            {prices.freePlan ? "FREE" : borrowed ? c.inQuota : c.includedToday}
           </span>
         )}
         {onToggleWatchlist && <span className="cl-watch"><WatchlistButton saved={!!saved} onToggle={onToggleWatchlist} /></span>}

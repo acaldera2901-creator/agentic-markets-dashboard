@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
 import { ClassicLobby } from "./ClassicLobby";
+import { ClassicPricesProvider } from "./ClassicContext";
 import { trackEvent } from "@/lib/track-event";
 import type { LobbyItem } from "@/lib/ui/lobby";
 
@@ -30,20 +31,37 @@ const football = [
 ];
 const tennis = [item({ sport: "tennis", league: "ATP Tokyo", startsAt: h(0.5) })];
 
-function setup(extra: Partial<React.ComponentProps<typeof ClassicLobby>> = {}) {
+function setup(extra: Partial<React.ComponentProps<typeof ClassicLobby>> = {}, freePlan = false) {
   const renderCard = vi.fn((it: LobbyItem, section: string) => <article data-section={section}>{it.data.home} – {it.data.away}</article>);
   render(
-    <ClassicLobby
+    <ClassicPricesProvider freePlan={freePlan} fpOdds={{}} booksBlocked geoCountry="" tz="UTC" tennisComputedAt={null}><ClassicLobby
       lang="en" tz="Europe/Rome" football={football} tennis={tennis} now={NOW} renderCard={renderCard}
       banners={{ board: { href: "/predictions?sport=football" }, live: { href: "/predictions?view=live" }, record: { href: "/history" } }}
       tail={<p>FAQ tail</p>}
       {...extra}
-    />,
+    /></ClassicPricesProvider>,
   );
   return { renderCard };
 }
 
 describe("ClassicLobby", () => {
+  it.each([true, false])("mixed discovery for Free=%s preserves sport filters and plan-specific copy", (freePlan) => {
+    const f = Array.from({ length: 6 }, (_, i) => item({ league: "Serie A", home: `Football ${i}`, locked: freePlan && i >= 3 }));
+    const t = Array.from({ length: 6 }, (_, i) => item({ sport: "tennis", league: "ATP Tokyo", home: `Tennis ${["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"][i]}`, locked: freePlan && i >= 3 }));
+    setup({ football: f, tennis: t }, freePlan);
+    const rail = screen.getByTestId("classic-featured");
+    const cards = within(rail).getAllByRole("article");
+    expect(cards.slice(0, 3).map(c => c.textContent?.split(" – ")[0])).toEqual(["Tennis Alpha", "Tennis Beta", "Football 0"]);
+    if (freePlan) {
+      expect(screen.getByText(/Up to 3 tennis and 3 football/)).toBeInTheDocument();
+      expect(cards.slice(0, 6).map(c => c.textContent?.split(" – ")[0]).sort()).toEqual(["Football 0", "Football 1", "Football 2", "Tennis Alpha", "Tennis Beta", "Tennis Gamma"]);
+    } else {
+      expect(screen.queryByText(/Up to 3 tennis and 3 football/)).toBeNull();
+      expect(cards).toHaveLength(10);
+    }
+    fireEvent.click(within(screen.getByRole("group", { name: "Sports" })).getByRole("button", { name: /Football/i }));
+    expect(within(screen.getByTestId("classic-featured")).getAllByRole("article").every(c => c.textContent?.startsWith("Football"))).toBe(true);
+  });
   it("tracks tab and sport choices while keeping their selection behavior", () => {
     vi.mocked(trackEvent).mockClear();
     setup();
