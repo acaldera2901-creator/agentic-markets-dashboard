@@ -175,30 +175,30 @@ export async function POST(req: Request) {
   // una vendita è recuperabile, concedere due volte lo stesso pagamento no.
   const addressKey = deposit.addressIn.toLowerCase();
   try {
-    const claimed = await dbQueryStrict<{ address: string }>(
+    // #CRYPTO-409-1016: la RPC exec_sql NON restituisce le righe di un RETURNING
+    // (stesso vincolo noto in lib/plan-grant.ts e app/api/paygate/checkout). Il
+    // vecchio `INSERT … RETURNING` tornava SEMPRE [] → ogni checkout crypto finiva
+    // in 409 mentre la riga del registro veniva scritta. Il gate resta la PRIMARY
+    // KEY: l'INSERT con ON CONFLICT DO NOTHING lascia entrare un solo ordine per
+    // indirizzo; poi si rilegge il proprietario. Due checkout concorrenti leggono
+    // lo stesso vincitore, quindi ne procede uno solo. Errore su una delle due
+    // chiamate → catch sotto → 500 fail-closed, nessun ordine.
+    await dbExecute(
       `INSERT INTO crypto_deposit_addresses (address, order_id, order_kind, coin)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (address) DO NOTHING
-       RETURNING address`,
+       ON CONFLICT (address) DO NOTHING`,
       [addressKey, orderId, purchase.kind === "weekly" ? "weekly" : "plan", coin.id]
     );
-    // Zero righe = la ON CONFLICT ha scartato l'INSERT, cioè l'indirizzo era già
-    // di qualcun altro. È un gate atomico: due checkout concorrenti sullo stesso
-    // indirizzo lo attraversano uno solo, senza SELECT-poi-INSERT.
-    if (claimed.length === 0) {
-      // #CRYPTO-409-1016 diagnostica: chi possiede l'indirizzo. Best-effort, non
-      // cambia l'esito (409 resta 409): serve a distinguere un riuso vero di
-      // PayGate da un falso conflitto.
-      const owner = await dbQueryStrict<{ order_id: string; order_kind: string; coin: string | null; created_at: string }>(
-        "SELECT order_id, order_kind, coin, created_at FROM crypto_deposit_addresses WHERE address = $1",
-        [addressKey]
-      ).catch(() => []);
+    const owner = await dbQueryStrict<{ order_id: string; order_kind: string; coin: string | null; created_at: string }>(
+      "SELECT order_id, order_kind, coin, created_at FROM crypto_deposit_addresses WHERE address = $1",
+      [addressKey]
+    );
+    if (owner[0]?.order_id !== orderId) {
       const o = owner[0];
       console.error(
         `[crypto/checkout] indirizzo di deposito GIÀ REGISTRATO (${addressKey}) coin=${coin.id} — ordine ${orderId} NON creato; ` +
           (o
-            ? `proprietario order=${o.order_id} kind=${o.order_kind} coin=${o.coin} dal ${o.created_at}` +
-              (o.order_id === orderId ? " (= QUESTO ordine: l'INSERT è passato)" : "")
+            ? `proprietario order=${o.order_id} kind=${o.order_kind} coin=${o.coin} dal ${o.created_at}`
             : "proprietario non leggibile")
       );
       return NextResponse.json({ error: "deposit address unavailable" }, { status: 409 });

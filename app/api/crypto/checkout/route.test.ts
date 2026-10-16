@@ -19,6 +19,25 @@ vi.mock("@/lib/crypto-api", () => ({ convertUsdToCoin, coinMinimum, createCrypto
 vi.mock("@/lib/activation", () => ({ siteOrigin: () => "https://www.betredge.com" }));
 vi.mock("@/lib/weekly-pick-server", () => ({ hasWeeklyPickStrict }));
 
+// Registro indirizzi in memoria: PRIMARY KEY su address, ON CONFLICT DO NOTHING.
+type RegRow = { order_id: string; order_kind: string; coin: string | null; created_at: string };
+const registry = new Map<string, RegRow>();
+async function fakeExecute(sql: string, params: unknown[] = []): Promise<unknown[]> {
+  if (sql.includes("INSERT INTO crypto_deposit_addresses")) {
+    const [address, order_id, order_kind, coin] = params as string[];
+    if (!registry.has(address)) registry.set(address, { order_id, order_kind, coin, created_at: "now" });
+  }
+  return []; // exec_sql: nessuna riga da una scrittura, RETURNING compreso
+}
+async function fakeQueryStrict(sql: string, params: unknown[] = []): Promise<unknown[]> {
+  if (/^\s*INSERT|UPDATE|DELETE/i.test(sql)) return fakeExecute(sql, params);
+  if (sql.includes("FROM crypto_deposit_addresses")) {
+    const row = registry.get(String(params[0]));
+    return row ? [row] : [];
+  }
+  return [];
+}
+
 function req(body: unknown) {
   return new Request("https://x/api/crypto/checkout", {
     method: "POST",
@@ -40,9 +59,13 @@ beforeEach(() => {
   coinMinimum.mockResolvedValue(0.665);
   createCryptoDeposit.mockResolvedValue({ addressIn: "0xdeposit", ipnToken: "ipn" });
   hasWeeklyPickStrict.mockResolvedValue(false);
-  // Caso normale: l'indirizzo è nuovo, il registro lo accetta e restituisce la
-  // riga inserita. I casi di conflitto lo ri-mockano a [].
-  dbQueryStrict.mockResolvedValue([{ address: "0xdeposit" }]);
+  // #CRYPTO-409-1016: DB finto con la semantica REALE della RPC exec_sql — le
+  // scritture non restituiscono MAI righe, nemmeno con RETURNING. Il vecchio mock
+  // `[{ address }]` simulava un RETURNING che in produzione non esiste, e così
+  // nascondeva il bug che mandava in 409 ogni checkout crypto.
+  registry.clear();
+  dbExecute.mockImplementation(fakeExecute);
+  dbQueryStrict.mockImplementation(fakeQueryStrict);
 });
 
 it("crea l'ordine con moneta, importo atteso e indirizzo di deposito", async () => {
@@ -220,98 +243,109 @@ it("registra l'indirizzo PRIMA di creare l'ordine, con la chiave in minuscolo", 
   const { POST } = await import("./route");
   expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(200);
 
-  const reg = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("crypto_deposit_addresses"));
-  expect(reg, "il checkout deve passare dal registro").toBeTruthy();
+  const calls = dbExecute.mock.calls.map((c) => String(c[0]));
+  const regIdx = calls.findIndex((q) => q.includes("INSERT INTO crypto_deposit_addresses"));
+  const ordIdx = calls.findIndex((q) => q.includes("INSERT INTO paygate_orders"));
+  expect(regIdx, "il checkout deve passare dal registro").toBeGreaterThanOrEqual(0);
+  expect(regIdx).toBeLessThan(ordIdx);
+  const reg = dbExecute.mock.calls[regIdx];
   // Gli explorer EVM restituiscono lo stesso indirizzo in checksum-case o tutto
   // minuscolo: senza normalizzare, due grafie dello stesso posto passerebbero
   // entrambe il vincolo.
-  expect(reg?.[1]?.[0]).toBe("0xabcdef");
-  expect(reg?.[1]?.[2]).toBe("plan");
-  // ON CONFLICT DO NOTHING + RETURNING = gate atomico, non SELECT-poi-INSERT.
-  expect(String(reg?.[0])).toMatch(/ON CONFLICT \(address\) DO NOTHING/);
-  expect(String(reg?.[0])).toMatch(/RETURNING address/);
+  expect(reg[1][0]).toBe("0xabcdef");
+  expect(reg[1][2]).toBe("plan");
+  expect(String(reg[0])).toMatch(/ON CONFLICT \(address\) DO NOTHING/);
+  // exec_sql non restituisce RETURNING: affidarcisi è il bug #CRYPTO-409-1016.
+  expect(String(reg[0])).not.toMatch(/RETURNING/);
 });
 
 it("weekly: il registro riceve order_kind 'weekly' — è l'altra metà del vincolo", async () => {
   const { POST } = await import("./route");
   expect((await POST(req({ requested_plan: "weekly", coin: "polygon-usdc" }))).status).toBe(200);
-  const reg = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("crypto_deposit_addresses"));
+  const reg = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO crypto_deposit_addresses"));
   expect(reg?.[1]?.[2]).toBe("weekly");
+});
+
+const orderInserts = () =>
+  dbExecute.mock.calls.filter((c) => /INSERT INTO (paygate_orders|weekly_pick_orders)/.test(String(c[0])));
+
+// #CRYPTO-409-1016 — il caso che in produzione falliva SEMPRE: indirizzo nuovo,
+// l'INSERT passa ma (come exec_sql reale) non restituisce righe.
+it("caso felice con la semantica reale di exec_sql: INSERT [] + SELECT proprio ordine → 200", async () => {
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  expect(res.status).toBe(200);
+  const body = await res.json();
+  expect(registry.get("0xdeposit")?.order_id).toBe(body.order);
+  expect(orderInserts()).toHaveLength(1);
+  expect(log.mock.calls.map((c) => String(c[0])).find((s) => s.includes("[crypto/checkout] OK"))).toContain("address=0xdeposit");
+  log.mockRestore();
 });
 
 // Il caso che la UNIQUE parziale "solo pending" NON copre: l'indirizzo è già
 // stato usato (anche da un ordine ormai pagato e chiuso). Senza gate, il nuovo
 // ordine nascerebbe saldato dalla transazione vecchia.
-it("409 e NESSUN ordine creato se l'indirizzo è già registrato", async () => {
-  dbQueryStrict.mockResolvedValue([]); // ON CONFLICT ha scartato l'INSERT
+it("409 e NESSUN ordine creato se l'indirizzo è di un altro ordine; il log dice moneta e proprietario", async () => {
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
+  registry.set("0xdeposit", { order_id: "old-order", order_kind: "plan", coin: "polygon-usdc", created_at: "2026-07-29" });
   const { POST } = await import("./route");
   const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
   expect(res.status).toBe(409);
   expect(await res.json()).toMatchObject({ error: "deposit address unavailable" });
-  expect(dbExecute).not.toHaveBeenCalled();
-});
-
-it("409 anche sul rail weekly: nessun ordine su un indirizzo già preso", async () => {
-  dbQueryStrict.mockResolvedValue([]);
-  const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "weekly", coin: "polygon-usdc" }))).status).toBe(409);
-  expect(dbExecute).not.toHaveBeenCalled();
-});
-
-// Fail-closed: se il registro non risponde non sappiamo se l'indirizzo è libero.
-// Fallire una vendita è recuperabile, concedere due volte lo stesso pagamento no.
-it("500 fail-closed se il registro non è raggiungibile, senza creare l'ordine", async () => {
-  dbQueryStrict.mockRejectedValue(new Error("db down"));
-  const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
-  expect(dbExecute).not.toHaveBeenCalled();
-});
-
-// #CRYPTO-409-1016 diagnostica: il 409 deve dire moneta e proprietario
-// dell'indirizzo, così un riuso vero di PayGate si distingue da un falso conflitto.
-it("409: il log dice moneta e proprietario dell'indirizzo, l'esito non cambia", async () => {
-  const err = vi.spyOn(console, "error").mockImplementation(() => {});
-  dbQueryStrict
-    .mockResolvedValueOnce([]) // INSERT … ON CONFLICT DO NOTHING
-    .mockResolvedValueOnce([{ order_id: "old-order", order_kind: "plan", coin: "polygon-usdc", created_at: "2026-07-29" }]);
-  const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
-  expect(res.status).toBe(409);
-  expect(dbExecute).not.toHaveBeenCalled();
+  expect(orderInserts()).toHaveLength(0);
+  expect(registry.get("0xdeposit")?.order_id).toBe("old-order"); // il registro non si sovrascrive
   const line = err.mock.calls.map((c) => String(c[0])).find((s) => s.includes("GIÀ REGISTRATO"));
   expect(line).toContain("coin=polygon-usdc");
   expect(line).toContain("proprietario order=old-order kind=plan");
-  expect(line).not.toContain("QUESTO ordine");
   err.mockRestore();
 });
 
-it("409: se il proprietario è l'ordine stesso il log lo dice (falso conflitto)", async () => {
-  const err = vi.spyOn(console, "error").mockImplementation(() => {});
-  let insertedOrder = "";
-  dbQueryStrict.mockImplementation(async (sql: string, params: unknown[]) => {
-    if (sql.includes("INSERT INTO crypto_deposit_addresses")) { insertedOrder = String(params[1]); return []; }
-    return [{ order_id: insertedOrder, order_kind: "plan", coin: "polygon-usdc", created_at: "now" }];
-  });
+it("409 anche sul rail weekly: nessun ordine su un indirizzo già preso", async () => {
+  registry.set("0xdeposit", { order_id: "old-order", order_kind: "plan", coin: "polygon-usdc", created_at: "x" });
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(409);
-  const line = err.mock.calls.map((c) => String(c[0])).find((s) => s.includes("GIÀ REGISTRATO"));
-  expect(line).toContain("(= QUESTO ordine");
-  err.mockRestore();
+  expect((await POST(req({ requested_plan: "weekly", coin: "polygon-usdc" }))).status).toBe(409);
+  expect(orderInserts()).toHaveLength(0);
 });
 
-it("409: owner illeggibile non rompe la risposta", async () => {
+it("409 se il proprietario non è leggibile (riga assente dopo l'INSERT)", async () => {
   const err = vi.spyOn(console, "error").mockImplementation(() => {});
-  dbQueryStrict.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error("db hiccup"));
+  dbQueryStrict.mockResolvedValue([]);
   const { POST } = await import("./route");
   expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(409);
+  expect(orderInserts()).toHaveLength(0);
   expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toContain("proprietario non leggibile");
   err.mockRestore();
 });
 
-it("il log di successo riporta l'indirizzo di deposito", async () => {
-  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+// Fail-closed: se il registro non risponde non sappiamo se l'indirizzo è libero.
+// Fallire una vendita è recuperabile, concedere due volte lo stesso pagamento no.
+it("500 fail-closed se l'INSERT nel registro fallisce, senza creare l'ordine", async () => {
+  dbExecute.mockRejectedValue(new Error("db down"));
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(200);
-  expect(log.mock.calls.map((c) => String(c[0])).find((s) => s.includes("[crypto/checkout] OK"))).toContain("address=0xdeposit");
-  log.mockRestore();
+  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
+  // L'unica scrittura tentata è l'INSERT del registro, rifiutata: nessun ordine.
+  expect(dbExecute).toHaveBeenCalledTimes(1);
+  expect(orderInserts()).toHaveLength(0);
+});
+
+it("500 fail-closed se la rilettura del proprietario fallisce, senza creare l'ordine", async () => {
+  dbQueryStrict.mockRejectedValue(new Error("db down"));
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
+  expect(orderInserts()).toHaveLength(0);
+});
+
+it("due checkout concorrenti sullo stesso indirizzo: ne passa uno solo", async () => {
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
+  const { POST } = await import("./route");
+  const [a, b] = await Promise.all([
+    POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" })),
+    POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" })),
+  ]);
+  expect([a.status, b.status].sort()).toEqual([200, 409]);
+  expect(orderInserts()).toHaveLength(1);
+  const winner = (await (a.status === 200 ? a : b).json()).order;
+  expect(registry.get("0xdeposit")?.order_id).toBe(winner);
+  err.mockRestore();
 });
