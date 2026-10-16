@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ClassicChrome from "@/components/classic/ClassicChrome";
 import { LEGAL_ENTITY } from "@/lib/legal-entity";
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function TermsPage() {
     <div className="min-h-screen font-mono mc-scene-clay" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-muted)" }}>
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
+      <ClassicChrome />
       <div className="legal-sheet max-w-2xl mx-auto my-10 px-7 py-11 space-y-8">
         <div className="space-y-2">
           <Link href="/" className="text-[10px] text-[var(--am-muted-2)] hover:text-[var(--am-coral)] uppercase tracking-wider">

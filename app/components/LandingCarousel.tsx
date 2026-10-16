@@ -22,6 +22,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CLASSIC } from "@/lib/classic/flag";
 import { copyFor, ctaLabelFor, HOUSE_CAMPAIGNS, type HouseCampaign, type Lang } from "@/lib/house-banners";
 
 const AUTOPLAY_MS = 3500;
@@ -97,9 +98,26 @@ const SLIDES: Slide[] = SLIDE_DEFS.flatMap((d): Slide[] => {
   return campaign ? [{ ...d, campaign }] : [];
 });
 
+// #CLASSIC-COVERAGE-1014 — i sei creativi hanno il testo in inglese cotto nei
+// pixel: su una pagina in italiano (es/fr/ru) erano l'unica scritta in un'altra
+// lingua. A flag acceso, fuori dall'inglese il carosello mostra le slide a testo
+// (foto + copy tradotta da lib/house-banners.ts, la stessa dei banner di casa).
+// Non servono asset nuovi: le foto sono già in /public/banners. In inglese
+// resta il carosello dei creativi.
+const TEXT_SLIDE_DEFS: OverlayDef[] = [
+  { kind: "overlay", campaignId: "landing-brand", img: "/banners/football-pitch.jpg", imgAlt: "Football pitch under floodlights" },
+  { kind: "overlay", campaignId: "top-anon", img: "/banners/tennis-player.jpg", imgAlt: "Tennis player serving" },
+  { kind: "overlay", campaignId: "feed-edge", img: "/banners/football-action.jpg", imgAlt: "Footballer striking the ball" },
+];
+const TEXT_SLIDES: Slide[] = TEXT_SLIDE_DEFS.flatMap((d): Slide[] => {
+  const campaign = HOUSE_CAMPAIGNS.find((c) => c.id === d.campaignId);
+  return campaign ? [{ ...d, campaign }] : [];
+});
+
 export default function LandingCarousel({ lang }: { lang: string }) {
   const L = asLang(lang);
-  const total = SLIDES.length;
+  const slides: Slide[] = CLASSIC && L !== "en" && TEXT_SLIDES.length ? TEXT_SLIDES : SLIDES;
+  const total = slides.length;
   const [perView, setPerView] = useState(1); // SSR-safe: 1; corretto al mount
   const [idx, setIdx] = useState(0);
   const reduceRef = useRef(false);
@@ -199,7 +217,7 @@ export default function LandingCarousel({ lang }: { lang: string }) {
               ["--lp-per-view" as string]: String(perView),
             }}
           >
-            {SLIDES.map((s, i) => {
+            {slides.map((s, i) => {
               // Visibile = nel range [idx, idx+perView). Le altre sono fuori
               // schermo → fuori dal flusso di tabulazione (aria-hidden/inert-like).
               const visible = i >= idx && i < idx + perView;

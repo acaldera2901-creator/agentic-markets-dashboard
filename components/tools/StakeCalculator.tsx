@@ -27,7 +27,7 @@ export function StakeCalculator({ copy, dash }: { copy: ToolCopy; dash: string }
   // subito il caso di cui parla il testo.
   const [odds, setOdds] = useState("2.50");
   const [target, setTarget] = useState("100");
-  const [bankroll, setBankroll] = useState("1000");
+  const [bankroll, setBankroll] = useState(__CLASSIC_BUILD__ ? "" : "1000"); // #CLASSIC-CARD-1008: nessuna cassa di default
 
   const result = useMemo(() => {
     const decimal = parseOdds(odds, "decimal");

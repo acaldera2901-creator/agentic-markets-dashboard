@@ -1,0 +1,819 @@
+/* components/classic/classic-lobby.css — filone «classic», lobby (#CLASSIC-LOBBY-1008)
+ *
+ * Tutto sotto il prefisso `brc-` (cercato con grep l'8/10: zero usi altrove),
+ * importato SOLO da ClassicLobby.tsx, che si monta solo a flag acceso.
+ *
+ * Regola del filone: NESSUNA CORNICE. Niente border, niente box-shadow,
+ * niente outline decorativi. I blocchi si separano con:
+ *   - lo spazio (8 dentro un gruppo, 16 fra gruppi vicini, 32 fra blocchi);
+ *   - due toni di fondo: pagina `--am-bg` < barra/intestazioni `--am-panel`
+ *     < stato attivo `--am-royal` (il blu vuol dire «sei qui»);
+ *   - la lastra blu della scheda.
+ * L'anello di focus resta: non è una cornice, è accessibilità.
+ *
+ * Accento razionato: il lime è dei NOSTRI numeri (sulla scheda) — qui non
+ * compare mai. Il giallo `--am-live` solo per «live». Il royal solo per lo
+ * stato selezionato.
+ */
+
+.brc-lobby {
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-4);
+  /* round 2 — gli unici vuoti ammessi sono i margini laterali del sito.
+     #CLASSIC-ASSET-1013 round 3 (Andrea, screenshot 14/10): più respiro ai
+     lati — 32 px invece di 16, così CTA della striscia e frecce del carosello
+     non toccano il bordo della pagina. */
+  padding: var(--am-s-4) var(--am-s-6) var(--am-s-5);
+  min-width: 0;
+}
+
+.brc-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.brc-lobby :is(button, a, input):focus-visible {
+  outline: 2px solid var(--am-royal-t);
+  outline-offset: 2px;
+}
+
+/* ── 1 · banner ────────────────────────────────────────────────────────── */
+.brc-banners__row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--am-s-4);
+}
+.brc-banner {
+  position: relative;
+  /* Proporzione FISSA della foto attesa (1200×600): la scatola è la stessa
+     col segnaposto e con l'immagine → nessuno spostamento quando arriva. */
+  aspect-ratio: 2 / 1;
+  border-radius: var(--am-r-card);
+  overflow: hidden;
+  background: #102b63;
+  isolation: isolate;
+}
+.brc-banner__media { position: absolute; inset: 0; display: block; }
+/* Una velatura navy da sinistra: il testo resta leggibile su QUALSIASI foto
+   arrivi nello slot (anche se il soggetto sconfina a sinistra), e sul
+   telefono, dove la colonna di testo occupa più della metà. */
+.brc-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(7,19,41,0.82) 0%, rgba(7,19,41,0.55) 45%, rgba(7,19,41,0) 70%);
+}
+.brc-banner__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: -2;
+  transition: transform 320ms cubic-bezier(.2,.7,.2,1);
+}
+.brc-banner:hover .brc-banner__art { transform: scale(1.03); }
+.brc-banner__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 6px;
+  padding: var(--am-s-4) var(--am-s-5) var(--am-s-4);
+  /* Il testo sta sempre sulla metà scura dell'arte: colori fissi, non del
+     tema (in chiaro il fondo del banner resta navy). */
+  color: #EDEFF2;
+  max-width: 52%;
+}
+/* ── #CLASSIC-INT-1008 · le foto approvate ─────────────────────────────────
+   Foto 16:9 (soggetto fra il 48 e l'80% della larghezza) in una scatola 2:1
+   (16:10 sul telefono), `cover` al centro: provato sui ritagli in
+   redesign/classic/banners/_check. Il testo HTML sta nel 40% sinistro, su un
+   velo navy che non arriva al soggetto. Se la foto non arriva, il ripiego
+   SVG (ClassicBanners) prende il suo posto e la scatola perde [data-photo]. */
+.brc-banner[data-photo] .brc-banner__text { max-width: 40%; }
+/* nel 40% il titolo grande andava su tre righe e toccava il bordo alto (1440):
+   la misura del brief banner, clamp(20, 2vw, 26) */
+.brc-banner[data-photo] .brc-banner__title { font-size: clamp(20px, 2vw, 26px); }
+/* #CLASSIC-ROOBET-1013 — con Fira Sans Condensed in tondo (più largo dell'Anton
+   maiuscolo) il titolo nel 40% andava su quattro righe e usciva dalla scatola
+   a 1440: un corpo in meno e il sottotitolo a tre righe. */
+html[data-frames="off"] .brc-banner[data-photo] .brc-banner__title { font-size: clamp(17px, 1.45vw, 21px); line-height: 1.08; }
+html[data-frames="off"] .brc-banner[data-photo] .brc-banner__sub { -webkit-line-clamp: 3; }
+html[data-frames="off"] .brc-banner__title { text-transform: none; font-weight: 700; letter-spacing: -0.01em; line-height: 1.08; }
+/* con Plex la CTA «Vedi le partite live →» misura 151 px nel 40% (143) a 1440:
+   può andare a capo; i due link del banner «record» stanno in 22 px di riga */
+html[data-frames="off"] .brc-banner__cta { white-space: normal; }
+html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta, .brc-banner__more) { line-height: 22px; }
+/* Le lingue lunghe (russo: Anton non ha il cirillico, ripiega su un font più
+   largo) nel 40% uscivano dall'alto della scatola, titolo compreso. Il
+   sottotitolo si ferma a 4 righe (3 sul telefono), i due link stanno sulla stessa riga quando
+   c'è posto, e se proprio non basta il blocco si allinea in alto (`safe`):
+   si perde la coda, mai il titolo. */
+.brc-banner[data-photo] .brc-banner__text { justify-content: safe flex-end; }
+.brc-banner[data-photo] .brc-banner__sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  /* #CLASSIC-FIX2-1008 (QA M3) — nella colonna flessibile il sottotitolo si
+     schiacciava sotto i link (russo e spagnolo «record»: tagliato a metà riga,
+     senza puntini). Non si restringe: i testi sono corti apposta (lobby-copy). */
+  flex-shrink: 0;
+}
+/* la freccia non va a capo da sola */
+.brc-banner__cta, .brc-banner__more { white-space: nowrap; }
+.brc-banner[data-photo]::before {
+  background: linear-gradient(90deg, rgba(7,19,41,0.85) 0%, rgba(7,19,41,0.5) 38%, rgba(7,19,41,0) 55%);
+}
+/* #CLASSIC-INSIEME-1014 — le tre foto v2 (asset-classic-final/banners-v2) hanno
+   lo stesso fondo quasi nero e opaco: il «record» non ha più bisogno del
+   pannello #0D2343 né di `lighten`, e prende lo stesso velo degli altri due. */
+.brc-banner__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-weight: 400;
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.brc-banner__sub {
+  margin: 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  color: #dce8fb;
+}
+.brc-banner__cta {
+  margin-top: 4px;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: #EDEFF2;
+  text-decoration: none;
+  border-radius: var(--am-r-ctl);
+}
+/* Il link si allarga a tutto il banner: si clicca ovunque, ma il nome
+   accessibile resta il verbo del link. */
+.brc-banner__cta::after { content: ""; position: absolute; inset: 0; }
+.brc-banner__cta:hover { text-decoration: underline; text-underline-offset: 3px; }
+.brc-banner:has(.brc-banner__cta:focus-visible) { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.brc-banner__cta:focus-visible { outline: none; }
+.brc-banner__links { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 14px; row-gap: 2px; }
+.brc-banner__links .brc-banner__cta { margin-top: 0; }
+/* con DUE link (banner «record») il primo non si allarga a tutto il banner:
+   coprirebbe il secondo, e i due bersagli si sovrapporrebbero (WCAG 2.5.8) */
+.brc-banner:has(.brc-banner__more) .brc-banner__cta::after { display: none; }
+.brc-banner:has(.brc-banner__more) .brc-banner__cta { display: inline-block; line-height: 24px; }
+/* il secondo link sta SOPRA il ::after del primo (che copre tutto il banner) */
+.brc-banner__more {
+  position: relative;
+  z-index: 1;
+  /* bersaglio ≥ 24 px (WCAG 2.5.8): accanto al link che copre tutto il banner */
+  display: inline-block;
+  line-height: 24px;
+  font-family: var(--am-font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: #dce8fb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: var(--am-r-ctl);
+}
+.brc-banner__more:hover { color: #EDEFF2; }
+
+/* ── 1b · lo stile dei banner di casa (#CLASSIC-BANNER-1014, Andrea 14/10) ──
+   I tre ingressi parlano la lingua dei creativi di casa (#RESTYLING-0921,
+   `public/banners/andrea-picks/*`) che la stessa persona vede fra le leghe:
+   - headline MAIUSCOLA condensata in due toni: crema + l'ultima parola nel
+     giallo→lime del brand, col punto finale (`Headline` in ClassicBanners);
+   - sottotitolo in tondo, chiaro, corto;
+   - UNA CTA a pillola lime con inchiostro scuro e chevron, maiuscola
+     condensata — il lime qui è la CTA (e l'accento della headline, come nei
+     creativi), nient'altro; il secondo link del «record» resta testo;
+   - «18+» piccolo nell'angolo basso a destra;
+   - velo quasi nero da sinistra invece del navy (il fondo dei creativi).
+   Cosa NON si porta: il logo (l'header 60 px sopra lo porta già, tre lockup in
+   fila sarebbero rumore), la × (non è pubblicità: chiuderli toglierebbe gli
+   ingressi), il glow della CTA (regola del filone: niente box-shadow).
+   Colori fissi, non del tema: il banner resta scuro anche in chiaro, e
+   `--am-lime-ink` in chiaro è bianco.
+   Il titolo passa da `.brc-banners`: la regola dei titoli di app/classic.css
+   (`:is(… .am-history .hh h2 …)`) pesa 0,3,2 e arriva dopo — misurato col CDP. */
+html[data-frames="off"] .brc-banners .brc-banner .brc-banner__title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  line-height: 0.96;
+  color: #F4EEDF;
+}
+.brc-banner__accent {
+  background: linear-gradient(90deg, #FFE818 0%, #C8FF00 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* forced-colors / niente clip: torna al lime pieno */
+}
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .brc-banner__accent { background: none; color: #C8FF00; }
+}
+@media (forced-colors: active) { .brc-banner__accent { background: none; color: CanvasText; } }
+.brc-banner__sub { color: #E4E9F2; }
+html[data-frames="off"] .brc-banner .brc-banner__cta,
+.brc-banner .brc-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 28px;
+  margin-top: 4px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: #C8FF00;
+  color: #0B1400;
+  font-family: var(--am-font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 140ms ease;
+}
+.brc-banner .brc-banner__cta:hover { text-decoration: none; background: #D8FF4D; }
+.brc-banner__chev { flex: none; margin-left: 2px; }
+.brc-banner__more .brc-banner__chev { width: 6px; height: 9px; margin-left: 1px; }
+/* il focus della CTA resta quello del banner intero (anello royal) */
+.brc-banner:has(.brc-banner__more) .brc-banner__cta { line-height: 1; }
+html[data-frames="off"] .brc-banner:has(.brc-banner__more) :is(.brc-banner__cta, .brc-banner__more) { line-height: 1; }
+html[data-frames="off"] .brc-banner:has(.brc-banner__more) .brc-banner__more { line-height: 24px; }
+.brc-banner__links { align-items: center; column-gap: 12px; }
+.brc-banner .brc-banner__more { display: inline-flex; align-items: center; white-space: nowrap; color: #E4E9F2; }
+.brc-banner__age {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-family: var(--am-font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(244, 238, 223, 0.78);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+.brc-banner[data-photo]::before {
+  background: linear-gradient(90deg, rgba(4,8,18,0.9) 0%, rgba(4,8,18,0.6) 38%, rgba(4,8,18,0) 55%);
+}
+
+/* ── 2 · tab + ricerca ─────────────────────────────────────────────────── */
+.brc-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--am-s-3);
+  padding: 4px;
+  background: var(--am-panel-2);
+  border-radius: var(--am-r-card);
+  /* Il primo blocco dopo i banner si stacca meno degli altri: la barra e la
+     striscia sport sono UN comando, non due sezioni. */
+  margin-top: var(--am-s-2);
+}
+.brc-tabs {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.brc-tabs::-webkit-scrollbar { display: none; }
+.brc-tab {
+  flex: none;
+  height: 44px;
+  padding: 0 var(--am-s-4);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--am-muted);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.brc-tab:hover { color: var(--am-text); background: var(--am-panel-3); }
+.brc-tab[aria-selected="true"] { background: var(--am-royal); color: #fff; }
+
+.brc-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  flex: 0 1 320px;
+  min-width: 200px;
+  height: 44px;
+  padding: 0 var(--am-s-2) 0 var(--am-s-3);
+  background: var(--am-inset);
+  border-radius: 8px;
+  color: var(--am-muted);
+}
+.brc-search:focus-within { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.brc-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+}
+.brc-search__input::placeholder { color: var(--am-muted-2); }
+.brc-lobby .brc-search__input:focus-visible { outline: none; }
+.brc-search__input::-webkit-search-cancel-button { display: none; }
+.brc-search__clear {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--am-muted);
+  cursor: pointer;
+}
+.brc-search__clear:hover { color: var(--am-text); background: var(--am-panel-2); }
+
+/* ── 3 · striscia sport ────────────────────────────────────────────────── */
+.brc-sports {
+  display: flex;
+  gap: var(--am-s-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* round 3 — il gap di .brc-main è 16: qui 8 netti (barra e striscia sono un
+     comando solo); prima era 0 e i chip sotto sembravano coperti */
+  margin-top: calc(-1 * var(--am-s-2));
+}
+.brc-sports::-webkit-scrollbar { display: none; }
+.brc-sport {
+  flex: none;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--am-s-2);
+  align-items: center;
+  justify-items: start;
+  min-width: 112px;
+  padding: 10px var(--am-s-4) 10px var(--am-s-3);
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--am-muted);
+  cursor: pointer;
+  text-align: left;
+}
+/* #CLASSIC-ASSET-1013 — l'icona è un oggetto 3D con la sua ombra: niente disco
+   sotto (sarebbe una cornice). Lo stato premuto lo dice il fondo del bottone,
+   in royal velato: il royal pieno dei tab resta ai controlli di solo testo —
+   sotto un'icona royal la cancellerebbe. */
+.brc-sport__icon { grid-row: 1 / 3; display: grid; place-items: center; width: 36px; height: 36px; }
+.brc-sport__label { font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; color: var(--am-text); }
+.brc-sport__n { font-family: var(--am-font-num); font-size: 12px; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
+.brc-sport:hover { background: var(--am-panel-2); }
+.brc-sport[aria-pressed="true"] { background: var(--am-royal-dim); }
+.brc-sport[aria-pressed="true"] .brc-sport__n { color: var(--am-muted); }
+.brc-sport .brc-ico { transition: transform 160ms ease; }
+.brc-sport:hover .brc-ico { transform: translateY(-1px); }
+
+/* le icone 3D (ClassicIcon): PNG trasparente, misura dal chiamante, mai stirate */
+.brc-ico { display: block; flex: none; object-fit: contain; user-select: none; }
+
+/* ── sezioni ───────────────────────────────────────────────────────────── */
+.brc-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--am-s-5);
+  min-width: 0;
+  /* round 3 — 24 netti fra i chip delle leghe e «Partite in evidenza»: i
+     filtri sono un gruppo, il titolo ne apre un altro */
+  margin-top: var(--am-s-2);
+}
+.brc-sec { display: flex; flex-direction: column; gap: var(--am-s-3); min-width: 0; }
+.brc-sec__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--am-s-4);
+}
+.brc-sec__title {
+  margin: 0;
+  font-family: var(--am-font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--am-text);
+}
+.brc-sec__hint {
+  margin: 6px 0 0;
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--am-muted);
+  max-width: 72ch;
+}
+
+/* ── 4 · carosello ─────────────────────────────────────────────────────── */
+.brc-rail-nav { display: flex; gap: 4px; flex: none; }
+.brc-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  cursor: pointer;
+}
+.brc-icon-btn:hover { background: var(--am-panel-3); }
+.brc-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--am-s-2);
+  display: grid;
+  grid-auto-flow: column;
+  /* 3,3 schede visibili a 1440: il bordo tagliato della quarta dice «si
+     scorre» meglio di qualunque freccia. */
+  grid-auto-columns: minmax(280px, calc((100% - 3 * var(--am-s-4)) / 3.3));
+  gap: var(--am-s-4);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--am-panel-3) transparent;
+}
+.brc-rail__item { scroll-snap-align: start; display: flex; min-width: 0; }
+.brc-rail__item > * { flex: 1; min-width: 0; }
+
+/* Lo scheletro del carosello: lastre vuote all'altezza di una scheda. Con la
+   scheda Slab (#CLASSIC-INT-1008) la fila del carosello misura 478 px a 1440 e
+   488 a 390 (dati veri dell'8/10: la fila prende l'altezza della scheda più
+   alta, quella con stima, mercato, prezzi per esito e bottone partner).
+   Nessuna animazione: un caricamento che lampeggia è rumore, e dura meno di un
+   secondo. */
+.brc-slab { display: block; width: 100%; min-height: 292px; border-radius: var(--am-r-card); background: var(--am-panel-2); }
+.brc-rail--skeleton { overflow: hidden; }
+
+/* ── griglie di schede ─────────────────────────────────────────────────── */
+.brc-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--am-s-4);
+}
+.brc-grid > li { display: flex; min-width: 0; }
+.brc-grid > li > * { flex: 1; min-width: 0; }
+
+/* ── 6 · categorie ─────────────────────────────────────────────────────── */
+.brc-when { display: flex; flex-wrap: wrap; gap: var(--am-s-2); }
+.brc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.brc-chip:hover { background: var(--am-panel-3); }
+.brc-chip[aria-pressed="true"] { background: var(--am-royal); color: #fff; }
+.brc-chip__n { font-family: var(--am-font-num); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.brc-sport-block { display: flex; flex-direction: column; gap: var(--am-s-2); }
+.brc-sport-block + .brc-sport-block { margin-top: var(--am-s-5); }
+.brc-sport-block__title {
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-2);
+  margin: 0 0 var(--am-s-1);
+  font-family: var(--am-font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--am-muted);
+}
+.brc-count {
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--am-muted-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.brc-group { display: flex; flex-direction: column; }
+.brc-group[data-open="true"] { padding-bottom: var(--am-s-4); }
+.brc-group__h { margin: 0; font-size: inherit; font-weight: inherit; }
+.brc-group__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--am-s-3);
+  min-height: 52px;
+  padding: 10px var(--am-s-4);
+  border: 0;
+  border-radius: 10px;
+  background: var(--am-panel-2);
+  color: var(--am-text);
+  text-align: left;
+  cursor: pointer;
+}
+.brc-group__toggle:hover { background: var(--am-panel-3); }
+.brc-group[data-open="true"] .brc-group__toggle { margin-bottom: var(--am-s-3); }
+.brc-group__titles { display: flex; align-items: baseline; gap: var(--am-s-3); min-width: 0; }
+.brc-group__name { font-family: var(--am-font-ui); font-size: 15px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brc-group__meta { font-family: var(--am-font-ui); font-size: 12px; color: var(--am-muted); white-space: nowrap; }
+.brc-group__counts { margin-left: auto; display: inline-flex; align-items: center; gap: var(--am-s-3); flex: none; }
+.brc-group__chev { flex: none; color: var(--am-muted); transition: transform 160ms ease; }
+.brc-group[data-open="false"] .brc-group__chev { transform: rotate(-90deg); }
+
+.brc-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--am-font-num);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--am-live);
+}
+.brc-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+.brc-empty {
+  margin: 0;
+  padding: var(--am-s-5) var(--am-s-4);
+  border-radius: 10px;
+  background: var(--am-panel-2);
+  font-family: var(--am-font-ui);
+  font-size: 14px;
+  color: var(--am-muted);
+}
+.brc-more { margin: 0; font-family: var(--am-font-ui); font-size: 13px; color: var(--am-muted); }
+.brc-link {
+  border: 0;
+  padding: 4px 2px;
+  background: none;
+  color: var(--am-royal-t);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--am-r-ctl);
+}
+.brc-link:hover { text-decoration: underline; }
+
+/* Finché il board non è arrivato, il pannello tiene l'altezza: ciò che lo
+   segue (fascia Pro, FAQ) resta sotto la piega e non salta all'arrivo dei
+   dati (CLS). */
+.brc-lobby[data-loading="true"] .brc-panel { min-height: 110vh; }
+
+/* ── 0 · il rail sinistro e il layout a due colonne (#CLASSIC-ROOBET-1013) ──
+   Roobet: 250 px di rail su un pannello, il resto è la pagina. Qui il rail
+   compare da 1200 px in su; sotto, tab e striscia sport fanno lo stesso lavoro
+   e il desk ha già la barra in basso. Il rail è «sticky» ma non più alto della
+   finestra: scorre con la pagina quando è più lungo. */
+.brc-main { display: flex; flex-direction: column; gap: var(--am-s-4); min-width: 0; }
+.brc-side { display: none; }
+@media (min-width: 1200px) {
+  /* round 3 (Andrea, 14/10) — inverte il round 2 punto 11: il pannello del rail
+     si chiude sotto l'ultima voce («Partner») e resta sticky sotto la topbar
+     (60 px) mentre la pagina scorre; se è più alto della finestra scorre da sé.
+     Gutter rail ↔ contenuto 32 px. */
+  .brc-lobby { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: var(--am-s-6); align-items: start; }
+  .brc-side {
+    display: flex; flex-direction: column; gap: var(--am-s-2);
+    padding: var(--am-s-3) var(--am-s-2);
+    border-radius: var(--am-r-card); background: var(--am-panel);
+    position: sticky; top: calc(60px + var(--am-s-3));
+    max-height: calc(100vh - 60px - var(--am-s-5)); overflow-y: auto; scrollbar-width: thin;
+  }
+}
+.brc-side__h {
+  display: flex; align-items: center; gap: 8px; margin: var(--am-s-2) 0 2px; padding: 0 10px;
+  font-family: var(--am-font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted);
+}
+.brc-side__h:first-child { margin-top: 0; }
+.brc-side__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.brc-side__item {
+  width: 100%; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 10px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--am-text);
+  font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; text-align: left; text-decoration: none; cursor: pointer;
+}
+.brc-side__item > svg { flex: none; color: var(--am-muted); }
+.brc-side__item > span:first-of-type { flex: 1; min-width: 0; }
+.brc-side__item:hover { background: var(--am-panel-2); }
+/* #CLASSIC-ASSET-1013 — con le icone 3D royal la voce attiva non è più royal
+   pieno (l'icona sparirebbe nel fondo): royal velato + testo bianco, lo stesso
+   «sei qui» della nav in alto (.br-nav__item[aria-current]) */
+.brc-side__item[aria-current="true"] { background: var(--am-royal-dim); color: #fff; }
+.brc-side__item[aria-current="true"] > svg, .brc-side__item[aria-current="true"] .brc-count { color: #fff; }
+.brc-side__n { margin-left: auto; }
+
+/* ── 3b · i chip delle leghe (la fila «Premier League · LaLiga · Serie A») ── */
+/* round 3 — 16 netti dalla striscia sport (prima 0: «Tutte 102» sembrava coperto) */
+.brc-leagues { display: flex; gap: var(--am-s-2); overflow-x: auto; scrollbar-width: none; margin-top: 0; padding-bottom: 2px; }
+.brc-leagues::-webkit-scrollbar { display: none; }
+.brc-leagues .brc-chip { flex: none; }
+/* la sigla del paese: un piccolo testo mono, al posto della bandierina */
+.brc-chip__cc { font-family: var(--am-font-num); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--am-muted); }
+.brc-chip[aria-pressed="true"] .brc-chip__cc { color: rgba(255, 255, 255, 0.75); }
+
+/* ── 6b · le righe per lega (la lista di Roobet) ───────────────────────── */
+/* l'intestazione del mercato («1X2» · «Winner») a destra, sulla riga del titolo,
+   fra i contatori e il chevron: nel flusso, così non copre «N live» */
+.brc-group__mkt {
+  flex: none; margin-left: var(--am-s-4); min-width: 84px; text-align: right;
+  font-family: var(--am-font-num); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted);
+}
+.brc-list { display: grid; gap: var(--am-s-2); }
+.brc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.brc-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--am-s-3);
+  padding: 8px 12px 8px 8px; border-radius: 10px; background: var(--am-panel);
+}
+.brc-row:hover { background: var(--am-panel-2); }
+.brc-row__main {
+  display: grid; grid-template-columns: 112px minmax(0, 1fr) auto auto; align-items: center; gap: var(--am-s-3);
+  min-width: 0; min-height: 52px; padding: 2px 4px; border-radius: 8px; color: var(--am-text); text-decoration: none;
+}
+.brc-row__when { font-family: var(--am-font-ui); font-size: 12px; font-weight: 500; color: var(--am-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.brc-row__when .br-live { font-size: 11px; }
+.brc-row__teams { display: grid; gap: 4px; min-width: 0; }
+.brc-row__team { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-width: 0; font-family: var(--am-font-ui); font-size: 14px; font-weight: 600; line-height: 1.2; }
+.brc-row__crest { width: 20px; height: 20px; object-fit: contain; }
+/* #CLASSIC-ASSET-1013 — il tennista ritagliato sul volto (Crest → .br-crest-photo)
+   anche nella riga: a 20 px la figura intera era una macchia */
+.brc-row__crest.br-crest-photo { border-radius: 50%; }
+.brc-row__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brc-row__score { font-family: var(--am-font-num); font-size: 13px; font-weight: 700; color: var(--am-live); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* il nostro numero: piccolo, con l'etichetta onesta sotto; lime solo se è nostro */
+.brc-row__est { display: grid; justify-items: end; gap: 1px; min-width: 52px; color: var(--am-text); }
+.brc-row__est[data-ours] .brc-row__est-n { color: var(--am-lime); }
+.brc-row__est-n { font: 700 17px/1 var(--cl-font-prob, var(--am-font-ui)); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.brc-row__est-pc { font-size: 11px; margin-left: 1px; }
+.brc-row__est-k { display: inline-flex; align-items: center; gap: 3px; font-family: var(--am-font-num); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--am-muted-2); white-space: nowrap; }
+.brc-row__chev { flex: none; color: var(--am-muted-2); }
+.brc-row__main:hover .brc-row__chev { color: var(--am-text); }
+/* la colonna del mercato: una casella per esito, larghezze uguali */
+.brc-row__mkt { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(84px, 1fr); gap: 6px; }
+.brc-row__mkt .cl-odd { justify-content: space-between; height: 36px; padding: 0 10px 0 8px; background: var(--am-panel-2); }
+.brc-row:hover .brc-row__mkt .cl-odd { background: var(--am-panel-3); }
+.brc-row__mkt .cl-odd:hover { background: var(--am-royal-dim); }
+/* round 2 — nelle tre caselle della riga l'«AD·18+» sta UNA volta, in coda;
+   la colonna è un flex che va a capo, così la riga dell'avviso sta sotto */
+.brc-row__mkt { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 6px; }
+.brc-row__mkt .cl-odd { flex: 1 1 84px; max-width: 128px; }
+.brc-row__mkt .cl-odd .cl-odd-ad { display: none; }
+.brc-row__ad { flex-basis: 100%; text-align: right; white-space: nowrap; }
+.brc-row__nomkt { display: inline-flex; align-items: center; min-height: 36px; padding: 0 10px; font-family: var(--am-font-ui); font-size: 12px; color: var(--am-muted-2); white-space: nowrap; }
+.brc-seeall {
+  justify-self: center; min-height: 36px; padding: 0 var(--am-s-4); border: 0; border-radius: 8px;
+  background: var(--am-panel); color: var(--am-text); font-family: var(--am-font-ui); font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.brc-seeall:hover { background: var(--am-panel-2); }
+
+/* ── tablet ────────────────────────────────────────────────────────────── */
+/* #CLASSIC-FIX2-1008 (QA M3) — fra 641 e 1365 px tre banner 2:1 in fila sono
+   alti 120–210 px: titolo e sottotitolo uscivano dal fondo (misurato a 768,
+   1024 e 1280 in 5 lingue). Qui scorrono come sul telefono, larghi almeno 460 px. */
+@media (min-width: 641px) and (max-width: 1365px) {
+  .brc-banners__row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: max(460px, 48%);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .brc-banners__row::-webkit-scrollbar { display: none; }
+  .brc-banner { scroll-snap-align: start; }
+}
+
+/* ── telefono ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .brc-lobby { gap: var(--am-s-4); padding: var(--am-s-4) var(--am-s-3) var(--am-s-7); }
+  /* I banner scorrono: una colonna all'86%, la successiva si affaccia. La
+     proporzione resta 2:1 → l'altezza non dipende dal contenuto. */
+  .brc-banners__row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 90%;
+    gap: var(--am-s-3);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--am-s-3));
+    padding-inline: var(--am-s-3);
+    scroll-padding-inline: var(--am-s-3);
+  }
+  .brc-banners__row::-webkit-scrollbar { display: none; }
+  /* Sul telefono 16:10 (consegna 800×500): a 2:1 la scatola era 267×133 e il
+     titolo su due righe più il sottotitolo non ci stavano. Sempre fissa → CLS 0. */
+  .brc-banner { scroll-snap-align: start; aspect-ratio: 16 / 10; }
+  .brc-banner::before { background: linear-gradient(90deg, rgba(7,19,41,0.9) 0%, rgba(7,19,41,0.75) 60%, rgba(7,19,41,0.2) 100%); }
+  .brc-banner__text { max-width: 72%; padding: var(--am-s-3) var(--am-s-4); gap: 4px; }
+  .brc-banner__title { font-size: 20px; }
+  .brc-banner__sub { font-size: 12px; }
+  /* #CLASSIC-INT-1008 — con la foto, sul telefono (scatola ~330×206) il 40% è
+     ~130 px: il titolo andava su quattro righe e usciva dall'alto. Qui il
+     testo prende il 54% su un velo più lungo; il soggetto della foto sta fra
+     il 48 e l'80% e resta visibile a destra. */
+  .brc-banner[data-photo] .brc-banner__text { max-width: 54%; }
+  .brc-banner[data-photo]::before {
+    /* #CLASSIC-BANNER-1014 — il quasi nero dei creativi di casa, non il navy */
+    background: linear-gradient(90deg, rgba(4,8,18,0.92) 0%, rgba(4,8,18,0.72) 48%, rgba(4,8,18,0) 70%);
+  }
+  .brc-banner[data-photo] .brc-banner__title { font-size: 18px; }
+  .brc-banner[data-photo] .brc-banner__sub { -webkit-line-clamp: 3; }
+
+  .brc-bar { flex-direction: column; align-items: stretch; gap: 4px; margin-top: 0; }
+  .brc-tab { padding: 0 var(--am-s-3); font-size: 13px; }
+  .brc-search { flex: none; min-width: 0; }
+  .brc-sports { margin-top: 0; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); }
+  .brc-sport { min-width: 0; }
+
+  .brc-sec__title { font-size: 22px; }
+  /* round 2 — 92%: a 86% la scheda era 267 px e il piede (tre partner + CTA)
+     andava su due righe; a 286 px «Sblocca l'analisi ↗» sta su una */
+  .brc-rail { grid-auto-columns: 92%; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); scroll-padding-inline: var(--am-s-3); }
+  .brc-rail-nav { display: none; }
+  .brc-slab { min-height: 300px; }
+  .brc-grid { grid-template-columns: minmax(0, 1fr); }
+  .brc-group__toggle { padding: 10px var(--am-s-3); gap: var(--am-s-2); }
+  .brc-group__titles { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .brc-leagues { margin-top: 0; margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3); }
+  /* la riga sul telefono (Roobet): ora e squadre sopra, le caselle del mercato
+     sotto a tutta larghezza, il numero accanto alle squadre */
+  .brc-row { grid-template-columns: minmax(0, 1fr); gap: var(--am-s-2); padding: 8px; }
+  .brc-row__main { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: auto auto; min-height: 0; }
+  .brc-row__when { grid-column: 1 / -1; grid-row: 1; }
+  .brc-row__teams { grid-column: 1; grid-row: 2; }
+  .brc-row__est { grid-column: 2; grid-row: 2; }
+  .brc-row__chev { grid-column: 3; grid-row: 2; }
+  .brc-row__mkt .cl-odd { flex: 1 1 0; max-width: none; padding: 0 8px 0 6px; }
+  .brc-group__mkt { display: none; }
+}
+
+/* #CLASSIC-FIX2-1008 (QA M3) — sotto i 380 px la colonna del testo al 54% è
+   ~175 px: francese, spagnolo e russo uscivano dal fondo. Un po' più larga e
+   il titolo un punto più piccolo; il soggetto della foto resta a destra. */
+@media (max-width: 380px) {
+  .brc-banner[data-photo] .brc-banner__text { max-width: 62%; }
+  .brc-banner[data-photo] .brc-banner__title { font-size: 17px; }
+  /* #CLASSIC-BANNER-1014 — con la CTA a pillola (28 px) il «record» a 360 in
+     francese e spagnolo perdeva il secondo link sotto il fondo: due righe di
+     sottotitolo invece di tre, solo dove ci sono due link. */
+  html[data-frames="off"] .brc-banner[data-photo]:has(.brc-banner__more) .brc-banner__sub { -webkit-line-clamp: 2; }
+}
+
+/* #CLASSIC-ASSET-1013 round 5 (QA BUG-1) — a 1440, coi 32 px di margine e di
+   gutter del round 3, il banner è 344×172 e il 40% meno il padding (16+24)
+   lasciava 90 px di testo: «Apri il board →» usciva dal fondo di 21 px. Da 1366
+   in su il testo prende il 48% con 16 px di padding per lato (133 px di riga:
+   «Vedi le partite live →» sta su due righe di parole, la freccia attaccata) e
+   fino a 1600 il sottotitolo si ferma a due righe. Il soggetto della foto sta
+   dal 50% in poi: il velo copre fino al 55%, il testo finisce al 43%. */
+@media (min-width: 1366px) {
+  html[data-frames="off"] .brc-banner[data-photo] .brc-banner__text { max-width: 48%; padding: 14px 16px; gap: 4px; }
+}
+@media (min-width: 1366px) and (max-width: 1600px) {
+  html[data-frames="off"] .brc-banner[data-photo] .brc-banner__sub { -webkit-line-clamp: 2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brc-banner__art, .brc-group__chev { transition: none; }
+  .brc-banner:hover .brc-banner__art { transform: none; }
+}

@@ -1914,30 +1914,53 @@ a.br-tile:hover .br-tile__go, button.br-tile:hover .br-tile__go { transform: tra
    desktop: sei risposte lunghe in colonna unica farebbero una coda più alta
    del prodotto che stanno spiegando. */
 .br-faq { display: flex; flex-direction: column; gap: var(--am-s-4); }
+/* #CLASSIC-ASSET-1013 round 3 — soffietti (<details>) chiusi, due colonne da
+   360 px: sei domande stanno in tre righe invece di un blocco di tre colonne
+   aperte. Nessuna cornice: ogni voce è una lastra sul pannello, il chevron
+   dice lo stato (ruota da aperto, senza transizione se reduced-motion). */
 .br-faq__list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--am-s-5) var(--am-s-6);
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: var(--am-s-2) var(--am-s-4);
+  /* round 4 (QA BUG-004): aprirne una non allunga la vicina sulla stessa riga */
+  align-items: start;
   margin: 0;
 }
-.br-faq__item { min-width: 0; }
+.br-faq__item { min-width: 0; border-radius: 10px; background: var(--am-panel); }
+.br-faq__item[open] { background: var(--am-panel-2); }
 .br-faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--am-s-3);
+  min-height: 52px;
+  padding: 12px var(--am-s-4);
+  list-style: none;
+  cursor: pointer;
   font-family: var(--am-font-ui);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.005em;
   color: var(--am-text);
+  border-radius: 10px;
 }
+.br-faq__q::-webkit-details-marker { display: none; }
+.br-faq__q:hover { background: var(--am-panel-2); }
+.br-faq__q:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+.br-faq__chev { flex: none; color: var(--am-muted); transition: transform 160ms ease; }
+.br-faq__item[open] .br-faq__chev { transform: rotate(180deg); }
 /* #FAQ-WHITE-0925 (Andrea, 25/09): «il testo bianco, non quel grigino» —
    da --am-muted a --am-text, come la domanda sopra. */
 .br-faq__a {
-  margin: 6px 0 0;
+  margin: 0;
+  padding: 0 var(--am-s-4) var(--am-s-4);
   font-family: var(--am-font-ui);
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--am-text);
   max-width: 68ch;
 }
+@media (prefers-reduced-motion: reduce) { .br-faq__chev { transition: none; } }
 
 /* ═══════════════════════════════════════════════════════════════════════
  * BOARD («Explore») — #RESTYLING-0921 round 5 (2026-09-22)

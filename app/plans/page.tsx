@@ -6,7 +6,10 @@ import Dashboard from "../app/page";
 
 export const metadata: Metadata = {
   title: "Plans and Pricing | BetRedge",
-  description: "Compare BetRedge Base and Pro subscriptions: how deep each plan reads, current monthly pricing, and how the Weekly Model Case fits in.",
+  // #CLASSIC-PLANS-1014 — a flag acceso la pagina vende Free e Pro soltanto.
+  description: process.env.NEXT_PUBLIC_CLASSIC === "1"
+    ? "BetRedge Free or Pro: Free opens three readings per sport a day, Pro opens the whole board with the full analysis. Monthly or annual, cancel anytime."
+    : "Compare BetRedge Base and Pro subscriptions: how deep each plan reads, current monthly pricing, and how the Weekly Model Case fits in.",
   alternates: { canonical: "/plans" },
 };
 

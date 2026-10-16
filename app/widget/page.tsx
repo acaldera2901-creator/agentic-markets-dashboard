@@ -4,6 +4,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
+import ClassicChrome from "@/components/classic/ClassicChrome";
 import { LEGAL_ENTITY } from "@/lib/legal-entity";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { WidgetPlayground } from "./WidgetPlayground";
@@ -36,6 +37,7 @@ export default function WidgetPage() {
   return (
     <div className="hv3 mc-scene-stadium" data-mc-ground style={{ background: "var(--am-bg)", color: "var(--am-text)", minHeight: "100vh" }}>
       <span className="bgfix" aria-hidden="true" />
+      <ClassicChrome />
       <JsonLd data={breadcrumbJsonLd([["Widget", "/widget"]])} />
 
       <style>{`
