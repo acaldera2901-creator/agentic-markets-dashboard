@@ -1,3 +1,4 @@
+import {emailOutcomesEnabled,recordEmailMessage} from './email-outcomes';
 // Transactional email via the Resend REST API (no SDK dependency — one fetch).
 // Used for customer OTP login codes. Fails loud to the caller so the auth route
 // can return a real error instead of silently "sending" nothing.
@@ -111,6 +112,7 @@ export async function sendEmail(opts: {
     const body = await resp.text().catch(() => "");
     throw new Error(`Resend send failed: ${resp.status} ${body.slice(0, 200)}`);
   }
+  if(emailOutcomesEnabled())try{const result=await resp.json() as {id?:unknown};if(typeof result.id==='string')await recordEmailMessage(result.id,opts.to,false);}catch{console.warn(JSON.stringify({kind:'email_message_correlation_failed',counter_complete:false}));}
 }
 
 // ── Branded shell (#EMAIL-BRAND-0701) ────────────────────────────────────────

@@ -1,3 +1,6 @@
+import {analyticsWriteAllowed} from '@/lib/events-write-gate';
+import {scheduleBusinessEvent} from '@/lib/business-events';
+import {attachAnalyticsIdentity,readAnalyticsSession,revokeAnalyticsSession,setAnalyticsCookie} from '@/lib/analytics-session';
 import { NextResponse } from "next/server";
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
 import { signupCountryAllowed, resolveRequestCountry } from "@/lib/signup-geo";
@@ -102,12 +105,13 @@ async function loadAuthRow(identifier: string): Promise<AuthRow | null> {
   return rows[0] ?? null;
 }
 
-function issueSession(profile: ProfileRow): NextResponse {
+async function issueSession(req:Request,profile: ProfileRow,via:'login'|'signup'='login'): Promise<NextResponse> {
   const res = NextResponse.json(
     { identifier: profile.identifier, plan: profile.plan, name: profile.name },
     { headers: { "cache-control": "no-store" } }
   );
   res.cookies.set(SESSION_COOKIE, signSession(profile.identifier), SESSION_COOKIE_OPTIONS);
+  await attachAnalyticsIdentity(req,res,profile.identifier,via);
   return res;
 }
 
@@ -116,10 +120,12 @@ export async function GET(req: Request) {
   if (!ctx) {
     return NextResponse.json({ error: "not authenticated" }, { status: 401 });
   }
-  return NextResponse.json(
+  const response=NextResponse.json(
     { identifier: ctx.identifier, plan: ctx.plan, name: ctx.name, plan_expires_at: ctx.plan_expires_at },
     { headers: { "cache-control": "no-store" } }
   );
+  if(ctx.plan!=='admin_full')await attachAnalyticsIdentity(req,response,ctx.identifier,'login');
+  return response;
 }
 
 export async function POST(req: Request) {
@@ -152,6 +158,9 @@ export async function POST(req: Request) {
     }
     const res = NextResponse.json({ ok: true });
     res.cookies.set(SESSION_COOKIE, "", { ...SESSION_COOKIE_OPTIONS, maxAge: 0 });
+    const analyticsSid=readAnalyticsSession(req);
+    setAnalyticsCookie(res,'');
+    if(analyticsSid)try{await revokeAnalyticsSession(analyticsSid);}catch{console.warn(JSON.stringify({kind:'analytics_logout_cleanup_failed',counter_complete:false}));}
     return res;
   }
 
@@ -323,7 +332,7 @@ export async function POST(req: Request) {
     if (!signupCountryAllowed(requestCountry)) {
       const deniedCountry = requestCountry ?? "unknown";
       try {
-        await dbQuery(
+        if(analyticsWriteAllowed())await dbQuery(
           `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)
            VALUES ('signup_geo_denied', NULL, $1, NULL, NULL, NULL, 0, '{}')`,
           [deniedCountry]
@@ -448,6 +457,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "registration failed" }, { status: 500 });
       }
     }
+    scheduleBusinessEvent({type:'signup_created',identifier});
     // When email confirmation isn't available, auto-activate + sign in (the
     // pre-HIGH-3 behavior) so signup→login→checkout work without a mail provider.
     if (!emailActivationRequired()) {
@@ -455,6 +465,7 @@ export async function POST(req: Request) {
         "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
         [identifier]
       );
+      scheduleBusinessEvent({type:'account_activated',identifier});
       // #REFERRAL-V2-0808 — i 7 giorni di PRO all'invitato si concedono
       // all'ATTIVAZIONE, non all'INSERT: il profilo nasce plan='free' e diventa
       // usabile solo dopo l'attivazione (HIGH-3), quindi un regalo concesso
@@ -470,7 +481,7 @@ export async function POST(req: Request) {
       }
       const profile = await loadProfile(identifier);
       if (!profile) return NextResponse.json({ error: "registration failed" }, { status: 500 });
-      return issueSession(profile);
+      return issueSession(req,profile,'signup');
     }
     try {
       await sendActivation(req, identifier, lang, signupIntent);
@@ -512,6 +523,7 @@ export async function POST(req: Request) {
       "UPDATE profiles SET activated_at = NOW(), updated_at = NOW() WHERE identifier = $1 OR LOWER(TRIM(identifier)) = $1",
       [identifier]
     );
+    scheduleBusinessEvent({type:'account_activated',identifier});
     // #REFERRAL-V2-0808 — TERZO percorso di attivazione (il piano ne dichiarava
     // due): il heal pigro di una riga rimasta non attivata dalla finestra senza
     // provider email. È un'attivazione a tutti gli effetti, quindi qui il bonus
@@ -528,5 +540,5 @@ export async function POST(req: Request) {
   if (!profile) {
     return NextResponse.json({ error: "login failed" }, { status: 500 });
   }
-  return issueSession(profile);
+  return issueSession(req,profile);
 }

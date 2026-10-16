@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
@@ -63,6 +64,14 @@ export async function GET(req: Request) {
         // Ordine marcato dal webhook come non-monopiano (Weekly Pick, righe
         // sconosciute, quantità multiple): il totale non è il prezzo del piano →
         // lordo ignoto, nessuna commissione. `last_error` letto PRIMA dell'UPDATE.
+        schedulePurchaseEvent({
+          plan:resolved.plan,
+identifier: ev.identifier,
+          rail: "shopify",
+          paymentRef: ev.event_id,
+          grossUsd: null,
+          paidAt: new Date(),
+        });
         scheduleAffiliateCommission({
           identifier: ev.identifier,
           rail: "shopify",

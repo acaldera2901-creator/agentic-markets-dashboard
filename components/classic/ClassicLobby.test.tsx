@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
 import { ClassicLobby } from "./ClassicLobby";
+import { trackEvent } from "@/lib/track-event";
 import type { LobbyItem } from "@/lib/ui/lobby";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
 }));
+
+vi.mock("@/lib/track-event", () => ({ trackEvent: vi.fn() }));
 
 const NOW = Date.parse("2026-10-10T10:00:00Z");
 const h = (n: number) => new Date(NOW + n * 3600_000).toISOString();
@@ -41,6 +44,18 @@ function setup(extra: Partial<React.ComponentProps<typeof ClassicLobby>> = {}) {
 }
 
 describe("ClassicLobby", () => {
+  it("tracks tab and sport choices while keeping their selection behavior", () => {
+    vi.mocked(trackEvent).mockClear();
+    setup();
+    const tab = screen.getByRole("tab", { name: "In-Play" });
+    fireEvent.click(tab);
+    expect(tab).toHaveAttribute("aria-selected", "true");
+    expect(trackEvent).toHaveBeenCalledWith("nav_click", { meta: { surface: "classic-lobby", view: "inplay" } });
+    const sport = within(screen.getByRole("group", { name: "Sports" })).getByRole("button", { name: /tennis/i });
+    fireEvent.click(sport);
+    expect(sport).toHaveAttribute("aria-pressed", "true");
+    expect(trackEvent).toHaveBeenCalledWith("tab_click", { meta: { surface: "classic-lobby", sport: "tennis" } });
+  });
   it("renders the Roobet skeleton in order: banners, tabs + search, sports strip, featured, differs, leagues, tail", () => {
     setup();
     const nav = screen.getByRole("navigation", { name: "Where to start" });

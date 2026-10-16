@@ -1,3 +1,4 @@
+import {trackEvent} from "@/lib/track-event";
 // components/classic/ClassicBanners.tsx — filone «classic», lobby (#CLASSIC-LOBBY-1008)
 //
 // I tre banner in testa alla lobby (la riga di Roobet), ma con i NOSTRI tre
@@ -137,12 +138,29 @@ function Chevron() {
   );
 }
 
-export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; label: string }) {
+export function ClassicBanners({ banners, label, preview=false }: { banners: ClassicBanner[]; label: string; preview?:boolean }) {
   // Le foto che non sono arrivate passano al ripiego SVG. L'errore può
   // scattare PRIMA dell'idratazione (l'<img> arriva nell'HTML del server e
   // React non c'era ancora ad ascoltare): al montaggio si guarda lo stato vero.
   const [failed, setFailed] = useState<Record<string, boolean>>({});
   const rowRef = useRef<HTMLUListElement | null>(null);
+  const measured = useRef(new Set<string>());
+  useEffect(()=>{
+    if(preview||!rowRef.current||typeof IntersectionObserver==='undefined')return;
+    const observer=new IntersectionObserver(entries=>{
+      for(const entry of entries){
+        const id=(entry.target as HTMLElement).dataset.banner;
+        if(!id||!entry.isIntersecting||entry.intersectionRatio<0.5||measured.current.has(id))continue;
+        measured.current.add(id);
+        trackEvent('house_banner_view',{meta:{campaign_id:'classic:'+id,slot:'classic-lobby',viewability:'50pct-v1'}});
+        observer.unobserve(entry.target);
+      }
+    },{threshold:[0.5]});
+    rowRef.current.querySelectorAll('[data-banner].brc-banner').forEach(element=>observer.observe(element));
+    return ()=>observer.disconnect();
+  },[banners,preview]);
+  const clickBanner=(id:string)=>{if(!preview)trackEvent('house_banner_click',{meta:{campaign_id:'classic:'+id,slot:'classic-lobby'}});};
+
   useEffect(() => {
     const broken: Record<string, boolean> = {};
     rowRef.current?.querySelectorAll<HTMLImageElement>("img.brc-banner__art").forEach((img) => {
@@ -201,11 +219,11 @@ export function ClassicBanners({ banners, label }: { banners: ClassicBanner[]; l
                   prima della freccia — la CTA può andare a capo fra le parole,
                   mai lasciando la freccia sola sulla riga dopo */}
               {b.href.startsWith("/") && !b.onClick ? (
-                <Link className="brc-banner__cta" href={b.href}>{b.cta}{"\u00A0"}<Chevron /></Link>
+                <Link className="brc-banner__cta" href={b.href} onClick={()=>clickBanner(b.id)}>{b.cta}{"\u00A0"}<Chevron /></Link>
               ) : (
-                <a className="brc-banner__cta" href={b.href} onClick={b.onClick}>{b.cta}{"\u00A0"}<Chevron /></a>
+                <a className="brc-banner__cta" href={b.href} onClick={ev=>{clickBanner(b.id);b.onClick?.(ev);}}>{b.cta}{"\u00A0"}<Chevron /></a>
               )}
-              {b.more && <Link className="brc-banner__more" href={b.more.href}>{b.more.label}{"\u00A0"}<Chevron /></Link>}
+              {b.more && <Link className="brc-banner__more" href={b.more.href} onClick={()=>clickBanner(b.id)}>{b.more.label}{"\u00A0"}<Chevron /></Link>}
               </p>
             </div>
             {/* il «18+» dei banner di casa, nell'angolo basso a destra */}

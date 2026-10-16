@@ -1,5 +1,7 @@
 import { it, expect, vi, beforeEach } from "vitest";
 
+const schedulePurchaseEvent=vi.fn();
+vi.mock("@/lib/business-events",()=>({schedulePurchaseEvent}));
 const dbQuery = vi.fn();
 const dbExecute = vi.fn();
 const activateShopifyPlan = vi.fn();
@@ -170,4 +172,11 @@ it("la query concede una grace prima di allertare e guarda solo il rail carta", 
   // Solo pagamenti andati a buon fine: 'pending'/'unresolved'/'stale' sono
   // gli altri due rami, non decadimenti.
   expect(sql).toMatch(/e\.status = 'granted'/);
+});
+
+it('historical Shopify amounts have no currency and never become USD purchase analytics',async()=>{
+ dbQuery.mockResolvedValueOnce([{event_id:'901',identifier:'synthetic@example.test',variant_id:'111',amount:500}]);
+ activateShopifyPlan.mockResolvedValue({identifier:'synthetic@example.test',plan:'base'});
+ const {GET}=await import('./route');await GET(req());
+ expect(schedulePurchaseEvent).toHaveBeenCalledWith(expect.objectContaining({rail:'shopify',paymentRef:'901',grossUsd:null}));
 });

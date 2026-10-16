@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { verifyBearer } from "@/lib/admin-auth";
@@ -52,6 +53,14 @@ export async function GET(req: Request) {
         console.log(`[paygate/reconcile] GRANT order=${o.id} plan=${g.plan}`);
         // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op).
         // `coin` valorizzato = ordine del rail crypto diretto, come in crypto-settle.
+        schedulePurchaseEvent({
+          plan:o.plan,
+identifier: o.identifier,
+          rail: o.coin ? "crypto" : "paygate",
+          paymentRef: o.id,
+          grossUsd: o.amount_usd,
+          paidAt: new Date(),
+        });
         scheduleAffiliateCommission({
           identifier: o.identifier,
           rail: o.coin ? "crypto" : "paygate",
