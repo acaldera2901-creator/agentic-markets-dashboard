@@ -266,3 +266,52 @@ it("500 fail-closed se il registro non è raggiungibile, senza creare l'ordine",
   expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
   expect(dbExecute).not.toHaveBeenCalled();
 });
+
+// #CRYPTO-409-1016 diagnostica: il 409 deve dire moneta e proprietario
+// dell'indirizzo, così un riuso vero di PayGate si distingue da un falso conflitto.
+it("409: il log dice moneta e proprietario dell'indirizzo, l'esito non cambia", async () => {
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
+  dbQueryStrict
+    .mockResolvedValueOnce([]) // INSERT … ON CONFLICT DO NOTHING
+    .mockResolvedValueOnce([{ order_id: "old-order", order_kind: "plan", coin: "polygon-usdc", created_at: "2026-07-29" }]);
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  expect(res.status).toBe(409);
+  expect(dbExecute).not.toHaveBeenCalled();
+  const line = err.mock.calls.map((c) => String(c[0])).find((s) => s.includes("GIÀ REGISTRATO"));
+  expect(line).toContain("coin=polygon-usdc");
+  expect(line).toContain("proprietario order=old-order kind=plan");
+  expect(line).not.toContain("QUESTO ordine");
+  err.mockRestore();
+});
+
+it("409: se il proprietario è l'ordine stesso il log lo dice (falso conflitto)", async () => {
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
+  let insertedOrder = "";
+  dbQueryStrict.mockImplementation(async (sql: string, params: unknown[]) => {
+    if (sql.includes("INSERT INTO crypto_deposit_addresses")) { insertedOrder = String(params[1]); return []; }
+    return [{ order_id: insertedOrder, order_kind: "plan", coin: "polygon-usdc", created_at: "now" }];
+  });
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(409);
+  const line = err.mock.calls.map((c) => String(c[0])).find((s) => s.includes("GIÀ REGISTRATO"));
+  expect(line).toContain("(= QUESTO ordine");
+  err.mockRestore();
+});
+
+it("409: owner illeggibile non rompe la risposta", async () => {
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
+  dbQueryStrict.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error("db hiccup"));
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(409);
+  expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toContain("proprietario non leggibile");
+  err.mockRestore();
+});
+
+it("il log di successo riporta l'indirizzo di deposito", async () => {
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  const { POST } = await import("./route");
+  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(200);
+  expect(log.mock.calls.map((c) => String(c[0])).find((s) => s.includes("[crypto/checkout] OK"))).toContain("address=0xdeposit");
+  log.mockRestore();
+});

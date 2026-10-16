@@ -186,8 +186,20 @@ export async function POST(req: Request) {
     // di qualcun altro. È un gate atomico: due checkout concorrenti sullo stesso
     // indirizzo lo attraversano uno solo, senza SELECT-poi-INSERT.
     if (claimed.length === 0) {
+      // #CRYPTO-409-1016 diagnostica: chi possiede l'indirizzo. Best-effort, non
+      // cambia l'esito (409 resta 409): serve a distinguere un riuso vero di
+      // PayGate da un falso conflitto.
+      const owner = await dbQueryStrict<{ order_id: string; order_kind: string; coin: string | null; created_at: string }>(
+        "SELECT order_id, order_kind, coin, created_at FROM crypto_deposit_addresses WHERE address = $1",
+        [addressKey]
+      ).catch(() => []);
+      const o = owner[0];
       console.error(
-        `[crypto/checkout] indirizzo di deposito GIÀ REGISTRATO (${addressKey}) — ordine ${orderId} NON creato`
+        `[crypto/checkout] indirizzo di deposito GIÀ REGISTRATO (${addressKey}) coin=${coin.id} — ordine ${orderId} NON creato; ` +
+          (o
+            ? `proprietario order=${o.order_id} kind=${o.order_kind} coin=${o.coin} dal ${o.created_at}` +
+              (o.order_id === orderId ? " (= QUESTO ordine: l'INSERT è passato)" : "")
+            : "proprietario non leggibile")
       );
       return NextResponse.json({ error: "deposit address unavailable" }, { status: 409 });
     }
@@ -227,7 +239,7 @@ export async function POST(req: Request) {
     purchase.kind === "weekly"
       ? `weekly week=${purchase.week}`
       : `${purchase.plan}/${purchase.period}`;
-  console.log(`[crypto/checkout] OK order=${orderId} ${what} ${coin.id} expected=${expected} amount_usd=${amount}`);
+  console.log(`[crypto/checkout] OK order=${orderId} ${what} ${coin.id} address=${addressKey} expected=${expected} amount_usd=${amount}`);
   return NextResponse.json({
     order: orderId,
     // Il client lo rimanda a /api/crypto/status: senza, il polling cercherebbe

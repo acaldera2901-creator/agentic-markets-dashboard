@@ -105,6 +105,8 @@ export function CryptoDirectPanel({
             ? pick5(lang, { it: `Importo troppo basso per ${d.coin}: minimo ${d.minimum}. Scegli un'altra moneta.`, en: `Amount too low for ${d.coin}: minimum ${d.minimum}. Pick another coin.`, es: `Importe demasiado bajo para ${d.coin}: mínimo ${d.minimum}.`, fr: `Montant trop bas pour ${d.coin} : minimum ${d.minimum}.`, ru: `Сумма слишком мала для ${d.coin}: минимум ${d.minimum}.` })
             : d?.error === "already purchased" || d?.error === "already included"
               ? pick5(lang, { it: "Hai già accesso a questa Weekly Pick.", en: "You already have access to this Weekly Pick.", es: "Ya tienes acceso a esta Weekly Pick.", fr: "Vous avez déjà accès à ce Weekly Pick.", ru: "У вас уже есть доступ к этому Weekly Pick." })
+              : d?.error === "deposit address unavailable"
+                ? pick5(lang, { it: "Il pagamento crypto non è disponibile in questo momento. Puoi pagare con carta oppure riprovare più tardi.", en: "Crypto payment is not available right now. You can pay by card or try again later.", es: "El pago crypto no está disponible ahora. Puedes pagar con tarjeta o intentarlo más tarde.", fr: "Le paiement crypto n'est pas disponible pour le moment. Vous pouvez payer par carte ou réessayer plus tard.", ru: "Криптоплатёж сейчас недоступен. Оплатите картой или повторите позже." })
               : pick5(lang, { it: "Non riesco ad aprire il pagamento crypto. Riprova.", en: "Can't open the crypto payment. Please retry.", es: "No puedo abrir el pago crypto. Inténtalo de nuevo.", fr: "Impossible d'ouvrir le paiement crypto. Réessayez.", ru: "Не удалось открыть крипто-платёж. Повторите." })
         );
         return;
