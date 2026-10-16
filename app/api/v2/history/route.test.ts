@@ -5,11 +5,11 @@
 import { it, expect, vi, beforeEach } from "vitest";
 import { TRACK_RECORD_BASE_CONDITIONS } from "@/lib/track-record";
 
-const { dbQuery } = vi.hoisted(() => ({ dbQuery: vi.fn() }));
+const { dbQuery, access } = vi.hoisted(() => ({ dbQuery: vi.fn(), access: vi.fn() }));
 vi.mock("@/lib/db", () => ({ dbQuery }));
-vi.mock("@/lib/auth", () => ({ resolveAccessState: async () => ({ state: "anonymous" }) }));
+vi.mock("@/lib/auth", () => ({ resolveAccessState: access }));
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); access.mockResolvedValue({state:"anonymous"}); });
 
 function row(over: Record<string, unknown>) {
   return {
@@ -55,4 +55,19 @@ it("la query non esclude più le righe senza esito: le conta il denominatore", a
   const [sql] = dbQuery.mock.calls[0];
   for (const c of TRACK_RECORD_BASE_CONDITIONS) expect(sql).toContain(c);
   expect(sql).not.toMatch(/unresolved/);
+});
+
+it("reuses raw history across requests without reusing access-projected responses", async () => {
+ dbQuery.mockResolvedValue(FIXTURE);
+ const {GET}=await import("./route");
+ access.mockResolvedValueOnce({state:"premium"});
+ const paid=await GET(new Request("http://x/api/v2/history?aggregate=segments"));
+ expect((await paid.json()).history[0].locked).toBe(false);
+ const anonymous=await GET(new Request("http://x/api/v2/history?limit=300"));
+ const body=await anonymous.json();
+ expect(body.history[0].locked).toBe(true);
+ expect(body.history[0]).not.toHaveProperty("pick");
+ expect(dbQuery).toHaveBeenCalledTimes(1);
+ expect(access).toHaveBeenCalledTimes(2);
+ expect(anonymous.headers.get("Cache-Control")).toBe("private, no-store");
 });

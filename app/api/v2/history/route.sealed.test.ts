@@ -7,7 +7,7 @@ const { dbQuery, dbQueryStrict } = vi.hoisted(() => ({ dbQuery: vi.fn(), dbQuery
 vi.mock("@/lib/db", () => ({ dbQuery, dbQueryStrict }));
 vi.mock("@/lib/auth", () => ({ resolveAccessState: async () => ({ state: "anonymous" }) }));
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); });
 afterEach(() => { vi.unstubAllEnvs(); });
 
 const FROM = "2026-10-20T00:00:00Z";

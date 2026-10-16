@@ -1,3 +1,4 @@
+import { readHistoryCached } from "@/lib/history-read-cache";
 import { NextResponse } from "next/server";
 import { dbQuery, dbQueryStrict } from "@/lib/db";
 import {
@@ -108,7 +109,7 @@ export async function GET(req: Request) {
   // per carattere. Acceso: servono la chiave del registro (source_table/id).
   const sealedCfg = sealedGradingConfig();
   const sealedCols = sealedCfg.enabled ? ", source_table, source_id" : "";
-  let fetched = await dbQuery<HistoryRow>(
+  let fetched = await readHistoryCached<HistoryRow>(JSON.stringify([conditions, values, sealedCols]), () => dbQuery<HistoryRow>(
     `SELECT id, sport, competition, event_name, home_team, away_team,
             player_one, player_two, market, pick, status,
             result, signal_type, is_paper, is_verified, is_demo,
@@ -139,7 +140,7 @@ export async function GET(req: Request) {
      ORDER BY starts_at DESC NULLS LAST, settled_at DESC NULLS LAST, id DESC
      LIMIT ${STATS_CAP}`,
     values
-  );
+  ));
 
   // SHOWN-PICKS-ONLY track record (#WINRATE-FLOOR-1 → #TRACKREC-REAL-0626). The
   // board suppresses below-floor rows as "no clear favourite" (no directional
@@ -170,7 +171,7 @@ export async function GET(req: Request) {
     let entries: SealedEntry[] = [];
     let unavailable = false;
     try {
-      entries = await dbQueryStrict<SealedEntry>(sealedEntriesSql(sealedCfg.from));
+      entries = await readHistoryCached<SealedEntry>(sealedEntriesSql(sealedCfg.from), () => dbQueryStrict<SealedEntry>(sealedEntriesSql(sealedCfg.from!)));
     } catch (e) {
       console.error("[history] sealed ledger read failed:", String(e));
       unavailable = true;
@@ -335,5 +336,5 @@ export async function GET(req: Request) {
         : `campione insufficiente: ${decisi} esiti verificati su un minimo di ${MIN_SAMPLE}`,
     },
     ...extra,
-  });
+  }, { headers: { "Cache-Control": "private, no-store" } });
 }

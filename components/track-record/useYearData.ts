@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { Segment } from "@/lib/track-record-history";
 import type { SourceBlock } from "@/lib/track-record";
 
 export type YearStats = {
   won?: number;
   lost?: number;
-  win_rate?: string;
+  win_rate?: string | null;
   // popolati dal backfill backend (Parte 2); assenti finché non atterra → UI degrada a "—"
   roi?: string;
   market_roi?: string;
@@ -33,12 +33,16 @@ export type YearStats = {
 
 export type YearData = { stats: YearStats; segments?: Segment[] };
 
+export const YearDataContext = createContext<YearData | null | undefined>(undefined);
+
 // #HISTORY-TRIM-0626: legge /api/v2/history sul track record live (nessun filtro
 // anno) + aggregati (additivi). Se il backend non fornisce ancora gli aggregati,
 // segments resta undefined (degrada pulito).
 export function useYearData(aggregate: string): YearData | null {
+  const shared = useContext(YearDataContext);
   const [data, setData] = useState<YearData | null>(null);
   useEffect(() => {
+    if (shared !== undefined) return;
     let alive = true;
     fetch(`/api/v2/history?aggregate=${aggregate}`)
       .then((r) => r.json())
@@ -51,6 +55,6 @@ export function useYearData(aggregate: string): YearData | null {
     return () => {
       alive = false;
     };
-  }, [aggregate]);
-  return data;
+  }, [aggregate, shared]);
+  return shared !== undefined ? shared : data;
 }
