@@ -1,4 +1,6 @@
 "use client";
+import {useSiteNavigation} from "./SiteNavigationContext";
+import {readLobbyDestination} from "@/lib/classic/site-navigation";
 import {trackEvent} from "@/lib/track-event";
 // components/classic/ClassicLobby.tsx — filone «classic», lobby (#CLASSIC-LOBBY-1008 · #CLASSIC-ROOBET-1013)
 //
@@ -152,9 +154,16 @@ function Rail({ id, title, hint, items, section, renderCard, copy, testId, busy 
 }
 
 export function ClassicLobby({ lang, tz, football, tennis, loading = false, renderCard, rowLink, banners, tail, now: nowProp, query: queryProp, onQueryChange }: ClassicLobbyProps) {
+  const sharedNavigation = useSiteNavigation();
   const copy = classicCopy(lang);
   const [tab, setTab] = useState<LobbyTab>("featured");
   const [sport, setSport] = useState<SportFilter>("popular");
+  useEffect(() => {
+    const target=readLobbyDestination(window.location.search);
+    // URL filters are applied after hydration, just like the desk view links.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTab(target.board);setSport(target.filter);
+  }, []);
   const [when, setWhen] = useState<DateFilter>("all");
   const [league, setLeague] = useState<string | null>(null);
   const [ownQuery, setOwnQuery] = useState("");
@@ -214,6 +223,12 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   const listed = useMemo(() => (leagueOn ? dated.filter((it) => `${it.data.sport}:${it.data.league?.trim() || UNNAMED_LEAGUE}` === league) : dated), [dated, leagueOn, league]);
   const blocks = useMemo(() => groupBySportLeague(listed), [listed]);
   const liveTotal = useMemo(() => searched.filter((it) => it.data.isLive).length, [searched]);
+
+  const reportNavigation=sharedNavigation?.report;
+  useEffect(()=>{
+    reportNavigation?.({board:tab,filter:sport,loading,live:liveTotal,popular:sportCounts.popular,football:sportCounts.football,tennis:sportCounts.tennis});
+  },[reportNavigation,tab,sport,loading,liveTotal,sportCounts.popular,sportCounts.football,sportCounts.tennis]);
+  useEffect(()=>()=>reportNavigation?.(null),[reportNavigation]);
 
   const featured = useMemo(() => (tab === "featured" ? featuredItems(sportScoped, now) : []), [tab, sportScoped, now]);
   // #CLASSIC-FIX2-1008 (M2) — lo scarto della fascia è quello che la scheda mostra: con le
@@ -280,7 +295,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   return (
     <div className="brc-lobby" data-testid="classic-lobby" data-loading={loading}>
       {/* ── 0 · il rail sinistro (desktop): sezioni, sport, altre destinazioni ── */}
-      <nav className="brc-side" aria-label={copy.sideLabel}>
+      {!sharedNavigation && <nav className="brc-side" aria-label={copy.sideLabel}>
         {/* le intestazioni sono etichette in maiuscoletto: senza icona, l'icona
             sta sulle voci (destinazioni), non sui titoli di gruppo */}
         <p className="brc-side__h">{copy.sideBoard}</p>
@@ -315,7 +330,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
           <li><Link className="brc-side__item" href="/tools"><ClassicIcon name="menu-tools" /><span>{copy.b3Tools}</span></Link></li>
           <li><Link className="brc-side__item" href="/partners"><ClassicIcon name="menu-partner" /><span>{copy.sidePartners}</span></Link></li>
         </ul>
-      </nav>
+      </nav>}
 
       <div className="brc-main">
       <ClassicBanners banners={bannerList} label={copy.bannersLabel} />

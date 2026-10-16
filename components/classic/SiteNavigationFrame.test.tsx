@@ -1,0 +1,35 @@
+import {vi,describe,it,expect} from 'vitest';
+import {render,screen,within} from '@testing-library/react';
+import SiteNavigationFrame from './SiteNavigationFrame';
+import {ClassicPrimaryNav} from './ClassicPrimaryNav';
+import {ClassicLobby} from './ClassicLobby';
+let pathname='/tools';
+vi.mock('next/navigation',()=>({usePathname:()=>pathname,useRouter:()=>({push:vi.fn(),back:vi.fn()})}));
+vi.mock('@/lib/classic/flag',()=>({CLASSIC:true}));
+vi.mock('@/lib/track-event',()=>({trackEvent:vi.fn()}));
+vi.mock('@/components/world-cup/SiteTopbar',()=>({default:()=> <div data-testid="shared-header"/>}));
+vi.mock('next/link',()=>({default:({href,children}:{href:string;children:React.ReactNode})=><a href={href}>{children}</a>}));
+describe('public site navigation',()=>{
+ it('retains all eleven sidebar links outside the desk',()=>{
+  pathname='/tools';render(<SiteNavigationFrame><p>Tools content</p></SiteNavigationFrame>);
+  const nav=screen.getByRole('navigation',{name:'Sections'});
+  expect(within(nav).getAllByRole('link')).toHaveLength(11);
+  expect(within(nav).getByRole('link',{name:'Starting Soon'})).toHaveAttribute('href','/?board=soon&filter=popular');
+  expect(within(nav).getByRole('link',{name:'Partners'})).toHaveAttribute('href','/partners');
+ });
+ it('offers real links for every primary destination',()=>{
+  render(<ClassicPrimaryNav active="football"/>);
+  expect(screen.getAllByRole('link')).toHaveLength(5);
+  expect(screen.getByRole('link',{name:'Football'})).toHaveAttribute('href','/predictions?view=football');
+  expect(screen.getByRole('link',{name:'Football'})).toHaveAttribute('aria-current','page');
+  expect(screen.getByRole('link',{name:'Home'})).toHaveAttribute('href','/');
+ });
+ it('does not duplicate the sidebar on the home lobby and applies shared-link filters',()=>{
+  pathname='/';window.history.replaceState(null,'','/?board=soon&filter=tennis');
+  render(<SiteNavigationFrame><ClassicLobby lang="en" tz="UTC" football={[]} tennis={[]} renderCard={()=>null} banners={{board:{href:'/predictions'},live:{href:'/predictions?view=live'},record:{href:'/history'}}}/></SiteNavigationFrame>);
+  expect(screen.getAllByRole('navigation',{name:'Sections'})).toHaveLength(1);
+  expect(screen.getByRole('tab',{name:'Starting Soon'})).toHaveAttribute('aria-selected','true');
+  expect(within(screen.getByRole('group',{name:'Sports'})).getByRole('button',{name:/Tennis/})).toHaveAttribute('aria-pressed','true');
+  window.history.replaceState(null,'','/');
+ });
+});

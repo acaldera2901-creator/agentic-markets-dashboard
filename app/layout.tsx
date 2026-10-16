@@ -1,3 +1,4 @@
+import SiteNavigationFrame from '@/components/classic/SiteNavigationFrame';
 import type { Metadata } from "next";
 import { Anton, Barlow_Condensed, JetBrains_Mono, Manrope } from "next/font/google";
 import PageViewTracker from "@/components/PageViewTracker";
@@ -172,7 +173,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gated sul consenso — attribuzione compresa — non si attivava mai lì. */}
         <CookieBanner />
         {/* a flag spento il ramo è `children` da solo: l'albero resta quello di main */}
-        {ClassicStyles ? <><ClassicStyles />{children}</> : children}
+        {ClassicStyles ? <><ClassicStyles /><SiteNavigationFrame>{children}</SiteNavigationFrame></> : children}
       </body>
     </html>
   );
