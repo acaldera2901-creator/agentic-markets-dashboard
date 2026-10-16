@@ -1,5 +1,6 @@
 "use client";
 
+import { YearDataContext, type YearData } from "./useYearData";
 import { PickLedger, type LedgerRow } from "./PickLedger";
 import { EdgeCard } from "./EdgeCard";
 import { SegmentTable } from "./SegmentTable";
@@ -82,10 +83,10 @@ const CSS = `
 @media(max-width:640px){.tr-root .tr-pill.btn{min-height:44px}}
 `;
 
-export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en" }) {
+export function TrackRecordView({ rows, lang, data }: { rows: LedgerRow[]; lang: "it" | "en"; data?: YearData | null }) {
   const it = lang === "it";
   return (
-    <div className="tr-root">
+    <YearDataContext.Provider value={data}><div className="tr-root">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div style={{ marginBottom: 6 }}>
         <span className="tr-pill">
@@ -106,6 +107,6 @@ export function TrackRecordView({ rows, lang }: { rows: LedgerRow[]; lang: "it" 
       </div>
       <EdgeCard lang={lang} />
       <SegmentTable lang={lang} />
-    </div>
+    </div></YearDataContext.Provider>
   );
 }

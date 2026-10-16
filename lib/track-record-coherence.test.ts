@@ -14,6 +14,7 @@ vi.mock("@/lib/auth", () => ({ resolveAccessState: async () => ({ state: "anonym
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.resetModules();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-09-28T09:00:00Z"));
 });

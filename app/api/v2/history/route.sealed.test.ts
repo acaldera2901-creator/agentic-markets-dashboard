@@ -7,7 +7,7 @@ const { dbQuery, dbQueryStrict } = vi.hoisted(() => ({ dbQuery: vi.fn(), dbQuery
 vi.mock("@/lib/db", () => ({ dbQuery, dbQueryStrict }));
 vi.mock("@/lib/auth", () => ({ resolveAccessState: async () => ({ state: "anonymous" }) }));
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); });
 afterEach(() => { vi.unstubAllEnvs(); });
 
 const FROM = "2026-10-20T00:00:00Z";
@@ -70,4 +70,16 @@ it("flag acceso, registro illeggibile: il periodo esce dal numero e lo dichiara"
   expect(stats.won + stats.lost).toBe(30);
   expect(stats.sealed_grading).toMatchObject({ unavailable: true, served_without_seal: 30 });
   err.mockRestore();
+});
+
+it("starts the independent ledger read before the history read completes", async () => {
+ vi.stubEnv("LEDGER_SEALED_GRADING", "1");vi.stubEnv("LEDGER_SEALED_FROM", FROM);
+ let finish!: (rows:typeof dopo)=>void;
+ dbQuery.mockReturnValueOnce(new Promise(resolve=>{finish=resolve;}));
+ dbQueryStrict.mockResolvedValueOnce(sigilli);
+ const {GET}=await import('./route');const response=GET(new Request('http://x/api/v2/history'));
+ await new Promise(resolve=>setTimeout(resolve,0));
+ const calls=dbQueryStrict.mock.calls.length;
+ finish(dopo);await response;
+ expect(calls).toBe(1);
 });

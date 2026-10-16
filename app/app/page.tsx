@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- A document navigation resets desk-local filters even when the current URL is already /. */
 "use client";
 
+import {usePolledTask} from "@/lib/use-polled-task";
+import type { Segment } from "@/lib/track-record-history";
 import {SitePageNavigation} from "@/components/classic/SiteNavigationContext";
 import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, Fragment, lazy, Suspense } from "react";
 import Link from "next/link";
@@ -10317,6 +10319,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const predOldest = process.env.NEXT_PUBLIC_CLASSIC === "1" ? useState<string | null>(null) : null;
   const [historyV2, setHistoryV2] = useState<V2HistoryRow[]>([]);
+  const historyRequestId = useRef(0);
+  const [historySegments, setHistorySegments] = useState<Segment[]>([]);
   const [historyV2Stats, setHistoryV2Stats] = useState<V2HistoryStats | null>(null);
   const [historyV2Loading, setHistoryV2Loading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -10784,16 +10788,19 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
 
   // Unified multi-sport track record for the History tab.
   const fetchHistoryV2 = useCallback(async () => {
+    const requestId = ++historyRequestId.current;
     setHistoryV2Loading(true);
     try {
-      const resp = await fetch("/api/v2/history?limit=300", { credentials: "same-origin" });
+      const resp = await fetch(`/api/v2/history?limit=300${tab === "history" ? "&aggregate=segments" : ""}`, { credentials: "same-origin" });
       if (resp.ok) {
         const data = await resp.json();
+        if (requestId !== historyRequestId.current) return;
         setHistoryV2(data.history ?? []);
         setHistoryV2Stats(data.stats ?? null);
+        setHistorySegments(data.segments ?? []);
       }
-    } catch { /**/ } finally { setHistoryV2Loading(false); }
-  }, []);
+    } catch { /**/ } finally { if (requestId === historyRequestId.current) setHistoryV2Loading(false); }
+  }, [tab, clientProfile?.plan, hasSession]);
 
   const fetchLive = useCallback(async () => {
     if (!profileHasAccess(clientProfile)) {
@@ -10823,31 +10830,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // «REFRESH ODDS» che lo chiamava (unico chiamante). I tre fetch che faceva
   // girano comunque sui loro intervalli qui sotto.
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      void fetchData();
-      void fetchPredictions();
-      void fetchFpOdds();
-      void fetchTennis();
-      void fetchHistoryV2();
-      void fetchLive();
-      void fetchTennisLive();
-    });
-    const dataInt = setInterval(fetchData, 30_000);
-    const predInt = setInterval(fetchPredictions, 3_600_000);
-    const fpInt = setInterval(fetchFpOdds, 30_000);
-    const tennisInt = setInterval(fetchTennis, 120_000);
-    const liveInt = setInterval(fetchLive, 60_000);
-    const tennisLiveInt = setInterval(fetchTennisLive, 60_000);
-    // #SETTLE-0909 — lo storico MANCAVA da questa lista. `fetchHistoryV2` girava
-    // solo al mount e sul refresh manuale, mentre la pagina mostrava un pallino
-    // verde e la scritta «si aggiorna a ogni match che finisce»: una promessa
-    // senza niente dietro. Il cron di settlement gira ogni 30 minuti, quindi
-    // 120s è già più fitto di quanto i dati possano cambiare — e costa una
-    // richiesta a un endpoint che serve solo aggregati.
-    const historyInt = setInterval(fetchHistoryV2, 120_000);
-    return () => { clearInterval(dataInt); clearInterval(predInt); clearInterval(fpInt); clearInterval(tennisInt); clearInterval(liveInt); clearInterval(tennisLiveInt); clearInterval(historyInt); };
-  }, [fetchData, fetchPredictions, fetchFpOdds, fetchTennis, fetchLive, fetchTennisLive, fetchHistoryV2]);
+  // Unrelated profile updates no longer restart every feed. History screens
+  // need no board/odds/live requests; history stats remain shared with Home.
+  const needsBoard = tab === "bets" || tab === "match-builder";
+  usePolledTask(fetchData, 30_000, needsBoard);
+  usePolledTask(fetchLive, 60_000, needsBoard);
+  usePolledTask(fetchFpOdds, 30_000, needsBoard);
+  usePolledTask(fetchTennisLive, 60_000, needsBoard);
+  usePolledTask(fetchHistoryV2, 120_000);
 
   // #PLAN-REFRESH-0831 — le prediction si rileggono ogni 60 minuti (l'intervallo
   // qui sopra). Il piano è il dato che decide cosa è sbloccato: finché non si
@@ -10858,15 +10848,13 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // di rifare la fetch a ogni salvataggio di nome/lingua/timezone.
   const clientPlan = clientProfile?.plan ?? null;
   useEffect(() => {
-    if (!clientPlan) return;
-    // queueMicrotask come l'effetto di mount qui sopra: le due fetch alzano il
-    // loading in modo sincrono, e un setState sincrono dentro un effetto innesca
-    // render a cascata (regola react-hooks, errore in lint).
-    queueMicrotask(() => {
-      void fetchPredictions();
-      void fetchTennis();
-    });
-  }, [clientPlan, fetchPredictions, fetchTennis]);
+    if (!needsBoard) return;
+    // Plan changes must immediately refresh access-projected board data.
+    queueMicrotask(() => { void fetchPredictions(); void fetchTennis(); });
+    const predInt = setInterval(fetchPredictions, 3_600_000);
+    const tennisInt = setInterval(fetchTennis, 120_000);
+    return () => { clearInterval(predInt); clearInterval(tennisInt); };
+  }, [needsBoard, clientPlan, fetchPredictions, fetchTennis]);
 
   // #LOGIN-WALL-0626: once the session reconcile resolved and there's no cookie
   // session, the desk is walled — the auth modal is force-shown and locked.
@@ -11573,7 +11561,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             <Suspense fallback={null}><AffiliateSection lang={uiLanguage} /></Suspense>
           ) : <ReferralPanel />)}
           {tab === "history" && (
-            <TrackRecordView rows={historyV2} lang={uiLanguage === "it" ? "it" : "en"} />
+            <TrackRecordView rows={historyV2} data={{ stats: historyV2Stats, segments: historySegments }} lang={uiLanguage === "it" ? "it" : "en"} />
           )}
           {tab === "leaderboard" && (
             <LeaderboardTab
