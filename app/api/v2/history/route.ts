@@ -37,7 +37,6 @@ type HistoryRow = Pick<
 };
 
 export async function GET(req: Request) {
-  const { state } = await resolveAccessState(req); // never denies (read)
 
   const { searchParams } = new URL(req.url);
   const sport       = searchParams.get("sport");
@@ -109,7 +108,18 @@ export async function GET(req: Request) {
   // per carattere. Acceso: servono la chiave del registro (source_table/id).
   const sealedCfg = sealedGradingConfig();
   const sealedCols = sealedCfg.enabled ? ", source_table, source_id" : "";
-  let fetched = await readHistoryCached<HistoryRow>(JSON.stringify([conditions, values, sealedCols]), () => dbQuery<HistoryRow>(
+  // Authentication, history and sealed ledger are independent reads. Run
+  // together so the cold path waits for the slowest read, not their sum.
+  const sealedRead = sealedCfg.enabled && sealedCfg.from
+    ? readHistoryCached<SealedEntry>(sealedEntriesSql(sealedCfg.from), () => dbQueryStrict<SealedEntry>(sealedEntriesSql(sealedCfg.from!)))
+        .then(entries => ({ entries, unavailable: false }), error => {
+          console.error("[history] sealed ledger read failed:", String(error));
+          return { entries: [] as SealedEntry[], unavailable: true };
+        })
+    : Promise.resolve({ entries: [] as SealedEntry[], unavailable: false });
+  const [{state}, initialRows, ledger] = await Promise.all([
+    resolveAccessState(req),
+    readHistoryCached<HistoryRow>(JSON.stringify([conditions, values, sealedCols]), () => dbQuery<HistoryRow>(
     `SELECT id, sport, competition, event_name, home_team, away_team,
             player_one, player_two, market, pick, status,
             result, signal_type, is_paper, is_verified, is_demo,
@@ -140,7 +150,8 @@ export async function GET(req: Request) {
      ORDER BY starts_at DESC NULLS LAST, settled_at DESC NULLS LAST, id DESC
      LIMIT ${STATS_CAP}`,
     values
-  ));
+  )), sealedRead]);
+  let fetched = initialRows;
 
   // SHOWN-PICKS-ONLY track record (#WINRATE-FLOOR-1 → #TRACKREC-REAL-0626). The
   // board suppresses below-floor rows as "no clear favourite" (no directional
@@ -168,14 +179,7 @@ export async function GET(req: Request) {
   // risposta lo dichiara in `sealed_grading.unavailable`.
   let sealedStats: (SealedGradingStats & { unavailable?: boolean }) | null = null;
   if (sealedCfg.enabled && sealedCfg.from) {
-    let entries: SealedEntry[] = [];
-    let unavailable = false;
-    try {
-      entries = await readHistoryCached<SealedEntry>(sealedEntriesSql(sealedCfg.from), () => dbQueryStrict<SealedEntry>(sealedEntriesSql(sealedCfg.from!)));
-    } catch (e) {
-      console.error("[history] sealed ledger read failed:", String(e));
-      unavailable = true;
-    }
+    const {entries, unavailable} = ledger;
     const applied = applySealedGrading(fetched, sealedMapFrom(entries), sealedCfg, isShownPick);
     fetched = applied.rows;
     sealedStats = applied.stats ? { ...applied.stats, ...(unavailable ? { unavailable } : {}) } : null;
