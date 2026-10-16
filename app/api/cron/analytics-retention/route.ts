@@ -1,3 +1,4 @@
+import {trackingRetentionEnabled,runTrackingRetention} from '@/lib/tracking-retention';
 // app/api/cron/analytics-retention/route.ts — #RETENTION-ANALYTICS-0915
 //
 // Applica il termine del registro dei trattamenti (voce «Analytics di prodotto
@@ -73,11 +74,12 @@ export async function GET(req: NextRequest) {
       ran_at: new Date().toISOString(),
     };
 
+    const coordinated=trackingRetentionEnabled()?await runTrackingRetention(dryRun):null;
     if (dryRun) {
-      return NextResponse.json({ ...body, dry_run: true, purged: 0 });
+      return NextResponse.json({ ...body, coordinated, dry_run: true, purged: 0 });
     }
 
-    if (eligible > 0) {
+    if (eligible > 0 && !coordinated) {
       await dbExecute(
         `UPDATE events SET session_id = NULL WHERE ${expired.where}`,
         expired.params
@@ -98,7 +100,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ...body, purged: eligible, remaining: 0 });
+    return NextResponse.json({ ...body, coordinated, purged: eligible, remaining: 0 });
   } catch (e) {
     console.error("[cron/analytics-retention] failed:", String(e));
     return NextResponse.json({ error: "retention_failed", detail: String(e) }, { status: 500 });

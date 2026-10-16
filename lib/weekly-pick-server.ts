@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 // lib/weekly-pick-server.ts — #WEEKLY-PICK-1. Data-layer server della weekly pick
 // (entitlement + grant). Separato da lib/weekly-pick.ts (puro/testabile) come
 // plan-grant.ts lo è da paygate.ts. GATED: usato solo dal wiring dietro flag.
@@ -63,6 +64,7 @@ export async function notifyWeeklyPickGranted(opts: {
   rail: string;
   orderId: string;
 }): Promise<void> {
+  schedulePurchaseEvent({identifier:opts.identifier,rail:"weekly_pick",paymentRef:opts.orderId,grossUsd:opts.amountUsd,plan:"weekly_pick"});
   try {
     await dbExecute(
       `INSERT INTO events (event_type, session_id, country, language, plan, partner_id, value, meta)

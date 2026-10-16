@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import CookieBanner from "@/components/CookieBanner";
 
 // #FUNNEL-MEAS-0813: la parità visiva fra Accetta e Rifiuta è un requisito di
@@ -113,5 +113,38 @@ describe("CookieBanner — parità dei due bottoni (EDPB)", () => {
     expect(focusables[0]).toBe(buttons().decline);
     expect(focusables[1]).toBe(buttons().accept);
     expect(focusables[2]).toBe(screen.getByRole("link", { name: /privacy/i }));
+  });
+});
+
+// #SESSIONI-1006 leva 4 — l'esito del banner, contato senza identificatori.
+describe("CookieBanner — consent_choice aggregato", () => {
+  let sent: Record<string, unknown>[] = [];
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    sent = [];
+    vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+      if (String(url) === "/api/track") sent.push(JSON.parse(String(init?.body ?? "{}")));
+      return Promise.resolve({ ok: true } as Response);
+    }));
+  });
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+  for (const [label, choice] of [[/accept/i, "accepted"], [/decline/i, "declined"]] as const) {
+    it(`${choice}: un evento con meta.choice e nessun session_id`, () => {
+      render(<CookieBanner />);
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      const ev = sent.filter((e) => e.event_type === "consent_choice");
+      expect(ev).toHaveLength(1);
+      expect(ev[0].meta).toEqual({ choice });
+      expect(ev[0]).not.toHaveProperty("session_id");
+      expect(ev[0]).not.toHaveProperty("anonymous");
+    });
+  }
+
+  it("accept non crea l'identificatore per l'evento di scelta", () => {
+    render(<CookieBanner />);
+    fireEvent.click(screen.getByRole("button", { name: /accept/i }));
+    expect(sessionStorage.getItem("am_sid")).toBeNull();
   });
 });

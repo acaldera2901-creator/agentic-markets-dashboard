@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // #POSTBACK-1014 — /go/[partner]: records the click and 302s to the partner's real
 // tracking link. The invariant that protects existing attribution: for a network whose
 // clickid param is not confirmed, the Location is the current link BYTE FOR BYTE.
 
 const dbQuery = vi.fn();
-vi.mock("@/lib/db", () => ({ dbQuery }));
+vi.mock("@/lib/db", () => ({ dbQuery,dbExecute:dbQuery }));
 // `after()` needs a request scope that vitest does not have: run the callback inline.
 vi.mock("next/server", async (orig) => ({
   ...(await orig<typeof import("next/server")>()),
@@ -27,8 +27,11 @@ const call = async (partner: string, cc?: string) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("VERCEL_ENV","production");
   dbQuery.mockResolvedValue([]);
 });
+
+afterEach(()=>vi.unstubAllEnvs());
 
 describe("GET /go/[partner]", () => {
   it("leaves the link byte-for-byte unchanged for every network without a confirmed param", async () => {
@@ -86,3 +89,5 @@ describe("GET /go/[partner]", () => {
     expect(dbQuery).not.toHaveBeenCalled();
   });
 });
+
+it('preview preserves redirects and clickid contract while avoiding production analytics writes',async()=>{vi.stubEnv('VERCEL_ENV','preview');const res=await call('stonevegas','NO');expect(res.status).toBe(302);expect(res.headers.get('location')).toMatch(/clickid=[a-f0-9]{32}$/);expect(dbQuery).not.toHaveBeenCalled();});

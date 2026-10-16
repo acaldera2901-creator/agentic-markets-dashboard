@@ -1,3 +1,5 @@
+import { shouldSkipAnalyticsPath } from "./analytics-quality";
+
 // Beacon analytics fire-and-forget verso /api/track.
 //
 // Estratto da app/app/page.tsx (#PARTNER-CLICK-TRACK-1) perché serve anche a
@@ -24,9 +26,12 @@ export function getSessionId(): string | null {
 
 export function trackEvent(
   event_type: string,
-  extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown> }
+  // `anonymous` (#SESSIONI-1006): l'evento non porta MAI il session_id, anche
+  // col consenso — per i conteggi aggregati come `consent_choice`.
+  extra?: { language?: string; plan?: string; partner_id?: string; value?: number; meta?: Record<string, unknown>; anonymous?: boolean }
 ) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || shouldSkipAnalyticsPath(window.location.pathname)) return;
+  const { anonymous, ...fields } = extra ?? {};
   // #STORAGE-CRASH-0813: questa lettura era FUORI dal try (quella del consenso,
   // due righe sotto, era già protetta). Dove lo storage è vietato — Safari in
   // navigazione privata, i browser interni delle app, i cookie bloccati —
@@ -37,13 +42,15 @@ export function trackEvent(
   const stored = (() => {
     try { return localStorage.getItem("agentic-lang"); } catch { return null; }
   })();
-  const language = extra?.language ?? stored ?? undefined;
+  const language = fields.language ?? stored ?? undefined;
   // #GOLIVE-QW-A: no persistent session_id before GDPR consent is granted — the
   // beacon still fires (anonymous, no id) so we don't tie events to a device
   // identifier the user hasn't accepted. session_id resumes once consent lands.
-  const consented = (() => {
+  const consented = !anonymous && (() => {
     try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
   })();
+  const internal = (() => { try { return localStorage.getItem("betredge_internal") === "1"; } catch { return false; } })();
+  if (internal) fields.meta = { ...fields.meta, internal: true };
   fetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -58,7 +65,7 @@ export function trackEvent(
     // `?? undefined`: con lo storage vietato getSessionId ritorna null, e la
     // chiave va OMESSA dal payload invece di arrivare a null — la forma del
     // beacon resta identica a prima del fix.
-    body: JSON.stringify({ event_type, session_id: consented ? (getSessionId() ?? undefined) : undefined, language, ...extra }),
+    body: JSON.stringify({ event_type, analytics_consent: consented, session_id: consented ? (getSessionId() ?? undefined) : undefined, language, ...fields }),
   }).catch(() => { /* ignore */ });
 }
 
@@ -73,4 +80,45 @@ export function trackEvent(
 export function viewerPlan(hasSession: boolean, profile: { plan: string } | null): string {
   if (!hasSession) return "anon";
   return profile?.plan ?? "unknown";
+}
+
+/** Session anchor only after consent; a blocked storage never creates a durable ID. */
+export function anchorSession(meta:Record<string,unknown>):void {
+ if(typeof window==='undefined'||shouldSkipAnalyticsPath(window.location.pathname))return;
+ try{
+  if(localStorage.getItem('gdpr_consent')!=='accepted')return;
+  const sid=getSessionId();
+  if(!sid||sessionStorage.getItem('br_session_anchor')===sid)return;
+  sessionStorage.setItem('br_session_anchor',sid);
+  trackEvent('session_start',{meta});
+ }catch{ /* analytics must never block navigation */ }
+}
+
+type ConsentSync='ready'|'disabled'|'revoked'|'failed';
+let bootstrap:Promise<ConsentSync>|null=null;
+/** Resolves only after the browser has installed the server's signed cookie. */
+export async function syncAnalyticsConsent(entry?:Record<string,unknown>,forceRevoke=false):Promise<ConsentSync> {
+ if(typeof window==='undefined'||shouldSkipAnalyticsPath(window.location.pathname))return 'disabled';
+ let consent:string|null;try{consent=forceRevoke?'declined':localStorage.getItem('gdpr_consent');}catch{return 'disabled';}
+ if(consent!=='accepted'&&consent!=='declined')return 'disabled';
+ if(consent==='declined')try{sessionStorage.removeItem('am_sid');sessionStorage.removeItem('br_session_anchor');localStorage.removeItem('am_attrib');}catch{/* storage denied */}
+ if(process.env.NEXT_PUBLIC_ANALYTICS_LINKING_ENABLED!=='1')return 'disabled';
+ let internal=false;try{internal=localStorage.getItem('betredge_internal')==='1';}catch{}
+ const request=(choice:'accepted'|'revoked')=>fetch('/api/analytics/session',{method:'POST',headers:{'content-type':'application/json'},keepalive:true,body:JSON.stringify({consent:choice,entry:{...entry,...(internal?{internal:true}:{})}})});
+ if(consent==='declined'){
+  // A late accept response must not install its cookie after the withdrawal response.
+  if(bootstrap)await bootstrap;
+  try{const response=await request('revoked');return response.ok?'revoked':'failed';}catch{return 'failed';}
+ }
+ if(bootstrap)return bootstrap;
+ bootstrap=(async()=>{
+  try{
+   const response=await request('accepted');if(!response.ok)return 'failed';
+   if(localStorage.getItem('gdpr_consent')!=='accepted'){
+    await request('revoked');return 'revoked';
+   }
+   return 'ready';
+  }catch{return 'failed';}
+ })();
+ try{return await bootstrap;}finally{bootstrap=null;}
 }

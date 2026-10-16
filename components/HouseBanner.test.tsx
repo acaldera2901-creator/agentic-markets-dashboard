@@ -19,6 +19,7 @@ let calls: { url: string; body: Record<string, unknown>; init?: RequestInit }[] 
 
 beforeEach(() => {
   calls = [];
+  vi.stubGlobal("IntersectionObserver", class { constructor(private cb: IntersectionObserverCallback) {} observe(target: Element) { this.cb([{ isIntersecting: true, intersectionRatio: 0.5, target } as IntersectionObserverEntry], this as unknown as IntersectionObserver); } disconnect() {} unobserve() {} });
   localStorage.clear();
   sessionStorage.clear();
   vi.stubGlobal(
@@ -66,7 +67,7 @@ describe("HouseBanner — il tracking passa dal gate del consenso", () => {
 
   it("il meta della campagna resta quello di prima", () => {
     render(<HouseBanner campaign={campaign} lang="it" />);
-    expect(tracked()[0].body.meta).toEqual({ campaign_id: campaign.id, slot: campaign.slot });
+    expect(tracked()[0].body.meta).toEqual({ campaign_id: campaign.id, slot: campaign.slot, viewability:"50pct-v1" });
   });
 
   it("anche dismiss e click passano dal gate", () => {
@@ -92,3 +93,6 @@ describe("HouseBanner — il tracking passa dal gate del consenso", () => {
     expect(document.querySelector(".house-banner")).not.toBeNull();
   });
 });
+
+it('does not count a banner below the visibility threshold',()=>{vi.stubGlobal('IntersectionObserver',class{observe(){} disconnect(){} unobserve(){}});render(<HouseBanner campaign={campaign} lang="en"/>);expect(tracked()).toHaveLength(0);});
+it('preview never records impression, click or dismiss',()=>{render(<HouseBanner campaign={campaign} lang="en" preview/>);expect(tracked()).toHaveLength(0);});

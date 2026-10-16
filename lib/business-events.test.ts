@@ -1,0 +1,9 @@
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+const {dbExecute,pending}=vi.hoisted(()=>({dbExecute:vi.fn().mockResolvedValue([]),pending:[] as Array<()=>Promise<unknown>>}));
+vi.mock('@/lib/db',()=>({dbExecute}));vi.mock('next/server',()=>({after:(fn:()=>Promise<unknown>)=>pending.push(fn)}));
+import {recordBusinessEvent,scheduleBusinessEvent,schedulePurchaseEvent} from './business-events';
+beforeEach(()=>{vi.clearAllMocks();pending.length=0;vi.stubEnv('VERCEL_ENV','production');vi.stubEnv('BUSINESS_EVENTS_ENABLED','1');vi.stubEnv('ANALYTICS_RETENTION_APPROVED','1');});afterEach(()=>vi.unstubAllEnvs());
+it('default off means zero queries and no deferred work',async()=>{vi.stubEnv('BUSINESS_EVENTS_ENABLED','');await recordBusinessEvent({type:'signup_created',identifier:'a@example.test'});scheduleBusinessEvent({type:'signup_created',identifier:'a@example.test'});expect(dbExecute).not.toHaveBeenCalled();expect(pending).toHaveLength(0);});
+it('uses an atomic DB event function; identity resolves to UUID inside DB, never client meta',async()=>{await recordBusinessEvent({type:'signup_created',identifier:'a@example.test'});expect(dbExecute).toHaveBeenCalledWith(expect.stringContaining('br_emit_business_event'),['signup_created','a@example.test','auth',null,null,null,null]);});
+it('defers purchase analytics until after response and never throws on failures',async()=>{dbExecute.mockRejectedValueOnce(new Error('telemetry DB down'));schedulePurchaseEvent({identifier:'a@example.test',rail:'paygate',paymentRef:'order-1',grossUsd:10});expect(dbExecute).not.toHaveBeenCalled();expect(pending).toHaveLength(1);await expect(pending[0]()).resolves.toBe(false);});
+it('rejects malformed amounts and unsupported business vocabularies',async()=>{await recordBusinessEvent({type:'purchase',identifier:'a@example.test',source:'paygate',orderId:'x',amount:NaN,currency:'USD'});expect(dbExecute).not.toHaveBeenCalled();});

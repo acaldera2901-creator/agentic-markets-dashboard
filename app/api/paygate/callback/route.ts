@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { hashToken, evaluateCallback, checkPaymentStatus } from "@/lib/paygate";
@@ -150,6 +151,14 @@ export async function GET(req: Request) {
 
       // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant. Non lancia mai;
       // con AFFILIATE_MODE=off non fa nulla.
+      schedulePurchaseEvent({
+        plan:order.plan,
+identifier: order.identifier,
+        rail: "paygate",
+        paymentRef: order.id,
+        grossUsd: order.amount_usd,
+        paidAt: new Date(),
+      });
       scheduleAffiliateCommission({
         identifier: order.identifier,
         rail: "paygate",

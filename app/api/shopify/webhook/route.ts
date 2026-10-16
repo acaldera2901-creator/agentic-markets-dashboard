@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import {
   verifyShopifyHmac,
@@ -310,6 +311,7 @@ export async function POST(req: Request) {
       }
       await grantWeeklyPick(order.identifier, currentWeekStart(new Date()), null);
       await markEvent(order.orderId, unknownItems.length > 0 ? "weekly-partial" : "weekly");
+      if(!isCryptoGatewayOrder(order.gatewayNames))schedulePurchaseEvent({identifier:order.identifier,rail:"shopify",paymentRef:order.orderId,grossUsd:null,plan:"weekly_pick"});
       return NextResponse.json({ received: true, weeklyPick: true });
     }
 
@@ -376,6 +378,15 @@ export async function POST(req: Request) {
       const amounts = notSinglePlan
         ? { grossUsd: null, taxUsd: null }
         : shopifyOrderAmounts(payload, order.totalPrice);
+      schedulePurchaseEvent({
+        plan:resolved.plan,
+identifier: order.identifier,
+        rail: "shopify",
+        paymentRef: order.orderId,
+        grossUsd: amounts.grossUsd,
+        paidAt: new Date(),
+        meta: { taxUsd: amounts.taxUsd },
+      });
       scheduleAffiliateCommission({
         identifier: order.identifier,
         rail: "shopify",

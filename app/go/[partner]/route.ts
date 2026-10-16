@@ -1,6 +1,8 @@
+import {analyticsWriteAllowed} from '@/lib/events-write-gate';
+import {recordTrackingCounter} from '@/lib/tracking-counters';
 import { after, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { dbQuery } from "@/lib/db";
+import { dbExecute } from "@/lib/db";
 import { NETWORKS, networkOfPartner } from "@/lib/affiliate-networks";
 import { targetUrlFor } from "@/lib/partners";
 
@@ -34,11 +36,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ partner:
   const param = NETWORKS[network].clickParam;
   // Fail-open and off the critical path: the user reaches the partner even if the
   // insert fails (dbQuery logs and swallows).
-  after(() =>
-    dbQuery(
+  if(analyticsWriteAllowed())after(async () => {
+    try{await dbExecute(
       `INSERT INTO partner_clicks (clickid, partner, network, clickid_sent, country) VALUES ($1, $2, $3, $4, $5)`,
       [clickid, partner, network, param !== null, country],
-    ),
-  );
+    );}catch{await recordTrackingCounter('insert_failed');}
+  });
   return noStore(NextResponse.redirect(param ? withParam(target, param, clickid) : target, 302));
 }

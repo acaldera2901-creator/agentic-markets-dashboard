@@ -1,3 +1,4 @@
+import CookiePreferences from '@/components/CookiePreferences';
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LEGAL_ENTITY, PRIVACY_CONTROLLER } from "@/lib/legal-entity";
@@ -45,7 +46,7 @@ export default function PrivacyPage() {
                 gli eventi portano un id di sessione casuale che li raggruppa, quindi
                 sono PSEUDONIMI (Cons. 26 GDPR). La parola "anonymous" toglieva al
                 trattamento la base giuridica che gli serve davvero (consenso). */}
-            <li><strong className="text-[var(--am-text)]">Usage events:</strong> Product usage events (page and tab views, tab clicks, plan views, banner views, partner link clicks, sign-up and checkout steps) recorded in our own first-party database. They contain no name, email or account reference, but they can be grouped by a randomly generated session identifier, so they are pseudonymous rather than anonymous. That identifier is created and sent <strong className="text-[var(--am-text)]">only after you accept cookies</strong> via the banner; if you decline, or have not answered yet, events are still counted but carry no identifier and cannot be linked to one another.</li>
+            <li><strong className="text-[var(--am-text)]">Usage events:</strong> Product usage events (page and tab views, tab clicks, plan views, banner views, partner link clicks, sign-up and checkout steps) recorded in our own first-party database. They contain no name or email address. A randomly generated session identifier makes consenting usage events pseudonymous rather than anonymous; where the account-linking option described below is enabled, a consenting authenticated session can be associated with an internal profile UUID. That identifier is created and sent <strong className="text-[var(--am-text)]">only after you accept cookies</strong> via the banner; if you decline, or have not answered yet, events are still counted but carry no identifier and cannot be linked to one another.</li>
             <li><strong className="text-[var(--am-text)]">Acquisition source:</strong> When you create an account, we store how you first reached the site (campaign parameters in the link you followed, the referring website, and the first page you landed on). This is first-party data kept in your browser&apos;s localStorage until sign-up and then saved with your profile; it is never shared with advertising networks.</li>
             <li><strong className="text-[var(--am-text)]">Deposit requests:</strong> For paying clients, name, email, and payment method are stored securely in Supabase with row-level security.</li>
             <li><strong className="text-[var(--am-text)]">Technical data:</strong> Standard server logs (IP address, browser type, request timestamps) retained for up to 30 days for security purposes.</li>
@@ -74,9 +75,12 @@ export default function PrivacyPage() {
               esenti da consenso. Qui ogni chiave è elencata con la sua qualificazione
               esatta, così la pagina si può verificare leggendo il codice. */}
           <p className="text-xs leading-relaxed">
-            BetRedge does not set first-party cookies for analytics: what we keep on your device is browser storage, listed key by key below. Each entry says whether it is exempt from consent (strictly necessary or a preference you set yourself) or requires your consent.
+            Storage used by BetRedge is listed key by key below. Each entry says whether it is exempt from consent (strictly necessary or a preference you set yourself) or requires your consent.
           </p>
+          {process.env.BUSINESS_EVENTS_ENABLED==='1'&&<p className="text-xs leading-relaxed">Business event analytics record registrations, activations and granted purchases using internal profile UUIDs and order references, without email addresses or names. These analytics identifiers expire after 14 months; underlying account and payment records follow their separate retention rules.</p>}
+          <CookiePreferences/>
           <ul className="text-xs space-y-2 list-disc list-inside">
+            {process.env.NEXT_PUBLIC_ANALYTICS_LINKING_ENABLED==='1'&&<li><strong className="text-[var(--am-text)]">br_analytics_session</strong> (secure, httpOnly session cookie) — created only after analytics consent. It groups consenting usage events and, after you authenticate, links that session to your internal profile UUID. It expires within 24 hours or when the browser session ends. Session links and event identifiers expire together after 14 months. Withdrawing consent removes the link and session identifiers. This cookie is separate from your account login cookie.</li>}
             <li><strong className="text-[var(--am-text)]">gdpr_consent</strong> (localStorage) — records your answer to the cookie banner. Strictly necessary: it is what makes your choice work, so it is stored whatever you answer. <em>No consent required.</em></li>
             <li><strong className="text-[var(--am-text)]">agentic-lang</strong> (localStorage) — the interface language. Set when you pick a language, and pre-filled on your first visit with the language your browser announces. It is a display preference, used only to show you the site in the right language. <em>No consent required.</em></li>
             <li><strong className="text-[var(--am-text)]">br_house_dismissed</strong> (localStorage) — remembers that you closed one of our own in-app promotional banners, so it is not shown to you again. <em>No consent required.</em></li>

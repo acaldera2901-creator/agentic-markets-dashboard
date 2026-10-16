@@ -1,60 +1,71 @@
-"use client";
-
-// components/PageViewTracker.tsx — #FUNNEL-MEAS-0813
-// Montato UNA volta nel root layout: prima di questo, il tracking di prima parte
-// esisteva solo dentro il desk /app, quindi misuravamo chi era già entrato e non
-// chi arriva (landing, /tools, /weekly-pick, /partners, /blog: zero eventi).
-// Nessun vendor, nessun cookie: riusa il beacon esistente (lib/track-event).
-
-import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
-import { externalReferrerHost, initAttribution, sourceFromSearch } from "@/lib/attribution";
-import { trackEvent } from "@/lib/track-event";
-
-// Il cap di meta in app/api/track/route.ts è 2048 byte, e se lo si supera la
-// route butta via l'INTERO meta (`metaJson = "{}"`), quindi anche `path`. Le
-// sette chiavi di provenienza sono già tagliate a 40 caratteri ciascuna
-// (~380 byte in tutto) e ref_host a 80: tagliando anche il path il peggior
-// caso resta sotto il cap invece di dipendere dalla lunghezza di una URL che
-// chiunque può allungare.
-const MAX_PATH_LEN = 512;
-
-export default function PageViewTracker() {
-  const pathname = usePathname();
-  // #ATTRIB-EVERYWHERE-0915: `document.referrer` NON cambia durante le
-  // navigazioni client-side — resta quello del caricamento iniziale. Allegarlo
-  // a ogni page_view direbbe che tutte le pagine della sessione arrivano da
-  // Reddit. È una proprietà dell'INGRESSO, quindi si registra una volta sola.
-  const entryView = useRef(true);
-  useEffect(() => {
-    // First-touch: scrive solo al primo caricamento e solo col consenso, poi è
-    // un no-op (la regola vive dentro initAttribution).
-    initAttribution();
-    // `path` in meta: è il campo libero della tabella events (meta JSONB);
-    // event_type resta "page_view" per non spezzare le query esistenti.
-    // La provenienza dichiarata nell'URL (`?src=tg-free` dai canali Telegram,
-    // `?utm_source=…` da Reddit/newsletter/widget, `?crm=…` dalle email CRM).
-    // Letta da window.location e non da useSearchParams(): quel hook renderebbe
-    // dinamiche le pagine statiche per SEO. Entra nel meta solo se c'e'.
-    const prov = typeof window !== "undefined" ? sourceFromSearch(window.location.search) : {};
-    const isEntry = entryView.current;
-    entryView.current = false;
-    // Solo l'host, mai la URL completa: dice "reddit.com" senza dire cosa
-    // stesse leggendo l'utente. Vedi externalReferrerHost.
-    const refHost = isEntry ? externalReferrerHost() : null;
-    trackEvent("page_view", {
-      meta: { path: pathname.slice(0, MAX_PATH_LEN), ...prov, ...(refHost ? { ref_host: refHost } : {}) },
-    });
-  }, [pathname]);
-
-  // Consenso accettato dopo il caricamento: l'utente è ancora sulla pagina di
-  // ingresso, quindi utm e referrer sono ancora leggibili e l'attribuzione si
-  // cattura adesso. Stesso evento del banner già ascoltato da LiveChat.
-  useEffect(() => {
-    const onConsent = () => initAttribution();
-    window.addEventListener("betredge:gdpr-consent", onConsent);
-    return () => window.removeEventListener("betredge:gdpr-consent", onConsent);
-  }, []);
-
-  return null;
+'use client';
+import {useCallback,useEffect,useRef} from 'react';
+import {usePathname} from 'next/navigation';
+import {externalReferrerHost,initAttribution,sourceFromSearch} from '@/lib/attribution';
+import {trackEvent,anchorSession,syncAnalyticsConsent} from '@/lib/track-event';
+import {shouldSkipAnalyticsPath} from '@/lib/analytics-quality';
+import {storageGet} from '@/lib/safe-storage';
+type Meta=Record<string,unknown>;
+export default function PageViewTracker(){
+ const pathname=usePathname();
+ const enhanced=process.env.NEXT_PUBLIC_ANALYTICS_LINKING_ENABLED==='1';
+ const entryView=useRef(true);
+ const pendingEntry=useRef<Meta|null>(null);
+ const currentView=useRef<Meta|null>(null);
+ const lastPath=useRef<string|null>(null);
+ const measured=useRef(new WeakSet<Meta>());
+ const measure=useCallback((meta:Meta,entry?:Meta)=>{
+  if(measured.current.has(meta))return;
+  const consent=storageGet('gdpr_consent');
+  // The advanced mode waits for a decision; no pre-consent view is back-linked.
+  // Entry context alone remains in memory. On acceptance only the current page is measured.
+  if(enhanced&&consent!=='accepted'&&consent!=='declined')return;
+  measured.current.add(meta);
+  if(enhanced&&consent==='accepted'){
+   void syncAnalyticsConsent(entry??meta).then(state=>{
+    if(state!=='ready'||storageGet('gdpr_consent')!=='accepted')return;
+    trackEvent('page_view',{meta});
+    if(entry)trackEvent('entry_attributed',{meta:entry});
+    anchorSession(entry??meta);
+   });
+  }else{
+   trackEvent('page_view',{meta});anchorSession(meta);
+  }
+ },[enhanced]);
+ useEffect(()=>{
+  if(shouldSkipAnalyticsPath(pathname)||lastPath.current===pathname)return;
+  lastPath.current=pathname;
+  initAttribution();
+  const first=entryView.current;entryView.current=false;
+  const ref=first?externalReferrerHost():null;
+  const meta:Meta={path:pathname.slice(0,512),...sourceFromSearch(window.location.search),...(ref?{ref_host:ref}:{})};
+  currentView.current=meta;
+  if(first&&storageGet('gdpr_consent')===null)pendingEntry.current=meta;
+  measure(meta);
+ },[pathname,measure]);
+ useEffect(()=>{
+  const onConsent=()=>{
+   initAttribution();
+   const entry=pendingEntry.current;pendingEntry.current=null;
+   const consent=storageGet('gdpr_consent');
+   if(enhanced){
+    if(consent==='accepted'){
+     // Consent lifecycle is independent of aggregate page-view deduplication.
+     // Reaccepting on the same page still mints/anchors a new consenting session.
+     const context=entry??currentView.current??{path:window.location.pathname};
+     void syncAnalyticsConsent(context).then(state=>{
+      if(state==='ready'&&storageGet('gdpr_consent')==='accepted')anchorSession(context);
+     });
+    }else void syncAnalyticsConsent(undefined,true);
+    if(currentView.current)measure(currentView.current,consent==='accepted'?entry??undefined:undefined);
+   }else{
+    void syncAnalyticsConsent(entry??{path:window.location.pathname});
+    if(entry&&consent==='accepted'){trackEvent('entry_attributed',{meta:entry});anchorSession(entry);}
+   }
+  };
+  const onStorage=(event:StorageEvent)=>{if(event.key==='gdpr_consent'||event.key===null){onConsent();if(!enhanced&&storageGet('gdpr_consent')!=='accepted')void syncAnalyticsConsent(undefined,true);}};
+  window.addEventListener('storage',onStorage);window.addEventListener('betredge:gdpr-consent',onConsent);
+  return()=>{window.removeEventListener('storage',onStorage);window.removeEventListener('betredge:gdpr-consent',onConsent);};
+ },[enhanced,measure]);
+ return null;
 }

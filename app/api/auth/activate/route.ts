@@ -1,3 +1,5 @@
+import {scheduleBusinessEvent} from '@/lib/business-events';
+import {attachAnalyticsIdentity} from '@/lib/analytics-session';
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
@@ -65,6 +67,7 @@ export async function GET(req: Request) {
     return redirect(req, "?activation=error");
   }
 
+  scheduleBusinessEvent({type:'account_activated',identifier:row.identifier});
   // #REFERRAL-V2-0808 — i 7 giorni di PRO all'invitato: questo è il percorso di
   // attivazione normale (link email). Si concede QUI e non all'INSERT del
   // profilo, che nasce plan='free' e non è usabile fino a questo click: un
@@ -129,5 +132,6 @@ export async function GET(req: Request) {
   // registra da una mail fredda non deve ritrovarsi sul listino.
   const res = redirect(req, activationLanding(url.searchParams.get("goto")));
   res.cookies.set(SESSION_COOKIE, signSession(row.identifier), SESSION_COOKIE_OPTIONS);
+  await attachAnalyticsIdentity(req,res,row.identifier,'signup');
   return res;
 }

@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { captureOrder, evaluateCapture } from "@/lib/paypal";
@@ -78,6 +79,14 @@ export async function POST(req: Request) {
   console.log(`[paypal/capture] GRANT order=${order.id} plan=${granted.plan} amount_usd=${String(order.amount_usd)}`);
   // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op). Stessa
   // ref del webhook: lo UNIQUE deduplica le due strade.
+  schedulePurchaseEvent({
+    plan:order.plan,
+identifier: order.identifier,
+    rail: "paypal",
+    paymentRef: order.id,
+    grossUsd: order.amount_usd,
+    paidAt: new Date(),
+  });
   scheduleAffiliateCommission({
     identifier: order.identifier,
     rail: "paypal",

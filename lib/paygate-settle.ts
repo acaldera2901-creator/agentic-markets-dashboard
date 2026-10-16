@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 // #PAYGATE-SELFHEAL: verifica un ordine PayGate 'pending' contro PayGate e, se
 // realmente pagato, lo salda (claim atomico pending→paid) e concede il piano.
 // È la stessa sequenza del callback (checkPaymentStatus → evaluateCallback →
@@ -98,6 +99,14 @@ export async function settlePendingOrder(order: PendingOrder): Promise<SettleRes
   if (!granted) return { granted: false, reason: "paid but grant failed (identifier not found?)" };
   await dbExecute("UPDATE paygate_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
   // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant (non lancia mai; off = no-op).
+  schedulePurchaseEvent({
+    plan:order.plan,
+identifier: order.identifier,
+    rail: "paygate",
+    paymentRef: order.id,
+    grossUsd: order.amount_usd,
+    paidAt: new Date(),
+  });
   scheduleAffiliateCommission({
     identifier: order.identifier,
     rail: "paygate",
