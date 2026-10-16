@@ -202,7 +202,7 @@ const PER_DAY: Record<Lang, (n: string) => string> = {
 };
 
 export type SignupPopupPlanRow = {
-  key: "free" | "base" | "pro";
+  key: "free" | "pro";
   name: string;
   /** Prezzo mensile, il più visibile. */
   price: string;
@@ -224,11 +224,9 @@ const ALLOWANCE: Record<Lang, { perSport: (n: number) => string; all: string }> 
 
 export function signupPopupPlanRows(lang: Lang): SignupPopupPlanRow[] {
   const a = ALLOWANCE[lang];
-  const base = PUBLIC_PAID_PLANS.base.amountUsdt;
   const pro = PUBLIC_PAID_PLANS.premium.amountUsdt;
   return [
     { key: "free", name: "Free", price: usdLabel(0, lang), per: "", perDay: "", allowance: a.perSport(showcaseAllowance("free")) },
-    { key: "base", name: "Base", price: usdLabel(base, lang), per: PER_MONTH[lang], perDay: PER_DAY[lang](usdLabel(perDayAmount(base), lang)), allowance: a.perSport(showcaseAllowance("base")) },
     { key: "pro", name: "Pro", price: usdLabel(pro, lang), per: PER_MONTH[lang], perDay: PER_DAY[lang](usdLabel(perDayAmount(pro), lang)), allowance: a.all },
   ];
 }
@@ -245,7 +243,7 @@ export type SignupPopupCopy = {
   bodyAnon: string;
   titleFree: string;
   /** Con N = righe coperte reali; senza N la frase resta vera. */
-  bodyFree: (lockedToday: number | null, baseAllowance: number) => string;
+  bodyFree: (lockedToday: number | null) => string;
   /** #SESSION-POPUP-0929: Base → Pro. Con N = righe coperte reali. */
   titleBase: string;
   bodyBase: (lockedToday: number | null) => string;
@@ -267,14 +265,14 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Profilo gratuito",
     eyebrowFree: "Il tuo piano",
     titleAnon: "3 letture complete al giorno, gratis",
-    bodyAnon: "Con un profilo gratuito ogni giorno si aprono le 3 analisi migliori per sport: la probabilità del modello e il perché. Se ne vuoi di più ci sono Base e Pro.",
+    bodyAnon: "Con un profilo gratuito ogni giorno si aprono le 3 analisi migliori per sport: la probabilità del modello e il perché. Se ne vuoi di più c'è Pro, che apre tutto il board.",
     titleFree: "Le tue 3 letture di oggi sono aperte",
-    bodyFree: (n, b) => n && n > 0
-      ? `Il board ne ha altre ${n} oggi. Base ne apre ${b} per sport, Pro tutto il board.`
-      : `Domani si ricaricano. Base ne apre ${b} per sport, Pro tutto il board.`,
+    bodyFree: (n) => n && n > 0
+      ? `Il board ne ha altre ${n} oggi. Pro apre tutto il board, ogni giorno.`
+      : `Domani si ricaricano. Pro apre tutto il board, ogni giorno.`,
     proof: (n) => `${n.toLocaleString("it-IT")} letture chiuse, ognuna registrata prima del fischio`,
     ctaAnon: "Crea il profilo gratuito",
-    ctaFree: "Vedi Base",
+    ctaFree: "Vedi Pro",
     ctaBase: "Vedi Pro",
     eyebrowBase: "Il tuo piano",
     titleBase: "Le tue 7 letture per sport di oggi sono aperte",
@@ -292,14 +290,14 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Free profile",
     eyebrowFree: "Your plan",
     titleAnon: "3 full readings a day, free",
-    bodyAnon: "With a free profile, the model's 3 best analyses per sport open every day: the model's probability and the why. Want more? There are Base and Pro.",
+    bodyAnon: "With a free profile, the model's 3 best analyses per sport open every day: the model's probability and the why. Want more? Pro opens the whole board.",
     titleFree: "Your 3 readings for today are open",
-    bodyFree: (n, b) => n && n > 0
-      ? `The board has ${n} more today. Base opens ${b} per sport, Pro the whole board.`
-      : `They reload tomorrow. Base opens ${b} per sport, Pro the whole board.`,
+    bodyFree: (n) => n && n > 0
+      ? `The board has ${n} more today. Pro opens the whole board, every day.`
+      : `They reload tomorrow. Pro opens the whole board, every day.`,
     proof: (n) => `${n.toLocaleString("en-US")} settled readings, each logged before kick-off`,
     ctaAnon: "Create a free profile",
-    ctaFree: "See Base",
+    ctaFree: "See Pro",
     ctaBase: "See Pro",
     eyebrowBase: "Your plan",
     titleBase: "Your 7 readings per sport for today are open",
@@ -317,14 +315,14 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Perfil gratuito",
     eyebrowFree: "Tu plan",
     titleAnon: "3 lecturas completas al día, gratis",
-    bodyAnon: "Con un perfil gratuito cada día se abren los 3 mejores análisis por deporte: la probabilidad del modelo y el porqué. Si quieres más, están Base y Pro.",
+    bodyAnon: "Con un perfil gratuito cada día se abren los 3 mejores análisis por deporte: la probabilidad del modelo y el porqué. Si quieres más, Pro abre todo el board.",
     titleFree: "Tus 3 lecturas de hoy están abiertas",
-    bodyFree: (n, b) => n && n > 0
-      ? `El board tiene ${n} más hoy. Base abre ${b} por deporte, Pro todo el board.`
-      : `Mañana se recargan. Base abre ${b} por deporte, Pro todo el board.`,
+    bodyFree: (n) => n && n > 0
+      ? `El board tiene ${n} más hoy. Pro abre todo el board, cada día.`
+      : `Mañana se recargan. Pro abre todo el board, cada día.`,
     proof: (n) => `${n.toLocaleString("es-ES")} lecturas cerradas, cada una registrada antes del inicio`,
     ctaAnon: "Crea el perfil gratuito",
-    ctaFree: "Ver Base",
+    ctaFree: "Ver Pro",
     ctaBase: "Ver Pro",
     eyebrowBase: "Tu plan",
     titleBase: "Tus 7 lecturas por deporte de hoy están abiertas",
@@ -342,14 +340,14 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Profil gratuit",
     eyebrowFree: "Votre offre",
     titleAnon: "3 lectures complètes par jour, gratuites",
-    bodyAnon: "Avec un profil gratuit, les 3 meilleures analyses par sport s'ouvrent chaque jour : la probabilité du modèle et le pourquoi. Pour aller plus loin, il y a Base et Pro.",
+    bodyAnon: "Avec un profil gratuit, les 3 meilleures analyses par sport s'ouvrent chaque jour : la probabilité du modèle et le pourquoi. Pour aller plus loin, Pro ouvre tout le board.",
     titleFree: "Vos 3 lectures du jour sont ouvertes",
-    bodyFree: (n, b) => n && n > 0
-      ? `Le board en a ${n} de plus aujourd'hui. Base en ouvre ${b} par sport, Pro tout le board.`
-      : `Elles se rechargent demain. Base en ouvre ${b} par sport, Pro tout le board.`,
+    bodyFree: (n) => n && n > 0
+      ? `Le board en a ${n} de plus aujourd'hui. Pro ouvre tout le board, chaque jour.`
+      : `Elles se rechargent demain. Pro ouvre tout le board, chaque jour.`,
     proof: (n) => `${n.toLocaleString("fr-FR")} lectures réglées, chacune enregistrée avant le coup d'envoi`,
     ctaAnon: "Créer le profil gratuit",
-    ctaFree: "Voir Base",
+    ctaFree: "Voir Pro",
     ctaBase: "Voir Pro",
     eyebrowBase: "Votre offre",
     titleBase: "Vos 7 lectures par sport du jour sont ouvertes",
@@ -367,14 +365,14 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     eyebrowAnon: "Бесплатный профиль",
     eyebrowFree: "Ваш тариф",
     titleAnon: "3 полных прогноза в день, бесплатно",
-    bodyAnon: "С бесплатным профилем каждый день открываются 3 лучших анализа на вид спорта: вероятность модели и почему. Нужно больше — есть Base и Pro.",
+    bodyAnon: "С бесплатным профилем каждый день открываются 3 лучших анализа на вид спорта: вероятность модели и почему. Нужно больше — Pro открывает весь борд.",
     titleFree: "Ваши 3 прогноза на сегодня открыты",
-    bodyFree: (n, b) => n && n > 0
-      ? `На борде сегодня ещё ${n}. Base открывает ${b} на вид спорта, Pro — весь борд.`
-      : `Завтра они обновятся. Base открывает ${b} на вид спорта, Pro — весь борд.`,
+    bodyFree: (n) => n && n > 0
+      ? `На борде сегодня ещё ${n}. Pro открывает весь борд, каждый день.`
+      : `Завтра они обновятся. Pro открывает весь борд, каждый день.`,
     proof: (n) => `${n.toLocaleString("ru-RU")} закрытых прогнозов, каждый записан до начала матча`,
     ctaAnon: "Создать бесплатный профиль",
-    ctaFree: "Смотреть Base",
+    ctaFree: "Смотреть Pro",
     ctaBase: "Смотреть Pro",
     eyebrowBase: "Ваш тариф",
     titleBase: "Ваши 7 прогнозов на вид спорта на сегодня открыты",

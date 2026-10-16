@@ -4,8 +4,8 @@
 //
 // Gancio D: il pop-up d'iscrizione/upgrade. #SESSION-POPUP-0929 (direttiva
 // Andrea, 29/09): compare al PRIMO caricamento della sessione, su qualunque tab
-// del desk, una volta per sessione; anonimo → profilo gratuito, Free → Base,
-// Base → Pro. Sostituisce il trigger differito del 28/09 (90 s attivi +
+// del desk, una volta per sessione; anonimo → profilo gratuito, Free → Pro,
+// Base (abbonati esistenti) → Pro. Sostituisce il trigger differito del 28/09 (90 s attivi +
 // engagement + pausa, design psicologia-persuasione). Resta ciò che non si
 // somma: aspetta finché c'è un overlay aperto (muro auth, checkout, una scheda
 // partita), il banner cookie senza risposta, o la scheda nascosta. Regole e
@@ -45,7 +45,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "@/lib/house-banners";
 import { trackEvent } from "@/lib/track-event";
-import { showcaseAllowance } from "@/lib/access-projection";
 import {
   SIGNUP_POPUP_COPY, SIGNUP_POPUP_POLL_MS,
   gdprConsentDecided, markSignupPopupShown, readSignupPopupMemory, readSignupPopupSession,
@@ -177,7 +176,7 @@ export function SignupPopup({ lang, audience, cardOpen, overlayOpen, lockedToday
       <button type="button" className="br-nudge__x" onClick={() => close("x")} aria-label={c.close}>×</button>
       <p className="br-label br-nudge__eyebrow">{base ? c.eyebrowBase : free ? c.eyebrowFree : c.eyebrowAnon}</p>
       <h2 id="br-nudge-title" ref={titleRef} tabIndex={-1} className="br-nudge__title">{base ? c.titleBase : free ? c.titleFree : c.titleAnon}</h2>
-      <p className="br-nudge__body">{base ? c.bodyBase(lockedToday) : free ? c.bodyFree(lockedToday, showcaseAllowance("base")) : c.bodyAnon}</p>
+      <p className="br-nudge__body">{base ? c.bodyBase(lockedToday) : free ? c.bodyFree(lockedToday) : c.bodyAnon}</p>
 
       <dl className="br-nudge__plans">
         {rows.map((r) => (

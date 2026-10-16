@@ -210,12 +210,12 @@ describe("le CTA", () => {
     expect(tracked("signup_popup_cta_click")[0].body.meta).toEqual({ audience: "anon", cta: "plans" });
   });
 
-  it("Free: titolo e corpo cambiano, la primaria è «Vedi Base» e porta ai piani", () => {
+  it("Free: titolo e corpo cambiano, la primaria è «Vedi Pro» e porta ai piani", () => {
     const onComparePlans = vi.fn();
     show({ audience: "free", onComparePlans, lockedToday: 9 });
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Le tue 3 letture di oggi sono aperte");
     expect(screen.getByText(/Il board ne ha altre 9 oggi/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Vedi Base" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vedi Pro" }));
     expect(onComparePlans).toHaveBeenCalledTimes(1);
     expect(tracked("signup_popup_shown")[0].body.meta).toEqual({ audience: "free" });
   });
@@ -236,16 +236,27 @@ describe("le CTA", () => {
 });
 
 describe("contenuto: prezzi veri, prova sociale solo se vera, niente pressione", () => {
-  it("i tre piani con mensile e giorno, Pro senza «14»", () => {
+  it("due piani (Free e Pro), nessun Base né $14,99", () => {
     show();
     const el = popup()!;
-    expect(el.textContent).toContain("$14,99");
     const text = el.textContent!.replace(/\u00a0/g, " ");
-    expect(text).toContain("≈ $0,50 al giorno");
-    expect(el.textContent).toContain("$29,99");
+    expect(el.querySelectorAll(".br-nudge__plan")).toHaveLength(2);
+    expect(el.querySelector('[data-plan="base"]')).toBeNull();
+    expect(text).not.toMatch(/Base|14[.,]99|0,50/);
+    expect(text).toContain("$29,99");
     expect(text).toContain("≈ $1 al giorno");
-    expect(el.textContent).toContain("Tutto il board");
-    expect(el.textContent).not.toMatch(/fino a 14|14 letture/);
+    expect(text).toContain("Tutto il board");
+  });
+
+  it("in nessuna lingua né audience compare «Base» (tranne l'etichetta interna delle varianti)", () => {
+    for (const lang of ["it", "en", "es", "fr", "ru"] as const) {
+      for (const audience of ["anon", "free"] as const) {
+        sessionStorage.clear();
+        const r = show({ lang, audience, lockedToday: 5 });
+        expect(popup()!.textContent, `${lang}/${audience}`).not.toMatch(/Base|14[.,]99/);
+        r.unmount(); cleanup();
+      }
+    }
   });
 
   it("la riga di prova sociale c'è solo con un numero dal DB", () => {
