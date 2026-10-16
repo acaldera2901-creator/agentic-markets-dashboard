@@ -1,0 +1,23 @@
+import React from 'react';
+import {render,screen,fireEvent,act,cleanup} from '@testing-library/react';
+import {it,expect,vi,afterEach} from 'vitest';
+import {ClassicBanners, type ClassicBanner} from '@/components/classic/ClassicBanners';
+import {trackEvent} from '@/lib/track-event';
+vi.mock('@/lib/track-event',()=>({trackEvent:vi.fn()}));
+vi.mock('next/link',()=>({default:(p:React.AnchorHTMLAttributes<HTMLAnchorElement>)=><a {...p}/>}));
+afterEach(()=>{cleanup();vi.unstubAllGlobals();vi.clearAllMocks();});
+it('integrated Classic banners qualify impressions at 50%, dedupe mounts, suppress preview and preserve callbacks',()=>{
+  let callback:IntersectionObserverCallback=()=>{};
+  vi.stubGlobal('IntersectionObserver',class{constructor(fn:IntersectionObserverCallback){callback=fn;}observe(){}unobserve(){}disconnect(){}});
+  const Component=ClassicBanners;const custom=vi.fn((event:React.MouseEvent)=>event.preventDefault());
+  const banners:ClassicBanner[]=[{id:'board',title:'Board',sub:'Today',cta:'Open board',href:'/app',onClick:custom}];
+  const {container,unmount}=render(<Component banners={banners} label="Featured"/>);
+  expect(trackEvent).not.toHaveBeenCalled();const target=container.querySelector('li')!;
+  const entry=(ratio:number):IntersectionObserverEntry=>({target,isIntersecting:true,intersectionRatio:ratio,time:0,boundingClientRect:target.getBoundingClientRect(),intersectionRect:target.getBoundingClientRect(),rootBounds:null});
+  act(()=>callback([entry(0.49)],{} as IntersectionObserver));expect(trackEvent).not.toHaveBeenCalled();
+  act(()=>callback([entry(0.5)],{} as IntersectionObserver));
+  act(()=>callback([entry(0.9)],{} as IntersectionObserver));
+  expect(trackEvent).toHaveBeenCalledTimes(1);expect(trackEvent).toHaveBeenCalledWith('house_banner_view',{meta:{campaign_id:'classic:board',slot:'classic-lobby',viewability:'50pct-v1'}});
+  fireEvent.click(screen.getByRole('link',{name:/Open board/}));expect(custom).toHaveBeenCalledOnce();expect(trackEvent).toHaveBeenCalledTimes(2);
+  unmount();vi.mocked(trackEvent).mockClear();render(<Component banners={banners} label="Featured" preview/>);fireEvent.click(screen.getByRole('link',{name:/Open board/}));expect(trackEvent).not.toHaveBeenCalled();
+});

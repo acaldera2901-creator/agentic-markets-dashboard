@@ -1,3 +1,4 @@
+import {scheduleBusinessEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute } from "@/lib/db";
 import { hashActivationToken, tokenHashMatches } from "@/lib/activation";
@@ -83,6 +84,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "reset failed" }, { status: 500 });
   }
 
+  scheduleBusinessEvent({type:'account_activated',identifier:row.identifier});
   // No session issued — the client redirects to login so the user signs in with
   // the new password (old sessions are already revoked via sessions_valid_from).
   return NextResponse.json({ ok: true }, { headers: { "cache-control": "no-store" } });

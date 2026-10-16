@@ -45,7 +45,7 @@ export default function BannersPreviewPage() {
                 data-export={c.id}
                 style={{ width: size.w, height: size.h, maxWidth: "100%" }}
               >
-                <HouseBanner campaign={c} lang={lang} />
+                <HouseBanner preview campaign={c} lang={lang} />
               </div>
             </div>
           );

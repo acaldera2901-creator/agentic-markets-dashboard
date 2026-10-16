@@ -1,0 +1,10 @@
+import {createHmac} from 'node:crypto';import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+const {dbExecute}=vi.hoisted(()=>({dbExecute:vi.fn().mockResolvedValue([])}));vi.mock('@/lib/db',()=>({dbExecute}));
+import {POST} from './route';
+const key=Buffer.from('isolated-secret-at-least-32-bytes!').toString('base64');
+function req(type='email.delivered',bad=false){const raw=JSON.stringify({type,created_at:new Date().toISOString(),data:{email_id:'provider-id',to:['private@example.test'],subject:'Private'}});const time=Math.floor(Date.now()/1000);return new Request('https://betredge.com/api/webhooks/resend',{method:'POST',headers:{'svix-id':'message-1','svix-timestamp':String(time),'svix-signature':bad?'v1,bad':`v1,${createHmac('sha256',Buffer.from(key,'base64')).update(`message-1.${time}.${raw}`).digest('base64')}`},body:raw});}
+beforeEach(()=>{vi.clearAllMocks();vi.stubEnv('VERCEL_ENV','production');vi.stubEnv('EMAIL_OUTCOMES_ENABLED','1');vi.stubEnv('EMAIL_OUTCOMES_RETENTION_DAYS','90');vi.stubEnv('RESEND_WEBHOOK_SECRET','whsec_'+key);});afterEach(()=>vi.unstubAllEnvs());
+it('default disabled acknowledges without parsing, signature work or writes',async()=>{vi.stubEnv('EMAIL_OUTCOMES_ENABLED','');expect((await POST(req())).status).toBe(200);expect(dbExecute).not.toHaveBeenCalled();});
+it('invalid signatures cannot write any outcomes',async()=>{expect((await POST(req('email.delivered',true))).status).toBe(400);expect(dbExecute).not.toHaveBeenCalled();});
+it('valid outcomes exclude body PII and use replay-safe event keys',async()=>{expect((await POST(req())).status).toBe(200);expect(JSON.stringify(dbExecute.mock.calls)).not.toContain('private@example.test');expect(dbExecute.mock.calls[0][0]).toContain('ON CONFLICT (event_id) DO NOTHING');});
+it('DB failure returns retryable status, engagement defaults to no writes',async()=>{dbExecute.mockRejectedValueOnce(new Error('private detail'));expect((await POST(req())).status).toBe(503);dbExecute.mockClear();expect((await POST(req('email.opened'))).status).toBe(200);expect(dbExecute).not.toHaveBeenCalled();});

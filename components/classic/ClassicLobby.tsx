@@ -1,4 +1,5 @@
 "use client";
+import {trackEvent} from "@/lib/track-event";
 // components/classic/ClassicLobby.tsx — filone «classic», lobby (#CLASSIC-LOBBY-1008 · #CLASSIC-ROOBET-1013)
 //
 // La Home con la STRUTTURA di Roobet — presa per intero, decisione di Andrea
@@ -272,8 +273,8 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
     : copy.emptyFilter;
 
   const linkFor = (it: LobbyItem): ClassicRowLink => rowLink ? rowLink(it) : { href: `/predictions?match=${encodeURIComponent(it.key)}`, locked: it.data.locked === true };
-  const pickTab = (t: LobbyTab) => { setTab(t); setLeague(null); };
-  const pickSport = (s: SportFilter) => { setSport(s); setLeague(null); };
+  const pickTab = (t: LobbyTab) => { trackEvent("nav_click",{meta:{surface:"classic-lobby",view:t}}); setTab(t); setLeague(null); };
+  const pickSport = (s: SportFilter) => { trackEvent("tab_click",{meta:{surface:"classic-lobby",sport:s}}); setSport(s); setLeague(null); };
   const liveSide = (ev: MouseEvent<HTMLAnchorElement>) => banners.live.onClick?.(ev);
 
   return (

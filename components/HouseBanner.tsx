@@ -56,7 +56,7 @@ function persistDismissed(ids: Set<string>) {
 // aggirato. Esattamente il motivo per cui l'intestazione di lib/track-event dice
 // che la regola privacy deve vivere in UN posto solo.
 function track(event_type: string, campaign: HouseCampaign) {
-  trackEvent(event_type, { meta: { campaign_id: campaign.id, slot: campaign.slot } });
+  trackEvent(event_type, { meta: { campaign_id: campaign.id, slot: campaign.slot, ...(event_type === "house_banner_view" ? {viewability:"50pct-v1"} : {}) } });
 }
 
 const fmtEdge = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
@@ -162,9 +162,10 @@ function PhotoBg({ src }: { src: string }) {
 // /plans, … — #URL-PATHS-0810) non risincronizzano il tab dell'host (lo legge
 // solo al mount) → il <Link> era un no-op e il bottone sembrava morto.
 // L'host ritorna true se ha gestito il click.
-export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign: HouseCampaign; lang: string; data?: BannerData | null; onCta?: (href: string) => boolean; inGrid?: boolean }) {
+export function HouseBanner({ campaign, lang, data, onCta, inGrid, preview = false }: { campaign: HouseCampaign; lang: string; data?: BannerData | null; onCta?: (href: string) => boolean; inGrid?: boolean; preview?: boolean }) {
   const [dismissed, setDismissed] = useState(false);
   const viewed = useRef(false);
+  const bannerRef = useRef<HTMLElement>(null);
   const L: Lang = hbLang(lang);
   const c = copyFor(campaign, L);
   const ctaLabel = ctaLabelFor(campaign, L);
@@ -177,11 +178,17 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
     if (readDismissed().has(campaign.id)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- legge dallo storage se il banner era gia' stato chiuso: non disponibile lato server
       setDismissed(true);
-    } else if (!viewed.current) {
-      viewed.current = true;
-      track("house_banner_view", campaign);
     }
-  }, [campaign]);
+    if (preview || readDismissed().has(campaign.id) || !bannerRef.current || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(entries => {
+      if (!viewed.current && entries.some(e => e.isIntersecting && e.intersectionRatio >= 0.5)) {
+        viewed.current = true;
+        track("house_banner_view", campaign);
+      }
+    }, { threshold: [0.5] });
+    observer.observe(bannerRef.current);
+    return () => observer.disconnect();
+  }, [campaign, preview]);
 
   if (dismissed) return null;
 
@@ -189,11 +196,11 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
     const ids = readDismissed();
     ids.add(campaign.id);
     persistDismissed(ids);
-    track("house_banner_dismiss", campaign);
+    if (!preview) track("house_banner_dismiss", campaign);
     setDismissed(true);
   };
   const onCtaClick = (e: MouseEvent) => {
-    track("house_banner_click", campaign);
+    if (!preview) track("house_banner_click", campaign);
     // Solo click semplici: cmd/ctrl/shift/alt/middle restano "apri in nuova scheda".
     if (
       onCta &&
@@ -229,7 +236,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
       // Il testo per chi non vede l'immagine sta nell'alt e nell'aria-label.
       if (campaign.creative) {
         return (
-          <aside className="house-banner hb-creative hb-cr-grid hb-cr-baked" aria-label={c.eyebrow}>
+          <aside ref={bannerRef} className="house-banner hb-creative hb-cr-grid hb-cr-baked" aria-label={c.eyebrow}>
             <Link href={campaign.cta.href} onClick={onCtaClick} aria-label={ctaLabel}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -263,7 +270,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
       const landscape = campaign.format === "billboard" || campaign.format === "leaderboard";
       const hasFooter = square || landscape;
       return (
-        <aside className={`house-banner hb-creative hb-cr-grid hb-cr-${campaign.format}${hasFooter ? " hb-cr-hasfoot" : ""}`} aria-label={c.eyebrow}>
+        <aside ref={bannerRef} className={`house-banner hb-creative hb-cr-grid hb-cr-${campaign.format}${hasFooter ? " hb-cr-hasfoot" : ""}`} aria-label={c.eyebrow}>
           <img src={creative} alt={c.headline} className="hb-cr-img" />
           {square ? (
             <div className="hb-cr-foot">
@@ -285,7 +292,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
     // Fuori dalla griglia (landing): creativo intero centrato, invariato.
     const creativeMaxW = campaign.format === "halfpage" ? 300 : campaign.format === "rectangle" ? 340 : 560;
     return (
-      <aside
+      <aside ref={bannerRef}
         className="house-banner hb-creative"
         aria-label={c.eyebrow}
         style={{ position: "relative", display: "block", height: "auto", minHeight: 0, padding: 0, background: "transparent", overflow: "hidden", borderRadius: 14, width: "100%", maxWidth: creativeMaxW, marginInline: "auto", gridColumn: "1 / -1" }}
@@ -306,7 +313,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
       if (data.edgeAvgPct != null) subBits.push(`${fmtEdge(data.edgeAvgPct)} ${HB_UI[L].avgEdge}`);
     }
     return (
-      <aside className={`house-banner hb-leaderboard${photoCls}`} aria-label={c.eyebrow}>
+      <aside ref={bannerRef} className={`house-banner hb-leaderboard${photoCls}`} aria-label={c.eyebrow}>
         {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
         <Glyph g={campaign.glyphs[0]} className="hb-ic" />
         <div className="hb-lead-text">
@@ -328,7 +335,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
         : null)
       : null;
     return (
-      <aside className={`house-banner hb-rectangle${photoCls}`} aria-label={c.eyebrow}>
+      <aside ref={bannerRef} className={`house-banner hb-rectangle${photoCls}`} aria-label={c.eyebrow}>
         {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
         {dismissBtn}
         <span className="hb-eyebrow">{c.eyebrow}</span>
@@ -353,7 +360,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
   // ── Half page (300×600) ───────────────────────────────────────────────
   if (campaign.format === "halfpage") {
     return (
-      <aside className={`house-banner hb-halfpage${photoCls}`} aria-label={c.eyebrow}>
+      <aside ref={bannerRef} className={`house-banner hb-halfpage${photoCls}`} aria-label={c.eyebrow}>
         {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
         <div className="hb-glow" aria-hidden="true" />
         {dismissBtn}
@@ -374,7 +381,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid }: { campaign:
 
   // ── Billboard (970×250 / full-width) ──────────────────────────────────
   return (
-    <aside className={`house-banner hb-billboard${rich ? " hb-rich" : ""}${photoCls}`} aria-label={c.eyebrow}>
+    <aside ref={bannerRef} className={`house-banner hb-billboard${rich ? " hb-rich" : ""}${photoCls}`} aria-label={c.eyebrow}>
       {campaign.image ? <PhotoBg src={campaign.image.src} /> : null}
       <div className="hb-glow" aria-hidden="true" />
       <div className="hb-float" aria-hidden="true">

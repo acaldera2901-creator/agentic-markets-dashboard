@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { verifyWebhookSignature } from "@/lib/paypal";
@@ -98,6 +99,14 @@ export async function POST(req: Request) {
     await dbExecute("UPDATE paypal_orders SET granted_at = NOW() WHERE id = $1", [order.id]);
     console.log(`[paypal/webhook] GRANT order=${order.id} plan=${granted.plan}`);
     // #AFFILIATE-V2-0930 — ledger affiliati (non lancia mai; off = no-op).
+    schedulePurchaseEvent({
+      plan:order.plan,
+identifier: order.identifier,
+      rail: "paypal",
+      paymentRef: order.id,
+      grossUsd: order.amount_usd,
+      paidAt: new Date(),
+    });
     scheduleAffiliateCommission({
       identifier: order.identifier,
       rail: "paypal",

@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, isStripeConfigured, resolvePlanFromPriceId, periodEndToIso } from "@/lib/stripe";
@@ -172,6 +173,15 @@ export async function POST(req: Request) {
           // off = no-op). Ref = invoice.id: ogni rinnovo è un'invoice nuova.
           if (activated && inv.id) {
             const amounts = stripeInvoiceAmounts(inv);
+            schedulePurchaseEvent({
+              plan:plan,
+identifier: activated.identifier,
+              rail: "stripe",
+              paymentRef: inv.id,
+              grossUsd: amounts.grossUsd,
+              paidAt: new Date(),
+              meta: { taxUsd: amounts.taxUsd },
+            });
             scheduleAffiliateCommission({
               identifier: activated.identifier,
               rail: "stripe",

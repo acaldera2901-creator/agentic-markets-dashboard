@@ -1,0 +1,4 @@
+import {render,screen,fireEvent} from '@testing-library/react';
+import {it,expect,vi} from 'vitest';
+import CookiePreferences from './CookiePreferences';
+it('withdrawal clears analytics storage, emits a consent update and confirms the action',()=>{localStorage.setItem('gdpr_consent','accepted');localStorage.setItem('am_attrib','sensitive-source');sessionStorage.setItem('am_sid','prior-session');const listener=vi.fn();window.addEventListener('betredge:gdpr-consent',listener);render(<CookiePreferences/>);fireEvent.click(screen.getByRole('button',{name:'Withdraw analytics consent'}));expect(localStorage.getItem('gdpr_consent')).toBe('declined');expect(sessionStorage.getItem('am_sid')).toBeNull();expect(localStorage.getItem('am_attrib')).toBeNull();expect(listener).toHaveBeenCalledOnce();expect(screen.getByRole('status')).toHaveTextContent('withdrawn');window.removeEventListener('betredge:gdpr-consent',listener);});

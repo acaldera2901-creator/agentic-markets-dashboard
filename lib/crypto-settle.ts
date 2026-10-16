@@ -1,3 +1,4 @@
+import {schedulePurchaseEvent} from '@/lib/business-events';
 // #CRYPTO-DIRECT-1 — saldo di un ordine crypto diretto: verifica on-chain →
 // claim atomico → grant → ordine specchiato in Shopify.
 //
@@ -148,6 +149,14 @@ export async function settleCryptoOrder(order: CryptoOrder): Promise<CryptoSettl
 
   // #AFFILIATE-V2-0930 — ledger affiliati, dopo il grant (non lancia mai; off = no-op).
   // Solo l'abbonamento: la Weekly Pick qui sotto non genera commissione.
+  schedulePurchaseEvent({
+    plan:order.plan,
+identifier: order.identifier,
+    rail: "crypto",
+    paymentRef: order.id,
+    grossUsd: order.amount_usd,
+    paidAt: new Date(),
+  });
   scheduleAffiliateCommission({
     identifier: order.identifier,
     rail: "crypto",
