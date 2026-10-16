@@ -2,6 +2,7 @@ import {vi,describe,it,expect} from 'vitest';
 import {render,screen,within} from '@testing-library/react';
 import SiteNavigationFrame from './SiteNavigationFrame';
 import {ClassicPrimaryNav} from './ClassicPrimaryNav';
+import {SitePageNavigation} from './SiteNavigationContext';
 import {ClassicLobby} from './ClassicLobby';
 let pathname='/tools';
 vi.mock('next/navigation',()=>({usePathname:()=>pathname,useRouter:()=>({push:vi.fn(),back:vi.fn()})}));
@@ -16,6 +17,14 @@ describe('public site navigation',()=>{
   expect(within(nav).getAllByRole('link')).toHaveLength(11);
   expect(within(nav).getByRole('link',{name:'Starting Soon'})).toHaveAttribute('href','/?board=soon&filter=popular');
   expect(within(nav).getByRole('link',{name:'Partners'})).toHaveAttribute('href','/partners');
+ });
+ it('places the desk sidebar beside content, outside the existing header',()=>{
+  pathname='/history';
+  render(<SiteNavigationFrame><header data-testid="desk-header"/><SitePageNavigation><h1>History</h1></SitePageNavigation></SiteNavigationFrame>);
+  expect(screen.getAllByRole('navigation',{name:'Sections'})).toHaveLength(1);
+  expect(screen.queryByTestId('shared-header')).not.toBeInTheDocument();
+  expect(screen.getByTestId('desk-header').closest('.br-site-page')).toBeNull();
+  expect(screen.getByRole('heading',{name:'History'}).closest('.br-site-page')).toContainElement(screen.getByRole('navigation',{name:'Sections'}));
  });
  it('offers real links for every primary destination',()=>{
   render(<ClassicPrimaryNav active="football"/>);

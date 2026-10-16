@@ -295,7 +295,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
   return (
     <div className="brc-lobby" data-testid="classic-lobby" data-loading={loading}>
       {/* ── 0 · il rail sinistro (desktop): sezioni, sport, altre destinazioni ── */}
-      {!sharedNavigation && <nav className="brc-side" aria-label={copy.sideLabel}>
+      {sharedNavigation ? sharedNavigation.sidebar : <nav className="brc-side" aria-label={copy.sideLabel}>
         {/* le intestazioni sono etichette in maiuscoletto: senza icona, l'icona
             sta sulle voci (destinazioni), non sui titoli di gruppo */}
         <p className="brc-side__h">{copy.sideBoard}</p>

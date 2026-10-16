@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- A document navigation resets desk-local filters even when the current URL is already /. */
 "use client";
 
+import {SitePageNavigation} from "@/components/classic/SiteNavigationContext";
 import { useEffect, useState, useCallback, useRef, useMemo, createContext, useContext, Fragment, lazy, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -11268,6 +11269,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           le schede bet, non come bande chrome. */}
 
       {/* ── 3-column layout ── */}
+      <SitePageNavigation disabled={tab === "bets" && deskView === "home"}>
       <div className="portal-columns">
 
         {/* ── Desk (nav + content) ── */}
@@ -11598,6 +11600,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         </div>{/* end portal-desk */}
 
       </div>{/* end portal-columns */}
+      </SitePageNavigation>
 
       {/* #BANNERS-IN-GRID: rimossa la banda house billboard full-width in fondo (bottom),
           i banner house vivono ora solo intercalati tra le schede bet. */}

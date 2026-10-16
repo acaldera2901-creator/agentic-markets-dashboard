@@ -1,12 +1,13 @@
 'use client';
 import {usePathname} from 'next/navigation';
-import {useEffect,useState,type ReactNode} from 'react';
+import {Fragment,useEffect,useState,type ReactNode} from 'react';
 import {CLASSIC} from '@/lib/classic/flag';
 import {classicCopy} from '@/lib/classic/lobby-copy';
 import {hasPublicNavigation,isDeskPath,lobbyDestination} from '@/lib/classic/site-navigation';
 import {ClassicIcon,type ClassicIconName} from './ClassicIcon';
 import {SiteNavigationContext,type LobbyNavigationState} from './SiteNavigationContext';
 import SiteTopbar from '@/components/world-cup/SiteTopbar';
+import './classic-lobby.css';
 import './site-navigation.css';
 export default function SiteNavigationFrame({children}:{children:ReactNode}){
  const path=usePathname()??'/';const [lang,setLang]=useState('en');
@@ -22,8 +23,9 @@ export default function SiteNavigationFrame({children}:{children:ReactNode}){
  {title:t.sportsLabel,items:[[lobbyDestination('featured','popular'),t.popular,'classic-popular'],[lobbyDestination('all','football'),t.football,'menu-prediction'],[lobbyDestination('all','tennis'),t.tennis,'classic-tennis']]},
  {title:t.sideMore,items:[['/predictions?view=live',t.sideLive,'classic-live'],['/history',t.sideRecord,'market-result'],['/tools',t.b3Tools,'menu-tools'],['/partners',t.sidePartners,'menu-partner']]},
  ];
- return <SiteNavigationContext.Provider value={{report:setLobby}}><div className="br-site-frame">
+ const sidebar=<nav className="brc-side br-site-sidebar" aria-label={t.sideLabel}>{groups.map(g=><Fragment key={g.title}><p className="brc-side__h">{g.title}</p><ul className="brc-side__list">{g.items.map(([href,label,icon])=><li key={label}><a href={href} className="brc-side__item" aria-current={href===path||Boolean(lobby&&(g.title===t.sideBoard?new URLSearchParams(href.split('?')[1]).get('board')===lobby.board:g.title===t.sportsLabel?new URLSearchParams(href.split('?')[1]).get('filter')===lobby.filter:false))?'true':undefined}><ClassicIcon name={icon}/><span>{label}</span>{lobby && (label===t.popular||label===t.football||label===t.tennis||label===t.tabInPlay) && <span className="br-site-count">{lobby.loading?'–':label===t.popular?lobby.popular:label===t.football?lobby.football:label===t.tennis?lobby.tennis:lobby.live}</span>}</a></li>)}</ul></Fragment>)}</nav>;
+ return <SiteNavigationContext.Provider value={{report:setLobby,sidebar}}><div className="br-site-frame">
  {!isDeskPath(path)&&<SiteTopbar globalNavigation lang={headerLang} hideLang={Boolean(toolsLocale)}/>}
- <nav className="br-site-sidebar" aria-label={t.sideLabel}>{groups.map(g=><section key={g.title}><p className="brc-side__h">{g.title}</p><ul>{g.items.map(([href,label,icon])=><li key={label}><a href={href} className="brc-side__item" aria-current={href===path||Boolean(lobby&&(g.title===t.sideBoard?new URLSearchParams(href.split('?')[1]).get('board')===lobby.board:g.title===t.sportsLabel?new URLSearchParams(href.split('?')[1]).get('filter')===lobby.filter:false))?'page':undefined}><ClassicIcon name={icon}/><span>{label}</span>{lobby && (label===t.popular||label===t.football||label===t.tennis||label===t.tabInPlay) && <span className="br-site-count">{lobby.loading?'–':label===t.popular?lobby.popular:label===t.football?lobby.football:label===t.tennis?lobby.tennis:lobby.live}</span>}</a></li>)}</ul></section>)}</nav>
- <div className="br-site-content">{children}</div></div></SiteNavigationContext.Provider>;
+ {isDeskPath(path)?children:<div className="brc-lobby br-site-page">{sidebar}<div className="br-site-content">{children}</div></div>}
+ </div></SiteNavigationContext.Provider>;
 }
