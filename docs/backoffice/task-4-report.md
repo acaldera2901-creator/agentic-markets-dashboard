@@ -44,3 +44,5 @@ See [tracking-1016-rollout.md](tracking-1016-rollout.md) for all named flags, sc
 6. Define authoritative expiry/refund lifecycle events with product/payment owners before adding hooks. The current normalized business-event contract supports signup, activation and purchase only; no inferred financial events or historical backfill are introduced.
 
 All new tracking flags retain their off defaults. No deployed environment changes, DB migration, provider send/configuration, push or production deployment was performed.
+
+Retention selection follow-up: business/counter-only cleanup can now run with no email period while email outcomes are off. NULL explicitly excludes email tables in SQL dry/live runs. Configured email retention remains supported and validated. Synthetic tests verify old business identifiers/counters are cleaned while old email rows are preserved.

@@ -7,7 +7,8 @@ export async function runTrackingRetention(dryRun:boolean):Promise<Record<string
  if(!trackingRetentionEnabled())return null;
  const emailDays=emailRetentionDays();const raw=process.env.TRACKING_COUNTER_RETENTION_DAYS??'';
  const counterDays=/^\d+$/.test(raw)?Number(raw):0;
- if(emailDays===null||counterDays<7||counterDays>730)throw new Error('Tracking retention periods require explicit configuration');
+ const emailRequired=process.env.EMAIL_OUTCOMES_ENABLED==='1'||!!process.env.EMAIL_OUTCOMES_RETENTION_DAYS;
+ if((emailRequired&&emailDays===null)||counterDays<7||counterDays>730)throw new Error('Tracking retention periods require explicit configuration');
  const rows=await dbQueryStrict<{summary:Record<string,unknown>}>('SELECT public.br_run_tracking_retention($1,$2,$3::jsonb,$4) AS summary',[emailDays,counterDays,JSON.stringify(PSEUDONYMOUS_EVENTS),dryRun]);
  if(!rows[0]?.summary)throw new Error('Tracking retention returned no verification summary');
  return rows[0].summary;

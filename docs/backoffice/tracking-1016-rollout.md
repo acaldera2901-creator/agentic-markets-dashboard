@@ -38,7 +38,7 @@ Before enabling any writer:
 | `RESEND_WEBHOOK_SECRET` | Provider-issued `whsec_…` secret; absent configuration fails closed |
 | `EMAIL_ENGAGEMENT_ENABLED` | Off unless exactly `1`; insufficient by itself: each provider message must also have verified consent stored |
 | `TRACKING_COUNTERS_ENABLED` | Off unless exactly `1`; aggregate counters and structured logs only |
-| `TRACKING_RETENTION_ENABLED` | Off unless exactly `1`; requires production gate, retention approval and both periods configured |
+| `TRACKING_RETENTION_ENABLED` | Off unless exactly `1`; requires production gate, retention approval and counter period; email period required only when outcomes enabled or explicitly configured |
 | `TRACKING_COUNTER_RETENTION_DAYS` | Explicit integer 7–730; no silent deletion default |
 | `CRON_SECRET` | Existing authenticated retention endpoint; no new scheduler was enabled |
 | `TRACK_ALLOW_WRITE` | Keep unset in shared dev/preview. `1` is an isolated-test override only |
@@ -68,3 +68,7 @@ Classic banners now emit 50%-qualified once-per-mount impressions with `viewabil
 - No false history backfill or production reclassification occurred. Historical metrics remain provisional.
 
 Provider references checked for the implementation: [Resend signature verification](https://www.resend.com/changelog/managing-webhooks-via-api), [event types](https://resend.com/docs/webhooks/event-types), [contact update payload](https://resend.com/docs/webhooks/contacts/updated).
+
+## Approved business/counter retention scope
+
+Business identifiers retain the existing 14-month cleanup boundary; counters use the explicitly selected 90-day period. When email outcomes are off and no email period is configured, the retention coordinator passes NULL for email retention. The SQL function skips email counts/deletes (summary email fields are null, meaning excluded), leaving existing email rows intact. An explicitly configured valid email period retains the previous email cleanup behavior; enabled outcomes or invalid explicit periods fail closed without a valid period. No email retention approval is inferred from business/counter activation.

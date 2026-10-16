@@ -65,3 +65,18 @@ it('both insert/revoke interleavings leave no linked SID and reject an insert af
  expect((await insert(second)).rows[0].inserted).toBe(false);
  expect((await db.query('SELECT * FROM events WHERE session_id IN ($1,$2)',[first,second])).rows).toHaveLength(0);
 });
+
+it('business/counter-only retention excludes email in dry and live runs',async()=>{
+ await db.exec("INSERT INTO email_events(event_id,message_id,event_type,occurred_at) VALUES('retain-email','retain-message','email.delivered',now()-interval '2 years'); INSERT INTO br_email_messages(message_id,sent_at) VALUES('retain-message',now()-interval '2 years'); INSERT INTO bo_tracking_counters(day,reason,count) VALUES(current_date-91,'bot',1); INSERT INTO events(event_type,meta,created_at) VALUES('purchase','{\"profile_id\":\"retention-profile\",\"order_id\":\"retention-order\"}',now()-interval '15 months')");
+ for(const dry of [true,false]){
+  const result=await db.query<{summary:Record<string,unknown>}>('SELECT br_run_tracking_retention($1,$2,$3,$4) AS summary',[null,90,'[]',dry]);
+  expect(result.rows[0].summary.email_events).toBeNull();expect(result.rows[0].summary.email_messages).toBeNull();
+  expect((await db.query("SELECT * FROM email_events WHERE event_id='retain-email'")).rows).toHaveLength(1);
+  expect((await db.query("SELECT * FROM br_email_messages WHERE message_id='retain-message'")).rows).toHaveLength(1);
+  expect((await db.query("SELECT * FROM bo_tracking_counters WHERE reason='bot'")).rows).toHaveLength(dry?1:0);
+  expect((await db.query("SELECT * FROM events WHERE meta->>'order_id'='retention-order'")).rows).toHaveLength(dry?1:0);
+ }
+});
+it('retention rejects invalid explicitly provided periods',async()=>{
+ for(const args of [[6,90,'[]',true],[null,null,'[]',true],[null,90,null,true]])await expect(db.query('SELECT br_run_tracking_retention($1,$2,$3,$4)',args)).rejects.toThrow(/invalid retention/);
+});

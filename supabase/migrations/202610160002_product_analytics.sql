@@ -132,12 +132,12 @@ CREATE OR REPLACE FUNCTION public.br_run_tracking_retention(p_email_days integer
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE summary jsonb;
 BEGIN
- IF p_email_days NOT BETWEEN 7 AND 730 OR p_counter_days NOT BETWEEN 7 AND 730 OR jsonb_typeof(p_browser_events)<>'array' THEN RAISE EXCEPTION 'invalid retention'; END IF;
+ IF (p_email_days IS NOT NULL AND p_email_days NOT BETWEEN 7 AND 730) OR p_counter_days IS NULL OR p_counter_days NOT BETWEEN 7 AND 730 OR jsonb_typeof(p_browser_events) IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'invalid retention'; END IF;
  summary:=jsonb_build_object(
   'session_links',(SELECT count(*) FROM public.session_links WHERE linked_at<now()-interval '14 months'),
   'sessions',(SELECT count(*) FROM public.br_analytics_sessions WHERE created_at<now()-interval '14 months'),
-  'email_events',(SELECT count(*) FROM public.email_events WHERE occurred_at<now()-make_interval(days=>p_email_days)),
-  'email_messages',(SELECT count(*) FROM public.br_email_messages WHERE sent_at<now()-make_interval(days=>p_email_days)),
+  'email_events',CASE WHEN p_email_days IS NULL THEN NULL ELSE (SELECT count(*) FROM public.email_events WHERE occurred_at<now()-make_interval(days=>p_email_days)) END,
+  'email_messages',CASE WHEN p_email_days IS NULL THEN NULL ELSE (SELECT count(*) FROM public.br_email_messages WHERE sent_at<now()-make_interval(days=>p_email_days)) END,
   'counters',(SELECT count(*) FROM public.bo_tracking_counters WHERE day<current_date-p_counter_days),'dry_run',p_dry);
  IF p_dry THEN RETURN summary; END IF;
  UPDATE public.events SET session_id=NULL WHERE created_at<now()-interval '14 months' AND event_type IN (SELECT jsonb_array_elements_text(p_browser_events));
@@ -145,8 +145,11 @@ BEGIN
  DELETE FROM public.br_analytics_sessions WHERE created_at<now()-interval '14 months';
  UPDATE public.events SET meta=meta-'profile_id'-'order_id' WHERE created_at<now()-interval '14 months' AND event_type IN ('signup_created','account_activated','purchase');
  DELETE FROM public.br_business_event_keys WHERE occurred_at<now()-interval '14 months';
+ -- NULL explicitly excludes email from this approved cleanup scope.
+ IF p_email_days IS NOT NULL THEN
  DELETE FROM public.email_events WHERE occurred_at<now()-make_interval(days=>p_email_days);
  DELETE FROM public.br_email_messages WHERE sent_at<now()-make_interval(days=>p_email_days);
+ END IF;
  DELETE FROM public.bo_tracking_counters WHERE day<current_date-p_counter_days;
  RETURN summary;
 END $$;
