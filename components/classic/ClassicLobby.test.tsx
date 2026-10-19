@@ -190,3 +190,16 @@ describe("ClassicLobby", () => {
     expect(screen.getByRole("heading", { name: "Dove la nostra stima si discosta di più" })).toBeInTheDocument();
   });
 });
+
+ it('expands mobile featured matches and keeps the league selection scoped to the league list',()=>{
+ setup();
+ const featured=screen.getByTestId('classic-featured');
+ const more=within(featured).getByRole('button',{name:/See all/});
+ expect(more).toHaveAttribute('aria-expanded','false');
+ fireEvent.click(more);
+ expect(within(featured).getByRole('button',{name:/Show less/})).toHaveAttribute('aria-expanded','true');
+ const select=screen.getByRole('combobox',{name:'Leagues'});
+ fireEvent.change(select,{target:{value:'football:Serie A'}});
+ expect(screen.getByRole('heading',{name:/Serie A/})).toBeInTheDocument();
+ expect(within(featured).getAllByRole('article').length).toBeGreaterThan(3);
+ });

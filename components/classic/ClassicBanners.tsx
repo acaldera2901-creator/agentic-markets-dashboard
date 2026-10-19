@@ -138,10 +138,11 @@ function Chevron() {
   );
 }
 
-export function ClassicBanners({ banners, label, preview=false }: { banners: ClassicBanner[]; label: string; preview?:boolean }) {
+export function ClassicBanners({ banners, label, preview=false, mobileLabels }: { banners: ClassicBanner[]; label: string; preview?:boolean; mobileLabels?:string[] }) {
   // Le foto che non sono arrivate passano al ripiego SVG. L'errore può
   // scattare PRIMA dell'idratazione (l'<img> arriva nell'HTML del server e
   // React non c'era ancora ad ascoltare): al montaggio si guarda lo stato vero.
+  const [mobileActive, setMobileActive] = useState(0);
   const [failed, setFailed] = useState<Record<string, boolean>>({});
   const rowRef = useRef<HTMLUListElement | null>(null);
   const measured = useRef(new Set<string>());
@@ -177,6 +178,7 @@ export function ClassicBanners({ banners, label, preview=false }: { banners: Cla
             key={b.id}
             className="brc-banner"
             data-banner={b.id}
+            data-mobile-active={mobileLabels ? mobileActive === i : undefined}
             data-photo={b.image && !failed[b.id] ? "" : undefined}
           >
             {b.image && failed[b.id] && b.image.fallback ? (
@@ -231,6 +233,7 @@ export function ClassicBanners({ banners, label, preview=false }: { banners: Cla
           </li>
         ))}
       </ul>
+      {mobileLabels && <div className="br-mobile-only br-banner-choices">{banners.map((b,i)=><button key={b.id} type="button" aria-pressed={mobileActive===i} onClick={()=>setMobileActive(i)}>{mobileLabels[i] || b.cta}</button>)}</div>}
     </nav>
   );
 }
