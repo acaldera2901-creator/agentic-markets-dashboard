@@ -1,3 +1,5 @@
+import { THEME_BOOTSTRAP } from "@/lib/theme";
+import "./theme.css";
 import SiteNavigationFrame from '@/components/classic/SiteNavigationFrame';
 import type { Metadata } from "next";
 import { Anton, Barlow_Condensed, JetBrains_Mono, Manrope } from "next/font/google";
@@ -133,22 +135,11 @@ const serviceJsonLd = {
   ],
 };
 
-// #RESTYLING-0921 round 14 — IL TEMA È UNO SOLO, E LO DECIDE IL SERVER.
-// Qui girava, prima del paint, uno script che leggeva `agentic-theme` da
-// localStorage e ne ricavava `data-theme`. Aveva senso finché il tema era una
-// scelta; Andrea l'ha chiusa: «togliamo la versione light, deve rimanere solo
-// la dark ma senza bottone». Il valore lo scrive l'attributo statico qui
-// sotto, quindi non c'è più niente da bootstrappare e niente da cui flashare.
-// Le regole `:root[data-theme="light"]` restano nei CSS: non sono più
-// raggiungibili (nessun codice scrive quel valore) e toglierle vorrebbe dire
-// rigenerare app/machina.css, che è un file GENERATO e il cui tema scuro è
-// scritto proprio come `:root:not([data-theme="light"])`. Si è tolto il modo
-// di accenderlo, non le migliaia di righe che non si accendono più.
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" {...(CLASSIC ? { "data-frames": "off" } : {})} className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning {...(CLASSIC ? { "data-frames": "off" } : {})} className={`${manrope.variable} ${jetbrainsMono.variable} ${barlowCondensed.variable} ${anton.variable}`}>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}

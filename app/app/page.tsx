@@ -57,6 +57,7 @@ import { SignupPopup } from "@/components/SignupPopup"; // #SIGNUP-POPUP-D-0928
 import { noteSignupPopupBlocker, signupPopupAudience } from "@/lib/signup-popup";
 import { SiteFooter } from "@/components/SiteFooter";
 import { campaignsFor, campaignSport, copyFor, ctaLabelFor } from "@/lib/house-banners";
+import ThemeToggle from "@/components/ThemeToggle";
 import LangDropdown from "@/components/LangDropdown";
 // #RESTYLING-0921 — design system del redesign. La card nuova si importa con
 // un alias: `PredictionCard` è già il nome della card legacy del board, che
@@ -10105,13 +10106,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   useEffect(() => {
     try { document.documentElement.lang = uiLanguage; } catch { /* no-op */ }
   }, [uiLanguage]);
-  // #RESTYLING-0921 round 14 — IL TEMA NON È PIÙ UNA SCELTA. Andrea:
-  // «togliamo la versione light, deve rimanere solo la dark ma senza bottone».
-  // Qui vivevano lo stato `theme`, il ri-assert post-idratazione e
-  // `toggleTheme`: senza un controllo che li chiami non hanno più un mestiere.
-  // Il tema lo fissa `<html data-theme="dark">` in app/layout.tsx, una volta,
-  // lato server: niente stato, niente localStorage, niente flash.
-
   // #UI-SCROLLTOP-0623: cambiare scheda è solo client-state (setTab), quindi la
   // pagina restava ferma a metà contenuto della scheda precedente. Riporta in
   // cima a ogni cambio tab (instant). I CTA che puntano ai Piani fanno il loro
@@ -11032,13 +11026,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       <header className="am-topbar">
         <div className="am-topbar-in">
           <a href="/" className="am-brandmark" aria-label="BetrEdge — home" style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}>
-            {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: erano due <img> che si scambiavano
-                via CSS su `data-theme`. Il gemello nero è stato tolto: `data-theme`
-                lo scrive statico il server a "dark" (app/layout.tsx) e nessun codice
-                scrive più "light", quindi `.brand-logo-light` era `display: none` per
-                sempre — ma un <img> display:none il browser lo SCARICA lo stesso.
-                Misurato @390 sul preview: 590 KB per pagina, il 30% di tutto il
-                payload di immagini, per un elemento che non può accendersi. */}
             {/* #CLASSIC-ASSET-1013 — il raster ufficiale scalato (LANCZOS) a 2x/3x
                 della misura resa (h 30 → 182×60 / 273×90) invece del PNG da 1390 px:
                 stesso marchio, 20–36 KB. Sotto i 641 px il lockup sarebbe largo
@@ -11053,6 +11040,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 alt="BetrEdge"
                 style={{ height: 30, width: "auto" }}
               />
+            </picture>
+            <picture className="brand-logo-light">
+              <source media="(max-width: 640px)" srcSet="/logos/betredge-monogram-white.svg" />
+              <img src="/logos/betredge-logo-black-48.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
             </picture>
           </a>
 
@@ -11242,6 +11233,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               </Link>
             )}
 
+            <ThemeToggle />
             <LangDropdown value={uiLanguage} onSelect={selectLanguage} />
           </div>
         </div>
