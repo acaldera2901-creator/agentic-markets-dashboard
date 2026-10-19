@@ -1,0 +1,79 @@
+/* Light variant 3: original geometry, navy navigation, white cards/blue arena.
+   Explicit theme scope keeps the approved dark palette unchanged. */
+html[data-theme="dark"] { color-scheme: dark; }
+html[data-theme="light"] { color-scheme: light; }
+html[data-theme] .br-theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  flex: none; min-width: 40px; min-height: 36px; padding: 8px 10px;
+  border: 0; border-radius: 8px; background: var(--am-panel-2);
+  color: var(--am-text); font: 600 12px/1 var(--am-font-ui); cursor: pointer;
+}
+html[data-theme] .br-theme-toggle:hover { background: var(--am-royal-dim); }
+html[data-theme] .br-theme-toggle:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; }
+@media (max-width: 640px) {
+  html[data-theme] .br-theme-toggle { min-width: 44px; min-height: 44px; padding: 10px; }
+  .br-theme-toggle span { display: none; }
+}
+html[data-theme="light"]:root {
+  --am-bg: #F3F6FB; --am-bg-2: #EAF0F8;
+  --am-panel: #FFFFFF; --am-panel-2: #EAF0F8; --am-panel-3: #DEE8F5;
+  --am-bar: rgba(255,255,255,.97); --am-inset: #EAF0F8;
+  --am-line: #D5DFED; --am-line-2: #B7C9E0;
+  --am-text: #14294B; --am-muted: #4C607C; --am-muted-2: #546783;
+  --am-coral: #194FC5; --am-coral-2: #145AFF; --am-coral-ink: #FFFFFF;
+  --am-coral-dim: #E8EFFF; --am-coral-b: #B7CBF5;
+  --am-royal-t: #194FC5; --am-edge: #167341;
+  --am-lime: #194FC5;
+  --am-wash: rgba(20,90,255,.04); --am-glow: transparent;
+  --cl-tone: rgba(20,50,100,.06); --cl-tone-2: rgba(20,50,100,.1);
+  --cl-tone-slab: #EAF0F8;
+}
+/* This local palette also follows the horizontal menu on mobile. */
+html[data-theme="light"] .brc-side {
+  --am-panel: #102445; --am-panel-2: #183963;
+  --am-text: #EEF4FF; --am-muted: #B5C7E3; --am-muted-2: #B5C7E3;
+  --am-royal-dim: #173D78; --am-royal-t: #C6D9FF;
+  background: #102445; color: #EEF4FF;
+}
+html[data-theme="light"][data-frames="off"] .cl-slab {
+  background: #FFFFFF; --cl-ink-2: #425C7D; --cl-ink-3: #546783;
+}
+html[data-theme="light"][data-frames="off"] .cl-slab:is(:hover,:focus-within) { background: #F8FAFF; }
+html[data-theme="light"][data-frames="off"] .cl-pickmod { background: #EAF0F8; }
+html[data-theme="light"][data-frames="off"] .cl-infotext { background: #F3F6FB; box-shadow: 0 6px 18px rgba(20,41,75,.15); }
+html[data-theme="light"][data-frames="off"] .cl-read { border-left-color: #C8D6EA; }
+html[data-theme="light"][data-frames="off"] .cl-tag { background: #E6EDFA; }
+html[data-theme="light"][data-frames="off"] .cl-odd { background: #EAF0F8; }
+html[data-theme="light"][data-frames="off"] .cl-odd:hover { background: #DCE7F8; }
+/* Blue matchup panels and photographic banners remain dark islands. */
+html[data-theme="light"][data-frames="off"] .cl-arena { --am-text: #FFFFFF; --am-muted: #DFE9FF; --am-live: #FFE600; --cl-tone: rgba(5,15,34,.32); }
+html[data-theme="light"] :is(.brc-banner,.br-sporthero,.house-banner) { --am-lime: #C8FF00; }
+html[data-theme="light"] .hv3 { --v-panel3: #DEE8F5; --v-coral-ink: #FFFFFF; }
+html[data-theme="light"] .cookie-consent { background: rgba(255,255,255,.98) !important; border-top-color: #D5DFED !important; }
+html[data-theme="light"] .text-amber-400 { color: #865600; }
+html[data-theme="light"] .am-topbar { background: #FFFFFF; }
+html[data-theme="light"] .am-brandmark > picture:has(.brand-logo-dark) { display: none; }
+/* Fixed navy surfaces in the classic layer need their own light treatment. */
+html[data-theme="light"][data-frames="off"] .cookie-consent { background: rgba(255,255,255,.98) !important; }
+html[data-theme="light"][data-frames="off"] .cookie-consent-actions button:first-child { color: #14294B !important; }
+html[data-theme="light"][data-frames="off"] .auth-modal,
+html[data-theme="light"][data-frames="off"] .partners-page .partner-card { background: #FFFFFF; }
+html[data-theme="light"][data-frames="off"] .partners-page .partner-card:hover { background: #EAF0F8; }
+html[data-theme="light"][data-frames="off"] .auth-modal input:not([type="checkbox"]):not([type="radio"]) { background: #EAF0F8; }
+html[data-theme="light"][data-frames="off"] .auth-modal button { color: var(--am-text); }
+html[data-theme="light"][data-frames="off"] .auth-modal button[type="submit"],
+html[data-theme="light"][data-frames="off"] .cl-nf-cta,
+html[data-theme="light"][data-frames="off"] .hv3 .v-btn--primary { color: #FFFFFF; }
+html[data-theme="light"] .br-nudge {
+  --nudge-bg: #FFFFFF; --nudge-ink: #14294B; --nudge-ink-2: #425C7D;
+  --nudge-ink-3: #546783; --nudge-link: #194FC5;
+  box-shadow: 0 20px 60px rgba(20,41,75,.22);
+}
+html[data-theme="light"] .br-nudge__plans { background: #D5DFED; }
+html[data-theme="light"] .br-nudge__plan { background: #EAF0F8; }
+@media (max-width: 640px) {
+  html[data-theme="light"] .am-brandmark .brand-logo-light img { background: #145AFF; border-radius: 5px; }
+}
+@media (max-width: 640px) {
+  html[data-theme] .am-topbar-in .br-theme-toggle { order: 14; }
+}

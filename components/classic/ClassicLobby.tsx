@@ -113,6 +113,7 @@ function Rail({ id, title, hint, items, section, renderCard, copy, testId, busy 
   renderCard: ClassicLobbyProps["renderCard"]; copy: ClassicCopy; testId: string; busy?: boolean;
 }) {
   const railRef = useRef<HTMLUListElement | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const scrollRail = (dir: 1 | -1) => {
     const el = railRef.current;
     if (!el) return;
@@ -144,12 +145,13 @@ function Rail({ id, title, hint, items, section, renderCard, copy, testId, busy 
           {[0, 1, 2, 3].map((i) => <li key={i} className="brc-rail__item"><span className="brc-slab" /></li>)}
         </ul>
       ) : (
-        <ul className="brc-rail" ref={railRef}>
-          {items.map((it) => (
-            <li key={it.key} className="brc-rail__item">{renderCard(it, section(it))}</li>
+        <ul id={`${id}-items`} className="brc-rail" ref={railRef}>
+          {items.map((it, index) => (
+            <li key={it.key} className="brc-rail__item" data-mobile-hidden={index >= 3 && !mobileExpanded}>{renderCard(it, section(it))}</li>
           ))}
         </ul>
       )}
+      {!busy && items.length > 3 && <button type="button" className="brc-seeall br-mobile-only" aria-expanded={mobileExpanded} aria-controls={`${id}-items`} onClick={() => setMobileExpanded(!mobileExpanded)}>{mobileExpanded ? copy.showLess : fill(copy.seeAll, {n: items.length})}</button>}
     </section>
   );
 }
@@ -334,7 +336,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
       </nav>}
 
       <div className="brc-main">
-      <ClassicBanners banners={bannerList} label={copy.bannersLabel} />
+      <ClassicBanners banners={bannerList} label={copy.bannersLabel} mobileLabels={[copy.football, copy.tabInPlay, copy.sideRecord]} />
 
       {/* ── 2 · tab + ricerca ─────────────────────────────────────────── */}
       <div className="brc-bar">
@@ -437,6 +439,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
             </div>
           </header>
 
+          {chips.length > 0 && <label className="br-mobile-only br-mobile-leagues">{copy.leaguesLabel}<select aria-label={copy.leaguesLabel} value={leagueOn ? league! : ''} onChange={e=>setLeague(e.target.value || null)}><option value="">{copy.chipAll} ({dated.length})</option>{chips.map(ch=><option key={ch.id} value={ch.id}>{ch.league}</option>)}</select></label>}
           {dateFilterOn && (
             <div className="brc-when" role="group" aria-label={copy.filterLabel}>
               {(["all", "live", "today", "tomorrow"] as const).map((f) => (

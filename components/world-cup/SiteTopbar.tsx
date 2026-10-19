@@ -17,6 +17,7 @@ import {ClassicPrimaryNav} from "@/components/classic/ClassicPrimaryNav";
 import {CLASSIC} from "@/lib/classic/flag";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 import LangDropdown from "@/components/LangDropdown";
 import { Icon, IconSignIn, IconRegister } from "@/components/ui/icons";
 
@@ -131,13 +132,6 @@ function SiteTopbarContent({
     return () => { cancelled = true; };
   }, []);
 
-  // #RESTYLING-0921 round 14 — via lo stato del tema, il suo toggle e
-  // l'ascolto di `prefers-color-scheme`. Il sito è solo scuro: `data-theme`
-  // lo scrive il server in app/layout.tsx e nessuno lo cambia più. Questa
-  // chrome viveva fuori dall'albero di page.tsx e quindi si portava dietro
-  // una copia della stessa logica — tre copie da tenere in pari erano il
-  // prezzo di una scelta che l'utente non ha più.
-
   // Language: the WC chrome lives outside page.tsx's LanguageCtx, so it reads the
   // shared `agentic-lang` key (same as WcBoard) and re-renders on mount. Toggling
   // here dispatches `agentic-lang-change` so the board updates live in step.
@@ -164,11 +158,8 @@ function SiteTopbarContent({
       <div className="am-topbar-in">
         <div className="am-brandmark">
           <a href="/" className="wc-topbar-home" aria-label="BetrEdge — home">
-            {/* #UI-LOGO-THEME-0623 → #MOBILE-0923: resta il solo bianco. Il tema è
-                statico e scuro (vedi la nota qui sopra, riga 129), quindi il gemello
-                nero era `display: none` per sempre — e un <img> display:none il
-                browser lo scarica comunque: 590 KB a pagina, misurati. */}
-            <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            <img className="brand-logo-dark" src="/logos/betredge-header-white@2x.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            <img className="brand-logo-light" src="/logos/betredge-logo-black-48.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
           </a>
           {!globalNavigation && !nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
         </div>
@@ -219,6 +210,7 @@ function SiteTopbarContent({
               su quelle pagine sarebbero due controlli lingua, uno dei quali non
               cambierebbe niente di visibile. Le altre pagine non passano il prop
               e continuano ad averlo. */}
+          <ThemeToggle />
           {hideLang ? null : <LangDropdown value={lang} onSelect={selectLang} />}
         </div>
       </div>

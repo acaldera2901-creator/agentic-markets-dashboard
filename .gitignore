@@ -91,3 +91,4 @@ refresh.log
 # l'upload di Resend rifiuta i file presi fuori dal repo. Il 09/09 vi sono stati
 # trovati i CSV di g10-g13 non ignorati: un solo `git add -A` li avrebbe committati.
 scratchpad/
+.env*.local

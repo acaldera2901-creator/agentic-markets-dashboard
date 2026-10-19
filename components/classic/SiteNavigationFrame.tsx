@@ -9,6 +9,8 @@ import {SiteNavigationContext,type LobbyNavigationState} from './SiteNavigationC
 import SiteTopbar from '@/components/world-cup/SiteTopbar';
 import './classic-lobby.css';
 import './site-navigation.css';
+import './mobile-navigation.css';
+import {MobileNavigation} from './MobileNavigation';
 export default function SiteNavigationFrame({children}:{children:ReactNode}){
  const path=usePathname()??'/';const [lang,setLang]=useState('en');
  const [lobby,setLobby]=useState<LobbyNavigationState|null>(null);
@@ -27,5 +29,6 @@ export default function SiteNavigationFrame({children}:{children:ReactNode}){
  return <SiteNavigationContext.Provider value={{report:setLobby,sidebar}}><div className="br-site-frame">
  {!isDeskPath(path)&&<SiteTopbar globalNavigation lang={headerLang} hideLang={Boolean(toolsLocale)}/>}
  {isDeskPath(path)?children:<div className="brc-lobby br-site-page">{sidebar}<div className="br-site-content">{children}</div></div>}
+ <MobileNavigation groups={groups} lang={navLang}/>
  </div></SiteNavigationContext.Provider>;
 }
