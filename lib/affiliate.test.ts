@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS, LANDING_PARTNERS, landingPartnersFor, landingTargetsFor, landingUrlOf, slugOf } from "@/lib/affiliate";
+import { CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS, IBET_GEO_URLS, LANDING_PARTNERS, landingPartnersFor, landingTargetsFor, landingUrlOf, slugOf } from "@/lib/affiliate";
 
 // #PARTNERS-VELOBET-CASEA — questi sono i partner "solo landing" che finiscono nel
 // menu "Piazza la scommessa" della scheda partita (football/tennis/World Cup).
@@ -96,11 +96,29 @@ describe("landingPartnersFor(country)", () => {
   // #GEO-PARTNERS-ALWAYS-0917 + #CASEA-ALWAYS-0917: da oggi NESSUNA voce dipende
   // dalla geo per esistere — la geo decide solo QUALE link apre Casea. L'elenco ha
   // la stessa lunghezza in ogni paese, ed è la richiesta di Andrea scritta in numeri.
-  it("stesso numero di voci in ogni geo: fisse + link-unico + Casea", () => {
-    const atteso = LANDING_PARTNERS.length + GEO_LANDING_PARTNERS.length + 1;
+  // #PARTNER-IBET-1020: l'unica eccezione è ibet, +1 voce solo in NO e FI.
+  it("stesso numero di voci in ogni geo: fisse + link-unico + Casea (+ ibet in NO/FI)", () => {
+    const base = LANDING_PARTNERS.length + GEO_LANDING_PARTNERS.length + 1;
     for (const cc of ["NO", "CH", "FI", "AT", "DE", "IT", "ES", "CA", "GB", "", null, undefined]) {
+      const atteso = cc === "NO" || cc === "FI" ? base + 1 : base;
       expect(landingPartnersFor(cc), `lunghezza diversa in ${String(cc)}`).toHaveLength(atteso);
       expect(new Set(namesIn(cc)).size, `doppioni in ${String(cc)}`).toBe(atteso);
+    }
+  });
+
+  it("ibet è nel menu solo in NO e FI, col link del suo paese", () => {
+    for (const [cc, url] of Object.entries(IBET_GEO_URLS)) {
+      expect(landingTargetsFor(cc).find((p) => p.name === "ibet")?.url, `ibet in ${cc}`).toBe(url);
+      expect(landingTargetsFor(cc.toLowerCase()).find((p) => p.name === "ibet")?.url).toBe(url);
+    }
+    for (const cc of ["SE", "DK", "DE", "IT", "CA", "", null, undefined]) {
+      expect(namesIn(cc), `ibet non dovrebbe esserci in ${String(cc)}`).not.toContain("ibet");
+    }
+  });
+
+  it("Tonybet e Ultrapari sono nel menu in ogni geo", () => {
+    for (const cc of ["NO", "FI", "IT", "DE", "CA", "", null]) {
+      expect(namesIn(cc), `menu in ${String(cc)}`).toEqual(expect.arrayContaining(["Tonybet", "Ultrapari"]));
     }
   });
 

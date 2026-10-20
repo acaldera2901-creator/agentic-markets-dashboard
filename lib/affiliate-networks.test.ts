@@ -28,14 +28,16 @@ describe("affiliate network registry", () => {
     });
   });
 
-  it("ultrapari is a registered network but not yet a partner on the site", () => {
+  // #PARTNER-ULTRAPARI-1020: Andrea approved Ultrapari on the site (20/10). Still no
+  // click-id param confirmed by the network -> /go keeps the link untouched.
+  it("ultrapari is a partner on the site, on its own network, without a clickid param", () => {
     expect(hasNetwork("ultrapari")).toBe(true);
     expect(NETWORKS.ultrapari.clickParam).toBeNull();
-    expect(Object.values(PARTNER_NETWORK)).not.toContain("ultrapari");
+    expect(networkOfPartner("ultrapari")).toBe("ultrapari");
   });
 
-  it("has 11 networks", () => {
-    expect(Object.keys(NETWORKS)).toHaveLength(11);
+  it("has 13 networks", () => {
+    expect(Object.keys(NETWORKS)).toHaveLength(13);
   });
 
   it("URL segments cannot match prototype keys", () => {

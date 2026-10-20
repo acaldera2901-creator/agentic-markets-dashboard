@@ -3,7 +3,7 @@
 // sono importati dalle costanti già esistenti (niente duplicazione); slotsbonus
 // è l'unica URL centralizzata qui (spostata dal footer). Tutti i partner sono
 // gambling → il consumo è SEMPRE geo-gated fail-closed (vedi /api/geo-books).
-import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, LANDING_PARTNERS, landingUrlOf } from "@/lib/affiliate";
+import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, IBET_GEO_URLS, LANDING_PARTNERS, landingUrlOf } from "@/lib/affiliate";
 import { BOOKS } from "@/lib/betconstruct-books";
 import { hrefFor } from "@/lib/affiliate-networks";
 
@@ -76,6 +76,12 @@ const ROLLXO_URL = landingUrlOf("RollXO") ?? "https://rollxo.media/n1xqevdiuw";
 const HOLLYWIN_URL = landingUrlOf("Hollywin") ?? "https://hollywin.media/n1fy3vie5j";
 const N1BET_URL = landingUrlOf("N1 Bet") ?? "https://n1betpartners.com/n16rrb51wa";
 const STONEVEGAS_URL = landingUrlOf("Stonevegas") ?? "https://stnvgs.pleotra.com/?mid=389978_2246288";
+// #PARTNER-TONYBET-1020: link unico, vive in LANDING_PARTNERS (fonte unica) e qui si rilegge.
+const TONYBET_URL = LANDING_PARTNERS.find((p) => p.name === "Tonybet")?.url
+  ?? "https://dro.netavix.com/redirect.aspx?pid=179732&lpid=974&bid=1990";
+// #PARTNER-ULTRAPARI-1020: link unico, vive in LANDING_PARTNERS (fonte unica) e qui si rilegge.
+const ULTRAPARI_URL = LANDING_PARTNERS.find((p) => p.name === "Ultrapari")?.url
+  ?? "https://refpa42156.com/L?tag=d_6109487m_118408c_&site=6109487&ad=118408";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -106,6 +112,25 @@ export const PARTNERS: Partner[] = [
   // dentro la placca, in linea con gli altri. Se BetWinner ci manda il suo file
   // ufficiale, si sostituisce public/logos/betwinner.svg e basta.
   { id: "betwinner", name: "BetWinner", category: "sportsbook", logo: "/logos/betwinner.svg", geoUrls: BETWINNER_GEO_URLS },
+  // #PARTNER-IBET-1020 — come BetWinner, senza `url`: link solo per NO e FI, nessun
+  // link neutro → compare SOLO lì, fail-closed altrove e a geo ignota.
+  // Logo = wordmark ufficiale preso dall'header di www.ibet.com (SVG inline, path e
+  // colore #FF0000 invariati); aggiunti solo xmlns e width/height intrinseci (186×80)
+  // per il cap CSS. Nessun logoShape (decisione Andrea 20/10): al cap emblema era il
+  // più grande della riga, al cap standard sta in linea con gli altri wordmark.
+  { id: "ibet", name: "ibet", category: "sportsbook", logo: "/logos/ibet.svg", geoUrls: IBET_GEO_URLS },
+  // #PARTNER-TONYBET-1020 — link unico in ogni geo (nessuna restrizione: la lista di
+  // paesi nel Deal Tracker è ambigua e NON è stata usata, vedi la PR). Logo = file
+  // ufficiale dell'header di tonybet.com (/assets/logo.svg, wordmark bianco + marchio),
+  // aggiunti solo width/height intrinseci. 4.4:1 è un wordmark → nessun logoShape.
+  { id: "tonybet", name: "Tonybet", category: "sportsbook", logo: "/logos/tonybet.svg", url: TONYBET_URL },
+  // #PARTNER-ULTRAPARI-1020 — sportsbook (piattaforma con prematch, toto, statistiche:
+  // visto dal loro robots.txt). Link unico in ogni geo, vedi la nota in lib/affiliate
+  // sulla pagina di blocco da DE/IT. Logo = SVG ufficiale servito dalla loro stessa
+  // pagina (v3.traincdn.com/genfiles/cms/media_asset/2606/4268512940_17.svg, letto dal
+  // browser di Andrea), wordmark verde #43ffa8; aggiunti solo width/height intrinseci.
+  // 3.9:1 è un wordmark → nessun logoShape.
+  { id: "ultrapari", name: "Ultrapari", category: "sportsbook", logo: "/logos/ultrapari.svg", url: ULTRAPARI_URL },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
   // #PARTNERS-VELOBET-CASEA (2026-07-31). Categoria "casino" per entrambi (scelta
   // Andrea): VeloBet è casinò + sportsbook (il suo JSON-LD si chiama "Velobet
@@ -332,6 +357,33 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook internacional, con registro dedicado a tu país.",
     fr: "Sportsbook international, avec une inscription dédiée à votre pays.",
     ru: "Международный букмекер с регистрацией для вашей страны.",
+  },
+  // #PARTNER-IBET-1020 / #PARTNER-TONYBET-1020: copy FTC-safe — nessun claim su bonus
+  // o quote. ibet: il link apre la registrazione sportsbook del tuo paese (fatto
+  // verificato, NO/FI). Tonybet: sportsbook + casinò visti sulla loro home; il partner
+  // vieta i bonus in Alberta/Ontario e qui non ce ne sono.
+  ibet: {
+    it: "Sportsbook partner, registrazione dedicata al tuo paese.",
+    en: "Partner sportsbook, with a sign-up dedicated to your country.",
+    es: "Sportsbook partner, con registro dedicado a tu país.",
+    fr: "Sportsbook partenaire, avec une inscription dédiée à votre pays.",
+    ru: "Партнёрский букмекер с регистрацией для вашей страны.",
+  },
+  // #PARTNER-ULTRAPARI-1020: copy FTC-safe — nessun claim su bonus o quote. Il solo
+  // fatto verificato è che il link apre la registrazione (il sito da qui è bloccato).
+  ultrapari: {
+    it: "Sportsbook partner, registrazione diretta dalla vetrina.",
+    en: "Partner sportsbook, sign up straight from the showcase.",
+    es: "Sportsbook partner, registro directo desde la vitrina.",
+    fr: "Sportsbook partenaire, inscription directe depuis la vitrine.",
+    ru: "Партнёрский букмекер — регистрация прямо из витрины.",
+  },
+  tonybet: {
+    it: "Sportsbook e casino in un unico conto.",
+    en: "Sportsbook and casino in a single account.",
+    es: "Sportsbook y casino en una sola cuenta.",
+    fr: "Sportsbook et casino sur un seul compte.",
+    ru: "Букмекер и казино в одном аккаунте.",
   },
   // #PARTNERS-VELOBET-CASEA: copy FTC-safe, nessun claim su bonus (i loro siti li
   // pubblicizzano, noi non li abbiamo verificati → non li dichiariamo).
