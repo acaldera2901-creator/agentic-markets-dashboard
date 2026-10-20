@@ -74,6 +74,14 @@ export const LANDING_PARTNERS = [
   // (dove ha licenza). Noi non mostriamo bonus di nessun partner → oggi è rispettato
   // per costruzione; se un giorno si mostrano i bonus, Tonybet va escluso lì.
   { name: "Tonybet", url: "https://dro.netavix.com/redirect.aspx?pid=179732&lpid=974&bid=1990" },
+  // #PARTNER-ULTRAPARI-1020 — rete refpa (site=6109487). Link unico, nessuna geo nel
+  // Deal Tracker → tutti i paesi. Verificato con curl (20/10): 303 →
+  // ultrapari.com/registration?tag=d_6109487m_118408c_ (il tag arriva alla
+  // registrazione). ATTENZIONE: da IP DE e IT il sito risponde con la sua pagina di
+  // blocco (/<lang>/block) → in quei paesi l'utente atterra su un blocco del PARTNER,
+  // come Stonevegas fuori perimetro. Lasciato ovunque in attesa della decisione di
+  // Andrea sul perimetro (non limitato di nostra iniziativa).
+  { name: "Ultrapari", url: "https://refpa42156.com/L?tag=d_6109487m_118408c_&site=6109487&ad=118408" },
 ] as const;
 
 export type LandingPartner = { name: string; url: string };

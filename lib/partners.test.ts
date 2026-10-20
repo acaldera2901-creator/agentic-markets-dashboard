@@ -7,7 +7,7 @@ const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 describe("partners catalog", () => {
   it("has exactly the approved partners, no Stake/Roobet", () => {
     const ids = PARTNERS.map((p) => p.id).sort();
-    expect(ids).toEqual(["beazt", "betscore", "betwinner", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "ibet", "n1bet", "rollxo", "slotsbonus", "stonevegas", "tonybet", "velobet", "wildz", "ybets"]);
+    expect(ids).toEqual(["beazt", "betscore", "betwinner", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "ibet", "n1bet", "rollxo", "slotsbonus", "stonevegas", "tonybet", "ultrapari", "velobet", "wildz", "ybets"]);
   });
 
   // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno
@@ -128,6 +128,13 @@ describe("partners catalog", () => {
       for (const cc of ["CA", "IE", "FI", "NO", "IT", "", null, undefined]) {
         expect(idsIn(cc), `Tonybet manca in ${String(cc)}`).toContain("tonybet");
         expect(targetUrlFor("tonybet", cc)).toBe("https://dro.netavix.com/redirect.aspx?pid=179732&lpid=974&bid=1990");
+      }
+    });
+
+    it("Ultrapari è in vetrina in ogni geo, con l'unico link della rete", () => {
+      for (const cc of ["DE", "IT", "NO", "BR", "", null, undefined]) {
+        expect(idsIn(cc), `Ultrapari manca in ${String(cc)}`).toContain("ultrapari");
+        expect(targetUrlFor("ultrapari", cc)).toBe("https://refpa42156.com/L?tag=d_6109487m_118408c_&site=6109487&ad=118408");
       }
     });
 

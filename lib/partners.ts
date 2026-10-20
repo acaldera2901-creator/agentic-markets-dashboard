@@ -79,6 +79,9 @@ const STONEVEGAS_URL = landingUrlOf("Stonevegas") ?? "https://stnvgs.pleotra.com
 // #PARTNER-TONYBET-1020: link unico, vive in LANDING_PARTNERS (fonte unica) e qui si rilegge.
 const TONYBET_URL = LANDING_PARTNERS.find((p) => p.name === "Tonybet")?.url
   ?? "https://dro.netavix.com/redirect.aspx?pid=179732&lpid=974&bid=1990";
+// #PARTNER-ULTRAPARI-1020: link unico, vive in LANDING_PARTNERS (fonte unica) e qui si rilegge.
+const ULTRAPARI_URL = LANDING_PARTNERS.find((p) => p.name === "Ultrapari")?.url
+  ?? "https://refpa42156.com/L?tag=d_6109487m_118408c_&site=6109487&ad=118408";
 
 // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): tutti i partner sono partner —
 // nessuno sportsbook va "in evidenza" sopra gli altri. Il flag `featured` resta
@@ -121,6 +124,13 @@ export const PARTNERS: Partner[] = [
   // ufficiale dell'header di tonybet.com (/assets/logo.svg, wordmark bianco + marchio),
   // aggiunti solo width/height intrinseci. 4.4:1 è un wordmark → nessun logoShape.
   { id: "tonybet", name: "Tonybet", category: "sportsbook", logo: "/logos/tonybet.svg", url: TONYBET_URL },
+  // #PARTNER-ULTRAPARI-1020 — sportsbook (piattaforma con prematch, toto, statistiche:
+  // visto dal loro robots.txt). Link unico in ogni geo, vedi la nota in lib/affiliate
+  // sulla pagina di blocco da DE/IT. Logo = SVG ufficiale servito dalla loro stessa
+  // pagina (v3.traincdn.com/genfiles/cms/media_asset/2606/4268512940_17.svg, letto dal
+  // browser di Andrea), wordmark verde #43ffa8; aggiunti solo width/height intrinseci.
+  // 3.9:1 è un wordmark → nessun logoShape.
+  { id: "ultrapari", name: "Ultrapari", category: "sportsbook", logo: "/logos/ultrapari.svg", url: ULTRAPARI_URL },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
   // #PARTNERS-VELOBET-CASEA (2026-07-31). Categoria "casino" per entrambi (scelta
   // Andrea): VeloBet è casinò + sportsbook (il suo JSON-LD si chiama "Velobet
@@ -358,6 +368,15 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook partner, con registro dedicado a tu país.",
     fr: "Sportsbook partenaire, avec une inscription dédiée à votre pays.",
     ru: "Партнёрский букмекер с регистрацией для вашей страны.",
+  },
+  // #PARTNER-ULTRAPARI-1020: copy FTC-safe — nessun claim su bonus o quote. Il solo
+  // fatto verificato è che il link apre la registrazione (il sito da qui è bloccato).
+  ultrapari: {
+    it: "Sportsbook partner, registrazione diretta dalla vetrina.",
+    en: "Partner sportsbook, sign up straight from the showcase.",
+    es: "Sportsbook partner, registro directo desde la vitrina.",
+    fr: "Sportsbook partenaire, inscription directe depuis la vitrine.",
+    ru: "Партнёрский букмекер — регистрация прямо из витрины.",
   },
   tonybet: {
     it: "Sportsbook e casino in un unico conto.",
