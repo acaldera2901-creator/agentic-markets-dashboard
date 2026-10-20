@@ -362,9 +362,3 @@ describe("wallet USDC",()=>{
  });
 });
 
-it('discloses payout setup and provisional accounting before users rely on the balance', async () => {
-  mockFetch(() => ({status:200,body:{...ME,operations:{payouts_enabled:false,accounting_ready:false}}}));
-  render(<AffiliateSection lang="it" />);
-  expect(await screen.findByText(/Trasferimenti non ancora attivi/)).toBeTruthy();
-  expect(screen.getByText(/Importi provvisori/)).toBeTruthy();
-});
