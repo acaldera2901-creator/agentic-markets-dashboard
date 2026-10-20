@@ -221,7 +221,10 @@ export function landingTargetsFor(country: string | null | undefined): LandingPa
   const cc = (country ?? "").trim().toUpperCase();
   const casea = (cc ? CASEA_GEO_URLS[cc] : undefined) ?? CASEA_FALLBACK_URL;
   const n1 = GEO_LANDING_PARTNERS.map(({ name, url }) => ({ name, url }));
-  return [...LANDING_PARTNERS, ...n1, { name: "Casea", url: casea }];
+  // #PARTNER-IBET-1020 (Andrea, 20/10: ogni partner anche nel menu) — ibet entra solo
+  // dove ha un link suo (NO, FI). Nessun fallback: fuori lista e a geo ignota non c'è.
+  const ibet = cc ? IBET_GEO_URLS[cc] : undefined;
+  return [...LANDING_PARTNERS, ...n1, { name: "Casea", url: casea }, ...(ibet ? [{ name: "ibet", url: ibet }] : [])];
 }
 
 // Menu names -> lib/partners ids ("GG.BET" -> ggbet, "N1 Bet" -> n1bet). A test

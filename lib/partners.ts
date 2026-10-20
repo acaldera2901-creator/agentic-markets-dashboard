@@ -116,9 +116,9 @@ export const PARTNERS: Partner[] = [
   // link neutro → compare SOLO lì, fail-closed altrove e a geo ignota.
   // Logo = wordmark ufficiale preso dall'header di www.ibet.com (SVG inline, path e
   // colore #FF0000 invariati); aggiunti solo xmlns e width/height intrinseci (186×80)
-  // per il cap CSS. 2.3:1 come Wildz/Stonevegas → emblema, altrimenti al cap standard
-  // sembrerebbe il partner minore.
-  { id: "ibet", name: "ibet", category: "sportsbook", logo: "/logos/ibet.svg", geoUrls: IBET_GEO_URLS, logoShape: "emblem" },
+  // per il cap CSS. Nessun logoShape (decisione Andrea 20/10): al cap emblema era il
+  // più grande della riga, al cap standard sta in linea con gli altri wordmark.
+  { id: "ibet", name: "ibet", category: "sportsbook", logo: "/logos/ibet.svg", geoUrls: IBET_GEO_URLS },
   // #PARTNER-TONYBET-1020 — link unico in ogni geo (nessuna restrizione: la lista di
   // paesi nel Deal Tracker è ambigua e NON è stata usata, vedi la PR). Logo = file
   // ufficiale dell'header di tonybet.com (/assets/logo.svg, wordmark bianco + marchio),
