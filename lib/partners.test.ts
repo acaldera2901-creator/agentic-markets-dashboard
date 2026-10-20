@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { BET_MENU_ORDER, PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu, targetUrlFor } from "@/lib/partners";
-import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS } from "@/lib/affiliate";
+import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS, IBET_GEO_URLS } from "@/lib/affiliate";
 
 const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 
 describe("partners catalog", () => {
   it("has exactly the approved partners, no Stake/Roobet", () => {
     const ids = PARTNERS.map((p) => p.id).sort();
-    expect(ids).toEqual(["beazt", "betscore", "betwinner", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "n1bet", "rollxo", "slotsbonus", "stonevegas", "velobet", "wildz", "ybets"]);
+    expect(ids).toEqual(["beazt", "betscore", "betwinner", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "ibet", "n1bet", "rollxo", "slotsbonus", "stonevegas", "tonybet", "velobet", "wildz", "ybets"]);
   });
 
   // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno
@@ -68,10 +68,15 @@ describe("partners catalog", () => {
     // #PARTNER-BETWINNER-0924: l'atteso non è più `PARTNERS` intero ma «tutti quelli
     // con un link di default». BetWinner non ne ha e sta fuori da queste geo — è la
     // sua eccezione, non un allentamento della regola per gli altri.
+    // #PARTNER-IBET-1020: ibet si aggiunge in NO e FI (la sua eccezione, come
+    // BetWinner nelle sue 9 geo) → lì l'atteso è «quelli con url» + ibet.
     it("la vetrina ha gli stessi id in ogni geo, IT ed ES comprese", () => {
       const atteso = PARTNERS.filter((p) => p.url).map((p) => p.id).sort();
-      for (const cc of ["NO", "DE", "AT", "CH", "FI", "IT", "ES", "CA", "GB", "", null, undefined]) {
+      for (const cc of ["DE", "AT", "CH", "IT", "ES", "CA", "GB", "", null, undefined]) {
         expect(idsIn(cc).sort(), `elenco diverso in ${String(cc)}`).toEqual(atteso);
+      }
+      for (const cc of ["NO", "FI"]) {
+        expect(idsIn(cc).sort(), `elenco diverso in ${cc}`).toEqual([...atteso, "ibet"].sort());
       }
     });
 
@@ -101,6 +106,29 @@ describe("partners catalog", () => {
       }
       // case/space-insensitive anche per lui: l'header arriva ISO-2, ma non ci fidiamo
       expect(targetUrlFor("betwinner", " in ")).toBe(BETWINNER_GEO_URLS.IN);
+    });
+
+    // #PARTNER-IBET-1020 — stessa forma di BetWinner: dentro NO/FI la card c'è col
+    // link di quel paese, fuori (e a geo ignota) non c'è. Nessun fallback.
+    it("ibet c'è solo in NO e FI, col link di quel paese", () => {
+      expect(Object.keys(IBET_GEO_URLS).sort()).toEqual(["FI", "NO"]);
+      expect(IBET_GEO_URLS.NO).not.toBe(IBET_GEO_URLS.FI);
+      for (const [cc, url] of Object.entries(IBET_GEO_URLS)) {
+        expect(idsIn(cc), `ibet manca in ${cc}`).toContain("ibet");
+        expect(targetUrlFor("ibet", cc), `link sbagliato in ${cc}`).toBe(url);
+      }
+      for (const cc of ["SE", "DK", "DE", "IT", "ES", "GB", "CA", "IN", "", null, undefined]) {
+        expect(idsIn(cc), `ibet non dovrebbe esserci in ${String(cc)}`).not.toContain("ibet");
+        expect(targetUrlFor("ibet", cc)).toBeUndefined();
+      }
+      expect(targetUrlFor("ibet", " fi ")).toBe(IBET_GEO_URLS.FI);
+    });
+
+    it("Tonybet è in vetrina in ogni geo, con l'unico link della rete", () => {
+      for (const cc of ["CA", "IE", "FI", "NO", "IT", "", null, undefined]) {
+        expect(idsIn(cc), `Tonybet manca in ${String(cc)}`).toContain("tonybet");
+        expect(targetUrlFor("tonybet", cc)).toBe("https://dro.netavix.com/redirect.aspx?pid=179732&lpid=974&bid=1990");
+      }
     });
 
     it("i quattro ex NO+DACH sono in vetrina in ogni geo, con l'unico link della rete", () => {

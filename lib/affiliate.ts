@@ -66,6 +66,14 @@ export const LANDING_PARTNERS = [
   // qui e l'attrito sparisce.
   { name: "Beazt", url: "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=6056" },
   { name: "Wildz", url: "https://go.wildzaffiliates.com/visit/?bta=1000385&nci=5345&utm_campaign=betredge" },
+  // #PARTNER-TONYBET-1020 — rete propria (tracker netavix, pid=179732). Link unico per
+  // tutte le geo, come consegnato nel Deal Tracker. Verificato con curl (20/10):
+  // 307 → tonybet.com/en col `btag=670976_<click-id della rete>` (il suffisso cambia
+  // a ogni click, l'id 670976 no). Atterra sulla home sportsbook, nessun deep-link.
+  // ATTENZIONE compliance: il partner vieta di mostrare bonus in Alberta e Ontario
+  // (dove ha licenza). Noi non mostriamo bonus di nessun partner → oggi è rispettato
+  // per costruzione; se un giorno si mostrano i bonus, Tonybet va escluso lì.
+  { name: "Tonybet", url: "https://dro.netavix.com/redirect.aspx?pid=179732&lpid=974&bid=1990" },
 ] as const;
 
 export type LandingPartner = { name: string; url: string };
@@ -126,6 +134,17 @@ export const BETWINNER_GEO_URLS: Record<string, string> = {
   CO: BETWINNER_SHARED_URL,
   ID: BETWINNER_SHARED_URL,
   MY: BETWINNER_SHARED_URL,
+};
+
+// #PARTNER-IBET-1020 — ibet (tracker record.ibetaffiliates.com). Stessa forma di
+// BetWinner: un link PER PAESE (NO, FI) e **nessun link neutro** → il partner esiste
+// SOLO in queste 2 geo, nessun fallback (istruzione di Andrea, 20/10). Verificati con
+// curl (20/10): NO → 301 www.ibet03.com/no-NO/promo/sportsbook-signup, FI → 301
+// www.ibet.com/fi-FI/signup, entrambi con `aff=<click-id della rete>`.
+// Aggiungere un paese = una riga qui.
+export const IBET_GEO_URLS: Record<string, string> = {
+  NO: "https://record.ibetaffiliates.com/_SS3_CLvKC4DbiNEwjTawKmNd7ZgqdRLk/3/",
+  FI: "https://record.ibetaffiliates.com/_SS3_CLvKC4C6ZGR6w30EnmNd7ZgqdRLk/2/",
 };
 
 // #PARTNERS-N1-0915 — rete N1 Partners (RollXO, Hollywin, N1 Bet). Terza forma di

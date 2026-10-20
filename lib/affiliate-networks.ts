@@ -24,6 +24,8 @@ const DEFS = {
   betwinner: { clickParam: null },
   rooster: { clickParam: null },
   ybets: { clickParam: null },
+  ibet: { clickParam: null },
+  tonybet: { clickParam: null },
   ultrapari: { clickParam: null }, // partner not on the site yet: no PARTNER_NETWORK row until it is
 } satisfies Record<string, Network>;
 export type NetworkId = keyof typeof DEFS;
@@ -37,6 +39,7 @@ export const PARTNER_NETWORK: Readonly<Record<string, NetworkId>> = {
   felicebet: "bluewin", velobet: "velobet", beazt: "rootz", wildz: "rootz",
   rollxo: "n1", hollywin: "n1", n1bet: "n1", ggbet: "ggbet",
   betwinner: "betwinner", fortuneplay: "rooster", ybets: "ybets",
+  ibet: "ibet", tonybet: "tonybet",
 };
 
 // Path segments come from the URL: plain `obj[key]` would accept "constructor"/"__proto__".
