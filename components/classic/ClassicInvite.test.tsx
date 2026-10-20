@@ -81,17 +81,17 @@ describe("ClassicInvite", () => {
     expect(screen.queryByLabelText("Choose your code")).toBeNull();
   });
 
-  it("v1 (v2 spento) loggato con dati: link, KPI reali, premi a giorni PRO; nessun importo, nessuna moneta, nessuna anteprima", async () => {
+  it.each(["en", "it", "es", "fr", "ru"])("commission terms replace legacy rewards in %s while preserving real link and counts", async (lang) => {
     stubFetch({ status: 200, body: STATS });
-    mount(false);
+    mount(false, lang);
     await screen.findByText("MARCO");
-    expect(screen.getByText("Whoever signs up through your link gets 7 free days of PRO.")).toBeTruthy();
-    expect(screen.getByText("25%")).toBeTruthy(); // 1/4
-    expect(screen.getByText("1 paying · 1 to the next reward")).toBeTruthy();
-    expect(screen.getByText("+29 days of PRO")).toBeTruthy();
     const text = document.body.textContent ?? "";
-    expect(text).not.toMatch(/\$|USDT|Polygon|commission|wallet|Preview|Sample/i);
-    expect(document.querySelector("[data-v2='0']")).toBeTruthy();
+    expect(text).toContain("20%");
+    expect(text).toContain("7%");
+    expect(text).toContain("25%");
+    expect(text).not.toMatch(/29|60|Telegram|days of PRO|giorni.*PRO|Sample|Esempio/);
+    expect(document.querySelector(".cli-tiers")).toBeNull();
+    expect((document.querySelector(".cli-url") as HTMLInputElement).value).toMatch(/\/r\/MARCO$/);
   });
 
   it("v2 acceso: banner «Anteprima» visibile, ogni blocco con importi marcato «Sample», wallet inerte, regole e rischi", async () => {
