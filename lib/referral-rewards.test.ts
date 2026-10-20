@@ -617,3 +617,17 @@ describe("la vista 016 e hasRoomAccess non possono divergere in silenzio", () =>
     expect(src).not.toMatch(/referral_room_access\s*=\s*TRUE/i);
   });
 });
+
+describe("commission programme replaces access rewards",()=>{
+ beforeEach(()=>{vi.clearAllMocks();vi.stubEnv("AFFILIATE_MODE","live");});
+ afterEach(()=>vi.unstubAllEnvs());
+ it("does not grant referrer PRO tiers when cash commissions are live",async()=>{
+ await checkReferralTiers("referred@example.test");
+ expect(dbQueryStrict).not.toHaveBeenCalled();expect(dbExecute).not.toHaveBeenCalled();
+ });
+ it("does not grant referral signup days when commissions are live",async()=>{
+ vi.mocked(dbQueryStrict).mockResolvedValueOnce([{referred_by:"FRIEND",plan:"free",plan_expires_at:null}]);
+ expect(await grantInviteeBonus("referred@example.test")).toBe(false);
+ expect(dbQueryStrict).toHaveBeenCalledTimes(1);expect(dbExecute).not.toHaveBeenCalled();
+ });
+});

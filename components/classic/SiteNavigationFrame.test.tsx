@@ -11,11 +11,12 @@ vi.mock('@/lib/track-event',()=>({trackEvent:vi.fn()}));
 vi.mock('@/components/world-cup/SiteTopbar',()=>({default:()=> <div data-testid="shared-header"/>}));
 vi.mock('next/link',()=>({default:({href,children}:{href:string;children:React.ReactNode})=><a href={href}>{children}</a>}));
 describe('public site navigation',()=>{
- it('retains all eleven sidebar links outside the desk',()=>{
+ it('retains all twelve sidebar links outside the desk',()=>{
   pathname='/tools';render(<SiteNavigationFrame><p>Tools content</p></SiteNavigationFrame>);
   const nav=screen.getByRole('navigation',{name:'Sections'});
-  expect(within(nav).getAllByRole('link')).toHaveLength(11);
+  expect(within(nav).getAllByRole('link')).toHaveLength(12);
   expect(within(nav).getByRole('link',{name:'Starting Soon'})).toHaveAttribute('href','/?board=soon&filter=popular');
+  expect(within(nav).getByRole('link',{name:'Invite'})).toHaveAttribute('href','/invite');
   expect(within(nav).getByRole('link',{name:'Partners'})).toHaveAttribute('href','/partners');
  });
  it('places the desk sidebar beside content, outside the existing header',()=>{

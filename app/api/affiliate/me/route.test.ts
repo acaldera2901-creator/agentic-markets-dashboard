@@ -93,7 +93,7 @@ describe("GET /api/affiliate/me", () => {
     expect(body.commissions.items[0].referred).toBe("c***@g***.com");
     expect(body.payouts[0]).toMatchObject({ status: "cancelled", cancel_code: "admin_cancelled" });
     expect(body.ledger).toMatchObject({ payable: 23.39, min_payout_usd: 50 });
-    expect(body.rails).toEqual({ coins: ["USDT"], networks: ["polygon"] });
+    expect(body.rails).toEqual({ coins: ["USDT", "USDC"], networks: ["polygon"] });
   });
 
   it("cursore della paginazione passato come intero, spazzatura ignorata", async () => {

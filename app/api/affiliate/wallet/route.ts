@@ -224,6 +224,8 @@ export async function PUT(req: Request) {
       lang: await mailLang(ctx.identifier),
       removed: false,
       addressMasked: masked,
+      coin: verdict.coin,
+      network: verdict.network,
       usableAfterISO: res.usable_after ?? null,
       payoutCancelled: cancelled > 0,
     }),

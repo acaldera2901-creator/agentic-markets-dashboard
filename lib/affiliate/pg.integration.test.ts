@@ -104,6 +104,7 @@ function req(url: string, method: string, who: string | null, body?: unknown) {
   });
 }
 const walletBody = (address: string) => ({
+  coin: "USDT",
   address,
   last6: address.slice(-6),
   payee_legal_name: "Alice Liddell",
@@ -123,6 +124,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated; END IF;
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN CREATE ROLE service_role; END IF;
       END $r$;
+      CREATE TABLE IF NOT EXISTS affiliate_clicks (id bigserial PRIMARY KEY, link_id uuid, book_key text, clicked_at timestamptz DEFAULT now());
+      INSERT INTO affiliate_clicks(book_key) SELECT 'existing-bo-click' WHERE NOT EXISTS (SELECT 1 FROM affiliate_clicks);
       CREATE TABLE IF NOT EXISTS profiles (
         identifier text PRIMARY KEY, referral_code text, referred_by text, language text,
         updated_at timestamptz, created_at timestamptz DEFAULT now());
@@ -152,7 +155,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.stubEnv("AFFILIATE_PAYOUT_FROM", "0x1111111111111111111111111111111111111111");
     await h.sql!.unsafe(`
       TRUNCATE affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
-               affiliate_clicks, affiliates, profiles RESTART IDENTITY CASCADE;
+               affiliate_referral_clicks, affiliates, profiles RESTART IDENTITY CASCADE;
       INSERT INTO profiles(identifier, referral_code, language) VALUES
         ('alice@x.io', NULL, 'it'), ('bob@x.io', 'BOBBY', 'en');`);
   });
@@ -160,6 +163,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   it("migration: i file affiliate_v2 riapplicati senza errori (idempotente)", async () => {
     for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT, "supabase/migrations", f), "utf8"));
     expect(MIGRATIONS.length).toBeGreaterThanOrEqual(2);
+    const legacy = await h.sql!`SELECT book_key FROM affiliate_clicks`;
+    expect(legacy).toEqual([{book_key:"existing-bo-click"}]);
   });
 
   it("iscrizione → wallet → pannello, tutto su SQL vero", async () => {
@@ -361,4 +366,27 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(r.status).toBe(409);
     expect(await r.json()).toMatchObject({ error: "not_eligible", items: [{ affiliate_id: 1, reasons: ["suspended"] }] });
   });
+
+  it("matures only due live commissions and leaves shadow, future and review cases untouched",async()=>{
+    const join=await import("@/app/api/affiliate/join/route");
+    expect((await join.POST(req("/api/affiliate/join","POST","alice@x.io",{code:"alice",terms_version:"2026-11-v1",age:true,onerous_ack:true}))).status).toBe(200);
+    await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'ok@x.io',id,now(),'valid' FROM affiliates`;
+    await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'review@x.io',id,now(),'fraud_review' FROM affiliates`;
+    for(const [ref,status,who,due] of [['due','pending','ok@x.io',true],['shadow','shadow','ok@x.io',true],['future','pending','ok@x.io',false],['review','pending','review@x.io',true]]){
+      await h.sql!`INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
+      SELECT id,${who},'crypto',${ref},'first',100,100,0.2,20,${['due','shadow','future','review'].indexOf(String(ref))},${status},now()-interval '70 days',${due?new Date(Date.now()-86400000):new Date(Date.now()+86400000)} FROM affiliates`;
+    }
+    const first=await h.sql!`SELECT affiliate_mature_commissions() AS result`;
+    expect(first[0].result).toEqual({ok:true,matured:1});
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS result`)[0].result).toEqual({ok:true,matured:0});
+    expect(await h.sql!`SELECT rail_payment_ref FROM affiliate_commissions WHERE status='payable'`).toEqual([{rail_payment_ref:'due'}]);
+  });
+
+  it("rollback preserves existing BO clicks and can be reapplied",async()=>{
+    await h.sql!`DELETE FROM profiles`;
+    await h.sql!.unsafe(readFileSync(path.join(ROOT,"scripts/affiliate-v2/rollback_gate_b.sql"),"utf8"));
+    expect(await h.sql!`SELECT book_key FROM affiliate_clicks`).toEqual([{book_key:"existing-bo-click"}]);
+    for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT,"supabase/migrations",f),"utf8"));
+  });
+
 });

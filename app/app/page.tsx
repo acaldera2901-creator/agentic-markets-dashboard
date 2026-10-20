@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- A document navigation resets desk-local filters even when the current URL is already /. */
 "use client";
 
+import {InvitePage} from "@/components/affiliate/InvitePage";
 import {usePolledTask} from "@/lib/use-polled-task";
 import type { Segment } from "@/lib/track-record-history";
 import {SitePageNavigation} from "@/components/classic/SiteNavigationContext";
@@ -7781,14 +7782,6 @@ type ReferralTierStat = {
   grantsRoom: boolean;
 };
 
-// #AFFILIATE-V2-UI-1015 — il pannello Affiliati v2 entra SOLO a build con
-// NEXT_PUBLIC_AFFILIATE_V2=1. Il confronto è scritto per esteso e il modulo è
-// `lazy`: a flag spento il bundler toglie l'import (e il suo CSS), e ReferralPanel
-// resta esattamente quello di prima.
-const AffiliateSection = process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"
-  ? lazy(() => import("@/components/affiliate/AffiliateSection").then((m) => ({ default: m.AffiliateSection })))
-  : null;
-
 function ReferralPanel() {
   const lang = useLang();
   // #REFERRAL-HARDENING: il codice ora si CLAIMA una volta sola sul profilo
@@ -11537,21 +11530,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           {/* #REFERRAL-PANEL: la vecchia AccountTab (dove era finita per errore la
               sezione Invita) non è più montata dopo #UI-ACCOUNT-DROPDOWN-0623 →
               il pannello referral vive su una tab dedicata, raggiungibile. */}
-          {/* #CLASSIC-INVITE-1014 — a flag acceso la tab è ClassicInvite: stesse
-              API di ReferralPanel (stats/claim), nessuna nuova. La parte Affiliati
-              v2 (importi, wallet, storico: dati di ESEMPIO) solo con il secondo
-              flag di build NEXT_PUBLIC_AFFILIATE_V2=1, che vive solo in Preview.
-              A flag spento resta il ramo di main (AffiliateSection o ReferralPanel). */}
-          {tab === "invita" && (process.env.NEXT_PUBLIC_CLASSIC === "1" ? (
-            <CL.ClassicInvite
-              lang={uiLanguage}
-              v2={process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"}
-              onSignIn={() => openAuth("login")}
-              onRegister={() => openAuth("create")}
-            />
-          ) : AffiliateSection ? (
-            <Suspense fallback={null}><AffiliateSection lang={uiLanguage} /></Suspense>
-          ) : <ReferralPanel />)}
+          {tab === "invita" && <InvitePage
+            classic={process.env.NEXT_PUBLIC_CLASSIC === "1"}
+            affiliate={process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"}
+            lang={uiLanguage}
+            onSignIn={() => openAuth("login")}
+            onRegister={() => openAuth("create")}
+            legacy={<ReferralPanel />}
+          />}
           {tab === "history" && (
             <TrackRecordView rows={historyV2} data={{ stats: historyV2Stats, segments: historySegments }} lang={uiLanguage === "it" ? "it" : "en"} />
           )}

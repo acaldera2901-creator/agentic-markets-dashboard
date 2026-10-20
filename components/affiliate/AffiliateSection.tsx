@@ -28,6 +28,8 @@ export type AffiliateSectionProps = {
   lang: string;
   /** Link ai Termini del programma: dal momento in cui sono pubblicati (terms_version presente). */
   termsHref?: string;
+  onSignIn?: () => void;
+  onRegister?: () => void;
   privacyHref?: string;
 };
 
@@ -41,7 +43,7 @@ type Phase =
   | { k: "enrolled"; me: Enrolled };
 type View = "dash" | "wallet" | "payouts";
 
-export function AffiliateSection({ lang, termsHref = "/terms", privacyHref = "/privacy" }: AffiliateSectionProps) {
+export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/terms", privacyHref = "/privacy" }: AffiliateSectionProps) {
   const l = affLang(lang);
   const c = AFF_COPY[l];
   const [phase, setPhase] = useState<Phase>({ k: "loading" });
@@ -125,7 +127,7 @@ export function AffiliateSection({ lang, termsHref = "/terms", privacyHref = "/p
     body = (
       <>
         <Head c={c} />
-        <div className="aff-block"><h2 className="aff-h">{c.state.anonTitle}</h2><p className="aff-muted">{c.state.anonBody}</p></div>
+        <div className="aff-block"><h2 className="aff-h">{c.state.anonTitle}</h2><p className="aff-muted">{c.state.anonBody}</p><div className="aff-actions">{onSignIn && <button type="button" className="aff-cta" onClick={onSignIn}>{l === "it" ? "Accedi" : "Sign in"}</button>}{onRegister && <button type="button" className="aff-cta aff-cta--ghost" onClick={onRegister}>{l === "it" ? "Registrati" : "Register"}</button>}</div></div>
       </>
     );
   } else if (phase.k === "closed") {

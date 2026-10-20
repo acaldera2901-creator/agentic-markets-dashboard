@@ -9,6 +9,7 @@
 // in prod sull'INSERT. Il test lo inchioda.
 
 import { dbQueryStrict, dbExecute } from "./db";
+import { affiliateMode } from "./affiliate/config";
 import { internalInviteSpec } from "./internal-invite";
 import { computePaygateGrant, type GrantablePlan } from "./plan-grant";
 
@@ -245,6 +246,8 @@ export async function hasRoomAccess(identifier: string): Promise<boolean> {
  *  **Non lancia mai.** Il chiamante è un rail di pagamento: un premio mancato si
  *  recupera dal log, un pagamento non concesso è un cliente perso. */
 export async function checkReferralTiers(invitedIdentifier: string): Promise<void> {
+  // Monetary commissions replace referral access rewards only after live activation.
+  if (affiliateMode() === "live") return;
   try {
     const me = await dbQueryStrict<{ referred_by: string | null }>(
       `SELECT referred_by FROM profiles
@@ -344,6 +347,7 @@ export async function grantInviteeBonus(identifier: string): Promise<boolean> {
     // Un codice interno non ha proprietario per definizione: la sua autorità è
     // la env, quindi il controllo sotto va SALTATO (non allentato).
     const internal = internalInviteSpec(code);
+    if (!internal && affiliateMode() === "live") return false;
     const days = internal ? internal.days : INVITEE_BONUS_DAYS;
 
     if (!internal) {

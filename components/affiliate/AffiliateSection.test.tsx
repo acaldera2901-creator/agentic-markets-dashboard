@@ -348,3 +348,16 @@ describe("wallet in due passi", () => {
     await waitFor(() => expect(calls.some((c) => c.method === "DELETE")).toBe(true));
   });
 });
+
+describe("wallet USDC",()=>{
+ it("changes the network acknowledgment with the selected coin and resets consent",async()=>{
+ mockFetch(me({...ME_EMPTY, rails:{coins:["USDT","USDC"],networks:["polygon"]}}));
+ render(<AffiliateSection lang="it"/>);
+ fireEvent.click(await screen.findByRole("button",{name:/Aggiungi wallet/}));
+ const ack=screen.getByRole("checkbox",{name:/Il mio wallet.*USDT/});
+ fireEvent.click(ack);
+ const select=screen.getAllByRole("combobox").find(e=>Array.from((e as HTMLSelectElement).options).some(o=>o.value==="USDC"))!;
+ fireEvent.change(select,{target:{value:"USDC"}});
+ expect(screen.getByRole("checkbox",{name:/Il mio wallet.*USDC/})).not.toBeChecked();
+ });
+});
