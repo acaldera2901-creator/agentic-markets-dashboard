@@ -146,20 +146,11 @@ describe("ClassicInvite", () => {
 describe("desk: parità a flag spento", () => {
   const page = readFileSync("app/app/page.tsx", "utf8");
 
-  it("la tab invita rende ClassicInvite SOLO nel ramo del flag classic, altrimenti ReferralPanel", () => {
-    expect(page).toMatch(
-      // #CLASSIC-RELEASE-1016: the `else` is main's branch (AffiliateSection under its own flag, else ReferralPanel)
-      /\{tab === "invita" && \(process\.env\.NEXT_PUBLIC_CLASSIC === "1" \? \(\s*<CL\.ClassicInvite[\s\S]*?\/>\s*\) : AffiliateSection \? \([\s\S]*?\) : <ReferralPanel \/>\)\}/,
-    );
-    // nessun altro montaggio, nessun import statico del componente nel desk
-    expect(page.match(/<CL\.ClassicInvite\b/g)?.length).toBe(1); // un solo montaggio
-    expect(page).not.toMatch(/from "@\/components\/classic\/ClassicInvite"/);
-  });
-
-  it("il flag v2 si legge solo dentro il ramo classic", () => {
-    const uses = page.match(/NEXT_PUBLIC_AFFILIATE_V2/g) ?? [];
-    expect(uses.length).toBe(4); // commento + prop v2, più commento + lazy di AffiliateSection (main, #AFFILIATE-V2-UI-1015)
-    expect(page).toMatch(/v2=\{process\.env\.NEXT_PUBLIC_AFFILIATE_V2 === "1"\}/);
+  it("routes invite through the real-account selector, preserving the legacy fallback", () => {
+    expect(page).toContain('{tab === "invita" && <InvitePage');
+    expect(page).toContain('classic={process.env.NEXT_PUBLIC_CLASSIC === "1"}');
+    expect(page).toContain('affiliate={process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"}');
+    expect(page).toContain('legacy={<ReferralPanel />}');
   });
 
   it("ReferralPanel è ancora lì, con le sue API e il suo copy", () => {

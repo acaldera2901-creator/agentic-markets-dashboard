@@ -45,3 +45,8 @@ describe("email payout (PR-9)", () => {
     expect(m.text).toContain("$55.00");
   });
 });
+
+it("wallet email names the saved USDC asset",()=>{
+ const m=walletChangedEmail({lang:"it",removed:false,addressMasked:"0x123…abcd",usableAfterISO:null,payoutCancelled:false,coin:"USDC",network:"polygon"});
+ expect(m.text).toContain("USDC");expect(m.text).not.toContain("USDT");
+});

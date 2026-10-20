@@ -12,7 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { getSessionPlan } from "@/lib/auth";
-import { affiliateConfig, affiliateMode, affiliateTermsVersion, payoutConfig } from "@/lib/affiliate/config";
+import { affiliateConfig, affiliateMode, affiliateTermsVersion, affiliatePayoutsMode, payoutConfig } from "@/lib/affiliate/config";
 import {
   ledgerView,
   loadActiveWallet,
@@ -42,6 +42,7 @@ export async function GET(req: Request) {
     if (!aff) {
       return NextResponse.json({
         enrolled: false,
+        operations: { payouts_enabled: affiliatePayoutsMode() === "live", accounting_ready: process.env.AFFILIATE_ACCOUNTING_READY === "1" },
         open: affiliateMode() !== "off" && affiliateTermsVersion() !== null,
       });
     }
@@ -55,6 +56,7 @@ export async function GET(req: Request) {
     const pc = payoutConfig();
     return NextResponse.json({
       enrolled: true,
+      operations: { payouts_enabled: affiliatePayoutsMode() === "live", accounting_ready: process.env.AFFILIATE_ACCOUNTING_READY === "1" },
       affiliate: { code: aff.code, status: aff.status, terms_version: aff.terms_version, created_at: aff.created_at },
       ledger: ledgerView(groups, affiliateConfig().minPayoutUsd),
       wallet: walletView(wallet, aff.status),

@@ -15,9 +15,10 @@ export type Payee = {
 
 /** GET /api/affiliate/me — non iscritto: 200 {enrolled:false, open}. */
 export type MeResponse =
-  | { enrolled: false; open: boolean }
+  | { enrolled: false; open: boolean; operations?: { payouts_enabled: boolean; accounting_ready: boolean } }
   | {
       enrolled: true;
+      operations?: { payouts_enabled: boolean; accounting_ready: boolean };
       affiliate: { code: string; status: "active" | "suspended" | "terminated"; terms_version: string; created_at: string };
       ledger: LedgerView;
       wallet: WalletView;

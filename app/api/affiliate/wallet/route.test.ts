@@ -39,6 +39,7 @@ function req(method: string, who: string | null, body?: unknown, headers: Record
 }
 
 const good = (over: Record<string, unknown> = {}) => ({
+  coin: "USDT",
   address: ADDR,
   last6: ADDR.slice(-6).toLowerCase(),
   payee_legal_name: "Alice Liddell",
@@ -165,7 +166,7 @@ describe("PUT: validazione (il server è l'arbitro)", () => {
     ["EIP-55", { address: ADDR_TYPO, last6: ADDR_TYPO.slice(-6) }, "invalid_checksum"],
     ["indirizzo zero", { address: "0x0000000000000000000000000000000000000000", last6: "000000" }, "zero_address"],
     ["Tron spento (D1)", { network: "tron", address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t" }, "network_not_enabled"],
-    ["USDC spento (D5)", { coin: "USDC" }, "coin_not_enabled"],
+    ["valuta non supportata", { coin: "BTC" }, "unsupported_coin"],
     ["ultime 6 diverse", { last6: "ffffff" }, "last6_mismatch"],
     ["conferma di rete", { network_ack: false }, "network_ack_required"],
     ["nome legale", { payee_legal_name: "A" }, "invalid_legal_name"],
@@ -288,7 +289,7 @@ describe("GET e DELETE", () => {
     expect(body.wallet).toMatchObject({ address_masked: "0x5aAe…eAed", state: "pending_screening" });
     expect(JSON.stringify(body)).not.toContain(ADDR);
     expect(JSON.stringify(body)).not.toContain("d359");
-    expect(body.rails).toEqual({ coins: ["USDT"], networks: ["polygon"] });
+    expect(body.rails).toEqual({ coins: ["USDT", "USDC"], networks: ["polygon"] });
   });
   it("DELETE: revoca via RPC con l'id della sessione + email", async () => {
     affiliateRpc.mockResolvedValueOnce({ ok: true, cancelled_payout_ids: [9] });
@@ -304,4 +305,14 @@ describe("GET e DELETE", () => {
     const { DELETE } = await load();
     expect((await DELETE(req("DELETE", "bob@x.io"))).status).toBe(404);
   });
+});
+
+describe("USDC on Polygon",()=>{
+ it("saves the chosen currency and includes it in the notification",async()=>{
+ const {PUT}=await load();
+ const res=await PUT(req("PUT","alice@x.io",good({coin:"USDC"})));
+ expect(res.status).toBe(200);
+ expect(affiliateRpc).toHaveBeenCalledWith("affiliate_set_wallet",expect.objectContaining({p_coin:"USDC",p_network:"polygon"}));
+ expect(JSON.stringify(sendEmail.mock.calls)).toContain("USDC");
+ });
 });

@@ -16,10 +16,10 @@ const POLY = "0x1111111111111111111111111111111111111111";
 const TREASURY = "0x72e348d948e984c7d57d8ccb93fdd52710e47fa2";
 
 describe("payout config D1–D5: default raccomandati, non decisi (#AFFILIATE-V2-CRYPTO-1007)", () => {
-  it("senza env: solo Polygon, solo USDT, fee a BetRedge, KYC al wallet, nessun wallet di uscita", () => {
+  it("senza env: solo Polygon, USDT e USDC, fee a BetRedge, KYC al wallet, nessun wallet di uscita", () => {
     expect(payoutConfig({})).toEqual({
       networks: ["polygon"],
-      coins: ["USDT"],
+      coins: ["USDT", "USDC"],
       networkFeePayer: "betredge",
       kycAtWallet: true,
       payoutFrom: null,
@@ -52,7 +52,7 @@ describe("payout config D1–D5: default raccomandati, non decisi (#AFFILIATE-V2
       AFFILIATE_PAYOUT_FROM: "0x123",
     });
     expect(c.networks).toEqual(["polygon"]);
-    expect(c.coins).toEqual(["USDT"]);
+    expect(c.coins).toEqual(["USDT", "USDC"]);
     expect(c.networkFeePayer).toBe("betredge");
     expect(c.kycAtWallet).toBe(true);
     expect(c.payoutFrom).toBeNull();
@@ -76,10 +76,7 @@ describe("payout config D1–D5: default raccomandati, non decisi (#AFFILIATE-V2
   it("il validatore del wallet rispetta le reti/coin accese", () => {
     const enabled = payoutConfig({});
     expect(validatePayoutWallet({ coin: "USDT", network: "polygon", address: POLY }, enabled).ok).toBe(true);
-    expect(validatePayoutWallet({ coin: "USDC", network: "polygon", address: POLY }, enabled)).toEqual({
-      ok: false,
-      reason: "coin_not_enabled",
-    });
+    expect(validatePayoutWallet({ coin: "USDC", network: "polygon", address: POLY }, enabled).ok).toBe(true);
     expect(
       validatePayoutWallet({ coin: "USDT", network: "tron", address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t" }, enabled),
     ).toEqual({ ok: false, reason: "network_not_enabled" });

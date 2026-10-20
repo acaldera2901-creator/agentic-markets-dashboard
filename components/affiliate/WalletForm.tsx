@@ -53,8 +53,8 @@ export function WalletForm({ c, lang, mode, current, initial, rails, onCancel, o
   const [country, setCountry] = useState(initial.country);
   const [addr, setAddr] = useState("");
   const [last6, setLast6] = useState("");
-  const [coin, setCoin] = useState(rails.coins[0] ?? "USDT");
-  const [network, setNetwork] = useState(rails.networks[0] ?? "polygon");
+  const [coin, setCoin] = useState(current?.coin && rails.coins.includes(current.coin) ? current.coin : rails.coins[0] ?? "USDT");
+  const [network, setNetwork] = useState(current?.network && rails.networks.includes(current.network) ? current.network : rails.networks[0] ?? "polygon");
   const [netack, setNetack] = useState(false);
   const [sanc, setSanc] = useState(false);
   const [tax, setTax] = useState(false);
@@ -65,6 +65,8 @@ export function WalletForm({ c, lang, mode, current, initial, rails, onCancel, o
   const summaryRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLHeadingElement>(null);
   const options = useMemo(() => countryOptions(lang === "it" ? "it" : "en"), [lang]);
+
+  const railText = (text: string) => text.replaceAll("USDT", coin).replaceAll("Polygon", NETWORK_LABEL[network] ?? network);
 
   const errList = ORDER.filter((f) => errors[f]);
 
@@ -140,14 +142,14 @@ export function WalletForm({ c, lang, mode, current, initial, rails, onCancel, o
       <span className="aff-label">{w.rail}</span>
       {rails.coins.length > 1 || rails.networks.length > 1 ? (
         <div className="aff-wline">
-          <select className="aff-input" aria-label={w.rail} value={coin} onChange={(e) => setCoin(e.target.value)} style={{ maxWidth: 160 }}>
+          <select className="aff-input" aria-label={lang === "it" ? "Valuta" : "Currency"} value={coin} onChange={(e) => {setCoin(e.target.value);setNetack(false);}} style={{ maxWidth: 160 }}>
             {rails.coins.map((k) => (
               <option key={k} value={k}>
                 {k}
               </option>
             ))}
           </select>
-          <select className="aff-input" aria-label={w.rail} value={network} onChange={(e) => setNetwork(e.target.value)} style={{ maxWidth: 220 }}>
+          <select className="aff-input" aria-label={lang === "it" ? "Rete" : "Network"} value={network} onChange={(e) => {setNetwork(e.target.value);setNetack(false);}} style={{ maxWidth: 220 }}>
             {rails.networks.map((k) => (
               <option key={k} value={k}>
                 {NETWORK_LABEL[k] ?? k}
@@ -201,7 +203,7 @@ export function WalletForm({ c, lang, mode, current, initial, rails, onCancel, o
             </div>
             <div>
               <dt>{w.rDecl}</dt>
-              <dd style={{ fontWeight: 400, fontSize: 14.5 }}>{w.rDeclV}</dd>
+              <dd style={{ fontWeight: 400, fontSize: 14.5 }}>{railText(w.rDeclV)}</dd>
             </div>
           </dl>
           <p className="aff-warn">{fill(w.confirmWarn, { date: dateTime(usableAt, lang) })}</p>
@@ -344,7 +346,7 @@ export function WalletForm({ c, lang, mode, current, initial, rails, onCancel, o
           <label className="aff-chk" data-bad={errors.netack ? "1" : "0"}>
             <input id={id("netack")} type="checkbox" checked={netack} onChange={(e) => setNetack(e.target.checked)} {...inv("netack")} />
             <span className="aff-tx">
-              {w.cNet} <span className="aff-req">{w.cNetReq}</span>
+              {railText(w.cNet)} <span className="aff-req">{railText(w.cNetReq)}</span>
             </span>
           </label>
           <FieldErr id={id(`e-netack`)} text={err("netack")} />

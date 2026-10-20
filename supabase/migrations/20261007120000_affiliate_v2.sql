@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS public.affiliates (
          OR (payee_legal_name IS NOT NULL AND payee_country IS NOT NULL))
 );
 
--- ── affiliate_clicks: solo metrica, nessun valore in chiaro ─────────────────
-CREATE TABLE IF NOT EXISTS public.affiliate_clicks (
+-- ── affiliate_referral_clicks: solo metrica, nessun valore in chiaro ─────────────────
+CREATE TABLE IF NOT EXISTS public.affiliate_referral_clicks (
   id            bigserial    PRIMARY KEY,
   affiliate_id  bigint       NOT NULL REFERENCES public.affiliates(id),
   clicked_at    timestamptz  NOT NULL DEFAULT now(),
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS public.affiliate_clicks (
   landing       text
 );
 
-CREATE INDEX IF NOT EXISTS idx_affiliate_clicks_affiliate_time
-  ON public.affiliate_clicks (affiliate_id, clicked_at);
+CREATE INDEX IF NOT EXISTS idx_affiliate_referral_clicks_affiliate_time
+  ON public.affiliate_referral_clicks (affiliate_id, clicked_at);
 
 -- ── affiliate_attributions: un utente, al massimo un affiliato, un livello ──
 CREATE TABLE IF NOT EXISTS public.affiliate_attributions (
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.affiliate_wallets (
   network          text         NOT NULL CHECK (network IN ('polygon','tron')),
   address          text         NOT NULL,
   created_at       timestamptz  NOT NULL DEFAULT now(),
-  -- HMAC come affiliate_clicks: chi ha cambiato il wallet, senza IP in chiaro.
+  -- HMAC come affiliate_referral_clicks: chi ha cambiato il wallet, senza IP in chiaro.
   created_ip_hash  text,
   -- Anti account-takeover: un wallet appena inserito non riceve pagamenti prima
   -- di questa data (created_at + cooldown, deciso dal codice).
@@ -264,26 +264,26 @@ CREATE INDEX IF NOT EXISTS idx_affiliate_payer_fingerprints_kind_value
 
 -- ── Accesso: solo server ────────────────────────────────────────────────────
 ALTER TABLE public.affiliates                   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.affiliate_clicks             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.affiliate_referral_clicks             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_attributions       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_wallets            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_payouts            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_commissions        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_payer_fingerprints ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON public.affiliates, public.affiliate_clicks, public.affiliate_attributions,
+REVOKE ALL ON public.affiliates, public.affiliate_referral_clicks, public.affiliate_attributions,
               public.affiliate_wallets, public.affiliate_payouts, public.affiliate_commissions,
               public.affiliate_payer_fingerprints
   FROM anon, authenticated;
 
 GRANT SELECT, INSERT, UPDATE, DELETE
-   ON public.affiliates, public.affiliate_clicks, public.affiliate_attributions,
+   ON public.affiliates, public.affiliate_referral_clicks, public.affiliate_attributions,
       public.affiliate_wallets, public.affiliate_payouts, public.affiliate_commissions,
       public.affiliate_payer_fingerprints
    TO service_role;
 
 GRANT USAGE, SELECT
-   ON SEQUENCE public.affiliates_id_seq, public.affiliate_clicks_id_seq,
+   ON SEQUENCE public.affiliates_id_seq, public.affiliate_referral_clicks_id_seq,
                public.affiliate_wallets_id_seq, public.affiliate_payouts_id_seq,
                public.affiliate_commissions_id_seq
    TO service_role;

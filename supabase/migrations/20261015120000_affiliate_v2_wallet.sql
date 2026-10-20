@@ -255,7 +255,7 @@ $$;
 -- Su Supabase i default privileges danno le sequence nuove anche a anon e
 -- authenticated: con la sola GRANT di #482 a service_role restavano leggibili e
 -- avanzabili (nextval) con la chiave pubblica. Revoca esplicita, idempotente.
-REVOKE ALL ON SEQUENCE public.affiliates_id_seq, public.affiliate_clicks_id_seq,
+REVOKE ALL ON SEQUENCE public.affiliates_id_seq, public.affiliate_referral_clicks_id_seq,
                        public.affiliate_wallets_id_seq, public.affiliate_payouts_id_seq,
                        public.affiliate_commissions_id_seq
   FROM anon, authenticated;

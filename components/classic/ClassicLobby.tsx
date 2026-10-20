@@ -332,6 +332,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
           <li><Link className="brc-side__item" href={banners.record.href}><ClassicIcon name="market-result" /><span>{copy.sideRecord}</span></Link></li>
           <li><Link className="brc-side__item" href="/tools"><ClassicIcon name="menu-tools" /><span>{copy.b3Tools}</span></Link></li>
           <li><Link className="brc-side__item" href="/partners"><ClassicIcon name="menu-partner" /><span>{copy.sidePartners}</span></Link></li>
+          <li><Link className="brc-side__item" href="/invite"><ClassicIcon name="menu-partner" /><span>{copy.sideInvite}</span></Link></li>
         </ul>
       </nav>}
 

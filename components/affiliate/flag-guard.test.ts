@@ -15,16 +15,10 @@ describe("flag NEXT_PUBLIC_AFFILIATE_V2", () => {
   const desk = read("app/app/page.tsx");
   const admin = read("app/admin/page.tsx");
 
-  it("desk: lazy sotto il confronto per esteso, nessun import statico", () => {
-    expect(desk).toMatch(/process\.env\.NEXT_PUBLIC_AFFILIATE_V2 === "1"\s*\n?\s*\? lazy\(\(\) => import\("@\/components\/affiliate\/AffiliateSection"\)/);
-    expect(desk).not.toMatch(/^import .* from "@\/components\/affiliate/m);
-    // #CLASSIC-RELEASE-1016: the second read is the `v2` prop of ClassicInvite, inside the classic branch only
-    expect((desk.match(/NEXT_PUBLIC_AFFILIATE_V2 === "1"/g) ?? []).length).toBe(2);
-  });
-
-  it("desk: a flag spento il ramo è ReferralPanel, identico a prima", () => {
-    // #CLASSIC-RELEASE-1016: same branch, now the `else` of the classic build flag
-    expect(desk).toMatch(/\{tab === "invita" && \(process\.env\.NEXT_PUBLIC_CLASSIC === "1" \? \([\s\S]*?\) : AffiliateSection \? \(\s*<Suspense fallback=\{null\}><AffiliateSection lang=\{uiLanguage\} \/><\/Suspense>\s*\) : <ReferralPanel \/>\)\}/);
+  it("desk passes explicit build flags to the tested invite router", () => {
+    expect(desk).toContain('affiliate={process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"}');
+    expect(desk).toContain('legacy={<ReferralPanel />}');
+    expect(desk).not.toContain('v2={process.env.NEXT_PUBLIC_AFFILIATE_V2');
   });
 
   it("admin: lazy sotto il confronto per esteso; a flag spento le sezioni sono le 4 di prima", () => {

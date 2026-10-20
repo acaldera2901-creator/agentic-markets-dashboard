@@ -118,8 +118,8 @@ export type NetworkFeePayer = "betredge" | "affiliate";
 export const PAYOUT_DEFAULTS = {
   /** D1 — reti accese al lancio. Raccomandato: solo Polygon (Tron solo col suo verificatore). */
   NETWORKS: ["polygon"] as PayoutNetwork[],
-  /** D5 — coin accese. Raccomandato: solo USDT (USDC per chi è in UE/MiCA, su richiesta). */
-  COINS: ["USDT"] as PayoutCoin[],
+  /** Valute confermate da Andrea il 20/10/2026: USDT e USDC su Polygon. */
+  COINS: ["USDT", "USDC"] as PayoutCoin[],
   /** D4 — chi paga la fee di rete. Raccomandato: BetRedge (su Polygon sono centesimi). */
   NETWORK_FEE_PAYER: "betredge" as NetworkFeePayer,
   /** D3 — KYC minimo (nome legale + paese + autodichiarazione) alla registrazione del wallet. */

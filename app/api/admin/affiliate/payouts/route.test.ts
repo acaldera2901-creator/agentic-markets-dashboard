@@ -154,7 +154,7 @@ describe("GET lista del mese", () => {
     expect(body.rows[1]).toMatchObject({ eligible: false, reasons: ["no_wallet", "missing_payee", "below_threshold"], wallet: null });
     const [sql, p] = dbQueryStrict.mock.calls[0];
     expect(sql).toContain("affiliate_payout_rows($1::date");
-    expect(p).toEqual([`${month()}-01`, 50, true, "{polygon}", "{USDT}"]);
+    expect(p).toEqual([`${month()}-01`, 50, true, "{polygon}", "{USDT,USDC}"]);
   });
   it("mese malformato → 400", async () => {
     expect((await (await list()).GET(req("/p?month=2026-13"))).status).toBe(400);
@@ -174,7 +174,7 @@ describe("POST crea payout", () => {
       p_min: 50,
       p_require_kyc: true,
       p_networks: ["polygon"],
-      p_coins: ["USDT"],
+      p_coins: ["USDT", "USDC"],
       p_created_by: "admin",
     });
   });

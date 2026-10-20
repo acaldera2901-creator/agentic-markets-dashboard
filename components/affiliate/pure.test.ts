@@ -87,7 +87,7 @@ describe("mappa stati (parola + forma, ogni stato)", () => {
   it("commissioni", () => {
     const base = { payable_after: "2026-12-08T00:00:00Z", paid_out_at: null };
     expect(commissionChip({ ...base, status: "pending" }, c, "it")?.state).toBe("hold");
-    expect(commissionChip({ ...base, status: "pending" }, c, "it")?.label).toMatch(/^In attesa · matura/);
+    expect(commissionChip({ ...base, status: "pending" }, c, "it")?.label).toMatch(/^In verifica · dal/);
     expect(commissionChip({ ...base, status: "payable" }, c, "it")?.label).toBe("Maturata");
     expect(commissionChip({ ...base, status: "in_payout" }, c, "it")?.label).toBe("In pagamento");
     expect(commissionChip({ ...base, status: "paid", paid_out_at: "2026-10-05T10:00:00Z" }, c, "it")).toMatchObject({ state: "paid", check: true });

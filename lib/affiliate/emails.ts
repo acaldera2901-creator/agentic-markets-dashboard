@@ -115,13 +115,15 @@ export function walletChangedEmail(opts: {
   addressMasked: string | null;
   usableAfterISO: string | null;
   payoutCancelled: boolean;
+  coin?: "USDT" | "USDC";
+  network?: "polygon" | "tron";
 }): Mail {
   const lang = resolveMailLang(opts.lang);
   const t = WALLET[lang];
   const parts = [
     opts.removed
       ? t.removed
-      : t.changed(opts.addressMasked ?? "—", opts.usableAfterISO ? fmtDate(opts.usableAfterISO, lang) : "—"),
+      : t.changed(opts.addressMasked ?? "—", opts.usableAfterISO ? fmtDate(opts.usableAfterISO, lang) : "—").replaceAll("USDT", opts.coin ?? "USDT").replaceAll("Polygon", opts.network === "tron" ? "Tron" : "Polygon"),
   ];
   if (opts.payoutCancelled) parts.push(t.payoutCancelled);
   parts.push(t.notYou(ACCOUNT_CONTACT_EMAIL));
