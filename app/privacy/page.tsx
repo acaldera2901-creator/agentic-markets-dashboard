@@ -22,7 +22,7 @@ export default function PrivacyPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Privacy Policy</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: September 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: 20 October 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -159,8 +159,15 @@ export default function PrivacyPage() {
           </p>
         </section>
 
+        <section className="space-y-3" id="affiliate-program">
+          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">11. Subscription Affiliate Program</h2>
+          <p className="text-xs leading-relaxed">If you enroll in our subscription affiliate program, we store your referral code, accepted terms version and timestamps, referral attribution, commission and adjustment records. If you register a payout wallet, we also store your legal name, country, declarations, selected asset and network, wallet-address history and verification status. These records are used to administer the program and verify eligibility, prevent abuse and prepare payments, on the basis of the affiliate agreement, applicable legal obligations and our legitimate interest in fraud prevention.</p>
+          <p className="text-xs leading-relaxed">Affiliates receive masked information about referred accounts, not their full contact details. Wallet addresses and any payment transactions on a public blockchain are publicly visible; BetRedge cannot erase blockchain records. We never request wallet private keys or recovery phrases. The retention and rights described above apply to our own records, subject to applicable accounting obligations and unresolved payment disputes. Contact info@betredge.com to exercise your rights or close your affiliate account.</p>
+          <p className="text-xs leading-relaxed">See the <Link href="/affiliates/terms" className="underline">Affiliate Program Terms</Link> for the commission and payment conditions.</p>
+        </section>
+
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">11. Changes</h2>
+          <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">12. Changes</h2>
           <p className="text-xs leading-relaxed">
             We may update this policy periodically. Continued use of the platform after changes constitutes acceptance of the updated policy.
           </p>

@@ -41,3 +41,11 @@ The first two are currently unapplied in the inspected production schema; do not
 6. Production migration/activation and final authenticated end-to-end verification. Local fixtures and mocked chain receipts are not real payout proof.
 
 Once prerequisites are met, configure the reviewed terms version and appropriate mode; set NEXT_PUBLIC_AFFILIATE_V2=1 for the real account panel. AFFILIATE_PAYOUT_COINS=USDT,USDC and AFFILIATE_PAYOUT_NETWORKS=polygon are the confirmed rails. Keep AFFILIATE_PAYOUTS=off until sending wallet, screening and operational checks are complete. No automatic shadow-to-live conversion of historical rows.
+
+## Authorized rollout, 20 October (supersedes the preparation-only status above)
+
+Andrea explicitly authorized database activation, terms and deployment, and confirmed Maven Agency AG as the affiliate contracting party/payer. Four migrations were applied in one RPC transaction at 13:08 UTC, with migration history recorded. A restricted local backup and post-apply verification are saved under the operational report directory. All seven tables have RLS enabled; anon/authenticated cannot read them or invoke the ten affiliate functions. Existing BO tables were preserved.
+
+Published terms version: aff-2026-10-20-v1, /affiliates/terms. Privacy updated with beneficiary, wallet and commission processing; consent version 2026-10-20.
+
+Release configuration: real account UI and enrollment on; commission recording live but pending amounts explicitly provisional. AFFILIATE_ACCOUNTING_READY=0 blocks automatic maturity until processor-fee/refund reconciliation is implemented and validated. AFFILIATE_PAYOUTS=off: no sending wallet, screening provider or outgoing funds. This is enrollment/wallet registration and pending recording, NOT an operational payout service. Do not enable either gate merely because 60 days have elapsed. The remaining accounting and BO-administration integration work above remains outstanding.
