@@ -7,8 +7,8 @@
 // regole sempre in chiaro, nessuna barra a premi, nessun «ti mancano X».
 //
 // Due versioni, scelte dal desk con due flag di BUILD:
-//   v2=false — il programma ATTUALE a giorni PRO (lo stesso di ReferralPanel),
-//              restylato: nessuna cifra in denaro.
+//   v2=false — link e statistiche referral reali con termini 20% / 7%.
+//              Nessun saldo commissioni derivato dai vecchi premi.
 //   v2=true  — l'ANTEPRIMA degli Affiliati v2 (NEXT_PUBLIC_AFFILIATE_V2=1, solo
 //              Preview): il backend v2 non esiste, quindi ledger, wallet e storico
 //              sono dati di ESEMPIO, marcati «Esempio» e sotto il banner
@@ -24,6 +24,7 @@ import { trackEvent } from "@/lib/track-event";
 import { launchPromoLive } from "@/lib/launch-promo-client";
 import { INVITE_SAMPLE, fillInvite, inviteCopy, type SampleState } from "@/lib/classic/invite-copy";
 import "./classic-invite.css";
+import {commissionCopy} from "@/lib/classic/commission-copy";
 
 type TierStat = { tier: number; reached: boolean; granted_at: string | null; rewardDays: number | null; grantsRoom: boolean };
 type Stats = { signups: number; paying: number; inviteeBonusDays: number; tiers: TierStat[] };
@@ -70,6 +71,7 @@ export function ClassicInvite({ lang, v2, onSignIn, onRegister }: ClassicInviteP
   const copy = inviteCopy(lang);
   const c = copy.common;
   const one = copy.v1;
+  const terms = commissionCopy(lang);
   const two = copy.v2;
   const locale = LOCALE[lang.slice(0, 2)] ?? "en-GB";
 
@@ -165,9 +167,6 @@ export function ClassicInvite({ lang, v2, onSignIn, onRegister }: ClassicInviteP
   // KPI reali — da /api/referral/stats. Loading «…», errore «—», zero resta zero.
   const kpi = (v: number | null, suffix = "") => (statsErr ? "—" : !stats ? "…" : v === null ? "—" : `${v}${suffix}`);
   const convPct = stats && stats.signups > 0 ? Math.round((stats.paying / stats.signups) * 100) : null;
-  const earnedDays = (stats?.tiers ?? []).reduce((s, t) => s + (t.granted_at !== null && t.rewardDays !== null ? t.rewardDays : 0), 0);
-  const nextTier = stats?.tiers.find((t) => !t.reached) ?? null;
-  const rewardName = (t: TierStat) => (t.rewardDays !== null ? fillInvite(one.rewardDays, { d: t.rewardDays }) : one.rewardRoom);
   const fmtDate = (iso: string) => {
     const d = new Date(`${iso}T12:00:00Z`);
     return d.toLocaleDateString(locale, { day: "numeric", month: "short" });
@@ -177,13 +176,13 @@ export function ClassicInvite({ lang, v2, onSignIn, onRegister }: ClassicInviteP
   const loggedIn = phase === "unclaimed" || phase === "claimed" || phase === "error";
   const steps = v2
     ? [[c.step1T, c.step1B], [two.step2T, two.step2B], [two.step3T, two.step3B]]
-    : [[c.step1T, c.step1B], [one.step2T, one.step2B], [one.step3T, one.step3B]];
+    : [[c.step1T, c.step1B], [terms.first, terms.firstBody], [terms.renewal, terms.renewalBody]];
 
   return (
     <div className="cli" id="client-invite" data-v2={v2 ? "1" : "0"}>
       <header className="cli-head">
         <h2 className="cli-headline">{c.headline}</h2>
-        <p className="cli-lede">{v2 ? two.lede : one.lede}</p>
+        <p className="cli-lede">{v2 ? two.lede : terms.intro}</p>
       </header>
 
       {v2 && (
@@ -261,7 +260,7 @@ export function ClassicInvite({ lang, v2, onSignIn, onRegister }: ClassicInviteP
                 <span className="cli-label">{c.yourCode}</span> <strong>{claimedCode}</strong>
               </p>
               {/* v1: cosa riceve l'amico, la frase che chi invita copia nel messaggio */}
-              {!v2 && !!stats?.inviteeBonusDays && <p className="cli-muted">{fillInvite(one.friendGets, { d: stats.inviteeBonusDays })}</p>}
+
               {statsErr && <p className="cli-muted cli-small" role="status">{c.statsErr}</p>}
             </div>
           )}
@@ -290,41 +289,16 @@ export function ClassicInvite({ lang, v2, onSignIn, onRegister }: ClassicInviteP
             <div><dt>{c.kSignups}</dt><dd>{kpi(stats?.signups ?? null)}</dd></div>
             <div><dt>{c.kPaying}</dt><dd>{kpi(stats?.paying ?? null)}</dd></div>
             <div><dt>{c.kConv}</dt><dd>{kpi(convPct, "%")}</dd></div>
-            <div><dt>{one.kEarnedDays}</dt><dd>{kpi(earnedDays)}</dd></div>
+
           </dl>
           {!statsErr && stats?.signups === 0 && <p className="cli-muted">{c.zeroState}</p>}
 
-          {!!stats?.tiers.length && (
-            <div className="cli-rewards">
-              <div className="cli-rewards__head">
-                <h4 className="cli-h4">{one.rewardsTitle}</h4>
-                <p className="cli-muted cli-small">
-                  {nextTier
-                    ? fillInvite(one.progress, { n: stats.paying, k: Math.max(1, nextTier.tier - stats.paying) })
-                    : fillInvite(one.progressDone, { n: stats.paying })}
-                </p>
-              </div>
-              <ul className="cli-tiers">
-                {stats.tiers.map((t) => (
-                  <li key={t.tier} data-reached={t.reached ? "1" : "0"}>
-                    <span className="cli-tiers__mark" aria-hidden="true">{t.reached ? "✓" : ""}</span>
-                    <span className="cli-tiers__at">{fillInvite(one.tierAt, { n: t.tier })}</span>
-                    <span>
-                      {rewardName(t)}
-                      {t.reached && !t.granted_at && <span className="cli-muted"> · {one.pending}</span>}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {nextTier && <p className="cli-muted cli-small">{fillInvite(one.nextUp, { r: rewardName(nextTier), n: nextTier.tier })}</p>}
-            </div>
-          )}
         </section>
       )}
 
       {!v2 && loggedIn && (
         <div className="cli-foot">
-          <p>{one.note}</p>
+          <p>{terms.note}</p>
           {launchPromoLive() && <p>{one.promo}</p>}
         </div>
       )}
