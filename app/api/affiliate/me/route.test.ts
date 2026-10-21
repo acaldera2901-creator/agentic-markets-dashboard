@@ -34,6 +34,9 @@ beforeEach(() => {
     if (/FROM affiliate_wallets/.test(sql)) {
       return [{ id: 1, coin: "USDT", network: "polygon", address: ADDR, created_at: "2026-10-01", usable_after: "2999-01-01", screening_result: "not_screened" }];
     }
+    if (/COUNT\(DISTINCT referred_identifier\)/.test(sql)) {
+      return [{ n: 6 }];
+    }
     if (/GROUP BY status, kind/.test(sql)) {
       return [{ status: "payable", kind: "first", total: "23.39", n: 2, next_after: null }];
     }
@@ -75,7 +78,7 @@ describe("GET /api/affiliate/me", () => {
     const { GET } = await import("./route");
     await GET(req("alice@x.io", "?affiliate_id=22&id=22"));
     const scoped = sqlSeen.filter((q) => /affiliate_(wallets|commissions|payouts)/.test(q.sql));
-    expect(scoped.length).toBe(4);
+    expect(scoped.length).toBe(5);
     for (const q of scoped) {
       expect(q.sql).toMatch(/affiliate_id = \$1/);
       expect(q.params[0]).toBe(11);

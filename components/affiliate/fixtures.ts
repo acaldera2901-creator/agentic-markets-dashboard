@@ -15,6 +15,8 @@ const base = (over: Partial<Enrolled> = {}): Enrolled => ({
   wallet: { state: "active", payable: true, address_masked: "0x4b1e…91d7", coin: "USDT", network: "polygon", created_at: "2026-10-02T09:00:00Z", usable_after: "2026-10-05T09:00:00Z", screened: true },
   payee: { name: "A. Bianchi", country: "IT", declarations: { sanctions_at: "2026-10-02T09:00:00Z", tax_at: "2026-10-02T09:00:00Z" } },
   rails: { coins: ["USDT"], networks: ["polygon"] },
+  // #AFFILIATE-TIERS-1021: 3 referiti paganti → livello base 7%, prossimo gradino a 5 (10%)
+  tier: { level: 0, rate: 0.07, base_rate: 0.07, first_rate: 0.2, paying_referred: 3, next: { min: 5, rate: 0.1 }, ladder: [{ min: 5, rate: 0.1 }, { min: 15, rate: 0.15 }] },
   payouts: [
     { id: 3, period_month: "2026-09-01", amount_usd: 60, coin: "USDT", network: "polygon", amount_coin: 60, status: "paid", tx_hash: TX, explorer_url: `https://polygon.blockscout.com/tx/${TX}`, paid_at: "2026-10-05T10:00:00Z", cancel_code: null },
   ],
@@ -48,6 +50,12 @@ export const ME_PENDING_SCREENING = base({
 export const ME_SUSPENDED = base({
   affiliate: { code: "ESEMPIO", status: "suspended", terms_version: "v1", created_at: "2026-09-01T10:00:00Z" },
   wallet: { state: "suspended", payable: false, address_masked: "0x4b1e…91d7", coin: "USDT", network: "polygon", created_at: "2026-10-02T09:00:00Z", usable_after: "2026-10-05T09:00:00Z", screened: true },
+});
+export const ME_TIER2 = base({
+  tier: { level: 2, rate: 0.15, base_rate: 0.07, first_rate: 0.2, paying_referred: 17, next: null, ladder: [{ min: 5, rate: 0.1 }, { min: 15, rate: 0.15 }] },
+});
+export const ME_NO_TIERS = base({
+  tier: { level: 0, rate: 0.07, base_rate: 0.07, first_rate: 0.2, paying_referred: 9, next: null, ladder: [] },
 });
 export const ME_NEGATIVE = base({
   ledger: { pending: 0, payable: 0, to_recover: -6, in_payout: 0, paid: 60, reversed: -6, count: 3, next_payable_after: null, min_payout_usd: 50 },

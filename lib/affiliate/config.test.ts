@@ -91,6 +91,8 @@ describe("affiliate config: i default approvati (#AFFILIATE-V2-0930)", () => {
     expect(c).toEqual({
       firstRate: 0.2,
       renewalRate: 0.07,
+      // #AFFILIATE-TIERS-1021: scala di default sui rinnovi (10% da 5 paganti, 15% da 15)
+      renewalTiers: [{ min: 5, rate: 0.1 }, { min: 15, rate: 0.15 }],
       renewalMaxMonths: null,
       holdDays: 60,
       clawbackDays: 120,
@@ -99,6 +101,9 @@ describe("affiliate config: i default approvati (#AFFILIATE-V2-0930)", () => {
       mode: "off",
     });
     expect(AFFILIATE_DEFAULTS.RENEWAL_MAX_MONTHS).toBeNull();
+    expect(affiliateConfig({ AFFILIATE_RENEWAL_TIERS: "none" }).renewalTiers).toEqual([]);
+    expect(affiliateConfig({ AFFILIATE_RENEWAL_TIERS: "3:0.09,8:0.12" }).renewalTiers).toEqual([{ min: 3, rate: 0.09 }, { min: 8, rate: 0.12 }]);
+    expect(affiliateConfig({ AFFILIATE_RENEWAL_TIERS: "garbage" }).renewalTiers).toEqual([{ min: 5, rate: 0.1 }, { min: 15, rate: 0.15 }]);
   });
 
   it("le env valide sovrascrivono i default", () => {

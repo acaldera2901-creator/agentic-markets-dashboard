@@ -28,6 +28,7 @@ import { dbQueryStrict, dbExecute } from "@/lib/db";
 import { affiliateConfig, affiliateMode, type AffiliateConfig, type AffiliateMode } from "./config";
 import { netAmount, commissionAmount, round2, type AffiliateRail, type NetMeta } from "./net";
 import { selfReferralCheck, type Fingerprint, type FingerprintKind } from "./self-referral";
+import { payingReferredSql, tierFor } from "./tiers";
 
 export type RecordCommissionInput = {
   /** Chi ha pagato (il referito). */
@@ -71,10 +72,14 @@ export function referredTag(identifier: string): string {
 /** La decisione, pura: tasso, cap dei rinnovi, stato, hold. */
 export function decideCommission(opts: {
   mode: AffiliateMode;
-  config: Pick<AffiliateConfig, "firstRate" | "renewalRate" | "renewalMaxMonths" | "holdDays">;
+  config: Pick<AffiliateConfig, "firstRate" | "renewalRate" | "renewalMaxMonths" | "holdDays"> &
+    Partial<Pick<AffiliateConfig, "renewalTiers">>;
   attributionStatus: AttributionStatus;
   /** Pagamenti di piano già fatti dal referito: 0 = primo acquisto. */
   renewalIndex: number;
+  /** Referiti paganti dell'affiliato (#AFFILIATE-TIERS-1021): decide lo
+   *  scaglione sui rinnovi. Assente = 0 = tasso base. */
+  payingReferred?: number;
   netUsd: number;
   paidAt: Date;
 }): CommissionDecision {
@@ -89,7 +94,10 @@ export function decideCommission(opts: {
   if (!first && max != null && opts.renewalIndex > max) {
     return { write: false, reason: "renewal_cap" };
   }
-  const rate = first ? opts.config.firstRate : opts.config.renewalRate;
+  // Scaglioni solo sui rinnovi: il primo acquisto resta al tasso piatto.
+  const rate = first
+    ? opts.config.firstRate
+    : tierFor(opts.payingReferred ?? 0, opts.config.renewalRate, opts.config.renewalTiers ?? []).rate;
   const amountUsd = commissionAmount(opts.netUsd, rate);
   if (!(amountUsd > 0)) return { write: false, reason: "zero_amount" };
   return {
@@ -240,6 +248,12 @@ async function ledgerPayments(referred: string): Promise<number> {
   return Number(rows[0]?.n ?? 0);
 }
 
+/** Referiti paganti dell'affiliato, la stessa misura del pannello (tiers.ts). */
+async function payingReferredCount(affiliateId: number, mode: AffiliateMode): Promise<number> {
+  const rows = await dbQueryStrict<{ n: number | string }>(payingReferredSql(mode).sql, [affiliateId]);
+  return Number(rows[0]?.n ?? 0);
+}
+
 async function record(input: RecordCommissionInput, config: AffiliateConfig): Promise<LedgerOutcome> {
   const referred = (input.identifier ?? "").trim().toLowerCase();
   const ref = String(input.paymentRef ?? "").trim();
@@ -263,6 +277,9 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   if (await paymentRecorded(input.rail, ref)) return { written: false, reason: "duplicate" };
 
   const historic = await historicPayments(referred, attribution.attributed_at, ref);
+  // Lo scaglione si misura PRIMA di scrivere questa riga: il referito che paga
+  // ora conta dal pagamento successivo (sul primo acquisto il tasso è piatto).
+  const payingReferred = await payingReferredCount(Number(attribution.affiliate_id), config.mode);
 
   for (let attempt = 0; attempt < MAX_INDEX_ATTEMPTS; attempt++) {
     const renewalIndex = historic + (await ledgerPayments(referred));
@@ -271,6 +288,7 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
       config,
       attributionStatus: attribution.status,
       renewalIndex,
+      payingReferred,
       netUsd: net,
       paidAt: input.paidAt,
     });
@@ -304,7 +322,7 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
     // pagamento dello stesso referito ha preso quell'indice: si ricalcola.
     if (await paymentRecorded(input.rail, ref)) {
       console.log(
-        `[affiliate] ${d.status} ${d.kind} rail=${input.rail} ref=${ref} referred#${tag} index=${renewalIndex} net=${net} amount=${d.amountUsd}`
+        `[affiliate] ${d.status} ${d.kind} rail=${input.rail} ref=${ref} referred#${tag} index=${renewalIndex} net=${net} rate=${d.rate} paying=${payingReferred} amount=${d.amountUsd}`
       );
       return { written: true, reason: d.status };
     }

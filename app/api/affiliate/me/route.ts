@@ -19,9 +19,11 @@ import {
   loadAffiliateBySession,
   loadCommissionsPage,
   loadLedgerGroups,
+  loadPayingReferred,
   loadPayouts,
   parseCursor,
   payeeView,
+  tierView,
   walletView,
 } from "@/lib/affiliate/account";
 
@@ -47,18 +49,22 @@ export async function GET(req: Request) {
       });
     }
     const cursor = parseCursor(new URL(req.url).searchParams.get("cursor"));
-    const [wallet, groups, payouts, commissions] = await Promise.all([
+    const cfg = affiliateConfig();
+    const [wallet, groups, payouts, commissions, payingReferred] = await Promise.all([
       loadActiveWallet(aff.id),
       loadLedgerGroups(aff.id),
       loadPayouts(aff.id),
       loadCommissionsPage(aff.id, cursor),
+      loadPayingReferred(aff.id, cfg.mode),
     ]);
     const pc = payoutConfig();
     return NextResponse.json({
       enrolled: true,
       operations: { payouts_enabled: affiliatePayoutsMode() === "live", accounting_ready: process.env.AFFILIATE_ACCOUNTING_READY === "1" },
       affiliate: { code: aff.code, status: aff.status, terms_version: aff.terms_version, created_at: aff.created_at },
-      ledger: ledgerView(groups, affiliateConfig().minPayoutUsd),
+      ledger: ledgerView(groups, cfg.minPayoutUsd),
+      // #AFFILIATE-TIERS-1021: livello, tasso in vigore e scala, dalla stessa misura del ledger.
+      tier: tierView(payingReferred, cfg),
       wallet: walletView(wallet, aff.status),
       payee: payeeView(aff),
       rails: { coins: pc.coins, networks: pc.networks },

@@ -12,6 +12,8 @@
 import { createHmac } from "node:crypto";
 import { dbQueryStrict } from "@/lib/db";
 import { explorerTxUrl, maskAddress, type PayoutCoin, type PayoutNetwork } from "./wallet";
+import type { AffiliateConfig } from "./config";
+import { payingReferredSql, tierFor, type TierStep } from "./tiers";
 
 export type AffiliateStatus = "active" | "suspended" | "terminated";
 
@@ -195,6 +197,40 @@ export async function loadLedgerGroups(affiliateId: number): Promise<LedgerGroup
       GROUP BY status, kind`,
     [affiliateId],
   );
+}
+
+// ── Scaglioni (#AFFILIATE-TIERS-1021) ────────────────────────────────────────
+
+export type TierView = {
+  level: number;
+  /** Tasso sui rinnovi in vigore per l'affiliato. */
+  rate: number;
+  base_rate: number;
+  first_rate: number;
+  paying_referred: number;
+  next: TierStep | null;
+  /** La scala pubblicata (vuota = nessuno scaglione attivo). */
+  ladder: TierStep[];
+};
+
+/** Stessa misura del ledger (tiers.ts): quello che il pannello mostra è quello
+ *  che la prossima commissione userà. */
+export async function loadPayingReferred(affiliateId: number, mode: AffiliateConfig["mode"]): Promise<number> {
+  const rows = await dbQueryStrict<{ n: number | string }>(payingReferredSql(mode).sql, [affiliateId]);
+  return Number(rows[0]?.n ?? 0);
+}
+
+export function tierView(payingReferred: number, config: Pick<AffiliateConfig, "firstRate" | "renewalRate" | "renewalTiers">): TierView {
+  const t = tierFor(payingReferred, config.renewalRate, config.renewalTiers);
+  return {
+    level: t.level,
+    rate: t.rate,
+    base_rate: config.renewalRate,
+    first_rate: config.firstRate,
+    paying_referred: t.payingReferred,
+    next: t.next,
+    ladder: [...config.renewalTiers],
+  };
 }
 
 // ── Storico commissioni (paginato) ───────────────────────────────────────────

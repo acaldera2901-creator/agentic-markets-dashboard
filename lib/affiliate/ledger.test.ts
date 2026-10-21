@@ -42,6 +42,15 @@ async function fakeDb(sql: string, params: unknown[] = []): Promise<unknown[]> {
   if (/WHERE rail = \$1 AND rail_payment_ref = \$2/.test(sql)) {
     return [{ n: state.commissions.filter((c) => c.rail === params[0] && c.ref === params[1]).length }];
   }
+  if (/COUNT\(DISTINCT referred_identifier\)/.test(sql)) {
+    const live = !/'shadow'/.test(sql);
+    const paying = new Set(
+      state.commissions
+        .filter((c) => (c.kind === "first" || c.kind === "renewal") && !["reversed", "void"].includes(c.status) && !(live && c.status === "shadow"))
+        .map((c) => c.referred)
+    );
+    return [{ n: paying.size }];
+  }
   if (/WHERE referred_identifier = \$1 AND kind/.test(sql)) {
     return [{ n: state.commissions.filter((c) => c.referred === params[0]).length }];
   }
@@ -88,8 +97,10 @@ beforeEach(() => {
   state.historicParams = [];
   process.env.AFFILIATE_MODE = "shadow";
   delete process.env.AFFILIATE_RENEWAL_MAX_MONTHS;
+  delete process.env.AFFILIATE_RENEWAL_TIERS;
 });
 afterEach(() => {
+  delete process.env.AFFILIATE_RENEWAL_TIERS;
   if (savedMode === undefined) delete process.env.AFFILIATE_MODE;
   else process.env.AFFILIATE_MODE = savedMode;
   delete process.env.AFFILIATE_RENEWAL_MAX_MONTHS;
@@ -130,6 +141,26 @@ describe("decideCommission (pura)", () => {
 
   it("netto 0 → nessuna riga", () => {
     expect(decideCommission({ ...base, netUsd: 0, renewalIndex: 0 })).toEqual({ write: false, reason: "zero_amount" });
+  });
+});
+
+describe("decideCommission — scaglioni sui rinnovi (#AFFILIATE-TIERS-1021)", () => {
+  const T = [{ min: 5, rate: 0.1 }, { min: 15, rate: 0.15 }];
+  const base = { mode: "live" as const, config: { ...CFG, renewalTiers: T }, attributionStatus: "valid" as const, netUsd: 100, paidAt: PAID };
+
+  it("sotto 5 referiti paganti il rinnovo resta al 7%; da 5 al 10%; da 15 al 15%", () => {
+    expect(decideCommission({ ...base, renewalIndex: 1, payingReferred: 4 })).toMatchObject({ rate: 0.07, amountUsd: 7 });
+    expect(decideCommission({ ...base, renewalIndex: 1, payingReferred: 5 })).toMatchObject({ rate: 0.1, amountUsd: 10 });
+    expect(decideCommission({ ...base, renewalIndex: 3, payingReferred: 15 })).toMatchObject({ rate: 0.15, amountUsd: 15 });
+  });
+
+  it("il primo acquisto non segue la scala: 20% anche con 50 referiti paganti", () => {
+    expect(decideCommission({ ...base, renewalIndex: 0, payingReferred: 50 })).toMatchObject({ kind: "first", rate: 0.2, amountUsd: 20 });
+  });
+
+  it("senza payingReferred o senza scala → tasso base (compatibile con i chiamanti vecchi)", () => {
+    expect(decideCommission({ ...base, renewalIndex: 1 })).toMatchObject({ rate: 0.07 });
+    expect(decideCommission({ ...base, config: CFG, renewalIndex: 1, payingReferred: 50 })).toMatchObject({ rate: 0.07 });
   });
 });
 
@@ -180,6 +211,32 @@ describe("recordAffiliateCommissionSafe", () => {
     const r = await recordAffiliateCommissionSafe(input({ paymentRef: "pp-2" }));
     expect(r.written).toBe(true);
     expect(state.commissions.map((c) => [c.kind, c.amount])).toEqual([["first", 3], ["renewal", 1.05]]);
+  });
+
+  it("scaglione misurato sul ledger: il 5° referito pagante porta i rinnovi di TUTTI al 10%, il primo acquisto resta al 20%", async () => {
+    process.env.AFFILIATE_MODE = "live";
+    for (let i = 1; i <= 4; i++) await recordAffiliateCommissionSafe(input({ identifier: `u${i}@t.com`, paymentRef: `pp-u${i}` }));
+    // 4 paganti: il rinnovo di u1 è ancora al 7%
+    await recordAffiliateCommissionSafe(input({ identifier: "u1@t.com", paymentRef: "pp-u1-r1" }));
+    // il 5° referito paga: primo acquisto al 20% (conteggio PRIMA della riga = 4)
+    await recordAffiliateCommissionSafe(input({ identifier: "u5@t.com", paymentRef: "pp-u5" }));
+    // ora i paganti sono 5: il rinnovo di u2 passa al 10%
+    await recordAffiliateCommissionSafe(input({ identifier: "u2@t.com", paymentRef: "pp-u2-r1" }));
+    const rows = state.commissions.map((c) => [c.ref, c.kind, c.params[7]]);
+    expect(rows).toEqual([
+      ["pp-u1", "first", 0.2], ["pp-u2", "first", 0.2], ["pp-u3", "first", 0.2], ["pp-u4", "first", 0.2],
+      ["pp-u1-r1", "renewal", 0.07],
+      ["pp-u5", "first", 0.2],
+      ["pp-u2-r1", "renewal", 0.1],
+    ]);
+    expect(state.commissions.every((c) => c.status === "pending")).toBe(true);
+  });
+
+  it("AFFILIATE_RENEWAL_TIERS=none spegne la scala: rinnovo al 7% anche con molti paganti", async () => {
+    process.env.AFFILIATE_RENEWAL_TIERS = "none";
+    for (let i = 1; i <= 6; i++) await recordAffiliateCommissionSafe(input({ identifier: `u${i}@t.com`, paymentRef: `pp-u${i}` }));
+    await recordAffiliateCommissionSafe(input({ identifier: "u1@t.com", paymentRef: "pp-u1-r1" }));
+    expect(state.commissions.at(-1)).toMatchObject({ kind: "renewal", amount: 1.05 });
   });
 
   it("cliente STORICO (pagava prima del programma): al primo pagamento attribuito è un rinnovo al 7%, non un 20%", async () => {

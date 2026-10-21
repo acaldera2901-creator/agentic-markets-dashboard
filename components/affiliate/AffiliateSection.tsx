@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AFF_COPY, affLang, type AffCopy } from "./copy";
 import { api } from "./api";
-import { CommissionHistory, HowSteps, HowWePay, LedgerBlock, LinkBlock, PayoutHistory, Rules, WalletCard } from "./Blocks";
+import { CommissionHistory, HowSteps, HowWePay, LedgerBlock, LinkBlock, PayoutHistory, Rules, TierBlock, WalletCard } from "./Blocks";
 import { Skeleton } from "./ui";
 import { WalletForm } from "./WalletForm";
 import type { JoinInfo, MeResponse } from "./types";
@@ -218,6 +218,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
             <HowSteps c={c} />
           </div>
           <LedgerBlock c={c} lang={l} ledger={me.ledger} payouts={me.payouts} unavailable={false} />
+          <TierBlock c={c} tier={me.tier ?? null} />
           <div className="aff-pair aff-w75">
             <WalletCard
               c={c}
