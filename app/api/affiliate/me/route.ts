@@ -34,8 +34,10 @@ export async function GET(req: Request) {
   try {
     ctx = await getSessionPlan(req);
   } catch (e) {
+    // Un errore del DB sulla sessione NON è «non loggato»: un 401 manderebbe la
+    // UI al login (o a offrire l'iscrizione) per un guasto nostro. 503 = riprova.
     console.error("[affiliate/me] session lookup failed:", String(e));
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "session unavailable" }, { status: 503 });
   }
   if (!ctx) return NextResponse.json({ error: "login required" }, { status: 401 });
 

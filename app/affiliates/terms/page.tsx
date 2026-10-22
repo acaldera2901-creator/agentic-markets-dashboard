@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ClassicChrome from '@/components/classic/ClassicChrome';
 import { PRIVACY_CONTROLLER, LEGAL_ENTITY } from '@/lib/legal-entity';
+import { AFFILIATE_TERMS_PUBLISHED_VERSION } from '@/lib/affiliate/config';
 
 export const metadata: Metadata = { title: 'Affiliate Program Terms | BetRedge', alternates: { canonical: '/affiliates/terms' } };
 const sections = [
@@ -21,7 +22,7 @@ export default function AffiliateTermsPage() {
     <main className="legal-sheet max-w-2xl mx-auto my-10 px-7 py-11 space-y-8">
       <Link href="/invite" className="underline">← Invite / Invita</Link>
       <h1 className="text-xl font-bold text-[var(--am-text)]">Affiliate Program Terms</h1>
-      <p className="text-xs">Version aff-2026-10-21-v2 · 21 October 2026 (adds volume tiers to section 3; supersedes aff-2026-10-20-v1)</p>
+      <p className="text-xs">Version {AFFILIATE_TERMS_PUBLISHED_VERSION} · 21 October 2026 (adds volume tiers to section 3; supersedes aff-2026-10-20-v1)</p>
       <p className="text-sm">The contracting party and payer for this program is {PRIVACY_CONTROLLER.name}, {PRIVACY_CONTROLLER.address}, {PRIVACY_CONTROLLER.uid}. Contact: {LEGAL_ENTITY.contactEmail}.</p>
       <p className="text-sm">These terms supplement the <Link href="/terms" className="underline">Terms of Service</Link> and <Link href="/privacy" className="underline">Privacy Policy</Link>. For the affiliate program, these specific conditions take precedence.</p>
       {sections.map(([title, body]) => <section key={title} className="space-y-3"><h2 className="text-sm font-semibold text-[var(--am-text)]">{title}</h2><p className="text-sm leading-relaxed">{body}</p></section>)}
