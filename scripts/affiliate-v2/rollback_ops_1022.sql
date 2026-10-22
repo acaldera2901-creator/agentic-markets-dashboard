@@ -12,6 +12,19 @@
 -- Le funzioni ridefinite tornano alla versione di 20261015120000/130000
 -- rieseguendo quelle due migration (idempotenti) DOPO questo file.
 
+-- Review Codex: un payout marcato «fondi in uscita» ma ancora `created` ha
+-- forse i fondi già partiti. Le funzioni vecchie lo annullerebbero (cambio
+-- wallet, sospensione, annullo admin) → doppio pagamento. Prima si registra il
+-- suo hash (→ submitted/paid), poi si può tornare indietro.
+DO $$
+DECLARE n bigint;
+BEGIN
+  SELECT count(*) INTO n FROM public.affiliate_payouts WHERE status = 'created' AND sent_marked_at IS NOT NULL;
+  IF n > 0 THEN
+    RAISE EXCEPTION 'rollback ops rifiutato: % payout marcati in uscita e ancora created: registrare prima il tx hash', n;
+  END IF;
+END $$;
+
 UPDATE public.affiliate_wallets SET screening_result = 'not_screened' WHERE screening_result = 'blocked';
 ALTER TABLE public.affiliate_wallets DROP CONSTRAINT IF EXISTS affiliate_wallets_blocked_needs_time;
 ALTER TABLE public.affiliate_wallets DROP CONSTRAINT IF EXISTS affiliate_wallets_manual_has_who_why;
