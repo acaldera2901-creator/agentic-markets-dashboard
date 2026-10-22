@@ -239,6 +239,7 @@ export async function POST(req: Request) {
   // un ordine rimasto senza grant: senza di essi l'evento è irrecuperabile.
   const claim = `claim:${crypto.randomUUID()}`;
   let won: { event_id: string }[];
+  let inserted = false;
   try {
     await dbExecute(
       `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, amount, status, last_error)
@@ -246,12 +247,24 @@ export async function POST(req: Request) {
        ON CONFLICT (event_id) DO NOTHING`,
       [order.orderId, order.identifier, order.variantId, order.totalPrice, claim]
     );
+    inserted = true;
     won = await dbQueryStrict<{ event_id: string }>(
       `SELECT event_id FROM shopify_events WHERE event_id = $1 AND last_error = $2 LIMIT 1`,
       [order.orderId, claim]
     );
   } catch (e) {
     console.error("[shopify/webhook] idempotency unavailable:", String(e));
+    // Se la riga è forse nostra (INSERT passato, SELECT fallita) la si toglie —
+    // SOLO se porta il nostro gettone — così il retry di Shopify non la vede come
+    // duplicato e il piano viene concesso. Best-effort: se fallisce, resta
+    // `pending` e la reconcile la segnala come stale.
+    if (inserted) {
+      try {
+        await dbExecute(`DELETE FROM shopify_events WHERE event_id = $1 AND last_error = $2`, [order.orderId, claim]);
+      } catch (delErr) {
+        console.error("[shopify/webhook] claim rollback failed:", String(delErr));
+      }
+    }
     return NextResponse.json({ error: "idempotency unavailable" }, { status: 500 });
   }
   if (won.length === 0) {
