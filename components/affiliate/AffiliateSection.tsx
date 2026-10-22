@@ -234,6 +234,12 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
           <Head c={c} />
           {me.affiliate.status === "suspended" && <div className="aff-banner" role="status"><p>{c.state.suspended}</p></div>}
           {me.affiliate.status === "terminated" && <div className="aff-banner" role="status"><p>{c.state.terminated}</p></div>}
+          {me.terms_current && me.affiliate.terms_version !== me.terms_current && (
+            <div className="aff-banner" role="status" data-testid="aff-terms-update">
+              <strong>{c.termsUpdate.title}</strong>
+              <p>{c.termsUpdate.body} <a href={termsHref} className="underline">{c.termsUpdate.link}</a></p>
+            </div>
+          )}
           {setup && <SetupBanner c={c} />}
           {flash && <div className="aff-open" role="status"><span>{flash}</span></div>}
           <div className="aff-top">

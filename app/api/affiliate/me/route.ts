@@ -12,7 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { getSessionPlan } from "@/lib/auth";
-import { affiliateConfig, affiliateMode, affiliateTermsVersion, affiliatePayoutsMode, payoutConfig } from "@/lib/affiliate/config";
+import { AFFILIATE_TERMS_PUBLISHED_VERSION, affiliateConfig, affiliateMode, affiliateTermsVersion, affiliatePayoutsMode, payoutConfig } from "@/lib/affiliate/config";
 import {
   ledgerView,
   loadActiveWallet,
@@ -69,6 +69,8 @@ export async function GET(req: Request) {
       enrolled: true,
       operations: { payouts_enabled: affiliatePayoutsMode() === "live", accounting_ready: process.env.AFFILIATE_ACCOUNTING_READY === "1" },
       affiliate: { code: aff.code, status: aff.status, terms_version: aff.terms_version, created_at: aff.created_at },
+      // #AFFILIATE-TERMS-V3-1022: la versione pubblicata, per il banner «Termini aggiornati» (non bloccante).
+      terms_current: AFFILIATE_TERMS_PUBLISHED_VERSION,
       ledger: ledgerView(groups, cfg.minPayoutUsd),
       // #AFFILIATE-TIERS-1021: livello, tasso in vigore e scala, dalla stessa misura del ledger.
       tier: tierView(payingReferred, cfg),

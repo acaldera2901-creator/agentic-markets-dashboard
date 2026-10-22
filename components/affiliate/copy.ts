@@ -89,6 +89,13 @@ const IT = {
   },
   // #INVITE-AFFILIATE-UX-1022 (R5): quando operations.payouts_enabled o accounting_ready sono falsi
   // (/api/affiliate/me), il pannello lo dice invece di promettere un calendario che non vale.
+  // #AFFILIATE-TERMS-V3-1022: notifica nel pannello a chi si è iscritto con una versione precedente.
+  // Non bloccante: la v3 sulla commissione è a favore dell'affiliato; 7A vale 30 giorni dopo la notifica.
+  termsUpdate: {
+    title: "Termini aggiornati (v3)",
+    body: "Dal 22 ottobre 2026 la commissione si calcola sul prezzo pagato dal cliente, imposte comprese e senza dedurre le commissioni di incasso: una modifica a tuo favore, che vale anche per le commissioni già registrate. Le nuove regole di promozione (sezione 7A) si applicano a te 30 giorni dopo questa notifica. Non devi fare nulla per continuare.",
+    link: "Leggi i termini aggiornati",
+  },
   setup: {
     title: "Pagamenti in attivazione",
     // «si registrano» e non «maturano»: il cron affiliate-mature salta finché la contabilità non è attiva (review Codex).
@@ -438,6 +445,11 @@ const EN: AffCopy = {
     w2b: "The first purchase must happen within 60 days. From then on, attribution is fixed on every renewal.",
     w3t: "From the payment",
     w3b: "Every commission stays pending for at least 60 days, until the checks are complete.",
+  },
+  termsUpdate: {
+    title: "Terms updated (v3)",
+    body: "From 22 October 2026 the commission is calculated on the price the customer pays, taxes included and with no processing fees deducted: a change in your favour, which also applies to commissions already recorded. The new promotion rules (section 7A) apply to you 30 days after this notice. You do not need to do anything to continue.",
+    link: "Read the updated terms",
   },
   setup: {
     title: "Payouts being activated",

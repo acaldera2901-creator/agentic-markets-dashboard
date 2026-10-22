@@ -52,6 +52,25 @@ describe("stati della pagina", () => {
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
+  it("#AFFILIATE-TERMS-V3-1022: iscritto con una versione precedente → banner «Termini aggiornati (v3)», non bloccante; stessa versione o ignota → niente", async () => {
+    mockFetch(me({ ...ME_EMPTY, terms_current: "aff-2026-10-22-v3" }));
+    const a = render(<AffiliateSection lang="it" />);
+    const banner = await screen.findByTestId("aff-terms-update");
+    expect(banner.textContent).toMatch(/Termini aggiornati \(v3\)/);
+    expect(banner.querySelector("a")?.getAttribute("href")).toBe("/affiliates/terms");
+    expect(screen.getByText("Il tuo link")).toBeTruthy(); // il pannello resta utilizzabile
+    a.unmount();
+    mockFetch(me({ ...ME_EMPTY, affiliate: { ...ME_EMPTY.affiliate, terms_version: "aff-2026-10-22-v3" }, terms_current: "aff-2026-10-22-v3" }));
+    const b = render(<AffiliateSection lang="en" />);
+    await screen.findByText(/Your link/);
+    expect(screen.queryByTestId("aff-terms-update")).toBeNull();
+    b.unmount();
+    mockFetch(me(ME_EMPTY));
+    render(<AffiliateSection lang="it" />);
+    await screen.findByText("Il tuo link");
+    expect(screen.queryByTestId("aff-terms-update")).toBeNull();
+  });
+
   it("R5: operations con payout o contabilità spenti → banner «pagamenti in attivazione» e frasi sui tempi caute; accesi → niente banner", async () => {
     mockFetch(me({ ...ME_EMPTY, operations: { payouts_enabled: false, accounting_ready: false } }));
     const a = render(<AffiliateSection lang="it" />);

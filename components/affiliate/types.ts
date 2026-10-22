@@ -24,6 +24,8 @@ export type MeResponse =
       enrolled: true;
       operations?: Operations;
       affiliate: { code: string; status: "active" | "suspended" | "terminated"; terms_version: string; created_at: string };
+      /** #AFFILIATE-TERMS-V3-1022 — versione pubblicata dei Termini; assente = ignota (nessun banner). */
+      terms_current?: string;
       ledger: LedgerView;
       /** #AFFILIATE-TIERS-1021 — assente nelle risposte precedenti al rollout: il pannello lo tratta come «non disponibile». */
       tier?: TierView;
