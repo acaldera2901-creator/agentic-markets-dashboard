@@ -20,6 +20,7 @@ import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { normalizeRefCode } from "@/lib/referral-code";
 import { affiliateMode, affiliateTermsVersion } from "@/lib/affiliate/config";
 import { affiliateIdentifier, loadAffiliateBySession } from "@/lib/affiliate/account";
+import { scheduleIpFingerprint } from "@/lib/affiliate/fingerprints";
 
 export const dynamic = "force-dynamic";
 
@@ -149,6 +150,9 @@ export async function POST(req: Request) {
     );
     const created = await loadAffiliateBySession(ctx.identifier);
     if (!created) return NextResponse.json({ error: "code_taken" }, { status: 409 });
+    // #AFFILIATE-FINGERPRINTS-1022 — l'IP dell'affiliato (HMAC), confrontato con
+    // quello dei suoi referiti alla loro prima conversione.
+    scheduleIpFingerprint(identifier, clientIp(req));
     return NextResponse.json({ ok: true, enrolled: true, code: created.code, status: created.status });
   } catch (e) {
     console.error("[affiliate/join] enrollment failed:", String(e));

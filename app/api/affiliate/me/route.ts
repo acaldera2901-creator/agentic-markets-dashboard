@@ -26,6 +26,8 @@ import {
   tierView,
   walletView,
 } from "@/lib/affiliate/account";
+import { scheduleIpFingerprint } from "@/lib/affiliate/fingerprints";
+import { clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +50,9 @@ export async function GET(req: Request) {
         open: affiliateMode() !== "off" && affiliateTermsVersion() !== null,
       });
     }
+    // #AFFILIATE-FINGERPRINTS-1022 — rinfresca l'IP dell'affiliato (HMAC) a ogni
+    // apertura del pannello: è quando copia il link da condividere.
+    scheduleIpFingerprint(ctx.identifier, clientIp(req));
     const cursor = parseCursor(new URL(req.url).searchParams.get("cursor"));
     const cfg = affiliateConfig();
     const [wallet, groups, payouts, commissions, payingReferred] = await Promise.all([

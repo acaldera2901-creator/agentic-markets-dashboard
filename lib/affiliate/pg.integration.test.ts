@@ -389,4 +389,34 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT,"supabase/migrations",f),"utf8"));
   });
 
+  // #AFFILIATE-FINGERPRINTS-1022 — dalla scrittura del fingerprint al verdetto del ledger.
+  it("R4 stesso IP di affiliato e referito entro 24h → attribuzione fraud_review (commissione ferma, non rifiutata)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    vi.stubEnv("AFFILIATE_HASH_SECRET", "x".repeat(32));
+    await h.sql!.unsafe(`
+      CREATE TABLE IF NOT EXISTS paygate_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, coin text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS paypal_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, status text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
+      TRUNCATE affiliate_payer_fingerprints;
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io','ALICE',now() - interval '1 day'), ('other@x.io','ALICE',now() - interval '1 day');`);
+    const { recordIpFingerprintSafe } = await import("@/lib/affiliate/fingerprints");
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9")).toBe(true);
+    expect(await recordIpFingerprintSafe("Ref@x.io", "9.9.9.9")).toBe(true);
+    expect(await recordIpFingerprintSafe("other@x.io", "8.8.8.8")).toBe(true);
+    // Ripassare lo stesso IP non duplica la riga: rinfresca seen_at.
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9")).toBe(true);
+    expect((await h.sql!`SELECT COUNT(*)::int AS n FROM affiliate_payer_fingerprints`)[0].n).toBe(3);
+    const pay = (identifier: string, ref: string) =>
+      recordAffiliateCommissionSafe({ identifier, rail: "paygate", paymentRef: ref, grossUsd: 14.99, paidAt: new Date() });
+    expect(await pay("ref@x.io", "pg-1")).toEqual({ written: true, reason: "shadow" });
+    expect(await pay("other@x.io", "pg-2")).toEqual({ written: true, reason: "shadow" });
+    expect(await h.sql!`SELECT referred_identifier AS who, status, status_reason AS why FROM affiliate_attributions ORDER BY 1`).toEqual([
+      { who: "other@x.io", status: "valid", why: null },
+      { who: "ref@x.io", status: "fraud_review", why: "shared_ip_24h" },
+    ]);
+  });
+
 });
