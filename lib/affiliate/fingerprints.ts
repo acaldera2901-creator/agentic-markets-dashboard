@@ -17,6 +17,11 @@
 // due avvistamenti a cavallo della mezzanotte (23:00 / 01:00) condividono un
 // valore. La finestra di 24 h la applica comunque selfReferralCheck sulle date
 // vere: il bucket allarga solo il confronto, non lo rende più permissivo.
+// ⚠ LIMITE NOTO (debito accettato, review Codex #3): dentro lo stesso bucket
+// resta solo il PRIMO avvistamento (DO NOTHING: una prova non si cancella mai).
+// Un secondo avvistamento lo stesso giorno, seguito da una registrazione 24-47 h
+// dopo il primo, non fa scattare fraud_review. È un segnale morbido (revisione
+// a mano, non rifiuto); upgrade path: tabella con più date per valore.
 // Conservazione: le righe ip_hash oltre FINGERPRINT_RETENTION_DAYS non possono
 // più decidere niente (attribuzione entro 60 gg dalla registrazione, finestra
 // IP 24 h) e si cancellano a ogni scrittura.
