@@ -128,6 +128,7 @@ select.aff-input{appearance:none;background-image:linear-gradient(45deg,transpar
 .aff-fine{display:grid;gap:var(--am-s-2);margin:0;padding:0;list-style:none}
 .aff-fine li{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:var(--am-s-3) 0;border-top:1px solid var(--am-line)}
 .aff-fine li:first-child{border-top:0;padding-top:0}
+.aff-levels{display:grid;gap:var(--am-s-3);margin-top:var(--am-s-4)}
 .aff-fine strong{font-size:14.5px}
 .aff-fine span{font-size:14px;color:var(--am-muted);line-height:1.5}
 .aff-steps-ind{margin:0;font-size:13px;color:var(--am-muted-2)}

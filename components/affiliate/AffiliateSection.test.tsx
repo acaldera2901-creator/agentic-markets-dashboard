@@ -80,6 +80,12 @@ describe("iscrizione", () => {
     render(<AffiliateSection lang="it" />);
   };
 
+  it("prima dell'iscrizione i livelli sono già spiegati (#INVITE-TIERS-HOW-1022)", async () => {
+    setup();
+    await screen.findByRole("button", { name: "Iscrivimi al programma" });
+    expect(screen.getByTestId("aff-levels").textContent).toMatch(/15% da 15/);
+  });
+
   it("la CTA resta spenta finché codice valido + 3 spunte", async () => {
     setup();
     const cta = (await screen.findByRole("button", { name: "Iscrivimi al programma" })) as HTMLButtonElement;
@@ -177,6 +183,15 @@ describe("dashboard", () => {
     expect(block.textContent).toMatch(/il primo acquisto resta al 20%/);
     // niente promesse: nessun importo stimato, nessun «guadagna»
     expect(block.textContent).not.toMatch(/guadagn|garantit|\$\d/i);
+  });
+
+  it("come funziona (#INVITE-TIERS-HOW-1022): i livelli sono spiegati nel pannello", async () => {
+    mockFetch(me(ME));
+    render(<AffiliateSection lang="it" />);
+    const block = await screen.findByTestId("aff-levels");
+    expect(block.textContent).toMatch(/Come funzionano i livelli/);
+    expect(block.textContent).toMatch(/referito pagante/);
+    expect(block.textContent).toMatch(/prende comunque il 20%/);
   });
 
   it("livello massimo e scala spenta: «livello più alto» / «nessuno scaglione»; risposta senza tier → nessun blocco", async () => {

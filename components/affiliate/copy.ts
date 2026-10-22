@@ -25,7 +25,7 @@ const IT = {
   head: {
     kicker: "Invita",
     title: "Porta BetRedge a chi ti chiede già i pronostici.",
-    lede: "Ricevi il 20% del loro primo acquisto e il 7% di ogni rinnovo dal secondo mese, con una percentuale che sale quanti più abbonati porti (la scala è nel pannello). Pagamenti una volta al mese in USDT o USDC su Polygon quando il maturato arriva a 50 $. Nessuna cifra è garantita.",
+    lede: "Ricevi il 20% del loro primo acquisto e il 7% di ogni rinnovo dal secondo mese, che sale al 10% da 5 referiti paganti e al 15% da 15. Pagamenti una volta al mese in USDT o USDC su Polygon quando il maturato arriva a 50 $. Nessuna cifra è garantita.",
   },
   state: {
     loading: "Carico il tuo estratto conto…",
@@ -62,7 +62,7 @@ const IT = {
     t3v: "60 gg",
     t4v: "50 $",
     t1: "del primo acquisto",
-    t2: "di ogni rinnovo, dal 2° mese",
+    t2: "di ogni rinnovo dal 2° mese; 10% da 5 referiti paganti, 15% da 15",
     t3: "di attesa prima di maturare",
     t4: "soglia per i pagamenti",
     f1t: "Sempre sull'importo netto",
@@ -94,6 +94,16 @@ const IT = {
     s2b: "Del loro primo acquisto, al netto di IVA, rimborsi e commissioni.",
     s3t: "Rinnovano: 7%",
     s3b: "Di ogni rinnovo dal secondo mese, finché restano abbonati. Con più referiti paganti la percentuale sale: vedi «Il tuo livello».",
+  },
+  levels: {
+    title: "Come funzionano i livelli",
+    l1t: "Tre livelli, solo sui rinnovi",
+    l1b: "7% di base, 10% da 5 referiti paganti, 15% da 15. Il primo acquisto di ogni referito resta sempre al 20%.",
+    l2t: "Chi è un referito pagante",
+    l2b: "Una persona arrivata dal tuo link che ha fatto almeno un acquisto pagato non rimborsato né stornato. Un'iscrizione senza pagamento non conta; se tutti i suoi acquisti vengono rimborsati o stornati, smette di contare.",
+    l3t: "Quando scatta il livello",
+    l3b: "Il livello si misura subito prima di registrare ogni commissione. Il pagamento del 5° referito pagante è un primo acquisto e prende comunque il 20%; da lì ogni rinnovo successivo di tutti i tuoi referiti passa al 10%. Lo stesso al 15° referito pagante, verso il 15%. Le commissioni già registrate non si ricalcolano.",
+    example: "Per fare un caso: hai 4 referiti paganti e i loro rinnovi sono al 7%. Si abbona il 5°: il suo primo acquisto è al 20%. Dal rinnovo successivo di ciascuno dei cinque, la percentuale è il 10%.",
   },
   tier: {
     title: "Il tuo livello",
@@ -322,7 +332,7 @@ const IT = {
   },
   rules: {
     title: "Le regole, in breve",
-    r1: "20% del primo acquisto e 7% dei rinnovi dal secondo mese, sempre sull'importo netto: niente IVA, rimborsi o commissioni.",
+    r1: "20% del primo acquisto; sui rinnovi dal secondo mese 7%, 10% da 5 referiti paganti e 15% da 15. Sempre sull'importo netto: niente IVA, rimborsi o commissioni.",
     r2: "Ogni commissione resta in attesa almeno 60 giorni e fino al completamento delle verifiche contabili. Se un acquisto viene rimborsato o contestato entro 120 giorni, la commissione si storna, anche se già pagata: si scala dal saldo successivo.",
     r3: "Pagamenti in USDT o USDC su Polygon, una volta al mese, a mano, da 50 $ maturati. Le fee di rete le paghiamo noi.",
     r4: "Per essere pagato registri un wallet con nome legale, paese e due dichiarazioni (non sanzionato; responsabile delle tue imposte). Potrebbero servire ulteriori informazioni per la verifica.",
@@ -345,7 +355,7 @@ const EN: AffCopy = {
   head: {
     kicker: "Invite",
     title: "Bring BetRedge to the people already asking you for picks.",
-    lede: "You get 20% of their first purchase and 7% of every renewal from the second month, with a rate that climbs the more subscribers you bring (the ladder is in your panel). Paid once a month in USDT or USDC on Polygon once your earned balance reaches $50. No amount is guaranteed.",
+    lede: "You get 20% of their first purchase and 7% of every renewal from the second month, rising to 10% from 5 paying referrals and 15% from 15. Paid once a month in USDT or USDC on Polygon once your earned balance reaches $50. No amount is guaranteed.",
   },
   state: {
     loading: "Loading your statement…",
@@ -382,7 +392,7 @@ const EN: AffCopy = {
     t3v: "60 days",
     t4v: "$50",
     t1: "of the first purchase",
-    t2: "of every renewal, from month 2",
+    t2: "of every renewal from month 2; 10% from 5 paying referrals, 15% from 15",
     t3: "wait before it's earned",
     t4: "payout threshold",
     f1t: "Always on the net amount",
@@ -414,6 +424,16 @@ const EN: AffCopy = {
     s2b: "Of their first purchase, net of VAT, refunds and fees.",
     s3t: "They renew: 7%",
     s3b: "Of every renewal from the second month, as long as they stay subscribed. More paying referrals raise the rate: see “Your level”.",
+  },
+  levels: {
+    title: "How the levels work",
+    l1t: "Three levels, on renewals only",
+    l1b: "7% base, 10% from 5 paying referrals, 15% from 15. The first purchase of every referral always stays at 20%.",
+    l2t: "What counts as a paying referral",
+    l2b: "Someone who came through your link and made at least one paid purchase that was not refunded or reversed. A sign-up without a payment does not count; if all of their purchases are refunded or reversed, they stop counting.",
+    l3t: "When a level kicks in",
+    l3b: "Your level is measured right before each commission is recorded. The payment of your 5th paying referral is a first purchase and still gets 20%; from then on, every later renewal of all your referrals moves to 10%. The same happens at your 15th paying referral, to 15%. Commissions already recorded are not recalculated.",
+    example: "For instance: you have 4 paying referrals and their renewals are at 7%. The 5th subscribes: their first purchase is at 20%. From the next renewal of each of the five, the rate is 10%.",
   },
   tier: {
     title: "Your level",
@@ -641,7 +661,7 @@ const EN: AffCopy = {
   },
   rules: {
     title: "The rules, in short",
-    r1: "20% of the first purchase and 7% of renewals from the second month, always on the net amount: no VAT, refunds or fees.",
+    r1: "20% of the first purchase; on renewals from the second month 7%, 10% from 5 paying referrals and 15% from 15. Always on the net amount: no VAT, refunds or fees.",
     r2: "Every commission remains pending for at least 60 days and until accounting checks are complete. If a purchase is refunded or disputed within 120 days, the commission is reversed, even if already paid: it is deducted from your next balance.",
     r3: "Payouts in USDT or USDC on Polygon, once a month, by hand, from $50 earned. We pay the network fees.",
     r4: "To be paid you register a wallet with legal name, country and two statements (not sanctioned; responsible for your taxes). Additional information may be needed for verification.",
