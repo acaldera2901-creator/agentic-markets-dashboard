@@ -1,11 +1,11 @@
 // components/affiliate/types.ts — #AFFILIATE-V2-UI-1015
 // Tipi delle risposte API: importati (solo tipi, cancellati al build) dai moduli
 // server che le producono, così il contratto non può divergere in silenzio.
-import type { CommissionView, LedgerView, PayoutView, WalletView } from "@/lib/affiliate/account";
+import type { CommissionView, LedgerView, PayoutView, TierView, WalletView } from "@/lib/affiliate/account";
 import type { AdminPayout, AdminPayoutRow } from "@/lib/affiliate/payouts";
 import type { PayoutCoin, PayoutNetwork } from "@/lib/affiliate/wallet";
 
-export type { CommissionView, LedgerView, PayoutView, WalletView, AdminPayout, AdminPayoutRow };
+export type { CommissionView, LedgerView, PayoutView, TierView, WalletView, AdminPayout, AdminPayoutRow };
 
 export type Payee = {
   name: string | null;
@@ -21,6 +21,8 @@ export type MeResponse =
       operations?: { payouts_enabled: boolean; accounting_ready: boolean };
       affiliate: { code: string; status: "active" | "suspended" | "terminated"; terms_version: string; created_at: string };
       ledger: LedgerView;
+      /** #AFFILIATE-TIERS-1021 — assente nelle risposte precedenti al rollout: il pannello lo tratta come «non disponibile». */
+      tier?: TierView;
       wallet: WalletView;
       payee: Payee;
       rails: { coins: PayoutCoin[]; networks: PayoutNetwork[] };

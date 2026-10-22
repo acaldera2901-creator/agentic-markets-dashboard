@@ -5,7 +5,7 @@ import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
 import { AffiliateSection } from "./AffiliateSection";
-import { ADDR_NEW, JOIN_OPEN, ME, ME_COOLDOWN, ME_EMPTY, ME_NEGATIVE, ME_PAYOUTS_ALL, ME_PENDING_SCREENING, ME_SUSPENDED } from "./fixtures";
+import { ADDR_NEW, JOIN_OPEN, ME, ME_COOLDOWN, ME_EMPTY, ME_NEGATIVE, ME_NO_TIERS, ME_PAYOUTS_ALL, ME_PENDING_SCREENING, ME_SUSPENDED, ME_TIER2 } from "./fixtures";
 
 type Handler = (url: string, init?: RequestInit) => { status: number; body?: unknown } | undefined;
 let calls: { url: string; method: string; body: unknown }[] = [];
@@ -162,6 +162,41 @@ describe("dashboard", () => {
     await screen.findByText("Il tuo link");
     expect(document.body.textContent).toMatch(/maturati su 50 \$: il prossimo pagamento parte quando arrivano a 50 \$/);
     expect(document.body.textContent).not.toMatch(/ti mancano|ti manca/i);
+  });
+
+  it("livello (#AFFILIATE-TIERS-1021): tasso, conteggio e prossimo gradino dall'API; la scala è quella del server", async () => {
+    mockFetch(me(ME));
+    render(<AffiliateSection lang="it" />);
+    const block = await screen.findByTestId("aff-tier");
+    expect(block.textContent).toMatch(/Livello base/);
+    expect(block.textContent).toMatch(/7% sui rinnovi/);
+    expect(block.textContent).toMatch(/3 referiti paganti/);
+    expect(block.textContent).toMatch(/Ancora 2 referiti paganti e ogni rinnovo passa al 10%/);
+    expect(block.textContent).toMatch(/fino a 4 referiti paganti/);
+    expect(block.textContent).toMatch(/da 15 referiti paganti/);
+    expect(block.textContent).toMatch(/il primo acquisto resta al 20%/);
+    // niente promesse: nessun importo stimato, nessun «guadagna»
+    expect(block.textContent).not.toMatch(/guadagn|garantit|\$\d/i);
+  });
+
+  it("livello massimo e scala spenta: «livello più alto» / «nessuno scaglione»; risposta senza tier → nessun blocco", async () => {
+    mockFetch(me(ME_TIER2));
+    const a = render(<AffiliateSection lang="it" />);
+    const top = await screen.findByTestId("aff-tier");
+    expect(top.textContent).toMatch(/Livello 2/);
+    expect(top.textContent).toMatch(/15% sui rinnovi/);
+    expect(top.textContent).toMatch(/Sei al livello più alto della scala/);
+    a.unmount();
+    mockFetch(me(ME_NO_TIERS));
+    const b = render(<AffiliateSection lang="it" />);
+    expect((await screen.findByTestId("aff-tier")).textContent).toMatch(/Nessuno scaglione attivo/);
+    b.unmount();
+    const { tier: _omit, ...noTier } = ME;
+    void _omit;
+    mockFetch(me(noTier));
+    render(<AffiliateSection lang="it" />);
+    await screen.findByText("Il tuo link");
+    expect(screen.queryByTestId("aff-tier")).toBeNull();
   });
 
   it("saldo negativo: maturata a $0,00 + saldo da recuperare", async () => {

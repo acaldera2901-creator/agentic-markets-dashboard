@@ -11,14 +11,18 @@
 
 import { catalogContracts } from "@/lib/crypto-coins";
 import { PAYOUT_COINS, PAYOUT_NETWORKS, type PayoutCoin, type PayoutNetwork } from "./wallet";
+import { DEFAULT_TIERS, parseTiers, type TierStep } from "./tiers";
 
 export type AffiliateMode = "off" | "shadow" | "live";
 
 export const AFFILIATE_DEFAULTS = {
   /** Commissione sul primo acquisto netto dell'utente portato. */
   FIRST_RATE: 0.2,
-  /** Commissione su ogni rinnovo netto, dal secondo mese. */
+  /** Commissione su ogni rinnovo netto, dal secondo mese (tasso BASE: gli
+   *  scaglioni di RENEWAL_TIERS possono solo alzarlo). */
   RENEWAL_RATE: 0.07,
+  /** Scaglioni sui rinnovi per referiti paganti (#AFFILIATE-TIERS-1021, lib/affiliate/tiers.ts). */
+  RENEWAL_TIERS: DEFAULT_TIERS,
   /** Quanti rinnovi pagano. `null` = illimitato (decisione di Andrea, 2026-09-30;
    *  il legale consiglia 12). */
   RENEWAL_MAX_MONTHS: null as number | null,
@@ -36,6 +40,8 @@ export const AFFILIATE_DEFAULTS = {
 export type AffiliateConfig = {
   firstRate: number;
   renewalRate: number;
+  /** Scala sui rinnovi: [{min, rate}] per minimo crescente. Vuota = solo il tasso base. */
+  renewalTiers: TierStep[];
   renewalMaxMonths: number | null;
   holdDays: number;
   clawbackDays: number;
@@ -97,6 +103,7 @@ export function affiliateConfig(env: Env = process.env): AffiliateConfig {
   return {
     firstRate: rate(env.AFFILIATE_FIRST_RATE, d.FIRST_RATE),
     renewalRate: rate(env.AFFILIATE_RENEWAL_RATE, d.RENEWAL_RATE),
+    renewalTiers: parseTiers(env.AFFILIATE_RENEWAL_TIERS, d.RENEWAL_TIERS),
     renewalMaxMonths: maxMonths(env.AFFILIATE_RENEWAL_MAX_MONTHS, d.RENEWAL_MAX_MONTHS),
     holdDays: days(env.AFFILIATE_HOLD_DAYS, d.HOLD_DAYS),
     clawbackDays: days(env.AFFILIATE_CLAWBACK_DAYS, d.CLAWBACK_DAYS),

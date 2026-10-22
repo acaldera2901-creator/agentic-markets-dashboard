@@ -8,7 +8,7 @@ import { fill } from "./copy";
 import { coinAmount, dateTime, monthLabel, shortDate, shortHash, usd } from "./format";
 import { cancelText, commissionChip, payoutChip } from "./status";
 import { ExplorerLink, StateChip, useCopy } from "./ui";
-import type { CommissionView, LedgerView, PayoutView, Payee, WalletView } from "./types";
+import type { CommissionView, LedgerView, PayoutView, Payee, TierView, WalletView } from "./types";
 
 const NETWORK_LABEL: Record<string, string> = { polygon: "Polygon", tron: "Tron" };
 
@@ -16,6 +16,49 @@ const NETWORK_LABEL: Record<string, string> = { polygon: "Polygon", tron: "Tron"
 export function money0(n: number, lang: AffLang): string {
   const v = Number.isInteger(n) ? String(n) : n.toFixed(2);
   return lang === "it" ? `${v} $` : `$${v}`;
+}
+
+// ── Il tuo livello (#AFFILIATE-TIERS-1021) ────────────────────────────────────
+
+/** `7%`, `12.5%`: percentuale dalla config del server, mai dalla copy. */
+export function pct(rate: number): string {
+  const v = Math.round(rate * 1000) / 10;
+  return `${Number.isInteger(v) ? v : v.toFixed(1)}%`;
+}
+
+export function TierBlock({ c, tier }: { c: AffCopy; tier: TierView | null }) {
+  const t = c.tier;
+  if (!tier) return null;
+  const count = tier.paying_referred === 1 ? t.count1 : fill(t.count, { n: tier.paying_referred });
+  const ladder = tier.ladder;
+  return (
+    <section className="aff-block" aria-labelledby="aff-t-tier" data-testid="aff-tier">
+      <div className="aff-block__head"><h2 className="aff-h" id="aff-t-tier">{t.title}</h2></div>
+      <ol className="aff-flow">
+        <li data-focus="1">
+          <span className="aff-l">{tier.level === 0 ? t.level0 : fill(t.levelN, { n: tier.level })}</span>
+          <span className="aff-v">{fill(t.rate, { rate: pct(tier.rate) })}</span>
+          <span className="aff-n">{count}</span>
+        </li>
+        <li>
+          <span className="aff-l">{t.nextTitle}</span>
+          <span className="aff-v">{tier.next ? pct(tier.next.rate) : "—"}</span>
+          <span className="aff-n">
+            {ladder.length === 0 ? t.none : tier.next ? fill(t.next, { k: tier.next.min - tier.paying_referred, rate: pct(tier.next.rate) }) : t.top}
+          </span>
+        </li>
+      </ol>
+      {ladder.length > 0 && (
+        <dl className="aff-terms-list" aria-label={t.ladderTitle}>
+          <div><dd>{pct(tier.base_rate)}</dd><dt>{fill(t.ladderBase, { max: ladder[0].min - 1 })}</dt></div>
+          {ladder.map((s) => (
+            <div key={s.min}><dd>{pct(s.rate)}</dd><dt>{fill(t.ladderStep, { min: s.min })}</dt></div>
+          ))}
+        </dl>
+      )}
+      <p className="aff-muted aff-small">{fill(t.note, { first: pct(tier.first_rate) })}</p>
+    </section>
+  );
 }
 
 // ── Il tuo link ──────────────────────────────────────────────────────────────
