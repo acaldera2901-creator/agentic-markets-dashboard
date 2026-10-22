@@ -33,7 +33,7 @@ it("rimborso: revoca l'accesso dell'identifier dell'ordine originale", async () 
   // 1a query: idempotenza sul refund (non visto). 2a: lookup identifier dall'ordine.
   dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([{ identifier: "u@t.com" }]);
   revokeShopifyPlan.mockResolvedValue(true);
-  const body = JSON.stringify({ id: 7001, order_id: 900 });
+  const body = JSON.stringify({ id: 7001, order_id: 900, transactions: [{ kind: "refund", status: "success", amount: "14.99" }] });
   const { POST } = await import("./route");
   const res = await POST(req(body, sign(body), "refunds/create"));
   expect(res.status).toBe(200);
@@ -167,6 +167,29 @@ it("rimborso con transazione FALLITA: nessuno storno affiliato (nessun denaro re
   const { POST } = await import("./route");
   await POST(req(body, sign(body), "refunds/create"));
   expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+});
+
+// #SHOPIFY-REFUND-FAILED-1022 — la revoca spegne l'accesso di un utente pagante:
+// solo con una transazione di rimborso RIUSCITA (denaro restituito davvero).
+// Fallita, in attesa o assente → accesso mantenuto, gestione manuale con alert.
+it.each([
+  ["fallita", [{ kind: "refund", status: "failure", amount: "14.99" }]],
+  ["in attesa", [{ kind: "refund", status: "pending", amount: "14.99" }]],
+  ["errore del gateway", [{ kind: "refund", status: "error", amount: "14.99" }]],
+  ["senza transazioni (solo restock)", []],
+  ["campo transactions assente", undefined],
+])("rimborso con transazione %s: NON revoca il piano, gestione manuale", async (_label, transactions) => {
+  dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([{ identifier: "u@t.com", variant_id: "111", amount: "14.99" }]);
+  revokeShopifyPlan.mockResolvedValue(true);
+  const body = JSON.stringify({ id: 7030, order_id: 930, ...(transactions === undefined ? {} : { transactions }) });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "refunds/create"));
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ manual: expect.stringContaining("nessuna transazione di rimborso riuscita") });
+  expect(revokeShopifyPlan).not.toHaveBeenCalled();
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+  expect(opsAlert).toHaveBeenCalled();
+  expect(dbExecute).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO shopify_events"), ["refund:7030", "u@t.com", "refund-not-successful", expect.any(String)]);
 });
 
 it("rimborso già processato o su ordine sconosciuto: nessuno storno affiliato", async () => {

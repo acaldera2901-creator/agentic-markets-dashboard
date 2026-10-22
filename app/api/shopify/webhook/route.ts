@@ -136,6 +136,13 @@ async function handleRefund(payload: unknown) {
     return NextResponse.json({ received: true, manual: why });
   };
 
+  // #SHOPIFY-REFUND-FAILED-1022 — `amount` null = nessuna transazione di rimborso
+  // riuscita (fallita, in attesa, errore, oppure solo restock): nessun denaro è
+  // tornato al cliente, quindi non si spegne l'accesso di un utente pagante.
+  // Prima isFullRefund(null) valeva «totale» e la revoca partiva lo stesso.
+  if (refund.amount == null) {
+    return manual("refund-not-successful", "nessuna transazione di rimborso riuscita: accesso mantenuto");
+  }
   if (isWeeklyPickVariant(order?.variant_id)) {
     return manual("weekly-refund", "rimborso Weekly Pick: entitlement one-off, piano non toccato");
   }
