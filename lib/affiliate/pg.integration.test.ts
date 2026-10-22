@@ -289,6 +289,9 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
 
     h.chainTo = A1;
     h.chainAmount = 60;
+    // Review indipendente P1-2: l'hash di un payout `created` si registra solo dopo la marca del
+    // secondo operatore (quattro occhi). Qui la si simula; il flusso completo è nei test OPS.
+    await h.sql!`UPDATE affiliate_payouts SET sent_marked_at = now(), sent_marked_by = 'bo:b@maven' WHERE id = ${p.id}`;
     const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: String(p.id) }) });
     expect(await t.json()).toMatchObject({ outcome: "paid" });
     const panel = await (await me.GET(req("/api/affiliate/me", "GET", "alice@x.io"))).json();
@@ -761,6 +764,45 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect((await h.sql!`SELECT status FROM affiliate_commissions`)[0].status).toBe("payable");
   });
 
+  it("OPS (review indipendente) quattro occhi non aggirabili: hash solo dopo la marca, stesso operatore anche con maiuscole, cookie non decide, screening scaduto", async () => {
+    await payableAlice();
+    h.screen = "none";
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    const cookie = (b: unknown) => req("/x", "POST", null, b) as never;
+    // P2-4: il cookie condiviso non può dichiarare «clear» (decisione sanzioni nominale); «blocked» sì.
+    expect(await (await screen.POST(cookie({ result: "clear", reason: "nessun match" }), idp(1))).json()).toMatchObject({ error: "named_operators_required" });
+    expect(await (await screen.POST(cookie({ result: "blocked", reason: "match da verificare" }), idp(1))).json()).toMatchObject({ ok: true });
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "OFAC/EU nessun match" }), idp(1));
+    expect((await admin.POST(bo("anna@maven", { month: month(), ids: [1], expected_total: "60.00" }))).status).toBe(200);
+    // P1-2: chi ha preparato non registra l'hash senza la marca di un secondo operatore.
+    h.chainTo = A1;
+    h.chainAmount = 60;
+    const t = await txr.POST(req("/x", "POST", null, { hash: H }) as never, idp(1));
+    expect(t.status).toBe(409);
+    expect(await t.json()).toEqual({ error: "not_marked" });
+    expect((await h.sql!`SELECT status, tx_hash FROM affiliate_payouts`)[0]).toEqual({ status: "created", tx_hash: null });
+    // P2-3: stessa persona con maiuscole/spazi diversi; nit: «admin-cookie» dichiarato via Bearer.
+    expect(await (await mark.POST(bo("Anna@Maven"), idp(1))).json()).toMatchObject({ error: "same_person" });
+    expect(await (await mark.POST(bo("admin-cookie"), idp(1))).json()).toMatchObject({ error: "named_operators_required" });
+    // Nit: la marca ricontrolla che la decisione manuale non sia scaduta (30 gg).
+    await h.sql!`UPDATE affiliate_wallets SET screened_at = now() - interval '31 days'`;
+    expect(await (await mark.POST(bo("michele@maven"), idp(1))).json()).toMatchObject({ error: "screening_stale" });
+    await h.sql!`UPDATE affiliate_wallets SET screened_at = now()`;
+    expect(await (await mark.POST(bo("michele@maven"), idp(1))).json()).toMatchObject({ ok: true, already: false });
+    // P2-4: togliere la marca (= «nessun fondo è partito») è una dichiarazione nominale.
+    expect(await (await unmark.POST(cookie({ reason: "nessun invio" }), idp(1))).json()).toMatchObject({ error: "named_operators_required" });
+    expect((await h.sql!`SELECT sent_marked_by FROM affiliate_payouts`)[0].sent_marked_by).toBe("bo:michele@maven");
+    expect(await (await txr.POST(req("/x", "POST", null, { hash: H }) as never, idp(1))).json()).toMatchObject({ outcome: "paid" });
+  });
+
+  it("OPS (review indipendente nit) storno con p_clawback_days NULL: errore, non finestra disattivata", async () => {
+    await expect(h.sql!`SELECT affiliate_reverse_commission('paygate','p1','e1',NULL,NULL)`).rejects.toThrow(/clawback/);
+  });
+
   it("OPS fraud_review: void annulla le commissioni ferme; valid le fa maturare; terminated è definitivo", async () => {
     await h.sql!.unsafe(`
       INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
@@ -808,6 +850,10 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const text = await csv.text();
     expect(text.split("\n")[0]).toMatch(/^id,affiliate_id,code,referred_identifier/);
     expect(text).toContain(",'=cmd@x.io,");
+    // Review indipendente P2-7: oltre il limite si tagliano le righe più VECCHIE, non le più recenti.
+    await h.sql!.unsafe(`INSERT INTO affiliate_commissions(affiliate_id, referred_identifier, rail, rail_payment_ref, kind, gross_usd, net_usd, rate, amount_usd, renewal_index, status, paid_at, payable_after)
+      VALUES (1,'b@x.io','paygate','p2','first',50,50,0.2,10,0,'pending',now(),now() + interval '60 days')`);
+    expect((await (await get("kind=commissions")).json()).rows.map((r: { id: number }) => r.id)).toEqual([2, 1]);
     expect((await get("kind=nope")).status).toBe(400);
     expect((await get("kind=commissions&from=2026-13-01")).status).toBe(400);
   });

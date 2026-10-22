@@ -68,6 +68,11 @@ DECLARE
   v_status      text;
   v_after       timestamptz;
 BEGIN
+  -- Review indipendente (nit): NULL disattiverebbe la finestra di clawback
+  -- (now() - paid_at > NULL è NULL, cioè «dentro»). Fail-loud.
+  IF p_clawback_days IS NULL OR p_clawback_days < 0 THEN
+    RAISE EXCEPTION 'affiliate_reverse_commission: p_clawback_days required (got %)', p_clawback_days;
+  END IF;
   IF coalesce(trim(p_ref), '') = '' OR coalesce(trim(p_event), '') = '' THEN
     RETURN jsonb_build_object('ok', true, 'written', false, 'reason', 'missing_ref');
   END IF;

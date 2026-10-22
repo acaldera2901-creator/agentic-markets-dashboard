@@ -4,7 +4,8 @@
 // Sola lettura, auth admin. La base di pagamento è il ledger (affiliate_commissions),
 // non profiles.referred_by. Contiene dati personali (email di affiliati e
 // referiti): il backoffice la espone solo ai ruoli owner/admin. Max 5000 righe
-// (`truncated: true` se ce ne sono di più: restringere con i filtri).
+// (`truncated: true` se ce ne sono di più: restringere con i filtri). Righe dalla
+// più recente (review indipendente P2-7): se si tronca, cadono le più vecchie.
 import { NextResponse, type NextRequest } from "next/server";
 import { dbQueryStrict } from "@/lib/db";
 import { csvCell } from "@/lib/affiliate/admin-ops";
@@ -49,7 +50,7 @@ const QUERIES: Record<string, string> = {
       LEFT JOIN affiliate_wallets w ON w.affiliate_id = a.id AND w.revoked_at IS NULL
      WHERE ($1::bigint IS NULL OR a.id = $1::bigint) AND ($2::text IS NULL OR a.status = $2::text)
        AND ($3::date IS NULL OR a.created_at >= $3::date) AND ($4::date IS NULL OR a.created_at < $4::date + 1)
-     ORDER BY a.id`,
+     ORDER BY a.id DESC`,
   commissions: `
     SELECT c.id, c.affiliate_id, a.code, c.referred_identifier, c.rail, c.rail_payment_ref, c.rail_event_ref, c.kind,
            c.gross_usd, c.net_usd, c.rate, c.amount_usd, c.renewal_index, c.status, c.paid_at, c.payable_after,
@@ -57,13 +58,13 @@ const QUERIES: Record<string, string> = {
       FROM affiliate_commissions c JOIN affiliates a ON a.id = c.affiliate_id
      WHERE ($1::bigint IS NULL OR c.affiliate_id = $1::bigint) AND ($2::text IS NULL OR c.status = $2::text)
        AND ($3::date IS NULL OR c.paid_at >= $3::date) AND ($4::date IS NULL OR c.paid_at < $4::date + 1)
-     ORDER BY c.id`,
+     ORDER BY c.id DESC`,
   attributions: `
     SELECT t.referred_identifier, t.affiliate_id, a.code, t.source, t.attributed_at, t.status, t.status_reason
       FROM affiliate_attributions t JOIN affiliates a ON a.id = t.affiliate_id
      WHERE ($1::bigint IS NULL OR t.affiliate_id = $1::bigint) AND ($2::text IS NULL OR t.status = $2::text)
        AND ($3::date IS NULL OR t.attributed_at >= $3::date) AND ($4::date IS NULL OR t.attributed_at < $4::date + 1)
-     ORDER BY t.attributed_at`,
+     ORDER BY t.attributed_at DESC`,
   payouts: `
     SELECT p.id, p.affiliate_id, a.code, p.period_month, p.amount_usd, p.coin, p.network, p.to_address, p.status,
            p.tx_hash, p.amount_coin, p.created_by, p.created_at, p.sent_marked_at, p.sent_marked_by,
@@ -71,7 +72,7 @@ const QUERIES: Record<string, string> = {
       FROM affiliate_payouts p JOIN affiliates a ON a.id = p.affiliate_id
      WHERE ($1::bigint IS NULL OR p.affiliate_id = $1::bigint) AND ($2::text IS NULL OR p.status = $2::text)
        AND ($3::date IS NULL OR p.created_at >= $3::date) AND ($4::date IS NULL OR p.created_at < $4::date + 1)
-     ORDER BY p.id`,
+     ORDER BY p.id DESC`,
   clicks: `
     SELECT (k.clicked_at AT TIME ZONE 'UTC')::date AS day, k.affiliate_id, a.code,
            substring(k.landing from '[?&]utm_source=([^&]*)') AS utm_source,
@@ -81,13 +82,13 @@ const QUERIES: Record<string, string> = {
      WHERE ($1::bigint IS NULL OR k.affiliate_id = $1::bigint)
        AND ($3::date IS NULL OR k.clicked_at >= $3::date) AND ($4::date IS NULL OR k.clicked_at < $4::date + 1)
      GROUP BY 1, 2, 3, 4, 5
-     ORDER BY 1, 2`,
+     ORDER BY 1 DESC, 2`,
   actions: `
     SELECT id, at, actor, action, affiliate_id, target, reason, detail
       FROM affiliate_admin_actions
      WHERE ($1::bigint IS NULL OR affiliate_id = $1::bigint) AND ($2::text IS NULL OR action = $2::text)
        AND ($3::date IS NULL OR at >= $3::date) AND ($4::date IS NULL OR at < $4::date + 1)
-     ORDER BY id`,
+     ORDER BY id DESC`,
 };
 
 export async function GET(req: NextRequest) {

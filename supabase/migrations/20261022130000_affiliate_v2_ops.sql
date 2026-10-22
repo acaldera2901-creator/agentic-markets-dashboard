@@ -197,6 +197,11 @@ BEGIN
   IF p.status = 'created' AND v_astatus <> 'active' AND p.sent_marked_at IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'affiliate_not_active', 'affiliate_status', v_astatus);
   END IF;
+  -- Review indipendente P1-2: la marca del secondo operatore è condizione del
+  -- ciclo. Senza, chi ha preparato il payout potrebbe inviare e registrare da solo.
+  IF p.status = 'created' AND p.sent_marked_at IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'not_marked');
+  END IF;
   IF EXISTS (SELECT 1 FROM affiliate_payouts x WHERE x.network = p.network AND x.dropped_tx_hash = p_tx_hash) THEN
     RETURN jsonb_build_object('ok', false, 'error', 'hash_already_used', 'dropped', true);
   END IF;
@@ -321,6 +326,12 @@ BEGIN
   END IF;
   IF p_reason IS NULL OR length(trim(p_reason)) < 3 OR p_by IS NULL OR length(trim(p_by)) < 2 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'reason_required');
+  END IF;
+  -- Review indipendente P2-4: «clear» è una decisione sanzioni nominale (parere
+  -- legale): il cookie condiviso di /admin non è una persona. «blocked» resta
+  -- ammesso: chiude, non apre.
+  IF p_result = 'clear' AND lower(trim(p_by)) IN ('admin-cookie', 'bo:admin-cookie', 'admin') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'named_operators_required');
   END IF;
   SELECT affiliate_id INTO v_aff FROM affiliate_wallets WHERE id = p_wallet_id;
   IF NOT FOUND THEN
@@ -478,10 +489,13 @@ BEGIN
   -- Quattro occhi (parere legale 22/10): chi ha preparato il payout non lo
   -- approva. «admin-cookie» (segreto condiviso di /admin) non è una persona:
   -- non può né preparare né approvare un invio.
-  IF trim(p_by) = 'admin-cookie' OR p.created_by = 'admin-cookie' OR p.created_by = 'admin' THEN
+  -- Review indipendente P2-3: confronti senza maiuscole/spazi («bo:Anna» = «bo:anna»);
+  -- «bo:admin-cookie» è il cookie dichiarato via Bearer.
+  IF lower(trim(p_by)) IN ('admin-cookie', 'bo:admin-cookie', 'admin')
+     OR lower(trim(p.created_by)) IN ('admin-cookie', 'bo:admin-cookie', 'admin') THEN
     RETURN jsonb_build_object('ok', false, 'error', 'named_operators_required');
   END IF;
-  IF trim(p_by) = p.created_by THEN
+  IF lower(trim(p_by)) = lower(trim(p.created_by)) THEN
     RETURN jsonb_build_object('ok', false, 'error', 'same_person', 'created_by', p.created_by);
   END IF;
   SELECT * INTO w FROM affiliate_wallets WHERE id = p.wallet_id;
@@ -491,6 +505,10 @@ BEGIN
   IF w.screening_result <> 'clear' THEN
     RETURN jsonb_build_object('ok', false, 'error',
                               CASE WHEN w.screening_result = 'blocked' THEN 'address_blocked' ELSE 'not_screened' END);
+  END IF;
+  -- Review indipendente (nit): stessa scadenza di affiliate_payout_rows, ricontrollata all'invio.
+  IF w.screening_provider = 'manual' AND w.screened_at < now() - interval '30 days' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'screening_stale');
   END IF;
 
   UPDATE affiliate_payouts SET sent_marked_at = now(), sent_marked_by = trim(p_by) WHERE id = p_id;
@@ -518,6 +536,11 @@ DECLARE
 BEGIN
   IF p_reason IS NULL OR length(trim(p_reason)) < 3 OR p_by IS NULL OR length(trim(p_by)) < 2 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'reason_required');
+  END IF;
+  -- Review indipendente P2-4: «nessun fondo è partito» la dichiara una persona
+  -- (smarcare + annullare + ricreare è la finestra di doppio pagamento).
+  IF lower(trim(p_by)) IN ('admin-cookie', 'bo:admin-cookie', 'admin') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'named_operators_required');
   END IF;
   SELECT affiliate_id INTO v_aff FROM affiliate_payouts WHERE id = p_id;
   IF NOT FOUND THEN

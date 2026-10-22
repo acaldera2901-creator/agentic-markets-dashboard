@@ -51,6 +51,7 @@ export const TX_ERROR_TEXT: Record<string, string> = {
   nonce_unknown: "Per questo payout non è registrato il nonce dell'invio: il server non può verificare che la transazione sia davvero sparita, quindi non annulla. Il payout resta com'è; se serve, gestiscilo a mano.",
   too_recent: "Sono passati meno di 30 minuti dalla registrazione dell'hash: riprova dopo.",
   affiliate_not_active: "L'affiliato non è attivo: non si registra niente. Se i fondi sono già partiti, gestiscili a mano.",
+  not_marked: "Il payout non è stato approvato e marcato «in uscita» da un secondo operatore nominato (backoffice): non si registra niente. Non inviare fondi prima della marca.",
   "origin not allowed": "Richiesta bloccata (origine non ammessa). Ricarica la pagina admin.",
   payouts_off: "I payout non sono attivi (AFFILIATE_PAYOUTS=off): non si registra niente.",
   payout_from_not_configured: "Il wallet di uscita non è configurato.",
