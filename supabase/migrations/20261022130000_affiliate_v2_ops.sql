@@ -449,9 +449,10 @@ LANGUAGE plpgsql
 SET search_path = public
 AS $$
 DECLARE
-  v_aff  bigint;
-  p      affiliate_payouts%ROWTYPE;
-  w      affiliate_wallets%ROWTYPE;
+  v_aff      bigint;
+  v_astatus  text;
+  p          affiliate_payouts%ROWTYPE;
+  w          affiliate_wallets%ROWTYPE;
 BEGIN
   IF p_by IS NULL OR length(trim(p_by)) < 2 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'actor_required');
@@ -460,7 +461,7 @@ BEGIN
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_found');
   END IF;
-  PERFORM 1 FROM affiliates WHERE id = v_aff FOR UPDATE;
+  SELECT status INTO v_astatus FROM affiliates WHERE id = v_aff FOR UPDATE;
   SELECT * INTO p FROM affiliate_payouts WHERE id = p_id FOR UPDATE;
   IF p.status <> 'created' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_created', 'status', p.status);
@@ -468,6 +469,11 @@ BEGIN
   IF p.sent_marked_at IS NOT NULL THEN
     RETURN jsonb_build_object('ok', true, 'payout_id', p_id, 'already', true,
                               'sent_marked_at', p.sent_marked_at, 'sent_marked_by', p.sent_marked_by);
+  END IF;
+  -- Review Codex: un nuovo invio solo verso un affiliato attivo (un payout
+  -- created di un sospeso esiste solo se era marcato e poi smarcato).
+  IF v_astatus <> 'active' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'affiliate_not_active', 'affiliate_status', v_astatus);
   END IF;
   -- Quattro occhi (parere legale 22/10): chi ha preparato il payout non lo
   -- approva. «admin-cookie» (segreto condiviso di /admin) non è una persona:
@@ -505,8 +511,10 @@ LANGUAGE plpgsql
 SET search_path = public
 AS $$
 DECLARE
-  v_aff  bigint;
-  p      affiliate_payouts%ROWTYPE;
+  v_aff        bigint;
+  v_astatus    text;
+  v_cancelled  bigint[] := '{}';
+  p            affiliate_payouts%ROWTYPE;
 BEGIN
   IF p_reason IS NULL OR length(trim(p_reason)) < 3 OR p_by IS NULL OR length(trim(p_by)) < 2 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'reason_required');
@@ -515,7 +523,7 @@ BEGIN
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_found');
   END IF;
-  PERFORM 1 FROM affiliates WHERE id = v_aff FOR UPDATE;
+  SELECT status INTO v_astatus FROM affiliates WHERE id = v_aff FOR UPDATE;
   SELECT * INTO p FROM affiliate_payouts WHERE id = p_id FOR UPDATE;
   IF p.status <> 'created' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_created', 'status', p.status);
@@ -524,10 +532,17 @@ BEGIN
     RETURN jsonb_build_object('ok', true, 'payout_id', p_id, 'already', true);
   END IF;
   UPDATE affiliate_payouts SET sent_marked_at = NULL, sent_marked_by = NULL WHERE id = p_id;
+  -- Review Codex: se l'affiliato non è più attivo, il payout smarcato fa la
+  -- fine che avrebbe fatto alla sospensione (annullato, commissioni payable).
+  IF v_astatus <> 'active' THEN
+    v_cancelled := affiliate_cancel_created_payouts(v_aff, 'affiliate_suspended', 'affiliate_' || v_astatus);
+  END IF;
   INSERT INTO affiliate_admin_actions (actor, action, affiliate_id, target, reason, detail)
   VALUES (trim(p_by), 'payout_unmarked_sent', v_aff, 'payout:' || p_id, trim(p_reason),
-          jsonb_build_object('was_marked_at', p.sent_marked_at, 'was_marked_by', p.sent_marked_by));
-  RETURN jsonb_build_object('ok', true, 'payout_id', p_id, 'already', false);
+          jsonb_build_object('was_marked_at', p.sent_marked_at, 'was_marked_by', p.sent_marked_by,
+                             'cancelled_payout_ids', to_jsonb(v_cancelled)));
+  RETURN jsonb_build_object('ok', true, 'payout_id', p_id, 'already', false,
+                            'cancelled_payout_ids', to_jsonb(v_cancelled));
 END;
 $$;
 

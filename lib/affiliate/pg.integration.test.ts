@@ -744,6 +744,23 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect((await h.sql!`SELECT status FROM affiliate_commissions`)[0].status).toBe("payable");
   });
 
+  it("OPS (review Codex) sospeso con payout marcato: smarcare lo annulla, e non si rimarca", async () => {
+    await payableAlice();
+    h.screen = "none";
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "nessun match" }), idp(1));
+    await admin.POST(bo("anna@maven", { month: month(), ids: [1], expected_total: "60.00" }));
+    await mark.POST(bo("michele@maven"), idp(1));
+    await status.POST(bo("anna@maven", { status: "suspended", reason: "verifica" }), idp(1));
+    expect(await (await unmark.POST(bo("michele@maven", { reason: "nessun invio partito" }), idp(1))).json()).toMatchObject({ ok: true, cancelled_payout_ids: [1] });
+    expect(await (await mark.POST(bo("michele@maven"), idp(1))).json()).toMatchObject({ error: "not_created" });
+    expect((await h.sql!`SELECT status FROM affiliate_commissions`)[0].status).toBe("payable");
+  });
+
   it("OPS fraud_review: void annulla le commissioni ferme; valid le fa maturare; terminated è definitivo", async () => {
     await h.sql!.unsafe(`
       INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
