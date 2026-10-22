@@ -93,6 +93,13 @@ function maxMonths(raw: string | undefined, fallback: number | null): number | n
  * con AFFILIATE_MODE=off e AFFILIATE_PAYOUTS=live un payout già maturato si può
  * ancora creare e registrare. Per fermare i soldi in uscita: AFFILIATE_PAYOUTS=off.
  */
+/** #AFFILIATE-TERMS-V3-1022 — vero se gli HMAC antifrode (IP|giorno, UA) vengono davvero scritti:
+ *  stessa soglia di hashIp (lib/affiliate/account.ts). Lo legge la Privacy per pubblicare il paragrafo
+ *  solo quando il trattamento esiste. Mai il valore: solo la sua presenza. */
+export function affiliateHashEnabled(env: Env = process.env): boolean {
+  return (env.AFFILIATE_HASH_SECRET ?? "").length >= 16;
+}
+
 export function affiliateMode(env: Env = process.env): AffiliateMode {
   const m = (env.AFFILIATE_MODE ?? "").trim().toLowerCase();
   return m === "shadow" || m === "live" ? m : "off";

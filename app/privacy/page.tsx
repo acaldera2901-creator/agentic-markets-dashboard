@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ClassicChrome from "@/components/classic/ClassicChrome";
 import { LEGAL_ENTITY, PRIVACY_CONTROLLER } from "@/lib/legal-entity";
+import { affiliateHashEnabled } from "@/lib/affiliate/config";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | BetRedge",
@@ -170,6 +171,13 @@ export default function PrivacyPage() {
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">11. Subscription Affiliate Program</h2>
           <p className="text-xs leading-relaxed">If you enroll in our subscription affiliate program, we store your referral code, accepted terms version and timestamps, referral attribution, commission and adjustment records. If you register a payout wallet, we also store your legal name, country, declarations, selected asset and network, wallet-address history and verification status. These records are used to administer the program and verify eligibility, prevent abuse and prepare payments, on the basis of the affiliate agreement, applicable legal obligations and our legitimate interest in fraud prevention.</p>
           <p className="text-xs leading-relaxed">Affiliates receive masked information about referred accounts, not their full contact details. Wallet addresses and any payment transactions on a public blockchain are publicly visible; BetRedge cannot erase blockchain records. We never request wallet private keys or recovery phrases. The retention and rights described above apply to our own records, subject to applicable accounting obligations and unresolved payment disputes. Contact info@betredge.com to exercise your rights or close your affiliate account.</p>
+          {/* #AFFILIATE-TERMS-V3-1022 — parere legale §4.2, esteso ai click su /r/CODE. Pubblicato SOLO quando
+              AFFILIATE_HASH_SECRET è impostato: senza segreto nessun HMAC viene scritto e il paragrafo direbbe il
+              falso. Prerequisito prima di impostare il segreto: la pulizia a 90 giorni di affiliate_referral_clicks
+              (PROPOSAL, non ancora nel codice). La pagina si rigenera al deploy che segue il cambio di env. */}
+          {affiliateHashEnabled() && (
+            <p className="text-xs leading-relaxed" data-testid="privacy-affiliate-hmac"><strong className="text-[var(--am-text)]">Fraud checks.</strong> To detect self-referrals and count referral-link visits, when an affiliate uses their account, when a user registers through a referral link and when anyone opens an affiliate&apos;s referral link (betredge.com/r/CODE), we store a keyed hash (HMAC) of the IP address combined with the date and, for link visits, a keyed hash of the browser user-agent — never the IP address or user-agent itself. If an affiliate and a referred user appear from the same address within 24 hours, the related commission is held for manual review; this has no effect on the referred user&apos;s account. These records are deleted after 90 days. Legal basis: our legitimate interest in preventing fraud and measuring the program (Art. 6(1)(f) GDPR); you can object as described in Section 7.</p>
+          )}
           <p className="text-xs leading-relaxed"><strong className="text-[var(--am-text)]">If you were invited by an affiliate.</strong> We record which affiliate invited you and whether your purchases qualify for a commission. The affiliate sees only masked information about you (never your email or name) and the commission amounts.</p>
           <p className="text-xs leading-relaxed">See the <Link href="/affiliates/terms" className="underline">Affiliate Program Terms</Link> for the commission and payment conditions.</p>
         </section>
