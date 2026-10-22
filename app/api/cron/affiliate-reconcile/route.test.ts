@@ -30,17 +30,21 @@ describe("affiliate reconcile cron", () => {
   it("gira anche in shadow; nulla da recuperare → nessun alert", async () => {
     vi.stubEnv("CRON_SECRET", "secret");
     vi.stubEnv("AFFILIATE_MODE", "shadow");
-    reconcile.mockResolvedValue({ checked: 3, written: 0, reasons: { outside_attribution_window: 3 } });
-    expect(await (await GET(req())).json()).toEqual({ ok: true, checked: 3, written: 0, reasons: { outside_attribution_window: 3 } });
+    const r = { checked: 3, written: 0, reasons: { outside_attribution_window: 3 }, shopify_manual: [], truncated: false };
+    reconcile.mockResolvedValue(r);
+    expect(await (await GET(req())).json()).toEqual({ ok: true, ...r });
     expect(opsAlert).not.toHaveBeenCalled();
   });
 
   it("una commissione recuperata è un segnale: alert ops", async () => {
     vi.stubEnv("CRON_SECRET", "secret");
     vi.stubEnv("AFFILIATE_MODE", "live");
-    reconcile.mockResolvedValue({ checked: 1, written: 1, reasons: { pending: 1 } });
+    reconcile.mockResolvedValue({ checked: 2, written: 1, reasons: { pending: 1 }, shopify_manual: ["s-9"], truncated: false });
     await GET(req());
-    expect(opsAlert).toHaveBeenCalledWith("affiliate-reconcile", [expect.stringContaining("recuperate: 1")]);
+    expect(opsAlert).toHaveBeenCalledWith("affiliate-reconcile", [
+      expect.stringContaining("recuperate: 1"),
+      expect.stringContaining("da verificare a mano: s-9"),
+    ]);
   });
 
   it("errore → 503, non un finto ok", async () => {

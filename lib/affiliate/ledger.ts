@@ -41,6 +41,12 @@ export type RecordCommissionInput = {
   /** Data dell'incasso. */
   paidAt: Date;
   meta?: NetMeta;
+  /** Recupero dalla riconciliazione (#AFFILIATE-RECONCILE-1022): il pagamento è
+   *  vecchio e altri del referito possono essere già nel ledger DOPO di lui. Il
+   *  suo indice conta solo le righe pagate PRIMA (in ordine di incasso), non
+   *  tutte: altrimenti prenderebbe l'indice di un pagamento successivo e il
+   *  vincolo (referito, indice) lo respingerebbe per sempre. */
+  recovery?: boolean;
 };
 
 export type LedgerOutcome = { written: boolean; reason: string };
@@ -243,12 +249,18 @@ async function historicPayments(referred: string, attributedAtISO: string, curre
   return Number(rows[0]?.n ?? 0);
 }
 
-async function ledgerPayments(referred: string): Promise<number> {
-  const rows = await dbQueryStrict<{ n: number | string }>(
-    `SELECT COUNT(*)::int AS n FROM affiliate_commissions
-      WHERE referred_identifier = $1 AND kind IN ('first','renewal')`,
-    [referred]
-  );
+async function ledgerPayments(referred: string, paidBeforeISO?: string): Promise<number> {
+  const rows = paidBeforeISO
+    ? await dbQueryStrict<{ n: number | string }>(
+        `SELECT COUNT(*)::int AS n FROM affiliate_commissions
+          WHERE referred_identifier = $1 AND kind IN ('first','renewal') AND paid_at < $2::timestamptz`,
+        [referred, paidBeforeISO]
+      )
+    : await dbQueryStrict<{ n: number | string }>(
+        `SELECT COUNT(*)::int AS n FROM affiliate_commissions
+          WHERE referred_identifier = $1 AND kind IN ('first','renewal')`,
+        [referred]
+      );
   return Number(rows[0]?.n ?? 0);
 }
 
@@ -286,7 +298,8 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   const payingReferred = await payingReferredCount(Number(attribution.affiliate_id), config.mode);
 
   for (let attempt = 0; attempt < MAX_INDEX_ATTEMPTS; attempt++) {
-    const renewalIndex = historic + (await ledgerPayments(referred));
+    const renewalIndex =
+      historic + (await ledgerPayments(referred, input.recovery ? input.paidAt.toISOString() : undefined));
     const d = decideCommission({
       mode: config.mode,
       config,

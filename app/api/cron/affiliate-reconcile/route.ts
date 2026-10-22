@@ -19,11 +19,16 @@ export async function GET(req: Request) {
   if (affiliateMode() === "off") return NextResponse.json({ ok: true, skipped: true });
   try {
     const r = await reconcileAffiliateLedger();
-    if (r.written > 0 || (r.reasons.error ?? 0) > 0) {
-      await opsAlert("affiliate-reconcile", [
-        `commissioni recuperate: ${r.written} su ${r.checked} pagamenti senza riga; esiti ${JSON.stringify(r.reasons)}`,
-      ]);
+    const lines: string[] = [];
+    if (r.written > 0 || (r.reasons.error ?? 0) > 0 || r.truncated) {
+      lines.push(
+        `commissioni recuperate: ${r.written} su ${r.checked} pagamenti senza riga; esiti ${JSON.stringify(r.reasons)}${r.truncated ? " (troncato: riprende al prossimo giro)" : ""}`
+      );
     }
+    if (r.shopify_manual.length > 0) {
+      lines.push(`ordini Shopify di referiti senza commissione, da verificare a mano: ${r.shopify_manual.join(", ")}`);
+    }
+    if (lines.length > 0) await opsAlert("affiliate-reconcile", lines);
     return NextResponse.json({ ok: true, ...r });
   } catch (e) {
     console.error("[affiliate/reconcile] failed:", String(e));
