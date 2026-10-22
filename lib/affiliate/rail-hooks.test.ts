@@ -327,11 +327,11 @@ describe("rail Shopify", () => {
     });
   };
 
-  it("webhook orders/paid: tasse dedotte dal netto, idempotenza non toccata", async () => {
+  it("webhook orders/paid: base lorda, tasse comprese (#AFFILIATE-TERMS-V3-1022), idempotenza non toccata", async () => {
     railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
     const { POST } = await import("@/app/api/shopify/webhook/route");
     const payload = { id: 903, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "18.29", total_tax: "3.30", currency: "USD" };
-    const off = await guard(() => POST(shopReq(payload)), ["shopify", "903", 18.29, 14.99]);
+    const off = await guard(() => POST(shopReq(payload)), ["shopify", "903", 18.29, 18.29]);
     expect(off.result).toEqual({ status: 200, json: { received: true } });
     expect(off.railCalls.some((c) => /DELETE FROM shopify_events/.test(c.sql))).toBe(false);
   });

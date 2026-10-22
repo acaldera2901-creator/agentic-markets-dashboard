@@ -345,9 +345,9 @@ describe("recordAffiliateCommissionSafe", () => {
     expect(log.mock.calls.flat().join(" ")).not.toContain("u@t.com");
   });
 
-  it("tasse dedotte dal netto", async () => {
+  it("#AFFILIATE-TERMS-V3-1022 base lorda: tasse NON dedotte", async () => {
     await recordAffiliateCommissionSafe(input({ rail: "shopify", grossUsd: 18.29, meta: { taxUsd: 3.3 } }));
-    expect(state.commissions[0].params.slice(5, 9)).toEqual([18.29, 14.99, 0.2, 3]);
+    expect(state.commissions[0].params.slice(5, 9)).toEqual([18.29, 18.29, 0.2, 3.66]);
   });
 
   it("DB giù: non lancia mai, ritorna error", async () => {

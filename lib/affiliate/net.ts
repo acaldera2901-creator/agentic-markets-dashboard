@@ -1,17 +1,16 @@
 // lib/affiliate/net.ts — #AFFILIATE-V2-0930
-// Il NETTO su cui si calcola la commissione. Pura, niente DB.
+// La BASE su cui si calcola la commissione. Pura, niente DB.
 //
-// Netto = lordo dell'abbonamento − IVA/sales tax − importo rimborsato − fee del
-// processore (decisione di Andrea, 2026-09-30: «netto senza IVA/rimborsi/fee»).
+// #AFFILIATE-TERMS-V3-1022 — termini aff-2026-10-22-v3 (decisione di Andrea,
+// 22/10/2026): base LORDA = prezzo pagato dal cliente, imposte comprese, fee
+// del processore e di rete NON dedotte. Si sottrae solo la parte già rimborsata
+// al momento dell'incasso (i rimborsi successivi sono reversal/clawback).
+// `taxUsd` e `feeUsd` restano nel tipo (i rail li passano) ma non riducono più
+// la base; un valore non valido rende comunque l'importo non verificabile (null).
+// Prima: «netto senza IVA/rimborsi/fee» (decisione 2026-09-30, termini v1/v2).
 // Non conosce depositi, perdite o link bookmaker: le sue sole fonti sono gli
 // ordini dei rail e l'invoice Stripe, passati dal chiamante.
 //
-// ⚠ LIMITE NOTO (fee): oggi nessun rail espone la fee del processore nei punti
-// in cui si incassa (paygate_orders/paypal_orders/shopify_events/invoice Stripe
-// non la portano). Una fee NON fornita vale 0, cioè NON viene dedotta: in shadow
-// il netto è sovrastimato della fee. Va chiuso prima del `live` (upgrade path:
-// il chiamante legge la fee dal rail — PayPal seller_receivable_breakdown,
-// Stripe balance_transaction — e la passa in `feeUsd`).
 
 export type AffiliateRail = "paygate" | "crypto" | "paypal" | "shopify" | "stripe" | "admin";
 
@@ -34,7 +33,7 @@ function component(v: number | null | undefined): number | null {
   return Number.isFinite(v) && v >= 0 ? v : null;
 }
 
-/** Netto in USD arrotondato a 2 decimali, oppure `null` quando non si può
+/** Base (lordo meno il già rimborsato) in USD arrotondata a 2 decimali, oppure `null` quando non si può
  *  calcolare senza inventare: lordo assente (es. righe Shopify storiche con
  *  `amount` NULL) o non valido, una componente non valida, o il rail `admin`
  *  (attivazioni manuali USDT: nessuna commissione, decisione di Andrea).
@@ -51,7 +50,7 @@ export function netAmount(
   const refunded = component(meta.refundedUsd);
   const fee = component(meta.feeUsd);
   if (tax == null || refunded == null || fee == null) return null;
-  return Math.max(0, round2(gross - tax - refunded - fee));
+  return Math.max(0, round2(gross - refunded));
 }
 
 function money(v: unknown): number | null {

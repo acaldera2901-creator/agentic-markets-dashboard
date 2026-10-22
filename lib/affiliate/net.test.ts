@@ -50,20 +50,20 @@ describe("netAmount (#AFFILIATE-V2-0930)", () => {
     expect(netAmount("paypal", 14.99)).toBe(14.99);
   });
 
-  it("IVA esclusa", () => {
-    expect(netAmount("shopify", 18.29, { taxUsd: 3.3 })).toBe(14.99);
+  it("#AFFILIATE-TERMS-V3-1022 base lorda: le imposte NON si deducono", () => {
+    expect(netAmount("shopify", 18.29, { taxUsd: 3.3 })).toBe(18.29);
   });
 
   it("rimborso parziale sottratto", () => {
     expect(netAmount("stripe", 29.99, { refundedUsd: 10 })).toBe(19.99);
   });
 
-  it("fee del processore sottratta quando il rail la fornisce", () => {
-    expect(netAmount("paypal", 14.99, { feeUsd: 0.99 })).toBe(14);
+  it("#AFFILIATE-TERMS-V3-1022 base lorda: la fee del processore NON si deduce", () => {
+    expect(netAmount("paypal", 14.99, { feeUsd: 0.99 })).toBe(14.99);
   });
 
-  it("tutte le componenti insieme", () => {
-    expect(netAmount("stripe", 24.4, { taxUsd: 4.4, refundedUsd: 5, feeUsd: 1 })).toBe(14);
+  it("tutte le componenti insieme: si sottrae solo il già rimborsato", () => {
+    expect(netAmount("stripe", 24.4, { taxUsd: 4.4, refundedUsd: 5, feeUsd: 1 })).toBe(19.4);
   });
 
   it("amount NULL → null: mai commissione su un importo inventato", () => {
