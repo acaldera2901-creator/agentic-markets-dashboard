@@ -31,10 +31,14 @@
 -- l'originale e lasciava lo storno `pending` fino al giro successivo, e un
 -- payout creato nel mezzo pagava la commissione intera (review Codex #2).
 --
--- LIMITE NOTO: un rimborso la cui quota di commissione arrotonda a 0 (meno di
--- mezzo centesimo) non si registra (il CHECK vieta una riga negativa da 0), e il
--- suo lordo non entra nel cumulato: su una serie di micro-rimborsi può restare
--- 1 centesimo di commissione. Accettato: importo trascurabile.
+-- LIMITE NOTO (debito accettato, review Codex #3): un rimborso la cui quota di
+-- commissione arrotonda a 0 (meno di mezzo centesimo: rimborsi sotto ~2,5 cent
+-- al 20%) non si registra — il CHECK vieta una riga negativa da 0 — e il suo
+-- lordo non entra nel cumulato. N micro-rimborsi seguiti dal saldo possono
+-- lasciare fino a N centesimi di commissione, e quel referito resta «pagante»
+-- per lo scaglione. Nessun rail oggi emette rimborsi di pochi centesimi su
+-- abbonamenti da 14,99 $ in su. Upgrade path: colonna refunded_gross sulla riga
+-- originale, aggiornata anche quando la quota è zero.
 --
 -- NON si applica da sola: workflow_dispatch con `approved_sha`. Idempotente
 -- (CREATE OR REPLACE). Rollback: DROP della funzione di storno e ri-esecuzione
