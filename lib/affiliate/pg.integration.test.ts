@@ -606,4 +606,44 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     ]);
   });
 
+  // #AFFILIATE-FINGERPRINTS-1022 — dalla scrittura del fingerprint al verdetto del ledger.
+  it("R4 stesso IP di affiliato e referito entro 24h → attribuzione fraud_review (commissione ferma, non rifiutata)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    vi.stubEnv("AFFILIATE_HASH_SECRET", "x".repeat(32));
+    await h.sql!.unsafe(`
+      CREATE TABLE IF NOT EXISTS paygate_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, coin text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS paypal_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, status text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
+      TRUNCATE affiliate_payer_fingerprints;
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io','ALICE',now() - interval '1 day'), ('other@x.io','ALICE',now() - interval '1 day');`);
+    const { recordIpFingerprintSafe } = await import("@/lib/affiliate/fingerprints");
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    const H = 3_600_000;
+    const t0 = Date.now();
+    // Alice vista il giorno -3 e di nuovo poco fa; Ref si registra subito dopo dallo stesso IP.
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9", new Date(t0 - 72 * H))).toBe(true);
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9", new Date(t0 - 2 * H))).toBe(true);
+    expect(await recordIpFingerprintSafe("Ref@x.io", "9.9.9.9", new Date(t0 - 1 * H))).toBe(true);
+    // Other: stesso IP, ma a 28 h dalla visita recente di Alice e a 42 h da quella vecchia → nessun segnale.
+    expect(await recordIpFingerprintSafe("other@x.io", "9.9.9.9", new Date(t0 - 30 * H))).toBe(true);
+    // Ripetere lo stesso giorno non duplica né sposta la prima vista del giorno.
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9", new Date(t0))).toBe(true);
+    const [c] = await h.sql!`SELECT COUNT(*)::int AS n FROM affiliate_payer_fingerprints WHERE identifier = 'alice@x.io'`;
+    expect(c.n).toBeLessThanOrEqual(4);
+    const pay = (identifier: string, ref: string) =>
+      recordAffiliateCommissionSafe({ identifier, rail: "paygate", paymentRef: ref, grossUsd: 14.99, paidAt: new Date() });
+    expect(await pay("ref@x.io", "pg-1")).toEqual({ written: true, reason: "shadow" });
+    expect(await pay("other@x.io", "pg-2")).toEqual({ written: true, reason: "shadow" });
+    expect(await h.sql!`SELECT referred_identifier AS who, status, status_reason AS why FROM affiliate_attributions ORDER BY 1`).toEqual([
+      { who: "other@x.io", status: "valid", why: null },
+      { who: "ref@x.io", status: "fraud_review", why: "shared_ip_24h" },
+    ]);
+    // Conservazione: oltre 90 giorni le righe ip_hash spariscono alla scrittura successiva.
+    await h.sql!`UPDATE affiliate_payer_fingerprints SET seen_at = now() - interval '91 days' WHERE identifier = 'other@x.io'`;
+    await recordIpFingerprintSafe("new@x.io", "7.7.7.7");
+    expect((await h.sql!`SELECT DISTINCT identifier FROM affiliate_payer_fingerprints ORDER BY 1`).map((r) => r.identifier)).toEqual(["alice@x.io", "new@x.io", "ref@x.io"]);
+    await h.sql!`TRUNCATE affiliate_payer_fingerprints`; // non sporcare il test di rollback
+  });
 });

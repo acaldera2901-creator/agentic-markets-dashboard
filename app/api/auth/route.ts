@@ -18,6 +18,7 @@ import { grantInviteeBonus } from "@/lib/referral-rewards";
 import { assertConsent, ConsentError } from "./consent";
 import { CURRENT_CONSENT_VERSION } from "@/lib/legal-version";
 import { acquisitionJson } from "@/lib/attribution";
+import { scheduleIpFingerprint } from "@/lib/affiliate/fingerprints";
 
 export const dynamic = "force-dynamic";
 
@@ -458,6 +459,9 @@ export async function POST(req: Request) {
       }
     }
     scheduleBusinessEvent({type:'signup_created',identifier});
+    // #AFFILIATE-FINGERPRINTS-1022 — solo chi arriva con un codice: l'IP (HMAC)
+    // serve all'anti-self-referral alla sua prima conversione. Dopo la risposta.
+    if (referredBy) scheduleIpFingerprint(identifier, clientIp(req));
     // When email confirmation isn't available, auto-activate + sign in (the
     // pre-HIGH-3 behavior) so signup→login→checkout work without a mail provider.
     if (!emailActivationRequired()) {
