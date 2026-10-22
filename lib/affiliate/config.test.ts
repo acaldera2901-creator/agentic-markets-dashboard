@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
+  AFFILIATE_TERMS_PUBLISHED_VERSION,
   affiliateConfig,
   affiliateMode,
   affiliatePayoutMinRatio,
@@ -161,7 +164,18 @@ describe("affiliateTermsVersion (PR-5)", () => {
     expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: "  " })).toBeNull();
   });
   it("versione valida, spazi tolti", () => {
-    expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: " 2026-11-v1 " })).toBe("2026-11-v1");
+    expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: ` ${AFFILIATE_TERMS_PUBLISHED_VERSION} ` })).toBe(AFFILIATE_TERMS_PUBLISHED_VERSION);
+  });
+  it("env rimasto a una versione vecchia: si registra la versione del testo pubblicato, non quella dell'env", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: "aff-2026-10-20-v1" })).toBe(AFFILIATE_TERMS_PUBLISHED_VERSION);
+    expect(err).toHaveBeenCalledWith(expect.stringContaining("aff-2026-10-20-v1"));
+    err.mockRestore();
+  });
+  it("la pagina dei termini mostra la stessa versione che si registra", () => {
+    const page = readFileSync(path.join(__dirname, "../../app/affiliates/terms/page.tsx"), "utf8");
+    expect(page).toContain("Version {AFFILIATE_TERMS_PUBLISHED_VERSION}");
+    expect(page).not.toMatch(/Version aff-\d/);
   });
   it("valore malformato → null, non un testo arbitrario nel registro dei consensi", () => {
     expect(affiliateTermsVersion({ AFFILIATE_TERMS_VERSION: "v1; DROP TABLE" })).toBeNull();

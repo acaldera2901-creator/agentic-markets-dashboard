@@ -11,7 +11,7 @@
 
 import { catalogContracts } from "@/lib/crypto-coins";
 import { PAYOUT_COINS, PAYOUT_NETWORKS, type PayoutCoin, type PayoutNetwork } from "./wallet";
-import { DEFAULT_TIERS, parseTiers, type TierStep } from "./tiers";
+import { DEFAULT_TIERS, effectiveTiers, parseTiers, type TierStep } from "./tiers";
 
 export type AffiliateMode = "off" | "shadow" | "live";
 
@@ -100,10 +100,12 @@ export function affiliateMode(env: Env = process.env): AffiliateMode {
 
 export function affiliateConfig(env: Env = process.env): AffiliateConfig {
   const d = AFFILIATE_DEFAULTS;
+  const renewalRate = rate(env.AFFILIATE_RENEWAL_RATE, d.RENEWAL_RATE);
   return {
     firstRate: rate(env.AFFILIATE_FIRST_RATE, d.FIRST_RATE),
-    renewalRate: rate(env.AFFILIATE_RENEWAL_RATE, d.RENEWAL_RATE),
-    renewalTiers: parseTiers(env.AFFILIATE_RENEWAL_TIERS, d.RENEWAL_TIERS),
+    renewalRate,
+    // Solo i gradini sopra la base: la scala mostrata e quella applicata coincidono.
+    renewalTiers: effectiveTiers(parseTiers(env.AFFILIATE_RENEWAL_TIERS, d.RENEWAL_TIERS), renewalRate),
     renewalMaxMonths: maxMonths(env.AFFILIATE_RENEWAL_MAX_MONTHS, d.RENEWAL_MAX_MONTHS),
     holdDays: days(env.AFFILIATE_HOLD_DAYS, d.HOLD_DAYS),
     clawbackDays: days(env.AFFILIATE_CLAWBACK_DAYS, d.CLAWBACK_DAYS),
@@ -202,15 +204,32 @@ export function payoutConfig(env: Env = process.env): PayoutConfig {
 
 // ── T&C affiliati (PR-5) ──────────────────────────────────────────────────────
 /**
- * Versione dei T&C affiliati in vigore, da `AFFILIATE_TERMS_VERSION`. Nessun
- * default: i T&C non sono pubblicati e una versione inventata registrerebbe un
- * consenso a un testo che non esiste. Senza env l'iscrizione è chiusa (null).
- * La stessa versione copre la terza spunta (clausole onerose) e le
- * autodichiarazioni D3 al wallet: è un solo documento.
+ * La versione del testo PUBBLICATO in app/affiliates/terms/page.tsx: testo e
+ * versione cambiano insieme, nello stesso commit (#AFFILIATE-TERMS-VERSION-1022).
+ * Prima la versione registrata nel consenso veniva dall'env, il testo dal
+ * codice: due fonti che potevano divergere, e il registro dei consensi avrebbe
+ * nominato un testo diverso da quello mostrato.
  */
+export const AFFILIATE_TERMS_PUBLISHED_VERSION = "aff-2026-10-21-v2";
+
+/**
+ * Versione dei T&C affiliati in vigore, o null = iscrizione chiusa.
+ * `AFFILIATE_TERMS_VERSION` resta l'interruttore «T&C pubblicati» (senza env,
+ * o con un valore malformato, l'iscrizione è chiusa), ma la versione registrata
+ * è SEMPRE quella del testo pubblicato: un env rimasto alla versione precedente
+ * non può far registrare un consenso a un testo che non si vede più (lo si
+ * segnala nel log). La stessa versione copre la terza spunta (clausole onerose)
+ * e le autodichiarazioni D3 al wallet: è un solo documento.
+ */
+let termsMismatchLogged: string | null = null;
 export function affiliateTermsVersion(env: Env = process.env): string | null {
   const v = (env.AFFILIATE_TERMS_VERSION ?? "").trim();
-  return /^[A-Za-z0-9._-]{1,40}$/.test(v) ? v : null;
+  if (!/^[A-Za-z0-9._-]{1,40}$/.test(v)) return null;
+  if (v !== AFFILIATE_TERMS_PUBLISHED_VERSION && termsMismatchLogged !== v) {
+    termsMismatchLogged = v; // una volta per valore e per istanza, non a ogni richiesta
+    console.error(`[affiliate/config] AFFILIATE_TERMS_VERSION=${v} ≠ testo pubblicato ${AFFILIATE_TERMS_PUBLISHED_VERSION}: registro la versione pubblicata`);
+  }
+  return AFFILIATE_TERMS_PUBLISHED_VERSION;
 }
 
 // ── Payout admin (PR-9) ───────────────────────────────────────────────────────

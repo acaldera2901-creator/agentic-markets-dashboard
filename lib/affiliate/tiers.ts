@@ -61,10 +61,19 @@ export type TierPosition = {
   next: TierStep | null;
 };
 
+/** I gradini che alzano davvero il tasso: un gradino con tasso ≤ base (es.
+ *  AFFILIATE_RENEWAL_RATE alzato sopra la scala) non è un livello e non va
+ *  mostrato come «prossimo livello» (#AFFILIATE-TIERS-NEXT-1022). */
+export function effectiveTiers(tiers: readonly TierStep[], baseRate: number): TierStep[] {
+  return tiers.filter((t) => t.rate > baseRate);
+}
+
 /** Il tasso sui rinnovi per `payingReferred` referiti paganti. Una scala vuota
  *  o un conteggio sotto il primo minimo → tasso base. Un gradino con tasso
- *  inferiore alla base non abbassa mai (gli scaglioni solo alzano). */
-export function tierFor(payingReferred: number, baseRate: number, tiers: readonly TierStep[]): TierPosition {
+ *  inferiore o uguale alla base si ignora: gli scaglioni solo alzano, e `next`
+ *  non propone mai un tasso che non è un aumento. */
+export function tierFor(payingReferred: number, baseRate: number, allTiers: readonly TierStep[]): TierPosition {
+  const tiers = effectiveTiers(allTiers, baseRate);
   const n = Number.isFinite(payingReferred) && payingReferred > 0 ? Math.floor(payingReferred) : 0;
   let level = 0;
   let rate = baseRate;
