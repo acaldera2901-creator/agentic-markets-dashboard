@@ -6,7 +6,7 @@ import Dashboard from "../app/page";
 
 export const metadata: Metadata = {
   title: "Invite Friends | BetRedge",
-  description: "Invite friends to BetRedge and unlock rewards as they join. Track your referrals from one panel.",
+  description: "BetRedge affiliate program: a commission on the subscriptions of the people you invite. Track your referrals and commissions from one panel.",
   alternates: { canonical: "/invite" },
 };
 

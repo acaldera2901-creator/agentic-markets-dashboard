@@ -173,3 +173,21 @@ describe("admin: testi", () => {
     expect(nextMonth("2026-12")).toBe("2027-01");
   });
 });
+
+// #INVITE-TIERS-COPY-1022: the static copy (lede, join numbers, rules) spells out
+// the renewal ladder; if the default ladder changes, this fails and the copy must follow.
+describe("copy della scala sui rinnovi = DEFAULT_TIERS", () => {
+  it("lede, numeri d'iscrizione e regole citano ogni gradino (it/en)", async () => {
+    const { DEFAULT_TIERS } = await import("@/lib/affiliate/tiers");
+    for (const l of ["it", "en"] as const) {
+      const c = AFF_COPY[l];
+      for (const text of [c.head.lede, `${c.enroll.t2v} ${c.enroll.t2}`, c.rules.r1]) {
+        expect(text).toMatch(/\b7%/);
+        for (const s of DEFAULT_TIERS) {
+          expect(text, `${l}: ${text}`).toContain(`${Math.round(s.rate * 100)}%`);
+          expect(text, `${l}: ${text}`).toMatch(new RegExp(`\\b${s.min}\\b`));
+        }
+      }
+    }
+  });
+});
