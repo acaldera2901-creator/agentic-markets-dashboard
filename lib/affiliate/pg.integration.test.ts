@@ -158,7 +158,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.stubEnv("AFFILIATE_PAYOUTS", "live");
     vi.stubEnv("AFFILIATE_PAYOUT_FROM", "0x1111111111111111111111111111111111111111");
     await h.sql!.unsafe(`
-      TRUNCATE affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
+      TRUNCATE affiliate_refund_events, affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
                affiliate_referral_clicks, affiliates, profiles RESTART IDENTITY CASCADE;
       INSERT INTO profiles(identifier, referral_code, language) VALUES
         ('alice@x.io', NULL, 'it'), ('bob@x.io', 'BOBBY', 'en');`);
@@ -473,8 +473,88 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await reverse(ev("r1", 33.33));
     await reverse(ev("r2", 33.33));
     await reverse(ev("r3", 33.34));
-    expect((await rows()).map((r) => r.amt)).toEqual([7, -2.33, -2.33, -2.34]);
+    // #AFFILIATE-REFUND-CUMULATIVE-1022: quota sul cumulato (2,33 → 4,67 → 7,00),
+    // non per rimborso (prima -2,33 -2,33 -2,34): stessa somma, esatta a ogni passo.
+    expect((await rows()).map((r) => r.amt)).toEqual([7, -2.33, -2.34, -2.33]);
     expect(await paying("live")).toBe(0);
+  });
+
+  // #AFFILIATE-REFUND-CUMULATIVE-1022 — debito #550 «micro-rimborsi»: la quota di
+  // ogni storno parziale si calcola sul rimborsato CUMULATO (registro degli eventi
+  // di rimborso), non per singolo rimborso. Dopo ogni evento la somma degli storni
+  // è esattamente round(commissione × rimborsato cumulato / lordo, 2).
+  const reversedSum = async () =>
+    Number((await h.sql!`SELECT COALESCE(SUM(-amount_usd),0)::float8 AS s FROM affiliate_commissions WHERE kind IN ('reversal','clawback')`)[0].s);
+  const exact = (amount: number, cumGross: number, gross = 100) => Number((Math.round(amount * cumGross / gross * 100 + 1e-9) / 100).toFixed(2));
+
+  it("R1 micro-rimborsi: 50 rimborsi da 2 cent (quota 0,4 cent l'uno) stornano 20 cent, poi il saldo chiude a zero", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 10);
+    for (let i = 1; i <= 50; i++) {
+      await reverse(ev(`m${i}`, 0.02));
+      expect(await reversedSum()).toBe(exact(20, 0.02 * i));
+    }
+    expect(await reversedSum()).toBe(0.2);
+    expect(await reverse(ev("rest", 99))).toEqual({ written: true, reason: "clawback" });
+    expect(await reversedSum()).toBe(20);
+    expect(await paying("live")).toBe(0);
+    expect(await reverse(ev("late", 0.02))).toEqual({ written: false, reason: "already_reversed" });
+  });
+
+  it("R1 rimborso totale in tranche irregolari: dopo ogni tranche storno = proporzionale esatto sul cumulato, chiusura al centesimo", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 10, 7);
+    const tranches = [0.03, 0.03, 0.03, 0.07, 1.17, 0.01, 12.34, 0.05, 40.4, 0.02];
+    let cum = 0;
+    for (const [i, t] of tranches.entries()) {
+      cum = Math.round((cum + t) * 100) / 100;
+      await reverse(ev(`t${i}`, t));
+      expect(await reversedSum()).toBe(exact(7, cum));
+    }
+    await reverse(ev("final", Math.round((100 - cum) * 100) / 100));
+    expect(await reversedSum()).toBe(7);
+    expect((await rows())[0]).toMatchObject({ kind: "first", status: "reversed" });
+    expect(await paying("live")).toBe(0);
+    // Il lordo delle righe di storno somma il rimborsato (anche i micro senza riga).
+    const [g] = await h.sql!`SELECT SUM(-gross_usd)::float8 AS g FROM affiliate_commissions WHERE kind = 'reversal'`;
+    expect(g.g).toBe(100);
+  });
+
+  it("R1 rimborso oltre la commissione residua: storna solo il residuo, mai sotto zero", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 10);
+    expect(await reverse(ev("r1", 50))).toEqual({ written: true, reason: "clawback" });
+    expect(await reverse(ev("r2", 80))).toEqual({ written: true, reason: "clawback" });
+    expect(await reversedSum()).toBe(20);
+    expect(await reverse(ev("r3", 150))).toEqual({ written: false, reason: "already_reversed" });
+    expect(await reversedSum()).toBe(20);
+  });
+
+  it("R1 redelivery idempotente anche per un micro-rimborso senza riga: il suo lordo conta una volta sola", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 10);
+    expect(await reverse(ev("m1", 0.02))).toEqual({ written: false, reason: "zero_amount" });
+    const again = await Promise.all([reverse(ev("m1", 0.02)), reverse(ev("m1", 0.02)), reverse(ev("m1", 0.02))]);
+    expect(again).toEqual(Array(3).fill({ written: false, reason: "duplicate" }));
+    const [e] = await h.sql!`SELECT count(*)::int AS n, SUM(refunded_usd)::float8 AS g FROM affiliate_refund_events WHERE rail_payment_ref = 'o1'`;
+    expect(e).toEqual({ n: 1, g: 0.02 });
+    // 0,02 + 0,01 = 0,03 → 0,006 → 0,01. Se m1 contasse 4 volte: 0,09 → 0,018 → 0,02.
+    expect(await reverse(ev("m2", 0.01))).toEqual({ written: true, reason: "reversal" });
+    expect(await reversedSum()).toBe(0.01);
+    expect(await reverse(ev("m2", 0.01))).toEqual({ written: false, reason: "duplicate" });
+  });
+
+  it("R1 storni scritti prima della migration (registro vuoto): la migration li riporta nel cumulato", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 10);
+    await reverse(ev("old", 50));
+    await h.sql!`TRUNCATE affiliate_refund_events`; // come in prod prima della migration
+    for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT, "supabase/migrations", f), "utf8"));
+    const [e] = await h.sql!`SELECT count(*)::int AS n, SUM(refunded_usd)::float8 AS g FROM affiliate_refund_events`;
+    expect(e).toEqual({ n: 1, g: 50 });
+    expect(await reverse(ev("old", 50))).toEqual({ written: false, reason: "duplicate" });
+    await reverse(ev("new", 25));
+    expect(await reversedSum()).toBe(15);
   });
 
   it("R1 corse (review Codex): stesso rimborso x2 a cavallo della maturazione e rimborsi diversi concorrenti non superano il residuo", async () => {
