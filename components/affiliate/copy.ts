@@ -71,9 +71,9 @@ const IT = {
     t3: "di attesa prima di maturare",
     t4: "soglia per i pagamenti",
     f1t: "Sempre sul prezzo pagato dal cliente",
-    f1b: "Imposte comprese, nessuna commissione di incasso dedotta; i rimborsi la riducono in proporzione.",
+    f1b: "Imposte comprese, nessuna commissione di incasso dedotta; i rimborsi riducono la commissione in proporzione.",
     f2t: "60 giorni di attesa, 120 di storno",
-    f2b: "Un rimborso o una contestazione entro 120 giorni storna la commissione, anche se già pagata: si scala dal saldo successivo.",
+    f2b: "Un rimborso o una contestazione entro 120 giorni riduce la commissione o la storna in proporzione, anche se già pagata: si scala dal saldo successivo.",
     f3t: "Esci quando vuoi",
     f3b: "Le commissioni già maturate restano tue.",
     // #INVITE-AFFILIATE-UX-1022 (M5/D1): «60 giorni» sono tre finestre diverse. Coerente col codice
@@ -85,7 +85,7 @@ const IT = {
     w2t: "Dalla registrazione",
     w2b: "Il primo acquisto deve arrivare entro 60 giorni. Da lì l'attribuzione è fissa su tutti i rinnovi.",
     w3t: "Dal pagamento",
-    w3b: "Ogni commissione resta in attesa 60 giorni prima di maturare, finché le verifiche sono complete.",
+    w3b: "Ogni commissione resta in attesa almeno 60 giorni, finché le verifiche sono complete.",
   },
   // #INVITE-AFFILIATE-UX-1022 (R5): quando operations.payouts_enabled o accounting_ready sono falsi
   // (/api/affiliate/me), il pannello lo dice invece di promettere un calendario che non vale.
@@ -360,7 +360,7 @@ const IT = {
   rules: {
     title: "Le regole, in breve",
     r1: "20% del primo acquisto; sui rinnovi dal secondo mese 7%, 10% da 5 referiti paganti e 15% da 15. Sempre sul prezzo pagato dal cliente; se un acquisto viene rimborsato, la commissione si riduce in proporzione.",
-    r2: "Ogni commissione resta in attesa almeno 60 giorni e fino al completamento delle verifiche contabili. Se un acquisto viene rimborsato o contestato entro 120 giorni, la commissione si storna, anche se già pagata: si scala dal saldo successivo.",
+    r2: "Ogni commissione resta in attesa almeno 60 giorni e fino al completamento delle verifiche contabili. Se un acquisto viene rimborsato o contestato entro 120 giorni, la commissione si riduce o si storna in proporzione, anche se già pagata: si scala dal saldo successivo.",
     r3: "Pagamenti in USDT o USDC su Polygon, una volta al mese, a mano, da 50 $ maturati. Le fee di rete le paghiamo noi.",
     r4: "Per essere pagato registri un wallet con nome legale, paese e due dichiarazioni (non sanzionato; responsabile delle tue imposte). Potrebbero servire ulteriori informazioni per la verifica.",
     r5: "Nessuna garanzia: quanto ricevi dipende da chi si abbona tramite te e da quanto resta.",
@@ -426,9 +426,9 @@ const EN: AffCopy = {
     t3: "wait before it's earned",
     t4: "payout threshold",
     f1t: "Always on the price the customer pays",
-    f1b: "Taxes included, no processing fees deducted; refunds reduce it in proportion.",
+    f1b: "Taxes included, no processing fees deducted; refunds reduce the commission in proportion.",
     f2t: "60 days wait, 120 days clawback",
-    f2b: "A refund or a dispute within 120 days reverses the commission, even if already paid: it is deducted from your next balance.",
+    f2b: "A refund or a dispute within 120 days reduces or reverses the commission in proportion, even if already paid: it is deducted from your next balance.",
     f3t: "Leave whenever you like",
     f3b: "Commissions already earned stay yours.",
     windowsT: "The 60 days, one by one",
@@ -437,7 +437,7 @@ const EN: AffCopy = {
     w2t: "From sign-up",
     w2b: "The first purchase must happen within 60 days. From then on, attribution is fixed on every renewal.",
     w3t: "From the payment",
-    w3b: "Every commission stays pending for 60 days before it is earned, until the checks are complete.",
+    w3b: "Every commission stays pending for at least 60 days, until the checks are complete.",
   },
   setup: {
     title: "Payouts being activated",
@@ -708,7 +708,7 @@ const EN: AffCopy = {
   rules: {
     title: "The rules, in short",
     r1: "20% of the first purchase; on renewals from the second month 7%, 10% from 5 paying referrals and 15% from 15. Always on the price the customer pays; if a purchase is refunded, the commission is reduced in proportion.",
-    r2: "Every commission remains pending for at least 60 days and until accounting checks are complete. If a purchase is refunded or disputed within 120 days, the commission is reversed, even if already paid: it is deducted from your next balance.",
+    r2: "Every commission remains pending for at least 60 days and until accounting checks are complete. If a purchase is refunded or disputed within 120 days, the commission is reduced or reversed in proportion, even if already paid: it is deducted from your next balance.",
     r3: "Payouts in USDT or USDC on Polygon, once a month, by hand, from $50 earned. We pay the network fees.",
     r4: "To be paid you register a wallet with legal name, country and two statements (not sanctioned; responsible for your taxes). Additional information may be needed for verification.",
     r5: "No guarantee: what you receive depends on who subscribes through you and for how long.",
