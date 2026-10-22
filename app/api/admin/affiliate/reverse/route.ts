@@ -9,9 +9,13 @@
 // webhook (lib/affiliate/reversal.ts): ripetere la stessa event_ref non scrive
 // due volte. Per un rimborso manuale usare un id proprio e univoco (es.
 // «manual-2026-10-22-<ordine>»). Auth admin + blocco cross-site come payouts.
+// #AFFILIATE-REVERSE-AUDIT-1022: operatore obbligatorio (come le altre azioni
+// admin: `x-admin-actor` dal BO, «admin-cookie» da /admin); lo storno scritto
+// finisce in affiliate_admin_actions nella stessa transazione.
 
 import { NextResponse, type NextRequest } from "next/server";
 import { adminGuard } from "@/lib/affiliate/payouts";
+import { adminActor } from "@/lib/affiliate/admin-ops";
 import { reverseAffiliateCommissionSafe } from "@/lib/affiliate/reversal";
 import type { AffiliateRail } from "@/lib/affiliate/net";
 
@@ -23,6 +27,8 @@ const REF = /^[A-Za-z0-9:_.\-]{1,120}$/;
 export async function POST(req: NextRequest) {
   const denied = await adminGuard(req, true);
   if (denied) return denied;
+  const actor = adminActor(req);
+  if (!actor) return NextResponse.json({ error: "actor_required" }, { status: 400 });
   let body: { rail?: unknown; payment_ref?: unknown; event_ref?: unknown; refunded_usd?: unknown };
   try {
     body = await req.json();
@@ -45,6 +51,7 @@ export async function POST(req: NextRequest) {
     // con la sua stessa event_ref deve dare `duplicate` se era già passato.
     eventRef,
     refundedGrossUsd: refunded,
+    actor,
   });
   return NextResponse.json(outcome, { status: outcome.reason === "error" ? 503 : 200 });
 }

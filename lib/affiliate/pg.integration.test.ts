@@ -158,7 +158,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.stubEnv("AFFILIATE_PAYOUTS", "live");
     vi.stubEnv("AFFILIATE_PAYOUT_FROM", "0x1111111111111111111111111111111111111111");
     await h.sql!.unsafe(`
-      TRUNCATE affiliate_refund_events, affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
+      TRUNCATE affiliate_admin_actions, affiliate_refund_events, affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
                affiliate_referral_clicks, affiliates, profiles RESTART IDENTITY CASCADE;
       INSERT INTO profiles(identifier, referral_code, language) VALUES
         ('alice@x.io', NULL, 'it'), ('bob@x.io', 'BOBBY', 'en');`);
@@ -607,6 +607,37 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     // Rigiocare la stessa event_ref (es. da un alert) non storna due volte.
     const again = await admin.POST(req("/x", "POST", null, { rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }) as never);
     expect(await again.json()).toEqual({ written: false, reason: "duplicate" });
+  });
+
+  it("R1 storno manuale nel registro azioni (review indipendente #9): chi, cosa, quanto — una riga per storno scritto", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    await aliceWithCommission("pending", 5);
+    await h.sql!`UPDATE affiliate_commissions SET rail = 'paygate', rail_payment_ref = 'pg-1'`;
+    const admin = await import("@/app/api/admin/affiliate/reverse/route");
+    const body = { rail: "paygate", payment_ref: "pg-1", event_ref: "manual-1", refunded_usd: 25 };
+    // Bearer senza operatore dichiarato: rifiutato, niente storno anonimo.
+    const anon = await admin.POST(bo(null, body));
+    expect(anon.status).toBe(400);
+    expect(await anon.json()).toEqual({ error: "actor_required" });
+    expect((await rows()).length).toBe(1);
+    const ok = await admin.POST(bo("ops@betredge.com", body));
+    expect(await ok.json()).toEqual({ written: true, reason: "reversal" });
+    const again = await admin.POST(bo("other@betredge.com", body));
+    expect(await again.json()).toEqual({ written: false, reason: "duplicate" });
+    const log = await h.sql!`SELECT actor, action, affiliate_id, target, detail FROM affiliate_admin_actions ORDER BY id`;
+    expect(log).toEqual([
+      {
+        actor: "bo:ops@betredge.com",
+        action: "commission_reversed",
+        affiliate_id: "1",
+        target: "paygate:pg-1",
+        detail: expect.objectContaining({ event_ref: "manual-1", refunded_usd: 25, amount: -5, reason: "reversal" }),
+      },
+    ]);
+    // Dal cookie di /admin resta «admin-cookie», come per le altre azioni.
+    expect(await (await admin.POST(req("/x", "POST", null, { ...body, event_ref: "manual-2", refunded_usd: null }) as never)).json())
+      .toEqual({ written: true, reason: "reversal" });
+    expect((await h.sql!`SELECT actor FROM affiliate_admin_actions ORDER BY id`).map((r) => r.actor)).toEqual(["bo:ops@betredge.com", "admin-cookie"]);
   });
 
   // #AFFILIATE-RECONCILE-1022 — la query di riconciliazione su SQL vero. Le

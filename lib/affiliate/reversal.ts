@@ -24,6 +24,9 @@ export type ReverseInput = {
   eventRef: string;
   /** Lordo rimborsato in USD; null = storno totale (chargeback, rimborso totale). */
   refundedGrossUsd: number | null;
+  /** Solo storni manuali (rotta admin): l'operatore, registrato in affiliate_admin_actions
+   *  nella stessa transazione dello storno (migration 20261022160000). */
+  actor?: string;
 };
 
 export type ReversalOutcome = { written: boolean; reason: string };
@@ -46,8 +49,9 @@ export async function reverseAffiliateCommissionSafe(
     if (config.mode === "off") return { written: false, reason: "mode_off" };
     const call = () =>
       affiliateRpc<{ ok: boolean; written?: boolean; reason?: string; amount?: number; status?: string }>(
-        "affiliate_reverse_commission",
+        input.actor ? "affiliate_admin_reverse_commission" : "affiliate_reverse_commission",
         {
+          ...(input.actor ? { p_actor: input.actor } : {}),
           p_rail: input.rail,
           p_ref: String(input.paymentRef ?? "").trim(),
           p_event: String(input.eventRef ?? "").trim(),
