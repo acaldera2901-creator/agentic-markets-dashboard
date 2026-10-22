@@ -210,7 +210,7 @@ export function payoutConfig(env: Env = process.env): PayoutConfig {
  * codice: due fonti che potevano divergere, e il registro dei consensi avrebbe
  * nominato un testo diverso da quello mostrato.
  */
-export const AFFILIATE_TERMS_PUBLISHED_VERSION = "aff-2026-10-21-v2";
+export const AFFILIATE_TERMS_PUBLISHED_VERSION = "aff-2026-10-22-v3";
 
 /**
  * Versione dei T&C affiliati in vigore, o null = iscrizione chiusa.

@@ -23,7 +23,7 @@ function req(method: string, who: string | null, body?: unknown, headers: Record
 
 const ok = (over: Record<string, unknown> = {}) => ({
   code: "alice",
-  terms_version: "aff-2026-10-21-v2",
+  terms_version: "aff-2026-10-22-v3",
   age: true,
   onerous_ack: true,
   ...over,
@@ -33,7 +33,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
   vi.stubEnv("AFFILIATE_MODE", "shadow");
-  vi.stubEnv("AFFILIATE_TERMS_VERSION", "aff-2026-10-21-v2");
+  vi.stubEnv("AFFILIATE_TERMS_VERSION", "aff-2026-10-22-v3");
   profiles = {
     "Alice@X.io": { referral_code: null, referred_by: null },
     "bob@x.io": { referral_code: "BOBBY", referred_by: null },
@@ -84,7 +84,7 @@ describe("POST /api/affiliate/join", () => {
     expect(await res.json()).toMatchObject({ ok: true, enrolled: true, code: "ALICE" });
     expect(profiles["Alice@X.io"].referral_code).toBe("ALICE");
     expect(affiliates).toEqual([
-      { identifier: "alice@x.io", code: "ALICE", status: "active", terms_version: "aff-2026-10-21-v2", onerous_ack_version: "aff-2026-10-21-v2" },
+      { identifier: "alice@x.io", code: "ALICE", status: "active", terms_version: "aff-2026-10-22-v3", onerous_ack_version: "aff-2026-10-22-v3" },
     ]);
   });
 
@@ -157,7 +157,7 @@ describe("GET /api/affiliate/join", () => {
       open: true,
       enrolled: false,
       status: null,
-      terms_version: "aff-2026-10-21-v2",
+      terms_version: "aff-2026-10-22-v3",
       code: "BOBBY",
       code_locked: true,
     });

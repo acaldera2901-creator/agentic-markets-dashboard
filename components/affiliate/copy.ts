@@ -70,7 +70,7 @@ const IT = {
     t2: "di ogni rinnovo dal 2° mese; 10% da 5 referiti paganti, 15% da 15",
     t3: "di attesa prima di maturare",
     t4: "soglia per i pagamenti",
-    f1t: "Sempre sull'importo netto",
+    f1t: "Sempre sul prezzo pagato dal cliente",
     f1b: "Senza IVA, rimborsi o commissioni di incasso.",
     f2t: "60 giorni di attesa, 120 di storno",
     f2b: "Un rimborso o una contestazione entro 120 giorni storna la commissione, anche se già pagata: si scala dal saldo successivo.",
@@ -92,7 +92,7 @@ const IT = {
   setup: {
     title: "Pagamenti in attivazione",
     // «si registrano» e non «maturano»: il cron affiliate-mature salta finché la contabilità non è attiva (review Codex).
-    body: "Iscrizioni, link e commissioni si registrano già. Il servizio di pagamento e la riconciliazione contabile non sono ancora attivi: le commissioni restano in attesa e nessun pagamento parte finché non lo sono, e lo leggerai qui per primo. Quello che hai registrato resta tuo.",
+    body: "Iscrizioni, link e commissioni si registrano già. Il servizio di pagamento e la riconciliazione contabile non sono ancora attivi: le commissioni restano in attesa e nessun pagamento parte finché non lo sono; lo leggerai qui per primo. L'attesa non ti fa perdere nulla: le commissioni seguono le regole di verifica della sezione 4 dei termini.",
   },
   joinErr: {
     invalid_code: "Il codice non è valido: 2–20 caratteri, lettere, numeri, - _.",
@@ -113,7 +113,7 @@ const IT = {
     s1t: "Condividi il link",
     s1b: "Chi apre il link ha 60 giorni per registrarsi; chi si registra ha 60 giorni per il primo acquisto. Da lì l'attribuzione è fissa sui rinnovi.",
     s2t: "Si abbonano: 20%",
-    s2b: "Del loro primo acquisto, al netto di IVA, rimborsi e commissioni.",
+    s2b: "Del loro primo acquisto, sul prezzo pagato (meno eventuali rimborsi).",
     s3t: "Rinnovano: 7%",
     s3b: "Di ogni rinnovo dal secondo mese, finché restano abbonati. Con più referiti paganti la percentuale sale: vedi «Il tuo livello».",
   },
@@ -359,7 +359,7 @@ const IT = {
   },
   rules: {
     title: "Le regole, in breve",
-    r1: "20% del primo acquisto; sui rinnovi dal secondo mese 7%, 10% da 5 referiti paganti e 15% da 15. Sempre sull'importo netto: niente IVA, rimborsi o commissioni.",
+    r1: "20% del primo acquisto; sui rinnovi dal secondo mese 7%, 10% da 5 referiti paganti e 15% da 15. Sempre sul prezzo pagato dal cliente; se un acquisto viene rimborsato, la commissione si riduce in proporzione.",
     r2: "Ogni commissione resta in attesa almeno 60 giorni e fino al completamento delle verifiche contabili. Se un acquisto viene rimborsato o contestato entro 120 giorni, la commissione si storna, anche se già pagata: si scala dal saldo successivo.",
     r3: "Pagamenti in USDT o USDC su Polygon, una volta al mese, a mano, da 50 $ maturati. Le fee di rete le paghiamo noi.",
     r4: "Per essere pagato registri un wallet con nome legale, paese e due dichiarazioni (non sanzionato; responsabile delle tue imposte). Potrebbero servire ulteriori informazioni per la verifica.",
@@ -425,7 +425,7 @@ const EN: AffCopy = {
     t2: "of every renewal from month 2; 10% from 5 paying referrals, 15% from 15",
     t3: "wait before it's earned",
     t4: "payout threshold",
-    f1t: "Always on the net amount",
+    f1t: "Always on the price the customer pays",
     f1b: "Without VAT, refunds or collection fees.",
     f2t: "60 days wait, 120 days clawback",
     f2b: "A refund or a dispute within 120 days reverses the commission, even if already paid: it is deducted from your next balance.",
@@ -441,7 +441,7 @@ const EN: AffCopy = {
   },
   setup: {
     title: "Payouts being activated",
-    body: "Enrollment, links and commissions are already recorded. The payout service and the accounting reconciliation are not active yet: commissions stay pending and no payout goes out until they are, and you will read it here first. What you have recorded stays yours.",
+    body: "Enrollment, links and commissions are already recorded. The payout service and the accounting reconciliation are not active yet: commissions stay pending and no payout goes out until they are; you will read it here first. The wait does not cost you anything: commissions follow the verification rules in section 4 of the terms.",
   },
   joinErr: {
     invalid_code: "The code isn't valid: 2–20 characters, letters, numbers, - _.",
@@ -462,7 +462,7 @@ const EN: AffCopy = {
     s1t: "Share the link",
     s1b: "Whoever opens the link has 60 days to sign up; whoever signs up has 60 days for the first purchase. From then on, attribution is fixed on renewals.",
     s2t: "They subscribe: 20%",
-    s2b: "Of their first purchase, net of VAT, refunds and fees.",
+    s2b: "Of their first purchase, on the price paid (less any refunds).",
     s3t: "They renew: 7%",
     s3b: "Of every renewal from the second month, as long as they stay subscribed. More paying referrals raise the rate: see “Your level”.",
   },
@@ -707,7 +707,7 @@ const EN: AffCopy = {
   },
   rules: {
     title: "The rules, in short",
-    r1: "20% of the first purchase; on renewals from the second month 7%, 10% from 5 paying referrals and 15% from 15. Always on the net amount: no VAT, refunds or fees.",
+    r1: "20% of the first purchase; on renewals from the second month 7%, 10% from 5 paying referrals and 15% from 15. Always on the price the customer pays; if a purchase is refunded, the commission is reduced in proportion.",
     r2: "Every commission remains pending for at least 60 days and until accounting checks are complete. If a purchase is refunded or disputed within 120 days, the commission is reversed, even if already paid: it is deducted from your next balance.",
     r3: "Payouts in USDT or USDC on Polygon, once a month, by hand, from $50 earned. We pay the network fees.",
     r4: "To be paid you register a wallet with legal name, country and two statements (not sanctioned; responsible for your taxes). Additional information may be needed for verification.",

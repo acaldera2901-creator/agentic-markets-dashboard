@@ -154,7 +154,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.resetModules();
     h.screen = "none";
     vi.stubEnv("AFFILIATE_MODE", "shadow");
-    vi.stubEnv("AFFILIATE_TERMS_VERSION", "aff-2026-10-21-v2");
+    vi.stubEnv("AFFILIATE_TERMS_VERSION", "aff-2026-10-22-v3");
     vi.stubEnv("AFFILIATE_PAYOUTS", "live");
     vi.stubEnv("AFFILIATE_PAYOUT_FROM", "0x1111111111111111111111111111111111111111");
     await h.sql!.unsafe(`
@@ -176,10 +176,10 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const wallet = await import("@/app/api/affiliate/wallet/route");
     const me = await import("@/app/api/affiliate/me/route");
 
-    const j = await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-21-v2", age: true, onerous_ack: true }));
+    const j = await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     expect(j.status).toBe(200);
     const [a] = await h.sql!`SELECT code, onerous_ack_version, onerous_ack_at IS NOT NULL AS ack FROM affiliates`;
-    expect(a).toEqual({ code: "ALICE", onerous_ack_version: "aff-2026-10-21-v2", ack: true });
+    expect(a).toEqual({ code: "ALICE", onerous_ack_version: "aff-2026-10-22-v3", ack: true });
 
     const put = await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
     expect(put.status).toBe(200);
@@ -197,8 +197,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
     const me = await import("@/app/api/affiliate/me/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-21-v2", age: true, onerous_ack: true }));
-    await join.POST(req("/api/affiliate/join", "POST", "bob@x.io", { code: "bobby", terms_version: "aff-2026-10-21-v2", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "bob@x.io", { code: "bobby", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
 
     const bobPanel = await (await me.GET(req("/api/affiliate/me", "GET", "bob@x.io"))).json();
@@ -218,7 +218,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.stubEnv("AFFILIATE_KYC_AT_WALLET", "off");
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-21-v2", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     const { payee_legal_name: _n, payee_country: _c, ...rest } = walletBody(A1);
     void _n; void _c;
     const put = await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", rest));
@@ -228,7 +228,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   it("suspended: PUT rifiutato, nessuna riga scritta", async () => {
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-21-v2", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await h.sql!`UPDATE affiliates SET status = 'suspended'`;
     const put = await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
     expect(put.status).toBe(403);
@@ -240,7 +240,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
     const me = await import("@/app/api/affiliate/me/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-21-v2", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
     await h.sql!.unsafe(`
       INSERT INTO affiliate_payouts(affiliate_id, period_month, amount_usd, coin, network, wallet_id, to_address, created_by)
@@ -262,7 +262,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     h.screen = "clear";
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-21-v2", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(address)));
     await h.sql!.unsafe(`
       UPDATE affiliate_wallets SET created_at = now() - interval '10 days', usable_after = now() - interval '7 days',
@@ -373,7 +373,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
 
   it("matures only due live commissions and leaves shadow, future and review cases untouched",async()=>{
     const join=await import("@/app/api/affiliate/join/route");
-    expect((await join.POST(req("/api/affiliate/join","POST","alice@x.io",{code:"alice",terms_version:"aff-2026-10-21-v2",age:true,onerous_ack:true}))).status).toBe(200);
+    expect((await join.POST(req("/api/affiliate/join","POST","alice@x.io",{code:"alice",terms_version:"aff-2026-10-22-v3",age:true,onerous_ack:true}))).status).toBe(200);
     await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'ok@x.io',id,now(),'valid' FROM affiliates`;
     await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'review@x.io',id,now(),'fraud_review' FROM affiliates`;
     for(const [ref,status,who,due] of [['due','pending','ok@x.io',true],['shadow','shadow','ok@x.io',true],['future','pending','ok@x.io',false],['review','pending','review@x.io',true]]){
