@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Test only: fake `gh` for the deploy-unico scripts. State in $FAKE_STATE.
+set -euo pipefail
+S="${FAKE_STATE:?}"; echo "gh $*" >> "$S/calls.log"
+all="$*"
+case "$1 ${2:-}" in
+  "pr view")
+    n="$3"; draft=true; [ -f "$S/ready-$n" ] && draft=false
+    if [[ "$all" == *"mergeCommit"* ]]; then
+      if [ -f "$S/merged-$n" ]; then echo "MERGED $(cat "$S/merged-$n")"; else echo "OPEN "; fi
+    else
+      head="${FAKE_PR_HEAD:?}"; [ "$n" = 2 ] && head="${FAKE_BO_HEAD:?}"
+      st=OPEN; [ -f "$S/merged-$n" ] && st=MERGED
+      line="$st $draft $head main"; [[ "$all" == *mergeable* ]] && line="$line MERGEABLE"
+      echo "$line"
+    fi ;;
+  "pr ready") touch "$S/ready-$3" ;;
+  "pr merge")
+    [[ "$all" == *"--match-head-commit"* ]] || { echo "manca --match-head-commit" >&2; exit 1; }
+    printf 'feedfacefeedfacefeedfacefeedfacefeed%04d\n' "$3" > "$S/merged-$3" ;;
+  "api "*)
+    if [[ "$all" == *check-runs* ]]; then
+      if [[ "$all" == *'select(.status != "completed")'* ]] || [[ "$all" == *conclusion* ]]; then echo "${FAKE_CI_BAD:-0}"; else echo 3; fi
+    elif [[ "$all" == */status* ]]; then echo "success (1)"
+    else echo ""; fi ;;
+  *) echo "fake gh: comando non previsto: $*" >&2; exit 1 ;;
+esac
