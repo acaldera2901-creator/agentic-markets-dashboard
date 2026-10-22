@@ -28,23 +28,43 @@ export type ReverseInput = {
 
 export type ReversalOutcome = { written: boolean; reason: string };
 
-/** Non lancia mai. Su errore: log + alert ops con TUTTO ciò che serve per
+/** #AFFILIATE-REVERSAL-RETRY-1022 — pause fra i tentativi (3 in tutto). La redelivery del
+ *  webhook non ritenta lo storno (il rimborso è già registrato), quindi un errore transitorio
+ *  si ritenta qui. Sicuro: stessa event_ref → se un tentativo era passato senza risposta, la
+ *  SQL risponde `duplicate`. Limite: un DB giù per più di ~3 s resta all'alert manuale. */
+export const REVERSAL_RETRY_DELAYS_MS = [500, 2000];
+
+/** Non lancia mai. Su errore (dopo i tentativi): log + alert ops con TUTTO ciò che serve per
  *  ripeterlo a mano da POST /api/admin/affiliate/reverse (stessa event_ref =
  *  nessun doppio storno), perché la redelivery del webhook non lo ritenta. */
-export async function reverseAffiliateCommissionSafe(input: ReverseInput): Promise<ReversalOutcome> {
+export async function reverseAffiliateCommissionSafe(
+  input: ReverseInput,
+  retryDelaysMs: number[] = REVERSAL_RETRY_DELAYS_MS
+): Promise<ReversalOutcome> {
   try {
     const config = affiliateConfig();
     if (config.mode === "off") return { written: false, reason: "mode_off" };
-    const r = await affiliateRpc<{ ok: boolean; written?: boolean; reason?: string; amount?: number; status?: string }>(
-      "affiliate_reverse_commission",
-      {
-        p_rail: input.rail,
-        p_ref: String(input.paymentRef ?? "").trim(),
-        p_event: String(input.eventRef ?? "").trim(),
-        p_refunded: input.refundedGrossUsd,
-        p_clawback_days: config.clawbackDays,
+    const call = () =>
+      affiliateRpc<{ ok: boolean; written?: boolean; reason?: string; amount?: number; status?: string }>(
+        "affiliate_reverse_commission",
+        {
+          p_rail: input.rail,
+          p_ref: String(input.paymentRef ?? "").trim(),
+          p_event: String(input.eventRef ?? "").trim(),
+          p_refunded: input.refundedGrossUsd,
+          p_clawback_days: config.clawbackDays,
+        }
+      );
+    let r: Awaited<ReturnType<typeof call>> | undefined;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        r = await call();
+        break;
+      } catch (e) {
+        if (attempt >= retryDelaysMs.length) throw e;
+        await new Promise((res) => setTimeout(res, retryDelaysMs[attempt]));
       }
-    );
+    }
     const outcome = { written: r.written === true, reason: String(r.reason ?? "unknown") };
     console.log(
       `[affiliate/reversal] rail=${input.rail} ref=${input.paymentRef} event=${input.eventRef} → ${outcome.reason}` +

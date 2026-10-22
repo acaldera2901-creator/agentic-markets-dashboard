@@ -45,12 +45,27 @@ describe("reverseAffiliateCommissionSafe", () => {
     });
   });
 
-  it("DB giù → non lancia, alert con i dati per ripeterlo dall'endpoint admin", async () => {
+  it("DB giù → non lancia, ritenta, poi alert con i dati per ripeterlo dall'endpoint admin", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "db down" } });
-    expect(await reverseAffiliateCommissionSafe(input)).toEqual({ written: false, reason: "error" });
+    expect(await reverseAffiliateCommissionSafe(input, [0, 0])).toEqual({ written: false, reason: "error" });
+    expect(rpc).toHaveBeenCalledTimes(3);
+    expect(opsAlert).toHaveBeenCalledTimes(1);
     expect(opsAlert).toHaveBeenCalledWith("affiliate-reversal", [
       expect.stringMatching(/payment_ref= o1 .*event_ref=r1 refunded_usd=12\.5/),
     ]);
+  });
+
+  // #AFFILIATE-REVERSAL-RETRY-1022: la redelivery del webhook non ritenta lo storno (il rimborso è
+  // già registrato). Un errore transitorio si ritenta qui: stessa event_ref → la SQL risponde
+  // `duplicate` se il primo tentativo era passato, quindi nessun doppio storno.
+  it("errore transitorio → ritenta con la stessa event_ref, nessun alert", async () => {
+    rpc
+      .mockResolvedValueOnce({ data: null, error: { message: "timeout" } })
+      .mockResolvedValueOnce({ data: { ok: true, written: true, reason: "reversal", status: "pending", amount: -2.5 }, error: null });
+    expect(await reverseAffiliateCommissionSafe(input, [0, 0])).toEqual({ written: true, reason: "reversal" });
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(rpc.mock.calls[0]).toEqual(rpc.mock.calls[1]);
+    expect(opsAlert).not.toHaveBeenCalled();
   });
 
   it("schedule: il lavoro gira dentro after(), non subito", () => {
