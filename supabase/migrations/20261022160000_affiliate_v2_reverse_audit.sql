@@ -4,8 +4,10 @@
 -- monetaria anonima (cookie o Bearer, nessuna riga in affiliate_admin_actions).
 -- Ora la rotta passa per affiliate_admin_reverse_commission: stesso storno di
 -- affiliate_reverse_commission (nessuna logica duplicata) e, nella STESSA
--- transazione, una riga `commission_reversed` con l'operatore — solo se lo storno
--- è stato scritto (un replay `duplicate` non aggiunge righe). Gli storni dei
+-- transazione, una riga `commission_reversed` con l'operatore e l'esito — quando
+-- lo storno è stato scritto O quando l'evento è stato registrato a quota zero
+-- (`zero_amount`: entra nel cumulato di 20261022150000, review 2 P2-4). Un replay
+-- `duplicate` o un rifiuto senza effetto non aggiungono righe. Gli storni dei
 -- webhook (nessun operatore) restano come sono.
 --
 -- ADDITIVA: allarga il CHECK di affiliate_admin_actions.action e aggiunge una
@@ -37,13 +39,14 @@ BEGIN
     RAISE EXCEPTION 'affiliate_admin_reverse_commission: actor required';
   END IF;
   r := affiliate_reverse_commission(p_rail, p_ref, p_event, p_refunded, p_clawback_days);
-  IF (r->>'written')::boolean IS TRUE THEN
+  IF (r->>'written')::boolean IS TRUE OR r->>'reason' = 'zero_amount' THEN
     SELECT affiliate_id INTO v_aff FROM affiliate_commissions
      WHERE rail = p_rail AND rail_payment_ref = p_ref AND kind IN ('first','renewal');
     INSERT INTO affiliate_admin_actions (actor, action, affiliate_id, target, detail)
     VALUES (p_actor, 'commission_reversed', v_aff, p_rail || ':' || p_ref,
             jsonb_build_object('event_ref', p_event, 'refunded_usd', p_refunded,
-                               'amount', r->'amount', 'reason', r->'reason', 'status', r->'status'));
+                               'written', r->'written', 'amount', r->'amount',
+                               'reason', r->'reason', 'status', r->'status'));
   END IF;
   RETURN r;
 END $$;

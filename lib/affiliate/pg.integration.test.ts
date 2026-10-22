@@ -644,6 +644,16 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
         detail: expect.objectContaining({ event_ref: "manual-1", refunded_usd: 25, amount: -5, reason: "reversal" }),
       },
     ]);
+    // Review 2 P2-4: un micro-rimborso manuale a quota zero registra l'evento (entra
+    // nel cumulato) → anche il registro azioni deve dire chi l'ha inserito.
+    await h.sql!`TRUNCATE affiliate_admin_actions`;
+    expect(await (await admin.POST(bo("ops@betredge.com", { ...body, event_ref: "manual-micro", refunded_usd: 0.02 }))).json())
+      .toEqual({ written: false, reason: "zero_amount" });
+    expect(await h.sql!`SELECT actor, action, detail->>'reason' AS reason, detail->>'written' AS written FROM affiliate_admin_actions`).toEqual([
+      { actor: "bo:ops@betredge.com", action: "commission_reversed", reason: "zero_amount", written: "false" },
+    ]);
+    await h.sql!`TRUNCATE affiliate_admin_actions`;
+    await h.sql!`INSERT INTO affiliate_admin_actions(actor, action) VALUES ('bo:ops@betredge.com', 'commission_reversed')`;
     // Dal cookie di /admin resta «admin-cookie», come per le altre azioni.
     expect(await (await admin.POST(req("/x", "POST", null, { ...body, event_ref: "manual-2", refunded_usd: null }) as never)).json())
       .toEqual({ written: true, reason: "reversal" });
