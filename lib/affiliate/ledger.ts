@@ -41,6 +41,13 @@ export type RecordCommissionInput = {
   /** Data dell'incasso. */
   paidAt: Date;
   meta?: NetMeta;
+  /** Recupero dalla riconciliazione (#AFFILIATE-RECONCILE-1022): il pagamento è
+   *  vecchio e altri del referito possono essere già nel ledger DOPO di lui. Il
+   *  suo indice conta solo le righe pagate PRIMA (in ordine di incasso), non
+   *  tutte: altrimenti prenderebbe l'indice di un pagamento successivo e il
+   *  vincolo (referito, indice) lo respingerebbe per sempre. Se quell'indice è
+   *  già occupato si accoda in fondo. */
+  recovery?: boolean;
 };
 
 export type LedgerOutcome = { written: boolean; reason: string };
@@ -189,12 +196,16 @@ async function resolveAttribution(
 
   // La PK su referred_identifier è il lock: chi perde la corsa non scrive, e si
   // rilegge la riga del vincitore.
+  // attributed_at = data dell'incasso che converte, non NOW(): è il confine dei
+  // «pagamenti storici» (historicPayments). Dal rail coincidono; dalla
+  // riconciliazione (#AFFILIATE-RECONCILE-1022) un incasso perso giorni fa non
+  // deve far contare come «pre-programma» gli altri pagamenti persi dopo di lui.
   await dbExecute(
     `INSERT INTO affiliate_attributions
        (referred_identifier, affiliate_id, source, attributed_at, status, status_reason)
-     VALUES ($1, $2, 'signup_ref', NOW(), $3, $4)
+     VALUES ($1, $2, 'signup_ref', LEAST(NOW(), $5::timestamptz), $3, $4)
      ON CONFLICT (referred_identifier) DO NOTHING`,
-    [referred, Number(affiliate.id), verdict.status, verdict.reason]
+    [referred, Number(affiliate.id), verdict.status, verdict.reason, paidAt.toISOString()]
   );
   const row = await readAttribution(referred);
   return row ? { attribution: row } : { reason: "not_attributed" };
@@ -239,12 +250,18 @@ async function historicPayments(referred: string, attributedAtISO: string, curre
   return Number(rows[0]?.n ?? 0);
 }
 
-async function ledgerPayments(referred: string): Promise<number> {
-  const rows = await dbQueryStrict<{ n: number | string }>(
-    `SELECT COUNT(*)::int AS n FROM affiliate_commissions
-      WHERE referred_identifier = $1 AND kind IN ('first','renewal')`,
-    [referred]
-  );
+async function ledgerPayments(referred: string, paidBeforeISO?: string): Promise<number> {
+  const rows = paidBeforeISO
+    ? await dbQueryStrict<{ n: number | string }>(
+        `SELECT COUNT(*)::int AS n FROM affiliate_commissions
+          WHERE referred_identifier = $1 AND kind IN ('first','renewal') AND paid_at < $2::timestamptz`,
+        [referred, paidBeforeISO]
+      )
+    : await dbQueryStrict<{ n: number | string }>(
+        `SELECT COUNT(*)::int AS n FROM affiliate_commissions
+          WHERE referred_identifier = $1 AND kind IN ('first','renewal')`,
+        [referred]
+      );
   return Number(rows[0]?.n ?? 0);
 }
 
@@ -282,7 +299,12 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   const payingReferred = await payingReferredCount(Number(attribution.affiliate_id), config.mode);
 
   for (let attempt = 0; attempt < MAX_INDEX_ATTEMPTS; attempt++) {
-    const renewalIndex = historic + (await ledgerPayments(referred));
+    // Recupero: al primo tentativo l'indice della sua posizione per data; se è
+    // già preso (un pagamento successivo registrato prima di lui) si accoda
+    // dopo tutti, come un rinnovo qualunque, invece di restare perso.
+    const renewalIndex =
+      historic +
+      (await ledgerPayments(referred, input.recovery && attempt === 0 ? input.paidAt.toISOString() : undefined));
     const d = decideCommission({
       mode: config.mode,
       config,

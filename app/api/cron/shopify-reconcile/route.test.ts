@@ -9,6 +9,8 @@ const opsAlert = vi.fn();
 vi.mock("@/lib/db", () => ({ dbQuery, dbExecute, dbQueryStrict: vi.fn() }));
 vi.mock("@/lib/plan-grant", () => ({ activateShopifyPlan }));
 vi.mock("@/lib/ops-alert", () => ({ opsAlert }));
+const scheduleAffiliateCommission = vi.fn();
+vi.mock("@/lib/affiliate/ledger", () => ({ scheduleAffiliateCommission }));
 // Il mock deve guardare l'HEADER, non solo il secret: altrimenti il test del 401
 // passerebbe per finta (verifyBearer tornerebbe true anche senza authorization).
 vi.mock("@/lib/admin-auth", () => ({
@@ -179,4 +181,16 @@ it('historical Shopify amounts have no currency and never become USD purchase an
  activateShopifyPlan.mockResolvedValue({identifier:'synthetic@example.test',plan:'base'});
  const {GET}=await import('./route');await GET(req());
  expect(schedulePurchaseEvent).toHaveBeenCalledWith(expect.objectContaining({rail:'shopify',paymentRef:'901',grossUsd:null}));
+});
+
+it("commissione affiliato recuperata con la data dell'INCASSO, non quella del recupero (D5)", async () => {
+  dbQuery.mockResolvedValueOnce([
+    { event_id: "902", identifier: "u@t.com", variant_id: "111", amount: "14.99", last_error: null, processed_at: "2026-09-01 10:00:00+00" },
+  ]);
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "base" });
+  const { GET } = await import("./route");
+  await GET(req());
+  expect(scheduleAffiliateCommission).toHaveBeenCalledWith(
+    expect.objectContaining({ rail: "shopify", paymentRef: "902", grossUsd: 14.99, paidAt: new Date("2026-09-01T10:00:00Z") })
+  );
 });
