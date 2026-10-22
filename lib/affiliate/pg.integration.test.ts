@@ -403,6 +403,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await h.sql!`DELETE FROM profiles`;
     await h.sql!.unsafe(readFileSync(path.join(ROOT,"scripts/affiliate-v2/rollback_gate_b.sql"),"utf8"));
     expect(await h.sql!`SELECT book_key FROM affiliate_clicks`).toEqual([{book_key:"existing-bo-click"}]);
+    // Review 2 P2-6: il rollback completo toglie anche la funzione dello storno manuale.
+    expect(await h.sql!`SELECT proname FROM pg_proc WHERE proname = 'affiliate_admin_reverse_commission'`).toEqual([]);
     for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT,"supabase/migrations",f),"utf8"));
   });
 

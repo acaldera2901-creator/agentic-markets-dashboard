@@ -36,6 +36,7 @@ END $$;
 DROP TRIGGER IF EXISTS trg_affiliates_status_cancel_payouts ON public.affiliates;
 
 DROP FUNCTION IF EXISTS public.affiliate_purge_clicks();
+DROP FUNCTION IF EXISTS public.affiliate_admin_reverse_commission(text, text, text, text, numeric, integer);
 DROP FUNCTION IF EXISTS public.affiliate_mature_commissions();
 DROP FUNCTION IF EXISTS public.affiliate_on_status_change();
 DROP FUNCTION IF EXISTS public.affiliate_payout_drop_tx(bigint, text);
