@@ -132,6 +132,31 @@ it("idempotenza atomica: INSERT in conflitto (0 righe) → duplicate, no grant",
   expect(activateShopifyPlan).not.toHaveBeenCalled();
 });
 
+// #SHOPIFY-CLAIM-1022 (review 2, P2-2): INSERT riuscito ma SELECT del gettone fallita →
+// 500 E la riga di QUESTA delivery va tolta, altrimenti il retry di Shopify vedrebbe
+// un duplicato e il piano non verrebbe mai concesso.
+it("idempotenza: SELECT del gettone in errore → 500 e cancella solo la propria riga", async () => {
+  dbQueryStrict.mockRejectedValue(new Error("db hiccup"));
+  const body = JSON.stringify({ id: 990, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(500);
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+  const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  const del = dbExecute.mock.calls.find((c) => String(c[0]).includes("DELETE FROM shopify_events"));
+  expect(String(del?.[0])).toMatch(/event_id = \$1 AND last_error = \$2/);
+  expect(del?.[1]).toEqual(["990", insert?.[1]?.[4]]);
+});
+
+it("idempotenza: INSERT in errore → 500, niente DELETE (la riga non è nostra)", async () => {
+  dbExecute.mockRejectedValueOnce(new Error("db down"));
+  const body = JSON.stringify({ id: 991, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(500);
+  expect(dbExecute.mock.calls.some((c) => String(c[0]).includes("DELETE FROM shopify_events"))).toBe(false);
+});
+
 // --- granularità del rimborso: non tutti i rimborsi spengono l'abbonamento ---
 
 it("rimborso della Weekly Pick: NON spegne l'abbonamento", async () => {
