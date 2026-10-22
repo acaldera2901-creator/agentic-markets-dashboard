@@ -764,6 +764,26 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     ]);
   });
 
+  it("LEDGER il pagamento che converte (grant pochi ms PRIMA dell'attribuzione) non è «storico»: il primo rinnovo ha indice 1 (#AFFILIATE-HISTORIC-1022, e2e B2)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '5 days');
+      INSERT INTO paygate_orders VALUES ('pg-1','ref@x.io',14.99,NULL,now() - interval '3 days');`);
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    const [g] = await h.sql!`SELECT granted_at FROM paygate_orders WHERE id = 'pg-1'`;
+    // Come dal rail: il grant è scritto, poi il ledger gira con paidAt di poco successivo.
+    const paid1 = new Date(new Date(g.granted_at).getTime() + 18);
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-1", grossUsd: 14.99, paidAt: paid1 }))
+      .toMatchObject({ written: true });
+    await h.sql!`INSERT INTO paygate_orders VALUES ('pg-2','ref@x.io',14.99,NULL,now() - interval '1 day')`;
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-2", grossUsd: 14.99, paidAt: new Date(Date.now() - 86_400_000) }))
+      .toMatchObject({ written: true });
+    expect(await h.sql!`SELECT rail_payment_ref AS ref, kind, renewal_index AS i FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { ref: "pg-1", kind: "first", i: 0 },
+      { ref: "pg-2", kind: "renewal", i: 1 },
+    ]);
+  });
+
   // #AFFILIATE-FINGERPRINTS-1022 — dalla scrittura del fingerprint al verdetto del ledger.
   it("R4 stesso IP di affiliato e referito entro 24h → attribuzione fraud_review (commissione ferma, non rifiutata)", async () => {
     vi.stubEnv("AFFILIATE_MODE", "shadow");

@@ -225,7 +225,10 @@ async function paymentRecorded(rail: AffiliateRail, ref: string): Promise<boolea
  *  acquisto», e il suo prossimo pagamento è un rinnovo al 7%, non un 20%.
  *  Stabile nel tempo: dopo `attributed_at` ogni pagamento finisce nel ledger.
  *  Il pagamento corrente si esclude per ref (il suo grant precede di poco la
- *  creazione dell'attribuzione).
+ *  creazione dell'attribuzione), e così ogni pagamento GIÀ nel ledger
+ *  (#AFFILIATE-HISTORIC-1022, e2e B2): il pagamento che ha convertito ha il grant
+ *  qualche ms prima di attributed_at, quindi dal rinnovo successivo risultava
+ *  «storico» E riga di ledger — contato due volte, rinnovi da indice 2.
  *  Rail contati: paygate_orders (anche crypto), paypal_orders e shopify_events
  *  concessi — escluse le righe `crypto-paygate` (specchio di un ordine PayGate
  *  già contato) e le Weekly Pick. Stripe non ha una tabella ordini locale: i suoi
@@ -244,7 +247,9 @@ async function historicPayments(referred: string, attributedAtISO: string, curre
           AND event_type = 'orders/paid'
           AND status IN ('granted','granted+weekly','granted-partial')
      ) h
-     WHERE h.ts < $2::timestamptz AND h.ref <> $3`,
+     WHERE h.ts < $2::timestamptz AND h.ref <> $3
+       AND h.ref NOT IN (SELECT rail_payment_ref FROM affiliate_commissions
+                          WHERE referred_identifier = $1 AND kind IN ('first','renewal'))`,
     [referred, attributedAtISO, currentRef]
   );
   return Number(rows[0]?.n ?? 0);
