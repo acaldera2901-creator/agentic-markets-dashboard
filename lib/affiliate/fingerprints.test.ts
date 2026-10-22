@@ -17,12 +17,14 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("recordIpFingerprintSafe", () => {
-  it("scrive l'HMAC, mai l'IP in chiaro, identifier normalizzato, prima vista mai sovrascritta; poi pulizia a 90 gg", async () => {
-    expect(await recordIpFingerprintSafe("  Ref@X.io ", "1.2.3.4")).toBe(true);
-    const [sql, params] = dbExecute.mock.calls[0];
+  it("scrive l'HMAC di IP+giorno (oggi e ieri), mai l'IP in chiaro; pulizia PRIMA dell'insert", async () => {
+    const at = new Date("2026-10-22T00:30:00Z");
+    expect(await recordIpFingerprintSafe("  Ref@X.io ", "1.2.3.4", at)).toBe(true);
+    expect(dbExecute.mock.calls[0]).toEqual([expect.stringMatching(/DELETE FROM affiliate_payer_fingerprints/), [90]]);
+    const [sql, params] = dbExecute.mock.calls[1];
     expect(sql).toMatch(/ON CONFLICT \(identifier, kind, value_hash\) DO NOTHING/);
-    expect(dbExecute.mock.calls[1]).toEqual([expect.stringMatching(/DELETE FROM affiliate_payer_fingerprints/), [90]]);
-    expect(params).toEqual(["ref@x.io", createHmac("sha256", SECRET).update("1.2.3.4").digest("hex")]);
+    const h = (v: string) => createHmac("sha256", SECRET).update(v).digest("hex");
+    expect(params).toEqual(["ref@x.io", h("1.2.3.4|2026-10-22"), h("1.2.3.4|2026-10-21"), at.toISOString()]);
     expect(JSON.stringify(params)).not.toContain("1.2.3.4");
   });
 
@@ -39,7 +41,7 @@ describe("recordIpFingerprintSafe", () => {
   });
 
   it("DB giù → false, non lancia", async () => {
-    dbExecute.mockRejectedValueOnce(new Error("down"));
+    dbExecute.mockRejectedValue(new Error("down"));
     expect(await recordIpFingerprintSafe("a@x.io", "1.2.3.4")).toBe(false);
   });
 
