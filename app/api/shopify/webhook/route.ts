@@ -16,7 +16,7 @@ import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
 import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 import { scheduleAffiliateReversal } from "@/lib/affiliate/reversal";
-import { shopifyOrderAmounts, withNotSinglePlanMark } from "@/lib/affiliate/net";
+import { shopifyOrderAmounts, shopifyOrderIsNonUsd, shopifyPaidAt, withNonUsdMark, withNotSinglePlanMark } from "@/lib/affiliate/net";
 import { opsAlert } from "@/lib/ops-alert";
 // #SUB-LIFECYCLE-0828: i topic fuori whitelist non si buttano piu, si osservano.
 import {
@@ -342,7 +342,7 @@ export async function POST(req: Request) {
       await markEvent(
         order.orderId,
         "unresolved",
-        withNotSinglePlanMark("identifier o variant non risolvibili", notSinglePlan)
+        withNonUsdMark(withNotSinglePlanMark("identifier o variant non risolvibili", notSinglePlan), shopifyOrderIsNonUsd(payload))
       );
       return NextResponse.json({ received: true, unresolved: true });
     }
@@ -373,7 +373,7 @@ export async function POST(req: Request) {
       await markEvent(
         order.orderId,
         "unresolved",
-        withNotSinglePlanMark("grant null: profilo inesistente o grandfather", notSinglePlan)
+        withNonUsdMark(withNotSinglePlanMark("grant null: profilo inesistente o grandfather", notSinglePlan), shopifyOrderIsNonUsd(payload))
       );
     } else {
       // #SHOPIFY-MULTILINE-0804 — carrello misto piano + Weekly Pick: vanno
@@ -411,7 +411,8 @@ identifier: order.identifier,
         rail: "shopify",
         paymentRef: order.orderId,
         grossUsd: amounts.grossUsd,
-        paidAt: new Date(),
+        // #SHOPIFY-RECONCILE-USD-1022 (D5): data dell'incasso dal payload, non della consegna.
+        paidAt: shopifyPaidAt(payload),
         meta: { taxUsd: amounts.taxUsd },
       });
       if (weeklyToo) return NextResponse.json({ received: true, weeklyPick: true });

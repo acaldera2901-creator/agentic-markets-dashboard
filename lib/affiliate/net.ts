@@ -86,6 +86,33 @@ export function isNotSinglePlanMarked(lastError: string | null | undefined): boo
   return (lastError ?? "").includes(SHOPIFY_NOT_SINGLE_PLAN_MARK);
 }
 
+/** #SHOPIFY-RECONCILE-USD-1022 — `shopify_events` non conserva la valuta, e i termini
+ *  pagano commissioni solo su acquisti in USD: un ordine 'unresolved' in altra valuta
+ *  porta questo marcatore, e la reconcile non tratta il suo `amount` come USD. */
+export const SHOPIFY_NON_USD_MARK = "[affiliate:non-usd]";
+
+export function shopifyOrderIsNonUsd(payload: unknown): boolean {
+  const c = (payload ?? {}) as { currency?: unknown };
+  return typeof c.currency === "string" && c.currency.toUpperCase() !== "USD";
+}
+
+export function withNonUsdMark(why: string, nonUsd: boolean): string {
+  return nonUsd ? `${why} ${SHOPIFY_NON_USD_MARK}` : why;
+}
+
+export function isNonUsdMarked(lastError: string | null | undefined): boolean {
+  return (lastError ?? "").includes(SHOPIFY_NON_USD_MARK);
+}
+
+/** Data dell'incasso di un ordine `orders/paid`: `processed_at` del payload (Shopify
+ *  ritenta il webhook fino a 48 h: l'ora di consegna non è l'ora del pagamento).
+ *  Assente, illeggibile o nel futuro → `now`. */
+export function shopifyPaidAt(payload: unknown, now = new Date()): Date {
+  const v = ((payload ?? {}) as { processed_at?: unknown }).processed_at;
+  const d = typeof v === "string" ? new Date(v) : null;
+  return d && !Number.isNaN(d.getTime()) && d.getTime() <= now.getTime() ? d : now;
+}
+
 /** Lordo e tasse di un'invoice Stripe `invoice.paid` (importi in centesimi).
  *  Una valuta diversa da USD → lordo null. */
 export function stripeInvoiceAmounts(inv: {

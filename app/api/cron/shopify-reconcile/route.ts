@@ -6,7 +6,7 @@ import { activateShopifyPlan } from "@/lib/plan-grant";
 import { resolveOrderFromVariant } from "@/lib/shopify";
 import { opsAlert } from "@/lib/ops-alert";
 import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
-import { isNotSinglePlanMarked } from "@/lib/affiliate/net";
+import { isNonUsdMarked, isNotSinglePlanMarked } from "@/lib/affiliate/net";
 
 export const dynamic = "force-dynamic";
 
@@ -81,7 +81,8 @@ identifier: ev.identifier,
           identifier: ev.identifier,
           rail: "shopify",
           paymentRef: ev.event_id,
-          grossUsd: ev.amount == null || isNotSinglePlanMarked(ev.last_error) ? null : Number(ev.amount),
+          // #SHOPIFY-RECONCILE-USD-1022: ordine in altra valuta (marcato dal webhook) → niente commissione (termini: solo USD).
+          grossUsd: ev.amount == null || isNotSinglePlanMarked(ev.last_error) || isNonUsdMarked(ev.last_error) ? null : Number(ev.amount),
           // #AFFILIATE-RECONCILE-1022 (D5): la data dell'INCASSO (arrivo del
           // webhook orders/paid), non quella del recupero: decide finestra di
           // attribuzione, hold e finestra di clawback.

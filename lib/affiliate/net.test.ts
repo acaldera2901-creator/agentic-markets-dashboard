@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  isNonUsdMarked,
+  shopifyOrderIsNonUsd,
+  shopifyPaidAt,
+  withNonUsdMark,
   netAmount,
   commissionAmount,
   round2,
@@ -102,5 +106,23 @@ describe("commissionAmount / round2", () => {
   it("round2 non cade nel tranello di 1.005", () => {
     expect(round2(1.005)).toBe(1.01);
     expect(round2(2.675)).toBe(2.68);
+  });
+});
+
+// #SHOPIFY-RECONCILE-USD-1022
+describe("Shopify: valuta e data dell'incasso", () => {
+  const now = new Date("2026-10-22T12:00:00Z");
+  it("processed_at valido e passato vince; assente, illeggibile o futuro → now", () => {
+    expect(shopifyPaidAt({ processed_at: "2026-10-21T09:00:00-04:00" }, now).toISOString()).toBe("2026-10-21T13:00:00.000Z");
+    expect(shopifyPaidAt({}, now)).toBe(now);
+    expect(shopifyPaidAt({ processed_at: "ieri" }, now)).toBe(now);
+    expect(shopifyPaidAt({ processed_at: "2026-10-23T00:00:00Z" }, now)).toBe(now);
+  });
+  it("non USD solo con valuta dichiarata diversa da USD; marcatore reversibile in lettura", () => {
+    expect(shopifyOrderIsNonUsd({ currency: "eur" })).toBe(true);
+    expect(shopifyOrderIsNonUsd({ currency: "USD" })).toBe(false);
+    expect(shopifyOrderIsNonUsd({})).toBe(false);
+    expect(isNonUsdMarked(withNonUsdMark("x", true))).toBe(true);
+    expect(withNonUsdMark("x", false)).toBe("x");
   });
 });

@@ -383,6 +383,37 @@ describe("rail Shopify", () => {
     expect(activateShopifyPlan).toHaveBeenCalled();
   });
 
+  // #SHOPIFY-RECONCILE-USD-1022 — termini: «solo acquisti in USD». shopify_events non conserva la
+  // valuta: il webhook la scrive come marcatore su last_error degli 'unresolved', la reconcile lo legge.
+  it("ordine non USD rimasto 'unresolved': il webhook lo marca [affiliate:non-usd]", async () => {
+    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    activateShopifyPlan.mockResolvedValue(null);
+    const { POST } = await import("@/app/api/shopify/webhook/route");
+    const payload = { id: 909, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "13.99", currency: "EUR" };
+    const off = await run("shadow", false, async () => body(await POST(shopReq(payload))));
+    const mark = off.railCalls.find((c) => /UPDATE shopify_events SET status/.test(c.sql));
+    expect(mark?.params).toEqual(["909", "unresolved", "grant null: profilo inesistente o grandfather [affiliate:non-usd]"]);
+  });
+
+  it("reconcile di un ordine marcato non USD: piano concesso, nessuna commissione (l'importo non è in USD)", async () => {
+    railResponder = (sql) =>
+      /WHERE status = 'unresolved'/.test(sql)
+        ? [{ event_id: "909", identifier: "u@t.com", variant_id: "111", amount: "13.99", last_error: "grant null: profilo inesistente o grandfather [affiliate:non-usd]" }]
+        : [];
+    const { GET } = await import("@/app/api/cron/shopify-reconcile/route");
+    await guard(() => GET(new Request("https://x/api/cron/shopify-reconcile", { headers: { authorization: "Bearer c" } })), null);
+    expect(activateShopifyPlan).toHaveBeenCalled();
+  });
+
+  it("webhook ritentato da Shopify: la commissione usa processed_at dell'ordine, non l'ora di consegna", async () => {
+    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    const { POST } = await import("@/app/api/shopify/webhook/route");
+    const paid = new Date(Date.now() - 20 * 3600_000).toISOString();
+    const payload = { id: 910, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "14.99", currency: "USD", processed_at: paid };
+    await guard(() => POST(shopReq(payload)), ["shopify", "910", 14.99, 14.99]);
+    expect(commissions[0][11]).toBe(paid);
+  });
+
   it("reconcile con amount NULL (righe storiche): nessuna commissione", async () => {
     railResponder = (sql) =>
       /WHERE status = 'unresolved'/.test(sql) ? [{ event_id: "906", identifier: "u@t.com", variant_id: "111", amount: null }] : [];
