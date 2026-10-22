@@ -2,6 +2,7 @@ import CookiePreferences from '@/components/CookiePreferences';
 import type { Metadata } from "next";
 import Link from "next/link";
 import ClassicChrome from "@/components/classic/ClassicChrome";
+import { SiteFooter } from "@/components/SiteFooter";
 import { LEGAL_ENTITY, PRIVACY_CONTROLLER } from "@/lib/legal-entity";
 import { affiliateHashEnabled } from "@/lib/affiliate/config";
 
@@ -195,6 +196,8 @@ export default function PrivacyPage() {
           </Link>
         </div>
       </div>
+      {/* #LEGAL-FOOTER-1022: footer standard del sito (18+, gioco responsabile, Termini, Privacy), come /affiliates/terms. */}
+      <SiteFooter lang="en" />
     </div>
   );
 }

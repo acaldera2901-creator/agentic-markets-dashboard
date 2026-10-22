@@ -33,7 +33,7 @@ const PUBLIC_ROUTES: Entry[] = [
   { path: "/", changeFrequency: "daily" },
   // #URL-PATHS-0810: /app è diventato un redirect permanente → in sitemap vanno
   // i path veri del desk. Plans/history sono pagine di prodotto indicizzabili;
-  // leaderboard/match-builder/invite restano fuori (contenuto dietro login).
+  // leaderboard/match-builder restano fuori (contenuto dietro login).
   { path: "/predictions", changeFrequency: "daily" },
   // #RESTYLING-0921 round 2: la vecchia landing vive qui, ora che "/" porta
   // direttamente nel prodotto. Contenuto informativo → weekly, non daily.
@@ -53,6 +53,8 @@ const PUBLIC_ROUTES: Entry[] = [
   { path: "/privacy", changeFrequency: "monthly" },
   // #INVITE-AFFILIATE-UX-1022 (M3): i Termini del programma affiliati sono pubblici e linkati dal footer.
   { path: "/affiliates/terms", changeFrequency: "monthly" },
+  // #LEGAL-FOOTER-1022: /invite è pubblico da anonimo (offerta del programma affiliati, M1/M3).
+  { path: "/invite", changeFrequency: "monthly" },
   // #TOOLS-HUB-0805: il Mondiale 2026 è finito. La pagina resta online come
   // archivio ma esce dalla nav — dichiararla ancora "daily" manderebbe i
   // crawler a ricontrollare ogni giorno una pagina che non cambia più.

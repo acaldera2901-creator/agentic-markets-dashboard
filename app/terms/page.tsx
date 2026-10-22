@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ClassicChrome from "@/components/classic/ClassicChrome";
+import { SiteFooter } from "@/components/SiteFooter";
 import { LEGAL_ENTITY } from "@/lib/legal-entity";
 
 export const metadata: Metadata = {
@@ -153,6 +154,8 @@ export default function TermsPage() {
           </Link>
         </div>
       </div>
+      {/* #LEGAL-FOOTER-1022: footer standard del sito (18+, gioco responsabile, Termini, Privacy), come /affiliates/terms. */}
+      <SiteFooter lang="en" />
     </div>
   );
 }
