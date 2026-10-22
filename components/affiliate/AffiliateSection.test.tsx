@@ -56,8 +56,10 @@ describe("stati della pagina", () => {
     mockFetch(me({ ...ME_EMPTY, operations: { payouts_enabled: false, accounting_ready: false } }));
     const a = render(<AffiliateSection lang="it" />);
     expect((await screen.findByTestId("aff-setup")).textContent).toMatch(/Pagamenti in attivazione/);
-    expect(document.body.textContent).toMatch(/da quando il servizio di pagamento è attivo/);
+    expect(document.body.textContent).toMatch(/quando il servizio di pagamento è attivo/);
     expect(document.body.textContent).not.toMatch(/secondo il calendario comunicato/);
+    // review Codex: con la contabilità spenta il cron affiliate-mature salta → mai «maturano comunque»
+    expect(screen.getByTestId("aff-setup").textContent).not.toMatch(/maturano comunque/);
     a.unmount();
     mockFetch(me({ ...ME_EMPTY, operations: { payouts_enabled: true, accounting_ready: true } }));
     const b = render(<AffiliateSection lang="it" />);

@@ -91,7 +91,8 @@ const IT = {
   // (/api/affiliate/me), il pannello lo dice invece di promettere un calendario che non vale.
   setup: {
     title: "Pagamenti in attivazione",
-    body: "Iscrizioni, link e commissioni si registrano già. Il servizio di pagamento e la riconciliazione contabile non sono ancora attivi: nessun pagamento parte finché non lo sono, e lo leggerai qui per primo. Le commissioni maturano comunque e restano tue.",
+    // «si registrano» e non «maturano»: il cron affiliate-mature salta finché la contabilità non è attiva (review Codex).
+    body: "Iscrizioni, link e commissioni si registrano già. Il servizio di pagamento e la riconciliazione contabile non sono ancora attivi: le commissioni restano in attesa e nessun pagamento parte finché non lo sono, e lo leggerai qui per primo. Quello che hai registrato resta tuo.",
   },
   joinErr: {
     invalid_code: "Il codice non è valido: 2–20 caratteri, lettere, numeri, - _.",
@@ -171,7 +172,7 @@ const IT = {
     thrNote: "Pagamenti una volta al mese, a mano, {day}. Conta solo il maturato, non quello in attesa.",
     emptyNote: "Le commissioni compaiono qui entro 24 ore dal primo acquisto di un tuo iscritto, con la prima data utile per la verifica. Il saldo matura anche senza wallet; per essere pagato serve un wallet attivo.",
     thrNoteSetup: "Pagamenti a mano, una volta al mese, da quando il servizio di pagamento è attivo. Conta solo il maturato, non quello in attesa.",
-    emptyNoteSetup: "Le commissioni compaiono qui entro 24 ore dal primo acquisto di un tuo iscritto, con la prima data utile per la verifica. Il saldo matura anche senza wallet; i pagamenti partono quando il servizio di pagamento è attivo e hai un wallet attivo.",
+    emptyNoteSetup: "Le commissioni compaiono qui entro 24 ore dal primo acquisto di un tuo iscritto, con la prima data utile per la verifica. Si registrano anche senza wallet; maturano quando la contabilità è attiva e si pagano quando il servizio di pagamento è attivo e hai un wallet attivo.",
     unavailable: "—",
   },
   wallet: {
@@ -440,7 +441,7 @@ const EN: AffCopy = {
   },
   setup: {
     title: "Payouts being activated",
-    body: "Enrollment, links and commissions are already recorded. The payout service and the accounting reconciliation are not active yet: no payout goes out until they are, and you will read it here first. Commissions keep accruing and stay yours.",
+    body: "Enrollment, links and commissions are already recorded. The payout service and the accounting reconciliation are not active yet: commissions stay pending and no payout goes out until they are, and you will read it here first. What you have recorded stays yours.",
   },
   joinErr: {
     invalid_code: "The code isn't valid: 2–20 characters, letters, numbers, - _.",
@@ -520,7 +521,7 @@ const EN: AffCopy = {
     thrNote: "Payouts once a month, by hand, {day}. Only the earned balance counts, not the pending one.",
     emptyNote: "Commissions appear here within 24 hours of the first purchase by someone you referred, with the earliest review date. The balance accrues even without a wallet; to be paid you need an active wallet.",
     thrNoteSetup: "Payouts by hand, once a month, from when the payout service is active. Only the earned balance counts, not the pending one.",
-    emptyNoteSetup: "Commissions appear here within 24 hours of the first purchase by someone you referred, with the earliest review date. The balance accrues even without a wallet; payouts start once the payout service is active and you have an active wallet.",
+    emptyNoteSetup: "Commissions appear here within 24 hours of the first purchase by someone you referred, with the earliest review date. They are recorded even without a wallet; they are earned once accounting is active and paid once the payout service is active and you have an active wallet.",
     unavailable: "—",
   },
   wallet: {

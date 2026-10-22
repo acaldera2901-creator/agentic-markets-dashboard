@@ -11643,7 +11643,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
         lang={uiLanguage}
         audience={signupPopupAudience({ authChecked, hasSession, plan: clientProfile?.plan })}
         cardOpen={autoOpenKey !== null}
-        overlayOpen={authOpen || mustAuth || checkoutOpen || founderOpen}
+        // #INVITE-AFFILIATE-UX-1022: su /invite (ora senza muro) il pop-up da cliente coprirebbe
+        // l'offerta da affiliato e la sua CTA «free» porterebbe sul board; qui resta in attesa
+        // (overlayRef: il poll riprova, non annulla) finché si va su un'altra tab. (Review Codex P2.)
+        overlayOpen={authOpen || mustAuth || checkoutOpen || founderOpen || tab === "invita"}
         lockedToday={
           predictions.filter((p) => p.locked === true).length
           + tennisMatches.filter((m) => m.locked === true).length
