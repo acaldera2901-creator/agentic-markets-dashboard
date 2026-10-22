@@ -45,7 +45,8 @@ export type RecordCommissionInput = {
    *  vecchio e altri del referito possono essere già nel ledger DOPO di lui. Il
    *  suo indice conta solo le righe pagate PRIMA (in ordine di incasso), non
    *  tutte: altrimenti prenderebbe l'indice di un pagamento successivo e il
-   *  vincolo (referito, indice) lo respingerebbe per sempre. */
+   *  vincolo (referito, indice) lo respingerebbe per sempre. Se quell'indice è
+   *  già occupato si accoda in fondo. */
   recovery?: boolean;
 };
 
@@ -298,8 +299,12 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   const payingReferred = await payingReferredCount(Number(attribution.affiliate_id), config.mode);
 
   for (let attempt = 0; attempt < MAX_INDEX_ATTEMPTS; attempt++) {
+    // Recupero: al primo tentativo l'indice della sua posizione per data; se è
+    // già preso (un pagamento successivo registrato prima di lui) si accoda
+    // dopo tutti, come un rinnovo qualunque, invece di restare perso.
     const renewalIndex =
-      historic + (await ledgerPayments(referred, input.recovery ? input.paidAt.toISOString() : undefined));
+      historic +
+      (await ledgerPayments(referred, input.recovery && attempt === 0 ? input.paidAt.toISOString() : undefined));
     const d = decideCommission({
       mode: config.mode,
       config,

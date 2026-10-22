@@ -24,7 +24,9 @@ import type { AffiliateRail } from "./net";
 export const RECONCILE_LOOKBACK_DAYS = 35;
 /** Ogni recupero costa ~7 RPC in serie: 50 stanno nel budget anche a 100 ms l'una. */
 export const RECONCILE_LIMIT = 50;
-const TIME_BUDGET_MS = 40_000;
+/** Si smette di INIZIARE recuperi dopo 30 s: uno già partito ha ~30 s di
+ *  margine prima del maxDuration di 60 s della rotta. */
+const TIME_BUDGET_MS = 30_000;
 
 type Candidate = { rail: AffiliateRail; ref: string; identifier: string; gross: number | null; paid_at: string };
 
@@ -46,11 +48,6 @@ SELECT p.rail, p.ref, p.identifier, p.gross::float8 AS gross, p.paid_at::text AS
     SELECT 'paypal', id::text, identifier, amount_usd, granted_at
       FROM paypal_orders
      WHERE granted_at > NOW() - INTERVAL '${RECONCILE_LOOKBACK_DAYS} days' AND status <> 'refunded'
-    UNION ALL
-    SELECT 'shopify', event_id, identifier, amount, processed_at
-      FROM shopify_events
-     WHERE event_type = 'orders/paid' AND status = 'granted'
-       AND processed_at > NOW() - INTERVAL '${RECONCILE_LOOKBACK_DAYS} days'
   ) p
  WHERE p.paid_at < NOW() - INTERVAL '15 minutes'
    AND COALESCE(TRIM(p.identifier), '') <> ''
@@ -72,6 +69,33 @@ SELECT p.rail, p.ref, p.identifier, p.gross::float8 AS gross, p.paid_at::text AS
  ORDER BY p.paid_at ASC
  LIMIT ${RECONCILE_LIMIT}`;
 
+/** Shopify: solo l'elenco, in una query separata, così non toglie posto ai
+ *  recuperabili (review Codex). Stessi filtri di referito dei candidati. */
+export const SHOPIFY_MANUAL_SQL = `
+SELECT e.event_id AS ref
+  FROM shopify_events e
+ WHERE e.event_type = 'orders/paid' AND e.status = 'granted'
+   AND e.processed_at > NOW() - INTERVAL '${RECONCILE_LOOKBACK_DAYS} days'
+   AND e.processed_at < NOW() - INTERVAL '15 minutes'
+   AND COALESCE(TRIM(e.identifier), '') <> ''
+   AND NOT EXISTS (
+     SELECT 1 FROM affiliate_commissions c
+      WHERE c.rail = 'shopify' AND c.rail_payment_ref = e.event_id AND c.kind IN ('first','renewal'))
+   AND (
+     EXISTS (SELECT 1 FROM affiliate_attributions a
+              WHERE a.referred_identifier = LOWER(TRIM(e.identifier)) AND a.status IN ('valid','fraud_review'))
+     OR (
+       NOT EXISTS (SELECT 1 FROM affiliate_attributions a WHERE a.referred_identifier = LOWER(TRIM(e.identifier)))
+       AND EXISTS (
+         SELECT 1 FROM profiles pr
+           JOIN affiliates af ON af.code = UPPER(TRIM(pr.referred_by)) AND af.status = 'active'
+          WHERE LOWER(TRIM(pr.identifier)) = LOWER(TRIM(e.identifier))
+            AND e.processed_at - pr.created_at <= make_interval(days => $1))
+     )
+   )
+ ORDER BY e.processed_at ASC
+ LIMIT 50`;
+
 export type ReconcileResult = {
   checked: number;
   written: number;
@@ -84,16 +108,13 @@ export type ReconcileResult = {
 
 export async function reconcileAffiliateLedger(now: () => number = Date.now): Promise<ReconcileResult> {
   const started = now();
-  const rows = await dbQueryStrict<Candidate>(CANDIDATES_SQL, [affiliateConfig().attributionWindowDays]);
+  const windowDays = affiliateConfig().attributionWindowDays;
+  const rows = await dbQueryStrict<Candidate>(CANDIDATES_SQL, [windowDays]);
+  const shopifyManual = (await dbQueryStrict<{ ref: string }>(SHOPIFY_MANUAL_SQL, [windowDays])).map((r) => r.ref);
   const reasons: Record<string, number> = {};
-  const shopifyManual: string[] = [];
   let written = 0;
   let truncated = false;
   for (const r of rows) {
-    if (r.rail === "shopify") {
-      shopifyManual.push(r.ref);
-      continue;
-    }
     if (now() - started > TIME_BUDGET_MS) {
       truncated = true;
       break;

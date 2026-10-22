@@ -426,7 +426,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
       INSERT INTO shopify_events(event_id,event_type,identifier,amount,status,processed_at) VALUES
         ('s-1','orders/paid','shop@x.io',29.99,'granted',now() - interval '3 days');`);
     const first = await reconcileAffiliateLedger();
-    expect(first).toMatchObject({ checked: 3, written: 2, shopify_manual: ["s-1"], truncated: false });
+    expect(first).toMatchObject({ checked: 2, written: 2, shopify_manual: ["s-1"], truncated: false });
     expect(await h.sql!`SELECT rail, rail_payment_ref AS ref, kind, renewal_index AS i, amount_usd::float8 AS amt, status
                          FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
       { rail: "paygate", ref: "pg-1", kind: "first", i: 0, amt: 3, status: "shadow" },
@@ -436,7 +436,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const [a] = await h.sql!`SELECT attributed_at < now() - interval '1 day' AS at_payment FROM affiliate_attributions WHERE referred_identifier = 'ref@x.io'`;
     expect(a.at_payment).toBe(true);
     // Idempotente: resta solo lo Shopify da verificare.
-    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 1, written: 0, shopify_manual: ["s-1"] });
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0, shopify_manual: ["s-1"] });
   });
 
   it("R3 (review Codex) un pagamento perso PRIMA di uno già registrato si recupera al suo indice, non resta bloccato", async () => {
@@ -452,6 +452,24 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await h.sql!`SELECT rail_payment_ref AS ref, kind, renewal_index AS i FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
       { ref: "pg-a", kind: "first", i: 0 },
       { ref: "pg-b", kind: "renewal", i: 1 },
+    ]);
+  });
+
+  it("R3 (review Codex #2) un rinnovo perso il cui indice è già preso da un successivo si accoda invece di restare perso", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    const reconcileAffiliateLedger = await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '30 days');
+      INSERT INTO paygate_orders VALUES ('pg-a','ref@x.io',14.99,NULL,now() - interval '20 days'), ('pg-b','ref@x.io',14.99,NULL,now() - interval '10 days'), ('pg-c','ref@x.io',14.99,NULL,now() - interval '1 day');
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, attributed_at, status) SELECT 'ref@x.io', id, now() - interval '20 days', 'valid' FROM affiliates;
+      INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
+        SELECT id,'ref@x.io','paygate','pg-a','first',14.99,14.99,0.2,3,0,'shadow',now() - interval '20 days',now() + interval '40 days' FROM affiliates
+        UNION ALL
+        SELECT id,'ref@x.io','paygate','pg-c','renewal',14.99,14.99,0.07,1.05,1,'shadow',now() - interval '1 day',now() + interval '59 days' FROM affiliates;`);
+    expect(await reconcileAffiliateLedger()).toMatchObject({ written: 1 });
+    expect(await h.sql!`SELECT rail_payment_ref AS ref, kind, renewal_index AS i FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { ref: "pg-a", kind: "first", i: 0 },
+      { ref: "pg-c", kind: "renewal", i: 1 },
+      { ref: "pg-b", kind: "renewal", i: 2 },
     ]);
   });
 
