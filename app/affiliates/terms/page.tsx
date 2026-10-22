@@ -3,6 +3,7 @@ import Link from 'next/link';
 import ClassicChrome from '@/components/classic/ClassicChrome';
 import { SiteFooter } from '@/components/SiteFooter';
 import { PRIVACY_CONTROLLER, LEGAL_ENTITY } from '@/lib/legal-entity';
+import { AFFILIATE_TERMS_PUBLISHED_VERSION } from '@/lib/affiliate/config';
 
 export const metadata: Metadata = { title: 'Affiliate Program Terms | BetRedge', alternates: { canonical: '/affiliates/terms' } };
 const sections = [
@@ -22,7 +23,7 @@ export default function AffiliateTermsPage() {
     <main className="legal-sheet max-w-2xl mx-auto my-10 px-7 py-11 space-y-8">
       <Link href="/invite" className="underline">← Invite / Invita</Link>
       <h1 className="text-xl font-bold text-[var(--am-text)]">Affiliate Program Terms</h1>
-      <p className="text-xs">Version aff-2026-10-21-v2 · 21 October 2026 (adds volume tiers to section 3; supersedes aff-2026-10-20-v1)</p>
+      <p className="text-xs">Version {AFFILIATE_TERMS_PUBLISHED_VERSION} · 21 October 2026 (adds volume tiers to section 3; supersedes aff-2026-10-20-v1)</p>
       {/* #INVITE-AFFILIATE-UX-1022 (M4): il testo legale resta solo in inglese (non si traduce qui: legale-compliance).
           Dichiarato in chiaro, in inglese e in italiano, quale versione vincola. */}
       <p className="text-xs border-l-2 pl-3" style={{ borderColor: 'var(--am-amber)' }}>

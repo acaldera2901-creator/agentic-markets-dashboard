@@ -60,6 +60,14 @@ describe("GET /api/affiliate/me", () => {
     expect((await GET(req(null))).status).toBe(401);
   });
 
+  it("errore DB sulla sessione → 503, non 401 (non è «non loggato»)", async () => {
+    getSessionPlan.mockRejectedValueOnce(new Error("db down"));
+    const { GET } = await import("./route");
+    const res = await GET(req("alice@x.io"));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "session unavailable" });
+  });
+
   it("non iscritto → 200 enrolled:false", async () => {
     const { GET } = await import("./route");
     const body = await (await GET(req("nobody@x.io"))).json();
