@@ -68,7 +68,7 @@ beforeEach(() => {
   process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "555";
   process.env.SHOPIFY_VARIANT_BASE_ONEOFF = "9111";
   process.env.SHOPIFY_CRYPTO_GATEWAY_NAME = "Crypto (USDT, BTC, ETH)";
-  // Default per il path orders/paid: l'INSERT..RETURNING restituisce 1 riga = ordine
+  // Default per il path orders/paid: la SELECT del gettone restituisce 1 riga = ordine
   // nostro (nessun conflitto) → si procede al grant. I test refund impostano le
   // proprie sequenze con mockResolvedValueOnce.
   dbQueryStrict.mockResolvedValue([{ event_id: "won" }]);
@@ -121,7 +121,7 @@ it("concede il piano su orders/paid valido", async () => {
 });
 
 it("idempotenza atomica: INSERT in conflitto (0 righe) → duplicate, no grant", async () => {
-  dbQueryStrict.mockResolvedValue([]); // ON CONFLICT DO NOTHING → nessuna riga = già preso
+  dbQueryStrict.mockResolvedValue([]); // gettone non ritrovato = un'altra delivery ha la riga
   const body = JSON.stringify({ id: 900, email: "u@t.com", line_items: [{ variant_id: 222 }] });
   const { POST } = await import("./route");
   const res = await POST(req(body, sign(body)));
@@ -187,9 +187,14 @@ it("l'ordine registra l'importo: senza, un rimborso parziale sarebbe indistingui
   const body = JSON.stringify({ id: 920, email: "u@t.com", total_price: "14.99", line_items: [{ variant_id: 111 }] });
   const { POST } = await import("./route");
   await POST(req(body, sign(body)));
-  // L'INSERT è ora il gate atomico (dbQueryStrict … RETURNING), non più dbExecute.
-  const insert = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
-  expect(insert?.[1]).toEqual(["920", "u@t.com", "111", 14.99]);
+  // #SHOPIFY-CLAIM-1022: INSERT … ON CONFLICT via dbExecute (MAI RETURNING: exec_sql
+  // non ne restituisce le righe) col gettone della delivery; il vincitore lo ritrova
+  // con una SELECT separata (test su exec_sql vero in pg.integration.test.ts).
+  const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  expect(String(insert?.[0])).not.toMatch(/RETURNING/i);
+  expect(insert?.[1]).toEqual(["920", "u@t.com", "111", 14.99, expect.stringMatching(/^claim:/)]);
+  const pick = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("last_error = $2"));
+  expect(pick?.[1]).toEqual(["920", insert?.[1]?.[4]]);
 });
 
 // #SHOPIFY-CRYPTO-2 — LA guardia che regge tutto il rail crypto.
@@ -290,7 +295,7 @@ it("carrello misto: in shopify_events va il variant del PIANO, non il primo del 
   });
   const { POST } = await import("./route");
   await POST(req(body, sign(body)));
-  const insert = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
   expect(insert?.[1]?.[2]).toBe("111"); // variant_id registrato = il piano
 });
 

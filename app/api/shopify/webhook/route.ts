@@ -224,21 +224,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true, skipped: "no order id" });
   }
 
-  // Idempotenza ATOMICA: l'INSERT È il gate. ON CONFLICT DO NOTHING RETURNING →
-  // 0 righe significa che un'altra delivery ha già preso questo ordine (duplicato):
-  // ack senza grant. Elimina la race SELECT-poi-INSERT — due delivery concorrenti
-  // dello stesso ordine passavano entrambe la SELECT → doppio activateShopifyPlan
-  // → 2x giorni concessi per 1 pagamento.
+  // Idempotenza ATOMICA: l'INSERT È il gate. ON CONFLICT DO NOTHING → chi non
+  // ha inserito la riga è una redelivery (duplicato): ack senza grant. Elimina la
+  // race SELECT-poi-INSERT — due delivery concorrenti dello stesso ordine
+  // passavano entrambe la SELECT → doppio activateShopifyPlan → 2x giorni.
+  // #SHOPIFY-CLAIM-1022: NON con `RETURNING`. exec_sql avvolge lo statement in
+  // `SELECT … FROM (<stmt>) t`, che per una scrittura è invalido: ricade
+  // sull'esecuzione nuda e risponde [] → ogni ordine sembrava un duplicato e il
+  // piano non veniva mai concesso (stesso limite documentato in stripe/webhook e
+  // crypto/checkout). Ora l'INSERT porta un gettone unico di questa delivery in
+  // last_error e una SELECT separata dice chi ha vinto: solo chi ritrova il
+  // PROPRIO gettone procede. markEvent sovrascrive last_error su ogni esito.
   // identifier e variant vengono registrati perché la reconcile possa ri-tentare
   // un ordine rimasto senza grant: senza di essi l'evento è irrecuperabile.
+  const claim = `claim:${crypto.randomUUID()}`;
   let won: { event_id: string }[];
   try {
+    await dbExecute(
+      `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, amount, status, last_error)
+       VALUES ($1, 'orders/paid', $2, $3, $4, 'pending', $5)
+       ON CONFLICT (event_id) DO NOTHING`,
+      [order.orderId, order.identifier, order.variantId, order.totalPrice, claim]
+    );
     won = await dbQueryStrict<{ event_id: string }>(
-      `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, amount, status)
-       VALUES ($1, 'orders/paid', $2, $3, $4, 'pending')
-       ON CONFLICT (event_id) DO NOTHING
-       RETURNING event_id`,
-      [order.orderId, order.identifier, order.variantId, order.totalPrice]
+      `SELECT event_id FROM shopify_events WHERE event_id = $1 AND last_error = $2 LIMIT 1`,
+      [order.orderId, claim]
     );
   } catch (e) {
     console.error("[shopify/webhook] idempotency unavailable:", String(e));
