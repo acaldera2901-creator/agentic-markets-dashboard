@@ -15,6 +15,7 @@ import { grantWeeklyPick } from "@/lib/weekly-pick-server";
 import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
 import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
+import { scheduleAffiliateReversal } from "@/lib/affiliate/reversal";
 import { shopifyOrderAmounts, withNotSinglePlanMark } from "@/lib/affiliate/net";
 import { opsAlert } from "@/lib/ops-alert";
 // #SUB-LIFECYCLE-0828: i topic fuori whitelist non si buttano piu, si osservano.
@@ -97,6 +98,18 @@ async function handleRefund(payload: unknown) {
     );
     return NextResponse.json({ received: true, unresolved: true });
   }
+
+  // #AFFILIATE-REVERSAL-1022 — storno della commissione affiliato in proporzione
+  // al rimborsato (termini §4), qualunque cosa decida sotto la revoca del piano.
+  // Gira dopo la risposta e non lancia mai; un ordine senza commissione (Weekly
+  // Pick, carrello misto, nessun affiliato) è un no-op. Importo assente = totale,
+  // come isFullRefund. Idempotente sull'id del rimborso.
+  scheduleAffiliateReversal({
+    rail: "shopify",
+    paymentRef: refund.orderId,
+    eventRef: refund.refundId,
+    refundedGrossUsd: refund.amount,
+  });
 
   // Un rimborso NON è sempre "spegni l'abbonamento". Due casi che la revoca
   // cieca sbagliava, entrambi a nostro danno o del cliente:
