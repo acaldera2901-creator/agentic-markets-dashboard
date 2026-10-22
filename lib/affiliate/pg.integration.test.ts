@@ -482,12 +482,29 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     ]);
     expect(results.filter((r) => (r as { written?: boolean }).written === true).length).toBeGreaterThanOrEqual(2);
     const all = await rows();
-    expect(all.filter((r) => r.ev === "r1")).toHaveLength(1);
+    expect(all.filter((r) => r.ev === "r1").length).toBeLessThanOrEqual(1); // mai due righe per lo stesso evento
     const reversed = all.filter((r) => r.kind !== "first").reduce((s, r) => s + -r.amt, 0);
     expect(Math.round(reversed * 100) / 100).toBe(20);
     // Nessuno storno `pending` orfano accanto a un originale già maturato.
     const [orig] = all;
     if (orig.status === "payable") expect(all.some((r) => r.kind === "reversal" && r.status === "pending")).toBe(false);
+  });
+
+  it("R1 maturazione concorrente a uno storno parziale non committato: vede lo storno (review Codex #2)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    await aliceWithCommission("pending", 70);
+    let maturity: Promise<unknown> | null = null;
+    await h.sql!.begin(async (tx) => {
+      await tx`SELECT affiliate_reverse_commission('shopify','o1','r1',50,120)`;
+      maturity = h.sql!`SELECT affiliate_mature_commissions() AS r`.execute(); // parte ORA (le query postgres.js sono lazy)
+      await new Promise((r) => setTimeout(r, 150)); // la maturazione resta in attesa del lock
+    });
+    const [m] = (await maturity!) as { r: unknown }[];
+    expect(m.r).toEqual({ ok: true, matured: 2 });
+    expect(await rows()).toEqual([
+      { kind: "first", ev: "", amt: 20, status: "payable" },
+      { kind: "reversal", ev: "r1", amt: -10, status: "payable" },
+    ]);
   });
 
   it("R1 endpoint admin (rimborso manuale PayGate/crypto): valida l'input e storna", async () => {
@@ -499,7 +516,10 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(bad.status).toBe(400);
     const ok = await admin.POST(req("/x", "POST", null, { rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }) as never);
     expect(await ok.json()).toEqual({ written: true, reason: "reversal" });
-    expect((await rows()).map((r) => r.ev)).toEqual(["", "admin:m1"]);
+    expect((await rows()).map((r) => r.ev)).toEqual(["", "m1"]);
+    // Rigiocare la stessa event_ref (es. da un alert) non storna due volte.
+    const again = await admin.POST(req("/x", "POST", null, { rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }) as never);
+    expect(await again.json()).toEqual({ written: false, reason: "duplicate" });
   });
 
 });

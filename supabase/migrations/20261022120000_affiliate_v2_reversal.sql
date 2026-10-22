@@ -24,9 +24,22 @@
 --    cumulato al lordo (± 1 cent) chiude il residuo (niente centesimi orfani).
 --  · idempotente per (rail, pagamento, evento), qualunque kind ne sia uscito.
 --
+-- Ridefinisce anche affiliate_mature_commissions (20261020150000) perché
+-- rispetti la regola QA F1 di 20261015130000: chi sposta righe verso `payable`
+-- blocca PRIMA le righe di `affiliates`. Senza quel lock la maturazione prendeva
+-- lo snapshot prima del commit di uno storno parziale concorrente: promuoveva
+-- l'originale e lasciava lo storno `pending` fino al giro successivo, e un
+-- payout creato nel mezzo pagava la commissione intera (review Codex #2).
+--
+-- LIMITE NOTO: un rimborso la cui quota di commissione arrotonda a 0 (meno di
+-- mezzo centesimo) non si registra (il CHECK vieta una riga negativa da 0), e il
+-- suo lordo non entra nel cumulato: su una serie di micro-rimborsi può restare
+-- 1 centesimo di commissione. Accettato: importo trascurabile.
+--
 -- NON si applica da sola: workflow_dispatch con `approved_sha`. Idempotente
--- (CREATE OR REPLACE). Rollback: DROP FUNCTION (le righe scritte restano: sono
--- registro contabile).
+-- (CREATE OR REPLACE). Rollback: DROP della funzione di storno e ri-esecuzione
+-- di 20261020150000 per la maturazione (le righe scritte restano: sono registro
+-- contabile).
 
 CREATE OR REPLACE FUNCTION public.affiliate_reverse_commission(
   p_rail           text,
@@ -136,3 +149,23 @@ END $$;
 
 REVOKE EXECUTE ON FUNCTION public.affiliate_reverse_commission(text, text, text, numeric, integer) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.affiliate_reverse_commission(text, text, text, numeric, integer) TO service_role;
+
+-- ── Maturazione con il lock comune (sostituisce 20261020150000) ─────────────
+CREATE OR REPLACE FUNCTION public.affiliate_mature_commissions()
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE n integer;
+BEGIN
+  -- Prima affiliates (ordine di lock comune), poi l'UPDATE: in READ COMMITTED
+  -- l'UPDATE prende lo snapshot DOPO aver ottenuto i lock, quindi vede anche gli
+  -- storni committati da chi teneva il lock.
+  PERFORM 1 FROM public.affiliates WHERE status = 'active' ORDER BY id FOR UPDATE;
+  UPDATE public.affiliate_commissions c SET status = 'payable'
+  FROM public.affiliates a, public.affiliate_attributions t
+  WHERE c.affiliate_id = a.id AND a.status = 'active'
+    AND t.affiliate_id = a.id AND t.referred_identifier = c.referred_identifier AND t.status = 'valid'
+    AND c.status = 'pending' AND c.payable_after <= now() AND c.payout_id IS NULL;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN jsonb_build_object('ok', true, 'matured', n);
+END $$;
+REVOKE ALL ON FUNCTION public.affiliate_mature_commissions() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.affiliate_mature_commissions() TO service_role;

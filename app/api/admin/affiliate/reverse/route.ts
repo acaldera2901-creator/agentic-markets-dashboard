@@ -3,9 +3,12 @@
 // POST { rail, payment_ref, event_ref, refunded_usd? } → storna la commissione
 // di un pagamento rimborsato A MANO: PayGate e crypto non hanno un webhook di
 // rimborso (il rimborso è un invio manuale), quindi chi rimborsa registra qui lo
-// storno. refunded_usd assente/null = storno totale. Stessa logica e stessa
-// idempotenza dei webhook (lib/affiliate/reversal.ts): ripetere la stessa
-// event_ref non scrive due volte. Auth admin + blocco cross-site come payouts.
+// storno. refunded_usd assente/null = storno totale. Serve anche a rigiocare uno
+// storno di webhook fallito (l'alert «affiliate-reversal» riporta rail,
+// payment_ref, event_ref e importo). Stessa logica e stessa idempotenza dei
+// webhook (lib/affiliate/reversal.ts): ripetere la stessa event_ref non scrive
+// due volte. Per un rimborso manuale usare un id proprio e univoco (es.
+// «manual-2026-10-22-<ordine>»). Auth admin + blocco cross-site come payouts.
 
 import { NextResponse, type NextRequest } from "next/server";
 import { adminGuard } from "@/lib/affiliate/payouts";
@@ -38,7 +41,9 @@ export async function POST(req: NextRequest) {
   const outcome = await reverseAffiliateCommissionSafe({
     rail,
     paymentRef,
-    eventRef: `admin:${eventRef}`,
+    // La event_ref NON si prefissa: rigiocare dall'alert lo storno di un webhook
+    // con la sua stessa event_ref deve dare `duplicate` se era già passato.
+    eventRef,
     refundedGrossUsd: refunded,
   });
   return NextResponse.json(outcome, { status: outcome.reason === "error" ? 503 : 200 });
