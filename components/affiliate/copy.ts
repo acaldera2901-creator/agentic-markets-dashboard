@@ -95,6 +95,16 @@ const IT = {
     s3t: "Rinnovano: 7%",
     s3b: "Di ogni rinnovo dal secondo mese, finché restano abbonati. Con più referiti paganti la percentuale sale: vedi «Il tuo livello».",
   },
+  levels: {
+    title: "Come funzionano i livelli",
+    l1t: "Tre livelli, solo sui rinnovi",
+    l1b: "7% di base, 10% da 5 referiti paganti, 15% da 15. Il primo acquisto di ogni referito resta sempre al 20%.",
+    l2t: "Chi è un referito pagante",
+    l2b: "Una persona arrivata dal tuo link che ha fatto almeno un acquisto pagato non rimborsato né stornato. Un'iscrizione senza pagamento non conta; se tutti i suoi acquisti vengono rimborsati o stornati, smette di contare.",
+    l3t: "Quando scatta il livello",
+    l3b: "Il livello si misura subito prima di registrare ogni commissione. Il pagamento del 5° referito pagante è un primo acquisto e prende comunque il 20%; da lì ogni rinnovo successivo di tutti i tuoi referiti passa al 10%. Lo stesso al 15° referito pagante, verso il 15%. Le commissioni già registrate non si ricalcolano.",
+    example: "Per fare un caso: hai 4 referiti paganti e i loro rinnovi sono al 7%. Si abbona il 5°: il suo primo acquisto è al 20%. Dal rinnovo successivo di ciascuno dei cinque, la percentuale è il 10%.",
+  },
   tier: {
     title: "Il tuo livello",
     level0: "Livello base",
@@ -414,6 +424,16 @@ const EN: AffCopy = {
     s2b: "Of their first purchase, net of VAT, refunds and fees.",
     s3t: "They renew: 7%",
     s3b: "Of every renewal from the second month, as long as they stay subscribed. More paying referrals raise the rate: see “Your level”.",
+  },
+  levels: {
+    title: "How the levels work",
+    l1t: "Three levels, on renewals only",
+    l1b: "7% base, 10% from 5 paying referrals, 15% from 15. The first purchase of every referral always stays at 20%.",
+    l2t: "What counts as a paying referral",
+    l2b: "Someone who came through your link and made at least one paid purchase that was not refunded or reversed. A sign-up without a payment does not count; if all of their purchases are refunded or reversed, they stop counting.",
+    l3t: "When a level kicks in",
+    l3b: "Your level is measured right before each commission is recorded. The payment of your 5th paying referral is a first purchase and still gets 20%; from then on, every later renewal of all your referrals moves to 10%. The same happens at your 15th paying referral, to 15%. Commissions already recorded are not recalculated.",
+    example: "For instance: you have 4 paying referrals and their renewals are at 7%. The 5th subscribes: their first purchase is at 20%. From the next renewal of each of the five, the rate is 10%.",
   },
   tier: {
     title: "Your level",

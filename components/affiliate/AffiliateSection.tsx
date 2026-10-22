@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AFF_COPY, affLang, type AffCopy } from "./copy";
 import { api } from "./api";
-import { CommissionHistory, HowSteps, HowWePay, LedgerBlock, LinkBlock, PayoutHistory, Rules, TierBlock, WalletCard } from "./Blocks";
+import { CommissionHistory, HowSteps, HowWePay, LedgerBlock, LinkBlock, PayoutHistory, Rules, TierBlock, TierHow, WalletCard } from "./Blocks";
 import { Skeleton } from "./ui";
 import { WalletForm } from "./WalletForm";
 import type { JoinInfo, MeResponse } from "./types";
@@ -340,6 +340,7 @@ function Enroll({ c, join, termsHref, onDone, onTerms }: {
           <li><strong>{e.f2t}</strong><span>{e.f2b}</span></li>
           <li><strong>{e.f3t}</strong><span>{e.f3b}</span></li>
         </ul>
+        <TierHow c={c} />
       </div>
     </section>
   );

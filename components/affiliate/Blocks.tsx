@@ -107,7 +107,24 @@ export function HowSteps({ c }: { c: AffCopy }) {
           </li>
         ))}
       </ol>
+      <TierHow c={c} />
     </section>
+  );
+}
+
+/** #INVITE-TIERS-HOW-1022 — come funzionano i livelli (7/10/15), testo statico legato a DEFAULT_TIERS dal test. */
+export function TierHow({ c }: { c: AffCopy }) {
+  const v = c.levels;
+  return (
+    <div className="aff-levels" data-testid="aff-levels">
+      <h3 className="aff-h">{v.title}</h3>
+      <ul className="aff-fine">
+        <li><strong>{v.l1t}</strong><span>{v.l1b}</span></li>
+        <li><strong>{v.l2t}</strong><span>{v.l2b}</span></li>
+        <li><strong>{v.l3t}</strong><span>{v.l3b}</span></li>
+      </ul>
+      <p className="aff-muted aff-small">{v.example}</p>
+    </div>
   );
 }
 

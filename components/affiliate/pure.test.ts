@@ -181,13 +181,34 @@ describe("copy della scala sui rinnovi = DEFAULT_TIERS", () => {
     const { DEFAULT_TIERS } = await import("@/lib/affiliate/tiers");
     for (const l of ["it", "en"] as const) {
       const c = AFF_COPY[l];
-      for (const text of [c.head.lede, `${c.enroll.t2v} ${c.enroll.t2}`, c.rules.r1]) {
+      for (const text of [c.head.lede, `${c.enroll.t2v} ${c.enroll.t2}`, c.rules.r1, c.levels.l1b]) {
         expect(text).toMatch(/\b7%/);
         for (const s of DEFAULT_TIERS) {
           expect(text, `${l}: ${text}`).toContain(`${Math.round(s.rate * 100)}%`);
           expect(text, `${l}: ${text}`).toMatch(new RegExp(`\\b${s.min}\\b`));
         }
       }
+    }
+  });
+});
+
+// #INVITE-TIERS-HOW-1022: «Come funzionano i livelli» — soglie, 20% sul primo acquisto del
+// referito che fa scattare il livello, nessuna stima di guadagno.
+describe("copy «come funzionano i livelli»", () => {
+  it("cita la prima soglia, il 20% del primo acquisto e niente importi o promesse (it/en)", async () => {
+    const { DEFAULT_TIERS } = await import("@/lib/affiliate/tiers");
+    const [first, second] = DEFAULT_TIERS;
+    for (const l of ["it", "en"] as const) {
+      const v = AFF_COPY[l].levels;
+      const all = Object.values(v).join(" ");
+      expect(v.l3b).toMatch(new RegExp(`\\b${first.min}(°|th)`));
+      expect(v.l3b).toMatch(new RegExp(`\\b${second.min}(°|th)`));
+      expect(v.l3b).toContain("20%");
+      expect(v.l3b).toContain(`${Math.round(first.rate * 100)}%`);
+      expect(v.l3b).toContain(`${Math.round(second.rate * 100)}%`);
+      expect(v.example).toContain(`${first.min - 1} `);
+      expect(v.example).toContain(`${Math.round(first.rate * 100)}%`);
+      expect(all).not.toMatch(/\$\s?\d|\d\s?\$|guadagn|garantit|earn|guarantee/i);
     }
   });
 });
