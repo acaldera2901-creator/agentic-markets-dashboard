@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import ClassicChrome from '@/components/classic/ClassicChrome';
+import { SiteFooter } from '@/components/SiteFooter';
 import { PRIVACY_CONTROLLER, LEGAL_ENTITY } from '@/lib/legal-entity';
 
 export const metadata: Metadata = { title: 'Affiliate Program Terms | BetRedge', alternates: { canonical: '/affiliates/terms' } };
@@ -22,9 +23,18 @@ export default function AffiliateTermsPage() {
       <Link href="/invite" className="underline">← Invite / Invita</Link>
       <h1 className="text-xl font-bold text-[var(--am-text)]">Affiliate Program Terms</h1>
       <p className="text-xs">Version aff-2026-10-21-v2 · 21 October 2026 (adds volume tiers to section 3; supersedes aff-2026-10-20-v1)</p>
+      {/* #INVITE-AFFILIATE-UX-1022 (M4): il testo legale resta solo in inglese (non si traduce qui: legale-compliance).
+          Dichiarato in chiaro, in inglese e in italiano, quale versione vincola. */}
+      <p className="text-xs border-l-2 pl-3" style={{ borderColor: 'var(--am-amber)' }}>
+        <strong className="text-[var(--am-text)]">Binding version: English.</strong> These Terms are published in English only; the English text is the one that applies, whatever language the rest of the site is shown in.
+        <span lang="it" className="block mt-1">Versione vincolante: inglese. I Termini sono pubblicati solo in inglese; fa fede il testo inglese, qualunque sia la lingua del resto del sito.</span>
+      </p>
       <p className="text-sm">The contracting party and payer for this program is {PRIVACY_CONTROLLER.name}, {PRIVACY_CONTROLLER.address}, {PRIVACY_CONTROLLER.uid}. Contact: {LEGAL_ENTITY.contactEmail}.</p>
       <p className="text-sm">These terms supplement the <Link href="/terms" className="underline">Terms of Service</Link> and <Link href="/privacy" className="underline">Privacy Policy</Link>. For the affiliate program, these specific conditions take precedence.</p>
       {sections.map(([title, body]) => <section key={title} className="space-y-3"><h2 className="text-sm font-semibold text-[var(--am-text)]">{title}</h2><p className="text-sm leading-relaxed">{body}</p></section>)}
     </main>
+    {/* #INVITE-AFFILIATE-UX-1022 (L3): il footer standard del sito (18+, gioco responsabile, Termini, Privacy),
+        in inglese come il documento. */}
+    <SiteFooter lang="en" />
   </div>;
 }

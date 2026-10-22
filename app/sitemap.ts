@@ -51,6 +51,8 @@ const PUBLIC_ROUTES: Entry[] = [
   { path: "/partners", changeFrequency: "monthly" },
   { path: "/terms", changeFrequency: "monthly" },
   { path: "/privacy", changeFrequency: "monthly" },
+  // #INVITE-AFFILIATE-UX-1022 (M3): i Termini del programma affiliati sono pubblici e linkati dal footer.
+  { path: "/affiliates/terms", changeFrequency: "monthly" },
   // #TOOLS-HUB-0805: il Mondiale 2026 è finito. La pagina resta online come
   // archivio ma esce dalla nav — dichiararla ancora "daily" manderebbe i
   // crawler a ricontrollare ogni giorno una pagina che non cambia più.

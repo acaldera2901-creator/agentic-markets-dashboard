@@ -18,10 +18,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AFF_COPY, affLang, type AffCopy } from "./copy";
 import { api } from "./api";
-import { CommissionHistory, HowSteps, HowWePay, LadderPreview, LedgerBlock, LinkBlock, PayoutHistory, Rules, TierBlock, TierHow, WalletCard } from "./Blocks";
+import { CommissionHistory, HowSteps, HowWePay, LedgerBlock, LinkBlock, Offer, PayoutHistory, Rules, TierBlock, WalletCard } from "./Blocks";
 import { Skeleton } from "./ui";
 import { WalletForm } from "./WalletForm";
-import type { JoinInfo, MeResponse } from "./types";
+import type { JoinInfo, MeResponse, Operations } from "./types";
 import "./affiliate.css";
 
 export type AffiliateSectionProps = {
@@ -54,6 +54,10 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
   const [loadingMore, setLoadingMore] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [busyRemove, setBusyRemove] = useState(false);
+  // #INVITE-AFFILIATE-UX-1022 (R5): flag operativi da /api/affiliate/me. null = risposta senza
+  // `operations` (ignoto) → nessun banner: non si dichiara uno stato che il server non ha detto.
+  const [ops, setOps] = useState<Operations | null>(null);
+  const setup = ops !== null && (!ops.payouts_enabled || !ops.accounting_ready);
   const mounted = useRef(true);
   // StrictMode (dev) monta, smonta e rimonta: il flag va riarmato a ogni mount
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -64,6 +68,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
     if (res.status === 401) return setPhase({ k: "anon" });
     if (!res.ok || !res.data) return setPhase({ k: "error" });
     const me = res.data;
+    setOps(me.operations ?? null);
     if (me.enrolled) {
       setMoreItems([]);
       setNextCursor(me.commissions.next_cursor);
@@ -124,10 +129,24 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
       </>
     );
   } else if (phase.k === "anon") {
+    // #INVITE-AFFILIATE-UX-1022 (M2/M3): da anonimo l'offerta è in chiaro — titolo, lede coi numeri,
+    // la stessa colonna «in numeri» dell'iscrizione e il link ai Termini. La CTA piena è «crea un account
+    // gratuito» (è il passo che manca a un affiliato nuovo); «Accedi» è la ghost. Niente muro.
     body = (
       <>
-        <Head c={c} />
-        <div className="aff-block"><h2 className="aff-h">{c.state.anonTitle}</h2><p className="aff-muted">{c.state.anonBody}</p><div className="aff-actions">{onSignIn && <button type="button" className="aff-cta" onClick={onSignIn}>{l === "it" ? "Accedi" : "Sign in"}</button>}{onRegister && <button type="button" className="aff-cta aff-cta--ghost" onClick={onRegister}>{l === "it" ? "Registrati" : "Register"}</button>}</div></div>
+        <Head c={c} lede />
+        <section className="aff-top" aria-label={c.state.anonTitle} data-testid="aff-anon">
+          <div className="aff-link aff-anon">
+            <h2 className="aff-h">{c.state.anonTitle}</h2>
+            <p className="aff-muted">{c.state.anonBody}</p>
+            <div className="aff-actions">
+              {onRegister && <button type="button" className="aff-cta" onClick={onRegister}>{c.state.anonRegister}</button>}
+              {onSignIn && <button type="button" className="aff-cta aff-cta--ghost" onClick={onSignIn}>{c.state.anonSignIn}</button>}
+            </div>
+            <p className="aff-terms"><a href={termsHref}>{c.state.anonTerms}</a> · <a href={privacyHref}>{c.rules.privacy}</a></p>
+          </div>
+          <Offer c={c} />
+        </section>
       </>
     );
   } else if (phase.k === "closed") {
@@ -157,6 +176,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
     body = (
       <>
         <Head c={c} lede />
+        {setup && <SetupBanner c={c} />}
         <Enroll c={c} join={phase.join} termsHref={termsHref} onDone={() => { setPhase({ k: "loading" }); void load(); }} onTerms={(v) => setPhase({ k: "enroll", join: { ...phase.join, terms_version: v } })} />
         <Rules c={c} termsHref={termsHref} privacyHref={privacyHref} />
       </>
@@ -203,7 +223,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
         <>
           <Head c={c} />
           <div><button type="button" className="aff-linkbtn" onClick={() => setView("dash")}>← {c.pay.back}</button></div>
-          <PayoutHistory c={c} lang={l} payouts={me.payouts} unavailable={false} full />
+          <PayoutHistory c={c} lang={l} payouts={me.payouts} unavailable={false} full setup={setup} />
         </>
       );
     } else {
@@ -214,12 +234,13 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
           <Head c={c} />
           {me.affiliate.status === "suspended" && <div className="aff-banner" role="status"><p>{c.state.suspended}</p></div>}
           {me.affiliate.status === "terminated" && <div className="aff-banner" role="status"><p>{c.state.terminated}</p></div>}
+          {setup && <SetupBanner c={c} />}
           {flash && <div className="aff-open" role="status"><span>{flash}</span></div>}
           <div className="aff-top">
             <LinkBlock c={c} code={me.affiliate.code} link={link} error={false} onRetry={() => void load()} />
             <HowSteps c={c} levels={!me.tier} />
           </div>
-          <LedgerBlock c={c} lang={l} ledger={me.ledger} payouts={me.payouts} unavailable={false} />
+          <LedgerBlock c={c} lang={l} ledger={me.ledger} payouts={me.payouts} unavailable={false} setup={setup} />
           <TierBlock c={c} tier={me.tier ?? null} />
           <div className="aff-pair aff-w75">
             <WalletCard
@@ -231,9 +252,9 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
               onAdd={() => { setFlash(""); setView("wallet"); }}
               onChange={() => { setFlash(""); setView("wallet"); }}
             />
-            <HowWePay c={c} />
+            <HowWePay c={c} setup={setup} />
           </div>
-          <PayoutHistory c={c} lang={l} payouts={me.payouts} unavailable={false} full={false} onAll={() => setView("payouts")} />
+          <PayoutHistory c={c} lang={l} payouts={me.payouts} unavailable={false} full={false} onAll={() => setView("payouts")} setup={setup} />
           <CommissionHistory c={c} lang={l} items={items} hasMore={nextCursor != null} loadingMore={loadingMore} onMore={loadMore} unavailable={false} />
           <Rules c={c} termsHref={termsHref} privacyHref={privacyHref} />
         </>
@@ -256,6 +277,17 @@ function Head({ c, lede }: { c: AffCopy; lede?: boolean }) {
       <h2 className="aff-headline">{c.head.title}</h2>
       {lede && <p className="aff-lede">{c.head.lede}</p>}
     </header>
+  );
+}
+
+/** #INVITE-AFFILIATE-UX-1022 (R5) — «pagamenti in attivazione»: payout o contabilità non attivi lato server.
+ *  Uno stato dichiarato, non un errore: ambra tratteggiato, mai rosso. */
+function SetupBanner({ c }: { c: AffCopy }) {
+  return (
+    <div className="aff-banner aff-banner--setup" role="status" data-testid="aff-setup">
+      <strong>{c.setup.title}</strong>
+      <p>{c.setup.body}</p>
+    </div>
   );
 }
 
@@ -331,23 +363,10 @@ function Enroll({ c, join, termsHref, onDone, onTerms }: {
         <p className="aff-muted aff-small">{e.ctaHint}</p>
       </form>
       {/* #INVITE-LAYOUT-1022 — colonna destra in tre registri: i numeri fissi (20% · 60 gg · 50 $),
-          la scala dei rinnovi 7/10/15 come oggetto a sé (prima era una frase da 13 px sotto il «7%»),
-          le tre regole fini. La spiegazione lunga dei livelli si apre da «Come funzionano i livelli». */}
-      <div className="aff-how">
-        <h2 className="aff-h">{e.howTitle}</h2>
-        <dl className="aff-terms-list">
-          <div><dd>{e.t1v}</dd><dt>{e.t1}</dt></div>
-          <div><dd>{e.t3v}</dd><dt>{e.t3}</dt></div>
-          <div><dd>{e.t4v}</dd><dt>{e.t4}</dt></div>
-        </dl>
-        <LadderPreview c={c} />
-        <ul className="aff-fine">
-          <li><strong>{e.f1t}</strong><span>{e.f1b}</span></li>
-          <li><strong>{e.f2t}</strong><span>{e.f2b}</span></li>
-          <li><strong>{e.f3t}</strong><span>{e.f3b}</span></li>
-        </ul>
-        <TierHow c={c} />
-      </div>
+          la scala dei rinnovi 7/10/15 come oggetto a sé, le tre regole fini.
+          #INVITE-AFFILIATE-UX-1022 — è lo stesso blocco `Offer` che si vede da anonimo (M3), con le tre
+          finestre da 60 giorni (M5): prima e dopo il login si legge lo stesso documento. */}
+      <Offer c={c} />
     </section>
   );
 }

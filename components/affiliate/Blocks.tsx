@@ -89,6 +89,48 @@ export function LadderPreview({ c }: { c: AffCopy }) {
   );
 }
 
+/** #INVITE-AFFILIATE-UX-1022 (M3/M5) — l'offerta in numeri, la stessa colonna da anonimo e in iscrizione:
+ *  i tre numeri fissi (20% · 60 gg · 50 $), la scala 7/10/15, le regole fini, le tre finestre da 60 giorni
+ *  (click → registrazione → pagamento, coerenti con referral-code.ts, ledger.ts e Termini §2/§4) e i livelli.
+ *  Nessuna stima di guadagno: solo percentuali, giorni e soglia. */
+export function Offer({ c }: { c: AffCopy }) {
+  const e = c.enroll;
+  return (
+    <div className="aff-how" data-testid="aff-offer">
+      <h2 className="aff-h">{e.howTitle}</h2>
+      <dl className="aff-terms-list">
+        <div><dd>{e.t1v}</dd><dt>{e.t1}</dt></div>
+        <div><dd>{e.t3v}</dd><dt>{e.t3}</dt></div>
+        <div><dd>{e.t4v}</dd><dt>{e.t4}</dt></div>
+      </dl>
+      <LadderPreview c={c} />
+      <ul className="aff-fine">
+        <li><strong>{e.f1t}</strong><span>{e.f1b}</span></li>
+        <li><strong>{e.f2t}</strong><span>{e.f2b}</span></li>
+        <li><strong>{e.f3t}</strong><span>{e.f3b}</span></li>
+      </ul>
+      <Windows c={c} />
+      <TierHow c={c} />
+    </div>
+  );
+}
+
+/** Le tre finestre da 60 giorni: tre righe con lo stesso numero a sinistra, perché il numero è lo stesso
+ *  e il lettore deve vedere che cambia il «da quando», non il «quanto». */
+export function Windows({ c }: { c: AffCopy }) {
+  const e = c.enroll;
+  return (
+    <div className="aff-windows" data-testid="aff-windows">
+      <p className="aff-ladder-lead">{e.windowsT}</p>
+      <ol className="aff-wins">
+        {[[e.w1t, e.w1b], [e.w2t, e.w2b], [e.w3t, e.w3b]].map(([t, b]) => (
+          <li key={t}><span className="aff-wn" aria-hidden="true">{e.t3v}</span><strong>{t}</strong><span className="aff-b">{b}</span></li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 // ── Il tuo link ──────────────────────────────────────────────────────────────
 
 export function LinkBlock({ c, code, link, error, onRetry }: { c: AffCopy; code: string | null; link: string; error: boolean; onRetry: () => void }) {
@@ -161,7 +203,8 @@ export function TierHow({ c }: { c: AffCopy }) {
 
 // ── Commissioni (ledger) ─────────────────────────────────────────────────────
 
-export function LedgerBlock({ c, lang, ledger, payouts, unavailable }: { c: AffCopy; lang: AffLang; ledger: LedgerView | null; payouts: PayoutView[]; unavailable: boolean }) {
+/** `setup` (#INVITE-AFFILIATE-UX-1022, R5): payout o contabilità non attivi → le frasi sui tempi cambiano. */
+export function LedgerBlock({ c, lang, ledger, payouts, unavailable, setup = false }: { c: AffCopy; lang: AffLang; ledger: LedgerView | null; payouts: PayoutView[]; unavailable: boolean; setup?: boolean }) {
   const l = c.led;
   if (unavailable || !ledger) {
     return (
@@ -218,7 +261,7 @@ export function LedgerBlock({ c, lang, ledger, payouts, unavailable }: { c: AffC
         </li>
       </ol>
       {empty ? (
-        <div className="aff-thr"><p className="aff-muted">{l.emptyNote}</p></div>
+        <div className="aff-thr"><p className="aff-muted">{setup ? l.emptyNoteSetup : l.emptyNote}</p></div>
       ) : (
         <div className="aff-thr">
           <p>
@@ -228,7 +271,7 @@ export function LedgerBlock({ c, lang, ledger, payouts, unavailable }: { c: AffC
           {below && (
             <div className="aff-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
           )}
-          <p className="aff-muted aff-small">{fill(l.thrNote, { day: c.payDay })}</p>
+          <p className="aff-muted aff-small">{setup ? l.thrNoteSetup : fill(l.thrNote, { day: c.payDay })}</p>
         </div>
       )}
     </section>
@@ -303,7 +346,7 @@ export function WalletCard({ c, lang, wallet, payee, onAdd, onChange, soft }: {
   );
 }
 
-export function HowWePay({ c }: { c: AffCopy }) {
+export function HowWePay({ c, setup = false }: { c: AffCopy; setup?: boolean }) {
   const p = c.pay_how;
   return (
     <section className="aff-block" aria-labelledby="aff-t-how2">
@@ -311,7 +354,7 @@ export function HowWePay({ c }: { c: AffCopy }) {
       <ul className="aff-fine">
         <li><strong>{p.t1}</strong><span>{p.b1}</span></li>
         <li><strong>{p.t2}</strong><span>{p.b2}</span></li>
-        <li><strong>{p.t3}</strong><span>{fill(p.b3, { day: c.payDay })}</span></li>
+        <li><strong>{p.t3}</strong><span>{setup ? p.b3Setup : fill(p.b3, { day: c.payDay })}</span></li>
         <li><strong>{p.t4}</strong><span>{p.b4}</span></li>
         <li><strong>{p.t5}</strong><span>{p.b5}</span></li>
       </ul>
@@ -349,8 +392,8 @@ function PayoutRow({ p, c, lang }: { p: PayoutView; c: AffCopy; lang: AffLang })
   );
 }
 
-export function PayoutHistory({ c, lang, payouts, unavailable, full, onAll }: {
-  c: AffCopy; lang: AffLang; payouts: PayoutView[]; unavailable: boolean; full: boolean; onAll?: () => void;
+export function PayoutHistory({ c, lang, payouts, unavailable, full, onAll, setup = false }: {
+  c: AffCopy; lang: AffLang; payouts: PayoutView[]; unavailable: boolean; full: boolean; onAll?: () => void; setup?: boolean;
 }) {
   const rows = full ? payouts : payouts.slice(0, 1);
   return (
@@ -361,7 +404,7 @@ export function PayoutHistory({ c, lang, payouts, unavailable, full, onAll }: {
       ) : payouts.length === 0 ? (
         <div className="aff-empty">
           <p className="aff-t">{c.pay.empty}</p>
-          <p className="aff-muted">{c.pay.emptyBody}</p>
+          <p className="aff-muted">{setup ? c.pay.emptyBodySetup : c.pay.emptyBody}</p>
         </div>
       ) : (
         <>

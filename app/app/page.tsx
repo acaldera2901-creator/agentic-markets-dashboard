@@ -4660,16 +4660,28 @@ function SettingsTab({
   );
 }
 
+// #INVITE-AFFILIATE-UX-1022 (M2): sul tab /invite il modale parla da affiliato. Termini §1: serve solo
+// un account valido — niente «Accesso clienti», niente «Continua verso i piani», niente nota su come si
+// paga Pro. Solo copy: stessa /api/auth, stessi consensi. es/fr/ru ricadono sull'inglese come il pannello.
+function affiliateAuthCopy(lang: Lang) {
+  return lang === "it"
+    ? { eyebrow: "Programma affiliati", loginTitle: "Accedi al tuo account", createTitle: "Crea il tuo account gratuito", loginSub: "Il programma è legato al tuo account BetRedge.", createSub: "Nessun piano a pagamento, nessuna carta: l'account serve solo per il tuo codice e le commissioni.", createBtn: "Crea l'account", footer: "Un account gratuito basta per iscriverti al programma. Nessun piano Pro richiesto, ora né dopo." }
+    : { eyebrow: "Affiliate program", loginTitle: "Sign in to your account", createTitle: "Create your free account", loginSub: "The program is tied to your BetRedge account.", createSub: "No paid plan, no card: the account is only for your code and your commissions.", createBtn: "Create the account", footer: "A free account is all you need to join the program. No Pro plan required, now or later." };
+}
+
 function ClientAuthModal({
   intent,
   onClose,
   onAuthed,
   dismissible = true,
   signupIntent,
+  affiliate = false,
 }: {
   intent: ClientAuthIntent;
   onClose: () => void;
   onAuthed: (profile: ClientProfile, serverPlan?: ClientProfile["plan"]) => void;
+  /** #INVITE-AFFILIATE-UX-1022: aperto dal tab /invite → voce da affiliato (vedi affiliateAuthCopy). */
+  affiliate?: boolean;
   // #FUNNEL-INTENT-0908: il piano scelto prima di registrarsi. Va nel body del
   // register perche' col gate email acceso la registrazione NON apre una
   // sessione: il server lo mette nel link di attivazione e torna col redirect.
@@ -4726,6 +4738,7 @@ function ClientAuthModal({
   const t = useT();
   const lang = useLang();
   const it = lang === "it";
+  const aff = affiliate ? affiliateAuthCopy(lang) : null;
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome";
   const normalizedEmail = email.trim().toLowerCase();
   const emailValid = normalizedEmail.includes("@");
@@ -4738,6 +4751,16 @@ function ClientAuthModal({
   // registrazione tiene lo stato locale (name/email/password); chiuderlo lo
   // distrugge (unmount), quindi un Escape/click-fuori accidentale azzerava
   // tutto. Ora la chiusura è solo esplicita via la × in alto a destra.
+  // #INVITE-AFFILIATE-UX-1022 (M1): eccezione che rispetta quella lezione — Escape chiude
+  // solo se il modale è chiudibile E non c'è ancora niente di scritto: non si può perdere
+  // nulla, e l'uscita è facile quanto l'ingresso (come la HomeAuthModal).
+  const untouched = name === "" && email === "" && password === "";
+  useEffect(() => {
+    if (!dismissible || !untouched) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [dismissible, untouched, onClose]);
 
   // #FUNNEL-MEAS-0813: quanti aprono il register e non lo finiscono. Scatta al
   // mount con intent=create e a ogni passaggio sul tab di registrazione.
@@ -4853,7 +4876,7 @@ function ClientAuthModal({
             </button>
           )}
           <div className="auth-modal-head">
-            <p className="eyebrow">{t.auth_eyebrow}</p>
+            <p className="eyebrow">{aff ? aff.eyebrow : t.auth_eyebrow}</p>
             <h3>{it ? "Recupera la password" : "Recover your password"}</h3>
             <span>{it ? "Ti inviamo un link per impostare una nuova password." : "We'll email you a link to set a new password."}</span>
           </div>
@@ -4895,9 +4918,9 @@ function ClientAuthModal({
           </button>
         )}
         <div className="auth-modal-head">
-          <p className="eyebrow">{t.auth_eyebrow}</p>
-          <h3>{mode === "login" ? t.auth_login_title : t.auth_create_title}</h3>
-          <span>{mode === "login" ? t.auth_login_sub : t.auth_create_sub}</span>
+          <p className="eyebrow">{aff ? aff.eyebrow : t.auth_eyebrow}</p>
+          <h3>{mode === "login" ? (aff ? aff.loginTitle : t.auth_login_title) : (aff ? aff.createTitle : t.auth_create_title)}</h3>
+          <span>{mode === "login" ? (aff ? aff.loginSub : t.auth_login_sub) : (aff ? aff.createSub : t.auth_create_sub)}</span>
         </div>
         <div className="auth-mode-switch">
           <button type="button" className={mode === "login" ? "is-active" : ""} onClick={() => { setMode("login"); setError(""); }}>Login</button>
@@ -4975,16 +4998,17 @@ function ClientAuthModal({
               : t.auth_hint_incomplete}
           </p>
         )}
-        <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : t.auth_create_btn)}</button>
-        <p>{t.auth_footer}</p>
+        <button disabled={!canSubmit || busy}>{busy ? "…" : (mode === "login" ? "Login" : (aff ? aff.createBtn : t.auth_create_btn))}</button>
+        <p>{aff ? aff.footer : t.auth_footer}</p>
         {/* #CLASSIC-COVERAGE-1014 — il muro non ha ×: senza una porta chi non vuole
             accedere resta intrappolato (niente Esc, niente clic fuori). La porta è
             la home, che è pubblica. Solo sul muro e solo a flag acceso. */}
         {/* navigazione vera (ricarica su «/»): con <Link> la home e la tab montano lo stesso
             Dashboard, `tab` restava «history/leaderboard» e l'effetto URL↔tab riscriveva
-            la barra, riportando sul muro (8 casi su 8). */}
+            la barra, riportando sul muro (8 casi su 8).
+            #INVITE-AFFILIATE-UX-1022 (L3): «Back to home» come nelle altre uscite del desk e come l'italiano. */}
         {CLASSIC && !dismissible && (
-          <button type="button" className="auth-wall-back" onClick={() => { window.location.assign("/"); }}>{it ? "← Torna alla home" : "← Back to the board"}</button>
+          <button type="button" className="auth-wall-back" onClick={() => { window.location.assign("/"); }}>{it ? "← Torna alla home" : "← Back to home"}</button>
         )}
       </form>
     </div>
@@ -10580,6 +10604,9 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       openCheckout(resume.plan);
       return;
     }
+    // #INVITE-AFFILIATE-UX-1022: chi accede da /invite resta su /invite (il pannello si rimonta
+    // con la sessione, vedi la `key` su InvitePage). Prima finiva sul board e doveva tornare indietro.
+    if (tab === "invita") return;
     setTab("bets");
   };
 
@@ -10861,7 +10888,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // `lockedHeadline`) — da anonimo escono model, mercato ed edge, mai la pick,
   // la motivazione o l'analisi profonda. Storico, leaderboard, builder e
   // invito restano dietro il muro.
-  const mustAuth = authChecked && !hasSession && tab !== "plans" && tab !== "bets";
+  // #INVITE-AFFILIATE-UX-1022 (M1): anche `invita` esce dal muro. Il pannello affiliati ha il suo
+  // stato anonimo (offerta in chiaro + «crea un account gratuito» / «accedi»): il muro non
+  // chiudibile copriva perfino il selettore lingua, e un affiliato che arrivava da una campagna
+  // vedeva solo un login da cliente. I dati restano protetti dove vanno protetti: /api/affiliate/me
+  // risponde 401 senza sessione, qui cambia solo cosa si mostra davanti.
+  const mustAuth = authChecked && !hasSession && tab !== "plans" && tab !== "bets" && tab !== "invita";
 
   const hasClientProfile = Boolean(clientProfile);
   const isClientUnlocked = profileHasAccess(clientProfile);
@@ -11530,7 +11562,10 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           {/* #REFERRAL-PANEL: la vecchia AccountTab (dove era finita per errore la
               sezione Invita) non è più montata dopo #UI-ACCOUNT-DROPDOWN-0623 →
               il pannello referral vive su una tab dedicata, raggiungibile. */}
+          {/* #INVITE-AFFILIATE-UX-1022: la `key` sulla sessione rimonta il pannello dopo login/logout,
+              così /api/affiliate/me viene riletto (il pannello legge una volta sola al mount). */}
           {tab === "invita" && <InvitePage
+            key={hasSession ? "session" : "anon"}
             classic={process.env.NEXT_PUBLIC_CLASSIC === "1"}
             affiliate={process.env.NEXT_PUBLIC_AFFILIATE_V2 === "1"}
             lang={uiLanguage}
@@ -11620,6 +11655,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       {(authOpen || mustAuth) && (
         <ClientAuthModal
           intent={authIntent}
+          affiliate={tab === "invita"}
           dismissible={!mustAuth}
           onClose={() => { if (!mustAuth) setAuthOpen(false); }}
           onAuthed={handleAuthed}

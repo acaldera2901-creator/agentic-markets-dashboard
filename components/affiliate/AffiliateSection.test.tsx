@@ -26,10 +26,49 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const me = (body: unknown): Handler => (url) => (url.startsWith("/api/affiliate/me") ? { status: 200, body } : undefined);
 
 describe("stati della pagina", () => {
-  it("401 → accedi", async () => {
+  it("401 → account gratuito, offerta in chiaro, Termini linkati; nessuna stima di guadagno (#INVITE-AFFILIATE-UX-1022)", async () => {
     mockFetch(() => ({ status: 401, body: { error: "login required" } }));
+    const onRegister = vi.fn();
+    const onSignIn = vi.fn();
+    render(<AffiliateSection lang="it" onRegister={onRegister} onSignIn={onSignIn} />);
+    const anon = await screen.findByTestId("aff-anon");
+    expect(anon.textContent).toMatch(/Serve solo un account gratuito/);
+    expect(anon.textContent).not.toMatch(/piani|Pro/);
+    // i numeri dell'offerta (M3) e le tre finestre da 60 giorni (M5)
+    const offer = screen.getByTestId("aff-offer");
+    expect(offer.textContent).toMatch(/20%/);
+    expect(offer.textContent).toMatch(/7%.*10%.*15%/);
+    expect(offer.textContent).toMatch(/50 \$/);
+    const wins = screen.getByTestId("aff-windows");
+    expect(wins.textContent).toMatch(/Dal click/);
+    expect(wins.textContent).toMatch(/Dalla registrazione/);
+    expect(wins.textContent).toMatch(/Dal pagamento/);
+    expect((screen.getByRole("link", { name: /Termini del programma/ }) as HTMLAnchorElement).getAttribute("href")).toBe("/affiliates/terms");
+    // niente stime di guadagno (la lede dice «Nessuna cifra è garantita»: è il contrario di una promessa)
+    expect(document.body.textContent).not.toMatch(/guadagn|stima|potresti|earn/i);
+    fireEvent.click(screen.getByRole("button", { name: "Crea un account gratuito" }));
+    expect(onRegister).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Accedi" }));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("R5: operations con payout o contabilità spenti → banner «pagamenti in attivazione» e frasi sui tempi caute; accesi → niente banner", async () => {
+    mockFetch(me({ ...ME_EMPTY, operations: { payouts_enabled: false, accounting_ready: false } }));
+    const a = render(<AffiliateSection lang="it" />);
+    expect((await screen.findByTestId("aff-setup")).textContent).toMatch(/Pagamenti in attivazione/);
+    expect(document.body.textContent).toMatch(/da quando il servizio di pagamento è attivo/);
+    expect(document.body.textContent).not.toMatch(/secondo il calendario comunicato/);
+    a.unmount();
+    mockFetch(me({ ...ME_EMPTY, operations: { payouts_enabled: true, accounting_ready: true } }));
+    const b = render(<AffiliateSection lang="it" />);
+    await screen.findByText("Il tuo link");
+    expect(screen.queryByTestId("aff-setup")).toBeNull();
+    b.unmount();
+    // risposta senza `operations` (prima del rollout) → ignoto, nessun banner
+    mockFetch(me(ME_EMPTY));
     render(<AffiliateSection lang="it" />);
-    expect(await screen.findByText(/Accedi per vedere il programma/)).toBeTruthy();
+    await screen.findByText("Il tuo link");
+    expect(screen.queryByTestId("aff-setup")).toBeNull();
   });
 
   it("programma non aperto (open:false) → «iscrizioni non aperte», nessun form, nessun lede", async () => {
