@@ -58,7 +58,8 @@ describe("tierFor / renewalRateFor", () => {
 describe("payingReferredSql", () => {
   it("in live le righe shadow NON contano; in shadow sì; reversed/void mai", () => {
     const live = payingReferredSql("live").sql;
-    expect(live).toMatch(/COUNT\(DISTINCT referred_identifier\)/);
+    // Per referito, al netto degli storni: un acquisto interamente rimborsato non conta.
+    expect(live).toMatch(/GROUP BY referred_identifier\s+HAVING SUM\(amount_usd\) > 0/);
     expect(live).not.toMatch(/'shadow'/);
     expect(live).not.toMatch(/'reversed'|'void'/);
     expect(payingReferredSql("shadow").sql).toMatch(/'shadow'/);
