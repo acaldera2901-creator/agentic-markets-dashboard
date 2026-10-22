@@ -51,6 +51,8 @@ const ROUTE_SOURCES: Record<string, string[]> = {
   "/partners": ["app/partners"],
   "/terms": ["app/terms"],
   "/privacy": ["app/privacy"],
+  // #INVITE-AFFILIATE-UX-1022 (M3): i Termini affiliati entrano in sitemap.
+  "/affiliates/terms": ["app/affiliates/terms"],
   "/world-cup": ["app/world-cup"],
 };
 

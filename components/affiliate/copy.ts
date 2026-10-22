@@ -29,8 +29,13 @@ const IT = {
   },
   state: {
     loading: "Carico il tuo estratto conto…",
-    anonTitle: "Accedi per vedere il programma.",
-    anonBody: "Il programma affiliati è legato al tuo account.",
+    // #INVITE-AFFILIATE-UX-1022 (M2/M3): da anonimo si parla da affiliato, non da cliente —
+    // basta un account gratuito (Termini §1), nessun piano, nessuna carta. I numeri stanno a fianco.
+    anonTitle: "Serve solo un account gratuito.",
+    anonBody: "Il programma è legato al tuo account BetRedge: nessun piano a pagamento, nessuna carta. Crei l'account, scegli il tuo codice e il link è pronto.",
+    anonRegister: "Crea un account gratuito",
+    anonSignIn: "Accedi",
+    anonTerms: "Leggi i Termini del programma",
     closedTitle: "Le iscrizioni non sono ancora aperte.",
     closedBody: "Il programma a commissione non è attivo: non c'è niente da compilare adesso. Il tuo link attuale continua a funzionare come prima.",
     errorTitle: "Non riesco a leggere il tuo estratto conto.",
@@ -71,6 +76,23 @@ const IT = {
     f2b: "Un rimborso o una contestazione entro 120 giorni storna la commissione, anche se già pagata: si scala dal saldo successivo.",
     f3t: "Esci quando vuoi",
     f3b: "Le commissioni già maturate restano tue.",
+    // #INVITE-AFFILIATE-UX-1022 (M5/D1): «60 giorni» sono tre finestre diverse. Coerente col codice
+    // (lib/referral-code.ts: 60 gg dal click; lib/affiliate/ledger.ts withinAttributionWindow: 60 gg
+    // registrazione→primo pagamento; config.HOLD_DAYS: 60 gg di attesa) e coi Termini §2 e §4.
+    windowsT: "I 60 giorni, uno per uno",
+    w1t: "Dal click",
+    w1b: "Chi apre il tuo link ha 60 giorni per registrarsi: il codice resta nel suo browser per quel tempo.",
+    w2t: "Dalla registrazione",
+    w2b: "Il primo acquisto deve arrivare entro 60 giorni. Da lì l'attribuzione è fissa su tutti i rinnovi.",
+    w3t: "Dal pagamento",
+    w3b: "Ogni commissione resta in attesa 60 giorni prima di maturare, finché le verifiche sono complete.",
+  },
+  // #INVITE-AFFILIATE-UX-1022 (R5): quando operations.payouts_enabled o accounting_ready sono falsi
+  // (/api/affiliate/me), il pannello lo dice invece di promettere un calendario che non vale.
+  setup: {
+    title: "Pagamenti in attivazione",
+    // «si registrano» e non «maturano»: il cron affiliate-mature salta finché la contabilità non è attiva (review Codex).
+    body: "Iscrizioni, link e commissioni si registrano già. Il servizio di pagamento e la riconciliazione contabile non sono ancora attivi: le commissioni restano in attesa e nessun pagamento parte finché non lo sono, e lo leggerai qui per primo. Quello che hai registrato resta tuo.",
   },
   joinErr: {
     invalid_code: "Il codice non è valido: 2–20 caratteri, lettere, numeri, - _.",
@@ -89,7 +111,7 @@ const IT = {
   how: {
     title: "Come funziona",
     s1t: "Condividi il link",
-    s1b: "Chi si iscrive da lì viene attribuito a te per 60 giorni dal primo click.",
+    s1b: "Chi apre il link ha 60 giorni per registrarsi; chi si registra ha 60 giorni per il primo acquisto. Da lì l'attribuzione è fissa sui rinnovi.",
     s2t: "Si abbonano: 20%",
     s2b: "Del loro primo acquisto, al netto di IVA, rimborsi e commissioni.",
     s3t: "Rinnovano: 7%",
@@ -149,6 +171,8 @@ const IT = {
     thrOk: "maturati, sopra la soglia di {min}: vengono preparati al prossimo giro di pagamenti, se hai un wallet attivo.",
     thrNote: "Pagamenti una volta al mese, a mano, {day}. Conta solo il maturato, non quello in attesa.",
     emptyNote: "Le commissioni compaiono qui entro 24 ore dal primo acquisto di un tuo iscritto, con la prima data utile per la verifica. Il saldo matura anche senza wallet; per essere pagato serve un wallet attivo.",
+    thrNoteSetup: "Pagamenti a mano, una volta al mese, da quando il servizio di pagamento è attivo. Conta solo il maturato, non quello in attesa.",
+    emptyNoteSetup: "Le commissioni compaiono qui entro 24 ore dal primo acquisto di un tuo iscritto, con la prima data utile per la verifica. Si registrano anche senza wallet; maturano quando la contabilità è attiva e si pagano quando il servizio di pagamento è attivo e hai un wallet attivo.",
     unavailable: "—",
   },
   wallet: {
@@ -284,6 +308,7 @@ const IT = {
     cancelSuspended: "Il pagamento è stato annullato perché i pagamenti sono sospesi per una verifica: l'importo è tornato tra le maturate.",
     empty: "Nessun pagamento ancora.",
     emptyBody: "Il primo parte quando il maturato arriva a 50 $ e hai un wallet attivo. Qui vedrai mese, importo e il link alla transazione sulla rete.",
+    emptyBodySetup: "Il primo parte quando il servizio di pagamento è attivo, il maturato arriva a 50 $ e hai un wallet attivo. Qui vedrai mese, importo e il link alla transazione sulla rete.",
     unavailable: "Storico non disponibile: i pagamenti non si perdono, è solo la lettura che è fallita.",
     foot: "Ogni pagamento ha la sua transazione sulla rete: la puoi controllare tu, senza fidarti di noi.",
     all: "Tutti gli stati e i dettagli",
@@ -326,6 +351,7 @@ const IT = {
     b2: "Ricevi la cifra che vedi. I costi del tuo exchange o di un'eventuale conversione sono tuoi.",
     t3: "Quando",
     b3: "Una volta al mese, a mano, {day}, se il maturato è almeno 50 $. La conferma sulla rete richiede pochi minuti; poi vedi qui la transazione.",
+    b3Setup: "Una volta al mese, a mano, se il maturato è almeno 50 $, da quando il servizio di pagamento è attivo: fino ad allora nessun pagamento parte. La conferma sulla rete richiede pochi minuti; poi vedi qui la transazione.",
     t4: "Irreversibile e pubblico",
     b4: "Un invio on-chain non si annulla e non possiamo recuperare fondi mandati all'indirizzo che registri. Indirizzo e transazione sono visibili a chiunque su un explorer.",
     t5: "Nessuna garanzia",
@@ -360,8 +386,11 @@ const EN: AffCopy = {
   },
   state: {
     loading: "Loading your statement…",
-    anonTitle: "Sign in to see the program.",
-    anonBody: "The affiliate program is tied to your account.",
+    anonTitle: "All you need is a free account.",
+    anonBody: "The program is tied to your BetRedge account: no paid plan, no card. Create the account, pick your code and the link is ready.",
+    anonRegister: "Create a free account",
+    anonSignIn: "Sign in",
+    anonTerms: "Read the program Terms",
     closedTitle: "Enrollment isn't open yet.",
     closedBody: "The commission program isn't active: there's nothing to fill in right now. Your current link keeps working as before.",
     errorTitle: "I can't read your statement.",
@@ -402,6 +431,17 @@ const EN: AffCopy = {
     f2b: "A refund or a dispute within 120 days reverses the commission, even if already paid: it is deducted from your next balance.",
     f3t: "Leave whenever you like",
     f3b: "Commissions already earned stay yours.",
+    windowsT: "The 60 days, one by one",
+    w1t: "From the click",
+    w1b: "Whoever opens your link has 60 days to sign up: the code stays in their browser for that long.",
+    w2t: "From sign-up",
+    w2b: "The first purchase must happen within 60 days. From then on, attribution is fixed on every renewal.",
+    w3t: "From the payment",
+    w3b: "Every commission stays pending for 60 days before it is earned, until the checks are complete.",
+  },
+  setup: {
+    title: "Payouts being activated",
+    body: "Enrollment, links and commissions are already recorded. The payout service and the accounting reconciliation are not active yet: commissions stay pending and no payout goes out until they are, and you will read it here first. What you have recorded stays yours.",
   },
   joinErr: {
     invalid_code: "The code isn't valid: 2–20 characters, letters, numbers, - _.",
@@ -420,7 +460,7 @@ const EN: AffCopy = {
   how: {
     title: "How it works",
     s1t: "Share the link",
-    s1b: "Whoever signs up from it is attributed to you for 60 days from their first click.",
+    s1b: "Whoever opens the link has 60 days to sign up; whoever signs up has 60 days for the first purchase. From then on, attribution is fixed on renewals.",
     s2t: "They subscribe: 20%",
     s2b: "Of their first purchase, net of VAT, refunds and fees.",
     s3t: "They renew: 7%",
@@ -480,6 +520,8 @@ const EN: AffCopy = {
     thrOk: "earned, above the {min} threshold: it is prepared in the next payout round, if you have an active wallet.",
     thrNote: "Payouts once a month, by hand, {day}. Only the earned balance counts, not the pending one.",
     emptyNote: "Commissions appear here within 24 hours of the first purchase by someone you referred, with the earliest review date. The balance accrues even without a wallet; to be paid you need an active wallet.",
+    thrNoteSetup: "Payouts by hand, once a month, from when the payout service is active. Only the earned balance counts, not the pending one.",
+    emptyNoteSetup: "Commissions appear here within 24 hours of the first purchase by someone you referred, with the earliest review date. They are recorded even without a wallet; they are earned once accounting is active and paid once the payout service is active and you have an active wallet.",
     unavailable: "—",
   },
   wallet: {
@@ -614,6 +656,7 @@ const EN: AffCopy = {
     cancelSuspended: "The payout was cancelled because payouts are paused for a review: the amount went back to earned.",
     empty: "No payouts yet.",
     emptyBody: "The first one goes out when your earned balance reaches $50 and you have an active wallet. Here you'll see month, amount and the link to the transaction on the network.",
+    emptyBodySetup: "The first one goes out once the payout service is active, your earned balance reaches $50 and you have an active wallet. Here you'll see month, amount and the link to the transaction on the network.",
     unavailable: "History unavailable: payouts aren't lost, only the reading failed.",
     foot: "Every payout has its own transaction on the network: you can check it yourself, without trusting us.",
     all: "All statuses and details",
@@ -656,6 +699,7 @@ const EN: AffCopy = {
     b2: "You receive the amount you see. Your exchange's costs, or any conversion costs, are yours.",
     t3: "When",
     b3: "Once a month, by hand, {day}, if your earned balance is at least $50. Network confirmation takes a few minutes; then you'll see the transaction here.",
+    b3Setup: "Once a month, by hand, if your earned balance is at least $50, from when the payout service is active: until then no payout goes out. Network confirmation takes a few minutes; then you'll see the transaction here.",
     t4: "Irreversible and public",
     b4: "An on-chain transfer can't be undone and we can't recover funds sent to the address you register. The address and transaction are visible to anyone on an explorer.",
     t5: "No guarantee",
