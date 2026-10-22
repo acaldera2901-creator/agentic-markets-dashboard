@@ -236,20 +236,23 @@ async function paymentRecorded(rail: AffiliateRail, ref: string): Promise<boolea
 async function historicPayments(referred: string, attributedAtISO: string, currentRef: string): Promise<number> {
   const rows = await dbQueryStrict<{ n: number | string }>(
     `SELECT COUNT(*)::int AS n FROM (
-       SELECT id::text AS ref, granted_at AS ts FROM paygate_orders
+       SELECT id::text AS ref, granted_at AS ts, ARRAY['paygate','crypto'] AS rails FROM paygate_orders
         WHERE LOWER(TRIM(identifier)) = $1 AND granted_at IS NOT NULL
        UNION ALL
-       SELECT id::text AS ref, granted_at AS ts FROM paypal_orders
+       SELECT id::text AS ref, granted_at AS ts, ARRAY['paypal'] AS rails FROM paypal_orders
         WHERE LOWER(TRIM(identifier)) = $1 AND granted_at IS NOT NULL
        UNION ALL
-       SELECT event_id AS ref, processed_at AS ts FROM shopify_events
+       SELECT event_id AS ref, processed_at AS ts, ARRAY['shopify'] AS rails FROM shopify_events
         WHERE LOWER(TRIM(identifier)) = $1
           AND event_type = 'orders/paid'
           AND status IN ('granted','granted+weekly','granted-partial')
      ) h
      WHERE h.ts < $2::timestamptz AND h.ref <> $3
-       AND h.ref NOT IN (SELECT rail_payment_ref FROM affiliate_commissions
-                          WHERE referred_identifier = $1 AND kind IN ('first','renewal'))`,
+       -- Review 2 P2-3: la coppia (rail, ref), non il solo ref (id di rail diversi
+       -- possono coincidere). paygate_orders alimenta sia «paygate» sia «crypto».
+       AND NOT EXISTS (SELECT 1 FROM affiliate_commissions c
+                        WHERE c.referred_identifier = $1 AND c.kind IN ('first','renewal')
+                          AND c.rail_payment_ref = h.ref AND c.rail = ANY(h.rails))`,
     [referred, attributedAtISO, currentRef]
   );
   return Number(rows[0]?.n ?? 0);

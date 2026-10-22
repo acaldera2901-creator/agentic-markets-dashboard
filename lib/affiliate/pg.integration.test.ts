@@ -784,6 +784,23 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     ]);
   });
 
+  it("LEDGER storico: l'esclusione «già nel ledger» confronta (rail, ref), non il solo ref (review 2 P2-3)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '30 days');
+      INSERT INTO paypal_orders VALUES ('X1','ref@x.io',14.99,'COMPLETED',now() - interval '20 days');
+      INSERT INTO paygate_orders VALUES ('pg-9','ref@x.io',14.99,NULL,now() - interval '1 day');
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, attributed_at, status) SELECT 'ref@x.io', id, now() - interval '10 days', 'valid' FROM affiliates;
+      -- Un ordine Shopify con lo STESSO id del PayPal storico, già nel ledger.
+      INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
+        SELECT id,'ref@x.io','shopify','X1','first',14.99,14.99,0.2,3,0,'shadow',now() - interval '5 days',now() + interval '55 days' FROM affiliates;`);
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-9", grossUsd: 14.99, paidAt: new Date(Date.now() - 86_400_000) }))
+      .toMatchObject({ written: true });
+    // storico PayPal X1 (1) + riga Shopify X1 nel ledger (1) → indice 2.
+    expect((await h.sql!`SELECT renewal_index AS i FROM affiliate_commissions WHERE rail_payment_ref = 'pg-9'`)[0].i).toBe(2);
+  });
+
   // #AFFILIATE-FINGERPRINTS-1022 — dalla scrittura del fingerprint al verdetto del ledger.
   it("R4 stesso IP di affiliato e referito entro 24h → attribuzione fraud_review (commissione ferma, non rifiutata)", async () => {
     vi.stubEnv("AFFILIATE_MODE", "shadow");
