@@ -24,8 +24,14 @@ export type NetMeta = {
 };
 
 /** Arrotonda a 2 decimali (centesimi), senza l'errore di 1.005 → 1.00. */
+// Review indipendente P2-8: come round(x, 2) di Postgres (backfill, storni): metà
+// lontano da zero sul valore DECIMALE. `n + EPSILON` non bastava sopra ~10 $
+// (40.15 × 0.1 = 4.01499… in float → 4.01 contro 4.02 in SQL). toFixed(10) toglie
+// il rumore binario, la notazione «e2» sposta la virgola senza moltiplicare in float.
 export function round2(n: number): number {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
+  if (!Number.isFinite(n)) return n;
+  const cents = Math.round(Number(`${Math.abs(n).toFixed(10)}e2`));
+  return (n < 0 ? -1 : 1) * Number(`${cents}e-2`);
 }
 
 function component(v: number | null | undefined): number | null {

@@ -126,3 +126,22 @@ describe("Shopify: valuta e data dell'incasso", () => {
     expect(withNonUsdMark("x", false)).toBe("x");
   });
 });
+
+// Review indipendente P2-8: il ledger (JS) e il backfill/storno (round() di Postgres, metà per
+// eccesso in decimale) devono dare lo stesso centesimo anche sui casi esattamente a metà.
+describe("round2 = round(x, 2) di Postgres", () => {
+  it("metà per eccesso sul valore decimale, non sull'approssimazione binaria", () => {
+    expect(commissionAmount(40.15, 0.1)).toBe(4.02); // 4.015 → in float 4.01499…
+    expect(commissionAmount(10.25, 0.3)).toBe(3.08);
+    expect(round2(-3.075)).toBe(-3.08);
+    expect(round2(2.998)).toBe(3);
+  });
+  it("su 0,01…2.000 $ × tassi del programma coincide col calcolo esatto in centesimi", () => {
+    for (const k of [7, 10, 15, 20]) {
+      for (let c = 1; c <= 200000; c += 1) {
+        const exact = Math.floor((c * k + 50) / 100) / 100;
+        if (commissionAmount(c / 100, k / 100) !== exact) throw new Error(`${c / 100} × ${k / 100}: ${commissionAmount(c / 100, k / 100)} ≠ ${exact}`);
+      }
+    }
+  });
+});
