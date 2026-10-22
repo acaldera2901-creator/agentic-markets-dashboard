@@ -174,6 +174,9 @@ beforeEach(() => {
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
+  // #SHOPIFY-CLAIM-1022: il gettone di idempotenza Shopify è casuale per delivery;
+  // fisso qui perché le chiamate del rail siano confrontabili fra un giro e l'altro.
+  vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000000");
 });
 afterEach(() => {
   process.env = { ...savedEnv };
