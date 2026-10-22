@@ -17,10 +17,11 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("recordIpFingerprintSafe", () => {
-  it("scrive l'HMAC, mai l'IP in chiaro, con identifier normalizzato e seen_at rinfrescato", async () => {
+  it("scrive l'HMAC, mai l'IP in chiaro, identifier normalizzato, prima vista mai sovrascritta; poi pulizia a 90 gg", async () => {
     expect(await recordIpFingerprintSafe("  Ref@X.io ", "1.2.3.4")).toBe(true);
     const [sql, params] = dbExecute.mock.calls[0];
-    expect(sql).toMatch(/ON CONFLICT \(identifier, kind, value_hash\) DO UPDATE SET seen_at = NOW\(\)/);
+    expect(sql).toMatch(/ON CONFLICT \(identifier, kind, value_hash\) DO NOTHING/);
+    expect(dbExecute.mock.calls[1]).toEqual([expect.stringMatching(/DELETE FROM affiliate_payer_fingerprints/), [90]]);
     expect(params).toEqual(["ref@x.io", createHmac("sha256", SECRET).update("1.2.3.4").digest("hex")]);
     expect(JSON.stringify(params)).not.toContain("1.2.3.4");
   });

@@ -406,9 +406,11 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9")).toBe(true);
     expect(await recordIpFingerprintSafe("Ref@x.io", "9.9.9.9")).toBe(true);
     expect(await recordIpFingerprintSafe("other@x.io", "8.8.8.8")).toBe(true);
-    // Ripassare lo stesso IP non duplica la riga: rinfresca seen_at.
+    // Ripassare lo stesso IP più tardi non duplica la riga e NON sposta la prima
+    // vista (review Codex: il rinfresco cancellava la prova della co-presenza).
+    await h.sql!`UPDATE affiliate_payer_fingerprints SET seen_at = now() - interval '2 hours'`;
     expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9")).toBe(true);
-    expect((await h.sql!`SELECT COUNT(*)::int AS n FROM affiliate_payer_fingerprints`)[0].n).toBe(3);
+    expect((await h.sql!`SELECT COUNT(*)::int AS n, bool_and(seen_at < now() - interval '1 hour') AS kept FROM affiliate_payer_fingerprints`)[0]).toEqual({ n: 3, kept: true });
     const pay = (identifier: string, ref: string) =>
       recordAffiliateCommissionSafe({ identifier, rail: "paygate", paymentRef: ref, grossUsd: 14.99, paidAt: new Date() });
     expect(await pay("ref@x.io", "pg-1")).toEqual({ written: true, reason: "shadow" });
@@ -417,6 +419,11 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
       { who: "other@x.io", status: "valid", why: null },
       { who: "ref@x.io", status: "fraud_review", why: "shared_ip_24h" },
     ]);
+    // Conservazione: oltre 90 giorni le righe ip_hash spariscono alla scrittura successiva.
+    await h.sql!`UPDATE affiliate_payer_fingerprints SET seen_at = now() - interval '91 days' WHERE identifier = 'other@x.io'`;
+    await recordIpFingerprintSafe("new@x.io", "7.7.7.7");
+    expect((await h.sql!`SELECT identifier FROM affiliate_payer_fingerprints ORDER BY 1`).map((r) => r.identifier)).toEqual(["alice@x.io", "new@x.io", "ref@x.io"]);
+    await h.sql!`TRUNCATE affiliate_payer_fingerprints`; // non sporcare il test di rollback
   });
 
 });

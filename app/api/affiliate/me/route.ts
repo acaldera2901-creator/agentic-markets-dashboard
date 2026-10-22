@@ -50,8 +50,8 @@ export async function GET(req: Request) {
         open: affiliateMode() !== "off" && affiliateTermsVersion() !== null,
       });
     }
-    // #AFFILIATE-FINGERPRINTS-1022 — rinfresca l'IP dell'affiliato (HMAC) a ogni
-    // apertura del pannello: è quando copia il link da condividere.
+    // #AFFILIATE-FINGERPRINTS-1022 — registra ogni IP NUOVO dell'affiliato (HMAC)
+    // quando apre il pannello: è quando copia il link da condividere.
     scheduleIpFingerprint(ctx.identifier, clientIp(req));
     const cursor = parseCursor(new URL(req.url).searchParams.get("cursor"));
     const cfg = affiliateConfig();
