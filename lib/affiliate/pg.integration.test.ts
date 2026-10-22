@@ -389,13 +389,13 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT,"supabase/migrations",f),"utf8"));
   });
 
-  // #AFFILIATE-REVERSAL-1022 — storni su SQL vero: CHECK, UNIQUE e maturazione.
-  async function aliceWithCommission(status: string, paidDaysAgo: number) {
-    const join = await import("@/app/api/affiliate/join/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+  // #AFFILIATE-REVERSAL-1022 — storni su SQL vero: CHECK, UNIQUE, lock, maturazione.
+  // Affiliato e commissione inseriti a mano: il test non dipende dall'iscrizione.
+  async function aliceWithCommission(status: string, paidDaysAgo: number, amount = 20) {
+    await h.sql!`INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at) VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now())`;
     await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'ref@x.io',id,now(),'valid' FROM affiliates`;
     await h.sql!`INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
-      SELECT id,'ref@x.io','shopify','o1','first',100,100,0.2,20,0,${status},now()-make_interval(days=>${paidDaysAgo}),now()-make_interval(days=>${paidDaysAgo})+interval '60 days' FROM affiliates`;
+      SELECT id,'ref@x.io','shopify','o1','first',100,100,${amount / 100},${amount},0,${status},now()-make_interval(days=>${paidDaysAgo}),now()-make_interval(days=>${paidDaysAgo})+interval '60 days' FROM affiliates`;
     return (await import("@/lib/affiliate/reversal")).reverseAffiliateCommissionSafe;
   }
   const rows = () => h.sql!`SELECT kind, rail_event_ref AS ev, amount_usd::float8 AS amt, status FROM affiliate_commissions ORDER BY id`;
@@ -403,14 +403,14 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const { payingReferredSql } = await import("@/lib/affiliate/tiers");
     return (await h.sql!.unsafe(payingReferredSql(mode).sql.replace("$1", "1")))[0].n;
   };
+  const ev = (eventRef: string, refundedGrossUsd: number | null) => ({ rail: "shopify" as const, paymentRef: "o1", eventRef, refundedGrossUsd });
 
-  it("R1 storno totale dentro l'hold: originale reversed, mai maturato, redelivery idempotente, non conta per lo scaglione", async () => {
+  it("R1 storno totale dentro l'hold: originale reversed, mai maturato, redelivery idempotente, fuori dallo scaglione", async () => {
     vi.stubEnv("AFFILIATE_MODE", "live");
     const reverse = await aliceWithCommission("pending", 70);
     expect(await paying("live")).toBe(1);
-    const ev = { rail: "shopify" as const, paymentRef: "o1", eventRef: "r1", refundedGrossUsd: null };
-    expect(await reverse(ev)).toEqual({ written: true, reason: "reversal" });
-    expect(await reverse(ev)).toEqual({ written: false, reason: "duplicate" });
+    expect(await reverse(ev("r1", null))).toEqual({ written: true, reason: "reversal" });
+    expect(await reverse(ev("r1", null))).toEqual({ written: false, reason: "duplicate" });
     expect(await rows()).toEqual([
       { kind: "first", ev: "", amt: 20, status: "reversed" },
       { kind: "reversal", ev: "r1", amt: -20, status: "reversed" },
@@ -422,33 +422,72 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   it("R1 parziale poi totale: la parziale matura con l'originale, il totale chiude il residuo senza superarlo", async () => {
     vi.stubEnv("AFFILIATE_MODE", "live");
     const reverse = await aliceWithCommission("pending", 10);
-    expect(await reverse({ rail: "shopify", paymentRef: "o1", eventRef: "r1", refundedGrossUsd: 25 })).toEqual({ written: true, reason: "reversal" });
+    expect(await reverse(ev("r1", 25))).toEqual({ written: true, reason: "reversal" });
     expect(await rows()).toEqual([
       { kind: "first", ev: "", amt: 20, status: "pending" },
       { kind: "reversal", ev: "r1", amt: -5, status: "pending" },
     ]);
     expect(await paying("live")).toBe(1);
-    expect(await reverse({ rail: "shopify", paymentRef: "o1", eventRef: "r2", refundedGrossUsd: null })).toEqual({ written: true, reason: "reversal" });
+    expect(await reverse(ev("r2", null))).toEqual({ written: true, reason: "reversal" });
     expect(await rows()).toEqual([
       { kind: "first", ev: "", amt: 20, status: "reversed" },
       { kind: "reversal", ev: "r1", amt: -5, status: "reversed" },
       { kind: "reversal", ev: "r2", amt: -15, status: "reversed" },
     ]);
-    expect(await reverse({ rail: "shopify", paymentRef: "o1", eventRef: "r3", refundedGrossUsd: 10 })).toEqual({ written: false, reason: "original_reversed" });
+    expect(await reverse(ev("r3", 10))).toEqual({ written: false, reason: "original_reversed" });
+  });
+
+  it("R1 parziale dentro l'hold matura insieme all'originale (saldo netto)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 70);
+    await reverse(ev("r1", 50));
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS r`)[0].r).toEqual({ ok: true, matured: 2 });
+    const [bal] = await h.sql!`SELECT SUM(amount_usd)::float8 AS b FROM affiliate_commissions WHERE status = 'payable'`;
+    expect(bal.b).toBe(10);
   });
 
   it("R1 dopo la maturazione: clawback negativo payable che scala il saldo; oltre 120 gg nessuna azione", async () => {
     vi.stubEnv("AFFILIATE_MODE", "live");
     const reverse = await aliceWithCommission("payable", 70);
-    expect(await reverse({ rail: "shopify", paymentRef: "o1", eventRef: "r1", refundedGrossUsd: 50 })).toEqual({ written: true, reason: "clawback" });
+    expect(await reverse(ev("r1", 50))).toEqual({ written: true, reason: "clawback" });
     const [bal] = await h.sql!`SELECT SUM(amount_usd)::float8 AS b FROM affiliate_commissions WHERE status = 'payable'`;
     expect(bal.b).toBe(10);
     expect(await paying("live")).toBe(1);
-    expect(await reverse({ rail: "shopify", paymentRef: "o1", eventRef: "r2", refundedGrossUsd: null })).toEqual({ written: true, reason: "clawback" });
+    expect(await reverse(ev("r2", null))).toEqual({ written: true, reason: "clawback" });
     expect(await paying("live")).toBe(0);
-    await h.sql!`UPDATE affiliate_commissions SET paid_at = now() - interval '121 days' WHERE kind = 'first'`;
     await h.sql!`DELETE FROM affiliate_commissions WHERE kind = 'clawback'`;
-    expect(await reverse({ rail: "shopify", paymentRef: "o1", eventRef: "r3", refundedGrossUsd: null })).toEqual({ written: false, reason: "outside_clawback_window" });
+    await h.sql!`UPDATE affiliate_commissions SET paid_at = now() - interval '121 days' WHERE kind = 'first'`;
+    expect(await reverse(ev("r3", null))).toEqual({ written: false, reason: "outside_clawback_window" });
+  });
+
+  it("R1 tre rimborsi che sommano il lordo chiudono il residuo: nessun centesimo orfano nello scaglione", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 70, 7);
+    await reverse(ev("r1", 33.33));
+    await reverse(ev("r2", 33.33));
+    await reverse(ev("r3", 33.34));
+    expect((await rows()).map((r) => r.amt)).toEqual([7, -2.33, -2.33, -2.34]);
+    expect(await paying("live")).toBe(0);
+  });
+
+  it("R1 corse (review Codex): stesso rimborso x2 a cavallo della maturazione e rimborsi diversi concorrenti non superano il residuo", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 70);
+    const results = await Promise.all([
+      reverse(ev("r1", 50)),
+      h.sql!`SELECT affiliate_mature_commissions() AS r`,
+      reverse(ev("r1", 50)),
+      reverse(ev("r2", 60)),
+      reverse(ev("r3", 60)),
+    ]);
+    expect(results.filter((r) => (r as { written?: boolean }).written === true).length).toBeGreaterThanOrEqual(2);
+    const all = await rows();
+    expect(all.filter((r) => r.ev === "r1")).toHaveLength(1);
+    const reversed = all.filter((r) => r.kind !== "first").reduce((s, r) => s + -r.amt, 0);
+    expect(Math.round(reversed * 100) / 100).toBe(20);
+    // Nessuno storno `pending` orfano accanto a un originale già maturato.
+    const [orig] = all;
+    if (orig.status === "payable") expect(all.some((r) => r.kind === "reversal" && r.status === "pending")).toBe(false);
   });
 
   it("R1 endpoint admin (rimborso manuale PayGate/crypto): valida l'input e storna", async () => {

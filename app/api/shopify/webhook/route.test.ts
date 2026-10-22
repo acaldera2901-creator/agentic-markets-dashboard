@@ -160,6 +160,15 @@ it("rimborso PARZIALE su un annuale: non azzera 12 mesi pagati", async () => {
   expect(scheduleAffiliateReversal).toHaveBeenCalledWith({ rail: "shopify", paymentRef: "911", eventRef: "7011", refundedGrossUsd: 29.99 });
 });
 
+it("rimborso con transazione FALLITA: nessuno storno affiliato (nessun denaro restituito)", async () => {
+  dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([{ identifier: "u@t.com", variant_id: "444", amount: "329.99" }]);
+  revokeShopifyPlan.mockResolvedValue(true);
+  const body = JSON.stringify({ id: 7020, order_id: 920, transactions: [{ kind: "refund", status: "failure", amount: "10.00" }] });
+  const { POST } = await import("./route");
+  await POST(req(body, sign(body), "refunds/create"));
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+});
+
 it("rimborso già processato o su ordine sconosciuto: nessuno storno affiliato", async () => {
   dbQueryStrict.mockResolvedValueOnce([{ event_id: "refund:7001" }]);
   const body = JSON.stringify({ id: 7001, order_id: 900 });
