@@ -174,7 +174,7 @@ export default function PrivacyPage() {
           {/* #AFFILIATE-TERMS-V3-1022 — parere legale §4.2, esteso ai click su /r/CODE. Pubblicato SOLO quando
               AFFILIATE_HASH_SECRET è impostato: senza segreto nessun HMAC viene scritto e il paragrafo direbbe il
               falso. Prerequisito prima di impostare il segreto: la pulizia a 90 giorni di affiliate_referral_clicks
-              (PROPOSAL, non ancora nel codice). La pagina si rigenera al deploy che segue il cambio di env. */}
+              (affiliate_purge_clicks + cron affiliate-clicks-retention, migration 20261022140000 applicata). La pagina si rigenera al deploy che segue il cambio di env. */}
           {affiliateHashEnabled() && (
             <p className="text-xs leading-relaxed" data-testid="privacy-affiliate-hmac"><strong className="text-[var(--am-text)]">Fraud checks.</strong> To detect self-referrals and count referral-link visits, when an affiliate uses their account, when a user registers through a referral link and when anyone opens an affiliate&apos;s referral link (betredge.com/r/CODE), we store a keyed hash (HMAC) of the IP address combined with the date and, for link visits, a keyed hash of the browser user-agent — never the IP address or user-agent itself. If an affiliate and a referred user appear from the same address within 24 hours, the related commission is held for manual review; this has no effect on the referred user&apos;s account. These records are deleted after 90 days. Legal basis: our legitimate interest in preventing fraud and measuring the program (Art. 6(1)(f) GDPR); you can object as described in Section 7.</p>
           )}

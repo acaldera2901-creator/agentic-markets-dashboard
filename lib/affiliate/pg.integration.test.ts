@@ -811,4 +811,24 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect((await get("kind=nope")).status).toBe(400);
     expect((await get("kind=commissions&from=2026-13-01")).status).toBe(400);
   });
+
+  it("RETENTION click /r/CODE: il cron cancella solo le righe oltre i 90 giorni, idempotente, niente accesso da anon", async () => {
+    await h.sql!.unsafe(`
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at, status)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now(),'active');
+      INSERT INTO affiliate_referral_clicks(affiliate_id, clicked_at, ip_hash, landing) VALUES
+        (1, now() - interval '91 days', 'h-old', '/'), (1, now() - interval '90 days 1 minute', 'h-edge', '/'),
+        (1, now() - interval '89 days', 'h-keep', '/'), (1, now(), 'h-new', '/');`);
+    const { GET } = await import("@/app/api/cron/affiliate-clicks-retention/route");
+    // verifyBearer è mockato in testa al file: «Bearer bo» passa.
+    const run = () => GET(new Request("https://x/api/cron/affiliate-clicks-retention", { headers: { authorization: "Bearer bo" } }));
+    const r1 = await run();
+    expect(r1.status).toBe(200);
+    expect(await r1.json()).toEqual({ ok: true, purged: 2, retention_days: 90 });
+    expect((await h.sql!`SELECT ip_hash FROM affiliate_referral_clicks ORDER BY id`).map((r) => r.ip_hash)).toEqual(["h-keep", "h-new"]);
+    expect(await (await run()).json()).toEqual({ ok: true, purged: 0, retention_days: 90 });
+    const [g] = await h.sql!`SELECT has_function_privilege('anon','public.affiliate_purge_clicks()','EXECUTE') AS anon,
+                                    has_function_privilege('service_role','public.affiliate_purge_clicks()','EXECUTE') AS svc`;
+    expect(g).toEqual({ anon: false, svc: true });
+  });
 });
