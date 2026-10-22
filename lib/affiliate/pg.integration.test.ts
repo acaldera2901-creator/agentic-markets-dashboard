@@ -389,4 +389,45 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT,"supabase/migrations",f),"utf8"));
   });
 
+  // #AFFILIATE-RECONCILE-1022 — la query di riconciliazione su SQL vero. Le
+  // tabelle dei rail sono stub con le sole colonne lette dal ledger e da qui.
+  it("R3 riconciliazione: recupera solo i pagamenti concessi di referiti senza riga, in ordine di incasso, e una volta sola", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    await h.sql!.unsafe(`
+      CREATE TABLE IF NOT EXISTS paygate_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, coin text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS paypal_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, status text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
+      TRUNCATE paygate_orders, paypal_orders, shopify_events;
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES
+        ('ref@x.io', ' alice ', now() - interval '10 days'),
+        ('old@x.io', 'ALICE', now() - interval '50 days'),
+        ('mixed@x.io', 'ALICE', now() - interval '10 days'),
+        ('nobody@x.io', NULL, now() - interval '10 days');
+      INSERT INTO paygate_orders VALUES
+        ('pg-1','ref@x.io',14.99,NULL,now() - interval '1 day'),
+        ('pg-old','old@x.io',14.99,NULL,now() - interval '40 days'),
+        ('pg-now','ref@x.io',14.99,NULL,now() - interval '5 minutes'),
+        ('pg-nobody','nobody@x.io',14.99,NULL,now() - interval '1 day');
+      INSERT INTO paypal_orders VALUES ('pp-1','ref@x.io',14.99,'refunded',NULL);
+      INSERT INTO shopify_events(event_id,event_type,identifier,amount,status,processed_at) VALUES
+        ('s-mixed','orders/paid','mixed@x.io',40,'granted+weekly',now() - interval '3 days'),
+        ('s-1','orders/paid','ref@x.io',29.99,'granted',now() - interval '2 days');`);
+    const { reconcileAffiliateLedger } = await import("@/lib/affiliate/reconcile");
+    const first = await reconcileAffiliateLedger();
+    expect(first).toMatchObject({ checked: 2, written: 2 });
+    expect(await h.sql!`SELECT rail, rail_payment_ref AS ref, kind, renewal_index AS i, amount_usd::float8 AS amt, status,
+                              paid_at < now() - interval '1 day' AS old_paid FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { rail: "shopify", ref: "s-1", kind: "first", i: 0, amt: 6, status: "shadow", old_paid: true },
+      { rail: "paygate", ref: "pg-1", kind: "renewal", i: 1, amt: 1.05, status: "shadow", old_paid: true },
+    ]);
+    // attributed_at = incasso che converte (s-1), non il momento del recupero:
+    // pg-1, perso DOPO s-1, è un rinnovo e non un pagamento «pre-programma».
+    const [a] = await h.sql!`SELECT attributed_at < now() - interval '1 day' AS at_payment FROM affiliate_attributions`;
+    expect(a.at_payment).toBe(true);
+    // Idempotente: al giro dopo non c'è più niente da recuperare.
+    expect(await reconcileAffiliateLedger()).toEqual({ checked: 0, written: 0, reasons: {} });
+  });
+
 });

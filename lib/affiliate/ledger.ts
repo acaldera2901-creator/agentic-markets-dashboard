@@ -189,12 +189,16 @@ async function resolveAttribution(
 
   // La PK su referred_identifier è il lock: chi perde la corsa non scrive, e si
   // rilegge la riga del vincitore.
+  // attributed_at = data dell'incasso che converte, non NOW(): è il confine dei
+  // «pagamenti storici» (historicPayments). Dal rail coincidono; dalla
+  // riconciliazione (#AFFILIATE-RECONCILE-1022) un incasso perso giorni fa non
+  // deve far contare come «pre-programma» gli altri pagamenti persi dopo di lui.
   await dbExecute(
     `INSERT INTO affiliate_attributions
        (referred_identifier, affiliate_id, source, attributed_at, status, status_reason)
-     VALUES ($1, $2, 'signup_ref', NOW(), $3, $4)
+     VALUES ($1, $2, 'signup_ref', LEAST(NOW(), $5::timestamptz), $3, $4)
      ON CONFLICT (referred_identifier) DO NOTHING`,
-    [referred, Number(affiliate.id), verdict.status, verdict.reason]
+    [referred, Number(affiliate.id), verdict.status, verdict.reason, paidAt.toISOString()]
   );
   const row = await readAttribution(referred);
   return row ? { attribution: row } : { reason: "not_attributed" };
