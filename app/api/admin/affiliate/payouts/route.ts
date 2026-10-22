@@ -25,6 +25,7 @@ import {
   parseMonth,
   payoutsOff,
 } from "@/lib/affiliate/payouts";
+import { adminActor } from "@/lib/affiliate/admin-ops";
 import { affiliateRpc } from "@/lib/affiliate/rpc";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +78,10 @@ export async function POST(req: NextRequest) {
   const expected = parseExpectedTotal(body.expected_total);
   if (!expected) return NextResponse.json({ error: "invalid expected_total" }, { status: 400 });
 
+  // #AFFILIATE-OPS-1022: chi prepara (created_by). Dal backoffice l'operatore
+  // nominato; da /admin «admin-cookie», che non potrà poi approvare l'invio.
+  const actor = adminActor(req);
+  if (!actor) return NextResponse.json({ error: "actor_required" }, { status: 400 });
   const p = eligibilityParams();
   let res;
   try {
@@ -91,9 +96,7 @@ export async function POST(req: NextRequest) {
       p_require_kyc: p.requireKyc,
       p_networks: p.networks,
       p_coins: p.coins,
-      // L'auth admin non porta un'identità (segreto condiviso): si registra il
-      // canale. Upgrade: un'identità per admin in lib/admin-session.
-      p_created_by: "admin",
+      p_created_by: actor,
     });
   } catch (e) {
     console.error("[admin/affiliate/payouts] create failed:", String(e));

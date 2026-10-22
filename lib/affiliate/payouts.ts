@@ -432,7 +432,8 @@ export async function registerPayoutTx(
  * Prima di congelare importi: ogni affiliato selezionato e pagabile ha un
  * destinatario fuori dalla denylist, e lo screening si RIFÀ adesso (non basta
  * quello della registrazione del wallet). Fail-closed: senza provider il
- * risultato è `not_screened` e non si crea niente; provider giù → 503.
+ * risultato è `not_screened` e non si crea niente, salvo una decisione manuale
+ * recente dell'operatore (#AFFILIATE-OPS-1022); provider giù → 503.
  * null = tutti ok. Chi non è pagabile lo rifiuta comunque la funzione SQL.
  */
 export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Promise<NextResponse | null> {
@@ -453,6 +454,10 @@ export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Pr
       }
       throw e;
     }
+    // #AFFILIATE-OPS-1022: senza provider vale la decisione MANUALE dell'operatore
+    // sul wallet attivo (stesso indirizzo, < 30 giorni); la funzione SQL la
+    // ricontrolla sotto lock (address_blocked / screening_stale / not_screened).
+    if (s.kind === "not_screened" && (await manualScreeningClear(id, row.wallet.address))) continue;
     if (s.kind !== "clear") {
       console.warn(`[affiliate/payouts] recipient ${s.kind} affiliate=${id} to=${row.wallet.address_masked}`);
       return NextResponse.json(
@@ -462,6 +467,17 @@ export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Pr
     }
   }
   return null;
+}
+
+/** Vero se il wallet attivo dell'affiliato ha una decisione manuale `clear` recente per QUESTO indirizzo. */
+export async function manualScreeningClear(affiliateId: number, address: string): Promise<boolean> {
+  const rows = await dbQueryStrict<{ ok: boolean }>(
+    `SELECT (screening_provider = 'manual' AND screening_result = 'clear'
+             AND screened_at >= NOW() - interval '30 days' AND LOWER(address) = LOWER($2)) AS ok
+       FROM affiliate_wallets WHERE affiliate_id = $1 AND revoked_at IS NULL`,
+    [affiliateId, address],
+  );
+  return rows[0]?.ok === true;
 }
 
 // ── Tx sparita: submitted → cancelled (QA F2 + N1) ──────────────────────────

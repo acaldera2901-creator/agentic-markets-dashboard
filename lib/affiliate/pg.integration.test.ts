@@ -24,7 +24,11 @@ vi.mock("@/lib/auth", () => ({
     return who ? { identifier: who, plan: "free" } : null;
   },
 }));
-vi.mock("@/lib/admin-auth", () => ({ isAdminAuthorized: async () => true }));
+vi.mock("@/lib/admin-auth", () => ({
+  isAdminAuthorized: async () => true,
+  // #AFFILIATE-OPS-1022: «Bearer bo» simula il backoffice (ADMIN_SECRET giusto).
+  verifyBearer: (r: Request) => r.headers.get("authorization") === "Bearer bo",
+}));
 // Catena finta (nessuna rete): una ricevuta USDT valida dal wallet di uscita al
 // destinatario indicato in h.chainTo, con 101 conferme.
 vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
@@ -645,5 +649,149 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await recordIpFingerprintSafe("new@x.io", "7.7.7.7");
     expect((await h.sql!`SELECT DISTINCT identifier FROM affiliate_payer_fingerprints ORDER BY 1`).map((r) => r.identifier)).toEqual(["alice@x.io", "new@x.io", "ref@x.io"]);
     await h.sql!`TRUNCATE affiliate_payer_fingerprints`; // non sporcare il test di rollback
+  });
+
+  // #AFFILIATE-OPS-1022 — strumenti operatore su SQL vero (screening manuale,
+  // quattro occhi, payout marcato, sospensione, fraud_review, export, click).
+  function bo(actor: string | null, body?: unknown, method = "POST", url = "/x") {
+    return new Request(`https://x${url}`, {
+      method,
+      headers: { authorization: "Bearer bo", ...(actor ? { "x-admin-actor": actor } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }) as never;
+  }
+  const idp = (id: number | string) => ({ params: Promise.resolve({ id: String(id) }) });
+
+  it("OPS payout senza provider: screening manuale → crea (A) → approva+marca (B≠A) → non annullabile → paid anche da sospeso", async () => {
+    await payableAlice();
+    h.screen = "none";
+    await h.sql!`UPDATE affiliate_wallets SET screening_result = 'not_screened', screened_at = NULL, screening_provider = NULL`;
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const cancel = await import("@/app/api/admin/affiliate/payouts/[id]/cancel/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    const body = { month: month(), ids: [1], expected_total: "60.00" };
+
+    expect(await (await admin.POST(bo("anna@maven", body))).json()).toMatchObject({ error: "not_eligible", items: [{ reasons: ["not_screened"] }] });
+    expect((await screen.POST(bo(null, { result: "clear", reason: "ok" }), idp(1))).status).toBe(400); // operatore obbligatorio
+    const s = await screen.POST(bo("anna@maven", { result: "clear", reason: "OFAC/EU: indirizzo e nome Alice Liddell GB, nessun match" }), idp(1));
+    expect(await s.json()).toMatchObject({ ok: true, screening_result: "clear" });
+    const [w] = await h.sql!`SELECT screening_provider, screened_by FROM affiliate_wallets WHERE id = 1`;
+    expect(w).toEqual({ screening_provider: "manual", screened_by: "bo:anna@maven" });
+
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(200);
+    const [p] = await h.sql!`SELECT id, created_by FROM affiliate_payouts`;
+    expect(p.created_by).toBe("bo:anna@maven");
+    // Quattro occhi: chi prepara non approva; il cookie condiviso non è una persona.
+    expect(await (await mark.POST(bo("anna@maven"), idp(p.id))).json()).toMatchObject({ error: "same_person" });
+    expect(await (await mark.POST(req("/x", "POST", null, {}) as never, idp(p.id))).json()).toMatchObject({ error: "named_operators_required" });
+    expect(await (await mark.POST(bo("michele@maven"), idp(p.id))).json()).toMatchObject({ ok: true, already: false, to_address: A1 });
+    expect(await (await mark.POST(bo("michele@maven"), idp(p.id))).json()).toMatchObject({ ok: true, already: true });
+
+    // R-C: marcato → non si annulla, né a mano né per cambio wallet o sospensione.
+    expect(await (await cancel.POST(req("/x", "POST", null, { reason: "ops" }) as never, idp(p.id))).json()).toMatchObject({ error: "marked_sent" });
+    const wallet = await import("@/app/api/affiliate/wallet/route");
+    await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A2)));
+    expect(await (await status.POST(bo("michele@maven", { status: "suspended", reason: "verifica" }), idp(1))).json()).toMatchObject({ ok: true, cancelled_payout_ids: [] });
+    expect((await h.sql!`SELECT status FROM affiliate_payouts`)[0].status).toBe("created");
+    h.chainTo = A1;
+    h.chainAmount = 60;
+    const t = await txr.POST(req("/x", "POST", null, { hash: H }) as never, idp(p.id));
+    expect(await t.json()).toMatchObject({ outcome: "paid" });
+    expect(await (await unmark.POST(bo("michele@maven", { reason: "x" + "yz" }), idp(p.id))).json()).toMatchObject({ error: "not_created" });
+
+    const log = await h.sql!`SELECT actor, action FROM affiliate_admin_actions ORDER BY id`;
+    expect(log).toEqual([
+      { actor: "bo:anna@maven", action: "wallet_screened" },
+      { actor: "bo:michele@maven", action: "payout_marked_sent" },
+      { actor: "bo:michele@maven", action: "affiliate_status" },
+    ]);
+    await expect(h.sql!`UPDATE affiliate_admin_actions SET actor = 'x'`).rejects.toThrow(/append-only/);
+    await expect(h.sql!`DELETE FROM affiliate_admin_actions`).rejects.toThrow(/append-only/);
+  });
+
+  it("OPS blocked / scaduto / unmark: niente payout su indirizzo bloccato; la marca tolta riapre l'annullo", async () => {
+    await payableAlice();
+    h.screen = "none";
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const cancel = await import("@/app/api/admin/affiliate/payouts/[id]/cancel/route");
+    const body = { month: month(), ids: [1], expected_total: "60.00" };
+    await screen.POST(bo("anna@maven", { result: "blocked", reason: "match lista sanzioni" }), idp(1));
+    const rows = await (await admin.GET(req(`/x?month=${month()}`, "GET", null) as never)).json();
+    expect(rows.rows[0].reasons).toContain("address_blocked");
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(409);
+
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "falso positivo verificato" }), idp(1));
+    await h.sql!`UPDATE affiliate_wallets SET screened_at = now() - interval '31 days'`;
+    const stale = await (await admin.GET(req(`/x?month=${month()}`, "GET", null) as never)).json();
+    expect(stale.rows[0].reasons).toContain("screening_stale");
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(409);
+
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "ricontrollo" }), idp(1));
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(200);
+    await mark.POST(bo("michele@maven"), idp(1));
+    expect(await (await unmark.POST(bo("michele@maven", { reason: "nessun invio partito" }), idp(1))).json()).toMatchObject({ ok: true, already: false });
+    expect(await (await cancel.POST(req("/x", "POST", null, { reason: "rifare" }) as never, idp(1))).json()).toMatchObject({ ok: true });
+    // Il blocco annulla un payout in preparazione non marcato.
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(200);
+    expect(await (await screen.POST(bo("anna@maven", { result: "blocked", reason: "nuovo match" }), idp(1))).json()).toMatchObject({ cancelled_payout_ids: [2] });
+    expect((await h.sql!`SELECT status FROM affiliate_commissions`)[0].status).toBe("payable");
+  });
+
+  it("OPS fraud_review: void annulla le commissioni ferme; valid le fa maturare; terminated è definitivo", async () => {
+    await h.sql!.unsafe(`
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, source, attributed_at, status, status_reason)
+        VALUES ('r1@x.io',1,'signup_ref',now(),'fraud_review','shared_ip_24h'), ('r2@x.io',1,'signup_ref',now(),'fraud_review','shared_ip_24h');
+      INSERT INTO affiliate_commissions(affiliate_id, referred_identifier, rail, rail_payment_ref, kind, gross_usd, net_usd, rate, amount_usd, renewal_index, status, paid_at, payable_after)
+        VALUES (1,'r1@x.io','paygate','p1','first',50,50,0.2,10,0,'pending',now() - interval '70 days',now() - interval '10 days'),
+               (1,'r2@x.io','paygate','p2','first',50,50,0.2,10,0,'pending',now() - interval '70 days',now() - interval '10 days');`);
+    const review = await import("@/app/api/admin/affiliate/attributions/review/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    expect(await (await review.POST(bo("anna@maven", { referred_identifier: "R1@x.io", decision: "void", reason: "stesso device" }))).json()).toMatchObject({ ok: true, voided_commissions: 1 });
+    expect(await (await review.POST(bo("anna@maven", { referred_identifier: "r1@x.io", decision: "valid", reason: "ripensato" }))).json()).toMatchObject({ error: "not_in_review" });
+    expect(await (await review.POST(bo("anna@maven", { referred_identifier: "r2@x.io", decision: "valid", reason: "coinquilini verificati" }))).json()).toMatchObject({ ok: true });
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS r`)[0].r).toEqual({ ok: true, matured: 1 });
+    expect(await h.sql!`SELECT referred_identifier AS who, status FROM affiliate_commissions ORDER BY 1`).toEqual([
+      { who: "r1@x.io", status: "void" },
+      { who: "r2@x.io", status: "payable" },
+    ]);
+    expect((await review.POST(bo("anna@maven", { referred_identifier: "nobody@x.io", decision: "void", reason: "xyz" }))).status).toBe(404);
+    await status.POST(bo("anna@maven", { status: "terminated", reason: "violazione §5" }), idp(1));
+    expect(await (await status.POST(bo("anna@maven", { status: "active", reason: "errore" }), idp(1))).json()).toMatchObject({ error: "terminated_is_final" });
+  });
+
+  it("OPS export + click: CSV del ledger senza formule, click contati solo per un affiliato attivo", async () => {
+    await h.sql!.unsafe(`
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at, status)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now(),'active'), ('sus@x.io','SUS','t',now(),now(),'t',now(),'suspended');
+      INSERT INTO affiliate_commissions(affiliate_id, referred_identifier, rail, rail_payment_ref, kind, gross_usd, net_usd, rate, amount_usd, renewal_index, status, paid_at, payable_after)
+        VALUES (1,'=cmd@x.io','paygate','p1','first',50,50,0.2,10,0,'pending',now(),now() + interval '60 days');`);
+    vi.stubEnv("AFFILIATE_HASH_SECRET", "k".repeat(32));
+    const { recordReferralClickSafe } = await import("@/lib/affiliate/clicks");
+    await recordReferralClickSafe("ALICE", "1.1.1.1", "UA", "/?ref=ALICE&utm_source=ig&utm_campaign=launch");
+    await recordReferralClickSafe("ALICE", "1.1.1.1", "UA", "/?ref=ALICE&utm_source=ig&utm_campaign=launch");
+    await recordReferralClickSafe("SUS", "1.1.1.1", "UA", "/?ref=SUS");
+    await recordReferralClickSafe("NOPE", "1.1.1.1", "UA", "/?ref=NOPE");
+    const exp = await import("@/app/api/admin/affiliate/export/route");
+    const get = (q: string) => exp.GET(req(`/api/admin/affiliate/export?${q}`, "GET", null) as never);
+    const clicks = await (await get("kind=clicks")).json();
+    expect(clicks.rows).toEqual([expect.objectContaining({ code: "ALICE", utm_source: "ig", utm_campaign: "launch", clicks: 2, unique_ip_day: 1 })]);
+    const aff = await (await get("kind=affiliates&status=active")).json();
+    expect(aff.rows).toEqual([expect.objectContaining({ code: "ALICE", pending_usd: 10, clicks_30d: 2 })]);
+    const csv = await get("kind=commissions&format=csv&affiliate_id=1");
+    expect(csv.headers.get("content-type")).toMatch(/text\/csv/);
+    const text = await csv.text();
+    expect(text.split("\n")[0]).toMatch(/^id,affiliate_id,code,referred_identifier/);
+    expect(text).toContain(",'=cmd@x.io,");
+    expect((await get("kind=nope")).status).toBe(400);
+    expect((await get("kind=commissions&from=2026-13-01")).status).toBe(400);
   });
 });

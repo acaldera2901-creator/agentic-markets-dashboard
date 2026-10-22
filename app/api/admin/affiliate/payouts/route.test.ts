@@ -14,7 +14,7 @@ const rpcCalls: string[] = [];
 const rpcArgs: { method: string; params: unknown[] }[] = [];
 let chain: { receipt?: unknown; head?: number; down?: boolean; tx?: unknown; finalizedNonce?: number; logs?: unknown[] };
 
-vi.mock("@/lib/admin-auth", () => ({ isAdminAuthorized }));
+vi.mock("@/lib/admin-auth", async (orig) => ({ ...(await orig<typeof import("@/lib/admin-auth")>()), isAdminAuthorized }));
 vi.mock("@/lib/db", () => ({ dbQueryStrict, dbQuery, dbExecute: vi.fn(), getSupabaseAdminClient: vi.fn() }));
 vi.mock("@/lib/affiliate/rpc", () => ({ affiliateRpc }));
 vi.mock("@/lib/email", async (orig) => ({ ...(await orig<typeof import("@/lib/email")>()), sendEmail }));
@@ -60,6 +60,7 @@ function receiptOk(amount = 60, to = TO, from = FROM) {
 
 type PayoutFixture = { status: string; tx_hash: string | null; cancel_code?: string | null; affiliate_status?: string; tx_nonce?: number | null; tx_block?: number | null; tx_from?: string | null };
 let payout: PayoutFixture | null;
+let manualClear = false;
 
 function req(url: string, method = "GET", body?: unknown, headers: Record<string, string> = {}) {
   // Il browser dell'admin manda sempre Origin su una POST same-origin.
@@ -79,7 +80,9 @@ beforeEach(() => {
   vi.stubEnv("AFFILIATE_PAYOUT_FROM", FROM);
   isAdminAuthorized.mockResolvedValue(true);
   payout = { status: "created", tx_hash: null };
+  manualClear = false;
   dbQueryStrict.mockImplementation(async (sql: string) => {
+    if (/FROM affiliate_wallets WHERE affiliate_id = \$1 AND revoked_at IS NULL/.test(sql)) return [{ ok: manualClear }];
     if (/affiliate_payout_rows/.test(sql)) {
       return [
         { affiliate_id: 1, code: "A1", status: "active", payee_legal_name: "Ann", payee_country: "IT", sanctions_declared: true, tax_declared: true, balance: 54, wallet_id: 1, address: TO, coin: "USDT", network: "polygon", wallet_created_at: "x", usable_after: "y", screening_result: "clear", paid_in_year: 120, payout_id: null, payout_status: null, payout_amount: null, reasons: [] },
@@ -175,7 +178,7 @@ describe("POST crea payout", () => {
       p_require_kyc: true,
       p_networks: ["polygon"],
       p_coins: ["USDT", "USDC"],
-      p_created_by: "admin",
+      p_created_by: "admin-cookie",
     });
   });
   it("totale cambiato nel frattempo → 409 col diff, niente creato (lo decide il DB)", async () => {
@@ -344,6 +347,14 @@ describe("QA F13 + F6 alla creazione", () => {
     const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
     expect(await r.json()).toMatchObject({ error: "not_screened", affiliate_id: 1 });
     expect(affiliateRpc).not.toHaveBeenCalled();
+  });
+  it("#AFFILIATE-OPS-1022 nessun provider ma decisione manuale clear recente → si crea", async () => {
+    screenPayoutAddress.mockResolvedValueOnce({ kind: "not_screened" });
+    manualClear = true;
+    affiliateRpc.mockResolvedValueOnce({ ok: true, total: 54, created: [] });
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    expect(r.status).toBe(200);
+    expect(affiliateRpc).toHaveBeenCalledWith("affiliate_create_payouts", expect.objectContaining({ p_ids: [1] }));
   });
   it("provider giù → 503, niente creato", async () => {
     const { ScreeningUnavailableError } = await import("@/lib/affiliate/screening");
