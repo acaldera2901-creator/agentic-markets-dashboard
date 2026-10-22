@@ -42,14 +42,14 @@ async function fakeDb(sql: string, params: unknown[] = []): Promise<unknown[]> {
   if (/WHERE rail = \$1 AND rail_payment_ref = \$2/.test(sql)) {
     return [{ n: state.commissions.filter((c) => c.rail === params[0] && c.ref === params[1]).length }];
   }
-  if (/COUNT\(DISTINCT referred_identifier\)/.test(sql)) {
+  if (/HAVING SUM\(amount_usd\) > 0/.test(sql)) {
     const live = !/'shadow'/.test(sql);
-    const paying = new Set(
-      state.commissions
-        .filter((c) => (c.kind === "first" || c.kind === "renewal") && !["reversed", "void"].includes(c.status) && !(live && c.status === "shadow"))
-        .map((c) => c.referred)
-    );
-    return [{ n: paying.size }];
+    const sums = new Map<string, number>();
+    for (const c of state.commissions) {
+      if (["reversed", "void"].includes(c.status) || (live && c.status === "shadow")) continue;
+      sums.set(c.referred, (sums.get(c.referred) ?? 0) + c.amount);
+    }
+    return [{ n: [...sums.values()].filter((v) => v > 0).length }];
   }
   if (/WHERE referred_identifier = \$1 AND kind/.test(sql)) {
     return [{ n: state.commissions.filter((c) => c.referred === params[0]).length }];

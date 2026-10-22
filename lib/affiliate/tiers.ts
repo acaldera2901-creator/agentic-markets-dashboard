@@ -94,17 +94,23 @@ export function renewalRateFor(payingReferred: number, baseRate: number, tiers: 
   return tierFor(payingReferred, baseRate, tiers).rate;
 }
 
-/** SQL del conteggio: referiti distinti con almeno una riga positiva non
- *  stornata. Le righe `shadow` contano solo in modalità shadow (prova), mai in
- *  live: una scala costruita su commissioni di prova non deve pagare. Unico
- *  posto che lo sa, così ledger e pannello contano la stessa cosa. */
+/** SQL del conteggio: referiti distinti con almeno un acquisto non interamente
+ *  rimborsato (termini §3), cioè con saldo positivo tra le righe positive e i
+ *  loro storni (reversal.ts: uno storno non supera mai la sua commissione, e
+ *  uno storno totale pre-maturazione porta tutto a `reversed`, fuori da qui).
+ *  Le righe `shadow` contano solo in modalità shadow (prova), mai in live: una
+ *  scala costruita su commissioni di prova non deve pagare. Unico posto che lo
+ *  sa, così ledger e pannello contano la stessa cosa. */
 export function payingReferredSql(mode: "shadow" | "live" | "off"): { sql: string } {
   const statuses = mode === "shadow" ? "('shadow','pending','payable','in_payout','paid')" : "('pending','payable','in_payout','paid')";
   return {
-    sql: `SELECT COUNT(DISTINCT referred_identifier)::int AS n
-       FROM affiliate_commissions
-      WHERE affiliate_id = $1
-        AND kind IN ('first','renewal')
-        AND status IN ${statuses}`,
+    sql: `SELECT COUNT(*)::int AS n FROM (
+       SELECT referred_identifier
+         FROM affiliate_commissions
+        WHERE affiliate_id = $1
+          AND status IN ${statuses}
+        GROUP BY referred_identifier
+       HAVING SUM(amount_usd) > 0
+     ) paying`,
   };
 }

@@ -60,7 +60,7 @@ function affiliateResponder(sql: string, params: unknown[]): unknown[] {
     return [{ n: commissions.filter((c) => c[2] === params[0] && c[3] === params[1]).length }];
   }
   // #AFFILIATE-TIERS-1021: conteggio dei referiti paganti per lo scaglione
-  if (/COUNT\(DISTINCT referred_identifier\)/.test(sql)) return [{ n: new Set(commissions.map((c) => c[1])).size }];
+  if (/HAVING SUM\(amount_usd\) > 0/.test(sql)) return [{ n: new Set(commissions.map((c) => c[1])).size }];
   if (/WHERE referred_identifier = \$1/.test(sql)) return [{ n: commissions.length }];
   if (/INSERT INTO affiliate_commissions/.test(sql)) {
     if (!commissions.some((c) => c[2] === params[2] && c[3] === params[3])) commissions.push(params);

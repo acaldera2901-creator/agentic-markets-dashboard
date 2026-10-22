@@ -4,6 +4,7 @@ import { dbQuery, dbExecute, getSupabaseAdminClient } from "@/lib/db";
 import { verifyWebhookSignature } from "@/lib/paypal";
 import { activatePaypalPlan } from "@/lib/plan-grant";
 import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
+import { scheduleAffiliateReversal } from "@/lib/affiliate/reversal";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
   catch (e) { console.error("[paypal/webhook] verify error:", String(e)); }
   if (!ok) { console.warn("[paypal/webhook] firma non valida → ignoro"); return NextResponse.json({ ok: true }); }
 
-  let event: { event_type?: string; resource?: { custom_id?: string; amount?: { value?: string; currency_code?: string }; id?: string } };
+  let event: { id?: string; event_type?: string; resource?: { custom_id?: string; amount?: { value?: string; currency_code?: string }; id?: string } };
   try { event = JSON.parse(raw); } catch { return NextResponse.json({ ok: true }); }
 
   // #GOLIVE-QW-B refund/chargeback (rail dormiente, predisposto): un rimborso o
@@ -51,6 +52,18 @@ export async function POST(req: Request) {
         "UPDATE paypal_orders SET status = 'refunded' WHERE id = $1 AND status <> 'refunded'",
         [refundedOrderId]
       );
+      // #AFFILIATE-REVERSAL-1022 — storno della commissione affiliato (termini §4).
+      // REVERSED (chargeback) = totale; REFUNDED = l'importo del rimborso, se in
+      // USD e leggibile, altrimenti totale. Idempotente sull'id del rimborso.
+      const refunded = Number(event.resource?.amount?.value ?? NaN);
+      const usd = (event.resource?.amount?.currency_code ?? "USD") === "USD";
+      scheduleAffiliateReversal({
+        rail: "paypal",
+        paymentRef: refundedOrderId,
+        eventRef: `${event.event_type}:${event.resource?.id ?? event.id ?? ""}`,
+        refundedGrossUsd:
+          event.event_type === "PAYMENT.CAPTURE.REFUNDED" && usd && Number.isFinite(refunded) && refunded > 0 ? refunded : null,
+      });
     }
     console.error(
       `[paypal/webhook] REFUND ricevuto order=${refundedOrderId || "unknown"} type=${event.event_type} — REVOCA MANUALE del piano richiesta (backoffice)`
