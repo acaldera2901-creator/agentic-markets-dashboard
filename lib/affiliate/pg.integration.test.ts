@@ -58,6 +58,16 @@ vi.mock("@/lib/affiliate/screening", async (orig) => {
     screenPayoutAddress: async () => (h.screen === "clear" ? { kind: "clear", provider: "test" } : { kind: "not_screened" }),
   };
 });
+// #SHOPIFY-CLAIM-1022 — il webhook Shopify su exec_sql vero: il grant è finto
+// (conta le chiamate), l'idempotenza no.
+const grants = vi.hoisted(() => ({ n: 0 }));
+vi.mock("@/lib/plan-grant", () => ({
+  activateShopifyPlan: async (identifier: string, plan: string) => {
+    grants.n++;
+    return { identifier, name: null, plan };
+  },
+  revokeShopifyPlan: async () => true,
+}));
 vi.mock("@/lib/email", async (orig) => ({
   ...(await orig<typeof import("@/lib/email")>()),
   sendEmail: vi.fn(async () => undefined),
@@ -638,6 +648,36 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await (await admin.POST(req("/x", "POST", null, { ...body, event_ref: "manual-2", refunded_usd: null }) as never)).json())
       .toEqual({ written: true, reason: "reversal" });
     expect((await h.sql!`SELECT actor FROM affiliate_admin_actions ORDER BY id`).map((r) => r.actor)).toEqual(["bo:ops@betredge.com", "admin-cookie"]);
+  });
+
+  it("SHOPIFY orders/paid su exec_sql vero: concede una volta sola, la redelivery (anche concorrente) è duplicate (#SHOPIFY-CLAIM-1022)", async () => {
+    await h.sql!.unsafe(`
+      CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, variant_id text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
+      TRUNCATE shopify_events;`);
+    // exec_sql non restituisce le righe di un RETURNING: lo dimostra la funzione stessa.
+    expect((await h.sql!`SELECT exec_sql('INSERT INTO shopify_events(event_id) VALUES (''x'') RETURNING event_id') AS r`)[0].r).toEqual([]);
+    await h.sql!`TRUNCATE shopify_events`;
+    vi.stubEnv("SHOPIFY_WEBHOOK_SECRET", "whsec");
+    vi.stubEnv("SHOPIFY_VARIANT_BASE", "111");
+    vi.stubEnv("SHOPIFY_VARIANT_PREMIUM", "222");
+    grants.n = 0;
+    const crypto = await import("node:crypto");
+    const { POST } = await import("@/app/api/shopify/webhook/route");
+    const deliver = (id: number) => {
+      const body = JSON.stringify({ id, email: "buyer@x.io", currency: "USD", total_price: "29.99", line_items: [{ variant_id: 222 }] });
+      const hmac = crypto.createHmac("sha256", "whsec").update(body, "utf8").digest("base64");
+      return POST(new Request("https://x/api/shopify/webhook", { method: "POST", headers: { "x-shopify-hmac-sha256": hmac, "x-shopify-topic": "orders/paid" }, body }));
+    };
+    const first = await (await deliver(5001)).json();
+    expect(first).not.toHaveProperty("duplicate");
+    expect(grants.n).toBe(1);
+    expect(await (await deliver(5001)).json()).toMatchObject({ duplicate: true });
+    expect(grants.n).toBe(1);
+    const [ev] = await h.sql!`SELECT status, last_error FROM shopify_events WHERE event_id = '5001'`;
+    expect(ev).toEqual({ status: "granted", last_error: null });
+    const race = await Promise.all([deliver(5002), deliver(5002), deliver(5002)].map(async (p) => (await p).json()));
+    expect(race.filter((r) => r.duplicate === true).length).toBe(2);
+    expect(grants.n).toBe(2);
   });
 
   // #AFFILIATE-RECONCILE-1022 — la query di riconciliazione su SQL vero. Le

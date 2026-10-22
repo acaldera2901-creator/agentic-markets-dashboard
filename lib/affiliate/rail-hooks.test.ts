@@ -174,6 +174,9 @@ beforeEach(() => {
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
+  // #SHOPIFY-CLAIM-1022: il gettone di idempotenza Shopify è casuale per delivery;
+  // fisso qui perché le chiamate del rail siano confrontabili fra un giro e l'altro.
+  vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000000");
 });
 afterEach(() => {
   process.env = { ...savedEnv };
@@ -328,7 +331,7 @@ describe("rail Shopify", () => {
   };
 
   it("webhook orders/paid: base lorda, tasse comprese (#AFFILIATE-TERMS-V3-1022), idempotenza non toccata", async () => {
-    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    railResponder = (sql) => (/FROM shopify_events WHERE event_id = .* AND last_error = /.test(sql) ? [{ event_id: "won" }] : []);
     const { POST } = await import("@/app/api/shopify/webhook/route");
     const payload = { id: 903, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "18.29", total_tax: "3.30", currency: "USD" };
     const off = await guard(() => POST(shopReq(payload)), ["shopify", "903", 18.29, 18.29]);
@@ -337,7 +340,7 @@ describe("rail Shopify", () => {
   });
 
   it("carrello piano + Weekly Pick: lordo non attribuibile al piano → nessuna commissione", async () => {
-    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    railResponder = (sql) => (/FROM shopify_events WHERE event_id = .* AND last_error = /.test(sql) ? [{ event_id: "won" }] : []);
     const { POST } = await import("@/app/api/shopify/webhook/route");
     const payload = { id: 904, email: "u@t.com", line_items: [{ variant_id: 111 }, { variant_id: 333 }], total_price: "30.00" };
     const off = await guard(() => POST(shopReq(payload)), null);
@@ -352,7 +355,7 @@ describe("rail Shopify", () => {
   });
 
   it("carrello misto rimasto 'unresolved' (grant null): il webhook lo marca in last_error", async () => {
-    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    railResponder = (sql) => (/FROM shopify_events WHERE event_id = .* AND last_error = /.test(sql) ? [{ event_id: "won" }] : []);
     activateShopifyPlan.mockResolvedValue(null);
     const { POST } = await import("@/app/api/shopify/webhook/route");
     const payload = { id: 907, email: "u@t.com", line_items: [{ variant_id: 111 }, { variant_id: 333 }], total_price: "27.98" };
@@ -364,7 +367,7 @@ describe("rail Shopify", () => {
   });
 
   it("ordine monopiano 'unresolved': last_error invariato (nessun marcatore)", async () => {
-    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    railResponder = (sql) => (/FROM shopify_events WHERE event_id = .* AND last_error = /.test(sql) ? [{ event_id: "won" }] : []);
     activateShopifyPlan.mockResolvedValue(null);
     const { POST } = await import("@/app/api/shopify/webhook/route");
     const payload = { id: 908, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "14.99" };
@@ -386,7 +389,7 @@ describe("rail Shopify", () => {
   // #SHOPIFY-RECONCILE-USD-1022 — termini: «solo acquisti in USD». shopify_events non conserva la
   // valuta: il webhook la scrive come marcatore su last_error degli 'unresolved', la reconcile lo legge.
   it("ordine non USD rimasto 'unresolved': il webhook lo marca [affiliate:non-usd]", async () => {
-    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    railResponder = (sql) => (/FROM shopify_events WHERE event_id = .* AND last_error = /.test(sql) ? [{ event_id: "won" }] : []);
     activateShopifyPlan.mockResolvedValue(null);
     const { POST } = await import("@/app/api/shopify/webhook/route");
     const payload = { id: 909, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "13.99", currency: "EUR" };
@@ -406,7 +409,7 @@ describe("rail Shopify", () => {
   });
 
   it("webhook ritentato da Shopify: la commissione usa processed_at dell'ordine, non l'ora di consegna", async () => {
-    railResponder = (sql) => (/INSERT INTO shopify_events/.test(sql) ? [{ event_id: "won" }] : []);
+    railResponder = (sql) => (/FROM shopify_events WHERE event_id = .* AND last_error = /.test(sql) ? [{ event_id: "won" }] : []);
     const { POST } = await import("@/app/api/shopify/webhook/route");
     const paid = new Date(Date.now() - 20 * 3600_000).toISOString();
     const payload = { id: 910, email: "u@t.com", line_items: [{ variant_id: 111 }], total_price: "14.99", currency: "USD", processed_at: paid };
