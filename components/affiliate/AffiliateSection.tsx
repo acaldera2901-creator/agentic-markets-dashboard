@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AFF_COPY, affLang, type AffCopy } from "./copy";
 import { api } from "./api";
-import { CommissionHistory, HowSteps, HowWePay, LedgerBlock, LinkBlock, PayoutHistory, Rules, TierBlock, TierHow, WalletCard } from "./Blocks";
+import { CommissionHistory, HowSteps, HowWePay, LadderPreview, LedgerBlock, LinkBlock, PayoutHistory, Rules, TierBlock, TierHow, WalletCard } from "./Blocks";
 import { Skeleton } from "./ui";
 import { WalletForm } from "./WalletForm";
 import type { JoinInfo, MeResponse } from "./types";
@@ -171,7 +171,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
       const hasWallet = me.wallet.state !== "none";
       body = (
         <>
-          <Head c={c} lede />
+          <Head c={c} />
           <WalletForm
             c={c}
             lang={l}
@@ -209,13 +209,15 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
     } else {
       body = (
         <>
-          <Head c={c} lede />
+          {/* #INVITE-LAYOUT-1022: da iscritto niente lede — è il pitch per chi deve ancora decidere;
+              i numeri stanno in «Il tuo livello» e nelle regole. Il link è la prima cosa sotto il titolo. */}
+          <Head c={c} />
           {me.affiliate.status === "suspended" && <div className="aff-banner" role="status"><p>{c.state.suspended}</p></div>}
           {me.affiliate.status === "terminated" && <div className="aff-banner" role="status"><p>{c.state.terminated}</p></div>}
           {flash && <div className="aff-open" role="status"><span>{flash}</span></div>}
           <div className="aff-top">
             <LinkBlock c={c} code={me.affiliate.code} link={link} error={false} onRetry={() => void load()} />
-            <HowSteps c={c} />
+            <HowSteps c={c} levels={!me.tier} />
           </div>
           <LedgerBlock c={c} lang={l} ledger={me.ledger} payouts={me.payouts} unavailable={false} />
           <TierBlock c={c} tier={me.tier ?? null} />
@@ -246,11 +248,12 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
   );
 }
 
+/** #INVITE-LAYOUT-1022 — il kicker è l'h1 del desk («Invita»), ridotto a etichetta dal CSS come per
+ *  ClassicInvite: prima si leggeva «Invita» grande, «INVITA» piccolo e poi il titolo, con due h1 nel documento. */
 function Head({ c, lede }: { c: AffCopy; lede?: boolean }) {
   return (
     <header className="aff-head">
-      <p className="aff-kicker">{c.head.kicker}</p>
-      <h1 className="aff-headline">{c.head.title}</h1>
+      <h2 className="aff-headline">{c.head.title}</h2>
       {lede && <p className="aff-lede">{c.head.lede}</p>}
     </header>
   );
@@ -327,14 +330,17 @@ function Enroll({ c, join, termsHref, onDone, onTerms }: {
         <div className="aff-actions"><button type="submit" className="aff-cta" disabled={!ready}>{busy ? e.busy : e.cta}</button></div>
         <p className="aff-muted aff-small">{e.ctaHint}</p>
       </form>
+      {/* #INVITE-LAYOUT-1022 — colonna destra in tre registri: i numeri fissi (20% · 60 gg · 50 $),
+          la scala dei rinnovi 7/10/15 come oggetto a sé (prima era una frase da 13 px sotto il «7%»),
+          le tre regole fini. La spiegazione lunga dei livelli si apre da «Come funzionano i livelli». */}
       <div className="aff-how">
         <h2 className="aff-h">{e.howTitle}</h2>
         <dl className="aff-terms-list">
           <div><dd>{e.t1v}</dd><dt>{e.t1}</dt></div>
-          <div><dd>{e.t2v}</dd><dt>{e.t2}</dt></div>
           <div><dd>{e.t3v}</dd><dt>{e.t3}</dt></div>
           <div><dd>{e.t4v}</dd><dt>{e.t4}</dt></div>
         </dl>
+        <LadderPreview c={c} />
         <ul className="aff-fine">
           <li><strong>{e.f1t}</strong><span>{e.f1b}</span></li>
           <li><strong>{e.f2t}</strong><span>{e.f2b}</span></li>

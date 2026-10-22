@@ -9,6 +9,8 @@ import { coinAmount, dateTime, monthLabel, shortDate, shortHash, usd } from "./f
 import { cancelText, commissionChip, payoutChip } from "./status";
 import { ExplorerLink, StateChip, useCopy } from "./ui";
 import type { CommissionView, LedgerView, PayoutView, Payee, TierView, WalletView } from "./types";
+// Modulo puro (nessun import): la scala di default, la stessa a cui pure.test lega la copy.
+import { DEFAULT_TIERS } from "@/lib/affiliate/tiers";
 
 const NETWORK_LABEL: Record<string, string> = { polygon: "Polygon", tron: "Tron" };
 
@@ -49,15 +51,41 @@ export function TierBlock({ c, tier }: { c: AffCopy; tier: TierView | null }) {
         </li>
       </ol>
       {ladder.length > 0 && (
-        <dl className="aff-terms-list" aria-label={t.ladderTitle}>
-          <div><dd>{pct(tier.base_rate)}</dd><dt>{fill(t.ladderBase, { max: ladder[0].min - 1 })}</dt></div>
-          {ladder.map((s) => (
-            <div key={s.min}><dd>{pct(s.rate)}</dd><dt>{fill(t.ladderStep, { min: s.min })}</dt></div>
-          ))}
-        </dl>
+        <div className="aff-ladder-wrap">
+          <p className="aff-ladder-lead">{t.ladderLead}</p>
+          <dl className="aff-terms-list aff-ladder" aria-label={t.ladderTitle}>
+            <div data-on={tier.level === 0 ? "1" : "0"}><dd>{pct(tier.base_rate)}</dd><dt>{fill(t.ladderBase, { max: ladder[0].min - 1 })}</dt></div>
+            {ladder.map((s, i) => (
+              <div key={s.min} data-on={tier.level === i + 1 ? "1" : "0"}><dd>{pct(s.rate)}</dd><dt>{fill(t.ladderStep, { min: s.min })}</dt></div>
+            ))}
+          </dl>
+        </div>
       )}
       <p className="aff-muted aff-small">{fill(t.note, { first: pct(tier.first_rate) })}</p>
+      {/* #INVITE-LAYOUT-1022: la spiegazione dei livelli vive QUI, sotto la scala, apribile — non più
+          ripetuta nella colonna «Come funziona» (era la stessa prosa due volte sopra la piega). */}
+      <TierHow c={c} />
     </section>
+  );
+}
+
+/** #INVITE-LAYOUT-1022 — prima dell'iscrizione non c'è un `tier` dal server: la scala 7/10/15 si mostra
+ *  dalla DEFAULT_TIERS (stesso vincolo della copy, pure.test) con il tasso base della copy d'iscrizione. */
+export function LadderPreview({ c }: { c: AffCopy }) {
+  const t = c.tier;
+  const e = c.enroll;
+  // La frase d'iscrizione legata ai test («7% di ogni rinnovo dal 2° mese; 10% da 5…, 15% da 15») è il nome
+  // accessibile della figura; a vista i numeri si leggono una volta sola, nelle celle.
+  return (
+    <div className="aff-ladder-wrap" data-testid="aff-ladder-preview">
+      <p className="aff-ladder-lead">{t.ladderLead}</p>
+      <dl className="aff-terms-list aff-ladder" aria-label={`${e.t2v} ${e.t2}`}>
+        <div><dd>{e.t2v}</dd><dt>{fill(t.ladderBase, { max: DEFAULT_TIERS[0].min - 1 })}</dt></div>
+        {DEFAULT_TIERS.map((s) => (
+          <div key={s.min}><dd>{pct(s.rate)}</dd><dt>{fill(t.ladderStep, { min: s.min })}</dt></div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -94,7 +122,8 @@ export function LinkBlock({ c, code, link, error, onRetry }: { c: AffCopy; code:
   );
 }
 
-export function HowSteps({ c }: { c: AffCopy }) {
+/** `levels`: la spiegazione dei livelli qui SOLO quando il blocco «Il tuo livello» non c'è (risposta senza `tier`). */
+export function HowSteps({ c, levels = false }: { c: AffCopy; levels?: boolean }) {
   return (
     <section className="aff-how" aria-labelledby="aff-t-how">
       <h2 className="aff-h" id="aff-t-how">{c.how.title}</h2>
@@ -107,24 +136,26 @@ export function HowSteps({ c }: { c: AffCopy }) {
           </li>
         ))}
       </ol>
-      <TierHow c={c} />
+      {levels && <TierHow c={c} />}
     </section>
   );
 }
 
-/** #INVITE-TIERS-HOW-1022 — come funzionano i livelli (7/10/15), testo statico legato a DEFAULT_TIERS dal test. */
+/** #INVITE-TIERS-HOW-1022 — come funzionano i livelli (7/10/15), testo statico legato a DEFAULT_TIERS dal test.
+ *  #INVITE-LAYOUT-1022 — è un `<details>`: la scala si vede sempre (sopra), la regola fine si apre quando serve.
+ *  `textContent` include anche il contenuto chiuso, quindi i test sul testo restano validi. */
 export function TierHow({ c }: { c: AffCopy }) {
   const v = c.levels;
   return (
-    <div className="aff-levels" data-testid="aff-levels">
-      <h3 className="aff-h">{v.title}</h3>
+    <details className="aff-levels" data-testid="aff-levels">
+      <summary><h3 className="aff-h4">{v.title}</h3></summary>
       <ul className="aff-fine">
         <li><strong>{v.l1t}</strong><span>{v.l1b}</span></li>
         <li><strong>{v.l2t}</strong><span>{v.l2b}</span></li>
         <li><strong>{v.l3t}</strong><span>{v.l3b}</span></li>
       </ul>
       <p className="aff-muted aff-small">{v.example}</p>
-    </div>
+    </details>
   );
 }
 
