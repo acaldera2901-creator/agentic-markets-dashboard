@@ -18,12 +18,14 @@ check "/api/affiliate/me senza sessione → 401" [ "$(du_http_code "$SITE_URL/ap
 du_db_schema_checks
 NAMES="$(du_vercel_env_names)"
 check "AFFILIATE_HASH_SECRET assente" sh -c '! printf "%s\n" "$1" | grep -qx AFFILIATE_HASH_SECRET' _ "$NAMES"
-PAY="$(du_vercel_env_value AFFILIATE_PAYOUTS)"
-check "AFFILIATE_PAYOUTS non live (${PAY:-vuota})" [ "$(printf '%s' "$PAY" | tr '[:upper:]' '[:lower:]')" != live ]
+du_safe_payment_flags || ko "payout/accounting/hash devono restare disattivati e leggibili"
+MERGE_SHA="$(cat "$LOG_DIR/merge-sha.txt")"
+du_production_matches "$MERGE_SHA" || ko "produzione non corrisponde al merge verificato"
 [ "$DU_KO" = 0 ] || die "$DU_KO precondizioni KO"
 PREV="$(du_vercel_env_value AFFILIATE_MODE)"
 echo "AFFILIATE_MODE attuale: ${PREV:-<vuota o sensitive>} (rollback = rimettere questo valore)"
-[ "$PREV" = live ] && { ok "già live"; du_mark passo7 live; exit 0; }
+# Even if project settings already say live, an older deployment may still run shadow.
+# Always redeploy and verify a new deployment before marking this step complete.
 PROD_JSON="$(vercel inspect "${SITE_URL#https://}" --scope "$VERCEL_SCOPE" -F json 2>/dev/null || true)"
 PROD_URL="$(printf '%s' "$PROD_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.target==="production"&&j.readyState==="READY"?j.url:"")}catch{}})')"
 PROD_ID="$(printf '%s' "$PROD_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).id||"")}catch{}})')"
@@ -36,15 +38,17 @@ if [ "$ESEGUI" != 1 ]; then c_grn "DRY-RUN: nessuna modifica."; exit 0; fi
 du_confirm "AFFILIATE LIVE"
 if printf '%s\n' "$NAMES" | grep -qx AFFILIATE_MODE; then du_vercel_env_set AFFILIATE_MODE live; else du_vercel_env_set AFFILIATE_MODE live --no-sensitive; fi
 NOW="$(du_vercel_env_value AFFILIATE_MODE)"
-[ "$NOW" = live ] || [ -z "$NOW" ] || die "AFFILIATE_MODE letto «$NOW» dopo l'update"
+[ "$NOW" = live ] || die "AFFILIATE_MODE letto «$NOW» dopo l'update"
 vercel redeploy "$PROD_URL" --target production --scope "$VERCEL_SCOPE"
 
 echo; echo "== Verifica post-passo =="
 NEW_ID="$(vercel inspect "${SITE_URL#https://}" --scope "$VERCEL_SCOPE" -F json 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write(j.readyState==="READY"?j.id:"")}catch{}})')"
 check "produzione servita da un deployment NUOVO ($NEW_ID ≠ $PROD_ID)" sh -c '[ -n "$1" ] && [ "$1" != "$2" ]' _ "$NEW_ID" "$PROD_ID"
-check "AFFILIATE_MODE=live (o non leggibile perché sensitive)" sh -c '[ "$1" = live ] || [ -z "$1" ]' _ "$(du_vercel_env_value AFFILIATE_MODE)"
+check "AFFILIATE_MODE=live" sh -c '[ "$1" = live ]' _ "$(du_vercel_env_value AFFILIATE_MODE)"
 check "termini v3 ancora online" sh -c 'curl -s --max-time 30 "$1" | grep -q "$2"' _ "$SITE_URL/affiliates/terms" "$TERMS_V3"
 check "/api/affiliate/me senza sessione → 401" [ "$(du_http_code "$SITE_URL/api/affiliate/me")" = 401 ]
 [ "$DU_KO" = 0 ] || die "$DU_KO verifiche KO dopo il live. Rollback: $DU_ROLLBACK (deployment precedente: $PROD_URL)"
+du_production_matches "$MERGE_SHA" || die "nuovo deploy non corrisponde al merge"
+du_safe_payment_flags || die "flag pagamento cambiati durante il deploy"
 du_mark passo7 "live; deployment precedente $PROD_URL ($PROD_ID); valore precedente ${PREV:-vuoto}"
 c_grn "Passo 7 OK: AFFILIATE_MODE=live. Prova manuale: /affiliates o /invite loggato → iscrizione aperta; /api/affiliate/me loggato → 200."

@@ -6,7 +6,8 @@
 // per intero prima di maturare.
 //
 // Tutta la decisione e la scrittura stanno nella funzione SQL
-// `affiliate_reverse_commission` (migration 20261022120000): serve il lock della
+// `affiliate_receive_reversal` conserva anche eventi arrivati prima della commissione.
+// Il replay usa `affiliate_reverse_commission`: serve il lock della
 // riga originale, che exec_sql non può dare. Qui solo il contratto dei rail:
 // non lancia mai, AFFILIATE_MODE=off no-op, gira dopo la risposta del webhook.
 
@@ -49,7 +50,7 @@ export async function reverseAffiliateCommissionSafe(
     if (config.mode === "off") return { written: false, reason: "mode_off" };
     const call = () =>
       affiliateRpc<{ ok: boolean; written?: boolean; reason?: string; amount?: number; status?: string }>(
-        input.actor ? "affiliate_admin_reverse_commission" : "affiliate_reverse_commission",
+        input.actor ? "affiliate_admin_reverse_commission" : "affiliate_receive_reversal",
         {
           ...(input.actor ? { p_actor: input.actor } : {}),
           p_rail: input.rail,
