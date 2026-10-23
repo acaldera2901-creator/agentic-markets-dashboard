@@ -421,6 +421,24 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await t.json()).toEqual({ error: "cancelled", cancel_code: "affiliate_suspended" });
   });
 
+  it("#AFFILIATE-COMPLETE-1023 sospensione dal backoffice che annulla un payout in preparazione → email generica all'affiliato", async () => {
+    await payableAlice();
+    const { sendEmail } = await import("@/lib/email");
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
+    vi.mocked(sendEmail).mockClear();
+    const r = await status.POST(
+      new Request("https://x/x", { method: "POST", headers: { authorization: "Bearer bo", "x-admin-actor": "michele@maven" }, body: JSON.stringify({ status: "suspended", reason: "verifica frode" }) }) as never,
+      { params: Promise.resolve({ id: "1" }) },
+    );
+    expect(await r.json()).toMatchObject({ ok: true, cancelled_payout_ids: [1] });
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    const mail = vi.mocked(sendEmail).mock.calls[0][0] as { to: string; text: string };
+    expect(mail.to).toBe("alice@x.io");
+    expect(mail.text).not.toMatch(/verifica frode/); // mai il motivo dell'operatore
+  });
+
   it("PR-9 suspended: non pagabile, la creazione è rifiutata", async () => {
     await payableAlice();
     await h.sql!`UPDATE affiliates SET status = 'suspended'`;
