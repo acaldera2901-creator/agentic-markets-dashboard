@@ -211,6 +211,44 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(w).toEqual({ screening_result: "not_screened", cd: true });
   });
 
+  it("#AFFILIATE-COMPLETE-1023 lascia il programma → rientra; termini aggiornati accettati; storico delle versioni", async () => {
+    const join = await import("@/app/api/affiliate/join/route");
+    const leave = await import("@/app/api/affiliate/leave/route");
+    const terms = await import("@/app/api/affiliate/terms/route");
+    const me = await import("@/app/api/affiliate/me/route");
+    const V3 = "aff-2026-10-22-v3";
+    expect((await leave.POST(req("/x", "POST", "alice@x.io"))).status).toBe(404); // non iscritta
+    expect((await join.POST(req("/x", "POST", "alice@x.io", { code: "alice", terms_version: V3, age: true, onerous_ack: true }))).status).toBe(200);
+    expect(await h.sql!`SELECT terms_version, onerous_ack, source FROM affiliate_terms_acceptances`).toEqual([{ terms_version: V3, onerous_ack: true, source: "join" }]);
+
+    // termini: già sulla versione in vigore → idempotente; versione vecchia o senza spunta → rifiutato
+    expect(await (await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3, onerous_ack: true }))).json()).toMatchObject({ ok: true, already: true });
+    expect((await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: "aff-2026-10-21-v2", onerous_ack: true }))).status).toBe(409);
+    expect((await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3 }))).status).toBe(400);
+    // iscritta con la v2 → accetta la v3 dal banner
+    await h.sql!`UPDATE affiliates SET terms_version = 'aff-2026-10-21-v2', onerous_ack_version = 'aff-2026-10-21-v2'`;
+    await h.sql!`DELETE FROM affiliate_terms_acceptances`;
+    expect(await (await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3, onerous_ack: true }))).json()).toMatchObject({ ok: true, already: false });
+    expect((await h.sql!`SELECT terms_version, onerous_ack_version FROM affiliates`)[0]).toEqual({ terms_version: V3, onerous_ack_version: V3 });
+    expect(await h.sql!`SELECT terms_version, source FROM affiliate_terms_acceptances`).toEqual([{ terms_version: V3, source: "update" }]);
+
+    // esce: left_at nel pannello, idempotente, lo stato resta active (il maturato si paga)
+    const l = await (await leave.POST(req("/x", "POST", "alice@x.io"))).json();
+    expect(l).toMatchObject({ ok: true, already: false });
+    expect(await (await leave.POST(req("/x", "POST", "alice@x.io"))).json()).toMatchObject({ ok: true, already: true });
+    const panel = await (await me.GET(req("/x", "GET", "alice@x.io"))).json();
+    expect(panel.affiliate).toMatchObject({ status: "active", left_at: expect.any(String) });
+    // rientra: stesso codice, consenso nuovo, left_at azzerato
+    expect(await (await join.POST(req("/x", "POST", "alice@x.io", { code: "ALICE", terms_version: V3, age: true, onerous_ack: true }))).json()).toMatchObject({ ok: true, rejoined: true, code: "ALICE" });
+    expect((await h.sql!`SELECT left_at FROM affiliates`)[0].left_at).toBeNull();
+    // chiuso dall'operatore: né uscita né termini
+    await h.sql!`UPDATE affiliates SET status = 'terminated'`;
+    expect((await leave.POST(req("/x", "POST", "alice@x.io"))).status).toBe(403);
+    expect((await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3, onerous_ack: true }))).status).toBe(403);
+    // ACL: anon/authenticated non leggono lo storico
+    expect((await h.sql!`SELECT has_table_privilege('anon','affiliate_terms_acceptances','SELECT') AS a, has_table_privilege('authenticated','affiliate_terms_acceptances','SELECT') AS b`)[0]).toEqual({ a: false, b: false });
+  });
+
   it("IDOR: Bob non vede né tocca il wallet di Alice", async () => {
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
@@ -708,8 +746,9 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
       CREATE TABLE IF NOT EXISTS paypal_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, status text, granted_at timestamptz);
       CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
       TRUNCATE paygate_orders, paypal_orders, shopify_events;
-      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
-        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      -- #AFFILIATE-COMPLETE-1023: enrolled before the payments below (no retroactive commission).
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at, created_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now(),now() - interval '120 days');
       ${extra}`);
     return (await import("@/lib/affiliate/reconcile")).reconcileAffiliateLedger;
   }
@@ -819,6 +858,33 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
       .toMatchObject({ written: true });
     // storico PayPal X1 (1) + riga Shopify X1 nel ledger (1) → indice 2.
     expect((await h.sql!`SELECT renewal_index AS i FROM affiliate_commissions WHERE rail_payment_ref = 'pg-9'`)[0].i).toBe(2);
+  });
+
+  it("#AFFILIATE-COMPLETE-1023 nessuna commissione prima dell'iscrizione, dopo l'uscita o ad affiliato chiuso — né dal rail né dalla riconciliazione", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reconcileAffiliateLedger = await railStubs(`
+      UPDATE affiliates SET created_at = now() - interval '5 days';
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '30 days');
+      -- pagato 10 giorni fa: Alice si è iscritta 5 giorni fa → niente (nemmeno come candidato)
+      INSERT INTO paygate_orders VALUES ('pg-pre','ref@x.io',14.99,NULL,now() - interval '10 days');`);
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0 });
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-pre", grossUsd: 14.99, paidAt: new Date(Date.now() - 10 * 86_400_000) }))
+      .toEqual({ written: false, reason: "before_enrollment" });
+    // dopo l'iscrizione: sì
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-1", grossUsd: 14.99, paidAt: new Date(Date.now() - 2 * 86_400_000) }))
+      .toMatchObject({ written: true, reason: "pending" });
+    // esce dal programma ieri: il pagamento di oggi no, quello di due giorni fa resta (e matura come sempre)
+    await h.sql!`UPDATE affiliates SET left_at = now() - interval '1 day'`;
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-2", grossUsd: 14.99, paidAt: new Date() }))
+      .toEqual({ written: false, reason: "affiliate_left" });
+    await h.sql!`INSERT INTO paygate_orders VALUES ('pg-2','ref@x.io',14.99,NULL,now() - interval '1 hour')`;
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0 });
+    // chiuso dall'operatore (con l'attribuzione già congelata): niente
+    await h.sql!`UPDATE affiliates SET left_at = NULL, status = 'terminated'`;
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-3", grossUsd: 14.99, paidAt: new Date() }))
+      .toEqual({ written: false, reason: "affiliate_terminated" });
+    expect(await h.sql!`SELECT rail_payment_ref AS ref, status FROM affiliate_commissions`).toEqual([{ ref: "pg-1", status: "pending" }]);
   });
 
   // #AFFILIATE-FINGERPRINTS-1022 — dalla scrittura del fingerprint al verdetto del ledger.

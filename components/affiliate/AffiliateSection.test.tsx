@@ -472,3 +472,67 @@ describe("wallet USDC",()=>{
  });
 });
 
+
+// #AFFILIATE-COMPLETE-1023 — lasciare il programma, rientrare, accettare i termini aggiornati.
+describe("uscita, rientro e termini aggiornati", () => {
+  const LEFT = { ...ME, affiliate: { ...ME.affiliate, left_at: "2026-11-02T10:00:00Z" } };
+
+  it("«Lascia il programma»: conferma neutra a due bottoni che dice cosa succede; «Annulla» non chiama niente; conferma → POST /leave e rilettura", async () => {
+    let left = false;
+    mockFetch((url, init) => {
+      if (url === "/api/affiliate/leave" && init?.method === "POST") { left = true; return { status: 200, body: { ok: true } }; }
+      if (url.startsWith("/api/affiliate/me")) return { status: 200, body: left ? LEFT : ME };
+      return undefined;
+    });
+    render(<AffiliateSection lang="it" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Lascia il programma" }));
+    const dlg = screen.getByTestId("aff-leave-confirm");
+    expect(dlg.textContent).toMatch(/resta tuo e te lo paghiamo come sempre/);
+    fireEvent.click(within(dlg).getByRole("button", { name: "Annulla" }));
+    expect(calls.some((c) => c.url === "/api/affiliate/leave")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Lascia il programma" }));
+    fireEvent.click(within(screen.getByTestId("aff-leave-confirm")).getByRole("button", { name: "Lascia il programma" }));
+    const banner = await screen.findByTestId("aff-left");
+    expect(banner.textContent).toMatch(/Hai lasciato il programma il/);
+    expect(calls.filter((c) => c.url === "/api/affiliate/leave")).toHaveLength(1);
+  });
+
+  it("uscita fallita: errore in chiaro, resta dentro", async () => {
+    mockFetch((url, init) => (url === "/api/affiliate/leave" && init?.method === "POST" ? { status: 500, body: {} } : me(ME)(url)));
+    render(<AffiliateSection lang="it" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Lascia il programma" }));
+    fireEvent.click(within(screen.getByTestId("aff-leave-confirm")).getByRole("button", { name: "Lascia il programma" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Non sono riuscito a registrare l'uscita/);
+    expect(screen.queryByTestId("aff-left")).toBeNull();
+  });
+
+  it("uscito: niente link da condividere né «Lascia»; wallet e storico restano; «Rientra» apre l'iscrizione col codice bloccato", async () => {
+    mockFetch((url, init) => (url === "/api/affiliate/join" && init?.method === "POST" ? { status: 200, body: { ok: true, rejoined: true } } : me({ ...LEFT, terms_current: "aff-2026-10-22-v3" })(url)));
+    render(<AffiliateSection lang="it" />);
+    await screen.findByTestId("aff-left");
+    expect(screen.queryByText("Il tuo link")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Lascia il programma" })).toBeNull();
+    expect(screen.queryByTestId("aff-terms-update")).toBeNull();
+    expect(screen.getByText("Storico pagamenti")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Rientra nel programma" }));
+    const code = (await screen.findByLabelText("Il tuo codice")) as HTMLInputElement;
+    expect(code.readOnly).toBe(true);
+    for (const cb of screen.getAllByRole("checkbox")) fireEvent.click(cb);
+    fireEvent.click(screen.getByRole("button", { name: "Iscrivimi al programma" }));
+    await waitFor(() => expect(calls.some((c) => c.url === "/api/affiliate/join" && c.method === "POST")).toBe(true));
+    expect(calls.find((c) => c.url === "/api/affiliate/join" && c.method === "POST")?.body).toMatchObject({ code: ME.affiliate.code, terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true });
+  });
+
+  it("termini aggiornati: accettazione facoltativa con la spunta sulle clausole onerose → POST /terms", async () => {
+    mockFetch((url, init) => (url === "/api/affiliate/terms" && init?.method === "POST" ? { status: 200, body: { ok: true } } : me({ ...ME, terms_current: "aff-2026-10-22-v3" })(url)));
+    render(<AffiliateSection lang="it" />);
+    const banner = await screen.findByTestId("aff-terms-update");
+    const btn = within(banner).getByRole("button", { name: "Accetta i termini aggiornati" }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(within(banner).getByRole("checkbox"));
+    fireEvent.click(btn);
+    await waitFor(() => expect(calls.some((c) => c.url === "/api/affiliate/terms")).toBe(true));
+    expect(calls.find((c) => c.url === "/api/affiliate/terms")?.body).toEqual({ terms_version: "aff-2026-10-22-v3", onerous_ack: true });
+    expect(await screen.findByText("Termini aggiornati accettati.")).toBeTruthy();
+  });
+});

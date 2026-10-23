@@ -35,6 +35,8 @@ type Candidate = { rail: AffiliateRail; ref: string; identifier: string; gross: 
  *  ledger, di un referito che PUÒ ancora generare commissione: attribuzione
  *  valida o in revisione, oppure nessuna attribuzione ma `referred_by` di un
  *  affiliato attivo e pagamento dentro la finestra dalla registrazione ($1 gg).
+ *  #AFFILIATE-COMPLETE-1023: e solo pagamenti fatti dopo l'iscrizione dell'affiliato
+ *  e prima che lasciasse il programma (stessa regola di standingBlock nel ledger).
  *  Chi non può (void, self_referral, fuori finestra) non si riseleziona a ogni
  *  giro: non toglie posto ai recuperabili. */
 export const CANDIDATES_SQL = `
@@ -55,13 +57,16 @@ SELECT p.rail, p.ref, p.identifier, p.gross::float8 AS gross, p.paid_at::text AS
      SELECT 1 FROM affiliate_commissions c
       WHERE c.rail = p.rail AND c.rail_payment_ref = p.ref AND c.kind IN ('first','renewal'))
    AND (
-     EXISTS (SELECT 1 FROM affiliate_attributions a
-              WHERE a.referred_identifier = LOWER(TRIM(p.identifier)) AND a.status IN ('valid','fraud_review'))
+     EXISTS (SELECT 1 FROM affiliate_attributions a JOIN affiliates af ON af.id = a.affiliate_id
+              WHERE a.referred_identifier = LOWER(TRIM(p.identifier)) AND a.status IN ('valid','fraud_review')
+                AND af.status <> 'terminated' AND p.paid_at >= af.created_at
+                AND (af.left_at IS NULL OR p.paid_at < af.left_at))
      OR (
        NOT EXISTS (SELECT 1 FROM affiliate_attributions a WHERE a.referred_identifier = LOWER(TRIM(p.identifier)))
        AND EXISTS (
          SELECT 1 FROM profiles pr
            JOIN affiliates af ON af.code = UPPER(TRIM(pr.referred_by)) AND af.status = 'active'
+                              AND p.paid_at >= af.created_at AND (af.left_at IS NULL OR p.paid_at < af.left_at)
           WHERE LOWER(TRIM(pr.identifier)) = LOWER(TRIM(p.identifier))
             AND p.paid_at - pr.created_at <= make_interval(days => $1))
      )
@@ -82,13 +87,16 @@ SELECT e.event_id AS ref
      SELECT 1 FROM affiliate_commissions c
       WHERE c.rail = 'shopify' AND c.rail_payment_ref = e.event_id AND c.kind IN ('first','renewal'))
    AND (
-     EXISTS (SELECT 1 FROM affiliate_attributions a
-              WHERE a.referred_identifier = LOWER(TRIM(e.identifier)) AND a.status IN ('valid','fraud_review'))
+     EXISTS (SELECT 1 FROM affiliate_attributions a JOIN affiliates af ON af.id = a.affiliate_id
+              WHERE a.referred_identifier = LOWER(TRIM(e.identifier)) AND a.status IN ('valid','fraud_review')
+                AND af.status <> 'terminated' AND e.processed_at >= af.created_at
+                AND (af.left_at IS NULL OR e.processed_at < af.left_at))
      OR (
        NOT EXISTS (SELECT 1 FROM affiliate_attributions a WHERE a.referred_identifier = LOWER(TRIM(e.identifier)))
        AND EXISTS (
          SELECT 1 FROM profiles pr
            JOIN affiliates af ON af.code = UPPER(TRIM(pr.referred_by)) AND af.status = 'active'
+                              AND e.processed_at >= af.created_at AND (af.left_at IS NULL OR e.processed_at < af.left_at)
           WHERE LOWER(TRIM(pr.identifier)) = LOWER(TRIM(e.identifier))
             AND e.processed_at - pr.created_at <= make_interval(days => $1))
      )

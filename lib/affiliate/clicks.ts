@@ -54,7 +54,7 @@ export async function recordReferralClickSafe(code: string, ip: string, ua: stri
     const day = at.toISOString().slice(0, 10);
     await dbExecute(
       `INSERT INTO affiliate_referral_clicks (affiliate_id, clicked_at, ip_hash, ua_hash, landing)
-       SELECT id, $2::timestamptz, $3, $4, $5 FROM affiliates WHERE code = $1 AND status = 'active'`,
+       SELECT id, $2::timestamptz, $3, $4, $5 FROM affiliates WHERE code = $1 AND status = 'active' AND left_at IS NULL`,
       [code, at.toISOString(), hashIp(`${ip}|${day}`), ua ? hashIp(ua) : null, landing.slice(0, 500)]
     );
     return true;

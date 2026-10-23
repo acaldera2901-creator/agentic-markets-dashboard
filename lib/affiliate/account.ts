@@ -10,7 +10,7 @@
 // libero di un annullo admin (`cancel_reason`: esce solo `cancel_code`).
 
 import { createHmac } from "node:crypto";
-import { dbQueryStrict } from "@/lib/db";
+import { dbExecute, dbQueryStrict } from "@/lib/db";
 import { explorerTxUrl, maskAddress, type PayoutCoin, type PayoutNetwork } from "./wallet";
 import type { AffiliateConfig } from "./config";
 import { payingReferredSql, tierFor, type TierStep } from "./tiers";
@@ -24,6 +24,8 @@ export type AffiliateRow = {
   status: AffiliateStatus;
   terms_version: string;
   created_at: string;
+  /** #AFFILIATE-COMPLETE-1023 — left the program (self-service); null = still in. */
+  left_at: string | null;
   payee_legal_name: string | null;
   payee_country: string | null;
   payee_sanctions_declared_at: string | null;
@@ -38,7 +40,7 @@ export function affiliateIdentifier(sessionIdentifier: string): string {
 export async function loadAffiliateBySession(sessionIdentifier: string): Promise<AffiliateRow | null> {
   const rows = await dbQueryStrict<AffiliateRow & { id: number | string }>(
     `SELECT id, identifier, code, status, terms_version, created_at::text AS created_at,
-            payee_legal_name, payee_country,
+            left_at::text AS left_at, payee_legal_name, payee_country,
             payee_sanctions_declared_at::text AS payee_sanctions_declared_at,
             payee_tax_declared_at::text AS payee_tax_declared_at
        FROM affiliates
@@ -48,6 +50,17 @@ export async function loadAffiliateBySession(sessionIdentifier: string): Promise
   );
   const r = rows[0];
   return r ? { ...r, id: Number(r.id) } : null;
+}
+
+/** #AFFILIATE-COMPLETE-1023 — history of accepted Terms versions (migration 20261023120000).
+ *  The first acceptance of a version is the one kept. */
+export async function recordAcceptance(affiliateId: number, termsVersion: string, source: "join" | "rejoin" | "update"): Promise<void> {
+  await dbExecute(
+    `INSERT INTO affiliate_terms_acceptances (affiliate_id, terms_version, onerous_ack, source)
+     VALUES ($1, $2, true, $3)
+     ON CONFLICT (affiliate_id, terms_version) DO NOTHING`,
+    [affiliateId, termsVersion, source],
+  );
 }
 
 // ── Mascheramento ────────────────────────────────────────────────────────────

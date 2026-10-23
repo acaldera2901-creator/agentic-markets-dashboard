@@ -3,6 +3,7 @@
 // I blocchi del pannello dell'affiliato (SPEC-ui §3.2, §3.5), tutti presentazionali:
 // ricevono i dati già letti da /api/affiliate/me e non fanno rete (tranne «Mostra
 // altre», che chiama il padre). Nessun numero è inventato: tutto viene dall'API.
+import { useState } from "react";
 import type { AffCopy, AffLang } from "./copy";
 import { fill } from "./copy";
 import { coinAmount, dateTime, monthLabel, shortDate, shortHash, usd } from "./format";
@@ -508,7 +509,7 @@ export function CommissionHistory({ c, lang, items, hasMore, loadingMore, onMore
   );
 }
 
-export function Rules({ c, termsHref, privacyHref }: { c: AffCopy; termsHref: string | null; privacyHref: string }) {
+export function Rules({ c, termsHref, privacyHref, onLeave }: { c: AffCopy; termsHref: string | null; privacyHref: string; onLeave?: () => Promise<boolean> }) {
   const r = c.rules;
   return (
     <section className="aff-block aff-rules aff-quiet" aria-labelledby="aff-t-rul">
@@ -517,8 +518,34 @@ export function Rules({ c, termsHref, privacyHref }: { c: AffCopy; termsHref: st
         {[r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.r7].map((t) => <li key={t}>{t}</li>)}
       </ul>
       <p className="aff-terms">
-        {termsHref ? <a href={termsHref}>{r.terms}</a> : r.terms} · <a href={privacyHref}>{r.privacy}</a> · {r.leave}
+        {termsHref ? <a href={termsHref}>{r.terms}</a> : r.terms} · <a href={privacyHref}>{r.privacy}</a>
+        {onLeave ? <> · <LeaveProgram c={c} onLeave={onLeave} /></> : <> · {r.leave}</>}
       </p>
     </section>
+  );
+}
+
+/** #AFFILIATE-COMPLETE-1023 — «Lascia il programma» (SPEC-ui §3.2): one click, then a neutral
+ *  two-button confirm that says what happens. No confirmshaming, the way back is as easy. */
+function LeaveProgram({ c, onLeave }: { c: AffCopy; onLeave: () => Promise<boolean> }) {
+  const r = c.rules;
+  const [ask, setAsk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(false);
+  if (!ask) return <button type="button" className="aff-linkbtn" onClick={() => { setErr(false); setAsk(true); }}>{r.leaveCta}</button>;
+  return (
+    <span className="aff-confirm" role="alertdialog" aria-label={r.leaveCta} data-testid="aff-leave-confirm">
+      <span className="block">{r.leaveAsk}</span>
+      {err && <span className="aff-err block" role="alert">{r.leaveError}</span>}
+      <span className="aff-inline-actions">
+        <button type="button" className="aff-cta aff-cta--ghost" disabled={busy} onClick={async () => {
+          setBusy(true);
+          const ok = await onLeave();
+          setBusy(false);
+          if (!ok) setErr(true);
+        }}>{r.leaveYes}</button>
+        <button type="button" className="aff-cta aff-cta--ghost" disabled={busy} onClick={() => setAsk(false)}>{r.leaveNo}</button>
+      </span>
+    </span>
   );
 }

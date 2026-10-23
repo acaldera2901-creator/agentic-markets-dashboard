@@ -23,7 +23,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY['affiliates','affiliate_referral_clicks','affiliate_attributions','affiliate_wallets',
                            'affiliate_payouts','affiliate_commissions','affiliate_payer_fingerprints',
-                           'affiliate_refund_events'] LOOP
+                           'affiliate_refund_events','affiliate_terms_acceptances'] LOOP
     IF to_regclass('public.' || t) IS NOT NULL THEN
       EXECUTE format('SELECT count(*) FROM public.%I', t) INTO n;
       IF n > 0 THEN
@@ -51,6 +51,7 @@ DROP FUNCTION IF EXISTS public.affiliate_cancel_created_payouts(bigint, text, te
 -- Ordine per le FK: il ledger referenzia payouts, payouts referenzia wallets,
 -- tutti referenziano affiliates.
 DROP TABLE IF EXISTS public.affiliate_refund_events;
+DROP TABLE IF EXISTS public.affiliate_terms_acceptances;
 DROP TABLE IF EXISTS public.affiliate_commissions;
 DROP TABLE IF EXISTS public.affiliate_payouts;
 DROP TABLE IF EXISTS public.affiliate_wallets;

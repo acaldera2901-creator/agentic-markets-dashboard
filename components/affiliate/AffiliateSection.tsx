@@ -16,7 +16,8 @@
 // etichette «Esempio» qui: valgono solo per l'anteprima senza backend, che resta
 // nel componente classic già esistente.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AFF_COPY, affLang, type AffCopy } from "./copy";
+import { AFF_COPY, affLang, fill, type AffCopy } from "./copy";
+import { shortDate } from "./format";
 import { api } from "./api";
 import { CommissionHistory, HowSteps, HowWePay, LedgerBlock, LinkBlock, Offer, PayoutHistory, Rules, TierBlock, WalletCard } from "./Blocks";
 import { Skeleton } from "./ui";
@@ -41,7 +42,7 @@ type Phase =
   | { k: "error" }
   | { k: "enroll"; join: JoinInfo }
   | { k: "enrolled"; me: Enrolled };
-type View = "dash" | "wallet" | "payouts";
+type View = "dash" | "wallet" | "payouts" | "rejoin";
 
 export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/affiliates/terms", privacyHref = "/privacy" }: AffiliateSectionProps) {
   const l = affLang(lang);
@@ -115,6 +116,15 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
     }
   };
 
+  // #AFFILIATE-COMPLETE-1023 — leave the program (Rules → neutral confirm). true = done.
+  const leave = async (): Promise<boolean> => {
+    const res = await api("/api/affiliate/leave", { method: "POST" });
+    if (!res.ok) return false;
+    setView("dash");
+    void load();
+    return true;
+  };
+
   let body: React.ReactNode;
   if (phase.k === "loading") {
     body = (
@@ -184,6 +194,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
   } else {
     const me = phase.me;
     const readOnly = me.affiliate.status !== "active";
+    const left = !!me.affiliate.left_at;
     const items = [...me.commissions.items, ...moreItems];
     const link = typeof window !== "undefined" ? `${window.location.origin}/r/${me.affiliate.code}` : `/r/${me.affiliate.code}`;
     const rails = { coins: me.rails.coins as string[], networks: me.rails.networks as string[] };
@@ -218,6 +229,21 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
           )}
         </>
       );
+    } else if (view === "rejoin" && left && !readOnly) {
+      // #AFFILIATE-COMPLETE-1023 — back in: same code (locked), the three ticks on the Terms in force.
+      body = (
+        <>
+          <Head c={c} />
+          <div><button type="button" className="aff-linkbtn" onClick={() => setView("dash")}>← {c.pay.back}</button></div>
+          <Enroll
+            c={c}
+            join={{ open: true, enrolled: true, status: me.affiliate.status, terms_version: me.terms_current ?? null, code: me.affiliate.code, code_locked: true }}
+            termsHref={termsHref}
+            onDone={() => { setView("dash"); setPhase({ k: "loading" }); void load(); }}
+            onTerms={() => { setView("dash"); setPhase({ k: "loading" }); void load(); }}
+          />
+        </>
+      );
     } else if (view === "payouts") {
       body = (
         <>
@@ -234,18 +260,24 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
           <Head c={c} />
           {me.affiliate.status === "suspended" && <div className="aff-banner" role="status"><p>{c.state.suspended}</p></div>}
           {me.affiliate.status === "terminated" && <div className="aff-banner" role="status"><p>{c.state.terminated}</p></div>}
-          {me.terms_current && me.affiliate.terms_version !== me.terms_current && (
-            <div className="aff-banner" role="status" data-testid="aff-terms-update">
-              <strong>{c.termsUpdate.title}</strong>
-              <p>{c.termsUpdate.body} <a href={termsHref} className="underline">{c.termsUpdate.link}</a></p>
+          {left && (
+            <div className="aff-banner" role="status" data-testid="aff-left">
+              <p>{fill(c.state.left, { date: shortDate(me.affiliate.left_at, l) })}</p>
+              {!readOnly && <div className="aff-actions"><button type="button" className="aff-cta aff-cta--ghost" onClick={() => { setFlash(""); setView("rejoin"); }}>{c.state.rejoin}</button></div>}
             </div>
+          )}
+          {!left && me.terms_current && me.affiliate.terms_version !== me.terms_current && (
+            <TermsUpdate c={c} termsHref={termsHref} version={me.terms_current} canAccept={!readOnly} onAccepted={() => { setFlash(c.termsUpdate.done); void load(); }} />
           )}
           {setup && <SetupBanner c={c} />}
           {flash && <div className="aff-open" role="status"><span>{flash}</span></div>}
-          <div className="aff-top">
-            <LinkBlock c={c} code={me.affiliate.code} link={link} error={false} onRetry={() => void load()} />
-            <HowSteps c={c} levels={!me.tier} />
-          </div>
+          {/* Left the program: the link no longer earns, so it is not offered (the banner says why). */}
+          {!left && (
+            <div className="aff-top">
+              <LinkBlock c={c} code={me.affiliate.code} link={link} error={false} onRetry={() => void load()} />
+              <HowSteps c={c} levels={!me.tier} />
+            </div>
+          )}
           <LedgerBlock c={c} lang={l} ledger={me.ledger} payouts={me.payouts} unavailable={false} setup={setup} />
           <TierBlock c={c} tier={me.tier ?? null} />
           <div className="aff-pair aff-w75">
@@ -262,7 +294,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
           </div>
           <PayoutHistory c={c} lang={l} payouts={me.payouts} unavailable={false} full={false} onAll={() => setView("payouts")} setup={setup} />
           <CommissionHistory c={c} lang={l} items={items} hasMore={nextCursor != null} loadingMore={loadingMore} onMore={loadMore} unavailable={false} />
-          <Rules c={c} termsHref={termsHref} privacyHref={privacyHref} />
+          <Rules c={c} termsHref={termsHref} privacyHref={privacyHref} onLeave={!readOnly && !left ? leave : undefined} />
         </>
       );
     }
@@ -374,5 +406,39 @@ function Enroll({ c, join, termsHref, onDone, onTerms }: {
           finestre da 60 giorni (M5): prima e dopo il login si legge lo stesso documento. */}
       <Offer c={c} />
     </section>
+  );
+}
+
+/** #AFFILIATE-COMPLETE-1023 — «Termini aggiornati»: non bloccante (si continua senza fare nulla);
+ *  chi vuole li accetta subito, riapprovando a parte le clausole onerose come all'iscrizione. */
+function TermsUpdate({ c, termsHref, version, canAccept, onAccepted }: {
+  c: AffCopy; termsHref: string; version: string; canAccept: boolean; onAccepted: () => void;
+}) {
+  const t = c.termsUpdate;
+  const [onerous, setOnerous] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(false);
+  const accept = async () => {
+    if (!onerous || busy) return;
+    setBusy(true);
+    setErr(false);
+    const res = await api("/api/affiliate/terms", { method: "POST", body: JSON.stringify({ terms_version: version, onerous_ack: true }) });
+    setBusy(false);
+    if (res.ok) onAccepted();
+    else setErr(true);
+  };
+  return (
+    <div className="aff-banner" role="status" data-testid="aff-terms-update">
+      <strong>{t.title}</strong>
+      <p>{t.body} <a href={termsHref} className="underline">{t.link}</a></p>
+      {canAccept && (
+        <>
+          <p className="aff-small">{t.acceptHint}</p>
+          <label className="aff-chk"><input type="checkbox" checked={onerous} onChange={(ev) => setOnerous(ev.target.checked)} /><span className="aff-tx">{t.onerous}</span></label>
+          {err && <p className="aff-err" role="alert">{t.error}</p>}
+          <div className="aff-actions"><button type="button" className="aff-cta aff-cta--ghost" disabled={!onerous || busy} onClick={accept}>{busy ? t.busy : t.accept}</button></div>
+        </>
+      )}
+    </div>
   );
 }

@@ -128,6 +128,22 @@ export function withinAttributionWindow(signupISO: string | null, paidAt: Date, 
   return paidAt.getTime() - signup <= windowDays * DAY_MS;
 }
 
+export type AffiliateStanding = { status: string; created_at: string | null; left_at: string | null };
+
+/** #AFFILIATE-COMPLETE-1023 — can this affiliate earn on a payment made at `paidAt`?
+ *  No if terminated (sanction), if the payment came after they left the program
+ *  (Terms §8: earned amounts stay theirs, new ones stop), or before they enrolled
+ *  (no retroactive commission: e.g. reconciliation replaying pre-launch purchases).
+ *  'suspended' still records: maturity and payouts already require 'active'. */
+export function standingBlock(a: AffiliateStanding | null, paidAt: Date): string | null {
+  if (!a) return "not_attributed";
+  if (a.status === "terminated") return "affiliate_terminated";
+  const t = paidAt.getTime();
+  if (a.left_at && !(t < new Date(a.left_at).getTime())) return "affiliate_left";
+  if (a.created_at && t < new Date(a.created_at).getTime()) return "before_enrollment";
+  return null;
+}
+
 type AttributionRow = { affiliate_id: number | string; status: AttributionStatus; attributed_at: string };
 
 async function readAttribution(referred: string): Promise<AttributionRow | null> {
@@ -291,6 +307,13 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   if (attribution.status === "self_referral" || attribution.status === "void") {
     return { written: false, reason: `attribution_${attribution.status}` };
   }
+  // #AFFILIATE-COMPLETE-1023 — the frozen attribution does not re-check the affiliate.
+  const standing = await dbQueryStrict<AffiliateStanding>(
+    `SELECT status, created_at::text AS created_at, left_at::text AS left_at FROM affiliates WHERE id = $1`,
+    [Number(attribution.affiliate_id)]
+  );
+  const blocked = standingBlock(standing[0] ?? null, input.paidAt);
+  if (blocked) return { written: false, reason: blocked };
 
   const net = netAmount(input.rail, input.grossUsd, input.meta);
   if (net == null) {
