@@ -4,7 +4,7 @@
 // Gira solo con AFFILIATE_PG_TEST_URL (un Postgres locale USA E GETTA, mai un DB
 // reale): applica le migration affiliate_v2 dal repo, emula `exec_sql` con la
 // stessa funzione di produzione e la RPC di Supabase con una SELECT sulla
-// funzione. In CI la variabile non c'è e il file si salta.
+// funzione. CI esegue la suite nel job affiliate-postgres con un DB temporaneo.
 //   AFFILIATE_PG_TEST_URL=postgres://postgres@127.0.0.1:54331/postgres npx vitest run lib/affiliate/pg.integration.test.ts
 // Il DB deve essere vuoto e usa e getta (initdb). I ruoli anon / authenticated /
 // service_role che le migration nominano nei GRANT/REVOKE li crea il test se
@@ -17,6 +17,15 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 const URL_ = process.env.AFFILIATE_PG_TEST_URL;
 
 const h = vi.hoisted(() => ({ sql: null as null | import("postgres").Sql, chainTo: "", chainAmount: 0, screen: "none" as "none" | "clear" }));
+const afterJobs = vi.hoisted(() => [] as Array<() => unknown>);
+vi.mock("next/server", async (original) => ({
+  ...(await original<typeof import("next/server")>()),
+  after: (job: () => unknown) => { afterJobs.push(job); },
+}));
+vi.mock("@/lib/ops-alert", () => ({ opsAlert: async () => undefined }));
+async function flushAfterJobs() {
+  while (afterJobs.length) await afterJobs.shift()!();
+}
 
 vi.mock("@/lib/auth", () => ({
   getSessionPlan: async (r: Request) => {
@@ -60,13 +69,15 @@ vi.mock("@/lib/affiliate/screening", async (orig) => {
 });
 // #SHOPIFY-CLAIM-1022 — il webhook Shopify su exec_sql vero: il grant è finto
 // (conta le chiamate), l'idempotenza no.
-const grants = vi.hoisted(() => ({ n: 0 }));
-vi.mock("@/lib/plan-grant", () => ({
-  activateShopifyPlan: async (identifier: string, plan: string) => {
+const grants = vi.hoisted(() => ({ n: 0, real: false }));
+vi.mock("@/lib/plan-grant", async (original) => ({
+  activateShopifyPlan: async (identifier: string, plan: "base" | "premium", period: "monthly" | "annual", oneOff: boolean) => {
     grants.n++;
+    if (grants.real) return (await original<typeof import("@/lib/plan-grant")>()).activateShopifyPlan(identifier, plan, period, oneOff);
     return { identifier, name: null, plan };
   },
-  revokeShopifyPlan: async () => true,
+  revokeShopifyPlan: async (identifier: string) => grants.real
+    ? (await original<typeof import("@/lib/plan-grant")>()).revokeShopifyPlan(identifier) : true,
 }));
 vi.mock("@/lib/email", async (orig) => ({
   ...(await orig<typeof import("@/lib/email")>()),
@@ -137,6 +148,9 @@ const walletBody = (address: string) => ({
 
 describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   beforeAll(async () => {
+    if (!["localhost", "127.0.0.1", "[::1]"].includes(new URL(URL_!).hostname)) {
+      throw new Error("Affiliate integration tests require disposable localhost Postgres");
+    }
     const postgres = (await import("postgres")).default;
     h.sql = postgres(URL_!, { max: 4, onnotice: () => {} });
     const sql = h.sql;
@@ -170,6 +184,9 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   });
   beforeEach(async () => {
     vi.resetModules();
+    afterJobs.length = 0;
+    grants.real = false;
+    vi.stubEnv("BUSINESS_EVENTS_ENABLED", "0");
     h.screen = "none";
     vi.stubEnv("AFFILIATE_MODE", "shadow");
     vi.stubEnv("AFFILIATE_TERMS_VERSION", "aff-2026-10-22-v3");
@@ -815,6 +832,79 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
       ${extra}`);
     return (await import("@/lib/affiliate/reconcile")).reconcileAffiliateLedger;
   }
+
+  async function shopifyCycle() {
+    await railStubs(`INSERT INTO profiles(identifier,referred_by,created_at)
+      VALUES ('cycle-buyer@x.io','ALICE',now() - interval '50 days');
+      ALTER TABLE shopify_events ADD COLUMN IF NOT EXISTS variant_id text;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan text DEFAULT 'free';
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS name text;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan_source text;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan_expires_at timestamptz;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS requested_plan text;
+      CREATE TABLE IF NOT EXISTS events(event_type text,session_id text,country text,language text,plan text,partner_id text,value numeric,meta jsonb);
+      CREATE TABLE IF NOT EXISTS notifications(type text,title text,body text,target text,sent boolean,sent_at timestamptz,meta jsonb);`);
+    grants.real = true;
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    vi.stubEnv("SHOPIFY_WEBHOOK_SECRET", "cycle-secret");
+    vi.stubEnv("SHOPIFY_VARIANT_BASE", "111");
+    vi.stubEnv("SHOPIFY_VARIANT_PREMIUM", "222");
+    grants.n = 0;
+    const crypto = await import("node:crypto");
+    const { POST } = await import("@/app/api/shopify/webhook/route");
+    const deliver = async (topic: string, payload: unknown) => {
+      const body = JSON.stringify(payload);
+      const signature = crypto.createHmac("sha256", "cycle-secret").update(body).digest("base64");
+      const response = await POST(new Request("https://x/api/shopify/webhook", {
+        method: "POST", body, headers: { "x-shopify-topic": topic, "x-shopify-hmac-sha256": signature },
+      }));
+      expect(response.status).toBe(200);
+      await flushAfterJobs();
+      return response.json();
+    };
+    const order = (id: number, daysAgo: number) => ({ id, email: "cycle-buyer@x.io", currency: "USD",
+      total_price: "29.99", total_tax: "4.99", processed_at: new Date(Date.now()-daysAgo*86400000).toISOString(),
+      line_items: [{ variant_id: 222, quantity: 1 }] });
+    const refund = (id: number, order_id: number, amount: string) => ({ id, order_id,
+      transactions: [{ kind: "refund", status: "success", amount }] });
+    return { deliver, order, refund };
+  }
+
+  it("complete Shopify commission cycle: first, renewal, duplicates, partial refund and chargeback agree with dashboard", async () => {
+    const { deliver, order, refund } = await shopifyCycle();
+    await deliver("orders/paid", order(91001, 40));
+    expect(await deliver("orders/paid", order(91001, 40))).toMatchObject({ duplicate: true });
+    await deliver("orders/paid", order(91002, 10));
+    expect(grants.n).toBe(2);
+    expect((await h.sql!`SELECT plan,plan_source,plan_expires_at > now() AS active
+      FROM profiles WHERE identifier='cycle-buyer@x.io'`)[0]).toEqual({plan:"premium",plan_source:"shopify",active:true});
+    expect(await h.sql!`SELECT kind, rate::float8 AS rate, amount_usd::float8 AS amount, renewal_index
+      FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { kind: "first", rate: 0.2, amount: 6, renewal_index: 0 },
+      { kind: "renewal", rate: 0.07, amount: 2.1, renewal_index: 1 },
+    ]);
+    await deliver("refunds/create", refund(92001, 91001, "10.00"));
+    await deliver("refunds/create", refund(92001, 91001, "10.00"));
+    const me = await import("@/app/api/affiliate/me/route");
+    const dashboard = async () => (await me.GET(req("/api/affiliate/me", "GET", "alice@x.io"))).json();
+    expect((await dashboard()).ledger).toMatchObject({ pending: 6.1, reversed: -2 });
+    await deliver("disputes/create", { id: 93001, order_id: 91002, type: "chargeback" });
+    await deliver("disputes/create", { id: 93001, order_id: 91002, type: "chargeback" });
+    expect((await dashboard()).ledger).toMatchObject({ pending: 4, reversed: -4.1 });
+    await deliver("refunds/create", refund(92002, 91001, "19.99"));
+    expect((await dashboard()).ledger).toMatchObject({ pending: 0, reversed: -8.1 });
+    expect((await dashboard()).tier.paying_referred).toBe(0);
+  });
+
+  it("refund delivered before its Shopify order is retained and reverses the later commission", async () => {
+    const { deliver, order, refund } = await shopifyCycle();
+    await deliver("refunds/create", refund(94001, 95001, "29.99"));
+    const inbox = await h.sql!`SELECT count(*)::int AS n FROM affiliate_reversal_inbox WHERE payment_ref='95001'`;
+    expect(inbox[0].n).toBe(1);
+    await deliver("orders/paid", order(95001, 5));
+    await h.sql!`SELECT affiliate_replay_reversals()`;
+    expect((await h.sql!`SELECT sum(amount_usd)::float8 AS total FROM affiliate_commissions`)[0].total).toBe(0);
+  });
 
   it("R3 riconciliazione: recupera solo i pagamenti recuperabili, in ordine di incasso, una volta sola; Shopify solo segnalato", async () => {
     vi.stubEnv("AFFILIATE_MODE", "shadow");

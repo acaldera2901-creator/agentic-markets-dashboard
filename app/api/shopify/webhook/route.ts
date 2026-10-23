@@ -87,23 +87,11 @@ async function handleRefund(payload: unknown) {
   }
   const identifier = order?.identifier ?? null;
 
-  if (!identifier) {
-    // Ordine sconosciuto (es. precedente a questa colonna): non tiriamo a
-    // indovinare chi disattivare, lo registriamo per revisione manuale.
-    console.error("[shopify/webhook] rimborso senza identifier noto", { refund });
-    await dbExecute(
-      `INSERT INTO shopify_events (event_id, event_type, status, last_error)
-       VALUES ($1, 'refunds/create', 'unresolved', 'order non trovato: revoca manuale')
-       ON CONFLICT (event_id) DO NOTHING`,
-      [eventKey]
-    );
-    return NextResponse.json({ received: true, unresolved: true });
-  }
-
   // #AFFILIATE-REVERSAL-1022 — storno della commissione affiliato in proporzione
   // al rimborsato (termini §4), qualunque cosa decida sotto la revoca del piano.
-  // Gira dopo la risposta e non lancia mai; un ordine senza commissione (Weekly
-  // Pick, carrello misto, nessun affiliato) è un no-op. Solo con un importo
+  // Queue before the unknown-order branch too: Shopify can deliver the refund
+  // first. The durable inbox will replay it when the commission arrives.
+  // Gira dopo la risposta e non lancia mai. Solo con un importo
   // rimborsato con successo: `amount` null = nessuna transazione di rimborso
   // riuscita (fallita, solo restock) → nessun denaro restituito, nessuno storno.
   // Idempotente sull'id del rimborso.
@@ -116,6 +104,19 @@ async function handleRefund(payload: unknown) {
     });
   } else {
     console.warn(`[shopify/webhook] rimborso ${refund.refundId} senza importo riuscito: nessuno storno affiliato`);
+  }
+
+  if (!identifier) {
+    // Ordine sconosciuto (es. precedente a questa colonna): non tiriamo a
+    // indovinare chi disattivare, lo registriamo per revisione manuale.
+    console.error("[shopify/webhook] rimborso senza identifier noto", { refund });
+    await dbExecute(
+      `INSERT INTO shopify_events (event_id, event_type, status, last_error)
+       VALUES ($1, 'refunds/create', 'unresolved', 'order non trovato: revoca manuale')
+       ON CONFLICT (event_id) DO NOTHING`,
+      [eventKey]
+    );
+    return NextResponse.json({ received: true, unresolved: true });
   }
 
   // Un rimborso NON è sempre "spegni l'abbonamento". Due casi che la revoca
