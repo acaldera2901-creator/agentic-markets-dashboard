@@ -8,6 +8,7 @@ import { receiptEmail, cancellationEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
 import { stripeInvoiceAmounts } from "@/lib/affiliate/net";
+import { scheduleAffiliateReversal } from "@/lib/affiliate/reversal";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -28,6 +29,21 @@ function extractSubscriptionId(inv: Stripe.Invoice): string | null {
   if (!sub) return null;
   if (typeof sub === "string") return sub;
   return sub.id;
+}
+
+// The invoice a payment belongs to (= the affiliate ledger's payment_ref for Stripe).
+// Since the 2025 API versions a Charge no longer carries `invoice`: the link is an
+// InvoicePayment keyed by the PaymentIntent. null = not an invoice payment.
+async function stripeInvoiceOfPayment(
+  stripe: ReturnType<typeof getStripe>,
+  pi: string | Stripe.PaymentIntent | null
+): Promise<string | null> {
+  const piId = typeof pi === "string" ? pi : pi?.id ?? null;
+  if (!piId) return null;
+  const list = await stripe.invoicePayments.list({ payment: { type: "payment_intent", payment_intent: piId }, limit: 1 });
+  const inv = list.data[0]?.invoice;
+  if (!inv) return null;
+  return typeof inv === "string" ? inv : inv.id ?? null;
 }
 
 export async function POST(req: Request) {
@@ -224,6 +240,48 @@ identifier: activated.identifier,
             text: mail.text,
           });
         }
+        break;
+      }
+      // #AFFILIATE-STRIPE-REFUND-1023 — rimborso o contestazione: la commissione
+      // dell'invoice si storna in proporzione (termini §4), come già PayPal/Shopify.
+      // Il piano NON si tocca qui (la revoca resta manuale, come prima).
+      case "charge.refunded": {
+        const ch = event.data.object as Stripe.Charge;
+        const invoiceId = await stripeInvoiceOfPayment(stripe, ch.payment_intent);
+        if (!invoiceId) {
+          console.error("[stripe/webhook] charge.refunded without invoice: no affiliate reversal", { charge: ch.id });
+          break;
+        }
+        // Ogni rimborso riuscito è un evento a sé (event_ref = id del rimborso): la
+        // redelivery e i rimborsi parziali successivi si deduplicano nella SQL.
+        const refunds = await stripe.refunds.list({ charge: ch.id, limit: 100 });
+        for (const r of refunds.data) {
+          if (r.status !== "succeeded" || (r.currency ?? "").toLowerCase() !== "usd") continue;
+          scheduleAffiliateReversal({ rail: "stripe", paymentRef: invoiceId, eventRef: `refund:${r.id}`, refundedGrossUsd: r.amount / 100 });
+        }
+        break;
+      }
+      case "charge.refund.updated": {
+        // Un rimborso nato `pending` (raro sulle carte) diventa `succeeded` qui:
+        // stesso event_ref di sopra, quindi contato una volta sola.
+        const r = event.data.object as Stripe.Refund;
+        if (r.status !== "succeeded" || (r.currency ?? "").toLowerCase() !== "usd") break;
+        const invoiceId = await stripeInvoiceOfPayment(stripe, r.payment_intent);
+        if (invoiceId) {
+          scheduleAffiliateReversal({ rail: "stripe", paymentRef: invoiceId, eventRef: `refund:${r.id}`, refundedGrossUsd: r.amount / 100 });
+        }
+        break;
+      }
+      case "charge.dispute.created": {
+        const d = event.data.object as Stripe.Dispute;
+        const invoiceId = await stripeInvoiceOfPayment(stripe, d.payment_intent);
+        if (!invoiceId) {
+          console.error("[stripe/webhook] dispute without invoice: no affiliate reversal", { dispute: d.id });
+          break;
+        }
+        // Contestazione = storno totale (come PayPal REVERSED). Una disputa vinta
+        // non ripristina la commissione in automatico: si rifà a mano se serve.
+        scheduleAffiliateReversal({ rail: "stripe", paymentRef: invoiceId, eventRef: `dispute:${d.id}`, refundedGrossUsd: null });
         break;
       }
       default:
