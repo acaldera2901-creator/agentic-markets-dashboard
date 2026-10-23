@@ -26,7 +26,7 @@ export const TX_REJECT_TEXT: Record<string, string> = {
   invalid_format: "Formato non valido: l'hash è 0x seguito da 64 caratteri esadecimali.",
   not_found: "Hash non trovato sulla rete.",
   tx_failed: "La transazione è fallita sulla rete.",
-  wrong_token: "Il token non è l'USDT atteso.",
+  wrong_token: "Il token non è quello del payout (USDT o USDC su Polygon, come indicato al passo 1).",
   wrong_recipient: "Il destinatario è diverso dall'indirizzo del payout.",
   wrong_sender: "Il mittente non è il wallet di uscita.",
   amount_too_low: "L'importo è inferiore al dovuto (anche di 0,01): serve l'importo ESATTO.",
@@ -78,40 +78,6 @@ export function txFailText(data: { error?: unknown; reason?: unknown; dropped?: 
 
 export function txErrorText(code: unknown): string {
   return (typeof code === "string" && TX_ERROR_TEXT[code]) || "Operazione non riuscita. Il payout non è cambiato: riprova.";
-}
-
-/** Errori di POST /payouts (crea). `total_mismatch` ha un testo suo con la differenza. */
-export const CREATE_ERROR_TEXT: Record<string, string> = {
-  payouts_off: "I payout non sono attivi (AFFILIATE_PAYOUTS=off): non si crea niente.",
-  payout_from_not_configured: "Il wallet di uscita non è configurato: non si crea niente.",
-  period_not_current: "Si crea solo per il mese corrente. Non è stato creato niente.",
-  invalid_ids: "Selezione non valida.",
-  invalid_expected_total: "Totale non valido.",
-  no_ids: "Nessun affiliato selezionato.",
-  address_not_allowed: "Un destinatario ha un indirizzo non ammesso (es. un wallet di BetRedge o un contratto). Non è stato creato niente.",
-  address_blocked: "Un destinatario non passa più il controllo dell'indirizzo. Non è stato creato niente.",
-  not_screened: "Un destinatario non ha un controllo dell'indirizzo valido (nessun provider). Non è stato creato niente.",
-  screening_unavailable: "Il controllo degli indirizzi non risponde. Non è stato creato niente: riprova.",
-  unknown_affiliate: "Un affiliato selezionato non esiste più. Non è stato creato niente: rileggi l'elenco.",
-  not_eligible: "Alcuni affiliati non sono più pagabili. Non è stato creato niente: rileggi l'elenco.",
-  "create failed": "Non sono riuscito a creare. Non è stato creato niente: riprova.",
-};
-
-/** `total_mismatch`: mostra la differenza, non crea (SPEC §4.1). `fmt` formatta i dollari. */
-export function createErrorText(data: { error?: unknown; expected?: unknown; actual?: unknown; affiliate_id?: unknown } | null, fmt: (n: number) => string, codeOf?: (id: number) => string | undefined): string {
-  const code = typeof data?.error === "string" ? data.error : "";
-  const who = typeof data?.affiliate_id === "number" ? codeOf?.(data.affiliate_id) : undefined;
-  if (who && ["address_not_allowed", "address_blocked", "not_screened"].includes(code)) return `${who}: ${CREATE_ERROR_TEXT[code]}`;
-  if (code === "total_mismatch") {
-    const exp = Number(data?.expected);
-    const act = Number(data?.actual);
-    if (Number.isFinite(exp) && Number.isFinite(act)) {
-      const diff = Math.round((act - exp) * 100) / 100;
-      return `Il totale è cambiato mentre decidevi: atteso ${fmt(exp)}, ora ${fmt(act)} (${diff >= 0 ? "+" : "−"}${fmt(Math.abs(diff))}). Non è stato creato niente: ricontrolla l'elenco aggiornato e riprova.`;
-    }
-    return "Il totale è cambiato mentre decidevi. Non è stato creato niente: ricontrolla l'elenco aggiornato.";
-  }
-  return CREATE_ERROR_TEXT[code] ?? "Non è stato creato niente: riprova.";
 }
 
 /** Mese precedente di "YYYY-MM". */

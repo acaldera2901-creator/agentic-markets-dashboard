@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const replay = vi.hoisted(() => vi.fn(async () => ({ok:true,processed:0})));
+vi.mock("@/lib/affiliate/rpc", () => ({affiliateRpc:replay}));
 const reconcile = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/affiliate/reconcile", () => ({ reconcileAffiliateLedger: reconcile }));
 const opsAlert = vi.hoisted(() => vi.fn());
@@ -45,6 +47,15 @@ describe("affiliate reconcile cron", () => {
       expect.stringContaining("recuperate: 1"),
       expect.stringContaining("da verificare a mano: s-9"),
     ]);
+  });
+
+  it("replays durable refunds after reconciling and reports replay errors", async () => {
+    vi.stubEnv("CRON_SECRET", "secret");
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    reconcile.mockResolvedValue({checked:0,written:0,reasons:{},shopify_manual:[],truncated:false});
+    replay.mockRejectedValueOnce(new Error("replay failed"));
+    expect((await GET(req())).status).toBe(503);
+    expect(replay).toHaveBeenCalledWith("affiliate_replay_reversals", {});
   });
 
   it("errore → 503, non un finto ok", async () => {

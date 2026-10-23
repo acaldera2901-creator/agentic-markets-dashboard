@@ -23,7 +23,8 @@ export type MeResponse =
   | {
       enrolled: true;
       operations?: Operations;
-      affiliate: { code: string; status: "active" | "suspended" | "terminated"; terms_version: string; created_at: string };
+      /** left_at (#AFFILIATE-COMPLETE-1023): left the program; absent in older responses = still in. */
+      affiliate: { code: string; status: "active" | "suspended" | "terminated"; terms_version: string; created_at: string; left_at?: string | null };
       /** #AFFILIATE-TERMS-V3-1022 — versione pubblicata dei Termini; assente = ignota (nessun banner). */
       terms_current?: string;
       ledger: LedgerView;

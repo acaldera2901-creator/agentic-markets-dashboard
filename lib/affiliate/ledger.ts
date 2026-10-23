@@ -128,6 +128,35 @@ export function withinAttributionWindow(signupISO: string | null, paidAt: Date, 
   return paidAt.getTime() - signup <= windowDays * DAY_MS;
 }
 
+export type AffiliateStanding = { status: string; created_at: string | null; absent: boolean };
+
+/** #AFFILIATE-COMPLETE-1023 — can this affiliate earn on a payment made at `paidAt`?
+ *  No if terminated (sanction), if the payment fell while they were out of the program
+ *  (Terms §8: earned amounts stay theirs, new ones stop), or before they enrolled
+ *  (no retroactive commission: e.g. reconciliation replaying pre-launch purchases).
+ *  'suspended' still records: maturity and payouts already require 'active'. */
+export function standingBlock(a: AffiliateStanding | null, paidAt: Date): string | null {
+  if (!a) return "not_attributed";
+  if (a.status === "terminated") return "affiliate_terminated";
+  if (a.absent) return "affiliate_left";
+  if (a.created_at && paidAt.getTime() < new Date(a.created_at).getTime()) return "before_enrollment";
+  return null;
+}
+
+/** The affiliate's standing at `paidAt`: «absent» = the payment falls inside a leave → rejoin
+ *  interval (affiliate_absences, migration 20261023120000), open or closed. */
+async function standingReason(affiliateId: number, paidAt: Date): Promise<string | null> {
+  const rows = await dbQueryStrict<AffiliateStanding>(
+    `SELECT a.status, a.created_at::text AS created_at,
+            EXISTS (SELECT 1 FROM affiliate_absences x
+                     WHERE x.affiliate_id = a.id AND x.left_at <= $2::timestamptz
+                       AND (x.rejoined_at IS NULL OR $2::timestamptz < x.rejoined_at)) AS absent
+       FROM affiliates a WHERE a.id = $1`,
+    [affiliateId, paidAt.toISOString()]
+  );
+  return standingBlock(rows[0] ?? null, paidAt);
+}
+
 type AttributionRow = { affiliate_id: number | string; status: AttributionStatus; attributed_at: string };
 
 async function readAttribution(referred: string): Promise<AttributionRow | null> {
@@ -177,6 +206,10 @@ async function resolveAttribution(
   );
   const affiliate = aff[0];
   if (!affiliate) return { reason: "not_attributed" };
+  // #AFFILIATE-COMPLETE-1023 (review Codex #4): checked BEFORE freezing the attribution — a
+  // rejected payment (e.g. before enrollment) must not become the attribution's start.
+  const blocked = await standingReason(Number(affiliate.id), paidAt);
+  if (blocked) return { reason: blocked };
 
   const fps = await dbQueryStrict<{ identifier: string; kind: FingerprintKind; value_hash: string; seen_at: string }>(
     `SELECT identifier, kind, value_hash, seen_at::text AS seen_at
@@ -291,6 +324,10 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   if (attribution.status === "self_referral" || attribution.status === "void") {
     return { written: false, reason: `attribution_${attribution.status}` };
   }
+  // #AFFILIATE-COMPLETE-1023 — the attribution actually in force (frozen, or won by a concurrent
+  // request) does not re-check the affiliate by itself; a new one was also checked before writing.
+  const blocked = await standingReason(Number(attribution.affiliate_id), input.paidAt);
+  if (blocked) return { written: false, reason: blocked };
 
   const net = netAmount(input.rail, input.grossUsd, input.meta);
   if (net == null) {

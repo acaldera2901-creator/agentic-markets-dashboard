@@ -18,6 +18,8 @@ du_require_cmd psql git supabase
 du_need_db
 [ -n "$APPROVED_SHA" ] || die "serve --sha <SHA approvato>: i file applicati devono essere quelli dello SHA dell'APPROVE"
 
+[ "$APPROVED_SHA" = "$DEPLOY_APPROVED_SHA" ] || die "SHA diverso dal contesto della run"
+
 # Precondizione 1: backup del passo 0 fatto nelle ultime 24 ore.
 if ! du_has_mark passo0 || [ -n "$(find "$LOG_DIR/passo0.ok" -mmin +1440 2>/dev/null)" ]; then
   die "manca il backup del passo 0 delle ultime 24 h (esegui passo0-backup.sh --esegui)"

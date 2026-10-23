@@ -70,12 +70,15 @@ has() { printf '%s\n' "$NAMES" | grep -qx "$1"; }
 if [ -n "$NAMES" ]; then
   if has AFFILIATE_HASH_SECRET; then block "AFFILIATE_HASH_SECRET è impostata: decisione di Andrea = NON impostarla (passo 11)"; else ok "AFFILIATE_HASH_SECRET assente"; fi
   for n in CRON_SECRET ADMIN_SECRET; do if has "$n"; then ok "$n presente (valore non letto)"; else block "$n assente in Production"; fi; done
-  echo "Come si legge AFFILIATE_MODE senza stampare segreti: «vercel env run -e production -- printenv AFFILIATE_MODE» — gli altri segreti restano dentro il processo figlio e solo quel valore esce (se la variabile è «sensitive» esce vuoto: leggerla dalla dashboard Vercel)."
-  MODE="$(du_vercel_env_value AFFILIATE_MODE)"; TV="$(du_vercel_env_value AFFILIATE_TERMS_VERSION)"
-  PAY="$(du_vercel_env_value AFFILIATE_PAYOUTS)"; ACC="$(du_vercel_env_value AFFILIATE_ACCOUNTING_READY)"; V2="$(du_vercel_env_value NEXT_PUBLIC_AFFILIATE_V2)"
+  echo "Flag da API Vercel (senza .env locali): sensitive/non leggibile = blocco."
+  MODE="$(du_vercel_env_value AFFILIATE_MODE)" || { MODE="UNREADABLE"; block "AFFILIATE_MODE non leggibile"; }
+  TV="$(du_vercel_env_value AFFILIATE_TERMS_VERSION)" || { TV="UNREADABLE"; block "AFFILIATE_TERMS_VERSION non leggibile"; }
+  PAY="$(du_vercel_env_value AFFILIATE_PAYOUTS)" || { PAY="UNREADABLE"; block "AFFILIATE_PAYOUTS non leggibile"; }
+  ACC="$(du_vercel_env_value AFFILIATE_ACCOUNTING_READY)" || { ACC="UNREADABLE"; block "AFFILIATE_ACCOUNTING_READY non leggibile"; }
+  V2="$(du_vercel_env_value NEXT_PUBLIC_AFFILIATE_V2)" || { V2="UNREADABLE"; block "NEXT_PUBLIC_AFFILIATE_V2 non leggibile"; }
   echo "  AFFILIATE_MODE=${MODE:-<vuota o sensitive>} · AFFILIATE_TERMS_VERSION=${TV:-<vuota o sensitive>} · AFFILIATE_PAYOUTS=${PAY:-<vuota>} · AFFILIATE_ACCOUNTING_READY=${ACC:-<vuota>} · NEXT_PUBLIC_AFFILIATE_V2=${V2:-<vuota>}"
   [ "$(printf '%s' "$PAY" | tr '[:upper:]' '[:lower:]')" = live ] && block "AFFILIATE_PAYOUTS=live: deve restare off in questo deploy"
-  if [ -n "$ACC" ] || has AFFILIATE_ACCOUNTING_READY; then block "AFFILIATE_ACCOUNTING_READY impostata: deve restare assente"; fi
+  du_safe_payment_flags || block "payout/accounting/hash non disattivati o non verificabili"
   [ "$V2" = 1 ] || cond "NEXT_PUBLIC_AFFILIATE_V2 non letta come 1 (dichiarata impostata il 20/10): verificala in dashboard"
   if [ "$TV" = "$TERMS_V3" ]; then ok "AFFILIATE_TERMS_VERSION già v3"; else cond "AFFILIATE_TERMS_VERSION da portare a $TERMS_V3 al passo 3 (oggi: ${TV:-vuota/sensitive})"; fi
   cond "AFFILIATE_MODE attuale: ${MODE:-non leggibile} → diventa live solo al passo 7"

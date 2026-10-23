@@ -12,6 +12,7 @@ echo '{"projectId":"prj_BO","orgId":"team_T","projectName":"backoffice"}' > "$WO
 printf 'CRON_SECRET=x\nADMIN_SECRET=x\nAFFILIATE_MODE=shadow\nNEXT_PUBLIC_AFFILIATE_V2=1\nAFFILIATE_PAYOUTS=off\n' > "$FAKE_STATE/env-site.txt"
 export PATH="$HERE/fakebin:$PATH" DEPLOY_LOG_DIR="$WORK/log" SITE_URL="http://127.0.0.1:$PORT" VERCEL_CWD="$WORK/site"
 HEAD_SHA="$(git -C "$ROOT" rev-parse HEAD)"; export FAKE_PR_HEAD="$HEAD_SHA" FAKE_BO_HEAD="5e04933187d1eddca0c3af42e09a1815e18e6703"
+export DEPLOY_RUN_ID="test-$RANDOM" DEPLOY_APPROVED_SHA="$HEAD_SHA"
 ENVF="$WORK/env.privato"
 cat > "$ENVF" <<EOF
 SUPABASE_DB_URL=$URL
@@ -57,6 +58,9 @@ t "passo0: dump schema+dati presenti" [ "$(ls "$WORK/log/backup" | wc -l | tr -d
 run passo2-migration.sh "" --sha "$HEAD_SHA"; t "passo2 dry-run: nessuna funzione nuova" [ "$(q "SELECT count(*) FROM pg_proc WHERE proname='affiliate_admin_reverse_commission'")" = 0 ]
 TAIL=30 run passo2-migration.sh "APPLICA MIGRATION AFFILIATE" --sha "$HEAD_SHA" --esegui; rc=$?
 t "passo2 --esegui OK" [ "$rc" = 0 ]
+t "passo2: 1023 left_at presente" [ "$(q "SELECT count(*) FROM information_schema.columns WHERE table_name='affiliates' AND column_name='left_at'")" = 1 ]
+t "passo2: inbox nel registro" [ "$(q "SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version='20261023130000'")" = 1 ]
+t "passo2: 1023 nel registro" [ "$(q "SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version='20261023120000'")" = 1 ]
 t "passo2: 160000 nel registro" [ "$(q "SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version='20261022160000'")" = 1 ]
 t "passo2: 202610160002 (non affiliate) NON applicata" [ "$(q "SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version='202610160002'")" = 0 ]
 t "passo2: 8 funzioni presenti" [ "$(q "SELECT count(DISTINCT proname) FROM pg_proc WHERE proname IN ('affiliate_reverse_commission','affiliate_admin_reverse_commission','affiliate_screen_wallet','affiliate_set_status','affiliate_review_attribution','affiliate_payout_mark_sent','affiliate_payout_unmark_sent','affiliate_purge_clicks')")" = 8 ]

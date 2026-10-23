@@ -68,7 +68,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       enrolled: true,
       operations: { payouts_enabled: affiliatePayoutsMode() === "live", accounting_ready: process.env.AFFILIATE_ACCOUNTING_READY === "1" },
-      affiliate: { code: aff.code, status: aff.status, terms_version: aff.terms_version, created_at: aff.created_at },
+      affiliate: { code: aff.code, status: aff.status, terms_version: aff.terms_version, created_at: aff.created_at, left_at: aff.left_at },
       // #AFFILIATE-TERMS-V3-1022: la versione pubblicata, per il banner «Termini aggiornati» (non bloccante).
       terms_current: AFFILIATE_TERMS_PUBLISHED_VERSION,
       ledger: ledgerView(groups, cfg.minPayoutUsd),

@@ -36,7 +36,7 @@ describe("reverseAffiliateCommissionSafe", () => {
   it("chiama la funzione SQL con ref ripulita e CLAWBACK_DAYS di config", async () => {
     rpc.mockResolvedValue({ data: { ok: true, written: true, reason: "reversal", status: "pending", amount: -2.5 }, error: null });
     expect(await reverseAffiliateCommissionSafe(input)).toEqual({ written: true, reason: "reversal" });
-    expect(rpc).toHaveBeenCalledWith("affiliate_reverse_commission", {
+    expect(rpc).toHaveBeenCalledWith("affiliate_receive_reversal", {
       p_rail: "shopify",
       p_ref: "o1",
       p_event: "r1",

@@ -19,6 +19,8 @@ du_need_db
 [ -n "$APPROVED_SHA" ] || die "serve --sha <SHA approvato> (quello dell'APPROVE #AFFILIATE-PLATFORM-1022)"
 [ "${#APPROVED_SHA}" = 40 ] || die "--sha deve essere lo SHA completo (40 caratteri): gh lo confronta esatto"
 
+[ "$APPROVED_SHA" = "$DEPLOY_APPROVED_SHA" ] || die "SHA diverso dal contesto della run"
+
 echo "== Precondizioni =="
 MAIN="$(du_origin_main)"
 [ "$MAIN" = "$EXPECTED_MAIN" ] || die "origin/main è $MAIN, atteso $EXPECTED_MAIN: rebase della #$PR_NUMBER, test, nuovo APPROVE sullo SHA nuovo"
@@ -31,14 +33,12 @@ echo "PR #$PR_NUMBER: $PR_STATE draft=$PR_DRAFT head=$PR_HEAD base=$PR_BASE merg
 [ "$PR_MERGEABLE" = MERGEABLE ] || die "PR non mergeable ($PR_MERGEABLE)"
 du_ci_green "$APPROVED_SHA" || die "CI non verde (o ancora in corso) su $APPROVED_SHA"
 ok "CI verde"
-for f in affiliate_admin_reverse_commission affiliate_purge_clicks affiliate_payout_mark_sent; do
-  n="$(du_sql_val "SELECT count(*) FROM pg_proc WHERE proname='$f'")"
-  [ "$n" -ge 1 ] || die "funzione $f assente nel DB: il passo 2 (migration) va PRIMA del merge"
-done
-ok "DB pronto (funzioni del passo 2 presenti)"
+du_has_mark passo2 || die "passo2 non verificato per questa esecuzione"
+du_db_schema_checks
+[ "$DU_KO" = 0 ] || die "schema incompleto: applicare tutte le migration incluse quelle 1023"
+du_safe_payment_flags || die "flag payout/accounting non sicuri o illeggibili"
 TV="$(du_vercel_env_value AFFILIATE_TERMS_VERSION)"
 if [ "$TV" = "$TERMS_V3" ]; then ok "AFFILIATE_TERMS_VERSION=$TV"
-elif [ -z "$TV" ] && du_has_mark passo3; then c_yel "AFFILIATE_TERMS_VERSION non leggibile (sensitive) ma passo 3 marcato OK"
 else die "AFFILIATE_TERMS_VERSION=${TV:-vuota} ≠ $TERMS_V3: esegui il passo 3"; fi
 if du_vercel_env_names | grep -qx AFFILIATE_HASH_SECRET; then die "AFFILIATE_HASH_SECRET impostata: decisione = non impostarla"; fi
 

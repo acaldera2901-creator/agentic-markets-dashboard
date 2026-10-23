@@ -12,8 +12,10 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyBearer } from "@/lib/admin-auth";
-import { adminGuard } from "./payouts";
+import { payoutCancelledEmail } from "./emails";
+import { adminGuard, loadPayout, mailLangOf, notifyAffiliate } from "./payouts";
 import { affiliateRpc, type RpcResult } from "./rpc";
+import { maskAddress } from "./wallet";
 
 const ACTOR = /^[A-Za-z0-9._%+@:-]{2,120}$/;
 
@@ -58,12 +60,37 @@ export async function adminOp(
     if (step instanceof NextResponse) return step;
     const res = await affiliateRpc<RpcResult>(step.fn, step.args);
     if (!res.ok) return NextResponse.json(res, { status: res.error === "not_found" ? 404 : 409 });
-    console.log(`[admin/affiliate/${tag}] ok actor=${actor} ${JSON.stringify(res).slice(0, 300)}`);
+    // #AFFILIATE-COMPLETE-1023: SPEC-ui §12 «nessun log di indirizzi interi» (mark-sent returns to_address).
+    console.log(`[admin/affiliate/${tag}] ok actor=${actor} ${maskAddressesIn(JSON.stringify(res)).slice(0, 300)}`);
+    await notifyCancelled((res as { cancelled_payout_ids?: unknown }).cancelled_payout_ids);
     return NextResponse.json(res);
   } catch (e) {
     console.error(`[admin/affiliate/${tag}] failed:`, String(e));
     return NextResponse.json({ error: `${tag} failed` }, { status: 500 });
   }
+}
+
+/** #AFFILIATE-COMPLETE-1023 — a suspension, a blocked address or an unmark can cancel payouts
+ *  in preparation (SQL side effect): the affiliate gets the same generic email as a manual
+ *  cancel (never the operator's reason). Best effort: the change is already committed. */
+export async function notifyCancelled(ids: unknown): Promise<void> {
+  if (!Array.isArray(ids)) return;
+  for (const raw of ids) {
+    const id = Number(raw);
+    if (!Number.isInteger(id) || id <= 0) continue;
+    try {
+      const p = await loadPayout(id);
+      if (!p || p.status !== "cancelled") continue;
+      await notifyAffiliate(p.affiliate_identifier, payoutCancelledEmail({ lang: await mailLangOf(p.affiliate_identifier), amountUsd: p.amount_usd }));
+    } catch (e) {
+      console.error(`[admin/affiliate] cancellation email for payout ${id} failed:`, String(e));
+    }
+  }
+}
+
+/** Every 0x+40-hex address in a log line, masked like the UI (0x4b1e…91d7). */
+export function maskAddressesIn(text: string): string {
+  return text.replace(/0x[0-9a-fA-F]{40}(?![0-9a-fA-F])/g, (a) => maskAddress(a));
 }
 
 /** Una cella CSV: virgolette raddoppiate e niente formule (=, +, -, @ in testa). */

@@ -50,6 +50,7 @@ function affiliateResponder(sql: string, params: unknown[]): unknown[] {
   }
   if (/FROM paygate_orders[\s\S]*h\.ts/.test(sql)) return [{ n: 0 }]; // nessun pagamento storico
   if (/FROM profiles/.test(sql)) return [{ referred_by: "AFF1", created_at: new Date().toISOString() }];
+  if (/FROM affiliates a WHERE a\.id = \$1/.test(sql)) return [{ status: "active", created_at: "2026-01-01T00:00:00Z", absent: false }];
   if (/FROM affiliates/.test(sql)) return [{ id: 7, identifier: "aff@x.com" }];
   if (/FROM affiliate_payer_fingerprints/.test(sql)) return [];
   if (/INSERT INTO affiliate_attributions/.test(sql)) {

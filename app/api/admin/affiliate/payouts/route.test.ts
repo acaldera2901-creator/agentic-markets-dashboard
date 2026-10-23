@@ -68,6 +68,8 @@ function req(url: string, method = "GET", body?: unknown, headers: Record<string
   return new Request(`https://x${url}`, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }) as unknown as NextRequest;
 }
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
+// #AFFILIATE-COMPLETE-1023: payouts are created by a named backoffice operator (Bearer + x-admin-actor).
+const BO = { authorization: "Bearer bo-secret", "x-admin-actor": "anna" };
 const month = () => new Date().toISOString().slice(0, 7);
 
 beforeEach(() => {
@@ -78,6 +80,7 @@ beforeEach(() => {
   chain = {};
   vi.stubEnv("AFFILIATE_PAYOUTS", "live");
   vi.stubEnv("AFFILIATE_PAYOUT_FROM", FROM);
+  vi.stubEnv("ADMIN_SECRET", "bo-secret");
   isAdminAuthorized.mockResolvedValue(true);
   payout = { status: "created", tx_hash: null };
   manualClear = false;
@@ -132,7 +135,7 @@ describe("auth admin (come activations)", () => {
 describe("AFFILIATE_PAYOUTS (default off)", () => {
   it("senza env: create/tx/verify 403 payouts_off, la lista resta leggibile, l'annullo resta possibile", async () => {
     vi.stubEnv("AFFILIATE_PAYOUTS", "");
-    const c = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    const c = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }, BO));
     expect(await c.json()).toEqual({ error: "payouts_off" });
     expect((await (await tx()).POST(req("/p/7/tx", "POST", { hash: H1 }), params("7"))).status).toBe(403);
     expect((await (await verify()).POST(req("/p/7/verify", "POST"), params("7"))).status).toBe(403);
@@ -142,7 +145,7 @@ describe("AFFILIATE_PAYOUTS (default off)", () => {
   });
   it("D2: senza wallet di uscita (o = wallet incassi PayGate) non si crea", async () => {
     vi.stubEnv("PAYGATE_PAYOUT_WALLET", FROM);
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }, BO));
     expect(r.status).toBe(503);
     expect(affiliateRpc).not.toHaveBeenCalled();
   });
@@ -168,7 +171,7 @@ describe("GET lista del mese", () => {
 describe("POST crea payout", () => {
   it("passa a una sola transazione SQL ids, mese, totale atteso e le stesse regole della lista", async () => {
     affiliateRpc.mockResolvedValueOnce({ ok: true, total: 54, created: [{ payout_id: 1, affiliate_id: 1, amount: 54 }] });
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1, "1"], expected_total: 54 }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1, "1"], expected_total: 54 }, BO));
     expect(r.status).toBe(200);
     expect(affiliateRpc).toHaveBeenCalledWith("affiliate_create_payouts", {
       p_ids: [1],
@@ -178,22 +181,22 @@ describe("POST crea payout", () => {
       p_require_kyc: true,
       p_networks: ["polygon"],
       p_coins: ["USDT", "USDC"],
-      p_created_by: "admin-cookie",
+      p_created_by: "bo:anna",
     });
   });
   it("totale cambiato nel frattempo → 409 col diff, niente creato (lo decide il DB)", async () => {
     affiliateRpc.mockResolvedValueOnce({ ok: false, error: "total_mismatch", expected: 54, actual: 60, items: [{ affiliate_id: 1, amount: 60 }] });
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54" }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54" }, BO));
     expect(r.status).toBe(409);
     expect(await r.json()).toMatchObject({ error: "total_mismatch", expected: 54, actual: 60 });
   });
   it("input non validi → 400/409 prima del DB", async () => {
     const P = (await list()).POST;
-    expect((await P(req("/p", "POST", { month: "2026-01", ids: [1], expected_total: "1" }))).status).toBe(409);
-    expect((await P(req("/p", "POST", { month: month(), ids: [], expected_total: "1" }))).status).toBe(400);
-    expect((await P(req("/p", "POST", { month: month(), ids: [-1], expected_total: "1" }))).status).toBe(400);
-    expect((await P(req("/p", "POST", { month: month(), ids: [1], expected_total: "1.234" }))).status).toBe(400);
-    expect((await P(req("/p", "POST", { month: month(), ids: [1] }))).status).toBe(400);
+    expect((await P(req("/p", "POST", { month: "2026-01", ids: [1], expected_total: "1" }, BO))).status).toBe(409);
+    expect((await P(req("/p", "POST", { month: month(), ids: [], expected_total: "1" }, BO))).status).toBe(400);
+    expect((await P(req("/p", "POST", { month: month(), ids: [-1], expected_total: "1" }, BO))).status).toBe(400);
+    expect((await P(req("/p", "POST", { month: month(), ids: [1], expected_total: "1.234" }, BO))).status).toBe(400);
+    expect((await P(req("/p", "POST", { month: month(), ids: [1] }, BO))).status).toBe(400);
     expect(affiliateRpc).not.toHaveBeenCalled();
   });
 });
@@ -329,22 +332,28 @@ describe("QA F10: Origin esatto sulle scritture admin", () => {
     expect((await (await cancel()).POST(req("/p/7/cancel", "POST", { reason: "xyz" }, { origin: "null" }), params("7"))).status).toBe(403);
     expect(affiliateRpc).not.toHaveBeenCalled();
     affiliateRpc.mockResolvedValueOnce({ ok: true, created: [] });
-    const bearer = new Request("https://x/p", { method: "POST", headers: { authorization: "Bearer s" }, body: JSON.stringify(body) }) as unknown as NextRequest;
+    const bearer = new Request("https://x/p", { method: "POST", headers: BO, body: JSON.stringify(body) }) as unknown as NextRequest;
     expect((await P(bearer)).status).toBe(200);
+  });
+  it("#AFFILIATE-COMPLETE-1023: dal cookie di /admin non si crea (quattro occhi = operatori nominati)", async () => {
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    expect(r.status).toBe(403);
+    expect(await r.json()).toEqual({ error: "named_operators_required" });
+    expect(affiliateRpc).not.toHaveBeenCalled();
   });
 });
 
 describe("QA F13 + F6 alla creazione", () => {
   it("rifà lo screening degli indirizzi selezionati: bloccato → 409, niente creato", async () => {
     screenPayoutAddress.mockResolvedValueOnce({ kind: "blocked", provider: "p" });
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }, BO));
     expect(r.status).toBe(409);
     expect(await r.json()).toMatchObject({ error: "address_blocked", affiliate_id: 1 });
     expect(affiliateRpc).not.toHaveBeenCalled();
   });
   it("nessun provider (not_screened) → 409 not_screened: fail-closed anche alla creazione", async () => {
     screenPayoutAddress.mockResolvedValueOnce({ kind: "not_screened" });
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }, BO));
     expect(await r.json()).toMatchObject({ error: "not_screened", affiliate_id: 1 });
     expect(affiliateRpc).not.toHaveBeenCalled();
   });
@@ -352,20 +361,20 @@ describe("QA F13 + F6 alla creazione", () => {
     screenPayoutAddress.mockResolvedValueOnce({ kind: "not_screened" });
     manualClear = true;
     affiliateRpc.mockResolvedValueOnce({ ok: true, total: 54, created: [] });
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }, BO));
     expect(r.status).toBe(200);
     expect(affiliateRpc).toHaveBeenCalledWith("affiliate_create_payouts", expect.objectContaining({ p_ids: [1] }));
   });
   it("provider giù → 503, niente creato", async () => {
     const { ScreeningUnavailableError } = await import("@/lib/affiliate/screening");
     screenPayoutAddress.mockRejectedValueOnce(new ScreeningUnavailableError("down"));
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }, BO));
     expect(r.status).toBe(503);
     expect(affiliateRpc).not.toHaveBeenCalled();
   });
   it("destinatario in denylist (es. diventato AFFILIATE_PAYOUT_FROM) → 409", async () => {
     vi.stubEnv("PAYGATE_PAYOUT_WALLET", TO);
-    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }));
+    const r = await (await list()).POST(req("/p", "POST", { month: month(), ids: [1], expected_total: "54.00" }, BO));
     expect(await r.json()).toMatchObject({ error: "address_not_allowed", affiliate_id: 1 });
     expect(affiliateRpc).not.toHaveBeenCalled();
   });

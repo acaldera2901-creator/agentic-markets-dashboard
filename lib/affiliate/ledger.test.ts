@@ -30,6 +30,8 @@ async function fakeDb(sql: string, params: unknown[] = []): Promise<unknown[]> {
     return [{ n: state.historic }];
   }
   if (/FROM profiles/.test(sql)) return [{ referred_by: state.referredBy, created_at: state.signupAt }];
+  // #AFFILIATE-COMPLETE-1023: the affiliate's standing (enrolled long before the test payments).
+  if (/FROM affiliates a WHERE a\.id = \$1/.test(sql)) return state.affiliate ? [{ status: "active", created_at: "2026-01-01T00:00:00Z", absent: false }] : [];
   if (/FROM affiliates/.test(sql)) return state.affiliate ? [state.affiliate] : [];
   if (/FROM affiliate_payer_fingerprints/.test(sql)) return state.fingerprints;
   if (/INSERT INTO affiliate_attributions/.test(sql)) {
@@ -384,5 +386,25 @@ describe("scheduleAffiliateCommission (after())", () => {
     });
     expect(() => scheduleAffiliateCommission(input())).not.toThrow();
     await vi.waitFor(() => expect(state.commissions).toHaveLength(1));
+  });
+});
+
+// #AFFILIATE-COMPLETE-1023 — the affiliate's standing at the time of the payment.
+describe("standingBlock", () => {
+  const paid = new Date("2026-11-10T12:00:00Z");
+  const a = (o: Partial<{ status: string; created_at: string | null; absent: boolean }> = {}) => ({
+    status: "active", created_at: "2026-11-01T00:00:00Z", absent: false, ...o,
+  });
+  it("active, enrolled before the payment, not away → can earn", async () => {
+    const { standingBlock } = await import("./ledger");
+    expect(standingBlock(a(), paid)).toBeNull();
+    expect(standingBlock(a({ status: "suspended" }), paid)).toBeNull(); // held by maturity, not dropped
+  });
+  it("blocks terminated, a payment during an absence and one before enrollment", async () => {
+    const { standingBlock } = await import("./ledger");
+    expect(standingBlock(null, paid)).toBe("not_attributed");
+    expect(standingBlock(a({ status: "terminated" }), paid)).toBe("affiliate_terminated");
+    expect(standingBlock(a({ absent: true }), paid)).toBe("affiliate_left");
+    expect(standingBlock(a({ created_at: "2026-11-10T12:00:01Z" }), paid)).toBe("before_enrollment");
   });
 });

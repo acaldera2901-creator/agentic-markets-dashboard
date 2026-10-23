@@ -8,7 +8,9 @@
 set -euo pipefail
 URL="$1"
 case "$URL" in postgres://*@127.0.0.1:*|postgres://*@localhost:*) ;; *) echo "solo Postgres locale" >&2; exit 2;; esac
-DB="${URL##*/}"; ADMIN_URL="${URL%/*}/postgres"
+DB="$(node -e 'console.log(new URL(process.argv[1]).pathname.slice(1))' "$URL")"
+[[ "$DB" =~ ^du_[a-zA-Z0-9_]+$ ]] || { echo "database name must start du_" >&2; exit 2; }
+ADMIN_URL="$(node -e 'const u=new URL(process.argv[1]);u.pathname="/postgres";console.log(u.href)' "$URL")"
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(git -C "$HERE" rev-parse --show-toplevel)"
 P=(psql -X -q -v ON_ERROR_STOP=1)
 "${P[@]}" "$ADMIN_URL" -c "DROP DATABASE IF EXISTS $DB" -c "CREATE DATABASE $DB"
