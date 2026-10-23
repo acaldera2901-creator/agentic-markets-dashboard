@@ -34,7 +34,7 @@ beforeEach(() => {
     if (/FROM affiliate_wallets/.test(sql)) {
       return [{ id: 1, coin: "USDT", network: "polygon", address: ADDR, created_at: "2026-10-01", usable_after: "2999-01-01", screening_result: "not_screened" }];
     }
-    if (/COUNT\(DISTINCT referred_identifier\)/.test(sql)) {
+    if (/HAVING SUM\(amount_usd\) > 0/.test(sql)) {
       return [{ n: 6 }];
     }
     if (/GROUP BY status, kind/.test(sql)) {
@@ -58,6 +58,14 @@ describe("GET /api/affiliate/me", () => {
   it("401 senza login", async () => {
     const { GET } = await import("./route");
     expect((await GET(req(null))).status).toBe(401);
+  });
+
+  it("errore DB sulla sessione → 503, non 401 (non è «non loggato»)", async () => {
+    getSessionPlan.mockRejectedValueOnce(new Error("db down"));
+    const { GET } = await import("./route");
+    const res = await GET(req("alice@x.io"));
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "session unavailable" });
   });
 
   it("non iscritto → 200 enrolled:false", async () => {

@@ -41,6 +41,13 @@ export type RecordCommissionInput = {
   /** Data dell'incasso. */
   paidAt: Date;
   meta?: NetMeta;
+  /** Recupero dalla riconciliazione (#AFFILIATE-RECONCILE-1022): il pagamento è
+   *  vecchio e altri del referito possono essere già nel ledger DOPO di lui. Il
+   *  suo indice conta solo le righe pagate PRIMA (in ordine di incasso), non
+   *  tutte: altrimenti prenderebbe l'indice di un pagamento successivo e il
+   *  vincolo (referito, indice) lo respingerebbe per sempre. Se quell'indice è
+   *  già occupato si accoda in fondo. */
+  recovery?: boolean;
 };
 
 export type LedgerOutcome = { written: boolean; reason: string };
@@ -121,6 +128,35 @@ export function withinAttributionWindow(signupISO: string | null, paidAt: Date, 
   return paidAt.getTime() - signup <= windowDays * DAY_MS;
 }
 
+export type AffiliateStanding = { status: string; created_at: string | null; absent: boolean };
+
+/** #AFFILIATE-COMPLETE-1023 — can this affiliate earn on a payment made at `paidAt`?
+ *  No if terminated (sanction), if the payment fell while they were out of the program
+ *  (Terms §8: earned amounts stay theirs, new ones stop), or before they enrolled
+ *  (no retroactive commission: e.g. reconciliation replaying pre-launch purchases).
+ *  'suspended' still records: maturity and payouts already require 'active'. */
+export function standingBlock(a: AffiliateStanding | null, paidAt: Date): string | null {
+  if (!a) return "not_attributed";
+  if (a.status === "terminated") return "affiliate_terminated";
+  if (a.absent) return "affiliate_left";
+  if (a.created_at && paidAt.getTime() < new Date(a.created_at).getTime()) return "before_enrollment";
+  return null;
+}
+
+/** The affiliate's standing at `paidAt`: «absent» = the payment falls inside a leave → rejoin
+ *  interval (affiliate_absences, migration 20261023120000), open or closed. */
+async function standingReason(affiliateId: number, paidAt: Date): Promise<string | null> {
+  const rows = await dbQueryStrict<AffiliateStanding>(
+    `SELECT a.status, a.created_at::text AS created_at,
+            EXISTS (SELECT 1 FROM affiliate_absences x
+                     WHERE x.affiliate_id = a.id AND x.left_at <= $2::timestamptz
+                       AND (x.rejoined_at IS NULL OR $2::timestamptz < x.rejoined_at)) AS absent
+       FROM affiliates a WHERE a.id = $1`,
+    [affiliateId, paidAt.toISOString()]
+  );
+  return standingBlock(rows[0] ?? null, paidAt);
+}
+
 type AttributionRow = { affiliate_id: number | string; status: AttributionStatus; attributed_at: string };
 
 async function readAttribution(referred: string): Promise<AttributionRow | null> {
@@ -170,6 +206,10 @@ async function resolveAttribution(
   );
   const affiliate = aff[0];
   if (!affiliate) return { reason: "not_attributed" };
+  // #AFFILIATE-COMPLETE-1023 (review Codex #4): checked BEFORE freezing the attribution — a
+  // rejected payment (e.g. before enrollment) must not become the attribution's start.
+  const blocked = await standingReason(Number(affiliate.id), paidAt);
+  if (blocked) return { reason: blocked };
 
   const fps = await dbQueryStrict<{ identifier: string; kind: FingerprintKind; value_hash: string; seen_at: string }>(
     `SELECT identifier, kind, value_hash, seen_at::text AS seen_at
@@ -189,12 +229,16 @@ async function resolveAttribution(
 
   // La PK su referred_identifier è il lock: chi perde la corsa non scrive, e si
   // rilegge la riga del vincitore.
+  // attributed_at = data dell'incasso che converte, non NOW(): è il confine dei
+  // «pagamenti storici» (historicPayments). Dal rail coincidono; dalla
+  // riconciliazione (#AFFILIATE-RECONCILE-1022) un incasso perso giorni fa non
+  // deve far contare come «pre-programma» gli altri pagamenti persi dopo di lui.
   await dbExecute(
     `INSERT INTO affiliate_attributions
        (referred_identifier, affiliate_id, source, attributed_at, status, status_reason)
-     VALUES ($1, $2, 'signup_ref', NOW(), $3, $4)
+     VALUES ($1, $2, 'signup_ref', LEAST(NOW(), $5::timestamptz), $3, $4)
      ON CONFLICT (referred_identifier) DO NOTHING`,
-    [referred, Number(affiliate.id), verdict.status, verdict.reason]
+    [referred, Number(affiliate.id), verdict.status, verdict.reason, paidAt.toISOString()]
   );
   const row = await readAttribution(referred);
   return row ? { attribution: row } : { reason: "not_attributed" };
@@ -214,7 +258,10 @@ async function paymentRecorded(rail: AffiliateRail, ref: string): Promise<boolea
  *  acquisto», e il suo prossimo pagamento è un rinnovo al 7%, non un 20%.
  *  Stabile nel tempo: dopo `attributed_at` ogni pagamento finisce nel ledger.
  *  Il pagamento corrente si esclude per ref (il suo grant precede di poco la
- *  creazione dell'attribuzione).
+ *  creazione dell'attribuzione), e così ogni pagamento GIÀ nel ledger
+ *  (#AFFILIATE-HISTORIC-1022, e2e B2): il pagamento che ha convertito ha il grant
+ *  qualche ms prima di attributed_at, quindi dal rinnovo successivo risultava
+ *  «storico» E riga di ledger — contato due volte, rinnovi da indice 2.
  *  Rail contati: paygate_orders (anche crypto), paypal_orders e shopify_events
  *  concessi — escluse le righe `crypto-paygate` (specchio di un ordine PayGate
  *  già contato) e le Weekly Pick. Stripe non ha una tabella ordini locale: i suoi
@@ -222,29 +269,40 @@ async function paymentRecorded(rail: AffiliateRail, ref: string): Promise<boolea
 async function historicPayments(referred: string, attributedAtISO: string, currentRef: string): Promise<number> {
   const rows = await dbQueryStrict<{ n: number | string }>(
     `SELECT COUNT(*)::int AS n FROM (
-       SELECT id::text AS ref, granted_at AS ts FROM paygate_orders
+       SELECT id::text AS ref, granted_at AS ts, ARRAY['paygate','crypto'] AS rails FROM paygate_orders
         WHERE LOWER(TRIM(identifier)) = $1 AND granted_at IS NOT NULL
        UNION ALL
-       SELECT id::text AS ref, granted_at AS ts FROM paypal_orders
+       SELECT id::text AS ref, granted_at AS ts, ARRAY['paypal'] AS rails FROM paypal_orders
         WHERE LOWER(TRIM(identifier)) = $1 AND granted_at IS NOT NULL
        UNION ALL
-       SELECT event_id AS ref, processed_at AS ts FROM shopify_events
+       SELECT event_id AS ref, processed_at AS ts, ARRAY['shopify'] AS rails FROM shopify_events
         WHERE LOWER(TRIM(identifier)) = $1
           AND event_type = 'orders/paid'
           AND status IN ('granted','granted+weekly','granted-partial')
      ) h
-     WHERE h.ts < $2::timestamptz AND h.ref <> $3`,
+     WHERE h.ts < $2::timestamptz AND h.ref <> $3
+       -- Review 2 P2-3: la coppia (rail, ref), non il solo ref (id di rail diversi
+       -- possono coincidere). paygate_orders alimenta sia «paygate» sia «crypto».
+       AND NOT EXISTS (SELECT 1 FROM affiliate_commissions c
+                        WHERE c.referred_identifier = $1 AND c.kind IN ('first','renewal')
+                          AND c.rail_payment_ref = h.ref AND c.rail = ANY(h.rails))`,
     [referred, attributedAtISO, currentRef]
   );
   return Number(rows[0]?.n ?? 0);
 }
 
-async function ledgerPayments(referred: string): Promise<number> {
-  const rows = await dbQueryStrict<{ n: number | string }>(
-    `SELECT COUNT(*)::int AS n FROM affiliate_commissions
-      WHERE referred_identifier = $1 AND kind IN ('first','renewal')`,
-    [referred]
-  );
+async function ledgerPayments(referred: string, paidBeforeISO?: string): Promise<number> {
+  const rows = paidBeforeISO
+    ? await dbQueryStrict<{ n: number | string }>(
+        `SELECT COUNT(*)::int AS n FROM affiliate_commissions
+          WHERE referred_identifier = $1 AND kind IN ('first','renewal') AND paid_at < $2::timestamptz`,
+        [referred, paidBeforeISO]
+      )
+    : await dbQueryStrict<{ n: number | string }>(
+        `SELECT COUNT(*)::int AS n FROM affiliate_commissions
+          WHERE referred_identifier = $1 AND kind IN ('first','renewal')`,
+        [referred]
+      );
   return Number(rows[0]?.n ?? 0);
 }
 
@@ -266,6 +324,10 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   if (attribution.status === "self_referral" || attribution.status === "void") {
     return { written: false, reason: `attribution_${attribution.status}` };
   }
+  // #AFFILIATE-COMPLETE-1023 — the attribution actually in force (frozen, or won by a concurrent
+  // request) does not re-check the affiliate by itself; a new one was also checked before writing.
+  const blocked = await standingReason(Number(attribution.affiliate_id), input.paidAt);
+  if (blocked) return { written: false, reason: blocked };
 
   const net = netAmount(input.rail, input.grossUsd, input.meta);
   if (net == null) {
@@ -282,7 +344,12 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   const payingReferred = await payingReferredCount(Number(attribution.affiliate_id), config.mode);
 
   for (let attempt = 0; attempt < MAX_INDEX_ATTEMPTS; attempt++) {
-    const renewalIndex = historic + (await ledgerPayments(referred));
+    // Recupero: al primo tentativo l'indice della sua posizione per data; se è
+    // già preso (un pagamento successivo registrato prima di lui) si accoda
+    // dopo tutti, come un rinnovo qualunque, invece di restare perso.
+    const renewalIndex =
+      historic +
+      (await ledgerPayments(referred, input.recovery && attempt === 0 ? input.paidAt.toISOString() : undefined));
     const d = decideCommission({
       mode: config.mode,
       config,

@@ -11,6 +11,8 @@ vi.mock("@/lib/plan-grant", () => ({ activateShopifyPlan, revokeShopifyPlan }));
 vi.mock("@/lib/weekly-pick-server", () => ({ grantWeeklyPick }));
 const opsAlert = vi.fn();
 vi.mock("@/lib/ops-alert", () => ({ opsAlert }));
+const scheduleAffiliateReversal = vi.fn();
+vi.mock("@/lib/affiliate/reversal", () => ({ scheduleAffiliateReversal }));
 
 const SECRET = "whsec_test_123";
 function sign(body: string) {
@@ -31,7 +33,7 @@ it("rimborso: revoca l'accesso dell'identifier dell'ordine originale", async () 
   // 1a query: idempotenza sul refund (non visto). 2a: lookup identifier dall'ordine.
   dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([{ identifier: "u@t.com" }]);
   revokeShopifyPlan.mockResolvedValue(true);
-  const body = JSON.stringify({ id: 7001, order_id: 900 });
+  const body = JSON.stringify({ id: 7001, order_id: 900, transactions: [{ kind: "refund", status: "success", amount: "14.99" }] });
   const { POST } = await import("./route");
   const res = await POST(req(body, sign(body), "refunds/create"));
   expect(res.status).toBe(200);
@@ -68,7 +70,7 @@ beforeEach(() => {
   process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "555";
   process.env.SHOPIFY_VARIANT_BASE_ONEOFF = "9111";
   process.env.SHOPIFY_CRYPTO_GATEWAY_NAME = "Crypto (USDT, BTC, ETH)";
-  // Default per il path orders/paid: l'INSERT..RETURNING restituisce 1 riga = ordine
+  // Default per il path orders/paid: la SELECT del gettone restituisce 1 riga = ordine
   // nostro (nessun conflitto) → si procede al grant. I test refund impostano le
   // proprie sequenze con mockResolvedValueOnce.
   dbQueryStrict.mockResolvedValue([{ event_id: "won" }]);
@@ -121,13 +123,38 @@ it("concede il piano su orders/paid valido", async () => {
 });
 
 it("idempotenza atomica: INSERT in conflitto (0 righe) → duplicate, no grant", async () => {
-  dbQueryStrict.mockResolvedValue([]); // ON CONFLICT DO NOTHING → nessuna riga = già preso
+  dbQueryStrict.mockResolvedValue([]); // gettone non ritrovato = un'altra delivery ha la riga
   const body = JSON.stringify({ id: 900, email: "u@t.com", line_items: [{ variant_id: 222 }] });
   const { POST } = await import("./route");
   const res = await POST(req(body, sign(body)));
   expect(res.status).toBe(200);
   expect(await res.json()).toMatchObject({ duplicate: true });
   expect(activateShopifyPlan).not.toHaveBeenCalled();
+});
+
+// #SHOPIFY-CLAIM-1022 (review 2, P2-2): INSERT riuscito ma SELECT del gettone fallita →
+// 500 E la riga di QUESTA delivery va tolta, altrimenti il retry di Shopify vedrebbe
+// un duplicato e il piano non verrebbe mai concesso.
+it("idempotenza: SELECT del gettone in errore → 500 e cancella solo la propria riga", async () => {
+  dbQueryStrict.mockRejectedValue(new Error("db hiccup"));
+  const body = JSON.stringify({ id: 990, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(500);
+  expect(activateShopifyPlan).not.toHaveBeenCalled();
+  const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  const del = dbExecute.mock.calls.find((c) => String(c[0]).includes("DELETE FROM shopify_events"));
+  expect(String(del?.[0])).toMatch(/event_id = \$1 AND last_error = \$2/);
+  expect(del?.[1]).toEqual(["990", insert?.[1]?.[4]]);
+});
+
+it("idempotenza: INSERT in errore → 500, niente DELETE (la riga non è nostra)", async () => {
+  dbExecute.mockRejectedValueOnce(new Error("db down"));
+  const body = JSON.stringify({ id: 991, email: "u@t.com", line_items: [{ variant_id: 222 }] });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body)));
+  expect(res.status).toBe(500);
+  expect(dbExecute.mock.calls.some((c) => String(c[0]).includes("DELETE FROM shopify_events"))).toBe(false);
 });
 
 // --- granularità del rimborso: non tutti i rimborsi spengono l'abbonamento ---
@@ -154,6 +181,50 @@ it("rimborso PARZIALE su un annuale: non azzera 12 mesi pagati", async () => {
   const res = await POST(req(body, sign(body), "refunds/create"));
   expect(await res.json()).toMatchObject({ manual: expect.stringContaining("parziale") });
   expect(revokeShopifyPlan).not.toHaveBeenCalled();
+  // #AFFILIATE-REVERSAL-1022: anche il parziale storna la commissione, in proporzione.
+  expect(scheduleAffiliateReversal).toHaveBeenCalledWith({ rail: "shopify", paymentRef: "911", eventRef: "7011", refundedGrossUsd: 29.99 });
+});
+
+it("rimborso con transazione FALLITA: nessuno storno affiliato (nessun denaro restituito)", async () => {
+  dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([{ identifier: "u@t.com", variant_id: "444", amount: "329.99" }]);
+  revokeShopifyPlan.mockResolvedValue(true);
+  const body = JSON.stringify({ id: 7020, order_id: 920, transactions: [{ kind: "refund", status: "failure", amount: "10.00" }] });
+  const { POST } = await import("./route");
+  await POST(req(body, sign(body), "refunds/create"));
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+});
+
+// #SHOPIFY-REFUND-FAILED-1022 — la revoca spegne l'accesso di un utente pagante:
+// solo con una transazione di rimborso RIUSCITA (denaro restituito davvero).
+// Fallita, in attesa o assente → accesso mantenuto, gestione manuale con alert.
+it.each([
+  ["fallita", [{ kind: "refund", status: "failure", amount: "14.99" }]],
+  ["in attesa", [{ kind: "refund", status: "pending", amount: "14.99" }]],
+  ["errore del gateway", [{ kind: "refund", status: "error", amount: "14.99" }]],
+  ["senza transazioni (solo restock)", []],
+  ["campo transactions assente", undefined],
+])("rimborso con transazione %s: NON revoca il piano, gestione manuale", async (_label, transactions) => {
+  dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([{ identifier: "u@t.com", variant_id: "111", amount: "14.99" }]);
+  revokeShopifyPlan.mockResolvedValue(true);
+  const body = JSON.stringify({ id: 7030, order_id: 930, ...(transactions === undefined ? {} : { transactions }) });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "refunds/create"));
+  expect(res.status).toBe(200);
+  expect(await res.json()).toMatchObject({ manual: expect.stringContaining("nessuna transazione di rimborso riuscita") });
+  expect(revokeShopifyPlan).not.toHaveBeenCalled();
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+  expect(opsAlert).toHaveBeenCalled();
+  expect(dbExecute).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO shopify_events"), ["refund:7030", "u@t.com", "refund-not-successful", expect.any(String)]);
+});
+
+it("rimborso già processato o su ordine sconosciuto: nessuno storno affiliato", async () => {
+  dbQueryStrict.mockResolvedValueOnce([{ event_id: "refund:7001" }]);
+  const body = JSON.stringify({ id: 7001, order_id: 900 });
+  const { POST } = await import("./route");
+  await POST(req(body, sign(body), "refunds/create"));
+  dbQueryStrict.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+  await POST(req(JSON.stringify({ id: 7002, order_id: 12345 }), sign(JSON.stringify({ id: 7002, order_id: 12345 })), "refunds/create"));
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
 });
 
 it("rimborso TOTALE di un piano: revoca", async () => {
@@ -187,9 +258,14 @@ it("l'ordine registra l'importo: senza, un rimborso parziale sarebbe indistingui
   const body = JSON.stringify({ id: 920, email: "u@t.com", total_price: "14.99", line_items: [{ variant_id: 111 }] });
   const { POST } = await import("./route");
   await POST(req(body, sign(body)));
-  // L'INSERT è ora il gate atomico (dbQueryStrict … RETURNING), non più dbExecute.
-  const insert = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
-  expect(insert?.[1]).toEqual(["920", "u@t.com", "111", 14.99]);
+  // #SHOPIFY-CLAIM-1022: INSERT … ON CONFLICT via dbExecute (MAI RETURNING: exec_sql
+  // non ne restituisce le righe) col gettone della delivery; il vincitore lo ritrova
+  // con una SELECT separata (test su exec_sql vero in pg.integration.test.ts).
+  const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  expect(String(insert?.[0])).not.toMatch(/RETURNING/i);
+  expect(insert?.[1]).toEqual(["920", "u@t.com", "111", 14.99, expect.stringMatching(/^claim:/)]);
+  const pick = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("last_error = $2"));
+  expect(pick?.[1]).toEqual(["920", insert?.[1]?.[4]]);
 });
 
 // #SHOPIFY-CRYPTO-2 — LA guardia che regge tutto il rail crypto.
@@ -290,7 +366,7 @@ it("carrello misto: in shopify_events va il variant del PIANO, non il primo del 
   });
   const { POST } = await import("./route");
   await POST(req(body, sign(body)));
-  const insert = dbQueryStrict.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
+  const insert = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO shopify_events"));
   expect(insert?.[1]?.[2]).toBe("111"); // variant_id registrato = il piano
 });
 
@@ -339,4 +415,31 @@ it("ordine monoriga: comportamento identico a prima (nessuna regressione)", asyn
   expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "monthly", false);
   expect(grantWeeklyPick).not.toHaveBeenCalled();
   expect(opsAlert).not.toHaveBeenCalled();
+});
+
+// #AFFILIATE-COMPLETE-1023 — chargeback Shopify Payments → storno totale della commissione affiliato.
+it("disputes/create chargeback: storno totale sull'ordine, alert, piano non toccato", async () => {
+  const body = JSON.stringify({ id: 551, order_id: 912, type: "chargeback", amount: "14.99", currency: "USD" });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "disputes/create"));
+  expect(res.status).toBe(200);
+  expect(scheduleAffiliateReversal).toHaveBeenCalledWith({ rail: "shopify", paymentRef: "912", eventRef: "dispute:551", refundedGrossUsd: null });
+  expect(opsAlert).toHaveBeenCalled();
+  expect(revokeShopifyPlan).not.toHaveBeenCalled();
+});
+
+it("disputes/create inquiry o senza ordine: nessuno storno", async () => {
+  const { POST } = await import("./route");
+  for (const p of [{ id: 552, order_id: 912, type: "inquiry" }, { id: 553, type: "chargeback" }]) {
+    const body = JSON.stringify(p);
+    expect((await POST(req(body, sign(body), "disputes/create"))).status).toBe(200);
+  }
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+});
+
+it("disputes/create con firma non valida: 401, nessuno storno", async () => {
+  const body = JSON.stringify({ id: 554, order_id: 912, type: "chargeback" });
+  const { POST } = await import("./route");
+  expect((await POST(req(body, "bad", "disputes/create"))).status).toBe(401);
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
 });

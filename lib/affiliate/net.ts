@@ -1,17 +1,16 @@
 // lib/affiliate/net.ts — #AFFILIATE-V2-0930
-// Il NETTO su cui si calcola la commissione. Pura, niente DB.
+// La BASE su cui si calcola la commissione. Pura, niente DB.
 //
-// Netto = lordo dell'abbonamento − IVA/sales tax − importo rimborsato − fee del
-// processore (decisione di Andrea, 2026-09-30: «netto senza IVA/rimborsi/fee»).
+// #AFFILIATE-TERMS-V3-1022 — termini aff-2026-10-22-v3 (decisione di Andrea,
+// 22/10/2026): base LORDA = prezzo pagato dal cliente, imposte comprese, fee
+// del processore e di rete NON dedotte. Si sottrae solo la parte già rimborsata
+// al momento dell'incasso (i rimborsi successivi sono reversal/clawback).
+// `taxUsd` e `feeUsd` restano nel tipo (i rail li passano) ma non riducono più
+// la base; un valore non valido rende comunque l'importo non verificabile (null).
+// Prima: «netto senza IVA/rimborsi/fee» (decisione 2026-09-30, termini v1/v2).
 // Non conosce depositi, perdite o link bookmaker: le sue sole fonti sono gli
 // ordini dei rail e l'invoice Stripe, passati dal chiamante.
 //
-// ⚠ LIMITE NOTO (fee): oggi nessun rail espone la fee del processore nei punti
-// in cui si incassa (paygate_orders/paypal_orders/shopify_events/invoice Stripe
-// non la portano). Una fee NON fornita vale 0, cioè NON viene dedotta: in shadow
-// il netto è sovrastimato della fee. Va chiuso prima del `live` (upgrade path:
-// il chiamante legge la fee dal rail — PayPal seller_receivable_breakdown,
-// Stripe balance_transaction — e la passa in `feeUsd`).
 
 export type AffiliateRail = "paygate" | "crypto" | "paypal" | "shopify" | "stripe" | "admin";
 
@@ -25,8 +24,14 @@ export type NetMeta = {
 };
 
 /** Arrotonda a 2 decimali (centesimi), senza l'errore di 1.005 → 1.00. */
+// Review indipendente P2-8: come round(x, 2) di Postgres (backfill, storni): metà
+// lontano da zero sul valore DECIMALE. `n + EPSILON` non bastava sopra ~10 $
+// (40.15 × 0.1 = 4.01499… in float → 4.01 contro 4.02 in SQL). toFixed(10) toglie
+// il rumore binario, la notazione «e2» sposta la virgola senza moltiplicare in float.
 export function round2(n: number): number {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
+  if (!Number.isFinite(n)) return n;
+  const cents = Math.round(Number(`${Math.abs(n).toFixed(10)}e2`));
+  return (n < 0 ? -1 : 1) * Number(`${cents}e-2`);
 }
 
 function component(v: number | null | undefined): number | null {
@@ -34,7 +39,7 @@ function component(v: number | null | undefined): number | null {
   return Number.isFinite(v) && v >= 0 ? v : null;
 }
 
-/** Netto in USD arrotondato a 2 decimali, oppure `null` quando non si può
+/** Base (lordo meno il già rimborsato) in USD arrotondata a 2 decimali, oppure `null` quando non si può
  *  calcolare senza inventare: lordo assente (es. righe Shopify storiche con
  *  `amount` NULL) o non valido, una componente non valida, o il rail `admin`
  *  (attivazioni manuali USDT: nessuna commissione, decisione di Andrea).
@@ -51,7 +56,7 @@ export function netAmount(
   const refunded = component(meta.refundedUsd);
   const fee = component(meta.feeUsd);
   if (tax == null || refunded == null || fee == null) return null;
-  return Math.max(0, round2(gross - tax - refunded - fee));
+  return Math.max(0, round2(gross - refunded));
 }
 
 function money(v: unknown): number | null {
@@ -85,6 +90,33 @@ export function withNotSinglePlanMark(why: string, notSinglePlan: boolean): stri
 
 export function isNotSinglePlanMarked(lastError: string | null | undefined): boolean {
   return (lastError ?? "").includes(SHOPIFY_NOT_SINGLE_PLAN_MARK);
+}
+
+/** #SHOPIFY-RECONCILE-USD-1022 — `shopify_events` non conserva la valuta, e i termini
+ *  pagano commissioni solo su acquisti in USD: un ordine 'unresolved' in altra valuta
+ *  porta questo marcatore, e la reconcile non tratta il suo `amount` come USD. */
+export const SHOPIFY_NON_USD_MARK = "[affiliate:non-usd]";
+
+export function shopifyOrderIsNonUsd(payload: unknown): boolean {
+  const c = (payload ?? {}) as { currency?: unknown };
+  return typeof c.currency === "string" && c.currency.toUpperCase() !== "USD";
+}
+
+export function withNonUsdMark(why: string, nonUsd: boolean): string {
+  return nonUsd ? `${why} ${SHOPIFY_NON_USD_MARK}` : why;
+}
+
+export function isNonUsdMarked(lastError: string | null | undefined): boolean {
+  return (lastError ?? "").includes(SHOPIFY_NON_USD_MARK);
+}
+
+/** Data dell'incasso di un ordine `orders/paid`: `processed_at` del payload (Shopify
+ *  ritenta il webhook fino a 48 h: l'ora di consegna non è l'ora del pagamento).
+ *  Assente, illeggibile o nel futuro → `now`. */
+export function shopifyPaidAt(payload: unknown, now = new Date()): Date {
+  const v = ((payload ?? {}) as { processed_at?: unknown }).processed_at;
+  const d = typeof v === "string" ? new Date(v) : null;
+  return d && !Number.isNaN(d.getTime()) && d.getTime() <= now.getTime() ? d : now;
 }
 
 /** Lordo e tasse di un'invoice Stripe `invoice.paid` (importi in centesimi).

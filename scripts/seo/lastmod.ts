@@ -51,6 +51,11 @@ const ROUTE_SOURCES: Record<string, string[]> = {
   "/partners": ["app/partners"],
   "/terms": ["app/terms"],
   "/privacy": ["app/privacy"],
+  // #INVITE-AFFILIATE-UX-1022 (M3): i Termini affiliati entrano in sitemap.
+  "/affiliates/terms": ["app/affiliates/terms"],
+  // #LEGAL-FOOTER-1022: il pannello /invite (route + componenti affiliato). Non app/app/page.tsx:
+  // cambia ogni giorno per il desk e sovrastimerebbe; sottostimare è sicuro.
+  "/invite": ["app/invite", "components/affiliate"],
   "/world-cup": ["app/world-cup"],
 };
 

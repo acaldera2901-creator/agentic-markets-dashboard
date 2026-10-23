@@ -30,6 +30,8 @@ async function fakeDb(sql: string, params: unknown[] = []): Promise<unknown[]> {
     return [{ n: state.historic }];
   }
   if (/FROM profiles/.test(sql)) return [{ referred_by: state.referredBy, created_at: state.signupAt }];
+  // #AFFILIATE-COMPLETE-1023: the affiliate's standing (enrolled long before the test payments).
+  if (/FROM affiliates a WHERE a\.id = \$1/.test(sql)) return state.affiliate ? [{ status: "active", created_at: "2026-01-01T00:00:00Z", absent: false }] : [];
   if (/FROM affiliates/.test(sql)) return state.affiliate ? [state.affiliate] : [];
   if (/FROM affiliate_payer_fingerprints/.test(sql)) return state.fingerprints;
   if (/INSERT INTO affiliate_attributions/.test(sql)) {
@@ -42,14 +44,14 @@ async function fakeDb(sql: string, params: unknown[] = []): Promise<unknown[]> {
   if (/WHERE rail = \$1 AND rail_payment_ref = \$2/.test(sql)) {
     return [{ n: state.commissions.filter((c) => c.rail === params[0] && c.ref === params[1]).length }];
   }
-  if (/COUNT\(DISTINCT referred_identifier\)/.test(sql)) {
+  if (/HAVING SUM\(amount_usd\) > 0/.test(sql)) {
     const live = !/'shadow'/.test(sql);
-    const paying = new Set(
-      state.commissions
-        .filter((c) => (c.kind === "first" || c.kind === "renewal") && !["reversed", "void"].includes(c.status) && !(live && c.status === "shadow"))
-        .map((c) => c.referred)
-    );
-    return [{ n: paying.size }];
+    const sums = new Map<string, number>();
+    for (const c of state.commissions) {
+      if (["reversed", "void"].includes(c.status) || (live && c.status === "shadow")) continue;
+      sums.set(c.referred, (sums.get(c.referred) ?? 0) + c.amount);
+    }
+    return [{ n: [...sums.values()].filter((v) => v > 0).length }];
   }
   if (/WHERE referred_identifier = \$1 AND kind/.test(sql)) {
     return [{ n: state.commissions.filter((c) => c.referred === params[0]).length }];
@@ -345,9 +347,9 @@ describe("recordAffiliateCommissionSafe", () => {
     expect(log.mock.calls.flat().join(" ")).not.toContain("u@t.com");
   });
 
-  it("tasse dedotte dal netto", async () => {
+  it("#AFFILIATE-TERMS-V3-1022 base lorda: tasse NON dedotte", async () => {
     await recordAffiliateCommissionSafe(input({ rail: "shopify", grossUsd: 18.29, meta: { taxUsd: 3.3 } }));
-    expect(state.commissions[0].params.slice(5, 9)).toEqual([18.29, 14.99, 0.2, 3]);
+    expect(state.commissions[0].params.slice(5, 9)).toEqual([18.29, 18.29, 0.2, 3.66]);
   });
 
   it("DB giù: non lancia mai, ritorna error", async () => {
@@ -384,5 +386,25 @@ describe("scheduleAffiliateCommission (after())", () => {
     });
     expect(() => scheduleAffiliateCommission(input())).not.toThrow();
     await vi.waitFor(() => expect(state.commissions).toHaveLength(1));
+  });
+});
+
+// #AFFILIATE-COMPLETE-1023 — the affiliate's standing at the time of the payment.
+describe("standingBlock", () => {
+  const paid = new Date("2026-11-10T12:00:00Z");
+  const a = (o: Partial<{ status: string; created_at: string | null; absent: boolean }> = {}) => ({
+    status: "active", created_at: "2026-11-01T00:00:00Z", absent: false, ...o,
+  });
+  it("active, enrolled before the payment, not away → can earn", async () => {
+    const { standingBlock } = await import("./ledger");
+    expect(standingBlock(a(), paid)).toBeNull();
+    expect(standingBlock(a({ status: "suspended" }), paid)).toBeNull(); // held by maturity, not dropped
+  });
+  it("blocks terminated, a payment during an absence and one before enrollment", async () => {
+    const { standingBlock } = await import("./ledger");
+    expect(standingBlock(null, paid)).toBe("not_attributed");
+    expect(standingBlock(a({ status: "terminated" }), paid)).toBe("affiliate_terminated");
+    expect(standingBlock(a({ absent: true }), paid)).toBe("affiliate_left");
+    expect(standingBlock(a({ created_at: "2026-11-10T12:00:01Z" }), paid)).toBe("before_enrollment");
   });
 });

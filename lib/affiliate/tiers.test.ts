@@ -1,6 +1,6 @@
 // #AFFILIATE-TIERS-1021 — scala sui rinnovi: parsing fail-safe e posizione.
 import { describe, it, expect } from "vitest";
-import { DEFAULT_TIERS, parseTiers, payingReferredSql, renewalRateFor, tierFor } from "./tiers";
+import { DEFAULT_TIERS, effectiveTiers, parseTiers, payingReferredSql, renewalRateFor, tierFor } from "./tiers";
 
 describe("parseTiers", () => {
   it("env assente o vuota → la scala di default (10 % da 5, 15 % da 15)", () => {
@@ -58,10 +58,23 @@ describe("tierFor / renewalRateFor", () => {
 describe("payingReferredSql", () => {
   it("in live le righe shadow NON contano; in shadow sì; reversed/void mai", () => {
     const live = payingReferredSql("live").sql;
-    expect(live).toMatch(/COUNT\(DISTINCT referred_identifier\)/);
+    // Per referito, al netto degli storni: un acquisto interamente rimborsato non conta.
+    expect(live).toMatch(/GROUP BY referred_identifier\s+HAVING SUM\(amount_usd\) > 0/);
     expect(live).not.toMatch(/'shadow'/);
     expect(live).not.toMatch(/'reversed'|'void'/);
     expect(payingReferredSql("shadow").sql).toMatch(/'shadow'/);
     expect(live).toMatch(/affiliate_id = \$1/);
+  });
+});
+
+describe("gradini sotto la base (#AFFILIATE-TIERS-NEXT-1022)", () => {
+  it("base 12%: il gradino al 10% non è un livello né il «prossimo»", () => {
+    expect(effectiveTiers(DEFAULT_TIERS, 0.12)).toEqual([{ min: 15, rate: 0.15 }]);
+    expect(tierFor(0, 0.12, DEFAULT_TIERS)).toEqual({ level: 0, rate: 0.12, payingReferred: 0, next: { min: 15, rate: 0.15 } });
+    expect(tierFor(6, 0.12, DEFAULT_TIERS)).toMatchObject({ level: 0, rate: 0.12, next: { min: 15 } });
+    expect(tierFor(15, 0.12, DEFAULT_TIERS)).toEqual({ level: 1, rate: 0.15, payingReferred: 15, next: null });
+  });
+  it("base sopra tutta la scala: nessun livello, nessun prossimo", () => {
+    expect(tierFor(99, 0.2, DEFAULT_TIERS)).toEqual({ level: 0, rate: 0.2, payingReferred: 99, next: null });
   });
 });

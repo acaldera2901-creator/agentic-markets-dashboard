@@ -66,6 +66,14 @@ describe("sitemap", () => {
     expect(urls).not.toContain(`${BASE}/app`);
   });
 
+  // #LEGAL-FOOTER-1022: /invite è pubblico da anonimo (offerta + Termini affiliati, #INVITE-AFFILIATE-UX-1022 M1/M3).
+  it("include /invite, con una data vera (non il fallback)", () => {
+    const inv = entries.find((e) => e.url === `${BASE}/invite`);
+    expect(inv).toBeTruthy();
+    expect(inv!.changeFrequency).toBe("monthly");
+    expect(inv!.lastModified).not.toBe(GENERATED_AT);
+  });
+
   it("declassa /world-cup: il torneo è finito, la pagina resta come archivio", () => {
     const wc = entries.find((e) => e.url === `${BASE}/world-cup`);
     expect(wc).toBeTruthy();

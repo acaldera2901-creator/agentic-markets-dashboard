@@ -24,7 +24,11 @@ vi.mock("@/lib/auth", () => ({
     return who ? { identifier: who, plan: "free" } : null;
   },
 }));
-vi.mock("@/lib/admin-auth", () => ({ isAdminAuthorized: async () => true }));
+vi.mock("@/lib/admin-auth", () => ({
+  isAdminAuthorized: async () => true,
+  // #AFFILIATE-OPS-1022: «Bearer bo» simula il backoffice (ADMIN_SECRET giusto).
+  verifyBearer: (r: Request) => r.headers.get("authorization") === "Bearer bo",
+}));
 // Catena finta (nessuna rete): una ricevuta USDT valida dal wallet di uscita al
 // destinatario indicato in h.chainTo, con 101 conferme.
 vi.mock("@/lib/affiliate/payout-verify", async (orig) => {
@@ -54,6 +58,16 @@ vi.mock("@/lib/affiliate/screening", async (orig) => {
     screenPayoutAddress: async () => (h.screen === "clear" ? { kind: "clear", provider: "test" } : { kind: "not_screened" }),
   };
 });
+// #SHOPIFY-CLAIM-1022 — il webhook Shopify su exec_sql vero: il grant è finto
+// (conta le chiamate), l'idempotenza no.
+const grants = vi.hoisted(() => ({ n: 0 }));
+vi.mock("@/lib/plan-grant", () => ({
+  activateShopifyPlan: async (identifier: string, plan: string) => {
+    grants.n++;
+    return { identifier, name: null, plan };
+  },
+  revokeShopifyPlan: async () => true,
+}));
 vi.mock("@/lib/email", async (orig) => ({
   ...(await orig<typeof import("@/lib/email")>()),
   sendEmail: vi.fn(async () => undefined),
@@ -103,6 +117,14 @@ function req(url: string, method: string, who: string | null, body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
+// #AFFILIATE-COMPLETE-1023: payouts are created by a named backoffice operator (Bearer + x-admin-actor).
+function opReq(body: unknown) {
+  return new Request("https://x/api/admin/affiliate/payouts", {
+    method: "POST",
+    headers: { authorization: "Bearer bo", "x-admin-actor": "ops@maven" },
+    body: JSON.stringify(body),
+  }) as never;
+}
 const walletBody = (address: string) => ({
   coin: "USDT",
   address,
@@ -150,11 +172,11 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.resetModules();
     h.screen = "none";
     vi.stubEnv("AFFILIATE_MODE", "shadow");
-    vi.stubEnv("AFFILIATE_TERMS_VERSION", "2026-11-v1");
+    vi.stubEnv("AFFILIATE_TERMS_VERSION", "aff-2026-10-22-v3");
     vi.stubEnv("AFFILIATE_PAYOUTS", "live");
     vi.stubEnv("AFFILIATE_PAYOUT_FROM", "0x1111111111111111111111111111111111111111");
     await h.sql!.unsafe(`
-      TRUNCATE affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
+      TRUNCATE affiliate_reversal_inbox, affiliate_payer_fingerprints, affiliate_admin_actions, affiliate_refund_events, affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
                affiliate_referral_clicks, affiliates, profiles RESTART IDENTITY CASCADE;
       INSERT INTO profiles(identifier, referral_code, language) VALUES
         ('alice@x.io', NULL, 'it'), ('bob@x.io', 'BOBBY', 'en');`);
@@ -172,10 +194,10 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const wallet = await import("@/app/api/affiliate/wallet/route");
     const me = await import("@/app/api/affiliate/me/route");
 
-    const j = await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    const j = await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     expect(j.status).toBe(200);
     const [a] = await h.sql!`SELECT code, onerous_ack_version, onerous_ack_at IS NOT NULL AS ack FROM affiliates`;
-    expect(a).toEqual({ code: "ALICE", onerous_ack_version: "2026-11-v1", ack: true });
+    expect(a).toEqual({ code: "ALICE", onerous_ack_version: "aff-2026-10-22-v3", ack: true });
 
     const put = await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
     expect(put.status).toBe(200);
@@ -189,12 +211,61 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(w).toEqual({ screening_result: "not_screened", cd: true });
   });
 
+  it("#AFFILIATE-COMPLETE-1023 lascia il programma → rientra; termini aggiornati accettati; storico delle versioni", async () => {
+    const join = await import("@/app/api/affiliate/join/route");
+    const leave = await import("@/app/api/affiliate/leave/route");
+    const terms = await import("@/app/api/affiliate/terms/route");
+    const me = await import("@/app/api/affiliate/me/route");
+    const V3 = "aff-2026-10-22-v3";
+    expect((await leave.POST(req("/x", "POST", "alice@x.io"))).status).toBe(404); // non iscritta
+    expect((await join.POST(req("/x", "POST", "alice@x.io", { code: "alice", terms_version: V3, age: true, onerous_ack: true }))).status).toBe(200);
+    expect(await h.sql!`SELECT terms_version, onerous_ack, source FROM affiliate_terms_acceptances`).toEqual([{ terms_version: V3, onerous_ack: true, source: "join" }]);
+
+    // termini: già sulla versione in vigore → idempotente; versione vecchia o senza spunta → rifiutato
+    expect(await (await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3, onerous_ack: true }))).json()).toMatchObject({ ok: true, already: true });
+    expect((await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: "aff-2026-10-21-v2", onerous_ack: true }))).status).toBe(409);
+    expect((await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3 }))).status).toBe(400);
+    // iscritta con la v2 → accetta la v3 dal banner
+    await h.sql!`UPDATE affiliates SET terms_version = 'aff-2026-10-21-v2', onerous_ack_version = 'aff-2026-10-21-v2'`;
+    await h.sql!`DELETE FROM affiliate_terms_acceptances`;
+    expect(await (await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3, onerous_ack: true }))).json()).toMatchObject({ ok: true, already: false });
+    expect((await h.sql!`SELECT terms_version, onerous_ack_version FROM affiliates`)[0]).toEqual({ terms_version: V3, onerous_ack_version: V3 });
+    expect(await h.sql!`SELECT terms_version, source FROM affiliate_terms_acceptances`).toEqual([{ terms_version: V3, source: "update" }]);
+
+    // esce: left_at nel pannello, idempotente, lo stato resta active (il maturato si paga)
+    const l = await (await leave.POST(req("/x", "POST", "alice@x.io"))).json();
+    expect(l).toMatchObject({ ok: true, already: false });
+    expect(await (await leave.POST(req("/x", "POST", "alice@x.io"))).json()).toMatchObject({ ok: true, already: true });
+    const panel = await (await me.GET(req("/x", "GET", "alice@x.io"))).json();
+    expect(panel.affiliate).toMatchObject({ status: "active", left_at: expect.any(String) });
+    // rientra: stesso codice, consenso nuovo, left_at azzerato
+    expect(await (await join.POST(req("/x", "POST", "alice@x.io", { code: "ALICE", terms_version: V3, age: true, onerous_ack: true }))).json()).toMatchObject({ ok: true, rejoined: true, code: "ALICE" });
+    expect((await h.sql!`SELECT left_at FROM affiliates`)[0].left_at).toBeNull();
+    expect(await h.sql!`SELECT rejoined_at IS NOT NULL AS closed FROM affiliate_absences`).toEqual([{ closed: true }]);
+    // review Codex #2-3: uscita → rientro → uscita nella stessa transazione (NOW() fermo) non si perde
+    await h.sql!.begin(async (tx) => {
+      const LEAVE = "WITH x AS (INSERT INTO affiliate_absences (affiliate_id, left_at) SELECT id, clock_timestamp() FROM affiliates WHERE id = 1 AND left_at IS NULL ON CONFLICT (affiliate_id) WHERE rejoined_at IS NULL DO NOTHING RETURNING left_at) UPDATE affiliates SET left_at = (SELECT left_at FROM x) WHERE id = 1 AND left_at IS NULL AND EXISTS (SELECT 1 FROM x)";
+      await tx`SELECT exec_sql(${LEAVE})`;
+      await tx`SELECT exec_sql(${"WITH x AS (UPDATE affiliate_absences SET rejoined_at = clock_timestamp() WHERE affiliate_id = 1 AND rejoined_at IS NULL RETURNING 1) UPDATE affiliates SET left_at = NULL WHERE id = 1 AND left_at IS NOT NULL"})`;
+      await tx`SELECT exec_sql(${LEAVE})`;
+    });
+    expect((await h.sql!`SELECT left_at IS NOT NULL AS out FROM affiliates`)[0].out).toBe(true);
+    expect(await h.sql!`SELECT rejoined_at IS NULL AS open FROM affiliate_absences ORDER BY left_at`).toEqual([{ open: false }, { open: false }, { open: true }]);
+    expect(await (await leave.POST(req("/x", "POST", "alice@x.io"))).json()).toMatchObject({ ok: true, already: true });
+    // chiuso dall'operatore: né uscita né termini
+    await h.sql!`UPDATE affiliates SET status = 'terminated'`;
+    expect((await leave.POST(req("/x", "POST", "alice@x.io"))).status).toBe(403);
+    expect((await terms.POST(req("/x", "POST", "alice@x.io", { terms_version: V3, onerous_ack: true }))).status).toBe(403);
+    // ACL: anon/authenticated non leggono lo storico
+    expect((await h.sql!`SELECT has_table_privilege('anon','affiliate_terms_acceptances','SELECT') AS a, has_table_privilege('authenticated','affiliate_terms_acceptances','SELECT') AS b`)[0]).toEqual({ a: false, b: false });
+  });
+
   it("IDOR: Bob non vede né tocca il wallet di Alice", async () => {
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
     const me = await import("@/app/api/affiliate/me/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
-    await join.POST(req("/api/affiliate/join", "POST", "bob@x.io", { code: "bobby", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "bob@x.io", { code: "bobby", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
 
     const bobPanel = await (await me.GET(req("/api/affiliate/me", "GET", "bob@x.io"))).json();
@@ -214,7 +285,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.stubEnv("AFFILIATE_KYC_AT_WALLET", "off");
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     const { payee_legal_name: _n, payee_country: _c, ...rest } = walletBody(A1);
     void _n; void _c;
     const put = await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", rest));
@@ -224,7 +295,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
   it("suspended: PUT rifiutato, nessuna riga scritta", async () => {
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await h.sql!`UPDATE affiliates SET status = 'suspended'`;
     const put = await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
     expect(put.status).toBe(403);
@@ -236,7 +307,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
     const me = await import("@/app/api/affiliate/me/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A1)));
     await h.sql!.unsafe(`
       INSERT INTO affiliate_payouts(affiliate_id, period_month, amount_usd, coin, network, wallet_id, to_address, created_by)
@@ -258,7 +329,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     h.screen = "clear";
     const join = await import("@/app/api/affiliate/join/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "2026-11-v1", age: true, onerous_ack: true }));
+    await join.POST(req("/api/affiliate/join", "POST", "alice@x.io", { code: "alice", terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(address)));
     await h.sql!.unsafe(`
       UPDATE affiliate_wallets SET created_at = now() - interval '10 days', usable_after = now() - interval '7 days',
@@ -278,13 +349,16 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(list.rows[0]).toMatchObject({ code: "ALICE", eligible: true, balance_usd: 60, wallet: { address: A1 } });
     expect(list.summary).toMatchObject({ eligible_count: 1, eligible_total_usd: 60 });
 
-    const created = await admin.POST(req("/api/admin/affiliate/payouts", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    const created = await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     expect(created.status).toBe(200);
     const [p] = await h.sql!`SELECT id, status, to_address FROM affiliate_payouts`;
     expect(p).toMatchObject({ status: "created", to_address: A1 });
 
     h.chainTo = A1;
     h.chainAmount = 60;
+    // Review indipendente P1-2: l'hash di un payout `created` si registra solo dopo la marca del
+    // secondo operatore (quattro occhi). Qui la si simula; il flusso completo è nei test OPS.
+    await h.sql!`UPDATE affiliate_payouts SET sent_marked_at = now(), sent_marked_by = 'bo:b@maven' WHERE id = ${p.id}`;
     const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: String(p.id) }) });
     expect(await t.json()).toMatchObject({ outcome: "paid" });
     const panel = await (await me.GET(req("/api/affiliate/me", "GET", "alice@x.io"))).json();
@@ -301,8 +375,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const body = { month: month(), ids: [1], expected_total: "60.00" };
     const [a, b] = await Promise.all([
-      admin.POST(req("/x", "POST", null, body) as never),
-      admin.POST(req("/x", "POST", null, body) as never),
+      admin.POST(opReq(body)),
+      admin.POST(opReq(body)),
     ]);
     expect([a.status, b.status].sort()).toEqual([200, 409]);
     const [n] = await h.sql!`SELECT count(*)::int AS n FROM affiliate_payouts`;
@@ -313,7 +387,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await payableAlice();
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
-    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     h.chainTo = A2;
     h.chainAmount = 60;
     const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: "1" }) });
@@ -327,7 +401,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A2)));
     h.chainTo = A1;
     h.chainAmount = 60;
@@ -340,7 +414,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await payableAlice();
     h.screen = "none";
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
-    const r = await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    const r = await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     expect(await r.json()).toMatchObject({ error: "not_screened", affiliate_id: 1 });
     const [n] = await h.sql!`SELECT count(*)::int AS n FROM affiliate_payouts`;
     expect(n.n).toBe(0);
@@ -350,7 +424,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await payableAlice();
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
-    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     await h.sql!`UPDATE affiliates SET status = 'suspended'`;
     h.chainTo = A1;
     h.chainAmount = 60;
@@ -358,18 +432,36 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await t.json()).toEqual({ error: "cancelled", cancel_code: "affiliate_suspended" });
   });
 
+  it("#AFFILIATE-COMPLETE-1023 sospensione dal backoffice che annulla un payout in preparazione → email generica all'affiliato", async () => {
+    await payableAlice();
+    const { sendEmail } = await import("@/lib/email");
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
+    vi.mocked(sendEmail).mockClear();
+    const r = await status.POST(
+      new Request("https://x/x", { method: "POST", headers: { authorization: "Bearer bo", "x-admin-actor": "michele@maven" }, body: JSON.stringify({ status: "suspended", reason: "verifica frode" }) }) as never,
+      { params: Promise.resolve({ id: "1" }) },
+    );
+    expect(await r.json()).toMatchObject({ ok: true, cancelled_payout_ids: [1] });
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    const mail = vi.mocked(sendEmail).mock.calls[0][0] as { to: string; text: string };
+    expect(mail.to).toBe("alice@x.io");
+    expect(mail.text).not.toMatch(/verifica frode/); // mai il motivo dell'operatore
+  });
+
   it("PR-9 suspended: non pagabile, la creazione è rifiutata", async () => {
     await payableAlice();
     await h.sql!`UPDATE affiliates SET status = 'suspended'`;
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
-    const r = await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    const r = await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     expect(r.status).toBe(409);
     expect(await r.json()).toMatchObject({ error: "not_eligible", items: [{ affiliate_id: 1, reasons: ["suspended"] }] });
   });
 
   it("matures only due live commissions and leaves shadow, future and review cases untouched",async()=>{
     const join=await import("@/app/api/affiliate/join/route");
-    expect((await join.POST(req("/api/affiliate/join","POST","alice@x.io",{code:"alice",terms_version:"2026-11-v1",age:true,onerous_ack:true}))).status).toBe(200);
+    expect((await join.POST(req("/api/affiliate/join","POST","alice@x.io",{code:"alice",terms_version:"aff-2026-10-22-v3",age:true,onerous_ack:true}))).status).toBe(200);
     await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'ok@x.io',id,now(),'valid' FROM affiliates`;
     await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'review@x.io',id,now(),'fraud_review' FROM affiliates`;
     for(const [ref,status,who,due] of [['due','pending','ok@x.io',true],['shadow','shadow','ok@x.io',true],['future','pending','ok@x.io',false],['review','pending','review@x.io',true]]){
@@ -386,7 +478,753 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await h.sql!`DELETE FROM profiles`;
     await h.sql!.unsafe(readFileSync(path.join(ROOT,"scripts/affiliate-v2/rollback_gate_b.sql"),"utf8"));
     expect(await h.sql!`SELECT book_key FROM affiliate_clicks`).toEqual([{book_key:"existing-bo-click"}]);
+    // Review 2 P2-6: il rollback completo toglie anche la funzione dello storno manuale.
+    expect(await h.sql!`SELECT proname FROM pg_proc WHERE proname = 'affiliate_admin_reverse_commission'`).toEqual([]);
     for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT,"supabase/migrations",f),"utf8"));
   });
 
+  // #AFFILIATE-REVERSAL-1022 — storni su SQL vero: CHECK, UNIQUE, lock, maturazione.
+  // Affiliato e commissione inseriti a mano: il test non dipende dall'iscrizione.
+  async function aliceWithCommission(status: string, paidDaysAgo: number, amount = 20) {
+    await h.sql!`INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at) VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now())`;
+    await h.sql!`INSERT INTO affiliate_attributions(referred_identifier,affiliate_id,attributed_at,status) SELECT 'ref@x.io',id,now(),'valid' FROM affiliates`;
+    await h.sql!`INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
+      SELECT id,'ref@x.io','shopify','o1','first',100,100,${amount / 100},${amount},0,${status},now()-make_interval(days=>${paidDaysAgo}),now()-make_interval(days=>${paidDaysAgo})+interval '60 days' FROM affiliates`;
+    return (await import("@/lib/affiliate/reversal")).reverseAffiliateCommissionSafe;
+  }
+  const rows = () => h.sql!`SELECT kind, rail_event_ref AS ev, amount_usd::float8 AS amt, status FROM affiliate_commissions ORDER BY id`;
+  const paying = async (mode: "live" | "shadow") => {
+    const { payingReferredSql } = await import("@/lib/affiliate/tiers");
+    return (await h.sql!.unsafe(payingReferredSql(mode).sql.replace("$1", "1")))[0].n;
+  };
+  const ev = (eventRef: string, refundedGrossUsd: number | null) => ({ rail: "shopify" as const, paymentRef: "o1", eventRef, refundedGrossUsd });
+
+  it("refund inbox is not readable or writable by anonymous clients", async () => {
+    const grants = await h.sql!`SELECT
+      has_table_privilege('anon','affiliate_reversal_inbox','SELECT') AS can_read,
+      has_function_privilege('anon','affiliate_receive_reversal(text,text,text,numeric,integer)','EXECUTE') AS can_write`;
+    expect(grants[0]).toEqual({can_read:false,can_write:false});
+  });
+
+  it("early refund is durable, blocks maturity and replays once after the commission arrives", async () => {
+    const early = await h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',NULL,120) AS r`;
+    expect(early[0].r.reason).toBe('deferred');
+    await aliceWithCommission('pending', 70);
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS r`)[0].r.matured).toBe(0);
+    expect((await h.sql!`SELECT affiliate_replay_reversals() AS r`)[0].r.processed).toBe(1);
+    expect((await h.sql!`SELECT affiliate_replay_reversals() AS r`)[0].r.processed).toBe(0);
+    expect(await rows()).toEqual([
+      {kind:'first',ev:'',amt:20,status:'reversed'},
+      {kind:'reversal',ev:'early',amt:-20,status:'reversed'},
+    ]);
+  });
+  it("concurrent duplicate early refunds retain the first payload and produce one proportional reversal", async () => {
+    await Promise.all([1,2,3].map(() => h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',25,120)`));
+    await aliceWithCommission('pending', 10);
+    await h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',100,120)`;
+    const result = await rows();
+    expect(result.filter(r=>r.kind==='reversal')).toEqual([{kind:'reversal',ev:'early',amt:-5,status:'pending'}]);
+    expect((await h.sql!`SELECT count(*)::int AS n FROM affiliate_reversal_inbox`)[0].n).toBe(1);
+  });
+  it("replay does not starve an available commission behind unrelated payments", async () => {
+    await h.sql!`SELECT affiliate_receive_reversal('shopify','unrelated','none',NULL,120)`;
+    await h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',NULL,120)`;
+    await aliceWithCommission('pending',10);
+    expect((await h.sql!`SELECT affiliate_replay_reversals(1) AS r`)[0].r.processed).toBe(1);
+  });
+
+  it("R1 storno totale dentro l'hold: originale reversed, mai maturato, redelivery idempotente, fuori dallo scaglione", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 70);
+    expect(await paying("live")).toBe(1);
+    expect(await reverse(ev("r1", null))).toEqual({ written: true, reason: "reversal" });
+    expect(await reverse(ev("r1", null))).toEqual({ written: false, reason: "duplicate" });
+    expect(await rows()).toEqual([
+      { kind: "first", ev: "", amt: 20, status: "reversed" },
+      { kind: "reversal", ev: "r1", amt: -20, status: "reversed" },
+    ]);
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS r`)[0].r).toEqual({ ok: true, matured: 0 });
+    expect(await paying("live")).toBe(0);
+  });
+
+  it("R1 parziale poi totale: la parziale matura con l'originale, il totale chiude il residuo senza superarlo", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 10);
+    expect(await reverse(ev("r1", 25))).toEqual({ written: true, reason: "reversal" });
+    expect(await rows()).toEqual([
+      { kind: "first", ev: "", amt: 20, status: "pending" },
+      { kind: "reversal", ev: "r1", amt: -5, status: "pending" },
+    ]);
+    expect(await paying("live")).toBe(1);
+    expect(await reverse(ev("r2", null))).toEqual({ written: true, reason: "reversal" });
+    expect(await rows()).toEqual([
+      { kind: "first", ev: "", amt: 20, status: "reversed" },
+      { kind: "reversal", ev: "r1", amt: -5, status: "reversed" },
+      { kind: "reversal", ev: "r2", amt: -15, status: "reversed" },
+    ]);
+    expect(await reverse(ev("r3", 10))).toEqual({ written: false, reason: "original_reversed" });
+  });
+
+  it("R1 parziale dentro l'hold matura insieme all'originale (saldo netto)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 70);
+    await reverse(ev("r1", 50));
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS r`)[0].r).toEqual({ ok: true, matured: 2 });
+    const [bal] = await h.sql!`SELECT SUM(amount_usd)::float8 AS b FROM affiliate_commissions WHERE status = 'payable'`;
+    expect(bal.b).toBe(10);
+  });
+
+  it("R1 dopo la maturazione: clawback negativo payable che scala il saldo; oltre 120 gg nessuna azione", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 70);
+    expect(await reverse(ev("r1", 50))).toEqual({ written: true, reason: "clawback" });
+    const [bal] = await h.sql!`SELECT SUM(amount_usd)::float8 AS b FROM affiliate_commissions WHERE status = 'payable'`;
+    expect(bal.b).toBe(10);
+    expect(await paying("live")).toBe(1);
+    expect(await reverse(ev("r2", null))).toEqual({ written: true, reason: "clawback" });
+    expect(await paying("live")).toBe(0);
+    await h.sql!`DELETE FROM affiliate_commissions WHERE kind = 'clawback'`;
+    await h.sql!`UPDATE affiliate_commissions SET paid_at = now() - interval '121 days' WHERE kind = 'first'`;
+    expect(await reverse(ev("r3", null))).toEqual({ written: false, reason: "outside_clawback_window" });
+  });
+
+  it("R1 tre rimborsi che sommano il lordo chiudono il residuo: nessun centesimo orfano nello scaglione", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 70, 7);
+    await reverse(ev("r1", 33.33));
+    await reverse(ev("r2", 33.33));
+    await reverse(ev("r3", 33.34));
+    // #AFFILIATE-REFUND-CUMULATIVE-1022: quota sul cumulato (2,33 → 4,67 → 7,00),
+    // non per rimborso (prima -2,33 -2,33 -2,34): stessa somma, esatta a ogni passo.
+    expect((await rows()).map((r) => r.amt)).toEqual([7, -2.33, -2.34, -2.33]);
+    expect(await paying("live")).toBe(0);
+  });
+
+  // #AFFILIATE-REFUND-CUMULATIVE-1022 — debito #550 «micro-rimborsi»: la quota di
+  // ogni storno parziale si calcola sul rimborsato CUMULATO (registro degli eventi
+  // di rimborso), non per singolo rimborso. Dopo ogni evento la somma degli storni
+  // è esattamente round(commissione × rimborsato cumulato / lordo, 2).
+  const reversedSum = async () =>
+    Number((await h.sql!`SELECT COALESCE(SUM(-amount_usd),0)::float8 AS s FROM affiliate_commissions WHERE kind IN ('reversal','clawback')`)[0].s);
+  const exact = (amount: number, cumGross: number, gross = 100) => Number((Math.round(amount * cumGross / gross * 100 + 1e-9) / 100).toFixed(2));
+
+  it("R1 micro-rimborsi: 50 rimborsi da 2 cent (quota 0,4 cent l'uno) stornano 20 cent, poi il saldo chiude a zero", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 10);
+    for (let i = 1; i <= 50; i++) {
+      await reverse(ev(`m${i}`, 0.02));
+      expect(await reversedSum()).toBe(exact(20, 0.02 * i));
+    }
+    expect(await reversedSum()).toBe(0.2);
+    expect(await reverse(ev("rest", 99))).toEqual({ written: true, reason: "clawback" });
+    expect(await reversedSum()).toBe(20);
+    expect(await paying("live")).toBe(0);
+    expect(await reverse(ev("late", 0.02))).toEqual({ written: false, reason: "already_reversed" });
+  });
+
+  it("R1 rimborso totale in tranche irregolari: dopo ogni tranche storno = proporzionale esatto sul cumulato, chiusura al centesimo", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 10, 7);
+    const tranches = [0.03, 0.03, 0.03, 0.07, 1.17, 0.01, 12.34, 0.05, 40.4, 0.02];
+    let cum = 0;
+    for (const [i, t] of tranches.entries()) {
+      cum = Math.round((cum + t) * 100) / 100;
+      await reverse(ev(`t${i}`, t));
+      expect(await reversedSum()).toBe(exact(7, cum));
+    }
+    await reverse(ev("final", Math.round((100 - cum) * 100) / 100));
+    expect(await reversedSum()).toBe(7);
+    expect((await rows())[0]).toMatchObject({ kind: "first", status: "reversed" });
+    expect(await paying("live")).toBe(0);
+    // Il lordo delle righe di storno somma il rimborsato (anche i micro senza riga).
+    const [g] = await h.sql!`SELECT SUM(-gross_usd)::float8 AS g FROM affiliate_commissions WHERE kind = 'reversal'`;
+    expect(g.g).toBe(100);
+  });
+
+  it("R1 rimborso oltre la commissione residua: storna solo il residuo, mai sotto zero", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 10);
+    expect(await reverse(ev("r1", 50))).toEqual({ written: true, reason: "clawback" });
+    expect(await reverse(ev("r2", 80))).toEqual({ written: true, reason: "clawback" });
+    expect(await reversedSum()).toBe(20);
+    expect(await reverse(ev("r3", 150))).toEqual({ written: false, reason: "already_reversed" });
+    expect(await reversedSum()).toBe(20);
+  });
+
+  it("R1 redelivery idempotente anche per un micro-rimborso senza riga: il suo lordo conta una volta sola", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 10);
+    expect(await reverse(ev("m1", 0.02))).toEqual({ written: false, reason: "zero_amount" });
+    const again = await Promise.all([reverse(ev("m1", 0.02)), reverse(ev("m1", 0.02)), reverse(ev("m1", 0.02))]);
+    expect(again).toEqual(Array(3).fill({ written: false, reason: "duplicate" }));
+    const [e] = await h.sql!`SELECT count(*)::int AS n, SUM(refunded_usd)::float8 AS g FROM affiliate_refund_events WHERE rail_payment_ref = 'o1'`;
+    expect(e).toEqual({ n: 1, g: 0.02 });
+    // 0,02 + 0,01 = 0,03 → 0,006 → 0,01. Se m1 contasse 4 volte: 0,09 → 0,018 → 0,02.
+    expect(await reverse(ev("m2", 0.01))).toEqual({ written: true, reason: "reversal" });
+    expect(await reversedSum()).toBe(0.01);
+    expect(await reverse(ev("m2", 0.01))).toEqual({ written: false, reason: "duplicate" });
+  });
+
+  it("R1 storni scritti prima della migration (registro vuoto): la migration li riporta nel cumulato", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("payable", 10);
+    await reverse(ev("old", 50));
+    await h.sql!`TRUNCATE affiliate_refund_events`; // come in prod prima della migration
+    for (const f of MIGRATIONS) await h.sql!.unsafe(readFileSync(path.join(ROOT, "supabase/migrations", f), "utf8"));
+    const [e] = await h.sql!`SELECT count(*)::int AS n, SUM(refunded_usd)::float8 AS g FROM affiliate_refund_events`;
+    expect(e).toEqual({ n: 1, g: 50 });
+    expect(await reverse(ev("old", 50))).toEqual({ written: false, reason: "duplicate" });
+    await reverse(ev("new", 25));
+    expect(await reversedSum()).toBe(15);
+  });
+
+  it("R1 corse (review Codex): stesso rimborso x2 a cavallo della maturazione e rimborsi diversi concorrenti non superano il residuo", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reverse = await aliceWithCommission("pending", 70);
+    const results = await Promise.all([
+      reverse(ev("r1", 50)),
+      h.sql!`SELECT affiliate_mature_commissions() AS r`,
+      reverse(ev("r1", 50)),
+      reverse(ev("r2", 60)),
+      reverse(ev("r3", 60)),
+    ]);
+    expect(results.filter((r) => (r as { written?: boolean }).written === true).length).toBeGreaterThanOrEqual(2);
+    const all = await rows();
+    expect(all.filter((r) => r.ev === "r1").length).toBeLessThanOrEqual(1); // mai due righe per lo stesso evento
+    const reversed = all.filter((r) => r.kind !== "first").reduce((s, r) => s + -r.amt, 0);
+    expect(Math.round(reversed * 100) / 100).toBe(20);
+    // Nessuno storno `pending` orfano accanto a un originale già maturato.
+    const [orig] = all;
+    if (orig.status === "payable") expect(all.some((r) => r.kind === "reversal" && r.status === "pending")).toBe(false);
+  });
+
+  it("R1 maturazione concorrente a uno storno parziale non committato: vede lo storno (review Codex #2)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    await aliceWithCommission("pending", 70);
+    let maturity: Promise<unknown> | null = null;
+    await h.sql!.begin(async (tx) => {
+      await tx`SELECT affiliate_reverse_commission('shopify','o1','r1',50,120)`;
+      maturity = h.sql!`SELECT affiliate_mature_commissions() AS r`.execute(); // parte ORA (le query postgres.js sono lazy)
+      await new Promise((r) => setTimeout(r, 150)); // la maturazione resta in attesa del lock
+    });
+    const [m] = (await maturity!) as { r: unknown }[];
+    expect(m.r).toEqual({ ok: true, matured: 2 });
+    expect(await rows()).toEqual([
+      { kind: "first", ev: "", amt: 20, status: "payable" },
+      { kind: "reversal", ev: "r1", amt: -10, status: "payable" },
+    ]);
+  });
+
+  it("R1 endpoint admin (rimborso manuale PayGate/crypto): valida l'input e storna", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    await aliceWithCommission("pending", 5);
+    await h.sql!`UPDATE affiliate_commissions SET rail = 'paygate', rail_payment_ref = 'pg-1'`;
+    const admin = await import("@/app/api/admin/affiliate/reverse/route");
+    const bad = await admin.POST(opReq({ rail: "admin", payment_ref: "pg-1", event_ref: "m1" }));
+    expect(bad.status).toBe(400);
+    const ok = await admin.POST(opReq({ rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }));
+    expect(await ok.json()).toEqual({ written: true, reason: "reversal" });
+    expect((await rows()).map((r) => r.ev)).toEqual(["", "m1"]);
+    // Rigiocare la stessa event_ref (es. da un alert) non storna due volte.
+    const again = await admin.POST(opReq({ rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }));
+    expect(await again.json()).toEqual({ written: false, reason: "duplicate" });
+  });
+
+  it("R1 storno manuale nel registro azioni (review indipendente #9): chi, cosa, quanto — una riga per storno scritto", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    await aliceWithCommission("pending", 5);
+    await h.sql!`UPDATE affiliate_commissions SET rail = 'paygate', rail_payment_ref = 'pg-1'`;
+    const admin = await import("@/app/api/admin/affiliate/reverse/route");
+    const body = { rail: "paygate", payment_ref: "pg-1", event_ref: "manual-1", refunded_usd: 25 };
+    // Bearer senza operatore dichiarato: rifiutato, niente storno anonimo.
+    const anon = await admin.POST(bo(null, body));
+    expect(anon.status).toBe(400);
+    expect(await anon.json()).toEqual({ error: "actor_required" });
+    expect((await rows()).length).toBe(1);
+    const ok = await admin.POST(bo("ops@betredge.com", body));
+    expect(await ok.json()).toEqual({ written: true, reason: "reversal" });
+    const again = await admin.POST(bo("other@betredge.com", body));
+    expect(await again.json()).toEqual({ written: false, reason: "duplicate" });
+    const log = await h.sql!`SELECT actor, action, affiliate_id, target, detail FROM affiliate_admin_actions ORDER BY id`;
+    expect(log).toEqual([
+      {
+        actor: "bo:ops@betredge.com",
+        action: "commission_reversed",
+        affiliate_id: "1",
+        target: "paygate:pg-1",
+        detail: expect.objectContaining({ event_ref: "manual-1", refunded_usd: 25, amount: -5, reason: "reversal" }),
+      },
+    ]);
+    // Review 2 P2-4: un micro-rimborso manuale a quota zero registra l'evento (entra
+    // nel cumulato) → anche il registro azioni deve dire chi l'ha inserito.
+    await h.sql!`TRUNCATE affiliate_admin_actions`;
+    expect(await (await admin.POST(bo("ops@betredge.com", { ...body, event_ref: "manual-micro", refunded_usd: 0.02 }))).json())
+      .toEqual({ written: false, reason: "zero_amount" });
+    expect(await h.sql!`SELECT actor, action, detail->>'reason' AS reason, detail->>'written' AS written FROM affiliate_admin_actions`).toEqual([
+      { actor: "bo:ops@betredge.com", action: "commission_reversed", reason: "zero_amount", written: "false" },
+    ]);
+    await h.sql!`TRUNCATE affiliate_admin_actions`;
+    await h.sql!`INSERT INTO affiliate_admin_actions(actor, action) VALUES ('bo:ops@betredge.com', 'commission_reversed')`;
+    // Dal cookie di /admin resta «admin-cookie», come per le altre azioni.
+    expect(await (await admin.POST(req("/x", "POST", null, { ...body, event_ref: "manual-2", refunded_usd: null }) as never)).json())
+      .toEqual({ written: true, reason: "reversal" });
+    expect((await h.sql!`SELECT actor FROM affiliate_admin_actions ORDER BY id`).map((r) => r.actor)).toEqual(["bo:ops@betredge.com", "admin-cookie"]);
+  });
+
+  it("SHOPIFY orders/paid su exec_sql vero: concede una volta sola, la redelivery (anche concorrente) è duplicate (#SHOPIFY-CLAIM-1022)", async () => {
+    await h.sql!.unsafe(`
+      CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, variant_id text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
+      TRUNCATE shopify_events;`);
+    // exec_sql non restituisce le righe di un RETURNING: lo dimostra la funzione stessa.
+    expect((await h.sql!`SELECT exec_sql('INSERT INTO shopify_events(event_id) VALUES (''x'') RETURNING event_id') AS r`)[0].r).toEqual([]);
+    await h.sql!`TRUNCATE shopify_events`;
+    vi.stubEnv("SHOPIFY_WEBHOOK_SECRET", "whsec");
+    vi.stubEnv("SHOPIFY_VARIANT_BASE", "111");
+    vi.stubEnv("SHOPIFY_VARIANT_PREMIUM", "222");
+    grants.n = 0;
+    const crypto = await import("node:crypto");
+    const { POST } = await import("@/app/api/shopify/webhook/route");
+    const deliver = (id: number) => {
+      const body = JSON.stringify({ id, email: "buyer@x.io", currency: "USD", total_price: "29.99", line_items: [{ variant_id: 222 }] });
+      const hmac = crypto.createHmac("sha256", "whsec").update(body, "utf8").digest("base64");
+      return POST(new Request("https://x/api/shopify/webhook", { method: "POST", headers: { "x-shopify-hmac-sha256": hmac, "x-shopify-topic": "orders/paid" }, body }));
+    };
+    const first = await (await deliver(5001)).json();
+    expect(first).not.toHaveProperty("duplicate");
+    expect(grants.n).toBe(1);
+    expect(await (await deliver(5001)).json()).toMatchObject({ duplicate: true });
+    expect(grants.n).toBe(1);
+    const [ev] = await h.sql!`SELECT status, last_error FROM shopify_events WHERE event_id = '5001'`;
+    expect(ev).toEqual({ status: "granted", last_error: null });
+    const race = await Promise.all([deliver(5002), deliver(5002), deliver(5002)].map(async (p) => (await p).json()));
+    expect(race.filter((r) => r.duplicate === true).length).toBe(2);
+    expect(grants.n).toBe(2);
+  });
+
+  // #AFFILIATE-RECONCILE-1022 — la query di riconciliazione su SQL vero. Le
+  // tabelle dei rail sono stub con le sole colonne lette dal ledger e da qui.
+  async function railStubs(extra: string) {
+    await h.sql!.unsafe(`
+      CREATE TABLE IF NOT EXISTS paygate_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, coin text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS paypal_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, status text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
+      TRUNCATE paygate_orders, paypal_orders, shopify_events;
+      -- #AFFILIATE-COMPLETE-1023: enrolled before the payments below (no retroactive commission).
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at, created_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now(),now() - interval '120 days');
+      ${extra}`);
+    return (await import("@/lib/affiliate/reconcile")).reconcileAffiliateLedger;
+  }
+
+  it("R3 riconciliazione: recupera solo i pagamenti recuperabili, in ordine di incasso, una volta sola; Shopify solo segnalato", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    const reconcileAffiliateLedger = await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES
+        ('ref@x.io', ' alice ', now() - interval '10 days'),
+        ('old@x.io', 'ALICE', now() - interval '50 days'),
+        ('late@x.io', 'ALICE', now() - interval '100 days'),
+        ('void@x.io', 'ALICE', now() - interval '10 days'),
+        ('shop@x.io', 'ALICE', now() - interval '10 days'),
+        ('nobody@x.io', NULL, now() - interval '10 days');
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, attributed_at, status) SELECT 'void@x.io', id, now(), 'void' FROM affiliates;
+      INSERT INTO paygate_orders VALUES
+        ('pg-1','ref@x.io',14.99,NULL,now() - interval '2 days'),
+        ('cr-1','ref@x.io',14.99,'USDT',now() - interval '1 day'),
+        ('pg-old','old@x.io',14.99,NULL,now() - interval '40 days'),
+        ('pg-late','late@x.io',14.99,NULL,now() - interval '1 day'),
+        ('pg-void','void@x.io',14.99,NULL,now() - interval '1 day'),
+        ('pg-now','ref@x.io',14.99,NULL,now() - interval '5 minutes'),
+        ('pg-nobody','nobody@x.io',14.99,NULL,now() - interval '1 day');
+      INSERT INTO paypal_orders VALUES ('pp-1','ref@x.io',14.99,'refunded',now() - interval '1 day');
+      INSERT INTO shopify_events(event_id,event_type,identifier,amount,status,processed_at) VALUES
+        ('s-1','orders/paid','shop@x.io',29.99,'granted',now() - interval '3 days');`);
+    const first = await reconcileAffiliateLedger();
+    expect(first).toMatchObject({ checked: 2, written: 2, shopify_manual: ["s-1"], truncated: false });
+    expect(await h.sql!`SELECT rail, rail_payment_ref AS ref, kind, renewal_index AS i, amount_usd::float8 AS amt, status
+                         FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { rail: "paygate", ref: "pg-1", kind: "first", i: 0, amt: 3, status: "shadow" },
+      { rail: "crypto", ref: "cr-1", kind: "renewal", i: 1, amt: 1.05, status: "shadow" },
+    ]);
+    // attributed_at = incasso che converte (pg-1), non il momento del recupero.
+    const [a] = await h.sql!`SELECT attributed_at < now() - interval '1 day' AS at_payment FROM affiliate_attributions WHERE referred_identifier = 'ref@x.io'`;
+    expect(a.at_payment).toBe(true);
+    // Idempotente: resta solo lo Shopify da verificare.
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0, shopify_manual: ["s-1"] });
+  });
+
+  it("R3 (review Codex) un pagamento perso PRIMA di uno già registrato si recupera al suo indice, non resta bloccato", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    const reconcileAffiliateLedger = await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '20 days');
+      INSERT INTO paygate_orders VALUES ('pg-a','ref@x.io',14.99,NULL,now() - interval '10 days'), ('pg-b','ref@x.io',14.99,NULL,now() - interval '1 day');
+      -- A ha creato l'attribuzione (un istante DOPO il suo grant) ma la riga è andata persa; B è nel ledger all'indice 1.
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, attributed_at, status) SELECT 'ref@x.io', id, now() - interval '10 days' + interval '1 second', 'valid' FROM affiliates;
+      INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
+        SELECT id,'ref@x.io','paygate','pg-b','renewal',14.99,14.99,0.07,1.05,1,'shadow',now() - interval '1 day',now() + interval '59 days' FROM affiliates;`);
+    expect(await reconcileAffiliateLedger()).toMatchObject({ written: 1 });
+    expect(await h.sql!`SELECT rail_payment_ref AS ref, kind, renewal_index AS i FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { ref: "pg-a", kind: "first", i: 0 },
+      { ref: "pg-b", kind: "renewal", i: 1 },
+    ]);
+  });
+
+  it("R3 (review Codex #2) un rinnovo perso il cui indice è già preso da un successivo si accoda invece di restare perso", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    const reconcileAffiliateLedger = await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '30 days');
+      INSERT INTO paygate_orders VALUES ('pg-a','ref@x.io',14.99,NULL,now() - interval '20 days'), ('pg-b','ref@x.io',14.99,NULL,now() - interval '10 days'), ('pg-c','ref@x.io',14.99,NULL,now() - interval '1 day');
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, attributed_at, status) SELECT 'ref@x.io', id, now() - interval '20 days', 'valid' FROM affiliates;
+      INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
+        SELECT id,'ref@x.io','paygate','pg-a','first',14.99,14.99,0.2,3,0,'shadow',now() - interval '20 days',now() + interval '40 days' FROM affiliates
+        UNION ALL
+        SELECT id,'ref@x.io','paygate','pg-c','renewal',14.99,14.99,0.07,1.05,1,'shadow',now() - interval '1 day',now() + interval '59 days' FROM affiliates;`);
+    expect(await reconcileAffiliateLedger()).toMatchObject({ written: 1 });
+    expect(await h.sql!`SELECT rail_payment_ref AS ref, kind, renewal_index AS i FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { ref: "pg-a", kind: "first", i: 0 },
+      { ref: "pg-c", kind: "renewal", i: 1 },
+      { ref: "pg-b", kind: "renewal", i: 2 },
+    ]);
+  });
+
+  it("LEDGER il pagamento che converte (grant pochi ms PRIMA dell'attribuzione) non è «storico»: il primo rinnovo ha indice 1 (#AFFILIATE-HISTORIC-1022, e2e B2)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '5 days');
+      INSERT INTO paygate_orders VALUES ('pg-1','ref@x.io',14.99,NULL,now() - interval '3 days');`);
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    const [g] = await h.sql!`SELECT granted_at FROM paygate_orders WHERE id = 'pg-1'`;
+    // Come dal rail: il grant è scritto, poi il ledger gira con paidAt di poco successivo.
+    const paid1 = new Date(new Date(g.granted_at).getTime() + 18);
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-1", grossUsd: 14.99, paidAt: paid1 }))
+      .toMatchObject({ written: true });
+    await h.sql!`INSERT INTO paygate_orders VALUES ('pg-2','ref@x.io',14.99,NULL,now() - interval '1 day')`;
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-2", grossUsd: 14.99, paidAt: new Date(Date.now() - 86_400_000) }))
+      .toMatchObject({ written: true });
+    expect(await h.sql!`SELECT rail_payment_ref AS ref, kind, renewal_index AS i FROM affiliate_commissions ORDER BY renewal_index`).toEqual([
+      { ref: "pg-1", kind: "first", i: 0 },
+      { ref: "pg-2", kind: "renewal", i: 1 },
+    ]);
+  });
+
+  it("LEDGER storico: l'esclusione «già nel ledger» confronta (rail, ref), non il solo ref (review 2 P2-3)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    await railStubs(`
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '30 days');
+      INSERT INTO paypal_orders VALUES ('X1','ref@x.io',14.99,'COMPLETED',now() - interval '20 days');
+      INSERT INTO paygate_orders VALUES ('pg-9','ref@x.io',14.99,NULL,now() - interval '1 day');
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, attributed_at, status) SELECT 'ref@x.io', id, now() - interval '10 days', 'valid' FROM affiliates;
+      -- Un ordine Shopify con lo STESSO id del PayPal storico, già nel ledger.
+      INSERT INTO affiliate_commissions(affiliate_id,referred_identifier,rail,rail_payment_ref,kind,gross_usd,net_usd,rate,amount_usd,renewal_index,status,paid_at,payable_after)
+        SELECT id,'ref@x.io','shopify','X1','first',14.99,14.99,0.2,3,0,'shadow',now() - interval '5 days',now() + interval '55 days' FROM affiliates;`);
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-9", grossUsd: 14.99, paidAt: new Date(Date.now() - 86_400_000) }))
+      .toMatchObject({ written: true });
+    // storico PayPal X1 (1) + riga Shopify X1 nel ledger (1) → indice 2.
+    expect((await h.sql!`SELECT renewal_index AS i FROM affiliate_commissions WHERE rail_payment_ref = 'pg-9'`)[0].i).toBe(2);
+  });
+
+  it("#AFFILIATE-COMPLETE-1023 nessuna commissione prima dell'iscrizione, dopo l'uscita o ad affiliato chiuso — né dal rail né dalla riconciliazione", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "live");
+    const reconcileAffiliateLedger = await railStubs(`
+      UPDATE affiliates SET created_at = now() - interval '5 days';
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io', 'ALICE', now() - interval '30 days');
+      -- pagato 10 giorni fa: Alice si è iscritta 5 giorni fa → niente (nemmeno come candidato)
+      INSERT INTO paygate_orders VALUES ('pg-pre','ref@x.io',14.99,NULL,now() - interval '10 days');`);
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0 });
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-pre", grossUsd: 14.99, paidAt: new Date(Date.now() - 10 * 86_400_000) }))
+      .toEqual({ written: false, reason: "before_enrollment" });
+    // review Codex #4: il pagamento rifiutato non congela l'attribuzione
+    expect(await h.sql!`SELECT 1 FROM affiliate_attributions`).toHaveLength(0);
+    // dopo l'iscrizione: sì
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-1", grossUsd: 14.99, paidAt: new Date(Date.now() - 2 * 86_400_000) }))
+      .toMatchObject({ written: true, reason: "pending" });
+    // esce dal programma ieri: il pagamento di oggi no, quello di due giorni fa resta (e matura come sempre)
+    await h.sql!`INSERT INTO affiliate_absences(affiliate_id, left_at) SELECT id, now() - interval '1 day' FROM affiliates`;
+    await h.sql!`UPDATE affiliates SET left_at = now() - interval '1 day'`;
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-2", grossUsd: 14.99, paidAt: new Date() }))
+      .toEqual({ written: false, reason: "affiliate_left" });
+    await h.sql!`INSERT INTO paygate_orders VALUES ('pg-2','ref@x.io',14.99,NULL,now() - interval '1 hour')`;
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0 });
+    // rientra oggi (review Codex #1): il pagamento fatto mentre era fuori resta escluso, anche dalla riconciliazione
+    await h.sql!`UPDATE affiliate_absences SET rejoined_at = now()`;
+    await h.sql!`UPDATE affiliates SET left_at = NULL`;
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0 });
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-2", grossUsd: 14.99, paidAt: new Date(Date.now() - 3_600_000) }))
+      .toEqual({ written: false, reason: "affiliate_left" });
+    // dopo il rientro si riguadagna
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-4", grossUsd: 14.99, paidAt: new Date(Date.now() + 1000) }))
+      .toMatchObject({ written: true });
+    await h.sql!`DELETE FROM affiliate_commissions WHERE rail_payment_ref = 'pg-4'`;
+    // chiuso dall'operatore (con l'attribuzione già congelata): niente
+    await h.sql!`UPDATE affiliates SET status = 'terminated'`;
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-3", grossUsd: 14.99, paidAt: new Date() }))
+      .toEqual({ written: false, reason: "affiliate_terminated" });
+    expect(await h.sql!`SELECT rail_payment_ref AS ref, status FROM affiliate_commissions`).toEqual([{ ref: "pg-1", status: "pending" }]);
+  });
+
+  // #AFFILIATE-FINGERPRINTS-1022 — dalla scrittura del fingerprint al verdetto del ledger.
+  it("R4 stesso IP di affiliato e referito entro 24h → attribuzione fraud_review (commissione ferma, non rifiutata)", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    vi.stubEnv("AFFILIATE_HASH_SECRET", "x".repeat(32));
+    await h.sql!.unsafe(`
+      CREATE TABLE IF NOT EXISTS paygate_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, coin text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS paypal_orders (id text PRIMARY KEY, identifier text, amount_usd numeric, status text, granted_at timestamptz);
+      CREATE TABLE IF NOT EXISTS shopify_events (event_id text PRIMARY KEY, event_type text, identifier text, amount numeric, status text, last_error text, processed_at timestamptz DEFAULT now());
+      TRUNCATE affiliate_payer_fingerprints;
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES ('ref@x.io','ALICE',now() - interval '1 day'), ('other@x.io','ALICE',now() - interval '1 day');`);
+    const { recordIpFingerprintSafe } = await import("@/lib/affiliate/fingerprints");
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    const H = 3_600_000;
+    const t0 = Date.now();
+    // Alice vista il giorno -3 e di nuovo poco fa; Ref si registra subito dopo dallo stesso IP.
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9", new Date(t0 - 72 * H))).toBe(true);
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9", new Date(t0 - 2 * H))).toBe(true);
+    expect(await recordIpFingerprintSafe("Ref@x.io", "9.9.9.9", new Date(t0 - 1 * H))).toBe(true);
+    // Other: stesso IP, ma a 28 h dalla visita recente di Alice e a 42 h da quella vecchia → nessun segnale.
+    expect(await recordIpFingerprintSafe("other@x.io", "9.9.9.9", new Date(t0 - 30 * H))).toBe(true);
+    // Ripetere lo stesso giorno non duplica né sposta la prima vista del giorno.
+    expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9", new Date(t0))).toBe(true);
+    const [c] = await h.sql!`SELECT COUNT(*)::int AS n FROM affiliate_payer_fingerprints WHERE identifier = 'alice@x.io'`;
+    expect(c.n).toBeLessThanOrEqual(4);
+    const pay = (identifier: string, ref: string) =>
+      recordAffiliateCommissionSafe({ identifier, rail: "paygate", paymentRef: ref, grossUsd: 14.99, paidAt: new Date() });
+    expect(await pay("ref@x.io", "pg-1")).toEqual({ written: true, reason: "shadow" });
+    expect(await pay("other@x.io", "pg-2")).toEqual({ written: true, reason: "shadow" });
+    expect(await h.sql!`SELECT referred_identifier AS who, status, status_reason AS why FROM affiliate_attributions ORDER BY 1`).toEqual([
+      { who: "other@x.io", status: "valid", why: null },
+      { who: "ref@x.io", status: "fraud_review", why: "shared_ip_24h" },
+    ]);
+    // Conservazione: oltre 90 giorni le righe ip_hash spariscono alla scrittura successiva.
+    await h.sql!`UPDATE affiliate_payer_fingerprints SET seen_at = now() - interval '91 days' WHERE identifier = 'other@x.io'`;
+    await recordIpFingerprintSafe("new@x.io", "7.7.7.7");
+    expect((await h.sql!`SELECT DISTINCT identifier FROM affiliate_payer_fingerprints ORDER BY 1`).map((r) => r.identifier)).toEqual(["alice@x.io", "new@x.io", "ref@x.io"]);
+    await h.sql!`TRUNCATE affiliate_payer_fingerprints`; // non sporcare il test di rollback
+  });
+
+  // #AFFILIATE-OPS-1022 — strumenti operatore su SQL vero (screening manuale,
+  // quattro occhi, payout marcato, sospensione, fraud_review, export, click).
+  function bo(actor: string | null, body?: unknown, method = "POST", url = "/x") {
+    return new Request(`https://x${url}`, {
+      method,
+      headers: { authorization: "Bearer bo", ...(actor ? { "x-admin-actor": actor } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }) as never;
+  }
+  const idp = (id: number | string) => ({ params: Promise.resolve({ id: String(id) }) });
+
+  it("OPS payout senza provider: screening manuale → crea (A) → approva+marca (B≠A) → non annullabile → paid anche da sospeso", async () => {
+    await payableAlice();
+    h.screen = "none";
+    await h.sql!`UPDATE affiliate_wallets SET screening_result = 'not_screened', screened_at = NULL, screening_provider = NULL`;
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const cancel = await import("@/app/api/admin/affiliate/payouts/[id]/cancel/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    const body = { month: month(), ids: [1], expected_total: "60.00" };
+
+    expect(await (await admin.POST(bo("anna@maven", body))).json()).toMatchObject({ error: "not_eligible", items: [{ reasons: ["not_screened"] }] });
+    expect((await screen.POST(bo(null, { result: "clear", reason: "ok" }), idp(1))).status).toBe(400); // operatore obbligatorio
+    const s = await screen.POST(bo("anna@maven", { result: "clear", reason: "OFAC/EU: indirizzo e nome Alice Liddell GB, nessun match" }), idp(1));
+    expect(await s.json()).toMatchObject({ ok: true, screening_result: "clear" });
+    const [w] = await h.sql!`SELECT screening_provider, screened_by FROM affiliate_wallets WHERE id = 1`;
+    expect(w).toEqual({ screening_provider: "manual", screened_by: "bo:anna@maven" });
+
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(200);
+    const [p] = await h.sql!`SELECT id, created_by FROM affiliate_payouts`;
+    expect(p.created_by).toBe("bo:anna@maven");
+    // Quattro occhi: chi prepara non approva; il cookie condiviso non è una persona.
+    expect(await (await mark.POST(bo("anna@maven"), idp(p.id))).json()).toMatchObject({ error: "same_person" });
+    expect(await (await mark.POST(req("/x", "POST", null, {}) as never, idp(p.id))).json()).toMatchObject({ error: "named_operators_required" });
+    expect(await (await mark.POST(bo("michele@maven"), idp(p.id))).json()).toMatchObject({ ok: true, already: false, to_address: A1 });
+    expect(await (await mark.POST(bo("michele@maven"), idp(p.id))).json()).toMatchObject({ ok: true, already: true });
+
+    // R-C: marcato → non si annulla, né a mano né per cambio wallet o sospensione.
+    expect(await (await cancel.POST(req("/x", "POST", null, { reason: "ops" }) as never, idp(p.id))).json()).toMatchObject({ error: "marked_sent" });
+    const wallet = await import("@/app/api/affiliate/wallet/route");
+    await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A2)));
+    expect(await (await status.POST(bo("michele@maven", { status: "suspended", reason: "verifica" }), idp(1))).json()).toMatchObject({ ok: true, cancelled_payout_ids: [] });
+    expect((await h.sql!`SELECT status FROM affiliate_payouts`)[0].status).toBe("created");
+    h.chainTo = A1;
+    h.chainAmount = 60;
+    const t = await txr.POST(req("/x", "POST", null, { hash: H }) as never, idp(p.id));
+    expect(await t.json()).toMatchObject({ outcome: "paid" });
+    expect(await (await unmark.POST(bo("michele@maven", { reason: "x" + "yz" }), idp(p.id))).json()).toMatchObject({ error: "not_created" });
+
+    const log = await h.sql!`SELECT actor, action FROM affiliate_admin_actions ORDER BY id`;
+    expect(log).toEqual([
+      { actor: "bo:anna@maven", action: "wallet_screened" },
+      { actor: "bo:michele@maven", action: "payout_marked_sent" },
+      { actor: "bo:michele@maven", action: "affiliate_status" },
+    ]);
+    await expect(h.sql!`UPDATE affiliate_admin_actions SET actor = 'x'`).rejects.toThrow(/append-only/);
+    await expect(h.sql!`DELETE FROM affiliate_admin_actions`).rejects.toThrow(/append-only/);
+  });
+
+  it("OPS blocked / scaduto / unmark: niente payout su indirizzo bloccato; la marca tolta riapre l'annullo", async () => {
+    await payableAlice();
+    h.screen = "none";
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const cancel = await import("@/app/api/admin/affiliate/payouts/[id]/cancel/route");
+    const body = { month: month(), ids: [1], expected_total: "60.00" };
+    await screen.POST(bo("anna@maven", { result: "blocked", reason: "match lista sanzioni" }), idp(1));
+    const rows = await (await admin.GET(req(`/x?month=${month()}`, "GET", null) as never)).json();
+    expect(rows.rows[0].reasons).toContain("address_blocked");
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(409);
+
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "falso positivo verificato" }), idp(1));
+    await h.sql!`UPDATE affiliate_wallets SET screened_at = now() - interval '31 days'`;
+    const stale = await (await admin.GET(req(`/x?month=${month()}`, "GET", null) as never)).json();
+    expect(stale.rows[0].reasons).toContain("screening_stale");
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(409);
+
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "ricontrollo" }), idp(1));
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(200);
+    await mark.POST(bo("michele@maven"), idp(1));
+    expect(await (await unmark.POST(bo("michele@maven", { reason: "nessun invio partito" }), idp(1))).json()).toMatchObject({ ok: true, already: false });
+    expect(await (await cancel.POST(req("/x", "POST", null, { reason: "rifare" }) as never, idp(1))).json()).toMatchObject({ ok: true });
+    // Il blocco annulla un payout in preparazione non marcato.
+    expect((await admin.POST(bo("anna@maven", body))).status).toBe(200);
+    expect(await (await screen.POST(bo("anna@maven", { result: "blocked", reason: "nuovo match" }), idp(1))).json()).toMatchObject({ cancelled_payout_ids: [2] });
+    expect((await h.sql!`SELECT status FROM affiliate_commissions`)[0].status).toBe("payable");
+  });
+
+  it("OPS (review Codex) sospeso con payout marcato: smarcare lo annulla, e non si rimarca", async () => {
+    await payableAlice();
+    h.screen = "none";
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "nessun match" }), idp(1));
+    await admin.POST(bo("anna@maven", { month: month(), ids: [1], expected_total: "60.00" }));
+    await mark.POST(bo("michele@maven"), idp(1));
+    await status.POST(bo("anna@maven", { status: "suspended", reason: "verifica" }), idp(1));
+    expect(await (await unmark.POST(bo("michele@maven", { reason: "nessun invio partito" }), idp(1))).json()).toMatchObject({ ok: true, cancelled_payout_ids: [1] });
+    expect(await (await mark.POST(bo("michele@maven"), idp(1))).json()).toMatchObject({ error: "not_created" });
+    expect((await h.sql!`SELECT status FROM affiliate_commissions`)[0].status).toBe("payable");
+  });
+
+  it("OPS (review indipendente) quattro occhi non aggirabili: hash solo dopo la marca, stesso operatore anche con maiuscole, cookie non decide, screening scaduto", async () => {
+    await payableAlice();
+    h.screen = "none";
+    const admin = await import("@/app/api/admin/affiliate/payouts/route");
+    const screen = await import("@/app/api/admin/affiliate/wallets/[id]/screening/route");
+    const mark = await import("@/app/api/admin/affiliate/payouts/[id]/mark-sent/route");
+    const unmark = await import("@/app/api/admin/affiliate/payouts/[id]/unmark-sent/route");
+    const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
+    const cookie = (b: unknown) => req("/x", "POST", null, b) as never;
+    // P2-4: il cookie condiviso non può dichiarare «clear» (decisione sanzioni nominale); «blocked» sì.
+    expect(await (await screen.POST(cookie({ result: "clear", reason: "nessun match" }), idp(1))).json()).toMatchObject({ error: "named_operators_required" });
+    expect(await (await screen.POST(cookie({ result: "blocked", reason: "match da verificare" }), idp(1))).json()).toMatchObject({ ok: true });
+    await screen.POST(bo("anna@maven", { result: "clear", reason: "OFAC/EU nessun match" }), idp(1));
+    expect((await admin.POST(bo("anna@maven", { month: month(), ids: [1], expected_total: "60.00" }))).status).toBe(200);
+    // P1-2: chi ha preparato non registra l'hash senza la marca di un secondo operatore.
+    h.chainTo = A1;
+    h.chainAmount = 60;
+    const t = await txr.POST(req("/x", "POST", null, { hash: H }) as never, idp(1));
+    expect(t.status).toBe(409);
+    expect(await t.json()).toEqual({ error: "not_marked" });
+    expect((await h.sql!`SELECT status, tx_hash FROM affiliate_payouts`)[0]).toEqual({ status: "created", tx_hash: null });
+    // P2-3: stessa persona con maiuscole/spazi diversi; nit: «admin-cookie» dichiarato via Bearer.
+    expect(await (await mark.POST(bo("Anna@Maven"), idp(1))).json()).toMatchObject({ error: "same_person" });
+    expect(await (await mark.POST(bo("admin-cookie"), idp(1))).json()).toMatchObject({ error: "named_operators_required" });
+    // Nit: la marca ricontrolla che la decisione manuale non sia scaduta (30 gg).
+    await h.sql!`UPDATE affiliate_wallets SET screened_at = now() - interval '31 days'`;
+    expect(await (await mark.POST(bo("michele@maven"), idp(1))).json()).toMatchObject({ error: "screening_stale" });
+    await h.sql!`UPDATE affiliate_wallets SET screened_at = now()`;
+    expect(await (await mark.POST(bo("michele@maven"), idp(1))).json()).toMatchObject({ ok: true, already: false });
+    // P2-4: togliere la marca (= «nessun fondo è partito») è una dichiarazione nominale.
+    expect(await (await unmark.POST(cookie({ reason: "nessun invio" }), idp(1))).json()).toMatchObject({ error: "named_operators_required" });
+    expect((await h.sql!`SELECT sent_marked_by FROM affiliate_payouts`)[0].sent_marked_by).toBe("bo:michele@maven");
+    expect(await (await txr.POST(req("/x", "POST", null, { hash: H }) as never, idp(1))).json()).toMatchObject({ outcome: "paid" });
+  });
+
+  it("OPS (review indipendente nit) storno con p_clawback_days NULL: errore, non finestra disattivata", async () => {
+    await expect(h.sql!`SELECT affiliate_reverse_commission('paygate','p1','e1',NULL,NULL)`).rejects.toThrow(/clawback/);
+  });
+
+  it("OPS fraud_review: void annulla le commissioni ferme; valid le fa maturare; terminated è definitivo", async () => {
+    await h.sql!.unsafe(`
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      INSERT INTO affiliate_attributions(referred_identifier, affiliate_id, source, attributed_at, status, status_reason)
+        VALUES ('r1@x.io',1,'signup_ref',now(),'fraud_review','shared_ip_24h'), ('r2@x.io',1,'signup_ref',now(),'fraud_review','shared_ip_24h');
+      INSERT INTO affiliate_commissions(affiliate_id, referred_identifier, rail, rail_payment_ref, kind, gross_usd, net_usd, rate, amount_usd, renewal_index, status, paid_at, payable_after)
+        VALUES (1,'r1@x.io','paygate','p1','first',50,50,0.2,10,0,'pending',now() - interval '70 days',now() - interval '10 days'),
+               (1,'r2@x.io','paygate','p2','first',50,50,0.2,10,0,'pending',now() - interval '70 days',now() - interval '10 days');`);
+    const review = await import("@/app/api/admin/affiliate/attributions/review/route");
+    const status = await import("@/app/api/admin/affiliate/affiliates/[id]/status/route");
+    expect(await (await review.POST(bo("anna@maven", { referred_identifier: "R1@x.io", decision: "void", reason: "stesso device" }))).json()).toMatchObject({ ok: true, voided_commissions: 1 });
+    expect(await (await review.POST(bo("anna@maven", { referred_identifier: "r1@x.io", decision: "valid", reason: "ripensato" }))).json()).toMatchObject({ error: "not_in_review" });
+    expect(await (await review.POST(bo("anna@maven", { referred_identifier: "r2@x.io", decision: "valid", reason: "coinquilini verificati" }))).json()).toMatchObject({ ok: true });
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS r`)[0].r).toEqual({ ok: true, matured: 1 });
+    expect(await h.sql!`SELECT referred_identifier AS who, status FROM affiliate_commissions ORDER BY 1`).toEqual([
+      { who: "r1@x.io", status: "void" },
+      { who: "r2@x.io", status: "payable" },
+    ]);
+    expect((await review.POST(bo("anna@maven", { referred_identifier: "nobody@x.io", decision: "void", reason: "xyz" }))).status).toBe(404);
+    await status.POST(bo("anna@maven", { status: "terminated", reason: "violazione §5" }), idp(1));
+    expect(await (await status.POST(bo("anna@maven", { status: "active", reason: "errore" }), idp(1))).json()).toMatchObject({ error: "terminated_is_final" });
+  });
+
+  it("OPS export + click: CSV del ledger senza formule, click contati solo per un affiliato attivo", async () => {
+    await h.sql!.unsafe(`
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at, status)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now(),'active'), ('sus@x.io','SUS','t',now(),now(),'t',now(),'suspended');
+      INSERT INTO affiliate_commissions(affiliate_id, referred_identifier, rail, rail_payment_ref, kind, gross_usd, net_usd, rate, amount_usd, renewal_index, status, paid_at, payable_after)
+        VALUES (1,'=cmd@x.io','paygate','p1','first',50,50,0.2,10,0,'pending',now(),now() + interval '60 days');`);
+    vi.stubEnv("AFFILIATE_HASH_SECRET", "k".repeat(32));
+    const { recordReferralClickSafe } = await import("@/lib/affiliate/clicks");
+    await recordReferralClickSafe("ALICE", "1.1.1.1", "UA", "/?ref=ALICE&utm_source=ig&utm_campaign=launch");
+    await recordReferralClickSafe("ALICE", "1.1.1.1", "UA", "/?ref=ALICE&utm_source=ig&utm_campaign=launch");
+    await recordReferralClickSafe("SUS", "1.1.1.1", "UA", "/?ref=SUS");
+    await recordReferralClickSafe("NOPE", "1.1.1.1", "UA", "/?ref=NOPE");
+    const exp = await import("@/app/api/admin/affiliate/export/route");
+    const get = (q: string) => exp.GET(req(`/api/admin/affiliate/export?${q}`, "GET", null) as never);
+    const clicks = await (await get("kind=clicks")).json();
+    expect(clicks.rows).toEqual([expect.objectContaining({ code: "ALICE", utm_source: "ig", utm_campaign: "launch", clicks: 2, unique_ip_day: 1 })]);
+    const aff = await (await get("kind=affiliates&status=active")).json();
+    expect(aff.rows).toEqual([expect.objectContaining({ code: "ALICE", pending_usd: 10, clicks_30d: 2 })]);
+    const csv = await get("kind=commissions&format=csv&affiliate_id=1");
+    expect(csv.headers.get("content-type")).toMatch(/text\/csv/);
+    const text = await csv.text();
+    expect(text.split("\n")[0]).toMatch(/^id,affiliate_id,code,referred_identifier/);
+    expect(text).toContain(",'=cmd@x.io,");
+    // Review indipendente P2-7: oltre il limite si tagliano le righe più VECCHIE, non le più recenti.
+    await h.sql!.unsafe(`INSERT INTO affiliate_commissions(affiliate_id, referred_identifier, rail, rail_payment_ref, kind, gross_usd, net_usd, rate, amount_usd, renewal_index, status, paid_at, payable_after)
+      VALUES (1,'b@x.io','paygate','p2','first',50,50,0.2,10,0,'pending',now(),now() + interval '60 days')`);
+    expect((await (await get("kind=commissions")).json()).rows.map((r: { id: number }) => r.id)).toEqual([2, 1]);
+    expect((await get("kind=nope")).status).toBe(400);
+    expect((await get("kind=commissions&from=2026-13-01")).status).toBe(400);
+  });
+
+  it("RETENTION click /r/CODE: il cron cancella solo le righe oltre i 90 giorni, idempotente, niente accesso da anon", async () => {
+    await h.sql!.unsafe(`
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at, status)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now(),'active');
+      INSERT INTO affiliate_referral_clicks(affiliate_id, clicked_at, ip_hash, landing) VALUES
+        (1, now() - interval '91 days', 'h-old', '/'), (1, now() - interval '90 days 1 minute', 'h-edge', '/'),
+        (1, now() - interval '89 days', 'h-keep', '/'), (1, now(), 'h-new', '/');`);
+    const { GET } = await import("@/app/api/cron/affiliate-clicks-retention/route");
+    // verifyBearer è mockato in testa al file: «Bearer bo» passa.
+    const run = () => GET(new Request("https://x/api/cron/affiliate-clicks-retention", { headers: { authorization: "Bearer bo" } }));
+    const r1 = await run();
+    expect(r1.status).toBe(200);
+    expect(await r1.json()).toEqual({ ok: true, purged: 2, retention_days: 90 });
+    expect((await h.sql!`SELECT ip_hash FROM affiliate_referral_clicks ORDER BY id`).map((r) => r.ip_hash)).toEqual(["h-keep", "h-new"]);
+    expect(await (await run()).json()).toEqual({ ok: true, purged: 0, retention_days: 90 });
+    const [g] = await h.sql!`SELECT has_function_privilege('anon','public.affiliate_purge_clicks()','EXECUTE') AS anon,
+                                    has_function_privilege('service_role','public.affiliate_purge_clicks()','EXECUTE') AS svc`;
+    expect(g).toEqual({ anon: false, svc: true });
+  });
 });

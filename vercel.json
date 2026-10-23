@@ -59,6 +59,14 @@
     {
       "path": "/api/cron/affiliate-mature",
       "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/cron/affiliate-reconcile",
+      "schedule": "45 5 * * *"
+    },
+    {
+      "path": "/api/cron/affiliate-clicks-retention",
+      "schedule": "35 3 * * *"
     }
   ]
 }

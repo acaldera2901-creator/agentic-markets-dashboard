@@ -2,7 +2,9 @@ import CookiePreferences from '@/components/CookiePreferences';
 import type { Metadata } from "next";
 import Link from "next/link";
 import ClassicChrome from "@/components/classic/ClassicChrome";
+import { SiteFooter } from "@/components/SiteFooter";
 import { LEGAL_ENTITY, PRIVACY_CONTROLLER } from "@/lib/legal-entity";
+import { affiliateHashEnabled } from "@/lib/affiliate/config";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | BetRedge",
@@ -87,6 +89,10 @@ export default function PrivacyPage() {
             <li><strong className="text-[var(--am-text)]">agentic-lang</strong> (localStorage) — the interface language. Set when you pick a language, and pre-filled on your first visit with the language your browser announces. It is a display preference, used only to show you the site in the right language. <em>No consent required.</em></li>
             <li><strong className="text-[var(--am-text)]">br_house_dismissed</strong> (localStorage) — remembers that you closed one of our own in-app promotional banners, so it is not shown to you again. <em>No consent required.</em></li>
             <li><strong className="text-[var(--am-text)]">am_attrib</strong> (localStorage) — the acquisition source described in Section 2 (campaign parameters, referring website, landing page). Not necessary to run the service. <em>Written only after you accept cookies.</em></li>
+            {/* #AFFILIATE-TERMS-V3-1022 — testo di legale-compliance (22/10). Senza la frase «Written only after you
+                accept cookies»: oggi am_ref NON aspetta il consenso (rischio accettato da Andrea il 22/10/2026, owner
+                Andrea, da rivalutare entro il 21/11/2026). Se arriva il gate di consenso, la frase si aggiunge qui. */}
+            <li><strong className="text-[var(--am-text)]">am_ref</strong> (localStorage) — the referral code from an invitation link you opened (for example betredge.com/r/CODE), with the date you opened it. It lets us credit the person who invited you if you register within 60 days. Not necessary to run the service. It expires after 60 days.</li>
             <li><strong className="text-[var(--am-text)]">am_sid</strong> (sessionStorage) — a randomly generated identifier that groups the usage events of a single browsing session, so that ten page views by one visitor are not counted as ten visitors. It contains no personal detail, but it makes those events pseudonymous rather than anonymous. <em>Created and sent only after you accept cookies</em>, and discarded when you close the tab.</li>
           </ul>
           <p className="text-xs leading-relaxed">
@@ -110,6 +116,9 @@ export default function PrivacyPage() {
               vive in lib/analytics-events.ts: se cambia li', cambia qui. */}
           <p className="text-xs leading-relaxed">
             Profile data stored in your browser can be deleted at any time by clearing localStorage. Server-side data for paying clients is retained for 2 years after account closure for legal and tax purposes, then deleted.
+          </p>
+          <p className="text-xs leading-relaxed">
+            <strong className="text-[var(--am-text)]">Affiliate program:</strong> the referral code on your device (<strong className="text-[var(--am-text)]">am_ref</strong>) expires after 60 days; commission and payout records are kept as long as accounting law requires (Switzerland: 10 years).
           </p>
           <p className="text-xs leading-relaxed">
             <strong className="text-[var(--am-text)]">Usage events:</strong> the session identifier described in Section 4 (<strong className="text-[var(--am-text)]">am_sid</strong>) is kept for a maximum of 14 months — long enough for one sports season plus a year-on-year comparison. A scheduled job runs every night and clears that identifier from every stored event older than 14 months. The event itself remains as an anonymous count, with no way left to link it to a session or to any other event.
@@ -163,6 +172,14 @@ export default function PrivacyPage() {
           <h2 className="text-sm font-semibold text-[var(--am-text)] uppercase tracking-wider border-b border-[var(--am-line)] pb-2">11. Subscription Affiliate Program</h2>
           <p className="text-xs leading-relaxed">If you enroll in our subscription affiliate program, we store your referral code, accepted terms version and timestamps, referral attribution, commission and adjustment records. If you register a payout wallet, we also store your legal name, country, declarations, selected asset and network, wallet-address history and verification status. These records are used to administer the program and verify eligibility, prevent abuse and prepare payments, on the basis of the affiliate agreement, applicable legal obligations and our legitimate interest in fraud prevention.</p>
           <p className="text-xs leading-relaxed">Affiliates receive masked information about referred accounts, not their full contact details. Wallet addresses and any payment transactions on a public blockchain are publicly visible; BetRedge cannot erase blockchain records. We never request wallet private keys or recovery phrases. The retention and rights described above apply to our own records, subject to applicable accounting obligations and unresolved payment disputes. Contact info@betredge.com to exercise your rights or close your affiliate account.</p>
+          {/* #AFFILIATE-TERMS-V3-1022 — parere legale §4.2, esteso ai click su /r/CODE. Pubblicato SOLO quando
+              AFFILIATE_HASH_SECRET è impostato: senza segreto nessun HMAC viene scritto e il paragrafo direbbe il
+              falso. Prerequisito prima di impostare il segreto: la pulizia a 90 giorni di affiliate_referral_clicks
+              (affiliate_purge_clicks + cron affiliate-clicks-retention, migration 20261022140000 applicata). La pagina si rigenera al deploy che segue il cambio di env. */}
+          {affiliateHashEnabled() && (
+            <p className="text-xs leading-relaxed" data-testid="privacy-affiliate-hmac"><strong className="text-[var(--am-text)]">Fraud checks.</strong> To detect self-referrals and count referral-link visits, when an affiliate uses their account, when a user registers through a referral link and when anyone opens an affiliate&apos;s referral link (betredge.com/r/CODE), we store a keyed hash (HMAC) of the IP address combined with the date and, for link visits, a keyed hash of the browser user-agent — never the IP address or user-agent itself. If an affiliate and a referred user appear from the same address within 24 hours, the related commission is held for manual review; this has no effect on the referred user&apos;s account. These records are deleted after 90 days. Legal basis: our legitimate interest in preventing fraud and measuring the program (Art. 6(1)(f) GDPR); you can object as described in Section 7.</p>
+          )}
+          <p className="text-xs leading-relaxed"><strong className="text-[var(--am-text)]">If you were invited by an affiliate.</strong> We record which affiliate invited you and whether your purchases qualify for a commission. The affiliate sees only masked information about you (never your email or name) and the commission amounts.</p>
           <p className="text-xs leading-relaxed">See the <Link href="/affiliates/terms" className="underline">Affiliate Program Terms</Link> for the commission and payment conditions.</p>
         </section>
 
@@ -179,6 +196,8 @@ export default function PrivacyPage() {
           </Link>
         </div>
       </div>
+      {/* #LEGAL-FOOTER-1022: footer standard del sito (18+, gioco responsabile, Termini, Privacy), come /affiliates/terms. */}
+      <SiteFooter lang="en" />
     </div>
   );
 }

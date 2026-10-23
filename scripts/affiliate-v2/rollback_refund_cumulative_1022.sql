@@ -1,0 +1,18 @@
+-- scripts/affiliate-v2/rollback_refund_cumulative_1022.sql — #AFFILIATE-REFUND-CUMULATIVE-1022
+-- Annulla 20261022150000_affiliate_v2_refund_cumulative.sql. NON è una migration:
+-- a mano, con APPROVE, sulla connessione diretta, INSIEME alla riesecuzione di
+-- 20261022120000 (rimette la funzione di storno per singolo rimborso):
+--   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 --single-transaction \
+--        -c "SET lock_timeout = '5s'" \
+--        -f scripts/affiliate-v2/rollback_refund_cumulative_1022.sql \
+--        -f supabase/migrations/20261022120000_affiliate_v2_reversal.sql
+-- poi: supabase migration repair --status reverted 20261022150000 --linked
+--
+-- Cosa resta: le righe di storno già scritte (registro contabile, non si
+-- toccano). Cosa si perde: il lordo dei micro-rimborsi registrati senza riga
+-- (quota zero) — si torna al limite noto di 20261022120000 (fino a 1 cent di
+-- residuo per micro-rimborso). Prima di eseguire, per memoria:
+--   SELECT e.* FROM affiliate_refund_events e WHERE NOT EXISTS (
+--     SELECT 1 FROM affiliate_commissions c WHERE c.rail = e.rail
+--       AND c.rail_payment_ref = e.rail_payment_ref AND c.rail_event_ref = e.rail_event_ref);
+DROP TABLE IF EXISTS public.affiliate_refund_events;

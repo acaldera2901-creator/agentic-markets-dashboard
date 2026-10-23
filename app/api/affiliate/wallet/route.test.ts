@@ -58,7 +58,7 @@ beforeEach(() => {
     return who ? { identifier: who, plan: "free" } : null;
   });
   vi.stubEnv("AFFILIATE_MODE", "shadow");
-  vi.stubEnv("AFFILIATE_TERMS_VERSION", "2026-11-v1");
+  vi.stubEnv("AFFILIATE_TERMS_VERSION", "aff-2026-10-22-v3");
   walletOf = {};
   dbQueryStrict.mockImplementation(async (sql: string, params: unknown[]) => {
     if (/FROM affiliates\b/.test(sql)) {
@@ -121,7 +121,7 @@ describe("PUT: salvataggio", () => {
       p_legal_name: "Alice Liddell",
       p_country: "GB",
       p_declared: true,
-      p_declarations_version: "2026-11-v1",
+      p_declarations_version: "aff-2026-10-22-v3",
       p_require_kyc: true,
     });
     expect(sendEmail).toHaveBeenCalledTimes(1);

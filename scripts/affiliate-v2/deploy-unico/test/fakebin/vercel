@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Test only: fake `vercel` for the deploy-unico scripts. Env store per --cwd in $FAKE_STATE.
+set -euo pipefail
+S="${FAKE_STATE:?}"; echo "vercel $*" >> "$S/calls.log"
+cwd=default; args=()
+while [ $# -gt 0 ]; do case "$1" in --cwd) cwd="$(basename "$2")"; shift;; --scope) shift;; *) args+=("$1");; esac; shift; done
+set -- "${args[@]}"
+E="$S/env-$cwd.txt"; touch "$E"
+case "$1" in
+  whoami) echo tester ;;
+  env)
+    case "$2" in
+      ls) echo "name value environments created"; cut -d= -f1 "$E" | sed 's/$/ Encrypted Production 1d ago/' ;;
+      run) n="${*: -1}"; v="$(grep "^$n=" "$E" | head -1 | cut -d= -f2- || true)"; echo 'Loaded env from Production'; V="$v" N="$n" EFILE="$E" node -e 'const fs=require("fs"),v=fs.readFileSync(process.env.EFILE,"utf8").split("\n").find(l=>l.startsWith(process.env.N+"="));console.log("DU_ENV="+JSON.stringify(v===undefined?null:process.env.V))' ;;
+      add) v="$(cat)"; grep -q "^$3=" "$E" && { echo "exists" >&2; exit 1; }; echo "$3=$v" >> "$E" ;;
+      update) v="$(cat)"; grep -q "^$3=" "$E" || { echo "missing" >&2; exit 1; }; grep -v "^$3=" "$E" > "$E.tmp" || true; echo "$3=$v" >> "$E.tmp"; mv "$E.tmp" "$E" ;;
+      *) exit 1 ;;
+    esac ;;
+  inspect) n="$(cat "$S/deploy-n" 2>/dev/null || echo 1)"; printf '{"id":"dpl_%s","url":"site-%s.vercel.app","target":"production","readyState":"READY"}\n' "$n" "$n" ;;
+  api)
+    case "$2" in
+      /v10/projects/*/env) EFILE="$E" node -e 'const fs=require("fs");console.log(JSON.stringify({envs:fs.readFileSync(process.env.EFILE,"utf8").trim().split("\n").filter(Boolean).map(l=>({key:l.split("=")[0],id:l.split("=")[0],type:"plain",target:["production"]}))}))' ;;
+      /v1/projects/*/env/*) N="${2##*/}" EFILE="$E" node -e 'const fs=require("fs"),key=process.env.N,line=fs.readFileSync(process.env.EFILE,"utf8").split("\n").find(l=>l.startsWith(key+"="));console.log(JSON.stringify({key,type:"plain",value:line?.slice(key.length+1)}))' ;;
+      /v13/deployments/*) n="$(cat "$S/deploy-n" 2>/dev/null || echo 1)"; printf '{"id":"dpl_%s","projectId":"prj_SITE","target":"production","readyState":"READY","gitSource":{"sha":"%s"}}\n' "$n" "$FAKE_PR_HEAD" ;;
+      *) exit 1 ;;
+    esac ;;
+  redeploy) n="$(cat "$S/deploy-n" 2>/dev/null || echo 1)"; echo $((n + 1)) > "$S/deploy-n"; echo "https://site-$((n + 1)).vercel.app" ;;
+  *) echo "fake vercel: comando non previsto: $*" >&2; exit 1 ;;
+esac

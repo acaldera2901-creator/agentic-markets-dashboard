@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  isNonUsdMarked,
+  shopifyOrderIsNonUsd,
+  shopifyPaidAt,
+  withNonUsdMark,
   netAmount,
   commissionAmount,
   round2,
@@ -50,20 +54,20 @@ describe("netAmount (#AFFILIATE-V2-0930)", () => {
     expect(netAmount("paypal", 14.99)).toBe(14.99);
   });
 
-  it("IVA esclusa", () => {
-    expect(netAmount("shopify", 18.29, { taxUsd: 3.3 })).toBe(14.99);
+  it("#AFFILIATE-TERMS-V3-1022 base lorda: le imposte NON si deducono", () => {
+    expect(netAmount("shopify", 18.29, { taxUsd: 3.3 })).toBe(18.29);
   });
 
   it("rimborso parziale sottratto", () => {
     expect(netAmount("stripe", 29.99, { refundedUsd: 10 })).toBe(19.99);
   });
 
-  it("fee del processore sottratta quando il rail la fornisce", () => {
-    expect(netAmount("paypal", 14.99, { feeUsd: 0.99 })).toBe(14);
+  it("#AFFILIATE-TERMS-V3-1022 base lorda: la fee del processore NON si deduce", () => {
+    expect(netAmount("paypal", 14.99, { feeUsd: 0.99 })).toBe(14.99);
   });
 
-  it("tutte le componenti insieme", () => {
-    expect(netAmount("stripe", 24.4, { taxUsd: 4.4, refundedUsd: 5, feeUsd: 1 })).toBe(14);
+  it("tutte le componenti insieme: si sottrae solo il già rimborsato", () => {
+    expect(netAmount("stripe", 24.4, { taxUsd: 4.4, refundedUsd: 5, feeUsd: 1 })).toBe(19.4);
   });
 
   it("amount NULL → null: mai commissione su un importo inventato", () => {
@@ -102,5 +106,42 @@ describe("commissionAmount / round2", () => {
   it("round2 non cade nel tranello di 1.005", () => {
     expect(round2(1.005)).toBe(1.01);
     expect(round2(2.675)).toBe(2.68);
+  });
+});
+
+// #SHOPIFY-RECONCILE-USD-1022
+describe("Shopify: valuta e data dell'incasso", () => {
+  const now = new Date("2026-10-22T12:00:00Z");
+  it("processed_at valido e passato vince; assente, illeggibile o futuro → now", () => {
+    expect(shopifyPaidAt({ processed_at: "2026-10-21T09:00:00-04:00" }, now).toISOString()).toBe("2026-10-21T13:00:00.000Z");
+    expect(shopifyPaidAt({}, now)).toBe(now);
+    expect(shopifyPaidAt({ processed_at: "ieri" }, now)).toBe(now);
+    expect(shopifyPaidAt({ processed_at: "2026-10-23T00:00:00Z" }, now)).toBe(now);
+  });
+  it("non USD solo con valuta dichiarata diversa da USD; marcatore reversibile in lettura", () => {
+    expect(shopifyOrderIsNonUsd({ currency: "eur" })).toBe(true);
+    expect(shopifyOrderIsNonUsd({ currency: "USD" })).toBe(false);
+    expect(shopifyOrderIsNonUsd({})).toBe(false);
+    expect(isNonUsdMarked(withNonUsdMark("x", true))).toBe(true);
+    expect(withNonUsdMark("x", false)).toBe("x");
+  });
+});
+
+// Review indipendente P2-8: il ledger (JS) e il backfill/storno (round() di Postgres, metà per
+// eccesso in decimale) devono dare lo stesso centesimo anche sui casi esattamente a metà.
+describe("round2 = round(x, 2) di Postgres", () => {
+  it("metà per eccesso sul valore decimale, non sull'approssimazione binaria", () => {
+    expect(commissionAmount(40.15, 0.1)).toBe(4.02); // 4.015 → in float 4.01499…
+    expect(commissionAmount(10.25, 0.3)).toBe(3.08);
+    expect(round2(-3.075)).toBe(-3.08);
+    expect(round2(2.998)).toBe(3);
+  });
+  it("su 0,01…2.000 $ × tassi del programma coincide col calcolo esatto in centesimi", () => {
+    for (const k of [7, 10, 15, 20]) {
+      for (let c = 1; c <= 200000; c += 1) {
+        const exact = Math.floor((c * k + 50) / 100) / 100;
+        if (commissionAmount(c / 100, k / 100) !== exact) throw new Error(`${c / 100} × ${k / 100}: ${commissionAmount(c / 100, k / 100)} ≠ ${exact}`);
+      }
+    }
   });
 });

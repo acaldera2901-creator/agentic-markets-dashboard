@@ -66,6 +66,8 @@ type FooterLang = "it" | "en" | "es" | "fr" | "ru";
 
 const COPY: Record<FooterLang, {
   note: string; pastperf: string; partnerlinks: string; partner: string; terms: string; privacy: string; social: string; tools: string; widget: string;
+  // #INVITE-AFFILIATE-UX-1022 (M3): i Termini del programma affiliati raggiungibili da ogni pagina.
+  affiliateTerms: string;
   // #SEO-ORPHANS-0908: etichette della riga guide. Solo il contorno è tradotto:
   // i titoli/termini delle guide restano in inglese perché gli articoli lo sono.
   learn: string; allGuides: string;
@@ -76,6 +78,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "I link partner sono affiliati commerciali.",
     partner: "Partner",
     tools: "Strumenti gratuiti", widget: "Widget per il tuo sito", terms: "Termini di Servizio", privacy: "Privacy Policy", social: "Seguici",
+    affiliateTerms: "Termini affiliati",
     learn: "Guide (in inglese)", allGuides: "Tutte le guide",
   },
   en: {
@@ -84,6 +87,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Partner links are commercial affiliates.",
     partner: "Partner",
     tools: "Free tools", widget: "Widget for your site", terms: "Terms of Service", privacy: "Privacy Policy", social: "Follow us",
+    affiliateTerms: "Affiliate Terms",
     learn: "Guides", allGuides: "All guides",
   },
   es: {
@@ -92,6 +96,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Los enlaces de partners son afiliados comerciales.",
     partner: "Partner",
     tools: "Herramientas gratis", widget: "Widget para tu web", terms: "Términos del Servicio", privacy: "Política de Privacidad", social: "Síguenos",
+    affiliateTerms: "Términos de afiliados",
     learn: "Guías (en inglés)", allGuides: "Todas las guías",
   },
   fr: {
@@ -100,6 +105,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Les liens partners sont des affiliés commerciaux.",
     partner: "Partenaire",
     tools: "Outils gratuits", widget: "Widget pour votre site", terms: "Conditions de Service", privacy: "Politique de Confidentialité", social: "Suivez-nous",
+    affiliateTerms: "Conditions d'affiliation",
     learn: "Guides (en anglais)", allGuides: "Tous les guides",
   },
   ru: {
@@ -108,6 +114,7 @@ const COPY: Record<FooterLang, {
     partnerlinks: "Партнёрские ссылки — коммерческие аффилиаты.",
     partner: "Партнёр",
     tools: "Инструменты", widget: "Виджет для сайта", terms: "Условия обслуживания", privacy: "Политика конфиденциальности", social: "Мы в соцсетях",
+    affiliateTerms: "Условия партнёрской программы",
     learn: "Руководства (на английском)", allGuides: "Все руководства",
   },
 };
@@ -167,6 +174,9 @@ export function SiteFooter({ lang = "en" }: { lang?: string }) {
         {/* Terms/Privacy = route INTERNE → <Link>, navigano nel sito (back ok) */}
         <Link href="/terms">{t.terms}</Link>
         <Link href="/privacy">{t.privacy}</Link>
+        {/* #INVITE-AFFILIATE-UX-1022 (M3): i Termini del programma affiliati erano raggiungibili solo
+            dal form d'iscrizione, cioè dopo il login — l'offerta si giudica prima. */}
+        <Link href="/affiliates/terms">{t.affiliateTerms}</Link>
       </div>
       {/* #SEO-ORPHANS-0908 — riga guide. Non è fine print legale: è navigazione,
           quindi ha una <nav> sua e una label mono che la apre.

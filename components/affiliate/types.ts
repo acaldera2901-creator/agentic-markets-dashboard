@@ -13,13 +13,20 @@ export type Payee = {
   declarations: { sanctions_at: string | null; tax_at: string | null };
 };
 
+/** Flag operativi esposti da /api/affiliate/me (route.ts): il pannello li legge, non li inventa.
+ *  Assenti nelle risposte precedenti al rollout → «ignoto», nessun banner. */
+export type Operations = { payouts_enabled: boolean; accounting_ready: boolean };
+
 /** GET /api/affiliate/me — non iscritto: 200 {enrolled:false, open}. */
 export type MeResponse =
-  | { enrolled: false; open: boolean; operations?: { payouts_enabled: boolean; accounting_ready: boolean } }
+  | { enrolled: false; open: boolean; operations?: Operations }
   | {
       enrolled: true;
-      operations?: { payouts_enabled: boolean; accounting_ready: boolean };
-      affiliate: { code: string; status: "active" | "suspended" | "terminated"; terms_version: string; created_at: string };
+      operations?: Operations;
+      /** left_at (#AFFILIATE-COMPLETE-1023): left the program; absent in older responses = still in. */
+      affiliate: { code: string; status: "active" | "suspended" | "terminated"; terms_version: string; created_at: string; left_at?: string | null };
+      /** #AFFILIATE-TERMS-V3-1022 — versione pubblicata dei Termini; assente = ignota (nessun banner). */
+      terms_current?: string;
       ledger: LedgerView;
       /** #AFFILIATE-TIERS-1021 — assente nelle risposte precedenti al rollout: il pannello lo tratta come «non disponibile». */
       tier?: TierView;

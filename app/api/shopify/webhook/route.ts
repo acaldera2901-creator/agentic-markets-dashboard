@@ -15,7 +15,8 @@ import { grantWeeklyPick } from "@/lib/weekly-pick-server";
 import { currentWeekStart } from "@/lib/weekly-pick";
 import { dbQueryStrict, dbExecute } from "@/lib/db";
 import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
-import { shopifyOrderAmounts, withNotSinglePlanMark } from "@/lib/affiliate/net";
+import { scheduleAffiliateReversal } from "@/lib/affiliate/reversal";
+import { shopifyOrderAmounts, shopifyOrderIsNonUsd, shopifyPaidAt, withNonUsdMark, withNotSinglePlanMark } from "@/lib/affiliate/net";
 import { opsAlert } from "@/lib/ops-alert";
 // #SUB-LIFECYCLE-0828: i topic fuori whitelist non si buttano piu, si osservano.
 import {
@@ -98,6 +99,24 @@ async function handleRefund(payload: unknown) {
     return NextResponse.json({ received: true, unresolved: true });
   }
 
+  // #AFFILIATE-REVERSAL-1022 — storno della commissione affiliato in proporzione
+  // al rimborsato (termini §4), qualunque cosa decida sotto la revoca del piano.
+  // Gira dopo la risposta e non lancia mai; un ordine senza commissione (Weekly
+  // Pick, carrello misto, nessun affiliato) è un no-op. Solo con un importo
+  // rimborsato con successo: `amount` null = nessuna transazione di rimborso
+  // riuscita (fallita, solo restock) → nessun denaro restituito, nessuno storno.
+  // Idempotente sull'id del rimborso.
+  if (refund.amount != null) {
+    scheduleAffiliateReversal({
+      rail: "shopify",
+      paymentRef: refund.orderId,
+      eventRef: refund.refundId,
+      refundedGrossUsd: refund.amount,
+    });
+  } else {
+    console.warn(`[shopify/webhook] rimborso ${refund.refundId} senza importo riuscito: nessuno storno affiliato`);
+  }
+
   // Un rimborso NON è sempre "spegni l'abbonamento". Due casi che la revoca
   // cieca sbagliava, entrambi a nostro danno o del cliente:
   // 1) rimborso della Weekly Pick (SKU one-off): spegneva l'ABBONAMENTO di chi
@@ -117,6 +136,13 @@ async function handleRefund(payload: unknown) {
     return NextResponse.json({ received: true, manual: why });
   };
 
+  // #SHOPIFY-REFUND-FAILED-1022 — `amount` null = nessuna transazione di rimborso
+  // riuscita (fallita, in attesa, errore, oppure solo restock): nessun denaro è
+  // tornato al cliente, quindi non si spegne l'accesso di un utente pagante.
+  // Prima isFullRefund(null) valeva «totale» e la revoca partiva lo stesso.
+  if (refund.amount == null) {
+    return manual("refund-not-successful", "nessuna transazione di rimborso riuscita: accesso mantenuto");
+  }
   if (isWeeklyPickVariant(order?.variant_id)) {
     return manual("weekly-refund", "rimborso Weekly Pick: entitlement one-off, piano non toccato");
   }
@@ -142,6 +168,22 @@ async function handleRefund(payload: unknown) {
     [eventKey, identifier, revoked ? "revoked" : "unresolved"]
   );
   return NextResponse.json({ received: true, revoked });
+}
+
+// #AFFILIATE-COMPLETE-1023 — chargeback (Shopify Payments, topic disputes/create):
+// the order's affiliate commission is reversed in full, like PayPal REVERSED and
+// Stripe charge.dispute.created. An `inquiry` moves no money: nothing reversed.
+// The plan is NOT touched here: access is a human decision (ops alert). Idempotent
+// on the dispute id (event_ref) in the SQL; a won dispute is restored by hand.
+async function handleDispute(payload: unknown) {
+  const d = (payload ?? {}) as { id?: unknown; order_id?: unknown; type?: unknown };
+  const id = d.id == null ? "" : String(d.id).trim();
+  const orderId = d.order_id == null ? "" : String(d.order_id).trim();
+  if (!id || !orderId) return NextResponse.json({ received: true, skipped: "no dispute or order id" });
+  if (d.type !== "chargeback") return NextResponse.json({ received: true, skipped: `dispute type ${String(d.type)}` });
+  scheduleAffiliateReversal({ rail: "shopify", paymentRef: orderId, eventRef: `dispute:${id}`, refundedGrossUsd: null });
+  await opsAlert("shopify-dispute", [`chargeback ${id} sull'ordine ${orderId}: commissione affiliato stornata, accesso al piano da valutare a mano`]);
+  return NextResponse.json({ received: true, dispute: id });
 }
 
 // #SUB-LIFECYCLE-0828 — registra un evento di ciclo di vita SENZA concedere.
@@ -196,6 +238,9 @@ export async function POST(req: Request) {
   if (topic === "refunds/create") {
     return handleRefund(payload);
   }
+  if (topic === "disputes/create") {
+    return handleDispute(payload);
+  }
   // Whitelist: solo orders/paid concede. Qualunque altro topic (o header assente,
   // es. un topic aggiunto in futuro sullo stesso URL) → ack senza grant, così non
   // si concede mai su un ordine non pagato.
@@ -224,24 +269,47 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true, skipped: "no order id" });
   }
 
-  // Idempotenza ATOMICA: l'INSERT È il gate. ON CONFLICT DO NOTHING RETURNING →
-  // 0 righe significa che un'altra delivery ha già preso questo ordine (duplicato):
-  // ack senza grant. Elimina la race SELECT-poi-INSERT — due delivery concorrenti
-  // dello stesso ordine passavano entrambe la SELECT → doppio activateShopifyPlan
-  // → 2x giorni concessi per 1 pagamento.
+  // Idempotenza ATOMICA: l'INSERT È il gate. ON CONFLICT DO NOTHING → chi non
+  // ha inserito la riga è una redelivery (duplicato): ack senza grant. Elimina la
+  // race SELECT-poi-INSERT — due delivery concorrenti dello stesso ordine
+  // passavano entrambe la SELECT → doppio activateShopifyPlan → 2x giorni.
+  // #SHOPIFY-CLAIM-1022: NON con `RETURNING`. exec_sql avvolge lo statement in
+  // `SELECT … FROM (<stmt>) t`, che per una scrittura è invalido: ricade
+  // sull'esecuzione nuda e risponde [] → ogni ordine sembrava un duplicato e il
+  // piano non veniva mai concesso (stesso limite documentato in stripe/webhook e
+  // crypto/checkout). Ora l'INSERT porta un gettone unico di questa delivery in
+  // last_error e una SELECT separata dice chi ha vinto: solo chi ritrova il
+  // PROPRIO gettone procede. markEvent sovrascrive last_error su ogni esito.
   // identifier e variant vengono registrati perché la reconcile possa ri-tentare
   // un ordine rimasto senza grant: senza di essi l'evento è irrecuperabile.
+  const claim = `claim:${crypto.randomUUID()}`;
   let won: { event_id: string }[];
+  let inserted = false;
   try {
+    await dbExecute(
+      `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, amount, status, last_error)
+       VALUES ($1, 'orders/paid', $2, $3, $4, 'pending', $5)
+       ON CONFLICT (event_id) DO NOTHING`,
+      [order.orderId, order.identifier, order.variantId, order.totalPrice, claim]
+    );
+    inserted = true;
     won = await dbQueryStrict<{ event_id: string }>(
-      `INSERT INTO shopify_events (event_id, event_type, identifier, variant_id, amount, status)
-       VALUES ($1, 'orders/paid', $2, $3, $4, 'pending')
-       ON CONFLICT (event_id) DO NOTHING
-       RETURNING event_id`,
-      [order.orderId, order.identifier, order.variantId, order.totalPrice]
+      `SELECT event_id FROM shopify_events WHERE event_id = $1 AND last_error = $2 LIMIT 1`,
+      [order.orderId, claim]
     );
   } catch (e) {
     console.error("[shopify/webhook] idempotency unavailable:", String(e));
+    // Se la riga è forse nostra (INSERT passato, SELECT fallita) la si toglie —
+    // SOLO se porta il nostro gettone — così il retry di Shopify non la vede come
+    // duplicato e il piano viene concesso. Best-effort: se fallisce, resta
+    // `pending` e la reconcile la segnala come stale.
+    if (inserted) {
+      try {
+        await dbExecute(`DELETE FROM shopify_events WHERE event_id = $1 AND last_error = $2`, [order.orderId, claim]);
+      } catch (delErr) {
+        console.error("[shopify/webhook] claim rollback failed:", String(delErr));
+      }
+    }
     return NextResponse.json({ error: "idempotency unavailable" }, { status: 500 });
   }
   if (won.length === 0) {
@@ -323,7 +391,7 @@ export async function POST(req: Request) {
       await markEvent(
         order.orderId,
         "unresolved",
-        withNotSinglePlanMark("identifier o variant non risolvibili", notSinglePlan)
+        withNonUsdMark(withNotSinglePlanMark("identifier o variant non risolvibili", notSinglePlan), shopifyOrderIsNonUsd(payload))
       );
       return NextResponse.json({ received: true, unresolved: true });
     }
@@ -354,7 +422,7 @@ export async function POST(req: Request) {
       await markEvent(
         order.orderId,
         "unresolved",
-        withNotSinglePlanMark("grant null: profilo inesistente o grandfather", notSinglePlan)
+        withNonUsdMark(withNotSinglePlanMark("grant null: profilo inesistente o grandfather", notSinglePlan), shopifyOrderIsNonUsd(payload))
       );
     } else {
       // #SHOPIFY-MULTILINE-0804 — carrello misto piano + Weekly Pick: vanno
@@ -392,7 +460,8 @@ identifier: order.identifier,
         rail: "shopify",
         paymentRef: order.orderId,
         grossUsd: amounts.grossUsd,
-        paidAt: new Date(),
+        // #SHOPIFY-RECONCILE-USD-1022 (D5): data dell'incasso dal payload, non della consegna.
+        paidAt: shopifyPaidAt(payload),
         meta: { taxUsd: amounts.taxUsd },
       });
       if (weeklyToo) return NextResponse.json({ received: true, weeklyPick: true });

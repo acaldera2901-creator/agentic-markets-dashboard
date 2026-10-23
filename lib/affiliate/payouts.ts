@@ -241,6 +241,9 @@ export type AdminPayout = {
   paid_at: string | null;
   cancel_code: string | null;
   cancel_reason: string | null;
+  /** #AFFILIATE-COMPLETE-1023: approval of the second named operator (backoffice), null = not marked. */
+  sent_marked_at: string | null;
+  sent_marked_by: string | null;
 };
 
 export function parsePayoutId(raw: string): number | null {
@@ -253,7 +256,8 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
             a.status AS affiliate_status, a.payee_legal_name AS payee_name, a.payee_country,
             p.period_month::text AS period_month, p.amount_usd, p.coin, p.network, p.to_address,
             p.amount_coin, p.tx_hash, p.tx_nonce, p.tx_block, p.tx_from, p.status, p.created_at::text AS created_at,
-            p.submitted_at::text AS submitted_at, p.paid_at::text AS paid_at, p.cancel_code, p.cancel_reason
+            p.submitted_at::text AS submitted_at, p.paid_at::text AS paid_at, p.cancel_code, p.cancel_reason,
+            p.sent_marked_at::text AS sent_marked_at, p.sent_marked_by
        FROM affiliate_payouts p JOIN affiliates a ON a.id = p.affiliate_id
       WHERE p.id = $1`,
     [id],
@@ -284,6 +288,8 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     paid_at: r.paid_at,
     cancel_code: r.cancel_code,
     cancel_reason: r.cancel_reason,
+    sent_marked_at: r.sent_marked_at ?? null,
+    sent_marked_by: r.sent_marked_by ?? null,
   };
 }
 
@@ -432,7 +438,8 @@ export async function registerPayoutTx(
  * Prima di congelare importi: ogni affiliato selezionato e pagabile ha un
  * destinatario fuori dalla denylist, e lo screening si RIFÀ adesso (non basta
  * quello della registrazione del wallet). Fail-closed: senza provider il
- * risultato è `not_screened` e non si crea niente; provider giù → 503.
+ * risultato è `not_screened` e non si crea niente, salvo una decisione manuale
+ * recente dell'operatore (#AFFILIATE-OPS-1022); provider giù → 503.
  * null = tutti ok. Chi non è pagabile lo rifiuta comunque la funzione SQL.
  */
 export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Promise<NextResponse | null> {
@@ -453,6 +460,10 @@ export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Pr
       }
       throw e;
     }
+    // #AFFILIATE-OPS-1022: senza provider vale la decisione MANUALE dell'operatore
+    // sul wallet attivo (stesso indirizzo, < 30 giorni); la funzione SQL la
+    // ricontrolla sotto lock (address_blocked / screening_stale / not_screened).
+    if (s.kind === "not_screened" && (await manualScreeningClear(id, row.wallet.address))) continue;
     if (s.kind !== "clear") {
       console.warn(`[affiliate/payouts] recipient ${s.kind} affiliate=${id} to=${row.wallet.address_masked}`);
       return NextResponse.json(
@@ -462,6 +473,17 @@ export async function checkRecipients(rows: AdminPayoutRow[], ids: number[]): Pr
     }
   }
   return null;
+}
+
+/** Vero se il wallet attivo dell'affiliato ha una decisione manuale `clear` recente per QUESTO indirizzo. */
+export async function manualScreeningClear(affiliateId: number, address: string): Promise<boolean> {
+  const rows = await dbQueryStrict<{ ok: boolean }>(
+    `SELECT (screening_provider = 'manual' AND screening_result = 'clear'
+             AND screened_at >= NOW() - interval '30 days' AND LOWER(address) = LOWER($2)) AS ok
+       FROM affiliate_wallets WHERE affiliate_id = $1 AND revoked_at IS NULL`,
+    [affiliateId, address],
+  );
+  return rows[0]?.ok === true;
 }
 
 // ── Tx sparita: submitted → cancelled (QA F2 + N1) ──────────────────────────

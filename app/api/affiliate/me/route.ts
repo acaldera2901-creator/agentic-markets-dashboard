@@ -12,7 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { getSessionPlan } from "@/lib/auth";
-import { affiliateConfig, affiliateMode, affiliateTermsVersion, affiliatePayoutsMode, payoutConfig } from "@/lib/affiliate/config";
+import { AFFILIATE_TERMS_PUBLISHED_VERSION, affiliateConfig, affiliateMode, affiliateTermsVersion, affiliatePayoutsMode, payoutConfig } from "@/lib/affiliate/config";
 import {
   ledgerView,
   loadActiveWallet,
@@ -26,6 +26,8 @@ import {
   tierView,
   walletView,
 } from "@/lib/affiliate/account";
+import { scheduleIpFingerprint } from "@/lib/affiliate/fingerprints";
+import { clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +36,10 @@ export async function GET(req: Request) {
   try {
     ctx = await getSessionPlan(req);
   } catch (e) {
+    // Un errore del DB sulla sessione NON è «non loggato»: un 401 manderebbe la
+    // UI al login (o a offrire l'iscrizione) per un guasto nostro. 503 = riprova.
     console.error("[affiliate/me] session lookup failed:", String(e));
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "session unavailable" }, { status: 503 });
   }
   if (!ctx) return NextResponse.json({ error: "login required" }, { status: 401 });
 
@@ -48,6 +52,9 @@ export async function GET(req: Request) {
         open: affiliateMode() !== "off" && affiliateTermsVersion() !== null,
       });
     }
+    // #AFFILIATE-FINGERPRINTS-1022 — registra ogni IP NUOVO dell'affiliato (HMAC)
+    // quando apre il pannello: è quando copia il link da condividere.
+    scheduleIpFingerprint(ctx.identifier, clientIp(req));
     const cursor = parseCursor(new URL(req.url).searchParams.get("cursor"));
     const cfg = affiliateConfig();
     const [wallet, groups, payouts, commissions, payingReferred] = await Promise.all([
@@ -61,7 +68,9 @@ export async function GET(req: Request) {
     return NextResponse.json({
       enrolled: true,
       operations: { payouts_enabled: affiliatePayoutsMode() === "live", accounting_ready: process.env.AFFILIATE_ACCOUNTING_READY === "1" },
-      affiliate: { code: aff.code, status: aff.status, terms_version: aff.terms_version, created_at: aff.created_at },
+      affiliate: { code: aff.code, status: aff.status, terms_version: aff.terms_version, created_at: aff.created_at, left_at: aff.left_at },
+      // #AFFILIATE-TERMS-V3-1022: la versione pubblicata, per il banner «Termini aggiornati» (non bloccante).
+      terms_current: AFFILIATE_TERMS_PUBLISHED_VERSION,
       ledger: ledgerView(groups, cfg.minPayoutUsd),
       // #AFFILIATE-TIERS-1021: livello, tasso in vigore e scala, dalla stessa misura del ledger.
       tier: tierView(payingReferred, cfg),

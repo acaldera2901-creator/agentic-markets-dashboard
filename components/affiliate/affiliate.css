@@ -221,6 +221,23 @@ select.aff-input{appearance:none;background-image:linear-gradient(45deg,transpar
 @media(prefers-reduced-motion:reduce){.aff-sk{animation:none}}
 .aff-banner{display:flex;gap:var(--am-s-3);align-items:flex-start;padding:var(--am-s-3) var(--am-s-4);border:1px solid var(--am-negative-b);border-radius:var(--am-r-card-sm);background:var(--am-negative-dim)}
 .aff-banner p{margin:0}
+/* #AFFILIATE-COMPLETE-1023 — a banner with more than one line (text + form/actions) stacks them in one column. */
+.aff-banner-body{display:grid;gap:var(--am-s-2);flex:1;min-width:0}
+/* #INVITE-AFFILIATE-UX-1022 (R5) — «pagamenti in attivazione»: non è un errore (niente rosso), è uno stato
+   dichiarato. Ambra tratteggiato, lo stesso segno del wallet «non ancora utilizzabile». */
+.aff-banner--setup{display:grid;gap:4px;border:1px dashed var(--am-amber);background:transparent}
+.aff-banner--setup strong{font-size:14.5px}
+.aff-banner--setup p{font-size:14px;line-height:1.5;color:var(--am-muted)}
+/* (M3) da anonimo: la stessa lastra focale dell'iscrizione, con una CTA lime e una ghost. */
+.aff-anon{display:grid;gap:var(--am-s-4)}
+.aff-anon .aff-terms{font-size:14px;color:var(--am-muted)}
+/* (M5) le tre finestre da 60 giorni: numero a sinistra ripetuto, titolo e riga sotto. */
+.aff-windows{display:grid;gap:var(--am-s-2);padding-top:var(--am-s-3);border-top:1px solid var(--am-line)}
+.aff-wins{margin:0;padding:0;list-style:none;display:grid;gap:var(--am-s-3)}
+.aff-wins li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:2px var(--am-s-3);align-items:baseline}
+.aff-wins .aff-wn{grid-row:1/span 2;font-family:var(--aff-font-display);font-weight:700;font-size:18px;line-height:1.2;color:var(--am-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.aff-wins strong{font-size:14.5px;line-height:1.35}
+.aff-wins span.aff-b{grid-column:2;font-size:13.5px;line-height:1.45;color:var(--am-muted)}
 
 /* ── admin ───────────────────────────────────────────────────────────── */
 .aff-adm-sum{display:grid;gap:var(--am-s-4);grid-template-columns:repeat(2,minmax(0,1fr))}

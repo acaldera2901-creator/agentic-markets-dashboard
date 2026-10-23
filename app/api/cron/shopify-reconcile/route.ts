@@ -6,9 +6,14 @@ import { activateShopifyPlan } from "@/lib/plan-grant";
 import { resolveOrderFromVariant } from "@/lib/shopify";
 import { opsAlert } from "@/lib/ops-alert";
 import { scheduleAffiliateCommission } from "@/lib/affiliate/ledger";
-import { isNotSinglePlanMarked } from "@/lib/affiliate/net";
+import { isNonUsdMarked, isNotSinglePlanMarked } from "@/lib/affiliate/net";
 
 export const dynamic = "force-dynamic";
+
+function paidAtOf(processedAt: string | null): Date {
+  const d = processedAt ? new Date(processedAt) : null;
+  return d && !Number.isNaN(d.getTime()) ? d : new Date();
+}
 
 // Gemella di paygate-reconcile, per il rail Shopify. Serve perché un ordine PAGATO
 // può restare senza piano e Shopify non ritenta in eterno: il caso reale è l'utente
@@ -26,9 +31,9 @@ export async function GET(req: Request) {
 
   const events = await dbQuery<{
     event_id: string; identifier: string | null; variant_id: string | null; amount: string | number | null;
-    last_error: string | null;
+    last_error: string | null; processed_at: string | null;
   }>(
-    `SELECT event_id, identifier, variant_id, amount, last_error
+    `SELECT event_id, identifier, variant_id, amount, last_error, processed_at::text AS processed_at
        FROM shopify_events
       WHERE status = 'unresolved'
         AND event_type = 'orders/paid'
@@ -76,8 +81,12 @@ identifier: ev.identifier,
           identifier: ev.identifier,
           rail: "shopify",
           paymentRef: ev.event_id,
-          grossUsd: ev.amount == null || isNotSinglePlanMarked(ev.last_error) ? null : Number(ev.amount),
-          paidAt: new Date(),
+          // #SHOPIFY-RECONCILE-USD-1022: ordine in altra valuta (marcato dal webhook) → niente commissione (termini: solo USD).
+          grossUsd: ev.amount == null || isNotSinglePlanMarked(ev.last_error) || isNonUsdMarked(ev.last_error) ? null : Number(ev.amount),
+          // #AFFILIATE-RECONCILE-1022 (D5): la data dell'INCASSO (arrivo del
+          // webhook orders/paid), non quella del recupero: decide finestra di
+          // attribuzione, hold e finestra di clawback.
+          paidAt: paidAtOf(ev.processed_at),
         });
       } else {
         // Profilo ancora inesistente o grandfather: si ritenta al prossimo giro.
