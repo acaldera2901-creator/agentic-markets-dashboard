@@ -2,6 +2,7 @@ import {schedulePurchaseEvent} from '@/lib/business-events';
 import { NextResponse } from "next/server";
 import {
   verifyShopifyHmac,
+  verifyShopifyDisputeHmac,
   extractOrder,
   extractRefund,
   resolveOrderFromVariant,
@@ -220,7 +221,9 @@ export async function POST(req: Request) {
 
   const raw = await req.text(); // raw body obbligatorio per l'HMAC
   const hmac = req.headers.get("x-shopify-hmac-sha256");
-  if (!verifyShopifyHmac(raw, hmac)) {
+  const topic = req.headers.get("x-shopify-topic");
+  if (!verifyShopifyHmac(raw, hmac) &&
+      !(topic === "disputes/create" && verifyShopifyDisputeHmac(raw, hmac))) {
     console.error("[shopify/webhook] bad signature");
     return NextResponse.json({ error: "invalid signature" }, { status: 401 });
   }
@@ -233,7 +236,6 @@ export async function POST(req: Request) {
   }
   // Il topic decide il ramo. NIENTE default a orders/paid: un header assente o
   // un topic sconosciuto NON deve concedere (whitelist esplicita sotto).
-  const topic = req.headers.get("x-shopify-topic");
 
   if (topic === "refunds/create") {
     return handleRefund(payload);
