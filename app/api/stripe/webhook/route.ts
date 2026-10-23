@@ -261,9 +261,11 @@ identifier: activated.identifier,
         }
         break;
       }
-      case "charge.refund.updated": {
+      case "charge.refund.updated":
+      case "refund.updated": {
         // Un rimborso nato `pending` (raro sulle carte) diventa `succeeded` qui:
-        // stesso event_ref di sopra, quindi contato una volta sola.
+        // stesso event_ref di sopra, quindi contato una volta sola. Stripe manda
+        // l'uno o l'altro evento a seconda del metodo di pagamento (review Codex #3).
         const r = event.data.object as Stripe.Refund;
         if (r.status !== "succeeded" || (r.currency ?? "").toLowerCase() !== "usd") break;
         const invoiceId = await stripeInvoiceOfPayment(stripe, r.payment_intent);

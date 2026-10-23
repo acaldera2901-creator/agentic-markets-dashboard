@@ -31,7 +31,15 @@ export async function POST(req: Request) {
     if (!aff) return NextResponse.json({ error: "not_enrolled" }, { status: 404 });
     if (aff.status === "terminated") return NextResponse.json({ error: "terminated" }, { status: 403 });
     if (aff.left_at) return NextResponse.json({ ok: true, already: true, left_at: aff.left_at });
-    await dbExecute("UPDATE affiliates SET left_at = NOW(), updated_at = NOW() WHERE id = $1 AND left_at IS NULL", [aff.id]);
+    // One statement (atomic): open the absence interval and mirror it on the affiliate.
+    await dbExecute(
+      `WITH x AS (
+         INSERT INTO affiliate_absences (affiliate_id) SELECT id FROM affiliates WHERE id = $1 AND left_at IS NULL
+         ON CONFLICT DO NOTHING RETURNING left_at)
+       UPDATE affiliates SET left_at = (SELECT left_at FROM x), updated_at = NOW()
+        WHERE id = $1 AND left_at IS NULL AND EXISTS (SELECT 1 FROM x)`,
+      [aff.id],
+    );
     const after = await loadAffiliateBySession(ctx.identifier);
     if (!after?.left_at) return NextResponse.json({ error: "leave failed" }, { status: 500 });
     console.log(`[affiliate/leave] affiliate ${aff.id} left the program`);

@@ -109,8 +109,11 @@ export async function POST(req: Request) {
         // #AFFILIATE-COMPLETE-1023 — back after leaving: same code, fresh consent on the
         // Terms in force (the three ticks were just given), history kept.
         await recordAcceptance(existing.id, termsVersion, "rejoin");
+        // One statement (atomic): close the absence (its payments stay excluded) and come back.
         await dbExecute(
-          `UPDATE affiliates
+          `WITH x AS (
+             UPDATE affiliate_absences SET rejoined_at = NOW() WHERE affiliate_id = $1 AND rejoined_at IS NULL RETURNING 1)
+           UPDATE affiliates
               SET left_at = NULL, terms_version = $2, terms_accepted_at = NOW(), age_confirmed_at = NOW(),
                   onerous_ack_at = NOW(), onerous_ack_version = $2, updated_at = NOW()
             WHERE id = $1 AND left_at IS NOT NULL`,

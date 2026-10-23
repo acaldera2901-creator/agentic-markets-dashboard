@@ -68,6 +68,12 @@ describe("Stripe → storno affiliato", () => {
     expect(scheduleAffiliateReversal).toHaveBeenCalledWith({ rail: "stripe", paymentRef: "in_9", eventRef: "refund:re_2", refundedGrossUsd: 3 });
   });
 
+  it("refund.updated → succeeded: trattato come charge.refund.updated", async () => {
+    evt.current = { id: "evt_u2", type: "refund.updated", data: { object: { id: "re_5", status: "succeeded", currency: "usd", amount: 250, payment_intent: "pi_1" } } };
+    await post();
+    expect(scheduleAffiliateReversal).toHaveBeenCalledWith({ rail: "stripe", paymentRef: "in_9", eventRef: "refund:re_5", refundedGrossUsd: 2.5 });
+  });
+
   it("charge.refund.updated ancora pending o non USD: nessuno storno", async () => {
     evt.current = { id: "evt_p", type: "charge.refund.updated", data: { object: { id: "re_2", status: "pending", currency: "usd", amount: 300, payment_intent: "pi_1" } } };
     await post();

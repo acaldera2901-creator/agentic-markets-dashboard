@@ -3,18 +3,20 @@
 -- affiliates.left_at (ledger, /api/affiliate/me, /leave, /terms, /join): with the
 -- column gone those routes fail closed (500) instead of silently paying a leaver.
 --
--- What is lost: who left the program and when, and the history of accepted
+-- What is lost: the history of accepted
 -- Terms versions (affiliates.terms_version keeps the latest). Refuses to run if
--- anyone has left, so a voluntary exit is never silently undone.
+-- anyone has ever left (affiliate_absences), so an exit is never silently undone.
 --   psql "$DATABASE_URL" --single-transaction -v ON_ERROR_STOP=1 -f scripts/affiliate-v2/rollback_leave_terms_1023.sql
+-- Repeatable (review Codex 23/10 #5): the data checks only run while the objects exist.
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns
-              WHERE table_schema = 'public' AND table_name = 'affiliates' AND column_name = 'left_at')
-     AND EXISTS (SELECT 1 FROM public.affiliates WHERE left_at IS NOT NULL) THEN
-    RAISE EXCEPTION 'rollback_leave_terms_1023: some affiliates have left the program (left_at set) — export them first and handle by hand';
+  IF to_regclass('public.affiliate_absences') IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM public.affiliate_absences) THEN
+      RAISE EXCEPTION 'rollback_leave_terms_1023: some affiliates have left the program (affiliate_absences has rows) — export them first and handle by hand';
+    END IF;
   END IF;
 END $$;
 
+DROP TABLE IF EXISTS public.affiliate_absences;
 DROP TABLE IF EXISTS public.affiliate_terms_acceptances;
 ALTER TABLE public.affiliates DROP COLUMN IF EXISTS left_at;

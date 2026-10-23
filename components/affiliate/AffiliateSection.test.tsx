@@ -488,8 +488,11 @@ describe("uscita, rientro e termini aggiornati", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Lascia il programma" }));
     const dlg = screen.getByTestId("aff-leave-confirm");
     expect(dlg.textContent).toMatch(/resta tuo e te lo paghiamo come sempre/);
+    expect(document.activeElement).toBe(within(dlg).getByRole("button", { name: "Lascia il programma" })); // il focus entra nella conferma
+    expect(dlg.getAttribute("aria-describedby")).toBe("aff-leave-ask");
     fireEvent.click(within(dlg).getByRole("button", { name: "Annulla" }));
     expect(calls.some((c) => c.url === "/api/affiliate/leave")).toBe(false);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Lascia il programma" })); // e torna sul bottone
     fireEvent.click(screen.getByRole("button", { name: "Lascia il programma" }));
     fireEvent.click(within(screen.getByTestId("aff-leave-confirm")).getByRole("button", { name: "Lascia il programma" }));
     const banner = await screen.findByTestId("aff-left");

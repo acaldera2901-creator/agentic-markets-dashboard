@@ -3,7 +3,7 @@
 // I blocchi del pannello dell'affiliato (SPEC-ui §3.2, §3.5), tutti presentazionali:
 // ricevono i dati già letti da /api/affiliate/me e non fanno rete (tranne «Mostra
 // altre», che chiama il padre). Nessun numero è inventato: tutto viene dall'API.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AffCopy, AffLang } from "./copy";
 import { fill } from "./copy";
 import { coinAmount, dateTime, monthLabel, shortDate, shortHash, usd } from "./format";
@@ -532,19 +532,28 @@ function LeaveProgram({ c, onLeave }: { c: AffCopy; onLeave: () => Promise<boole
   const [ask, setAsk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(false);
-  if (!ask) return <button type="button" className="aff-linkbtn" onClick={() => { setErr(false); setAsk(true); }}>{r.leaveCta}</button>;
+  const trigger = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const reopenFocus = useRef(false);
+  // Keyboard/screen-reader users keep their place (review Codex #6): focus moves into the
+  // confirm when it opens and back to «Lascia il programma» when it is cancelled.
+  useEffect(() => {
+    if (ask) confirmRef.current?.focus();
+    else if (reopenFocus.current) { trigger.current?.focus(); reopenFocus.current = false; }
+  }, [ask]);
+  if (!ask) return <button ref={trigger} type="button" className="aff-linkbtn" onClick={() => { setErr(false); setAsk(true); }}>{r.leaveCta}</button>;
   return (
-    <span className="aff-confirm" role="alertdialog" aria-label={r.leaveCta} data-testid="aff-leave-confirm">
-      <span className="block">{r.leaveAsk}</span>
+    <span className="aff-confirm" role="alertdialog" aria-label={r.leaveCta} aria-describedby="aff-leave-ask" data-testid="aff-leave-confirm">
+      <span className="block" id="aff-leave-ask">{r.leaveAsk}</span>
       {err && <span className="aff-err block" role="alert">{r.leaveError}</span>}
       <span className="aff-inline-actions">
-        <button type="button" className="aff-cta aff-cta--ghost" disabled={busy} onClick={async () => {
+        <button ref={confirmRef} type="button" className="aff-cta aff-cta--ghost" disabled={busy} onClick={async () => {
           setBusy(true);
           const ok = await onLeave();
           setBusy(false);
           if (!ok) setErr(true);
         }}>{r.leaveYes}</button>
-        <button type="button" className="aff-cta aff-cta--ghost" disabled={busy} onClick={() => setAsk(false)}>{r.leaveNo}</button>
+        <button type="button" className="aff-cta aff-cta--ghost" disabled={busy} onClick={() => { reopenFocus.current = true; setAsk(false); }}>{r.leaveNo}</button>
       </span>
     </span>
   );

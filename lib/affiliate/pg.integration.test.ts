@@ -241,6 +241,10 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     // rientra: stesso codice, consenso nuovo, left_at azzerato
     expect(await (await join.POST(req("/x", "POST", "alice@x.io", { code: "ALICE", terms_version: V3, age: true, onerous_ack: true }))).json()).toMatchObject({ ok: true, rejoined: true, code: "ALICE" });
     expect((await h.sql!`SELECT left_at FROM affiliates`)[0].left_at).toBeNull();
+    expect(await h.sql!`SELECT rejoined_at IS NOT NULL AS closed FROM affiliate_absences`).toEqual([{ closed: true }]);
+    // seconda uscita: un nuovo intervallo, il primo resta
+    expect(await (await leave.POST(req("/x", "POST", "alice@x.io"))).json()).toMatchObject({ ok: true, already: false });
+    expect(await h.sql!`SELECT rejoined_at IS NULL AS open FROM affiliate_absences ORDER BY left_at`).toEqual([{ open: false }, { open: true }]);
     // chiuso dall'operatore: né uscita né termini
     await h.sql!`UPDATE affiliates SET status = 'terminated'`;
     expect((await leave.POST(req("/x", "POST", "alice@x.io"))).status).toBe(403);
@@ -889,17 +893,30 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
     expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-pre", grossUsd: 14.99, paidAt: new Date(Date.now() - 10 * 86_400_000) }))
       .toEqual({ written: false, reason: "before_enrollment" });
+    // review Codex #4: il pagamento rifiutato non congela l'attribuzione
+    expect(await h.sql!`SELECT 1 FROM affiliate_attributions`).toHaveLength(0);
     // dopo l'iscrizione: sì
     expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-1", grossUsd: 14.99, paidAt: new Date(Date.now() - 2 * 86_400_000) }))
       .toMatchObject({ written: true, reason: "pending" });
     // esce dal programma ieri: il pagamento di oggi no, quello di due giorni fa resta (e matura come sempre)
+    await h.sql!`INSERT INTO affiliate_absences(affiliate_id, left_at) SELECT id, now() - interval '1 day' FROM affiliates`;
     await h.sql!`UPDATE affiliates SET left_at = now() - interval '1 day'`;
     expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-2", grossUsd: 14.99, paidAt: new Date() }))
       .toEqual({ written: false, reason: "affiliate_left" });
     await h.sql!`INSERT INTO paygate_orders VALUES ('pg-2','ref@x.io',14.99,NULL,now() - interval '1 hour')`;
     expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0 });
+    // rientra oggi (review Codex #1): il pagamento fatto mentre era fuori resta escluso, anche dalla riconciliazione
+    await h.sql!`UPDATE affiliate_absences SET rejoined_at = now()`;
+    await h.sql!`UPDATE affiliates SET left_at = NULL`;
+    expect(await reconcileAffiliateLedger()).toMatchObject({ checked: 0, written: 0 });
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-2", grossUsd: 14.99, paidAt: new Date(Date.now() - 3_600_000) }))
+      .toEqual({ written: false, reason: "affiliate_left" });
+    // dopo il rientro si riguadagna
+    expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-4", grossUsd: 14.99, paidAt: new Date(Date.now() + 1000) }))
+      .toMatchObject({ written: true });
+    await h.sql!`DELETE FROM affiliate_commissions WHERE rail_payment_ref = 'pg-4'`;
     // chiuso dall'operatore (con l'attribuzione già congelata): niente
-    await h.sql!`UPDATE affiliates SET left_at = NULL, status = 'terminated'`;
+    await h.sql!`UPDATE affiliates SET status = 'terminated'`;
     expect(await recordAffiliateCommissionSafe({ identifier: "ref@x.io", rail: "paygate", paymentRef: "pg-3", grossUsd: 14.99, paidAt: new Date() }))
       .toEqual({ written: false, reason: "affiliate_terminated" });
     expect(await h.sql!`SELECT rail_payment_ref AS ref, status FROM affiliate_commissions`).toEqual([{ ref: "pg-1", status: "pending" }]);
