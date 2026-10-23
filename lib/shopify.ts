@@ -10,7 +10,16 @@ export function isShopifyConfigured(): boolean {
 
 // Shopify firma il RAW body con HMAC-SHA256 (base64) usando il webhook secret.
 export function verifyShopifyHmac(rawBody: string, hmacHeader: string | null): boolean {
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
+  return verifyHmac(rawBody, hmacHeader, process.env.SHOPIFY_WEBHOOK_SECRET);
+}
+
+// API-created subscriptions use the app's client secret, unlike subscriptions
+// created in the shop admin. This separate key is authorized only for disputes.
+export function verifyShopifyDisputeHmac(rawBody: string, hmacHeader: string | null): boolean {
+  return verifyHmac(rawBody, hmacHeader, process.env.SHOPIFY_DISPUTE_WEBHOOK_SECRET);
+}
+
+function verifyHmac(rawBody: string, hmacHeader: string | null, secret: string | undefined): boolean {
   if (!secret || !hmacHeader) return false;
   const digest = crypto.createHmac("sha256", secret).update(rawBody, "utf8").digest("base64");
   const a = Buffer.from(digest);

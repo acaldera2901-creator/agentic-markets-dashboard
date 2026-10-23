@@ -62,6 +62,7 @@ it("rimborso su ordine sconosciuto: NON tira a indovinare chi disattivare", asyn
 
 beforeEach(() => {
   vi.clearAllMocks();
+  delete process.env.SHOPIFY_DISPUTE_WEBHOOK_SECRET;
   process.env.SHOPIFY_WEBHOOK_SECRET = SECRET;
   process.env.SHOPIFY_VARIANT_BASE = "111";
   process.env.SHOPIFY_VARIANT_PREMIUM = "222";
@@ -442,4 +443,24 @@ it("disputes/create con firma non valida: 401, nessuno storno", async () => {
   const { POST } = await import("./route");
   expect((await POST(req(body, "bad", "disputes/create"))).status).toBe(401);
   expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+});
+
+it("accepts an app-signed dispute without replacing the admin webhook secret", async () => {
+  process.env.SHOPIFY_DISPUTE_WEBHOOK_SECRET = "app-disputes-secret";
+  const body = JSON.stringify({ id: 555, order_id: 912, type: "inquiry" });
+  const signature = crypto.createHmac("sha256", "app-disputes-secret").update(body).digest("base64");
+  const { POST } = await import("./route");
+  expect((await POST(req(body, signature, "disputes/create"))).status).toBe(200);
+  expect((await POST(req(body, sign(body), "disputes/create"))).status).toBe(200);
+});
+
+it("does not authorize orders or refunds with the dispute-only app secret", async () => {
+  process.env.SHOPIFY_DISPUTE_WEBHOOK_SECRET = "app-disputes-secret";
+  const body = JSON.stringify({ id: 556, order_id: 912 });
+  const signature = crypto.createHmac("sha256", "app-disputes-secret").update(body).digest("base64");
+  const { POST } = await import("./route");
+  for (const topic of ["orders/paid", "refunds/create", null]) {
+    expect((await POST(req(body, signature, topic))).status).toBe(401);
+  }
+  expect((await POST(req(body + " ", signature, "disputes/create"))).status).toBe(401);
 });
