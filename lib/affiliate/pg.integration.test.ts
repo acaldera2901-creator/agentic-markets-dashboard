@@ -4,7 +4,7 @@
 // Gira solo con AFFILIATE_PG_TEST_URL (un Postgres locale USA E GETTA, mai un DB
 // reale): applica le migration affiliate_v2 dal repo, emula `exec_sql` con la
 // stessa funzione di produzione e la RPC di Supabase con una SELECT sulla
-// funzione. In CI la variabile non c'è e il file si salta.
+// funzione. CI esegue la suite nel job affiliate-postgres con un DB temporaneo.
 //   AFFILIATE_PG_TEST_URL=postgres://postgres@127.0.0.1:54331/postgres npx vitest run lib/affiliate/pg.integration.test.ts
 // Il DB deve essere vuoto e usa e getta (initdb). I ruoli anon / authenticated /
 // service_role che le migration nominano nei GRANT/REVOKE li crea il test se
