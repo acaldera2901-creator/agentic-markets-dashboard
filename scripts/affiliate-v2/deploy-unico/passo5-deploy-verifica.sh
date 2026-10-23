@@ -17,7 +17,7 @@ while [ $# -gt 0 ]; do case "$1" in
   *) die "argomento sconosciuto: $1";; esac; shift; done
 ESEGUI=0; DU_RO=1
 du_init passo5-deploy "Passo 5 — attesa deploy + verifiche read-only su $SITE_URL" "Vercel → Deployments → promote del deployment precedente (immediato) + git revert dello squash del passo 4."
-du_require_cmd curl git psql node
+du_require_cmd curl git psql node vercel
 du_need_db
 [ -n "$MERGE_SHA" ] || MERGE_SHA="$(cat "$LOG_DIR/merge-sha.txt" 2>/dev/null || true)"
 [ -n "$MERGE_SHA" ] || die "SHA del merge sconosciuto: passa --merge-sha"
@@ -25,13 +25,13 @@ echo "SHA del merge: $MERGE_SHA"
 has() { grep -q -- "$1" <<<"$2"; }
 lacks() { ! grep -q -- "$1" <<<"$2"; }
 
-echo; echo "== Attesa: la pagina dei termini deve servire $TERMS_V3 (= codice nuovo in produzione) =="
+echo; echo "== Attesa: alias produzione READY sullo SHA $MERGE_SHA =="
 deadline=$(( $(date +%s) + WAIT_MIN * 60 ))
-until du_http_body "$SITE_URL/affiliates/terms" | grep -q "$TERMS_V3"; do
-  [ "$(date +%s)" -lt "$deadline" ] || die "dopo $WAIT_MIN min $SITE_URL/affiliates/terms non mostra $TERMS_V3: controlla il deploy in Vercel (auto-deploy rotto? allora «vercel --prod» da Andrea, gated)"
+until du_production_matches "$MERGE_SHA"; do
+  [ "$(date +%s)" -lt "$deadline" ] || die "dopo $WAIT_MIN min alias produzione non risolve allo SHA $MERGE_SHA: controlla il deploy in Vercel (auto-deploy rotto? allora «vercel --prod» da Andrea, gated)"
   echo "  $(date -u +%H:%M:%S) non ancora… (riprovo fra 20 s)"; sleep 20
 done
-ok "codice nuovo online"
+ok "alias produzione READY sullo SHA esatto $MERGE_SHA"
 if command -v gh >/dev/null 2>&1; then
   echo "GitHub deployments per lo SHA (stato Vercel):"
   gh api "repos/$REPO_SLUG/deployments?sha=$MERGE_SHA" --jq '.[] | "  " + .environment + " id=" + (.id|tostring)' 2>/dev/null || echo "  (non leggibili)"
@@ -90,5 +90,6 @@ if [ "$CALL_CRON" = 1 ]; then
 fi
 
 echo; hr
+du_production_matches "$MERGE_SHA" || ko "alias produzione cambiato durante la verifica"
 if [ "$DU_KO" = 0 ]; then du_mark passo5 "$MERGE_SHA"; c_grn "Passo 5 VERDE ($MERGE_SHA). Prossimo: passo6-backfill-v3.sh. Poi guarda i log Vercel per 30 min: nessun [affiliate/*] error nuovo."
 else c_red "Passo 5: $DU_KO verifiche KO. NON procedere ai passi 6-7. Rollback: $DU_ROLLBACK"; exit 1; fi

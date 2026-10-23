@@ -36,10 +36,12 @@ AFFILIATE_MIGRATIONS="20261007120000_affiliate_v2
 20261022130000_affiliate_v2_ops
 20261022140000_affiliate_v2_clicks_retention
 20261022150000_affiliate_v2_refund_cumulative
-20261022160000_affiliate_v2_reverse_audit"
+20261022160000_affiliate_v2_reverse_audit
+20261023120000_affiliate_v2_leave_terms
+20261023130000_affiliate_v2_reversal_inbox"
 # Always re-applied (new in #553; 130000/160000 were corrected in place and all
 # five are CREATE OR REPLACE / IF NOT EXISTS — idempotent).
-ALWAYS_APPLY="20261022120000 20261022130000 20261022140000 20261022150000 20261022160000"
+ALWAYS_APPLY="20261022120000 20261022130000 20261022140000 20261022150000 20261022160000 20261023120000 20261023130000"
 
 ESEGUI=0
 ENV_FILE="${DEPLOY_ENV_FILE:-}"
@@ -68,6 +70,7 @@ du_parse_args() {
 
 # du_init STEP "description" "rollback text" — log file + header.
 du_init() {
+  du_context >/dev/null || die "imposta DEPLOY_RUN_ID e DEPLOY_APPROVED_SHA prima di ogni esecuzione"
   DU_STEP="$1"
   umask 077
   mkdir -p "$LOG_DIR"
@@ -141,9 +144,26 @@ du_confirm() {
   echo "Confermato da $(whoami) alle $(date -u +%H:%M:%SZ)"
 }
 
-# du_mark NAME — marker files in LOG_DIR chain the steps (passo5 green → 6 → 7).
-du_mark() { printf '%s\n' "${2:-ok} $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$LOG_DIR/$1.ok"; }
-du_has_mark() { [ -f "$LOG_DIR/$1.ok" ]; }
+# Every step is bound to one operator-selected run, approved revision and target.
+# Start a fresh run ID after changing revision/target; old .ok files cannot pass.
+du_context() {
+  local db
+  db="$(du_env SUPABASE_DB_URL)" || return 1
+  [ -n "${DEPLOY_RUN_ID:-}" ] || { echo "DEPLOY_RUN_ID required" >&2; return 1; }
+  [[ "${DEPLOY_APPROVED_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || { echo "DEPLOY_APPROVED_SHA must be a full SHA" >&2; return 1; }
+  printf '%s\n' "$DEPLOY_RUN_ID" "$DEPLOY_APPROVED_SHA" "$SITE_URL" "$VERCEL_CWD" "$VERCEL_SCOPE" "$(cat "$VERCEL_CWD/.vercel/project.json" 2>/dev/null || true)" "$db" | shasum -a 256 | awk '{print $1}'
+}
+du_mark() {
+  local context
+  context="$(du_context)" || return 1
+  printf '%s\n%s\n' "$context" "${2:-ok} $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$LOG_DIR/$1.ok"
+}
+du_has_mark() {
+  local context
+  context="$(du_context)" || return 1
+  [ -f "$LOG_DIR/$1.ok" ] && [ "$(head -1 "$LOG_DIR/$1.ok")" = "$context" ] &&
+    [ -z "$(find "$LOG_DIR/$1.ok" -mmin +1440)" ]
+}
 
 # ---------- git / GitHub ----------
 du_origin_main() { git -C "$REPO_ROOT" fetch -q origin main && git -C "$REPO_ROOT" rev-parse origin/main; }
@@ -163,22 +183,42 @@ du_ci_green() {
 # ---------- Vercel ----------
 VERCEL_SCOPE="${VERCEL_SCOPE:-betredge}"
 du_vercel() { vercel --cwd "$VERCEL_CWD" --scope "$VERCEL_SCOPE" "$@"; }
-# Production env NAMES only (values stay encrypted).
-du_vercel_env_names() { du_vercel env ls production 2>/dev/null | awk 'NR>1 && $1 ~ /^[A-Z][A-Z0-9_]*$/ {print $1}' | sort -u; }
-# du_vercel_env_value NAME — ONLY for non-secret flags. The value is read inside
-# a child process (`vercel env run -e production -- printenv NAME`): the other
-# production secrets live only in that child and are never printed.
+# Read project settings through the API: `env run` also loads local .env files
+# and therefore cannot establish the production value. Never decrypt secrets.
+du_vercel_project_id() {
+  node -e 'const j=require(process.argv[1]);if(!/^prj_[A-Za-z0-9]+$/.test(j.projectId))process.exit(1);process.stdout.write(j.projectId)' "$VERCEL_CWD/.vercel/project.json"
+}
+du_vercel_env_metadata() {
+  local project raw
+  project="$(du_vercel_project_id)" || return 1
+  raw="$(du_vercel api "/v10/projects/$project/env" 2>/dev/null)" || return 1
+  printf '%s' "$raw" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);if(!Array.isArray(j.envs))throw Error();const a=j.envs.filter(e=>Array.isArray(e.target)&&e.target.includes("production"));if(a.some(e=>!e.key||!e.id||!e.type))throw Error();process.stdout.write(JSON.stringify(a.map(({key,id,type})=>({key,id,type}))))}catch{process.exitCode=1}})'
+}
+du_vercel_env_names() {
+  local metadata
+  metadata="$(du_vercel_env_metadata)" || return 1
+  printf '%s' "$metadata" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).map(e=>e.key).sort().join("\n")))'
+}
+# Only explicitly allowlisted non-secret configuration can be returned.
+# Sensitive/ambiguous values fail closed, never become an empty/off value.
 du_vercel_env_value() {
   case "$1" in
     AFFILIATE_MODE|AFFILIATE_TERMS_VERSION|AFFILIATE_PAYOUTS|AFFILIATE_ACCOUNTING_READY|NEXT_PUBLIC_AFFILIATE_V2|BETREDGE_ADMIN_BASE_URL) ;;
     *) die "du_vercel_env_value: $1 non è in whitelist (potrebbe essere un segreto)";;
   esac
-  du_vercel env run -e production -- printenv "$1" 2>/dev/null || true
+  local metadata id project raw
+  metadata="$(du_vercel_env_metadata)" || return 1
+  id="$(printf '%s' "$metadata" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const a=JSON.parse(s).filter(e=>e.key===process.argv[1]);if(a.length===0)return;if(a.length!==1||a[0].type==="sensitive"){console.error("Production flag unreadable or ambiguous: "+process.argv[1]);process.exitCode=1;return}process.stdout.write(a[0].id)})' "$1")" || return 1
+  [ -n "$id" ] || return 0
+  project="$(du_vercel_project_id)" || return 1
+  raw="$(du_vercel api "/v1/projects/$project/env/$id" 2>/dev/null)" || return 1
+  printf '%s' "$raw" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const e=JSON.parse(s);if(e.key!==process.argv[1]||e.type==="sensitive"||!(e.type==="plain"||e.decrypted===true)||typeof e.value!=="string"||!e.value.length)throw Error();process.stdout.write(e.value)}catch{console.error("Invalid/unreadable production flag: "+process.argv[1]);process.exitCode=1}})' "$1"
 }
 # du_vercel_env_set NAME VALUE [extra flags] — add or update on Production, value via stdin.
 du_vercel_env_set() {
-  local name="$1" value="$2"; shift 2
-  if du_vercel_env_names | grep -qx "$name"; then
+  local name="$1" value="$2" names; shift 2
+  names="$(du_vercel_env_names)" || return 1
+  if printf '%s\n' "$names" | grep -qx "$name"; then
     printf '%s' "$value" | du_vercel env update "$name" production --yes "$@"
   else
     printf '%s' "$value" | du_vercel env add "$name" production --yes "$@"
@@ -206,12 +246,14 @@ ko() { c_red "KO  $*"; DU_KO=$((DU_KO + 1)); }
 check() { local d="$1"; shift; if "$@"; then ok "$d"; else ko "$d"; fi; }
 
 # The 7 functions + purge required by the new code (proposal, «Piano di verifica» 2/7b).
-DB_FUNCTIONS="affiliate_reverse_commission affiliate_admin_reverse_commission affiliate_screen_wallet affiliate_set_status affiliate_review_attribution affiliate_payout_mark_sent affiliate_payout_unmark_sent affiliate_purge_clicks"
-DB_TABLES="affiliates affiliate_referral_clicks affiliate_attributions affiliate_wallets affiliate_commissions affiliate_payouts affiliate_payer_fingerprints affiliate_refund_events affiliate_admin_actions"
+DB_FUNCTIONS="affiliate_receive_reversal affiliate_replay_reversals affiliate_reverse_commission affiliate_admin_reverse_commission affiliate_screen_wallet affiliate_set_status affiliate_review_attribution affiliate_payout_mark_sent affiliate_payout_unmark_sent affiliate_purge_clicks"
+DB_TABLES="affiliate_reversal_inbox affiliates affiliate_referral_clicks affiliate_attributions affiliate_wallets affiliate_commissions affiliate_payouts affiliate_payer_fingerprints affiliate_refund_events affiliate_admin_actions affiliate_absences affiliate_terms_acceptances"
 
 # du_db_schema_checks — read-only: tables, functions, refund-events backfill, cumulative function body.
 du_db_schema_checks() {
   local t f n a b
+  n="$(du_sql_val "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='affiliates' AND column_name='left_at'")"
+  check "affiliates.left_at presente (1023)" [ "$n" = 1 ]
   for t in $DB_TABLES; do
     n="$(du_sql_val "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='$t'")"
     check "tabella $t presente" [ "$n" = 1 ]
@@ -233,3 +275,25 @@ du_db_schema_checks() {
 du_applied_versions() { du_sql_list "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version"; }
 
 du_mig_file() { printf '%s/supabase/migrations/%s.sql' "$REPO_ROOT" "$1"; }
+
+# Fail closed: a CLI failure is never permission to enable accrual or payouts.
+du_safe_payment_flags() {
+  local pay acc names
+  names="$(du_vercel_env_names)" || return 1
+  pay="$(du_vercel_env_value AFFILIATE_PAYOUTS)" || return 1
+  acc="$(du_vercel_env_value AFFILIATE_ACCOUNTING_READY)" || return 1
+  [ "$pay" = off ] || { echo "AFFILIATE_PAYOUTS must be explicitly off" >&2; return 1; }
+  case "$acc" in ""|0) ;; *) echo "Accounting must remain disabled" >&2; return 1;; esac
+  ! printf '%s\n' "$names" | grep -qx AFFILIATE_HASH_SECRET
+}
+
+# Resolve the actual production alias, then require its deployment metadata.
+# `vercel inspect` alone omits git metadata in current CLI versions.
+du_production_matches() {
+  local sha="$1" inspected id detail
+  [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || return 1
+  inspected="$(du_vercel inspect "${SITE_URL#https://}" -F json 2>/dev/null)" || return 1
+  id="$(printf '%s' "$inspected" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);if(j.target!=="production"||j.readyState!=="READY"||!/^dpl_[a-zA-Z0-9]+$/.test(j.id))throw Error();process.stdout.write(j.id)}catch{process.exitCode=1}})')" || return 1
+  detail="$(du_vercel api "/v13/deployments/$id" 2>/dev/null)" || return 1
+  printf '%s' "$detail" | node -e 'const fs=require("fs");let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s),p=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));if(j.id!==process.argv[3]||j.projectId!==p.projectId||j.target!=="production"||j.readyState!=="READY"||(j.gitSource?.sha??j.meta?.githubCommitSha)!==process.argv[1])throw Error()}catch{process.exitCode=1}})' "$sha" "$VERCEL_CWD/.vercel/project.json" "$id"
+}

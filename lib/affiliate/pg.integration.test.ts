@@ -176,7 +176,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     vi.stubEnv("AFFILIATE_PAYOUTS", "live");
     vi.stubEnv("AFFILIATE_PAYOUT_FROM", "0x1111111111111111111111111111111111111111");
     await h.sql!.unsafe(`
-      TRUNCATE affiliate_admin_actions, affiliate_refund_events, affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
+      TRUNCATE affiliate_reversal_inbox, affiliate_payer_fingerprints, affiliate_admin_actions, affiliate_refund_events, affiliate_commissions, affiliate_payouts, affiliate_wallets, affiliate_attributions,
                affiliate_referral_clicks, affiliates, profiles RESTART IDENTITY CASCADE;
       INSERT INTO profiles(identifier, referral_code, language) VALUES
         ('alice@x.io', NULL, 'it'), ('bob@x.io', 'BOBBY', 'en');`);
@@ -498,6 +498,40 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     return (await h.sql!.unsafe(payingReferredSql(mode).sql.replace("$1", "1")))[0].n;
   };
   const ev = (eventRef: string, refundedGrossUsd: number | null) => ({ rail: "shopify" as const, paymentRef: "o1", eventRef, refundedGrossUsd });
+
+  it("refund inbox is not readable or writable by anonymous clients", async () => {
+    const grants = await h.sql!`SELECT
+      has_table_privilege('anon','affiliate_reversal_inbox','SELECT') AS can_read,
+      has_function_privilege('anon','affiliate_receive_reversal(text,text,text,numeric,integer)','EXECUTE') AS can_write`;
+    expect(grants[0]).toEqual({can_read:false,can_write:false});
+  });
+
+  it("early refund is durable, blocks maturity and replays once after the commission arrives", async () => {
+    const early = await h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',NULL,120) AS r`;
+    expect(early[0].r.reason).toBe('deferred');
+    await aliceWithCommission('pending', 70);
+    expect((await h.sql!`SELECT affiliate_mature_commissions() AS r`)[0].r.matured).toBe(0);
+    expect((await h.sql!`SELECT affiliate_replay_reversals() AS r`)[0].r.processed).toBe(1);
+    expect((await h.sql!`SELECT affiliate_replay_reversals() AS r`)[0].r.processed).toBe(0);
+    expect(await rows()).toEqual([
+      {kind:'first',ev:'',amt:20,status:'reversed'},
+      {kind:'reversal',ev:'early',amt:-20,status:'reversed'},
+    ]);
+  });
+  it("concurrent duplicate early refunds retain the first payload and produce one proportional reversal", async () => {
+    await Promise.all([1,2,3].map(() => h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',25,120)`));
+    await aliceWithCommission('pending', 10);
+    await h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',100,120)`;
+    const result = await rows();
+    expect(result.filter(r=>r.kind==='reversal')).toEqual([{kind:'reversal',ev:'early',amt:-5,status:'pending'}]);
+    expect((await h.sql!`SELECT count(*)::int AS n FROM affiliate_reversal_inbox`)[0].n).toBe(1);
+  });
+  it("replay does not starve an available commission behind unrelated payments", async () => {
+    await h.sql!`SELECT affiliate_receive_reversal('shopify','unrelated','none',NULL,120)`;
+    await h.sql!`SELECT affiliate_receive_reversal('shopify','o1','early',NULL,120)`;
+    await aliceWithCommission('pending',10);
+    expect((await h.sql!`SELECT affiliate_replay_reversals(1) AS r`)[0].r.processed).toBe(1);
+  });
 
   it("R1 storno totale dentro l'hold: originale reversed, mai maturato, redelivery idempotente, fuori dallo scaglione", async () => {
     vi.stubEnv("AFFILIATE_MODE", "live");

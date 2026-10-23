@@ -17,7 +17,7 @@ case "$1 ${2:-}" in
   "pr ready") touch "$S/ready-$3" ;;
   "pr merge")
     [[ "$all" == *"--match-head-commit"* ]] || { echo "manca --match-head-commit" >&2; exit 1; }
-    printf 'feedfacefeedfacefeedfacefeedfacefeed%04d\n' "$3" > "$S/merged-$3" ;;
+    printf '%s\n' "$FAKE_PR_HEAD" > "$S/merged-$3" ;;
   "api "*)
     if [[ "$all" == *check-runs* ]]; then
       if [[ "$all" == *'select(.status != "completed")'* ]] || [[ "$all" == *conclusion* ]]; then echo "${FAKE_CI_BAD:-0}"; else echo 3; fi

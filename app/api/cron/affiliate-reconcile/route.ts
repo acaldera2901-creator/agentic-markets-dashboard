@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { verifyBearer } from "@/lib/admin-auth";
 import { affiliateMode } from "@/lib/affiliate/config";
 import { reconcileAffiliateLedger } from "@/lib/affiliate/reconcile";
+import { affiliateRpc } from "@/lib/affiliate/rpc";
 import { opsAlert } from "@/lib/ops-alert";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,10 @@ export async function GET(req: Request) {
   if (affiliateMode() === "off") return NextResponse.json({ ok: true, skipped: true });
   try {
     const r = await reconcileAffiliateLedger();
+    const refunds = await affiliateRpc<{ ok: boolean; processed: number }>("affiliate_replay_reversals", {});
+    if (!refunds.ok) throw new Error("refund replay rejected");
     const lines: string[] = [];
+    if (refunds.processed > 0) lines.push(`storni differiti elaborati: ${refunds.processed}`);
     if (r.written > 0 || (r.reasons.error ?? 0) > 0 || r.truncated) {
       lines.push(
         `commissioni recuperate: ${r.written} su ${r.checked} pagamenti senza riga; esiti ${JSON.stringify(r.reasons)}${r.truncated ? " (troncato: riprende al prossimo giro)" : ""}`

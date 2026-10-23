@@ -28,7 +28,6 @@ else du_vercel_env_set AFFILIATE_TERMS_VERSION "$TERMS_V3" --no-sensitive; fi
 echo; echo "== Verifica post-passo =="
 NOW="$(du_vercel_env_value AFFILIATE_TERMS_VERSION)"
 if [ "$NOW" = "$TERMS_V3" ]; then ok "AFFILIATE_TERMS_VERSION=$NOW"
-elif [ -z "$NOW" ]; then c_yel "valore non leggibile (variabile sensitive): controllalo nella dashboard Vercel prima del passo 4"
 else die "valore letto «$NOW» ≠ $TERMS_V3"; fi
 du_mark passo3 "$PREV"
 c_grn "Passo 3 OK. Effetto al prossimo deploy (il merge del passo 4): niente redeploy adesso."
