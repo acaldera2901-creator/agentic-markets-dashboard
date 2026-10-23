@@ -28,8 +28,10 @@ describe("lista del mese", () => {
     for (const c of ["ESEMPIO-A", "ESEMPIO-B", "ESEMPIO-C", "ESEMPIO-D", "ESEMPIO-E", "ESEMPIO-F"]) expect(screen.getByText(c)).toBeTruthy();
     expect(screen.getByText(/wallet in attesa delle 72 ore/)).toBeTruthy();
     expect(screen.getAllByText(/sotto soglia: passa al mese dopo/).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
-    expect(screen.getByText("2 selezionati · $310,60.")).toBeTruthy();
+    // #AFFILIATE-COMPLETE-1023: creation lives in the backoffice (named operators), not here.
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /Crea/ })).toBeNull();
+    expect(screen.getByTestId("create-in-bo").textContent).toMatch(/backoffice/);
   });
 
   it("l'indirizzo intero non compare mai nella lista (solo mascherato)", async () => {
@@ -44,15 +46,14 @@ describe("lista del mese", () => {
     mock(list({ mode: "off" }));
     render(<AdminPayouts />);
     expect(await screen.findByTestId("payouts-off")).toBeTruthy();
-    expect((screen.getByRole("button", { name: /Crea/ }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /Crea/ })).toBeNull();
   });
 
   it("senza wallet di uscita: avviso e niente creazione", async () => {
     mock(list({ payout_from: null }));
     render(<AdminPayouts />);
     expect(await screen.findByText(/Wallet di uscita non configurato/)).toBeTruthy();
-    expect((screen.getByRole("button", { name: /Crea/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: /Crea/ })).toBeNull();
   });
 
   it("401 → sessione scaduta; 500 → errore con retry, nessuna riga inventata", async () => {
@@ -64,54 +65,6 @@ describe("lista del mese", () => {
     render(<AdminPayouts />);
     expect(await screen.findByText(/Non riesco a leggere i payout/)).toBeTruthy();
     expect(screen.queryByText("ESEMPIO-A")).toBeNull();
-  });
-
-  it("deselezionare ricalcola il totale; POST con expected_total e solo gli id scelti", async () => {
-    mock((url, method) => method === "POST" ? { status: 200, body: { ok: true } } : list()(url));
-    render(<AdminPayouts />);
-    await screen.findByText("ESEMPIO-A");
-    fireEvent.click(screen.getByLabelText("Seleziona ESEMPIO-B"));
-    expect(screen.getByText("1 selezionato · $212,40.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Crea 1 payout" }));
-    await waitFor(() => expect(calls.some((c) => c.method === "POST")).toBe(true));
-    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ month: "2026-10", ids: [1], expected_total: "212.40" });
-  });
-
-  it("409 total_mismatch: mostra la differenza e rilegge (non crea)", async () => {
-    mock((url, method) => method === "POST" ? { status: 409, body: { ok: false, error: "total_mismatch", expected: "310.60", actual: "374.00" } } : list()(url));
-    render(<AdminPayouts />);
-    await screen.findByText("ESEMPIO-A");
-    fireEvent.click(screen.getByRole("button", { name: "Crea 2 payout" }));
-    const alert = await screen.findByText(/Il totale è cambiato/);
-    expect(alert.textContent).toMatch(/atteso \$310,60, ora \$374,00/);
-    expect(alert.textContent).toMatch(/Non è stato creato niente/);
-    await waitFor(() => expect(calls.filter((c) => c.method === "GET").length).toBeGreaterThanOrEqual(2));
-  });
-
-  it.each([
-    ["address_blocked", /ESEMPIO-B: Un destinatario non passa più il controllo/],
-    ["not_screened", /ESEMPIO-B: Un destinatario non ha un controllo/],
-    ["address_not_allowed", /ESEMPIO-B: Un destinatario ha un indirizzo non ammesso/],
-  ])("409 %s alla creazione: dice quale affiliato, non crea, rilegge", async (error, re) => {
-    mock((url, method) => method === "POST" ? { status: 409, body: { error, affiliate_id: 2 } } : list()(url));
-    render(<AdminPayouts />);
-    await screen.findByText("ESEMPIO-A");
-    fireEvent.click(screen.getByRole("button", { name: "Crea 2 payout" }));
-    expect((await screen.findByRole("alert")).textContent).toMatch(re);
-  });
-
-  it("409 not_eligible e 503 screening_unavailable alla creazione", async () => {
-    mock((url, method) => method === "POST" ? { status: 409, body: { ok: false, error: "not_eligible", items: [] } } : list()(url));
-    const a = render(<AdminPayouts />);
-    await screen.findByText("ESEMPIO-A");
-    fireEvent.click(screen.getByRole("button", { name: "Crea 2 payout" }));
-    expect((await screen.findByRole("alert")).textContent).toMatch(/non sono più pagabili/);
-    a.unmount();
-    mock((url, method) => method === "POST" ? { status: 503, body: { error: "screening_unavailable", affiliate_id: 1 } } : list()(url));
-    render(<AdminPayouts />);
-    await screen.findByText("ESEMPIO-A");
-    fireEvent.click(screen.getByRole("button", { name: "Crea 2 payout" }));
-    expect((await screen.findByRole("alert")).textContent).toMatch(/controllo degli indirizzi non risponde/);
   });
 
   it("mese passato: sola lettura", async () => {
@@ -202,11 +155,37 @@ describe("registra tx", () => {
   });
 
   it("affiliato sospeso: blocco evidente, nessun invio/registrazione", async () => {
-    setup({ affiliate_status: "suspended" });
+    setup({ affiliate_status: "suspended", sent_marked_at: null, sent_marked_by: null });
     await openTx();
     expect(screen.getByTestId("affiliate-status").textContent).toMatch(/SOSPESO/);
     expect((screen.getByRole("button", { name: "Registra e verifica" }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(screen.getByTestId("tx-confirm")).getByRole("checkbox") as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it("#AFFILIATE-COMPLETE-1023: sospeso dopo la marca «in uscita» → l'hash si registra (come la SQL)", async () => {
+    setup({ affiliate_status: "suspended" });
+    await openTx();
+    expect(screen.getByTestId("affiliate-status").textContent).toMatch(/SOSPESO.*già approvato e marcato/);
+    fireEvent.change(screen.getByLabelText(/Incolla l.hash/), { target: { value: TX } });
+    fireEvent.click(within(screen.getByTestId("tx-confirm")).getByRole("checkbox"));
+    expect((screen.getByRole("button", { name: "Registra e verifica" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("#AFFILIATE-COMPLETE-1023: non ancora marcato «in uscita» → avviso, niente registrazione", async () => {
+    setup({ sent_marked_at: null, sent_marked_by: null });
+    await openTx();
+    expect(screen.getByTestId("mark-state").textContent).toMatch(/Non ancora approvato.*Non inviare fondi/);
+    fireEvent.change(screen.getByLabelText(/Incolla l.hash/), { target: { value: TX } });
+    fireEvent.click(within(screen.getByTestId("tx-confirm")).getByRole("checkbox"));
+    expect((screen.getByRole("button", { name: "Registra e verifica" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("USDC: il passo 1 dice la valuta del payout, non USDT", async () => {
+    setup({ coin: "USDC" });
+    render(<AdminPayouts />);
+    fireEvent.click(await screen.findByRole("button", { name: "Invia e registra hash" }));
+    expect(await screen.findByText("1 · Importo da inviare (USDC, 2 decimali)")).toBeTruthy();
+    expect(screen.getByTestId("mark-state").textContent).toMatch(/bo:marco/);
   });
 
   it("esito paid: POST /tx con l'hash, messaggio di verifica", async () => {

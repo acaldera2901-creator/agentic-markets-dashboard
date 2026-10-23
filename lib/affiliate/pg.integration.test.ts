@@ -117,6 +117,14 @@ function req(url: string, method: string, who: string | null, body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
+// #AFFILIATE-COMPLETE-1023: payouts are created by a named backoffice operator (Bearer + x-admin-actor).
+function opReq(body: unknown) {
+  return new Request("https://x/api/admin/affiliate/payouts", {
+    method: "POST",
+    headers: { authorization: "Bearer bo", "x-admin-actor": "ops@maven" },
+    body: JSON.stringify(body),
+  }) as never;
+}
 const walletBody = (address: string) => ({
   coin: "USDT",
   address,
@@ -292,7 +300,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(list.rows[0]).toMatchObject({ code: "ALICE", eligible: true, balance_usd: 60, wallet: { address: A1 } });
     expect(list.summary).toMatchObject({ eligible_count: 1, eligible_total_usd: 60 });
 
-    const created = await admin.POST(req("/api/admin/affiliate/payouts", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    const created = await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     expect(created.status).toBe(200);
     const [p] = await h.sql!`SELECT id, status, to_address FROM affiliate_payouts`;
     expect(p).toMatchObject({ status: "created", to_address: A1 });
@@ -318,8 +326,8 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const body = { month: month(), ids: [1], expected_total: "60.00" };
     const [a, b] = await Promise.all([
-      admin.POST(req("/x", "POST", null, body) as never),
-      admin.POST(req("/x", "POST", null, body) as never),
+      admin.POST(opReq(body)),
+      admin.POST(opReq(body)),
     ]);
     expect([a.status, b.status].sort()).toEqual([200, 409]);
     const [n] = await h.sql!`SELECT count(*)::int AS n FROM affiliate_payouts`;
@@ -330,7 +338,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await payableAlice();
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
-    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     h.chainTo = A2;
     h.chainAmount = 60;
     const t = await txr.POST(req(`/x`, "POST", null, { hash: H }) as never, { params: Promise.resolve({ id: "1" }) });
@@ -344,7 +352,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
     const wallet = await import("@/app/api/affiliate/wallet/route");
-    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     await wallet.PUT(req("/api/affiliate/wallet", "PUT", "alice@x.io", walletBody(A2)));
     h.chainTo = A1;
     h.chainAmount = 60;
@@ -357,7 +365,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await payableAlice();
     h.screen = "none";
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
-    const r = await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    const r = await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     expect(await r.json()).toMatchObject({ error: "not_screened", affiliate_id: 1 });
     const [n] = await h.sql!`SELECT count(*)::int AS n FROM affiliate_payouts`;
     expect(n.n).toBe(0);
@@ -367,7 +375,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await payableAlice();
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
     const txr = await import("@/app/api/admin/affiliate/payouts/[id]/tx/route");
-    await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     await h.sql!`UPDATE affiliates SET status = 'suspended'`;
     h.chainTo = A1;
     h.chainAmount = 60;
@@ -379,7 +387,7 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await payableAlice();
     await h.sql!`UPDATE affiliates SET status = 'suspended'`;
     const admin = await import("@/app/api/admin/affiliate/payouts/route");
-    const r = await admin.POST(req("/x", "POST", null, { month: month(), ids: [1], expected_total: "60.00" }) as never);
+    const r = await admin.POST(opReq({ month: month(), ids: [1], expected_total: "60.00" }));
     expect(r.status).toBe(409);
     expect(await r.json()).toMatchObject({ error: "not_eligible", items: [{ affiliate_id: 1, reasons: ["suspended"] }] });
   });
@@ -611,13 +619,13 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     await aliceWithCommission("pending", 5);
     await h.sql!`UPDATE affiliate_commissions SET rail = 'paygate', rail_payment_ref = 'pg-1'`;
     const admin = await import("@/app/api/admin/affiliate/reverse/route");
-    const bad = await admin.POST(req("/x", "POST", null, { rail: "admin", payment_ref: "pg-1", event_ref: "m1" }) as never);
+    const bad = await admin.POST(opReq({ rail: "admin", payment_ref: "pg-1", event_ref: "m1" }));
     expect(bad.status).toBe(400);
-    const ok = await admin.POST(req("/x", "POST", null, { rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }) as never);
+    const ok = await admin.POST(opReq({ rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }));
     expect(await ok.json()).toEqual({ written: true, reason: "reversal" });
     expect((await rows()).map((r) => r.ev)).toEqual(["", "m1"]);
     // Rigiocare la stessa event_ref (es. da un alert) non storna due volte.
-    const again = await admin.POST(req("/x", "POST", null, { rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }) as never);
+    const again = await admin.POST(opReq({ rail: "paygate", payment_ref: "pg-1", event_ref: "m1" }));
     expect(await again.json()).toEqual({ written: false, reason: "duplicate" });
   });
 

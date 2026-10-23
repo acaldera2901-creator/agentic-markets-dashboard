@@ -9,9 +9,9 @@
 // mano dal wallet di uscita — il server non firma. `mode:"off"` (payout non attivi)
 // è sempre visibile e spegne i pulsanti di scrittura.
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
-import { CREATE_ERROR_TEXT, createErrorText, nextMonth, prevMonth, reasonText, TX_REJECT_TEXT, txErrorText, txFailText } from "./admin-copy";
+import { nextMonth, prevMonth, reasonText, TX_REJECT_TEXT, txErrorText, txFailText } from "./admin-copy";
 import { addressGroups, dateTime, monthLabel, shortDate, usd } from "./format";
 import { AFF_COPY } from "./copy";
 import { CheckIcon, ExplorerLink, StateChip, useCopy } from "./ui";
@@ -21,15 +21,11 @@ import "./affiliate.css";
 
 const IT = AFF_COPY.it;
 const money = (n: number) => usd(n, "it");
-const cents = (n: number) => Math.round(n * 100);
 
 export function AdminPayouts() {
   const [month, setMonth] = useState<string | null>(null);
   const [data, setData] = useState<AdminMonth | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error" | "unauthorized">("loading");
-  const [picked, setPicked] = useState<Set<number>>(new Set());
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  const [busy, setBusy] = useState(false);
   const [txId, setTxId] = useState<number | null>(null);
 
   const load = useCallback(async (m: string | null) => {
@@ -39,7 +35,6 @@ export function AdminPayouts() {
     const d = res.data;
     setData(d);
     setMonth(d.month);
-    setPicked(new Set(d.rows.filter((r) => selectable(r, d)).map((r) => r.affiliate_id)));
     setState("ready");
   }, []);
 
@@ -49,28 +44,7 @@ export function AdminPayouts() {
 
   const go = (m: string) => {
     setState("loading");
-    setMsg(null);
     void load(m);
-  };
-
-  const chosen = useMemo(() => (data ? data.rows.filter((r) => picked.has(r.affiliate_id)) : []), [data, picked]);
-  const chosenCents = chosen.reduce((s, r) => s + cents(r.balance_usd), 0);
-
-  const create = async () => {
-    if (!data || busy || chosen.length === 0) return;
-    setBusy(true);
-    setMsg(null);
-    const res = await api<{ ok?: boolean; error?: string; expected?: string; actual?: string }>("/api/admin/affiliate/payouts", {
-      method: "POST",
-      body: JSON.stringify({ month: data.month, ids: chosen.map((r) => r.affiliate_id), expected_total: (chosenCents / 100).toFixed(2) }),
-    });
-    setBusy(false);
-    if (res.ok && res.data?.ok !== false) {
-      setMsg({ kind: "ok", text: `Creati ${chosen.length} payout per ${money(chosenCents / 100)}. Ora vanno inviati a mano e registrati con l'hash.` });
-    } else {
-      setMsg({ kind: "err", text: res.status === 0 ? CREATE_ERROR_TEXT["create failed"] : createErrorText(res.data, money, (aid) => data.rows.find((r) => r.affiliate_id === aid)?.code) });
-    }
-    await load(data.month); // sempre rileggere: l'elenco che vedi deve essere quello del server
   };
 
   if (txId != null) {
@@ -87,7 +61,6 @@ export function AdminPayouts() {
 
   const off = data?.mode === "off";
   const isCurrent = data ? data.month === data.current_month : false;
-  const canWrite = !!data && !off && isCurrent && !!data.payout_from;
 
   return (
     <div className="aff-cli" data-testid="admin-payouts">
@@ -129,14 +102,14 @@ export function AdminPayouts() {
 
           <dl className="aff-adm-sum">
             <div><dd>{data.summary.eligible_count}</dd><dt>pagabili</dt><span className="aff-nn">{excluded(data.rows)}</span></div>
-            <div><dd>{money(data.summary.eligible_total_usd)}</dd><dt>totale da inviare</dt><span className="aff-nn">in USDT, 1:1</span></div>
+            <div><dd>{money(data.summary.eligible_total_usd)}</dd><dt>totale da inviare</dt><span className="aff-nn">in stablecoin ({data.rails.coins.join("/")}), 1:1</span></div>
             <div><dd>{money(data.summary.to_fund_usd)}</dd><dt>da avere sul wallet di uscita</dt><span className="aff-nn">ricaricalo del solo importo del mese</span></div>
             <div><dd>{data.summary.prepared_count}</dd><dt>già preparati</dt><span className="aff-nn">in attesa dell&apos;hash</span></div>
           </dl>
 
           {data.payout_from && (
             <div className="aff-wstate" data-s="active">
-              <p className="aff-small" style={{ margin: 0 }}>Wallet di uscita (dedicato ai payout, solo USDT su Polygon). Il saldo si controlla sul wallet, qui non lo leggiamo.</p>
+              <p className="aff-small" style={{ margin: 0 }}>Wallet di uscita (dedicato ai payout, {data.rails.coins.join(" e ")} su Polygon: ricaricalo nella valuta di ogni payout). Il saldo si controlla sul wallet, qui non lo leggiamo.</p>
               <p className="aff-addr" style={{ margin: 0 }}>{data.payout_from}</p>
             </div>
           )}
@@ -158,9 +131,6 @@ export function AdminPayouts() {
                   key={r.affiliate_id}
                   r={r}
                   d={data}
-                  canPick={canWrite && selectable(r, data)}
-                  picked={picked.has(r.affiliate_id)}
-                  onPick={(on) => setPicked((p) => { const n = new Set(p); if (on) n.add(r.affiliate_id); else n.delete(r.affiliate_id); return n; })}
                   onOpen={() => setTxId(r.payout!.id)}
                 />
               ))}
@@ -168,26 +138,20 @@ export function AdminPayouts() {
           </table>
           {data.rows.length === 0 && <p className="aff-muted">Nessun affiliato iscritto.</p>}
 
-          {msg && <p className={msg.kind === "err" ? "aff-err" : "aff-ok-line"} role={msg.kind === "err" ? "alert" : "status"}>{msg.text}</p>}
-
-          <div className="aff-bar-sel">
-            <p>
-              <strong>{chosen.length} selezionat{chosen.length === 1 ? "o" : "i"} · {money(chosenCents / 100)}.</strong>{" "}
-              Crea payout blocca questi importi nel registro e li prepara per l&apos;invio a mano. Si può annullare finché non c&apos;è un hash. Il server ricalcola il totale e non crea se è cambiato.
-            </p>
-            <button type="button" className="aff-cta" style={{ minHeight: 44 }} disabled={!canWrite || chosen.length === 0 || busy} onClick={create}>
-              {busy ? "Creo…" : `Crea ${chosen.length} payout`}
-            </button>
-          </div>
+          {/* #AFFILIATE-COMPLETE-1023: four-eyes needs named operators and /admin's shared cookie is not
+              one, so payouts are created (and approved) in the backoffice. Here: read, register the hash, cancel. */}
+          <p className="aff-muted" data-testid="create-in-bo">
+            I payout si creano dal <strong>backoffice</strong> (Affiliate program) con un operatore nominato; un secondo operatore li approva e li marca «in uscita». Qui si legge, si registra l&apos;hash e si annulla.
+          </p>
         </section>
       )}
     </div>
   );
 }
 
-/** Una riga è selezionabile se il server la dice eleggibile (nessun motivo) e non ha già un payout. */
-export function selectable(r: AdminPayoutRow, d: Pick<AdminMonth, "mode" | "current_month" | "month" | "payout_from">): boolean {
-  return r.eligible && !r.payout && d.mode === "live" && d.month === d.current_month && !!d.payout_from;
+/** Hash can be registered: affiliate active, or the payout was already marked sent (SQL record_tx allows it). */
+export function canRegister(p: Pick<AdminPayout, "affiliate_status" | "sent_marked_at">): boolean {
+  return p.affiliate_status === "active" || p.sent_marked_at != null;
 }
 
 function excluded(rows: AdminPayoutRow[]): string {
@@ -198,9 +162,7 @@ function excluded(rows: AdminPayoutRow[]): string {
   return parts.length ? `più ${parts.join(", ")}` : "nessuna esclusione";
 }
 
-function Row({ r, d, canPick, picked, onPick, onOpen }: {
-  r: AdminPayoutRow; d: AdminMonth; canPick: boolean; picked: boolean; onPick: (on: boolean) => void; onOpen: () => void;
-}) {
+function Row({ r, d, onOpen }: { r: AdminPayoutRow; d: AdminMonth; onOpen: () => void }) {
   const name = r.payee.name ? `${r.payee.name}${r.payee.country ? ` · ${r.payee.country}` : ""}` : "dati mancanti";
   const dim = !r.eligible && !r.payout;
   const reasons = r.reasons.filter((x) => x !== "already_created");
@@ -217,14 +179,7 @@ function Row({ r, d, canPick, picked, onPick, onOpen }: {
   return (
     <tr data-state={p?.status ?? "none"} className={dim ? "aff-rowdim" : undefined}>
       <td data-k="who">
-        {canPick ? (
-          <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <input type="checkbox" checked={picked} onChange={(e) => onPick(e.target.checked)} style={{ accentColor: "var(--am-royal-t)", width: 18, height: 18, marginTop: 2 }} aria-label={`Seleziona ${r.code}`} />
-            <span>{r.code}<span className="aff-sub">{name}</span></span>
-          </label>
-        ) : (
-          <span style={{ paddingLeft: 28, display: "block" }}>{r.code}<span className="aff-sub">{name}</span></span>
-        )}
+        <span style={{ display: "block" }}>{r.code}<span className="aff-sub">{name}</span></span>
       </td>
       <td data-k="amount" className="aff-num">
         <strong>{money(r.balance_usd)}</strong>
@@ -298,7 +253,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
       if (o.outcome !== "rejected" && (o as { tx_from_mismatch?: boolean }).tx_from_mismatch) setFromMismatch(true);
       if (o.outcome === "paid") {
         const conf = o.confirmations != null ? ` · ${o.confirmations} conferme` : "";
-        setResult({ kind: "paid", text: `Verificato sulla rete: token, mittente = wallet di uscita, destinatario = indirizzo del payout${o.amount_coin && Number.isFinite(Number(o.amount_coin)) ? ` · ${Number(o.amount_coin).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT` : ""}${conf}. Il payout è Pagato; l'affiliato riceve l'email con il link all'explorer.` });
+        setResult({ kind: "paid", text: `Verificato sulla rete: token, mittente = wallet di uscita, destinatario = indirizzo del payout${o.amount_coin && Number.isFinite(Number(o.amount_coin)) ? ` · ${Number(o.amount_coin).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 6 })} ${p?.coin ?? ""}` : ""}${conf}. Il payout è Pagato; l'affiliato riceve l'email con il link all'explorer.` });
       } else if (o.outcome === "submitted") {
         setResult({ kind: "submitted", text: `Transazione trovata con ${o.confirmations} conferme${o.required ? ` su ${o.required}` : ""}. Resta Inviato: usa «Riverifica» tra qualche minuto.` });
       } else {
@@ -322,7 +277,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
       setBusy(false);
       return setResult({ kind: "error", text: "Non riesco a rileggere il payout: non registro niente. Riprova." });
     }
-    if (!isVerify && (f.status !== p.status || f.to_address !== p.to_address || f.affiliate_status !== "active")) {
+    if (!isVerify && (f.status !== p.status || f.to_address !== p.to_address || !canRegister(f))) {
       setBusy(false);
       setP(f);
       setConfirmed(false);
@@ -358,8 +313,11 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
 
   const groups = addressGroups(p.to_address);
   const editable = p.status === "created";
-  const affOk = p.affiliate_status === "active";
-  const canSubmit = editable && !off && affOk && confirmed && hash.trim().length > 0 && !busy;
+  // Same rule as affiliate_payout_record_tx: a marked payout of a since-suspended affiliate can still be settled.
+  const affActive = p.affiliate_status === "active";
+  const affOk = canRegister(p);
+  const marked = p.sent_marked_at != null;
+  const canSubmit = editable && !off && affOk && marked && confirmed && hash.trim().length > 0 && !busy;
   const canCancel = editable || p.status === "submitted";
   return (
     <>
@@ -375,12 +333,23 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
             <StateChip chip={payoutChip(p.status, IT)} />
           </div>
           {off && <div className="aff-banner" role="status"><p>I payout non sono attivi: qui si legge e si annulla, non si registra niente.</p></div>}
-          <div className={affOk ? "aff-wstate" : "aff-banner"} data-s={affOk ? "active" : "blocked"} role={affOk ? undefined : "alert"} data-testid="affiliate-status">
+          <div className={affActive ? "aff-wstate" : "aff-banner"} data-s={affActive ? "active" : "blocked"} role={affActive ? undefined : "alert"} data-testid="affiliate-status">
             <p style={{ margin: 0 }}>
               <strong>Affiliato: {p.affiliate_status === "active" ? "attivo" : p.affiliate_status === "suspended" ? "SOSPESO" : p.affiliate_status === "terminated" ? "USCITO dal programma" : p.affiliate_status}</strong>
-              {!affOk && (p.status === "submitted" ? " · l'invio è già partito: puoi riverificare la transazione per chiuderla come Pagata, ma non fare nuovi invii." : " · non inviare e non registrare: se i fondi sono già partiti, gestiscili a mano.")}
+              {!affActive && (p.status === "submitted"
+                ? " · l'invio è già partito: puoi riverificare la transazione per chiuderla come Pagata, ma non fare nuovi invii."
+                : affOk
+                  ? " · il payout era già approvato e marcato «in uscita»: se i fondi sono partiti registra l'hash; non fare nuovi invii."
+                  : " · non inviare e non registrare: se i fondi sono già partiti, gestiscili a mano.")}
             </p>
           </div>
+          {editable && (
+            <p className={marked ? "aff-small" : "aff-err"} role={marked ? undefined : "alert"} data-testid="mark-state">
+              {marked
+                ? `Approvato e marcato «in uscita» da ${p.sent_marked_by ?? "—"} il ${dateTime(p.sent_marked_at as string, "it")}.`
+                : "Non ancora approvato: un secondo operatore nominato deve marcarlo «in uscita» dal backoffice. Non inviare fondi prima della marca."}
+            </p>
+          )}
           {fromMismatch && (
             <div className="aff-banner" role="status" data-testid="from-mismatch"><p><strong>Tx non firmata dal wallet di uscita:</strong> questo pagamento non potrà essere annullato automaticamente.</p></div>
           )}
@@ -389,7 +358,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
           )}
 
           <div className="aff-kv">
-            <span className="aff-k">1 · Importo da inviare (USDT, 2 decimali)</span>
+            <span className="aff-k">1 · Importo da inviare ({p.coin}, 2 decimali)</span>
             <span className="aff-small" data-testid="exact-amount"><strong>Invia l&apos;importo ESATTO.</strong> Anche 0,01 in meno viene rifiutato (importo troppo basso).</span>
             <div className="aff-row">
               <span className="aff-amt">{p.amount_usd.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -400,7 +369,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
           </div>
 
           <div className="aff-kv">
-            <span className="aff-k">2 · Indirizzo di destinazione, copiato al momento della creazione (rete Polygon)</span>
+            <span className="aff-k">2 · Indirizzo di destinazione, copiato al momento della creazione ({p.coin} su {p.network === "polygon" ? "Polygon" : p.network})</span>
             <div className="aff-big-addr" role="group" aria-label="Indirizzo di destinazione" style={{ fontSize: 16 }}>
               {groups.map((g, i) => (
                 <span key={i}>{g.map((x, j) => (x.hl ? <b key={j}>{x.text}</b> : <span key={j} className="aff-plain">{x.text}</span>))}</span>
@@ -425,7 +394,7 @@ function TxPanel({ id, off, onBack }: { id: number; off: boolean; onBack: () => 
               <ExplorerLink href={p.explorer_url} text={p.tx_hash} sr="apre l'explorer in una nuova scheda" />
               {p.tx_from && <span className="aff-small" data-testid="tx-from">Mittente registrato: <span className="aff-addr">{p.tx_from}</span></span>}
               {p.status === "submitted" && p.tx_nonce != null && <span className="aff-small">Nonce registrato: {p.tx_nonce}{p.tx_block != null ? ` · blocco ${p.tx_block}` : ""} (serve se devi sostituire la transazione dal wallet di uscita)</span>}
-              {p.status === "paid" && p.paid_at && <span className="aff-small">Pagato il {dateTime(p.paid_at, "it")}{p.amount_coin != null ? ` · ricevuti ${p.amount_coin} USDT` : ""}</span>}
+              {p.status === "paid" && p.paid_at && <span className="aff-small">Pagato il {dateTime(p.paid_at, "it")}{p.amount_coin != null ? ` · ricevuti ${p.amount_coin} ${p.coin}` : ""}</span>}
             </div>
           )}
 

@@ -82,6 +82,9 @@ export async function POST(req: NextRequest) {
   // nominato; da /admin «admin-cookie», che non potrà poi approvare l'invio.
   const actor = adminActor(req);
   if (!actor) return NextResponse.json({ error: "actor_required" }, { status: 400 });
+  // #AFFILIATE-COMPLETE-1023: a payout created by the shared /admin cookie could never be
+  // marked sent (four-eyes needs named operators) and would sit blocked until cancelled.
+  if (actor === "admin-cookie") return NextResponse.json({ error: "named_operators_required" }, { status: 403 });
   const p = eligibilityParams();
   let res;
   try {

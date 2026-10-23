@@ -241,6 +241,9 @@ export type AdminPayout = {
   paid_at: string | null;
   cancel_code: string | null;
   cancel_reason: string | null;
+  /** #AFFILIATE-COMPLETE-1023: approval of the second named operator (backoffice), null = not marked. */
+  sent_marked_at: string | null;
+  sent_marked_by: string | null;
 };
 
 export function parsePayoutId(raw: string): number | null {
@@ -253,7 +256,8 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
             a.status AS affiliate_status, a.payee_legal_name AS payee_name, a.payee_country,
             p.period_month::text AS period_month, p.amount_usd, p.coin, p.network, p.to_address,
             p.amount_coin, p.tx_hash, p.tx_nonce, p.tx_block, p.tx_from, p.status, p.created_at::text AS created_at,
-            p.submitted_at::text AS submitted_at, p.paid_at::text AS paid_at, p.cancel_code, p.cancel_reason
+            p.submitted_at::text AS submitted_at, p.paid_at::text AS paid_at, p.cancel_code, p.cancel_reason,
+            p.sent_marked_at::text AS sent_marked_at, p.sent_marked_by
        FROM affiliate_payouts p JOIN affiliates a ON a.id = p.affiliate_id
       WHERE p.id = $1`,
     [id],
@@ -284,6 +288,8 @@ export async function loadPayout(id: number): Promise<AdminPayout | null> {
     paid_at: r.paid_at,
     cancel_code: r.cancel_code,
     cancel_reason: r.cancel_reason,
+    sent_marked_at: r.sent_marked_at ?? null,
+    sent_marked_by: r.sent_marked_by ?? null,
   };
 }
 

@@ -5,7 +5,7 @@ import { AFF_COPY, affLang, fill } from "./copy";
 import { checkAddressLocal, last6Matches, looksLikeTron, mapWalletError } from "./errors";
 import { addressGroups, monthLabel, shortHash, usd } from "./format";
 import { cancelText, commissionChip, payoutChip } from "./status";
-import { createErrorText, nextMonth, prevMonth, reasonText, txErrorText, txFailText, TX_REJECT_TEXT } from "./admin-copy";
+import { nextMonth, prevMonth, reasonText, txErrorText, txFailText, TX_REJECT_TEXT } from "./admin-copy";
 
 const A = "0x4b1e9a07c3d85f2e6a90b7c14d3e58f20a6c91d7";
 
@@ -161,12 +161,6 @@ describe("admin: testi", () => {
     expect(txFailText({ error: "hash_already_used", dropped: true })).toMatch(/annullato perché la transazione era sparita/);
     expect(txFailText({ error: "hash_already_used" })).toMatch(/già stato usato/);
     expect(txFailText({ error: "tx_not_droppable", reason: "boh" })).not.toMatch(/boh/);
-  });
-  it("total_mismatch mostra la differenza", () => {
-    const t = createErrorText({ error: "total_mismatch", expected: "349.20", actual: "412.60" }, (n) => usd(n, "it"));
-    expect(t).toMatch(/atteso \$349,20, ora \$412,60/);
-    expect(t).toMatch(/\+\$63,40/);
-    expect(t).toMatch(/Non è stato creato niente/);
   });
   it("mesi", () => {
     expect(prevMonth("2026-01")).toBe("2025-12");
