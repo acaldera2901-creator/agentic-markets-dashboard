@@ -266,8 +266,10 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
           {me.affiliate.status === "terminated" && <div className="aff-banner" role="status"><p>{c.state.terminated}</p></div>}
           {left && (
             <div className="aff-banner" role="status" data-testid="aff-left">
-              <p>{fill(c.state.left, { date: shortDate(me.affiliate.left_at, l) })}</p>
-              {!readOnly && <div className="aff-actions"><button type="button" className="aff-cta aff-cta--ghost" onClick={() => { setFlash(""); setView("rejoin"); }}>{c.state.rejoin}</button></div>}
+              <div className="aff-banner-body">
+                <p>{fill(c.state.left, { date: shortDate(me.affiliate.left_at, l) })}</p>
+                {!readOnly && <div className="aff-actions"><button type="button" className="aff-cta aff-cta--ghost" onClick={() => { setFlash(""); setView("rejoin"); }}>{c.state.rejoin}</button></div>}
+              </div>
             </div>
           )}
           {!left && me.terms_current && me.affiliate.terms_version !== me.terms_current && (
@@ -435,15 +437,17 @@ function TermsUpdate({ c, termsHref, version, canAccept, onAccepted }: {
   return (
     <div className="aff-banner" role="status" data-testid="aff-terms-update">
       <strong>{t.title}</strong>
-      <p>{t.body} <a href={termsHref} className="underline">{t.link}</a></p>
-      {canAccept && (
-        <>
-          <p className="aff-small">{t.acceptHint}</p>
-          <label className="aff-chk"><input type="checkbox" checked={onerous} onChange={(ev) => setOnerous(ev.target.checked)} /><span className="aff-tx">{t.onerous}</span></label>
-          {err && <p className="aff-err" role="alert">{t.error}</p>}
-          <div className="aff-actions"><button type="button" className="aff-cta aff-cta--ghost" disabled={!onerous || busy} onClick={accept}>{busy ? t.busy : t.accept}</button></div>
-        </>
-      )}
+      <div className="aff-banner-body">
+        <p>{t.body} <a href={termsHref} className="underline">{t.link}</a></p>
+        {canAccept && (
+          <>
+            <p className="aff-small">{t.acceptHint}</p>
+            <label className="aff-chk"><input type="checkbox" checked={onerous} onChange={(ev) => setOnerous(ev.target.checked)} /><span className="aff-tx">{t.onerous}</span></label>
+            {err && <p className="aff-err" role="alert">{t.error}</p>}
+            <div className="aff-actions"><button type="button" className="aff-cta aff-cta--ghost" disabled={!onerous || busy} onClick={accept}>{busy ? t.busy : t.accept}</button></div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

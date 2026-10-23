@@ -221,6 +221,8 @@ select.aff-input{appearance:none;background-image:linear-gradient(45deg,transpar
 @media(prefers-reduced-motion:reduce){.aff-sk{animation:none}}
 .aff-banner{display:flex;gap:var(--am-s-3);align-items:flex-start;padding:var(--am-s-3) var(--am-s-4);border:1px solid var(--am-negative-b);border-radius:var(--am-r-card-sm);background:var(--am-negative-dim)}
 .aff-banner p{margin:0}
+/* #AFFILIATE-COMPLETE-1023 — a banner with more than one line (text + form/actions) stacks them in one column. */
+.aff-banner-body{display:grid;gap:var(--am-s-2);flex:1;min-width:0}
 /* #INVITE-AFFILIATE-UX-1022 (R5) — «pagamenti in attivazione»: non è un errore (niente rosso), è uno stato
    dichiarato. Ambra tratteggiato, lo stesso segno del wallet «non ancora utilizzabile». */
 .aff-banner--setup{display:grid;gap:4px;border:1px dashed var(--am-amber);background:transparent}
