@@ -53,6 +53,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
   const [moreItems, setMoreItems] = useState<Enrolled["commissions"]["items"]>([]);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [busyRemove, setBusyRemove] = useState(false);
   // #INVITE-AFFILIATE-UX-1022 (R5): flag operativi da /api/affiliate/me. null = risposta senza
@@ -93,9 +94,12 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
   const loadMore = async () => {
     if (nextCursor == null || loadingMore) return;
     setLoadingMore(true);
+    setMoreError(false);
     const res = await api<MeResponse>(`/api/affiliate/me?cursor=${nextCursor}`);
     if (!mounted.current) return;
     setLoadingMore(false);
+    // #AFFILIATE-COMPLETE-1023: a failed page said nothing; now it says so (the list stays).
+    if (!(res.ok && res.data && res.data.enrolled)) setMoreError(true);
     if (res.ok && res.data && res.data.enrolled) {
       setMoreItems((prev) => [...prev, ...(res.data as Enrolled).commissions.items]);
       setNextCursor((res.data as Enrolled).commissions.next_cursor);
@@ -294,6 +298,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
           </div>
           <PayoutHistory c={c} lang={l} payouts={me.payouts} unavailable={false} full={false} onAll={() => setView("payouts")} setup={setup} />
           <CommissionHistory c={c} lang={l} items={items} hasMore={nextCursor != null} loadingMore={loadingMore} onMore={loadMore} unavailable={false} />
+          {moreError && <p className="aff-err" role="alert" data-testid="aff-more-error">{c.state.errorBody}</p>}
           <Rules c={c} termsHref={termsHref} privacyHref={privacyHref} onLeave={!readOnly && !left ? leave : undefined} />
         </>
       );

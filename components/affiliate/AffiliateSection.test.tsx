@@ -536,3 +536,13 @@ describe("uscita, rientro e termini aggiornati", () => {
     expect(await screen.findByText("Termini aggiornati accettati.")).toBeTruthy();
   });
 });
+
+it("#AFFILIATE-COMPLETE-1023: «Mostra altre» fallita → messaggio in chiaro, la lista resta", async () => {
+  const paged = { ...ME, commissions: { ...ME.commissions, next_cursor: 5 } };
+  mockFetch((url) => (url.includes("cursor=") ? { status: 500, body: {} } : url.startsWith("/api/affiliate/me") ? { status: 200, body: paged } : undefined));
+  render(<AffiliateSection lang="it" />);
+  const before = (await screen.findAllByRole("row")).length;
+  fireEvent.click(await screen.findByRole("button", { name: "Mostra altre" }));
+  expect((await screen.findByTestId("aff-more-error")).textContent).toMatch(/le commissioni non si perdono/i);
+  expect(screen.getAllByRole("row").length).toBe(before);
+});
