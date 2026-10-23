@@ -178,9 +178,9 @@ async function resolveAttribution(
   referred: string,
   paidAt: Date,
   config: AffiliateConfig
-): Promise<{ attribution: AttributionRow; fresh: boolean } | { reason: string }> {
+): Promise<{ attribution: AttributionRow } | { reason: string }> {
   const frozen = await readAttribution(referred);
-  if (frozen) return { attribution: frozen, fresh: false };
+  if (frozen) return { attribution: frozen };
 
   const prof = await dbQueryStrict<{ referred_by: string | null; created_at: string | null }>(
     `SELECT referred_by, created_at::text AS created_at FROM profiles
@@ -241,7 +241,7 @@ async function resolveAttribution(
     [referred, Number(affiliate.id), verdict.status, verdict.reason, paidAt.toISOString()]
   );
   const row = await readAttribution(referred);
-  return row ? { attribution: row, fresh: true } : { reason: "not_attributed" };
+  return row ? { attribution: row } : { reason: "not_attributed" };
 }
 
 async function paymentRecorded(rail: AffiliateRail, ref: string): Promise<boolean> {
@@ -324,12 +324,10 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   if (attribution.status === "self_referral" || attribution.status === "void") {
     return { written: false, reason: `attribution_${attribution.status}` };
   }
-  // #AFFILIATE-COMPLETE-1023 — a frozen attribution does not re-check the affiliate by itself
-  // (a new one was checked before being written, in resolveAttribution).
-  if (!resolved.fresh) {
-    const blocked = await standingReason(Number(attribution.affiliate_id), input.paidAt);
-    if (blocked) return { written: false, reason: blocked };
-  }
+  // #AFFILIATE-COMPLETE-1023 — the attribution actually in force (frozen, or won by a concurrent
+  // request) does not re-check the affiliate by itself; a new one was also checked before writing.
+  const blocked = await standingReason(Number(attribution.affiliate_id), input.paidAt);
+  if (blocked) return { written: false, reason: blocked };
 
   const net = netAmount(input.rail, input.grossUsd, input.meta);
   if (net == null) {

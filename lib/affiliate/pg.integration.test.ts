@@ -242,9 +242,16 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await (await join.POST(req("/x", "POST", "alice@x.io", { code: "ALICE", terms_version: V3, age: true, onerous_ack: true }))).json()).toMatchObject({ ok: true, rejoined: true, code: "ALICE" });
     expect((await h.sql!`SELECT left_at FROM affiliates`)[0].left_at).toBeNull();
     expect(await h.sql!`SELECT rejoined_at IS NOT NULL AS closed FROM affiliate_absences`).toEqual([{ closed: true }]);
-    // seconda uscita: un nuovo intervallo, il primo resta
-    expect(await (await leave.POST(req("/x", "POST", "alice@x.io"))).json()).toMatchObject({ ok: true, already: false });
-    expect(await h.sql!`SELECT rejoined_at IS NULL AS open FROM affiliate_absences ORDER BY left_at`).toEqual([{ open: false }, { open: true }]);
+    // review Codex #2-3: uscita → rientro → uscita nella stessa transazione (NOW() fermo) non si perde
+    await h.sql!.begin(async (tx) => {
+      const LEAVE = "WITH x AS (INSERT INTO affiliate_absences (affiliate_id, left_at) SELECT id, clock_timestamp() FROM affiliates WHERE id = 1 AND left_at IS NULL ON CONFLICT (affiliate_id) WHERE rejoined_at IS NULL DO NOTHING RETURNING left_at) UPDATE affiliates SET left_at = (SELECT left_at FROM x) WHERE id = 1 AND left_at IS NULL AND EXISTS (SELECT 1 FROM x)";
+      await tx`SELECT exec_sql(${LEAVE})`;
+      await tx`SELECT exec_sql(${"WITH x AS (UPDATE affiliate_absences SET rejoined_at = clock_timestamp() WHERE affiliate_id = 1 AND rejoined_at IS NULL RETURNING 1) UPDATE affiliates SET left_at = NULL WHERE id = 1 AND left_at IS NOT NULL"})`;
+      await tx`SELECT exec_sql(${LEAVE})`;
+    });
+    expect((await h.sql!`SELECT left_at IS NOT NULL AS out FROM affiliates`)[0].out).toBe(true);
+    expect(await h.sql!`SELECT rejoined_at IS NULL AS open FROM affiliate_absences ORDER BY left_at`).toEqual([{ open: false }, { open: false }, { open: true }]);
+    expect(await (await leave.POST(req("/x", "POST", "alice@x.io"))).json()).toMatchObject({ ok: true, already: true });
     // chiuso dall'operatore: né uscita né termini
     await h.sql!`UPDATE affiliates SET status = 'terminated'`;
     expect((await leave.POST(req("/x", "POST", "alice@x.io"))).status).toBe(403);

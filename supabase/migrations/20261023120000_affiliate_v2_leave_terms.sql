@@ -34,6 +34,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_affiliate_absences_open
 ALTER TABLE public.affiliate_absences ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.affiliate_absences FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.affiliate_absences TO service_role;
+-- Re-run safety (review Codex 23/10 #2-1): an affiliate already out gets its open interval.
+INSERT INTO public.affiliate_absences (affiliate_id, left_at)
+SELECT id, left_at FROM public.affiliates WHERE left_at IS NOT NULL
+ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS public.affiliate_terms_acceptances (
   affiliate_id   bigint       NOT NULL REFERENCES public.affiliates(id),

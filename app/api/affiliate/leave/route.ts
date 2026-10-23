@@ -34,8 +34,9 @@ export async function POST(req: Request) {
     // One statement (atomic): open the absence interval and mirror it on the affiliate.
     await dbExecute(
       `WITH x AS (
-         INSERT INTO affiliate_absences (affiliate_id) SELECT id FROM affiliates WHERE id = $1 AND left_at IS NULL
-         ON CONFLICT DO NOTHING RETURNING left_at)
+         INSERT INTO affiliate_absences (affiliate_id, left_at)
+         SELECT id, clock_timestamp() FROM affiliates WHERE id = $1 AND left_at IS NULL
+         ON CONFLICT (affiliate_id) WHERE rejoined_at IS NULL DO NOTHING RETURNING left_at)
        UPDATE affiliates SET left_at = (SELECT left_at FROM x), updated_at = NOW()
         WHERE id = $1 AND left_at IS NULL AND EXISTS (SELECT 1 FROM x)`,
       [aff.id],
