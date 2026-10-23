@@ -416,3 +416,30 @@ it("ordine monoriga: comportamento identico a prima (nessuna regressione)", asyn
   expect(grantWeeklyPick).not.toHaveBeenCalled();
   expect(opsAlert).not.toHaveBeenCalled();
 });
+
+// #AFFILIATE-COMPLETE-1023 — chargeback Shopify Payments → storno totale della commissione affiliato.
+it("disputes/create chargeback: storno totale sull'ordine, alert, piano non toccato", async () => {
+  const body = JSON.stringify({ id: 551, order_id: 912, type: "chargeback", amount: "14.99", currency: "USD" });
+  const { POST } = await import("./route");
+  const res = await POST(req(body, sign(body), "disputes/create"));
+  expect(res.status).toBe(200);
+  expect(scheduleAffiliateReversal).toHaveBeenCalledWith({ rail: "shopify", paymentRef: "912", eventRef: "dispute:551", refundedGrossUsd: null });
+  expect(opsAlert).toHaveBeenCalled();
+  expect(revokeShopifyPlan).not.toHaveBeenCalled();
+});
+
+it("disputes/create inquiry o senza ordine: nessuno storno", async () => {
+  const { POST } = await import("./route");
+  for (const p of [{ id: 552, order_id: 912, type: "inquiry" }, { id: 553, type: "chargeback" }]) {
+    const body = JSON.stringify(p);
+    expect((await POST(req(body, sign(body), "disputes/create"))).status).toBe(200);
+  }
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+});
+
+it("disputes/create con firma non valida: 401, nessuno storno", async () => {
+  const body = JSON.stringify({ id: 554, order_id: 912, type: "chargeback" });
+  const { POST } = await import("./route");
+  expect((await POST(req(body, "bad", "disputes/create"))).status).toBe(401);
+  expect(scheduleAffiliateReversal).not.toHaveBeenCalled();
+});

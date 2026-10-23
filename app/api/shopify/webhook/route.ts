@@ -170,6 +170,22 @@ async function handleRefund(payload: unknown) {
   return NextResponse.json({ received: true, revoked });
 }
 
+// #AFFILIATE-COMPLETE-1023 — chargeback (Shopify Payments, topic disputes/create):
+// the order's affiliate commission is reversed in full, like PayPal REVERSED and
+// Stripe charge.dispute.created. An `inquiry` moves no money: nothing reversed.
+// The plan is NOT touched here: access is a human decision (ops alert). Idempotent
+// on the dispute id (event_ref) in the SQL; a won dispute is restored by hand.
+async function handleDispute(payload: unknown) {
+  const d = (payload ?? {}) as { id?: unknown; order_id?: unknown; type?: unknown };
+  const id = d.id == null ? "" : String(d.id).trim();
+  const orderId = d.order_id == null ? "" : String(d.order_id).trim();
+  if (!id || !orderId) return NextResponse.json({ received: true, skipped: "no dispute or order id" });
+  if (d.type !== "chargeback") return NextResponse.json({ received: true, skipped: `dispute type ${String(d.type)}` });
+  scheduleAffiliateReversal({ rail: "shopify", paymentRef: orderId, eventRef: `dispute:${id}`, refundedGrossUsd: null });
+  await opsAlert("shopify-dispute", [`chargeback ${id} sull'ordine ${orderId}: commissione affiliato stornata, accesso al piano da valutare a mano`]);
+  return NextResponse.json({ received: true, dispute: id });
+}
+
 // #SUB-LIFECYCLE-0828 — registra un evento di ciclo di vita SENZA concedere.
 //
 // Best-effort per costruzione: qualunque errore viene inghiottito e l'handler
@@ -221,6 +237,9 @@ export async function POST(req: Request) {
 
   if (topic === "refunds/create") {
     return handleRefund(payload);
+  }
+  if (topic === "disputes/create") {
+    return handleDispute(payload);
   }
   // Whitelist: solo orders/paid concede. Qualunque altro topic (o header assente,
   // es. un topic aggiunto in futuro sullo stesso URL) → ack senza grant, così non
