@@ -8,13 +8,13 @@ const nl: ToolsCopy = {
   hub: {
     metaTitle: "Gratis wedtools — odds, EV, Kelly en marge | BetRedge",
     metaDescription:
-      "11 gratis rekenmachines: odds omrekenen naar elk formaat, de bookmakermarge verwijderen, verwachte waarde berekenen, je inzet bepalen met Kelly, arbitrage checken en je ROI meten. Zonder account.",
+      "12 gratis rekenmachines: odds omrekenen naar elk formaat, de bookmakermarge verwijderen, verwachte waarde berekenen, je inzet bepalen met Kelly, arbitrage checken en je ROI meten. Zonder account.",
     h1: "Gratis wedtools",
     lede:
-      "De elf berekeningen die je voor een wed maakt: odds omgerekend, marge verwijderd, inzet bepaald, ROI gemeten. Gratis, zonder account.",
+      "De twaalf berekeningen die je voor een wed maakt: odds omgerekend, marge verwijderd, inzet bepaald, ROI gemeten. Gratis, zonder account.",
     cardCta: "Open de tool",
     intro: [
-      "Elke wed is een vergelijking tussen een prijs en een kans. Deze elf rekenmachines maken die vergelijking netjes: ze zetten odds om tussen formaten, halen de marge van de bookmaker eruit om de eerlijke lijn te tonen, veranderen een kansschatting in verwachte waarde, rekenen de benen van een combi naar één prijs, laten zien wanneer twee bookmakers genoeg uit elkaar liggen voor arbitrage, bepalen de inzet zodat een verliesreeks je bankroll niet beëindigt en meten daarna wat die weds echt hebben opgebracht.",
+      "Elke wed is een vergelijking tussen een prijs en een kans. Deze twaalf rekenmachines maken die vergelijking netjes: ze zetten odds om tussen formaten, halen de marge van de bookmaker eruit om de eerlijke lijn te tonen, veranderen een kansschatting in verwachte waarde, rekenen de benen van een combi naar één prijs, laten zien wanneer twee bookmakers genoeg uit elkaar liggen voor arbitrage, bepalen de inzet zodat een verliesreeks je bankroll niet beëindigt en meten daarna wat die weds echt hebben opgebracht.",
       "Alles draait volledig in je browser: er wordt niets verzonden, niets opgeslagen en er is geen account nodig. Gebruik ze los, of gebruik ze om te controleren wat ons model al bij elke wedstrijd publiceert.",
     ],
   },
@@ -701,6 +701,81 @@ const nl: ToolsCopy = {
         {
           q: "Deze of het Kelly-criterium?",
           a: "Deze wanneer je geen gemeten voordeel hebt, wat meestal zo is: een procentuele eenheid vraagt geen kansschatting en het slechtste geval is vooraf bekend. De Kelly-criterium calculator is het juiste gereedschap zodra je een kans kan verdedigen, en die raadt doorgaans meer aan dan een vlakke 2%. Zijn antwoord als plafond en de vlakke regel als vloer behandelen houdt ze beide eerlijk.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Dutchingcalculator — verdeel je inzet zodat elke uitkomst evenveel uitbetaalt | BetRedge",
+      metaDescription:
+        "Gratis dutchingcalculator: voer 2 tot 8 uitkomsten van één markt in en zie hoe je de inzet verdeelt zodat de uitbetaling gelijk is welke uitkomst ook wint, met dekking en break-evenodds.",
+      h1: "Dutchingcalculator",
+      lede:
+        "Voer de odds in van elke uitkomst die je wilt afdekken en zie hoe je één inzet zo verdeelt dat elke uitkomst hetzelfde uitbetaalt — en wat dat kost of oplevert.",
+      labels: {
+        inputTitle: "Odds van elke uitkomst",
+        outcome: "Uitkomst",
+        addOutcome: "Uitkomst toevoegen",
+        removeOutcome: "Verwijderen",
+        modeTitle: "Wat weet je",
+        modeTotal: "Totale inzet",
+        modeTarget: "Doelwinst",
+        total: "Totale inzet",
+        targetProfit: "Doelwinst",
+        roundTitle: "Inzetten afronden op",
+        roundNone: "Niet",
+        resultTitle: "Zo verdeel je het",
+        profit: "Winst of verlies (slechtste uitkomst)",
+        profitPercent: "Winst of verlies op de totale inzet",
+        totalStake: "Benodigde totale inzet",
+        coverage: "Marktdekking (som van de impliciete kansen)",
+        stakeOn: "Inzet op uitkomst",
+        returnOn: "Uitbetaling als uitkomst",
+        meanOdds: "Gemiddelde odds hier (harmonisch)",
+        breakEvenOdds: "Gemiddelde odds nodig voor break-even",
+        verdictWin: "Winst vastgelegd: {pct} op de totale inzet, welke uitkomst ook wint.",
+        verdictLoss: "Met deze odds verlies je {pct}, wat er ook gebeurt.",
+        verdictFlat:
+          "Deze odds zijn break-even: je krijgt precies je inzet terug, welke uitkomst ook wint.",
+        verdictUnreachable:
+          "Met deze odds kan geen enkele totale inzet winst opleveren: de impliciete kansen tellen op tot 100% of meer.",
+        hint:
+          "Eén decimale odd per uitkomst, van 2 tot 8. Afronden houdt elke inzet op een veelvoud van 1, 5 of 10; de uitbetalingen worden daarna per uitkomst herberekend en zijn niet meer gelijk. Decimaal accepteert een komma.",
+      },
+      takeaway:
+        "Dutching maakt een weddenschap niet beter, het maakt de uitkomst gelijk voor elke uitkomst die je afdekt — daarom zegt de dekking, en niet de inzetverdeling, of het de moeite waard was.",
+      example: {
+        title: "Drie uitkomsten, 100 te verdelen",
+        rows: [
+          { label: "Odds", value: "2.10 · 3.60 · 3.60" },
+          { label: "Marktdekking", value: "103,17%" },
+          { label: "Inzet op elk, van 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Uitbetaling bij elke uitkomst", value: "96,92" },
+          { label: "Winst of verlies", value: "−3,08 (−3,08%)" },
+        ],
+        note:
+          "Draai de vraag om en dezelfde odds geven het antwoord: 2.10 en 2.10 tellen op tot 95,24%, dus voor een winst van 20 heb je in totaal 400 nodig, 200 aan elke kant, met 420 uitbetaling in beide gevallen. Bij afronden gaat de gelijkheid kapot: bij 5 wordt de eerste verdeling 45, 25 en 25, het totaal zakt naar 95 en de uitbetalingen worden 94,50, 90,00 en 90,00 — de slechtste uitkomst is nu −5,00.",
+      },
+      explainerTitle: "Gelijke uitbetaling bij elke uitkomst",
+      explainer: [
+        "**Dutching verdeelt één inzet over meerdere uitkomsten van dezelfde markt, zodat de uitbetaling gelijk is welke uitkomst ook wint.** Elke uitkomst krijgt een deel in verhouding tot de impliciete kans — één gedeeld door de odds — en de delen tellen op tot je totaal. Anders dan bij arbitrage hoeven de impliciete kansen niet onder 100% te blijven. Bij odds van 2.10, 3.60 en 3.60 tellen ze op tot 103,17%, en 100 verdeeld als 46,15, 26,92 en 26,92 betaalt bij elke uitkomst 96,92 uit: het resultaat hangt niet meer van de wedstrijd af, maar het is een verlies van 3,08%, omdat de markt zijn marge houdt.",
+        "**Het getal om eerst te lezen is de marktdekking.** Onder 100% legt de verdeling een winst vast; erboven een verlies, en hoe verder erboven, hoe meer je voor de zekerheid betaalt. Break-even is een kwestie van gemiddelde odds: bij drie uitkomsten moet het harmonisch gemiddelde van de odds 3,00 halen, en hier is het 2,91. Twee praktische punten. **Inzetten afronden op een hele eenheid, op 5 of 10 breekt de gelijkheid** — de calculator herberekent elke uitbetaling en laat zien dat ze niet meer gelijk zijn. En meerdere uitkomsten afdekken betekent op elk de marge betalen: dutching bepaalt hoe je bloot staat, het haalt niet de kosten van blootstelling weg.",
+      ],
+      faq: [
+        {
+          q: "Wat is het verschil tussen dutching en arbitrage?",
+          a: "Arbitrage vraagt odds die samen onder 100% blijven, zodat een winst vastligt. Dutching vraagt alleen dat je meerdere uitkomsten van één markt afdekt met gelijke uitbetaling: de som mag boven 100% liggen, en dan maakt het gelijktrekken van de uitbetaling het verlies zeker en zichtbaar. De rekensom is dezelfde, de voorwaarde niet.",
+        },
+        {
+          q: "Waarom haalt de calculator mijn doelwinst niet?",
+          a: "Als de impliciete kansen optellen tot 100% of meer, levert geen enkele inzet winst op: de uitbetaling per ingezette eenheid is één gedeeld door die som, dus 1 of minder. De calculator zegt dat in plaats van een totaal te verzinnen. De uitweg is betere odds of minder afgedekte uitkomsten.",
+        },
+        {
+          q: "Wat gebeurt er als ik de inzetten afrond?",
+          a: "Elke inzet gaat naar het dichtstbijzijnde veelvoud van 1, 5 of 10, dus het totaal verandert en de uitbetalingen zijn niet meer gelijk. De calculator herberekent de uitbetaling van elke uitkomst uit de afgeronde inzetten en toont de slechtste als winst of verlies, het eerlijke getal om op te plannen.",
+        },
+        {
+          q: "Waarom zou iemand meerdere uitkomsten met verlies afdekken?",
+          a: "Omdat het een onzeker resultaat in een bekend resultaat verandert: je betaalt een bekende prijs om gelijk te hebben op elke afgedekte uitkomst. Of die prijs het waard is hangt af van wat zekerheid je waard is, en de dekking zegt precies wat het kost.",
         },
       ],
     },

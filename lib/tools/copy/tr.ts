@@ -8,13 +8,13 @@ const tr: ToolsCopy = {
   hub: {
     metaTitle: "Ücretsiz bahis araçları — oran, EV, Kelly ve marj | BetRedge",
     metaDescription:
-      "11 ücretsiz hesaplayıcı: oranları her formata çevir, bahis şirketinin marjını çıkar, beklenen değeri hesapla, Kelly ile miktarı belirle, arbitrajı kontrol et ve getiriyi ölç. Kayıt gerekmez.",
+      "12 ücretsiz hesaplayıcı: oranları her formata çevir, bahis şirketinin marjını çıkar, beklenen değeri hesapla, Kelly ile miktarı belirle, arbitrajı kontrol et ve getiriyi ölç. Kayıt gerekmez.",
     h1: "Ücretsiz bahis araçları",
     lede:
-      "Bahis öncesi yapılan on bir hesap: oranlar çevrilmiş, marj çıkarılmış, miktar belirlenmiş, getiri ölçülmüş. Ücretsiz, hesap açmadan.",
+      "Bahis öncesi yapılan on iki hesap: oranlar çevrilmiş, marj çıkarılmış, miktar belirlenmiş, getiri ölçülmüş. Ücretsiz, hesap açmadan.",
     cardCta: "Aracı aç",
     intro: [
-      "Her bahis, bir fiyat ile bir olasılığın karşılaştırmasıdır. Bu on bir hesaplayıcı o karşılaştırmayı düzgün yapar: oranları formatlar arasında çevirir, bahis şirketinin marjını çıkarıp adil çizgiyi görünür kılar, bir olasılık tahminini beklenen değere dönüştürür, kombine bacaklarını tek bir orana toplar, iki bahis şirketinin arbitraj için yeterince ayrıştığı anı gösterir, kayıp serisinin kasayı bitirmemesi için bahis miktarını ölçekler ve sonrasında o bahislerin gerçekte ne getirdiğini ölçer.",
+      "Her bahis, bir fiyat ile bir olasılığın karşılaştırmasıdır. Bu on iki hesaplayıcı o karşılaştırmayı düzgün yapar: oranları formatlar arasında çevirir, bahis şirketinin marjını çıkarıp adil çizgiyi görünür kılar, bir olasılık tahminini beklenen değere dönüştürür, kombine bacaklarını tek bir orana toplar, iki bahis şirketinin arbitraj için yeterince ayrıştığı anı gösterir, kayıp serisinin kasayı bitirmemesi için bahis miktarını ölçekler ve sonrasında o bahislerin gerçekte ne getirdiğini ölçer.",
       "Tamamı tarayıcında çalışır: hiçbir şey gönderilmez, hiçbir şey saklanmaz ve açılacak bir hesap yoktur. Tek başına kullan ya da modelimizin her maç için zaten yayımladığını doğrulamak için kullan.",
     ],
   },
@@ -701,6 +701,82 @@ const tr: ToolsCopy = {
         {
           q: "Bunu mu, Kelly kriterini mi kullanmalıyım?",
           a: "Ölçülmüş bir avantajın yokken bunu kullan, yani çoğu zaman: yüzdeyle tanımlı birim olasılık tahmini istemez ve en kötü durumu önceden bilinir. Kelly kriteri hesaplayıcısı, bir olasılığı savunabildiğin anda doğru araçtır ve genellikle sabit %2'den fazlasını önerir. Onun cevabını tavan, sabit kuralı taban saymak ikisini de dürüst tutar.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Dutching Hesaplayıcı — Bahsi Her Sonuç Aynı Ödesin Diye Bölün | BetRedge",
+      metaDescription:
+        "Ücretsiz dutching hesaplayıcı: tek bir pazarın 2 ila 8 sonucunu girin, hangisi kazanırsa kazansın getirinin aynı olması için bahsi nasıl böleceğinizi, kapsamı ve başabaş oranı görün.",
+      h1: "Dutching hesaplayıcı",
+      lede:
+        "Kapsamak istediğiniz her sonucun oranını girin; tek bir bahsi her sonuç aynı getiriyi verecek şekilde nasıl böleceğinizi ve bunun neye mal olduğunu ya da ne kazandırdığını görün.",
+      labels: {
+        inputTitle: "Her sonucun oranı",
+        outcome: "Sonuç",
+        addOutcome: "Sonuç ekle",
+        removeOutcome: "Kaldır",
+        modeTitle: "Ne biliyorsunuz",
+        modeTotal: "Toplam bahis",
+        modeTarget: "Hedef kâr",
+        total: "Toplam bahis",
+        targetProfit: "Hedef kâr",
+        roundTitle: "Bahisleri yuvarla",
+        roundNone: "Yok",
+        resultTitle: "Nasıl bölünür",
+        profit: "Kâr veya zarar (en kötü sonuç)",
+        profitPercent: "Toplam bahse göre kâr veya zarar",
+        totalStake: "Gereken toplam bahis",
+        coverage: "Pazar kapsamı (ima edilen olasılıkların toplamı)",
+        stakeOn: "Sonuca bahis",
+        returnOn: "Sonuç kazanırsa getiri",
+        meanOdds: "Buradaki ortalama oran (harmonik)",
+        breakEvenOdds: "Başabaş için gereken ortalama oran",
+        verdictWin:
+          "Kâr kilitlendi: toplam bahsin {pct} kadarı, hangi sonuç kazanırsa kazansın.",
+        verdictLoss: "Bu oranlarla ne olursa olsun {pct} kaybedersiniz.",
+        verdictFlat:
+          "Bu oranlar başabaş: hangi sonuç kazanırsa kazansın bahsettiğinizi aynen geri alırsınız.",
+        verdictUnreachable:
+          "Bu oranlarla hiçbir toplam bahis kâr getiremez: ima edilen olasılıklar %100 veya daha fazlasını tutuyor.",
+        hint:
+          "Sonuç başına bir ondalık oran, 2 ile 8 arası. Yuvarlama her bahsi 1, 5 veya 10 katında tutar; getiriler sonra sonuç başına yeniden hesaplanır ve artık aynı değildir. Ondalık virgül kabul eder.",
+      },
+      takeaway:
+        "Dutching bir bahsi daha iyi yapmaz, kapsadığınız her sonuçta sonucu aynı yapar — bu yüzden buna değip değmediğini bahis dağılımı değil, kapsam söyler.",
+      example: {
+        title: "Üç sonuç, bölünecek 100",
+        rows: [
+          { label: "Oranlar", value: "2.10 · 3.60 · 3.60" },
+          { label: "Pazar kapsamı", value: "%103,17" },
+          { label: "Her birine bahis, 100 üzerinden", value: "46,15 · 26,92 · 26,92" },
+          { label: "Her sonuçta getiri", value: "96,92" },
+          { label: "Kâr veya zarar", value: "−3,08 (%−3,08)" },
+        ],
+        note:
+          "Soruyu tersine çevirin, aynı oranlar yanıtlar: 2.10 ve 2.10 toplamda %95,24 eder, yani 20 kâr için toplam 400, her tarafa 200 gerekir ve iki durumda da getiri 420 olur. Eşitliğin bozulduğu yer yuvarlamadır: 5'te ilk dağılım 45, 25 ve 25 olur, toplam 95'e düşer ve getiriler 94,50, 90,00 ve 90,00 çıkar — en kötü sonuç artık −5,00.",
+      },
+      explainerTitle: "Her sonuçta eşit getiri",
+      explainer: [
+        "**Dutching, tek bir bahsi aynı pazarın birkaç sonucuna böler; böylece hangisi kazanırsa kazansın getiri aynı olur.** Her sonuç, ima edilen olasılığıyla orantılı bir pay alır — bir bölü oran — ve paylar toplam bahsinizi verir. Arbitrajdan farkı, ima edilen olasılıkların %100'ün altında toplanmasını gerektirmemesidir. 2.10, 3.60 ve 3.60 oranlarında toplam %103,17 eder ve 100'ün 46,15, 26,92 ve 26,92 olarak bölünmesi her sonuçta 96,92 getirir: sonuç artık maça bağlı değildir ama %3,08'lik bir zarardır, çünkü pazar marjını elinde tutar.",
+        "**İlk okunacak sayı pazar kapsamıdır.** %100'ün altında bölüşüm bir kârı kilitler; üstünde bir zararı kilitler ve ne kadar üstündeyse kesinliğe o kadar fazla ödersiniz. Başabaş, ortalama oran meselesidir: üç sonuçta oranların harmonik ortalaması 3,00'a ulaşmalıdır, burada 2,91'dir. İki pratik not. **Bahisleri tam birime, 5'e veya 10'a yuvarlamak eşitliği bozar** — hesaplayıcı her getiriyi yeniden hesaplar ve artık aynı olmadıklarını gösterir. Ayrıca birkaç sonucu kapsamak, her birinde marjı ödemek demektir: dutching nasıl maruz kalacağınızı seçmenin yoludur, maruz kalmanın maliyetini ortadan kaldırmanın değil.",
+      ],
+      faq: [
+        {
+          q: "Dutching ile arbitraj arasındaki fark nedir?",
+          a: "Arbitraj, birlikte %100'ün altında toplanan oranlar ister; böylece kâr kilitlenir. Dutching yalnızca bir pazarın birkaç sonucunu eşit getiriyle kapsamanızı ister: toplam %100'ü aşabilir ve o zaman getiriyi eşitlemek zararı kesin ve görünür kılar. Aritmetik aynıdır, koşul değildir.",
+        },
+        {
+          q: "Hesaplayıcı neden hedef kârıma ulaşamıyor?",
+          a: "İma edilen olasılıklar %100 veya daha fazla topladığında hiçbir bahis kâr üretmez: bahis birimi başına getiri bir bölü bu toplamdır, yani 1 veya daha azdır. Hesaplayıcı bir tutar uydurmak yerine bunu söyler. Çıkış yolu daha iyi oranlar ya da daha az kapsanan sonuçtur.",
+        },
+        {
+          q: "Bahisleri yuvarlarsam ne olur?",
+          a: "Her bahis 1, 5 veya 10'un en yakın katına gider; toplam değişir ve getiriler aynı olmaktan çıkar. Hesaplayıcı yuvarlanmış bahislerden her sonucun getirisini yeniden hesaplar ve en kötüsünü kâr veya zarar olarak gösterir; plan yapmak için dürüst sayı budur.",
+        },
+        {
+          q: "Neden biri birkaç sonucu zararla kapsasın?",
+          a: "Çünkü belirsiz bir sonucu bilinen bir sonuca çevirir: kapsadığınız sonuçlardan herhangi birinde haklı çıkmak için bilinen bir fiyat ödersiniz. Bu fiyatın değip değmeyeceği kesinliğin sizin için değerine bağlıdır ve kapsam tam olarak neye mal olduğunu söyler.",
         },
       ],
     },

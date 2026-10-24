@@ -12,13 +12,13 @@ const en: ToolsCopy = {
   hub: {
     metaTitle: "Odds, Probability & Position-Sizing Calculators — Free | BetRedge",
     metaDescription:
-      "Eleven free calculators for odds, probability and position sizing: convert any odds format, remove the bookmaker margin, get expected value, size a stake with Kelly, check an arbitrage. No signup.",
+      "Twelve free calculators for odds, probability and position sizing: convert any odds format, remove the bookmaker margin, get expected value, size a stake with Kelly, check an arbitrage. No signup.",
     h1: "Odds, probability and position sizing",
     lede:
-      "The eleven calculations every serious bettor runs before placing a bet — converted, de-margined, sized and measured. Free, no account needed.",
+      "The twelve calculations every serious bettor runs before placing a bet — converted, de-margined, sized and measured. Free, no account needed.",
     cardCta: "Open the tool",
     intro: [
-      "Every bet is a comparison between a price and a probability. These eleven calculators do that comparison properly: they translate prices between formats, strip the bookmaker's margin out of a market to expose the fair line, turn a probability estimate into expected value, fold a parlay's legs into one price, show when two books disagree enough to lock an arbitrage, size the stake so a losing run does not end the bankroll, and measure afterwards what those bets actually returned.",
+      "Every bet is a comparison between a price and a probability. These twelve calculators do that comparison properly: they translate prices between formats, strip the bookmaker's margin out of a market to expose the fair line, turn a probability estimate into expected value, fold a parlay's legs into one price, show when two books disagree enough to lock an arbitrage, size the stake so a losing run does not end the bankroll, and measure afterwards what those bets actually returned.",
       "They run entirely in your browser — nothing is sent anywhere, nothing is stored, and there is no account to create. Use them on their own, or use them to check what our model already publishes on every match.",
     ],
   },
@@ -713,6 +713,81 @@ const en: ToolsCopy = {
         {
           q: "Should I use this or the Kelly criterion?",
           a: "Use this when you do not have a measured edge, which is most of the time: a percentage unit needs no probability estimate and its worst case is knowable in advance. The Kelly criterion calculator is the right tool once you can defend a probability, and it will usually recommend more than a flat 2%. Treating its answer as a ceiling and a flat rule as the floor keeps both honest.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Dutching Calculator — Split a Stake So Every Outcome Pays the Same | BetRedge",
+      metaDescription:
+        "Free dutching calculator: enter 2 to 8 outcomes of one market and see how to split the stake so the return is identical whichever wins, plus market coverage and break-even odds.",
+      h1: "Dutching calculator",
+      lede:
+        "Enter the price of each outcome you want to cover and see how to split one stake so every outcome returns the same — and what that costs or earns.",
+      labels: {
+        inputTitle: "Price of each outcome",
+        outcome: "Outcome",
+        addOutcome: "Add outcome",
+        removeOutcome: "Remove",
+        modeTitle: "What do you know",
+        modeTotal: "Total stake",
+        modeTarget: "Target profit",
+        total: "Total stake",
+        targetProfit: "Target profit",
+        roundTitle: "Round stakes to",
+        roundNone: "None",
+        resultTitle: "How to split it",
+        profit: "Profit or loss (worst outcome)",
+        profitPercent: "Profit or loss on the total stake",
+        totalStake: "Total stake needed",
+        coverage: "Market coverage (sum of implied probabilities)",
+        stakeOn: "Stake on outcome",
+        returnOn: "Return if outcome",
+        meanOdds: "Average odds here (harmonic)",
+        breakEvenOdds: "Average odds needed to break even",
+        verdictWin: "Profit locked in: {pct} on the total stake, whichever outcome wins.",
+        verdictLoss: "With these prices you lose {pct} whatever happens.",
+        verdictFlat:
+          "These prices break even: you get back exactly what you stake, whichever outcome wins.",
+        verdictUnreachable:
+          "At these prices no total stake can return a profit: the implied probabilities add up to 100% or more.",
+        hint:
+          "One decimal price per outcome, from 2 to 8. Rounding keeps each stake a multiple of 1, 5 or 10; returns are then recomputed per outcome and are no longer identical. Decimal accepts a comma.",
+      },
+      takeaway:
+        "Dutching does not make a bet better, it makes the result the same on every outcome you cover — which is why the coverage figure, not the stake split, tells you whether it was worth doing.",
+      example: {
+        title: "Three outcomes, 100 to split",
+        rows: [
+          { label: "Prices", value: "2.10 · 3.60 · 3.60" },
+          { label: "Market coverage", value: "103.17%" },
+          { label: "Stake on each, out of 100", value: "46.15 · 26.92 · 26.92" },
+          { label: "Return in every outcome", value: "96.92" },
+          { label: "Profit or loss", value: "−3.08 (−3.08%)" },
+        ],
+        note:
+          "Reverse the question and the same prices answer it: 2.10 and 2.10 sum to 95.24%, so asking for a profit of 20 needs 400 in total, 200 on each side, returning 420 either way. Rounding is where the equality breaks: at 5 the first split becomes 45, 25 and 25, the total drops to 95, and the returns become 94.50, 90.00 and 90.00 — the worst outcome is now −5.00.",
+      },
+      explainerTitle: "Equal return on every outcome",
+      explainer: [
+        "**Dutching splits one stake across several outcomes of the same market so that the return is the same whichever one wins.** Each outcome gets a share proportional to its implied probability — one divided by its price — and the shares add up to your total. Unlike an arbitrage, it does not need the implied probabilities to add up to less than 100%. At prices of 2.10, 3.60 and 3.60 they add up to 103.17%, and 100 split as 46.15, 26.92 and 26.92 returns 96.92 on every outcome: the result stops depending on the match, but it is a loss of 3.08%, because the market keeps its margin.",
+        "**The number to read first is the market coverage.** Below 100% the split locks in a profit; above it, it locks in a loss, and the further above, the more you pay for the certainty. Break-even is a matter of average odds: with three outcomes the harmonic mean of the prices has to reach 3.00, and here it is 2.91. Two practical points. **Rounding stakes to a whole unit, or to 5 or 10, breaks the equality** — the calculator recomputes each return and shows that they are no longer identical. And covering several outcomes means paying the margin on each of them: dutching is a way to choose how you are exposed, not a way to remove the cost of being exposed.",
+      ],
+      faq: [
+        {
+          q: "What is the difference between dutching and arbitrage?",
+          a: "Arbitrage needs prices that together sum to less than 100%, so a profit is locked in. Dutching only asks that you cover several outcomes of one market with equal returns: the sum can be above 100%, and then equalising the return simply makes the loss certain and visible. The arithmetic is the same, the condition is not.",
+        },
+        {
+          q: "Why can't the calculator reach my target profit?",
+          a: "When the implied probabilities add up to 100% or more, no stake produces a profit: the return per unit staked is one divided by that sum, which is 1 or less. The calculator says so instead of inventing a total. The way out is better prices or fewer outcomes covered.",
+        },
+        {
+          q: "What happens when I round the stakes?",
+          a: "Each stake moves to the nearest multiple of 1, 5 or 10, so the total changes and the returns stop being identical. The calculator recomputes the return for every outcome from the rounded stakes and reports the worst one as the profit or loss, which is the honest number to plan around.",
+        },
+        {
+          q: "Why would anyone cover several outcomes at a loss?",
+          a: "Because it turns an uncertain result into a known one: you pay a known price for being right on any of the outcomes you cover. Whether that price is worth paying depends on how much the certainty is worth to you, and the coverage figure tells you exactly what it costs.",
         },
       ],
     },

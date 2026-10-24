@@ -8,13 +8,13 @@ const pl: ToolsCopy = {
   hub: {
     metaTitle: "Darmowe narzędzia bukmacherskie — kursy, EV, Kelly i marża | BetRedge",
     metaDescription:
-      "11 darmowych kalkulatorów: przeliczanie kursów na każdy format, usuwanie marży bukmachera, wartość oczekiwana, dobór stawki według Kelly'ego, sprawdzenie arbitrażu i pomiar ROI. Bez rejestracji.",
+      "12 darmowych kalkulatorów: przeliczanie kursów na każdy format, usuwanie marży bukmachera, wartość oczekiwana, dobór stawki według Kelly'ego, sprawdzenie arbitrażu i pomiar ROI. Bez rejestracji.",
     h1: "Darmowe narzędzia bukmacherskie",
     lede:
-      "Jedenaście obliczeń, które wykonuje się przed zakładem: kursy przeliczone, marża usunięta, stawka dobrana, ROI zmierzony. Bezpłatnie, bez konta.",
+      "Dwanaście obliczeń, które wykonuje się przed zakładem: kursy przeliczone, marża usunięta, stawka dobrana, ROI zmierzony. Bezpłatnie, bez konta.",
     cardCta: "Otwórz narzędzie",
     intro: [
-      "Każdy zakład to porównanie ceny z prawdopodobieństwem. Te jedenaście kalkulatorów wykonuje je porządnie: przeliczają kursy między formatami, usuwają marżę bukmachera i odsłaniają uczciwą linię, zamieniają oszacowanie prawdopodobieństwa w wartość oczekiwaną, składają nogi kuponu w jeden kurs, pokazują, kiedy dwóch bukmacherów rozchodzi się dość, by domknąć arbitraż, dobierają stawkę tak, aby seria przegranych nie zamknęła bankrolla, i mierzą potem, ile te zakłady naprawdę przyniosły.",
+      "Każdy zakład to porównanie ceny z prawdopodobieństwem. Te dwanaście kalkulatorów wykonuje je porządnie: przeliczają kursy między formatami, usuwają marżę bukmachera i odsłaniają uczciwą linię, zamieniają oszacowanie prawdopodobieństwa w wartość oczekiwaną, składają nogi kuponu w jeden kurs, pokazują, kiedy dwóch bukmacherów rozchodzi się dość, by domknąć arbitraż, dobierają stawkę tak, aby seria przegranych nie zamknęła bankrolla, i mierzą potem, ile te zakłady naprawdę przyniosły.",
       "Wszystko działa wyłącznie w twojej przeglądarce: nic nie jest wysyłane, nic nie jest zapisywane i nie trzeba zakładać konta. Korzystaj z nich osobno albo używaj ich, by sprawdzić to, co nasz model publikuje przy każdym meczu.",
     ],
   },
@@ -701,6 +701,82 @@ const pl: ToolsCopy = {
         {
           q: "Ten kalkulator czy kryterium Kelly'ego?",
           a: "Ten, gdy nie masz zmierzonej przewagi, czyli niemal zawsze: jednostka w procentach nie wymaga oszacowania prawdopodobieństwa, a jej najgorszy przypadek znasz z góry. Kalkulator kryterium Kelly'ego jest właściwym narzędziem, gdy potrafisz obronić prawdopodobieństwo, i zwykle zaleci więcej niż płaskie 2%. Traktowanie jego odpowiedzi jako sufitu, a płaskiej zasady jako podłogi trzyma oba w ryzach.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Kalkulator dutchingu — podział stawki, by każdy wynik płacił tyle samo | BetRedge",
+      metaDescription:
+        "Darmowy kalkulator dutchingu: wpisz od 2 do 8 wyników jednego rynku i zobacz, jak podzielić stawkę, by zwrot był identyczny bez względu na wynik, z pokryciem rynku i kursem break-even.",
+      h1: "Kalkulator dutchingu",
+      lede:
+        "Wpisz kurs każdego wyniku, który chcesz pokryć, i zobacz, jak podzielić jedną stawkę, by każdy wynik zwracał tyle samo — oraz ile to kosztuje lub daje.",
+      labels: {
+        inputTitle: "Kurs każdego wyniku",
+        outcome: "Wynik",
+        addOutcome: "Dodaj wynik",
+        removeOutcome: "Usuń",
+        modeTitle: "Co wiesz",
+        modeTotal: "Stawka łączna",
+        modeTarget: "Zysk docelowy",
+        total: "Stawka łączna",
+        targetProfit: "Zysk docelowy",
+        roundTitle: "Zaokrąglij stawki do",
+        roundNone: "Brak",
+        resultTitle: "Jak to podzielić",
+        profit: "Zysk lub strata (najgorszy wynik)",
+        profitPercent: "Zysk lub strata względem stawki łącznej",
+        totalStake: "Potrzebna stawka łączna",
+        coverage: "Pokrycie rynku (suma prawdopodobieństw implikowanych)",
+        stakeOn: "Stawka na wynik",
+        returnOn: "Zwrot, jeśli wygra wynik",
+        meanOdds: "Średni kurs tutaj (harmoniczny)",
+        breakEvenOdds: "Średni kurs potrzebny do break-even",
+        verdictWin:
+          "Zysk zablokowany: {pct} stawki łącznej, bez względu na to, który wynik wygra.",
+        verdictLoss: "Przy tych kursach tracisz {pct}, cokolwiek się stanie.",
+        verdictFlat:
+          "Te kursy dają break-even: odzyskujesz dokładnie to, co postawiłeś, bez względu na wynik.",
+        verdictUnreachable:
+          "Przy tych kursach żadna stawka łączna nie da zysku: prawdopodobieństwa implikowane sumują się do 100% lub więcej.",
+        hint:
+          "Jeden kurs dziesiętny na wynik, od 2 do 8. Zaokrąglenie utrzymuje każdą stawkę na wielokrotności 1, 5 lub 10; zwroty są potem liczone na nowo dla każdego wyniku i nie są już identyczne. Dziesiętny przyjmuje przecinek.",
+      },
+      takeaway:
+        "Dutching nie poprawia zakładu, tylko sprawia, że wynik jest taki sam na każdym pokrytym wyniku — dlatego to pokrycie, a nie podział stawek, mówi, czy było warto.",
+      example: {
+        title: "Trzy wyniki, 100 do podziału",
+        rows: [
+          { label: "Kursy", value: "2.10 · 3.60 · 3.60" },
+          { label: "Pokrycie rynku", value: "103,17%" },
+          { label: "Stawka na każdy, ze 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Zwrot przy każdym wyniku", value: "96,92" },
+          { label: "Zysk lub strata", value: "−3,08 (−3,08%)" },
+        ],
+        note:
+          "Odwróć pytanie, a te same kursy odpowiedzą: 2.10 i 2.10 dają 95,24%, więc zysk 20 wymaga łącznie 400, po 200 na stronę, ze zwrotem 420 w obu przypadkach. Zaokrąglenie to miejsce, gdzie równość pęka: przy 5 pierwszy podział zmienia się w 45, 25 i 25, suma spada do 95, a zwroty wynoszą 94,50, 90,00 i 90,00 — najgorszy wynik to teraz −5,00.",
+      },
+      explainerTitle: "Równy zwrot na każdym wyniku",
+      explainer: [
+        "**Dutching dzieli jedną stawkę na kilka wyników tego samego rynku tak, by zwrot był taki sam bez względu na to, który wygra.** Każdy wynik dostaje część proporcjonalną do swojego prawdopodobieństwa implikowanego — jeden podzielone przez kurs — a części sumują się do stawki łącznej. W przeciwieństwie do arbitrażu nie wymaga, by prawdopodobieństwa implikowane dawały mniej niż 100%. Przy kursach 2.10, 3.60 i 3.60 dają 103,17%, a 100 podzielone na 46,15, 26,92 i 26,92 zwraca 96,92 przy każdym wyniku: rezultat przestaje zależeć od meczu, ale jest stratą 3,08%, bo rynek zatrzymuje swoją marżę.",
+        "**Liczba, którą czyta się najpierw, to pokrycie rynku.** Poniżej 100% podział blokuje zysk; powyżej — stratę, a im wyżej, tym więcej płacisz za pewność. Break-even to kwestia średniego kursu: przy trzech wynikach średnia harmoniczna kursów musi sięgnąć 3,00, a tu wynosi 2,91. Dwie uwagi praktyczne. **Zaokrąglenie stawek do pełnej jednostki, do 5 lub 10 łamie równość** — kalkulator liczy każdy zwrot na nowo i pokazuje, że nie są już identyczne. A pokrycie kilku wyników oznacza płacenie marży na każdym z nich: dutching pozwala wybrać, jak jesteś wystawiony na ryzyko, nie znosi kosztu tej ekspozycji.",
+      ],
+      faq: [
+        {
+          q: "Czym dutching różni się od arbitrażu?",
+          a: "Arbitraż wymaga kursów, które razem dają mniej niż 100%, więc zysk jest zablokowany. Dutching wymaga tylko pokrycia kilku wyników jednego rynku z równym zwrotem: suma może przekraczać 100%, a wtedy wyrównanie zwrotu czyni stratę pewną i widoczną. Arytmetyka jest ta sama, warunek nie.",
+        },
+        {
+          q: "Dlaczego kalkulator nie osiąga mojego zysku docelowego?",
+          a: "Gdy prawdopodobieństwa implikowane sumują się do 100% lub więcej, żadna stawka nie daje zysku: zwrot na jednostkę stawki to jeden podzielone przez tę sumę, czyli 1 lub mniej. Kalkulator mówi to wprost, zamiast wymyślać kwotę. Wyjściem są lepsze kursy albo mniej pokrytych wyników.",
+        },
+        {
+          q: "Co się dzieje, gdy zaokrąglam stawki?",
+          a: "Każda stawka przechodzi na najbliższą wielokrotność 1, 5 lub 10, więc suma się zmienia, a zwroty przestają być identyczne. Kalkulator przelicza zwrot każdego wyniku z zaokrąglonych stawek i podaje najgorszy jako zysk lub stratę — to uczciwa liczba do planowania.",
+        },
+        {
+          q: "Po co pokrywać kilka wyników ze stratą?",
+          a: "Bo zamienia niepewny rezultat w znany: płacisz znaną cenę za to, że trafisz którykolwiek z pokrytych wyników. Czy ta cena jest warta zapłaty, zależy od tego, ile jest dla ciebie warta pewność, a pokrycie mówi dokładnie, ile kosztuje.",
         },
       ],
     },

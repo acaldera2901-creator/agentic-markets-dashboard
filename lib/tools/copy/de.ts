@@ -8,13 +8,13 @@ const de: ToolsCopy = {
   hub: {
     metaTitle: "Kostenlose Wett-Tools — Quoten, EV, Kelly und Marge | BetRedge",
     metaDescription:
-      "11 kostenlose Rechner: Quoten in jedes Format umrechnen, Buchmacher-Marge entfernen, Erwartungswert berechnen, den Einsatz mit Kelly bestimmen, Arbitrage prüfen und die Rendite messen. Ohne Anmeldung.",
+      "12 kostenlose Rechner: Quoten in jedes Format umrechnen, Buchmacher-Marge entfernen, Erwartungswert berechnen, den Einsatz mit Kelly bestimmen, Arbitrage prüfen und die Rendite messen. Ohne Anmeldung.",
     h1: "Kostenlose Wett-Tools",
     lede:
-      "Die elf Rechnungen, die vor jeder Wette anstehen: Quoten umgerechnet, Marge entfernt, Einsatz bestimmt, Rendite gemessen. Kostenlos, ohne Konto.",
+      "Die zwölf Rechnungen, die vor jeder Wette anstehen: Quoten umgerechnet, Marge entfernt, Einsatz bestimmt, Rendite gemessen. Kostenlos, ohne Konto.",
     cardCta: "Tool öffnen",
     intro: [
-      "Jede Wette ist ein Vergleich zwischen einem Preis und einer Wahrscheinlichkeit. Diese elf Rechner führen diesen Vergleich sauber durch: sie übersetzen Quoten zwischen den Formaten, entfernen die Marge des Buchmachers und legen die faire Linie frei, verwandeln eine Wahrscheinlichkeitsschätzung in einen Erwartungswert, fassen die Beine einer Kombiwette zu einer Quote zusammen, zeigen, wann zwei Buchmacher weit genug auseinanderliegen für eine Arbitrage, bestimmen den Einsatz so, dass eine Verlustserie die Bankroll nicht beendet, und messen hinterher, was diese Wetten wirklich gebracht haben.",
+      "Jede Wette ist ein Vergleich zwischen einem Preis und einer Wahrscheinlichkeit. Diese zwölf Rechner führen diesen Vergleich sauber durch: sie übersetzen Quoten zwischen den Formaten, entfernen die Marge des Buchmachers und legen die faire Linie frei, verwandeln eine Wahrscheinlichkeitsschätzung in einen Erwartungswert, fassen die Beine einer Kombiwette zu einer Quote zusammen, zeigen, wann zwei Buchmacher weit genug auseinanderliegen für eine Arbitrage, bestimmen den Einsatz so, dass eine Verlustserie die Bankroll nicht beendet, und messen hinterher, was diese Wetten wirklich gebracht haben.",
       "Alles läuft vollständig im Browser: nichts wird gesendet, nichts gespeichert, kein Konto nötig. Nutze sie für sich — oder nutze sie, um zu prüfen, was unser Modell zu jedem Spiel längst veröffentlicht.",
     ],
   },
@@ -701,6 +701,82 @@ const de: ToolsCopy = {
         {
           q: "Dieser Rechner oder das Kelly-Kriterium?",
           a: "Dieser, wenn du keinen gemessenen Vorteil hast, also meistens: eine prozentuale Einheit braucht keine Wahrscheinlichkeitsschätzung, und ihr schlimmster Fall ist vorher bekannt. Der Rechner zum Kelly-Kriterium ist richtig, sobald du eine Wahrscheinlichkeit verteidigen kannst, und er empfiehlt meist mehr als flache 2 %. Seine Antwort als Decke und die flache Regel als Boden zu behandeln, hält beide ehrlich.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Dutching-Rechner — Einsatz so aufteilen, dass jedes Ergebnis gleich zahlt | BetRedge",
+      metaDescription:
+        "Kostenloser Dutching-Rechner: 2 bis 8 Ausgänge eines Marktes eingeben und sehen, wie der Einsatz so zu teilen ist, dass jeder Ausgang gleich zahlt, mit Abdeckung und Break-even-Quote.",
+      h1: "Dutching-Rechner",
+      lede:
+        "Gib die Quote jedes Ausgangs ein, den du abdecken willst, und sieh, wie ein Einsatz so zu teilen ist, dass jeder Ausgang gleich viel zurückzahlt — und was das kostet oder bringt.",
+      labels: {
+        inputTitle: "Quote jedes Ausgangs",
+        outcome: "Ausgang",
+        addOutcome: "Ausgang hinzufügen",
+        removeOutcome: "Entfernen",
+        modeTitle: "Was du weißt",
+        modeTotal: "Gesamteinsatz",
+        modeTarget: "Zielgewinn",
+        total: "Gesamteinsatz",
+        targetProfit: "Zielgewinn",
+        roundTitle: "Einsätze runden auf",
+        roundNone: "Nicht",
+        resultTitle: "So teilst du auf",
+        profit: "Gewinn oder Verlust (schlechtester Ausgang)",
+        profitPercent: "Gewinn oder Verlust auf den Gesamteinsatz",
+        totalStake: "Nötiger Gesamteinsatz",
+        coverage: "Marktabdeckung (Summe der impliziten Wahrscheinlichkeiten)",
+        stakeOn: "Einsatz auf Ausgang",
+        returnOn: "Rückzahlung, wenn Ausgang",
+        meanOdds: "Durchschnittsquote hier (harmonisch)",
+        breakEvenOdds: "Nötige Durchschnittsquote für Break-even",
+        verdictWin:
+          "Gewinn gesichert: {pct} auf den Gesamteinsatz, welcher Ausgang auch gewinnt.",
+        verdictLoss: "Mit diesen Quoten verlierst du {pct}, egal was passiert.",
+        verdictFlat:
+          "Diese Quoten sind Break-even: Du bekommst genau deinen Einsatz zurück, welcher Ausgang auch gewinnt.",
+        verdictUnreachable:
+          "Mit diesen Quoten kann kein Gesamteinsatz einen Gewinn bringen: Die impliziten Wahrscheinlichkeiten ergeben 100 % oder mehr.",
+        hint:
+          "Eine Dezimalquote pro Ausgang, von 2 bis 8. Das Runden hält jeden Einsatz auf einem Vielfachen von 1, 5 oder 10; die Rückzahlungen werden danach je Ausgang neu berechnet und sind nicht mehr gleich. Dezimal akzeptiert ein Komma.",
+      },
+      takeaway:
+        "Dutching macht eine Wette nicht besser, es macht das Ergebnis bei jedem abgedeckten Ausgang gleich — deshalb sagt die Abdeckung und nicht die Einsatzaufteilung, ob es sich gelohnt hat.",
+      example: {
+        title: "Drei Ausgänge, 100 zu verteilen",
+        rows: [
+          { label: "Quoten", value: "2.10 · 3.60 · 3.60" },
+          { label: "Marktabdeckung", value: "103,17 %" },
+          { label: "Einsatz auf jeden, von 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Rückzahlung bei jedem Ausgang", value: "96,92" },
+          { label: "Gewinn oder Verlust", value: "−3,08 (−3,08 %)" },
+        ],
+        note:
+          "Dreh die Frage um, und dieselben Quoten antworten: 2.10 und 2.10 ergeben 95,24 %, also braucht ein Gewinn von 20 insgesamt 400, je 200 auf jeder Seite, mit 420 Rückzahlung in beiden Fällen. Beim Runden geht die Gleichheit verloren: bei 5 wird die erste Aufteilung zu 45, 25 und 25, die Summe sinkt auf 95, und die Rückzahlungen sind 94,50, 90,00 und 90,00 — der schlechteste Ausgang ist jetzt −5,00.",
+      },
+      explainerTitle: "Gleiche Rückzahlung bei jedem Ausgang",
+      explainer: [
+        "**Dutching teilt einen Einsatz auf mehrere Ausgänge desselben Marktes auf, sodass die Rückzahlung gleich ist, welcher auch gewinnt.** Jeder Ausgang bekommt einen Anteil proportional zu seiner impliziten Wahrscheinlichkeit — eins geteilt durch die Quote — und die Anteile ergeben deinen Gesamteinsatz. Anders als bei der Arbitrage müssen die impliziten Wahrscheinlichkeiten nicht unter 100 % liegen. Bei Quoten von 2.10, 3.60 und 3.60 ergeben sie 103,17 %, und 100, aufgeteilt in 46,15, 26,92 und 26,92, zahlen bei jedem Ausgang 96,92 zurück: Das Ergebnis hängt nicht mehr vom Spiel ab, ist aber ein Verlust von 3,08 %, weil der Markt seine Marge behält.",
+        "**Die Zahl, die man zuerst liest, ist die Marktabdeckung.** Unter 100 % sichert die Aufteilung einen Gewinn, darüber einen Verlust, und je weiter darüber, desto mehr zahlst du für die Sicherheit. Break-even ist eine Frage der Durchschnittsquote: Bei drei Ausgängen muss das harmonische Mittel der Quoten 3,00 erreichen, hier sind es 2,91. Zwei praktische Hinweise. **Wer Einsätze auf ganze Einheiten, auf 5 oder 10 rundet, bricht die Gleichheit** — der Rechner berechnet jede Rückzahlung neu und zeigt, dass sie nicht mehr gleich sind. Und mehrere Ausgänge abzudecken heißt, auf jedem die Marge zu zahlen: Dutching wählt, wie du exponiert bist, es beseitigt nicht die Kosten der Exposition.",
+      ],
+      faq: [
+        {
+          q: "Was ist der Unterschied zwischen Dutching und Arbitrage?",
+          a: "Arbitrage braucht Quoten, die zusammen unter 100 % liegen, sodass ein Gewinn gesichert ist. Dutching verlangt nur, mehrere Ausgänge eines Marktes mit gleicher Rückzahlung abzudecken: Die Summe kann über 100 % liegen, und dann macht das Angleichen der Rückzahlung den Verlust sicher und sichtbar. Die Rechnung ist dieselbe, die Bedingung nicht.",
+        },
+        {
+          q: "Warum erreicht der Rechner meinen Zielgewinn nicht?",
+          a: "Wenn die impliziten Wahrscheinlichkeiten 100 % oder mehr ergeben, bringt kein Einsatz einen Gewinn: Die Rückzahlung je Einsatzeinheit ist eins geteilt durch diese Summe, also 1 oder weniger. Der Rechner sagt das, statt einen Betrag zu erfinden. Der Ausweg sind bessere Quoten oder weniger abgedeckte Ausgänge.",
+        },
+        {
+          q: "Was passiert, wenn ich die Einsätze runde?",
+          a: "Jeder Einsatz geht auf das nächste Vielfache von 1, 5 oder 10, also ändert sich die Summe und die Rückzahlungen sind nicht mehr gleich. Der Rechner berechnet die Rückzahlung jedes Ausgangs aus den gerundeten Einsätzen neu und zeigt den schlechtesten als Gewinn oder Verlust, die ehrliche Zahl zum Planen.",
+        },
+        {
+          q: "Warum sollte man mehrere Ausgänge mit Verlust abdecken?",
+          a: "Weil es ein unsicheres Ergebnis in ein bekanntes verwandelt: Du zahlst einen bekannten Preis dafür, bei jedem abgedeckten Ausgang richtigzuliegen. Ob sich der Preis lohnt, hängt davon ab, was dir die Sicherheit wert ist, und die Abdeckung sagt genau, was sie kostet.",
         },
       ],
     },

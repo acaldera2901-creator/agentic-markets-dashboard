@@ -8,13 +8,13 @@ const sv: ToolsCopy = {
   hub: {
     metaTitle: "Gratis spelverktyg — odds, EV, Kelly och marginal | BetRedge",
     metaDescription:
-      "11 gratis kalkylatorer: omvandla odds mellan alla format, ta bort spelbolagets marginal, räkna ut väntat värde, sätt insatsen med Kelly, kontrollera arbitrage och mät avkastningen. Utan registrering.",
+      "12 gratis kalkylatorer: omvandla odds mellan alla format, ta bort spelbolagets marginal, räkna ut väntat värde, sätt insatsen med Kelly, kontrollera arbitrage och mät avkastningen. Utan registrering.",
     h1: "Gratis spelverktyg",
     lede:
-      "De elva räkneövningarna som görs före ett spel: odds omvandlade, marginal borttagen, insats satt, avkastning mätt. Gratis, utan konto.",
+      "De tolv räkneövningarna som görs före ett spel: odds omvandlade, marginal borttagen, insats satt, avkastning mätt. Gratis, utan konto.",
     cardCta: "Öppna verktyget",
     intro: [
-      "Varje spel är en jämförelse mellan ett pris och en sannolikhet. De här elva kalkylatorerna gör jämförelsen ordentligt: de översätter odds mellan format, tar bort spelbolagets marginal och visar den rättvisa linjen, förvandlar en sannolikhetsuppskattning till väntat värde, lägger ihop benen i ett kombinationsspel till ett odds, visar när två spelbolag skiljer sig nog för ett arbitrage, sätter insatsen så att en förlustsvit inte avslutar kassan och mäter efteråt vad spelen faktiskt gav.",
+      "Varje spel är en jämförelse mellan ett pris och en sannolikhet. De här tolv kalkylatorerna gör jämförelsen ordentligt: de översätter odds mellan format, tar bort spelbolagets marginal och visar den rättvisa linjen, förvandlar en sannolikhetsuppskattning till väntat värde, lägger ihop benen i ett kombinationsspel till ett odds, visar när två spelbolag skiljer sig nog för ett arbitrage, sätter insatsen så att en förlustsvit inte avslutar kassan och mäter efteråt vad spelen faktiskt gav.",
       "Allt körs helt i din webbläsare: inget skickas, inget sparas och det finns inget konto att skapa. Använd dem för sig — eller använd dem för att kontrollera vad vår modell redan publicerar för varje match.",
     ],
   },
@@ -701,6 +701,81 @@ const sv: ToolsCopy = {
         {
           q: "Ska jag använda den här eller Kelly-kriteriet?",
           a: "Den här när du inte har en uppmätt fördel, vilket är för det mesta: en enhet i procent kräver ingen sannolikhetsbedömning och dess värsta fall är känt i förväg. Kalkylatorn för Kelly-kriteriet är rätt verktyg så snart du kan försvara en sannolikhet, och den rekommenderar oftast mer än platta 2 %. Att läsa dess svar som ett tak och den platta regeln som ett golv håller båda hederliga.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Dutchingkalkylator — dela insatsen så att varje utfall betalar lika | BetRedge",
+      metaDescription:
+        "Gratis dutchingkalkylator: ange 2 till 8 utfall i en marknad och se hur insatsen delas så att utbetalningen blir identisk oavsett vilket som vinner, med täckning och break even-odds.",
+      h1: "Dutchingkalkylator",
+      lede:
+        "Ange oddset för varje utfall du vill täcka och se hur en insats delas så att varje utfall betalar lika mycket — och vad det kostar eller ger.",
+      labels: {
+        inputTitle: "Odds för varje utfall",
+        outcome: "Utfall",
+        addOutcome: "Lägg till utfall",
+        removeOutcome: "Ta bort",
+        modeTitle: "Vad vet du",
+        modeTotal: "Total insats",
+        modeTarget: "Målvinst",
+        total: "Total insats",
+        targetProfit: "Målvinst",
+        roundTitle: "Avrunda insatser till",
+        roundNone: "Ingen",
+        resultTitle: "Så delar du",
+        profit: "Vinst eller förlust (sämsta utfallet)",
+        profitPercent: "Vinst eller förlust på total insats",
+        totalStake: "Total insats som krävs",
+        coverage: "Marknadstäckning (summa av implicerade sannolikheter)",
+        stakeOn: "Insats på utfall",
+        returnOn: "Utbetalning om utfall",
+        meanOdds: "Genomsnittsodds här (harmoniskt)",
+        breakEvenOdds: "Genomsnittsodds som krävs för break even",
+        verdictWin: "Vinst låst: {pct} på total insats, oavsett vilket utfall som vinner.",
+        verdictLoss: "Med de här oddsen förlorar du {pct} vad som än händer.",
+        verdictFlat:
+          "De här oddsen går jämnt upp: du får tillbaka exakt din insats, oavsett vilket utfall som vinner.",
+        verdictUnreachable:
+          "Med de här oddsen kan ingen total insats ge vinst: de implicerade sannolikheterna summerar till 100 % eller mer.",
+        hint:
+          "Ett decimalodds per utfall, från 2 till 8. Avrundning håller varje insats på en multipel av 1, 5 eller 10; utbetalningarna räknas sedan om per utfall och är inte längre identiska. Decimal godtar komma.",
+      },
+      takeaway:
+        "Dutching gör inte ett spel bättre, det gör resultatet lika för varje utfall du täcker — därför är det täckningen, inte insatsfördelningen, som visar om det var värt det.",
+      example: {
+        title: "Tre utfall, 100 att dela",
+        rows: [
+          { label: "Odds", value: "2.10 · 3.60 · 3.60" },
+          { label: "Marknadstäckning", value: "103,17 %" },
+          { label: "Insats på vart och ett, av 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Utbetalning vid varje utfall", value: "96,92" },
+          { label: "Vinst eller förlust", value: "−3,08 (−3,08 %)" },
+        ],
+        note:
+          "Vänd på frågan så svarar samma odds: 2.10 och 2.10 summerar till 95,24 %, så en vinst på 20 kräver 400 totalt, 200 på varje sida, med 420 i utbetalning i båda fallen. Avrundningen är där likheten bryts: vid 5 blir den första fördelningen 45, 25 och 25, totalen sjunker till 95 och utbetalningarna blir 94,50, 90,00 och 90,00 — det sämsta utfallet är nu −5,00.",
+      },
+      explainerTitle: "Lika utbetalning vid varje utfall",
+      explainer: [
+        "**Dutching delar en insats på flera utfall i samma marknad så att utbetalningen blir densamma oavsett vilket som vinner.** Varje utfall får en andel proportionell mot sin implicerade sannolikhet — ett delat med oddset — och andelarna summerar till din totala insats. Till skillnad från arbitrage behöver de implicerade sannolikheterna inte summera till under 100 %. Vid odds på 2.10, 3.60 och 3.60 summerar de till 103,17 %, och 100 fördelat som 46,15, 26,92 och 26,92 ger 96,92 vid varje utfall: resultatet slutar bero på matchen, men det är en förlust på 3,08 %, eftersom marknaden behåller sin marginal.",
+        "**Siffran att läsa först är marknadstäckningen.** Under 100 % låser fördelningen en vinst; över låser den en förlust, och ju längre över, desto mer betalar du för säkerheten. Break even är en fråga om genomsnittsodds: med tre utfall måste det harmoniska medelvärdet av oddsen nå 3,00, och här är det 2,91. Två praktiska punkter. **Att avrunda insatser till hela enheter, till 5 eller 10 bryter likheten** — kalkylatorn räknar om varje utbetalning och visar att de inte längre är identiska. Och att täcka flera utfall betyder att betala marginalen på vart och ett: dutching är ett sätt att välja hur du är exponerad, inte ett sätt att ta bort kostnaden för att vara det.",
+      ],
+      faq: [
+        {
+          q: "Vad är skillnaden mellan dutching och arbitrage?",
+          a: "Arbitrage kräver odds som tillsammans summerar till under 100 %, så att en vinst är låst. Dutching kräver bara att du täcker flera utfall i en marknad med lika utbetalning: summan kan vara över 100 %, och då gör utjämningen av utbetalningen förlusten säker och synlig. Räkningen är densamma, villkoret inte.",
+        },
+        {
+          q: "Varför når kalkylatorn inte min målvinst?",
+          a: "När de implicerade sannolikheterna summerar till 100 % eller mer ger ingen insats vinst: utbetalningen per satsad enhet är ett delat med den summan, alltså 1 eller mindre. Kalkylatorn säger det i stället för att hitta på en total. Utvägen är bättre odds eller färre täckta utfall.",
+        },
+        {
+          q: "Vad händer om jag avrundar insatserna?",
+          a: "Varje insats flyttas till närmaste multipel av 1, 5 eller 10, så totalen ändras och utbetalningarna är inte längre identiska. Kalkylatorn räknar om utbetalningen för varje utfall från de avrundade insatserna och visar det sämsta som vinst eller förlust, vilket är den ärliga siffran att planera efter.",
+        },
+        {
+          q: "Varför skulle någon täcka flera utfall med förlust?",
+          a: "För att det förvandlar ett osäkert resultat till ett känt: du betalar ett känt pris för att ha rätt på vilket som helst av de utfall du täcker. Om priset är värt det beror på vad säkerhet är värd för dig, och täckningen visar exakt vad den kostar.",
         },
       ],
     },
