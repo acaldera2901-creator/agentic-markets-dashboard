@@ -42,6 +42,7 @@ import { discoveryCopy } from "@/lib/classic/discovery-copy";
 import { useClassicPrices } from "@/components/classic/ClassicContext";
 import { classicCopy, fill, type ClassicCopy } from "@/lib/classic/lobby-copy";
 import { ClassicBanners, type ClassicBanner } from "@/components/classic/ClassicBanners";
+import { ClassicNewsStrip } from "@/components/classic/ClassicNewsStrip"; // #NEWS-FOTMOB-PROD-1026
 import { ClassicRow, type ClassicRowLink } from "@/components/classic/ClassicRow";
 import { IconChevronDown, IconChevronRight, IconClose, IconSearch } from "@/components/ui/icons";
 import { ClassicIcon } from "@/components/classic/ClassicIcon";
@@ -338,6 +339,10 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
 
       <div className="brc-main">
       <ClassicBanners banners={bannerList} label={copy.bannersLabel} mobileLabels={[copy.football, copy.tabInPlay, copy.sideRecord]} />
+
+      {/* ── 1b · «Latest news» (#NEWS-FOTMOB-PROD-1026): tre note al massimo,
+          niente quando non c'è nulla da dire — il board non aspetta le news ── */}
+      <ClassicNewsStrip lang={lang} football={football} />
 
       {/* ── 2 · tab + ricerca ─────────────────────────────────────────── */}
       <div className="brc-bar">

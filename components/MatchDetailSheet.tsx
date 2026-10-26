@@ -92,6 +92,26 @@ export type MdsTeamNews = {
   away: { name: string; items: string[] };
 };
 
+/** #NEWS-FOTMOB-PROD-1026 — one rewritten FotMob note naming a team of this
+ *  match, every string already formatted by the caller (the sheet formats no
+ *  dates, as for the kickoff). Timing only: the sheet says when, never why. */
+export type MdsNewsItem = {
+  key: string;
+  /** «14:21», Rome */
+  time: string;
+  /** «12 minutes ago», may be empty */
+  ago: string;
+  iso: string;
+  source: string;
+  title: string;
+  body: string;
+  textLang: "en" | "it";
+  english: boolean;
+  url: string;
+  aiLabel: string;
+};
+export type MdsNews = { label: string; note: string; readOriginal: string; inEnglish: string; rows: MdsNewsItem[] };
+
 export type MdsSectionLabels = {
   why: string;
   form: string;
@@ -116,6 +136,8 @@ export type MdsData = {
   form?: MdsForm | null;
   teamNews?: MdsTeamNews | null;
   teamNewsLocked?: boolean;
+  /** #NEWS-FOTMOB-PROD-1026 — null/absent = no note names this match (nothing rendered). */
+  news?: MdsNews | null;
   onUnlock?: () => void;
   sections?: MdsSectionLabels;
   hero: {
@@ -163,6 +185,8 @@ export type MdsData = {
     selMany: string;
   };
 };
+
+import "@/components/news/news.css"; // #NEWS-FOTMOB-PROD-1026 — .mds-news
 
 function Ico({ id }: { id: string }) {
   return (
@@ -540,6 +564,34 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                    «nessuna assenza»: è un dato che non abbiamo. */
                 <p className="br-md__none">{data.sections?.teamNewsUnavailable ?? "Absences not available for this match."}</p>
               )}
+            </section>
+          )}
+
+          {/* #NEWS-FOTMOB-PROD-1026 — the rewritten FotMob notes that name a team
+              of this match, after the absences (news about the teams sit together)
+              and before the markets: a note is never next to a price. Source,
+              AI label and the link to the original on every note. */}
+          {data.news && data.news.rows.length > 0 && (
+            <section className="br-md__sec" data-testid="mds-news">
+              <h3 className="br-md__h">{data.news.label}</h3>
+              <ol className="mds-news">
+                {data.news.rows.map((n) => (
+                  <li key={n.key} className="mds-news__item">
+                    <span className="mds-news__when">
+                      <time dateTime={n.iso}>{n.time}</time>
+                      <span>{n.source}</span>
+                      {n.ago && <span className="mds-news__ago">· {n.ago}</span>}
+                    </span>
+                    <p className="mds-news__t" lang={n.textLang}>{n.title}</p>
+                    <p className="mds-news__b" lang={n.textLang}>{n.body}</p>
+                    <p className="mds-news__meta">
+                      <span>{n.aiLabel}{n.english ? ` · ${data.news!.inEnglish}` : ""}</span>
+                      <a href={n.url} rel="nofollow noopener noreferrer" target="_blank">{data.news!.readOriginal} <span aria-hidden="true">↗</span></a>
+                    </p>
+                  </li>
+                ))}
+              </ol>
+              <p className="mds-news__note">{data.news.note}</p>
             </section>
           )}
 
