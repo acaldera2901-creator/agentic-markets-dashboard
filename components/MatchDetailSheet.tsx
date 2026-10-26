@@ -110,6 +110,8 @@ export type MdsNewsItem = {
   url: string;
   /** our 16:9 picture for the kind of story (never the source's), or null */
   image: { src: string; width: number; height: number } | null;
+  /** the clubs the note names: real crest (the board's map) and real colours, or null each (lib/news/clubs.ts) */
+  badges: { name: string; crest: string | null; colors: readonly [string, string] | null }[];
 };
 export type MdsNews = { label: string; note: string; readOriginal: string; inEnglish: string; rows: MdsNewsItem[] };
 
@@ -187,7 +189,7 @@ export type MdsData = {
   };
 };
 
-import Image from "next/image"; // #NEWS-FOTMOB-PROD-1026 — the picture of a note
+import { NewsArt } from "@/components/news/NewsArt"; // #NEWS-FOTMOB-PROD-1026 — the picture of a note
 import "@/components/news/news.css"; // #NEWS-FOTMOB-PROD-1026 — .mds-news
 
 function Ico({ id }: { id: string }) {
@@ -581,7 +583,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                   <li key={n.key} className="mds-news__item">
                     {n.image && (
                       <span className="mds-news__img">
-                        <Image src={n.image.src} width={n.image.width} height={n.image.height} alt="" loading="lazy" sizes="(max-width: 640px) 100vw, 560px" />
+                        <NewsArt image={n.image} badges={n.badges} variant="card" sizes="(max-width: 640px) 100vw, 560px" />
                       </span>
                     )}
                     <span className="mds-news__when">

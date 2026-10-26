@@ -3,6 +3,7 @@
 // «Latest news» strip on the board (B), the News card of the match sheet (C).
 // No React, no Next, no Date.now(): every function takes `now`. Times are
 // Rome's, on purpose (the brief): one clock for every visitor, declared once.
+import { noteBadges, type ClubBadge } from "./clubs";
 import { fillNews, newsCopy, type NewsCopy } from "./copy";
 import { dedupeKinds, newsImage, newsKind, type NewsImage, type NewsKind } from "./kind";
 import { matchTeams } from "./teams";
@@ -85,6 +86,8 @@ export type NewsRow = {
   kind: NewsKind;
   /** our 16:9 picture for that kind, null when we have none */
   image: NewsImage | null;
+  /** the clubs the note names (max two, in order): real crest and colours when we have them (lib/news/clubs.ts) */
+  badges: ClubBadge[];
 };
 
 /** The mapping note → row. `now` null = before mount: no relative time (never a hydration mismatch). `kind` given = already de-duplicated by rowsFor. */
@@ -104,6 +107,7 @@ export function rowFor(card: NewsCard, lang: string, now: number | null, kind: N
     url: card.url,
     kind,
     image: newsImage(kind),
+    badges: noteBadges(`${card.note.en.title} ${card.note.it.title}`, `${card.note.en.body} ${card.note.it.body}`, card.teams),
   };
 }
 

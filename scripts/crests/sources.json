@@ -51,6 +51,10 @@
   "matched": "Fiorentina",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/hc8nhu1656098030.png"
  },
+ "football:afc bournemouth": {
+  "matched": "Bournemouth",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/y08nak1534071116.png"
+ },
  "football:aik": {
   "matched": "AIK",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/rwsrxq1420769503.png"
@@ -164,6 +168,10 @@
   "url": "https://a.espncdn.com/i/teamlogos/soccer/500/280.png",
   "provider": "ESPN",
   "providerId": "280"
+ },
+ "football:bayer 04 leverkusen": {
+  "matched": "Bayer Leverkusen",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/3x9k851726760113.png"
  },
  "football:benevento": {
   "matched": "Benevento",
@@ -735,6 +743,10 @@
   "provider": "ESPN",
   "providerId": "8169"
  },
+ "football:la galaxy": {
+  "matched": "LA Galaxy",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/ysyysr1420227188.png"
+ },
  "football:lask linz": {
   "matched": "LASK",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/oox26l1683556395.png"
@@ -1298,6 +1310,10 @@
  "football:trabzonspor": {
   "matched": "Trabzonspor",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/96s34o1776827629.png"
+ },
+ "football:tsg hoffenheim": {
+  "matched": "Hoffenheim",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/9hwvb21621593919.png"
  },
  "football:udinese calcio": {
   "matched": "Udinese",

@@ -6,9 +6,9 @@
 // error, not yet loaded) → renders nothing: the board never waits for the news.
 // A note that names a team on the board links to that match; the others are
 // text — never a guessed link.
-import Image from "next/image";
 import Link from "next/link";
 import { fillNews, newsCopy } from "@/lib/news/copy";
+import { NewsArt } from "@/components/news/NewsArt";
 import type { LobbyItem } from "@/lib/ui/lobby";
 import { matchesForNote, rowsFor, stripCards, timeRome, type BoardMatch } from "@/lib/news/view";
 import { boardHref, useNewsFeed, useNow } from "@/components/news/use-news";
@@ -37,7 +37,7 @@ export function ClassicNewsStrip({ lang, football }: { lang: string; football: r
             <li key={r.key} className="brc-news__item" data-img={r.image ? "" : undefined} data-kind={r.kind}>
               {r.image && (
                 <span className="brc-news__thumb">
-                  <Image src={r.image.src} width={r.image.width} height={r.image.height} alt="" loading="lazy" sizes="64px" />
+                  <NewsArt image={r.image} badges={r.badges} variant="strip" sizes="64px" />
                 </span>
               )}
               <span className="brc-news__when">

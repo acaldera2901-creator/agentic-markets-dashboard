@@ -6,8 +6,8 @@
 // link only when the board names the team — never invented. The picture is
 // ours, by kind of story (lib/news/kind.ts), never FotMob's; no price, no
 // pick: the news says when, never why.
-import Image from "next/image";
 import { fillNews, newsCopy } from "@/lib/news/copy";
+import { NewsArt } from "./NewsArt";
 import type { NewsFeed } from "@/lib/news/table";
 import { matchesForNote, rowsFor, stateMessage, updatedLine } from "@/lib/news/view";
 import { boardHref, useBoardMatches, useNow, useSiteLang } from "./use-news";
@@ -46,7 +46,7 @@ export function NewsList({ feed }: { feed: NewsFeed }) {
                 </div>
                 {r.image && (
                   <span className="nw-thumb">
-                    <Image src={r.image.src} width={r.image.width} height={r.image.height} alt="" loading="lazy" sizes="(max-width: 640px) calc(100vw - 64px), 168px" />
+                    <NewsArt image={r.image} badges={r.badges} variant="thumb" sizes="(max-width: 640px) calc(100vw - 64px), 168px" />
                   </span>
                 )}
                 <div className="nw-note">
