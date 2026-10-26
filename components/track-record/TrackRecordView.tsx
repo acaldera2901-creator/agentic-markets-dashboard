@@ -83,7 +83,7 @@ const CSS = `
 @media(max-width:640px){.tr-root .tr-pill.btn{min-height:44px}}
 `;
 
-export function TrackRecordView({ rows, lang, data }: { rows: LedgerRow[]; lang: "it" | "en"; data?: YearData | null }) {
+export function TrackRecordView({ rows, lang, data, loading = false, error = false, onRetry }: { rows: LedgerRow[]; lang: "it" | "en"; data?: YearData | null; loading?: boolean; error?: boolean; onRetry?: () => void }) {
   const it = lang === "it";
   return (
     <YearDataContext.Provider value={data}><div className="tr-root">
@@ -99,14 +99,18 @@ export function TrackRecordView({ rows, lang, data }: { rows: LedgerRow[]; lang:
         <h2>{it ? "Registro pick" : "Pick log"}</h2>
         <span className="hint">{it ? "pick concluse · arrivano qui quando la partita finisce" : "settled picks · they land here when the match ends"}</span>
       </div>
-      <PickLedger rows={rows} lang={lang} />
+      {error && <div className="tr-card tr-empty" role="alert">{it ? "Aggiornamento non riuscito. Riprova tra poco." : "Could not refresh results. Please try again."} {onRetry && <button className="tr-pill btn" onClick={onRetry}>{it ? "Riprova" : "Retry"}</button>}</div>}
+      {error && rows.length === 0 ? null : loading && rows.length === 0
+        ? <div className="tr-card tr-empty" role="status" aria-live="polite">{it ? "Caricamento dei risultati verificati…" : "Loading verified results…"}</div>
+        : <PickLedger rows={rows} lang={lang} />}
 
       <div className="tr-sh">
         <span className="tr-glyph"><GlyphTrend size={16} /></span>
         <h2>{it ? "Lo storico in sintesi" : "Track record at a glance"}</h2>
       </div>
-      <EdgeCard lang={lang} />
-      <SegmentTable lang={lang} />
+      {error && !data?.stats ? null : loading && !data?.stats
+        ? <div className="tr-card tr-empty" role="status">{it ? "Caricamento delle statistiche…" : "Loading statistics…"}</div>
+        : <><EdgeCard lang={lang} /><SegmentTable lang={lang} /></>}
     </div></YearDataContext.Provider>
   );
 }

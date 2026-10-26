@@ -79,6 +79,23 @@ describe("computeCrossCompetitionForms", () => {
     expect(b[PSG].form).toBe(a[PSG].form);
   });
 
+  it("excludes matches at or after the observation cutoff", () => {
+    const forms = computeCrossCompetitionForms([PSG_FL1, PSG_CL], Date.parse("2026-10-14T19:00:00Z"));
+    expect(forms[PSG].form).toBe("LWWWW");
+    expect(forms["FC Barcelona"]).toBeUndefined();
+  });
+
+  it("does not turn missing or invalid scores into form badges", () => {
+    const rows = [
+      dated("2026-10-01", PSG, 1, 0, "A"),
+      dated("2026-10-02", PSG, null as unknown as number, null as unknown as number, "B"),
+      dated("2026-10-03", PSG, -1, 0, "C"),
+      dated("2026-10-04", PSG, Number.NaN, 0, "D"),
+    ];
+    expect(computeCrossCompetitionForms([rows])[PSG].form).toBe("W");
+    expect(computeTeamForms(rows)[PSG].form).toBe("W");
+  });
+
   it("a team seen only in one competition keeps that competition's form", () => {
     expect(computeCrossCompetitionForms([PSG_FL1, PSG_CL])["FC Barcelona"].form).toBe("L");
   });

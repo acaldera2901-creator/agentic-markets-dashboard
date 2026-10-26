@@ -6,7 +6,10 @@ import { it, expect, vi, beforeEach } from "vitest";
 import { TRACK_RECORD_BASE_CONDITIONS } from "@/lib/track-record";
 
 const { dbQuery, access } = vi.hoisted(() => ({ dbQuery: vi.fn(), access: vi.fn() }));
-vi.mock("@/lib/db", () => ({ dbQuery }));
+vi.mock("next/cache", async () => ({
+  unstable_cache: (await import("@/tests/helpers/next-data-cache")).mockUnstableCache,
+}));
+vi.mock("@/lib/db", () => ({ dbQuery, dbQueryStrict: dbQuery }));
 vi.mock("@/lib/auth", () => ({ resolveAccessState: access }));
 
 beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); access.mockResolvedValue({state:"anonymous"}); });

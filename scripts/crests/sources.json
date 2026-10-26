@@ -11,6 +11,12 @@
   "matched": "Köln",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/2j1sc91566049407.png"
  },
+ "football:1. fc magdeburg": {
+  "matched": "1. FC Magdeburg",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/10382.png",
+  "provider": "ESPN",
+  "providerId": "10382"
+ },
  "football:1. fc nürnberg": {
   "matched": "Nürnberg",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/wtj8rd1659904028.png"
@@ -22,6 +28,12 @@
  "football:1. fsv mainz 05": {
   "matched": "Mainz",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/fhm9v51552134916.png"
+ },
+ "football:aberdeen": {
+  "matched": "Aberdeen",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/263.png",
+  "provider": "ESPN",
+  "providerId": "263"
  },
  "football:ac horsens": {
   "matched": "AC Horsens",
@@ -39,6 +51,16 @@
   "matched": "Fiorentina",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/hc8nhu1656098030.png"
  },
+ "football:aik": {
+  "matched": "AIK",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/rwsrxq1420769503.png"
+ },
+ "football:aldosivi mar del plata": {
+  "matched": "Aldosivi",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/9739.png",
+  "provider": "ESPN",
+  "providerId": "9739"
+ },
  "football:almería": {
   "matched": "Almería",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/yswsww1473503818.png"
@@ -47,9 +69,37 @@
   "matched": "Amed",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/4fqdgh1783788571.png"
  },
+ "football:américa": {
+  "matched": "América",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/227.png",
+  "provider": "ESPN",
+  "providerId": "227"
+ },
+ "football:andorra cf": {
+  "matched": "FC Andorra",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/eyaka21639481902.png"
+ },
  "football:annecy fc": {
   "matched": "Annecy",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/h6981f1655120883.png"
+ },
+ "football:arezzo": {
+  "matched": "Arezzo",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3345.png",
+  "provider": "ESPN",
+  "providerId": "3345"
+ },
+ "football:argentinos juniors": {
+  "matched": "Argentinos Juniors",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3.png",
+  "provider": "ESPN",
+  "providerId": "3"
+ },
+ "football:arminia bielefeld": {
+  "matched": "Arminia Bielefeld",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2506.png",
+  "provider": "ESPN",
+  "providerId": "2506"
  },
  "football:arsenal fc": {
   "matched": "Arsenal",
@@ -87,17 +137,51 @@
   "matched": "Huracán",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/kppi2b1775776550.png"
  },
+ "football:atlético san luis": {
+  "matched": "Atlético de San Luis",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/15720.png",
+  "provider": "ESPN",
+  "providerId": "15720"
+ },
  "football:austin fc": {
   "matched": "Austin FC",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/a3dlg61595434277.png"
+ },
+ "football:avellino": {
+  "matched": "US Avellino",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/4055.png",
+  "provider": "ESPN",
+  "providerId": "4055"
+ },
+ "football:bahia": {
+  "matched": "Bahia",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/9967.png",
+  "provider": "ESPN",
+  "providerId": "9967"
+ },
+ "football:barnet": {
+  "matched": "Barnet",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/280.png",
+  "provider": "ESPN",
+  "providerId": "280"
  },
  "football:benevento": {
   "matched": "Benevento",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/rvwtpt1426870819.png"
  },
+ "football:benfica": {
+  "matched": "Benfica",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/hj4kyc1781152436.png"
+ },
  "football:birmingham city": {
   "matched": "Birmingham City",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/wufs551672950865.png"
+ },
+ "football:bk hacken": {
+  "matched": "BK Häcken",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/7834.png",
+  "provider": "ESPN",
+  "providerId": "7834"
  },
  "football:blackburn rovers": {
   "matched": "Blackburn Rovers",
@@ -106,6 +190,12 @@
  "football:boca juniors": {
   "matched": "Boca Juniors",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/bm7krb1775741582.png"
+ },
+ "football:bodø/glimt": {
+  "matched": "Bodo/Glimt",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2980.png",
+  "provider": "ESPN",
+  "providerId": "2980"
  },
  "football:bohemians": {
   "matched": "Bohemians",
@@ -118,6 +208,12 @@
  "football:borussia dortmund": {
   "matched": "Borussia Dortmund",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/tqo8ge1716960353.png"
+ },
+ "football:botafogo": {
+  "matched": "Botafogo",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/6086.png",
+  "provider": "ESPN",
+  "providerId": "6086"
  },
  "football:boulogne": {
   "matched": "Boulogne",
@@ -135,6 +231,10 @@
   "matched": "Bromley",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/qq7kzz1661950278.png"
  },
+ "football:burgos cf": {
+  "matched": "Burgos",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/79h3ul1708150894.png"
+ },
  "football:burnley": {
   "matched": "Burnley",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/ql7nl31686893820.png"
@@ -143,9 +243,25 @@
   "matched": "Burton Albion",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/dfjbwe1781738043.png"
  },
+ "football:ca osasuna": {
+  "matched": "Osasuna",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/rvspvt1473502960.png"
+ },
+ "football:ca tigre ba": {
+  "matched": "Tigre",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/7767.png",
+  "provider": "ESPN",
+  "providerId": "7767"
+ },
  "football:cagliari calcio": {
   "matched": "Cagliari",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/wvsvxt1447534471.png"
+ },
+ "football:cambridge united": {
+  "matched": "Cambridge United",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/351.png",
+  "provider": "ESPN",
+  "providerId": "351"
  },
  "football:cardiff city": {
   "matched": "Cardiff City",
@@ -158,6 +274,18 @@
  "football:çaykur rizespor": {
   "matched": "Rizespor",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/t7senr1657195719.png"
+ },
+ "football:celtic": {
+  "matched": "Celtic",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/256.png",
+  "provider": "ESPN",
+  "providerId": "256"
+ },
+ "football:cesena fc": {
+  "matched": "Cesena",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3337.png",
+  "provider": "ESPN",
+  "providerId": "3337"
  },
  "football:cf montreal": {
   "matched": "CF Montréal",
@@ -175,6 +303,12 @@
   "matched": "Chelsea",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/pbf4ul1782638263.png"
  },
+ "football:chesterfield fc": {
+  "matched": "Chesterfield",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/343.png",
+  "provider": "ESPN",
+  "providerId": "343"
+ },
  "football:chicago fire": {
   "matched": "Chicago Fire",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/8xuc781639493166.png"
@@ -190,6 +324,12 @@
  "football:club atlético de madrid": {
   "matched": "Atlético Madrid",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/0ulh3q1719984315.png"
+ },
+ "football:club brugge": {
+  "matched": "Club Brugge",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/570.png",
+  "provider": "ESPN",
+  "providerId": "570"
  },
  "football:club brugge kv": {
   "matched": "Club Brugge",
@@ -211,13 +351,35 @@
   "matched": "Córdoba",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/ttyyvy1473503827.png"
  },
+ "football:corinthians": {
+  "matched": "Corinthians",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/874.png",
+  "provider": "ESPN",
+  "providerId": "874"
+ },
+ "football:coritiba": {
+  "matched": "Coritiba",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/ywwsyu1473538050.png"
+ },
  "football:çorum fk": {
   "matched": "Çorum",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/ivoq4l1679510278.png"
  },
+ "football:cremonese": {
+  "matched": "Cremonese",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/4050.png",
+  "provider": "ESPN",
+  "providerId": "4050"
+ },
  "football:d.c. united": {
   "matched": "DC United",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/uwvsyt1467462609.png"
+ },
+ "football:degerfors if": {
+  "matched": "Degerfors IF",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/20856.png",
+  "provider": "ESPN",
+  "providerId": "20856"
  },
  "football:derry city": {
   "matched": "Derry City",
@@ -231,9 +393,27 @@
   "matched": "Djurgården",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/yuuwru1425411493.png"
  },
+ "football:doncaster rovers": {
+  "matched": "Doncaster Rovers",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/279.png",
+  "provider": "ESPN",
+  "providerId": "279"
+ },
  "football:drogheda united": {
   "matched": "Drogheda United",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/w1j16u1582565320.png"
+ },
+ "football:dundee fc": {
+  "matched": "Dundee",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/261.png",
+  "provider": "ESPN",
+  "providerId": "261"
+ },
+ "football:dundee united": {
+  "matched": "Dundee United",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/264.png",
+  "provider": "ESPN",
+  "providerId": "264"
  },
  "football:eintracht braunschweig": {
   "matched": "Eintracht Braunschweig",
@@ -251,6 +431,12 @@
   "matched": "Erzurumspor",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/7sepx01783701613.png"
  },
+ "football:estudiantes de río cuarto": {
+  "matched": "Estudiantes de Río Cuarto",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/19685.png",
+  "provider": "ESPN",
+  "providerId": "19685"
+ },
  "football:everton fc": {
   "matched": "Everton",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/eqayrf1523184794.png"
@@ -262,6 +448,12 @@
  "football:eyüpspor": {
   "matched": "Eyüpspor",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/7fb0ub1626445710.png"
+ },
+ "football:falkirk f.c.": {
+  "matched": "Falkirk",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/254.png",
+  "provider": "ESPN",
+  "providerId": "254"
  },
  "football:fc augsburg": {
   "matched": "Augsburg",
@@ -291,6 +483,12 @@
   "matched": "Inter Milan",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/ryhu6d1617113103.png"
  },
+ "football:fc juárez": {
+  "matched": "FC Juárez",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/17851.png",
+  "provider": "ESPN",
+  "providerId": "17851"
+ },
  "football:fc lahti": {
   "matched": "Lahti",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/kmafvd1741054191.png"
@@ -302,6 +500,10 @@
  "football:fc schalke 04": {
   "matched": "Schalke 04",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/hnci291621593978.png"
+ },
+ "football:fenerbahce": {
+  "matched": "Fenerbahçe",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/twxxvs1448199691.png"
  },
  "football:fenerbahçe sk": {
   "matched": "Fenerbahçe",
@@ -319,13 +521,31 @@
   "matched": "Shakhtar Donetsk",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/sqrxsr1421791799.png"
  },
+ "football:flamengo": {
+  "matched": "Flamengo",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/819.png",
+  "provider": "ESPN",
+  "providerId": "819"
+ },
  "football:fleetwood town": {
   "matched": "Fleetwood Town",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/txwuwp1424032712.png"
  },
+ "football:fluminense": {
+  "matched": "Fluminense",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3445.png",
+  "provider": "ESPN",
+  "providerId": "3445"
+ },
  "football:frosinone calcio": {
   "matched": "Frosinone",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/a7xa151603170120.png"
+ },
+ "football:gais": {
+  "matched": "GAIS",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/8222.png",
+  "provider": "ESPN",
+  "providerId": "8222"
  },
  "football:galatasaray": {
   "matched": "Galatasaray",
@@ -351,6 +571,16 @@
   "matched": "Gimnasia y Esgrima de La Plata",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/dtqto61775838814.png"
  },
+ "football:grazer ak": {
+  "matched": "Grazer AK",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/21846.png",
+  "provider": "ESPN",
+  "providerId": "21846"
+ },
+ "football:grêmio": {
+  "matched": "Grêmio",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/uvpwyt1473538089.png"
+ },
  "football:grenoble": {
   "matched": "Grenoble",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/x2hcpg1488227785.png"
@@ -363,9 +593,33 @@
   "matched": "Guingamp",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/5iihrp1590259631.png"
  },
+ "football:halmstads bk": {
+  "matched": "Halmstads BK",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3017.png",
+  "provider": "ESPN",
+  "providerId": "3017"
+ },
  "football:hamburger sv": {
   "matched": "Hamburg",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/tvtppt1473453296.png"
+ },
+ "football:hammarby if": {
+  "matched": "Hammarby IF",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2495.png",
+  "provider": "ESPN",
+  "providerId": "2495"
+ },
+ "football:hartberg": {
+  "matched": "TSV Hartberg",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/6907.png",
+  "provider": "ESPN",
+  "providerId": "6907"
+ },
+ "football:hearts": {
+  "matched": "Heart of Midlothian",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/262.png",
+  "provider": "ESPN",
+  "providerId": "262"
  },
  "football:heerenveen": {
   "matched": "Heerenveen",
@@ -378,6 +632,18 @@
  "football:henan fc": {
   "matched": "Henan FC",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/mc9rzf1699122167.png"
+ },
+ "football:hertha berlin": {
+  "matched": "Hertha Berlin",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/129.png",
+  "provider": "ESPN",
+  "providerId": "129"
+ },
+ "football:hibernian": {
+  "matched": "Hibernian",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/258.png",
+  "provider": "ESPN",
+  "providerId": "258"
  },
  "football:hjk helsinki": {
   "matched": "HJK Helsinki",
@@ -403,13 +669,31 @@
   "matched": "Gnistan",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/fakswa1615842508.png"
  },
+ "football:ifk goteborg": {
+  "matched": "IFK Göteborg",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2556.png",
+  "provider": "ESPN",
+  "providerId": "2556"
+ },
  "football:ifk mariehamn": {
   "matched": "IFK Mariehamn",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/07tzlu1515432319.png"
  },
+ "football:ik sirius": {
+  "matched": "IK Sirius",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/8547.png",
+  "provider": "ESPN",
+  "providerId": "8547"
+ },
  "football:ilves tampere": {
   "matched": "Ilves",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/jhx8vm1578953713.png"
+ },
+ "football:independiente rivadavia": {
+  "matched": "Independiente Rivadavia",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/9744.png",
+  "provider": "ESPN",
+  "providerId": "9744"
  },
  "football:inter miami cf": {
   "matched": "Inter Miami",
@@ -423,13 +707,43 @@
   "matched": "Jaro",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/blp8tg1603355064.png"
  },
+ "football:juve stabia": {
+  "matched": "Juve Stabia",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3975.png",
+  "provider": "ESPN",
+  "providerId": "3975"
+ },
  "football:juventus fc": {
   "matched": "Juventus",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/uxf0gr1742983727.png"
  },
+ "football:kalmar ff": {
+  "matched": "Kalmar FF",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3052.png",
+  "provider": "ESPN",
+  "providerId": "3052"
+ },
+ "football:kilmarnock": {
+  "matched": "Kilmarnock",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/260.png",
+  "provider": "ESPN",
+  "providerId": "260"
+ },
+ "football:kups kuopio": {
+  "matched": "KuPS Kuopio",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/8169.png",
+  "provider": "ESPN",
+  "providerId": "8169"
+ },
  "football:lask linz": {
   "matched": "LASK",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/oox26l1683556395.png"
+ },
+ "football:le havre ac": {
+  "matched": "Le Havre AC",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3236.png",
+  "provider": "ESPN",
+  "providerId": "3236"
  },
  "football:le mans fc": {
   "matched": "Le Mans",
@@ -438,6 +752,12 @@
  "football:leganés": {
   "matched": "Leganés",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/tm0adr1616443898.png"
+ },
+ "football:leicester city": {
+  "matched": "Leicester City",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/375.png",
+  "provider": "ESPN",
+  "providerId": "375"
  },
  "football:levante ud": {
   "matched": "Levante",
@@ -467,6 +787,22 @@
   "matched": "Luton Town",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/v977eh1681319466.png"
  },
+ "football:lyngby": {
+  "matched": "Lyngby Boldklub",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/7860.png",
+  "provider": "ESPN",
+  "providerId": "7860"
+ },
+ "football:lyon": {
+  "matched": "Lyon",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/blk9771656932845.png"
+ },
+ "football:malmo ff": {
+  "matched": "Malmö FF",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2720.png",
+  "provider": "ESPN",
+  "providerId": "2720"
+ },
  "football:manchester city fc": {
   "matched": "Manchester City",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/vwpvry1467462651.png"
@@ -478,6 +814,12 @@
  "football:mansfield town": {
   "matched": "Mansfield Town",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/c1fpes1761709071.png"
+ },
+ "football:mantova": {
+  "matched": "Mantova",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3991.png",
+  "provider": "ESPN",
+  "providerId": "3991"
  },
  "football:metz": {
   "matched": "Metz",
@@ -495,13 +837,35 @@
   "matched": "Milton Keynes Dons",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/9hx41b1748524969.png"
  },
+ "football:minnesota united fc": {
+  "matched": "Minnesota United FC",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/17362.png",
+  "provider": "ESPN",
+  "providerId": "17362"
+ },
  "football:mirassol": {
   "matched": "Mirassol",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/pw8uo11765900737.png"
  },
+ "football:mjällby aif": {
+  "matched": "Mjällby AIF",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/20301.png",
+  "provider": "ESPN",
+  "providerId": "20301"
+ },
  "football:modena": {
   "matched": "Modena",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/93n2wm1656015823.png"
+ },
+ "football:montpellier": {
+  "matched": "Montpellier",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/8wn9x31750879448.png"
+ },
+ "football:motherwell": {
+  "matched": "Motherwell",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/266.png",
+  "provider": "ESPN",
+  "providerId": "266"
  },
  "football:motor lublin": {
   "matched": "Motor Lublin",
@@ -535,13 +899,33 @@
   "matched": "New York Red Bulls",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/suytvy1473536462.png"
  },
+ "football:newport county": {
+  "matched": "Newport County",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/635.png",
+  "provider": "ESPN",
+  "providerId": "635"
+ },
  "football:norwich city": {
   "matched": "Norwich City",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/pabczm1679951464.png"
  },
+ "football:olympique lyonnais": {
+  "matched": "Lyon",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/blk9771656932845.png"
+ },
+ "football:örgryte is": {
+  "matched": "Örgryte IS",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/131552.png",
+  "provider": "ESPN",
+  "providerId": "131552"
+ },
  "football:orlando city sc": {
   "matched": "Orlando City",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/qyppxw1423832326.png"
+ },
+ "football:osasuna": {
+  "matched": "Osasuna",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/rvspvt1473502960.png"
  },
  "football:oxford united": {
   "matched": "Oxford United",
@@ -554,6 +938,18 @@
  "football:pae aek": {
   "matched": "AEK Athens",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/4nogst1602773624.png"
+ },
+ "football:palermo": {
+  "matched": "Palermo",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2923.png",
+  "provider": "ESPN",
+  "providerId": "2923"
+ },
+ "football:palmeiras": {
+  "matched": "Palmeiras",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2029.png",
+  "provider": "ESPN",
+  "providerId": "2029"
  },
  "football:paris saint-germain fc": {
   "matched": "Paris Saint-Germain",
@@ -574,6 +970,18 @@
  "football:philadelphia union": {
   "matched": "Philadelphia Union",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/gyznyo1602103682.png"
+ },
+ "football:pisa": {
+  "matched": "Pisa",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3956.png",
+  "provider": "ESPN",
+  "providerId": "3956"
+ },
+ "football:portland timbers": {
+  "matched": "Portland Timbers",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/9723.png",
+  "provider": "ESPN",
+  "providerId": "9723"
  },
  "football:portsmouth": {
   "matched": "Portsmouth",
@@ -599,6 +1007,18 @@
   "matched": "Qingdao Hainiu",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/qzq6nw1654864098.png"
  },
+ "football:querétaro": {
+  "matched": "Querétaro",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/222.png",
+  "provider": "ESPN",
+  "providerId": "222"
+ },
+ "football:racing club": {
+  "matched": "Racing Club",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/15.png",
+  "provider": "ESPN",
+  "providerId": "15"
+ },
  "football:racing club de lens": {
   "matched": "Lens",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/3pxoum1598797195.png"
@@ -610,6 +1030,12 @@
  "football:randers fc": {
   "matched": "Randers FC",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/w0kmhn1690407779.png"
+ },
+ "football:rangers": {
+  "matched": "Rangers",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/257.png",
+  "provider": "ESPN",
+  "providerId": "257"
  },
  "football:rb leipzig": {
   "matched": "RB Leipzig",
@@ -635,6 +1061,16 @@
   "matched": "Real Sociedad B",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/hliq4n1579632023.png"
  },
+ "football:red star": {
+  "matched": "Red Star",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/so4unb1658758422.png"
+ },
+ "football:remo": {
+  "matched": "Remo",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/4936.png",
+  "provider": "ESPN",
+  "providerId": "4936"
+ },
  "football:rotherham united": {
   "matched": "Rotherham United",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/yfoiyf1779788861.png"
@@ -642,6 +1078,16 @@
  "football:sabah fk": {
   "matched": "Sabah",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/dug7wr1614888756.png"
+ },
+ "football:salford city": {
+  "matched": "Salford City",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/lpi7qa1779778149.png"
+ },
+ "football:sampdoria": {
+  "matched": "Sampdoria",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2734.png",
+  "provider": "ESPN",
+  "providerId": "2734"
  },
  "football:san diego fc": {
   "matched": "San Diego FC",
@@ -651,6 +1097,22 @@
   "matched": "San Jose Earthquakes",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/xyrqqt1420781048.png"
  },
+ "football:santa clara": {
+  "matched": "Santa Clara",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/7337a61724860742.png"
+ },
+ "football:santos": {
+  "matched": "Santos",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2674.png",
+  "provider": "ESPN",
+  "providerId": "2674"
+ },
+ "football:sao paulo": {
+  "matched": "São Paulo",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/2026.png",
+  "provider": "ESPN",
+  "providerId": "2026"
+ },
  "football:sc paderborn 07": {
   "matched": "Paderborn",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/kddvva1566048058.png"
@@ -658,6 +1120,14 @@
  "football:seattle sounders fc": {
   "matched": "Seattle Sounders",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/2dy5cx1706711036.png"
+ },
+ "football:sevilla": {
+  "matched": "Sevilla",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/vpsqqx1473502977.png"
+ },
+ "football:sevilla fc": {
+  "matched": "Sevilla",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/vpsqqx1473502977.png"
  },
  "football:shamrock rovers": {
   "matched": "Shamrock Rovers",
@@ -670,6 +1140,12 @@
  "football:sheffield united": {
   "matched": "Sheffield United",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/w7f8pj1672950689.png"
+ },
+ "football:sheffield wednesday": {
+  "matched": "Sheffield Wednesday",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/399.png",
+  "provider": "ESPN",
+  "providerId": "399"
  },
  "football:shelbourne dublin": {
   "matched": "Shelbourne",
@@ -719,6 +1195,24 @@
   "matched": "Napoli",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/l8qyxv1742982541.png"
  },
+ "football:st johnstone": {
+  "matched": "St Johnstone",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/267.png",
+  "provider": "ESPN",
+  "providerId": "267"
+ },
+ "football:st mirren": {
+  "matched": "St Mirren",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/250.png",
+  "provider": "ESPN",
+  "providerId": "250"
+ },
+ "football:st. louis city sc": {
+  "matched": "St. Louis CITY SC",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/21812.png",
+  "provider": "ESPN",
+  "providerId": "21812"
+ },
  "football:stade de reims": {
   "matched": "Stade de Reims",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/xcrw1b1592925946.png"
@@ -735,13 +1229,31 @@
   "matched": "Stoke City",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/lz89v21781718914.png"
  },
+ "football:südtirol": {
+  "matched": "Sudtirol",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/11139.png",
+  "provider": "ESPN",
+  "providerId": "11139"
+ },
  "football:sv 07 elversberg": {
   "matched": "Elversberg",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/z079go1677573926.png"
  },
+ "football:sv darmstadt 98": {
+  "matched": "SV Darmstadt 98",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3812.png",
+  "provider": "ESPN",
+  "providerId": "3812"
+ },
  "football:sv werder bremen": {
   "matched": "Werder Bremen",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/tkvqan1716960454.png"
+ },
+ "football:sv zulte-waregem": {
+  "matched": "Zulte-Waregem",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/4691.png",
+  "provider": "ESPN",
+  "providerId": "4691"
  },
  "football:swansea city": {
   "matched": "Swansea City",
@@ -783,6 +1295,10 @@
   "matched": "TPS",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/c7ta7c1576077399.png"
  },
+ "football:trabzonspor": {
+  "matched": "Trabzonspor",
+  "url": "https://r2.thesportsdb.com/images/media/team/badge/96s34o1776827629.png"
+ },
  "football:udinese calcio": {
   "matched": "Udinese",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/vwvstr1448806811.png"
@@ -807,6 +1323,18 @@
   "matched": "Vancouver Whitecaps",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/tpwxpy1473536521.png"
  },
+ "football:vasco da gama": {
+  "matched": "Vasco da Gama",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/3454.png",
+  "provider": "ESPN",
+  "providerId": "3454"
+ },
+ "football:västerås sk": {
+  "matched": "Västerås SK",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/22163.png",
+  "provider": "ESPN",
+  "providerId": "22163"
+ },
  "football:venezia fc": {
   "matched": "Venezia",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/vbiget1781026964.png"
@@ -818,6 +1346,12 @@
  "football:vfl bochum": {
   "matched": "Bochum",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/kag3jy1599821108.png"
+ },
+ "football:vfl osnabrück": {
+  "matched": "VfL Osnabruck",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/7013.png",
+  "provider": "ESPN",
+  "providerId": "7013"
  },
  "football:vfl wolfsburg": {
   "matched": "Wolfsburg",
@@ -867,6 +1401,12 @@
   "matched": "Wieczysta Kraków",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/sjv7bd1750699486.png"
  },
+ "football:wigan athletic": {
+  "matched": "Wigan Athletic",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/350.png",
+  "provider": "ESPN",
+  "providerId": "350"
+ },
  "football:wisła kraków": {
   "matched": "Wisła Kraków",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/y9j7hv1781237442.png"
@@ -874,6 +1414,12 @@
  "football:wrexham afc": {
   "matched": "Wrexham",
   "url": "https://r2.thesportsdb.com/images/media/team/badge/ezpymt1675092551.png"
+ },
+ "football:york city": {
+  "matched": "York City",
+  "url": "https://a.espncdn.com/i/teamlogos/soccer/500/315.png",
+  "provider": "ESPN",
+  "providerId": "315"
  },
  "football:yunnan yukun": {
   "matched": "Yunnan Yukun",
@@ -951,6 +1497,11 @@
   "matched": "Carlos Alcaraz",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/ybvci41748969943.png"
  },
+ "tennis:carolina alves": {
+  "matched": "Carolina Alves",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2023/12/06/ae53ae23-784b-4dfa-8904-5f350feafa9a/Carolina-Alves.png?width=258&height=345",
+  "provider": "WTA"
+ },
  "tennis:casper ruud": {
   "matched": "Casper Ruud",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/36r02q1748970858.png"
@@ -970,6 +1521,10 @@
  "tennis:dalibor svrcina": {
   "matched": "Dalibor Svrčina",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/rklz3y1760967138.png"
+ },
+ "tennis:daniel altmaier": {
+  "matched": "Daniel Altmaier",
+  "url": "https://www.itftennis.com/remote.axd/media.itftennis.com/asset-bank/servlet/display?file=22137989f92009589434fd2e.jpg?crop=0.34120403606901389,0.026155016669682847,0.22686715526558704,0.5636873786982457&cropmode=percentage&width=219&height=282&rnd=133353579750000000"
  },
  "tennis:daniil medvedev": {
   "matched": "Daniil Medvedev",
@@ -1011,9 +1566,23 @@
   "matched": "Felix Auger-Aliassime",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/h0yqcx1675268125.png"
  },
+ "tennis:fernanda labrana": {
+  "matched": "Fernanda Labrana",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2024/01/02/3fa2ca14-33b9-40a7-83dd-3f6d837e3186/Labrana_crop.jpg?width=258&height=345",
+  "provider": "WTA"
+ },
+ "tennis:francesca jones": {
+  "matched": "Francesca Jones",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2026/04/08/1b91f00c-13e9-440b-8610-568ae3bfde84/Jones-Torso_324479.png?width=790&height=740"
+ },
  "tennis:francisco comesana": {
   "matched": "Francisco Comesaña",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/zqhp981741271524.png"
+ },
+ "tennis:gabriela ce": {
+  "matched": "Gabriela Ce",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2026/09/24/26c54fde-91bc-48db-b04c-4e35cfbac53d/Ce-Torso_316674.png?width=790&height=740",
+  "provider": "WTA"
  },
  "tennis:giorgia pedone": {
   "matched": "Giorgia Pedone",
@@ -1022,6 +1591,14 @@
  "tennis:giovanni mpetshi perricard": {
   "matched": "Giovanni Mpetshi Perricard",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/2bem9a1741277450.png"
+ },
+ "tennis:harriet dart": {
+  "matched": "Harriet Dart",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2026/09/21/c4ca9db8-9a77-4e68-b1c4-80dfc6ef4459/Dart-Torso_319489.png?width=790&height=740"
+ },
+ "tennis:holger rune": {
+  "matched": "Holger Rune",
+  "url": "https://www.atptour.com/-/media/tennis/players/head-shot/2025/02/19/01/29/rune_head_2025.png?sc=0&hash=6cee84c618d26b7c2d752e6af254b26f"
  },
  "tennis:hubert hurkacz": {
   "matched": "Hubert Hurkacz",
@@ -1047,6 +1624,11 @@
   "matched": "James Duckworth",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/vz1uab1741182338.png"
  },
+ "tennis:jazmin ortenzi": {
+  "matched": "Jazmin Ortenzi",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2026/09/24/ebd9809d-f6ca-4c21-a673-e60536cac031/Ortenzi-Torso_327283.png?width=790&height=740",
+  "provider": "WTA"
+ },
  "tennis:jelena ostapenko": {
   "matched": "Jeļena Ostapenko",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/9wxfbq1716792791.png"
@@ -1058,6 +1640,16 @@
  "tennis:jil teichmann": {
   "matched": "Jil Teichmann",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/fzield1675698351.png"
+ },
+ "tennis:julia grabher": {
+  "matched": "Julia Grabher",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2023/06/02/645804de-70df-4b15-b709-f7b5fba3f900/Grabher-Torso_320316.png?width=790&height=740",
+  "provider": "WTA"
+ },
+ "tennis:julia riera": {
+  "matched": "Julia Riera",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2023/03/16/69d8d3e1-fdfa-4488-b3cb-f2acf26664b3/Riera_Crop.jpg?width=258&height=345",
+  "provider": "WTA"
  },
  "tennis:karen khachanov": {
   "matched": "Karen Khachanov",
@@ -1086,6 +1678,11 @@
  "tennis:laslo djere": {
   "matched": "Laslo Djere",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/t2v06d1760379320.png"
+ },
+ "tennis:laura pigossi": {
+  "matched": "Laura Pigossi",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2021/12/01/86f25b18-2abf-469b-968f-1bc44d083db0/Pigossi_crop.jpg?width=258&height=345",
+  "provider": "WTA"
  },
  "tennis:laura samson": {
   "matched": "Laura Samson",
@@ -1131,9 +1728,18 @@
   "matched": "Maja Chwalińska",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/d58yvo1790780053.png"
  },
+ "tennis:maria lourdes carle": {
+  "matched": "Maria Lourdes Carle",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2024/05/01/bfbb951d-8617-45e0-a357-fbf3e1b0ff02/Carle-Torso_322638-WTA-Tennis.png?width=790&height=740",
+  "provider": "WTA"
+ },
  "tennis:maria sakkari": {
   "matched": "Maria Sakkari",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/g7tomm1675266335.png"
+ },
+ "tennis:mariano navone": {
+  "matched": "Mariano Navone",
+  "url": "https://r2.thesportsdb.com/images/media/player/cutout/leqnu01741272065.png"
  },
  "tennis:marin cilic": {
   "matched": "Marin Čilić",
@@ -1147,9 +1753,17 @@
   "matched": "Mateus Alves",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/zyta2h1771244690.png"
  },
+ "tennis:matteo berrettini": {
+  "matched": "Matteo Berrettini",
+  "url": "https://r2.thesportsdb.com/images/media/player/cutout/y9ut4z1675268167.png"
+ },
  "tennis:mattia bellucci": {
   "matched": "Mattia Bellucci",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/m43bw61761038693.png"
+ },
+ "tennis:mika brunold": {
+  "matched": "Mika Brunold",
+  "url": "https://www.itftennis.com/remote.axd/media.itftennis.com/assetbank-itf/servlet/display?file=22137aa7cf220b48987cfe2e.jpg&filename=unwatermarked_Mika_Brunold_(SUI).jpg?crop=0.27085415793376971,0.049441632003783362,0.25837551994324959,0.3443609669063511&cropmode=percentage&width=219&height=282&rnd=134297191430000000"
  },
  "tennis:miomir kecmanovic": {
   "matched": "Miomir Kecmanovic",
@@ -1163,9 +1777,21 @@
   "matched": "Nikola Bartůňková",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/dgu9vf1774776063.png"
  },
+ "tennis:nuno borges": {
+  "matched": "Nuno Borges",
+  "url": "https://www.itftennis.com/remote.axd/media.itftennis.com/assetbank-itf/servlet/display?file=22137ab7f16808668434ff18.jpg?crop=0.30302327473958335,0.010788446805292508,0.25455248283617427,0.60941357339672775&cropmode=percentage&width=219&height=282&rnd=133658770600000000"
+ },
+ "tennis:quentin halys": {
+  "matched": "Quentin Halys",
+  "url": "https://www.atptour.com/-/media/tennis/players/head-shot/2024/02/23/20/00/halys_head_2024.png?sc=0&hash=b6cb295fb50282a8975bb0c38115f016"
+ },
  "tennis:rafael jodar": {
   "matched": "Rafael Jódar",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/mu6fu71790417681.png"
+ },
+ "tennis:rebeka masarova": {
+  "matched": "Rebeka Masarova",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2026/04/08/d41ed8ca-258e-4a35-88bb-51b5e80c1458/Masarova-Torso_322087.png?width=790&height=740"
  },
  "tennis:sara saito": {
   "matched": "Sara Saito",
@@ -1174,6 +1800,11 @@
  "tennis:shintaro mochizuki": {
   "matched": "Shintaro Mochizuki",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/bl2oys1760969583.png"
+ },
+ "tennis:solana sierra": {
+  "matched": "Solana Sierra",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2026/04/08/e76e1f45-3e4b-4a47-8a42-01b1e6dd9a85/Sierra-Torso_329081.png?width=790&height=740",
+  "provider": "WTA"
  },
  "tennis:sonay kartal": {
   "matched": "Sonay Kartal",
@@ -1191,6 +1822,10 @@
   "matched": "Tamara Zidanšek",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/3wj8tl1654687204.png"
  },
+ "tennis:tatiana prozorova": {
+  "matched": "Tatiana Prozorova",
+  "url": "https://photoresources.wtatennis.com/photo-resources/2024/10/29/ecdf8680-3588-4ac6-8ab1-6f091d7cd6ca/330723.jpg?width=258&height=345"
+ },
  "tennis:thiago seyboth wild": {
   "matched": "Thiago Seyboth Wild",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/afcb0z1741188470.png"
@@ -1199,9 +1834,21 @@
   "matched": "Thijs Boogaard",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/mbin5f1781533529.png"
  },
+ "tennis:tomas etcheverry": {
+  "matched": "Tomás Martín Etcheverry",
+  "url": "https://r2.thesportsdb.com/images/media/player/cutout/41jopm1760966905.png"
+ },
  "tennis:tomas machac": {
   "matched": "Tomáš Macháč",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/o5s4qb1760968735.png"
+ },
+ "tennis:tomas martin etcheverry": {
+  "matched": "Tomás Martín Etcheverry",
+  "url": "https://r2.thesportsdb.com/images/media/player/cutout/41jopm1760966905.png"
+ },
+ "tennis:tomás martín etcheverry": {
+  "matched": "Tomás Martín Etcheverry",
+  "url": "https://r2.thesportsdb.com/images/media/player/cutout/41jopm1760966905.png"
  },
  "tennis:tommy paul": {
   "matched": "Tommy Paul",
@@ -1210,6 +1857,10 @@
  "tennis:valentin royer": {
   "matched": "Valentin Royer",
   "url": "https://r2.thesportsdb.com/images/media/player/cutout/jupdcn1760970200.png"
+ },
+ "tennis:valentin vacherot": {
+  "matched": "Valentin Vacherot",
+  "url": "https://r2.thesportsdb.com/images/media/player/cutout/hdsnjj1760358981.png"
  },
  "tennis:yulia putintseva": {
   "matched": "Yulia Putintseva",

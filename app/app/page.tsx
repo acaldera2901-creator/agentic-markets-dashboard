@@ -2,6 +2,7 @@
 "use client";
 
 import {InvitePage} from "@/components/affiliate/InvitePage";
+import {readHistorySummary,writeHistorySummary} from "@/lib/history-summary-cache";
 import {usePolledTask} from "@/lib/use-polled-task";
 import type { Segment } from "@/lib/track-record-history";
 import {SitePageNavigation} from "@/components/classic/SiteNavigationContext";
@@ -5168,6 +5169,7 @@ function MDS_SECTION_LABELS(lang: Lang) {
   return {
     why: pick5(lang, { it: "Perché il modello sceglie questo pick", en: "Why the model likes this pick", es: "Por qué el modelo elige este pronóstico", fr: "Pourquoi le modèle choisit ce pronostic", ru: "Почему модель выбирает этот прогноз" }),
     form: pick5(lang, { it: "Forma recente", en: "Recent form", es: "Forma reciente", fr: "Forme récente", ru: "Текущая форма" }),
+    formNote: pick5(lang, { it: "Ultime partite concluse disponibili; la più recente è a destra. La copertura dipende dalle competizioni disponibili.", en: "Last available completed matches; newest on the right. Coverage depends on the available competitions.", es: "Últimos partidos finalizados disponibles; el más reciente a la derecha. La cobertura depende de las competiciones disponibles.", fr: "Derniers matchs terminés disponibles ; le plus récent à droite. La couverture dépend des compétitions disponibles.", ru: "Последние доступные завершённые матчи; самый недавний справа. Охват зависит от доступных турниров." }),
     teamNews: pick5(lang, { it: "Assenze e news squadra", en: "Absences & team news", es: "Ausencias y noticias", fr: "Absences et actualités", ru: "Отсутствия и новости" }),
     teamNewsLocked: pick5(lang, { it: "Formazioni e assenze, quando disponibili, fanno parte di Pro.", en: "Lineups and absences, when available, are part of Pro.", es: "Alineaciones y ausencias, cuando estén disponibles, son parte de Pro.", fr: "Compositions et absences, lorsqu'elles sont disponibles, font partie de Pro.", ru: "Составы и отсутствия, когда доступны, входят в Pro." }),
     teamNewsNone: pick5(lang, { it: "Nessuna assenza segnalata.", en: "No reported absences.", es: "Sin ausencias reportadas.", fr: "Aucune absence signalée.", ru: "Об отсутствиях не сообщается." }),
@@ -10337,7 +10339,20 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const historyRequestId = useRef(0);
   const [historySegments, setHistorySegments] = useState<Segment[]>([]);
   const [historyV2Stats, setHistoryV2Stats] = useState<V2HistoryStats | null>(null);
-  const [historyV2Loading, setHistoryV2Loading] = useState(false);
+  const [historyV2Loading, setHistoryV2Loading] = useState(true);
+  const [historyV2Error, setHistoryV2Error] = useState(false);
+  useEffect(() => {
+    // Restore only public aggregates after hydration, never paid pick rows.
+    queueMicrotask(() => {
+      try {
+        const cached = readHistorySummary(window.sessionStorage);
+        if (cached) {
+          setHistoryV2Stats(current => current ?? cached.stats as unknown as V2HistoryStats);
+          setHistorySegments(current => current.length ? current : cached.segments);
+        }
+      } catch { /* storage can be disabled */ }
+    });
+  }, []);
   const [loading, setLoading] = useState(true);
   const [predLoading, setPredLoading] = useState(true);
   const [tennisLoading, setTennisLoading] = useState(true);
@@ -10808,16 +10823,25 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const fetchHistoryV2 = useCallback(async () => {
     const requestId = ++historyRequestId.current;
     setHistoryV2Loading(true);
+    setHistoryV2Error(false);
     try {
       const resp = await fetch(`/api/v2/history?limit=300${tab === "history" ? "&aggregate=segments" : ""}`, { credentials: "same-origin" });
       if (resp.ok) {
         const data = await resp.json();
-        if (requestId !== historyRequestId.current) return;
+        if (requestId !== historyRequestId.current) {
+          // A session check can restart the gated request. Its public aggregate
+          // is still useful while the fresh, access-projected list is loading.
+          setHistoryV2Stats(current => current ?? data.stats ?? null);
+          return;
+        }
+        if (data.stats) {
+          try { writeHistorySummary(window.sessionStorage, { stats: data.stats, segments: data.segments ?? [] }); } catch { /* optional cache */ }
+        }
         setHistoryV2(data.history ?? []);
         setHistoryV2Stats(data.stats ?? null);
         setHistorySegments(data.segments ?? []);
-      }
-    } catch { /**/ } finally { if (requestId === historyRequestId.current) setHistoryV2Loading(false); }
+      } else if (requestId === historyRequestId.current) setHistoryV2Error(true);
+    } catch { if (requestId === historyRequestId.current) setHistoryV2Error(true); } finally { if (requestId === historyRequestId.current) setHistoryV2Loading(false); }
   }, [tab, clientProfile?.plan, hasSession]);
 
   const fetchLive = useCallback(async () => {
@@ -11579,7 +11603,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
             legacy={<ReferralPanel />}
           />}
           {tab === "history" && (
-            <TrackRecordView rows={historyV2} data={{ stats: historyV2Stats, segments: historySegments }} lang={uiLanguage === "it" ? "it" : "en"} />
+            <TrackRecordView rows={historyV2} loading={historyV2Loading} error={historyV2Error} onRetry={fetchHistoryV2} data={{ stats: historyV2Stats, segments: historySegments }} lang={uiLanguage === "it" ? "it" : "en"} />
           )}
           {tab === "leaderboard" && (
             <LeaderboardTab

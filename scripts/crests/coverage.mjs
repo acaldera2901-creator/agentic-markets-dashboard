@@ -10,8 +10,9 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BASE = process.argv[2] || "https://www.betredge.com";
-const map = JSON.parse(fs.readFileSync(path.join(ROOT, "lib/ui/crest-map.json"), "utf8"));
-const key = (sport, name) => `${sport}:${name.trim().toLowerCase()}`; // = lib/ui/crest-assets.ts
+const normalize = (value) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+const map = Object.fromEntries(Object.entries(JSON.parse(fs.readFileSync(path.join(ROOT, "lib/ui/crest-map.json"), "utf8"))).map(([name, url]) => [normalize(name), url]));
+const key = (sport, name) => `${normalize(sport)}:${normalize(name)}`; // = lib/ui/crest-assets.ts
 
 const get = async (p) => { const r = await fetch(BASE + p); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
 const [pred, ten] = await Promise.all([get("/api/predictions"), get("/api/tennis")]);

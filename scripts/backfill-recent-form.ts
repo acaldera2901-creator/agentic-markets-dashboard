@@ -80,7 +80,7 @@ export function generateRecentFormBackfill(input: BackfillInput, nowIso = new Da
   if (input.rows.some(r => !isSummerLeague(r.league) && Date.parse(r.kickoff)>now)) {
     for (const code of fdCodes) if (!seen.has(code)) throw new Error(`Missing source ${code}: export all six fd.org histories`);
   }
-  const cross = computeCrossCompetitionForms(input.histories.map(h=>h.matches));
+  const cross = computeCrossCompetitionForms(input.histories.map(h=>h.matches), now);
   const summer = new Map<string,{forms:ReturnType<typeof computeTeamForms>; roster:string[]}>();
   const changes: Change[]=[]; const backup: Row[]=[]; const skipped: {match_id:string;reason:string}[]=[];
   const ids = new Set<string>();

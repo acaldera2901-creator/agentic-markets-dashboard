@@ -460,6 +460,7 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         awayGoals: r.awayGoals!,
       })),
     ),
+    t0,
   );
 
   // ── Per-league computation ───────────────────────────────────────────────
@@ -672,8 +673,8 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // all-competition form (league + CL); the summer snapshot has its own
       // naming, so those leagues keep their league-only form.
       const summerForm = isSummerLeague(code);
-      const formH = (summerForm ? undefined : crossForms[homeName]) ?? teamForms[homeName];
-      const formA = (summerForm ? undefined : crossForms[awayName]) ?? teamForms[awayName];
+      const formH = summerForm ? teamForms[homeName] : crossForms[homeName];
+      const formA = summerForm ? teamForms[awayName] : crossForms[awayName];
       if (formH) enrichment.form_home = formH.form;
       if (formA) enrichment.form_away = formA.form;
 
