@@ -70,6 +70,7 @@ describe("Weekly Model Case states", () => {
     expect(await screen.findByText(/Past A vs B/)).toBeTruthy();
     expect(screen.getByText("Live")).toBeTruthy();
     expect(screen.getByText("40%")).toBeTruthy();
+    expect(screen.getByText("12 Oct")).toBeTruthy();
   });
   it("prevents duplicate checkout and restores controls on checkout failure", async () => {
     let finish: ((value: unknown) => void) | undefined;

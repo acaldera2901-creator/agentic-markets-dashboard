@@ -360,7 +360,7 @@ export default function WeeklyPickPage() {
   const canPurchase = available && !data?.closed && data?.purchasable !== false && price !== null;
   const unlocked = !!data?.unlocked;
   const legacy = data?.integrity === "legacy_unverified";
-  const fmtWeek = (iso: string) => { try { return new Date(iso).toLocaleDateString(t.locale, { day: "2-digit", month: "short" }); } catch { return iso; } };
+  const fmtWeek = (iso: string) => { try { return new Date(iso).toLocaleDateString(t.locale, { day: "2-digit", month: "short", timeZone: "UTC" }); } catch { return iso; } };
   // #WEEKLY-PICK-4: le leg ora coprono più giorni della settimana → il solo orario
   // ("04:00") era ambiguo; mostriamo anche il giorno ("gio 04:00", locale-aware).
   const fmtKick = (iso?: string | null) => { if (!iso) return null; try { return new Date(iso).toLocaleString(t.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }); } catch { return null; } };
