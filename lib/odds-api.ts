@@ -115,6 +115,19 @@ function logOdds(
   else console.warn(line);
 }
 
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Retry-After in seconds when the API sends it (capped at 5 s so 33 leagues
+// can never stall the cron), otherwise 1-2 s with jitter so the retries of a
+// burst do not land together again.
+export function retryDelayMs(retryAfter: string | null): number {
+  const s = Number(retryAfter);
+  if (retryAfter != null && retryAfter.trim() !== "" && Number.isFinite(s) && s >= 0) {
+    return Math.min(s * 1000, 5000);
+  }
+  return 1000 + Math.floor(Math.random() * 1000);
+}
+
 export async function fetchOdds(league: string): Promise<OddsResult[]> {
   const apiKey = process.env.ODDS_API_KEY;
   const sportKey = SPORT_KEYS[league];
@@ -137,7 +150,7 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
   let status: number | null = null;
   let remaining: string | null = null;
   let used: string | null = null;
-  let retried422 = 0;
+  let retried429 = 0;
   let stage = "fetch";
   try {
     const url = new URL(`${BASE}/sports/${sportKey}/odds`);
@@ -152,18 +165,23 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
       url.searchParams.set("bookmakers", "betfair,pinnacle,bet365");
     }
 
-    // btts/double_chance aren't supported for every league (e.g. the summer
-    // calendar) → The Odds API returns 422 INVALID_MARKET and the whole league's
-    // odds were lost, dropping every fixture. Request the full set, then fall back
-    // to the core markets on 422 so odds still attach. (#FIX-SUMMER-ODDS-0625)
-    // Le estive NON supportano btts/double_chance: chiediamo subito il set core,
-    // evitando il round-trip 422 sprecato (#ODDS-BURN-CUT).
-    url.searchParams.set("markets", summer ? "h2h,totals" : "h2h,totals,btts,double_chance");
+    // #ODDS-CORE-MARKETS-1026: only the core markets, for every league. This
+    // endpoint (/sports/{key}/odds) never serves btts/double_chance — verified
+    // live on 2026-10-26: 422 "Markets not supported by this endpoint: btts,
+    // double_chance" on Serie A. They exist only per event (/events/{id}/odds,
+    // billed per event), so asking for them here bought a guaranteed 422 and a
+    // second, near-simultaneous request per league. ExtraOdds.btts_* and
+    // double_* therefore stay null, exactly as they always came out of this
+    // call; consumers already treat a missing market price as "no quote".
+    url.searchParams.set("markets", "h2h,totals");
     let r = await fetch(url.toString(), { cache: "no-store" });
     observeRemaining(r.headers.get("x-requests-remaining"));
-    if (r.status === 422) {
-      retried422 = 1;
-      url.searchParams.set("markets", "h2h,totals");
+    // One delayed retry on 429: the cron fires every league at once
+    // (Promise.all in computeAndStore), so a frequency limit hit is transient.
+    // A 429 response is not billed. Bounded: a single extra call, <= 5 s wait.
+    if (r.status === 429) {
+      retried429 = 1;
+      await sleep(retryDelayMs(r.headers.get("retry-after")));
       r = await fetch(url.toString(), { cache: "no-store" });
       observeRemaining(r.headers.get("x-requests-remaining"));
     }
@@ -171,7 +189,7 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
     remaining = r.headers.get("x-requests-remaining");
     used = r.headers.get("x-requests-used");
     if (!r.ok) {
-      logOdds(league, sportKey, "http_error", { status, retried422, remaining, used, ms: Date.now() - t0 });
+      logOdds(league, sportKey, "http_error", { status, retried429, remaining, used, ms: Date.now() - t0 });
       return [];
     }
 
@@ -228,12 +246,12 @@ export async function fetchOdds(league: string): Promise<OddsResult[]> {
       });
     }
     logOdds(league, sportKey, events.length ? "ok" : "empty", {
-      status, events: events.length, results: results.length, retried422, remaining, used, ms: Date.now() - t0,
+      status, events: events.length, results: results.length, retried429, remaining, used, ms: Date.now() - t0,
     });
     return results;
   } catch (e) {
     logOdds(league, sportKey, stage === "json" ? "non_json" : "exception", {
-      status, stage, retried422, remaining, used, ms: Date.now() - t0, err: scrubError(e, apiKey),
+      status, stage, retried429, remaining, used, ms: Date.now() - t0, err: scrubError(e, apiKey),
     });
     return [];
   }
