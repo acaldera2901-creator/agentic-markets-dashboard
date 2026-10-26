@@ -67,3 +67,26 @@ export function computeTeamForms(results: MatchResult[]): TeamForms {
 
   return forms;
 }
+
+type DatedResult = MatchResult & { utcDate: string };
+
+/**
+ * Last-5 form over EVERY competition passed in, merged in kickoff order.
+ *
+ * #FORMA-TUTTE-1026 — computeTeamForms on one league's history only sees that
+ * league: PSG read LWWWW in Ligue 1 while its real last 5 were WWWWW with the
+ * Champions League wins over Man City (14/10) and Barcelona (20/10). Each
+ * block is one competition's fetchHistory, chronological inside itself but not
+ * across blocks, hence the sort. A match belongs to one competition, so no
+ * dedupe is needed. Team names must be the same across blocks: true for
+ * football-data.org, NOT for the summer snapshot (ESPN names) — do not mix them.
+ */
+export function computeCrossCompetitionForms(competitions: DatedResult[][]): TeamForms {
+  const all = competitions
+    .flat()
+    .map((r) => ({ r, t: Date.parse(r.utcDate) }))
+    .filter(({ t }) => Number.isFinite(t))
+    .sort((a, b) => a.t - b.t)
+    .map(({ r }) => r);
+  return computeTeamForms(all);
+}

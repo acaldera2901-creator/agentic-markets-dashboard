@@ -35,7 +35,7 @@ import { fetchHistory, fetchFixtures } from "@/lib/football-data";
 import { fetchOdds, OddsResult } from "@/lib/odds-api";
 import { abbinaQuote } from "@/lib/odds-join";
 import { seedOddsRemaining, persistOddsRemaining } from "@/lib/odds-quota";
-import { computePiRatings, computeTeamForms } from "@/lib/pi-rating";
+import { computeCrossCompetitionForms, computePiRatings, computeTeamForms } from "@/lib/pi-rating";
 import { fetchLeagueXG, matchTeam, xgBlendBaseline } from "@/lib/understat";
 import { fetchMatchWeather } from "@/lib/weather";
 import {
@@ -447,6 +447,20 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
   const researchMap: Record<string, string> = {};
   for (const r of researchRows) researchMap[r.match_id] = r.summary;
 
+  // #FORMA-TUTTE-1026: one form table over every football-data history already
+  // fetched above (same team names across competitions). Zero extra API calls.
+  const crossForms = computeCrossCompetitionForms(
+    histories.map(({ results }) =>
+      results.map((r) => ({
+        utcDate: r.utcDate,
+        homeTeam: r.homeTeam,
+        awayTeam: r.awayTeam,
+        homeGoals: r.homeGoals!,
+        awayGoals: r.awayGoals!,
+      })),
+    ),
+  );
+
   // ── Per-league computation ───────────────────────────────────────────────
   for (const { code, results } of [...histories, ...summerHistories]) {
     const training: MatchResult[] = results.map((r) => ({
@@ -653,9 +667,12 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
         enrichment.ppda_away = xgA.ppda;
       }
 
-      // Form from history
-      const formH = teamForms[homeName];
-      const formA = teamForms[awayName];
+      // Form from history. #FORMA-TUTTE-1026: football-data leagues read the
+      // all-competition form (league + CL); the summer snapshot has its own
+      // naming, so those leagues keep their league-only form.
+      const summerForm = isSummerLeague(code);
+      const formH = (summerForm ? undefined : crossForms[homeName]) ?? teamForms[homeName];
+      const formA = (summerForm ? undefined : crossForms[awayName]) ?? teamForms[awayName];
       if (formH) enrichment.form_home = formH.form;
       if (formA) enrichment.form_away = formA.form;
 
