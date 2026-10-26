@@ -39,7 +39,7 @@ beforeEach(() => {
   process.env.PAYGATE_PAYOUT_WALLET = "0xabc";
   getSessionPlan.mockResolvedValue({ identifier: "u@t.com", plan: "free", name: null, plan_expires_at: null });
   hasWeeklyPickStrict.mockResolvedValue(false);
-  weeklyPickWeekStateStrict.mockResolvedValue({ exists: true, legs: 5, remaining: 3 });
+  weeklyPickWeekStateStrict.mockResolvedValue({ exists: true, legs: 5, remaining: 3, purchasable: true });
   dbExecute.mockResolvedValue([]);
   createReceivingWallet.mockResolvedValue({ addressIn: "addr", polygonAddressIn: "poly", ipnToken: "ipn" });
 });
@@ -98,8 +98,15 @@ describe("POST /api/weekly-pick/checkout — guardia settimana", () => {
   });
 
   it("schedina completa a 3 gambe → si vende", async () => {
-    weeklyPickWeekStateStrict.mockResolvedValue({ exists: true, legs: 3, remaining: 3 });
+    weeklyPickWeekStateStrict.mockResolvedValue({ exists: true, legs: 3, remaining: 3, purchasable: true });
     const res = await (await load()).POST(req());
     expect(res.status).toBe(200);
   });
+});
+
+it('rejects a legacy or started case even if some legs remain', async () => {
+  weeklyPickWeekStateStrict.mockResolvedValue({ exists: true, legs: 3, remaining: 3, purchasable: false });
+  const res = await (await load()).POST(req());
+  expect(res.status).toBe(409);
+  expect(dbExecute).not.toHaveBeenCalled();
 });

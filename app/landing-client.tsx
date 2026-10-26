@@ -503,7 +503,7 @@ const V3_EN: V3Copy = {
   suEyebrow: "The board", suHead: "Four ways to read the market.", suSub: "One engine, four surfaces — from a single fixture to the whole week. Readings, not tips.",
   suItems: [
     { pk: "Model Edges", pn: "Today’s market gaps", p: "Fixtures where BetRedge’s probability estimate differs materially from the market-implied probability, ranked by edge. Filter by sport and market.", ps: "refreshed live · ", psB: "edge-ranked" },
-    { pk: "Weekly Model Case", pn: "The weekly combination model", p: "One combination of markets a week, built by the model and frozen the moment it’s published — every leg time-stamped before kick-off.", ps: "frozen at publish · ", psB: "fully logged" },
+    { pk: "Weekly Model Case", pn: "The weekly combination model", p: "A weekly combination of eligible model selections. Purchase opens when a complete, verified case is available.", ps: "model selections · ", psB: "fully logged" },
     { pk: "Build a Probability View", pn: "Combine markets on one fixture", p: "Stack markets across a fixture and watch the blended probability and implied edge recompute as you add legs.", ps: "live probability · ", psB: "per leg" },
     { pk: "Live Probability Board", pn: "The board, as the match moves", p: "Follow live scores and match status where available. Stored pre-match predictions stay frozen; no bets are executed.", ps: "live · ", psB: "updating" },
   ],
@@ -567,7 +567,7 @@ const V3_IT: V3Copy = {
   suEyebrow: "Il board", suHead: "Quattro modi di leggere il mercato.", suSub: "Un motore, quattro superfici — dalla singola partita all’intera settimana. Letture, non dritte.",
   suItems: [
     { pk: "Model Edges", pn: "Gli scarti di mercato di oggi", p: "Le partite dove la stima di probabilità di BetRedge si discosta in modo rilevante da quella implicita del mercato, ordinate per edge. Filtra per sport e mercato.", ps: "aggiornato live · ", psB: "ordinato per edge" },
-    { pk: "Weekly Model Case", pn: "Il modello combinato della settimana", p: "Una combinazione di mercati a settimana, costruita dal modello e congelata al momento della pubblicazione — ogni selezione con timestamp prima del fischio.", ps: "congelata alla pubblicazione · ", psB: "tutto registrato" },
+    { pk: "Weekly Model Case", pn: "Il modello combinato della settimana", p: "Una combinazione settimanale di selezioni idonee del modello. Acquisto disponibile quando il caso è completo e verificato.", ps: "selezioni del modello · ", psB: "tutto registrato" },
     { pk: "Costruisci una vista di probabilità", pn: "Combina i mercati di una partita", p: "Sovrapponi mercati su una partita e guarda probabilità ed edge combinati ricalcolarsi mentre aggiungi selezioni.", ps: "probabilità live · ", psB: "per selezione" },
     { pk: "Board di probabilità live", pn: "Il board, mentre la partita si muove", p: "Segui punteggi e stato live dove disponibili. I pronostici pre-partita restano congelati; nessuna scommessa viene eseguita.", ps: "live · ", psB: "in aggiornamento" },
   ],

@@ -39,7 +39,7 @@ beforeEach(() => {
   process.env.WEEKLY_PICK_ENABLED = "true";
   promoEligibility.mockResolvedValue({ firstPaidOrder: false });
   hasWeeklyPick.mockResolvedValue(false);
-  weekState.mockResolvedValue({ exists: true, legs: 5, remaining: 3 });
+  weekState.mockResolvedValue({ exists: true, legs: 5, remaining: 3, purchasable: true });
   getSessionPlan.mockResolvedValue({
     identifier: "u@t.com",
     plan: "free",
@@ -281,4 +281,9 @@ it("lingua assente o non pubblicata → inglese, non spagnolo", async () => {
   expect(new URL(noLang.url).pathname).toBe("/en/cart/clear");
   const fr = (await (await POST(req({ requested_plan: "base", period: "monthly", lang: "fr" }))).json()) as { url: string };
   expect(new URL(fr.url).pathname).toBe("/en/cart/clear");
+});
+it('weekly: rejects incomplete, legacy or started cases', async () => {
+  weekState.mockResolvedValue({ exists: true, legs: 3, remaining: 3, purchasable: false });
+  const { POST } = await import('./route');
+  expect((await POST(req({ requested_plan: 'weekly' }))).status).toBe(409);
 });

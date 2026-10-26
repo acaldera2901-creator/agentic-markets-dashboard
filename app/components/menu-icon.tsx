@@ -6,7 +6,7 @@
 type MenuName =
   | "prediction" | "history" | "plans" | "creator" | "builder"
   // #RAIL-ICONS-V2: podio classifica, busta invito, biglietto weekly pick, stemma account.
-  | "leaderboard" | "invite" | "weeklypick" | "account"
+  | "invite" | "weeklypick" | "account"
   // #PARTNERS-RAIL-1: stretta di mano (vetrina /partners nel rail).
   | "partner"
   // #TOOLS-HUB-0805: calcolatrice (hub /tools nel rail, al posto della World Cup).
@@ -18,7 +18,6 @@ const SRC: Record<MenuName, string> = {
   plans: "/icons/menu-plans.png",
   creator: "/icons/menu-creator.png",
   builder: "/icons/menu-builder.png",
-  leaderboard: "/icons/menu-leaderboard.png",
   invite: "/icons/menu-invite.png",
   weeklypick: "/icons/menu-weeklypick.png",
   account: "/icons/menu-account.png",
@@ -31,7 +30,6 @@ const SRC_SM: Record<MenuName, string> = {
   plans: "/icons/menu-plans-sm.png",
   creator: "/icons/menu-creator-sm.png",
   builder: "/icons/menu-builder-sm.png",
-  leaderboard: "/icons/menu-leaderboard-sm.png",
   invite: "/icons/menu-invite-sm.png",
   weeklypick: "/icons/menu-weeklypick-sm.png",
   account: "/icons/menu-account-sm.png",

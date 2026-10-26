@@ -11,7 +11,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
 import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
-import { GlyphLock, GlyphCheck, GlyphRank, GlyphFlame, GlyphInjury, GlyphModel, GlyphTrophy } from "@/components/ui/glyphs"; // #UI-MACHINA-0802 · #NO-EMOJI-0822
+import { GlyphLock, GlyphCheck, GlyphInjury, GlyphModel } from "@/components/ui/glyphs"; // #UI-MACHINA-0802 · #NO-EMOJI-0822
 import { pickLanguage } from "@/lib/pick-language"; // #GEO-LANG-0821
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
 import {
@@ -368,7 +368,7 @@ const BASE_TRANSLATIONS = {
     language_en: "Inglese",
     account_pending_detail: "Conto cliente non ancora collegato. Il saldo parte da zero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Mercati", nav_predictions: "Previsioni", nav_leaderboard: "Classifica", nav_account: "Account",
+    nav_markets: "Mercati", nav_predictions: "Previsioni", nav_account: "Account",
     auth_signin: "Accedi", auth_register: "Registrati",
     featured_label: "In evidenza",
     kpi_events_lbl: "Eventi", kpi_withedge: "Con edge", kpi_hit: "Hit", kpi_settled_lbl: "Pick chiuse", kpi_coverage: "Verificate",
@@ -627,7 +627,7 @@ const BASE_TRANSLATIONS = {
     language_en: "English",
     account_pending_detail: "Client account not connected yet. Balance starts at zero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Markets", nav_predictions: "Predictions", nav_leaderboard: "Leaderboard", nav_account: "Account",
+    nav_markets: "Markets", nav_predictions: "Predictions", nav_account: "Account",
     auth_signin: "Sign In", auth_register: "Register",
     featured_label: "Featured",
     kpi_events_lbl: "Events", kpi_withedge: "With edge", kpi_hit: "Hit", kpi_settled_lbl: "Settled picks", kpi_coverage: "Verified",
@@ -889,7 +889,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Italiano", language_en: "Inglés", language_es: "Español", language_fr: "Francés", language_ru: "Ruso",
     account_pending_detail: "Cuenta de cliente aún no conectada. El saldo empieza en cero.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Mercados", nav_predictions: "Predicciones", nav_leaderboard: "Clasificación", nav_account: "Cuenta",
+    nav_markets: "Mercados", nav_predictions: "Predicciones", nav_account: "Cuenta",
     auth_signin: "Entrar", auth_register: "Registrarse",
     featured_label: "Destacados",
     kpi_events_lbl: "Eventos", kpi_withedge: "Con edge", kpi_hit: "Acierto", kpi_settled_lbl: "Pronósticos cerrados", kpi_coverage: "Verificados",
@@ -1148,7 +1148,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Italien", language_en: "Anglais", language_es: "Espagnol", language_fr: "Français", language_ru: "Russe",
     account_pending_detail: "Compte client pas encore connecté. Le solde démarre à zéro.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Marchés", nav_predictions: "Prédictions", nav_leaderboard: "Classement", nav_account: "Compte",
+    nav_markets: "Marchés", nav_predictions: "Prédictions", nav_account: "Compte",
     auth_signin: "Connexion", auth_register: "S'inscrire",
     featured_label: "À la une",
     kpi_events_lbl: "Événements", kpi_withedge: "Avec edge", kpi_hit: "Réussite", kpi_settled_lbl: "Pronostics clôturés", kpi_coverage: "Vérifiés",
@@ -1407,7 +1407,7 @@ const EXTRA_TRANSLATIONS = {
     language_it: "Итальянский", language_en: "Английский", language_es: "Испанский", language_fr: "Французский", language_ru: "Русский",
     account_pending_detail: "Аккаунт клиента ещё не подключён. Баланс начинается с нуля.",
     // Topnav / shell (i18n migration)
-    nav_markets: "Рынки", nav_predictions: "Прогнозы", nav_leaderboard: "Рейтинг", nav_account: "Аккаунт",
+    nav_markets: "Рынки", nav_predictions: "Прогнозы", nav_account: "Аккаунт",
     auth_signin: "Войти", auth_register: "Регистрация",
     featured_label: "Избранное",
     kpi_events_lbl: "События", kpi_withedge: "С эджем", kpi_hit: "Точность", kpi_settled_lbl: "Закрытые прогнозы", kpi_coverage: "Проверено",
@@ -1796,20 +1796,18 @@ const LEAGUE_FLAGS: Record<string, string> = {
 const RAIL_GLYPHS: Record<string, string> = {
   bets: "#g-desk",
   history: "#g-history",
-  leaderboard: "#g-rank",
   "match-builder": "#g-builder",
   account: "#g-acct",
 };
 
 // #MENU-ICONS-0626 / #RAIL-ICONS-V2: voci del rail con la nuova icona illustrata
 // (MenuIcon raster). Le voci non mappate restano sui glifi SVG di fallback.
-const RAIL_ICONS: Record<string, "prediction" | "history" | "plans" | "creator" | "builder" | "leaderboard" | "invite" | "weeklypick" | "account"> = {
+const RAIL_ICONS: Record<string, "prediction" | "history" | "plans" | "creator" | "builder" | "invite" | "weeklypick" | "account"> = {
   bets: "prediction",
   history: "history",
   "match-builder": "builder",
   plans: "plans",
   // #RAIL-ICONS-V2: icone custom anche per classifica e invito (copre rail desk + bottom bar mobile).
-  leaderboard: "leaderboard",
   invita: "invite",
 };
 
@@ -1826,7 +1824,7 @@ const MATCH_TYPE_META: Record<string, { label: string; color: string; priority: 
   STANDARD:           { label: "Standard",       color: "text-gray-600 border-gray-600/40 bg-gray-600/5",      priority: 0 },
 };
 
-type Tab = "bets" | "plans" | "history" | "leaderboard" | "match-builder" | "invita";
+type Tab = "bets" | "plans" | "history" | "match-builder" | "invita";
 type AccountSection = "account" | "piani";
 
 // ─── Tennis Types ─────────────────────────────────────────────────────────────
@@ -1953,7 +1951,7 @@ type ClientProfile = {
     securityAlerts: boolean;
   };
   sportPreferences?: string[];
-  leaderboardOptIn?: boolean;
+  leaderboardOptIn?: boolean; // Legacy stored profile field; no public ranking or opt-in remains.
 };
 
 type ClientAuthIntent = "login" | "create";
@@ -4494,7 +4492,6 @@ function SettingsTab({
   }
 
   const settingsTimezone = draft.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const leaderboard = draft.leaderboardOptIn ?? false;
 
   const copy = pick5(lang, {
     it: {
@@ -4513,10 +4510,6 @@ function SettingsTab({
       emailNote: "Per cambiare email contatta il supporto",
       sportPrefs: "Sport preferiti",
       sportPrefsDesc: "Ricevi prediction solo per gli sport selezionati.",
-      leaderboardTitle: "Leaderboard",
-      leaderboardDesc: "Appari nella classifica pubblica dei clienti per hit rate.",
-      leaderboardOn: "Partecipo",
-      leaderboardOff: "Non partecipo",
     },
     en: {
       profile: "Profile",
@@ -4534,10 +4527,6 @@ function SettingsTab({
       emailNote: "Contact support to change your email",
       sportPrefs: "Sport preferences",
       sportPrefsDesc: "Receive predictions only for selected sports.",
-      leaderboardTitle: "Leaderboard",
-      leaderboardDesc: "Appear in the public leaderboard ranked by hit rate.",
-      leaderboardOn: "Opted in",
-      leaderboardOff: "Opted out",
     },
     es: {
       profile: "Perfil",
@@ -4555,10 +4544,6 @@ function SettingsTab({
       emailNote: "Para cambiar el email contacta con soporte",
       sportPrefs: "Deportes preferidos",
       sportPrefsDesc: "Recibe predicciones solo de los deportes seleccionados.",
-      leaderboardTitle: "Leaderboard",
-      leaderboardDesc: "Aparece en el leaderboard público de clientes por hit rate.",
-      leaderboardOn: "Participo",
-      leaderboardOff: "No participo",
     },
     fr: {
       profile: "Profil",
@@ -4576,10 +4561,6 @@ function SettingsTab({
       emailNote: "Pour changer d'email, contactez le support",
       sportPrefs: "Sports préférés",
       sportPrefsDesc: "Recevez des prédictions uniquement pour les sports sélectionnés.",
-      leaderboardTitle: "Leaderboard",
-      leaderboardDesc: "Apparaissez dans le leaderboard public des clients classé par hit rate.",
-      leaderboardOn: "J'y participe",
-      leaderboardOff: "Je n'y participe pas",
     },
     ru: {
       profile: "Профиль",
@@ -4597,10 +4578,6 @@ function SettingsTab({
       emailNote: "Чтобы сменить email, обратитесь в поддержку",
       sportPrefs: "Любимые виды спорта",
       sportPrefsDesc: "Получайте прогнозы только по выбранным видам спорта.",
-      leaderboardTitle: "Leaderboard",
-      leaderboardDesc: "Появляйтесь в публичном leaderboard клиентов по hit rate.",
-      leaderboardOn: "Участвую",
-      leaderboardOff: "Не участвую",
     },
   });
 
@@ -4641,24 +4618,6 @@ function SettingsTab({
         </div>
       </section>
 
-      <section className="settings-panel">
-        <div className="settings-panel-head">
-          <div>
-            <p className="eyebrow">{copy.leaderboardTitle}</p>
-            <h3>{copy.leaderboardDesc}</h3>
-          </div>
-          <span>{leaderboard ? copy.leaderboardOn : copy.leaderboardOff}</span>
-        </div>
-        <div className="settings-notification-list">
-          <button type="button"
-            className={leaderboard ? "is-on" : ""}
-            onClick={() => setDraft({ ...draft, leaderboardOptIn: !leaderboard })}
-          >
-            <span>{copy.leaderboardTitle}</span>
-            <strong>{leaderboard ? copy.leaderboardOn : copy.leaderboardOff}</strong>
-          </button>
-        </div>
-      </section>
 
       <button className="settings-save" onClick={() => onSave(draft)}>{t.settings_save}</button>
     </div>
@@ -6853,328 +6812,6 @@ function MatchBuilderTab({
   );
 }
 
-// ─── Leaderboard Tab ─────────────────────────────────────────────────────────
-
-interface LeaderboardEntry {
-  rank: number;
-  name: string;
-  points: number;
-  bets_won: number;
-  bets_total: number;
-  hit_rate: number;
-  sport: string;
-}
-
-function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOptedIn?: boolean }) {
-  const lang = useLang();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [systemWins, setSystemWins] = useState<number | null>(null);
-  const [systemHitRate, setSystemHitRate] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/leaderboard")
-      .then((r) => r.json())
-      .then((d) => {
-        setEntries(d.leaderboard ?? []);
-        setSystemWins(d.system_wins ?? null);
-        setSystemHitRate(d.system_hit_rate ?? null);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const copy = pick5(lang, {
-    it: {
-      eyebrow: "Classifica pubblica",
-      title: "Leaderboard BetRedge",
-      subtitle: "Classifica sperimentale. Gli aggiornamenti automatici dei punti non sono attivi.",
-      rank: "#",
-      player: "Giocatore",
-      points: "Punti",
-      won: "Vinte",
-      total: "Totali",
-      hitRate: "Hit Rate",
-      sport: "Sport",
-      systemWins: "Bet vinte dal sistema",
-      systemHitRate: "Hit rate sistema",
-      pointsFormula: "Punti sperimentali",
-      yourRank: "La tua posizione",
-      notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
-      loading: "Caricamento classifica…",
-      noData: "Ancora nessuna classifica.",
-      emptyHint: "Nessun dato di classifica disponibile. L’attivazione nelle Impostazioni crea la tua voce; i punti automatici non sono attivi.",
-      podiumLabel: ["Primo", "Secondo", "Terzo"],
-    },
-    en: {
-      eyebrow: "Public leaderboard",
-      title: "BetRedge Leaderboard",
-      subtitle: "Experimental leaderboard. Automatic ranking updates are not active.",
-      rank: "#",
-      player: "Player",
-      points: "Points",
-      won: "Won",
-      total: "Total",
-      hitRate: "Hit Rate",
-      sport: "Sport",
-      systemWins: "System wins",
-      systemHitRate: "System hit rate",
-      pointsFormula: "Experimental points",
-      yourRank: "Your position",
-      notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
-      loading: "Loading leaderboard…",
-      noData: "No ranking yet.",
-      emptyHint: "No ranking data yet. Enabling the leaderboard in Settings creates your entry; automatic points are not active.",
-      podiumLabel: ["First", "Second", "Third"],
-    },
-    es: {
-      eyebrow: "Clasificación pública",
-      title: "Leaderboard BetRedge",
-      subtitle: "Clasificación experimental. Las actualizaciones automáticas de puntos no están activas.",
-      rank: "#",
-      player: "Jugador",
-      points: "Puntos",
-      won: "Ganadas",
-      total: "Totales",
-      hitRate: "Hit Rate",
-      sport: "Deporte",
-      systemWins: "Bets ganadas por el sistema",
-      systemHitRate: "Hit rate del sistema",
-      pointsFormula: "Puntos experimentales",
-      yourRank: "Tu posición",
-      notOptedIn: "Activa la leaderboard en Ajustes para aparecer en la clasificación.",
-      loading: "Cargando clasificación…",
-      noData: "Aún no hay clasificación.",
-      emptyHint: "Aún no hay datos de clasificación. Activarla en Ajustes crea tu entrada; los puntos automáticos no están activos.",
-      podiumLabel: ["Primero", "Segundo", "Tercero"],
-    },
-    fr: {
-      eyebrow: "Classement public",
-      title: "Leaderboard BetRedge",
-      subtitle: "Classement expérimental. La mise à jour automatique des points n’est pas active.",
-      rank: "#",
-      player: "Joueur",
-      points: "Points",
-      won: "Gagnés",
-      total: "Total",
-      hitRate: "Hit Rate",
-      sport: "Sport",
-      systemWins: "Bets gagnés par le système",
-      systemHitRate: "Hit rate du système",
-      pointsFormula: "Points expérimentaux",
-      yourRank: "Votre position",
-      notOptedIn: "Activez le leaderboard dans les Paramètres pour apparaître au classement.",
-      loading: "Chargement du classement…",
-      noData: "Pas encore de classement.",
-      emptyHint: "Aucune donnée de classement pour le moment. L’activer dans les Paramètres crée votre entrée ; les points automatiques ne sont pas actifs.",
-      podiumLabel: ["Premier", "Deuxième", "Troisième"],
-    },
-    ru: {
-      eyebrow: "Публичный рейтинг",
-      title: "Leaderboard BetRedge",
-      subtitle: "Экспериментальный рейтинг. Автоматическое обновление очков пока не работает.",
-      rank: "#",
-      player: "Игрок",
-      points: "Очки",
-      won: "Выиграно",
-      total: "Всего",
-      hitRate: "Hit Rate",
-      sport: "Спорт",
-      systemWins: "Ставки, выигранные системой",
-      systemHitRate: "Hit rate системы",
-      pointsFormula: "Экспериментальные очки",
-      yourRank: "Ваша позиция",
-      notOptedIn: "Включите leaderboard в Настройках, чтобы попасть в рейтинг.",
-      loading: "Загрузка рейтинга…",
-      noData: "Рейтинга пока нет.",
-      emptyHint: "Данных рейтинга пока нет. Включение рейтинга в Настройках создаёт вашу запись; автоматическое начисление очков не работает.",
-      podiumLabel: ["Первое", "Второе", "Третье"],
-    },
-  });
-
-  const podium = entries.slice(0, 3);
-  const rest = entries.slice(3);
-
-  const yourEntry = isOptedIn && clientName
-    ? entries.find((e) => e.name === clientName)
-    : null;
-
-  const medalColors = [
-    "from-[var(--am-coral)] to-[var(--am-coral-2)]",
-    "from-[var(--am-panel-3)] to-[var(--am-panel-2)]",
-    "from-[var(--am-panel-2)] to-[var(--am-inset)]",
-  ];
-  const medalBorder = ["var(--am-coral-b)", "var(--am-line-2)", "var(--am-line)"];
-
-  return (
-    <div className="space-y-6 p-4">
-      {/* Header */}
-      <div className="space-y-1">
-        <p className="eyebrow">{copy.eyebrow}</p>
-        <h2 className="text-xl font-bold text-[var(--am-text)]">{copy.title}</h2>
-        <p className="text-xs font-mono text-[var(--am-muted-2)] max-w-lg">{copy.subtitle}</p>
-      </div>
-
-      {/* Stats strip — only once the settled sample is statistically honest
-          (server returns null below MIN_SYSTEM_SETTLED to avoid a "100% from
-          1 pick" FTC claim). */}
-      {systemHitRate != null && systemWins != null && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="am-surface p-4 text-center">
-            <div className="text-2xl font-black text-[var(--am-positive)] font-mono">{systemWins}</div>
-            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemWins}</div>
-          </div>
-          <div className="am-surface p-4 text-center">
-            <div className="text-2xl font-black text-[var(--am-coral)] font-mono">{systemWins * 10}</div>
-            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.pointsFormula}</div>
-          </div>
-          <div className="am-surface p-4 text-center">
-            <div className="text-2xl font-black font-mono text-[var(--am-positive)]">
-              {systemHitRate}%
-            </div>
-            <div className="text-[10px] font-mono text-[var(--am-muted-2)] uppercase tracking-wider mt-0.5">{copy.systemHitRate}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Hall of Fame */}
-      {entries.length > 0 && (
-        <div className="space-y-2">
-          <p className="eyebrow">Hall of Fame</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="am-surface p-4 space-y-1">
-              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                <GlyphTrophy size={13} /> Top hit rate
-              </div>
-              {(() => {
-                const top = [...entries].sort((a, b) => b.hit_rate - a.hit_rate)[0];
-                return top ? (
-                  <>
-                    <div className="text-sm font-bold text-[var(--am-text)] truncate">{top.name}</div>
-                    <div className="text-lg font-black font-mono text-[var(--am-positive)]">
-                      {top.hit_rate}%
-                    </div>
-                    <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{top.bets_won}W / {top.bets_total}</div>
-                  </>
-                ) : null;
-              })()}
-            </div>
-            <div className="am-surface p-4 space-y-1">
-              <div className="text-[10px] font-mono text-[var(--am-muted)] uppercase tracking-wider">
-                <><GlyphFlame size={13} /> {pick5(lang, { it: "Più attivo", en: "Most active", es: "Más activo", fr: "Le plus actif", ru: "Самый активный" })}</>
-              </div>
-              {(() => {
-                const top = [...entries].sort((a, b) => b.bets_total - a.bets_total)[0];
-                return top ? (
-                  <>
-                    <div className="text-sm font-bold text-[var(--am-text)] truncate">{top.name}</div>
-                    <div className="text-lg font-black font-mono text-[var(--am-coral)]">{top.bets_total}</div>
-                    <div className="text-[10px] font-mono text-[var(--am-muted-2)]">{pick5(lang, { it: "scommesse totali", en: "total bets", es: "apuestas totales", fr: "paris totaux", ru: "всего ставок" })}</div>
-                  </>
-                ) : null;
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="text-xs font-mono text-[var(--am-muted-2)] animate-pulse py-8 text-center">{copy.loading}</div>
-      ) : entries.length === 0 ? (
-        // #QW2: empty state progettato — ghost podium (insegna la forma della
-        // classifica) + spiegazione di quando si popola. Il CTA "attiva in
-        // Impostazioni" vive già nel pannello "Your position" sotto.
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3" aria-hidden="true">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="am-surface p-4 text-center space-y-2" style={{ opacity: 0.4 }}>
-                <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
-                <div style={{ height: 10, borderRadius: 3, background: "var(--am-line-2)", width: i === 0 ? "72%" : "56%", margin: "0 auto" }} />
-                <div className="text-xl font-black font-mono text-[var(--am-muted-2)]">— pt</div>
-                <div style={{ height: 8, borderRadius: 3, background: "var(--am-line)", width: "42%", margin: "0 auto" }} />
-              </div>
-            ))}
-          </div>
-          <div className="text-center space-y-1 py-2">
-            <p className="text-sm font-bold text-[var(--am-text)]">{copy.noData}</p>
-            <p className="text-xs font-mono text-[var(--am-muted-2)]" style={{ maxWidth: 360, margin: "0 auto" }}>{copy.emptyHint}</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Podium */}
-          {podium.length > 0 && (
-            <div className="grid grid-cols-3 gap-3">
-              {podium.map((e, i) => (
-                <div key={e.rank} className={`am-surface p-4 text-center space-y-2 bg-gradient-to-b ${medalColors[i]}`} style={i === 0 ? { borderColor: medalBorder[i], background: "var(--am-coral)" } : { borderColor: medalBorder[i] }}>
-                  <div className="text-lg"><GlyphRank rank={(i + 1) as 1 | 2 | 3} size={24} /></div>
-                  <div className={`text-sm font-bold truncate ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.name}</div>
-                  <div className={`text-xl font-black font-mono ${i === 0 ? "text-[var(--am-coral-ink)]" : "text-[var(--am-text)]"}`}>{e.points} pt</div>
-                  <div className={`text-[10px] font-mono ${i === 0 ? "text-[var(--am-coral-ink)] opacity-90" : "text-[var(--am-muted-2)]"}`}>{e.bets_won}W · {e.hit_rate}%</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Full table */}
-          {rest.length > 0 && (
-            <div className="am-surface overflow-hidden">
-              <table className="w-full text-xs font-mono">
-                <thead>
-                  <tr className="border-b border-[var(--am-line)] text-[var(--am-muted-2)] uppercase tracking-wider">
-                    <th className="px-4 py-3 text-left">{copy.rank}</th>
-                    <th className="px-4 py-3 text-left">{copy.player}</th>
-                    <th className="px-4 py-3 text-right">{copy.points}</th>
-                    <th className="px-4 py-3 text-right">{copy.won}/{copy.total}</th>
-                    <th className="px-4 py-3 text-right">{copy.hitRate}</th>
-                    <th className="px-4 py-3 text-right hidden md:table-cell">{copy.sport}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rest.map((e) => (
-                    <tr key={e.rank}
-                      className="border-b border-[var(--am-line)] transition-colors"
-                      style={yourEntry?.rank === e.rank ? { background: "var(--am-coral-dim)", borderColor: "var(--am-coral-b)" } : undefined}
-                    >
-                      <td className="px-4 py-3 text-[var(--am-muted-2)]">{e.rank}</td>
-                      <td className="px-4 py-3 text-[var(--am-text)] font-semibold">
-                        {e.name}
-                        {yourEntry?.rank === e.rank && <span className="ml-2 text-[9px] text-[var(--am-coral)] border border-[var(--am-coral-b)] px-1 py-0.5 rounded">YOU</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right text-[var(--am-positive)] font-bold">{e.points}</td>
-                      <td className="px-4 py-3 text-right text-[var(--am-muted)]">{e.bets_won}/{e.bets_total}</td>
-                      <td className="px-4 py-3 text-right text-[var(--am-positive)]">{e.hit_rate}%</td>
-                      <td className="px-4 py-3 text-right text-[var(--am-muted-2)] hidden md:table-cell capitalize">{e.sport}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Your rank / opt-in CTA */}
-      <div className="am-surface p-5 space-y-2">
-        <p className="eyebrow">{copy.yourRank}</p>
-        {isOptedIn && yourEntry ? (
-          <div className="flex items-center gap-4">
-            <div className="text-3xl font-black font-mono text-[var(--am-coral)]">#{yourEntry.rank}</div>
-            <div>
-              <div className="text-sm font-bold text-[var(--am-text)]">{yourEntry.name}</div>
-              <div className="text-xs font-mono text-[var(--am-muted-2)]">
-                {yourEntry.points} {copy.points} · {yourEntry.hit_rate}% {copy.hitRate}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-xs font-mono text-[var(--am-muted-2)]">{copy.notOptedIn}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── History Tab ──────────────────────────────────────────────────────────────
 
 function HistoryTab({ history, stats, loading }: {
@@ -7741,9 +7378,6 @@ function AccountMenu({
           <div className="br-acct-links">
             <button type="button" onClick={() => { setOpen(false); onGoToTab("history"); }}>
               {pick5(lang, { it: "Storico verificato", en: "Verified history", es: "Historial verificado", fr: "Historique vérifié", ru: "Проверенная история" })}
-            </button>
-            <button type="button" onClick={() => { setOpen(false); onGoToTab("leaderboard"); }}>
-              {pick5(lang, { it: "Classifica", en: "Leaderboard", es: "Clasificación", fr: "Classement", ru: "Рейтинг" })}
             </button>
             <button type="button" onClick={() => { setOpen(false); onGoToTab("match-builder"); }}>
               Build a Probability View
@@ -9926,7 +9560,7 @@ function UnifiedBetsTab({
       {/* Whole-board access wall: anonymous and free/pending see the board
           blurred behind a single login/plan overlay (the per-card `locked`
           projection already strips the picks server-side; this hides the
-          matchups too). Leaderboard and the public Old-bets history stay
+          matchups too). The public Old-bets history stays
           outside the gate. Unlock = active plan (profileHasAccess). */}
       {/* #BANNERS-IN-GRID: rimossa la banda house full-width sopra la board (topbar,
           lasciava gutter ai lati). I banner house ora vivono SOLO intercalati tra le
@@ -10572,26 +10206,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
     window.localStorage.setItem(CLIENT_PROFILES_KEY, JSON.stringify(nextProfiles));
   };
 
-  // Settings save: persist the profile locally AND sync the leaderboard opt-in
-  // to the server when it changes (HIGH-2: the toggle previously only touched
-  // localStorage, so POST /api/leaderboard was never called and no one could
-  // actually appear in the public leaderboard).
   const handleSettingsSave = (profile: ClientProfile) => {
-    const wasOptedIn = clientProfile?.leaderboardOptIn ?? false;
-    const nowOptedIn = profile.leaderboardOptIn ?? false;
     saveClientProfile(profile);
-    if (nowOptedIn === wasOptedIn) return;
-    const req = nowOptedIn
-      ? fetch("/api/leaderboard", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ displayName: profile.name }),
-        })
-      : fetch("/api/leaderboard", { method: "DELETE", credentials: "same-origin" });
-    req
-      .then((r) => { if (!r.ok) console.error(`[leaderboard] opt-${nowOptedIn ? "in" : "out"} failed: ${r.status}`); })
-      .catch((e) => console.error("[leaderboard] opt-in/out network error:", String(e)));
   };
 
   const openAuth = (intent: ClientAuthIntent = "login") => {
@@ -10914,7 +10530,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   // I dati NON restano scoperti: li protegge dove va protetto, cioè
   // server-side, la proiezione d'accesso (lib/access-projection.ts +
   // `lockedHeadline`) — da anonimo escono model, mercato ed edge, mai la pick,
-  // la motivazione o l'analisi profonda. Storico, leaderboard, builder e
+  // la motivazione o l'analisi profonda. Storico, builder e
   // invito restano dietro il muro.
   // #INVITE-AFFILIATE-UX-1022 (M1): anche `invita` esce dal muro. Il pannello affiliati ha il suo
   // stato anonimo (offerta in chiaro + «crea un account gratuito» / «accedi»): il muro non
@@ -10946,7 +10562,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   const navItems: { tab: Tab; label: string; value?: string; tone?: string }[] = [
     { tab: "bets",        label: tNav.nav_predictions, value: isSignalPreviewUnlocked ? String(predictions.length + tennisMatches.length) : undefined, tone: "green" },
     { tab: "history",      label: tNav.nav_history },
-    { tab: "leaderboard", label: tNav.nav_leaderboard },
     // #MB-1: builder visibile solo da loggati (decisione Andrea 2026-06-07);
     // i link condivisi ?mb= aprono comunque il tab anche da anonimi.
     ...(hasClientProfile ? [{ tab: "match-builder" as Tab, label: "Build a Probability View", tone: "green" }] : []),
@@ -10988,8 +10603,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
   }, [liveTennis]);
 
   // #MOBILE-1: voci della bottom tab bar (solo mobile). Riusa setTab + label i18n + glifi rail.
-  // #RESTYLING-0921 — Home · Live · Watchlist · Tools · Profile. History e
-  // Leaderboard restano raggiungibili da Profile (menu Account), come su
+  // #RESTYLING-0921 — Home · Live · Watchlist · Tools · Profile. History
+  // resta raggiungibile da Profile (menu Account), come su
   // desktop. Round 10: al posto di «Explore» (che portava al board generico,
   // ora rimosso) c'è «Live», che su telefono è la vista che si cerca davvero
   // mentre si gioca; Football e Tennis restano nelle tile «Sfoglia per sport»
@@ -11315,7 +10930,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 esplicitamente fra le cose da togliere, e con la topnav nuova
                 era anche l'unica ragione per cui il contenuto partiva da metà
                 schermo. Dove sono finite le sue voci:
-                  · Predictions/History/Leaderboard/Builder/Plans → menu Account
+                  · Predictions/History/Builder/Plans → menu Account
                   · Tools → nav primaria
                   · Creator Picks / Weekly Model Case / Partner → menu Account
                   · Aggiorna quote → testa del desk, accanto al titolo
@@ -11395,13 +11010,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                       fr: `Chaque pronostic clôturé et vérifié, gagné ou perdu${cov ? ` — ${cov} de ceux que nous avons affichés` : ""}. Ce que nous ne pouvons pas confirmer, nous le disons.`,
                       ru: `Каждый закрытый и проверенный прогноз — выигранный или проигранный${cov ? ` (${cov} из показанных)` : ""}. О том, что подтвердить нельзя, мы говорим прямо.`,
                     });
-                  })() : tab === "leaderboard" ? pick5(uiLanguage, {
-                    it: "Come si posizionano i clienti per hit rate. 10 punti per ogni pick vinto.",
-                    en: "How clients rank by hit rate. 10 points for every winning pick.",
-                    es: "Cómo se clasifican los clientes por hit rate. 10 puntos por cada pronóstico ganado.",
-                    fr: "Le classement des clients par hit rate. 10 points par pronostic gagné.",
-                    ru: "Рейтинг клиентов по проценту попаданий. 10 очков за каждый выигранный прогноз.",
-                }) : tab === "match-builder" ? pick5(uiLanguage, {
+                  })() : tab === "match-builder" ? pick5(uiLanguage, {
                     it: "Costruisci la tua multipla. Il modello calcola la probabilità combinata, selezione per selezione.",
                     en: "Build your accumulator. The model computes the combined probability, leg by leg.",
                     es: "Crea tu combinada. El modelo calcula la probabilidad combinada, selección a selección.",
@@ -11604,12 +11213,6 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
           />}
           {tab === "history" && (
             <TrackRecordView rows={historyV2} loading={historyV2Loading} error={historyV2Error} onRetry={fetchHistoryV2} data={{ stats: historyV2Stats, segments: historySegments }} lang={uiLanguage === "it" ? "it" : "en"} />
-          )}
-          {tab === "leaderboard" && (
-            <LeaderboardTab
-              clientName={clientProfile?.name}
-              isOptedIn={clientProfile?.leaderboardOptIn ?? false}
-            />
           )}
           {tab === "match-builder" && (
             <MatchBuilderTab
