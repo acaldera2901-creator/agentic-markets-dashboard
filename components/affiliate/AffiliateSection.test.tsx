@@ -39,6 +39,7 @@ describe("stati della pagina", () => {
     expect(offer.textContent).toMatch(/20%/);
     expect(offer.textContent).toMatch(/7%.*10%.*15%/);
     expect(offer.textContent).toMatch(/50 \$/);
+    expect(document.body.textContent).toMatch(/subordinati all’attivazione del servizio/);
     const wins = screen.getByTestId("aff-windows");
     expect(wins.textContent).toMatch(/Dal click/);
     expect(wins.textContent).toMatch(/Dalla registrazione/);
@@ -224,7 +225,7 @@ describe("dashboard", () => {
     mockFetch(me(ME));
     render(<AffiliateSection lang="it" />);
     await screen.findByText("Il tuo link");
-    expect(document.body.textContent).toMatch(/maturati su 50 \$: il prossimo pagamento parte quando arrivano a 50 \$/);
+    expect(document.body.textContent).toMatch(/maturati su 50 \$: questa è la soglia minima, non una conferma di pagamento/);
     expect(document.body.textContent).not.toMatch(/ti mancano|ti manca/i);
   });
 

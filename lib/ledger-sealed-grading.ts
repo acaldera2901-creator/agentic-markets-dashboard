@@ -164,6 +164,8 @@ export function sealedEntriesSql(fromIso: string): string {
             ) ps ON TRUE
            WHERE l.source_table = 'match_predictions'
              AND l.model_version = 'football-v4-xg-model'
+             AND l.is_backfill = FALSE
+             AND l.captured_at < l.commence_time
              AND l.pick IS NOT NULL
              AND l.commence_time >= '${from}'
            ORDER BY l.commence_time DESC

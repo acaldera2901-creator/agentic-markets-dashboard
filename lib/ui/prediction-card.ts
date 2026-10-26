@@ -15,7 +15,8 @@
 // `EDGE_HIGH_PP` vivono; `edgeTone`/`formatEdge`, che servivano solo a
 // dipingerlo e a scriverlo col segno, sono stati rimossi con l'EdgeBadge.
 
-import { displayTournament, probabilitySourceOf, type ProbabilitySource } from "@/lib/partner-market";
+import { tennisHistoryProbabilitySource } from "@/lib/tennis-probability";
+import { displayTournament, type ProbabilitySource } from "@/lib/partner-market";
 import { impliedProbability } from "@/lib/betting-math";
 import type { UnifiedPrediction } from "@/lib/unified-adapter";
 
@@ -114,6 +115,7 @@ export type PredictionCardData = {
 export type ClassicRowInput =
   | {
       sport: "football";
+      modelAsOf?: string | null;
       est?: [number | null | undefined, number | null | undefined, number | null | undefined];
       odds?: [number | null | undefined, number | null | undefined, number | null | undefined];
       leadIdx?: 0 | 1 | 2;
@@ -123,6 +125,7 @@ export type ClassicRowInput =
   | {
       sport: "tennis";
       modelVersion: string | null;
+      probabilitySource?: ProbabilitySource;
       tournament: string | null;
       p?: [number | null | undefined, number | null | undefined];
       odds?: [number | null | undefined, number | null | undefined];
@@ -165,6 +168,6 @@ export function fromUnifiedPrediction(
     confidence: p.confidence_score,
     explanation: p.explanation,
     locked: extra.locked ?? false,
-    probabilitySource: probabilitySourceOf(p.model_version),
+    probabilitySource: isTennis ? tennisHistoryProbabilitySource(p.model_version, p.notes) : "model",
   };
 }

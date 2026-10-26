@@ -94,7 +94,7 @@ describe("A2 · computed_at senza fuso = UTC, lo stesso tipo di scheda in ogni f
   });
   const NAIVE = "2026-10-08T12:01:00.492886"; // come lo serve /api/tennis
   const elo = {
-    started: false, modelVersion: "elo_surface_v4_features_odds", tournament: "China Open", player1: "Elise Mertens", player2: "Iga Swiatek",
+    started: false, modelVersion: "elo_surface_v4_features_odds", probabilitySource: "model" as const, tournament: "China Open", player1: "Elise Mertens", player2: "Iga Swiatek",
     p: [0.31, 0.69] as [number, number], odds: [4.1, 1.17] as [number, number], leadIdx: 1 as const, books: [],
   };
   for (const tz of ["Europe/Rome", "UTC", "America/New_York", "Asia/Tokyo"]) {

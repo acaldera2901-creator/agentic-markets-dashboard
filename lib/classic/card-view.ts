@@ -19,8 +19,7 @@
 // quindi lì la stima È il modello grezzo e non si inverte il blend.
 // Senza alcun mercato:
 //   calcio  «Model only» solo se il numero è recente (≤ 6 h, la stessa soglia
-//           dell'Elo del tennis) — l'età è `oldest_computed_at` di /api/predictions,
-//           l'unica che vale per ogni riga; altrimenti «No price yet».
+//           dell'Elo del tennis) — l'età è `computed_at` della singola riga /api/predictions; altrimenti «No price yet».
 //   tennis  mai l'Elo da solo: la stima Elo esiste solo fusa col mercato → «No price yet».
 // Sanità (fixdata2 N3): prezzo equo della stima a > 25% dal miglior prezzo del
 // book con link → «Market only», dove l'esito mostrato è noto.
@@ -242,7 +241,7 @@ export type ClassicFootballInput = {
   books: readonly ClassicBook[];
   landing?: readonly ClassicLanding[];
   labels?: readonly [string, string, string];
-  /** L'età del numero senza mercato: `oldest_computed_at` di /api/predictions. Senza: mai «Model only». */
+  /** Per-row computed_at: without a valid timestamp, no served-price comparison or model-only claim. */
   modelAsOf?: string | null;
   now?: Date;
 };
@@ -254,6 +253,12 @@ export function classicFootballView(i: ClassicFootballInput): ClassicView {
   const landing = i.landing ?? [];
   const labels = i.labels ?? ["1", "X", "2"];
   const open = !!i.est && i.est.every(finite) && i.leadIdx != null;
+  // A retained priced row is still a valid stored estimate, but not evidence
+  // of a current market gap. Keep its probability without calling it raw model.
+  const pricedSnapshotIsFresh = freshEnough(i.modelAsOf, i.now ?? new Date());
+  const retained = (x: number, chips: ClassicChip[], cells: ClassicCell[], cta: ClassicView["cta"]) =>
+    finish({ kind: "estimate", bigPct: pct(x), marketPct: null,
+      guard: { level: "no_value", delta_pp: null }, gap: null }, i.started, chips, cells, cta);
   const alone = (x: number | null) =>
     x != null && freshEnough(i.modelAsOf, i.now ?? new Date())
       ? { kind: "model_only" as const, bigPct: pct(x), marketPct: null, guard: OK_GUARD, gap: null }
@@ -281,6 +286,7 @@ export function classicFootballView(i: ClassicFootballInput): ClassicView {
     const mkt = served ? [served.p.home, served.p.draw, served.p.away] : bookImpliedMarket(books, 3);
     const chips = chipsFor(books, idx, landing);
     const cta = ctaFrom(chips, [], books, landing);
+    if (!noServed && !pricedSnapshotIsFresh) return retained(est[idx], chips, [], cta);
     if (!mkt) return finish(alone(est[idx]), i.started, chips, [], cta);
     return finish(read(est, mkt, idx, !served && noServed, served ? "served" : "partners", bestLinkedPrice(books, idx)), i.started, chips, [], cta);
   }
@@ -293,6 +299,7 @@ export function classicFootballView(i: ClassicFootballInput): ClassicView {
   // Il margine della quota servita non si conosce: si usa quello di riserva (5%), SEMPRE —
   // non quello di un book partner, che è un altro mercato. Così la scheda e la fascia
   // «Where our estimate differs most» (che le quote partner non le ha) dicono la stessa cosa.
+  if (i.oddsLead != null && !pricedSnapshotIsFresh) return retained(estLead, [], cells, ctaFrom([], cells, books, landing));
   const mLead = devigOne(i.oddsLead, DEFAULT_1X2_MARGIN);
   if (mLead == null) {
     // nessuna quota servita: la stima è il modello grezzo; il mercato, se c'è, dai book partner
@@ -317,6 +324,7 @@ export function classicFootballView(i: ClassicFootballInput): ClassicView {
 export type ClassicTennisInput = {
   started: boolean;
   modelVersion: string | null | undefined;
+  probabilitySource?: "model" | "market" | "unknown";
   tournament: string | null | undefined;
   player1: string;
   player2: string;
@@ -340,7 +348,8 @@ export function classicTennisView(i: ClassicTennisInput): ClassicView {
   const landing = i.landing ?? [];
   const labels = i.labels ?? ["P1", "P2"];
   const open = !!i.p && i.p.every(finite) && i.leadIdx != null;
-  const partnerRow = i.modelVersion === PARTNER_MARKET_MODEL;
+  const source = i.probabilitySource ?? (i.modelVersion === PARTNER_MARKET_MODEL ? "market" : "unknown");
+  const partnerRow = source === "market";
   let idx: number | null = open ? (i.leadIdx as 0 | 1) : null;
   const shown = open ? (i.p as [number, number])[idx as number] : finite(i.pLead) ? i.pLead : null;
 
@@ -382,7 +391,7 @@ export function classicTennisView(i: ClassicTennisInput): ClassicView {
     return finish({ kind: "no_price", bigPct: null, marketPct: null, guard: OK_GUARD, gap: null }, i.started, chips, cells, cta);
   }
   const marketOnly = (far = false) => finish({ kind: "market_only", bigPct: pct(mLead), marketPct: pct(mLead), guard: OK_GUARD, gap: null, from, far }, i.started, chips, cells, cta);
-  if (partnerRow) return marketOnly();
+  if (source !== "model") return marketOnly();
   // Il lato mostrato vale come «player1» della stima (l'orientamento non serve: un lato solo).
   const est = tennisEstimate(
     {
@@ -488,7 +497,7 @@ export function classicViewFor(
     const labels = ["1", "X", "2"] as const;
     const fp = abbinaQuotaPartner(data.home, data.away, data.startsAt, prices.fpOdds, prices.fpIndex).quota;
     const books = prices.booksBlocked ? [] : footballBooks(fp, data.home, data.away);
-    const view = classicFootballView({ started, est: raw.est, odds: raw.odds, leadIdx: raw.leadIdx, estLead: raw.estLead, oddsLead: raw.oddsLead, books, landing, labels, modelAsOf: prices.footballOldestAt ?? null, now });
+    const view = classicFootballView({ started, est: raw.est, odds: raw.odds, leadIdx: raw.leadIdx, estLead: raw.estLead, oddsLead: raw.oddsLead, books, landing, labels, modelAsOf: raw.modelAsOf ?? null, now });
     return { view, labels, leadIdx: raw.leadIdx ?? null };
   }
   if (raw?.sport === "tennis") {
@@ -496,7 +505,7 @@ export function classicViewFor(
     const fp = tennisOddsFor(prices.fpOdds, data.home, data.away, data.startsAt);
     const books = prices.booksBlocked ? [] : tennisBooks(fp, data.home, data.away);
     const view = classicTennisView({
-      started, modelVersion: raw.modelVersion, tournament: raw.tournament, player1: data.home, player2: data.away,
+      started, modelVersion: raw.modelVersion, probabilitySource: raw.probabilitySource, tournament: raw.tournament, player1: data.home, player2: data.away,
       p: raw.p, odds: raw.odds, leadIdx: raw.leadIdx, pLead: raw.pLead, oddsLead: raw.oddsLead,
       eloAsOf: prices.tennisComputedAt, now, books, landing, labels,
     });

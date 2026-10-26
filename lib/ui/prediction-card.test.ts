@@ -81,3 +81,9 @@ describe("fromUnifiedPrediction", () => {
     expect(d.away).toBe("Alcaraz");
   });
 });
+
+it('propagates persisted tennis provenance instead of guessing from model name', () => {
+  const notes=JSON.stringify({probability:{version:'tennis-probability-v1',source:'market',raw_p1:.8,raw_p2:.2,published_p1:.75,published_p2:.25}});
+  expect(fromUnifiedPrediction({...base,sport:'tennis',notes}).probabilitySource).toBe('market');
+  expect(fromUnifiedPrediction({...base,sport:'tennis',notes:null}).probabilitySource).toBe('unknown');
+});

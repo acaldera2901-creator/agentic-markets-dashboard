@@ -11,7 +11,7 @@ export const PARTNER_MARKET_MODEL = "partner-market-v1";
 export const PARTNER_FEED_TOURNAMENT = "Partner feed";
 
 /** Da dove viene la probabilità mostrata: il nostro modello o il mercato. */
-export type ProbabilitySource = "model" | "market";
+export type ProbabilitySource = "model" | "market" | "unknown";
 
 export function probabilitySourceOf(modelVersion: string | null | undefined): ProbabilitySource {
   return modelVersion === PARTNER_MARKET_MODEL ? "market" : "model";
@@ -26,6 +26,7 @@ export function displayTournament(tournament: string | null | undefined): string
 
 /** L'etichetta della probabilità, accanto al numero. */
 export function probabilityLabel(source: ProbabilitySource | null | undefined, lang: string = "en"): string {
+  if (source === "unknown") return lang === "it" ? "Fonte non verificata" : "Source unverified";
   if (source !== "market") return "Our model"; // invariato: la card lo scrive così in ogni lingua
   const labels: Record<string, string> = {
     it: "Quota di mercato, senza margine",

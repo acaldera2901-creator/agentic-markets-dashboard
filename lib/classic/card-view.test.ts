@@ -1,11 +1,14 @@
 // #CLASSIC-CARD-1008 — la scheda Slab decide cosa può dire. Righe vere del board
 // (now/data/joined-football.json, letto l'08/10 14:43 CEST), nessuna rete, nessun DB.
-import { describe, expect, it } from "vitest";
+import { beforeEach, afterEach, vi, describe, expect, it } from "vitest";
 import { classicFootballView, classicTennisView, differsBy as differsByOf, freshEnough, leadFromMarket, sheetValueAllowed, footballBooks, tennisBooks, tennisOddsFor, type ClassicBook } from "./card-view";
 import { dedupeByPair, devigOne, fairFarFromBest, modelGuard, rawModelFromEstimate, saneMarketSet, tzAbbr } from "./guard";
 import { normName } from "@/lib/odds-api";
 import { playerKey } from "./fixdata3";
 
+beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date("2026-10-26T12:00:00Z")); });
+afterEach(() => vi.useRealTimers());
+const FRESH = "2026-10-26T11:00:00Z";
 const book = (key: string, name: string, prices: (number | null)[]): ClassicBook => ({ key, name, url: `https://example.test/${key}`, prices });
 const COMO_BOOKS = [book("fortuneplay", "FortunePlay", [2.51, 3.57, 2.69]), book("ybets", "YBets", [2.47, 3.5, 2.64])];
 const VILLA_BOOKS = [book("fortuneplay", "FortunePlay", [2.65, 3.51, 2.58]), book("ybets", "YBets", [2.6, 3.45, 2.54])];
@@ -48,7 +51,7 @@ describe("guard — il modello grezzo ricavato dalla stima servita", () => {
 
 describe("calcio — riga aperta", () => {
   it("Como–Roma: protezione ok, stima, mercato, scarto col segno, best unico", () => {
-    const v = classicFootballView({ started: false, est: [0.41, 0.27, 0.32], odds: [2.57, 3.55, 2.7], leadIdx: 0, books: COMO_BOOKS });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, est: [0.41, 0.27, 0.32], odds: [2.57, 3.55, 2.7], leadIdx: 0, books: COMO_BOOKS });
     expect(v.kind).toBe("estimate");
     expect(v.valueAllowed).toBe(true);
     expect(v.bigPct).toBeCloseTo(41, 5);
@@ -58,14 +61,14 @@ describe("calcio — riga aperta", () => {
     expect(v.cta).toMatchObject({ name: "FortunePlay", price: 2.51 });
   });
   it("Aston Villa: oltre 25 pp sul grezzo → Market only (il numero è il mercato, niente scarto)", () => {
-    const v = classicFootballView({ started: false, est: [0.462, 0.27, 0.268], odds: [2.66, 3.5, 2.6], leadIdx: 0, books: VILLA_BOOKS });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, est: [0.462, 0.27, 0.268], odds: [2.66, 3.5, 2.6], leadIdx: 0, books: VILLA_BOOKS });
     expect(v.kind).toBe("market_only");
     expect(v.bigPct).toBe(v.marketPct);
     expect(v.gapPp).toBeNull();
     expect(v.valueAllowed).toBe(false);
   });
   it("Bolton: 15–25 pp → protetta, scarto sì, valore no", () => {
-    const v = classicFootballView({ started: false, est: [0.392, 0.28, 0.328], odds: [2.84, 3.4, 2.6], leadIdx: 0, books: BOLTON_BOOKS });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, est: [0.392, 0.28, 0.328], odds: [2.84, 3.4, 2.6], leadIdx: 0, books: BOLTON_BOOKS });
     expect(v.kind).toBe("protected");
     expect(v.valueAllowed).toBe(false);
     expect(v.gapPp).not.toBeNull();
@@ -96,26 +99,26 @@ describe("calcio — riga aperta", () => {
     expect(v.chips[2]).toMatchObject({ name: "BetScore", price: null });
   });
   it("partita iniziata: niente prezzi né bottone, i numeri restano", () => {
-    const v = classicFootballView({ started: true, est: [0.41, 0.27, 0.32], odds: [2.57, 3.55, 2.7], leadIdx: 0, books: COMO_BOOKS });
+    const v = classicFootballView({ modelAsOf: FRESH, started: true, est: [0.41, 0.27, 0.32], odds: [2.57, 3.55, 2.7], leadIdx: 0, books: COMO_BOOKS });
     expect(v.chips).toEqual([]);
     expect(v.cta).toBeNull();
     expect(v.bigPct).toBeCloseTo(41, 5);
   });
   it("quote servite assurde → si usa il mercato dei book", () => {
-    const v = classicFootballView({ started: false, est: [0.41, 0.27, 0.32], odds: [1.0, 1.01, 1.02], leadIdx: 0, books: COMO_BOOKS });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, est: [0.41, 0.27, 0.32], odds: [1.0, 1.01, 1.02], leadIdx: 0, books: COMO_BOOKS });
     expect(v.marketPct!).toBeCloseTo((1 / 2.51 / (1 / 2.51 + 1 / 3.57 + 1 / 2.69) + 1 / 2.47 / (1 / 2.47 + 1 / 3.5 + 1 / 2.64)) * 50, 1);
   });
 });
 
 describe("calcio — riga chiusa (il lato non si rivela)", () => {
   it("niente chip sul lato: il miglior prezzo per ogni esito", () => {
-    const v = classicFootballView({ started: false, estLead: 0.41, oddsLead: 2.57, books: COMO_BOOKS });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.41, oddsLead: 2.57, books: COMO_BOOKS });
     expect(v.chips).toEqual([]);
     expect(v.cells.map((c) => [c.label, c.price, c.bookName])).toEqual([["1", 2.51, "FortunePlay"], ["X", 3.57, "FortunePlay"], ["2", 2.69, "FortunePlay"]]);
     expect(v.kind).toBe("estimate");
   });
   it("Nantes (chiusa, 38% contro 3.50): Market only", () => {
-    const v = classicFootballView({ started: false, estLead: 0.383, oddsLead: 3.5, books: [book("fortuneplay", "FortunePlay", [1.94, 3.17, 3.35])] });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.383, oddsLead: 3.5, books: [book("fortuneplay", "FortunePlay", [1.94, 3.17, 3.35])] });
     expect(v.kind).toBe("market_only");
   });
 });
@@ -128,7 +131,7 @@ describe("calcio — mercato ricavato dai prezzi dei partner (#CLASSIC-FIX1-1008
   const mAway = (devig([9.8, 9.2, 1.19])[2] + devig([9.4, 8.7, 1.18])[2]) / 2;
 
   it("Augsburg–Bayern: niente più «Model only 71%» — mercato dai book, dichiarato, protezione applicata", () => {
-    const v = classicFootballView({ started: false, estLead: 0.711728075383029, oddsLead: null, books: AUGSBURG });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.711728075383029, oddsLead: null, books: AUGSBURG });
     expect(v.marketFrom).toBe("partners");
     expect(v.marketPct!).toBeCloseTo(mAway * 100, 6);
     // nessuna quota servita = nessun blend: la stima è il modello, 71,2 contro 79,6 → 8,5 pp, protezione ok
@@ -139,26 +142,26 @@ describe("calcio — mercato ricavato dai prezzi dei partner (#CLASSIC-FIX1-1008
   it("senza quote servite NON si inverte il blend (la stima è il modello grezzo)", () => {
     // 0,70 contro 0,7962: invertendo il 30/70 il «modello» sarebbe 0,47 (32 pp) → Market only per errore
     expect(modelGuard([{ model_p: rawModelFromEstimate(0.7, mAway), market_p: mAway }]).level).toBe("market_only");
-    const v = classicFootballView({ started: false, estLead: 0.7, oddsLead: null, books: AUGSBURG });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.7, oddsLead: null, books: AUGSBURG });
     expect(v.kind).toBe("estimate");
     // 0,62: 17,6 pp dal mercato (protetta) ma prezzo equo 1,61 contro 1,19 (+35%) → Market only
-    expect(classicFootballView({ started: false, estLead: 0.62, oddsLead: null, books: AUGSBURG }).priceFar).toBe(true);
+    expect(classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.62, oddsLead: null, books: AUGSBURG }).priceFar).toBe(true);
   });
   it("oltre 25 pp dal mercato ricavato → Market only, il numero è quello dei book", () => {
-    const v = classicFootballView({ started: false, estLead: 0.5, oddsLead: null, books: AUGSBURG });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.5, oddsLead: null, books: AUGSBURG });
     expect(v.kind).toBe("market_only");
     expect(v.bigPct).toBe(v.marketPct);
     expect(v.marketFrom).toBe("partners");
   });
   it("Palace–Forest (v3c N3): prezzo equo a > 25% dal miglior prezzo con link → Market only senza prezzo equo", () => {
     const books = [book("fortuneplay", "FortunePlay", [2.68, 3.35, 2.64])];
-    const v = classicFootballView({ started: false, estLead: 0.59, oddsLead: null, books });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.59, oddsLead: null, books });
     expect(v.kind).toBe("market_only");
     expect(v.priceFar).toBe(true);
     expect(v.gapPp).toBeNull();
   });
   it("riga aperta senza quote servite: il mercato è dei book e la stima non si inverte", () => {
-    const v = classicFootballView({ started: false, est: [0.08, 0.13, 0.79], odds: [null, null, null], leadIdx: 2, books: AUGSBURG });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, est: [0.08, 0.13, 0.79], odds: [null, null, null], leadIdx: 2, books: AUGSBURG });
     expect(v.kind).toBe("estimate");
     expect(v.marketFrom).toBe("partners");
   });
@@ -171,7 +174,7 @@ describe("calcio — mercato ricavato dai prezzi dei partner (#CLASSIC-FIX1-1008
     expect(classicFootballView({ started: false, estLead: 0.43, oddsLead: null, books }).kind).toBe("no_price");
   });
   it("le quote servite restano la prima scelta: origine «served»", () => {
-    const v = classicFootballView({ started: false, estLead: 0.41, oddsLead: 2.57, books: COMO_BOOKS });
+    const v = classicFootballView({ modelAsOf: FRESH, started: false, estLead: 0.41, oddsLead: 2.57, books: COMO_BOOKS });
     expect(v.marketFrom).toBe("served");
   });
   it("età del numero: ≤ 6 h", () => {
@@ -201,7 +204,7 @@ describe("tennis", () => {
   });
   it("ATP con Elo fresco → Elo-based (0,1·Elo + 0,9·mercato), scarto attenuato, mai valore", () => {
     const v = classicTennisView({
-      started: false, modelVersion: "elo_surface_v4_features_odds", tournament: "Rolex Shanghai Masters", player1: "Cameron Norrie", player2: "Dalibor Svrcina",
+      started: false, modelVersion: "elo_surface_v4_features_odds", probabilitySource: "model" as const, tournament: "Rolex Shanghai Masters", player1: "Cameron Norrie", player2: "Dalibor Svrcina",
       p: [0.63, 0.37], odds: [1.65, 2.25], leadIdx: 0, eloAsOf: "2026-10-08T09:00:00Z", now: NOW, books: [],
     });
     expect(v.kind).toBe("elo_blend");
@@ -210,24 +213,24 @@ describe("tennis", () => {
     expect(v.bigPct!).toBeCloseTo((0.1 * 0.63 + 0.9 * m) * 100, 1);
   });
   it("Elo più vecchio di 6 h, o Challenger → Market only", () => {
-    const base = { started: false, modelVersion: "elo_surface_v4_features_odds", player1: "A B", player2: "C D", p: [0.63, 0.37] as [number, number], odds: [1.65, 2.25] as [number, number], leadIdx: 0 as const, now: NOW, books: [] };
+    const base = { started: false, modelVersion: "elo_surface_v4_features_odds", probabilitySource: "model" as const, player1: "A B", player2: "C D", p: [0.63, 0.37] as [number, number], odds: [1.65, 2.25] as [number, number], leadIdx: 0 as const, now: NOW, books: [] };
     expect(classicTennisView({ ...base, tournament: "Rolex Shanghai Masters", eloAsOf: "2026-10-08T05:00:00Z" }).kind).toBe("market_only");
     expect(classicTennisView({ ...base, tournament: "ATP Challenger Braga", eloAsOf: "2026-10-08T11:00:00Z" }).kind).toBe("market_only");
   });
   it("Elo senza nessun mercato → No price yet: nessun numero, nessun tag", () => {
-    const v = classicTennisView({ started: false, modelVersion: "elo_surface_v4_features_odds", tournament: "China Open", player1: "A", player2: "B", pLead: 0.87, oddsLead: null, eloAsOf: null, now: NOW, books: [] });
+    const v = classicTennisView({ started: false, modelVersion: "elo_surface_v4_features_odds", probabilitySource: "model" as const, tournament: "China Open", player1: "A", player2: "B", pLead: 0.87, oddsLead: null, eloAsOf: null, now: NOW, books: [] });
     expect(v.kind).toBe("no_price");
     expect([v.bigPct, v.marketPct, v.gapPp]).toEqual([null, null, null]);
     expect(v.valueAllowed).toBe(false);
     // anche con l'Elo fresco: senza mercato la stima Elo non esiste
-    const fresh = classicTennisView({ started: false, modelVersion: "elo_surface_v4_features_odds", tournament: "China Open", player1: "A", player2: "B", pLead: 0.87, oddsLead: null, eloAsOf: "2026-10-08T11:00:00Z", now: NOW, books: [] });
+    const fresh = classicTennisView({ started: false, modelVersion: "elo_surface_v4_features_odds", probabilitySource: "model" as const, tournament: "China Open", player1: "A", player2: "B", pLead: 0.87, oddsLead: null, eloAsOf: "2026-10-08T11:00:00Z", now: NOW, books: [] });
     expect(fresh.kind).toBe("no_price");
   });
   it("Svitolina–Zheng 08/10 (Elo di 2 giorni, nessuna quota servita, book partner) → Market only dai partner", () => {
     // /api/tennis 08/10: model_prob 0,7303, market_odds null, computed_at 2026-10-07T11:45:12
     // FortunePlay e YBets: Svitolina 1.63, Zheng 2.07 (allineati a [player1, player2])
     const books = [book("fortuneplay", "FortunePlay", [1.63, 2.07]), book("ybets", "YBets", [1.63, 2.07])];
-    const v = classicTennisView({ started: false, modelVersion: "elo_surface_v4_features_odds", tournament: "China Open", player1: "Elina Svitolina", player2: "Zheng Qinwen", pLead: 0.7303, oddsLead: null, eloAsOf: "2026-10-07T11:45:12", now: new Date("2026-10-08T15:00:00Z"), books });
+    const v = classicTennisView({ started: false, modelVersion: "elo_surface_v4_features_odds", probabilitySource: "model" as const, tournament: "China Open", player1: "Elina Svitolina", player2: "Zheng Qinwen", pLead: 0.7303, oddsLead: null, eloAsOf: "2026-10-07T11:45:12", now: new Date("2026-10-08T15:00:00Z"), books });
     expect(v.kind).toBe("market_only");
     expect(v.marketFrom).toBe("partners");
     expect(v.bigPct).toBe(v.marketPct);
@@ -235,7 +238,7 @@ describe("tennis", () => {
   });
   it("Elo fresco ma prezzo equo a > 25% dal miglior prezzo con link → Market only", () => {
     const v = classicTennisView({
-      started: false, modelVersion: "elo_surface_v4_features_odds", tournament: "China Open", player1: "A B", player2: "C D",
+      started: false, modelVersion: "elo_surface_v4_features_odds", probabilitySource: "model" as const, tournament: "China Open", player1: "A B", player2: "C D",
       p: [0.9, 0.1], odds: [1.65, 2.25], leadIdx: 0, eloAsOf: "2026-10-08T11:00:00Z", now: NOW,
       books: [book("fortuneplay", "FortunePlay", [2.3, 1.6])],
     });
@@ -267,8 +270,8 @@ describe("la fascia «differs most» e la scheda dicono la stessa cosa", () => {
   it("su righe chiuse, dentro la fascia ⇔ scheda «estimate» non in linea", () => {
     const rows: [number, number][] = [[0.618, 1.66], [0.443, 1.96], [0.412, 2.58], [0.39, 2.37], [0.805, 1.15], [0.57, 1.47], [0.383, 3.5]];
     for (const [est, odds] of rows) {
-      const data = { sport: "football", startsAt: "2026-10-12T12:00:00Z", isLive: false, classic: { sport: "football", estLead: est, oddsLead: odds } };
-      const card = classicFootballView({ started: false, estLead: est, oddsLead: odds, books: COMO_BOOKS });
+      const data = { sport: "football", startsAt: "2026-10-12T12:00:00Z", isLive: false, classic: { sport: "football", modelAsOf: FRESH, estLead: est, oddsLead: odds } };
+      const card = classicFootballView({ modelAsOf: FRESH, started: false, estLead: est, oddsLead: odds, books: COMO_BOOKS });
       const inBand = (card.kind === "estimate" && !card.flat);
       expect(differsByOf(data) != null, `${est}@${odds}`).toBe(inBand);
     }
@@ -278,10 +281,58 @@ describe("la fascia «differs most» e la scheda dicono la stessa cosa", () => {
 describe("scheda partita: i tag «+X%» seguono la protezione", () => {
   const fpOf = (prices: [number, number, number]) => ({ homeKey: normName("H"), awayKey: normName("A"), oddsHome: prices[0], oddsDraw: prices[1], oddsAway: prices[2], matchUrl: "u" });
   it("Como ok → sì; Bolton protetta e Villa Market only → no; tennis → mai", () => {
-    const row = (est: [number, number, number], odds: [number, number, number]) => ({ sport: "football", home: "H", away: "A", classic: { sport: "football", est, odds, leadIdx: 0 } });
+    const row = (est: [number, number, number], odds: [number, number, number]) => ({ sport: "football", home: "H", away: "A", classic: { sport: "football", modelAsOf: FRESH, est, odds, leadIdx: 0 } });
     expect(sheetValueAllowed(row([0.41, 0.27, 0.32], [2.57, 3.55, 2.7]), fpOf([2.51, 3.57, 2.69]))).toBe(true);
     expect(sheetValueAllowed(row([0.392, 0.28, 0.328], [2.84, 3.4, 2.6]), fpOf([2.78, 3.34, 2.56]))).toBe(false);
     expect(sheetValueAllowed(row([0.462, 0.27, 0.268], [2.66, 3.5, 2.6]), fpOf([2.65, 3.51, 2.58]))).toBe(false);
     expect(sheetValueAllowed({ sport: "tennis", home: "a", away: "b", classic: { sport: "tennis" } }, null)).toBe(false);
   });
 });
+
+
+describe("football retained priced snapshots — no current market comparison after six hours", () => {
+  const now = new Date("2026-10-26T12:00:00Z");
+  const open = { started: false, est: [0.41, 0.27, 0.32] as [number, number, number], odds: [2.57, 3.55, 2.7] as [number, number, number], leadIdx: 0 as const, books: COMO_BOOKS, now };
+  const locked = { started: false, estLead: 0.41, oddsLead: 2.57, books: COMO_BOOKS, now };
+
+  it.each([open, locked])("preserves the stored probability but removes stale market comparison (open and locked)", (input) => {
+    const view = classicFootballView({ ...input, modelAsOf: "2026-10-23T12:00:00Z" });
+    expect(view.bigPct).toBeCloseTo(41);
+    expect(view.kind).toBe("estimate"); // still a blend, not a model-only number
+    expect(view.marketPct).toBeNull();
+    expect(view.marketFrom).toBeNull();
+    expect(view.gapPp).toBeNull();
+    expect(view.valueAllowed).toBe(false);
+  });
+
+  it.each([open, locked])("keeps the comparison at six hours, suppresses it one second later", (input) => {
+    const fresh = classicFootballView({ ...input, modelAsOf: "2026-10-26T06:00:00Z" });
+    expect(fresh.valueAllowed).toBe(true);
+    expect(fresh.marketPct).not.toBeNull();
+    const stale = classicFootballView({ ...input, modelAsOf: "2026-10-26T05:59:59Z" });
+    expect(stale.valueAllowed).toBe(false);
+    expect(stale.gapPp).toBeNull();
+  });
+});
+
+it.each([null, undefined, "invalid"])("priced snapshot without usable timestamp (%s) cannot claim value", (modelAsOf) => {
+ const view = classicFootballView({ started: false, estLead: 0.41, oddsLead: 2.57, books: [], modelAsOf });
+ expect(view.bigPct).toBeCloseTo(41);
+ expect(view.marketPct).toBeNull();
+ expect(view.valueAllowed).toBe(false);
+});
+
+ describe("tennis explicit provenance", () => {
+ const base = { started:false, modelVersion:"elo_surface_v4_features_odds", tournament:"Rolex Shanghai Masters", player1:"A B",player2:"C D", p:[0.63,0.37] as [number,number], odds:[1.65,2.25] as [number,number],leadIdx:0 as const,eloAsOf:"2026-10-08T11:00:00Z",now:new Date("2026-10-08T12:00:00Z"),books:[] };
+ it("never treats unknown or missing provenance as Elo",()=>{
+ for(const probabilitySource of ["unknown",undefined] as const){
+ const v=classicTennisView({...base,probabilitySource});
+ expect(v.kind).toBe("market_only");expect(v.gapPp).toBeNull();
+ }
+ });
+ it("preserves an explicitly market-sourced published probability",()=>{
+ const v=classicTennisView({...base,probabilitySource:"market"});
+ expect(v.kind).toBe("market_only");expect(v.bigPct).toBe(63);
+ });
+ it("still blends explicitly model-sourced Elo",()=>expect(classicTennisView({...base,probabilitySource:"model"}).kind).toBe("elo_blend"));
+ });

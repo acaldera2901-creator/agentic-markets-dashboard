@@ -75,3 +75,17 @@ export function resolveTennisProbability(input: TennisProbabilityInput) {
     selectedOdds: publishedTennisOdds(odds),
   };
 }
+
+/** Read provenance recorded at publication; never infer a historical model
+ * probability from the presence of odds or a generic model-version name. */
+export function tennisHistoryProbabilitySource(modelVersion: string | null | undefined, notes: string | null | undefined): TennisProbabilitySource {
+  try {
+    const metadata = object(object(JSON.parse(notes ?? '{}'))?.probability);
+    if (metadata?.version === 'tennis-probability-v1'
+      && validTennisPair(metadata.raw_p1, metadata.raw_p2)
+      && validTennisPair(metadata.published_p1, metadata.published_p2)) {
+      if (metadata.source === 'model' || metadata.source === 'market') return metadata.source;
+    }
+  } catch { /* Missing or invalid historical provenance remains unknown. */ }
+  return modelVersion === PARTNER_MARKET_MODEL ? 'market' : 'unknown';
+}

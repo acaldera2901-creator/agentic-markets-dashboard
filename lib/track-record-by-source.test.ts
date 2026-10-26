@@ -24,7 +24,7 @@ function row(over: R): R {
     player_one: `A${seq}`, player_two: `B${seq}`, home_team: null, away_team: null,
     starts_at: "2026-09-20T10:00:00Z", settled_at: "2026-09-20T12:00:00Z",
     published_at: "2026-09-19T08:00:00Z", result: "won", verification_state: "verified",
-    notes: null, confidence_score: 65, is_paper: false, is_verified: false, is_demo: false,
+    notes: JSON.stringify({ probability: { version:'tennis-probability-v1',source:over.model_version === 'partner-market-v1' ? 'market' : 'model',raw_p1:.65,raw_p2:.35,published_p1:.65,published_p2:.35 } }), confidence_score: 65, is_paper: false, is_verified: false, is_demo: false,
     is_historical: true, model_version: "tennis-elo-v1",
     ...over,
   };
@@ -53,6 +53,14 @@ describe("/api/v2/history stats.by_source", () => {
     row({ result: null, model_version: "tennis-elo-v1" }),
   ];
 
+  it("uses persisted source metadata and separates unproven tennis provenance", async () => {
+    const probability={version:'tennis-probability-v1',source:'market',raw_p1:.8,raw_p2:.2,published_p1:.75,published_p2:.25};
+    const s=await stats([row({notes:JSON.stringify({probability}),model_version:'elo_surface_v4_features_odds'}),row({notes:null}),row({notes:JSON.stringify({probability:{...probability,source:'model'}})})]);
+    expect(s.n).toBe(3);
+    expect(s.by_source.market_partner.n).toBe(1);
+    expect(s.by_source.model.n).toBe(1);
+    expect(s.by_source.unknown.n).toBe(1);
+  });
   it("partizione esatta: model.n + market_partner.n === n, totale invariato", async () => {
     const s = await stats(fixture);
     expect(s.n).toBe(75);

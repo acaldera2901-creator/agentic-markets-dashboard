@@ -9,7 +9,7 @@ import { join } from "node:path";
 it("il paywall non etichetta l'all-time come «ultime 100 pick»", () => {
   const src = readFileSync(join(__dirname, "page.tsx"), "utf8");
   expect(src).not.toMatch(/ultime 100 pick concluse|last 100 settled picks|100 derniers picks/);
-  expect(src).toContain("hit rate · tutte le pick concluse");
+  expect(src).toContain("hit rate · pick concluse disponibili");
 });
 
 // #SPLIT-0201 — il paywall mostra la STESSA cifra del KPI dello storico
@@ -18,11 +18,12 @@ it("il paywall non etichetta l'all-time come «ultime 100 pick»", () => {
 it("il paywall usa headlineFigure come il KPI, con la sua n", () => {
   const src = readFileSync(join(__dirname, "page.tsx"), "utf8");
   expect(src).not.toMatch(/hitRate=\{v2RateMeaningful \? historyV2Stats\?\.win_rate/);
-  expect(src).toMatch(/hitRate=\{historyV2Stats && isRateMeaningful\(v2Head\.n\) && v2Head\.winRate\s*\?\s*\{ rate: v2Head\.winRate, n: v2Head\.n, breakdown: v2Head\.breakdown, sealedFrom: sealedCohortFrom\(historyV2Stats\) \}/);
-  expect(src).toContain("hit rate · tutte le pick concluse\", en: \"hit rate · all settled picks");
-  expect(src).toMatch(/ru: "hit rate · все закрытые пики" \}\)\} · \{hitRate\.n\}/);
+  expect(src).toMatch(/hitRate=\{historyV2Stats && isRateMeaningful\(v2Head\.n\) && v2Head\.winRate\s*\?\s*\{ rate: v2Head\.winRate, n: v2Head\.n, breakdown: v2Head\.breakdown, sealedFrom: sealedCohortFrom\(historyV2Stats\), truncated: historyV2Stats\.truncated, population_limit: historyV2Stats\.population_limit \}/);
+  expect(src).toContain("hit rate · pick concluse disponibili\", en: \"hit rate · available settled picks");
+  expect(src).toMatch(/ru: "hit rate · доступные закрытые пики" \}\)\} · \{hitRate\.n\}/);
+  expect(src).toContain("historyPopulationLimitNote(lang, hitRate)");
   expect(src).not.toMatch(/nostre predizioni|our predictions/);
   // stessa scomposizione del KPI, dallo stesso headlineFigure
-  expect(src).toContain("{ rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown, sealedFrom: sealedCohortFrom(historyV2Stats) }");
+  expect(src).toContain("{ rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown, sealedFrom: sealedCohortFrom(historyV2Stats), truncated: historyV2Stats.truncated, population_limit: historyV2Stats.population_limit }");
   expect(src).toContain('<span className="fp-note">{sourceBreakdownLine(lang, hitRate.breakdown)}</span>');
 });

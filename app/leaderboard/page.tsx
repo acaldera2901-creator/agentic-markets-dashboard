@@ -6,7 +6,7 @@ import Dashboard from "../app/page";
 
 export const metadata: Metadata = {
   title: "Leaderboard | BetRedge",
-  description: "The BetRedge community leaderboard: how members rank over time, updated as predictions settle.",
+  description: "The BetRedge community leaderboard is experimental. Automatic ranking updates are not active.",
   alternates: { canonical: "/leaderboard" },
 };
 
