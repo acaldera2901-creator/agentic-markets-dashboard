@@ -36,7 +36,7 @@ import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
 import { formPhrase, goalsPhrase, scorerPhrase, confidenceWord, valuePhrase } from "@/lib/why-text";
 import { isRateMeaningful, headlineFigure, type SourceBlock } from "@/lib/track-record";
-import { sourceBreakdownLine, sealedCohortFrom, sealedPopulationNote } from "@/lib/track-record-copy"; // #SPLIT-0201 #COPY-LEDGER-1007
+import { historyPopulationLimitNote, sourceBreakdownLine, sealedCohortFrom, sealedPopulationNote } from "@/lib/track-record-copy"; // #SPLIT-0201 #COPY-LEDGER-1007
 import { resetAccessCache } from "@/lib/use-has-access";
 import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon, SportMark } from "@/app/components/sport-icon";
@@ -105,7 +105,7 @@ import { buildLobbySections, lobbyKey, startingSoonLabel, LOBBY_ROW_CAP, type Lo
 import { quotaRuleCopy } from "@/lib/ui/quota-rule"; // #INCLUDED-TODAY-0928
 import { buildTeamNews } from "@/lib/ui/team-news"; // #INFORTUNI-1001
 import { tennisLiveScoreLabel } from "@/lib/ui/tennis-live-score"; // #LIVE-INVERTED-1007
-import { displayTournament, probabilityLabel, probabilitySourceOf } from "@/lib/partner-market"; // #COERENZA-1001
+import { displayTournament, probabilityLabel, PARTNER_MARKET_MODEL } from "@/lib/partner-market"; // #COERENZA-1001
 import { useWatchlist } from "@/lib/watchlist";
 import {ClassicPrimaryNav} from "@/components/classic/ClassicPrimaryNav";
 import { CLASSIC } from "@/lib/classic/flag"; // #CLASSIC-COVERAGE-1014
@@ -1754,13 +1754,15 @@ interface V2HistoryStats {
   sample_sufficient?: boolean;
   coverage?: number | null;
   surfaced_total?: number;
+  truncated?: boolean;
+  population_limit?: number;
   unverified_excluded?: number;
   unresolved_excluded?: number; // #COERENZA-1001
   interval_95?: { low: number; high: number } | null;
   win_rate_display?: string | null;
   insufficient_sample_reason?: string | null;
   // #SPLIT-0201 — la stessa popolazione per fonte (modello / quote del partner).
-  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
+  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock>; unknown?: Partial<SourceBlock> } | null;
   // #COPY-LEDGER-1007 — presente solo con LEDGER_SEALED_GRADING acceso e data valida.
   sealed_grading?: { from?: string | null } | null;
 }
@@ -1843,6 +1845,7 @@ export interface TennisMatch { // #HOME-V3: riusato 1:1 nella sezione Anatomy de
   edge: number | null;
   best_selection: "P1" | "P2" | null;
   model: string;
+  probability_source?: "model" | "market" | "unknown";
   // Elo analysis fields
   elo_p1?: number | null;
   elo_p2?: number | null;
@@ -2248,7 +2251,7 @@ function isTennisBestBet(m: TennisMatch) {
 // per sport, tutte le altre come schede mascherate), quindi il pannello non
 // "rappresenta" più il resto del catalogo: lo affianca. Va in DUE punti — una
 // copia in griglia dopo la terza scheda (`inGrid`) e una a chiusura board.
-type PaywallHitRate = { rate: string; n: number; breakdown: ReturnType<typeof headlineFigure>["breakdown"]; sealedFrom?: string | null };
+type PaywallHitRate = { rate: string; n: number; breakdown: ReturnType<typeof headlineFigure>["breakdown"]; sealedFrom?: string | null; truncated?: boolean; population_limit?: number };
 
 function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
   count: number;
@@ -2289,7 +2292,8 @@ function FreePaywall({ count, hitRate, lang, onUpgrade, inGrid }: {
               100. L'etichetta dice quello che il numero è (stesso errore che
               #SETTLE-0909 aveva tolto dai KPI). #SPLIT-0201 — la stessa cifra
               del KPI dello storico (headlineFigure), con la sua n. */}
-          <strong>{hitRate.rate}</strong> {pick5(lang, { it: "hit rate · tutte le pick concluse", en: "hit rate · all settled picks", es: "hit rate · todas las picks cerradas", fr: "hit rate · tous les picks réglés", ru: "hit rate · все закрытые пики" })} · {hitRate.n}
+          <strong>{hitRate.rate}</strong> {pick5(lang, { it: "hit rate · pick concluse disponibili", en: "hit rate · available settled picks", es: "hit rate · picks cerradas disponibles", fr: "hit rate · picks réglés disponibles", ru: "hit rate · доступные закрытые пики" })} · {hitRate.n}
+          {historyPopulationLimitNote(lang, hitRate) && <span className="fp-note">{historyPopulationLimitNote(lang, hitRate)}</span>}
           {hitRate.breakdown && (
             <span className="fp-note">{sourceBreakdownLine(lang, hitRate.breakdown)}</span>
           )}
@@ -6251,9 +6255,9 @@ export function TennisMatchCard({ m, fp, onSelect, onBetNow, isPreview, isPremiu
           titleId={modalTitleId}
           lang={lang}
           title={<>{m.player1} <span className="pdm-v">v</span> {m.player2}</>}
-          subtitle={probabilitySourceOf(m.model) === "market"
+          subtitle={(m.probability_source ?? (m.model === PARTNER_MARKET_MODEL ? "market" : "unknown")) !== "model"
             // #COERENZA-1001 — riga partner: niente torneo inventato, niente superficie forzata.
-            ? <>{probabilityLabel("market", lang)}{m.round ? ` · ${m.round}` : ""}</>
+            ? <>{probabilityLabel(m.probability_source ?? (m.model === PARTNER_MARKET_MODEL ? "market" : "unknown"), lang)}{m.round ? ` · ${m.round}` : ""}</>
             : <>{m.tournament}{m.round ? ` · ${m.round}` : ""} · {surface.label}</>}
           hideHead
           hideExtraMarkets
@@ -6882,7 +6886,7 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
     it: {
       eyebrow: "Classifica pubblica",
       title: "Leaderboard BetRedge",
-      subtitle: "10 punti per ogni scommessa vinta. La classifica si aggiorna ad ogni settlement.",
+      subtitle: "Classifica sperimentale. Gli aggiornamenti automatici dei punti non sono attivi.",
       rank: "#",
       player: "Giocatore",
       points: "Punti",
@@ -6892,18 +6896,18 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       sport: "Sport",
       systemWins: "Bet vinte dal sistema",
       systemHitRate: "Hit rate sistema",
-      pointsFormula: "10 pt per vittoria",
+      pointsFormula: "Punti sperimentali",
       yourRank: "La tua posizione",
       notOptedIn: "Abilita la leaderboard nelle Impostazioni per comparire in classifica.",
       loading: "Caricamento classifica…",
       noData: "Ancora nessuna classifica.",
-      emptyHint: "La classifica si popola dopo il settlement dei pronostici. Attiva la leaderboard nelle Impostazioni per comparire.",
+      emptyHint: "Nessun dato di classifica disponibile. L’attivazione nelle Impostazioni crea la tua voce; i punti automatici non sono attivi.",
       podiumLabel: ["Primo", "Secondo", "Terzo"],
     },
     en: {
       eyebrow: "Public leaderboard",
       title: "BetRedge Leaderboard",
-      subtitle: "10 points for every won bet. Rankings update after each settlement.",
+      subtitle: "Experimental leaderboard. Automatic ranking updates are not active.",
       rank: "#",
       player: "Player",
       points: "Points",
@@ -6913,18 +6917,18 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       sport: "Sport",
       systemWins: "System wins",
       systemHitRate: "System hit rate",
-      pointsFormula: "10 pts per win",
+      pointsFormula: "Experimental points",
       yourRank: "Your position",
       notOptedIn: "Enable leaderboard in Settings to appear in the rankings.",
       loading: "Loading leaderboard…",
       noData: "No ranking yet.",
-      emptyHint: "The ranking fills in after picks settle. Enable the leaderboard in Settings to appear.",
+      emptyHint: "No ranking data yet. Enabling the leaderboard in Settings creates your entry; automatic points are not active.",
       podiumLabel: ["First", "Second", "Third"],
     },
     es: {
       eyebrow: "Clasificación pública",
       title: "Leaderboard BetRedge",
-      subtitle: "10 puntos por cada apuesta ganada. La clasificación se actualiza tras cada settlement.",
+      subtitle: "Clasificación experimental. Las actualizaciones automáticas de puntos no están activas.",
       rank: "#",
       player: "Jugador",
       points: "Puntos",
@@ -6934,18 +6938,18 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       sport: "Deporte",
       systemWins: "Bets ganadas por el sistema",
       systemHitRate: "Hit rate del sistema",
-      pointsFormula: "10 pts por victoria",
+      pointsFormula: "Puntos experimentales",
       yourRank: "Tu posición",
       notOptedIn: "Activa la leaderboard en Ajustes para aparecer en la clasificación.",
       loading: "Cargando clasificación…",
       noData: "Aún no hay clasificación.",
-      emptyHint: "La clasificación se llena tras el settlement de los pronósticos. Activa la leaderboard en Ajustes para aparecer.",
+      emptyHint: "Aún no hay datos de clasificación. Activarla en Ajustes crea tu entrada; los puntos automáticos no están activos.",
       podiumLabel: ["Primero", "Segundo", "Tercero"],
     },
     fr: {
       eyebrow: "Classement public",
       title: "Leaderboard BetRedge",
-      subtitle: "10 points pour chaque pari gagné. Le classement se met à jour après chaque settlement.",
+      subtitle: "Classement expérimental. La mise à jour automatique des points n’est pas active.",
       rank: "#",
       player: "Joueur",
       points: "Points",
@@ -6955,18 +6959,18 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       sport: "Sport",
       systemWins: "Bets gagnés par le système",
       systemHitRate: "Hit rate du système",
-      pointsFormula: "10 pts par victoire",
+      pointsFormula: "Points expérimentaux",
       yourRank: "Votre position",
       notOptedIn: "Activez le leaderboard dans les Paramètres pour apparaître au classement.",
       loading: "Chargement du classement…",
       noData: "Pas encore de classement.",
-      emptyHint: "Le classement se remplit après le settlement des pronostics. Activez le leaderboard dans les Paramètres pour apparaître.",
+      emptyHint: "Aucune donnée de classement pour le moment. L’activer dans les Paramètres crée votre entrée ; les points automatiques ne sont pas actifs.",
       podiumLabel: ["Premier", "Deuxième", "Troisième"],
     },
     ru: {
       eyebrow: "Публичный рейтинг",
       title: "Leaderboard BetRedge",
-      subtitle: "10 очков за каждую выигранную ставку. Рейтинг обновляется после каждого settlement.",
+      subtitle: "Экспериментальный рейтинг. Автоматическое обновление очков пока не работает.",
       rank: "#",
       player: "Игрок",
       points: "Очки",
@@ -6976,12 +6980,12 @@ function LeaderboardTab({ clientName, isOptedIn }: { clientName?: string; isOpte
       sport: "Спорт",
       systemWins: "Ставки, выигранные системой",
       systemHitRate: "Hit rate системы",
-      pointsFormula: "10 очков за победу",
+      pointsFormula: "Экспериментальные очки",
       yourRank: "Ваша позиция",
       notOptedIn: "Включите leaderboard в Настройках, чтобы попасть в рейтинг.",
       loading: "Загрузка рейтинга…",
       noData: "Рейтинга пока нет.",
-      emptyHint: "Рейтинг заполняется после settlement прогнозов. Включите leaderboard в Настройках, чтобы попасть в него.",
+      emptyHint: "Данных рейтинга пока нет. Включение рейтинга в Настройках создаёт вашу запись; автоматическое начисление очков не работает.",
       podiumLabel: ["Первое", "Второе", "Третье"],
     },
   });
@@ -8422,8 +8426,8 @@ function FeaturedEdge({
     // Si compone dai pezzi che ESISTONO, cosi' il separatore non sopravvive al
     // pezzo che deve separare.
     // #COERENZA-1001 — riga partner: «Partner feed» non è un torneo e 'hard' è forzato.
-    const partner = probabilitySourceOf(m.model) === "market";
-    league = (partner ? [probabilityLabel("market", lang), m.round] : [m.tournament, surf, m.round])
+    const source = m.probability_source ?? (m.model === PARTNER_MARKET_MODEL ? "market" : "unknown");
+    league = (source !== "model" ? [probabilityLabel(source, lang), m.round] : [m.tournament, surf, m.round])
       .filter((x) => String(x ?? "").trim()).join(" · ");
     // Coherence (FTC): pick, probability, model-edge and buildTennisWhy (which
     // narrates the higher-probability player as the favourite) must all point
@@ -11461,6 +11465,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   {v2Head.breakdown && (
                     <span className="note">{sourceBreakdownLine(uiLanguage, v2Head.breakdown)}</span>
                   )}
+                  {historyPopulationLimitNote(uiLanguage, historyV2Stats) && <span className="note">{historyPopulationLimitNote(uiLanguage, historyV2Stats)}</span>}
                   {v2SealedNote && <span className="note">{v2SealedNote}</span>}
                 </div>
               )}
@@ -11523,7 +11528,7 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
               isLoggedIn={hasClientProfile}
               tennisIsPlaceholder={tennisIsPlaceholder}
               hitRate={historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate
-                ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown, sealedFrom: sealedCohortFrom(historyV2Stats) } : null}
+                ? { rate: v2Head.winRate, n: v2Head.n, breakdown: v2Head.breakdown, sealedFrom: sealedCohortFrom(historyV2Stats), truncated: historyV2Stats.truncated, population_limit: historyV2Stats.population_limit } : null}
               view={deskView}
               query={lobbyQuery}
               watchSaved={watchlist.saved}

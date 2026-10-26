@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { probabilitySourceOf } from "@/lib/partner-market";
+import { PARTNER_MARKET_MODEL } from "@/lib/partner-market";
 import { dbQuery } from "@/lib/db";
 import { resolveAccessState } from "@/lib/auth";
 import { isUnlocked, showcaseDailyRanking, showcaseAllowance, currentShowcaseDay, type ShowcaseFill } from "@/lib/access-projection";
@@ -412,7 +412,7 @@ function normalizePrediction(p: TennisPredictionInput) {
     // the real tournament name); absent stays visibly absent.
     // #COERENZA-1001 — tranne il feed partner, che scrive 'hard' d'ufficio:
     // quella superficie non è un dato, quindi non si serve.
-    surface: probabilitySourceOf(p.model_version || p.model) === "market" ? "" : (p.surface || "").toUpperCase(),
+    surface: (p.model_version || p.model) === PARTNER_MARKET_MODEL ? "" : (p.surface || "").toUpperCase(),
     round: p.round || "",
     scheduled: ensureUtc(p.scheduled_at || p.scheduled || ""),
     p1: p.p1,
@@ -425,7 +425,8 @@ function normalizePrediction(p: TennisPredictionInput) {
     model: p.model_version || p.model || "elo_surface_v2",
     // #COERENZA-1001 — «market» = la probabilità è la quota de-viggata del
     // partner (partner-market-v1), non il nostro modello. I numeri non cambiano.
-    probability_source: probabilitySourceOf(p.model_version || p.model),
+    model_version: p.model_version || p.model,
+    probability_source: resolveTennisProbability({ ...p, model_version: p.model_version || p.model }).source,
     elo_p1: p.elo_p1 ?? null,
     elo_p2: p.elo_p2 ?? null,
     elo_p1_overall: p.elo_p1_overall ?? null,

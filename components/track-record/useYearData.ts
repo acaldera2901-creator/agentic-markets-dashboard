@@ -20,13 +20,15 @@ export type YearStats = {
   n?: number;
   coverage?: number | null;
   surfaced_total?: number;
+  truncated?: boolean;
+  population_limit?: number;
   unverified_excluded?: number;
   // #COERENZA-1001 — le altre esclusioni dal numero, dichiarate accanto.
   unresolved_excluded?: number;
   post_cutover_excluded?: { n: number; won: number; lost: number; win_rate: number | null };
   interval_95?: { low: number; high: number } | null;
   // #SPLIT-0201 — la stessa popolazione per fonte (modello / quote del partner).
-  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
+  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock>; unknown?: Partial<SourceBlock> } | null;
   // #COPY-LEDGER-1007 — presente solo con il grading sigillato acceso lato server.
   sealed_grading?: { from?: string | null } | null;
 } | null;

@@ -32,7 +32,7 @@ it("con by_source: la cifra principale resta il totale, con la sua n", () => {
   const { container } = render(<EdgeCard lang="it" />);
   expect(container.querySelector(".tr-big")?.textContent).toBe("66.7%");
   expect(screen.getByText("75")).toBeTruthy();
-  expect(screen.getByText("Modello: 75.0% su 40 · Quote di mercato del partner: 57.1% su 35")).toBeTruthy();
+  expect(screen.getByText("Modello: 75.0% su 40 · Probabilità di mercato: 57.1% su 35")).toBeTruthy();
 });
 
 it("senza by_source (risposta vecchia): il totale come oggi, nessuna riga del partner", () => {
@@ -56,7 +56,15 @@ it("flag spento: markup identico, nessuna nota", () => {
 it("flag acceso: nota nella lingua con la data del server", () => {
   yearData.current = { stats: { ...base, sealed_grading: { from: "2026-10-26T00:00:00.000Z" } } };
   const it_ = render(<EdgeCard lang="it" />).container;
-  expect(it_.querySelector(".tr-sealed-note")?.textContent).toMatch(/^Dal 26\/10\/2026 il track record conta solo/);
+  expect(it_.querySelector(".tr-sealed-note")?.textContent).toMatch(/^Dal 26\/10\/2026 il track record del calcio conta solo/);
   const en = render(<EdgeCard lang="en" />).container;
-  expect(en.querySelector(".tr-sealed-note")?.textContent).toMatch(/^From 26 October 2026, the track record/);
+  expect(en.querySelector(".tr-sealed-note")?.textContent).toMatch(/^From 26 October 2026, the football track record/);
+});
+
+it('discloses unknown provenance and a capped history population', () => {
+  yearData.current={stats:{...base,truncated:true,population_limit:15000,by_source:{model:{n:40},market_partner:{n:30},unknown:{n:5}}}};
+  const {container}=render(<EdgeCard lang="en"/>);
+  expect(container.textContent).toContain('Source unverified: 5 picks');
+  expect(container.textContent).toContain('15000');
+  expect(container.textContent).toContain('not the full history');
 });

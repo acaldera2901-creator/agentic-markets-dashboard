@@ -40,7 +40,8 @@ const COPY = {
   it: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Schedine costruite dalla community col Match Builder, basate sulle probabilità del nostro modello. Predizioni AI selezionate dai creator, con la probabilità in chiaro e nessun edge promesso.",
+    sub: "Schedine condivise dai creator. Le probabilità sono inviate da chi pubblica e non vengono verificate rispetto al modello di BetRedge. Il totale moltiplica i valori assumendo selezioni indipendenti; non è valido per selezioni correlate.",
+    probabilityNote: "Valori del creator · ipotesi di indipendenza",
     create: "Crea la tua →",
     loading: "Caricamento…",
     loadError: "Impossibile caricare le schedine.",
@@ -61,7 +62,8 @@ const COPY = {
   en: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Accumulators built by the community with the Match Builder, based on our model's probabilities. AI predictions hand-picked by creators, with the probability shown and no promised edge.",
+    sub: "Slips shared by creators. Publishers submit the probabilities; they are not verified against the BetRedge model. The total multiplies those values assuming independent selections and is not valid for correlated selections.",
+    probabilityNote: "Creator values · independence assumed",
     create: "Build yours →",
     loading: "Loading…",
     loadError: "Couldn't load the slips.",
@@ -82,7 +84,8 @@ const COPY = {
   es: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Combinadas creadas por la comunidad con el Match Builder, basadas en las probabilidades de nuestro modelo. Predicciones de IA seleccionadas por creators, con la probabilidad a la vista y sin edge prometido.",
+    sub: "Combinadas compartidas por creadores. Quien publica aporta las probabilidades; no se verifican frente al modelo de BetRedge. El total multiplica esos valores suponiendo selecciones independientes y no es válido para selecciones correlacionadas.",
+    probabilityNote: "Valores del creador · se asume independencia",
     create: "Crea la tuya →",
     loading: "Cargando…",
     loadError: "No se pudieron cargar las combinadas.",
@@ -103,7 +106,8 @@ const COPY = {
   fr: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Combinés créés par la communauté avec le Match Builder, basés sur les probabilités de notre modèle. Prédictions IA sélectionnées par les creators, avec la probabilité affichée et aucun edge promis.",
+    sub: "Combinés partagés par les créateurs. Les probabilités sont fournies par leur auteur, sans vérification avec le modèle BetRedge. Le total multiplie ces valeurs en supposant des sélections indépendantes ; il ne convient pas aux sélections corrélées.",
+    probabilityNote: "Valeurs du créateur · indépendance supposée",
     create: "Créez le vôtre →",
     loading: "Chargement…",
     loadError: "Impossible de charger les combinés.",
@@ -124,7 +128,8 @@ const COPY = {
   ru: {
     back: "← Board",
     title: "Creator Picks",
-    sub: "Экспрессы, собранные сообществом в Match Builder, на основе вероятностей нашей модели. AI-прогнозы, отобранные креаторами, с открытой вероятностью и без обещанного edge.",
+    sub: "Экспрессы от авторов. Вероятности вводит автор; они не сверяются с моделью BetRedge. Итог получен перемножением этих значений при допущении независимости исходов и неприменим к связанным исходам.",
+    probabilityNote: "Значения автора · допущение независимости",
     create: "Создать свой →",
     loading: "Загрузка…",
     loadError: "Не удалось загрузить экспрессы.",
@@ -295,8 +300,11 @@ export default function CommunityPage() {
               </span>
               <div className="flex items-center gap-3">
                 {slip.combined_prob != null && (
-                  <span className="text-lg font-black font-mono" style={{ color: "var(--am-coral)" }}>
-                    {Math.round(slip.combined_prob * 100)}%
+                  <span className="text-right">
+                    <span className="block text-lg font-black font-mono" style={{ color: "var(--am-coral)" }}>
+                      {Math.round(slip.combined_prob * 100)}%
+                    </span>
+                    <span className="block text-[10px] font-mono" style={{ color: "var(--am-muted-2)" }}>{t.probabilityNote}</span>
                   </span>
                 )}
                 <span className="text-[10px] font-mono" style={{ color: "var(--am-muted-2)" }}>

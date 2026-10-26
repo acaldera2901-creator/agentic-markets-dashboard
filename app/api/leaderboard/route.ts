@@ -83,8 +83,9 @@ export async function GET() {
   const betsWins   = Number(systemStats[0]?.wins ?? 0);
   const betsLosses = Number(systemStats[0]?.losses ?? 0);
   // If bets table has no data, derive system stats from leaderboard entries
-  const systemWins = betsWins > 0 ? betsWins : entries.reduce((sum, e) => sum + (e.bets_won ?? 0), 0);
-  const systemSettled = betsWins + betsLosses > 0
+  const hasSettledBets = betsWins + betsLosses > 0;
+  const systemWins = hasSettledBets ? betsWins : entries.reduce((sum, e) => sum + (e.bets_won ?? 0), 0);
+  const systemSettled = hasSettledBets
     ? betsWins + betsLosses
     : entries.reduce((sum, e) => sum + (e.bets_total ?? 0), 0);
   // Below the minimum sample the whole system-stats strip is suppressed (null),

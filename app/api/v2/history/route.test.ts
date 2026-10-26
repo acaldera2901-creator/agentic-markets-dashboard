@@ -71,3 +71,13 @@ it("reuses raw history across requests without reusing access-projected response
  expect(access).toHaveBeenCalledTimes(2);
  expect(anonymous.headers.get("Cache-Control")).toBe("private, no-store");
 });
+
+it("declares a capped population instead of silently presenting it as complete", async () => {
+  dbQuery.mockResolvedValueOnce([...Array.from({length: 15000}, (_, i) => row({id: `row-${i}`})), row({id: "sentinel", home_team: "Outside cap"})]);
+  const {GET} = await import("./route");
+  const {stats} = await (await GET(new Request("http://x/api/v2/history"))).json();
+  expect(stats.truncated).toBe(true);
+  expect(stats.population_limit).toBe(15000);
+  expect(stats.total).toBe(1);
+  expect(dbQuery.mock.calls[0][0]).toContain("LIMIT 15001");
+});

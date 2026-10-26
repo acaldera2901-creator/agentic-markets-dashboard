@@ -11,7 +11,7 @@ import { SeoProse } from "@/components/seo/SeoProse";
 
 export const metadata: Metadata = {
   title: "Creator Picks and Community | BetRedge",
-  description: "Accumulators built by the BetRedge community with the Match Builder, each leg carrying the model's own probability.",
+  description: "Creator-submitted slips and probabilities, with their source and independence assumption explained.",
   alternates: { canonical: "/community" },
 };
 
@@ -23,8 +23,8 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
       <SeoProse
         heading="What Creator Picks are"
         intro={[
-          "Creator Picks are accumulators assembled by BetRedge members using the Match Builder. The selections are chosen by a person; the probability attached to each leg, and to the slip as a whole, comes from the same model that prices every match on the board. Nothing about a creator slip changes the underlying numbers.",
-          "This is the difference between this page and the Weekly Pick. The Weekly Pick is selected by the model. A creator slip is a person's reading of the same probabilities, published under their name and settled the same way.",
+          "Creator Picks are slips published by community members. The server stores the selections and probabilities submitted by the publisher; it does not verify those values against current BetRedge model predictions. Treat them as creator-submitted snapshots.",
+          "The combined percentage multiplies the submitted probabilities and assumes independent selections. That calculation is not valid for correlated or repeated selections. These community snapshots are separate from the platform’s recorded predictions and do not establish a verified performance record.",
         ]}
         faq={[
           [
@@ -33,11 +33,11 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
           ],
           [
             "Where do the probabilities come from?",
-            "From the BetRedge model, unchanged. A creator picks the legs; the probability shown next to each one is the same number the model publishes for that match everywhere else on the site.",
+            "They are submitted by the publisher. They may have been copied from a reading, but this page does not verify their source or freshness. The combined number assumes independent selections.",
           ],
           [
             "How is a creator slip different from the Weekly Pick?",
-            "The Weekly Pick is the model's own selection, published once a week. A creator slip is a person's selection from the same set of probabilities, published whenever they build one.",
+            "The Weekly Pick is published by BetRedge. Creator slips are submitted by members, with their own supplied selections and probabilities; they are not verified copies of the Weekly Pick or of board predictions.",
           ],
           [
             "Do I need a paid plan to see them?",

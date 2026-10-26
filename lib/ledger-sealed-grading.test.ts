@@ -131,6 +131,8 @@ describe("(c) track record", () => {
   it("la SQL legge solo le sigillate vere del periodo, ultima revisione, senza alias t", () => {
     const sql = sealedEntriesSql(ON.from!);
     expect(sql).toContain("l.pick IS NOT NULL");
+    expect(sql).toContain("l.is_backfill = FALSE");
+    expect(sql).toContain("l.captured_at < l.commence_time");
     expect(sql).toContain("l.commence_time >= '2026-10-20T00:00:00.000Z'");
     expect(sql).toContain("settlement_revision DESC");
     expect(sql).not.toMatch(/\bAS t\b|\)\s*t\b/);

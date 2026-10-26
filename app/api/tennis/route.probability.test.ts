@@ -28,6 +28,7 @@ describe("real tennis GET probability parity", () => {
     const response = await GET(new Request("http://localhost/api/tennis"));
     const { matches: [out] } = await response.json();
     const unified = tennisPredictionToUnifiedInsert(row);
+    expect(out.probability_source).toBe(source ?? "unknown");
     expect(out.p1).toBe(source === "market" ? applyTennisTemperature(.8) : .8);
     expect(out.p2).toBe(source === "market" ? applyTennisTemperature(.2) : .2);
     expect(out.confidence_score).toBe(unified.confidence_score);
@@ -36,6 +37,12 @@ describe("real tennis GET probability parity", () => {
     expect(out.odds_p2).toBe(unified.odds);
     expect(out).not.toHaveProperty("feature_snapshot");
     expect(mocks.db.mock.calls[0][0]).toContain("tp.feature_snapshot");
+  });
+  it("partner metadata-free rows retain their source through normalization", async () => {
+    const row={...fixture(null),model_version:'partner-market-v1'}; mocks.db.mockResolvedValue([row]);
+    const {matches:[out]}=await (await GET(new Request('http://localhost/api/tennis'))).json();
+    expect(out.probability_source).toBe('market');
+    expect(out.p1).toBe(applyTennisTemperature(.8));
   });
   it("Redis uses the same contract without consulting DB", async () => {
     const row = fixture();

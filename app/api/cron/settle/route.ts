@@ -94,6 +94,22 @@ interface SettleReport {
   ran_at: string;
 }
 
+/** Supabase rejects with plain objects, not Error instances. Preserve the
+ * diagnostic fields without serializing request headers or arbitrary payloads. */
+function settlementError(error: unknown): string {
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const fields = Object.fromEntries(
+      ["code", "message", "details", "hint"]
+        .filter((key) => typeof record[key] === "string" && record[key] !== "")
+        .map((key) => [key, String(record[key]).slice(0, 1000)])
+    );
+    if (Object.keys(fields).length) return JSON.stringify(fields);
+    return "Unknown settlement error (no diagnostic fields)";
+  }
+  return String(error);
+}
+
 function footballOutcome(
   pick: string,
   market: string | null,
@@ -182,7 +198,7 @@ export async function GET(req: NextRequest) {
              AND ($3 = 'FINISHED' OR kickoff > NOW() - interval '150 minutes')`,
           [m.homeGoals, m.awayGoals, m.status, m.id]
         ).then(() => { report.scores_updated += 1; })
-          .catch((e: unknown) => report.errors.push(`scores:${m.id}:${String(e)}`));
+          .catch((e: unknown) => report.errors.push(`scores:${m.id}:${settlementError(e)}`));
       }
       if (m.status === "FINISHED" && m.homeGoals != null && m.awayGoals != null) {
         await settlePredictionLog(m.id, m.homeGoals, m.awayGoals);
@@ -191,7 +207,7 @@ export async function GET(req: NextRequest) {
       }
     }
   } catch (e) {
-    report.errors.push(`fetch_matches:${String(e)}`);
+    report.errors.push(`fetch_matches:${settlementError(e)}`);
   }
 
   // ── A2. Summer leagues (#SUMMER-LEAGUES-1): fd.org does not cover them, so
@@ -208,12 +224,12 @@ export async function GET(req: NextRequest) {
            WHERE match_id = $3 AND (match_status IS DISTINCT FROM 'FINISHED')`,
           [m.homeGoals, m.awayGoals, m.id]
         ).then(() => { report.scores_updated += 1; })
-          .catch((e: unknown) => report.errors.push(`summer_scores:${m.id}:${String(e)}`));
+          .catch((e: unknown) => report.errors.push(`summer_scores:${m.id}:${settlementError(e)}`));
         await settlePredictionLog(m.id, m.homeGoals, m.awayGoals);
         finished.set(m.id, { homeGoals: m.homeGoals, awayGoals: m.awayGoals });
       }
     } catch (e) {
-      report.errors.push(`summer:${code}:${String(e)}`);
+      report.errors.push(`summer:${code}:${settlementError(e)}`);
     }
   }
 
@@ -268,7 +284,7 @@ export async function GET(req: NextRequest) {
              SET home_score = $1, away_score = $2, match_status = 'FINISHED'
            WHERE match_id = $3 AND (match_status IS DISTINCT FROM 'FINISHED')`,
           [f.homeGoals, f.awayGoals, r.match_id]
-        ).catch((e: unknown) => report.errors.push(`recovery_score:${r.match_id}:${String(e)}`));
+        ).catch((e: unknown) => report.errors.push(`recovery_score:${r.match_id}:${settlementError(e)}`));
         await settlePredictionLog(r.match_id, f.homeGoals, f.awayGoals);
         // entra nella mappa dei finiti: cosi' lo step C lo porta anche nella
         // history pubblica, come qualunque altro risultato.
@@ -277,7 +293,7 @@ export async function GET(req: NextRequest) {
       }
     }
   } catch (e) {
-    report.errors.push(`recovery:${String(e)}`);
+    report.errors.push(`recovery:${settlementError(e)}`);
   }
 
   // ── A4. Open served rows, by date + names (#CALCIO-1001) ────────────────
@@ -320,7 +336,7 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (e) {
-      report.errors.push(`recovery_served:${String(e)}`);
+      report.errors.push(`recovery_served:${settlementError(e)}`);
     }
   }
 
@@ -449,7 +465,7 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (e) {
-      report.errors.push(`unified_football:${String(e)}`);
+      report.errors.push(`unified_football:${settlementError(e)}`);
     }
   }
 
@@ -481,17 +497,23 @@ export async function GET(req: NextRequest) {
         .lt("starts_at", cutoff)
         .limit(500);
       if (error) throw error;
-      const ids = (trows ?? []).map((r) => String(r.source_id)).filter(Boolean);
+      const ids = [...new Set((trows ?? [])
+        .filter((r) => r.source_id != null)
+        .map((r) => String(r.source_id)).filter(Boolean))];
       if (ids.length > 0) {
-        const { data: winners, error: wErr } = await sb
-          .from("tennis_predictions")
-          .select("match_id, winner")
-          .in("match_id", ids)
-          .not("winner", "is", null);
-        if (wErr) throw wErr;
-        const winnerByMatch = new Map(
-          (winners ?? []).map((w) => [String(w.match_id), String(w.winner)])
-        );
+        // The 500-row lookup produced a 36KB encoded IN filter and HTTP 400.
+        // Read all bounded batches before grading anything; any failed batch
+        // leaves this run's tennis rows untouched for a retry.
+        const winnerByMatch = new Map<string, string>();
+        for (let offset = 0; offset < ids.length; offset += 50) {
+          const { data: winners, error: wErr } = await sb
+            .from("tennis_predictions")
+            .select("match_id, winner")
+            .in("match_id", ids.slice(offset, offset + 50))
+            .not("winner", "is", null);
+          if (wErr) throw wErr;
+          for (const w of winners ?? []) winnerByMatch.set(String(w.match_id), String(w.winner));
+        }
         for (const row of trows ?? []) {
           const winner = winnerByMatch.get(String(row.source_id));
           if (!winner) continue; // not settled upstream yet — next run
@@ -501,9 +523,11 @@ export async function GET(req: NextRequest) {
           // able to hold up a customer-facing settlement. Only when the winner
           // matches a known side: no guessing.
           const side = tennisWinnerSide(winner, row.home_team, row.away_team);
-          if (side) {
-            await settlePredictionLogWinner(String(row.source_id), side === "home");
+          if (!side) {
+            report.errors.push(`unified_tennis:${row.id}:winner_mismatch`);
+            continue; // never turn a mismatched source winner into a verified loss
           }
+          await settlePredictionLogWinner(String(row.source_id), side === "home");
           // #TENNIS-VOID-NOT-LOST-0805 — see lib/tennis-settlement.ts.
           const outcome = gradeTennisPick(row.pick, winner);
           if (!outcome) continue;
@@ -530,12 +554,12 @@ export async function GET(req: NextRequest) {
             })
             .eq("id", row.id)
             .is("result", null);
-          if (upErr) report.errors.push(`unified_tennis:${row.id}:${upErr.message}`);
+          if (upErr) report.errors.push(`unified_tennis:${row.id}:${settlementError(upErr)}`);
           else report.unified_tennis_settled += 1;
         }
       }
     } catch (e) {
-      report.errors.push(`unified_tennis:${String(e)}`);
+      report.errors.push(`unified_tennis:${settlementError(e)}`);
     }
   }
 
@@ -612,7 +636,7 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (e) {
-      report.errors.push(`void_stale:${String(e)}`);
+      report.errors.push(`void_stale:${settlementError(e)}`);
     }
   }
 
@@ -628,7 +652,7 @@ export async function GET(req: NextRequest) {
     const rows = await dbQuery<{ n: number }>(sealedOrphansSql(6));
     report.sealed_orphans = Number(rows[0]?.n ?? 0);
   } catch (e) {
-    report.errors.push(`sealed_orphans:${String(e)}`);
+    report.errors.push(`sealed_orphans:${settlementError(e)}`);
   }
 
   // #CALCIO-1001 review F — every ESPN call failed (e.g. 403 from Vercel):
@@ -663,7 +687,7 @@ export async function GET(req: NextRequest) {
       );
     }
   } catch (e) {
-    report.errors.push(`tennis_staleness:${String(e)}`);
+    report.errors.push(`tennis_staleness:${settlementError(e)}`);
   }
 
   // Fail loud: a run that collected any error returns 500 so Vercel marks it

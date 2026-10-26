@@ -148,10 +148,11 @@ export async function GET(req: Request) {
      -- backtick la chiude. E' il secondo file in cui ci inciampo oggi, dopo
      -- lib/tennis-adapter.ts — dove avevo gia' scritto questa stessa nota.)
      ORDER BY starts_at DESC NULLS LAST, settled_at DESC NULLS LAST, id DESC
-     LIMIT ${STATS_CAP}`,
+     LIMIT ${STATS_CAP + 1}`,
     values
   )), sealedRead]);
-  let fetched = initialRows;
+  const truncated = initialRows.length > STATS_CAP;
+  let fetched = initialRows.slice(0, STATS_CAP);
 
   // SHOWN-PICKS-ONLY track record (#WINRATE-FLOOR-1 → #TRACKREC-REAL-0626). The
   // board suppresses below-floor rows as "no clear favourite" (no directional
@@ -284,6 +285,8 @@ export async function GET(req: Request) {
   return NextResponse.json({
     history,
     stats: {
+      truncated,
+      population_limit: STATS_CAP,
       total,
       won,
       lost,

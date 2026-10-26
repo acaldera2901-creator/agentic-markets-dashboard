@@ -81,3 +81,62 @@ def test_db_giu_e_unknown_su_tutti(mocker):
     assert pipeline.check_freshness(_spec()).level == "unknown"
     assert pipeline.check_quota("x").level == "unknown"
     assert pipeline.check_void_rate().level == "unknown"
+
+
+# #HISTORY-FRESHNESS-1026 — lo storico delle 26 leghe e' rimasto fermo al
+# 21/09 per cinque settimane senza che nessuno se ne accorgesse: la PR
+# settimanale si aggiornava ma non veniva mergiata, e il giro del 19/10 e'
+# fallito. Il check misura il file che il prodotto serve davvero.
+from datetime import date as _date
+
+from tools.control_center.checks.pipeline import judge_history_snapshot
+
+
+def _doc(generated_at, status="ok", failed=(), last=None):
+    last = last or {"SB": "2026-10-18", "ELI": "2026-10-18"}
+    return {
+        "generated_at": generated_at,
+        "refresh_status": status,
+        "failed_leagues": list(failed),
+        "leagues": {c: {"last_match_at": d} for c, d in last.items()},
+    }
+
+
+def test_storico_fresco_e_verde():
+    v = judge_history_snapshot(_doc("2026-10-26"), _date(2026, 10, 26))
+    assert v.level == "green"
+    assert v.value == 0
+
+
+def test_storico_di_una_settimana_saltata_e_ambra():
+    v = judge_history_snapshot(_doc("2026-10-15"), _date(2026, 10, 26))
+    assert v.level == "amber"
+    assert v.value == 11
+
+
+def test_storico_fermo_al_21_09_e_rosso():
+    # Il caso vero del 26/10: 35 giorni.
+    v = judge_history_snapshot(_doc("2026-09-21"), _date(2026, 10, 26))
+    assert v.level == "red"
+    assert v.value == 35
+    assert "2026-09-21" in v.headline
+
+
+def test_refresh_parziale_non_e_mai_verde():
+    v = judge_history_snapshot(_doc("2026-10-26", status="partial", failed=["VEI"]), _date(2026, 10, 26))
+    assert v.level == "amber"
+    assert "VEI" in v.headline
+
+
+def test_leghe_ferme_finiscono_nell_evidenza_senza_cambiare_il_livello():
+    # Una lega ferma da settimane puo' essere fuori stagione: si mostra, non si
+    # giudica (il giudizio sta sulla data dello snapshot).
+    doc = _doc("2026-10-26", last={"SB": "2026-10-18", "CSL": "2026-09-12"})
+    v = judge_history_snapshot(doc, _date(2026, 10, 26))
+    assert v.level == "green"
+    assert v.evidence["leghe_ferme"] == {"CSL": "2026-09-12"}
+
+
+def test_data_illeggibile_e_unknown():
+    v = judge_history_snapshot({"leagues": {}}, _date(2026, 10, 26))
+    assert v.level == "unknown"
