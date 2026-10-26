@@ -19,7 +19,8 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        router.replace("/admin");
+        const data = (await res.json().catch(() => ({}))) as { scope?: string };
+        router.replace(data.scope === "growth" ? "/admin/growth" : "/admin");
       } else {
         setError("Wrong password.");
       }

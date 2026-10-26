@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/admin-session";
+import { GROWTH_COOKIE, canViewGrowth, isGrowthPath } from "@/lib/growth-access";
 import { TAB_PATHS, normalizeTab } from "@/lib/app-tab-paths";
 
 export async function middleware(req: NextRequest) {
@@ -18,7 +19,18 @@ export async function middleware(req: NextRequest) {
 
   // Protect admin UI pages (not the login page itself). The cookie carries an
   // expiring HMAC session token, never the raw ADMIN_SECRET (Edge-safe verify).
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+  // /admin/growth also accepts the separate view-only growth session.
+  if (isGrowthPath(pathname)) {
+    const ok = await canViewGrowth(
+      req.cookies.get("admin_token")?.value,
+      req.cookies.get(GROWTH_COOKIE)?.value
+    );
+    if (!ok) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return NextResponse.redirect(url);
+    }
+  } else if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     const token = req.cookies.get("admin_token")?.value;
     const secret = process.env.ADMIN_SECRET;
 
