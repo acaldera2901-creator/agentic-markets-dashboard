@@ -20,7 +20,7 @@ This change reconciles public descriptions with implemented behavior and fixes r
 - Backfilled/post-start seals are excluded by the sealed-ledger reader. Existing cohort rules otherwise remain unchanged; provenance and capped-history notices are explicit.
 - Unknown tennis provenance does not silently become an Elo estimate. Market, model and unknown classifications propagate through API, history, desk, embed and CLASSIC cards.
 - Public methodology, FAQ, community and affiliate payout copy reflect current behavior. User-submitted community probabilities are not model-verified. No affiliate payout service is activated by this change.
-- Next.js and runtime transitive dependencies are updated for published security advisories. No major test-runner upgrade is included.
+- Next.js and runtime transitive dependencies are updated for published security advisories. Vitest4.1.12 also removes the remaining development-tool advisories; the full test suite is rerun after the upgrade.
 
 ## Release boundaries
 
