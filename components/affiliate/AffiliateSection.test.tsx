@@ -52,13 +52,12 @@ describe("stati della pagina", () => {
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
-  it("#AFFILIATE-TERMS-V3-1022: iscritto con una versione precedente → banner «Termini aggiornati (v3)», non bloccante; stessa versione o ignota → niente", async () => {
+  it("#AFFILIATE-TERMS-V3-1022: nessun banner aggiornamento termini; il pannello resta disponibile", async () => {
     mockFetch(me({ ...ME_EMPTY, terms_current: "aff-2026-10-22-v3" }));
     const a = render(<AffiliateSection lang="it" />);
-    const banner = await screen.findByTestId("aff-terms-update");
-    expect(banner.textContent).toMatch(/Termini aggiornati \(v3\)/);
-    expect(banner.querySelector("a")?.getAttribute("href")).toBe("/affiliates/terms");
-    expect(screen.getByText("Il tuo link")).toBeTruthy(); // il pannello resta utilizzabile
+    await screen.findByText("Il tuo link");
+    expect(screen.queryByTestId("aff-terms-update")).toBeNull();
+    expect(document.querySelector('a[href="/affiliates/terms"]')).toBeTruthy();
     a.unmount();
     mockFetch(me({ ...ME_EMPTY, affiliate: { ...ME_EMPTY.affiliate, terms_version: "aff-2026-10-22-v3" }, terms_current: "aff-2026-10-22-v3" }));
     const b = render(<AffiliateSection lang="en" />);
@@ -71,14 +70,13 @@ describe("stati della pagina", () => {
     expect(screen.queryByTestId("aff-terms-update")).toBeNull();
   });
 
-  it("R5: operations con payout o contabilità spenti → banner «pagamenti in attivazione» e frasi sui tempi caute; accesi → niente banner", async () => {
+  it("operations mantengono i dettagli corretti senza banner iniziale", async () => {
     mockFetch(me({ ...ME_EMPTY, operations: { payouts_enabled: false, accounting_ready: false } }));
     const a = render(<AffiliateSection lang="it" />);
-    expect((await screen.findByTestId("aff-setup")).textContent).toMatch(/Pagamenti in attivazione/);
+    await screen.findByText("Il tuo link");
+    expect(screen.queryByTestId("aff-setup")).toBeNull();
     expect(document.body.textContent).toMatch(/quando il servizio di pagamento è attivo/);
     expect(document.body.textContent).not.toMatch(/secondo il calendario comunicato/);
-    // review Codex: con la contabilità spenta il cron affiliate-mature salta → mai «maturano comunque»
-    expect(screen.getByTestId("aff-setup").textContent).not.toMatch(/maturano comunque/);
     a.unmount();
     mockFetch(me({ ...ME_EMPTY, operations: { payouts_enabled: true, accounting_ready: true } }));
     const b = render(<AffiliateSection lang="it" />);
@@ -526,17 +524,12 @@ describe("uscita, rientro e termini aggiornati", () => {
     expect(calls.find((c) => c.url === "/api/affiliate/join" && c.method === "POST")?.body).toMatchObject({ code: ME.affiliate.code, terms_version: "aff-2026-10-22-v3", age: true, onerous_ack: true });
   });
 
-  it("termini aggiornati: accettazione facoltativa con la spunta sulle clausole onerose → POST /terms", async () => {
-    mockFetch((url, init) => (url === "/api/affiliate/terms" && init?.method === "POST" ? { status: 200, body: { ok: true } } : me({ ...ME, terms_current: "aff-2026-10-22-v3" })(url)));
+  it("rimozione banner non accetta automaticamente i termini", async () => {
+    mockFetch(me({ ...ME, terms_current: "aff-2026-10-22-v3" }));
     render(<AffiliateSection lang="it" />);
-    const banner = await screen.findByTestId("aff-terms-update");
-    const btn = within(banner).getByRole("button", { name: "Accetta i termini aggiornati" }) as HTMLButtonElement;
-    expect(btn.disabled).toBe(true);
-    fireEvent.click(within(banner).getByRole("checkbox"));
-    fireEvent.click(btn);
-    await waitFor(() => expect(calls.some((c) => c.url === "/api/affiliate/terms")).toBe(true));
-    expect(calls.find((c) => c.url === "/api/affiliate/terms")?.body).toEqual({ terms_version: "aff-2026-10-22-v3", onerous_ack: true });
-    expect(await screen.findByText("Termini aggiornati accettati.")).toBeTruthy();
+    await screen.findByText("Il tuo link");
+    expect(screen.queryByTestId("aff-terms-update")).toBeNull();
+    expect(calls.some((c) => c.url === "/api/affiliate/terms")).toBe(false);
   });
 });
 
