@@ -40,7 +40,7 @@ const DB_INTERP_RE =
 // survives edits above the call site. Re-audit before adding an entry.
 const ALLOWLIST = new Set<string>([
   // Dynamic WHERE built from static fragments; user values go to `values` at $N.
-  'app/api/v2/history/route.ts::conditions.join(" AND ")',
+  'lib/history-snapshot.ts::conditions.join(" AND ")',
   'app/api/v2/predictions/route.ts::conditions.join(" AND ")',
   // `$1, $2, …` placeholder lists for a variadic IN (…) — values in params array.
   "app/api/weekly-pick/route.ts::idPlaceholders",
@@ -77,7 +77,7 @@ const ALLOWLIST = new Set<string>([
   // la finestra di date viaggia nei params ($1, $2).
   'app/api/v2/yesterday-read/route.ts::TRACK_RECORD_BASE_CONDITIONS.join(" AND ")',
   // #LEDGER-SIGILLATA-1007 — costante: "" (flag spento) o ", source_table, source_id".
-  "app/api/v2/history/route.ts::sealedCols",
+  "lib/history-snapshot.ts::sealedCols",
   "app/api/v2/yesterday-read/route.ts::sealedCols",
 ]);
 

@@ -14,3 +14,12 @@ describe('history raw-read cache',()=>{
   expect(load).toHaveBeenCalledTimes(4);
  });
 });
+
+describe('history snapshot coalescing',()=>{
+ it('TTL zero coalesces concurrent work without extending the shared-cache lifetime',async()=>{
+  const read=createHistoryReadCache(()=>1000,0);const load=vi.fn(async()=>[{id:1}]);
+  await Promise.all([read('snapshot',load),read('snapshot',load)]);
+  expect(load).toHaveBeenCalledTimes(1);
+  await read('snapshot',load);expect(load).toHaveBeenCalledTimes(2);
+ });
+});

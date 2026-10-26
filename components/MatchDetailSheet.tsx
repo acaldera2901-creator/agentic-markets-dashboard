@@ -95,6 +95,7 @@ export type MdsTeamNews = {
 export type MdsSectionLabels = {
   why: string;
   form: string;
+  formNote?: string;
   teamNews: string;
   teamNewsLocked: string;
   teamNewsNone: string;
@@ -485,11 +486,12 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
           {data.form && (
             <section className="br-md__sec">
               <h3 className="br-md__h">{data.sections?.form ?? "Recent form"}</h3>
+              <p className="br-muted" style={{ fontSize: 12, margin: "0 0 10px" }}>{data.sections?.formNote ?? "Last available completed matches; newest on the right. Coverage depends on the available competitions."}</p>
               <div className="br-md__form">
                 {[data.form.home, data.form.away].map((side) => (
                   <div className="br-md__formrow" key={side.name}>
                     <span className="br-md__formname">{side.name}</span>
-                    <span className="br-md__formres">
+                    <span className="br-md__formres" role="img" aria-label={side.results.join(" · ")}>
                       {side.results.map((r, i) => (
                         <i key={i} data-r={r.toUpperCase()} aria-hidden="true">{r.toUpperCase()}</i>
                       ))}

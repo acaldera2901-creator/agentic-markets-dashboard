@@ -54,6 +54,8 @@ export function computeTeamForms(results: MatchResult[]): TeamForms {
   const log: Record<string, string[]> = {};
 
   for (const r of results) {
+    // Runtime source payloads can violate the static MatchResult contract.
+    if (![r.homeGoals, r.awayGoals].every((g) => Number.isInteger(g) && g >= 0)) continue;
     const homeResult = r.homeGoals > r.awayGoals ? "W" : r.homeGoals === r.awayGoals ? "D" : "L";
     const awayResult = r.awayGoals > r.homeGoals ? "W" : r.awayGoals === r.homeGoals ? "D" : "L";
     (log[r.homeTeam] ??= []).push(homeResult);
@@ -71,7 +73,10 @@ export function computeTeamForms(results: MatchResult[]): TeamForms {
 type DatedResult = MatchResult & { utcDate: string };
 
 /**
- * Last-5 form over EVERY competition passed in, merged in kickoff order.
+ * Last-5 form over the supplied competitions, merged in kickoff order.
+ * This does not imply coverage of cups or competitions missing from the input.
+ * `before` is the exclusive observation cutoff, normally the refresh start time.
+ * Inputs must be finished results; kickoff alone cannot prove a match is finished.
  *
  * #FORMA-TUTTE-1026 — computeTeamForms on one league's history only sees that
  * league: PSG read LWWWW in Ligue 1 while its real last 5 were WWWWW with the
@@ -81,11 +86,11 @@ type DatedResult = MatchResult & { utcDate: string };
  * dedupe is needed. Team names must be the same across blocks: true for
  * football-data.org, NOT for the summer snapshot (ESPN names) — do not mix them.
  */
-export function computeCrossCompetitionForms(competitions: DatedResult[][]): TeamForms {
+export function computeCrossCompetitionForms(competitions: DatedResult[][], before = Date.now()): TeamForms {
   const all = competitions
     .flat()
     .map((r) => ({ r, t: Date.parse(r.utcDate) }))
-    .filter(({ t }) => Number.isFinite(t))
+    .filter(({ t }) => Number.isFinite(t) && t < before)
     .sort((a, b) => a.t - b.t)
     .map(({ r }) => r);
   return computeTeamForms(all);

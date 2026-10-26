@@ -9,7 +9,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const { dbQuery } = vi.hoisted(() => ({ dbQuery: vi.fn() }));
-vi.mock("@/lib/db", () => ({ dbQuery }));
+vi.mock("next/cache", async () => ({
+  unstable_cache: (await import("@/tests/helpers/next-data-cache")).mockUnstableCache,
+}));
+vi.mock("@/lib/db", () => ({ dbQuery, dbQueryStrict: dbQuery }));
 vi.mock("@/lib/auth", () => ({ resolveAccessState: async () => ({ state: "anonymous" }) }));
 
 beforeEach(() => {
