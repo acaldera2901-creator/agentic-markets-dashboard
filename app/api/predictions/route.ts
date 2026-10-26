@@ -656,8 +656,8 @@ async function computeAndStore(): Promise<{ stored: number; leagues: string[] }>
       // Form from history
       const formH = teamForms[homeName];
       const formA = teamForms[awayName];
-      if (formH) enrichment.form_home = formH.homeForm;
-      if (formA) enrichment.form_away = formA.awayForm;
+      if (formH) enrichment.form_home = formH.form;
+      if (formA) enrichment.form_away = formA.form;
 
       // Research from Ollama (Python agent)
       if (researchMap[fix.id]) enrichment.research = researchMap[fix.id];
