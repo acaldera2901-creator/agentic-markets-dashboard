@@ -5,7 +5,7 @@ export interface PiRatings {
 }
 
 export interface TeamForms {
-  [team: string]: { homeForm: string; awayForm: string };
+  [team: string]: { form: string };
 }
 
 /**
@@ -41,26 +41,28 @@ export function computePiRatings(results: MatchResult[]): PiRatings {
   return ratings;
 }
 
-/** Returns last-5 W/D/L strings for each team, split by home/away context. */
+/**
+ * Returns each team's last-5 W/D/L string over ALL its matches, home and away
+ * together, oldest first. `results` must be in chronological order (as
+ * fetchHistory returns them).
+ *
+ * #FORMA-RECENTE-1026 — this used to keep two logs, one per venue, and the
+ * board showed the home team's last 5 HOME games and the away team's last 5
+ * AWAY games under the label "Recent form": every badge row was wrong.
+ */
 export function computeTeamForms(results: MatchResult[]): TeamForms {
-  const homeLog: Record<string, string[]> = {};
-  const awayLog: Record<string, string[]> = {};
+  const log: Record<string, string[]> = {};
 
   for (const r of results) {
     const homeResult = r.homeGoals > r.awayGoals ? "W" : r.homeGoals === r.awayGoals ? "D" : "L";
     const awayResult = r.awayGoals > r.homeGoals ? "W" : r.awayGoals === r.homeGoals ? "D" : "L";
-    (homeLog[r.homeTeam] ??= []).push(homeResult);
-    (awayLog[r.awayTeam] ??= []).push(awayResult);
+    (log[r.homeTeam] ??= []).push(homeResult);
+    (log[r.awayTeam] ??= []).push(awayResult);
   }
 
-  const teams = new Set([...Object.keys(homeLog), ...Object.keys(awayLog)]);
   const forms: TeamForms = {};
-
-  for (const team of teams) {
-    forms[team] = {
-      homeForm: (homeLog[team] ?? []).slice(-5).join(""),
-      awayForm: (awayLog[team] ?? []).slice(-5).join(""),
-    };
+  for (const [team, played] of Object.entries(log)) {
+    forms[team] = { form: played.slice(-5).join("") };
   }
 
   return forms;
