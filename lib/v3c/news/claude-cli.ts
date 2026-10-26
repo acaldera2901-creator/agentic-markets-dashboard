@@ -13,7 +13,7 @@
 // One unsupported claim → the note is dropped («final»), never written.
 import { spawn } from "node:child_process";
 import type { FeedItem } from "./feed";
-import { OUTPUT_SCHEMA, PROMPT_VERSION, readModelOutput, RewriteError, SYSTEM_PROMPT, userPrompt, type Rewritten } from "./rewrite";
+import { OUTPUT_SCHEMA, PROMPT_VERSION, readModelOutput, repairPrompt, RewriteError, SYSTEM_PROMPT, userPrompt, type Rewritten } from "./rewrite";
 import { readVerdict, VERIFY_PROMPT, VERIFY_SCHEMA, verifyPrompt } from "./verify";
 
 export const CLAUDE_MODEL = "haiku";
@@ -30,8 +30,8 @@ const TIMEOUT_MS = 120_000;
 /** What one rewrite attempt ended in. Only `ok` produces a row. */
 export type RewriteOutcome =
   | { kind: "ok"; rewritten: Rewritten; usage: CallUsage }
-  /** the model said no, or the text failed a check: dropped for good */
-  | { kind: "final"; reason: string; usage?: CallUsage }
+  /** the model said no, or the text failed a check: dropped for good (`copied`: the runs, when it copied) */
+  | { kind: "final"; reason: string; usage?: CallUsage; copied?: string[] }
   /** subscription usage/rate limit: stop for this run, the item stays queued */
   | { kind: "limit"; reason: string }
   /** anything else (timeout, crash, unreadable answer): retried on a later run */
@@ -106,7 +106,8 @@ export function readCliOutput(stdout: string, stderr: string, code: number | nul
     const rewritten = readModelOutput(e.output, item, `${e.usage.model ?? CLAUDE_MODEL} · prompt ${PROMPT_VERSION}`);
     return { kind: "ok", rewritten, usage: e.usage };
   } catch (err) {
-    return { kind: "final", reason: err instanceof RewriteError ? err.message : String(err), usage: e.usage };
+    if (err instanceof RewriteError) return { kind: "final", reason: err.message, usage: e.usage, ...(err.copied?.length ? { copied: err.copied } : {}) };
+    return { kind: "final", reason: String(err), usage: e.usage };
   }
 }
 
@@ -172,11 +173,24 @@ export async function verifyWithClaude(item: Pick<FeedItem, "title" | "text"> & 
   return readVerifyOutput(r.out, r.err, r.code, r.ms, fake);
 }
 
-/** Rewrite, mechanical checks, second reading: one item, two `claude -p` calls at most. Never throws. */
+/**
+ * Rewrite, mechanical checks, second reading: one item, three `claude -p` calls at
+ * most. A note refused ONLY for a 6-word copy gets one repair turn that names the
+ * runs (repairPrompt); the new note goes through every check again. Never throws.
+ */
 export async function rewriteWithClaude(item: FeedItem, opts: { bin: string; cwd: string; model?: string; verifyModel?: string; env?: NodeJS.ProcessEnv }): Promise<RewriteOutcome> {
   const r = await runClaude(claudeArgs(opts.model), userPrompt(item), opts);
   if ("fail" in r) return { kind: "transient", reason: r.fail };
-  const first = readCliOutput(r.out, r.err, r.code, item, r.ms);
+  let first = readCliOutput(r.out, r.err, r.code, item, r.ms);
+  if (first.kind === "final" && first.copied?.length) {
+    const r2 = await runClaude(claudeArgs(opts.model), repairPrompt(item, first.copied), opts);
+    if ("fail" in r2) return first; // the copy stands: dropped, no retry loop
+    const second = readCliOutput(r2.out, r2.err, r2.code, item, r2.ms);
+    const usage = first.usage && "usage" in second && second.usage ? sumUsage(first.usage, second.usage) : first.usage;
+    if (second.kind === "limit") return second;
+    if (second.kind !== "ok") return second.kind === "final" ? { kind: "final", reason: `repair: ${second.reason}`, usage } : first;
+    first = { kind: "ok", usage: usage ?? second.usage, rewritten: { ...second.rewritten, note: { ...second.rewritten.note, model: `${second.rewritten.note.model} · repaired` } } };
+  }
   if (first.kind !== "ok") return first; // the mechanical checks already said no: no second call spent
   const v = await runClaude(claudeArgs(opts.verifyModel ?? VERIFY_MODEL, VERIFY_SCHEMA, VERIFY_PROMPT), verifyPrompt(item, first.rewritten.note), opts);
   if ("fail" in v) return { kind: "transient", reason: `verify: ${v.fail}` };

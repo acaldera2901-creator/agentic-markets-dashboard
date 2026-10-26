@@ -262,7 +262,7 @@ describe("claude-cli · the local `claude -p`", () => {
     expect(o.kind).toBe("ok");
     if (o.kind !== "ok") return;
     expect(o.rewritten.teams).toEqual(["United States", "Canada"]);
-    expect(o.rewritten.note.model).toBe("claude-haiku-4-5-20251001 · prompt v4");
+    expect(o.rewritten.note.model).toBe("claude-haiku-4-5-20251001 · prompt v5");
     expect(o.usage).toEqual({ ms: 4242, costUsd: 0.0028, inTokens: 1549, outTokens: 253, model: "claude-haiku-4-5-20251001" });
   });
 

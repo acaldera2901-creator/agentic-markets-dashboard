@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { checkFacts, italianArticleError } from "./facts";
 import { claudeArgs, rewriteWithClaude, VERIFY_MODEL } from "./claude-cli";
 import { readVerdict, VERIFY_PROMPT, VERIFY_SCHEMA, verifyPrompt } from "./verify";
-import { readModelOutput, RewriteError, SYSTEM_PROMPT } from "./rewrite";
+import { checkRewrite, copiedRuns, readModelOutput, repairPrompt, RewriteError, SYSTEM_PROMPT, userPrompt } from "./rewrite";
 import type { FeedItem } from "./feed";
 
 const src = (guid: string, title: string, text: string): FeedItem => ({ guid, title, text, url: `https://www.fotmob.com/news/${guid}`, t: Date.parse("2026-10-07T10:00:00Z"), source: "FotMob" });
@@ -110,6 +110,59 @@ describe("facts · false positives it must NOT produce", () => {
   });
 });
 
+// the originals and the haiku notes (prompt v4) the watcher dropped on 26/10 as
+// «facts: it: name «barcellona»» (fotmob.com/it/news read 26/10, outputs re-run that day)
+const MOURINHO = src("26-mourinho", "'We have to keep going' – Mourinho's sights higher than one Clasico win", "Real Madrid claimed a 2-1 win over LaLiga leaders Barcelona on Sunday, but Jose Mourinho is far from satisfied.");
+const FLICK = src("26-flick", "Flick says Barca struggled to match Madrid's physicality in Clasico defeat", "Barcelona saw their perfect start to the season in LaLiga halted by their arch-rivals Real Madrid, with Kylian Mbappe doing the damage.");
+const DROPPED_26_10 = {
+  mourinho: { en: { title: "Mourinho not satisfied after Real Madrid's 2-1 win over Barcelona", body: "Real Madrid won 2-1 against Barcelona, the LaLiga leaders, on Sunday. Jose Mourinho is far from content." }, it: { title: "Mourinho non soddisfatto dopo il 2-1 del Real Madrid sul Barcellona", body: "Il Real Madrid ha vinto 2-1 contro il Barcellona, capolista della LaLiga, domenica. Jose Mourinho non è affatto soddisfatto." } },
+  flick: { en: { title: "Flick says Barcelona found Real Madrid's physicality hard to match", body: "Barcelona's perfect LaLiga start came to an end in a Clasico defeat to Real Madrid, in which Kylian Mbappe played a major part." }, it: { title: "Flick: il Barcellona ha faticato con la fisicità del Real Madrid", body: "L'inizio perfetto del Barcellona in LaLiga si è concluso con la sconfitta nel Clasico contro il Real Madrid, in cui Kylian Mbappe ha giocato un ruolo importante." } },
+};
+
+describe("facts · IT/EN exonyms (26/10: 13 notes dropped for «barcellona»)", () => {
+  it("the two notes dropped on 26/10 pass: Barcellona is Barcelona", () => {
+    expect(checkFacts(DROPPED_26_10.mourinho, MOURINHO)).toEqual({ ok: true, unsupported: [] });
+    expect(checkFacts(DROPPED_26_10.flick, FLICK)).toEqual({ ok: true, unsupported: [] });
+  });
+  it.each([
+    ["Barcellona", "Barcelona"], ["Barcellona", "Barca"], ["Stoccarda", "Stuttgart"], ["Siviglia", "Sevilla"], ["Lipsia", "Leipzig"], ["Colonia", "Koln"],
+    ["Marsiglia", "Marseille"], ["Lione", "Lyon"], ["Parigi", "Paris"], ["Mosca", "Moscow"], ["Salisburgo", "Salzburg"], ["Copenaghen", "Copenhagen"],
+    ["Azerbaigian", "Azerbaijan"], ["Kazakistan", "Kazakhstan"], ["Macedonia del Nord", "North Macedonia"], ["Israele", "Israel"],
+    ["Pallone d'Oro", "Ballon d’Or"], ["Coppa del Re", "Copa del Rey"], ["Europa", "Europe"], ["Giornata", "Matchday"],
+  ])("IT «%s» ↔ source «%s»", (itName, srcName) => {
+    const s = src("x", `${srcName} news`, `The story of ${srcName} continues.`);
+    const n = { en: { title: `${srcName} news`, body: `${srcName} continues.` }, it: { title: "Le notizie", body: `La storia di ${itName} continua.` } };
+    expect(checkFacts(n, s)).toEqual({ ok: true, unsupported: [] });
+  });
+  it("curly and straight apostrophes are the same word: Ballon d'Or in the note, Ballon d’Or in the source", () => {
+    const s = src("x", "Ballon d’Or 2026 nominees", "Harry Kane leads the nominees for the prize.");
+    expect(checkFacts({ en: { title: "Kane leads Ballon d'Or 2026 nominees", body: "Harry Kane is the front-runner." }, it: { title: "Kane guida i candidati al Pallone d'Oro 2026", body: "Harry Kane è in testa." } }, s).ok).toBe(true);
+  });
+  it("sentence-initial function words are not names (Ora, Né, Senza, According, Neither, Without)", () => {
+    const n = { en: { title: "Vancouver lose", body: "According to the report, Vancouver lost. Neither side changed. Without Sorensen happy, Vancouver lost." }, it: { title: "Vancouver perde", body: "Ora il Vancouver ha perso. Né il Vancouver né il Chicago Fire cambiano. Senza Sorensen il Vancouver perde." } };
+    expect(checkFacts(n, VANCOUVER).unsupported.filter((x) => /name/.test(x))).toEqual([]);
+  });
+  it("the alias list does not open the door: a club, city or country the original does not name is still refused", () => {
+    const n = (it: string) => ({ ...DROPPED_26_10.mourinho, it: { ...DROPPED_26_10.mourinho.it, body: it } });
+    expect(checkFacts(n("Il Real Madrid ha battuto il Siviglia."), MOURINHO).unsupported).toContain("it: name «seville»");
+    expect(checkFacts(n("Il Real Madrid ha giocato a Parigi."), MOURINHO).unsupported).toContain("it: name «paris»");
+    expect(checkFacts(n("Il Real Madrid ha battuto la Stoccarda."), MOURINHO).unsupported).toContain("it: name «stuttgart»");
+    // a demonym is a nationality claim, not the same name: still refused
+    expect(checkFacts({ ...DROPPED_26_10.mourinho, en: { ...DROPPED_26_10.mourinho.en, body: "The Portuguese coach is not satisfied." } }, MOURINHO).unsupported).toContain("en: name «portuguese»");
+  });
+  it("the other barriers are untouched: an added quote, record, transfer or scorer next to Barcellona is still refused", () => {
+    // a Clasico original where nothing speaks of a quote, record, transfer or goal
+    const CLASICO = src("x", "Real Madrid 2-1 Barcelona", "Jose Mourinho's Real Madrid won 2-1 against LaLiga leaders Barcelona on Sunday.");
+    const note = { en: { title: "Real Madrid beat Barcelona 2-1", body: "Real Madrid won against the LaLiga leaders on Sunday." }, it: { title: "Il Real Madrid batte il Barcellona 2-1", body: "" } };
+    const it_ = (body: string) => ({ ...note, it: { ...note.it, body } });
+    expect(checkFacts(it_("Il Real Madrid ha vinto contro il Barcellona domenica."), CLASICO)).toEqual({ ok: true, unsupported: [] });
+    expect(checkFacts(it_("Il Real Madrid ha battuto il Barcellona. Mourinho ha detto «non basta»."), CLASICO).unsupported).toContain("it: quote not in the original");
+    expect(checkFacts(it_("Il Real Madrid ha battuto il Barcellona, un record."), CLASICO).unsupported).toContain("it: record not in the original");
+    expect(checkFacts(it_("Il Barcellona ha firmato un contratto."), CLASICO).unsupported).toContain("it: transfer not in the original");
+    expect(checkFacts(it_("Il Real Madrid ha segnato due gol al Barcellona."), CLASICO).unsupported).toEqual(expect.arrayContaining(["it: goal/scorer not in the original"]));
+  });
+});
+
 describe("facts · Italian articles with countries", () => {
   it.each([
     ["la Benin", false],
@@ -134,6 +187,43 @@ describe("rewrite · the tighter prompt (v4) and the mechanical barrier in the r
     const o = { status: "ok", headline_en: NOTES.ellis.en.title, body_en: NOTES.ellis.en.body, headline_it: NOTES.ellis.it.title, body_it: NOTES.ellis.it.body, teams: ["United States", "Canada"] };
     expect(() => readModelOutput(o, USA, "m")).toThrow(RewriteError);
     expect(() => readModelOutput(o, USA, "m")).toThrow(/^facts: .*goal\/scorer/);
+  });
+});
+
+// the original and the haiku note (v4) dropped on 26/10 for «Udinese 2-0 in Serie A»: 6 words of the teaser
+const MILAN = src("26-milan", "Amorim proud of AC Milan's response after bounce-back win", "AC Milan were well beaten by Bournemouth in the Europa League on Thursday, but they responded by seeing off Udinese 2-0 in Serie A.");
+const COPY = { en: { title: "Amorim takes pride in AC Milan's reaction", body: "Following a comprehensive loss to Bournemouth on Thursday in Europa League play, AC Milan beat Udinese 2-0 in Serie A." }, it: { title: "Amorim è orgoglioso della reazione dell'AC Milan", body: "Dopo una sconfitta netta contro il Bournemouth giovedì in Europa League, l'AC Milan ha battuto l'Udinese 2-0 in Serie A." } };
+const REPAIRED = { en: { title: "Amorim takes pride in AC Milan's reaction", body: "AC Milan lost heavily to Bournemouth on Thursday, then won 2-0 against Udinese in Serie A." }, it: { title: "Amorim orgoglioso della reazione dell'AC Milan", body: "L'AC Milan ha perso nettamente con il Bournemouth giovedì, poi ha vinto 2-0 contro l'Udinese in Serie A." } };
+
+describe("rewrite · 6-word copies (58 of 227 drops in the log, n.1): same barrier, one repair turn", () => {
+  it("the barrier is unchanged: a run of 6 words made of names and a score is still a copy; the reworded note passes", () => {
+    expect(checkRewrite(COPY, MILAN)).toBe("copies a 6-word run");
+    expect(checkRewrite(REPAIRED, MILAN)).toBeNull();
+    expect(checkFacts(REPAIRED, MILAN)).toEqual({ ok: true, unsupported: [] });
+  });
+  it("the refusal carries the runs it found; other refusals carry none", () => {
+    const o = { status: "ok", headline_en: COPY.en.title, body_en: COPY.en.body, headline_it: COPY.it.title, body_it: COPY.it.body, teams: [] };
+    let err: RewriteError | null = null;
+    try {
+      readModelOutput(o, MILAN, "m");
+    } catch (e) {
+      err = e as RewriteError;
+    }
+    expect(err?.message).toBe("check: copies a 6-word run");
+    expect(err?.copied).toEqual(["udinese 2 0 in serie a"]);
+    expect(copiedRuns(REPAIRED, MILAN)).toEqual([]);
+    try {
+      readModelOutput({ ...o, body_en: "AC Milan beat Udinese 5-0." }, MILAN, "m");
+    } catch (e) {
+      expect((e as RewriteError).copied).toBeUndefined();
+    }
+  });
+  it("the repair prompt is the same item plus the runs, and keeps every rule", () => {
+    const p = repairPrompt(MILAN, ["udinese 2 0 in serie a"]);
+    expect(p.startsWith(userPrompt(MILAN))).toBe(true);
+    expect(p).toContain("- udinese 2 0 in serie a");
+    expect(p).toMatch(/same facts/);
+    expect(p).toMatch(/Every other rule still applies/);
   });
 });
 
@@ -200,6 +290,9 @@ describe("claude-cli · rewrite → mechanical checks → second reading, with a
     answers,
     JSON.stringify({
       rewrite: {
+        // the repair turn (its input also holds the item): listed first so it wins
+        "rejected_attempt": asAnswer(REPAIRED, ["AC Milan", "Udinese"]),
+        "bounce-back win": asAnswer(COPY, ["AC Milan", "Udinese"]),
         "Ellis caps": asAnswer(NOTES.ellis, ["United States", "Canada"]),
         "Tuchel lauds": asAnswer(NOTES.kane, ["England", "Czechia"]),
         "Sorensen accepts": asAnswer(NOTES.vancouver, ["Vancouver Whitecaps", "Chicago Fire"]),
@@ -214,6 +307,7 @@ describe("claude-cli · rewrite → mechanical checks → second reading, with a
         "Sorensen accepted blame": { supported: true, unsupported: [] },
         "208th and last match": { supported: true, unsupported: [] },
         "Estadio Monumental was": { supported: true, unsupported: [] },
+        "won 2-0 against Udinese": { supported: true, unsupported: [] },
       },
     }),
   );
@@ -244,9 +338,30 @@ describe("claude-cli · rewrite → mechanical checks → second reading, with a
       const o = await run(item);
       expect(o.kind).toBe("ok");
       if (o.kind !== "ok") return;
-      expect(o.rewritten.note.model).toMatch(/^claude-haiku · prompt v4 · verified claude-sonnet$/);
+      expect(o.rewritten.note.model).toMatch(/^claude-haiku · prompt v5 · verified claude-sonnet$/);
       expect(o.usage).toMatchObject({ costUsd: 0.004, inTokens: 1800, outTokens: 160 });
     }
+  });
+  it("Milan: copied a 6-word run → one repair turn → passes every check and the second reading; the model says «repaired»", async () => {
+    const before = calls().length;
+    const o = await run(MILAN);
+    expect(calls().slice(before)).toEqual(["rewrite haiku key=no", "rewrite haiku key=no", `verify ${VERIFY_MODEL} key=no`]);
+    expect(o.kind).toBe("ok");
+    if (o.kind !== "ok") return;
+    expect(o.rewritten.note.en).toEqual(REPAIRED.en);
+    expect(o.rewritten.note.model).toBe("claude-haiku · prompt v5 · repaired · verified claude-sonnet");
+    expect(o.usage).toMatchObject({ costUsd: 0.006, inTokens: 2700 });
+  });
+  it("a repair that copies again is dropped («repair: …»): one repair only, no second reading", async () => {
+    const ans = JSON.parse(readFileSync(answers, "utf8"));
+    const saved = ans.rewrite.rejected_attempt;
+    ans.rewrite.rejected_attempt = asAnswer(COPY, []);
+    writeFileSync(answers, JSON.stringify(ans));
+    const before = calls().length;
+    expect(await run(MILAN)).toMatchObject({ kind: "final", reason: "repair: check: copies a 6-word run" });
+    expect(calls().slice(before)).toEqual(["rewrite haiku key=no", "rewrite haiku key=no"]);
+    ans.rewrite.rejected_attempt = saved;
+    writeFileSync(answers, JSON.stringify(ans));
   });
   it("a usage limit on the second reading keeps the item queued; an unreadable verdict is retried later, never published", async () => {
     const limitItem = { ...VANCOUVER, guid: "l", title: `${VANCOUVER.title} LIMITCASE` };

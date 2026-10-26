@@ -15,12 +15,15 @@ export type AiNote = { kind: "ai"; en: NoteText; it: NoteText; model: string };
 /** A rewrite plus the team names the item states (for the board links; never shown as such). */
 export type Rewritten = { note: AiNote; teams: string[] };
 
-/** Bump when the prompt or the checks change (stored with each row as rewrite_model). */
-export const PROMPT_VERSION = "v4";
+/** Bump when the prompt or the checks change (stored with each row as rewrite_model). v5 = v4 + one repair turn on a 6-word copy. */
+export const PROMPT_VERSION = "v5";
 export const MAX_WORDS = 60;
 export const MAX_TITLE_WORDS = 14;
 
-export class RewriteError extends Error {}
+export class RewriteError extends Error {
+  /** for «copies a 6-word run»: the runs, so the one repair turn can name them */
+  copied?: string[];
+}
 
 // ─── the checks ──────────────────────────────────────────────────────────────
 
@@ -49,6 +52,24 @@ export function sharesRun(a: string, b: string, n = 6): boolean {
   for (let i = 0; i + n <= wb.length; i++) grams.add(wb.slice(i, i + n).join(" "));
   for (let i = 0; i + n <= wa.length; i++) if (grams.has(wa.slice(i, i + n).join(" "))) return true;
   return false;
+}
+
+/** The 6-word runs our note shares with the original headline or teaser (what `checkRewrite` refuses), at most 8. */
+export function copiedRuns(note: { en: NoteText; it: NoteText }, item: FeedItem, n = 6): string[] {
+  const out = new Set<string>();
+  for (const t of [note.en, note.it]) {
+    const ours = words(`${t.title}. ${t.body}`);
+    for (const src of [item.title, item.text]) {
+      const wb = words(src);
+      const grams = new Set<string>();
+      for (let i = 0; i + n <= wb.length; i++) grams.add(wb.slice(i, i + n).join(" "));
+      for (let i = 0; i + n <= ours.length; i++) {
+        const g = ours.slice(i, i + n).join(" ");
+        if (grams.has(g)) out.add(g);
+      }
+    }
+  }
+  return [...out].slice(0, 8);
 }
 
 /** null = publishable; otherwise the reason it is not. */
@@ -95,6 +116,18 @@ Rules, all mandatory:
 
 export function userPrompt(item: FeedItem): string {
   return `<item>\n<published>${new Date(item.t).toISOString()}</published>\n<headline>${item.title}</headline>\n<teaser>${item.text}</teaser>\n</item>`;
+}
+
+/**
+ * The one repair turn (v5). Measured 26/10: the rule against reused sequences is
+ * in the prompt since v1, yet haiku (no thinking) still copies runs made of names
+ * and a score («Udinese 2-0 in Serie A», «3-0 win over Czechia at Wembley») —
+ * 58 of 227 drops in the log, n.1. Naming the exact runs works where the general
+ * rule does not. The barrier is the same: the new answer passes every check again.
+ */
+export function repairPrompt(item: FeedItem, runs: readonly string[]): string {
+  const list = runs.map((r) => `- ${r}`).join("\n");
+  return `${userPrompt(item)}\n<rejected_attempt>\nYour previous note for this item was refused because it repeated these word sequences of the item (shown lower case, punctuation removed):\n${list}\nWrite the note again with the same facts. Names, scores and numbers count as words: change the order and the words around them so that no 6 consecutive words of your headline or body, in English or in Italian, match the item. Every other rule still applies.\n</rejected_attempt>`;
 }
 
 /** The output shape, passed to `claude -p --json-schema`. */
@@ -146,7 +179,7 @@ export function readModelOutput(output: unknown, item: FeedItem, model: string):
   const s = (k: string) => (typeof o[k] === "string" ? (o[k] as string).replace(/\s+/g, " ").trim() : "");
   const note: AiNote = { kind: "ai", en: { title: s("headline_en"), body: s("body_en") }, it: { title: s("headline_it"), body: s("body_it") }, model };
   const bad = checkRewrite(note, item);
-  if (bad) throw new RewriteError(`check: ${bad}`);
+  if (bad) throw Object.assign(new RewriteError(`check: ${bad}`), bad === "copies a 6-word run" ? { copied: copiedRuns(note, item) } : {});
   const facts = checkFacts(note, item);
   if (!facts.ok) throw new RewriteError(`facts: ${facts.unsupported.join("; ").slice(0, 240)}`);
   return { note, teams: statedTeams(o.teams, item) };

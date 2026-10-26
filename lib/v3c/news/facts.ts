@@ -46,6 +46,26 @@ const CANON: Record<string, string> = {
   "bayern monaco": "bayern munich", "inter milan": "inter", internazionale: "inter", "man utd": "manchester united",
   "man united": "manchester united", "man city": "manchester city", psg: "paris saint germain",
   "paris saint-germain": "paris saint germain",
+  // 26/10: 13 notes dropped for «barcellona» (+ pallone d'oro, europa, stoccarda, seville).
+  // Criterion for an entry: the SAME named thing in its Italian and its English (or
+  // native) spelling — exonyms of clubs, cities, countries, competitions. Never a
+  // synonym, a demonym («Portuguese») or a nickname: each of those would add a fact.
+  barcellona: "barcelona", barca: "barcelona", sevilla: "seville", stoccarda: "stuttgart", colonia: "cologne", koln: "cologne",
+  friburgo: "freiburg", magonza: "mainz", lipsia: "leipzig", amburgo: "hamburg", brema: "bremen", norimberga: "nuremberg",
+  nurnberg: "nuremberg", marsiglia: "marseille", lione: "lyon", tolosa: "toulouse", parigi: "paris", mosca: "moscow",
+  belgrado: "belgrade", zagabria: "zagreb", atene: "athens", varsavia: "warsaw", praga: "prague", anversa: "antwerp",
+  bruges: "brugge", copenaghen: "copenhagen", kobenhavn: "copenhagen", salisburgo: "salzburg", saragozza: "zaragoza",
+  maiorca: "mallorca", edimburgo: "edinburgh", naples: "napoli", turin: "torino", milano: "milan", rome: "roma",
+  firenze: "florence", genova: "genoa",
+  azerbaigian: "azerbaijan", kazakistan: "kazakhstan", lussemburgo: "luxembourg", "macedonia del nord": "north macedonia",
+  cipro: "cyprus", lituania: "lithuania", lettonia: "latvia", bielorussia: "belarus", moldavia: "moldova", israele: "israel",
+  "isole faroe": "faroe islands", "emirati arabi uniti": "united arab emirates", "capo verde": "cape verde",
+  "bosnia ed erzegovina": "bosnia and herzegovina", "bosnia erzegovina": "bosnia and herzegovina", "corea del nord": "north korea",
+  giordania: "jordan", siria: "syria", libia: "libya", etiopia: "ethiopia", mozambico: "mozambique", filippine: "philippines",
+  thailandia: "thailand", "trinidad e tobago": "trinidad and tobago", "repubblica irlanda": "ireland", "republic of ireland": "ireland",
+  "pallone oro": "ballon or", "coppa del re": "copa del rey", europa: "europe", european: "europe", europea: "europe",
+  europeo: "europe", europee: "europe", "european championship": "euro", euros: "euro",
+  giornata: "matchday", matchweek: "matchday", gameweek: "matchday", playoffs: "playoff",
   // days and months (temporal: must be in the original too, see TEMPORAL)
   lunedi: "monday", martedi: "tuesday", mercoledi: "wednesday", giovedi: "thursday", venerdi: "friday", sabato: "saturday", domenica: "sunday",
   gennaio: "january", febbraio: "february", marzo: "march", aprile: "april", maggio: "may", giugno: "june", luglio: "july",
@@ -66,7 +86,9 @@ const STOP = new Set(
     "allo dal dalla dai dagli dalle del della dei degli delle dello sul sulla sui sugli sulle con per su da di tra fra dopo prima durante " +
     "questa questo questi queste quella quello ma come contro sono si non entrambe entrambi anche ancora poi mentre nonostante " +
     "terza terzo seconda secondo quarta quarto ultima ultimo nuova nuovo final last first new two three four five six seven eight nine ten " +
-    "due tre quattro cinque sei sette otto nove dieci it's sette"
+    "due tre quattro cinque sei sette otto nove dieci it's sette " +
+    // 26/10, measured in the log: closed-class words only (adverbs, pronouns, conjunctions)
+    "ora ne ci cio ad oltre senza sia nessuna nessuno alcune alcuni according along neither without"
   ).split(" "),
 );
 
@@ -135,7 +157,8 @@ function tokens(text: string): Tok[] {
   for (const sentence of text.split(/(?<=[.!?;:])\s+|\s+[—–-]\s+|\n+/)) {
     let first = true;
     for (const m of sentence.matchAll(/[\p{L}\p{N}]+(?:['’.][\p{L}]+)*(?:-[\p{L}\p{N}]+)*/gu)) {
-      let raw = m[0].replace(/['’]s$/i, "").replace(/s['’]$/i, "s");
+      // curly → straight first: «d’Or» and «d'Or» are the same word (26/10, Ballon d’Or)
+      let raw = m[0].replace(/['’]s$/i, "").replace(/s['’]$/i, "s").replace(/['’]/g, "'");
       let initial = first;
       first = false;
       const el = raw.match(ELISION);
@@ -143,7 +166,6 @@ function tokens(text: string): Tok[] {
         raw = raw.slice(el[0].length);
         initial = false; // «L'Argentina»: the article was the first word
       }
-      raw = raw.replace(/['’]/g, "'");
       for (const part of raw.split("-")) {
         if (!part) continue;
         out.push({ f: fold(part), cap: /^\p{Lu}/u.test(part), initial });
