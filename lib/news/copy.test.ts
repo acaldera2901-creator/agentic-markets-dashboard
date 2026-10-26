@@ -23,9 +23,8 @@ describe("news copy", () => {
       }
     }
   });
-  it("source, link and takedown are always there; the English carries no banned lexicon", () => {
+  it("takedown is always there; the English carries no banned lexicon", () => {
     for (const lang of NEWS_LANGS) {
-      expect(NEWS_COPY[lang].aiLabel).toContain("{source}");
       expect(NEWS_COPY[lang].takedown).toContain("info@betredge.com");
       expect(NEWS_COPY[lang].takedown).toMatch(/24/);
     }

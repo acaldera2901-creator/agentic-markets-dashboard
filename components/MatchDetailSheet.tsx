@@ -108,7 +108,8 @@ export type MdsNewsItem = {
   textLang: "en" | "it";
   english: boolean;
   url: string;
-  aiLabel: string;
+  /** our 16:9 picture for the kind of story (never the source's), or null */
+  image: { src: string; width: number; height: number } | null;
 };
 export type MdsNews = { label: string; note: string; readOriginal: string; inEnglish: string; rows: MdsNewsItem[] };
 
@@ -186,6 +187,7 @@ export type MdsData = {
   };
 };
 
+import Image from "next/image"; // #NEWS-FOTMOB-PROD-1026 — the picture of a note
 import "@/components/news/news.css"; // #NEWS-FOTMOB-PROD-1026 — .mds-news
 
 function Ico({ id }: { id: string }) {
@@ -569,14 +571,19 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
 
           {/* #NEWS-FOTMOB-PROD-1026 — the rewritten FotMob notes that name a team
               of this match, after the absences (news about the teams sit together)
-              and before the markets: a note is never next to a price. Source,
-              AI label and the link to the original on every note. */}
+              and before the markets: a note is never next to a price. Source
+              and the link to the original on every note; the picture is ours. */}
           {data.news && data.news.rows.length > 0 && (
             <section className="br-md__sec" data-testid="mds-news">
               <h3 className="br-md__h">{data.news.label}</h3>
               <ol className="mds-news">
                 {data.news.rows.map((n) => (
                   <li key={n.key} className="mds-news__item">
+                    {n.image && (
+                      <span className="mds-news__img">
+                        <Image src={n.image.src} width={n.image.width} height={n.image.height} alt="" loading="lazy" sizes="(max-width: 640px) 100vw, 560px" />
+                      </span>
+                    )}
                     <span className="mds-news__when">
                       <time dateTime={n.iso}>{n.time}</time>
                       <span>{n.source}</span>
@@ -585,7 +592,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                     <p className="mds-news__t" lang={n.textLang}>{n.title}</p>
                     <p className="mds-news__b" lang={n.textLang}>{n.body}</p>
                     <p className="mds-news__meta">
-                      <span>{n.aiLabel}{n.english ? ` · ${data.news!.inEnglish}` : ""}</span>
+                      {n.english && <span>{data.news!.inEnglish}</span>}
                       <a href={n.url} rel="nofollow noopener noreferrer" target="_blank">{data.news!.readOriginal} <span aria-hidden="true">↗</span></a>
                     </p>
                   </li>

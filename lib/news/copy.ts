@@ -3,7 +3,7 @@
 // match sheet), in the 11 languages of the site, in the shape of
 // lib/classic/lobby-copy.ts (plain strings, `{placeholders}`, parity test).
 // Translations carried over from betredge/v3c-newswatch:lib/v3c/news-copy.ts
-// (REVIEW-NATIVE on the legal lines: AI label, takedown); three keys are new
+// (REVIEW-NATIVE on the legal line: takedown); three keys are new
 // here (romeTime, allNews, newsSection). The notes themselves are EN/IT; the
 // other 9 languages show EN, labelled «In English».
 //
@@ -22,8 +22,6 @@ export type NewsCopy = {
   lastUpdateAt: string;
   pausedMeta: string;
   romeTime: string;
-  /** {source} */
-  aiLabel: string;
   inEnglish: string;
   readOriginal: string;
   onBoard: string;
@@ -44,7 +42,6 @@ const en: NewsCopy = {
   lastUpdateAt: "Last update at {time}",
   pausedMeta: "News paused",
   romeTime: "Rome time",
-  aiLabel: "Rewritten with AI from {source}",
   inEnglish: "In English",
   readOriginal: "Read the original",
   onBoard: "On the board",
@@ -64,7 +61,6 @@ const it: NewsCopy = {
   lastUpdateAt: "Ultimo aggiornamento alle {time}",
   pausedMeta: "Notizie in pausa",
   romeTime: "Ora di Roma",
-  aiLabel: "Riscritto con l’IA a partire da {source}", // REVIEW-NATIVE
   inEnglish: "In inglese",
   readOriginal: "Leggi l’originale",
   onBoard: "Sul board",
@@ -84,7 +80,6 @@ const de: NewsCopy = {
   lastUpdateAt: "Letzte Aktualisierung um {time}",
   pausedMeta: "News pausiert",
   romeTime: "Zeit in Rom",
-  aiLabel: "Mit KI umgeschrieben, Quelle: {source}", // REVIEW-NATIVE
   inEnglish: "Auf Englisch",
   readOriginal: "Original lesen",
   onBoard: "Auf dem Board",
@@ -104,7 +99,6 @@ const es: NewsCopy = {
   lastUpdateAt: "Última actualización a las {time}",
   pausedMeta: "Noticias en pausa",
   romeTime: "Hora de Roma",
-  aiLabel: "Reescrito con IA a partir de {source}", // REVIEW-NATIVE
   inEnglish: "En inglés",
   readOriginal: "Leer el original",
   onBoard: "En el tablero",
@@ -124,7 +118,6 @@ const fr: NewsCopy = {
   lastUpdateAt: "Dernière mise à jour à {time}",
   pausedMeta: "Actus en pause",
   romeTime: "Heure de Rome",
-  aiLabel: "Réécrit par IA à partir de {source}", // REVIEW-NATIVE
   inEnglish: "En anglais",
   readOriginal: "Lire l’original",
   onBoard: "Sur le tableau",
@@ -144,7 +137,6 @@ const nl: NewsCopy = {
   lastUpdateAt: "Laatst bijgewerkt om {time}",
   pausedMeta: "Nieuws gepauzeerd",
   romeTime: "Tijd in Rome",
-  aiLabel: "Met AI herschreven op basis van {source}", // REVIEW-NATIVE
   inEnglish: "In het Engels",
   readOriginal: "Lees het origineel",
   onBoard: "Op het board",
@@ -164,7 +156,6 @@ const pl: NewsCopy = {
   lastUpdateAt: "Ostatnia aktualizacja o {time}",
   pausedMeta: "Newsy wstrzymane",
   romeTime: "Czas rzymski",
-  aiLabel: "Przepisane przez AI na podstawie {source}", // REVIEW-NATIVE
   inEnglish: "Po angielsku",
   readOriginal: "Przeczytaj oryginał",
   onBoard: "Na tablicy",
@@ -184,7 +175,6 @@ const pt: NewsCopy = {
   lastUpdateAt: "Última atualização às {time}",
   pausedMeta: "Notícias em pausa",
   romeTime: "Hora de Roma",
-  aiLabel: "Reescrito com IA a partir de {source}", // REVIEW-NATIVE
   inEnglish: "Em inglês",
   readOriginal: "Ler o original",
   onBoard: "No board",
@@ -204,7 +194,6 @@ const ru: NewsCopy = {
   lastUpdateAt: "Последнее обновление в {time}",
   pausedMeta: "Новости на паузе",
   romeTime: "Время Рима",
-  aiLabel: "Переписано с помощью ИИ по материалу {source}", // REVIEW-NATIVE
   inEnglish: "На английском",
   readOriginal: "Читать оригинал",
   onBoard: "На панели",
@@ -224,7 +213,6 @@ const sv: NewsCopy = {
   lastUpdateAt: "Senast uppdaterad kl. {time}",
   pausedMeta: "Nyheterna pausade",
   romeTime: "Tid i Rom",
-  aiLabel: "Omskriven med AI utifrån {source}", // REVIEW-NATIVE
   inEnglish: "På engelska",
   readOriginal: "Läs originalet",
   onBoard: "På boarden",
@@ -244,7 +232,6 @@ const tr: NewsCopy = {
   lastUpdateAt: "Son güncelleme: {time}",
   pausedMeta: "Haberler duraklatıldı",
   romeTime: "Roma saati",
-  aiLabel: "{source} kaynağından yapay zekâ ile yeniden yazıldı", // REVIEW-NATIVE
   inEnglish: "İngilizce",
   readOriginal: "Orijinali oku",
   onBoard: "Panoda",

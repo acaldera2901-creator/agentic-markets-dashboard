@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { NewsFeed } from "@/lib/news/table";
 import { newsCopy, fillNews } from "@/lib/news/copy";
-import { notesForMatch, rowFor, type BoardMatch, type NewsRow } from "@/lib/news/view";
+import { notesForMatch, rowsFor, type BoardMatch, type NewsRow } from "@/lib/news/view";
 
 // ─── the feed ────────────────────────────────────────────────────────────────
 type Store<T> = { value: T; listeners: Set<() => void>; started: boolean };
@@ -113,7 +113,7 @@ export function useMatchNews(home: string, away: string, lang: string): SheetNew
     const notes = notesForMatch(feed.cards, home, away);
     if (!notes.length) return null;
     const c = newsCopy(lang);
-    const rows = notes.map((n) => rowFor(n, lang, now, c));
+    const rows = rowsFor(notes, lang, now);
     return { label: c.newsSection, note: fillNews(c.matchBody, { source: rows[0].source }), readOriginal: c.readOriginal, inEnglish: c.inEnglish, rows };
   }, [feed, now, home, away, lang]);
 }

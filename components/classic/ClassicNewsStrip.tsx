@@ -6,10 +6,11 @@
 // error, not yet loaded) → renders nothing: the board never waits for the news.
 // A note that names a team on the board links to that match; the others are
 // text — never a guessed link.
+import Image from "next/image";
 import Link from "next/link";
 import { fillNews, newsCopy } from "@/lib/news/copy";
 import type { LobbyItem } from "@/lib/ui/lobby";
-import { matchesForNote, rowFor, stripCards, timeRome, type BoardMatch } from "@/lib/news/view";
+import { matchesForNote, rowsFor, stripCards, timeRome, type BoardMatch } from "@/lib/news/view";
 import { boardHref, useNewsFeed, useNow } from "@/components/news/use-news";
 import "@/components/news/news.css";
 
@@ -29,12 +30,16 @@ export function ClassicNewsStrip({ lang, football }: { lang: string; football: r
         <Link className="brc-news__all" href="/blog">{c.allNews} <span aria-hidden="true">›</span></Link>
       </div>
       <ol className="brc-news__list">
-        {cards.map((card) => {
-          const r = rowFor(card, lang, now, c);
-          const m = matchesForNote(card, board)[0];
+        {rowsFor(cards, lang, now).map((r, i) => {
+          const m = matchesForNote(cards[i], board)[0];
           const title = <span className="brc-news__t" lang={r.textLang}>{r.title}</span>;
           return (
-            <li key={r.key} className="brc-news__item">
+            <li key={r.key} className="brc-news__item" data-img={r.image ? "" : undefined} data-kind={r.kind}>
+              {r.image && (
+                <span className="brc-news__thumb">
+                  <Image src={r.image.src} width={r.image.width} height={r.image.height} alt="" loading="lazy" sizes="64px" />
+                </span>
+              )}
               <span className="brc-news__when">
                 <time dateTime={r.iso}>{r.time}</time>
                 <span className="brc-news__src">{r.source}</span>

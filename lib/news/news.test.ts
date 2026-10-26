@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { cardFromRow, feedFromTable, ITEMS_SQL, MAX_ITEMS, STALE_MS, STATE_SQL, type NewsItemRow, type NewsStateRow } from "./table";
 import { newsEnabled, readNews } from "./read.server";
 import { matchTeams } from "./teams";
-import { matchesForNote, notesForMatch, relativeLabel, rowFor, stateMessage, stripCards, timeRome, updatedLine } from "./view";
+import { matchesForNote, notesForMatch, relativeLabel, rowFor, rowsFor, stateMessage, stripCards, timeRome, updatedLine } from "./view";
 import { newsCopy } from "./copy";
 
 const NOW = Date.parse("2026-10-26T12:47:00Z"); // 13:47 in Rome (CET from 25/10)
@@ -99,8 +99,11 @@ describe("view · note → row", () => {
   });
   it("«x minutes ago» only once «now» is known; the day for a note not of today", () => {
     const r = rowFor(cards[0], "en", NOW);
-    expect(r).toMatchObject({ key: "madrid", time: "13:09", ago: "37 minutes ago", iso: "2026-10-26T12:09:49.000Z", source: "FotMob", textLang: "en", english: false });
-    expect(r.aiLabel).toBe("Rewritten with AI from FotMob");
+    expect(r).toMatchObject({ key: "madrid", time: "13:09", ago: "37 minutes ago", iso: "2026-10-26T12:09:49.000Z", source: "FotMob", textLang: "en", english: false, kind: "risultato" });
+    expect(r.image).toEqual({ src: "/news/news-01-risultato.webp", width: 1200, height: 675 });
+    expect(rowFor(cards[1], "en", NOW)).toMatchObject({ kind: "generica", image: { src: "/news/news-07-generica.webp" } }); // «EN mufc» / «Body en.»: no words of any kind
+    // a list: the generic rows after Madrid alternate 07 / 01 so no two neighbours share a picture («EN totw» reads as an award)
+    expect(rowsFor(cards, "en", NOW).map((r) => r.kind)).toEqual(["risultato", "generica", "risultato", "generica", "premi"]);
     expect(rowFor(cards[0], "en", null).ago).toBe("");
     expect(relativeLabel(NOW - 3 * H, NOW, "en")).toBe("3 hours ago");
     expect(relativeLabel(NOW - 26 * H, NOW, "it")).toBe("ieri");
@@ -108,9 +111,9 @@ describe("view · note → row", () => {
     expect(rowFor(old, "en", NOW).ago).toBe("3 days ago");
   });
   it("IT reads the Italian text; the other nine read English, tagged", () => {
-    expect(rowFor(cards[0], "it", NOW)).toMatchObject({ title: "Il Real Madrid batte il Barcellona 2-1", textLang: "it", english: false, aiLabel: "Riscritto con l’IA a partire da FotMob", ago: "37 minuti fa" });
-    expect(rowFor(cards[0], "de", NOW)).toMatchObject({ title: /Mourinho/, textLang: "en", english: true, aiLabel: "Mit KI umgeschrieben, Quelle: FotMob" });
-    expect(rowFor(cards[0], "xx", NOW).aiLabel).toBe("Rewritten with AI from FotMob");
+    expect(rowFor(cards[0], "it", NOW)).toMatchObject({ title: "Il Real Madrid batte il Barcellona 2-1", textLang: "it", english: false, ago: "37 minuti fa" });
+    expect(rowFor(cards[0], "de", NOW)).toMatchObject({ title: /Mourinho/, textLang: "en", english: true });
+    expect(rowFor(cards[0], "xx", NOW).textLang).toBe("en");
   });
   it("header line and state message for every state", () => {
     const c = newsCopy("en");

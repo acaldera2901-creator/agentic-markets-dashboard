@@ -4,6 +4,7 @@
 // No React, no Next, no Date.now(): every function takes `now`. Times are
 // Rome's, on purpose (the brief): one clock for every visitor, declared once.
 import { fillNews, newsCopy, type NewsCopy } from "./copy";
+import { dedupeKinds, newsImage, newsKind, type NewsImage, type NewsKind } from "./kind";
 import { matchTeams } from "./teams";
 import type { NewsCard, NewsFeed } from "./table";
 
@@ -80,11 +81,14 @@ export type NewsRow = {
   /** «In English» tag outside EN/IT */
   english: boolean;
   url: string;
-  aiLabel: string;
+  /** the kind of story, from its words (lib/news/kind.ts) */
+  kind: NewsKind;
+  /** our 16:9 picture for that kind, null when we have none */
+  image: NewsImage | null;
 };
 
-/** The mapping note → row. `now` null = before mount: no relative time (never a hydration mismatch). */
-export function rowFor(card: NewsCard, lang: string, now: number | null, copy: NewsCopy = newsCopy(lang)): NewsRow {
+/** The mapping note → row. `now` null = before mount: no relative time (never a hydration mismatch). `kind` given = already de-duplicated by rowsFor. */
+export function rowFor(card: NewsCard, lang: string, now: number | null, kind: NewsKind = newsKind(card)): NewsRow {
   const x = noteText(card, lang);
   const ago = now != null ? relativeLabel(card.t, now, lang) : "";
   return {
@@ -98,8 +102,15 @@ export function rowFor(card: NewsCard, lang: string, now: number | null, copy: N
     textLang: lang === "it" ? "it" : "en",
     english: x.english,
     url: card.url,
-    aiLabel: fillNews(copy.aiLabel, { source: card.source }),
+    kind,
+    image: newsImage(kind),
   };
+}
+
+/** A list of rows in page order, no two neighbours on the same picture (lib/news/kind.ts dedupeKinds). */
+export function rowsFor(cards: readonly NewsCard[], lang: string, now: number | null): NewsRow[] {
+  const kinds = dedupeKinds(cards.map(newsKind));
+  return cards.map((c, i) => rowFor(c, lang, now, kinds[i]));
 }
 
 /** The strip on the board: at most `max` notes, newest first. Anything but «ok» → nothing (the strip hides). */
