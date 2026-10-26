@@ -8,7 +8,6 @@ export const TAB_PATHS = {
   bets: "/predictions",
   history: "/history",
   plans: "/plans",
-  leaderboard: "/leaderboard",
   "match-builder": "/probability-view",
   invita: "/invite",
 } as const;
@@ -20,6 +19,8 @@ export type AppTab = keyof typeof TAB_PATHS;
 // in VALID_TABS ma la landing lo linkava (cadeva su bets: qui va al builder vero).
 export const TAB_ALIASES: Record<string, AppTab> = {
   account: "plans",
+  // Retired public ranking: old bookmarks now open predictions.
+  leaderboard: "bets",
   builder: "match-builder",
 };
 

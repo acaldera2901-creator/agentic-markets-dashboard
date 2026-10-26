@@ -1,20 +1,6 @@
-// #URL-PATHS-0810: path inglese della tab "leaderboard" (ex /app?tab=leaderboard).
-// #SEO-PACK-0810: title senza em-dash, description propria, breadcrumb.
-import type { Metadata } from "next";
-import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
-import Dashboard from "../app/page";
+import { permanentRedirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Leaderboard | BetRedge",
-  description: "The BetRedge community leaderboard is experimental. Automatic ranking updates are not active.",
-  alternates: { canonical: "/leaderboard" },
-};
-
+// Preserve old bookmarks without exposing the retired public ranking.
 export default function LeaderboardPage() {
-  return (
-    <>
-      <JsonLd data={breadcrumbJsonLd([["Leaderboard", "/leaderboard"]])} />
-      <Dashboard initialTab="leaderboard" />
-    </>
-  );
+  permanentRedirect("/predictions");
 }

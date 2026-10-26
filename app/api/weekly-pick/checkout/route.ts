@@ -77,6 +77,7 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
+    if (state.purchasable !== true) return NextResponse.json({ error: "case unavailable for purchase" }, { status: 409 });
   } catch (e) {
     console.error("[weekly-pick/checkout] weeklyPickWeekStateStrict failed:", String(e));
     return NextResponse.json({ error: "unavailable" }, { status: 500 });

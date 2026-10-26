@@ -93,6 +93,7 @@ export type WeeklyPickLeg = {
   // (max 1 leg/giorno). Opzionale per retro-compatibilità: selections salvate e
   // candidate senza data seguono il comportamento legacy (pool top-prob).
   startsAt?: string | null;
+  snapshot?: { sourceTable: string; sourceId: string; modelVersion: string; pick: string; capturedAt: string; probabilitySource: "model" };
 };
 
 // Lunedì 00:00 UTC della settimana che contiene `now`, come "YYYY-MM-DD". PURA.
@@ -188,9 +189,9 @@ export function appendWeeklyLegs(
 }
 
 // Stato di una leg risolto contro il settlement della sua predizione.
-export type LegStatus = "upcoming" | "won" | "lost" | "void";
+export type LegStatus = "upcoming" | "won" | "lost" | "void" | "unresolved";
 // Esito aggregato della multipla nella settimana.
-export type MultiplaOutcome = "live" | "won" | "lost";
+export type MultiplaOutcome = "live" | "won" | "lost" | "void" | "unresolved";
 // Riga minima di unified_predictions necessaria alla risoluzione.
 export type PredOutcomeRow = {
   id: string;
@@ -219,10 +220,10 @@ export function resolveWeeklyPickOutcomes(
     const predId = leg.id.startsWith("wp_") ? leg.id.slice(3) : leg.id;
     const row = byId.get(predId);
     let status: LegStatus = "upcoming";
-    if (row && (row.result === "won" || row.result === "lost" || row.result === "void")) {
+    if (row && (row.result === "won" || row.result === "lost" || row.result === "void" || row.result === "unresolved")) {
       status = row.result;
     }
-    return { ...leg, status, kickoff: row?.starts_at ?? null };
+    return { ...leg, status, kickoff: leg.startsAt ?? row?.starts_at ?? null };
   });
   const anyLost = resolved.some((l) => l.status === "lost");
   const remaining = resolved.filter((l) => l.status === "upcoming").length;
@@ -241,9 +242,9 @@ export function resolveWeeklyPickOutcomes(
     ? "lost"
     : remaining > 0
       ? "live"
-      : vinte > 0
-        ? "won"
-        : "lost"; // tutte annullate: nessuna gamba ha prodotto un esito
+      : resolved.some(l => l.status === "unresolved") || resolved.length === 0
+        ? "unresolved"
+        : vinte > 0 ? "won" : "void";
   return { legs: resolved, outcome, remaining, vinte, annullate };
 }
 
@@ -285,4 +286,25 @@ export function weeklyBrief(
     avgConfidence,
     strongest: strongest ? { label: strongest.label, market: strongest.market, prob: strongest.prob } : null,
   };
+}
+
+/** Legacy rows stay visible, but are not silently certified retroactively. */
+export function weeklyPickIntegrity(legs: WeeklyPickLeg[]): "sealed_model" | "legacy_unverified" {
+  return legs.length > 0 && legs.every(l => l.snapshot?.probabilitySource === "model"
+    && l.snapshot.sourceTable && l.snapshot.sourceId && l.snapshot.modelVersion && l.snapshot.pick
+    && Number.isFinite(Date.parse(l.snapshot.capturedAt)) && l.startsAt
+    && Date.parse(l.snapshot.capturedAt) < Date.parse(l.startsAt)) ? "sealed_model" : "legacy_unverified";
+}
+
+export function weeklyPickPurchasable(legs: WeeklyPickLeg[], rows: PredOutcomeRow[], now = new Date()): boolean {
+  if (legs.length !== WEEKLY_PICK_MAX_LEGS || weeklyPickIntegrity(legs) !== "sealed_model") return false;
+  const byId = new Map(rows.map(r => [r.id, r]));
+  return legs.every(l => {
+    const row = byId.get(l.id.startsWith("wp_") ? l.id.slice(3) : l.id);
+    const kickoff = Date.parse(l.startsAt!);
+    return row && !["settled", "finished", "cancelled", "canceled", "void", "unresolved"].includes(row.status ?? "")
+      && (!row.result || row.result === "pending")
+      && Number.isFinite(l.prob) && l.prob >= WEEKLY_PICK_MIN_LEG_PROB && l.prob <= 1
+      && kickoff > now.getTime() && kickoff === Date.parse(row.starts_at ?? "");
+  });
 }

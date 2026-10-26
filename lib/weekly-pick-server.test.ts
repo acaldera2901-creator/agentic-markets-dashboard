@@ -20,7 +20,7 @@ describe("weeklyPickWeekStateStrict", () => {
   it("nessuna riga per la settimana → exists=false (il chiamante risponde 404)", async () => {
     dbQueryStrict.mockResolvedValueOnce([]);
     const s = await (await load()).weeklyPickWeekStateStrict("2026-09-07");
-    expect(s).toEqual({ exists: false, legs: 0, remaining: 0 });
+    expect(s).toEqual({ exists: false, legs: 0, remaining: 0, purchasable: false });
     expect((await load()).weeklyPickClosed(s)).toBe(false);
     expect(dbQueryStrict).toHaveBeenCalledTimes(1);
   });
@@ -29,7 +29,7 @@ describe("weeklyPickWeekStateStrict", () => {
     dbQueryStrict.mockResolvedValueOnce([{ selections: JSON.stringify(legs) }]);
     dbQueryStrict.mockResolvedValueOnce([pred("a", "won"), pred("b", "won")]);
     const s = await (await load()).weeklyPickWeekStateStrict("2026-08-31");
-    expect(s).toEqual({ exists: true, legs: 2, remaining: 0 });
+    expect(s).toEqual({ exists: true, legs: 2, remaining: 0, purchasable: false });
     expect((await load()).weeklyPickClosed(s)).toBe(true);
     expect(String(dbQueryStrict.mock.calls[1][0])).toContain("IN ($1, $2)");
     expect(dbQueryStrict.mock.calls[1][1]).toEqual(["a", "b"]);
@@ -39,14 +39,14 @@ describe("weeklyPickWeekStateStrict", () => {
     dbQueryStrict.mockResolvedValueOnce([{ selections: legs }]);
     dbQueryStrict.mockResolvedValueOnce([pred("a", "lost")]);
     const s = await (await load()).weeklyPickWeekStateStrict("2026-08-31");
-    expect(s).toEqual({ exists: true, legs: 2, remaining: 1 });
+    expect(s).toEqual({ exists: true, legs: 2, remaining: 1, purchasable: false });
     expect((await load()).weeklyPickClosed(s)).toBe(false);
   });
 
   it("riga senza gambe → exists ma NON chiusa (vuota, non finita)", async () => {
     dbQueryStrict.mockResolvedValueOnce([{ selections: [] }]);
     const s = await (await load()).weeklyPickWeekStateStrict("2026-08-31");
-    expect(s).toEqual({ exists: true, legs: 0, remaining: 0 });
+    expect(s).toEqual({ exists: true, legs: 0, remaining: 0, purchasable: false });
     expect((await load()).weeklyPickClosed(s)).toBe(false);
     expect(dbQueryStrict).toHaveBeenCalledTimes(1);
   });
@@ -55,4 +55,19 @@ describe("weeklyPickWeekStateStrict", () => {
     dbQueryStrict.mockRejectedValueOnce(new Error("timeout"));
     await expect((await load()).weeklyPickWeekStateStrict("2026-08-31")).rejects.toThrow("timeout");
   });
+});
+
+it('reads new case results against the frozen ledger key, never the mutable served pick', async () => {
+ const sealed = {...legs[0],snapshot:{sourceTable:'tennis_predictions',sourceId:'match-a',modelVersion:'elo-v4',pick:'A',capturedAt:'2026-10-26T08:00:00Z',probabilitySource:'model' as const}};
+ dbQueryStrict.mockResolvedValueOnce([{source_table:'tennis_predictions',source_id:'match-a',model_version:'elo-v4',result:'lost'}]);
+ const result = await (await load()).resolveSealedWeeklyRows([sealed], [pred('a','won')]);
+ expect(result[0].result).toBe('lost');
+ expect(dbQueryStrict.mock.calls[0][0]).toContain('pick_settlement');
+ expect(dbQueryStrict.mock.calls[0][1]).toEqual(['tennis_predictions','match-a','elo-v4']);
+});
+it('keeps missing sealed results unresolved instead of inheriting a served win', async () => {
+ const sealed = {...legs[0],snapshot:{sourceTable:'tennis_predictions',sourceId:'match-a',modelVersion:'elo-v4',pick:'A',capturedAt:'2026-10-26T08:00:00Z',probabilitySource:'model' as const}};
+ dbQueryStrict.mockResolvedValueOnce([]);
+ const result = await (await load()).resolveSealedWeeklyRows([sealed], [pred('a','won')]);
+ expect(result[0].result).toBe('unresolved');
 });
