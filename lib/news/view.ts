@@ -6,6 +6,7 @@
 import { noteBadges, type ClubBadge } from "./clubs";
 import { fillNews, newsCopy, type NewsCopy } from "./copy";
 import { dedupeKinds, newsImage, newsKind, type NewsImage, type NewsKind } from "./kind";
+import { noteImage, type NoteImage } from "./per-note";
 import { matchTeams } from "./teams";
 import type { NewsCard, NewsFeed } from "./table";
 
@@ -84,8 +85,8 @@ export type NewsRow = {
   url: string;
   /** the kind of story, from its words (lib/news/kind.ts) */
   kind: NewsKind;
-  /** our 16:9 picture for that kind, null when we have none */
-  image: NewsImage | null;
+  /** the picture made for this note (lib/news/per-note.ts, with its png fallback) or else our 16:9 picture for its kind; null when we have none */
+  image: NoteImage | NewsImage | null;
   /** the clubs the note names (max two, in order): real crest and colours when we have them (lib/news/clubs.ts) */
   badges: ClubBadge[];
 };
@@ -106,15 +107,24 @@ export function rowFor(card: NewsCard, lang: string, now: number | null, kind: N
     english: x.english,
     url: card.url,
     kind,
-    image: newsImage(kind),
+    image: noteImage(card) ?? newsImage(kind),
     badges: noteBadges(`${card.note.en.title} ${card.note.it.title}`, `${card.note.en.body} ${card.note.it.body}`, card.teams),
   };
 }
 
-/** A list of rows in page order, no two neighbours on the same picture (lib/news/kind.ts dedupeKinds). */
+/** A list of rows in page order, no two neighbours on the same kind picture (lib/news/kind.ts dedupeKinds); a note with its own picture breaks the chain. */
 export function rowsFor(cards: readonly NewsCard[], lang: string, now: number | null): NewsRow[] {
-  const kinds = dedupeKinds(cards.map(newsKind));
-  return cards.map((c, i) => rowFor(c, lang, now, kinds[i]));
+  const kinds = cards.map(newsKind);
+  const out = [...kinds];
+  let start = 0;
+  for (let i = 0; i <= cards.length; i++) {
+    if (i === cards.length || noteImage(cards[i])) {
+      const seg = dedupeKinds(kinds.slice(start, i));
+      for (let j = 0; j < seg.length; j++) out[start + j] = seg[j];
+      start = i + 1;
+    }
+  }
+  return cards.map((c, i) => rowFor(c, lang, now, out[i]));
 }
 
 /** The strip on the board: at most `max` notes, newest first. Anything but «ok» → nothing (the strip hides). */

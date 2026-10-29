@@ -5,10 +5,14 @@
 // bundled badges, lib/ui/crest-map.json) as sharp elements on a dark pill in
 // the lower corners — first club left, second club right. No club named →
 // the photo alone. No crest bundled for a club → no crest for it, never a
-// substitute. Decorative photo (alt=""), named crests (alt = club).
+// substitute. Decorative photo (alt=""), named crests (alt = club). The photo
+// is the one made for the note when there is one (lib/news/per-note.ts:
+// webp with a png fallback in a <picture>), else the kind's (next/image).
 import Image from "next/image";
 import type { ClubBadge } from "@/lib/news/clubs";
 import type { NewsImage } from "@/lib/news/kind";
+
+type Picture = NewsImage & { png?: string };
 
 export type NewsArtVariant = "thumb" | "strip" | "card";
 
@@ -37,14 +41,22 @@ export function tintGradient(badges: readonly ClubBadge[]): string | null {
   return `linear-gradient(100deg, ${L} 0%, transparent 46%, transparent 54%, ${R} 100%)`;
 }
 
-export function NewsArt({ image, badges, variant, className, sizes }: { image: NewsImage | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string }) {
+export function NewsArt({ image, badges, variant, className, sizes }: { image: Picture | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string }) {
   if (!image) return null;
   const tint = tintGradient(badges);
   const px = CREST_PX[variant];
   const shown = badges.filter((b) => b.crest).slice(0, 2);
   return (
-    <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined}>
-      <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading="lazy" sizes={sizes} />
+    <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined} data-own={image.png ? "" : undefined}>
+      {image.png ? (
+        <picture>
+          <source type="image/webp" srcSet={image.src} />
+          {/* eslint-disable-next-line @next/next/no-img-element -- the per-note picture ships as webp + png fallback; a <picture> is the way to offer both */}
+          <img className="nwa-img" src={image.png} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
+        </picture>
+      ) : (
+        <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading="lazy" sizes={sizes} />
+      )}
       {tint && <span className="nwa-tint" aria-hidden="true" style={{ backgroundImage: tint }} />}
       {shown.map((b, i) => (
         <span key={b.name} className="nwa-badge" data-side={i === 0 ? "l" : "r"} style={{ width: px + 8, height: px + 8 }}>
