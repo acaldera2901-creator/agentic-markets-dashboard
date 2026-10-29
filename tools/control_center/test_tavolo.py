@@ -204,6 +204,58 @@ class Freni(Base):
         finally:
             tavolo.LIMITI["exec_lato_giorno"] = vecchio
 
+    def _in_parallelo(self, fn, n=8):
+        """n chiamate a fn(i) partite insieme; ritorna (accettati, rifiutati)."""
+        via = threading.Barrier(n)
+        esiti = []
+
+        def uno(i):
+            via.wait()
+            try:
+                fn(i)
+                esiti.append("ok")
+            except tavolo.Rifiutato:
+                esiti.append("rifiutato")
+        th = [threading.Thread(target=uno, args=(i,)) for i in range(n)]
+        for t in th:
+            t.start()
+        for t in th:
+            t.join(30)
+        return esiti.count("ok"), esiti.count("rifiutato")
+
+    def test_qa_570_dedup_atomico_fra_thread(self):
+        # QA #570 punto 2: 5 POST identici in parallelo diventavano 5 file in inbox.
+        ok, no = self._in_parallelo(lambda i: tavolo.invia("andrea", "codex", "stessa domanda",
+                                                           richiede_risposta=True, esegui=True))
+        self.assertEqual((ok, no), (1, 7))
+        self.assertEqual(len(list((self.dir / "inbox-codex").glob("t-*.json"))), 1)
+
+    def test_qa_570_dedup_atomico_fra_processi(self):
+        procs = [subprocess.Popen([sys.executable, str(REPO / "tools/tavolo"), "invia", "--to", "codex",
+                                   "stessa domanda fra processi"],
+                                  env={**os.environ, "AM_SHELL": "claude_test"},
+                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT) for _ in range(6)]
+        rc = sorted(p.wait(60) for p in procs)
+        for p in procs:
+            p.stdout.close()
+        self.assertEqual(rc, [tavolo.OK] + [tavolo.RIFIUTATO] * 5)
+        self.assertEqual(len(list((self.dir / "inbox-codex").glob("t-*.json"))), 1)
+
+    def test_qa_570_budget_exec_riservato_all_accettazione(self):
+        # Testi diversi (niente dedup), tutti con --esegui: il budget del giorno
+        # si riserva quando il messaggio entra, non quando il bridge finisce.
+        vecchio = tavolo.LIMITI["exec_lato_giorno"]
+        tavolo.LIMITI["exec_lato_giorno"] = 2
+        try:
+            ok, no = self._in_parallelo(lambda i: tavolo.invia("andrea", "codex", f"domanda {i}",
+                                                               esegui=True))
+            self.assertEqual((ok, no), (2, 6))
+            with self.assertRaises(tavolo.Rifiutato):
+                tavolo.invia("andrea", "codex", "ancora una", esegui=True)
+            tavolo.invia("andrea", "codex", "senza bridge")   # la posta resta libera
+        finally:
+            tavolo.LIMITI["exec_lato_giorno"] = vecchio
+
     def test_tetto_token_per_conv(self):
         m = tavolo.invia("claude", "codex", "inizio")
         tavolo._registra({"evento": "exec", "lato": "codex", "conv": m["conv"],
@@ -654,6 +706,23 @@ class Api(Base):
             d = json.loads(r.read())
         self.assertFalse(d["live"])
         self.assertIn("limiti", d)
+
+    def test_qa_570_esegui_solo_booleano(self):
+        # QA #570 punto 3: "esegui":"false" (stringa) era vero e il bridge partiva.
+        with mock.patch.object(tavolo, "consegna_in_background", return_value={"ok": True}) as bg:
+            for valore in ("false", "true", 1, 0, None, [], {}):
+                code, d = self._post({"azione": "chiedi", "a": "codex", "testo": f"x {valore!r}",
+                                      "esegui": valore})
+                self.assertEqual(code, 400, (valore, d))
+            self.assertFalse(list((self.dir / "inbox-codex").glob("t-*.json")))
+            bg.assert_not_called()
+            self.assertEqual(self._post({"azione": "chiedi", "a": "codex", "testo": "falso",
+                                         "esegui": False})[0], 200)
+            self.assertEqual(self._post({"azione": "chiedi", "a": "codex", "testo": "assente"})[0], 200)
+            bg.assert_not_called()
+            self.assertEqual(self._post({"azione": "chiedi", "a": "codex", "testo": "vero",
+                                         "esegui": True})[0], 200)
+            bg.assert_called_once()
 
     def test_post_protetto_dal_token(self):
         self.assertEqual(self._post({"azione": "chiedi", "a": "codex", "testo": "x"}, token=False)[0], 403)
@@ -1115,6 +1184,116 @@ class TorreCockpit(unittest.TestCase):
         finally:
             httpd.shutdown()
             httpd.server_close()
+
+
+class TorreBrowser(Base):
+    """QA #570 punti 1, 4, 5, 6: la pagina vera in un Chrome headless, servita
+    da un server su porta effimera e TAVOLO_DIR temporaneo. Salta se Playwright
+    o Chrome mancano (la logica server resta coperta dalle classi sopra)."""
+
+    LARGHEZZE = (390, 721, 768, 900, 1024, 1032, 1440)
+
+    def setUp(self):
+        super().setUp()
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            self.skipTest("playwright non installato")
+        from . import server
+        self.httpd = server.make_server(0)
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}/"
+        self.pw = sync_playwright().start()
+        try:
+            self.browser = self.pw.chromium.launch(channel="chrome")
+        except Exception as exc:  # noqa: BLE001
+            self.pw.stop()
+            self.httpd.shutdown()
+            self.httpd.server_close()
+            self.skipTest(f"Chrome headless non disponibile: {exc}")
+        self.errori = []
+
+    def tearDown(self):
+        if hasattr(self, "browser"):
+            self.browser.close()
+            self.pw.stop()
+            self.httpd.shutdown()
+            self.httpd.server_close()
+        super().tearDown()
+
+    def pagina(self, larghezza=1440, hash_="", orologio=False):
+        p = self.browser.new_page(viewport={"width": larghezza, "height": 900})
+        p.on("pageerror", lambda e: self.errori.append(str(e)))
+        if orologio:
+            p.clock.install()
+        p.goto(self.url + hash_)
+        p.wait_for_selector("#navtorre a")
+        return p
+
+    def test_barra_cliccabile_a_ogni_larghezza(self):
+        # Punto 1: fra 721 e ~1030 px la barra andava a capo sotto un'intestazione
+        # alta 44 px fissi e finiva sotto `main`: le voci non si cliccavano.
+        js = """() => [...document.querySelectorAll('#navtorre a')].map(a => {
+                  const r = a.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+                  const e = document.elementFromPoint(x, y);
+                  return [a.textContent.trim(), !!e && a.contains(e), Math.round(y)]; })"""
+        for w in self.LARGHEZZE:
+            p = self.pagina(w)
+            voci = p.evaluate(js)
+            self.assertEqual(len(voci), 5)
+            for nome, ok, y in voci:
+                self.assertTrue(ok, f"{w}px: «{nome}» coperta (y={y})")
+            self.assertLessEqual(p.evaluate("document.documentElement.scrollWidth"), w, f"{w}px scorre di lato")
+            p.close()
+        self.assertEqual(self.errori, [])
+
+    def test_pid_morto_non_si_dice_non_verificato(self):
+        # Punto 4: «pid morto ... (non verificato)» si contraddiceva.
+        tavolo.collegati({"lato": "codex", "client": "codex", "pid": _pid_morto(), "exe": None,
+                          "riconosciuto": "test"})
+        p = self.pagina(hash_="#tavolo")
+        p.wait_for_selector("#tav-pres .sis-r")
+        testo = p.inner_text("#tav-pres")
+        self.assertIn("pid morto", testo)
+        self.assertNotIn("non verificato", testo)
+        self.assertEqual(self.errori, [])
+
+    def test_live_spento_niente_chiedi(self):
+        # Punto 5: con l'interruttore OFF il «chiedi» c'era e finiva in un errore.
+        m = tavolo.invia("andrea", "codex", "aperta prima dello spegnimento")
+        self.assertTrue(m)
+        (self.dir / "LIVE").unlink()
+        p = self.pagina(hash_="#tavolo")
+        p.wait_for_selector("#tav-nuova .nulla")
+        attivi = p.evaluate("""() => [...document.querySelectorAll('#vista-tavolo button')]
+                                 .filter(b => b.textContent.trim() === 'chiedi' && !b.disabled).length""")
+        self.assertEqual(attivi, 0)
+        self.assertIn("OFF", p.inner_text("#tav-nuova"))
+        self.assertEqual(self.errori, [])
+
+    def test_un_solo_giro_per_tick_a_pagina_aperta(self):
+        # Punto 6a: a pagina Tavolo aperta il giro da 60 s e quello da 15 s
+        # chiedevano /api/tavolo nello stesso secondo.
+        p = self.pagina(hash_="#tavolo", orologio=True)
+        p.wait_for_selector("#tav-kpi .sis-k")
+        chiamate = []
+        p.on("request", lambda r: chiamate.append(r.url) if r.url.endswith("/api/tavolo") else None)
+        p.clock.run_for(60_000)
+        p.wait_for_timeout(500)
+        self.assertEqual(len(chiamate), 4, chiamate)   # 15, 30, 45, 60 s: uno per tick
+        self.assertEqual(self.errori, [])
+
+    def test_badge_vecchio_se_l_endpoint_tace(self):
+        # Punto 6b: dopo aver dato dati, se /api/tavolo tace il badge restava vecchio.
+        m = tavolo.invia("andrea", "codex", "domanda")
+        tavolo.invia("codex", "andrea", "risposta", tipo="verdetto", in_risposta_a=m["id"])
+        p = self.pagina(orologio=True)
+        p.wait_for_function("document.getElementById('nav-tavolo').textContent === '1'")
+        p.route("**/api/tavolo", lambda r: r.abort())
+        p.clock.run_for(61_000)
+        p.wait_for_function("document.getElementById('nav-tavolo').textContent !== '1'")
+        self.assertIn("non aggiornato", p.get_attribute("#nav-tavolo", "title") or "")
+        self.assertEqual(self.errori, [])
 
 
 class Wrapper(unittest.TestCase):

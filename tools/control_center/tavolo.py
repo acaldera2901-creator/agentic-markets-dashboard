@@ -24,6 +24,7 @@ limitano *quanti* scambi, non *cosa* fa chi riceve.
 """
 
 import argparse
+import contextlib
 import fcntl
 import hashlib
 import json
@@ -450,9 +451,37 @@ def _freni(m: dict, impr: str, nuova_conv: bool, esegui: bool, ora: datetime) ->
         raise Rifiutato(f"conv {m['conv']} ha consumato {tok} token misurati "
                         f"(tetto {LIMITI['token_conv']})")
     if esegui:
-        n = _exec_oggi(m["to"], ora)
+        n = _exec_riservate(m["to"], ora)
         if n >= LIMITI["exec_lato_giorno"]:
             raise Rifiutato(f"{m['to']}: {n} invocazioni oggi (tetto {LIMITI['exec_lato_giorno']})")
+
+
+def _exec_riservate(lato: str, ora: datetime) -> int:
+    """Il budget exec si riserva all'accettazione (QA #570): i messaggi entrati
+    oggi con --esegui contano gia', anche se il bridge non ha ancora finito; in
+    piu' le exec di messaggi entrati senza (`tavolo consegna` a mano). Un bridge
+    che poi non parte consuma comunque il posto: si sbaglia per difetto."""
+    giorno = _iso(ora)[:10]
+    oggi = [e for e in eventi() if str(e.get("quando", ""))[:10] == giorno]
+    riservati = {e.get("id") for e in oggi
+                 if e.get("evento") == "accettato" and e.get("esegui") and e.get("a") == lato}
+    return len(riservati) + sum(1 for e in oggi if e.get("evento") == "exec"
+                                and e.get("lato") == lato and e.get("id") not in riservati)
+
+
+@contextlib.contextmanager
+def _sezione_posta():
+    """Una sola scrittura di posta alla volta, fra thread e processi (QA #570):
+    controllo dei freni (dedup, tetti, budget) e scrittura stanno dentro lo
+    stesso flock, altrimenti N invii identici in parallelo passano tutti."""
+    # .flock, non .lock: i *.lock sono i worktree occupati, e spariscono al rilascio;
+    # questo file resta (il lock e' il flock, non l'esistenza del file).
+    fd = os.open(_d("lock") / "posta.flock", os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(fd)   # chiudere rilascia il flock
 
 
 def invia(da: str, a: str, corpo=None, *, tipo: str = "domanda", conv: str | None = None,
@@ -515,23 +544,27 @@ def invia(da: str, a: str, corpo=None, *, tipo: str = "domanda", conv: str | Non
     # Solo il contenuto: cambiare ref, conv o in_risposta_a non aggira il dedup.
     impr = _impronta_msg(m)
     m["impronta"] = impr
-    try:
-        if not _risposta_bridge:
-            if conv in _conv_chiuse():
-                raise Rifiutato(f"conv {conv} e' chiusa")
-            if tipo == "lavoro":
-                if not worktree:
-                    raise Rifiutato("un `lavoro` senza worktree non si accetta: --worktree o --filone")
-                verifica_worktree(worktree)
-            _freni(m, impr, nuova_conv, esegui, ora)
-    except Rifiutato as exc:
-        _registra({"evento": "rifiutato", "motivo": str(exc), "da": da, "a": a,
-                   "conv": conv, "ref": ref, "tipo": tipo, "impronta": impr}, ora)
-        raise
-    _scrivi_atomico(_d(f"inbox-{a}") / f"{m['id']}.json", m)
-    _registra({"evento": "accettato", "id": m["id"], "da": da, "a": a, "conv": conv,
-               "tipo": tipo, "nuova_conv": nuova_conv}
-              | ({"risposta_bridge": True} if _risposta_bridge else {}), ora)
+    # Freni e scrittura nella stessa sezione critica: il dedup e i tetti
+    # valgono anche per N invii identici in parallelo (QA #570).
+    with _sezione_posta():
+        try:
+            if not _risposta_bridge:
+                if conv in _conv_chiuse():
+                    raise Rifiutato(f"conv {conv} e' chiusa")
+                if tipo == "lavoro":
+                    if not worktree:
+                        raise Rifiutato("un `lavoro` senza worktree non si accetta: --worktree o --filone")
+                    verifica_worktree(worktree)
+                _freni(m, impr, nuova_conv, esegui, ora)
+        except Rifiutato as exc:
+            _registra({"evento": "rifiutato", "motivo": str(exc), "da": da, "a": a,
+                       "conv": conv, "ref": ref, "tipo": tipo, "impronta": impr}, ora)
+            raise
+        _scrivi_atomico(_d(f"inbox-{a}") / f"{m['id']}.json", m)
+        _registra({"evento": "accettato", "id": m["id"], "da": da, "a": a, "conv": conv,
+                   "tipo": tipo, "nuova_conv": nuova_conv}
+                  | ({"esegui": True} if esegui and not _risposta_bridge else {})
+                  | ({"risposta_bridge": True} if _risposta_bridge else {}), ora)
     return m
 
 

@@ -62,7 +62,9 @@ b,strong{font-weight:600}
 main{display:flex;flex-direction:column;gap:calc(var(--u)*2);flex:1;min-height:0}
 
 /* ─── testa ─── */
-.testa{display:flex;align-items:center;gap:calc(var(--u)*3);flex-wrap:wrap;height:44px;flex:none}
+/* min-height, non height: quando la barra va a capo (con cinque voci succede fino a ~1030 px)
+   l'intestazione cresce, invece di lasciarla sotto `main` dove non si clicca (QA #570) */
+.testa{display:flex;align-items:center;gap:calc(var(--u)*3);flex-wrap:wrap;min-height:44px;flex:none}
 .marchio{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}
 .marchio .m{width:36px;height:36px;display:grid;place-items:center;background:var(--cy);color:var(--void);
   font-family:var(--mono);font-weight:700;font-size:18px;
@@ -1694,7 +1696,11 @@ function destinatari(pres,predef){
 function tuoiTavolo(d){
   return ((d&&d.conv)||[]).filter(c=>c.aperta&&c.palla==="andrea").length;
 }
-function navTavolo(d){ const n=tuoiTavolo(d), e=$("nav-tavolo"); e.textContent=n?String(n):""; e.className="n"; }
+function navTavolo(d){
+  const e=$("nav-tavolo");
+  if(!d){ e.textContent="?"; e.className="n"; e.title="/api/tavolo non risponde: conteggio non aggiornato"; return; }
+  const n=tuoiTavolo(d); e.textContent=n?String(n):""; e.className="n"; e.title="";
+}
 function chiediAl(dove,predef,extra,pres){
   conferma(dove,"Domanda per chi? I collegati sono in cima:",async (testo,scelta)=>{
     const [a,modo]=String(scelta).split("|"), esegui=modo!=="sessione";
@@ -1725,7 +1731,7 @@ async function caricaTavolo(){
     box.append(el("div","nulla","/api/tavolo non risponde."));
     fr.append(el("div","nulla","Stato dei freni sconosciuto finché l'endpoint tace."));
     ri.append(el("div","nulla","—"));
-    stamp("/api/tavolo non risponde · riprovo fra 15 s", true); return;
+    navTavolo(null); stamp("/api/tavolo non risponde · riprovo fra 15 s", true); return;
   }
   navTavolo(d);
   const conv=d.conv||[], aperte=conv.filter(c=>c.aperta), tk=d.token||{};
@@ -1739,7 +1745,7 @@ async function caricaTavolo(){
   if(!pres.length) pr.append(el("div","nulla","Nessuno collegato. Un agente si collega con «tavolo collegati»."));
   pres.forEach(p=>pr.append(rigaTav(p.vivo?"green":(p.stato==="scaduto"?"amber":"red"),
     `${NOME_LATO[p.identita]||p.identita} · ${p.vivo?"vivo":p.stato} · ${p.client||"?"} · progetto ${p.progetto||"—"}`,
-    `collegato da ${etaS(p.da_s)} · ultimo battito ${etaS(p.battito_s)} fa · pid ${p.pid??"non verificabile"}${p.pid!=null&&!p.pid_verificato?" (non verificato)":""} · ${p.cwd||""}`
+    `collegato da ${etaS(p.da_s)} · ultimo battito ${etaS(p.battito_s)} fa · pid ${p.pid??"non verificabile"}${p.pid!=null&&!p.pid_verificato&&p.stato!=="pid morto"?" (non verificato)":""} · ${p.cwd||""}`
     +(p.riconosciuto?` · riconosciuto da ${p.riconosciuto}`:""))));
 
   $("tav-conv-n").textContent=d.assente?"mai usato":`${aperte.length} aperte · ${conv.length} in tutto`;
@@ -1761,6 +1767,7 @@ async function caricaTavolo(){
       const altroLlm=base==="claude"?"codex":"claude";
       const acts=el("div","rim");
       const b=el("button","btn piccolo","chiedi"); b.type="button";
+      if(!d.live){ b.disabled=true; b.title="Interruttore OFF: il Tavolo non scrive"; }
       b.addEventListener("click",()=>chiediAl(r,altroLlm,{conv:c.conv,progetto:c.progetto},pres));
       const bc=el("button","btn piccolo quieto","chiudi conv"); bc.type="button";
       bc.addEventListener("click",()=>conferma(r,"Perché chiudi questa conversazione?",async motivo=>{
@@ -1772,8 +1779,11 @@ async function caricaTavolo(){
     }
     box.append(r);
   }
-  const bn=el("button","btn","chiedi"); bn.type="button";
-  bn.addEventListener("click",()=>chiediAl(nu,vivi.length?vivi[0].identita:"codex",null,pres)); nu.append(bn);
+  if(!d.live) nu.append(el("div","nulla","Interruttore OFF: il Tavolo non scrive, quindi niente «chiedi». Si riaccende creando "+(d.dir||"la cartella")+"/LIVE."));
+  else{
+    const bn=el("button","btn","chiedi"); bn.type="button";
+    bn.addEventListener("click",()=>chiediAl(nu,vivi.length?vivi[0].identita:"codex",null,pres)); nu.append(bn);
+  }
 
   const L=d.limiti||{}, og=d.oggi||{}, ex=og.exec||{}, co=d.code||{};
   $("tav-stato").textContent=(d.live?"LIVE":"spento")+" · "+(d.generato?fmtDataOra(d.generato):"—");
@@ -2369,14 +2379,15 @@ if(VISTA==="hub") caricaHub(); else if(!ALTRE.includes(VISTA)) caricaDettaglio()
 if(ALTRE.includes(VISTA)) mostraAltra(VISTA); else evidenziaNav();
 /* i conteggi della barra (Da fare, Sistema, Tavolo) si tengono vivi anche quando non sei in quella pagina */
 async function aggiornaNav(){
-  const [d,st,tv]=await Promise.all([json("/api/dafare",null),json("/api/state",null),VISTA==="tavolo"?null:json("/api/tavolo",null)]);
-  if(tv) navTavolo(tv);
+  const conTavolo=VISTA!=="tavolo";   /* in pagina Tavolo il badge lo tiene caricaTavolo */
+  const [d,st,tv]=await Promise.all([json("/api/dafare",null),json("/api/state",null),conTavolo?json("/api/tavolo",null):null]);
+  if(conTavolo&&VISTA!=="tavolo") navTavolo(tv);
   if(d){ DAFARE=d; navConteggi(); if(VISTA==="dafare") disegnaDafare(); }
   if(st&&st.checks){ const ko=Object.entries(st.checks).filter(([k,c])=>k.startsWith("launchd_")&&c.level!=="green").length;
     $("nav-sistema").textContent=ko?String(ko):""; $("nav-sistema").className="n"+(ko?" r":""); }
 }
 aggiornaNav();
-setInterval(()=>{ VISTA==="hub"?caricaHub():ricarica(); aggiornaNav(); },POLL_MS);
+setInterval(()=>{ if(VISTA==="hub") caricaHub(); else if(VISTA!=="tavolo") ricarica(); aggiornaNav(); },POLL_MS);   /* il Tavolo ha il suo giro da 15 s */
 setInterval(caricaCervello,POLL_CERVELLO_MS);
 setInterval(()=>{ if(VISTA==="tavolo") caricaTavolo(); },POLL_TAVOLO_MS);   /* solo a pagina aperta */
 </script>
