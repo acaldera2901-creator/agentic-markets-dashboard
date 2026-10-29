@@ -43,6 +43,7 @@ import { useClassicPrices } from "@/components/classic/ClassicContext";
 import { classicCopy, fill, type ClassicCopy } from "@/lib/classic/lobby-copy";
 import { ClassicBanners, type ClassicBanner } from "@/components/classic/ClassicBanners";
 import { ClassicNewsStrip } from "@/components/classic/ClassicNewsStrip"; // #NEWS-FOTMOB-PROD-1026
+import { useNewsFeed } from "@/components/news/use-news"; // #NEWS-FOTMOB-PROD-1026 — «News» in the side menu
 import { ClassicRow, type ClassicRowLink } from "@/components/classic/ClassicRow";
 import { IconChevronDown, IconChevronRight, IconClose, IconSearch } from "@/components/ui/icons";
 import { ClassicIcon } from "@/components/classic/ClassicIcon";
@@ -160,6 +161,8 @@ function Rail({ id, title, hint, items, section, renderCard, copy, testId, busy 
 export function ClassicLobby({ lang, tz, football, tennis, loading = false, renderCard, rowLink, banners, tail, now: nowProp, query: queryProp, onQueryChange }: ClassicLobbyProps) {
   const sharedNavigation = useSiteNavigation();
   const copy = classicCopy(lang);
+  const newsFeed = useNewsFeed();
+  const newsOn = Boolean(newsFeed && newsFeed.state !== "off");
   const [tab, setTab] = useState<LobbyTab>("featured");
   const [sport, setSport] = useState<SportFilter>("popular");
   useEffect(() => {
@@ -330,6 +333,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
         <p className="brc-side__h">{copy.sideMore}</p>
         <ul className="brc-side__list">
           <li><a className="brc-side__item" href={banners.live.href} onClick={liveSide}><ClassicIcon name="classic-live" /><span>{copy.sideLive}</span></a></li>
+          {newsOn && <li><Link className="brc-side__item" href="/blog#news"><ClassicIcon name="menu-creator" /><span>{copy.sideNews}</span></Link></li>}
           <li><Link className="brc-side__item" href={banners.record.href}><ClassicIcon name="market-result" /><span>{copy.sideRecord}</span></Link></li>
           <li><Link className="brc-side__item" href="/tools"><ClassicIcon name="menu-tools" /><span>{copy.b3Tools}</span></Link></li>
           <li><Link className="brc-side__item" href="/partners"><ClassicIcon name="menu-partner" /><span>{copy.sidePartners}</span></Link></li>

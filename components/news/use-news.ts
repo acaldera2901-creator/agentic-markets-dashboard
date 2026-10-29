@@ -23,10 +23,10 @@ function startFeed() {
     .then(() => feedStore.listeners.forEach((l) => l()));
 }
 
-/** The feed, null until it arrives (and on the server). */
-export function useNewsFeed(): WireFeed | null {
+/** The feed, null until it arrives (and on the server). `enabled` false = no request (a page that will not show the news). */
+export function useNewsFeed(enabled = true): WireFeed | null {
   return useSyncExternalStore(
-    (cb) => { feedStore.listeners.add(cb); startFeed(); return () => { feedStore.listeners.delete(cb); }; },
+    (cb) => { feedStore.listeners.add(cb); if (enabled) startFeed(); return () => { feedStore.listeners.delete(cb); }; },
     () => feedStore.value,
     () => null,
   );

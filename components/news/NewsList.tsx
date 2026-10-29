@@ -21,7 +21,7 @@ export function NewsList({ feed }: { feed: WireFeed }) {
   const message = stateMessage(feed, c);
   const updated = updatedLine(feed, lang, c);
   return (
-    <section className="nw" aria-labelledby="nw-title" data-state={feed.state}>
+    <section id="news" className="nw" aria-labelledby="nw-title" data-state={feed.state}>
       <div className="nw-head">
         <h2 id="nw-title" className="nw-h">{c.latest}</h2>
         {updated && (

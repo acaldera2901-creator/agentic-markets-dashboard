@@ -8,7 +8,7 @@
    CTA (board) and to the eyebrow (blog), and the news must not read as a call.
 
    ── A · the News section of /blog ───────────────────────────────────────── */
-.nw { margin: 0 0 var(--am-s-7, 48px); font-family: var(--am-font-ui); }
+.nw { margin: 0 0 var(--am-s-7, 48px); font-family: var(--am-font-ui); scroll-margin-top: 88px; /* the fixed top bar, when /blog#news lands here */ }
 .nw-head {
   display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--am-s-1) var(--am-s-4);
   margin-bottom: var(--am-s-4);

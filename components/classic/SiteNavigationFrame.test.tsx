@@ -10,6 +10,8 @@ vi.mock('@/lib/classic/flag',()=>({CLASSIC:true}));
 vi.mock('@/lib/track-event',()=>({trackEvent:vi.fn()}));
 vi.mock('@/components/world-cup/SiteTopbar',()=>({default:()=> <div data-testid="shared-header"/>}));
 vi.mock('next/link',()=>({default:({href,children}:{href:string;children:React.ReactNode})=><a href={href}>{children}</a>}));
+let newsFeed:{state:string}|null=null;
+vi.mock('@/components/news/use-news',()=>({useNewsFeed:()=>newsFeed,useNow:()=>null}));
 describe('public site navigation',()=>{
  it('retains all twelve sidebar links outside the desk',()=>{
   pathname='/tools';render(<SiteNavigationFrame><p>Tools content</p></SiteNavigationFrame>);
@@ -18,6 +20,17 @@ describe('public site navigation',()=>{
   expect(within(nav).getByRole('link',{name:'Starting Soon'})).toHaveAttribute('href','/?board=soon&filter=popular');
   expect(within(nav).getByRole('link',{name:'Invite'})).toHaveAttribute('href','/invite');
   expect(within(nav).getByRole('link',{name:'Partners'})).toHaveAttribute('href','/partners');
+ });
+ it('adds «News» to the More group only while the news is on, pointing at the section on /blog, marked current there',()=>{
+  newsFeed={state:'ok'};pathname='/blog';render(<SiteNavigationFrame><p>Blog</p></SiteNavigationFrame>);
+  const nav=screen.getByRole('navigation',{name:'Sections'});
+  expect(within(nav).getAllByRole('link')).toHaveLength(13);
+  const news=within(nav).getByRole('link',{name:'News'});
+  expect(news).toHaveAttribute('href','/blog#news');
+  expect(news).toHaveAttribute('aria-current','true');
+  expect(news.compareDocumentPosition(within(nav).getByRole('link',{name:'Track record'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(within(nav).getByRole('link',{name:'Live scores'}).compareDocumentPosition(news) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  newsFeed={state:'off'};
  });
  it('places the desk sidebar beside content, outside the existing header',()=>{
   pathname='/history';
