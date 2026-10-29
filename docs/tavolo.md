@@ -10,7 +10,8 @@ Adattato dal Tavolo di Michele (SHELL-SYSTEM-GUIDE §6-8, §12), non copiato.
 ## Il metodo in cinque righe
 
 1. **Simmetria.** Claude e Codex hanno gli stessi comandi, gli stessi tipi di
-   messaggio, gli stessi permessi e la stessa tabella ruoli. Entrambi leggono,
+   messaggio, la stessa capacità effettiva (meccanismo diverso: vedi
+   «Simmetria: la differenza residua») e la stessa tabella ruoli. Entrambi leggono,
    propongono, obiettano, danno verdetto e scrivono codice.
 2. **Gli script muovono la posta, non un modello.** Niente chat libera:
    messaggi chiusi con id, conv, tipo, e freni nel codice.
@@ -25,6 +26,8 @@ Adattato dal Tavolo di Michele (SHELL-SYSTEM-GUIDE §6-8, §12), non copiato.
 ## Comandi (identici per i due lati)
 
 L'identità viene dall'ambiente: `AM_SHELL` → claude, `CODEX_SHELL` → codex.
+Se sono presenti **entrambe** è un errore esplicito (exit 2): nessuna delle
+due vince in silenzio.
 
 ```bash
 tavolo invia --to codex|claude [--tipo T] [--conv C] [--ref R] [--progetto P] [--req] \
@@ -47,7 +50,13 @@ sempre questi campi: lo schema JSON è uno solo, uguale per i due lati
 (`--output-schema` per Codex, `--json-schema` per Claude).
 
 Exit code: `0` ok · `2` uso/errore · `3` **RIFIUTATO** (freno) · `4` catena
-(`BRIDGE_DEPTH`) · `5` spento (manca `LIVE`) · `6` bridge fallito.
+(`BRIDGE_DEPTH`) · `5` spento (manca `LIVE`) · `6` bridge fallito (anche
+binario assente o non eseguibile: il messaggio torna in inbox, niente traceback).
+
+`--in-risposta-a ID` deve puntare a un messaggio **vero**, della **stessa
+conv**, mandato **dal destinatario al mittente** (si risponde a chi ha
+scritto). È l'unica porta per `inbox-andrea`: un LLM ci scrive solo
+rispondendo a un messaggio reale di Andrea per lui.
 
 ## Ciclo di vita di un messaggio
 
@@ -65,7 +74,18 @@ Exit code: `0` ok · `2` uso/errore · `3` **RIFIUTATO** (freno) · `4` catena
 
 Col bridge (`--esegui`) i passi 3-4 li fa il bridge per conto del
 destinatario: claim, esecuzione headless, ricevuta `via: bridge`, risposta
-nella stessa conv. **Nella coda va solo un avviso di una riga**; il corpo lo
+nella stessa conv.
+
+**I freni si controllano prima dell'exec, non dopo.** `consegna` verifica
+`LIVE`, conv chiusa, posto nella conv **anche per la risposta**
+(`per_conv`), `token_conv` e `exec_lato_giorno`; se uno scatta, l'exec non
+parte e il messaggio resta in inbox (nessun token speso). `invia --esegui`
+chiede già due posti (messaggio + risposta). Una volta eseguita l'exec, la
+risposta entra **sempre**, anche se nel frattempo la conv è stata chiusa, il
+tetto raggiunto o `LIVE` tolto: i token sono spesi, perderla sarebbe solo
+spreco. Se il binario non parte, o il worktree è occupato, il messaggio
+torna in inbox subito (claim rinominato `.claim.rilasciato-*`, non conta come
+recupero), non resta in `in-carico/` per 60 minuti. **Nella coda va solo un avviso di una riga**; il corpo lo
 carica solo chi fa `prendi`. Il brief passato al bridge ha un tetto di
 `brief_righe` (60): il resto è tagliato e il taglio è dichiarato nel brief.
 
@@ -73,8 +93,8 @@ carica solo chi fa `prendi`. Il brief passato al bridge ha un tetto di
 
 | Freno | Valore | Perché |
 |---|---|---|
-| `dedup_min` | 60 | stesso testo allo stesso destinatario = duplicato (ref e conv non contano; la risposta a un messaggio diverso sì) |
-| `per_conv` | 40 | paracadute anti-fuga sulla vita della conv |
+| `dedup_min` | 60 | stesso contenuto allo stesso destinatario = duplicato. L'impronta è solo il contenuto: `ref`, `conv` e `in_risposta_a` **non** contano, e i campi strutturati sono ordinati per chiave (riordinarli non aggira il dedup). Due «ok» uguali a due domande diverse entro 60 min: il secondo è un duplicato, si scrive qualcosa di più preciso |
+| `per_conv` | 40 | paracadute anti-fuga sulla vita della conv; con `--esegui` servono due posti (c'è anche la risposta) |
 | `req_per_conv` | 20 | messaggi con «richiede risposta» per conv |
 | `conv_nuove_coppia_giorno` | 10 | aprire conv nuove non aggira i tetti |
 | `exec_lato_giorno` | 30 | invocazioni headless al giorno per lato |
@@ -88,7 +108,8 @@ nulla (exit 5): è il rollback istantaneo. `HOOK-OFF` nella stessa cartella
 zittisce `tavolo avvisi` (per un eventuale hook di inizio sessione).
 
 **Anti-catena:** il bridge lancia il figlio con `BRIDGE_DEPTH=1`; dentro un
-bridge `invia` e `consegna` rifiutano (exit 4). La risposta la scrive il
+bridge `invia` e `consegna` rifiutano (exit 4). Un `BRIDGE_DEPTH` non intero
+o negativo è una profondità invalida e rifiuta anche lui (fail closed). La risposta la scrive il
 processo padre, non il figlio.
 
 ## Scrittura sicura (tipo `lavoro`)
@@ -96,22 +117,59 @@ processo padre, non il figlio.
 - Serve `--worktree <path>` o `--filone <nome>` (crea
   `~/Desktop/01-BETREDGE/am-tavolo-<nome>` da `origin/main`, branch
   `tavolo/<nome>`).
-- Il worktree dev'essere un worktree git **collegato**, su un branch che non
-  è `main`/`master`, non in detached HEAD, e **non la vetrina**: altrimenti
-  `RIFIUTATO`.
-- Un solo scrittore per worktree: lock in `~/.betredge-cc/tavolo/lock/` con
-  pid + identità; un lock di un processo morto si sostituisce.
+- Il worktree dev'essere un worktree git **collegato del repo agentic-markets**
+  (stesso `git-common-dir` della vetrina: un worktree di un altro repo è
+  rifiutato), su un branch che non è `main`/`master`, non in detached HEAD, e
+  **non la vetrina**: altrimenti `RIFIUTATO`.
+- Un solo scrittore per worktree: `flock` esclusivo su un file in
+  `~/.betredge-cc/tavolo/lock/` (dentro, pid + identità solo come
+  diagnostica). Il kernel rilascia il lock se il proprietario muore: niente
+  «lock orfano da cancellare», quindi niente race fra due che lo sostituiscono.
 - Codex gira `-s workspace-write -C <worktree>`; Claude gira con
   `--permission-mode acceptEdits`, cwd nel worktree, strumenti
-  `Read,Glob,Grep,Edit,Write` (niente Bash). Pareri e domande: Codex
-  `-s read-only`, Claude `--permission-mode plan` con `Read,Glob,Grep`.
+  `Read,Glob,Grep,Bash,Edit,Write`. Pareri e domande: Codex `-s read-only`,
+  Claude `--permission-mode dontAsk` con `Read,Glob,Grep,Bash`. In entrambi i
+  modi Claude ha la Bash **solo** sulla allowlist `BASH_CLAUDE` di
+  `tavolo.py` (test, lint, git di sola lettura) e `--permission-prompts none`:
+  il resto è negato.
+
+### Simmetria: la differenza residua (dichiarata)
+
+La capacità è equivalente (entrambi leggono, cercano, lanciano test/lint e
+git di sola lettura; nel `lavoro` entrambi scrivono nel worktree), ma il
+meccanismo **non** è lo stesso:
+
+- **Codex** ha una shell **qualsiasi** dentro un sandbox del sistema operativo
+  (seatbelt): in `read-only` nessuna scrittura su disco, in `workspace-write`
+  scrittura solo nel worktree. Il limite è *dove scrive*, non *cosa lancia*.
+- **Claude** ha una **allowlist di prefissi di comando**, senza sandbox del
+  sistema operativo. Il limite è *cosa lancia*, non *dove scrive*: un comando
+  ammesso (es. `npm test`) può scrivere dove vuole (cache, snapshot), e un
+  prefisso ammesso non è confinato al worktree (`git log` funziona anche con
+  un path fuori). Comandi composti: ci si affida al controllo di Claude Code
+  che valuta ogni pezzo (`a && b`) — non verificato da noi su tutti i casi.
+- Conseguenza: Codex può lanciare comandi che Claude non può (qualsiasi
+  comando di sola lettura fuori lista), Claude può far scrivere su disco un
+  comando in lista dove Codex lo vedrebbe fallire. Chiudere del tutto il gap
+  vorrebbe dire dare a Claude il suo sandbox (`--settings` con `sandbox`):
+  non fatto, non verificato.
+
+Verificato il 29/10 su `claude -p` reale, modo parere: `git log -1 --oneline`
+eseguito, `touch` fuori dal repo **negato** («don't ask mode»), file non
+creato. Il modo `lavoro` (acceptEdits + allowlist) è verificato solo sugli
+argomenti passati (test), **non** con un `claude -p` reale.
 - Il bridge **non committa e non pusha**. Riporta `file_toccati` e
   `vetrina_intatta` (confronto di `git status --porcelain` della vetrina prima
   e dopo). Il commit lo fa chi ha chiesto il lavoro, dopo la review dell'altro
   lato, con i file elencati per nome (mai `git add -A`). Push e merge: dopo
   `APPROVE #id`.
-- Limite onesto di `vetrina_intatta`: se un'altra sessione tocca la vetrina
-  nello stesso minuto, risulta `false` anche se il bridge non c'entra.
+- Limiti onesti di `vetrina_intatta`: **rileva, non blocca** (è un campo
+  della risposta, a scrittura già avvenuta: il blocco vero è il sandbox di
+  Codex / `acceptEdits` di Claude sulla cwd); **non vede i file gitignorati**
+  (`git status --porcelain` senza `--ignored`: `.next/`, `node_modules`,
+  `.env*` toccati dal bridge non lo fanno diventare `false`); e se un'altra
+  sessione tocca la vetrina nello stesso minuto risulta `false` anche se il
+  bridge non c'entra.
 
 ## Tabella ruoli (`config/tavolo_ruoli.json`)
 
@@ -133,11 +191,23 @@ per lato in `lati` (Claude: `sonnet`; Codex: quello di default).
 - Claude: `usage` e `total_cost_usd` dall'output `--output-format json`.
 - Un'invocazione senza usage leggibile è contata come «non misurata», mai
   stimata.
-- Contesto magro, misurato il 29/10 su «pong»: Claude di default 45.194 token
-  e $0,90 → con `--setting-sources "" --strict-mcp-config
-  --disable-slash-commands --model sonnet` 7.057 token e $0,016. Codex con
-  `--ignore-user-config`: 20.710 → 18.314. Conseguenza: il figlio **non legge
-  CLAUDE.md né AGENTS.md** — il brief deve portare il contesto che serve.
+- Contesto magro: Claude di default su «pong» 45.194 token e $0,90 → con
+  `--setting-sources "" --strict-mcp-config --disable-slash-commands --model
+  sonnet` 7.057 token e $0,016 (29/10, prima della Bash in allowlist). Con la
+  Bash e due comandi lanciati: 24.561 in (16.102 in cache) · 585 out · $0,041.
+- Codex con `--ignore-user-config`: **dipende da quanto il task fa girare
+  comandi**, ogni comando rimanda il contesto. Misurato il 29/10: su «pong»
+  18.314 in (era 20.710 senza il flag); su un task senza comandi 19.586 in ·
+  101 out; su un'exec che ha lanciato `npm test` (misura del QA) **94.855 in,
+  di cui 69.248 in cache**. Il numero da aspettarsi non è 18k: è 18-20k per un
+  parere secco, un multiplo per un task che esegue.
+- Cosa il figlio ha nel contesto: Claude **non legge CLAUDE.md**
+  (`--setting-sources ""`). Codex **sì legge l'AGENTS.md del progetto** nella
+  cwd `-C` anche con `--ignore-user-config` (verificato il 29/10: ha copiato
+  alla lettera la prima riga, `<!-- BEGIN:nextjs-agent-rules -->`, senza
+  lanciare comandi né leggere file — zero eventi `command_execution`).
+  `~/.codex/AGENTS.md` non esiste. Quindi il brief deve portare il contesto
+  per Claude; per Codex c'è in più l'AGENTS.md del repo.
 
 ## Limiti dichiarati
 

@@ -4,8 +4,9 @@ Adattato dal Tavolo di Michele (SHELL-SYSTEM-GUIDE §6-8, §12), non copiato.
 Le differenze, e perche':
 
 - **Simmetria** (decisione di Andrea): Claude e Codex hanno gli stessi
-  comandi, gli stessi tipi di messaggio, gli stessi permessi e la stessa
-  tabella ruoli. Entrambi leggono, propongono, obiettano, danno verdetto e
+  comandi, gli stessi tipi di messaggio, la stessa capacita' effettiva
+  (meccanismo diverso, dichiarato in docs/tavolo.md) e la stessa tabella
+  ruoli. Entrambi leggono, propongono, obiettano, danno verdetto e
   scrivono codice. Non c'e' un ramo «solo per Codex» in questo file.
 - **Recapito in PULL**: su Mac `codex queue` lo drena solo una finestra Codex
   Desktop viva (misurato il 21/09), quindi non si usa. Il recapito e' un
@@ -22,6 +23,7 @@ limitano *quanti* scambi, non *cosa* fa chi riceve.
 """
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -90,6 +92,10 @@ class Spento(Exception):
     """L'interruttore LIVE manca: il Tavolo non scrive nulla."""
 
 
+class BridgeNonPartito(Exception):
+    """Il binario del bridge non e' partito: nessun token speso, messaggio rilasciato."""
+
+
 # ── percorsi ────────────────────────────────────────────────────────────────
 def base() -> Path:
     return Path(os.environ.get("TAVOLO_DIR") or Path.home() / ".betredge-cc/tavolo")
@@ -146,6 +152,8 @@ def _da_iso(s: str) -> datetime:
 def identita(env=None) -> str:
     """Il lato di chi chiama, dall'ambiente. Non autenticato: vedi docstring."""
     env = os.environ if env is None else env
+    if env.get("CODEX_SHELL") and env.get("AM_SHELL"):
+        raise ValueError("identita' ambigua: AM_SHELL e CODEX_SHELL sono entrambe presenti")
     if env.get("CODEX_SHELL"):
         return "codex"
     if env.get("AM_SHELL"):
@@ -160,9 +168,10 @@ def altro(lato: str) -> str:
 def profondita(env=None) -> int:
     env = os.environ if env is None else env
     try:
-        return int(env.get("BRIDGE_DEPTH") or 0)
+        d = int(env.get("BRIDGE_DEPTH") or 0)
     except ValueError:
         return 1   # un valore illeggibile non deve aprire la porta alle catene
+    return 1 if d < 0 else d   # negativo = invalido: fail closed, come illeggibile
 
 
 # ── registro (append-only) ──────────────────────────────────────────────────
@@ -237,6 +246,15 @@ def impronta(testo: str) -> str:
     return hashlib.sha256(norm.encode()).hexdigest()[:16]
 
 
+def _impronta_msg(m: dict) -> str:
+    """Solo il contenuto: ne' ref, ne' conv, ne' in_risposta_a. Campi strutturati
+    in ordine di chiave, cosi' riordinarli non aggira il dedup."""
+    c = m.get("corpo")
+    if not m.get("corpo_file") and isinstance(c, dict):
+        return impronta("\n".join(f"{k}: {c[k]}" for k in sorted(c, key=str)))
+    return impronta(testo_corpo(m))
+
+
 def _nuovo_id(ora: datetime) -> str:
     return f"t-{ora.strftime('%Y%m%d%H%M%S')}-{secrets.token_hex(3)}"
 
@@ -269,9 +287,12 @@ def _freni(m: dict, impr: str, nuova_conv: bool, esegui: bool, ora: datetime) ->
             raise Rifiutato(f"duplicato di {x['id']} (stesso testo a {m['to']} "
                             f"entro {LIMITI['dedup_min']} min)")
     nella_conv = [x for x in tutti if x.get("conv") == m["conv"]]
-    if len(nella_conv) >= LIMITI["per_conv"]:
+    # Con --esegui serve posto anche per la risposta del bridge.
+    posti = 2 if esegui else 1
+    if len(nella_conv) + posti > LIMITI["per_conv"]:
         raise Rifiutato(f"conv {m['conv']} ha gia' {len(nella_conv)} messaggi "
-                        f"(tetto {LIMITI['per_conv']})")
+                        f"(tetto {LIMITI['per_conv']}"
+                        + (", serve posto anche per la risposta del bridge)" if esegui else ")"))
     if m["richiede_risposta"]:
         req = sum(1 for x in nella_conv if x.get("richiede_risposta"))
         if req >= LIMITI["req_per_conv"]:
@@ -300,11 +321,16 @@ def invia(da: str, a: str, corpo=None, *, tipo: str = "domanda", conv: str | Non
           ref: str | None = None, progetto: str | None = None, richiede_risposta: bool = False,
           in_risposta_a: str | None = None, corpo_file: str | None = None,
           esegui: bool = False, worktree: str | None = None, misura: dict | None = None,
-          compito: str | None = None, ora=None) -> dict:
-    """Mette un messaggio nella inbox del destinatario, dopo i freni."""
+          compito: str | None = None, ora=None, _risposta_bridge: bool = False) -> dict:
+    """Mette un messaggio nella inbox del destinatario, dopo i freni.
+
+    `_risposta_bridge` (solo da `consegna`, mai da CLI o API): la risposta di
+    un'exec gia' eseguita non passa da freni, conv chiusa e LIVE, che sono
+    stati controllati PRIMA dell'exec. Rifiutarla adesso butterebbe i token."""
     if profondita() > 0:
         raise Catena("dentro un bridge non si invia: niente catene (BRIDGE_DEPTH)")
-    _richiedi_live()
+    if not _risposta_bridge:
+        _richiedi_live()
     ora = _ora(ora)
     if da not in LATI + UMANI:
         raise ValueError(f"mittente non valido: {da!r}")
@@ -321,10 +347,17 @@ def invia(da: str, a: str, corpo=None, *, tipo: str = "domanda", conv: str | Non
             raise ValueError(f"file del corpo inesistente: {corpo_file}")
     elif corpo in (None, "", {}):
         raise ValueError("corpo vuoto")
-    if in_risposta_a and not conv:
+    if in_risposta_a:
+        # Sempre un messaggio vero, della stessa conv, mandato da `a` a `da`:
+        # e' l'unica porta per inbox-andrea, quindi non si inventa.
         orig = next((x for x in messaggi() if x.get("id") == in_risposta_a), None)
         if orig is None:
             raise ValueError(f"in_risposta_a sconosciuto: {in_risposta_a}")
+        if conv and conv != orig.get("conv"):
+            raise ValueError(f"in_risposta_a {in_risposta_a} e' della conv {orig.get('conv')}, non di {conv}")
+        if orig.get("to") != da or orig.get("from") != a:
+            raise ValueError(f"in_risposta_a {in_risposta_a} va da {orig.get('from')} a {orig.get('to')}: "
+                             f"non e' un messaggio a cui {da} risponde verso {a}")
         conv = orig["conv"]
     nuova_conv = not conv or not any(x.get("conv") == conv for x in messaggi())
     conv = conv or f"c-{ora.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(2)}"
@@ -341,25 +374,26 @@ def invia(da: str, a: str, corpo=None, *, tipo: str = "domanda", conv: str | Non
         m["compito"] = compito
     if misura is not None:
         m["misura"] = misura
-    # La risposta a messaggi diversi non e' un duplicato («ok» a due domande);
-    # ref e conv invece non entrano: cambiarli non aggira il dedup.
-    impr = impronta(testo_corpo(m) + "\n" + (in_risposta_a or ""))
+    # Solo il contenuto: cambiare ref, conv o in_risposta_a non aggira il dedup.
+    impr = _impronta_msg(m)
     m["impronta"] = impr
     try:
-        if conv in _conv_chiuse():
-            raise Rifiutato(f"conv {conv} e' chiusa")
-        if tipo == "lavoro":
-            if not worktree:
-                raise Rifiutato("un `lavoro` senza worktree non si accetta: --worktree o --filone")
-            verifica_worktree(worktree)
-        _freni(m, impr, nuova_conv, esegui, ora)
+        if not _risposta_bridge:
+            if conv in _conv_chiuse():
+                raise Rifiutato(f"conv {conv} e' chiusa")
+            if tipo == "lavoro":
+                if not worktree:
+                    raise Rifiutato("un `lavoro` senza worktree non si accetta: --worktree o --filone")
+                verifica_worktree(worktree)
+            _freni(m, impr, nuova_conv, esegui, ora)
     except Rifiutato as exc:
         _registra({"evento": "rifiutato", "motivo": str(exc), "da": da, "a": a,
                    "conv": conv, "ref": ref, "tipo": tipo, "impronta": impr}, ora)
         raise
     _scrivi_atomico(_d(f"inbox-{a}") / f"{m['id']}.json", m)
     _registra({"evento": "accettato", "id": m["id"], "da": da, "a": a, "conv": conv,
-               "tipo": tipo, "nuova_conv": nuova_conv}, ora)
+               "tipo": tipo, "nuova_conv": nuova_conv}
+              | ({"risposta_bridge": True} if _risposta_bridge else {}), ora)
     return m
 
 
@@ -431,9 +465,10 @@ def prendi(lato: str, ora=None, solo: str | None = None) -> list[dict]:
     return presi
 
 
-def conferma(lato: str, mid: str, via: str = "cli", ora=None) -> dict:
+def conferma(lato: str, mid: str, via: str = "cli", ora=None, _dopo_exec: bool = False) -> dict:
     """Ricevuta di lettura per id: «letto» vuol dire confermato da chi riceve."""
-    _richiedi_live()
+    if not _dopo_exec:
+        _richiedi_live()
     ora = _ora(ora)
     ic = base() / "in-carico"
     p = ic / f"{mid}.json"
@@ -452,6 +487,19 @@ def conferma(lato: str, mid: str, via: str = "cli", ora=None) -> dict:
         json.dump(ricevuta, f, ensure_ascii=False)
     _registra({"evento": "ricevuta", **ricevuta}, ora)
     return ricevuta
+
+
+def _rilascia(mid: str, motivo: str, ora=None) -> None:
+    """Il bridge non e' partito: il messaggio torna in inbox, il claim resta
+    come traccia (rename, non cancellato) e non conta come recupero."""
+    ic = base() / "in-carico"
+    m = _leggi(ic / f"{mid}.json")
+    if m is None:
+        return
+    if (ic / f"{mid}.claim").exists():
+        os.rename(ic / f"{mid}.claim", ic / f"{mid}.claim.rilasciato-{time.time_ns()}")
+    os.rename(ic / f"{mid}.json", _d(f"inbox-{m['to']}") / f"{mid}.json")
+    _registra({"evento": "rilasciato", "id": mid, "conv": m.get("conv"), "motivo": motivo[:300]}, ora)
 
 
 def ricevuta(mid: str) -> dict | None:
@@ -494,6 +542,12 @@ def verifica_worktree(percorso: str) -> dict:
     comune = (p / _git(p, "rev-parse", "--git-common-dir")).resolve()
     if gitdir == comune:
         raise Rifiutato(f"{p} e' il checkout principale, non un worktree dedicato")
+    try:
+        comune_v = (v / _git(v, "rev-parse", "--git-common-dir")).resolve()
+    except Rifiutato:
+        raise Rifiutato(f"la vetrina {v} non e' un repo git: non so a che repo appartiene {p}")
+    if comune != comune_v:
+        raise Rifiutato(f"{p} e' un worktree di un altro repo ({comune}), non di {v}")
     r = subprocess.run(["git", "-C", str(p), "symbolic-ref", "--short", "-q", "HEAD"],
                        capture_output=True, text=True, timeout=30, check=False)
     branch = r.stdout.strip()
@@ -515,27 +569,40 @@ def worktree_filone(nome: str) -> str:
     return str(p)
 
 
-def _lock_worktree(wt: str, chi: str) -> Path:
-    """Un solo scrittore per worktree: lock con pid e identita'."""
+def _lock_worktree(wt: str, chi: str) -> tuple[Path, int]:
+    """Un solo scrittore per worktree: flock esclusivo sul file di lock.
+
+    Atomico per costruzione: il kernel rilascia il lock quando il proprietario
+    muore, quindi non c'e' un «proprietario morto -> cancello -> ricreo» da
+    sbagliare ne' un os.kill da interpretare. Il contenuto (pid, chi, dal) e'
+    solo diagnostica. Si rilascia con `_sblocca`."""
     lp = _d("lock") / (hashlib.sha1(wt.encode()).hexdigest()[:16] + ".lock")
-    for _ in range(2):
+    for _ in range(3):
+        fd = os.open(lp, os.O_CREAT | os.O_RDWR, 0o600)
         try:
-            fd = os.open(lp, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        except FileExistsError:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            os.close(fd)
             d = _leggi(lp) or {}
-            pid = int(d.get("pid") or 0)
-            try:
-                if pid:
-                    os.kill(pid, 0)
-                    raise Rifiutato(f"worktree occupato da {d.get('chi')} (pid {pid}) dal {d.get('dal')}")
-            except ProcessLookupError:
-                pass
-            lp.unlink(missing_ok=True)   # il proprietario e' morto: il lock e' orfano
+            raise Rifiutato(f"worktree occupato da {d.get('chi')} (pid {d.get('pid')}) dal {d.get('dal')}")
+        try:
+            stesso = os.fstat(fd).st_ino == os.stat(lp).st_ino
+        except FileNotFoundError:
+            stesso = False
+        if not stesso:            # sbloccato e rimosso fra open e flock: riprovo sul file nuovo
+            os.close(fd)
             continue
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump({"pid": os.getpid(), "chi": chi, "worktree": wt, "dal": _iso(_ora())}, f)
-        return lp
+        os.ftruncate(fd, 0)
+        os.write(fd, json.dumps({"pid": os.getpid(), "chi": chi, "worktree": wt,
+                                 "dal": _iso(_ora())}).encode())
+        return lp, fd
     raise Rifiutato(f"lock del worktree non acquisibile: {lp}")
+
+
+def _sblocca(lock: tuple[Path, int]) -> None:
+    lp, fd = lock
+    lp.unlink(missing_ok=True)   # prima di chiudere: chi riapre trova un file nuovo
+    os.close(fd)
 
 
 def _porcelain(cwd) -> str:
@@ -670,13 +737,23 @@ def _usage_claude(d: dict) -> dict | None:
             "costo_usd": d.get("total_cost_usd")}
 
 
+# Comandi che Claude puo' lanciare nel bridge, in entrambi i modi: test, lint,
+# git di sola lettura. Codex li ha gia' (shell nel sandbox); questo li rende
+# equivalenti. Il resto della shell e' negato (--permission-prompts none).
+# Limite: e' una allowlist di prefissi, non un sandbox del sistema operativo
+# come quello di Codex (vedi docs/tavolo.md, «Simmetria: la differenza residua»).
+BASH_CLAUDE = ("git status", "git diff", "git log", "git show", "git blame", "git ls-files",
+               "npm test", "npm run test", "npm run lint", "npx tsc --noEmit", "npx vitest run",
+               "python3 -m unittest", "python3 -m pytest")
+
+
 def esegui_lato(lato: str, prompt: str, cwd: str, scrittura: bool, effort: str,
                 modello: str | None) -> dict:
     """Una invocazione headless. Stesse opzioni per i due lati:
     sola lettura per i pareri, scrittura confinata a `cwd` per il lavoro."""
     exe = binario(lato)
     if not exe:
-        return {"rc": 127, "errore": f"binario {lato} non trovato", "usage": None, "risposta": None}
+        raise BridgeNonPartito(f"binario {lato} non trovato")
     t0 = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="tavolo-") as tmp:
         if lato == "codex":
@@ -697,9 +774,15 @@ def esegui_lato(lato: str, prompt: str, cwd: str, scrittura: bool, effort: str,
             # niente CLAUDE.md, MCP e skill nel contesto (misurato 29/10 su «pong»:
             # 45.194 token e $0,90 di default -> 7.057 token e $0,016 cosi').
             # Il brief deve quindi portare con se' il contesto che serve.
+            strumenti = ["Read", "Glob", "Grep", "Bash"] + (["Edit", "Write"] if scrittura else [])
             argv = [exe, "-p", "--output-format", "json", "--json-schema", json.dumps(SCHEMA_RISPOSTA),
-                    "--permission-mode", "acceptEdits" if scrittura else "plan",
-                    "--tools", "Read,Glob,Grep,Edit,Write" if scrittura else "Read,Glob,Grep",
+                    # acceptEdits confina Edit/Write alla cwd (il worktree); dontAsk
+                    # nega tutto cio' che non e' nella allowlist.
+                    "--permission-mode", "acceptEdits" if scrittura else "dontAsk",
+                    "--permission-prompts", "none",
+                    "--tools", ",".join(strumenti),
+                    "--allowedTools", ",".join(["Read", "Glob", "Grep"]
+                                               + [f"Bash({c}:*)" for c in BASH_CLAUDE]),
                     "--strict-mcp-config", "--disable-slash-commands", "--setting-sources", "",
                     "--effort", effort, "--no-session-persistence"]
             if modello:
@@ -707,6 +790,8 @@ def esegui_lato(lato: str, prompt: str, cwd: str, scrittura: bool, effort: str,
         try:
             r = subprocess.run(argv, input=prompt, cwd=cwd, env=_env_figlio(lato),
                                capture_output=True, text=True, timeout=LIMITI["timeout_s"], check=False)
+        except OSError as exc:   # PermissionError, FileNotFoundError: non e' partito
+            raise BridgeNonPartito(f"binario {exe} non eseguibile: {exc}") from exc
         except subprocess.TimeoutExpired:
             return {"rc": 124, "errore": f"nessuna risposta entro {LIMITI['timeout_s']}s",
                     "usage": None, "risposta": None, "durata_s": round(time.monotonic() - t0, 1)}
@@ -738,7 +823,10 @@ def esegui_lato(lato: str, prompt: str, cwd: str, scrittura: bool, effort: str,
 
 def consegna(mid: str, ora=None) -> dict:
     """Recapito sincrono: il destinatario lo esegue headless, la risposta torna
-    nella stessa conv e l'originale riceve la sua ricevuta di lettura."""
+    nella stessa conv e l'originale riceve la sua ricevuta di lettura.
+
+    Tutti i freni si controllano PRIMA dell'exec, lasciando posto per la
+    risposta: dopo, i token sono spesi e la risposta entra comunque."""
     if profondita() > 0:
         raise Catena("bridge dentro un bridge: rifiutato (BRIDGE_DEPTH)")
     _richiedi_live()
@@ -749,29 +837,47 @@ def consegna(mid: str, ora=None) -> dict:
     if m is None:
         raise ValueError(f"{mid} non e' in nessuna inbox degli LLM")
     lato = m["to"]
-    n = _exec_oggi(lato, ora)
-    if n >= LIMITI["exec_lato_giorno"]:
-        _registra({"evento": "rifiutato", "motivo": f"budget exec {lato} esaurito ({n})",
-                   "id": mid, "conv": m["conv"], "a": lato}, ora)
-        raise Rifiutato(f"{lato}: {n} invocazioni oggi (tetto {LIMITI['exec_lato_giorno']})")
+    try:
+        if m["conv"] in _conv_chiuse():
+            raise Rifiutato(f"conv {m['conv']} e' chiusa")
+        n = sum(1 for x in messaggi() if x.get("conv") == m["conv"])
+        if n + 1 > LIMITI["per_conv"]:
+            raise Rifiutato(f"conv {m['conv']} ha {n} messaggi: nessun posto per la risposta "
+                            f"(tetto {LIMITI['per_conv']})")
+        tok = _token_conv(m["conv"])
+        if tok >= LIMITI["token_conv"]:
+            raise Rifiutato(f"conv {m['conv']} ha consumato {tok} token misurati "
+                            f"(tetto {LIMITI['token_conv']})")
+        n = _exec_oggi(lato, ora)
+        if n >= LIMITI["exec_lato_giorno"]:
+            raise Rifiutato(f"{lato}: {n} invocazioni oggi (tetto {LIMITI['exec_lato_giorno']})")
+    except Rifiutato as exc:
+        _registra({"evento": "rifiutato", "motivo": str(exc), "id": mid, "conv": m["conv"],
+                   "a": lato}, ora)
+        raise
     if not prendi(lato, ora, solo=mid):
         raise ValueError(f"{mid} e' gia' preso da un altro")
-    cfg = ruoli()
     scrittura, lock, prima = None, None, None
     try:
-        if m["tipo"] == "lavoro":
-            scrittura = verifica_worktree(m["worktree"])
-            lock = _lock_worktree(scrittura["path"], f"{lato}-bridge")
-            prima = _porcelain(vetrina())
-        cwd = scrittura["path"] if scrittura else str(vetrina() if vetrina().exists() else REPO)
-        esito = esegui_lato(lato, brief(m, scrittura), cwd, bool(scrittura),
-                            _effort(cfg, lato, m["tipo"]), cfg["lati"][lato].get("modello"))
+        try:
+            cfg = ruoli()
+            if m["tipo"] == "lavoro":
+                scrittura = verifica_worktree(m["worktree"])
+                lock = _lock_worktree(scrittura["path"], f"{lato}-bridge")
+                prima = _porcelain(vetrina())
+            cwd = scrittura["path"] if scrittura else str(vetrina() if vetrina().exists() else REPO)
+            esito = esegui_lato(lato, brief(m, scrittura), cwd, bool(scrittura),
+                                _effort(cfg, lato, m["tipo"]), cfg["lati"][lato].get("modello"))
+        except BaseException as exc:
+            # L'exec non e' avvenuta: nessun token speso, il messaggio torna in inbox.
+            _rilascia(mid, f"{type(exc).__name__}: {exc}", ora)
+            raise
         if scrittura:
             esito["file_toccati"] = [r[3:] for r in _porcelain(scrittura["path"]).splitlines() if r]
             esito["vetrina_intatta"] = _porcelain(vetrina()) == prima
     finally:
         if lock:
-            lock.unlink(missing_ok=True)
+            _sblocca(lock)
     _registra({"evento": "exec", "lato": lato, "id": mid, "conv": m["conv"], "rc": esito["rc"],
                "usage": esito["usage"], "durata_s": esito.get("durata_s"),
                "scrittura": bool(scrittura)}, ora)
@@ -783,12 +889,13 @@ def consegna(mid: str, ora=None) -> dict:
     for k in ("file_toccati", "vetrina_intatta"):
         if k in esito:
             corpo[k] = esito[k]
-    conferma(lato, mid, via="bridge", ora=ora)
+    conferma(lato, mid, via="bridge", ora=ora, _dopo_exec=True)
     # La risposta la scrive questo processo (profondita' 0), non il figlio.
     risposta = invia(lato, m["from"], corpo,
                      tipo=tipo if tipo in TIPI else "handoff", conv=m["conv"], ref=m.get("ref"),
                      progetto=m.get("progetto"), in_risposta_a=mid,
-                     misura=esito["usage"] or {"non_misurato": True}, ora=ora)
+                     misura=esito["usage"] or {"non_misurato": True}, ora=ora,
+                     _risposta_bridge=True)
     return {"risposta": risposta, "esito": esito}
 
 
@@ -1036,6 +1143,9 @@ def main(argv=None) -> int:
     except Spento as exc:
         print(f"SPENTO: {exc}", file=sys.stderr)
         return SPENTO
+    except BridgeNonPartito as exc:
+        print(f"ERRORE BRIDGE: {exc} (messaggio rilasciato in inbox)", file=sys.stderr)
+        return ERRORE_BRIDGE
     except ValueError as exc:
         print(f"ERRORE: {exc}", file=sys.stderr)
         return USO

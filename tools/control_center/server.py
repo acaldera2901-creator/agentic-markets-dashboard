@@ -26,6 +26,7 @@ from .snapshot import HISTORY_FILE, STATE_FILE, freschezza, read_state
 
 HOST = "127.0.0.1"
 PORT = 8790
+TAVOLO_MAX_CORPO = 64 * 1024   # il testo e' tagliato a 4000 caratteri: 64 KiB bastano
 STATIC = Path(__file__).resolve().parent / "static"
 COCKPIT = STATIC / "cockpit.html"     # la home: verdetto, richiedono te, progetti
 PAGE = STATIC / "index.html"          # /canvas: il piano zoomabile, tutti i settori
@@ -96,6 +97,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             lunghezza = int(self.headers.get("Content-Length") or 0)
+            # Solo per il Tavolo: una lunghezza negativa farebbe leggere fino a
+            # EOF, una enorme terrebbe il thread appeso. (Le altre rotte POST
+            # hanno lo stesso parsing preesistente: segnalato, non toccato.)
+            if rotta == "/api/tavolo" and not 0 <= lunghezza <= TAVOLO_MAX_CORPO:
+                self._send(413 if lunghezza > 0 else 400, b'{"error":"lunghezza del corpo non ammessa"}',
+                           "application/json; charset=utf-8")
+                return
             corpo = json.loads(self.rfile.read(lunghezza) or b"{}")
         except (ValueError, json.JSONDecodeError):
             self._send(400, b'{"error":"corpo non valido"}', "application/json; charset=utf-8")
@@ -346,10 +354,14 @@ class Handler(BaseHTTPRequestHandler):
     def _tavolo_post(self, corpo: dict) -> tuple[int, bytes, str]:
         """Le due azioni del Tavolo dalla torre. Scrive come Andrea, mai una card."""
         tipo_json = "application/json; charset=utf-8"
+        if not isinstance(corpo, dict):
+            return 400, b'{"ok":false,"errore":"il corpo deve essere un oggetto JSON"}', tipo_json
         azione = str(corpo.get("azione", ""))
         try:
             if azione == "chiedi":
-                m = tavolo.invia("andrea", str(corpo.get("a", "")), str(corpo.get("testo", ""))[:4000],
+                if not isinstance(corpo.get("testo"), str):
+                    return 400, b'{"ok":false,"errore":"testo mancante o non stringa"}', tipo_json
+                m = tavolo.invia("andrea", str(corpo.get("a", "")), corpo["testo"][:4000],
                                  tipo=str(corpo.get("tipo") or "domanda"),
                                  conv=str(corpo.get("conv") or "") or None,
                                  progetto=str(corpo.get("progetto") or "") or None,
