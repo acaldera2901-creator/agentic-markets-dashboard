@@ -167,6 +167,9 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
 .conferma input{flex:1 1 200px;background:var(--inset);border:1px solid var(--line-2);padding:5px 8px;
   font-size:12.5px;color:var(--ink)}
 .conferma input:focus{outline:1px solid var(--cy);outline-offset:0}
+.conferma select{flex:1 1 100%;background:var(--inset);border:1px solid var(--line-2);padding:5px 8px;
+  font-size:12.5px;color:var(--ink)}
+.conferma select:focus{outline:1px solid var(--cy);outline-offset:0}
 .rapporto{font-family:var(--mono);font-size:11.5px;white-space:pre-wrap;background:var(--inset);
   border:1px solid var(--line);padding:10px;max-height:360px;overflow:auto;margin-top:8px}
 
@@ -687,6 +690,22 @@ code{font-family:var(--mono);font-size:11.5px;background:var(--inset);border:1px
       </div>
       <div class="copertina"><b class="lettera-g">G</b><h3>Governo</h3><div class="grande" id="c-governo-n">—</div><div class="stato" id="c-governo-s"></div></div>
     </section>
+
+    <section class="settore" id="s-tavolo" data-l="T" data-nome="Tavolo">
+      <header class="targa"><b class="lettera">T</b><h2>Tavolo</h2><span class="meta" id="m-tavolo">—</span></header>
+      <div class="corpo">
+        <div class="kpis" id="tav-kpi" style="grid-template-columns:repeat(4,1fr)"></div>
+        <div class="pannello"><h4>Collegati ora <small id="m-tav-pres"></small></h4><div class="righe" id="tav-pres"></div>
+          <p class="nota">Un agente si collega con <code>tavolo collegati</code> (basta dirgli «collegati al tavolo»). <b>Vivo</b> = un comando tavolo entro il TTL <b>e</b> il suo processo ancora acceso: un pid morto non è mai mostrato vivo. Una presenza per lato.</p></div>
+        <div class="pannello"><h4>Conversazioni Claude ↔ Codex <small id="m-tav-conv"></small></h4><div id="tav-conv"></div>
+          <div class="azioni" id="tav-nuova" style="padding:10px 14px"></div>
+          <p class="nota">Dalla torre scrivi come <b>Andrea</b> e scegli il destinatario fra i collegati: a una sessione collegata la domanda resta in posta (la legge con <code>tavolo prendi</code>); altrimenti il bridge (<code>codex exec</code> / <code>claude -p</code>, sola lettura) risponde nella stessa conv. La posta di un agente <b>non è mai un via libera</b>: push, deploy, DB e soldi restano dietro <code>APPROVE #id</code>.</p></div>
+        <div class="pannello"><h4>Interruttore e freni <small>valori nel codice</small></h4><div class="righe" id="tav-freni"></div></div>
+        <div class="pannello"><h4>Rifiuti recenti <small id="m-tav-rif"></small></h4><div class="righe" id="tav-rifiuti"></div>
+          <p class="nota">Un messaggio frenato <b>non entra</b> nella posta e non si aggira cambiando ref o conv.</p></div>
+      </div>
+      <div class="copertina"><b class="lettera-g">T</b><h3>Tavolo</h3><div class="grande" id="c-tavolo-n">—</div><div class="stato" id="c-tavolo-s"></div></div>
+    </section>
   </div>
 
   <div class="col w-xl">
@@ -795,12 +814,15 @@ function conferma(dove, domanda, onOk, opz={}){
   const gia=dove.querySelector(".conferma"); if(gia) gia.remove();
   const box=el("div","conferma");
   box.append(el("div","q",domanda));
-  let input=null;
+  let input=null, scelta=null;
+  if(opz.scelta){ scelta=el("select"); scelta.setAttribute("aria-label",opz.sceltaNome||"scelta");
+    opz.scelta.forEach(o=>{ const x=el("option","",o.t); x.value=o.v; scelta.append(x); }); box.append(scelta); }
   if(opz.input){ input=el("input"); input.placeholder=opz.input; input.maxLength=opz.max||300; box.append(input); }
   const ok=el("button","btn "+(opz.pericolo?"no":"ok"),opz.si||"conferma");
   const no=el("button","btn","annulla");
   const chiudi=()=>box.remove();
-  ok.addEventListener("click",()=>{ const v=input?input.value.trim():""; if(input&&!v){ input.focus(); return; } chiudi(); onOk(v); });
+  ok.addEventListener("click",()=>{ const v=input?input.value.trim():""; if(input&&!v){ input.focus(); return; }
+    if(scelta&&!scelta.value){ scelta.focus(); return; } chiudi(); onOk(v, scelta?scelta.value:undefined); });
   no.addEventListener("click",chiudi);
   box.addEventListener("keydown",ev=>{ if(ev.key==="Escape"){ev.stopPropagation();chiudi();} if(ev.key==="Enter"&&ev.target===input) ok.click(); });
   box.append(ok,no); dove.append(box);
@@ -955,6 +977,7 @@ function costruisciIndice(){
   });
   const t=el("button","tutto"); t.append(el("b","","⌂"), el("span","","Esc")); t.title="Tutto il piano"; t.addEventListener("click",tutto); hud.append(t);
   const pp=el("button"); pp.append(el("span","l","L"), el("span","t","Progetti"), el("span","kk","·")); pp.addEventListener("click",()=>vai("progetti")); pon.append(pp);
+  const pt=el("button"); pt.append(el("span","l","T"), el("span","t","Tavolo"), el("span","kk","·")); pt.addEventListener("click",()=>vai("tavolo")); pon.append(pt);
 }
 
 /* ═══════════════════════════ ispettore ═══════════════════════════ */
@@ -1842,12 +1865,134 @@ function selezionaMappa(id,apri){
   ispettore(n.tag+" · "+ZONE_NOME[n.zone],n.title,n.desc.replace(/\n/g," "),blocchi,n.metrics);
 }
 
+
+/* ═══════════════════════════ T · tavolo ═══════════════════════════ */
+/* La posta Claude <-> Codex (tools/control_center/tavolo.py). Legge solo
+   /api/tavolo; se tace, il settore lo dice e il resto della torre vive. */
+async function postTavolo(corpo){
+  try{
+    const r=await fetch("/api/tavolo",{method:"POST",
+      headers:{"Content-Type":"application/json","X-CC-Token":TOKEN},body:JSON.stringify(corpo)});
+    return await r.json();
+  }catch(e){ return {ok:false,errore:String(e)}; }
+}
+const tokBreve=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?Math.round(n/1e3)+"k":String(n||0);
+function sottoToken(t,lato){
+  if(!t||!t.invocazioni) return "nessuna invocazione";
+  let s=`${t.invocazioni} invocazion${t.invocazioni>1?"i":"e"}`;
+  if(t.non_misurate) s+=` · ${t.non_misurate} non misurat${t.non_misurate>1?"e":"a"}`;
+  const conCosto=t.invocazioni-(t.costo_non_misurato||0)-(t.non_misurate||0);
+  if(conCosto>0) s+=` · $${(t.costo_usd||0).toFixed(2)}`;
+  if(t.costo_non_misurato) s+=" · costo non misurato";
+  return s;
+}
+const NOME_LATO={claude:"Claude",codex:"Codex"};
+/* Il destinatario si sceglie fra i collegati: a una sessione viva la domanda
+   resta in posta (la legge con `tavolo prendi`); altrimenti, o se lo scegli,
+   risponde il bridge headless nella stessa conv. Il predefinito e' la sessione
+   di `predef` (in una conv, l'altro LLM) se e' collegata; se no nessuno: il
+   bridge spende token e non si sceglie mai da solo. */
+function destinatari(pres,predef){
+  const lati=["claude","codex"].sort((x,y)=>(y===predef)-(x===predef));
+  const vivo=l=>(pres||[]).find(p=>p.identita===l&&p.vivo);
+  const out=[];
+  if(!vivo(predef)) out.push({v:"",t:"— scegli il destinatario —"});
+  lati.filter(vivo).forEach(l=>{ const p=vivo(l);
+    out.push({v:l+"|sessione",t:`${NOME_LATO[l]} · sessione collegata (${p.client}, progetto ${p.progetto||"—"}) · la legge con tavolo prendi`}); });
+  lati.forEach(l=>out.push({v:l+"|bridge",t:`${NOME_LATO[l]} · ${vivo(l)?"bridge headless":"non collegato"} · risponde subito il bridge (sola lettura)`}));
+  return out;
+}
+function chiediAl(dove,predef,extra,pres){
+  conferma(dove,"Domanda per chi? I collegati sono in cima:",async (testo,scelta)=>{
+    const [a,modo]=String(scelta).split("|"), esegui=modo!=="sessione";
+    const out=dove.querySelector(".esito")||dove.appendChild(el("div","esito"));
+    out.className="esito"; out.textContent="invio…";
+    const r=await postTavolo(Object.assign({azione:"chiedi",a,testo,esegui},extra||{}));
+    out.className="esito "+(r.ok?"ok":"ko");
+    out.textContent=r.ok?`accettato ${r.id} · conv ${r.conv} · `+(esegui?"il bridge sta lavorando":`in posta di ${NOME_LATO[a]}: la sessione collegata la legge con tavolo prendi`)
+      :((r.rifiutato?"RIFIUTATO: ":"non inviato: ")+(r.errore||"errore"));
+    if(r.ok) setTimeout(renderTavolo,2000);
+  },{scelta:destinatari(pres,predef),sceltaNome:"destinatario",input:"la domanda",max:4000,si:"invia"});
+}
+async function renderTavolo(){
+  if(document.querySelector("#s-tavolo .conferma")) return;
+  const d=await json("/api/tavolo",null);
+  const kp=$("tav-kpi"), box=$("tav-conv"), fr=$("tav-freni"), ri=$("tav-rifiuti"), nu=$("tav-nuova"), pr=$("tav-pres");
+  kp.textContent=""; box.textContent=""; fr.textContent=""; ri.textContent=""; nu.textContent=""; pr.textContent="";
+  if(!d){
+    $("m-tavolo").textContent="endpoint muto";
+    box.append(el("div","vuoto","/api/tavolo non risponde: niente dati, e niente di inventato."));
+    copertina("tavolo","—","dim","endpoint muto"); return;
+  }
+  const conv=d.conv||[], aperte=conv.filter(c=>c.aperta), tk=d.token||{};
+  const pres=d.presenze||[], vivi=pres.filter(p=>p.vivo);
+  $("m-tav-pres").textContent=(vivi.length?`${vivi.length} vivi`:"nessuno vivo")+(d.presenza_ttl_min?` · TTL ${d.presenza_ttl_min} min`:"");
+  if(!pres.length) pr.append(el("div","vuoto","Nessuno collegato. Un agente si collega con «tavolo collegati»."));
+  pres.forEach(p=>pr.append(riga("",p.vivo?"green":(p.stato==="scaduto"?"amber":"red"),p.vivo?"vivo":p.stato,
+    `${NOME_LATO[p.identita]||p.identita} · ${p.client||"?"} · progetto ${p.progetto||"—"}`,
+    `collegato da ${breve(p.da_s)} · ultimo battito ${etaS(p.battito_s)} · pid ${p.pid??"non verificabile"} · ${p.cwd||""}`,
+    p.riconosciuto||"")));
+  const tot=l=>tk[l]?tokBreve((tk[l].input||0)+(tk[l].output||0)):"0";
+  const tuoi=aperte.filter(c=>c.palla==="andrea").length;
+  kp.append(kpi("conv aperte",String(aperte.length),{testo:`${conv.length} in tutto`}),
+            kpi("palla ad Andrea",String(tuoi),{testo:tuoi?"risposte da leggere":"niente per te"},tuoi?"amber":""),
+            kpi("token Claude",tot("claude"),{testo:sottoToken(tk.claude,"claude")}),
+            kpi("token Codex",tot("codex"),{testo:sottoToken(tk.codex,"codex")}));
+  $("m-tav-conv").textContent=d.assente?"mai usato":`${aperte.length} aperte`;
+  if(!conv.length) box.append(el("div","vuoto",d.assente?"Il Tavolo non è mai stato usato: nessuna cartella in "+d.dir+".":"Nessuna conversazione."));
+  for(const c of conv.slice(0,12)){
+    const r=el("div","req"), cap=el("div","cap");
+    cap.append(el("span","chi",(c.progetto||"—")+" · "+c.conv),
+               el("span","can"+(c.palla==="andrea"?" gate":""),c.aperta?"palla a "+c.palla:"chiusa"),
+               el("span","quando",(c.aperta?"da "+breve(c.da_s):"")+" · "+c.messaggi+" msg"));
+    r.append(cap);
+    const u=c.ultimo||{}, t=c.token||{};
+    let riga2=`ultimo: ${u.tipo} di ${u.from} → ${u.to}`+(u.letto?" · letto":" · non confermato");
+    if(c.ultimo_verdetto) riga2+=` · verdetto di ${c.ultimo_verdetto.da}: ${c.ultimo_verdetto.esito||"—"}`;
+    if(c.sintesi) riga2+=` · sintesi: claude ${c.sintesi.claude} / codex ${c.sintesi.codex} — ${c.sintesi.concordano?"concordano":"DISCORDANO"}`;
+    riga2+=` · token claude ${tokBreve((t.claude||{}).input+(t.claude||{}).output||0)} · codex ${tokBreve((t.codex||{}).input+(t.codex||{}).output||0)}`;
+    r.append(el("div","esito",riga2));
+    const txt=el("div","txt",u.anteprima||""); r.append(txt);
+    if(c.aperta){
+      const base=(u.from==="claude"||u.from==="codex")?u.from:(u.to==="claude"?"claude":"codex");
+      const altroLlm=base==="claude"?"codex":"claude";
+      const acts=el("div","azioni"); acts.style.marginTop="8px";
+      const b=el("button","btn ok","chiedi");
+      b.addEventListener("click",()=>chiediAl(r,altroLlm,{conv:c.conv,progetto:c.progetto},pres));
+      const bc=el("button","btn no","chiudi conv");
+      bc.addEventListener("click",()=>conferma(r,"Perché chiudi questa conversazione?",async motivo=>{
+        const res=await postTavolo({azione:"chiudi",conv:c.conv,motivo});
+        const out=el("div","esito "+(res.ok?"ok":"ko"),res.ok?"chiusa":("non chiusa: "+(res.errore||"errore"))); r.append(out);
+        if(res.ok) setTimeout(renderTavolo,800);
+      },{input:"il motivo",max:300,si:"chiudi",pericolo:true}));
+      acts.append(b,bc); r.append(acts);
+    }
+    box.append(r);
+  }
+  const bn=el("button","btn","chiedi");
+  bn.addEventListener("click",()=>chiediAl(nu,vivi.length?vivi[0].identita:"codex",null,pres)); nu.append(bn);
+  const L=d.limiti||{}, og=d.oggi||{}, ex=og.exec||{}, co=d.code||{};
+  fr.append(riga(d.live?"":"red",d.live?"green":"red",d.live?"LIVE":"OFF","Interruttore",d.live?"il Tavolo scrive":"manca "+d.dir+"/LIVE: il Tavolo non scrive nulla"));
+  if(d.hook_off) fr.append(riga("amber","amber","OFF","Avvisi","HOOK-OFF presente: `tavolo avvisi` tace"));
+  fr.append(riga("","info","exec","Invocazioni oggi",`claude ${ex.claude??0}/${L.exec_lato_giorno} · codex ${ex.codex??0}/${L.exec_lato_giorno}`));
+  fr.append(riga("","info","conv","Conv nuove oggi",`${og.conv_nuove??0} · tetto ${L.conv_nuove_coppia_giorno} per coppia`));
+  fr.append(riga("","info","code","In coda",`claude ${co["inbox-claude"]??0} · codex ${co["inbox-codex"]??0} · andrea ${co["inbox-andrea"]??0} · in carico ${co["in-carico"]??0}`));
+  if(co.quarantena) fr.append(riga("amber","amber","!","Quarantena",`${co.quarantena} messaggi: lease scaduto troppe volte o file illeggibile`));
+  fr.append(riga("","info","tetti","Limiti",`dedup ${L.dedup_min} min · ${L.per_conv} msg/conv · ${L.token_conv} token/conv · lease ${L.lease_min} min × ${L.recuperi_max}`));
+  const rif=d.rifiuti||[];
+  $("m-tav-rif").textContent=rif.length?String(rif.length):"";
+  if(!rif.length) ri.append(el("div","vuoto","Nessun rifiuto."));
+  rif.forEach(x=>ri.append(riga("red","red","✘",x.motivo,`${x.da||"?"} → ${x.a||"?"} · ${eta(x.quando)}`,x.tipo||"")));
+  $("m-tavolo").textContent=(d.live?"LIVE":"spento")+" · "+(d.generato?orario(d.generato):"—");
+  copertina("tavolo",String(aperte.length),tuoi?"amber":(aperte.length?"":"dim"),
+    `conv aperte`+(tuoi?` · ${tuoi} aspettano te`:"")+(d.live?"":" · interruttore spento")+(rif.length?` · ${rif.length} rifiuti recenti`:""));
+}
 /* ═══════════════════════════ avvio ═══════════════════════════ */
 costruisciIndice(); costruisciMappa();
 async function avvio(){
   applica();
   await Promise.all([renderSistema(),renderAzienda(),renderSala(),renderCert(),renderProgetti(),renderCervello(),renderTerminali()]);
-  renderCouncil();
+  renderCouncil(); renderTavolo();
   misuraMondo();
   let salvata=null; try{ salvata=JSON.parse(localStorage.getItem("cc2-vista")||"null"); }catch(e){}
   let hash=location.hash.replace("#","");
@@ -1869,6 +2014,7 @@ setInterval(renderCert,120000);
 setInterval(renderCervello,60000);
 setInterval(renderProgetti,60000);
 setInterval(renderSala,5000);
+setInterval(renderTavolo,15000);
 $("pr-cerca").addEventListener("input",e=>{ progQ=e.target.value; disegnaElencoProgetti(); });
 </script>
 </body>
