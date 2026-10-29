@@ -1053,6 +1053,70 @@ class TorreDestinatario(unittest.TestCase):
         self.assertFalse('predef+"|bridge"' in html)
 
 
+class TorreCockpit(unittest.TestCase):
+    """La home della torre e' cockpit.html, non il canvas: il Tavolo deve stare
+    nella sua barra, come pagina (`#tavolo`), con la stessa logica del settore."""
+
+    STATIC = REPO / "tools/control_center/static"
+
+    def _html(self, nome):
+        return (self.STATIC / nome).read_text(encoding="utf-8")
+
+    def _blocco_js(self, html):
+        import re
+        return re.search(r"/\* ═+ Tavolo ═+ \*/(.*?)/\* ═+ ", html, re.S).group(1)
+
+    def test_voce_nella_barra_e_pagina(self):
+        html = self._html("cockpit.html")
+        self.assertIn('href="#tavolo" data-v="tavolo"', html)
+        self.assertIn('id="nav-tavolo"', html)
+        self.assertIn('id="vista-tavolo"', html)
+        for nodo in ("tav-kpi", "tav-pres", "tav-conv", "tav-nuova", "tav-freni", "tav-rifiuti"):
+            self.assertIn(f'id="{nodo}"', html)
+        self.assertIn('const ALTRE=["dafare","sistema","tavolo"]', html)
+        self.assertIn("(dafare|sistema|tavolo)", html)
+
+    def test_destinatari_e_lo_stesso_codice_del_canvas(self):
+        # Copiata, non riscritta: se una delle due copie cambia, il test lo dice.
+        import re
+        estrai = lambda h: (re.search(r"^const NOME_LATO=.*?;$", h, re.M).group(0),
+                            re.search(r"^function destinatari\(.*?^}$", h, re.M | re.S).group(0))
+        self.assertEqual(estrai(self._html("cockpit.html")), estrai(self._html("index.html")))
+
+    def test_testo_mai_come_html(self):
+        js = self._blocco_js(self._html("cockpit.html"))
+        self.assertIn("/api/tavolo", js)
+        self.assertNotIn("innerHTML", js)
+        self.assertIn('"X-CC-Token":TOKEN', js)
+
+    def test_badge_conta_solo_la_palla_ad_andrea_sulle_aperte(self):
+        import re
+        import shutil
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node non disponibile")
+        fn = re.search(r"^function tuoiTavolo\(.*?^}$", self._html("cockpit.html"), re.M | re.S).group(0)
+        conv = [{"aperta": True, "palla": "andrea"}, {"aperta": False, "palla": "andrea"},
+                {"aperta": True, "palla": "codex"}, {"aperta": True, "palla": "andrea"}]
+        js = f"{fn}\nconsole.log(tuoiTavolo({json.dumps({'conv': conv})}), tuoiTavolo(null), tuoiTavolo({{}}))"
+        r = subprocess.run([node, "-e", js], capture_output=True, text=True, timeout=30)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.split(), ["2", "0", "0"])
+
+    def test_la_home_servita_ha_il_tavolo(self):
+        from . import server
+        httpd = server.make_server(0)
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        try:
+            porta = httpd.server_address[1]
+            html = urllib.request.urlopen(f"http://127.0.0.1:{porta}/", timeout=10).read().decode()
+            self.assertIn('data-v="tavolo"', html)
+            self.assertNotIn("__CC_TOKEN__", html)
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+
 class Wrapper(unittest.TestCase):
     """~/.local/bin/tavolo: trova il repo da solo, o dice perche' non lo trova."""
 

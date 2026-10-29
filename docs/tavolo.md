@@ -3,8 +3,8 @@
 Codice: `tools/control_center/tavolo.py` · CLI: `tools/tavolo` (nel PATH come
 `tavolo`, vedi «Il comando nel PATH») · skill Claude: `.claude/skills/tavolo/` · ruoli:
 `config/tavolo_ruoli.json` · test: `tools/control_center/test_tavolo.py` ·
-posta: `~/.betredge-cc/tavolo/` · torre: settore **T · Tavolo** su
-`/canvas#tavolo`, API `GET/POST /api/tavolo`.
+posta: `~/.betredge-cc/tavolo/` · torre: voce **Tavolo** nella barra della home
+(`/#tavolo`) e settore **T · Tavolo** su `/canvas#tavolo`, API `GET/POST /api/tavolo`.
 
 Adattato dal Tavolo di Michele (SHELL-SYSTEM-GUIDE §6-8, §12), non copiato.
 

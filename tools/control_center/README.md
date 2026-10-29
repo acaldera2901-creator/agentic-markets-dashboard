@@ -79,6 +79,12 @@ Metodo, comandi, freni e limiti: `docs/tavolo.md`. Limite onesto: l'identita'
 di chi usa `tavolo` viene da `AM_SHELL`/`CODEX_SHELL` e non e' autenticata
 crittograficamente.
 
+Nella home (`cockpit.html`) il Tavolo e' una pagina della barra, accanto a Da
+fare e Sistema (`/#tavolo`): stessa lettura, stesse due azioni, aggiornata ogni
+15 s solo quando e' aperta. Il badge conta le conv aperte con la palla ad
+Andrea. `destinatari()` e' copiata dal canvas carattere per carattere e un test
+(`TorreCockpit`) fallisce se le due copie divergono.
+
 ## Il cockpit (`/api/cockpit?area=<area>`) e i task nelle card
 
 I task vivono nel blocco STATO della card (#UNIONE-0907, nessun registro
