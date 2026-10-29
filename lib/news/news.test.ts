@@ -157,6 +157,12 @@ describe("view · links to the board, by team name only", () => {
     expect(matchesForNote(derby, week).map((m) => m.id)).toEqual(["558548", "a"]);
     expect(matchTeams("Messi scores for Inter Miami", ["FC Internazionale Milano", "Inter Miami CF"])).toEqual(new Set(["Inter Miami CF"]));
   });
+  it("«Inter» alone (the watcher's team name of 29/10) links FC Internazionale Milano, never FC Inter Turku", () => {
+    const inter = cardFromRow(row({ guid_hash: "chivu", published_at: "2026-10-29T08:30:04Z", teams: ["Inter", "Venezia"] }))!;
+    expect(matchesForNote(inter, [...board, { id: "t", home: "FC Inter Turku", away: "HJK Helsinki" }, { id: "v", home: "Como 1907", away: "Venezia FC" }]).map((m) => m.id)).toEqual(["558548", "v"]);
+    expect(notesForMatch([inter], "AC Milan", "FC Internazionale Milano").map((c) => c.guid)).toEqual(["chivu"]);
+    expect(notesForMatch([inter], "FC Inter Turku", "HJK Helsinki")).toEqual([]);
+  });
   it("the match sheet: the notes naming either team, newest first", () => {
     const derby = cardFromRow(row({ guid_hash: "derby", published_at: "2026-10-26T12:20:00Z", teams: ["AC Milan", "Internazionale Milano"] }))!;
     const older = cardFromRow(row({ guid_hash: "milan-old", published_at: "2026-10-25T12:20:00Z", teams: ["Milan"] }))!;

@@ -29,6 +29,8 @@ const ALIASES: Record<string, string[]> = {
   "nottingham forest": ["nottingham forest"],
   inter: ["inter milan", "internazionale"],
   internazionale: ["inter milan", "inter"],
+  "fc internazionale milano": ["inter", "inter milan", "internazionale"],
+  "internazionale milano": ["inter", "inter milan", "internazionale"],
   "ac milan": ["milan"],
   milan: ["ac milan"],
   "paris saint germain": ["psg", "paris sg"],
