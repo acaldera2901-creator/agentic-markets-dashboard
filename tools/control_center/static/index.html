@@ -821,7 +821,8 @@ function conferma(dove, domanda, onOk, opz={}){
   const ok=el("button","btn "+(opz.pericolo?"no":"ok"),opz.si||"conferma");
   const no=el("button","btn","annulla");
   const chiudi=()=>box.remove();
-  ok.addEventListener("click",()=>{ const v=input?input.value.trim():""; if(input&&!v){ input.focus(); return; } chiudi(); onOk(v, scelta?scelta.value:undefined); });
+  ok.addEventListener("click",()=>{ const v=input?input.value.trim():""; if(input&&!v){ input.focus(); return; }
+    if(scelta&&!scelta.value){ scelta.focus(); return; } chiudi(); onOk(v, scelta?scelta.value:undefined); });
   no.addEventListener("click",chiudi);
   box.addEventListener("keydown",ev=>{ if(ev.key==="Escape"){ev.stopPropagation();chiudi();} if(ev.key==="Enter"&&ev.target===input) ok.click(); });
   box.append(ok,no); dove.append(box);
@@ -1888,11 +1889,14 @@ function sottoToken(t,lato){
 const NOME_LATO={claude:"Claude",codex:"Codex"};
 /* Il destinatario si sceglie fra i collegati: a una sessione viva la domanda
    resta in posta (la legge con `tavolo prendi`); altrimenti, o se lo scegli,
-   risponde il bridge headless nella stessa conv. */
+   risponde il bridge headless nella stessa conv. Il predefinito e' la sessione
+   di `predef` (in una conv, l'altro LLM) se e' collegata; se no nessuno: il
+   bridge spende token e non si sceglie mai da solo. */
 function destinatari(pres,predef){
   const lati=["claude","codex"].sort((x,y)=>(y===predef)-(x===predef));
   const vivo=l=>(pres||[]).find(p=>p.identita===l&&p.vivo);
   const out=[];
+  if(!vivo(predef)) out.push({v:"",t:"— scegli il destinatario —"});
   lati.filter(vivo).forEach(l=>{ const p=vivo(l);
     out.push({v:l+"|sessione",t:`${NOME_LATO[l]} · sessione collegata (${p.client}, progetto ${p.progetto||"—"}) · la legge con tavolo prendi`}); });
   lati.forEach(l=>out.push({v:l+"|bridge",t:`${NOME_LATO[l]} · ${vivo(l)?"bridge headless":"non collegato"} · risponde subito il bridge (sola lettura)`}));
@@ -1900,7 +1904,7 @@ function destinatari(pres,predef){
 }
 function chiediAl(dove,predef,extra,pres){
   conferma(dove,"Domanda per chi? I collegati sono in cima:",async (testo,scelta)=>{
-    const [a,modo]=String(scelta||predef+"|bridge").split("|"), esegui=modo!=="sessione";
+    const [a,modo]=String(scelta).split("|"), esegui=modo!=="sessione";
     const out=dove.querySelector(".esito")||dove.appendChild(el("div","esito"));
     out.className="esito"; out.textContent="invio…";
     const r=await postTavolo(Object.assign({azione:"chiedi",a,testo,esegui},extra||{}));

@@ -80,7 +80,16 @@ posta aperta, i comandi essenziali e i freni. `tavolo scollegati` la toglie.
   `--resume`) si ricollega con `tavolo collegati`.
 - **Vivo** = battito entro il TTL **e** pid ancora acceso **e** stesso
   eseguibile (un pid riusato da un altro programma è morto). TTL
-  `presenza_ttl_min` = 30, sovrascrivibile con `TAVOLO_PRESENZA_TTL_MIN`.
+  `presenza_ttl_min` = 30, sovrascrivibile con `TAVOLO_PRESENZA_TTL_MIN`
+  (non numerico, nan, inf, zero o negativo → 30 con avviso su stderr).
+  Un `ultimo_battito` nel futuro è `scaduto`, mai vivo. Se il processo non si
+  può verificare (pid o exe assenti, libproc muta) vale **solo il TTL** e
+  `pid_verificato` è falso: esistere non basta (il pid 1 esiste sempre).
+- Contano solo `presenze/claude.json` e `presenze/codex.json`, file veri (un
+  symlink è ignorato), con `identita` uguale al nome del file e i campi del
+  tipo atteso: una voce malformata è ignorata, non fa crollare `collegati`.
+- `CLAUDE_PID` (marcatore, passo 3 dell'identità) conta solo se il suo
+  eseguibile è claude, come per gli antenati: un pid riusato non prova niente.
   Altrimenti lo stato è `scaduto` o `pid morto`, e la torre lo mostra così:
   **mai vivo un pid che non esiste più**. Con `--come` da un terminale il pid
   è quello della shell.
@@ -309,6 +318,15 @@ per lato in `lati` (Claude: `sonnet`; Codex: quello di default).
   per Claude; per Codex c'è in più l'AGENTS.md del repo.
 
 ## Limiti dichiarati
+
+- **Debito accettato (re-QA d0a7691e, BUG-4)** — owner **Andrea**, da
+  rivalutare al primo caso reale di variabile ereditata. `AM_SHELL` /
+  `CODEX_SHELL` esplicite battono gli antenati: l'ordine è voluto (il bridge le
+  imposta al figlio, e devono vincere). La conseguenza: con una di loro
+  impostata `pid` ed `exe` restano `None`, la presenza non è verificabile e
+  scade solo col TTL (30 min), anche se il processo è già uscito. Una variabile
+  ereditata per errore da una shell dell'altro lato darebbe l'identità
+  sbagliata senza che gli antenati la correggano.
 
 - L'identità viene da `AM_SHELL` / `CODEX_SHELL` o dal processo che lancia il
   comando: **non è autenticata crittograficamente**. I freni limitano quanti

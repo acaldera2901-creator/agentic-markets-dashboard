@@ -17,8 +17,9 @@ Le differenze, e perche':
 Posta in ~/.betredge-cc/tavolo/ (fuori da ~/Desktop: TCC blocca i daemon li').
 Mai cancellare un messaggio: si sposta solo con rename atomici.
 
-Limite onesto: l'identita' viene dall'ambiente (AM_SHELL per Claude,
-CODEX_SHELL per Codex). Non e' autenticata crittograficamente: i freni
+Limite onesto: l'identita' viene da AM_SHELL/CODEX_SHELL, poi dal processo
+agente fra gli antenati, poi dai marcatori d'ambiente (ordine in `riconosci`).
+Non e' autenticata crittograficamente: i freni
 limitano *quanti* scambi, non *cosa* fa chi riceve.
 """
 
@@ -26,6 +27,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import math
 import os
 import secrets
 import shutil
@@ -274,7 +276,11 @@ def riconosci(env=None, come: str | None = None, antenati="leggi") -> dict:
         exe = (_info_pid(pid) or (None, 0))[0]
     else:
         claude_pid = env.get("CLAUDE_PID")
-        m_claude = env.get("CLAUDECODE") == "1" and (not claude_pid or _pid_vivo(claude_pid))
+        # Un CLAUDE_PID conta solo se il suo eseguibile e' claude, come per gli
+        # antenati: un pid riusato da un altro programma non prova niente.
+        info_claude = _info_pid(int(claude_pid)) if (claude_pid or "").isdigit() else None
+        m_claude = env.get("CLAUDECODE") == "1" and (
+            not claude_pid or (info_claude is not None and _classifica(info_claude[0]) == "claude"))
         m_codex = bool(env.get("CODEX_THREAD_ID") or env.get("CODEX_SANDBOX"))
         if antenati is not None or m_claude == m_codex:
             perche = ("marcatori di Claude e di Codex insieme" if m_claude and m_codex else
@@ -283,8 +289,8 @@ def riconosci(env=None, come: str | None = None, antenati="leggi") -> dict:
             raise ValueError(f"non so chi sei ({perche}): ripeti con --come claude|codex")
         lato = "claude" if m_claude else "codex"
         prova = "ambiente " + ("CLAUDECODE" if m_claude else "CODEX_THREAD_ID/CODEX_SANDBOX")
-        if lato == "claude" and claude_pid:
-            pid = int(claude_pid)
+        if lato == "claude" and info_claude:
+            pid, exe = int(claude_pid), info_claude[0]
     if agente and agente[2] != lato:
         pid, exe = None, None                    # l'antenato e' l'altro client: non e' il mio pid
     client = {"claude": "claude-code", "codex": "codex"}[lato]
@@ -651,11 +657,26 @@ def chiudi(chi: str, conv: str, motivo: str = "", ora=None) -> dict:
 
 
 # ── presenze: chi e' al tavolo adesso ───────────────────────────────────────
+_TTL_AVVISATO: set[str] = set()
+
+
 def _ttl_s() -> float:
-    try:
-        return float(os.environ.get("TAVOLO_PRESENZA_TTL_MIN") or LIMITI["presenza_ttl_min"]) * 60
-    except ValueError:
-        return LIMITI["presenza_ttl_min"] * 60
+    """TTL delle presenze in secondi. Un TAVOLO_PRESENZA_TTL_MIN non numerico,
+    nan, inf, zero o negativo torna al default con un avviso: un valore
+    invalido non deve mai far sparire /api/tavolo (inf rompeva int())."""
+    grezzo = os.environ.get("TAVOLO_PRESENZA_TTL_MIN")
+    if grezzo:
+        try:
+            v = float(grezzo) * 60
+        except ValueError:
+            v = float("nan")
+        if math.isfinite(v) and v > 0:
+            return v
+        if grezzo not in _TTL_AVVISATO:
+            _TTL_AVVISATO.add(grezzo)
+            print(f"tavolo: TAVOLO_PRESENZA_TTL_MIN={grezzo!r} non valido, uso "
+                  f"{LIMITI['presenza_ttl_min']} min", file=sys.stderr)
+    return LIMITI["presenza_ttl_min"] * 60
 
 
 def _presenza_file(lato: str) -> Path:
@@ -693,45 +714,67 @@ def scollegati(lato: str, ora=None) -> bool:
     return True
 
 
+def _leggi_presenza(lato: str) -> dict | None:
+    """La presenza di un lato se il file e' valido, altrimenti None. Conta il
+    nome del file, non il contenuto: solo presenze/<lato>.json, file vero (un
+    symlink e' ignorato), con identita == lato e i campi del tipo atteso."""
+    f = _presenza_file(lato)
+    if f.is_symlink() or not f.is_file():
+        return None
+    p = _leggi(f)
+    if not isinstance(p, dict) or p.get("identita") != lato:
+        return None
+    if not isinstance(p.get("client"), str):
+        return None
+    if not all(isinstance(p.get(k), str) for k in ("ultimo_battito", "collegato_da")):
+        return None
+    pid = p.get("pid")
+    if pid is not None and (isinstance(pid, bool) or not isinstance(pid, int)):
+        return None
+    if any(p.get(k) is not None and not isinstance(p.get(k), str)
+           for k in ("exe", "riconosciuto", "cwd", "progetto")):
+        return None
+    return p
+
+
 def battito(chi: dict, ora=None) -> None:
     """Ogni comando tavolo dice «ci sono ancora», solo per chi e' collegato.
     Il pid non cambia: una sessione nuova (o ripresa) si ricollega con
     `tavolo collegati`, e fino ad allora una presenza col pid morto resta morta."""
     if not live():
         return
-    f = _presenza_file(chi["lato"])
-    p = _leggi(f)
+    p = _leggi_presenza(chi["lato"])
     if p is None:
         return
     p["ultimo_battito"] = _iso(_ora(ora))
-    _scrivi_atomico(f, p)
+    _scrivi_atomico(_presenza_file(chi["lato"]), p)
 
 
 def presenze(ora=None) -> list[dict]:
-    """Le presenze con il loro stato: vivo solo se il battito e' nel TTL e il
-    pid (quando c'e') esiste ancora ed e' lo stesso eseguibile."""
+    """Le presenze con il loro stato: vivo solo se il battito e' nel TTL (un
+    battito nel futuro e' scaduto) e il pid, quando c'e', esiste ancora ed e'
+    lo stesso eseguibile. Se il processo non si puo' verificare (pid o exe
+    assenti, libproc muta) vale solo il TTL e pid_verificato e' False."""
     ora = _ora(ora)
-    cartella = base() / "presenze"
-    if not cartella.exists():
-        return []
     out = []
-    for f in sorted(cartella.glob("*.json")):
-        p = _leggi(f)
-        if not p:
+    for lato in LATI:
+        p = _leggi_presenza(lato)
+        if p is None:
             continue
         try:
-            battito_s = int((ora - _da_iso(p["ultimo_battito"])).total_seconds())
+            battito = (ora - _da_iso(p["ultimo_battito"])).total_seconds()
             da_s = int((ora - _da_iso(p["collegato_da"])).total_seconds())
-        except (KeyError, ValueError, TypeError):
+        except (ValueError, TypeError):
             continue
-        if p.get("pid") is not None and not _pid_vivo(p["pid"], p.get("exe")):
+        pid, exe = p.get("pid"), p.get("exe")
+        verificato = False
+        if pid is not None and not _pid_vivo(pid, exe):
             st = "pid morto"
-        elif battito_s > _ttl_s():
-            st = "scaduto"
         else:
-            st = "vivo"
-        out.append({**p, "battito_s": battito_s, "da_s": da_s, "stato": st, "vivo": st == "vivo",
-                    "pid_verificato": p.get("pid") is not None})
+            verificato = pid is not None and exe is not None and _info_pid(pid) is not None
+            st = "scaduto" if battito < 0 or battito > _ttl_s() else "vivo"
+        out.append({**p, "battito_s": int(battito), "da_s": da_s, "stato": st, "vivo": st == "vivo",
+                    "pid_verificato": verificato})
     return out
 
 
@@ -746,13 +789,14 @@ def orientamento(lato: str, ora=None) -> str:
     io = next((p for p in tutte if p["identita"] == lato), None)
     l_altro = altro(lato)
     r = [f"COLLEGATO al Tavolo come {lato}"
-         + (f" ({io['client']}, pid {io['pid'] or '?'}, riconosciuto da {io['riconosciuto']})" if io else "")
+         + (f" ({io.get('client')}, pid {io.get('pid') or '?'}, riconosciuto da {io.get('riconosciuto')})"
+            if io else "")
          + (f" · progetto {io['progetto']}" if io and io.get("progetto") else "")
          + f" · posta {base()} · TTL {int(_ttl_s() // 60)} min"]
     altri = [p for p in tutte if p["identita"] != lato and p["vivo"]]
     if altri:
         r.append("Collegati: " + "; ".join(
-            f"{p['identita']} ({p['client']}, progetto {p.get('progetto') or '-'}, da {p['da_s'] // 60} min)"
+            f"{p['identita']} ({p.get('client')}, progetto {p.get('progetto') or '-'}, da {p['da_s'] // 60} min)"
             for p in altri))
     else:
         r.append(f"{l_altro} non e' collegato: risponde comunque col bridge headless (`--esegui`).")

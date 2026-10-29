@@ -14,6 +14,7 @@ import tempfile
 import threading
 import unittest
 import urllib.error
+from unittest import mock
 import urllib.request
 from datetime import timedelta
 from pathlib import Path
@@ -819,6 +820,112 @@ class Presenze(Base):
         os.environ["TAVOLO_DIR"] = str(self.dir / "mai-usato")
         self.assertEqual(tavolo.stato()["presenze"], [])
 
+    # ── re-QA d0a7691e ──────────────────────────────────────────────────────
+    def _scrivi(self, nome, dati):
+        d = self.dir / "presenze"
+        d.mkdir(exist_ok=True)
+        f = d / nome
+        f.write_text(json.dumps(dati) if isinstance(dati, dict) else dati)
+        return f
+
+    def _valida(self, lato="codex", **kw):
+        ora = tavolo._iso(tavolo._ora())
+        return {"identita": lato, "client": "codex", "pid": None, "exe": None,
+                "riconosciuto": "test", "cwd": "/tmp", "progetto": None,
+                "collegato_da": ora, "ultimo_battito": ora, **kw}
+
+    def test_bug1_presenza_senza_client_non_fa_crashare_collegati(self):
+        # Re-QA BUG-1: KeyError 'client' in orientamento dopo aver gia' scritto la presenza.
+        v = self._valida()
+        del v["client"]
+        self._scrivi("codex.json", v)
+        rc, out = self.cli("collegati", "--come", "claude")
+        self.assertEqual(rc, 0, out)
+        self.assertNotIn("Traceback", out)
+        self.assertEqual([p["identita"] for p in tavolo.presenze()], ["claude"])
+
+    def test_bug1_voci_malformate_scartate(self):
+        for v in ([1, 2], "null", {**self._valida(), "client": 5}, {**self._valida(), "pid": "12"},
+                  {**self._valida(), "pid": True}, {**self._valida(), "exe": 3},
+                  {**self._valida(), "progetto": ["x"]}, {**self._valida(), "ultimo_battito": 7}):
+            self._scrivi("codex.json", v if isinstance(v, (dict, str)) else json.dumps(v))
+            self.assertEqual(tavolo.presenze(), [], v)
+            tavolo.orientamento("claude")
+
+    def test_bug2_conta_il_nome_del_file_non_il_contenuto(self):
+        self._scrivi("zzz.json", self._valida("codex"))           # nome estraneo
+        self._scrivi("claude.json", self._valida("codex"))        # identita' != nome
+        self.assertEqual(tavolo.presenze(), [])
+        self._scrivi("codex.json", self._valida("codex"))
+        self.assertEqual([p["identita"] for p in tavolo.presenze()], ["codex"])
+
+    def test_bug2_battito_nel_futuro_e_scaduto(self):
+        futuro = tavolo._iso(tavolo._ora() + timedelta(days=365))
+        self._scrivi("codex.json", self._valida(ultimo_battito=futuro))
+        [v] = tavolo.presenze()
+        self.assertEqual(v["stato"], "scaduto")
+        self.assertFalse(v["vivo"])
+
+    def test_bug2_pid_non_verificabile_vale_solo_il_ttl(self):
+        # pid 1 (launchd) senza exe: esiste, ma non prova niente.
+        self._scrivi("codex.json", self._valida(pid=1, exe=None))
+        [v] = tavolo.presenze()
+        self.assertTrue(v["vivo"])
+        self.assertFalse(v["pid_verificato"])
+        vecchio = tavolo._iso(tavolo._ora() - timedelta(minutes=tavolo.LIMITI["presenza_ttl_min"] + 1))
+        self._scrivi("codex.json", self._valida(pid=1, exe=None, ultimo_battito=vecchio))
+        self.assertEqual(tavolo.presenze()[0]["stato"], "scaduto")
+        # pid null: idem, mai verificato.
+        self._scrivi("codex.json", self._valida(pid=None, exe=None))
+        self.assertFalse(tavolo.presenze()[0]["pid_verificato"])
+        # pid 1 con exe di un client: e' launchd, quindi morto.
+        self._scrivi("codex.json", self._valida(pid=1, exe=CODEX_EXE))
+        self.assertEqual(tavolo.presenze()[0]["stato"], "pid morto")
+
+    def test_bug2_pid_verificato_solo_con_exe_che_combacia(self):
+        exe = tavolo._info_pid(os.getpid())
+        if exe is None:
+            self.skipTest("libproc non disponibile")
+        self._scrivi("codex.json", self._valida(pid=os.getpid(), exe=exe[0]))
+        [v] = tavolo.presenze()
+        self.assertTrue(v["vivo"])
+        self.assertTrue(v["pid_verificato"])
+
+    def test_bug7_presenza_symlink_ignorata(self):
+        vera = self.dir / "altrove.json"
+        vera.write_text(json.dumps(self._valida()))
+        (self.dir / "presenze").mkdir(exist_ok=True)
+        (self.dir / "presenze" / "codex.json").symlink_to(vera)
+        self.assertEqual(tavolo.presenze(), [])
+        tavolo.battito({"lato": "codex"})                  # non la adotta come file vero
+        self.assertTrue((self.dir / "presenze" / "codex.json").is_symlink())
+
+    def test_bug5_ttl_invalido_torna_al_default(self):
+        tavolo.collegati(self.chi("codex"))
+        for v in ("nan", "inf", "-inf", "-5", "0", "abc", "1e400"):
+            os.environ["TAVOLO_PRESENZA_TTL_MIN"] = v
+            self.assertEqual(tavolo._ttl_s(), tavolo.LIMITI["presenza_ttl_min"] * 60, v)
+            st = tavolo.stato()
+            self.assertEqual(st["presenza_ttl_min"], tavolo.LIMITI["presenza_ttl_min"], v)
+            self.assertEqual(st["presenze"][0]["stato"], "vivo", v)
+        os.environ["TAVOLO_PRESENZA_TTL_MIN"] = "2.5"
+        self.assertEqual(tavolo._ttl_s(), 150)
+
+    def test_bug5_ttl_invalido_api_non_sparisce(self):
+        from . import server
+        httpd = server.make_server(0)
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        try:
+            os.environ["TAVOLO_PRESENZA_TTL_MIN"] = "inf"
+            with urllib.request.urlopen(f"http://127.0.0.1:{httpd.server_address[1]}/api/tavolo",
+                                        timeout=10) as r:
+                d = json.loads(r.read())
+            self.assertNotIn("errore", d)
+            self.assertIn("presenze", d)
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
 
 class IdentitaAutomatica(Base):
     """Senza AM_SHELL/CODEX_SHELL il client si ricava dal processo che ha
@@ -840,15 +947,30 @@ class IdentitaAutomatica(Base):
         self.assertIsNone(tavolo._classifica("/Users/x/.nvm/versions/node/v24/bin/node"))
         self.assertIsNone(tavolo._classifica("/bin/zsh"))
 
+    def _pid_e_claude(self):
+        # CLAUDE_PID deve puntare a un eseguibile claude: finto via _info_pid.
+        vero = tavolo._info_pid
+        return mock.patch.object(tavolo, "_info_pid", lambda pid: (CLAUDE_EXE, 1)
+                                 if pid == os.getpid() else vero(pid))
+
     def test_antenati_illeggibili_si_usano_i_marcatori(self):
         self.assertEqual(tavolo.riconosci({"CODEX_THREAD_ID": "x", "CODEX_SANDBOX": "seatbelt"},
                                           antenati=None)["lato"], "codex")
-        self.assertEqual(tavolo.riconosci({"CLAUDECODE": "1", "CLAUDE_PID": str(os.getpid())},
-                                          antenati=None)["lato"], "claude")
+        with self._pid_e_claude():
+            r = tavolo.riconosci({"CLAUDECODE": "1", "CLAUDE_PID": str(os.getpid())}, antenati=None)
+        self.assertEqual((r["lato"], r["pid"], r["exe"]), ("claude", os.getpid(), CLAUDE_EXE))
+
+    def test_bug3_claude_pid_riusato_da_altro_programma_non_conta(self):
+        # Re-QA BUG-3: CLAUDE_PID vivo ma e' python (o launchd): non e' Claude.
+        for pid in (os.getpid(), 1):
+            env = {"CLAUDECODE": "1", "CLAUDE_PID": str(pid), "CODEX_THREAD_ID": "x"}
+            self.assertEqual(tavolo.riconosci(env, antenati=None)["lato"], "codex", pid)
+            with self.assertRaises(ValueError):
+                tavolo.riconosci({"CLAUDECODE": "1", "CLAUDE_PID": str(pid)}, antenati=None)
 
     def test_marcatori_di_entrambi_e_claude_vivo_e_ambiguo(self):
         env = {"CLAUDECODE": "1", "CLAUDE_PID": str(os.getpid()), "CODEX_THREAD_ID": "x"}
-        with self.assertRaises(ValueError) as e:
+        with self._pid_e_claude(), self.assertRaises(ValueError) as e:
             tavolo.riconosci(env, antenati=None)
         self.assertIn("--come", str(e.exception))
         self.assertEqual(tavolo.riconosci(env, come="codex", antenati=None)["lato"], "codex")
@@ -887,6 +1009,48 @@ class IdentitaAutomatica(Base):
             self.skipTest("antenati non leggibili su questa macchina")
         self.assertTrue(a)
         self.assertTrue(all(isinstance(p, int) and isinstance(x, str) for p, x in a))
+
+
+class TorreDestinatario(unittest.TestCase):
+    """Re-QA BUG-6: il «chiedi» dentro una conv predefinisce l'altro LLM della
+    conv, mai il primo collegato, e mai un bridge (che spende token)."""
+
+    def _destinatari(self, pres, predef):
+        import re
+        import shutil
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node non disponibile")
+        html = (REPO / "tools/control_center/static/index.html").read_text(encoding="utf-8")
+        nomi = re.search(r"^const NOME_LATO=.*?;$", html, re.M).group(0)
+        fn = re.search(r"^function destinatari\(.*?^}$", html, re.M | re.S).group(0)
+        js = f"{nomi}\n{fn}\nconsole.log(JSON.stringify(destinatari({json.dumps(pres)},{json.dumps(predef)})))"
+        r = subprocess.run([node, "-e", js], capture_output=True, text=True, timeout=30)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return [o["v"] for o in json.loads(r.stdout)]
+
+    def test_predefinito_e_l_altro_llm_della_conv(self):
+        claude_vivo = [{"identita": "claude", "vivo": True, "client": "claude-code"}]
+        # Conv con palla a codex, ma collegato c'e' solo claude: niente claude|sessione in testa.
+        v = self._destinatari(claude_vivo, "codex")
+        self.assertEqual(v[0], "")
+        self.assertIn("claude|sessione", v)
+        # L'altro LLM collegato: la sua sessione e' il predefinito (non spende token).
+        both = claude_vivo + [{"identita": "codex", "vivo": True, "client": "codex"}]
+        self.assertEqual(self._destinatari(both, "codex")[0], "codex|sessione")
+        self.assertEqual(self._destinatari(both, "claude")[0], "claude|sessione")
+
+    def test_mai_un_bridge_predefinito(self):
+        for pres in ([], [{"identita": "codex", "vivo": False, "client": "codex"}],
+                     [{"identita": "claude", "vivo": True, "client": "claude-code"}]):
+            for predef in ("claude", "codex"):
+                v = self._destinatari(pres, predef)
+                self.assertFalse(v[0].endswith("|bridge"), (pres, predef, v))
+                self.assertIn(predef + "|bridge", v)        # sceglibile, mai predefinito
+
+    def test_nessun_ripiego_silenzioso_sul_bridge(self):
+        html = (REPO / "tools/control_center/static/index.html").read_text(encoding="utf-8")
+        self.assertFalse('predef+"|bridge"' in html)
 
 
 class Wrapper(unittest.TestCase):
