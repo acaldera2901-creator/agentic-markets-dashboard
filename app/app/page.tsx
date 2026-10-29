@@ -3883,7 +3883,7 @@ function CheckoutModal({
 
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
-      <div className="auth-modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
+      <div className="auth-modal checkout-modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
         <div className="auth-modal-head">
           <p className="eyebrow">Checkout</p>
           <h3>{planLabel(plan, lang)}</h3>
@@ -4017,15 +4017,15 @@ function CheckoutModal({
           <div style={{ marginTop: 12, borderTop: "1px solid var(--am-coral)", paddingTop: 12 }}>
             <div style={{ display: "flex", gap: 8, margin: "0 0 6px" }}>
               <button type="button" onClick={() => setPeriod("monthly")} aria-pressed={period === "monthly"}
-                style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "monthly" ? "var(--am-coral)" : "none", color: period === "monthly" ? "#fff" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}>
+                style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "monthly" ? "var(--am-coral)" : "none", color: period === "monthly" ? "var(--am-coral-ink)" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}>
                 {pick5(lang, { it: "Mensile", en: "Monthly", es: "Mensual", fr: "Mensuel", ru: "Месячный" })}
               </button>
               <button type="button" onClick={() => setPeriod("annual")} aria-pressed={period === "annual"}
-                style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "annual" ? "var(--am-coral)" : "none", color: period === "annual" ? "#fff" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}>
+                style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: "1px solid var(--am-coral)", background: period === "annual" ? "var(--am-coral)" : "none", color: period === "annual" ? "var(--am-coral-ink)" : "var(--am-coral)", cursor: "pointer", fontFamily: "var(--font-mono), ui-monospace, monospace", fontSize: 13 }}>
                 {pick5(lang, { it: "Annuale — 1 mese gratis", en: "Annual — 1 month free", es: "Anual — 1 mes gratis", fr: "Annuel — 1 mois offert", ru: "Год — 1 месяц бесплатно" })}
               </button>
             </div>
-            <p style={{ fontSize: 12, opacity: 0.7, margin: "0 0 8px" }}>
+            <p style={{ fontSize: 12, color: "var(--am-muted)", margin: "0 0 8px" }}>
               {/* Il rail carta crea un ABBONAMENTO Shopify che si rinnova da sé:
                   dire "pagamento singolo / rinnovo manuale" sarebbe un addebito
                   ricorrente non dichiarato al momento dell'acquisto. */}
@@ -4033,8 +4033,8 @@ function CheckoutModal({
                 ? pick5(lang, { it: "Abbonamento: si rinnova automaticamente ogni mese. Puoi disdire quando vuoi dal tuo account.", en: "Subscription: renews automatically every month. You can cancel anytime from your account.", es: "Suscripción: se renueva automáticamente cada mes. Puedes cancelar cuando quieras desde tu cuenta.", fr: "Abonnement : renouvellement automatique chaque mois. Vous pouvez annuler à tout moment depuis votre compte.", ru: "Подписка: продлевается автоматически каждый месяц. Отменить можно в любой момент в аккаунте." })
                 : pick5(lang, { it: "Abbonamento annuale: paghi 11 mensilità, 1 mese è gratis. Si rinnova automaticamente ogni 12 mesi, disdici quando vuoi dal tuo account.", en: "Annual subscription: you pay 11 monthly instalments, 1 month is free. Renews automatically every 12 months; cancel anytime from your account.", es: "Suscripción anual: pagas 11 mensualidades, 1 mes es gratis. Se renueva automáticamente cada 12 meses; cancela cuando quieras desde tu cuenta.", fr: "Abonnement annuel : vous payez 11 mensualités, 1 mois est offert. Renouvellement automatique tous les 12 mois ; annulez à tout moment depuis votre compte.", ru: "Годовая подписка: вы платите за 11 месяцев, 1 месяц бесплатно. Продлевается автоматически каждые 12 месяцев; отменить можно в аккаунте." })}
             </p>
-            <button type="button" onClick={payWithCard} disabled={!withdrawalConsent || redirecting}
-              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
+            <button className="checkout-payment" aria-busy={redirecting} type="button" onClick={payWithCard} disabled={!withdrawalConsent || redirecting}
+              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", borderStyle: (!withdrawalConsent || redirecting) ? "dashed" : "solid" }}>
               {redirecting
                 ? pick5(lang, { it: "Reindirizzamento al pagamento sicuro…", en: "Redirecting to secure payment…", es: "Redirigiendo al pago seguro…", fr: "Redirection vers le paiement sécurisé…", ru: "Перенаправление на безопасную оплату…" })
                 : <>{pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD</>}
@@ -4047,14 +4047,14 @@ function CheckoutModal({
             {process.env.NEXT_PUBLIC_SHOPIFY_CRYPTO_ENABLED === "true" && (
               <>
                 {!cryptoOpen ? (
-                  <button type="button" onClick={() => setCryptoOpen(true)} disabled={!withdrawalConsent || redirecting}
-                    style={{ width: "100%", marginTop: 8, padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-line)", color: "var(--am-text)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", opacity: (!withdrawalConsent || redirecting) ? 0.6 : 1 }}>
+                  <button className="checkout-payment" type="button" onClick={() => setCryptoOpen(true)} disabled={!withdrawalConsent || redirecting}
+                    style={{ width: "100%", marginTop: 8, padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-line)", color: "var(--am-text)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", borderStyle: (!withdrawalConsent || redirecting) ? "dashed" : "solid" }}>
                     {pick5(lang, { it: "Paga in crypto", en: "Pay with crypto", es: "Pagar con crypto", fr: "Payer en crypto", ru: "Оплатить криптовалютой" })} · {price.toFixed(2)} USD
                   </button>
                 ) : (
                   <CryptoDirectPanel lang={lang} target={{ kind: "plan", plan, period }} onPaid={() => window.location.assign("/predictions?crypto=paid")} />
                 )}
-                <p style={{ fontSize: 11, opacity: 0.7, margin: "6px 0 0" }}>
+                <p style={{ fontSize: 11, color: "var(--am-muted)", margin: "6px 0 0" }}>
                   {pick5(lang, {
                     it: "Crypto: pagamento singolo da 30 giorni, non si rinnova. Alla scadenza ricompri quando vuoi.",
                     en: "Crypto: one-time payment for 30 days, no auto-renewal. Buy again whenever you want.",
@@ -4070,7 +4070,7 @@ function CheckoutModal({
 
         {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID && withdrawalConsent && (
           <div style={{ marginTop: 12 }}>
-            <p style={{ fontSize: 11, opacity: 0.7, textAlign: "center", margin: "0 0 6px" }}>
+            <p style={{ fontSize: 11, color: "var(--am-muted)", textAlign: "center", margin: "0 0 6px" }}>
               {pick5(lang, { it: "oppure paga con PayPal", en: "or pay with PayPal", es: "o paga con PayPal", fr: "ou payez avec PayPal", ru: "или оплатите через PayPal" })}
             </p>
             <div id="paypal-button-container" />
