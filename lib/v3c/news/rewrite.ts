@@ -15,14 +15,16 @@ export type AiNote = { kind: "ai"; en: NoteText; it: NoteText; model: string };
 /** A rewrite plus the team names the item states (for the board links; never shown as such). */
 export type Rewritten = { note: AiNote; teams: string[] };
 
-/** Bump when the prompt or the checks change (stored with each row as rewrite_model). v5 = v4 + one repair turn on a 6-word copy. */
-export const PROMPT_VERSION = "v5";
+/** Bump when the prompt or the checks change (stored with each row as rewrite_model). v5 = v4 + one repair turn on a 6-word copy; v6 = up to 2 repair turns on any mechanical or fact refusal, the reason and our refused note passed back. */
+export const PROMPT_VERSION = "v6";
 export const MAX_WORDS = 60;
 export const MAX_TITLE_WORDS = 14;
 
 export class RewriteError extends Error {
-  /** for «copies a 6-word run»: the runs, so the one repair turn can name them */
+  /** for «copies a 6-word run»: the runs, so the repair turn can name them */
   copied?: string[];
+  /** the refused note (check or facts refusal), so the repair turn can show it back */
+  previous?: { en: NoteText; it: NoteText };
 }
 
 // ─── the checks ──────────────────────────────────────────────────────────────
@@ -118,16 +120,50 @@ export function userPrompt(item: FeedItem): string {
   return `<item>\n<published>${new Date(item.t).toISOString()}</published>\n<headline>${item.title}</headline>\n<teaser>${item.text}</teaser>\n</item>`;
 }
 
+/** Repair turns after a refusal (v6): at most this many, each one passes every check again. */
+export const MAX_REPAIRS = 2;
+
 /**
- * The one repair turn (v5). Measured 26/10: the rule against reused sequences is
- * in the prompt since v1, yet haiku (no thinking) still copies runs made of names
- * and a score («Udinese 2-0 in Serie A», «3-0 win over Czechia at Wembley») —
- * 58 of 227 drops in the log, n.1. Naming the exact runs works where the general
- * rule does not. The barrier is the same: the new answer passes every check again.
+ * A refusal a repair turn may fix: the mechanical checks and the fact barrier
+ * are deterministic, so a new note that passes them passes the same bar.
+ * Not repaired: «insufficient» (the model said the item has no facts) and the
+ * second reading (re-asking until the verifier says yes would wear the barrier down).
  */
-export function repairPrompt(item: FeedItem, runs: readonly string[]): string {
-  const list = runs.map((r) => `- ${r}`).join("\n");
-  return `${userPrompt(item)}\n<rejected_attempt>\nYour previous note for this item was refused because it repeated these word sequences of the item (shown lower case, punctuation removed):\n${list}\nWrite the note again with the same facts. Names, scores and numbers count as words: change the order and the words around them so that no 6 consecutive words of your headline or body, in English or in Italian, match the item. Every other rule still applies.\n</rejected_attempt>`;
+export const repairable = (reason: string): boolean => /^(check|facts): /.test(reason) || reason === "not JSON";
+
+export type Rejection = { reason: string; copied?: readonly string[]; previous?: { en: NoteText; it: NoteText } };
+
+const BANNED_ALL = new RegExp(BANNED_NEWS.source, "gi");
+
+/** What to do about one refusal, in the words the model needs. */
+function repairHint(r: Rejection): string {
+  const why = r.reason.replace(/^(check|facts): /, "");
+  if (why === "copies a 6-word run" && r.copied?.length) {
+    const list = r.copied.map((x) => `- ${x}`).join("\n");
+    return `It repeated these word sequences of the item (shown lower case, punctuation removed):\n${list}\nWrite the note again with the same facts. Names, scores and numbers count as words: change the order and the words around them so that no 6 consecutive words of your headline or body, in English or in Italian, match the item.`;
+  }
+  if (why === "copies the headline") return "It repeated the item's headline. Write the note again with the same facts and a headline of your own.";
+  if (/title too long/.test(why)) return "A headline was too long. Write the note again with the same facts: headline_en and headline_it at most 12 words each — the Italian one too, so shorten it rather than translating word by word.";
+  if (/over \d+ words/.test(why)) return `It was too long. Write the note again with the same facts: headline plus body at most ${MAX_WORDS} words in English and in Italian.`;
+  if (/banned word/.test(why)) {
+    const found = new Set<string>();
+    for (const t of r.previous ? [r.previous.en, r.previous.it] : []) for (const m of `${t.title} ${t.body}`.matchAll(BANNED_ALL)) found.add(m[0].toLowerCase());
+    const list = found.size ? `: ${[...found].map((w) => `«${w}»`).join(", ")}` : "";
+    return `It used a word that is not allowed on this site${list}. Write the note again with the same facts without that word or any betting term.`;
+  }
+  if (/looks like a price/.test(why)) return "It contained something that looks like a price (a decimal number or a fraction such as 5/2). Write the note again with the same facts without it.";
+  if (/link in text/.test(why)) return "It contained a link. Write the note again with the same facts and no link or web address.";
+  if (/empty/.test(why)) return "A headline or body was empty. Write the note again with all four text fields filled.";
+  if (r.reason === "not JSON") return "The answer was not the JSON object. Answer with the JSON object only.";
+  return `These parts are not stated in the item, or not written as the item writes them: ${why}. Write the note again with only what the item states, every name and number written as the item writes it (an Italian exonym of a place or club is fine, a translated or completed person's name is not). Add nothing.`;
+}
+
+/** A repair turn: the same item, our refused note, why it was refused and what to change. */
+export function repairPrompt(item: FeedItem, r: Rejection): string {
+  const prev = r.previous
+    ? `\n<your_note>\nheadline_en: ${r.previous.en.title}\nbody_en: ${r.previous.en.body}\nheadline_it: ${r.previous.it.title}\nbody_it: ${r.previous.it.body}\n</your_note>`
+    : "";
+  return `${userPrompt(item)}\n<rejected_attempt>${prev}\nYour previous note for this item was refused by an automatic check («${r.reason}»). ${repairHint(r)}\nEvery other rule still applies.\n</rejected_attempt>`;
 }
 
 /** The output shape, passed to `claude -p --json-schema`. */
@@ -178,9 +214,10 @@ export function readModelOutput(output: unknown, item: FeedItem, model: string):
   if (o.status === "insufficient") throw new RewriteError("insufficient");
   const s = (k: string) => (typeof o[k] === "string" ? (o[k] as string).replace(/\s+/g, " ").trim() : "");
   const note: AiNote = { kind: "ai", en: { title: s("headline_en"), body: s("body_en") }, it: { title: s("headline_it"), body: s("body_it") }, model };
+  const previous = { en: note.en, it: note.it };
   const bad = checkRewrite(note, item);
-  if (bad) throw Object.assign(new RewriteError(`check: ${bad}`), bad === "copies a 6-word run" ? { copied: copiedRuns(note, item) } : {});
+  if (bad) throw Object.assign(new RewriteError(`check: ${bad}`), { previous }, bad === "copies a 6-word run" ? { copied: copiedRuns(note, item) } : {});
   const facts = checkFacts(note, item);
-  if (!facts.ok) throw new RewriteError(`facts: ${facts.unsupported.join("; ").slice(0, 240)}`);
+  if (!facts.ok) throw Object.assign(new RewriteError(`facts: ${facts.unsupported.join("; ").slice(0, 240)}`), { previous });
   return { note, teams: statedTeams(o.teams, item) };
 }

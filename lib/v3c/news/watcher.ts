@@ -22,6 +22,8 @@ import { assertNotApi, FOTMOB_NEWS_PAGE_URL, looksBlocked, mayFetch, mergeSource
 import { rowFor, type NewsItemRow, type NewsStateRow } from "./table";
 import { words } from "./rewrite";
 import type { RewriteOutcome } from "./claude-cli";
+import { imageBase, imagePrompt, MAX_IMAGE_ATTEMPTS } from "./image";
+import type { ImageAttempt, ImageFiles } from "./image-gen";
 
 export const RSS_EVERY_MS = 3_600_000;
 export const ROBOTS_EVERY_MS = 6 * 3_600_000;
@@ -42,6 +44,10 @@ export const RETENTION_DAYS = 30;
 
 type Kind = "page" | "rss";
 export type Queued = { item: FeedItem; hash: string; attempts: number; row?: NewsItemRow };
+/** A picture to make for a note already written (#NEWSWATCH-2). Built from OUR note, never the original. */
+export type ImageJob = { hash: string; base: string; prompt: string; attempts: number; at: number; files?: ImageFiles; lastError?: string };
+/** Worst case of one picture attempt (gptimg + post + check): an attempt starts only if it fits the run window. */
+export const IMAGE_ATTEMPT_MS = 150_000;
 
 /** Everything the watcher remembers between runs (a JSON file next to the daemon). */
 export type WatcherState = {
@@ -54,6 +60,8 @@ export type WatcherState = {
   blocked: string | null;
   lastRssAt: number;
   robots: { at: number; text: string } | null;
+  /** pictures still to make or to publish (absent before #NEWSWATCH-2: same v1 file) */
+  images?: ImageJob[];
 };
 
 export const freshState = (): WatcherState => ({
@@ -76,7 +84,15 @@ export interface WatcherDb {
   setState(patch: StatePatch): Promise<void>;
   /** delete rows published before `before` (retention) */
   prune(before: string): Promise<void>;
+  /** news_items.image_url for one row (#NEWSWATCH-2, needs the additive column: behind NEWS_WATCHER_IMAGE_PUBLISH) */
+  attachImage?(guidHash: string, url: string): Promise<void>;
 }
+
+/** The pictures (#NEWSWATCH-2): absent = off (the default). `publish` absent = files stay on the Mac. */
+export type ImageDeps = {
+  make: (job: ImageJob) => Promise<ImageAttempt>;
+  publish?: (job: ImageJob, files: ImageFiles) => Promise<string>;
+};
 
 export type Deps = {
   now: () => number;
@@ -84,9 +100,11 @@ export type Deps = {
   rewrite: (item: FeedItem) => Promise<RewriteOutcome>;
   db: WatcherDb;
   log: (line: string) => void;
+  images?: ImageDeps;
 };
 
-export type RunOptions = { pageUrl?: string; feedUrl?: string; maxRewrites?: number };
+/** `windowMs`: how long a run may last (the launchd interval); picture attempts start only inside it. */
+export type RunOptions = { pageUrl?: string; feedUrl?: string; maxRewrites?: number; windowMs?: number };
 
 export type RunReport = {
   /** 0 ok · 1 something broke (DB) · 2 the source blocked us (needs a person) */
@@ -100,6 +118,7 @@ export type RunReport = {
   limited: string | null;
   errors: string[];
   outcomes: { item: FeedItem; outcome: RewriteOutcome }[];
+  images?: { made: number; failed: number; fallback: number; published: number; local: number; pending: number };
 };
 
 export const sha = (s: string): string => createHash("sha256").update(s).digest("hex");
@@ -264,6 +283,8 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
     try {
       await d.db.insert(rows);
       rep.written = rows.length;
+      // the note is out with the picture of its kind; its own picture follows, never before
+      if (d.images) for (const r of rows) (s.images ??= []).push({ hash: r.guid_hash, base: imageBase(r.guid_hash, r.rewritten_en.title), prompt: imagePrompt(r.rewritten_en, r.teams), attempts: 0, at: now });
       for (const q of s.queue) if (q.row) done(q);
       s.queue = s.queue.filter((q) => !q.row);
     } catch (e) {
@@ -288,5 +309,68 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
     rep.errors.push(`news_state update failed: ${String(e).slice(0, 120)}`);
     rep.exit = 1;
   }
+
+  // 8. pictures, after everything else: a slow or failed picture never holds a note back
+  if (d.images) await pictures(s, d, d.images, now, o.windowMs ?? 600_000, rep);
   return rep;
+}
+
+/**
+ * Newest first, one attempt at a time (gptimg runs in series), only while an
+ * attempt fits the run window. A failed attempt counts; after MAX_IMAGE_ATTEMPTS
+ * the note keeps the picture of its kind for good. A picture made but not yet
+ * published is published on a later run, never made again.
+ */
+async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number, windowMs: number, rep: RunReport): Promise<void> {
+  const st = { made: 0, failed: 0, fallback: 0, published: 0, local: 0, pending: 0 };
+  rep.images = st;
+  const jobs = (s.images ?? []).filter((j) => start - j.at <= MAX_AGE_MS).sort((a, b) => b.at - a.at);
+  const keep: ImageJob[] = [];
+  let stop = false;
+  for (const j of jobs) {
+    if (!j.files && !stop) {
+      if (d.now() - start + IMAGE_ATTEMPT_MS > windowMs) stop = true;
+      else {
+        const a = await img.make(j);
+        if (a.kind === "ok") {
+          j.files = a.files;
+          st.made++;
+          d.log(`image ok ${j.base} · attempt ${j.attempts + 1} · ${a.ms} ms · webp ${Math.round(a.files.webpBytes / 1024)} KB`);
+        } else if (a.kind === "limit") {
+          d.log(`image: usage limit (${a.reason}) — pictures wait for the next run`);
+          stop = true;
+        } else {
+          j.attempts++;
+          j.lastError = a.reason;
+          st.failed++;
+          d.log(`image refused ${j.base} · attempt ${j.attempts} · ${a.ms} ms · ${a.reason}`);
+          if (j.attempts >= MAX_IMAGE_ATTEMPTS) {
+            st.fallback++;
+            d.log(`image fallback ${j.base}: ${MAX_IMAGE_ATTEMPTS} attempts refused — the note keeps the picture of its kind`);
+            continue;
+          }
+        }
+      }
+    }
+    if (j.files && !img.publish) {
+      st.local++;
+      d.log(`image ready on the Mac only (publishing off): ${j.files.webp}`);
+      continue;
+    }
+    if (j.files && img.publish) {
+      try {
+        const url = await img.publish(j, j.files);
+        if (!d.db.attachImage) throw new Error("db has no attachImage");
+        await d.db.attachImage(j.hash, url);
+        st.published++;
+        d.log(`image published ${j.base} → ${url}`);
+        continue;
+      } catch (e) {
+        rep.errors.push(`image publish ${j.base}: ${String(e).slice(0, 120)}`);
+      }
+    }
+    keep.push(j);
+  }
+  st.pending = keep.length;
+  s.images = keep;
 }

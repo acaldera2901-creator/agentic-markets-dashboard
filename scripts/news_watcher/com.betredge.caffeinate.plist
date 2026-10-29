@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PROPOSED, not installed (#NEWSWATCH-2). Keeps the Mac from SYSTEM sleep so the
+  news loop keeps running: `caffeinate -s` holds a power assertion while it lives.
+  Limits (Apple, man caffeinate): -s is honoured ONLY on AC power; on battery the
+  Mac sleeps as usual. The display may still sleep (wanted). Closing the lid
+  without an external display still sleeps the Mac. Off: `launchctl bootout
+  gui/$(id -u)/com.betredge.caffeinate` (or `lab off --si` once listed in
+  lab/daemoni-opzionali.txt).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.betredge.caffeinate</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-s</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/Users/calde/Library/Application Support/news-watcher/caffeinate.err.log</string>
+</dict>
+</plist>

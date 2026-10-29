@@ -4,7 +4,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { freshState, MAX_ATTEMPTS, MAX_REWRITES, MIN_TEASER_WORDS, runCycle, sha, type Deps, type WatcherDb } from "./watcher";
+import { freshState, MAX_ATTEMPTS, MAX_REWRITES, MIN_TEASER_WORDS, runCycle, sha, type Deps, type ImageJob, type WatcherDb } from "./watcher";
+import type { ImageAttempt } from "./image-gen";
 import { words } from "./rewrite";
 import { claudeArgs, LIMIT_RE, readCliOutput, type RewriteOutcome } from "./claude-cli";
 import { parseNewsPage } from "./page";
@@ -262,7 +263,7 @@ describe("claude-cli · the local `claude -p`", () => {
     expect(o.kind).toBe("ok");
     if (o.kind !== "ok") return;
     expect(o.rewritten.teams).toEqual(["United States", "Canada"]);
-    expect(o.rewritten.note.model).toBe("claude-haiku-4-5-20251001 · prompt v5");
+    expect(o.rewritten.note.model).toBe("claude-haiku-4-5-20251001 · prompt v6");
     expect(o.usage).toEqual({ ms: 4242, costUsd: 0.0028, inTokens: 1549, outTokens: 253, model: "claude-haiku-4-5-20251001" });
   });
 
@@ -274,6 +275,97 @@ describe("claude-cli · the local `claude -p`", () => {
     const bad = { ...good, body_en: "A sure win for the USA." };
     expect(readCliOutput(cli({ structured_output: bad, result: JSON.stringify(bad) }), "", 0, item, 1)).toMatchObject({ kind: "final", reason: expect.stringMatching(/banned/) });
     expect(LIMIT_RE.test("Claude usage limit reached. Your limit will reset at 6pm")).toBe(true);
+    // measured 29/10 in prod: this wording was read as transient and dropped 5 items
+    expect(readCliOutput(cli({ is_error: true, subtype: "success", result: "You've hit your 5-hour limit · resets 2:30pm (Atlantic/Canary)" }), "", 1, item, 1).kind).toBe("limit");
     expect(LIMIT_RE.test("The match ended with a red card")).toBe(false);
+  });
+});
+
+describe("watcher · one picture per note (#NEWSWATCH-2, behind NEWS_WATCHER_IMAGES)", () => {
+  const files = (base: string) => ({ png: `/x/${base}.png`, webp: `/x/${base}.webp`, webpBytes: 90_000 });
+  const okMake = vi.fn(async (j: ImageJob): Promise<ImageAttempt> => ({ kind: "ok", files: files(j.base), ms: 50_000 }));
+
+  it("off by default: no job, no picture step, the run is the one of before", async () => {
+    const s = freshState();
+    const rep = await runCycle(s, deps({ db: fakeDb() }), { maxRewrites: 2 });
+    expect(rep.images).toBeUndefined();
+    expect(s.images).toBeUndefined();
+  });
+
+  it("the note first, its picture after: rows inserted and news_state written BEFORE the first gptimg; files stay on the Mac when publishing is off", async () => {
+    const db = fakeDb();
+    const order: string[] = [];
+    db.insert = vi.fn(async (r: NewsItemRow[]) => void (order.push("insert"), db.rows.push(...r)));
+    db.setState = vi.fn(async () => void order.push("state"));
+    const make = vi.fn(async (j: ImageJob) => (order.push(`make ${j.base}`), okMake(j)));
+    const s = freshState();
+    const rep = await runCycle(s, deps({ db, images: { make } }), { maxRewrites: 2 });
+    expect(order.slice(0, 2)).toEqual(["insert", "state"]);
+    expect(make).toHaveBeenCalledTimes(2);
+    expect(rep.images).toMatchObject({ made: 2, local: 2, published: 0, pending: 0 });
+    const j = make.mock.calls[0][0] as ImageJob;
+    expect(j.base).toMatch(/^news-[a-z0-9]+-[a-z0-9-]+$/);
+    expect(j.prompt).toContain("no readable text");
+    // the prompt is built from OUR note, never from the original headline
+    expect(j.prompt).not.toContain(db.rows[0].source_url);
+    expect(s.images).toEqual([]);
+  });
+
+  it("a refused picture is made again at most twice, then the note keeps the picture of its kind", async () => {
+    const make = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "bad", reason: "check: swoosh on a boot", ms: 60_000 }));
+    const s = freshState();
+    const rep = await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 1 });
+    // one attempt per job per run: the first run tried once
+    expect(make).toHaveBeenCalledTimes(1);
+    expect(rep.images).toMatchObject({ failed: 1, fallback: 0, pending: 1 });
+    expect(s.images?.[0]).toMatchObject({ attempts: 1, lastError: "check: swoosh on a boot" });
+    const reps = [];
+    for (let i = 0; i < 3; i++) reps.push(await runCycle(s, deps({ db: fakeDb(), images: { make } }, READ_AT + (i + 1) * 3 * MIN), { maxRewrites: 0 }));
+    expect(make).toHaveBeenCalledTimes(3); // 1 + 2 regenerations, never a fourth
+    expect(reps[1].images).toMatchObject({ fallback: 1, pending: 0 });
+    expect(s.images).toEqual([]);
+  });
+
+  it("an attempt starts only if it fits the run window (3-min interval: one at most, the rest waits)", async () => {
+    let t = READ_AT;
+    const make = vi.fn(async (j: ImageJob): Promise<ImageAttempt> => {
+      t += 100_000;
+      return okMake(j);
+    });
+    const s = freshState();
+    const rep = await runCycle(s, { ...deps({ db: fakeDb(), images: { make } }), now: () => t }, { maxRewrites: 3, windowMs: 180_000 });
+    expect(make).toHaveBeenCalledTimes(1);
+    expect(rep.images).toMatchObject({ made: 1, pending: 2 });
+    expect(s.images).toHaveLength(2);
+  });
+
+  it("publishing on: upload then news_items.image_url; an upload that fails keeps the files and is retried next run WITHOUT a new gptimg", async () => {
+    const db = fakeDb();
+    const attached: [string, string][] = [];
+    db.attachImage = vi.fn(async (h: string, u: string) => void attached.push([h, u]));
+    let fail = true;
+    const publish = vi.fn(async (j: ImageJob) => {
+      if (fail) throw new Error("storage http 503");
+      return `https://cdn.example/${j.base}.webp`;
+    });
+    const make = vi.fn(okMake);
+    const s = freshState();
+    const rep = await runCycle(s, deps({ db, images: { make, publish } }), { maxRewrites: 1 });
+    expect(rep.images).toMatchObject({ made: 1, published: 0, pending: 1 });
+    expect(rep.errors.join(" ")).toMatch(/image publish .*503/);
+    expect(rep.exit).toBe(0); // a picture never breaks the run
+    fail = false;
+    const rep2 = await runCycle(s, deps({ db, images: { make, publish } }, READ_AT + 3 * MIN), { maxRewrites: 0 });
+    expect(make).toHaveBeenCalledTimes(1);
+    expect(rep2.images).toMatchObject({ published: 1, pending: 0 });
+    expect(attached).toEqual([[db.rows[0].guid_hash, `https://cdn.example/${(make.mock.calls[0][0] as ImageJob).base}.webp`]]);
+  });
+
+  it("a usage limit on the check stops pictures for this run without counting an attempt", async () => {
+    const make = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "limit", reason: "You've hit your weekly limit" }));
+    const s = freshState();
+    await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 2 });
+    expect(make).toHaveBeenCalledTimes(1);
+    expect(s.images?.map((j) => j.attempts)).toEqual([0, 0]);
   });
 });

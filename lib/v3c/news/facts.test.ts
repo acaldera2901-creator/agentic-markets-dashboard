@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { checkFacts, italianArticleError } from "./facts";
 import { claudeArgs, rewriteWithClaude, VERIFY_MODEL } from "./claude-cli";
 import { readVerdict, VERIFY_PROMPT, VERIFY_SCHEMA, verifyPrompt } from "./verify";
-import { checkRewrite, copiedRuns, readModelOutput, repairPrompt, RewriteError, SYSTEM_PROMPT, userPrompt } from "./rewrite";
+import { checkRewrite, copiedRuns, MAX_REPAIRS, readModelOutput, repairable, repairPrompt, RewriteError, SYSTEM_PROMPT, userPrompt } from "./rewrite";
 import type { FeedItem } from "./feed";
 
 const src = (guid: string, title: string, text: string): FeedItem => ({ guid, title, text, url: `https://www.fotmob.com/news/${guid}`, t: Date.parse("2026-10-07T10:00:00Z"), source: "FotMob" });
@@ -218,12 +218,41 @@ describe("rewrite · 6-word copies (58 of 227 drops in the log, n.1): same barri
       expect((e as RewriteError).copied).toBeUndefined();
     }
   });
-  it("the repair prompt is the same item plus the runs, and keeps every rule", () => {
-    const p = repairPrompt(MILAN, ["udinese 2 0 in serie a"]);
+  it("the repair prompt is the same item plus our refused note, the reason and the runs, and keeps every rule", () => {
+    const p = repairPrompt(MILAN, { reason: "check: copies a 6-word run", copied: ["udinese 2 0 in serie a"], previous: COPY });
     expect(p.startsWith(userPrompt(MILAN))).toBe(true);
     expect(p).toContain("- udinese 2 0 in serie a");
+    expect(p).toContain(`body_en: ${COPY.en.body}`);
+    expect(p).toContain("«check: copies a 6-word run»");
     expect(p).toMatch(/same facts/);
     expect(p).toMatch(/Every other rule still applies/);
+  });
+});
+
+describe("rewrite · v6 repair turns on any mechanical or fact refusal (46% of notes dropped in prod, 26/10–29/10)", () => {
+  it("what is repaired: checks, facts, unreadable JSON; never «insufficient» nor the second reading", () => {
+    expect(MAX_REPAIRS).toBe(2);
+    for (const r of ["check: copies a 6-word run", "check: it: title too long", "check: it: banned word", "facts: it: name «murales»", "facts: en: record not in the original", "not JSON"]) expect(repairable(r)).toBe(true);
+    for (const r of ["insufficient", "verifier: Kane's record", "repair: check: copies a 6-word run"]) expect(repairable(r)).toBe(false);
+  });
+  it("each refusal is told in the words the model needs", () => {
+    const prev = { en: { title: "Bayern win", body: "A sure win." }, it: { title: "Il Bayern vince", body: "Una vittoria, nessuna scommessa." } };
+    expect(repairPrompt(MILAN, { reason: "check: it: title too long", previous: prev })).toMatch(/at most 12 words each — the Italian one too/);
+    const banned = repairPrompt(MILAN, { reason: "check: en: banned word", previous: prev });
+    expect(banned).toContain("«sure win»");
+    expect(banned).toContain("«scommess»");
+    const facts = repairPrompt(MILAN, { reason: "facts: it: name «murales»", previous: prev });
+    expect(facts).toContain("it: name «murales»");
+    expect(facts).toMatch(/Add nothing/);
+    expect(facts).toContain("<your_note>");
+  });
+  it("a refusal carries our refused note (check and facts), so the next turn can see it", () => {
+    const o = { status: "ok", headline_en: COPY.en.title, body_en: COPY.en.body, headline_it: COPY.it.title, body_it: COPY.it.body, teams: [] };
+    try {
+      readModelOutput(o, MILAN, "m");
+    } catch (e) {
+      expect((e as RewriteError).previous).toEqual(COPY);
+    }
   });
 });
 
@@ -290,8 +319,10 @@ describe("claude-cli · rewrite → mechanical checks → second reading, with a
     answers,
     JSON.stringify({
       rewrite: {
-        // the repair turn (its input also holds the item): listed first so it wins
-        "rejected_attempt": asAnswer(REPAIRED, ["AC Milan", "Udinese"]),
+        // the repair turns (their input also holds the item): listed first so they win
+        "- udinese 2 0 in serie a": asAnswer(REPAIRED, ["AC Milan", "Udinese"]),
+        "title too long": asAnswer(COPY, ["AC Milan", "Udinese"]),
+        TOOLONGCASE: asAnswer({ ...REPAIRED, it: { ...REPAIRED.it, title: "Amorim è davvero molto orgoglioso della bella reazione mostrata dalla sua squadra, l'AC Milan, dopo la sconfitta" } }, ["AC Milan", "Udinese"]),
         "bounce-back win": asAnswer(COPY, ["AC Milan", "Udinese"]),
         "Ellis caps": asAnswer(NOTES.ellis, ["United States", "Canada"]),
         "Tuchel lauds": asAnswer(NOTES.kane, ["England", "Czechia"]),
@@ -321,11 +352,11 @@ describe("claude-cli · rewrite → mechanical checks → second reading, with a
     }
   };
 
-  it("Ellis: dropped by the mechanical check — the verifier is never called", async () => {
+  it("Ellis: refused by the fact barrier, repaired twice, still refused — the verifier is never called", async () => {
     const before = calls().length;
     const o = await run(USA);
-    expect(o).toMatchObject({ kind: "final", reason: expect.stringMatching(/^facts: .*goal\/scorer/) });
-    expect(calls().slice(before)).toEqual(["rewrite haiku key=no"]);
+    expect(o).toMatchObject({ kind: "final", reason: expect.stringMatching(/^repair: facts: .*goal\/scorer/), attempts: 3 });
+    expect(calls().slice(before)).toEqual(["rewrite haiku key=no", "rewrite haiku key=no", "rewrite haiku key=no"]);
   });
   it("Kane: passes the mechanical check, dropped by the second reading (sonnet)", async () => {
     const before = calls().length;
@@ -338,7 +369,8 @@ describe("claude-cli · rewrite → mechanical checks → second reading, with a
       const o = await run(item);
       expect(o.kind).toBe("ok");
       if (o.kind !== "ok") return;
-      expect(o.rewritten.note.model).toMatch(/^claude-haiku · prompt v5 · verified claude-sonnet$/);
+      expect(o.rewritten.note.model).toMatch(/^claude-haiku · prompt v6 · verified claude-sonnet$/);
+      expect(o.attempts).toBe(1);
       expect(o.usage).toMatchObject({ costUsd: 0.004, inTokens: 1800, outTokens: 160 });
     }
   });
@@ -349,18 +381,26 @@ describe("claude-cli · rewrite → mechanical checks → second reading, with a
     expect(o.kind).toBe("ok");
     if (o.kind !== "ok") return;
     expect(o.rewritten.note.en).toEqual(REPAIRED.en);
-    expect(o.rewritten.note.model).toBe("claude-haiku · prompt v5 · repaired · verified claude-sonnet");
+    expect(o.rewritten.note.model).toBe("claude-haiku · prompt v6 · repaired · verified claude-sonnet");
     expect(o.usage).toMatchObject({ costUsd: 0.006, inTokens: 2700 });
+    expect(o.attempts).toBe(2);
   });
-  it("a repair that copies again is dropped («repair: …»): one repair only, no second reading", async () => {
+  it("two different refusals in a row (IT title too long, then a copy) → the second repair passes: 3 rewrites + the second reading", async () => {
+    const item = { ...MILAN, guid: "m2", title: `${MILAN.title} TOOLONGCASE` };
+    const before = calls().length;
+    const o = await run(item);
+    expect(calls().slice(before)).toEqual(["rewrite haiku key=no", "rewrite haiku key=no", "rewrite haiku key=no", `verify ${VERIFY_MODEL} key=no`]);
+    expect(o).toMatchObject({ kind: "ok", attempts: 3 });
+  });
+  it("a repair that copies again is repaired once more, then dropped («repair: …»): never more than 2 repairs, no second reading", async () => {
     const ans = JSON.parse(readFileSync(answers, "utf8"));
-    const saved = ans.rewrite.rejected_attempt;
-    ans.rewrite.rejected_attempt = asAnswer(COPY, []);
+    const saved = ans.rewrite["- udinese 2 0 in serie a"];
+    ans.rewrite["- udinese 2 0 in serie a"] = asAnswer(COPY, []);
     writeFileSync(answers, JSON.stringify(ans));
     const before = calls().length;
-    expect(await run(MILAN)).toMatchObject({ kind: "final", reason: "repair: check: copies a 6-word run" });
-    expect(calls().slice(before)).toEqual(["rewrite haiku key=no", "rewrite haiku key=no"]);
-    ans.rewrite.rejected_attempt = saved;
+    expect(await run(MILAN)).toMatchObject({ kind: "final", reason: "repair: check: copies a 6-word run", attempts: 3 });
+    expect(calls().slice(before)).toEqual(["rewrite haiku key=no", "rewrite haiku key=no", "rewrite haiku key=no"]);
+    ans.rewrite["- udinese 2 0 in serie a"] = saved;
     writeFileSync(answers, JSON.stringify(ans));
   });
   it("a usage limit on the second reading keeps the item queued; an unreadable verdict is retried later, never published", async () => {

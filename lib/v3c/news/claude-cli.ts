@@ -13,7 +13,7 @@
 // One unsupported claim → the note is dropped («final»), never written.
 import { spawn } from "node:child_process";
 import type { FeedItem } from "./feed";
-import { OUTPUT_SCHEMA, PROMPT_VERSION, readModelOutput, repairPrompt, RewriteError, SYSTEM_PROMPT, userPrompt, type Rewritten } from "./rewrite";
+import { MAX_REPAIRS, OUTPUT_SCHEMA, PROMPT_VERSION, readModelOutput, repairable, repairPrompt, RewriteError, SYSTEM_PROMPT, userPrompt, type NoteText, type Rewritten } from "./rewrite";
 import { readVerdict, VERIFY_PROMPT, VERIFY_SCHEMA, verifyPrompt } from "./verify";
 
 export const CLAUDE_MODEL = "haiku";
@@ -29,9 +29,10 @@ const TIMEOUT_MS = 120_000;
 
 /** What one rewrite attempt ended in. Only `ok` produces a row. */
 export type RewriteOutcome =
-  | { kind: "ok"; rewritten: Rewritten; usage: CallUsage }
-  /** the model said no, or the text failed a check: dropped for good (`copied`: the runs, when it copied) */
-  | { kind: "final"; reason: string; usage?: CallUsage; copied?: string[] }
+  /** `attempts`: rewrite calls spent (1 = passed at the first try) */
+  | { kind: "ok"; rewritten: Rewritten; usage: CallUsage; attempts?: number }
+  /** the model said no, or the text failed a check: dropped for good (`copied`: the runs, when it copied; `previous`: the refused note) */
+  | { kind: "final"; reason: string; usage?: CallUsage; copied?: string[]; previous?: { en: NoteText; it: NoteText }; attempts?: number }
   /** subscription usage/rate limit: stop for this run, the item stays queued */
   | { kind: "limit"; reason: string }
   /** anything else (timeout, crash, unreadable answer): retried on a later run */
@@ -56,8 +57,12 @@ export function claudeArgs(model = CLAUDE_MODEL, schema: object = OUTPUT_SCHEMA,
   ];
 }
 
-/** «You've hit your weekly limit», 429, usage/rate/quota limit, overloaded. */
-export const LIMIT_RE = /hit your (?:weekly |daily |session )?limit|usage limit|rate.?limit|quota|\b429\b|overloaded|limit (?:will )?reset|resets? at/i;
+/**
+ * «You've hit your weekly limit», «… your 5-hour limit», 429, usage/rate/quota limit, overloaded.
+ * The 5-hour wording was not matched until 29/10: read as transient, 5 items were
+ * retried 3 runs into the limit and dropped in prod that day.
+ */
+export const LIMIT_RE = /hit your (?:[\w-]+ )?limit|usage limit|rate.?limit|quota|\b429\b|overloaded|limit (?:will )?reset|resets? at/i;
 
 type CliResult = {
   type?: string;
@@ -74,7 +79,7 @@ type CliResult = {
 type Envelope = { ok: true; output: unknown; usage: CallUsage } | { ok: false; outcome: Extract<RewriteOutcome, { kind: "limit" | "transient" }> };
 
 /** What `claude -p --output-format json` printed → the model's output and the usage, or why not. Pure. */
-function readEnvelope(stdout: string, stderr: string, code: number | null, ms: number): Envelope {
+export function readEnvelope(stdout: string, stderr: string, code: number | null, ms: number): Envelope {
   let r: CliResult | null = null;
   try {
     r = JSON.parse(stdout.trim()) as CliResult;
@@ -106,7 +111,7 @@ export function readCliOutput(stdout: string, stderr: string, code: number | nul
     const rewritten = readModelOutput(e.output, item, `${e.usage.model ?? CLAUDE_MODEL} · prompt ${PROMPT_VERSION}`);
     return { kind: "ok", rewritten, usage: e.usage };
   } catch (err) {
-    if (err instanceof RewriteError) return { kind: "final", reason: err.message, usage: e.usage, ...(err.copied?.length ? { copied: err.copied } : {}) };
+    if (err instanceof RewriteError) return { kind: "final", reason: err.message, usage: e.usage, ...(err.copied?.length ? { copied: err.copied } : {}), ...(err.previous ? { previous: err.previous } : {}) };
     return { kind: "final", reason: String(err), usage: e.usage };
   }
 }
@@ -133,7 +138,7 @@ const sumUsage = (a: CallUsage, b: CallUsage): CallUsage => ({ ms: a.ms + b.ms, 
 type Run = { out: string; err: string; code: number | null; ms: number } | { fail: string };
 
 /** One `claude -p` process: args, stdin in, stdout/stderr out. Never throws. */
-function runClaude(args: string[], stdin: string, opts: { bin: string; cwd: string; env?: NodeJS.ProcessEnv }): Promise<Run> {
+export function runClaude(args: string[], stdin: string, opts: { bin: string; cwd: string; env?: NodeJS.ProcessEnv }): Promise<Run> {
   const t0 = Date.now();
   return new Promise((resolve) => {
     // the subscription login only: an API key in the environment would bill the API instead
@@ -174,25 +179,33 @@ export async function verifyWithClaude(item: Pick<FeedItem, "title" | "text"> & 
 }
 
 /**
- * Rewrite, mechanical checks, second reading: one item, three `claude -p` calls at
- * most. A note refused ONLY for a 6-word copy gets one repair turn that names the
- * runs (repairPrompt); the new note goes through every check again. Never throws.
+ * Rewrite, mechanical checks, second reading. A note refused by a mechanical or
+ * fact check (`repairable`) gets up to MAX_REPAIRS repair turns, each told the
+ * reason and shown the refused note (repairPrompt); every new note goes through
+ * every check again, and only a note that passed them reaches the second
+ * reading, which is never repaired. At most 1 + MAX_REPAIRS + 1 calls. Never throws.
  */
 export async function rewriteWithClaude(item: FeedItem, opts: { bin: string; cwd: string; model?: string; verifyModel?: string; env?: NodeJS.ProcessEnv }): Promise<RewriteOutcome> {
   const r = await runClaude(claudeArgs(opts.model), userPrompt(item), opts);
   if ("fail" in r) return { kind: "transient", reason: r.fail };
-  let first = readCliOutput(r.out, r.err, r.code, item, r.ms);
-  if (first.kind === "final" && first.copied?.length) {
-    const r2 = await runClaude(claudeArgs(opts.model), repairPrompt(item, first.copied), opts);
-    if ("fail" in r2) return first; // the copy stands: dropped, no retry loop
-    const second = readCliOutput(r2.out, r2.err, r2.code, item, r2.ms);
-    const usage = first.usage && "usage" in second && second.usage ? sumUsage(first.usage, second.usage) : first.usage;
-    if (second.kind === "limit") return second;
-    if (second.kind !== "ok") return second.kind === "final" ? { kind: "final", reason: `repair: ${second.reason}`, usage } : first;
-    first = { kind: "ok", usage: usage ?? second.usage, rewritten: { ...second.rewritten, note: { ...second.rewritten.note, model: `${second.rewritten.note.model} · repaired` } } };
+  let cur = readCliOutput(r.out, r.err, r.code, item, r.ms);
+  let attempts = 1;
+  while (cur.kind === "final" && attempts <= MAX_REPAIRS && repairable(cur.reason.replace(/^repair: /, ""))) {
+    const last: Extract<RewriteOutcome, { kind: "final" }> = cur;
+    const reason = last.reason.replace(/^repair: /, "");
+    const r2 = await runClaude(claudeArgs(opts.model), repairPrompt(item, { reason, copied: last.copied, previous: last.previous }), opts);
+    attempts++;
+    if ("fail" in r2) break; // the refusal stands: dropped, no more calls
+    const next = readCliOutput(r2.out, r2.err, r2.code, item, r2.ms);
+    if (next.kind === "limit") return next;
+    if (next.kind === "transient") break;
+    const usage = last.usage && next.usage ? sumUsage(last.usage, next.usage) : (next.usage ?? last.usage);
+    if (next.kind === "final") cur = { ...next, reason: `repair: ${next.reason}`, usage };
+    else cur = { kind: "ok", usage: usage ?? next.usage, rewritten: { ...next.rewritten, note: { ...next.rewritten.note, model: `${next.rewritten.note.model} · repaired` } } };
   }
-  if (first.kind !== "ok") return first; // the mechanical checks already said no: no second call spent
-  const v = await runClaude(claudeArgs(opts.verifyModel ?? VERIFY_MODEL, VERIFY_SCHEMA, VERIFY_PROMPT), verifyPrompt(item, first.rewritten.note), opts);
+  if (cur.kind !== "ok") return cur.kind === "final" ? { ...cur, attempts } : cur; // the checks said no: no second reading spent
+  const v = await runClaude(claudeArgs(opts.verifyModel ?? VERIFY_MODEL, VERIFY_SCHEMA, VERIFY_PROMPT), verifyPrompt(item, cur.rewritten.note), opts);
   if ("fail" in v) return { kind: "transient", reason: `verify: ${v.fail}` };
-  return readVerifyOutput(v.out, v.err, v.code, v.ms, first);
+  const out = readVerifyOutput(v.out, v.err, v.code, v.ms, cur);
+  return out.kind === "ok" || out.kind === "final" ? { ...out, attempts } : out;
 }

@@ -1,6 +1,6 @@
 // scripts/news_watcher/main.ts (#REDESIGN-V3C newswatch) — the news watcher, one run.
 //
-// launchd (com.betredge.news-watcher, every 600 s) runs a BUNDLED copy of this
+// launchd (com.betredge.news-watcher, every NEWS_WATCHER_INTERVAL_S s) runs a BUNDLED copy of this
 // file that lives OUTSIDE ~/Desktop (TCC: a LaunchAgent cannot read ~/Desktop):
 //   ~/Library/Application Support/news-watcher/news-watcher.mjs
 // Install and switch-off: docs/redesign/news-watcher-proposal.md (gated).
@@ -11,6 +11,11 @@
 //   node news-watcher.mjs --limit 3    at most 3 rewrites this run
 //   node news-watcher.mjs --unblock    clear a «blocked» stop after a person reviewed it
 //
+// Flags (environment, the plist sets them; all OFF by default — #NEWSWATCH-2):
+//   NEWS_WATCHER_INTERVAL_S=180|300|600   the launchd interval: a run starts picture attempts only inside it
+//   NEWS_WATCHER_IMAGES=1                 one picture per written note (gptimg in series, checked), files on the Mac
+//   NEWS_WATCHER_IMAGE_PUBLISH=supabase   upload to Storage + news_items.image_url (needs its own APPROVE: bucket + column)
+//
 // Credentials: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY from <home>/.env (chmod 600),
 // read into this process only, never printed. No Anthropic key is used: the rewrite
 // is the local `claude -p` on Andrea's subscription.
@@ -20,7 +25,8 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { rewriteWithClaude } from "../../lib/v3c/news/claude-cli";
-import { freshState, runCycle, type StatePatch, type WatcherDb, type WatcherState } from "../../lib/v3c/news/watcher";
+import { makeImage, storagePublisher } from "../../lib/v3c/news/image-gen";
+import { freshState, runCycle, type ImageDeps, type StatePatch, type WatcherDb, type WatcherState } from "../../lib/v3c/news/watcher";
 import type { NewsItemRow } from "../../lib/v3c/news/table";
 
 const args = process.argv.slice(2);
@@ -34,6 +40,7 @@ const STATE_FILE = join(HOME, "state.json");
 const LOCK = join(HOME, "watcher.lock");
 const HEARTBEAT = join(HOME, "last-run.json");
 const CLAUDE_BIN = process.env.NEWS_WATCHER_CLAUDE || join(homedir(), ".local", "bin", "claude");
+const IMAGE_DIR = join(HOME, "images");
 
 const log = (line: string) => console.log(`${new Date().toISOString()} ${line}`);
 
@@ -92,6 +99,9 @@ function restDb(url: string, key: string): WatcherDb {
     async prune(before: string) {
       await call("DELETE", `/news_items?published_at=lt.${encodeURIComponent(before)}`, undefined, "return=minimal");
     },
+    async attachImage(guidHash: string, url: string) {
+      await call("PATCH", `/news_items?guid_hash=eq.${encodeURIComponent(guidHash)}`, { image_url: url }, "return=minimal");
+    },
   };
 }
 
@@ -108,6 +118,9 @@ const dryDb: WatcherDb = {
   },
   async prune(before) {
     log(`[dry-run] WOULD DELETE news_items published_at < ${before}`);
+  },
+  async attachImage(guidHash, url) {
+    log(`[dry-run] WOULD UPDATE news_items SET image_url = ${url} WHERE guid_hash = ${guidHash}`);
   },
 };
 
@@ -133,6 +146,24 @@ async function main(): Promise<number> {
     }
     db = restDb(url, key);
   }
+  const intervalS = Math.max(60, Number(process.env.NEWS_WATCHER_INTERVAL_S) || 600);
+  let images: ImageDeps | undefined;
+  if (process.env.NEWS_WATCHER_IMAGES === "1") {
+    images = {
+      make: (job) =>
+        makeImage(job, {
+          dir: IMAGE_DIR,
+          gptimg: process.env.NEWS_WATCHER_GPTIMG || join(homedir(), ".local", "bin", "gptimg"),
+          cwebp: process.env.NEWS_WATCHER_CWEBP || "/opt/homebrew/bin/cwebp",
+          claudeBin: CLAUDE_BIN,
+        }),
+    };
+    if (process.env.NEWS_WATCHER_IMAGE_PUBLISH === "supabase") {
+      const bucket = process.env.NEWS_WATCHER_IMAGE_BUCKET || "news-images";
+      if (DRY) images.publish = async (job) => (log(`[dry-run] WOULD UPLOAD ${job.base}.webp to storage bucket ${bucket}`), `https://<project>.supabase.co/storage/v1/object/public/${bucket}/${job.base}.webp`);
+      else images.publish = storagePublisher(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "", process.env.SUPABASE_SERVICE_ROLE_KEY || "", bucket);
+    }
+  }
   if (!DRY && !lock()) {
     log("previous run still in progress: skipping this one");
     return 0;
@@ -140,12 +171,13 @@ async function main(): Promise<number> {
   try {
     const rep = await runCycle(
       state,
-      { now: Date.now, fetch, rewrite: (it) => rewriteWithClaude(it, { bin: CLAUDE_BIN, cwd: HOME }), db, log },
-      { maxRewrites: LIMIT },
+      { now: Date.now, fetch, rewrite: (it) => rewriteWithClaude(it, { bin: CLAUDE_BIN, cwd: HOME }), db, log, images },
+      { maxRewrites: LIMIT, windowMs: intervalS * 1000 },
     );
     for (const { item, outcome } of rep.outcomes) {
       const u = "usage" in outcome && outcome.usage ? outcome.usage : null;
-      const cost = u ? ` · ${u.ms} ms · in ${u.inTokens ?? "?"} / out ${u.outTokens ?? "?"} tok · list $${u.costUsd?.toFixed(4) ?? "?"} · ${u.model ?? "?"}` : "";
+      const tries = "attempts" in outcome && outcome.attempts && outcome.attempts > 1 ? ` · ${outcome.attempts} attempts` : "";
+      const cost = u ? `${tries} · ${u.ms} ms · in ${u.inTokens ?? "?"} / out ${u.outTokens ?? "?"} tok · list $${u.costUsd?.toFixed(4) ?? "?"} · ${u.model ?? "?"}` : "";
       if (outcome.kind === "ok") {
         const n = outcome.rewritten.note;
         log(`rewrite ok ${item.guid}${cost}`);
@@ -157,8 +189,16 @@ async function main(): Promise<number> {
         }
       } else log(`rewrite ${outcome.kind} ${item.guid}: ${outcome.reason}${cost}`);
     }
-    const summary = { at: new Date().toISOString(), dryRun: DRY, ...rep, outcomes: undefined };
-    log(`run: exit ${rep.exit} · fetched page ${rep.fetched.page ?? "-"} rss ${rep.fetched.rss ?? "-"} · queued ${rep.queued} · rewritten ${rep.rewritten} · rejected ${rep.rejected.length} · written ${rep.written} · queue ${state.queue.length}${rep.limited ? " · LIMITED" : ""}${rep.errors.length ? ` · errors: ${rep.errors.join(" | ")}` : ""}`);
+    // lastOkAt: the last run that READ the source — what the sentinel looks at (a failed run keeps the old one)
+    let lastOkAt: string | null = null;
+    try {
+      lastOkAt = (JSON.parse(readFileSync(HEARTBEAT, "utf8")) as { lastOkAt?: string }).lastOkAt ?? null;
+    } catch {
+      /* first run */
+    }
+    if (rep.fetched.page != null || rep.fetched.rss != null) lastOkAt = new Date().toISOString();
+    const summary = { at: new Date().toISOString(), lastOkAt, intervalS, dryRun: DRY, ...rep, outcomes: undefined };
+    log(`run: exit ${rep.exit} · fetched page ${rep.fetched.page ?? "-"} rss ${rep.fetched.rss ?? "-"} · queued ${rep.queued} · rewritten ${rep.rewritten} · rejected ${rep.rejected.length} · written ${rep.written} · queue ${state.queue.length}${rep.limited ? " · LIMITED" : ""}${rep.images ? ` · images made ${rep.images.made} refused ${rep.images.failed} fallback ${rep.images.fallback} published ${rep.images.published} pending ${rep.images.pending}` : ""}${rep.errors.length ? ` · errors: ${rep.errors.join(" | ")}` : ""}`);
     if (!DRY) {
       saveState(state);
       writeFileSync(HEARTBEAT, JSON.stringify(summary, null, 2)); // the artifact daemon-health looks at
