@@ -58,3 +58,21 @@ describe("noteImage · lookup and fallback", () => {
     expect(cardFromRow(row("d", "javascript:alert(1)"))).toBeNull();
   });
 });
+
+describe("the wire · nothing that leaves the server points back to the source", () => {
+  it("wireFeed keeps guid, time, text, teams and the resolved picture; drops url and source; other states pass through", async () => {
+    const { wireFeed, rowsFor } = await import("./view");
+    const state: NewsStateRow = { enabled: true, last_run_at: "2026-10-29T09:00:00Z", last_error: null, source_status: "ok" };
+    const feed = feedFromTable(state, [row("a", "https://www.fotmob.com/news/34p7x1w2mryx1d30uxb50a7qb-chivu", ["Inter", "Venezia"]), row("b", "https://www.fotmob.com/news/unknown-x")], Date.parse("2026-10-29T09:00:00Z"));
+    const wire = wireFeed(feed);
+    expect(wire.state).toBe("ok");
+    if (wire.state !== "ok") return;
+    expect(Object.keys(wire.cards[0]).sort()).toEqual(["guid", "image", "note", "t", "teams"]);
+    expect(wire.cards[0].image?.src).toContain("chivu-inter-no-conviction");
+    expect(wire.cards[1].image).toBeNull();
+    expect(JSON.stringify(wire)).not.toMatch(/fotmob/i);
+    // the browser builds the same rows from the wire cards as from the data cards
+    expect(rowsFor(wire.cards, "en", null).map((r) => r.image?.src)).toEqual(rowsFor(feed.state === "ok" ? feed.cards : [], "en", null).map((r) => r.image?.src));
+    expect(wireFeed({ state: "paused", since: null })).toEqual({ state: "paused", since: null });
+  });
+});

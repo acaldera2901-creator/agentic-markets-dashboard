@@ -8,12 +8,11 @@
 // pick: the news says when, never why.
 import { fillNews, newsCopy } from "@/lib/news/copy";
 import { NewsArt } from "./NewsArt";
-import type { NewsFeed } from "@/lib/news/table";
-import { matchesForNote, rowsFor, stateMessage, updatedLine } from "@/lib/news/view";
+import { matchesForNote, rowsFor, stateMessage, updatedLine, type WireFeed } from "@/lib/news/view";
 import { boardHref, useBoardMatches, useNow, useSiteLang } from "./use-news";
 import "./news.css";
 
-export function NewsList({ feed }: { feed: NewsFeed }) {
+export function NewsList({ feed }: { feed: WireFeed }) {
   const lang = useSiteLang();
   const now = useNow();
   const c = newsCopy(lang);
@@ -50,7 +49,7 @@ export function NewsList({ feed }: { feed: NewsFeed }) {
                   </span>
                 )}
                 <div className="nw-note">
-                  <span className="nw-lab">{r.source}{r.english && <em className="nw-en"> · {c.inEnglish}</em>}</span>
+                  {r.english && <span className="nw-lab nw-en">{c.inEnglish}</span>}
                   <h3 className="nw-title" lang={r.textLang}>{r.title}</h3>
                   <p className="nw-text" lang={r.textLang}>{r.body}</p>
                   {links.length > 0 && (

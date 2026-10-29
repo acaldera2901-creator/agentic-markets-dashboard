@@ -1,4 +1,4 @@
-// lib/news/copy.ts (#NEWS-FOTMOB-PROD-1026) — the words of the FotMob news
+// lib/news/copy.ts (#NEWS-FOTMOB-PROD-1026) — the words of the news
 // (News on /blog, the «Latest news» strip on the board, the News card of the
 // match sheet), in the 11 languages of the site, in the shape of
 // lib/classic/lobby-copy.ts (plain strings, `{placeholders}`, parity test).
@@ -26,8 +26,6 @@ export type NewsCopy = {
   onBoard: string;
   allNews: string;
   newsSection: string;
-  /** {source} */
-  matchBody: string;
   error: string;
   empty: string;
   pending: string;
@@ -45,7 +43,6 @@ const en: NewsCopy = {
   onBoard: "On the board",
   allNews: "All news",
   newsSection: "News",
-  matchBody: "Reported by {source}. We show when it happened, not what moved the price.",
   error: "The news feed is unavailable right now. The guides below are unaffected.",
   empty: "No news in the feed right now.",
   pending: "News is on its way. We only show a story once we have rewritten it. Our guides are below.",
@@ -63,7 +60,6 @@ const it: NewsCopy = {
   onBoard: "Sul board",
   allNews: "Tutte le notizie",
   newsSection: "Notizie",
-  matchBody: "Riportata da {source}. Mostriamo quando è successo, non cosa ha mosso la quota.",
   error: "Il feed delle notizie ora non è disponibile. Le guide qui sotto non cambiano.",
   empty: "Nessuna notizia nel feed in questo momento.",
   pending: "Notizie in arrivo. Mostriamo una notizia solo dopo averla riscritta. Le nostre guide sono qui sotto.",
@@ -81,7 +77,6 @@ const de: NewsCopy = {
   onBoard: "Auf dem Board",
   allNews: "Alle News",
   newsSection: "News",
-  matchBody: "Gemeldet von {source}. Wir zeigen, wann es passiert ist, nicht was die Quote bewegt hat.",
   error: "Der News-Feed ist gerade nicht verfügbar. Die Guides unten sind davon nicht betroffen.",
   empty: "Gerade keine Meldungen im Feed.",
   pending: "News folgen in Kürze. Wir zeigen eine Meldung erst, wenn wir sie umgeschrieben haben. Unsere Guides stehen unten.",
@@ -99,7 +94,6 @@ const es: NewsCopy = {
   onBoard: "En el tablero",
   allNews: "Todas las noticias",
   newsSection: "Noticias",
-  matchBody: "Publicada por {source}. Mostramos cuándo ocurrió, no qué movió la cuota.",
   error: "El feed de noticias no está disponible ahora. Las guías de abajo no cambian.",
   empty: "Ahora no hay noticias en el feed.",
   pending: "Noticias en camino. Solo mostramos una noticia después de reescribirla. Nuestras guías están abajo.",
@@ -117,7 +111,6 @@ const fr: NewsCopy = {
   onBoard: "Sur le tableau",
   allNews: "Toutes les actus",
   newsSection: "Actus",
-  matchBody: "Rapporté par {source}. Nous montrons quand c’est arrivé, pas ce qui a fait bouger la cote.",
   error: "Le flux d’actus est indisponible pour le moment. Les guides ci-dessous ne changent pas.",
   empty: "Aucune actu dans le flux pour le moment.",
   pending: "Actus en route. Nous ne montrons une actu qu’après l’avoir réécrite. Nos guides sont ci-dessous.",
@@ -135,7 +128,6 @@ const nl: NewsCopy = {
   onBoard: "Op het board",
   allNews: "Al het nieuws",
   newsSection: "Nieuws",
-  matchBody: "Gemeld door {source}. We tonen wanneer het gebeurde, niet wat de odds bewoog.",
   error: "De nieuwsfeed is nu niet beschikbaar. De gidsen hieronder veranderen niet.",
   empty: "Nu geen nieuws in de feed.",
   pending: "Nieuws komt eraan. We tonen een bericht pas nadat we het herschreven hebben. Onze gidsen staan hieronder.",
@@ -153,7 +145,6 @@ const pl: NewsCopy = {
   onBoard: "Na tablicy",
   allNews: "Wszystkie wiadomości",
   newsSection: "Wiadomości",
-  matchBody: "Podał {source}. Pokazujemy, kiedy to się stało, a nie co ruszyło kursem.",
   error: "Kanał wiadomości jest teraz niedostępny. Poradniki poniżej się nie zmieniają.",
   empty: "Teraz brak wiadomości w kanale.",
   pending: "Wiadomości w drodze. Pokazujemy wiadomość dopiero po jej przepisaniu. Nasze poradniki są poniżej.",
@@ -171,7 +162,6 @@ const pt: NewsCopy = {
   onBoard: "No board",
   allNews: "Todas as notícias",
   newsSection: "Notícias",
-  matchBody: "Noticiada por {source}. Mostramos quando aconteceu, não o que mexeu a odd.",
   error: "O feed de notícias não está disponível agora. Os guias abaixo não mudam.",
   empty: "Agora não há notícias no feed.",
   pending: "Notícias a caminho. Só mostramos uma notícia depois de a reescrever. Os nossos guias estão abaixo.",
@@ -189,7 +179,6 @@ const ru: NewsCopy = {
   onBoard: "На панели",
   allNews: "Все новости",
   newsSection: "Новости",
-  matchBody: "Сообщил {source}. Мы показываем, когда это произошло, а не что сдвинуло коэффициент.",
   error: "Лента новостей сейчас недоступна. Руководства ниже не меняются.",
   empty: "Сейчас в ленте нет новостей.",
   pending: "Новости скоро появятся. Мы показываем новость только после того, как перепишем её. Наши руководства ниже.",
@@ -207,7 +196,6 @@ const sv: NewsCopy = {
   onBoard: "På boarden",
   allNews: "Alla nyheter",
   newsSection: "Nyheter",
-  matchBody: "Rapporterad av {source}. Vi visar när det hände, inte vad som flyttade oddset.",
   error: "Nyhetsflödet är inte tillgängligt just nu. Guiderna nedan påverkas inte.",
   empty: "Inga nyheter i flödet just nu.",
   pending: "Nyheter är på väg. Vi visar en nyhet först när vi har skrivit om den. Våra guider finns nedan.",
@@ -225,7 +213,6 @@ const tr: NewsCopy = {
   onBoard: "Panoda",
   allNews: "Tüm haberler",
   newsSection: "Haberler",
-  matchBody: "{source} bildirdi. Ne zaman olduğunu gösteriyoruz, oranı neyin oynattığını değil.",
   error: "Haber akışı şu anda kullanılamıyor. Aşağıdaki rehberler etkilenmez.",
   empty: "Şu anda akışta haber yok.",
   pending: "Haberler yolda. Bir haberi yalnızca yeniden yazdıktan sonra gösteriyoruz. Rehberlerimiz aşağıda.",

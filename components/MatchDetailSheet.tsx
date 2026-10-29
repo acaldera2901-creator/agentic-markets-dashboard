@@ -102,7 +102,6 @@ export type MdsNewsItem = {
   /** «12 minutes ago», may be empty */
   ago: string;
   iso: string;
-  source: string;
   title: string;
   body: string;
   textLang: "en" | "it";
@@ -112,7 +111,7 @@ export type MdsNewsItem = {
   /** the clubs the note names: real crest (the board's map) and real colours, or null each (lib/news/clubs.ts) */
   badges: { name: string; crest: string | null; colors: readonly [string, string] | null }[];
 };
-export type MdsNews = { label: string; note: string; inEnglish: string; rows: MdsNewsItem[] };
+export type MdsNews = { label: string; inEnglish: string; rows: MdsNewsItem[] };
 
 export type MdsSectionLabels = {
   why: string;
@@ -587,7 +586,6 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                     )}
                     <span className="mds-news__when">
                       <time dateTime={n.iso}>{n.time}</time>
-                      <span>{n.source}</span>
                       {n.ago && <span className="mds-news__ago">· {n.ago}</span>}
                     </span>
                     <p className="mds-news__t" lang={n.textLang}>{n.title}</p>
@@ -596,7 +594,6 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                   </li>
                 ))}
               </ol>
-              <p className="mds-news__note">{data.news.note}</p>
             </section>
           )}
 

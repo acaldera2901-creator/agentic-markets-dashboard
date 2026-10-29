@@ -10,6 +10,25 @@ import { noteImage, type NoteImage } from "./per-note";
 import { matchTeams } from "./teams";
 import type { NewsCard, NewsFeed } from "./table";
 
+/**
+ * What leaves the server for the browser (the /blog list, /api/news): a note
+ * without its source name or source URL — nothing on the wire points back to
+ * the source. The picture made for the note is resolved here, server side,
+ * from the URL the card keeps in the data layer.
+ */
+export type WireCard = { guid: string; t: number; note: NewsCard["note"]; teams: string[]; image: NoteImage | null };
+export type WireFeed = Exclude<NewsFeed, { state: "ok" }> | { state: "ok"; updatedAt: number; cards: WireCard[] };
+export type AnyCard = NewsCard | WireCard;
+
+export const wireCard = (c: NewsCard): WireCard => ({ guid: c.guid, t: c.t, note: c.note, teams: c.teams, image: noteImage(c) });
+
+export function wireFeed(feed: NewsFeed): WireFeed {
+  return feed.state === "ok" ? { state: "ok", updatedAt: feed.updatedAt, cards: feed.cards.map(wireCard) } : feed;
+}
+
+/** The picture made for this note, whichever side of the wire the card is on. */
+const ownImage = (c: AnyCard): NoteImage | null => ("image" in c ? c.image : noteImage(c));
+
 export const ROME_TZ = "Europe/Rome";
 
 /** «14:21» in Rome, whatever the visitor's clock. */
@@ -39,7 +58,7 @@ export function relativeLabel(t: number, now: number, locale = "en"): string {
 }
 
 /** The text the visitor reads: IT for Italian, EN otherwise (tagged «In English» outside EN/IT). */
-export function noteText(card: NewsCard, lang: string): { title: string; body: string; english: boolean } {
+export function noteText(card: AnyCard, lang: string): { title: string; body: string; english: boolean } {
   const t = lang === "it" ? card.note.it : card.note.en;
   return { title: t.title, body: t.body, english: lang !== "en" && lang !== "it" };
 }
@@ -48,7 +67,7 @@ export function noteText(card: NewsCard, lang: string): { title: string; body: s
 export type BoardMatch = { id: string; home: string; away: string; league?: string | null };
 
 /** The board matches (at most two) whose home or away team a note names; a match naming both teams comes first. */
-export function matchesForNote(card: NewsCard, board: readonly BoardMatch[]): BoardMatch[] {
+export function matchesForNote(card: AnyCard, board: readonly BoardMatch[]): BoardMatch[] {
   if (!card.teams.length || !board.length) return [];
   const found = matchTeams(card.teams.join(". "), board.flatMap((m) => [m.home, m.away]));
   if (!found.size) return [];
@@ -62,7 +81,7 @@ export function matchesForNote(card: NewsCard, board: readonly BoardMatch[]): Bo
 }
 
 /** The notes that name either team of a match, newest first (the match sheet). */
-export function notesForMatch(cards: readonly NewsCard[], home: string, away: string): NewsCard[] {
+export function notesForMatch<C extends AnyCard>(cards: readonly C[], home: string, away: string): C[] {
   return cards.filter((c) => c.teams.length && matchTeams(c.teams.join(". "), [home, away]).size > 0).sort((a, b) => b.t - a.t);
 }
 
@@ -75,7 +94,6 @@ export type NewsRow = {
   ago: string;
   /** the ISO instant, for <time dateTime> */
   iso: string;
-  source: string;
   title: string;
   body: string;
   /** the language of title/body, for lang= */
@@ -91,7 +109,7 @@ export type NewsRow = {
 };
 
 /** The mapping note → row. `now` null = before mount: no relative time (never a hydration mismatch). `kind` given = already de-duplicated by rowsFor. */
-export function rowFor(card: NewsCard, lang: string, now: number | null, kind: NewsKind = newsKind(card)): NewsRow {
+export function rowFor(card: AnyCard, lang: string, now: number | null, kind: NewsKind = newsKind(card)): NewsRow {
   const x = noteText(card, lang);
   const ago = now != null ? relativeLabel(card.t, now, lang) : "";
   return {
@@ -99,24 +117,23 @@ export function rowFor(card: NewsCard, lang: string, now: number | null, kind: N
     time: timeRome(card.t, lang),
     ago: ago || (now != null && !sameRomeDay(card.t, now) ? dayRome(card.t, lang) : ""),
     iso: new Date(card.t).toISOString(),
-    source: card.source,
     title: x.title,
     body: x.body,
     textLang: lang === "it" ? "it" : "en",
     english: x.english,
     kind,
-    image: noteImage(card) ?? newsImage(kind),
+    image: ownImage(card) ?? newsImage(kind),
     badges: noteBadges(`${card.note.en.title} ${card.note.it.title}`, `${card.note.en.body} ${card.note.it.body}`, card.teams),
   };
 }
 
 /** A list of rows in page order, no two neighbours on the same kind picture (lib/news/kind.ts dedupeKinds); a note with its own picture breaks the chain. */
-export function rowsFor(cards: readonly NewsCard[], lang: string, now: number | null): NewsRow[] {
+export function rowsFor(cards: readonly AnyCard[], lang: string, now: number | null): NewsRow[] {
   const kinds = cards.map(newsKind);
   const out = [...kinds];
   let start = 0;
   for (let i = 0; i <= cards.length; i++) {
-    if (i === cards.length || noteImage(cards[i])) {
+    if (i === cards.length || ownImage(cards[i])) {
       const seg = dedupeKinds(kinds.slice(start, i));
       for (let j = 0; j < seg.length; j++) out[start + j] = seg[j];
       start = i + 1;
@@ -126,19 +143,19 @@ export function rowsFor(cards: readonly NewsCard[], lang: string, now: number | 
 }
 
 /** The strip on the board: at most `max` notes, newest first. Anything but «ok» → nothing (the strip hides). */
-export function stripCards(feed: NewsFeed, max = 3): NewsCard[] {
-  return feed.state === "ok" ? feed.cards.slice(0, max) : [];
+export function stripCards<F extends NewsFeed | WireFeed>(feed: F, max = 3): (F extends { state: "ok"; cards: (infer C)[] } ? C : never)[] {
+  return (feed.state === "ok" ? feed.cards.slice(0, max) : []) as ReturnType<typeof stripCards<F>>;
 }
 
 /** The header line of the section: «Updated at 14:21» / «Last update at 12:03» / «News paused». */
-export function updatedLine(feed: NewsFeed, lang: string, copy: NewsCopy = newsCopy(lang)): string {
+export function updatedLine(feed: NewsFeed | WireFeed, lang: string, copy: NewsCopy = newsCopy(lang)): string {
   if (feed.state === "ok" || feed.state === "empty") return fillNews(copy.updatedAt, { time: timeRome(feed.updatedAt, lang) });
   if (feed.state === "paused") return feed.since != null ? `${copy.pausedMeta} · ${fillNews(copy.lastUpdateAt, { time: timeRome(feed.since, lang) })}` : copy.pausedMeta;
   return "";
 }
 
 /** The message of a feed that has no notes to show; null when there are notes (or the news is off). */
-export function stateMessage(feed: NewsFeed, copy: NewsCopy): string | null {
+export function stateMessage(feed: NewsFeed | WireFeed, copy: NewsCopy): string | null {
   switch (feed.state) {
     case "empty": return copy.pending;
     case "paused": return copy.paused;

@@ -42,7 +42,6 @@ export function ClassicNewsStrip({ lang, football }: { lang: string; football: r
               )}
               <span className="brc-news__when">
                 <time dateTime={r.iso}>{r.time}</time>
-                <span className="brc-news__src">{r.source}</span>
               </span>
               {m ? <a className="brc-news__link" href={boardHref(m)}>{title}</a> : title}
             </li>

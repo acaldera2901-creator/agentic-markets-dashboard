@@ -99,7 +99,7 @@ describe("view · note → row", () => {
   });
   it("«x minutes ago» only once «now» is known; the day for a note not of today", () => {
     const r = rowFor(cards[0], "en", NOW);
-    expect(r).toMatchObject({ key: "madrid", time: "13:09", ago: "37 minutes ago", iso: "2026-10-26T12:09:49.000Z", source: "FotMob", textLang: "en", english: false, kind: "risultato" });
+    expect(r).toMatchObject({ key: "madrid", time: "13:09", ago: "37 minutes ago", iso: "2026-10-26T12:09:49.000Z", textLang: "en", english: false, kind: "risultato" });
     expect(r.image).toEqual({ src: "/news/news-01-risultato.webp", width: 1200, height: 675 });
     expect(rowFor(cards[1], "en", NOW)).toMatchObject({ kind: "generica", image: { src: "/news/news-07-generica.webp" } }); // «EN mufc» / «Body en.»: no words of any kind
     // a list: the generic rows after Madrid alternate 07 / 01 so no two neighbours share a picture («EN totw» reads as an award)

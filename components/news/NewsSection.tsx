@@ -6,6 +6,7 @@
 // the relative times and the «On the board» links are the visitor's.
 import { connection } from "next/server";
 import { getNews, newsEnabled } from "@/lib/news/read.server";
+import { wireFeed } from "@/lib/news/view";
 import { NewsList } from "./NewsList";
 
 export async function NewsSection() {
@@ -13,5 +14,5 @@ export async function NewsSection() {
   await connection();
   const feed = await getNews();
   if (feed.state === "off") return null;
-  return <NewsList feed={feed} />;
+  return <NewsList feed={wireFeed(feed)} />;
 }

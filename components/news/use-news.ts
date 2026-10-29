@@ -6,26 +6,25 @@
 // interval for everyone) and the site language (the `agentic-lang` key every
 // page outside the desk already reads, see ClassicChrome).
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import type { NewsFeed } from "@/lib/news/table";
-import { newsCopy, fillNews } from "@/lib/news/copy";
-import { notesForMatch, rowsFor, type BoardMatch, type NewsRow } from "@/lib/news/view";
+import { newsCopy } from "@/lib/news/copy";
+import { notesForMatch, rowsFor, type BoardMatch, type NewsRow, type WireFeed } from "@/lib/news/view";
 
 // ─── the feed ────────────────────────────────────────────────────────────────
 type Store<T> = { value: T; listeners: Set<() => void>; started: boolean };
-const feedStore: Store<NewsFeed | null> = { value: null, listeners: new Set(), started: false };
+const feedStore: Store<WireFeed | null> = { value: null, listeners: new Set(), started: false };
 
 function startFeed() {
   if (feedStore.started || typeof window === "undefined") return;
   feedStore.started = true;
   fetch("/api/news", { credentials: "same-origin" })
-    .then((r) => (r.ok ? (r.json() as Promise<NewsFeed>) : Promise.reject(new Error(String(r.status)))))
+    .then((r) => (r.ok ? (r.json() as Promise<WireFeed>) : Promise.reject(new Error(String(r.status)))))
     .then((f) => { feedStore.value = f; })
     .catch(() => { feedStore.value = { state: "error" }; })
     .then(() => feedStore.listeners.forEach((l) => l()));
 }
 
 /** The feed, null until it arrives (and on the server). */
-export function useNewsFeed(): NewsFeed | null {
+export function useNewsFeed(): WireFeed | null {
   return useSyncExternalStore(
     (cb) => { feedStore.listeners.add(cb); startFeed(); return () => { feedStore.listeners.delete(cb); }; },
     () => feedStore.value,
@@ -102,7 +101,7 @@ export function useSiteLang(): string {
 }
 
 // ─── the match sheet ────────────────────────────────────────────────────────
-export type SheetNews = { label: string; note: string; inEnglish: string; rows: NewsRow[] };
+export type SheetNews = { label: string; inEnglish: string; rows: NewsRow[] };
 
 /** The News card of a football match sheet: the notes naming either team, strings in the desk language. null = nothing to show. */
 export function useMatchNews(home: string, away: string, lang: string): SheetNews | null {
@@ -114,6 +113,6 @@ export function useMatchNews(home: string, away: string, lang: string): SheetNew
     if (!notes.length) return null;
     const c = newsCopy(lang);
     const rows = rowsFor(notes, lang, now);
-    return { label: c.newsSection, note: fillNews(c.matchBody, { source: rows[0].source }), inEnglish: c.inEnglish, rows };
+    return { label: c.newsSection, inEnglish: c.inEnglish, rows };
   }, [feed, now, home, away, lang]);
 }
