@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+"""`tavolo`: lo stesso comando per Claude e per Codex (docs/tavolo.md).
+
+L'identita' viene dall'ambiente: AM_SHELL (Claude) o CODEX_SHELL (Codex).
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools.control_center.tavolo import main  # noqa: E402
+
+sys.exit(main())

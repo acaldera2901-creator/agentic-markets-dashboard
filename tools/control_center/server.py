@@ -21,7 +21,7 @@ from .actions import (
     start_daemon,
     stop_daemon,
 )
-from . import cockpit, council, progetti, rimedi, sala
+from . import cockpit, council, progetti, rimedi, sala, tavolo
 from .snapshot import HISTORY_FILE, STATE_FILE, freschezza, read_state
 
 HOST = "127.0.0.1"
@@ -87,7 +87,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802 - firma imposta da BaseHTTPRequestHandler
         rotta = self.path.split("?", 1)[0]
-        if rotta not in ("/api/action", "/api/task/fatto"):
+        if rotta not in ("/api/action", "/api/task/fatto", "/api/tavolo"):
             self._send(404, b'{"error":"not found"}', "application/json; charset=utf-8")
             return
         if not self._autorizzato():
@@ -99,6 +99,10 @@ class Handler(BaseHTTPRequestHandler):
             corpo = json.loads(self.rfile.read(lunghezza) or b"{}")
         except (ValueError, json.JSONDecodeError):
             self._send(400, b'{"error":"corpo non valido"}', "application/json; charset=utf-8")
+            return
+
+        if rotta == "/api/tavolo":
+            self._send(*self._tavolo_post(corpo))
             return
 
         if rotta == "/api/task/fatto":
@@ -227,6 +231,16 @@ class Handler(BaseHTTPRequestHandler):
             # Costa 43 ms misurati su 3 sessioni (03/09).
             self._send(200, json.dumps(sala.stato(), ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
+        elif path == "/api/tavolo":
+            # Dal vivo come la Sala: legge la posta su disco a ogni richiesta.
+            # Se il Tavolo non e' mai stato usato risponde `assente`, e se
+            # qualcosa si rompe lo dice in JSON: la pagina non resta mai rotta.
+            try:
+                corpo = tavolo.stato()
+            except Exception as exc:  # noqa: BLE001
+                corpo = {"assente": True, "errore": str(exc)[:300]}
+            self._send(200, json.dumps(corpo, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
         elif path == "/api/council":
             # Puo' essere lento (chiama un servizio esterno): la pagina lo
             # carica a parte, non insieme al resto.
@@ -328,6 +342,33 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, testo.encode(), "text/plain; charset=utf-8")
         else:
             self._send(404, b'{"error":"not found"}', "application/json; charset=utf-8")
+
+    def _tavolo_post(self, corpo: dict) -> tuple[int, bytes, str]:
+        """Le due azioni del Tavolo dalla torre. Scrive come Andrea, mai una card."""
+        tipo_json = "application/json; charset=utf-8"
+        azione = str(corpo.get("azione", ""))
+        try:
+            if azione == "chiedi":
+                m = tavolo.invia("andrea", str(corpo.get("a", "")), str(corpo.get("testo", ""))[:4000],
+                                 tipo=str(corpo.get("tipo") or "domanda"),
+                                 conv=str(corpo.get("conv") or "") or None,
+                                 progetto=str(corpo.get("progetto") or "") or None,
+                                 richiede_risposta=True, esegui=bool(corpo.get("esegui")))
+                esito = {"ok": True, "id": m["id"], "conv": m["conv"]}
+                if corpo.get("esegui"):
+                    # Il bridge dura minuti: gira fuori dalla richiesta HTTP.
+                    esito["bridge"] = tavolo.consegna_in_background(m["id"])
+            elif azione == "chiudi":
+                esito = tavolo.chiudi("andrea", str(corpo.get("conv", "")),
+                                      str(corpo.get("motivo", "")))
+            else:
+                return 400, b'{"ok":false,"errore":"azione non ammessa"}', tipo_json
+        except tavolo.Rifiutato as exc:
+            esito = {"ok": False, "rifiutato": True, "errore": str(exc)}
+        except (tavolo.Spento, tavolo.Catena, ValueError) as exc:
+            esito = {"ok": False, "errore": str(exc)}
+        return (200 if esito.get("ok") else 409,
+                json.dumps(esito, ensure_ascii=False).encode(), tipo_json)
 
     def _history(self) -> bytes:
         try:

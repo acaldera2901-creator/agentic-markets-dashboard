@@ -1,0 +1,34 @@
+{
+  "_doc": "Tabella di assegnazione del Tavolo (tools/control_center/tavolo.py). Vale per Claude e per Codex allo stesso modo: si modifica qui, non nel codice. 'altro' = il lato opposto a chi ha scritto (l'autore). Per rischio medium/high chi rivede deve essere diverso da chi esegue: `tavolo assegna` lo controlla e il test lo pretende.",
+  "lati": {
+    "claude": {"modello": "sonnet", "effort": "low"},
+    "codex": {"modello": null, "effort": "low"}
+  },
+  "effort_per_tipo": {"lavoro": "medium", "*": "low"},
+  "compiti": {
+    "grafica_statica": {
+      "esegue": "codex", "rivede": "claude", "rischio": "medium", "strumento": "gptimg",
+      "nota": "Codex genera ogni grafica statica finita (regola 2026-09-21/22); Claude la verifica cifra per cifra e la integra."
+    },
+    "codice": {
+      "esegue": "claude", "rivede": "codex", "rischio": "medium",
+      "nota": "Codice e integrazione degli asset: Claude scrive, Codex rivede."
+    },
+    "integrazione": {
+      "esegue": "claude", "rivede": "codex", "rischio": "medium",
+      "nota": "Posiziona gli asset Codex nel repo e scrive il codice che li usa."
+    },
+    "review": {
+      "esegue": "altro", "rivede": null, "rischio": "low",
+      "nota": "La review indipendente la fa sempre il lato che NON ha scritto."
+    },
+    "decisione": {
+      "pareri": ["claude", "codex"], "sintesi": "script", "rischio": "high",
+      "nota": "Due pareri separati (stessa domanda, conv distinte o stessa conv), sintesi deterministica in `tavolo stato --conv`: nessun LLM rilegge tutto."
+    },
+    "domanda": {
+      "esegue": "altro", "rivede": null, "rischio": "low",
+      "nota": "Domanda chiusa all'altro lato, sandbox in sola lettura."
+    }
+  }
+}

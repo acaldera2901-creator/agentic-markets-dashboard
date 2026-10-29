@@ -67,6 +67,18 @@ venv del repo: una libreria installata in uno solo dei due si scopre con un
 dichiara sempre *perche'* ha agganciato una sessione; se la Sala tace, la
 scheda esce lo stesso senza quella striscia.
 
+Il settore **Tavolo** (lettera T, si apre dal Ponte come Progetti) legge
+`/api/tavolo` dal vivo ogni 15 s: conversazioni Claude ↔ Codex aperte, di chi
+e' la palla e da quanto, ultimo verdetto, sintesi dei due pareri (da script),
+token per lato (Codex: costo «non misurato», e' abbonamento), interruttore
+`LIVE`, freni e rifiuti recenti. Due azioni, con la stessa `POST` protetta dal
+token (`/api/tavolo`): **chiedi** (scrive come Andrea all'LLM scelto e lancia il
+bridge in background, sola lettura) e **chiudi conv**. Nessun endpoint scrive
+una card. Se l'endpoint tace il settore lo dice, il resto della torre vive.
+Metodo, comandi, freni e limiti: `docs/tavolo.md`. Limite onesto: l'identita'
+di chi usa `tavolo` viene da `AM_SHELL`/`CODEX_SHELL` e non e' autenticata
+crittograficamente.
+
 ## Il cockpit (`/api/cockpit?area=<area>`) e i task nelle card
 
 I task vivono nel blocco STATO della card (#UNIONE-0907, nessun registro
