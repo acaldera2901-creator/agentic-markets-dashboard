@@ -133,22 +133,28 @@ export function imagePrompt(note: NoteText, teams: readonly string[]): string {
 
 // ─── the file name ───────────────────────────────────────────────────────────
 
-const SLUG_STOP = new Set(["the", "a", "an", "of", "to", "in", "on", "at", "for", "and", "after", "with", "as", "by", "is", "are", "s"]);
-
-/** A short slug from OUR English headline: at most 6 words, 48 characters. */
-export function slugOf(title: string): string {
-  const w = words(title).filter((x) => !SLUG_STOP.has(x)).slice(0, 6);
-  return (w.join("-").slice(0, 48).replace(/-+$/, "") || "note");
+/** The FotMob id in a source URL — same rule as the site's lib/news/per-note.ts `fotmobIdOf` — or null. */
+export function fotmobIdOf(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)fotmob\.com$/.test(u.hostname)) return null;
+    const m = u.pathname.match(/^\/(?:[a-z]{2}\/)?(?:news|topnews)\/([a-z0-9]+)(?:-|$)/i);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * news-<opaque id>-<slug>. Andrea 29/10: nothing on the site may lead back to the
- * source, so the public file name never carries the FotMob id (art direction's
- * hand-made files did): the id is 16 hex of sha256("news-image:" + guid_hash),
- * stable per note, not the guid_hash itself. The slug is from OUR headline.
+ * The public file stem of a note's picture: «news-» + 12 hex of sha256(source id) —
+ * the convention the site decided (feat/news-fotmob-prod-1026 @ 5c35bc31,
+ * lib/news/per-note.server.ts `noteImageName`): no slug, no source id in any URL
+ * (Andrea 29/10). The site finds the picture from the row's source_url by the same
+ * rule. null when the URL has no source id: the site could not find it, so no picture is made.
  */
-export function imageBase(guidHash: string, title: string): string {
-  return `news-${createHash("sha256").update(`news-image:${guidHash}`).digest("hex").slice(0, 16)}-${slugOf(title)}`;
+export function imageBase(sourceUrl: string): string | null {
+  const id = fotmobIdOf(sourceUrl);
+  return id ? `news-${createHash("sha256").update(id).digest("hex").slice(0, 12)}` : null;
 }
 
 // ─── the visual check (a, b, c of art direction + faces) ─────────────────────

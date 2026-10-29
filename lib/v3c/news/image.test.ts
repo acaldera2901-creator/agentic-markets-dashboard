@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { clubHex, colourName, IMAGE_CHECK_SCHEMA, IMAGE_STYLE, imageBase, imagePrompt, protagonistTint, readImageVerdict, sceneKind, slugOf } from "./image";
+import { clubHex, colourName, IMAGE_CHECK_SCHEMA, IMAGE_STYLE, fotmobIdOf, imageBase, imagePrompt, protagonistTint, readImageVerdict, sceneKind } from "./image";
 import { storagePublisher } from "./image-gen";
 
 const BAYERN = { title: "Bayern reach DFB-Pokal last 16; Brown praises unity", body: "Bayern Munich advanced in the DFB-Pokal on Wednesday, reaching the last 16. Nathaniel Brown praised the squad's unity during difficult times." };
@@ -57,17 +57,15 @@ describe("image · one club colour, never a pair, never a name", () => {
   });
 });
 
-describe("image · file name news-<opaque id>-<slug>: nothing leads back to the source", () => {
-  it("an opaque, stable id per note and a slug from our headline — never the FotMob id nor the guid_hash", () => {
-    expect(slugOf(BAYERN.title)).toBe("bayern-reach-dfb-pokal-last-16");
-    const gh = "08667ce3f2660655a4f1905bf214aa627ca36bfa920be68f3d797504d4e36d4b";
-    const b = imageBase(gh, BAYERN.title);
-    expect(b).toMatch(/^news-[0-9a-f]{16}-bayern-reach-dfb-pokal-last-16$/);
-    expect(imageBase(gh, BAYERN.title)).toBe(b); // stable per note
-    expect(b).not.toContain("1h64s2rd5exkn16klbwyxxlsns");
-    expect(b).not.toContain(gh.slice(0, 16)); // not the guid_hash either
-    expect(b).not.toMatch(/fotmob/i);
-    expect(imageBase(gh, "!!")).toMatch(/^news-[0-9a-f]{16}-note$/);
+describe("image · file name news-<sha256(source id)[:12]>: the site's convention (5c35bc31), nothing leads back to the source", () => {
+  it("same names as the site's noteImageName for the four hand-made pictures; no slug, no id; null without a source id", () => {
+    expect(fotmobIdOf("https://www.fotmob.com/it/topnews/30206-some-title")).toBe("30206");
+    // expected values copied from the site's lib/news/per-note.test.ts
+    expect(imageBase("https://www.fotmob.com/news/34p7x1w2mryx1d30uxb50a7qb-chivu-admits")).toBe("news-85469d0dd84e");
+    expect(imageBase("https://www.fotmob.com/it/news/1h64s2rd5exkn16klbwyxxlsns-were-winning")).toBe("news-3ad88e639192");
+    expect(imageBase("https://www.fotmob.com/news/4jikbwtyvot1ka7zjol4z8ww-x")).toBe("news-d92d970f9936");
+    expect(imageBase("https://www.fotmob.com/news/mb6zakc8ytax1tip7i9m9dlsx-x")).toBe("news-39567f5fa699");
+    expect(imageBase("https://example.com/news/abc-x")).toBeNull();
   });
 });
 

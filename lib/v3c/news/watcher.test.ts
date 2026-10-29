@@ -304,7 +304,7 @@ describe("watcher · one picture per note (#NEWSWATCH-2, behind NEWS_WATCHER_IMA
     expect(make).toHaveBeenCalledTimes(2);
     expect(rep.images).toMatchObject({ made: 2, local: 2, published: 0, pending: 0 });
     const j = make.mock.calls[0][0] as ImageJob;
-    expect(j.base).toMatch(/^news-[a-z0-9]+-[a-z0-9-]+$/);
+    expect(j.base).toMatch(/^news-[0-9a-f]{12}$/);
     expect(j.prompt).toContain("no readable text");
     // the prompt is built from OUR note, never from the original headline
     expect(j.prompt).not.toContain(db.rows[0].source_url);

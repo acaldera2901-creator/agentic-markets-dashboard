@@ -30,8 +30,9 @@ dentro il limite e perse**. Corretto e testato in v6.
 **Immagini (dry-run con `NEWS_WATCHER_IMAGES=1`, `NEWS_WATCHER_IMAGE_PUBLISH=supabase` a secco, 3 note vere).**
 - Ordine: le 3 `WOULD INSERT` alle 14:38:17, la prima immagine pronta alle 14:39:22 → **nota prima, immagine dopo**.
 - 3/3 generate, controllate e passate al **1° tentativo**: 65 s, 49 s, 44 s (gptimg + sips + cwebp + controllo);
-  1200×675; webp 75 / 95 / 132 KB (< 150 KB); png 1,1–1,2 MB. Nomi opachi, es.
-  `news-60a5f27ee9febc6a-martinez-praises-leverkusen-passion-dfb-pokal.webp` (nessun id FotMob).
+  1200×675; webp 75 / 95 / 132 KB (< 150 KB); png 1,1–1,2 MB. (Questo dry-run usava ancora un nome
+  provvisorio con slug; dopo la convenzione decisa da ui-andrea il nome è `news-<sha256(id)[:12]>`, vedi sotto:
+  cambio puro, coperto dai test, NON rifatto il dry-run con immagini.)
 - Guardate a occhio da me: huddle rosso di spalle, allenatore di spalle + due giocatori rossi lontani, stadio
   blu vuoto; nessun volto, logo, testo leggibile visto. La terza nota («Alonso confident…») è caduta nella
   scena «other» (stadio vuoto): la tabella segnali non ha «confident».
@@ -57,7 +58,7 @@ Con 3 min un giro con un'immagine dura fino a ~2,5 min: entra un solo tentativo 
 |---|---|
 | `lib/v3c/news/rewrite.ts` | 1 riparazione solo per «copies a 6-word run» → fino a `MAX_REPAIRS = 2` su ogni scarto meccanico o di fatti (`repairable`: `check: …`, `facts: …`, `not JSON`). Il turno di riparazione riceve la nota scartata, il motivo e un'istruzione mirata (righe copiate, titolo IT troppo lungo, parola vietata nominata, nomi/fatti non nell'originale). `PROMPT_VERSION` v5 → **v6**. Mai riparati: «insufficient» e la seconda lettura (sonnet): richiedere finché il verificatore dice sì consumerebbe la barriera. |
 | `lib/v3c/news/claude-cli.ts` | ciclo di riparazione (max 1 + 2 riscritture + 1 verifica per nota); `attempts` nell'esito e nel log. **Bug corretto:** `LIMIT_RE` non riconosceva «You've hit your **5-hour** limit» → letto come errore transitorio, la voce ritentata 3 giri dentro il limite e poi **scartata** (misurato in prod il 29/10: 15 righe, 5 note perse). Ora è `limit`: il giro si ferma e la voce resta in coda. |
-| `lib/v3c/news/image.ts` (nuovo) | parte pura dell'immagine: SCENA dalla tabella segnali di art-director (10 tipi), TINTA = un solo colore del club protagonista (mai una coppia: «blue and black» → strisce reali), STYLE fisso; nome file `news-<16 hex opachi>-<slug del NOSTRO titolo>`; prompt e schema del controllo visivo. |
+| `lib/v3c/news/image.ts` (nuovo) | parte pura dell'immagine: SCENA dalla tabella segnali di art-director (10 tipi), TINTA = un solo colore del club protagonista (mai una coppia: «blue and black» → strisce reali), STYLE fisso; nome file `news-<sha256(id sorgente)[:12]>` (convenzione del sito, `5c35bc31`); prompt e schema del controllo visivo. |
 | `lib/v3c/news/club-tints.json` (nuovo) | istantanea dei colori primari di `lib/news/clubs.ts` (branch `feat/news-fotmob-prod-1026`): 153 club, esclusi gli `unsure`. Da sostituire con l'import quando i due branch sono su main. |
 | `lib/v3c/news/image-gen.ts` (nuovo) | un tentativo: `gptimg` (stdin chiuso = `</dev/null`, timeout 240 s) → `sips` ritaglio 16:9 + 1200×675 → `cwebp` < 150 KB → controllo visivo `claude -p` sonnet con il solo tool Read. Un'immagine bocciata va in `_rejected/`, mai servita. `storagePublisher` = opzione A (vedi sotto), dietro flag. |
 | `lib/v3c/news/watcher.ts` | passo 8 «immagini» **dopo** insert e `news_state`: la nota esce subito (con l'immagine di tipo lato UI), l'immagine segue. Un tentativo per nota per giro, in serie, solo se entra nella finestra del giro (`IMAGE_ATTEMPT_MS = 150 s`); 3 tentativi bocciati → fallback definitivo all'immagine di tipo. Coda `images` nello `state.json` (campo opzionale, stesso formato v1). Un errore d'immagine non cambia mai l'exit del giro. |
@@ -66,7 +67,7 @@ Con 3 min un giro con un'immagine dura fino a ~2,5 min: entra un solo tentativo 
 | `scripts/news_watcher/com.betredge.caffeinate.plist` (nuovo) | `/usr/bin/caffeinate -s`, `KeepAlive`. |
 | `scripts/news_watcher/com.betredge.news-sentinel.plist` + `sentinel.mjs` (nuovi) | ogni 300 s legge solo `last-run.json`: nessun giro riuscito da > 15 min → una notifica macOS per fermo + exit 3 (→ `lab stato` lo mostra «ROTTO (exit 3)» con la riga del motivo, **senza toccare `lab-stato`**, che scopre i plist da solo). Rientro → una riga «rientrato». `enabled=false` non è un fermo. |
 | `scripts/news_watcher/render-launchd.sh` (nuovo) | `render-launchd.sh 180\|300 <dir>`: scrive i 3 plist con l'intervallo scelto e li valida con `plutil -lint`. Non installa nulla. |
-| test | `facts.test.ts`, `watcher.test.ts`, `image.test.ts` (nuovo): riparazioni, limite 5-hour, immagini (ordine nota→immagine, cap 3, finestra, publish che fallisce e riprova senza rigenerare, limite d'uso), nome opaco, publisher su fetch finto. |
+| test | `facts.test.ts`, `watcher.test.ts`, `image.test.ts` (nuovo): riparazioni, limite 5-hour, immagini (ordine nota→immagine, cap 3, finestra, publish che fallisce e riprova senza rigenerare, limite d'uso), nome uguale a `noteImageName` del sito sui 4 casi del suo test, publisher su fetch finto. |
 
 ### Sul Mac (passi dell'esecuzione, SOLO dopo `APPROVE #NEWSWATCH-2`)
 
@@ -131,9 +132,13 @@ scala, e un daemon che committa e pusha da solo sarebbe peggio. Il codice v6 gen
 l'immagine **sul Mac** (`$H/images/`) e si ferma lì: la pubblicazione è dietro
 `NEWS_WATCHER_IMAGE_PUBLISH`, **spento**.
 
-Vincolo nuovo di Andrea (29/10): nulla sul sito deve riportare a FotMob → il nome pubblico è
-`news-<16 hex di sha256("news-image:"+guid_hash)>-<slug del nostro titolo>.webp`: né id FotMob né
-guid_hash (che è lo sha256 del guid FotMob e si potrebbe ricalcolare).
+Vincolo nuovo di Andrea (29/10): nulla sul sito deve riportare a FotMob. Convenzione decisa da ui-andrea
+(`feat/news-fotmob-prod-1026` @ `5c35bc31`, `lib/news/per-note.server.ts` `noteImageName`):
+`news-<sha256(id sorgente)[:12]>.{webp,png}`, niente slug. Il watcher salva con lo **stesso** nome
+(`imageBase(source_url)` in `image.ts`, stessi 4 valori attesi del test del sito); una nota senza id
+sorgente nell'URL non riceve immagine (il sito non potrebbe trovarla). Variante possibile dell'opzione A:
+siccome il nome è deterministico, il sito potrebbe ricostruire l'URL dello Storage senza colonna —
+ma non saprebbe se il file esiste; la colonna `image_url` resta la scelta consigliata.
 
 | | **A · Supabase Storage, bucket pubblico** (consigliata, implementata dietro flag) | **B · Vercel Blob** |
 |---|---|---|
@@ -167,7 +172,7 @@ intervallo configurabile, sentinella, plist caffeinate/sentinella/watcher-templa
 
 **Verificato davvero:**
 - `vitest` `lib/v3c` + `components/v3c`: **970/970 verdi** (38 file); `lib/v3c/news`: 160/160. `tsc` pulito sui file toccati, `eslint` 0.
-- Bundle esbuild v6: `news-watcher.mjs` 84 KB, sha256 `ab4b693f…` (scratchpad, NON copiato in `Application Support`). Installato oggi: v4, sha256 `3e7f65f0…`.
+- Bundle esbuild v6: `news-watcher.mjs` 84 KB, sha256 `1e4abb37…` (rebuild dopo la convenzione nomi; scratchpad, NON copiato in `Application Support`). Installato oggi: v4, sha256 `3e7f65f0…`.
 - 3 dry-run reali (FotMob vero, `claude -p` vero, `gptimg` vero, DB finto che stampa): numeri sopra.
 - Sentinella in dry-run su 7 casi (nessun file, fresco, fermo 40 min, heartbeat vecchio formato, interruttore spento, bloccato, heartbeat reale di prod in sola lettura): esiti attesi, exit 0/3.
 - `render-launchd.sh 300` e `180`: 3 plist validi (`plutil -lint`); 240 rifiutato.

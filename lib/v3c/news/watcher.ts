@@ -284,7 +284,11 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
       await d.db.insert(rows);
       rep.written = rows.length;
       // the note is out with the picture of its kind; its own picture follows, never before
-      if (d.images) for (const r of rows) (s.images ??= []).push({ hash: r.guid_hash, base: imageBase(r.guid_hash, r.rewritten_en.title), prompt: imagePrompt(r.rewritten_en, r.teams), attempts: 0, at: now });
+      if (d.images)
+        for (const r of rows) {
+          const base = imageBase(r.source_url);
+          if (base) (s.images ??= []).push({ hash: r.guid_hash, base, prompt: imagePrompt(r.rewritten_en, r.teams), attempts: 0, at: now });
+        }
       for (const q of s.queue) if (q.row) done(q);
       s.queue = s.queue.filter((q) => !q.row);
     } catch (e) {
