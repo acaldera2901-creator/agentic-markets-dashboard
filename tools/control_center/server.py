@@ -361,13 +361,17 @@ class Handler(BaseHTTPRequestHandler):
             if azione == "chiedi":
                 if not isinstance(corpo.get("testo"), str):
                     return 400, b'{"ok":false,"errore":"testo mancante o non stringa"}', tipo_json
+                # Solo il booleano vero fa partire il bridge: "false" (stringa) era vero (QA #570).
+                esegui = corpo.get("esegui", False)
+                if not isinstance(esegui, bool):
+                    return 400, b'{"ok":false,"errore":"esegui deve essere true o false"}', tipo_json
                 m = tavolo.invia("andrea", str(corpo.get("a", "")), corpo["testo"][:4000],
                                  tipo=str(corpo.get("tipo") or "domanda"),
                                  conv=str(corpo.get("conv") or "") or None,
                                  progetto=str(corpo.get("progetto") or "") or None,
-                                 richiede_risposta=True, esegui=bool(corpo.get("esegui")))
+                                 richiede_risposta=True, esegui=esegui)
                 esito = {"ok": True, "id": m["id"], "conv": m["conv"]}
-                if corpo.get("esegui"):
+                if esegui is True:
                     # Il bridge dura minuti: gira fuori dalla richiesta HTTP.
                     esito["bridge"] = tavolo.consegna_in_background(m["id"])
             elif azione == "chiudi":
