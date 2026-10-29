@@ -82,7 +82,6 @@ export type NewsRow = {
   textLang: "en" | "it";
   /** «In English» tag outside EN/IT */
   english: boolean;
-  url: string;
   /** the kind of story, from its words (lib/news/kind.ts) */
   kind: NewsKind;
   /** the picture made for this note (lib/news/per-note.ts, with its png fallback) or else our 16:9 picture for its kind; null when we have none */
@@ -105,7 +104,6 @@ export function rowFor(card: NewsCard, lang: string, now: number | null, kind: N
     body: x.body,
     textLang: lang === "it" ? "it" : "en",
     english: x.english,
-    url: card.url,
     kind,
     image: noteImage(card) ?? newsImage(kind),
     badges: noteBadges(`${card.note.en.title} ${card.note.it.title}`, `${card.note.en.body} ${card.note.it.body}`, card.teams),

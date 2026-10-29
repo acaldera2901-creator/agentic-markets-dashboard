@@ -23,7 +23,6 @@ export type NewsCopy = {
   pausedMeta: string;
   romeTime: string;
   inEnglish: string;
-  readOriginal: string;
   onBoard: string;
   allNews: string;
   newsSection: string;
@@ -43,7 +42,6 @@ const en: NewsCopy = {
   pausedMeta: "News paused",
   romeTime: "Rome time",
   inEnglish: "In English",
-  readOriginal: "Read the original",
   onBoard: "On the board",
   allNews: "All news",
   newsSection: "News",
@@ -62,7 +60,6 @@ const it: NewsCopy = {
   pausedMeta: "Notizie in pausa",
   romeTime: "Ora di Roma",
   inEnglish: "In inglese",
-  readOriginal: "Leggi l’originale",
   onBoard: "Sul board",
   allNews: "Tutte le notizie",
   newsSection: "Notizie",
@@ -81,7 +78,6 @@ const de: NewsCopy = {
   pausedMeta: "News pausiert",
   romeTime: "Zeit in Rom",
   inEnglish: "Auf Englisch",
-  readOriginal: "Original lesen",
   onBoard: "Auf dem Board",
   allNews: "Alle News",
   newsSection: "News",
@@ -100,7 +96,6 @@ const es: NewsCopy = {
   pausedMeta: "Noticias en pausa",
   romeTime: "Hora de Roma",
   inEnglish: "En inglés",
-  readOriginal: "Leer el original",
   onBoard: "En el tablero",
   allNews: "Todas las noticias",
   newsSection: "Noticias",
@@ -119,7 +114,6 @@ const fr: NewsCopy = {
   pausedMeta: "Actus en pause",
   romeTime: "Heure de Rome",
   inEnglish: "En anglais",
-  readOriginal: "Lire l’original",
   onBoard: "Sur le tableau",
   allNews: "Toutes les actus",
   newsSection: "Actus",
@@ -138,7 +132,6 @@ const nl: NewsCopy = {
   pausedMeta: "Nieuws gepauzeerd",
   romeTime: "Tijd in Rome",
   inEnglish: "In het Engels",
-  readOriginal: "Lees het origineel",
   onBoard: "Op het board",
   allNews: "Al het nieuws",
   newsSection: "Nieuws",
@@ -157,7 +150,6 @@ const pl: NewsCopy = {
   pausedMeta: "Newsy wstrzymane",
   romeTime: "Czas rzymski",
   inEnglish: "Po angielsku",
-  readOriginal: "Przeczytaj oryginał",
   onBoard: "Na tablicy",
   allNews: "Wszystkie wiadomości",
   newsSection: "Wiadomości",
@@ -176,7 +168,6 @@ const pt: NewsCopy = {
   pausedMeta: "Notícias em pausa",
   romeTime: "Hora de Roma",
   inEnglish: "Em inglês",
-  readOriginal: "Ler o original",
   onBoard: "No board",
   allNews: "Todas as notícias",
   newsSection: "Notícias",
@@ -195,7 +186,6 @@ const ru: NewsCopy = {
   pausedMeta: "Новости на паузе",
   romeTime: "Время Рима",
   inEnglish: "На английском",
-  readOriginal: "Читать оригинал",
   onBoard: "На панели",
   allNews: "Все новости",
   newsSection: "Новости",
@@ -214,7 +204,6 @@ const sv: NewsCopy = {
   pausedMeta: "Nyheterna pausade",
   romeTime: "Tid i Rom",
   inEnglish: "På engelska",
-  readOriginal: "Läs originalet",
   onBoard: "På boarden",
   allNews: "Alla nyheter",
   newsSection: "Nyheter",
@@ -233,7 +222,6 @@ const tr: NewsCopy = {
   pausedMeta: "Haberler duraklatıldı",
   romeTime: "Roma saati",
   inEnglish: "İngilizce",
-  readOriginal: "Orijinali oku",
   onBoard: "Panoda",
   allNews: "Tüm haberler",
   newsSection: "Haberler",

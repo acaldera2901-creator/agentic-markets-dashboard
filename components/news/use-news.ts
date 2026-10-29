@@ -102,7 +102,7 @@ export function useSiteLang(): string {
 }
 
 // ─── the match sheet ────────────────────────────────────────────────────────
-export type SheetNews = { label: string; note: string; readOriginal: string; inEnglish: string; rows: NewsRow[] };
+export type SheetNews = { label: string; note: string; inEnglish: string; rows: NewsRow[] };
 
 /** The News card of a football match sheet: the notes naming either team, strings in the desk language. null = nothing to show. */
 export function useMatchNews(home: string, away: string, lang: string): SheetNews | null {
@@ -114,6 +114,6 @@ export function useMatchNews(home: string, away: string, lang: string): SheetNew
     if (!notes.length) return null;
     const c = newsCopy(lang);
     const rows = rowsFor(notes, lang, now);
-    return { label: c.newsSection, note: fillNews(c.matchBody, { source: rows[0].source }), readOriginal: c.readOriginal, inEnglish: c.inEnglish, rows };
+    return { label: c.newsSection, note: fillNews(c.matchBody, { source: rows[0].source }), inEnglish: c.inEnglish, rows };
   }, [feed, now, home, away, lang]);
 }

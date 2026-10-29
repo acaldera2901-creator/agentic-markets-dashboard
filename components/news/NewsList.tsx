@@ -53,11 +53,6 @@ export function NewsList({ feed }: { feed: NewsFeed }) {
                   <span className="nw-lab">{r.source}{r.english && <em className="nw-en"> · {c.inEnglish}</em>}</span>
                   <h3 className="nw-title" lang={r.textLang}>{r.title}</h3>
                   <p className="nw-text" lang={r.textLang}>{r.body}</p>
-                  <p className="nw-meta">
-                    <a className="nw-orig" href={r.url} rel="nofollow noopener noreferrer" target="_blank">
-                      {c.readOriginal} <span aria-hidden="true">↗</span>
-                    </a>
-                  </p>
                   {links.length > 0 && (
                     <p className="nw-board">
                       <span className="nw-lab">{c.onBoard}</span>

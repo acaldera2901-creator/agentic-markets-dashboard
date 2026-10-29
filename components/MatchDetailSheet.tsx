@@ -107,13 +107,12 @@ export type MdsNewsItem = {
   body: string;
   textLang: "en" | "it";
   english: boolean;
-  url: string;
   /** our 16:9 picture for the kind of story (never the source's), or null */
   image: { src: string; width: number; height: number } | null;
   /** the clubs the note names: real crest (the board's map) and real colours, or null each (lib/news/clubs.ts) */
   badges: { name: string; crest: string | null; colors: readonly [string, string] | null }[];
 };
-export type MdsNews = { label: string; note: string; readOriginal: string; inEnglish: string; rows: MdsNewsItem[] };
+export type MdsNews = { label: string; note: string; inEnglish: string; rows: MdsNewsItem[] };
 
 export type MdsSectionLabels = {
   why: string;
@@ -593,10 +592,7 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                     </span>
                     <p className="mds-news__t" lang={n.textLang}>{n.title}</p>
                     <p className="mds-news__b" lang={n.textLang}>{n.body}</p>
-                    <p className="mds-news__meta">
-                      {n.english && <span>{data.news!.inEnglish}</span>}
-                      <a href={n.url} rel="nofollow noopener noreferrer" target="_blank">{data.news!.readOriginal} <span aria-hidden="true">↗</span></a>
-                    </p>
+                    {n.english && <p className="mds-news__meta"><span>{data.news!.inEnglish}</span></p>}
                   </li>
                 ))}
               </ol>
