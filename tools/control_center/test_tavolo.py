@@ -21,6 +21,8 @@ from pathlib import Path
 from . import tavolo
 
 REPO = Path(__file__).resolve().parents[2]
+MARCATORI = ("CLAUDECODE", "CLAUDE_PID", "CLAUDE_CODE_SESSION_ID", "CODEX_THREAD_ID",
+             "CODEX_SANDBOX", "CODEX_SESSION_ID", "TAVOLO_PRESENZA_TTL_MIN")
 
 # Un binario finto che parla come il vero: Codex scrive -o e stampa JSONL con
 # `turn.completed`; Claude stampa un JSON con `structured_output` e `usage`.
@@ -73,12 +75,15 @@ class Base(unittest.TestCase):
             b.chmod(0o755)
         self.env = {"TAVOLO_DIR": str(self.dir), "CODEX_BIN": str(bindir / "codex"),
                     "CLAUDE_BIN": str(bindir / "claude"), "TAVOLO_REPO": str(REPO),
-                    "TAVOLO_VETRINA": str(t / "vetrina"), "TAVOLO_WT_ROOT": str(t)}
+                    "TAVOLO_VETRINA": str(t / "vetrina"), "TAVOLO_WT_ROOT": str(t),
+                    # I test non devono dipendere da chi li lancia (una sessione
+                    # Claude, Codex o un terminale): niente antenati, niente marcatori.
+                    "TAVOLO_SENZA_ANTENATI": "1"}
         self._vecchio = {k: os.environ.get(k) for k in
                          list(self.env) + ["AM_SHELL", "CODEX_SHELL", "BRIDGE_DEPTH", "FINTO_ESITO",
-                                           "FINTO_ARGV"]}
+                                           "FINTO_ARGV"] + list(MARCATORI)}
         os.environ.update(self.env)
-        for k in ("AM_SHELL", "CODEX_SHELL", "BRIDGE_DEPTH", "FINTO_ESITO", "FINTO_ARGV"):
+        for k in ("AM_SHELL", "CODEX_SHELL", "BRIDGE_DEPTH", "FINTO_ESITO", "FINTO_ARGV") + MARCATORI:
             os.environ.pop(k, None)
         (t / "vetrina").mkdir()
 
@@ -317,7 +322,7 @@ class Simmetria(Base):
         self.assertEqual(tavolo.identita({"AM_SHELL": "agentic_lab"}), "claude")
         self.assertEqual(tavolo.identita({"CODEX_SHELL": "agentic_codex"}), "codex")
         with self.assertRaises(ValueError):
-            tavolo.identita({})
+            tavolo.identita({}, antenati=[])
         self.assertEqual(self.cli("prendi")[0], 2)
 
     def test_il_bridge_e_lo_stesso_per_i_due_lati(self):
@@ -665,6 +670,245 @@ class Api(Base):
         self.assertEqual(st["rifiuti"][0]["a"], "codex")
         self.assertEqual(self._post({"azione": "chiudi", "conv": d["conv"]})[0], 200)
         self.assertEqual(self._post({"azione": "scrivi_card"})[0], 400)
+
+
+CLAUDE_EXE = "/Users/x/.local/share/claude/versions/2.1.312"
+CODEX_EXE = "/x/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex"
+
+
+def _pid_morto() -> int:
+    p = subprocess.Popen([sys.executable, "-c", "pass"])
+    p.wait()
+    return p.pid
+
+
+class Presenze(Base):
+    """`tavolo collegati`: chi e' al tavolo adesso, vivo solo se il battito e
+    il processo lo dicono."""
+
+    def chi(self, lato="claude", pid=None, exe=None):
+        return {"lato": lato, "client": "claude-code" if lato == "claude" else "codex",
+                "pid": os.getpid() if pid is None else pid, "exe": exe,
+                "riconosciuto": "test"}
+
+    def test_collegati_scrive_la_presenza_e_scollegati_la_toglie(self):
+        p = tavolo.collegati(self.chi("codex"), progetto="betredge", cwd="/tmp/x")
+        f = self.dir / "presenze" / "codex.json"
+        self.assertTrue(f.exists())
+        d = json.loads(f.read_text())
+        for k in ("identita", "client", "pid", "cwd", "progetto", "collegato_da", "ultimo_battito"):
+            self.assertIn(k, d)
+        self.assertEqual((d["identita"], d["progetto"], d["cwd"]), ("codex", "betredge", "/tmp/x"))
+        self.assertEqual(p["identita"], "codex")
+        [v] = tavolo.presenze()
+        self.assertTrue(v["vivo"])
+        self.assertEqual(v["stato"], "vivo")
+        self.assertTrue(tavolo.scollegati("codex"))
+        self.assertFalse(f.exists())
+        self.assertEqual(tavolo.presenze(), [])
+        self.assertFalse(tavolo.scollegati("codex"))   # gia' fuori: non e' un errore
+
+    def test_presenza_scaduta_dopo_il_ttl(self):
+        prima = tavolo._ora() - timedelta(minutes=tavolo.LIMITI["presenza_ttl_min"] + 1)
+        tavolo.collegati(self.chi(), ora=prima)
+        [v] = tavolo.presenze()
+        self.assertFalse(v["vivo"])
+        self.assertEqual(v["stato"], "scaduto")
+
+    def test_ttl_configurabile(self):
+        prima = tavolo._ora() - timedelta(minutes=5)
+        tavolo.collegati(self.chi(), ora=prima)
+        self.assertTrue(tavolo.presenze()[0]["vivo"])
+        os.environ["TAVOLO_PRESENZA_TTL_MIN"] = "2"
+        self.assertEqual(tavolo.presenze()[0]["stato"], "scaduto")
+
+    def test_pid_morto_non_e_mai_vivo_anche_col_battito_fresco(self):
+        tavolo.collegati(self.chi(pid=_pid_morto()))
+        [v] = tavolo.presenze()
+        self.assertFalse(v["vivo"])
+        self.assertEqual(v["stato"], "pid morto")
+
+    def test_pid_riusato_da_un_altro_programma_e_morto(self):
+        # Stesso numero di pid, eseguibile diverso: non e' piu' la sessione collegata.
+        tavolo.collegati(self.chi(pid=os.getpid(), exe="/non/esiste/claude"))
+        self.assertEqual(tavolo.presenze()[0]["stato"], "pid morto")
+
+    def test_battito_aggiorna_solo_chi_e_collegato(self):
+        prima = tavolo._ora() - timedelta(minutes=20)
+        tavolo.collegati(self.chi(), ora=prima)
+        tavolo.battito(self.chi("codex"))                 # codex non e' collegato: niente file
+        self.assertFalse((self.dir / "presenze" / "codex.json").exists())
+        tavolo.battito(self.chi())
+        v = tavolo.presenze()[0]
+        self.assertLess(v["battito_s"], 60)
+        self.assertGreaterEqual(v["da_s"], 20 * 60 - 5)   # collegato_da non cambia
+
+    def test_battito_non_resuscita_un_pid_morto_ma_collegati_si(self):
+        # E2E 29/10: il battito adottava il pid di un'altra sessione dello stesso
+        # lato, e collegati teneva il vecchio «collegato da». Una sessione nuova
+        # si ricollega e riparte da zero.
+        prima = tavolo._ora() - timedelta(minutes=10)
+        tavolo.collegati(self.chi(pid=_pid_morto()), ora=prima)
+        tavolo.battito(self.chi(pid=os.getpid()))
+        self.assertEqual(tavolo.presenze()[0]["stato"], "pid morto")
+        tavolo.collegati(self.chi(pid=os.getpid()))
+        v = tavolo.presenze()[0]
+        self.assertTrue(v["vivo"])
+        self.assertLess(v["da_s"], 60)
+
+    def test_ogni_comando_tavolo_batte(self):
+        prima = tavolo._ora() - timedelta(minutes=20)
+        tavolo.collegati(self.chi("codex", pid=None), ora=prima)
+        rc, out = self.cli("prendi", chi="codex")
+        self.assertEqual(rc, 0, out)
+        self.assertLess(tavolo.presenze()[0]["battito_s"], 60)
+
+    def test_collegati_rispetta_l_interruttore(self):
+        (self.dir / "LIVE").unlink()
+        with self.assertRaises(tavolo.Spento):
+            tavolo.collegati(self.chi())
+
+    def test_orientamento_corto_con_chi_c_e_e_la_mia_posta(self):
+        tavolo.collegati(self.chi("codex"), progetto="betredge")
+        tavolo.invia("codex", "claude", "domanda per te")
+        tavolo.collegati(self.chi("claude"))
+        testo = tavolo.orientamento("claude")
+        righe = testo.splitlines()
+        self.assertLessEqual(len(righe), 15, testo)
+        self.assertIn("codex", righe[1 if len(righe) > 1 else 0] + testo)
+        self.assertIn("1 messagg", testo)
+        for cmd in ("tavolo prendi", "tavolo conferma", "tavolo invia", "tavolo stato",
+                    "tavolo scollegati"):
+            self.assertIn(cmd, testo)
+        self.assertIn("APPROVE", testo)
+        self.assertIn("RIFIUTATO", testo)
+
+    def test_cli_collegati_e_scollegati(self):
+        rc, out = self.cli("collegati", "--come", "codex", "--progetto", "betredge")
+        self.assertEqual(rc, 0, out)
+        self.assertLessEqual(len(out.strip().splitlines()), 15, out)
+        self.assertIn("codex", out)
+        d = json.loads((self.dir / "presenze" / "codex.json").read_text())
+        self.assertEqual(d["progetto"], "betredge")
+        self.assertEqual(d["riconosciuto"], "--come")
+        rc, out = self.cli("scollegati", "--come", "codex")
+        self.assertEqual(rc, 0, out)
+        self.assertFalse((self.dir / "presenze" / "codex.json").exists())
+
+    def test_posta_non_scrivibile_errore_chiaro_non_traceback(self):
+        # E2E 29/10: Codex in workspace-write non scrive fuori da cwd e /tmp.
+        self.dir.chmod(0o500)
+        try:
+            rc, out = self.cli("collegati", "--come", "codex")
+        finally:
+            self.dir.chmod(0o700)
+        self.assertEqual(rc, 2, out)
+        self.assertIn("writable_roots", out)
+        self.assertNotIn("Traceback", out)
+
+    def test_cli_senza_identita_chiede_come(self):
+        rc, out = self.cli("collegati")
+        self.assertEqual(rc, 2)
+        self.assertIn("--come", out)
+
+    def test_api_ha_le_presenze(self):
+        tavolo.collegati(self.chi("codex"), progetto="betredge")
+        st = tavolo.stato()
+        [v] = st["presenze"]
+        self.assertEqual((v["identita"], v["stato"]), ("codex", "vivo"))
+        os.environ["TAVOLO_DIR"] = str(self.dir / "mai-usato")
+        self.assertEqual(tavolo.stato()["presenze"], [])
+
+
+class IdentitaAutomatica(Base):
+    """Senza AM_SHELL/CODEX_SHELL il client si ricava dal processo che ha
+    lanciato il comando (antenato piu' vicino) e, se gli antenati non si
+    leggono, dai marcatori misurati sul 29/10. Ambiguo = chiedi --come."""
+
+    def test_l_antenato_piu_vicino_decide(self):
+        r = tavolo.riconosci({}, antenati=[(10, "/bin/zsh"), (20, CLAUDE_EXE), (1, "/sbin/launchd")])
+        self.assertEqual((r["lato"], r["pid"], r["exe"]), ("claude", 20, CLAUDE_EXE))
+        # Codex lanciato da dentro Claude: vince Codex, che e' piu' vicino.
+        r = tavolo.riconosci({"CLAUDECODE": "1"}, antenati=[(5, CODEX_EXE), (9, "/bin/zsh"), (20, CLAUDE_EXE)])
+        self.assertEqual((r["lato"], r["pid"]), ("codex", 5))
+        r = tavolo.riconosci({}, antenati=[(7, "/Applications/ChatGPT.app/Contents/Resources/codex-cli/"
+                                               "CodexCLI.app/Contents/MacOS/codex")])
+        self.assertEqual(r["lato"], "codex")
+
+    def test_wrapper_node_non_e_codex(self):
+        # `node .../bin/codex` e' il lanciatore npm: il client vero e' il figlio.
+        self.assertIsNone(tavolo._classifica("/Users/x/.nvm/versions/node/v24/bin/node"))
+        self.assertIsNone(tavolo._classifica("/bin/zsh"))
+
+    def test_antenati_illeggibili_si_usano_i_marcatori(self):
+        self.assertEqual(tavolo.riconosci({"CODEX_THREAD_ID": "x", "CODEX_SANDBOX": "seatbelt"},
+                                          antenati=None)["lato"], "codex")
+        self.assertEqual(tavolo.riconosci({"CLAUDECODE": "1", "CLAUDE_PID": str(os.getpid())},
+                                          antenati=None)["lato"], "claude")
+
+    def test_marcatori_di_entrambi_e_claude_vivo_e_ambiguo(self):
+        env = {"CLAUDECODE": "1", "CLAUDE_PID": str(os.getpid()), "CODEX_THREAD_ID": "x"}
+        with self.assertRaises(ValueError) as e:
+            tavolo.riconosci(env, antenati=None)
+        self.assertIn("--come", str(e.exception))
+        self.assertEqual(tavolo.riconosci(env, come="codex", antenati=None)["lato"], "codex")
+
+    def test_claude_pid_morto_e_un_marcatore_vecchio(self):
+        # Misurato il 29/10: l'ambiente globale di tmux porta CLAUDECODE=1 e il
+        # CLAUDE_PID di una sessione chiusa; un Codex in quel pannello e' Codex.
+        env = {"CLAUDECODE": "1", "CLAUDE_PID": str(_pid_morto()), "CODEX_THREAD_ID": "x"}
+        self.assertEqual(tavolo.riconosci(env, antenati=None)["lato"], "codex")
+
+    def test_nessun_antenato_agente_non_si_indovina_dai_marcatori(self):
+        # Antenati leggibili e nessun client fra loro: i marcatori sono ereditati
+        # (un terminale dentro tmux), non provano niente.
+        with self.assertRaises(ValueError):
+            tavolo.riconosci({"CLAUDECODE": "1", "CLAUDE_PID": str(os.getpid())},
+                             antenati=[(3, "/bin/zsh"), (2, "/opt/homebrew/bin/tmux")])
+
+    def test_come_contro_l_evidenza_e_un_errore(self):
+        with self.assertRaises(ValueError):
+            tavolo.riconosci({}, come="codex", antenati=[(20, CLAUDE_EXE)])
+        with self.assertRaises(ValueError):
+            tavolo.riconosci({"AM_SHELL": "x"}, come="codex", antenati=[])
+        with self.assertRaises(ValueError):
+            tavolo.riconosci({}, come="gemini", antenati=[])
+        self.assertEqual(tavolo.riconosci({}, come="claude", antenati=[(20, CLAUDE_EXE)])["lato"], "claude")
+
+    def test_le_variabili_esplicite_vincono_e_l_ambiguita_resta_errore(self):
+        self.assertEqual(tavolo.riconosci({"CODEX_SHELL": "x"}, antenati=[(20, CLAUDE_EXE)])["lato"], "codex")
+        with self.assertRaises(ValueError):
+            tavolo.riconosci({"AM_SHELL": "x", "CODEX_SHELL": "y"}, antenati=[])
+
+    def test_antenati_veri_si_leggono(self):
+        os.environ.pop("TAVOLO_SENZA_ANTENATI")
+        a = tavolo._antenati()
+        if a is None:
+            self.skipTest("antenati non leggibili su questa macchina")
+        self.assertTrue(a)
+        self.assertTrue(all(isinstance(p, int) and isinstance(x, str) for p, x in a))
+
+
+class Wrapper(unittest.TestCase):
+    """~/.local/bin/tavolo: trova il repo da solo, o dice perche' non lo trova."""
+
+    def _lancia(self, env_extra):
+        w = REPO / "tools/tavolo-wrapper.sh"
+        env = {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"], **env_extra}
+        return subprocess.run(["bash", str(w), "stato", "--json"], env=env, capture_output=True,
+                              text=True, timeout=60)
+
+    def test_usa_tavolo_repo(self):
+        with tempfile.TemporaryDirectory() as t:
+            r = self._lancia({"TAVOLO_REPO": str(REPO), "TAVOLO_DIR": t})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("presenze", json.loads(r.stdout))
+
+    def test_repo_introvabile_messaggio_chiaro(self):
+        with tempfile.TemporaryDirectory() as t:
+            r = self._lancia({"TAVOLO_REPO": t + "/nulla", "HOME": t})
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("TAVOLO_REPO", r.stderr)
 
 
 if __name__ == "__main__":

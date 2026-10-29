@@ -55,6 +55,7 @@ LIMITI = {
     "recuperi_max": 2,               # dopo 2 ritorni in inbox, la terza scadenza va in quarantena
     "brief_righe": 60,               # righe di corpo passate al bridge; il resto e' tagliato e dichiarato
     "timeout_s": 900,                # un bridge che non risponde in 15 min e' un errore, non un'attesa
+    "presenza_ttl_min": 30,          # senza un comando tavolo da 30 min = non collegato (TAVOLO_PRESENZA_TTL_MIN)
 }
 
 OK, USO, RIFIUTATO, CATENA, SPENTO, ERRORE_BRIDGE = 0, 2, 3, 4, 5, 6
@@ -114,7 +115,7 @@ def _ruoli_file() -> Path:
 
 
 CASELLE = ("inbox-claude", "inbox-codex", "inbox-andrea", "in-carico", "letti",
-           "quarantena", "lock")
+           "quarantena", "lock", "presenze")
 
 
 def _d(nome: str) -> Path:
@@ -149,16 +150,147 @@ def _da_iso(s: str) -> datetime:
 
 
 # ── identita' ───────────────────────────────────────────────────────────────
-def identita(env=None) -> str:
-    """Il lato di chi chiama, dall'ambiente. Non autenticato: vedi docstring."""
+def identita(env=None, come: str | None = None, antenati="leggi") -> str:
+    """Il lato di chi chiama. Non autenticato: vedi docstring e `riconosci`."""
+    return riconosci(env, come, antenati)["lato"]
+
+
+def _classifica(exe: str) -> str | None:
+    """Il client di un eseguibile, dal suo percorso (misurato il 29/10):
+    Claude Code e' `~/.local/share/claude/versions/<ver>` (o un `claude`);
+    Codex e' un binario `codex` (CLI npm vendor, CodexCLI.app di Codex
+    Desktop). `node .../bin/codex` e' solo il lanciatore npm: non conta."""
+    p = Path(exe)
+    nome = p.name.lower()
+    if nome == "codex":
+        return "codex"
+    if nome == "claude" or "/claude/versions/" in exe:
+        return "claude"
+    return None
+
+
+def _proc_lib():
+    import ctypes
+    import ctypes.util
+    try:
+        return ctypes, ctypes.CDLL(ctypes.util.find_library("proc") or "/usr/lib/libproc.dylib")
+    except OSError:
+        return ctypes, None
+
+
+def _info_pid(pid: int) -> tuple[str, int] | None:
+    """(eseguibile, ppid) di un pid, via libproc (macOS). Funziona anche dentro
+    il sandbox di Codex, dove `ps` e `kill -0` sono negati (misurato il 29/10)."""
+    ctypes, lib = _proc_lib()
+    if lib is None:
+        return None
+    buf = ctypes.create_string_buffer(4096)
+    if lib.proc_pidpath(pid, buf, 4096) <= 0:
+        return None
+    info = ctypes.create_string_buffer(136)            # struct proc_bsdinfo
+    if lib.proc_pidinfo(pid, 3, 0, info, 136) != 136:  # PROC_PIDTBSDINFO
+        return None
+    return buf.value.decode(errors="replace"), int.from_bytes(info.raw[16:20], "little")
+
+
+def _antenati(pid: int | None = None) -> list[tuple[int, str]] | None:
+    """La catena dei processi sopra di noi, dal piu' vicino. None = illeggibile."""
+    if os.environ.get("TAVOLO_SENZA_ANTENATI"):
+        return None
+    pid = os.getppid() if pid is None else pid
+    out: list[tuple[int, str]] = []
+    for _ in range(40):
+        if pid <= 1:
+            break
+        info = _info_pid(pid)
+        if info is None:
+            if not out:
+                return None
+            break
+        out.append((pid, info[0]))
+        pid = info[1]
+    return out
+
+
+def _pid_vivo(pid, exe: str | None = None) -> bool:
+    """Vivo = il processo esiste ed e' ancora lo stesso eseguibile (pid riusato = morto)."""
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    info = _info_pid(pid)
+    if info is not None:
+        return exe is None or info[0] == exe
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        pass                     # esiste, non e' nostro
+    except OSError:
+        return False
+    if exe is None:
+        return True
+    _, lib = _proc_lib()
+    return lib is None           # libproc c'e' ma non lo vede: e' morto o non e' lui
+
+
+def riconosci(env=None, come: str | None = None, antenati="leggi") -> dict:
+    """Chi sta chiamando: {lato, client, pid, exe, riconosciuto}.
+
+    Ordine: AM_SHELL/CODEX_SHELL espliciti (entrambi = errore) -> il processo
+    agente piu' vicino fra gli antenati -> se gli antenati non si leggono, i
+    marcatori d'ambiente misurati il 29/10 (Claude Code: CLAUDECODE=1 e
+    CLAUDE_PID; Codex: CODEX_THREAD_ID, CODEX_SANDBOX). I marcatori si
+    ereditano (un Codex lanciato da Claude li ha entrambi; l'ambiente globale
+    di tmux porta quelli di sessioni chiuse), quindi non bastano mai da soli
+    quando gli antenati dicono altro. Ambiguo -> errore che chiede --come."""
     env = os.environ if env is None else env
+    if come is not None and come not in LATI:
+        raise ValueError(f"--come non valido: {come!r} (claude|codex)")
+    if antenati == "leggi":
+        antenati = _antenati()
+    agente = next(((pid, exe, lato) for pid, exe in (antenati or [])
+                   if (lato := _classifica(exe))), None)
+    pid, exe = (agente[0], agente[1]) if agente else (None, None)
     if env.get("CODEX_SHELL") and env.get("AM_SHELL"):
         raise ValueError("identita' ambigua: AM_SHELL e CODEX_SHELL sono entrambe presenti")
-    if env.get("CODEX_SHELL"):
-        return "codex"
-    if env.get("AM_SHELL"):
-        return "claude"
-    raise ValueError("identita' non dichiarata: serve AM_SHELL (Claude) o CODEX_SHELL (Codex)")
+    esplicito = "codex" if env.get("CODEX_SHELL") else "claude" if env.get("AM_SHELL") else None
+    if esplicito:
+        if come and come != esplicito:
+            raise ValueError(f"--come {come} contro {'CODEX_SHELL' if esplicito == 'codex' else 'AM_SHELL'}")
+        lato, prova = esplicito, "CODEX_SHELL" if esplicito == "codex" else "AM_SHELL"
+    elif agente:
+        lato, prova = agente[2], f"processo {agente[2]}"
+        if come and come != lato:
+            raise ValueError(f"--come {come}, ma il processo che ti ha lanciato e' {lato} "
+                             f"({agente[1]}, pid {agente[0]})")
+    elif come:
+        lato, prova = come, "--come"
+        # Nessun agente sopra di noi (un terminale): la presenza vive quanto la shell.
+        pid = os.getppid()
+        exe = (_info_pid(pid) or (None, 0))[0]
+    else:
+        claude_pid = env.get("CLAUDE_PID")
+        m_claude = env.get("CLAUDECODE") == "1" and (not claude_pid or _pid_vivo(claude_pid))
+        m_codex = bool(env.get("CODEX_THREAD_ID") or env.get("CODEX_SANDBOX"))
+        if antenati is not None or m_claude == m_codex:
+            perche = ("marcatori di Claude e di Codex insieme" if m_claude and m_codex else
+                      "nessun processo claude/codex fra gli antenati" if antenati is not None
+                      else "nessun marcatore di Claude o di Codex")
+            raise ValueError(f"non so chi sei ({perche}): ripeti con --come claude|codex")
+        lato = "claude" if m_claude else "codex"
+        prova = "ambiente " + ("CLAUDECODE" if m_claude else "CODEX_THREAD_ID/CODEX_SANDBOX")
+        if lato == "claude" and claude_pid:
+            pid = int(claude_pid)
+    if agente and agente[2] != lato:
+        pid, exe = None, None                    # l'antenato e' l'altro client: non e' il mio pid
+    client = {"claude": "claude-code", "codex": "codex"}[lato]
+    if exe and "CodexCLI.app" in exe:
+        client = "codex-desktop"
+    return {"lato": lato, "client": client, "pid": pid, "exe": exe, "riconosciuto": prova}
 
 
 def altro(lato: str) -> str:
@@ -516,6 +648,128 @@ def chiudi(chi: str, conv: str, motivo: str = "", ora=None) -> dict:
         return {"ok": True, "conv": conv, "gia_chiusa": True}
     _registra({"evento": "chiusa", "conv": conv, "da": chi, "motivo": motivo[:300]}, ora)
     return {"ok": True, "conv": conv}
+
+
+# ── presenze: chi e' al tavolo adesso ───────────────────────────────────────
+def _ttl_s() -> float:
+    try:
+        return float(os.environ.get("TAVOLO_PRESENZA_TTL_MIN") or LIMITI["presenza_ttl_min"]) * 60
+    except ValueError:
+        return LIMITI["presenza_ttl_min"] * 60
+
+
+def _presenza_file(lato: str) -> Path:
+    if lato not in LATI:
+        raise ValueError(f"identita' non valida: {lato!r}")
+    return base() / "presenze" / f"{lato}.json"
+
+
+def collegati(chi: dict, progetto: str | None = None, cwd: str | None = None, ora=None) -> dict:
+    """Registra la presenza dell'identita'. Una per lato: la posta e' per lato,
+    quindi una seconda sessione dello stesso lato prende il posto della prima."""
+    _richiedi_live()
+    ora = _ora(ora)
+    f = _presenza_file(chi["lato"])
+    _d("presenze")
+    vecchia = _leggi(f) or {}
+    stessa = vecchia.get("pid") == chi.get("pid") and chi.get("pid") is not None
+    p = {"identita": chi["lato"], "client": chi.get("client"), "pid": chi.get("pid"),
+         "exe": chi.get("exe"), "riconosciuto": chi.get("riconosciuto"),
+         "cwd": cwd or os.getcwd(), "progetto": progetto or (vecchia.get("progetto") if stessa else None),
+         "collegato_da": vecchia["collegato_da"] if stessa and vecchia.get("collegato_da") else _iso(ora),
+         "ultimo_battito": _iso(ora)}
+    _scrivi_atomico(f, p)
+    _registra({"evento": "collegato", "lato": chi["lato"], "client": p["client"], "pid": p["pid"],
+               "progetto": p["progetto"]}, ora)
+    return p
+
+
+def scollegati(lato: str, ora=None) -> bool:
+    f = _presenza_file(lato)
+    if not f.exists():
+        return False
+    f.unlink()
+    _registra({"evento": "scollegato", "lato": lato}, ora)
+    return True
+
+
+def battito(chi: dict, ora=None) -> None:
+    """Ogni comando tavolo dice «ci sono ancora», solo per chi e' collegato.
+    Il pid non cambia: una sessione nuova (o ripresa) si ricollega con
+    `tavolo collegati`, e fino ad allora una presenza col pid morto resta morta."""
+    if not live():
+        return
+    f = _presenza_file(chi["lato"])
+    p = _leggi(f)
+    if p is None:
+        return
+    p["ultimo_battito"] = _iso(_ora(ora))
+    _scrivi_atomico(f, p)
+
+
+def presenze(ora=None) -> list[dict]:
+    """Le presenze con il loro stato: vivo solo se il battito e' nel TTL e il
+    pid (quando c'e') esiste ancora ed e' lo stesso eseguibile."""
+    ora = _ora(ora)
+    cartella = base() / "presenze"
+    if not cartella.exists():
+        return []
+    out = []
+    for f in sorted(cartella.glob("*.json")):
+        p = _leggi(f)
+        if not p:
+            continue
+        try:
+            battito_s = int((ora - _da_iso(p["ultimo_battito"])).total_seconds())
+            da_s = int((ora - _da_iso(p["collegato_da"])).total_seconds())
+        except (KeyError, ValueError, TypeError):
+            continue
+        if p.get("pid") is not None and not _pid_vivo(p["pid"], p.get("exe")):
+            st = "pid morto"
+        elif battito_s > _ttl_s():
+            st = "scaduto"
+        else:
+            st = "vivo"
+        out.append({**p, "battito_s": battito_s, "da_s": da_s, "stato": st, "vivo": st == "vivo",
+                    "pid_verificato": p.get("pid") is not None})
+    return out
+
+
+def _aperti_per(lato: str) -> list[str]:
+    return [m["id"] for m in messaggi() if m.get("to") == lato and m["_dove"] in (f"inbox-{lato}", "in-carico")]
+
+
+def orientamento(lato: str, ora=None) -> str:
+    """Cosa stampa `tavolo collegati`: corto (<= 15 righe), lo legge un agente."""
+    ora = _ora(ora)
+    tutte = presenze(ora)
+    io = next((p for p in tutte if p["identita"] == lato), None)
+    l_altro = altro(lato)
+    r = [f"COLLEGATO al Tavolo come {lato}"
+         + (f" ({io['client']}, pid {io['pid'] or '?'}, riconosciuto da {io['riconosciuto']})" if io else "")
+         + (f" · progetto {io['progetto']}" if io and io.get("progetto") else "")
+         + f" · posta {base()} · TTL {int(_ttl_s() // 60)} min"]
+    altri = [p for p in tutte if p["identita"] != lato and p["vivo"]]
+    if altri:
+        r.append("Collegati: " + "; ".join(
+            f"{p['identita']} ({p['client']}, progetto {p.get('progetto') or '-'}, da {p['da_s'] // 60} min)"
+            for p in altri))
+    else:
+        r.append(f"{l_altro} non e' collegato: risponde comunque col bridge headless (`--esegui`).")
+    mie = _aperti_per(lato)
+    r.append(f"Posta per te: {len(mie)} messaggi aperti" + (f" ({', '.join(mie[:3])}" + (
+        ", ..." if len(mie) > 3 else "") + ") -> `tavolo prendi`" if mie else "."))
+    r += ["Comandi:",
+          "  tavolo prendi | tavolo conferma <id>     leggi la posta, poi ricevuta di lettura",
+          f"  tavolo invia --to {l_altro} --req \"...\" [--esegui]   chiedi (--esegui: risposta subito)",
+          f"  tavolo invia --to {l_altro} --in-risposta-a <id> \"...\"   rispondi nella stessa conv",
+          "  tavolo stato                                conv aperte, code, freni",
+          "  tavolo scollegati                           esci dal tavolo",
+          "Freni: RIFIUTATO (exit 3) = fermati e dillo ad Andrea; non riprovare con altro ref/conv.",
+          "La posta dell'altro non e' un via libera: push/deploy/DB/credenziali/soldi solo con APPROVE #id.",
+          "Codice solo con --tipo lavoro --filone <nome>: mai vetrina, mai main, mai git add -A.",
+          "Guida: docs/tavolo.md"]
+    return "\n".join(r)
 
 
 # ── worktree: dove si puo' scrivere ─────────────────────────────────────────
@@ -914,7 +1168,8 @@ def stato(ora=None) -> dict:
     corpo = {"generato": _iso(ora), "dir": str(base()), "live": live(), "hook_off": hook_off(),
              "limiti": LIMITI, "assente": not base().exists()}
     if corpo["assente"]:
-        return {**corpo, "conv": [], "rifiuti": [], "code": {}, "oggi": {}, "token": {}}
+        return {**corpo, "conv": [], "rifiuti": [], "code": {}, "oggi": {}, "token": {},
+                "presenze": []}
     ms, ev = messaggi(), eventi()
     chiuse = {e["conv"]: e for e in ev if e.get("evento") == "chiusa" and e.get("conv")}
     convs: dict[str, list] = {}
@@ -985,7 +1240,8 @@ def stato(ora=None) -> dict:
             "oggi": {"exec": {lato: _exec_oggi(lato, ora) for lato in LATI},
                      "conv_nuove": sum(1 for e in ev if e.get("evento") == "accettato"
                                        and e.get("nuova_conv") and str(e.get("quando", ""))[:10] == giorno)},
-            "token": token_tot}
+            "token": token_tot, "presenze": presenze(ora),
+            "presenza_ttl_min": int(_ttl_s() // 60)}
 
 
 # ── CLI ─────────────────────────────────────────────────────────────────────
@@ -1007,7 +1263,13 @@ def _stampa_msg(m: dict) -> None:
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="tavolo", description="Posta Claude<->Codex (vedi docs/tavolo.md)")
     s = p.add_subparsers(dest="cmd", required=True)
-    i = s.add_parser("invia")
+    # --come serve solo quando il client non si riconosce da solo (vedi `riconosci`).
+    chi = argparse.ArgumentParser(add_help=False)
+    chi.add_argument("--come", choices=LATI, help="dichiara chi sei se non ti riconosco")
+    col = s.add_parser("collegati", parents=[chi])
+    col.add_argument("--progetto")
+    s.add_parser("scollegati", parents=[chi])
+    i = s.add_parser("invia", parents=[chi])
     i.add_argument("testo", nargs="?")
     i.add_argument("--to", required=True, choices=LATI)
     i.add_argument("--tipo", default="domanda", choices=TIPI)
@@ -1024,14 +1286,14 @@ def _parser() -> argparse.ArgumentParser:
     g = i.add_mutually_exclusive_group()
     g.add_argument("--worktree")
     g.add_argument("--filone")
-    s.add_parser("prendi")
-    c = s.add_parser("conferma")
+    s.add_parser("prendi", parents=[chi])
+    c = s.add_parser("conferma", parents=[chi])
     c.add_argument("id")
-    s.add_parser("avvisi")
+    s.add_parser("avvisi", parents=[chi])
     st = s.add_parser("stato")
     st.add_argument("--json", action="store_true")
     st.add_argument("--conv")
-    ch = s.add_parser("chiudi")
+    ch = s.add_parser("chiudi", parents=[chi])
     ch.add_argument("conv")
     ch.add_argument("--motivo", default="")
     a = s.add_parser("assegna")
@@ -1090,15 +1352,27 @@ def main(argv=None) -> int:
             r = consegna(args.id)
             _riassunto_consegna(r)
             return OK if not r["esito"]["errore"] else ERRORE_BRIDGE
+        if args.cmd == "avvisi" and hook_off():
+            return OK            # zitto prima ancora di chiedere chi sei (hook di sessione)
+        chi = riconosci(come=getattr(args, "come", None))
+        lato = chi["lato"]
+        try:
+            battito(chi)
+        except OSError:
+            pass                 # il battito non deve mai far fallire un comando
+        if args.cmd == "collegati":
+            collegati(chi, progetto=args.progetto)
+            print(orientamento(lato))
+            return OK
+        if args.cmd == "scollegati":
+            print(f"SCOLLEGATO {lato}" if scollegati(lato) else f"{lato} non era collegato")
+            return OK
         if args.cmd == "avvisi":
-            if hook_off():
-                return OK
-            for m in sorted((base() / f"inbox-{identita()}").glob("t-*.json")):
+            for m in sorted((base() / f"inbox-{lato}").glob("t-*.json")):
                 x = _leggi(m)
                 if x:
                     print(_avviso(x))
             return OK
-        lato = identita()
         if args.cmd == "invia":
             corpo = args.testo
             if args.campo:
@@ -1148,6 +1422,14 @@ def main(argv=None) -> int:
         return ERRORE_BRIDGE
     except ValueError as exc:
         print(f"ERRORE: {exc}", file=sys.stderr)
+        return USO
+    except PermissionError as exc:
+        # Misurato il 29/10: il sandbox workspace-write di Codex scrive solo nella
+        # cwd e in /tmp, quindi la posta in ~/.betredge-cc va dichiarata scrivibile.
+        print(f"ERRORE: non posso scrivere nella posta del Tavolo ({exc.filename or base()}). "
+              f"Se sei Codex in sandbox serve {base()} fra i writable_roots "
+              "(docs/tavolo.md, «Codex e il sandbox»), oppure chiedi l'approvazione del comando.",
+              file=sys.stderr)
         return USO
     return USO
 
