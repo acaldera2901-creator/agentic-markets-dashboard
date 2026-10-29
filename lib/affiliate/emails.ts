@@ -217,3 +217,44 @@ export function payoutCancelledEmail(opts: { lang: string | null | undefined; am
   const t = PAYOUT[lang];
   return build(lang, t.subjCancelled, [t.cancelled(fmtUsd(opts.amountUsd, lang)), t.contact(ACCOUNT_CONTACT_EMAIL)]);
 }
+
+// ── Avviso operatori: wallet inserito / cambiato / rimosso (#AFF-WALLET-ALERT) ──
+// Interno, solo in italiano. Indirizzo SEMPRE mascherato: l'intero si legge
+// (owner) nella scheda del backoffice linkata.
+
+export type WalletOpsAction = "added" | "changed" | "removed";
+
+const OPS_ACTION: Record<WalletOpsAction, string> = {
+  added: "ha inserito un wallet",
+  changed: "ha cambiato il wallet",
+  removed: "ha rimosso il wallet",
+};
+
+const escHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+export function walletOpsAlertEmail(opts: {
+  affiliateId: number;
+  code: string;
+  action: WalletOpsAction;
+  addressMasked: string | null;
+  coin?: string;
+  network?: string;
+  usableAfterISO: string | null;
+  cancelledPayouts: number;
+  boUrl: string;
+}): Mail {
+  const link = `${opts.boUrl}/affiliate-program/${opts.affiliateId}`;
+  const subject = `[Affiliati] ${opts.code} ${OPS_ACTION[opts.action]}`;
+  const lines = [`L'affiliato ${opts.code} (id ${opts.affiliateId}) ${OPS_ACTION[opts.action]}.`];
+  if (opts.action !== "removed") {
+    lines.push(`Wallet: ${opts.addressMasked ?? "—"} · ${opts.coin ?? "—"} · ${opts.network ?? "—"}.`);
+    lines.push(`Utilizzabile dal ${opts.usableAfterISO ? fmtDate(opts.usableAfterISO, "it") : "—"}. Screening da fare dal backoffice.`);
+  }
+  if (opts.cancelledPayouts > 0) lines.push(`Payout in preparazione annullati: ${opts.cancelledPayouts}.`);
+  lines.push(`Scheda nel backoffice: ${link}`);
+  const html = brandedShell(
+    brandHeading(escHtml(subject)) + lines.map((l) => brandText(escHtml(l))).join(""),
+    { lang: "it" },
+  );
+  return { subject, html, text: lines.join("\n\n"), replyTo: ACCOUNT_CONTACT_EMAIL };
+}
