@@ -1,0 +1,125 @@
+/* components/news/news.css (#NEWS-FOTMOB-PROD-1026) — the FotMob notes in the
+   three places they live, in the language of the site that is already there:
+   the --am-* tokens (dark navy / light paper), --am-font-ui (Plex under the
+   classic flag, Manrope outside), radius 12/8/4, the 4-px spacing scale, the
+   technical label of design-system.css (11 px, tracked, muted-2). No border
+   around anything: a slab is a tone of background and space (REGOLE-CLASSIC).
+   Lime is not used here: on these screens it already belongs to the banner
+   CTA (board) and to the eyebrow (blog), and the news must not read as a call.
+
+   ── A · the News section of /blog ───────────────────────────────────────── */
+.nw { margin: 0 0 var(--am-s-7, 48px); font-family: var(--am-font-ui); scroll-margin-top: 88px; /* the fixed top bar, when /blog#news lands here */ }
+.nw-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--am-s-1) var(--am-s-4);
+  margin-bottom: var(--am-s-4);
+}
+.nw-h { margin: 0; font-size: 24px; line-height: 1.1; font-weight: 700; letter-spacing: -0.01em; color: var(--am-text); }
+.nw-updated { margin: 0; font-size: 13px; line-height: 1.4; color: var(--am-muted); font-variant-numeric: tabular-nums; }
+.nw-tz { color: var(--am-muted-2); }
+.nw-state {
+  margin: 0; padding: var(--am-s-4) var(--am-s-5);
+  border-radius: var(--am-r-card); background: var(--am-inset);
+  font-size: 14px; line-height: 1.55; color: var(--am-muted);
+}
+.nw-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--am-s-2); }
+.nw-item {
+  display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--am-s-4);
+  padding: var(--am-s-4) var(--am-s-5);
+  border-radius: var(--am-r-card); background: var(--am-panel);
+}
+/* our picture for the kind of story: 16:9, the small radius of the system, no
+   shadow; on the phone it goes first, full width, above the text. The hairline
+   ring is the chip tone of the slab (two of the seven pictures are as dark as
+   the navy at thumbnail size — art direction 26/10): a tone, not a frame. */
+.nw, .brc-news, .mds-news { --nw-ring: rgba(255, 255, 255, 0.1); }
+:root[data-theme="light"] :is(.nw, .brc-news, .mds-news) { --nw-ring: rgba(20, 23, 28, 0.1); }
+.nw-item[data-img] { grid-template-columns: 72px 168px minmax(0, 1fr); }
+.nw-thumb { display: block; width: 168px; aspect-ratio: 16 / 9; border-radius: var(--am-r-card-sm); overflow: hidden; background: var(--am-inset); box-shadow: inset 0 0 0 1px var(--nw-ring); }
+.nw-thumb, .brc-news__thumb, .mds-news__img { isolation: isolate; }
+
+/* ── the composed picture (NewsArt): photo · club tint · real crests ─────────
+   The photo fills the box; the tint is the club colour(s) over it (left =
+   first club, right = second); each crest sits on a dark pill in a lower
+   corner so it reads on any colour. Sizes are fixed per variant: no CLS. */
+.nwa { position: relative; display: block; width: 100%; height: 100%; isolation: isolate; }
+.nwa-img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.nwa-tint { position: absolute; inset: 0; pointer-events: none; }
+.nwa-badge {
+  position: absolute; bottom: 6px; display: grid; place-items: center;
+  border-radius: var(--am-r-ctl); background: rgba(5, 15, 34, 0.78); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.nwa-badge > img { display: block; object-fit: contain; }
+.nwa-badge[data-side="l"] { left: 6px; }
+.nwa-badge[data-side="r"] { right: 6px; }
+.nwa[data-variant="strip"] .nwa-badge { bottom: 3px; border-radius: 4px; }
+.nwa[data-variant="strip"] .nwa-badge[data-side="l"] { left: 3px; }
+.nwa[data-variant="strip"] .nwa-badge[data-side="r"] { right: 3px; }
+.nwa[data-variant="card"] .nwa-badge { bottom: 10px; border-radius: var(--am-r-card-sm); }
+.nwa[data-variant="card"] .nwa-badge[data-side="l"] { left: 10px; }
+.nwa[data-variant="card"] .nwa-badge[data-side="r"] { right: 10px; }
+.nw-when { display: grid; align-content: start; gap: 2px; padding-top: 1px; }
+.nw-time { font-size: 15px; font-weight: 700; line-height: 1.2; color: var(--am-text); font-variant-numeric: tabular-nums; }
+.nw-ago { font-size: 12px; line-height: 1.3; color: var(--am-muted-2); }
+.nw-note { display: grid; gap: var(--am-s-1); min-width: 0; }
+/* the technical label of the system (design-system.css .br-label), written
+   here so the blog does not depend on the desk's sheet */
+.nw-lab { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.2; color: var(--am-muted-2); }
+.nw-en { letter-spacing: 0.04em; text-transform: none; }
+.nw-title { margin: 0; font-size: 16px; line-height: 1.3; font-weight: 700; letter-spacing: -0.005em; color: var(--am-text); text-wrap: pretty; }
+.nw-text { margin: 0; font-size: 14px; line-height: 1.55; color: var(--am-muted); max-width: 64ch; }
+.nw-board { margin: 2px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--am-s-1) var(--am-s-3); font-size: 13.5px; line-height: 1.4; }
+.nw-board a { color: var(--am-royal-t); font-weight: 600; text-decoration: none; }
+.nw-board a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nw-takedown { margin: var(--am-s-4) 0 0; font-size: 12.5px; line-height: 1.5; color: var(--am-muted-2); }
+.nw :is(a):focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; border-radius: 2px; }
+@media (max-width: 640px) {
+  .nw-item, .nw-item[data-img] { grid-template-columns: 1fr; gap: var(--am-s-2); padding: var(--am-s-4); }
+  .nw-thumb { order: -1; width: 100%; margin-bottom: var(--am-s-1); }
+  .nw-when { grid-auto-flow: column; justify-content: start; align-items: baseline; gap: var(--am-s-2); }
+  .nw-h { font-size: 22px; }
+}
+
+/* ── B · «Latest news» on the board (between the banners and the tabs) ───── */
+.brc-news {
+  display: grid; gap: var(--am-s-3);
+  padding: var(--am-s-3) var(--am-s-4);
+  border-radius: var(--am-r-card); background: var(--am-panel-2);
+  font-family: var(--am-font-ui);
+}
+.brc-news__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--am-s-1) var(--am-s-3); min-width: 0; }
+.brc-news__h { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted); }
+.brc-news__upd { font-size: 11px; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
+.brc-news__all { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--am-royal-t); text-decoration: none; white-space: nowrap; }
+.brc-news__all:hover { text-decoration: underline; text-underline-offset: 3px; }
+.brc-news__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--am-s-4); }
+.brc-news__item { display: grid; gap: 2px; min-width: 0; align-content: start; }
+/* the small picture of the strip: 64 × 36, the control radius, two rows tall */
+.brc-news__item[data-img] { grid-template-columns: 64px minmax(0, 1fr); column-gap: var(--am-s-3); }
+.brc-news__thumb { grid-row: 1 / span 2; display: block; width: 64px; aspect-ratio: 16 / 9; border-radius: var(--am-r-ctl); overflow: hidden; background: var(--am-inset); align-self: start; margin-top: 2px; box-shadow: inset 0 0 0 1px var(--nw-ring); }
+.brc-news__when { display: flex; align-items: baseline; gap: var(--am-s-2); font-size: 12px; line-height: 1.3; }
+.brc-news__when > time { font-weight: 700; color: var(--am-text); font-variant-numeric: tabular-nums; }
+.brc-news__t {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font-size: 13.5px; font-weight: 600; line-height: 1.35; color: var(--am-text); text-wrap: pretty;
+}
+.brc-news__link { text-decoration: none; color: inherit; }
+.brc-news__link:hover .brc-news__t { text-decoration: underline; text-underline-offset: 3px; }
+.brc-news__link:focus-visible { outline: 2px solid var(--am-royal-t); outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 900px) { .brc-news__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .brc-news__item:nth-child(3) { display: none; } }
+@media (max-width: 640px) {
+  .brc-news { padding: var(--am-s-3); }
+  .brc-news__list { grid-template-columns: 1fr; gap: var(--am-s-3); }
+  .brc-news__item:nth-child(3) { display: grid; }
+  .brc-news__upd { display: none; }
+}
+
+/* ── C · the News card of the match sheet (with the other br-md__sec) ─────── */
+.mds-news { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--am-s-3); }
+.mds-news__item { display: grid; gap: 3px; padding: var(--am-s-3) var(--am-s-4); border-radius: var(--am-r-card-sm); background: var(--am-inset); }
+.mds-news__img { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--am-r-card-sm); overflow: hidden; background: var(--am-panel); margin-bottom: var(--am-s-2); box-shadow: inset 0 0 0 1px var(--nw-ring); }
+.mds-news__when { display: flex; align-items: baseline; gap: var(--am-s-2); font-family: var(--am-font-ui); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--am-muted-2); }
+.mds-news__when > time { font-weight: 700; color: var(--am-text); letter-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.mds-news__ago { letter-spacing: 0.02em; text-transform: none; }
+.mds-news__t { margin: 0; font-family: var(--am-font-ui); font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--am-text); text-wrap: pretty; }
+.mds-news__b { margin: 0; font-family: var(--am-font-ui); font-size: 13.5px; line-height: 1.5; color: var(--am-muted); }
+.mds-news__meta { margin: 2px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--am-s-1) var(--am-s-3); font-family: var(--am-font-ui); font-size: 12px; line-height: 1.4; color: var(--am-muted-2); }

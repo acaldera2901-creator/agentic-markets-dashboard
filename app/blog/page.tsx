@@ -11,6 +11,9 @@ import { listPublishedPosts, formatPostDate } from "@/lib/blog";
 // e non aveva footer. Le guide spiegano i conti che i calcolatori fanno.
 import { SiteFooter } from "@/components/SiteFooter";
 import ClassicChrome from "@/components/classic/ClassicChrome";
+// #NEWS-FOTMOB-PROD-1026 — the rewritten FotMob notes above the guides. Off
+// (NEWS_FOTMOB_ENABLED unset) it renders nothing and this page stays ISR.
+import { NewsSection } from "@/components/news/NewsSection";
 
 export const revalidate = 600;
 
@@ -51,6 +54,8 @@ export default async function BlogIndexPage() {
           and{" "}
           <Link href="/ai-tennis-predictions" className="underline" style={{ color: "var(--am-text)" }}>AI tennis predictions</Link>.
         </p>
+
+        <NewsSection />
 
         {posts.length === 0 && (
           <p className="mb-4">No articles published yet. Check back soon.</p>
