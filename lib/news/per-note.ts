@@ -1,27 +1,33 @@
 // lib/news/per-note.ts (#NEWS-FOTMOB-PROD-1026) — the picture made FOR one
-// note (art direction, from the note's own text; never a FotMob image), looked
-// up by the FotMob id of the note's source URL. Files under /public/images/news
-// as news-<fotmobId>-<slug>.webp with a .png beside it for <picture>. A note
-// with no picture of its own falls back to the picture of its kind
-// (lib/news/kind.ts). Pure.
+// note (art direction, from the note's own text; never the source's image).
+// The file name is opaque: news-<sha256(source id)[:12]>.webp with a .png
+// beside it for <picture>, under /public/images/news — a public image URL
+// never carries the source's id. The hash lives in per-note.server.ts
+// (node:crypto, server only); this file is pure and safe for the browser:
+// the id out of a URL, the list of delivered pictures, the lookup by name.
+// A note with no picture of its own falls back to the picture of its kind
+// (lib/news/kind.ts).
 import type { NewsImage } from "./kind";
-import type { NewsCard } from "./table";
 
 /** The per-note picture: the webp, its png fallback, the fixed size. */
 export type NoteImage = NewsImage & { png: string };
 
 const SIZE = { width: 1200, height: 675 } as const;
-const file = (name: string): NoteImage => ({ src: `/images/news/${name}.webp`, png: `/images/news/${name}.png`, ...SIZE });
 
-/** FotMob id → picture. Added by hand, one line per delivered picture. */
-export const NOTE_IMAGES: Readonly<Record<string, NoteImage>> = {
-  "1h64s2rd5exkn16klbwyxxlsns": file("news-1h64s2rd5exkn16klbwyxxlsns-bayern-unity"),
-  "4jikbwtyvot1ka7zjol4z8ww": file("news-4jikbwtyvot1ka7zjol4z8ww-miami-cincinnati-late-equaliser"),
-  "34p7x1w2mryx1d30uxb50a7qb": file("news-34p7x1w2mryx1d30uxb50a7qb-chivu-inter-no-conviction"),
-  "mb6zakc8ytax1tip7i9m9dlsx": file("news-mb6zakc8ytax1tip7i9m9dlsx-chelsea-efl-cup-exit"),
-};
+/** The stems of the pictures delivered so far (one line per picture: the hash of the source id, never the id). */
+export const NOTE_IMAGE_NAMES: ReadonlySet<string> = new Set([
+  "news-3ad88e639192", // 29/10 · Bayern unity
+  "news-d92d970f9936", // 29/10 · Miami–Cincinnati late equaliser
+  "news-85469d0dd84e", // 29/10 · Chivu/Inter no conviction
+  "news-39567f5fa699", // 29/10 · Chelsea EFL Cup exit
+]);
 
-/** The FotMob id in a source URL: «/news/<id>-slug» or «/topnews/<number>-slug»; null for anything else. */
+/** The picture with this stem, or null when none was delivered. */
+export function noteImageByName(name: string): NoteImage | null {
+  return NOTE_IMAGE_NAMES.has(name) ? { src: `/images/news/${name}.webp`, png: `/images/news/${name}.png`, ...SIZE } : null;
+}
+
+/** The source id in a note's URL: «/news/<id>-slug» or «/topnews/<number>-slug», language prefix or not; null for anything else. */
 export function fotmobIdOf(url: string): string | null {
   try {
     const u = new URL(url);
@@ -31,10 +37,4 @@ export function fotmobIdOf(url: string): string | null {
   } catch {
     return null;
   }
-}
-
-/** The picture made for this note, or null (→ the kind's picture). */
-export function noteImage(card: Pick<NewsCard, "url">): NoteImage | null {
-  const id = fotmobIdOf(card.url);
-  return id ? NOTE_IMAGES[id] ?? null : null;
 }

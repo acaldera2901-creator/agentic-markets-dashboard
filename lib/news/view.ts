@@ -6,7 +6,7 @@
 import { noteBadges, type ClubBadge } from "./clubs";
 import { fillNews, newsCopy, type NewsCopy } from "./copy";
 import { dedupeKinds, newsImage, newsKind, type NewsImage, type NewsKind } from "./kind";
-import { noteImage, type NoteImage } from "./per-note";
+import type { NoteImage } from "./per-note";
 import { matchTeams } from "./teams";
 import type { NewsCard, NewsFeed } from "./table";
 
@@ -20,14 +20,16 @@ export type WireCard = { guid: string; t: number; note: NewsCard["note"]; teams:
 export type WireFeed = Exclude<NewsFeed, { state: "ok" }> | { state: "ok"; updatedAt: number; cards: WireCard[] };
 export type AnyCard = NewsCard | WireCard;
 
-export const wireCard = (c: NewsCard): WireCard => ({ guid: c.guid, t: c.t, note: c.note, teams: c.teams, image: noteImage(c) });
+/** `own` = the picture made for a data card (lib/news/per-note.server.ts noteImage; server only, so it is passed in). */
+export const wireCard = (c: NewsCard, own: (c: NewsCard) => NoteImage | null): WireCard => ({ guid: c.guid, t: c.t, note: c.note, teams: c.teams, image: own(c) });
 
-export function wireFeed(feed: NewsFeed): WireFeed {
-  return feed.state === "ok" ? { state: "ok", updatedAt: feed.updatedAt, cards: feed.cards.map(wireCard) } : feed;
+export function wireFeed(feed: NewsFeed, own: (c: NewsCard) => NoteImage | null): WireFeed {
+  return feed.state === "ok" ? { state: "ok", updatedAt: feed.updatedAt, cards: feed.cards.map((c) => wireCard(c, own)) } : feed;
 }
 
 /** The picture made for this note, whichever side of the wire the card is on. */
-const ownImage = (c: AnyCard): NoteImage | null => ("image" in c ? c.image : noteImage(c));
+/** Only a wire card carries its own picture: a data card is resolved at the wire (wireFeed), never here. */
+const ownImage = (c: AnyCard): NoteImage | null => ("image" in c ? c.image : null);
 
 export const ROME_TZ = "Europe/Rome";
 
