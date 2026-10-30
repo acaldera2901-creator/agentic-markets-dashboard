@@ -42,7 +42,8 @@ function setup(o: { gptimg?: string; hf?: string; check?: string; daily?: number
 }
 const job = (n = 0) => ({ base: `news-t${n}`, prompt: "CUT-OUT card", attempts: 0, expected: "" });
 
-describe("image-gen · Higgsfield fallback", () => {
+// needs macOS sips and its Desktop Pictures: skipped on the Linux CI runner
+describe.skipIf(process.platform !== "darwin")("image-gen · Higgsfield fallback", () => {
   it("gptimg out of credits → one Higgsfield call, card ok, marked final, logged with credits and counters", async () => {
     const s = setup({});
     const a = await makeImage(job(), s.opts);
