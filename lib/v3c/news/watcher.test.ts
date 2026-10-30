@@ -368,7 +368,7 @@ describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IM
       if (fail) throw new Error("storage http 503");
       return `https://cdn.example/${j.base}.webp`;
     });
-    const make = vi.fn(okMake);
+    const make = vi.fn((j: ImageJob) => okMake(j)); // vitest 4: vi.fn(aMock) shares the call count of aMock
     const s = freshState();
     const rep = await runCycle(s, deps({ db, images: { make, publish } }), { maxRewrites: 1 });
     expect(rep.images).toMatchObject({ made: 1, published: 0, pending: 1 });
