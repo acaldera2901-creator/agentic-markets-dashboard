@@ -17,6 +17,8 @@ type Picture = NewsImage & { own?: true; png?: string };
 export type NewsArtVariant = "thumb" | "strip" | "card";
 
 const CREST_PX: Record<NewsArtVariant, number> = { thumb: 32, strip: 24, card: 56 };
+/** On a note's own picture (card art) the crest sits in the top corner next to the word or figure: one step smaller than on a photo, so it never covers the «5», a head or a digit. */
+const CREST_PX_OWN: Record<NewsArtVariant, number> = { thumb: 24, strip: 20, card: 48 };
 
 /** The club colour that tints: the shirt, unless it is (near) white — then the second colour, so a white shirt does not wash the photo out. */
 export function tintOf(colors: readonly [string, string] | null): string | null {
@@ -44,7 +46,7 @@ export function tintGradient(badges: readonly ClubBadge[]): string | null {
 export function NewsArt({ image, badges, variant, className, sizes }: { image: Picture | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string }) {
   if (!image) return null;
   const tint = tintGradient(badges);
-  const px = CREST_PX[variant];
+  const px = (image.own ? CREST_PX_OWN : CREST_PX)[variant];
   const shown = badges.filter((b) => b.crest).slice(0, 2);
   return (
     <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined} data-own={image.own ? "" : undefined}>
