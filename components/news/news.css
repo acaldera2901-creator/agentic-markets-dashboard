@@ -87,6 +87,9 @@
   .nw-thumb { order: -1; width: 100%; margin-bottom: var(--am-s-1); }
   .nw-when { grid-auto-flow: column; justify-content: start; align-items: baseline; gap: var(--am-s-2); }
   .nw-h { font-size: 22px; }
+  /* on the phone the top bar wraps to two rows (109 px at 390, not 60):
+     88 px put the title under the buttons — QA 30/10 */
+  .nw { scroll-margin-top: 136px; }
 }
 
 /* ── B · «Latest news» on the board (between the banners and the tabs) ───── */
