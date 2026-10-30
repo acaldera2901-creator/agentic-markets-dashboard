@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  TEMPLATE, not installed (#REDESIGN-V3C newswatch). Install only after APPROVE of
+  Andrea: docs/redesign/news-watcher-proposal.md §4. Everything it runs lives OUTSIDE
+  ~/Desktop (TCC: a LaunchAgent cannot read ~/Desktop — lesson 2026-07-25).
+  No secret in this file: the service role key is in news-watcher/.env (chmod 600).
+  #NEWSWATCH-2: a TEMPLATE with __INTERVAL_S__ — render it with
+  `scripts/news_watcher/render-launchd.sh 180|300 <outdir>` (interval and the
+  NEWS_WATCHER_INTERVAL_S the run window reads are then the same number).
+  The card flags (NEWS_WATCHER_IMAGES, NEWS_WATCHER_IMAGE_PUBLISH) live ONLY in
+  news-watcher/.env: a variable set here would win over the .env (process.loadEnvFile
+  never overrides), so the switch must not be duplicated in the plist.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.betredge.news-watcher</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/calde/.nvm/versions/node/v24.14.0/bin/node</string>
+        <string>/Users/calde/Library/Application Support/news-watcher/news-watcher.mjs</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/calde/Library/Application Support/news-watcher</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/calde/.local/bin:/Users/calde/.nvm/versions/node/v24.14.0/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>NEWS_WATCHER_INTERVAL_S</key>
+        <string>__INTERVAL_S__</string>
+    </dict>
+    <key>StartInterval</key>
+    <integer>__INTERVAL_S__</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/calde/Library/Application Support/news-watcher/watcher.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/calde/Library/Application Support/news-watcher/watcher.err.log</string>
+</dict>
+</plist>
