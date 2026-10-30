@@ -250,11 +250,16 @@ export function storagePublisher(url: string, key: string, bucket: string, f: ty
 }
 
 /** Retention: delete published cards by public URL (one call, at most 100 names); a URL outside the bucket is ignored. */
+/** The approved neutral cards (no text) in the bucket: a note whose own card is refused or late goes out with one, never the stock picture. */
+export const NEUTRAL_CARDS = ["news-00000000000a", "news-00000000000b", "news-00000000000c"]; // d (black boot on navy) refused at review 30/10
+export const neutralCard = (url: string, bucket: string) => (hash: string): string =>
+  `${url.replace(/\/+$/, "")}/storage/v1/object/public/${bucket}/${NEUTRAL_CARDS[parseInt(hash.slice(0, 8), 16) % NEUTRAL_CARDS.length]}.webp`;
+
 export function storageRemover(url: string, key: string, bucket: string, f: typeof fetch = fetch): (urls: string[]) => Promise<void> {
   const base = url.replace(/\/+$/, "");
   const prefix = `${base}/storage/v1/object/public/${bucket}/`;
   return async (urls) => {
-    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}\.webp$/.test(n)).slice(0, 100);
+    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}\.webp$/.test(n) && !NEUTRAL_CARDS.includes(n.slice(0, -5))).slice(0, 100); // the neutral set is shared, never retired
     if (!names.length) return;
     const r = await f(`${base}/storage/v1/object/${bucket}`, {
       method: "DELETE",

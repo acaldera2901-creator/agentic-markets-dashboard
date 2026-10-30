@@ -23,7 +23,7 @@ import { rowFor, type NewsItemRow, type NewsStateRow } from "./table";
 import { words } from "./rewrite";
 import type { RewriteOutcome } from "./claude-cli";
 import { imageBase, MAX_IMAGE_ATTEMPTS, protagonist, protagonistTint, sceneKind } from "./image";
-import { cardPrompt, cardText, cardTint, expectedText, pickCard, tooSimilar, WINDOW, type CardSpec, type LedgerRow } from "./card";
+import { cardPrompt, cardText, cardTint, expectedText, pickCard, tooSimilar, WINDOW, type CardSpec, type LedgerRow, hasQuote } from "./card";
 import type { ImageAttempt, ImageFiles } from "./image-gen";
 import type { NoteText } from "./rewrite";
 
@@ -47,7 +47,7 @@ export const RETENTION_DAYS = 30;
 type Kind = "page" | "rss";
 export type Queued = { item: FeedItem; hash: string; attempts: number; row?: NewsItemRow };
 /** A card to make for a note already written (#NEWSWATCH-2-IMG). Built from OUR note (EN), never the original. */
-export type ImageJob = { hash: string; base: string; note: NoteText; teams: string[]; attempts: number; at: number; card?: CardSpec; files?: ImageFiles; lastError?: string };
+export type ImageJob = { hash: string; base: string; note: NoteText; teams: string[]; attempts: number; at: number; card?: CardSpec; files?: ImageFiles; lastError?: string; row?: NewsItemRow };
 /** Worst case of one picture attempt (gptimg + post + check): an attempt starts only if it fits the run window. */
 export const IMAGE_ATTEMPT_MS = 150_000;
 
@@ -100,7 +100,13 @@ export type ImageDeps = {
   publish?: (job: ImageJob, files: ImageFiles) => Promise<string>;
   /** delete published files by their public URL (retention: 30 days, with the row) */
   remove?: (urls: string[]) => Promise<void>;
+  /** hold the row out of news_items until its card is published, at most HOLD_MS (#NEWSWATCH-QUALITY) */
+  holdRows?: boolean;
+  /** the public URL of an approved neutral card (no text), for a note whose own card was finally refused or late */
+  neutral?: (hash: string) => string;
 };
+/** 3 runs of 5 min: after this a held note goes out with a neutral approved card, never the old stock picture. */
+export const HOLD_MS = 15 * 60_000;
 
 export type Deps = {
   now: () => number;
@@ -289,13 +295,15 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
   const rows = s.queue.filter((q) => q.row).map((q) => q.row!);
   if (rows.length) {
     try {
-      await d.db.insert(rows);
-      rep.written = rows.length;
-      // the note is out with the picture of its kind; its own picture follows, never before
+      const hold = (r: NewsItemRow) => !!(d.images?.holdRows && d.images.publish && imageBase(r.source_url));
+      const now_ = rows.filter((r) => !hold(r));
+      if (now_.length) await d.db.insert(now_);
+      rep.written = now_.length;
+      // held rows wait in the state file for their card (or a neutral one after HOLD_MS); the others get theirs later
       if (d.images)
         for (const r of rows) {
           const base = imageBase(r.source_url);
-          if (base) (s.images ??= []).push({ hash: r.guid_hash, base, note: r.rewritten_en, teams: r.teams, attempts: 0, at: now });
+          if (base) (s.images ??= []).push({ hash: r.guid_hash, base, note: r.rewritten_en, teams: r.teams, attempts: 0, at: now, ...(hold(r) ? { row: r } : {}) });
         }
       for (const q of s.queue) if (q.row) done(q);
       s.queue = s.queue.filter((q) => !q.row);
@@ -345,11 +353,33 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
   const jobs = (s.images ?? []).filter((j) => start - j.at <= MAX_AGE_MS).sort((a, b) => b.at - a.at);
   const keep: ImageJob[] = [];
   let stop = false;
+  /** Out with this picture: a held row is inserted with it, a written row gets its image_url. */
+  const release = async (j: ImageJob, url: string): Promise<void> => {
+    if (j.row) await d.db.insert([{ ...j.row, image_url: url } as NewsItemRow]);
+    else if (d.db.attachImage) await d.db.attachImage(j.hash, url);
+    else throw new Error("db has no attachImage");
+  };
+  const neutral = async (j: ImageJob, why: string): Promise<boolean> => {
+    const url = img.neutral?.(j.hash);
+    if (!url) return !j.row; // no neutral set: a written row keeps its stock picture, a held row keeps waiting
+    try {
+      await release(j, url);
+      st.published++;
+      d.log(`image neutral ${j.base} (${why}) → ${url}`);
+      return true;
+    } catch (e) {
+      rep.errors.push(`image neutral ${j.base}: ${String(e).slice(0, 120)}`);
+      return false;
+    }
+  };
   for (const j of jobs) {
+    if (j.row && !j.files && start - j.at >= HOLD_MS) {
+      if (await neutral(j, "no card in time")) continue;
+    }
     if (!j.files && !stop) {
       if (d.now() - start + IMAGE_ATTEMPT_MS > windowMs) stop = true;
       else {
-        if (!j.card) j.card = pickCard(j.hash, sceneKind(j.note), cardText(j.note), cardTint(protagonistTint(j.note, j.teams), j.hash), protagonist(j.note, j.teams), s.cards ?? []);
+        if (!j.card) j.card = pickCard(j.hash, sceneKind(j.note), cardText(j.note), cardTint(protagonistTint(j.note, j.teams), j.hash), protagonist(j.note, j.teams), s.cards ?? [], hasQuote(j.note));
         const card = j.card;
         const a = await img.make({ base: j.base, prompt: cardPrompt(card), attempts: j.attempts, expected: expectedText(card.text), mood: card.mood });
         const dup = a.kind === "ok" ? tooSimilar(a.sig, s.cards ?? []) : null;
@@ -371,7 +401,9 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
           if (a.final) j.attempts = MAX_IMAGE_ATTEMPTS; // Higgsfield: one call per note, never a retry
           if (j.attempts >= MAX_IMAGE_ATTEMPTS) {
             st.fallback++;
-            d.log(`image fallback ${j.base}: ${MAX_IMAGE_ATTEMPTS} attempts refused — the note keeps the picture of its kind`);
+            d.log(`image fallback ${j.base}: ${MAX_IMAGE_ATTEMPTS} attempts refused`);
+            if (await neutral(j, "card refused")) continue;
+            keep.push(j);
             continue;
           }
         }
@@ -385,9 +417,8 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
     if (j.files && img.publish) {
       try {
         const url = await img.publish(j, j.files);
-        if (!d.db.attachImage) throw new Error("db has no attachImage");
         try {
-          await d.db.attachImage(j.hash, url);
+          await release(j, url);
         } catch (e) {
           // the row did not take the URL: no file in the bucket without its row (republished next run)
           await img.remove?.([url]).catch((re) => d.log(`image orphan cleanup ${j.base} failed: ${String(re).slice(0, 120)}`));

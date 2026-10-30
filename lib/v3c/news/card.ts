@@ -88,7 +88,7 @@ const FOR_TEXT: Record<TextType, Format[]> = {
 export const NEUTRAL_TINTS = ["cobalt blue", "teal", "coral red", "amber"];
 export const WINDOW = 12;
 
-export type CardSpec = { format: Format; block: string; dominant: Dominant; tint: string | null; club: string | null; text: CardText; figure: string; object: string; kind?: SceneKind; mood?: string };
+export type CardSpec = { format: Format; block: string; dominant: Dominant; tint: string | null; club: string | null; text: CardText; figure: string; object: string; kind?: SceneKind; mood?: string; quoted?: boolean };
 /** One published card, as the rotation and the duplicate check remember it. */
 export type LedgerRow = { at: number; format: Format; block: string; dominant: Dominant; tint: string | null; club: string | null; dhash?: string; csig?: number[]; figure?: string };
 
@@ -130,7 +130,7 @@ export function cardKind(kind: SceneKind, text: CardText): SceneKind {
   if (w === "win" && kind === "preview") return kind; // «a win could take them top»: not won yet
   return w || kind;
 }
-const OBJECTS = ["a huge plain white football with no logo", "a huge plain black football boot with no brand marks", "a generic plain silver trophy with no engraving"];
+const OBJECTS = ["a huge classic soccer ball with clearly visible black pentagon and white hexagon panels (never a blank white circle), no logo", "a huge plain black football boot with no brand marks", "a generic plain silver trophy with no engraving"];
 
 const seed = (s: string): number => parseInt(createHash("sha256").update(s).digest("hex").slice(0, 8), 16);
 
@@ -149,7 +149,10 @@ export function violations(c: { format: Format; block: string; dominant: Dominan
 }
 
 /** Deterministic per note: start from its hash, take the first legal (format, block); else the least bad. */
-export function pickCard(guidHash: string, kind: SceneKind, text: CardText, tint: string | null, club: string | null, ledger: readonly LedgerRow[]): CardSpec {
+/** Quote marks only on a real quote: the note itself carries words in quotation marks (30/10: «“ PLAYOFF» on plain news). */
+export const hasQuote = (n: { title: string; body: string }): boolean => /[“”«»"]\s*\S[^“”«»"]{2,}[“”«»"]/.test(`${n.title} ${n.body}`);
+
+export function pickCard(guidHash: string, kind: SceneKind, text: CardText, tint: string | null, club: string | null, ledger: readonly LedgerRow[], quoted = false): CardSpec {
   const k = cardKind(kind, text);
   const figs = FIGURE[k];
   const f0 = seed(`${guidHash}:fig`) % 2;
@@ -166,7 +169,7 @@ export function pickCard(guidHash: string, kind: SceneKind, text: CardText, tint
     }
     if (v === 0) break;
   }
-  return { ...best, tint, text, kind: k, mood: MOOD[k], object: OBJECTS[seed(`${guidHash}:obj`) % OBJECTS.length] };
+  return { ...best, tint, text, kind: k, mood: MOOD[k], quoted, object: OBJECTS[seed(`${guidHash}:obj`) % OBJECTS.length] };
 }
 
 /** The tint of the card: the club's colour, else a neutral one picked by the note's hash. */
@@ -198,7 +201,8 @@ function cardPromptBase(c: CardSpec): string {
   const label = expectedText(c.text);
   const w = c.format === "number" ? c.text.words : label || undefined;
   // cut-out: the figure is NEVER the background colour (measured 30/10: red on red, unreadable) — navy and white on the club colour, as in the approved v3 preview
-  const figCut = /no people/.test(c.figure) ? `${c.figure}, in deep navy and white` : `${c.figure}, a stylised flat silhouette filled with solid deep navy #071329 with crisp white details, in a plain deep navy kit, clearly contrasting with the ${T} background (the figure is never ${T})`;
+  const navy = /navy/.test(T);
+  const figCut = navy && !/no people/.test(c.figure) ? `${c.figure}, a stylised flat silhouette filled with solid white with crisp navy details, clearly contrasting with the deep navy background` : /no people/.test(c.figure) ? `${c.figure}, in deep navy and white` : `${c.figure}, a stylised flat silhouette filled with solid deep navy #071329 with crisp white details, in a plain deep navy kit, clearly contrasting with the ${T} background (the figure is never ${T})`;
   // the pose carries the mood of the note; every element whole and inside the frame
   const moodLine = c.mood ? `. MOOD of the figure: ${c.mood}. Every word, head and hand entirely inside the frame with a clear margin (a figure may bleed off the bottom edge only)` : "";
   const chest = "framed from the chest up only (head and shoulders large in the frame)";
@@ -210,7 +214,7 @@ function cardPromptBase(c: CardSpec): string {
     case "score":
       return `SCOREBOARD card: a giant condensed white numeral reading exactly ${c.text.big} fills a solid flat ${T} block covering the ${c.block} two thirds of the frame; on the other third, on a flat deep navy block, a huge plain white round soccer ball (association football, classic panels, never an oval American football or rugby ball) with no logo, cut-out style with a hard shadow. Nothing else: no band, no box, no frame, no empty panel in the lower third. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "quote":
-      return `QUOTE card: giant white quotation marks in the upper middle, ${fig} standing on the right, the whole frame a solid flat ${T} block;${caption("in the lower third,")} No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
+      return `${c.quoted ? "QUOTE card: giant white quotation marks in the upper middle," : "STATEMENT card: no quotation marks anywhere,"} ${fig} standing on the right, the whole frame a solid flat ${T} block;${caption("in the lower third,")} No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "cutout":
       if (!w) return `CUT-OUT card: ${figCut}, large, ${chest}, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame, a few bold flat geometric shapes in deep navy behind it. Dominant accent: ${T}. ${CARD_STYLE_NO_TEXT}`;
       return `CUT-OUT card: ${figCut}, ${chest}, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame${moodLine}; across the lower third a wide white band bordered by a thin hairline with condensed ${T} uppercase text reading exactly ${w}. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;

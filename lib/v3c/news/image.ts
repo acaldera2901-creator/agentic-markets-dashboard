@@ -23,7 +23,7 @@ const SIGNALS: [SceneKind, RegExp][] = [
   ["lineup", /\bnames? (his |a |the )?squad|\bsquad for\b|line-?up|call(ed)?[- ]up|\bnamed in\b|starting xi/i],
   ["award", /\baward|ballon|player of the|\btrophy|\bnominat|honou?r/i],
   ["exit", /\bexit|knocked out|eliminat|on penalties|bows? out|crash(es)? out|\bout of the\b/i],
-  ["preview", /\bahead of\b|\bpreview\b|\bset to (face|meet|host|play)\b|\bwill (face|meet|host|play)\b|\bupcoming\b|\bclash with\b|\bthis weekend\b|\bcould (take|move|go|send|lift)\b|\bhop(e|es|ing) to\b|\baim(s|ing)? to\b/i],
+  ["preview", /\bahead of\b|\bpreview\b|\bset to (face|meet|host|play)\b|\bwill (face|meet|host|play)\b|\bupcoming\b|\bclash with\b|\bthis weekend\b|\bcould (take|move|go|send|lift)\b|\bhop(e|es|ing) to\b|\baim(s|ing)? to\b|\bon (monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i],
   ["late", /equalis|equaliz|\bdraw|\bdrew\b|\blevel\b|late goal|late winner|rescues?\b|\ba point\b/i],
   ["unity", /\breach(es|ed)?\b|advance|qualif|unity|together|spirit|into the (last|quarter|semi|final)/i],
   // a defeat is never a celebration (30/10: «DEFEAT» card with raised fists, \bdefeat was in «win»)
@@ -93,7 +93,11 @@ export function protagonist(note: NoteText, teams: readonly string[]): string | 
 export function protagonistTint(note: NoteText, teams: readonly string[]): string | null {
   const p = protagonist(note, teams);
   const hex = p ? clubHex(p) : null;
-  return hex ? colourName(hex) : null;
+  if (!hex) return null;
+  // a white/cream club (Tottenham, Real Madrid, Fulham): a white block on a white card is no block — its navy secondary instead
+  const n = parseInt(hex.replace("#", ""), 16);
+  if (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 215) return "deep navy";
+  return colourName(hex);
 }
 
 // ─── the file name ───────────────────────────────────────────────────────────

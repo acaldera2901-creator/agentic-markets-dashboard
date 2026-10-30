@@ -2,7 +2,7 @@
 // against the six notes art direction did by hand on 29/10
 // (preview-news-prod/2026-10-29-stile-v3-inspo/README.md §4).
 import { describe, expect, it } from "vitest";
-import { cardPrompt, cardText, colourDist, expectedText, fits, hamming, pickCard, tooSimilar, violations, WINDOW, type LedgerRow } from "./card";
+import { cardPrompt, cardText, colourDist, expectedText, fits, hamming, hasQuote, pickCard, tooSimilar, violations, WINDOW, type LedgerRow } from "./card";
 import { sceneKind } from "./image";
 import { words } from "./rewrite";
 
@@ -65,7 +65,7 @@ describe("card · the rotation («never two alike»)", () => {
     const order = ["bayern", "miami", "chelsea", "bournemouth", "juventus", "burnley"] as const;
     for (const k of order) {
       const n = NOTES[k];
-      const c = pickCard(k, sceneKind(n), cardText(n), "red", k, ledger);
+      const c = pickCard(k, sceneKind(n), cardText(n), "red", k, ledger, hasQuote(n));
       const prev = ledger.at(-1);
       if (prev) {
         expect(c.format).not.toBe(prev.format);
@@ -166,5 +166,24 @@ describe("mood and composition (#NEWSWATCH-QUALITY)", () => {
     const ledger = [{ at: 1, format: a.format, block: a.block, dominant: a.dominant, tint: a.tint, club: a.club, figure: a.figure }];
     const b = pick("aaaa", "win", { type: "none" }, "navy", "Tottenham", ledger);
     expect(b.figure).not.toBe(a.figure);
+  });
+});
+
+describe("quality 2 (#NEWSWATCH-QUALITY)", () => {
+  it("quotation marks only when the note quotes someone", () => {
+    const q = (title: string) => cardPrompt(pickCard("ab12", "coach", { type: "word", words: "PLAYOFF" }, "red", null, [], hasQuote({ title, body: "" })));
+    const quoteFmt = (title: string) => pickCard("ab12", "coach", { type: "word", words: "PLAYOFF" }, "red", null, [], hasQuote({ title, body: "" }));
+    expect(hasQuote({ title: "Flick: “we were not good enough”", body: "" })).toBe(true);
+    expect(hasQuote({ title: "Atletico eye the playoff", body: "" })).toBe(false);
+    if (quoteFmt("Atletico eye the playoff").format === "quote") expect(q("Atletico eye the playoff")).toMatch(/no quotation marks anywhere/);
+  });
+  it("the ball is a recognisable soccer ball, never a blank white circle", () => {
+    for (const h of ["a1", "b2", "c3", "d4", "e5", "f6"]) expect(pickCard(h, "other", { type: "none" }, "red", null, []).object).not.toMatch(/plain white football/);
+  });
+  it("a white club gets its navy secondary as the colour block, with a white figure on the cut-out", async () => {
+    const { protagonistTint } = await import("./image");
+    expect(protagonistTint({ title: "Tottenham beat Palace", body: "" }, ["Tottenham Hotspur"])).toBe("deep navy");
+    const c = { ...pickCard("ab12", "win", { type: "none" }, "deep navy", "Tottenham", []), format: "cutout" as const };
+    expect(cardPrompt(c)).toMatch(/filled with solid white/);
   });
 });

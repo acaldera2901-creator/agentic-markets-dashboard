@@ -25,7 +25,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { rewriteWithClaude } from "../../lib/v3c/news/claude-cli";
-import { makeImage, storagePublisher, storageRemover } from "../../lib/v3c/news/image-gen";
+import { makeImage, neutralCard, storagePublisher, storageRemover } from "../../lib/v3c/news/image-gen";
 import { freshState, runCycle, type ImageDeps, type StatePatch, type WatcherDb, type WatcherState } from "../../lib/v3c/news/watcher";
 import type { NewsItemRow } from "../../lib/v3c/news/table";
 
@@ -179,6 +179,8 @@ async function main(): Promise<number> {
         const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
         images.publish = storagePublisher(sbUrl, sbKey, bucket);
         images.remove = storageRemover(sbUrl, sbKey, bucket);
+        images.neutral = neutralCard(sbUrl, bucket);
+        images.holdRows = process.env.NEWS_WATCHER_HOLD_ROWS !== "0"; // a note enters /api/news with its card (or a neutral one after 15 min)
       }
     }
   }
