@@ -170,10 +170,10 @@ export async function imageSignature(png: string, tmpDir: string): Promise<Image
 }
 
 /** The visual check on the finished png: `claude -p` with the Read tool only, in the image's folder; the text read is compared with `expected`. */
-export async function checkImage(png: string, expected: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">): Promise<{ ok: true; textSeen: string } | { ok: false; reason: string; limit?: boolean }> {
+export async function checkImage(png: string, expected: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">, mood?: string): Promise<{ ok: true; textSeen: string } | { ok: false; reason: string; limit?: boolean }> {
   const args = claudeArgs(opts.checkModel ?? IMAGE_CHECK_MODEL, IMAGE_CHECK_SCHEMA, IMAGE_CHECK_PROMPT);
   args[args.indexOf("--tools") + 1] = "Read";
-  const r = await runClaude(args, `Image file: ${basename(png)}\nExpected text: ${expected ? `«${expected}»` : "none (the card must show no text at all)"}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
+  const r = await runClaude(args, `Image file: ${basename(png)}\nExpected text: ${expected ? `«${expected}»` : "none (the card must show no text at all)"}${mood ? `\nMood of the note: ${mood}` : ""}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
   if ("fail" in r) return { ok: false, reason: `check: ${r.fail}` };
   const e = readEnvelope(r.out, r.err, r.code, r.ms);
   if (!e.ok) return { ok: false, reason: `check: ${e.outcome.reason}`.slice(0, 200), limit: e.outcome.kind === "limit" };
@@ -186,7 +186,7 @@ export async function checkImage(png: string, expected: string, opts: Pick<Image
 }
 
 /** One attempt: generate, post-produce, check. Never throws. */
-export async function makeImage(job: { base: string; prompt: string; attempts: number; expected: string }, o: ImageGenOpts): Promise<ImageAttempt> {
+export async function makeImage(job: { base: string; prompt: string; attempts: number; expected: string; mood?: string }, o: ImageGenOpts): Promise<ImageAttempt> {
   const t0 = Date.now();
   const rawDir = join(o.dir, "_raw");
   const rejDir = join(o.dir, "_rejected");
@@ -216,7 +216,7 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
   } else if (g.code !== 0 || !existsSync(raw)) return { kind: "bad", reason: `gptimg exit ${g.code}: ${tail(g.err)}`, ms: Date.now() - t0 };
   const files = await postProcess(raw, job.base, o.dir, o.cwebp);
   if ("error" in files) return { kind: "bad", reason: files.error, ms: Date.now() - t0, final: viaHf };
-  const c = await checkImage(files.png, job.expected, o);
+  const c = await checkImage(files.png, job.expected, o, job.mood);
   if (c.ok) {
     const sig = await imageSignature(files.png, rawDir);
     if (sig) return { kind: "ok", files, ms: Date.now() - t0, sig, textSeen: c.textSeen, final: viaHf };
@@ -250,11 +250,16 @@ export function storagePublisher(url: string, key: string, bucket: string, f: ty
 }
 
 /** Retention: delete published cards by public URL (one call, at most 100 names); a URL outside the bucket is ignored. */
+/** The approved neutral cards (no text) in the bucket: a note whose own card is refused or late goes out with one, never the stock picture. */
+export const NEUTRAL_CARDS = ["news-00000000000a", "news-00000000000b", "news-00000000000c"]; // d (black boot on navy) refused at review 30/10
+export const neutralCard = (url: string, bucket: string) => (hash: string): string =>
+  `${url.replace(/\/+$/, "")}/storage/v1/object/public/${bucket}/${NEUTRAL_CARDS[parseInt(hash.slice(0, 8), 16) % NEUTRAL_CARDS.length]}.webp`;
+
 export function storageRemover(url: string, key: string, bucket: string, f: typeof fetch = fetch): (urls: string[]) => Promise<void> {
   const base = url.replace(/\/+$/, "");
   const prefix = `${base}/storage/v1/object/public/${bucket}/`;
   return async (urls) => {
-    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}\.webp$/.test(n)).slice(0, 100);
+    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}\.webp$/.test(n) && !NEUTRAL_CARDS.includes(n.slice(0, -5))).slice(0, 100); // the neutral set is shared, never retired
     if (!names.length) return;
     const r = await f(`${base}/storage/v1/object/${bucket}`, {
       method: "DELETE",
