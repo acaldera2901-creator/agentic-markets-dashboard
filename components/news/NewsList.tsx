@@ -45,7 +45,7 @@ export function NewsList({ feed }: { feed: WireFeed }) {
                 </div>
                 {r.image && (
                   <span className="nw-thumb">
-                    <NewsArt image={r.image} badges={r.badges} variant="thumb" sizes="(max-width: 640px) calc(100vw - 64px), 168px" />
+                    <NewsArt image={r.image} kind={r.kind} badges={r.badges} variant="thumb" sizes="(max-width: 640px) calc(100vw - 64px), 168px" />
                   </span>
                 )}
                 <div className="nw-note">
