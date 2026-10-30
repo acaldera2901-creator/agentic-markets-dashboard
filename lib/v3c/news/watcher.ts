@@ -96,7 +96,7 @@ export interface WatcherDb {
 
 /** The pictures (#NEWSWATCH-2): absent = off (the default). `publish` absent = files stay on the Mac. */
 export type ImageDeps = {
-  make: (job: { base: string; prompt: string; attempts: number; expected: string }) => Promise<ImageAttempt>;
+  make: (job: { base: string; prompt: string; attempts: number; expected: string; mood?: string }) => Promise<ImageAttempt>;
   publish?: (job: ImageJob, files: ImageFiles) => Promise<string>;
   /** delete published files by their public URL (retention: 30 days, with the row) */
   remove?: (urls: string[]) => Promise<void>;
@@ -351,12 +351,12 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
       else {
         if (!j.card) j.card = pickCard(j.hash, sceneKind(j.note), cardText(j.note), cardTint(protagonistTint(j.note, j.teams), j.hash), protagonist(j.note, j.teams), s.cards ?? []);
         const card = j.card;
-        const a = await img.make({ base: j.base, prompt: cardPrompt(card), attempts: j.attempts, expected: expectedText(card.text) });
+        const a = await img.make({ base: j.base, prompt: cardPrompt(card), attempts: j.attempts, expected: expectedText(card.text), mood: card.mood });
         const dup = a.kind === "ok" ? tooSimilar(a.sig, s.cards ?? []) : null;
         if (a.kind === "ok" && !dup) {
           j.files = a.files;
           st.made++;
-          (s.cards ??= []).push({ at: d.now(), format: card.format, block: card.block, dominant: card.dominant, tint: card.tint, club: card.club, dhash: a.sig.dhash, csig: a.sig.csig });
+          (s.cards ??= []).push({ at: d.now(), format: card.format, block: card.block, dominant: card.dominant, tint: card.tint, club: card.club, dhash: a.sig.dhash, csig: a.sig.csig, figure: card.figure });
           s.cards = s.cards.slice(-WINDOW);
           d.log(`image ok ${j.base} · ${card.format}/${card.block} · ${card.tint ?? "navy"} · text «${expectedText(card.text)}» · attempt ${j.attempts + 1} · ${a.ms} ms · webp ${Math.round(a.files.webpBytes / 1024)} KB`);
         } else if (a.kind === "limit") {

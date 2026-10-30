@@ -14,19 +14,22 @@ export const IMAGE_SIZE = { width: 1200, height: 675 } as const;
 /** The webp served to the site stays under this (art direction: < 150 KB). */
 export const MAX_WEBP_BYTES = 150 * 1024;
 
-export type SceneKind = "injury" | "transfer" | "lineup" | "award" | "exit" | "late" | "unity" | "coach" | "win" | "other";
+export type SceneKind = "injury" | "transfer" | "lineup" | "award" | "exit" | "late" | "unity" | "coach" | "win" | "loss" | "preview" | "other";
 
 /** Signal → scene, first match wins (order matters: an exit «on penalties» is not a draw). */
 const SIGNALS: [SceneKind, RegExp][] = [
   ["injury", /\binjur|hamstring|knock\b|ruled out|sidelined|stretcher|surgery/i],
-  ["transfer", /\btransfer|\bsign(s|ed|ing)?\b|\bloan\b|\bjoins?\b|contract|move to|\bbid\b/i],
+  ["transfer", /\btransfer|\bsign(s|ed|ing)?\b|\bloan\b|\bjoins?\b|contract|move to\b|\bbid\b/i],
   ["lineup", /\bnames? (his |a |the )?squad|\bsquad for\b|line-?up|call(ed)?[- ]up|\bnamed in\b|starting xi/i],
   ["award", /\baward|ballon|player of the|\btrophy|\bnominat|honou?r/i],
   ["exit", /\bexit|knocked out|eliminat|on penalties|bows? out|crash(es)? out|\bout of the\b/i],
+  ["preview", /\bahead of\b|\bpreview\b|\bset to (face|meet|host|play)\b|\bwill (face|meet|host|play)\b|\bupcoming\b|\bclash with\b|\bthis weekend\b|\bcould (take|move|go|send|lift)\b|\bhop(e|es|ing) to\b|\baim(s|ing)? to\b/i],
   ["late", /equalis|equaliz|\bdraw|\bdrew\b|\blevel\b|late goal|late winner|rescues?\b|\ba point\b/i],
   ["unity", /\breach(es|ed)?\b|advance|qualif|unity|together|spirit|into the (last|quarter|semi|final)/i],
+  // a defeat is never a celebration (30/10: «DEFEAT» card with raised fists, \bdefeat was in «win»)
+  ["loss", /\bdefeat(s|ed)?\b|\blost\b|\bloses?\b|\blosing\b|\bbeaten\b|\bloss(es)?\b|setback|slump|disappoint|\bwoes?\b/i],
   ["coach", /concede|admit|insist|stress|\bsays?\b|\bsaid\b|prais|blame|accept|proud|warn|hail|laud/i],
-  ["win", /\bbeat|\bwin\b|\bwins\b|\bwon\b|victory|thrash|\bdefeat/i],
+  ["win", /\bbeat|\bwin\b|\bwins\b|\bwon\b|victory|thrash/i],
 ];
 
 export function sceneKind(note: NoteText): SceneKind {
@@ -132,7 +135,9 @@ Refuse the card (ok: false) and list the problem if ANY of these is true:
 - a club crest, a sponsor, shirt numbers or names, a striped or two-tone shirt;
 - a betting symbol, money or odds;
 - an empty band, box or frame that looks like a placeholder for missing text;
-- lines, marks or shapes in the top-left or top-right corner (both must be plain background, badges go there).
+- lines, marks or shapes in the top-left or top-right corner (both must be plain background, badges go there);
+- the pose or mood of the figures contradicts the «Mood of the note» given in the message (e.g. raised arms or fists, celebrating, on a defeat, an exit or an injury);
+- a word, a head or a hand cut off by the edge of the image or squeezed outside a safe margin (a figure bleeding off the BOTTOM edge from the waist or knees down is the house style, not a problem).
 - a ball that is not an association-football (soccer) ball: an oval American football, a rugby ball, or any other sport's ball;
 - any text or number other than the expected text: a score, date, name, minute or digit that the note does not give.
 

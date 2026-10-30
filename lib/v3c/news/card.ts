@@ -88,27 +88,53 @@ const FOR_TEXT: Record<TextType, Format[]> = {
 export const NEUTRAL_TINTS = ["cobalt blue", "teal", "coral red", "amber"];
 export const WINDOW = 12;
 
-export type CardSpec = { format: Format; block: string; dominant: Dominant; tint: string | null; club: string | null; text: CardText; figure: string; object: string };
+export type CardSpec = { format: Format; block: string; dominant: Dominant; tint: string | null; club: string | null; text: CardText; figure: string; object: string; kind?: SceneKind; mood?: string };
 /** One published card, as the rotation and the duplicate check remember it. */
-export type LedgerRow = { at: number; format: Format; block: string; dominant: Dominant; tint: string | null; club: string | null; dhash?: string; csig?: number[] };
+export type LedgerRow = { at: number; format: Format; block: string; dominant: Dominant; tint: string | null; club: string | null; dhash?: string; csig?: number[]; figure?: string };
 
-const FIGURE: Record<SceneKind, string> = {
-  unity: "four footballers huddled together, seen from behind",
-  late: "a footballer celebrating with both arms raised, seen from behind",
-  win: "two footballers celebrating together, seen from behind",
-  coach: "a head coach in a long plain coat with arms folded",
-  exit: "a footballer walking away with head lowered, seen from behind",
-  injury: "a footballer kneeling on the grass holding his knee, seen from the side",
-  transfer: "a footballer walking with a plain holdall bag over his shoulder, seen from behind",
-  lineup: "a row of plain shirts hanging on hooks, no people",
-  award: "a generic plain trophy with no engraving, no people",
-  other: "a footballer standing with a ball under his arm, seen from behind",
+/** Two poses per scene: two notes of the same kind in a row never get the same composition (30/10: Arsenal and Tottenham, same hug). */
+const FIGURE: Record<SceneKind, [string, string]> = {
+  unity: ["four footballers huddled together, seen from behind", "a line of three footballers standing shoulder to shoulder, seen from behind"],
+  late: ["a footballer celebrating with both arms raised, seen from behind", "a footballer sliding on his knees in celebration, seen from the side"],
+  win: ["two footballers celebrating together, seen from behind", "a single footballer punching the air with one fist, seen from the side"],
+  loss: ["a footballer standing with head bowed and hands on his hips, seen from behind", "a footballer crouching with his head down and forearms on his knees, seen from the side"],
+  preview: ["a footballer standing ready with one foot on a ball, looking ahead, seen from behind", "two footballers walking out side by side towards the pitch, seen from behind"],
+  coach: ["a head coach in a long plain coat with arms folded", "a head coach in a long plain coat pointing forward, seen from the side"],
+  exit: ["a footballer walking away with head lowered, seen from behind", "a footballer sitting on the grass with head in his hands, seen from the side"],
+  injury: ["a footballer kneeling on the grass holding his knee, seen from the side", "a footballer limping off with one arm over a teammate's shoulder, seen from behind"],
+  transfer: ["a footballer walking with a plain holdall bag over his shoulder, seen from behind", "a footballer standing calmly holding up a plain blank shirt, seen from behind"],
+  lineup: ["a row of plain shirts hanging on hooks, no people", "a plain tactics board with magnets on it, no people"],
+  award: ["a generic plain trophy with no engraving, no people", "a generic plain medal on a ribbon, no people"],
+  other: ["a footballer standing with a ball under his arm, seen from behind", "a footballer jogging with a ball at his feet, seen from the side"],
 };
+/** The mood the pose and the word must share; the visual check gets it too. */
+export const MOOD: Record<SceneKind, string> = {
+  win: "joyful celebration",
+  late: "joyful celebration",
+  unity: "together, determined",
+  loss: "dejected or neutral — NEVER celebrating, no raised arms or fists",
+  exit: "dejected — NEVER celebrating, no raised arms or fists",
+  injury: "concerned — NEVER celebrating, no raised arms or fists",
+  preview: "anticipation, calm and focused — not celebrating yet",
+  transfer: "neutral and calm — no celebration",
+  coach: "neutral and serious — no celebration",
+  lineup: "neutral",
+  award: "neutral",
+  other: "neutral and calm — no celebration",
+};
+/** The card's word decides the mood when it has one: «DEFEAT» is never drawn as a win. */
+const WORD_KIND: Record<string, SceneKind> = { DEFEAT: "loss", LOSS: "loss", WIN: "win", VICTORY: "win", WINNER: "win", EXIT: "exit", INJURY: "injury", INJURED: "injury", LOAN: "transfer" };
+export function cardKind(kind: SceneKind, text: CardText): SceneKind {
+  const last = text.words?.split(" ").at(-1);
+  const w = last ? WORD_KIND[last] : undefined;
+  if (w === "win" && kind === "preview") return kind; // «a win could take them top»: not won yet
+  return w || kind;
+}
 const OBJECTS = ["a huge plain white football with no logo", "a huge plain black football boot with no brand marks", "a generic plain silver trophy with no engraving"];
 
 const seed = (s: string): number => parseInt(createHash("sha256").update(s).digest("hex").slice(0, 8), 16);
 
-export function violations(c: { format: Format; block: string; dominant: Dominant; club: string | null; tint: string | null }, ledger: readonly LedgerRow[]): string[] {
+export function violations(c: { format: Format; block: string; dominant: Dominant; club: string | null; tint: string | null; figure?: string }, ledger: readonly LedgerRow[]): string[] {
   const recent = ledger.slice(-WINDOW);
   const out: string[] = [];
   const last = recent.at(-1);
@@ -117,13 +143,18 @@ export function violations(c: { format: Format; block: string; dominant: Dominan
   if (recent.some((r) => r.format === c.format && r.block === c.block)) out.push("same format+block in window");
   // on flat cards the colour block is what the eye sees: same format + same tint = the same card
   if (recent.some((r) => r.format === c.format && r.tint === c.tint)) out.push("same format+tint in window");
+  // the composition: the same pose in the last 3 cards reads as the same picture whatever the colour
+  if (c.figure && recent.slice(-3).some((r) => r.figure === c.figure)) out.push("same figure in the last 3");
   return out;
 }
 
 /** Deterministic per note: start from its hash, take the first legal (format, block); else the least bad. */
 export function pickCard(guidHash: string, kind: SceneKind, text: CardText, tint: string | null, club: string | null, ledger: readonly LedgerRow[]): CardSpec {
-  const cands = FOR_TEXT[text.type].flatMap((f) => FORMATS[f].blocks.map((b) => ({ format: f, block: b, dominant: FORMATS[f].dominant, club, tint })));
-  const start = seed(guidHash) % cands.length;
+  const k = cardKind(kind, text);
+  const figs = FIGURE[k];
+  const f0 = seed(`${guidHash}:fig`) % 2;
+  const cands = [figs[f0], figs[1 - f0]].flatMap((figure) => FOR_TEXT[text.type].flatMap((f) => FORMATS[f].blocks.map((b) => ({ format: f, block: b, dominant: FORMATS[f].dominant, club, tint, figure }))));
+  const start = seed(guidHash) % (cands.length / 2); // the note's own pose first, the other only if needed
   let best = cands[start];
   let bestV = Infinity;
   for (let k = 0; k < cands.length; k++) {
@@ -135,7 +166,7 @@ export function pickCard(guidHash: string, kind: SceneKind, text: CardText, tint
     }
     if (v === 0) break;
   }
-  return { ...best, tint, text, figure: FIGURE[kind], object: OBJECTS[seed(`${guidHash}:obj`) % OBJECTS.length] };
+  return { ...best, tint, text, kind: k, mood: MOOD[k], object: OBJECTS[seed(`${guidHash}:obj`) % OBJECTS.length] };
 }
 
 /** The tint of the card: the club's colour, else a neutral one picked by the note's hash. */
@@ -156,6 +187,11 @@ export const CARD_STYLE_NO_TEXT = CARD_STYLE.replace("condensed white uppercase 
 );
 
 export function cardPrompt(c: CardSpec): string {
+  const p = cardPromptBase(c);
+  return c.mood && !p.includes("MOOD of the figure") ? `${p} MOOD of the figure: ${c.mood}. Every word, head and hand entirely inside the frame with a clear margin (a figure may bleed off the bottom edge only).` : p;
+}
+
+function cardPromptBase(c: CardSpec): string {
   const T = c.tint ?? "cobalt blue";
   const other = c.block === "left" ? "right" : "left";
   const fig = /no people/.test(c.figure) ? `${c.figure}, in ${T}` : `${c.figure}, a stylised flat silhouette filled with solid colour, in plain ${T} kit`;
@@ -163,6 +199,8 @@ export function cardPrompt(c: CardSpec): string {
   const w = c.format === "number" ? c.text.words : label || undefined;
   // cut-out: the figure is NEVER the background colour (measured 30/10: red on red, unreadable) — navy and white on the club colour, as in the approved v3 preview
   const figCut = /no people/.test(c.figure) ? `${c.figure}, in deep navy and white` : `${c.figure}, a stylised flat silhouette filled with solid deep navy #071329 with crisp white details, in a plain deep navy kit, clearly contrasting with the ${T} background (the figure is never ${T})`;
+  // the pose carries the mood of the note; every element whole and inside the frame
+  const moodLine = c.mood ? `. MOOD of the figure: ${c.mood}. Every word, head and hand entirely inside the frame with a clear margin (a figure may bleed off the bottom edge only)` : "";
   const chest = "framed from the chest up only (head and shoulders large in the frame)";
   const caption = (where: string) => (w ? ` ${where} large condensed white uppercase text reading exactly ${w}, with a thin white hairline frame around it.` : ` No text at all.`);
   switch (c.format) {
@@ -175,7 +213,7 @@ export function cardPrompt(c: CardSpec): string {
       return `QUOTE card: giant white quotation marks in the upper middle, ${fig} standing on the right, the whole frame a solid flat ${T} block;${caption("in the lower third,")} No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "cutout":
       if (!w) return `CUT-OUT card: ${figCut}, large, ${chest}, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame, a few bold flat geometric shapes in deep navy behind it. Dominant accent: ${T}. ${CARD_STYLE_NO_TEXT}`;
-      return `CUT-OUT card: ${figCut}, ${chest}, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame; across the lower third a wide white band bordered by a thin hairline with condensed ${T} uppercase text reading exactly ${w}. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
+      return `CUT-OUT card: ${figCut}, ${chest}, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame${moodLine}; across the lower third a wide white band bordered by a thin hairline with condensed ${T} uppercase text reading exactly ${w}. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "number":
       return `BIG NUMBER card: a giant condensed white numeral ${c.text.big} fills the ${c.block} half of the frame on a solid flat ${T} block; on the ${other} half, ${c.object}, cut-out flat illustration with a hard shadow on a pale cream background;${caption("in the lower third,")} No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "band":

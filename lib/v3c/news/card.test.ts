@@ -145,3 +145,26 @@ describe("card · after the first dry-run (29/10): no empty placeholders, no nav
     expect(cardTint(null, "h")).toBe(cardTint(null, "h"));
   });
 });
+
+describe("mood and composition (#NEWSWATCH-QUALITY)", () => {
+  it("the mood follows the outcome: defeat never celebrates, win celebrates, transfer neutral, preview anticipation", async () => {
+    const { sceneKind } = await import("./image");
+    const { pickCard: pick, cardPrompt: prompt } = await import("./card");
+    const p = (title: string, words?: string) => prompt(pick("ab12", sceneKind({ title, body: "" }), words ? { type: "word", words } : { type: "none" }, "red", "Arsenal", []));
+    expect(p("Arsenal suffer first defeat of the season", "DEFEAT")).toMatch(/NEVER celebrating, no raised arms or fists/);
+    expect(p("Arsenal beat Chelsea", "WIN")).toMatch(/MOOD of the figure: joyful celebration/);
+    expect(p("Pulisic signs new contract")).toMatch(/neutral and calm — no celebration/);
+    expect(p("Arsenal set to face Spurs this weekend")).toMatch(/anticipation/);
+  });
+  it("the card's word wins over the scene: DEFEAT on a note that also says «win» is drawn as a loss", async () => {
+    const { pickCard: pick } = await import("./card");
+    expect(pick("ab12", "win", { type: "word", words: "DEFEAT" }, "red", null, []).mood).toMatch(/NEVER celebrating/);
+  });
+  it("two notes of the same kind in a row never get the same pose", async () => {
+    const { pickCard: pick } = await import("./card");
+    const a = pick("aaaa", "win", { type: "none" }, "red", "Arsenal", []);
+    const ledger = [{ at: 1, format: a.format, block: a.block, dominant: a.dominant, tint: a.tint, club: a.club, figure: a.figure }];
+    const b = pick("aaaa", "win", { type: "none" }, "navy", "Tottenham", ledger);
+    expect(b.figure).not.toBe(a.figure);
+  });
+});
