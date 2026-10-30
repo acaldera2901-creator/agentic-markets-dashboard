@@ -23,7 +23,7 @@ const SIGNALS: [SceneKind, RegExp][] = [
   ["lineup", /\bnames? (his |a |the )?squad|\bsquad for\b|line-?up|call(ed)?[- ]up|\bnamed in\b|starting xi/i],
   ["award", /\baward|ballon|player of the|\btrophy|\bnominat|honou?r/i],
   ["exit", /\bexit|knocked out|eliminat|on penalties|bows? out|crash(es)? out|\bout of the\b/i],
-  ["preview", /\bahead of\b|\bpreview\b|\bset to (face|meet|host|play)\b|\bwill (face|meet|host|play)\b|\bupcoming\b|\bclash with\b|\bthis weekend\b|\bcould (take|move|go|send|lift)\b|\bhop(e|es|ing) to\b|\baim(s|ing)? to\b|\bon (monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i],
+  ["preview", /\bahead of\b|\bpreview\b|\bset to (face|meet|host|play)\b|\bwill (face|meet|host|play)\b|\bupcoming\b|\bclash with\b|\bthis weekend\b|\bcould (take|move|go|send|lift)\b|\bhop(e|es|ing) to\b|\baim(s|ing)? to\b|\b(meet|meets|face|faces|host|hosts|visit|visits)\b[^.]*\bon (monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i],
   ["late", /equalis|equaliz|\bdraw|\bdrew\b|\blevel\b|late goal|late winner|rescues?\b|\ba point\b/i],
   ["unity", /\breach(es|ed)?\b|advance|qualif|unity|together|spirit|into the (last|quarter|semi|final)/i],
   // a defeat is never a celebration (30/10: «DEFEAT» card with raised fists, \bdefeat was in «win»)
