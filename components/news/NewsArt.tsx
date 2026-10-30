@@ -12,11 +12,13 @@ import Image from "next/image";
 import type { ClubBadge } from "@/lib/news/clubs";
 import type { NewsImage } from "@/lib/news/kind";
 
-type Picture = NewsImage & { png?: string };
+type Picture = NewsImage & { own?: true; png?: string };
 
 export type NewsArtVariant = "thumb" | "strip" | "card";
 
-const CREST_PX: Record<NewsArtVariant, number> = { thumb: 32, strip: 20, card: 56 };
+const CREST_PX: Record<NewsArtVariant, number> = { thumb: 32, strip: 24, card: 56 };
+/** On a note's own picture (card art) the crest sits in the top corner next to the word or figure: one step smaller than on a photo, so it never covers the «5», a head or a digit. */
+const CREST_PX_OWN: Record<NewsArtVariant, number> = { thumb: 24, strip: 20, card: 48 };
 
 /** The club colour that tints: the shirt, unless it is (near) white — then the second colour, so a white shirt does not wash the photo out. */
 export function tintOf(colors: readonly [string, string] | null): string | null {
@@ -44,15 +46,15 @@ export function tintGradient(badges: readonly ClubBadge[]): string | null {
 export function NewsArt({ image, badges, variant, className, sizes }: { image: Picture | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string }) {
   if (!image) return null;
   const tint = tintGradient(badges);
-  const px = CREST_PX[variant];
+  const px = (image.own ? CREST_PX_OWN : CREST_PX)[variant];
   const shown = badges.filter((b) => b.crest).slice(0, 2);
   return (
-    <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined} data-own={image.png ? "" : undefined}>
-      {image.png ? (
+    <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined} data-own={image.own ? "" : undefined}>
+      {image.own ? (
         <picture>
-          <source type="image/webp" srcSet={image.src} />
-          {/* eslint-disable-next-line @next/next/no-img-element -- the per-note picture ships as webp + png fallback; a <picture> is the way to offer both */}
-          <img className="nwa-img" src={image.png} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
+          {image.png && <source type="image/webp" srcSet={image.src} />}
+          {/* eslint-disable-next-line @next/next/no-img-element -- the per-note picture is a plain file (bundled webp + png fallback, or the watcher's upload on our storage): no optimiser, no remotePatterns */}
+          <img className="nwa-img" src={image.png ?? image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
         </picture>
       ) : (
         <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading="lazy" sizes={sizes} />

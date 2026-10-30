@@ -107,7 +107,7 @@ export type MdsNewsItem = {
   textLang: "en" | "it";
   english: boolean;
   /** our 16:9 picture for the kind of story (never the source's), or null */
-  image: { src: string; width: number; height: number } | null;
+  image: { src: string; width: number; height: number; own?: true; png?: string } | null;
   /** the clubs the note names: real crest (the board's map) and real colours, or null each (lib/news/clubs.ts) */
   badges: { name: string; crest: string | null; colors: readonly [string, string] | null }[];
 };

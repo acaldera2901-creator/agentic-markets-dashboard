@@ -9,8 +9,8 @@
 // (lib/news/kind.ts).
 import type { NewsImage } from "./kind";
 
-/** The per-note picture: the webp, its png fallback, the fixed size. */
-export type NoteImage = NewsImage & { png: string };
+/** The per-note picture: a local webp with its png fallback, or the watcher's public URL (#NEWSWATCH-2-IMG); `own` marks it as made for the note. */
+export type NoteImage = NewsImage & { own: true; png?: string };
 
 const SIZE = { width: 1200, height: 675 } as const;
 
@@ -24,7 +24,7 @@ export const NOTE_IMAGE_NAMES: ReadonlySet<string> = new Set([
 
 /** The picture with this stem, or null when none was delivered. */
 export function noteImageByName(name: string): NoteImage | null {
-  return NOTE_IMAGE_NAMES.has(name) ? { src: `/images/news/${name}.webp`, png: `/images/news/${name}.png`, ...SIZE } : null;
+  return NOTE_IMAGE_NAMES.has(name) ? { own: true, src: `/images/news/${name}.webp`, png: `/images/news/${name}.png`, ...SIZE } : null;
 }
 
 /** The source id in a note's URL: «/news/<id>-slug» or «/topnews/<number>-slug», language prefix or not; null for anything else. */

@@ -37,7 +37,7 @@ export function ClassicNewsStrip({ lang, football }: { lang: string; football: r
             <li key={r.key} className="brc-news__item" data-img={r.image ? "" : undefined} data-kind={r.kind}>
               {r.image && (
                 <span className="brc-news__thumb">
-                  <NewsArt image={r.image} badges={r.badges} variant="strip" sizes="64px" />
+                  <NewsArt image={r.image} badges={r.badges} variant="strip" sizes="96px" />
                 </span>
               )}
               <span className="brc-news__when">
