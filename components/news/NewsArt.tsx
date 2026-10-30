@@ -9,8 +9,9 @@
 // is the one made for the note when there is one (lib/news/per-note.ts:
 // webp with a png fallback in a <picture>), else the kind's (next/image).
 import Image from "next/image";
+import { useState } from "react";
 import type { ClubBadge } from "@/lib/news/clubs";
-import type { NewsImage } from "@/lib/news/kind";
+import { newsImage, type NewsImage, type NewsKind } from "@/lib/news/kind";
 
 type Picture = NewsImage & { own?: true; png?: string };
 
@@ -43,7 +44,10 @@ export function tintGradient(badges: readonly ClubBadge[]): string | null {
   return `linear-gradient(100deg, ${L} 0%, transparent 46%, transparent 54%, ${R} 100%)`;
 }
 
-export function NewsArt({ image, badges, variant, className, sizes }: { image: Picture | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string }) {
+export function NewsArt({ image: given, badges, variant, className, sizes, kind }: { image: Picture | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string; kind?: NewsKind }) {
+  // #NEWSWATCH-2-IMG-UI: a per-note picture that fails to load falls back to the kind's picture — never a broken image.
+  const [broken, setBroken] = useState(false);
+  const image: Picture | null = broken && given?.own ? (kind ? newsImage(kind) : null) : given;
   if (!image) return null;
   const tint = tintGradient(badges);
   const px = (image.own ? CREST_PX_OWN : CREST_PX)[variant];
@@ -54,7 +58,7 @@ export function NewsArt({ image, badges, variant, className, sizes }: { image: P
         <picture>
           {image.png && <source type="image/webp" srcSet={image.src} />}
           {/* eslint-disable-next-line @next/next/no-img-element -- the per-note picture is a plain file (bundled webp + png fallback, or the watcher's upload on our storage): no optimiser, no remotePatterns */}
-          <img className="nwa-img" src={image.png ?? image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" />
+          <img className="nwa-img" src={image.png ?? image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" onError={() => setBroken(true)} />
         </picture>
       ) : (
         <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading="lazy" sizes={sizes} />
