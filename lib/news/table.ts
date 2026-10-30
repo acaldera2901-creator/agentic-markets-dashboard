@@ -42,10 +42,12 @@ export type NewsItemRow = {
   teams: string[];
   rewrite_model: string;
   rewritten_at: string;
+  /** #NEWSWATCH-2-IMG — the picture the watcher uploaded for this note (public https URL), or null/absent */
+  image_url?: string | null;
 };
 
-/** One REWRITTEN note as the client receives it. */
-export type NewsCard = { guid: string; url: string; source: string; t: number; note: AiNote; teams: string[] };
+/** One REWRITTEN note as the data layer holds it (never sent as is: see view.ts WireCard). */
+export type NewsCard = { guid: string; url: string; source: string; t: number; note: AiNote; teams: string[]; imageUrl: string | null };
 
 /**
  * off: NEWS_FOTMOB_ENABLED unset (production today) · paused: switched off in the
@@ -96,7 +98,8 @@ export function cardFromRow(r: NewsItemRow): NewsCard | null {
   if (t == null || !en || !it || !r.guid_hash || !r.source || !httpUrl(r.source_url)) return null;
   if (typeof r.rewrite_model === "string" && r.rewrite_model.startsWith(REJECTED_PREFIX)) return null;
   const teams = Array.isArray(r.teams) ? r.teams.filter((x): x is string => typeof x === "string") : [];
-  return { guid: r.guid_hash, url: r.source_url, source: r.source, t, note: { kind: "ai", en, it, model: r.rewrite_model ?? "" }, teams };
+  const imageUrl = typeof r.image_url === "string" && /^https?:\/\//.test(r.image_url) ? r.image_url : null;
+  return { guid: r.guid_hash, url: r.source_url, source: r.source, t, note: { kind: "ai", en, it, model: r.rewrite_model ?? "" }, teams, imageUrl };
 }
 
 /** What the page shows, from the state row and the item rows. Pure. */
@@ -114,4 +117,6 @@ export function feedFromTable(state: NewsStateRow | null, rows: readonly NewsIte
 
 /** The site's two reads (SELECT only). */
 export const STATE_SQL = "SELECT enabled, last_run_at, last_error, source_status FROM news_state WHERE id = 1";
-export const ITEMS_SQL = `SELECT guid_hash, source, source_url, published_at, rewritten_en, rewritten_it, teams, rewrite_model, rewritten_at FROM news_items WHERE published_at > now() - interval '${SHOW_DAYS} days' AND rewrite_model NOT LIKE '${REJECTED_PREFIX}%' ORDER BY published_at DESC LIMIT ${MAX_ITEMS}`;
+// `image_url` is read through to_jsonb so the SELECT keeps working before the
+// additive column lands (#NEWSWATCH-2-IMG): absent column → NULL, never an error.
+export const ITEMS_SQL = `SELECT guid_hash, source, source_url, published_at, rewritten_en, rewritten_it, teams, rewrite_model, rewritten_at, to_jsonb(news_items)->>'image_url' AS image_url FROM news_items WHERE published_at > now() - interval '${SHOW_DAYS} days' AND rewrite_model NOT LIKE '${REJECTED_PREFIX}%' ORDER BY published_at DESC LIMIT ${MAX_ITEMS}`;

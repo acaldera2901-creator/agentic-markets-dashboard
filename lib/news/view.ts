@@ -16,12 +16,14 @@ import type { NewsCard, NewsFeed } from "./table";
  * the source. The picture made for the note is resolved here, server side,
  * from the URL the card keeps in the data layer.
  */
-export type WireCard = { guid: string; t: number; note: NewsCard["note"]; teams: string[]; image: NoteImage | null };
+/** The note on the wire: the two texts only — no `model` (which rewriter/prompt wrote it is server-side detail). */
+export type WireNote = Omit<NewsCard["note"], "model">;
+export type WireCard = { guid: string; t: number; note: WireNote; teams: string[]; image: NoteImage | null };
 export type WireFeed = Exclude<NewsFeed, { state: "ok" }> | { state: "ok"; updatedAt: number; cards: WireCard[] };
 export type AnyCard = NewsCard | WireCard;
 
 /** `own` = the picture made for a data card (lib/news/per-note.server.ts noteImage; server only, so it is passed in). */
-export const wireCard = (c: NewsCard, own: (c: NewsCard) => NoteImage | null): WireCard => ({ guid: c.guid, t: c.t, note: c.note, teams: c.teams, image: own(c) });
+export const wireCard = (c: NewsCard, own: (c: NewsCard) => NoteImage | null): WireCard => ({ guid: c.guid, t: c.t, note: { kind: c.note.kind, en: c.note.en, it: c.note.it }, teams: c.teams, image: own(c) });
 
 export function wireFeed(feed: NewsFeed, own: (c: NewsCard) => NoteImage | null): WireFeed {
   return feed.state === "ok" ? { state: "ok", updatedAt: feed.updatedAt, cards: feed.cards.map((c) => wireCard(c, own)) } : feed;

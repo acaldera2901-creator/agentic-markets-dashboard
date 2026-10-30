@@ -6,8 +6,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fotmobIdOf, NOTE_IMAGE_NAMES, noteImageByName } from "./per-note";
-import { noteImage, noteImageName } from "./per-note.server";
-import { cardFromRow, feedFromTable, type NewsItemRow, type NewsStateRow } from "./table";
+import { noteImage, noteImageName, uploadedImage } from "./per-note.server";
+import { cardFromRow, feedFromTable, ITEMS_SQL, type NewsItemRow, type NewsStateRow } from "./table";
 import { rowsFor, wireFeed } from "./view";
 
 const row = (guid: string, url: string, teams: string[] = []): NewsItemRow => ({
@@ -43,8 +43,8 @@ describe("noteImageName · the opaque convention the watcher follows", () => {
 
 describe("noteImage · lookup and fallback", () => {
   it("the four notes of 29/10 have their own picture; a note without one gets null", () => {
-    expect(noteImage({ url: "https://www.fotmob.com/news/34p7x1w2mryx1d30uxb50a7qb-chivu" })).toEqual({ src: "/images/news/news-85469d0dd84e.webp", png: "/images/news/news-85469d0dd84e.png", width: 1200, height: 675 });
-    expect(noteImage({ url: "https://www.fotmob.com/news/zzzz-unknown" })).toBeNull();
+    expect(noteImage({ url: "https://www.fotmob.com/news/34p7x1w2mryx1d30uxb50a7qb-chivu", imageUrl: null })).toEqual({ own: true, src: "/images/news/news-85469d0dd84e.webp", png: "/images/news/news-85469d0dd84e.png", width: 1200, height: 675 });
+    expect(noteImage({ url: "https://www.fotmob.com/news/zzzz-unknown", imageUrl: null })).toBeNull();
     expect(noteImageByName("news-000000000000")).toBeNull();
   });
   it("every listed picture exists (webp and png), is opaque and is ours", () => {
@@ -52,7 +52,7 @@ describe("noteImage · lookup and fallback", () => {
       expect(name).toMatch(/^news-[0-9a-f]{12}$/);
       const img = noteImageByName(name)!;
       expect(existsSync(join(process.cwd(), "public", img.src)), img.src).toBe(true);
-      expect(existsSync(join(process.cwd(), "public", img.png)), img.png).toBe(true);
+      expect(existsSync(join(process.cwd(), "public", img.png!)), img.png).toBe(true);
       expect(img.width / img.height).toBeCloseTo(16 / 9, 2);
     }
     expect(NOTE_IMAGE_NAMES.size).toBe(4);
@@ -73,6 +73,8 @@ describe("the wire · nothing that leaves the server points back to the source",
     expect(wire.state).toBe("ok");
     if (wire.state !== "ok") return;
     expect(Object.keys(wire.cards[0]).sort()).toEqual(["guid", "image", "note", "t", "teams"]);
+    expect(Object.keys(wire.cards[0].note).sort()).toEqual(["en", "it", "kind"]); // no `model`, no `imageUrl`
+    expect(JSON.stringify(wire)).not.toMatch(/claude|haiku|prompt|rewrite_model|imageUrl/);
     expect(wire.cards[0].image?.src).toBe("/images/news/news-85469d0dd84e.webp");
     expect(wire.cards[1].image).toBeNull();
     const json = JSON.stringify(wire);
@@ -86,5 +88,39 @@ describe("the wire · nothing that leaves the server points back to the source",
     expect(rows.map((r) => r.image?.src)).toEqual(["/images/news/news-85469d0dd84e.webp", "/news/news-01-risultato.webp", "/news/news-07-generica.webp"]);
     expect(rows[0].image && "png" in rows[0].image).toBe(true);
     expect(rowsFor(feed.state === "ok" ? feed.cards : [], "en", null).map((r) => r.image?.src)).toEqual(["/news/news-01-risultato.webp", "/news/news-07-generica.webp", "/news/news-01-risultato.webp"]);
+  });
+});
+
+describe("#NEWSWATCH-2-IMG · the watcher's uploaded picture (news_items.image_url)", () => {
+  const ORIGIN = "https://abcd1234.supabase.co";
+  const up = `${ORIGIN}/storage/v1/object/public/news-images/news-85469d0dd84e.webp`;
+  it("a URL on our own storage origin is the note's picture; anything else is ignored", () => {
+    expect(uploadedImage(up, ORIGIN)).toEqual({ own: true, src: up, width: 1200, height: 675 });
+    expect(uploadedImage("https://evil.example/news-x.webp", ORIGIN)).toBeNull();
+    expect(uploadedImage("http://abcd1234.supabase.co/storage/v1/object/public/news-images/x.webp", ORIGIN)).toBeNull(); // scheme is part of the origin
+    expect(uploadedImage(`${ORIGIN}/storage/v1/object/public/news-images/x.svg`, ORIGIN)).toBeNull(); // raster only
+    expect(uploadedImage(null, ORIGIN)).toBeNull();
+    expect(uploadedImage(up, null)).toBeNull(); // no storage configured → nothing remote
+    expect(uploadedImage("not a url", ORIGIN)).toBeNull();
+  });
+  it("the data layer keeps image_url only as an http(s) string; the SELECT reads it through to_jsonb so an absent column is NULL, not an error", () => {
+    const base = row("u", "https://www.fotmob.com/news/zzzz-x");
+    expect(cardFromRow({ ...base, image_url: up })?.imageUrl).toBe(up);
+    expect(cardFromRow({ ...base, image_url: "javascript:alert(1)" })?.imageUrl).toBeNull();
+    expect(cardFromRow({ ...base })?.imageUrl).toBeNull();
+    expect(ITEMS_SQL).toContain("to_jsonb(news_items)->>'image_url' AS image_url");
+  });
+  it("the upload wins over the bundled file; a note with neither falls back to its kind; the wire carries the upload URL only on our origin", () => {
+    const own = (c: { url: string; imageUrl: string | null }) => noteImage(c);
+    const withUpload = { ...row("a", "https://www.fotmob.com/news/34p7x1w2mryx1d30uxb50a7qb-chivu"), image_url: up };
+    const feed = feedFromTable(STATE, [withUpload, row("b", "https://www.fotmob.com/news/none-x")], NOW);
+    const prev = process.env.NEXT_PUBLIC_SUPABASE_URL; process.env.NEXT_PUBLIC_SUPABASE_URL = ORIGIN;
+    try {
+      const wire = wireFeed(feed, own);
+      if (wire.state !== "ok") throw new Error(wire.state);
+      expect(wire.cards[0].image).toEqual({ own: true, src: up, width: 1200, height: 675 });
+      expect(wire.cards[1].image).toBeNull();
+      expect(rowsFor(wire.cards, "en", null).map((r) => r.image?.src)).toEqual([up, "/news/news-01-risultato.webp"]);
+    } finally { if (prev === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL; else process.env.NEXT_PUBLIC_SUPABASE_URL = prev; }
   });
 });

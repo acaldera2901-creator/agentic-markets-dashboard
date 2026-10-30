@@ -40,8 +40,8 @@ export function pickNewsImage(title: string, summary: string): 1 | 2 | 3 | 4 | 5
   return KIND_NUMBER[best];
 }
 
-/** The kind of a note, from both its languages together. */
-export function newsKind(card: Pick<NewsCard, "note">): NewsKind {
+/** The kind of a note, from both its languages together (the texts only: a wire note without `model` is enough). */
+export function newsKind(card: { note: Pick<NewsCard["note"], "en" | "it"> }): NewsKind {
   return KIND_BY_NUMBER[pickNewsImage(`${card.note.en.title} ${card.note.it.title}`, `${card.note.en.body} ${card.note.it.body}`)];
 }
 
