@@ -256,9 +256,9 @@ describe("clausola sul rinnovo: condizionale al rail, muta se non sa", () => {
   });
 
   it("rail ricorrenti: dice che si rinnova da solo, senza 'se'", () => {
-    // plan-grant.ts distingue GIA' i due casi shopify: 'shopify' = subscription
-    // contract, 'shopify_oneoff' = 30 giorni una volta. Quindi la frase e' certa.
-    for (const src of ["shopify", "stripe"]) {
+    // Resta SOLO stripe: li' l'addebito del ciclo successivo lo esegue Stripe.
+    // #SHOPIFY-NO-BILLER-0911 ha tolto shopify da qui (vedi il test sotto).
+    for (const src of ["stripe"]) {
       const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: src });
       expect(m!.text, src).toMatch(/si rinnova da solo/i);
       expect(m!.text, src).not.toMatch(/non si rinnova/i);
@@ -270,6 +270,30 @@ describe("clausola sul rinnovo: condizionale al rail, muta se non sa", () => {
     // E' il caso che avevo trattato come ambiguo al primo giro: non lo e'.
     const m = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: "shopify_oneoff" });
     expect(m!.text).toMatch(/non si rinnova da solo/i);
+  });
+
+  // #SHOPIFY-NO-BILLER-0911 — il difetto che questo test difende: su Shopify il
+  // subscription contract NON si addebita da solo. La piattaforma lo crea al
+  // checkout e si ferma; il ciclo successivo parte solo se un'app chiama
+  // `subscriptionBillingAttemptCreate`, e nel repo quella chiamata non esiste.
+  // Promettere "si rinnova da solo: non devi fare nulla" a chi ha
+  // plan_source='shopify' era falso, e lo e' stato in tutte e 5 le lingue.
+  it("shopify carta: NON promette il rinnovo automatico, in nessuna lingua", () => {
+    for (const lang of LANGS) {
+      const shopify = renderCrm("ret_7d_before", lang, "a@b.com", { planSource: "shopify" });
+      const oneoff = renderCrm("ret_7d_before", lang, "a@b.com", { planSource: "paygate" });
+      expect(shopify, lang).not.toBeNull();
+      // stessa clausola del rail one-off: e' l'unica vera finche' non c'e' un
+      // biller. Si confronta la PRIMA RIGA (il corpo): il resto del testo porta
+      // il token di disiscrizione, che ha un nonce e cambia a ogni render.
+      const corpo = (s: string) => s.split("\n")[0];
+      expect(corpo(shopify!.text), lang).toBe(corpo(oneoff!.text));
+    }
+    const it = renderCrm("ret_7d_before", "it", "a@b.com", { planSource: "shopify" })!;
+    expect(it.text).toMatch(/non si rinnova da solo/i);
+    expect(it.text).not.toMatch(/non devi fare nulla/i);
+    const en = renderCrm("ret_7d_before", "en", "a@b.com", { planSource: "shopify" })!;
+    expect(en.text).not.toMatch(/renews itself|nothing to do/i);
   });
 
   it("sorgente assente o non-pagante: NESSUNA frase sul rinnovo", () => {
