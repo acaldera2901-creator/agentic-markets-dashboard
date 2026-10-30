@@ -36,7 +36,7 @@ export type ImageGenOpts = { dir: string; gptimg: string; cwebp: string; claudeB
 // ONLY when gptimg says «out of credits / limit». gpt_image_2 1k LOW = 0.5 credits
 // (listino 30/10: low 0.5 · medium 1 · high 3.5); 1344×752, enough for the 1200×675 crop.
 // One call per note: whatever happens (fail, refused, duplicate) the note keeps its stock picture.
-// Hard caps in a persistent ledger (hf-budget.json in the image dir), reserved BEFORE the call.
+// Caps (0 = none) in a persistent ledger (hf-budget.json in the image dir), reserved BEFORE the call.
 export const HF_CREDITS_PER_IMAGE = 0.5;
 export const HF_TIMEOUT_MS = 240_000;
 export type HfOpts = { bin: string; dailyMax: number; totalMax: number; log: (m: string) => void; fetch?: typeof fetch; now?: () => Date };
@@ -57,7 +57,8 @@ export function reserveHf(dir: string, hf: HfOpts): HfBudget | null {
   const day = (hf.now ?? (() => new Date()))().toISOString().slice(0, 10);
   const b = readBudget(file);
   if (b.day !== day) Object.assign(b, { day, dayCount: 0 });
-  if (b.dayCount >= hf.dailyMax || b.total >= hf.totalMax) {
+  // 0 = no cap (Andrea 30/10: «non diamo un limite»); the counters stay, for the log
+  if ((hf.dailyMax > 0 && b.dayCount >= hf.dailyMax) || (hf.totalMax > 0 && b.total >= hf.totalMax)) {
     hf.log(`higgsfield: cap reached (day ${b.dayCount}/${hf.dailyMax} · total ${b.total}/${hf.totalMax}) — no call, the note keeps its stock picture`);
     return null;
   }
@@ -197,7 +198,7 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
     if (!o.hf) return { kind: "limit", reason: `gptimg: ${tail(g.err || g.out)}` };
     const b = reserveHf(o.dir, o.hf);
     if (!b) return { kind: "bad", reason: "higgsfield cap reached", ms: Date.now() - t0, final: true };
-    o.hf.log(`higgsfield: gptimg out of credits → gpt_image_2 1k low for ${job.base} · ~${HF_CREDITS_PER_IMAGE} credits · day ${b.dayCount}/${o.hf.dailyMax} · total ${b.total}/${o.hf.totalMax}`);
+    o.hf.log(`higgsfield: gptimg out of credits → gpt_image_2 1k low for ${job.base} · ~${HF_CREDITS_PER_IMAGE} credits · day ${b.dayCount}/${o.hf.dailyMax || "∞"} · total ${b.total}/${o.hf.totalMax || "∞"}`);
     const h = await run(o.hf.bin, ["generate", "create", "gpt_image_2", "--prompt", job.prompt, "--aspect_ratio", "16:9", "--resolution", "1k", "--quality", "low", "--wait", "--json"], { cwd: rawDir, timeoutMs: HF_TIMEOUT_MS, env: o.env });
     const url = h.code === 0 ? (h.out.match(/https:\/\/[^"\s]+?(?<!_min)\.png/) ?? [])[0] : undefined;
     if (!url) return { kind: "bad", reason: `higgsfield exit ${h.code}${h.timedOut ? " (timeout)" : ""}: ${tail(h.err || h.out)}`, ms: Date.now() - t0, final: true };

@@ -117,6 +117,19 @@ describe("card · after the first dry-run (29/10): no empty placeholders, no nav
     expect(cardText({ title: "Brian White has 100 MLS goals", body: "His focus is on the Vancouver Whitecaps winning a title." })).toEqual({ type: "count", big: "100", words: "GOALS" });
     expect(cardText({ title: "Osorio's goal makes MLS history", body: "Jonathan Osorio scored in his most recent match." })).toEqual({ type: "word", words: "HISTORY" });
   });
+  it("score has no empty frame; cut-out figure is navy/white on the club colour, chest up", () => {
+    const base = { block: "left", dominant: "figure", tint: "red", club: null, figure: "a head coach", object: "a ball" } as const;
+    const sc = cardPrompt({ ...base, format: "score", text: { type: "score", big: "2-0" } } as never);
+    expect(sc).not.toMatch(/hairline frame runs along the lower third/);
+    expect(sc).toMatch(/round soccer ball/); // 30/10: «football» came out as an American football
+    for (const text of [{ type: "none" }, { type: "word", words: "FOCUS" }]) {
+      const p = cardPrompt({ ...base, format: "cutout", block: "full", text } as never);
+      expect(p).toMatch(/filled with solid deep navy #071329/);
+      expect(p).toMatch(/the figure is never red/);
+      expect(p).toMatch(/from the chest up only/);
+      expect(p).not.toMatch(/in plain red kit/);
+    }
+  });
   it("a card without text asks for no band, box, frame or hairline, and a split panel carries an object instead of nothing", () => {
     for (const format of ["split", "cutout"] as const) {
       const p = cardPrompt({ format, block: "right", dominant: "figure", tint: "teal", club: null, text: { type: "none" }, figure: "a footballer", object: "a huge plain white football with no logo" });

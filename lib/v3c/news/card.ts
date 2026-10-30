@@ -161,18 +161,21 @@ export function cardPrompt(c: CardSpec): string {
   const fig = /no people/.test(c.figure) ? `${c.figure}, in ${T}` : `${c.figure}, a stylised flat silhouette filled with solid colour, in plain ${T} kit`;
   const label = expectedText(c.text);
   const w = c.format === "number" ? c.text.words : label || undefined;
+  // cut-out: the figure is NEVER the background colour (measured 30/10: red on red, unreadable) — navy and white on the club colour, as in the approved v3 preview
+  const figCut = /no people/.test(c.figure) ? `${c.figure}, in deep navy and white` : `${c.figure}, a stylised flat silhouette filled with solid deep navy #071329 with crisp white details, in a plain deep navy kit, clearly contrasting with the ${T} background (the figure is never ${T})`;
+  const chest = "framed from the chest up only (head and shoulders large in the frame)";
   const caption = (where: string) => (w ? ` ${where} large condensed white uppercase text reading exactly ${w}, with a thin white hairline frame around it.` : ` No text at all.`);
   switch (c.format) {
     case "split":
       if (!w) return `SPLIT card: the ${other} half is a flat illustration of ${fig} on a pale cream background; the ${c.block} half is one solid flat ${T} panel with ${c.object} in its centre, cut-out with a hard shadow. Dominant accent: ${T}. ${CARD_STYLE_NO_TEXT}`;
       return `SPLIT card: the ${other} half is a flat illustration of ${fig} on a pale cream background; the ${c.block} half is one solid flat ${T} panel.${caption(`On the ${T} panel, in the lower third,`)} Dominant accent: ${T}. ${CARD_STYLE}`;
     case "score":
-      return `SCOREBOARD card: a giant condensed white numeral reading exactly ${c.text.big} fills a solid flat ${T} block covering the ${c.block} two thirds of the frame; on the other third, on a flat deep navy block, a huge plain white football with no logo, cut-out style with a hard shadow. A thin white hairline frame runs along the lower third, empty. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
+      return `SCOREBOARD card: a giant condensed white numeral reading exactly ${c.text.big} fills a solid flat ${T} block covering the ${c.block} two thirds of the frame; on the other third, on a flat deep navy block, a huge plain white round soccer ball (association football, classic panels, never an oval American football or rugby ball) with no logo, cut-out style with a hard shadow. Nothing else: no band, no box, no frame, no empty panel in the lower third. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "quote":
       return `QUOTE card: giant white quotation marks in the upper middle, ${fig} standing on the right, the whole frame a solid flat ${T} block;${caption("in the lower third,")} No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "cutout":
-      if (!w) return `CUT-OUT card: ${fig}, large, seen from the chest up, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame, a few bold flat geometric shapes in deep navy behind it. Dominant accent: ${T}. ${CARD_STYLE_NO_TEXT}`;
-      return `CUT-OUT card: ${fig}, seen from the chest up, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame; across the lower third a wide white band bordered by a thin hairline with condensed ${T} uppercase text reading exactly ${w}. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
+      if (!w) return `CUT-OUT card: ${figCut}, large, ${chest}, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame, a few bold flat geometric shapes in deep navy behind it. Dominant accent: ${T}. ${CARD_STYLE_NO_TEXT}`;
+      return `CUT-OUT card: ${figCut}, ${chest}, flat illustration cut out with a hard shadow on a solid flat ${T} background that fills the frame; across the lower third a wide white band bordered by a thin hairline with condensed ${T} uppercase text reading exactly ${w}. No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "number":
       return `BIG NUMBER card: a giant condensed white numeral ${c.text.big} fills the ${c.block} half of the frame on a solid flat ${T} block; on the ${other} half, ${c.object}, cut-out flat illustration with a hard shadow on a pale cream background;${caption("in the lower third,")} No other text. Dominant accent: ${T}. ${CARD_STYLE}`;
     case "band":

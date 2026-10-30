@@ -84,6 +84,12 @@ describe("image-gen · Higgsfield fallback", () => {
     expect(a.kind === "bad" && a.final && a.reason).toMatch(/cap reached/);
     expect(s.logs.at(-1)).toMatch(/cap reached \(day 2\/2 · total 2\/60\)/);
   });
+  it("0 = no cap: calls go on, the counters still log", async () => {
+    const s = setup({ daily: 0, total: 0 });
+    for (const n of [1, 2, 3]) await makeImage(job(n), s.opts);
+    expect(s.calls()).toBe(3);
+    expect(s.logs.at(-1)).toMatch(/day 3\/∞ · total 3\/∞/);
+  });
   it("total cap holds across days", async () => {
     const s = setup({ total: 1 });
     await makeImage(job(1), s.opts);

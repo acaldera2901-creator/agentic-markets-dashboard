@@ -17,7 +17,7 @@ process.loadEnvFile(join(HOME, ".env"));
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
 const credits = () => Number(/([\d.]+) credits/.exec(execFileSync("higgsfield", ["account", "status"], { encoding: "utf8" }))?.[1]);
 type Res = { guid: string; base: string; title: string; expected: string; format: string; ok: boolean; reason?: string; files?: ImageFiles; sig?: ImageSig };
-const resFile = join(OUT, "results.json");
+const resFile = join(OUT, process.env.BF_RES || "results.json");
 
 async function make(guids: string[]) {
   const news = JSON.parse(readFileSync(join(OUT, "news.json"), "utf8")).cards as { guid: string; note: { en: { title: string; body: string } }; teams: string[]; image: unknown }[];
@@ -63,7 +63,7 @@ async function publish(guids: string[]) {
     if (rows.length !== 1 || rows[0].image_url !== null) throw new Error(`${r.guid}: expected one row with image_url null, got ${JSON.stringify(rows)}`);
     rb.push({ guid_hash: r.guid, image_url: null });
   }
-  const rbFile = join(OUT, "rollback.json");
+  const rbFile = join(OUT, process.env.BF_RB || "rollback.json");
   if (existsSync(rbFile)) throw new Error("rollback.json already exists");
   writeFileSync(rbFile, JSON.stringify(rb, null, 1));
   log(`rollback saved: ${rb.length} rows → ${rbFile}`);
