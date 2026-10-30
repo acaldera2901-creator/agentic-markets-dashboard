@@ -368,6 +368,7 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
           if (a.kind === "ok") j.card = undefined; // a look-alike: pick again against the ledger
           st.failed++;
           d.log(`image refused ${j.base} · ${card.format} · attempt ${j.attempts} · ${a.ms} ms · ${j.lastError}`);
+          if (a.final) j.attempts = MAX_IMAGE_ATTEMPTS; // Higgsfield: one call per note, never a retry
           if (j.attempts >= MAX_IMAGE_ATTEMPTS) {
             st.fallback++;
             d.log(`image fallback ${j.base}: ${MAX_IMAGE_ATTEMPTS} attempts refused — the note keeps the picture of its kind`);

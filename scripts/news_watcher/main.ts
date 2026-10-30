@@ -164,6 +164,11 @@ async function main(): Promise<number> {
           gptimg: process.env.NEWS_WATCHER_GPTIMG || join(homedir(), ".local", "bin", "gptimg"),
           cwebp: process.env.NEWS_WATCHER_CWEBP || "/opt/homebrew/bin/cwebp",
           claudeBin: CLAUDE_BIN,
+          // #NEWSWATCH-HF: Higgsfield only when gptimg is out of credits, capped per day and in total
+          hf:
+            process.env.HF_FALLBACK === "1"
+              ? { bin: process.env.NEWS_WATCHER_HIGGSFIELD || "higgsfield", dailyMax: Number(process.env.HF_DAILY_MAX ?? 6), totalMax: Number(process.env.HF_TOTAL_MAX ?? 60), log }
+              : undefined,
         }),
     };
     if (process.env.NEWS_WATCHER_IMAGE_PUBLISH === "supabase") {

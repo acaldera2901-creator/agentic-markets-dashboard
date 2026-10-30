@@ -11,7 +11,7 @@
 //  - Post-production with macOS `sips` + `cwebp`: no Python, no npm dependency.
 //  - A picture the check refuses is moved to _rejected/ (kept as evidence), never served.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { claudeArgs, readEnvelope, runClaude } from "./claude-cli";
 import { IMAGE_CHECK_PROMPT, IMAGE_CHECK_SCHEMA, IMAGE_SIZE, MAX_WEBP_BYTES, readImageVerdict } from "./image";
@@ -24,13 +24,48 @@ export type ImageFiles = { png: string; webp: string; webpBytes: number };
 /** dHash 8×8 (16 hex) + 4×4 RGB colour signature (48 numbers) of the finished png, for the anti-duplicate. */
 export type ImageSig = { dhash: string; csig: number[] };
 export type ImageAttempt =
-  | { kind: "ok"; files: ImageFiles; ms: number; sig: ImageSig; textSeen: string }
+  | { kind: "ok"; files: ImageFiles; ms: number; sig: ImageSig; textSeen: string; final?: boolean }
   /** this attempt failed (generation, post-production or the visual check): counts towards the cap */
-  | { kind: "bad"; reason: string; ms: number }
+  | { kind: "bad"; reason: string; ms: number; final?: boolean }
   /** the subscription said stop (checker): no attempt counted, images wait for a later run */
   | { kind: "limit"; reason: string };
 
-export type ImageGenOpts = { dir: string; gptimg: string; cwebp: string; claudeBin: string; checkModel?: string; env?: NodeJS.ProcessEnv };
+export type ImageGenOpts = { dir: string; gptimg: string; cwebp: string; claudeBin: string; checkModel?: string; env?: NodeJS.ProcessEnv; hf?: HfOpts };
+
+// ─── Higgsfield fallback (#NEWSWATCH-HF, APPROVED by Andrea 30/10) ───────────
+// ONLY when gptimg says «out of credits / limit». gpt_image_2 1k LOW = 0.5 credits
+// (listino 30/10: low 0.5 · medium 1 · high 3.5); 1344×752, enough for the 1200×675 crop.
+// One call per note: whatever happens (fail, refused, duplicate) the note keeps its stock picture.
+// Hard caps in a persistent ledger (hf-budget.json in the image dir), reserved BEFORE the call.
+export const HF_CREDITS_PER_IMAGE = 0.5;
+export const HF_TIMEOUT_MS = 240_000;
+export type HfOpts = { bin: string; dailyMax: number; totalMax: number; log: (m: string) => void; fetch?: typeof fetch; now?: () => Date };
+type HfBudget = { day: string; dayCount: number; total: number };
+
+function readBudget(file: string): HfBudget {
+  try {
+    const b = JSON.parse(readFileSync(file, "utf8"));
+    return { day: String(b.day ?? ""), dayCount: Number(b.dayCount) || 0, total: Number(b.total) || 0 };
+  } catch {
+    return { day: "", dayCount: 0, total: 0 };
+  }
+}
+
+/** Reserve one Higgsfield image under the caps; null = cap reached (logged). */
+export function reserveHf(dir: string, hf: HfOpts): HfBudget | null {
+  const file = join(dir, "hf-budget.json");
+  const day = (hf.now ?? (() => new Date()))().toISOString().slice(0, 10);
+  const b = readBudget(file);
+  if (b.day !== day) Object.assign(b, { day, dayCount: 0 });
+  if (b.dayCount >= hf.dailyMax || b.total >= hf.totalMax) {
+    hf.log(`higgsfield: cap reached (day ${b.dayCount}/${hf.dailyMax} · total ${b.total}/${hf.totalMax}) — no call, the note keeps its stock picture`);
+    return null;
+  }
+  b.dayCount++;
+  b.total++;
+  writeFileSync(file, JSON.stringify(b));
+  return b;
+}
 
 type Proc = { code: number | null; out: string; err: string; ms: number; timedOut: boolean };
 
@@ -157,20 +192,36 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
   // -r: a flat graphic card, not a photograph (without it the wrapper prepends «photorealistic»)
   const g = await run(o.gptimg, ["-r", job.prompt, raw], { cwd: rawDir, timeoutMs: GPTIMG_TIMEOUT_MS, env: o.env });
   if (g.timedOut) return { kind: "bad", reason: `gptimg timeout after ${g.ms} ms`, ms: Date.now() - t0 };
-  if (g.code !== 0 && GPTIMG_LIMIT_RE.test(`${g.err} ${g.out}`)) return { kind: "limit", reason: `gptimg: ${tail(g.err || g.out)}` };
-  if (g.code !== 0 || !existsSync(raw)) return { kind: "bad", reason: `gptimg exit ${g.code}: ${tail(g.err)}`, ms: Date.now() - t0 };
+  let viaHf = false;
+  if (g.code !== 0 && GPTIMG_LIMIT_RE.test(`${g.err} ${g.out}`)) {
+    if (!o.hf) return { kind: "limit", reason: `gptimg: ${tail(g.err || g.out)}` };
+    const b = reserveHf(o.dir, o.hf);
+    if (!b) return { kind: "bad", reason: "higgsfield cap reached", ms: Date.now() - t0, final: true };
+    o.hf.log(`higgsfield: gptimg out of credits → gpt_image_2 1k low for ${job.base} · ~${HF_CREDITS_PER_IMAGE} credits · day ${b.dayCount}/${o.hf.dailyMax} · total ${b.total}/${o.hf.totalMax}`);
+    const h = await run(o.hf.bin, ["generate", "create", "gpt_image_2", "--prompt", job.prompt, "--aspect_ratio", "16:9", "--resolution", "1k", "--quality", "low", "--wait", "--json"], { cwd: rawDir, timeoutMs: HF_TIMEOUT_MS, env: o.env });
+    const url = h.code === 0 ? (h.out.match(/https:\/\/[^"\s]+?(?<!_min)\.png/) ?? [])[0] : undefined;
+    if (!url) return { kind: "bad", reason: `higgsfield exit ${h.code}${h.timedOut ? " (timeout)" : ""}: ${tail(h.err || h.out)}`, ms: Date.now() - t0, final: true };
+    try {
+      const r = await (o.hf.fetch ?? fetch)(url);
+      if (!r.ok) throw new Error(`download ${r.status}`);
+      writeFileSync(raw, Buffer.from(await r.arrayBuffer()));
+    } catch (e) {
+      return { kind: "bad", reason: `higgsfield: ${e instanceof Error ? e.message : e}`, ms: Date.now() - t0, final: true };
+    }
+    viaHf = true;
+  } else if (g.code !== 0 || !existsSync(raw)) return { kind: "bad", reason: `gptimg exit ${g.code}: ${tail(g.err)}`, ms: Date.now() - t0 };
   const files = await postProcess(raw, job.base, o.dir, o.cwebp);
-  if ("error" in files) return { kind: "bad", reason: files.error, ms: Date.now() - t0 };
+  if ("error" in files) return { kind: "bad", reason: files.error, ms: Date.now() - t0, final: viaHf };
   const c = await checkImage(files.png, job.expected, o);
   if (c.ok) {
     const sig = await imageSignature(files.png, rawDir);
-    if (sig) return { kind: "ok", files, ms: Date.now() - t0, sig, textSeen: c.textSeen };
+    if (sig) return { kind: "ok", files, ms: Date.now() - t0, sig, textSeen: c.textSeen, final: viaHf };
   }
-  if (!c.ok && c.limit) return { kind: "limit", reason: c.reason };
+  if (!c.ok && c.limit && !viaHf) return { kind: "limit", reason: c.reason };
   const reason = c.ok ? "signature: sips failed" : c.reason;
   mkdirSync(rejDir, { recursive: true });
   for (const f of [files.png, files.webp]) if (existsSync(f)) renameSync(f, join(rejDir, basename(f).replace(/(\.\w+)$/, `-a${job.attempts + 1}$1`)));
-  return { kind: "bad", reason, ms: Date.now() - t0 };
+  return { kind: "bad", reason, ms: Date.now() - t0, final: viaHf };
 }
 
 /**
