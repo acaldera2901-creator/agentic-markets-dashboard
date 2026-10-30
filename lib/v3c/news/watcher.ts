@@ -386,7 +386,13 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
       try {
         const url = await img.publish(j, j.files);
         if (!d.db.attachImage) throw new Error("db has no attachImage");
-        await d.db.attachImage(j.hash, url);
+        try {
+          await d.db.attachImage(j.hash, url);
+        } catch (e) {
+          // the row did not take the URL: no file in the bucket without its row (republished next run)
+          await img.remove?.([url]).catch((re) => d.log(`image orphan cleanup ${j.base} failed: ${String(re).slice(0, 120)}`));
+          throw e;
+        }
         st.published++;
         d.log(`image published ${j.base} → ${url}`);
         continue;

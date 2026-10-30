@@ -65,9 +65,14 @@ describe("image-gen · Higgsfield fallback", () => {
     expect(s.calls()).toBe(0);
   });
   it("Higgsfield error → bad + final (no retry)", async () => {
-    const s = setup({ hf: `echo "insufficient credits" >&2; exit 1` });
+    const s = setup({ hf: `echo "generation failed: content policy" >&2; exit 1` });
     const a = await makeImage(job(), s.opts);
     expect(a.kind === "bad" && a.final).toBe(true);
+  });
+  it.each([`echo "insufficient credits" >&2; exit 1`, `echo "Error: 401 Unauthorized — token expired, log in again" >&2; exit 1`])("Higgsfield not available (%s) → limit: the note is retried on a later run", async (body) => {
+    const s = setup({ hf: body });
+    const a = await makeImage(job(), s.opts);
+    expect(a.kind).toBe("limit");
   });
   it("visual check refuses the Higgsfield card → bad + final", async () => {
     const s = setup({ check: CHECK_NO });
@@ -81,7 +86,7 @@ describe("image-gen · Higgsfield fallback", () => {
     await makeImage(job(2), s.opts);
     const a = await makeImage(job(3), s.opts);
     expect(s.calls()).toBe(2);
-    expect(a.kind === "bad" && a.final && a.reason).toMatch(/cap reached/);
+    expect(a.kind === "limit" && a.reason).toMatch(/cap reached/); // waits for a later run
     expect(s.logs.at(-1)).toMatch(/cap reached \(day 2\/2 · total 2\/60\)/);
   });
   it("0 = no cap: calls go on, the counters still log", async () => {

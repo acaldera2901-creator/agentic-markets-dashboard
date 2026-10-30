@@ -131,3 +131,11 @@ describe("image · gptimg «stop for now» is a pause, never a burnt attempt", (
     expect(GPTIMG_LIMIT_RE.test("gptimg: nessun PNG trovato")).toBe(false);
   });
 });
+
+describe("IMAGE_CHECK_PROMPT · refusal reasons (#NEWSWATCH-AUTO)", () => {
+  it("refuses a non-soccer ball and any text/number not in the note", async () => {
+    const { IMAGE_CHECK_PROMPT } = await import("./image");
+    expect(IMAGE_CHECK_PROMPT).toMatch(/American football, a rugby ball/);
+    expect(IMAGE_CHECK_PROMPT).toMatch(/any text or number other than the expected text/);
+  });
+});

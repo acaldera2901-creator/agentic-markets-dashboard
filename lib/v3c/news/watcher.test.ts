@@ -381,6 +381,31 @@ describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IM
     expect(attached).toEqual([[db.rows[0].guid_hash, `https://cdn.example/${(make.mock.calls[0][0] as ImageJob).base}.webp`]]);
   });
 
+  it("upload ok but news_items PATCH fails → the uploaded file is removed (no orphan), the job retries next run", async () => {
+    const db = fakeDb();
+    db.attachImage = vi.fn(async () => {
+      throw new Error("patch http 500");
+    });
+    const publish = vi.fn(async (j: { base: string }) => `https://cdn.example/${j.base}.webp`);
+    const remove = vi.fn(async () => {});
+    const s = freshState();
+    const rep = await runCycle(s, deps({ db, images: { make: okMake, publish, remove } }), { maxRewrites: 1 });
+    expect(remove).toHaveBeenCalledWith([await publish.mock.results[0].value]);
+    expect(rep.images).toMatchObject({ published: 0, pending: 1 });
+    expect(rep.errors.join(" ")).toMatch(/patch http 500/);
+  });
+
+  it("a note left pending for a credit limit is retried on the next run when a source is back, with no human", async () => {
+    let limited = true;
+    const make = vi.fn(async (j: ImageJob): Promise<ImageAttempt> => (limited ? { kind: "limit", reason: "out of credits" } : okMake(j)));
+    const s = freshState();
+    await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 1 });
+    expect(s.images).toHaveLength(1);
+    limited = false;
+    const rep2 = await runCycle(s, deps({ db: fakeDb(), images: { make } }, READ_AT + 5 * MIN), { maxRewrites: 0 });
+    expect(rep2.images).toMatchObject({ made: 1 });
+  });
+
   it("retention: the cards of the rows that expire are deleted BEFORE the rows (a file never outlives its row)", async () => {
     const db = fakeDb();
     const order: string[] = [];

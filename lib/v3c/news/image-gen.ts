@@ -38,6 +38,8 @@ export type ImageGenOpts = { dir: string; gptimg: string; cwebp: string; claudeB
 // One call per note: whatever happens (fail, refused, duplicate) the note keeps its stock picture.
 // Caps (0 = none) in a persistent ledger (hf-budget.json in the image dir), reserved BEFORE the call.
 export const HF_CREDITS_PER_IMAGE = 0.5;
+/** Higgsfield said «not now» (auth expired, no credits, rate limit), not «this picture is bad»: the note waits for a later run. */
+export const HF_UNAVAILABLE_RE = /unauthori[sz]ed|not authenticated|not logged in|log ?in again|token (?:has )?expired|\b401\b|\b403\b|insufficient|not enough credits|out of credits|\b402\b|rate.?limit|\b429\b/i;
 export const HF_TIMEOUT_MS = 240_000;
 export type HfOpts = { bin: string; dailyMax: number; totalMax: number; log: (m: string) => void; fetch?: typeof fetch; now?: () => Date };
 type HfBudget = { day: string; dayCount: number; total: number };
@@ -197,10 +199,11 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
   if (g.code !== 0 && GPTIMG_LIMIT_RE.test(`${g.err} ${g.out}`)) {
     if (!o.hf) return { kind: "limit", reason: `gptimg: ${tail(g.err || g.out)}` };
     const b = reserveHf(o.dir, o.hf);
-    if (!b) return { kind: "bad", reason: "higgsfield cap reached", ms: Date.now() - t0, final: true };
+    if (!b) return { kind: "limit", reason: "higgsfield cap reached" }; // retried on a later run, not given up
     o.hf.log(`higgsfield: gptimg out of credits → gpt_image_2 1k low for ${job.base} · ~${HF_CREDITS_PER_IMAGE} credits · day ${b.dayCount}/${o.hf.dailyMax || "∞"} · total ${b.total}/${o.hf.totalMax || "∞"}`);
     const h = await run(o.hf.bin, ["generate", "create", "gpt_image_2", "--prompt", job.prompt, "--aspect_ratio", "16:9", "--resolution", "1k", "--quality", "low", "--wait", "--json"], { cwd: rawDir, timeoutMs: HF_TIMEOUT_MS, env: o.env });
     const url = h.code === 0 ? (h.out.match(/https:\/\/[^"\s]+?(?<!_min)\.png/) ?? [])[0] : undefined;
+    if (!url && HF_UNAVAILABLE_RE.test(`${h.err} ${h.out}`)) return { kind: "limit", reason: `higgsfield unavailable: ${tail(h.err || h.out)}` };
     if (!url) return { kind: "bad", reason: `higgsfield exit ${h.code}${h.timedOut ? " (timeout)" : ""}: ${tail(h.err || h.out)}`, ms: Date.now() - t0, final: true };
     try {
       const r = await (o.hf.fetch ?? fetch)(url);
