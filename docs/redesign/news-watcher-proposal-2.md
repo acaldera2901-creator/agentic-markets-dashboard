@@ -191,3 +191,93 @@ intervallo configurabile, sentinella, plist caffeinate/sentinella/watcher-templa
 **Debiti dichiarati:** pulizia dei file nel bucket dopo 30 gg (opzione A); `club-tints.json` è una copia
 di `lib/news/clubs.ts` da sostituire con l'import a merge; la sentinella non vede un giro che legge la fonte
 ma non riesce a riscrivere (es. OAuth di `claude` scaduto: 19 righe nel log di prod) — lo vede `last_error`.
+
+---
+
+# #NEWSWATCH-2-IMG · card grafiche per nota, Storage opzione A (APPROVE di Andrea 29/10)
+
+**Cambio rispetto alla prima versione:** al posto della foto di scena, una **card grafica** «stile v3
+inspo» (art-director, `preview-news-prod/2026-10-29-stile-v3-inspo/README.md`): `gptimg -r`, 6 formati
+(split / scheda numeri / citazione / ritaglio / numero+oggetto / fascia), una sola tinta del club,
+testo SOLO dalla nota riscritta (`cardText`: punteggio, «last 16», ordinali, «N straight wins», «100
+GOALS», parole chiave ≤ 8 caratteri o su due righe), silhouette PIENE dal ginocchio in su, angoli alti
+liberi per gli stemmi del sito. Rotazione «mai due uguali» sulle ultime 12 card (`state.json.cards`):
+card adiacenti con formato E elemento dominante diversi, stesso club → altro formato, (formato, blocco)
+e (formato, tinta) mai ripetuti. Anti-doppione meccanico dHash 8×8 + firma colore 4×4 (con `sips`).
+Check visivo **obbligatorio** prima di pubblicare (sonnet, solo Read): legge il testo, che il watcher
+confronta **meccanicamente** con quello atteso; rifiuta volti (anche ovale vuoto), marchi/swoosh,
+stemmi, strisce, riquadri vuoti «segnaposto», segni negli angoli alti. Testo sbagliato o difetto →
+rigenera, max 2, poi resta l'immagine di tipo. Nomi `news-<sha256(id)[:12]>.webp` (convenzione del sito).
+
+## Scritture in produzione (esatte)
+
+**1. Bucket + colonna** — file `supabase/migrations/20261029220000_news_images.sql`:
+```sql
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('news-images', 'news-images', true, 307200, array['image/webp'])
+on conflict (id) do nothing;
+alter table public.news_items
+  add column if not exists image_url text
+  check (image_url is null or image_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/news-images/news-[0-9a-f]{12}\.webp$');
+```
+- Bucket **pubblico in sola lettura**: si legge chi ha l'URL; nessuna policy su `storage.objects`, quindi
+  anon/authenticated non elencano, non caricano, non cancellano. Scrive solo la service role del watcher.
+- Colonna additiva, nullable: NULL = nessuna card (il sito mostra l'immagine di tipo).
+- **Rollback:** `alter table public.news_items drop column if exists image_url;` poi svuotare il bucket
+  e `delete from storage.buckets where id = 'news-images';`.
+
+**2. Upload** (watcher, service key già nel `.env`, nessuna chiave nuova): `POST
+/storage/v1/object/news-images/news-<12hex>.webp` (`x-upsert: true`) poi `PATCH news_items SET
+image_url` per quel `guid_hash`. Solo webp (15–55 KB a card; il png resta sul Mac).
+
+**3. Retention:** a ogni giro, prima del `DELETE` delle righe oltre 30 giorni, il watcher legge i loro
+`image_url` e cancella quei file dal bucket (`DELETE /storage/v1/object/news-images`, max 100 nomi,
+solo `news-<12hex>.webp` di quel bucket): un file non sopravvive alla sua riga.
+
+**4. Flag del watcher** — SOLO nel `.env` del watcher (il plist non li deve impostare: una variabile
+del plist vincerebbe sul `.env`):
+```
+NEWS_WATCHER_IMAGES=1
+NEWS_WATCHER_IMAGE_PUBLISH=supabase
+```
+
+## Ordine e comandi per Andrea (eseguire con `!` dove serve)
+
+Il permission system ha bloccato a me la creazione del bucket («Modify Shared Resources»); il connettore
+Supabase non vede il progetto (`list_projects` vuoto). Quindi:
+
+1. **Migration** — Supabase Dashboard del progetto `izscgffubtakzvwxchqt` → SQL Editor → incollare il
+   file `supabase/migrations/20261029220000_news_images.sql` → Run. (Non `supabase db push`: spingerebbe
+   tutte le migration pendenti della cartella.) Verifica:
+   `select id, public, file_size_limit from storage.buckets where id='news-images';` →
+   `news-images | true | 307200`, e `select column_name from information_schema.columns where table_name='news_items' and column_name='image_url';` → 1 riga.
+2. **Codex con credito** — oggi `gptimg` risponde «Your workspace is out of credits»: senza credito
+   nessuna card (il watcher lo tratta come pausa, la nota esce comunque con l'immagine di tipo).
+3. **Dry-run del bundle card** (lo faccio io quando c'è credito): 3-4 note vere, card guardate.
+4. **Bundle + flag** (con backup):
+   ```bash
+   H="$HOME/Library/Application Support/news-watcher"
+   cp "$H/news-watcher.mjs" "$H/news-watcher.mjs.bak-v6"
+   cd ~/Desktop/01-BETREDGE/am-v3c-newswatch && npx esbuild scripts/news_watcher/main.ts --bundle --platform=node --format=esm --target=node22 --outfile="$H/news-watcher.mjs"
+   node "$H/news-watcher.mjs" --dry-run --limit 1
+   printf 'NEWS_WATCHER_IMAGES=1\nNEWS_WATCHER_IMAGE_PUBLISH=supabase\n' >> "$H/.env"
+   ```
+   Nessun `launchctl`: il job carico rilegge bundle e `.env` a ogni giro.
+5. **Sito** (ui-andrea, dopo il punto 1 — mai prima, la SELECT fallirebbe): `image_url` nella
+   `ITEMS_SQL` di `lib/news/table.ts` e nella card; `noteImage()` lo preferisce a `NOTE_IMAGE_NAMES`;
+   serve solo webp (niente png di fallback per le card dallo Storage). CSP `img-src https:` già ok.
+
+**Rollback del watcher:** togliere le due righe dal `.env` (le card si fermano al giro dopo) e/o
+`cp "$H/news-watcher.mjs.bak-v6" "$H/news-watcher.mjs"`.
+
+## Verificato / non verificato (30/10 notte)
+- **Verificato:** test `lib/v3c/news` 178/178, `tsc` ed `eslint` puliti. Soglie anti-doppione con `sips`
+  ricalibrate sulle card v3: 2/2 coppie «stessa card rigenerata» segnalate (13/7,7 e 23/25,3), 0/26
+  coppie di card diverse. Dry-run 1 (29/10, 4 note vere): 4 card generate e passate al check al 1°
+  tentativo, guardate da me — nessun volto, marchio o testo sbagliato, ma 3 su 4 erano senza testo
+  con un pannello o una fascia vuoti (aria da segnaposto) e una con segni negli angoli alti: corretto
+  (copertura testo «100 GOALS»/«HISTORY», layout senza testo senza fascia, tinta neutra invece del navy,
+  il check rifiuta segnaposto e angoli sporchi). Il limite d'uso e il credito Codex esaurito sono pausa,
+  non tentativi bruciati.
+- **NON verificato:** le card dopo le correzioni (dry-run 2 fermato da «out of credits» di Codex);
+  bucket e colonna (non creati); upload reale; la resa nel sito (il sito non legge ancora `image_url`).

@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { freshState, MAX_ATTEMPTS, MAX_REWRITES, MIN_TEASER_WORDS, runCycle, sha, type Deps, type ImageJob, type WatcherDb } from "./watcher";
+import { freshState, MAX_ATTEMPTS, MAX_REWRITES, MIN_TEASER_WORDS, runCycle, sha, type Deps, type ImageDeps, type WatcherDb } from "./watcher";
 import type { ImageAttempt } from "./image-gen";
 import { words } from "./rewrite";
 import { claudeArgs, LIMIT_RE, readCliOutput, type RewriteOutcome } from "./claude-cli";
@@ -281,9 +281,13 @@ describe("claude-cli · the local `claude -p`", () => {
   });
 });
 
-describe("watcher · one picture per note (#NEWSWATCH-2, behind NEWS_WATCHER_IMAGES)", () => {
-  const files = (base: string) => ({ png: `/x/${base}.png`, webp: `/x/${base}.webp`, webpBytes: 90_000 });
-  const okMake = vi.fn(async (j: ImageJob): Promise<ImageAttempt> => ({ kind: "ok", files: files(j.base), ms: 50_000 }));
+type ImageJob = Parameters<ImageDeps["make"]>[0];
+describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IMAGES)", () => {
+  const files = (base: string) => ({ png: `/x/${base}.png`, webp: `/x/${base}.webp`, webpBytes: 30_000 });
+  let n = 0;
+  // every fake card looks different (distinct dHash), so the anti-duplicate never fires here
+  const sig = () => ({ dhash: (BigInt(0x9e3779b97f4a7c15) * BigInt(++n) % (BigInt(1) << BigInt(64))).toString(16).padStart(16, "0"), csig: Array.from({ length: 48 }, (_, i) => (i * 37 + n * 101) % 256) });
+  const okMake = vi.fn(async (j: ImageJob): Promise<ImageAttempt> => ({ kind: "ok", files: files(j.base), ms: 50_000, sig: sig(), textSeen: j.expected }));
 
   it("off by default: no job, no picture step, the run is the one of before", async () => {
     const s = freshState();
@@ -305,10 +309,26 @@ describe("watcher · one picture per note (#NEWSWATCH-2, behind NEWS_WATCHER_IMA
     expect(rep.images).toMatchObject({ made: 2, local: 2, published: 0, pending: 0 });
     const j = make.mock.calls[0][0] as ImageJob;
     expect(j.base).toMatch(/^news-[0-9a-f]{12}$/);
-    expect(j.prompt).toContain("no readable text");
+    expect(j.prompt).toMatch(/^(SPLIT|SCOREBOARD|QUOTE|CUT-OUT|BIG NUMBER|BAND) card:/);
+    expect(j.prompt).toContain("never an empty or blank face outline");
     // the prompt is built from OUR note, never from the original headline
     expect(j.prompt).not.toContain(db.rows[0].source_url);
     expect(s.images).toEqual([]);
+    // the rotation remembers both cards; adjacent cards never share a format (text-less notes here:
+    // both formats that carry no text show a figure, so the dominant element can only rotate with text — card.test.ts)
+    expect(s.cards).toHaveLength(2);
+    expect(s.cards![0].format).not.toBe(s.cards![1].format);
+  });
+
+  it("a look-alike of a recent card (dHash and colour under the thresholds) is refused and the card picked again", async () => {
+    const same = { dhash: "f0f0f0f0f0f0f0f0", csig: Array(48).fill(200) };
+    const make = vi.fn(async (j: ImageJob): Promise<ImageAttempt> => ({ kind: "ok", files: files(j.base), ms: 1, sig: same, textSeen: j.expected }));
+    const s = freshState();
+    s.cards = [{ at: READ_AT - MIN, format: "band", block: "lower", dominant: "word", tint: "teal", club: null, dhash: "f0f0f0f0f0f0f0f1", csig: Array(48).fill(201) }];
+    const rep = await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 1 });
+    expect(rep.images).toMatchObject({ made: 0, failed: 1, pending: 1 });
+    expect(s.images?.[0].lastError).toMatch(/^duplicate: looks like a recent card/);
+    expect(s.images?.[0].card).toBeUndefined();
   });
 
   it("a refused picture is made again at most twice, then the note keeps the picture of its kind", async () => {
@@ -344,7 +364,7 @@ describe("watcher · one picture per note (#NEWSWATCH-2, behind NEWS_WATCHER_IMA
     const attached: [string, string][] = [];
     db.attachImage = vi.fn(async (h: string, u: string) => void attached.push([h, u]));
     let fail = true;
-    const publish = vi.fn(async (j: ImageJob) => {
+    const publish = vi.fn(async (j: { base: string }) => {
       if (fail) throw new Error("storage http 503");
       return `https://cdn.example/${j.base}.webp`;
     });
@@ -359,6 +379,16 @@ describe("watcher · one picture per note (#NEWSWATCH-2, behind NEWS_WATCHER_IMA
     expect(make).toHaveBeenCalledTimes(1);
     expect(rep2.images).toMatchObject({ published: 1, pending: 0 });
     expect(attached).toEqual([[db.rows[0].guid_hash, `https://cdn.example/${(make.mock.calls[0][0] as ImageJob).base}.webp`]]);
+  });
+
+  it("retention: the cards of the rows that expire are deleted BEFORE the rows (a file never outlives its row)", async () => {
+    const db = fakeDb();
+    const order: string[] = [];
+    db.expiredImages = vi.fn(async () => (order.push("select"), ["https://p.supabase.co/storage/v1/object/public/news-images/news-0123456789ab.webp"]));
+    db.prune = vi.fn(async () => void order.push("prune"));
+    const remove = vi.fn(async (u: string[]) => void order.push(`remove ${u.length}`));
+    await runCycle(freshState(), deps({ db, images: { make: okMake, remove } }), { maxRewrites: 0 });
+    expect(order).toEqual(["select", "remove 1", "prune"]);
   });
 
   it("a usage limit on the check stops pictures for this run without counting an attempt", async () => {

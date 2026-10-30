@@ -8,7 +8,9 @@
   #NEWSWATCH-2: a TEMPLATE with __INTERVAL_S__ — render it with
   `scripts/news_watcher/render-launchd.sh 180|300 <outdir>` (interval and the
   NEWS_WATCHER_INTERVAL_S the run window reads are then the same number).
-  NEWS_WATCHER_IMAGES stays 0 until Andrea switches the pictures on.
+  The card flags (NEWS_WATCHER_IMAGES, NEWS_WATCHER_IMAGE_PUBLISH) live ONLY in
+  news-watcher/.env: a variable set here would win over the .env (process.loadEnvFile
+  never overrides), so the switch must not be duplicated in the plist.
 -->
 <plist version="1.0">
 <dict>
@@ -27,8 +29,6 @@
         <string>/Users/calde/.local/bin:/Users/calde/.nvm/versions/node/v24.14.0/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>NEWS_WATCHER_INTERVAL_S</key>
         <string>__INTERVAL_S__</string>
-        <key>NEWS_WATCHER_IMAGES</key>
-        <string>0</string>
     </dict>
     <key>StartInterval</key>
     <integer>__INTERVAL_S__</integer>

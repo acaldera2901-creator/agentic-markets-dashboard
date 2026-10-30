@@ -1,12 +1,11 @@
-// lib/v3c/news/image.test.ts (#NEWSWATCH-2) — the picture of one note, pure part,
-// checked against the four notes art direction did by hand on 29/10
-// (preview-news-prod/2026-10-29/img-per-news/README.md).
+// lib/v3c/news/image.test.ts (#NEWSWATCH-2, -IMG) — kind, tint, file name, the
+// visual check's reading; checked against the notes art direction did by hand on 29/10.
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { clubHex, colourName, IMAGE_CHECK_SCHEMA, IMAGE_STYLE, fotmobIdOf, imageBase, imagePrompt, protagonistTint, readImageVerdict, sceneKind } from "./image";
-import { storagePublisher } from "./image-gen";
+import { clubHex, colourName, IMAGE_CHECK_PROMPT, IMAGE_CHECK_SCHEMA, fotmobIdOf, imageBase, protagonist, protagonistTint, readImageVerdict, sceneKind, textTokens } from "./image";
+import { GPTIMG_LIMIT_RE, storagePublisher, storageRemover } from "./image-gen";
 
 const BAYERN = { title: "Bayern reach DFB-Pokal last 16; Brown praises unity", body: "Bayern Munich advanced in the DFB-Pokal on Wednesday, reaching the last 16. Nathaniel Brown praised the squad's unity during difficult times." };
 const MIAMI = { title: "Inter Miami and FC Cincinnati draw 2-2", body: "Riquelme Fillipi scored a late equaliser after Inter Miami had given up a one-goal lead. The match ended 2-2 after a frantic finish." };
@@ -45,15 +44,9 @@ describe("image · one club colour, never a pair, never a name", () => {
     expect(protagonistTint(BAYERN, ["Bayern Munich"])).toBe(colourName(clubHex("Bayern Munich")!));
     expect(protagonistTint({ title: "Nowhere FC win", body: "" }, ["Nowhere FC"])).toBeNull();
   });
-  it("the prompt: scene + tint + the fixed style; no club, player or league named; no colour pair", () => {
-    const p = imagePrompt(CHIVU, ["Inter", "Venezia"]);
-    expect(p.endsWith(IMAGE_STYLE)).toBe(true);
-    expect(p).toContain("deep blue");
-    for (const name of ["Inter", "Venezia", "Chivu", "Serie A"]) expect(p).not.toContain(name);
-    expect(p).not.toMatch(/blue and black|black and blue/i);
-    expect(p).toMatch(/no stripes/);
-    const noTeam = imagePrompt({ title: "Stadium works start", body: "" }, []);
-    expect(noTeam).toContain("No club colour");
+  it("the protagonist is returned by name for the rotation (same club → another format)", () => {
+    expect(protagonist(MIAMI, ["FC Cincinnati", "Inter Miami"])).toBe("Inter Miami");
+    expect(protagonist({ title: "x", body: "" }, [])).toBeNull();
   });
 });
 
@@ -71,12 +64,28 @@ describe("image · file name news-<sha256(source id)[:12]>: the site's conventio
 
 describe("image · the visual check's answer", () => {
   it("ok only with an empty list; problems listed; bad shapes throw", () => {
-    expect(IMAGE_CHECK_SCHEMA.required).toEqual(["ok", "problems"]);
-    expect(readImageVerdict({ ok: true, problems: [] })).toEqual({ ok: true });
-    expect(readImageVerdict({ ok: true, problems: ["swoosh on a boot"] })).toEqual({ ok: false, problems: ["swoosh on a boot"] });
-    expect(readImageVerdict({ ok: false, problems: [] })).toEqual({ ok: false, problems: ["checker said no"] });
-    expect(() => readImageVerdict("fine")).toThrow(/not JSON/);
-    expect(() => readImageVerdict({ ok: "yes", problems: [] })).toThrow(/wrong shape/);
+    expect(readImageVerdict({ ok: true, text_seen: "5 STRAIGHT WINS", problems: [] }, "5 STRAIGHT WINS")).toEqual({ ok: true, textSeen: "5 STRAIGHT WINS" });
+    expect(readImageVerdict({ ok: true, text_seen: "x", problems: ["swoosh on a boot"] }, "x")).toMatchObject({ ok: false, problems: ["swoosh on a boot"] });
+    expect(readImageVerdict({ ok: false, text_seen: "", problems: [] }, "")).toMatchObject({ ok: false, problems: ["checker said no"] });
+    expect(() => readImageVerdict("fine", "")).toThrow(/not JSON/);
+    expect(() => readImageVerdict({ ok: "yes", text_seen: "", problems: [] }, "")).toThrow(/wrong shape/);
+    expect(() => readImageVerdict({ ok: true, problems: [] }, "")).toThrow(/wrong shape/);
+  });
+  it("the text is compared HERE, not trusted to the model: a model saying ok with a misspelt card is refused", () => {
+    expect(readImageVerdict({ ok: true, text_seen: "STRAIGTH WINS 5", problems: [] }, "5 STRAIGHT WINS")).toMatchObject({ ok: false, problems: [expect.stringMatching(/^text «STRAIGTH WINS 5» ≠ «5 STRAIGHT WINS»/)] });
+    expect(readImageVerdict({ ok: true, text_seen: "LAST 16 BETREDGE", problems: [] }, "LAST 16")).toMatchObject({ ok: false });
+    expect(readImageVerdict({ ok: true, text_seen: "FOCUS", problems: [] }, "")).toMatchObject({ ok: false });
+    // reading order and a word broken over two lines do not matter
+    expect(readImageVerdict({ ok: true, text_seen: "STRAIGHT WINS 5", problems: [] }, "5 STRAIGHT WINS")).toMatchObject({ ok: true });
+    expect(readImageVerdict({ ok: true, text_seen: "QUARTER- FINALS", problems: [] }, "QUARTER-FINALS")).toMatchObject({ ok: true });
+    expect(textTokens("2-2")).toBe("2 2");
+  });
+  it("the check asks for the exact text, faces including a blank face outline, marks, crests", () => {
+    expect(IMAGE_CHECK_SCHEMA.required).toEqual(["ok", "text_seen", "problems"]);
+    expect(IMAGE_CHECK_PROMPT).toMatch(/blank face outline/);
+    expect(IMAGE_CHECK_PROMPT).toMatch(/swoosh/);
+    expect(IMAGE_CHECK_PROMPT).toMatch(/club crest/);
+    expect(IMAGE_CHECK_PROMPT).toMatch(/not exactly the expected text/);
   });
 });
 
@@ -95,5 +104,30 @@ describe("image · option A publisher (Storage), with a fake fetch — never run
     expect(new Headers(init.headers).get("content-type")).toBe("image/webp");
     const bad = vi.fn(async () => new Response("nope", { status: 403 }));
     await expect(storagePublisher("https://p.supabase.co", "svc", "b", bad as unknown as typeof fetch)({ base: "news-x-slug" }, { png: "", webp, webpBytes: 4 })).rejects.toThrow(/http 403/);
+  });
+});
+
+describe("image · retention remover (Storage), with a fake fetch", () => {
+  it("one DELETE with the names of our cards only; nothing outside the bucket or the naming", async () => {
+    const f = vi.fn(async () => new Response("[]", { status: 200 }));
+    const pub = "https://p.supabase.co/storage/v1/object/public/news-images/";
+    await storageRemover("https://p.supabase.co", "svc", "news-images", f as unknown as typeof fetch)([`${pub}news-0123456789ab.webp`, `${pub}../other.webp`, "https://evil.example/news-0123456789ab.webp"]);
+    expect(f).toHaveBeenCalledTimes(1);
+    const [u, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(u).toBe("https://p.supabase.co/storage/v1/object/news-images");
+    expect(init.method).toBe("DELETE");
+    expect(JSON.parse(String(init.body))).toEqual({ prefixes: ["news-0123456789ab.webp"] });
+    const none = vi.fn();
+    await storageRemover("https://p.supabase.co", "svc", "news-images", none as unknown as typeof fetch)(["https://evil.example/x.webp"]);
+    expect(none).not.toHaveBeenCalled();
+  });
+});
+
+describe("image · gptimg «stop for now» is a pause, never a burnt attempt", () => {
+  it("out of credits (29/10), limit, capacity → limit; a real failure is not", () => {
+    expect(GPTIMG_LIMIT_RE.test("ERROR: Your workspace is out of credits. Ask your workspace owner to refill in order to continue.")).toBe(true);
+    expect(GPTIMG_LIMIT_RE.test("Selected model is at capacity. Please try a different model.")).toBe(true);
+    expect(GPTIMG_LIMIT_RE.test("You've hit your 5-hour limit")).toBe(true);
+    expect(GPTIMG_LIMIT_RE.test("gptimg: nessun PNG trovato")).toBe(false);
   });
 });

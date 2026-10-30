@@ -22,8 +22,10 @@ import { assertNotApi, FOTMOB_NEWS_PAGE_URL, looksBlocked, mayFetch, mergeSource
 import { rowFor, type NewsItemRow, type NewsStateRow } from "./table";
 import { words } from "./rewrite";
 import type { RewriteOutcome } from "./claude-cli";
-import { imageBase, imagePrompt, MAX_IMAGE_ATTEMPTS } from "./image";
+import { imageBase, MAX_IMAGE_ATTEMPTS, protagonist, protagonistTint, sceneKind } from "./image";
+import { cardPrompt, cardText, cardTint, expectedText, pickCard, tooSimilar, WINDOW, type CardSpec, type LedgerRow } from "./card";
 import type { ImageAttempt, ImageFiles } from "./image-gen";
+import type { NoteText } from "./rewrite";
 
 export const RSS_EVERY_MS = 3_600_000;
 export const ROBOTS_EVERY_MS = 6 * 3_600_000;
@@ -44,8 +46,8 @@ export const RETENTION_DAYS = 30;
 
 type Kind = "page" | "rss";
 export type Queued = { item: FeedItem; hash: string; attempts: number; row?: NewsItemRow };
-/** A picture to make for a note already written (#NEWSWATCH-2). Built from OUR note, never the original. */
-export type ImageJob = { hash: string; base: string; prompt: string; attempts: number; at: number; files?: ImageFiles; lastError?: string };
+/** A card to make for a note already written (#NEWSWATCH-2-IMG). Built from OUR note (EN), never the original. */
+export type ImageJob = { hash: string; base: string; note: NoteText; teams: string[]; attempts: number; at: number; card?: CardSpec; files?: ImageFiles; lastError?: string };
 /** Worst case of one picture attempt (gptimg + post + check): an attempt starts only if it fits the run window. */
 export const IMAGE_ATTEMPT_MS = 150_000;
 
@@ -62,6 +64,8 @@ export type WatcherState = {
   robots: { at: number; text: string } | null;
   /** pictures still to make or to publish (absent before #NEWSWATCH-2: same v1 file) */
   images?: ImageJob[];
+  /** the last WINDOW cards made: the rotation and the anti-duplicate read it */
+  cards?: LedgerRow[];
 };
 
 export const freshState = (): WatcherState => ({
@@ -86,12 +90,16 @@ export interface WatcherDb {
   prune(before: string): Promise<void>;
   /** news_items.image_url for one row (#NEWSWATCH-2, needs the additive column: behind NEWS_WATCHER_IMAGE_PUBLISH) */
   attachImage?(guidHash: string, url: string): Promise<void>;
+  /** image_url of the rows published before `before` (retention of the Storage files, same flag) */
+  expiredImages?(before: string): Promise<string[]>;
 }
 
 /** The pictures (#NEWSWATCH-2): absent = off (the default). `publish` absent = files stay on the Mac. */
 export type ImageDeps = {
-  make: (job: ImageJob) => Promise<ImageAttempt>;
+  make: (job: { base: string; prompt: string; attempts: number; expected: string }) => Promise<ImageAttempt>;
   publish?: (job: ImageJob, files: ImageFiles) => Promise<string>;
+  /** delete published files by their public URL (retention: 30 days, with the row) */
+  remove?: (urls: string[]) => Promise<void>;
 };
 
 export type Deps = {
@@ -287,7 +295,7 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
       if (d.images)
         for (const r of rows) {
           const base = imageBase(r.source_url);
-          if (base) (s.images ??= []).push({ hash: r.guid_hash, base, prompt: imagePrompt(r.rewritten_en, r.teams), attempts: 0, at: now });
+          if (base) (s.images ??= []).push({ hash: r.guid_hash, base, note: r.rewritten_en, teams: r.teams, attempts: 0, at: now });
         }
       for (const q of s.queue) if (q.row) done(q);
       s.queue = s.queue.filter((q) => !q.row);
@@ -300,7 +308,13 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
   // 7. housekeeping and the state row
   for (const [k, t] of Object.entries(s.seen)) if (now - t > SEEN_KEEP_MS) delete s.seen[k];
   try {
-    await d.db.prune(new Date(now - RETENTION_DAYS * 86_400_000).toISOString());
+    const before = new Date(now - RETENTION_DAYS * 86_400_000).toISOString();
+    // the cards of the rows about to expire go first: a file never outlives its row
+    if (d.images?.remove && d.db.expiredImages) {
+      const urls = await d.db.expiredImages(before);
+      if (urls.length) await d.images.remove(urls);
+    }
+    await d.db.prune(before);
   } catch (e) {
     rep.errors.push(`prune failed: ${String(e).slice(0, 120)}`);
   }
@@ -335,19 +349,25 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
     if (!j.files && !stop) {
       if (d.now() - start + IMAGE_ATTEMPT_MS > windowMs) stop = true;
       else {
-        const a = await img.make(j);
-        if (a.kind === "ok") {
+        if (!j.card) j.card = pickCard(j.hash, sceneKind(j.note), cardText(j.note), cardTint(protagonistTint(j.note, j.teams), j.hash), protagonist(j.note, j.teams), s.cards ?? []);
+        const card = j.card;
+        const a = await img.make({ base: j.base, prompt: cardPrompt(card), attempts: j.attempts, expected: expectedText(card.text) });
+        const dup = a.kind === "ok" ? tooSimilar(a.sig, s.cards ?? []) : null;
+        if (a.kind === "ok" && !dup) {
           j.files = a.files;
           st.made++;
-          d.log(`image ok ${j.base} · attempt ${j.attempts + 1} · ${a.ms} ms · webp ${Math.round(a.files.webpBytes / 1024)} KB`);
+          (s.cards ??= []).push({ at: d.now(), format: card.format, block: card.block, dominant: card.dominant, tint: card.tint, club: card.club, dhash: a.sig.dhash, csig: a.sig.csig });
+          s.cards = s.cards.slice(-WINDOW);
+          d.log(`image ok ${j.base} · ${card.format}/${card.block} · ${card.tint ?? "navy"} · text «${expectedText(card.text)}» · attempt ${j.attempts + 1} · ${a.ms} ms · webp ${Math.round(a.files.webpBytes / 1024)} KB`);
         } else if (a.kind === "limit") {
           d.log(`image: usage limit (${a.reason}) — pictures wait for the next run`);
           stop = true;
         } else {
           j.attempts++;
-          j.lastError = a.reason;
+          j.lastError = a.kind === "ok" ? `duplicate: ${dup}` : a.reason;
+          if (a.kind === "ok") j.card = undefined; // a look-alike: pick again against the ledger
           st.failed++;
-          d.log(`image refused ${j.base} · attempt ${j.attempts} · ${a.ms} ms · ${a.reason}`);
+          d.log(`image refused ${j.base} · ${card.format} · attempt ${j.attempts} · ${a.ms} ms · ${j.lastError}`);
           if (j.attempts >= MAX_IMAGE_ATTEMPTS) {
             st.fallback++;
             d.log(`image fallback ${j.base}: ${MAX_IMAGE_ATTEMPTS} attempts refused — the note keeps the picture of its kind`);

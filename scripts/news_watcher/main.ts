@@ -25,7 +25,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { rewriteWithClaude } from "../../lib/v3c/news/claude-cli";
-import { makeImage, storagePublisher } from "../../lib/v3c/news/image-gen";
+import { makeImage, storagePublisher, storageRemover } from "../../lib/v3c/news/image-gen";
 import { freshState, runCycle, type ImageDeps, type StatePatch, type WatcherDb, type WatcherState } from "../../lib/v3c/news/watcher";
 import type { NewsItemRow } from "../../lib/v3c/news/table";
 
@@ -102,6 +102,10 @@ function restDb(url: string, key: string): WatcherDb {
     async attachImage(guidHash: string, url: string) {
       await call("PATCH", `/news_items?guid_hash=eq.${encodeURIComponent(guidHash)}`, { image_url: url }, "return=minimal");
     },
+    async expiredImages(before: string) {
+      const rows = (await (await call("GET", `/news_items?published_at=lt.${encodeURIComponent(before)}&image_url=not.is.null&select=image_url`)).json()) as { image_url: string }[];
+      return rows.map((r) => r.image_url);
+    },
   };
 }
 
@@ -121,6 +125,10 @@ const dryDb: WatcherDb = {
   },
   async attachImage(guidHash, url) {
     log(`[dry-run] WOULD UPDATE news_items SET image_url = ${url} WHERE guid_hash = ${guidHash}`);
+  },
+  async expiredImages(before) {
+    log(`[dry-run] WOULD SELECT image_url FROM news_items WHERE published_at < ${before} AND image_url IS NOT NULL`);
+    return [];
   },
 };
 
@@ -161,7 +169,12 @@ async function main(): Promise<number> {
     if (process.env.NEWS_WATCHER_IMAGE_PUBLISH === "supabase") {
       const bucket = process.env.NEWS_WATCHER_IMAGE_BUCKET || "news-images";
       if (DRY) images.publish = async (job) => (log(`[dry-run] WOULD UPLOAD ${job.base}.webp to storage bucket ${bucket}`), `https://<project>.supabase.co/storage/v1/object/public/${bucket}/${job.base}.webp`);
-      else images.publish = storagePublisher(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "", process.env.SUPABASE_SERVICE_ROLE_KEY || "", bucket);
+      else {
+        const sbUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+        const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+        images.publish = storagePublisher(sbUrl, sbKey, bucket);
+        images.remove = storageRemover(sbUrl, sbKey, bucket);
+      }
     }
   }
   if (!DRY && !lock()) {

@@ -1,8 +1,9 @@
-// lib/v3c/news/image-gen.ts (#NEWSWATCH-2) — one attempt at the picture of one
-// note, on Andrea's Mac: `gptimg` (Codex, subscription, $0), then the
+// lib/v3c/news/image-gen.ts (#NEWSWATCH-2, -IMG) — one attempt at the card of one
+// note, on Andrea's Mac: `gptimg -r` (Codex, subscription, $0), then the
 // post-production of art direction (centre crop 16:9 → 1200×675 png, webp
-// < 150 KB), then the visual check by `claude -p` (sonnet, Read only). Used only
-// by the news watcher, behind NEWS_WATCHER_IMAGES (off by default).
+// < 150 KB), then the visual check by `claude -p` (sonnet, Read only: the exact
+// text, no face/blank face, no mark/crest), then the anti-duplicate signature.
+// Used only by the news watcher, behind NEWS_WATCHER_IMAGES (off by default).
 //
 //  - `gptimg` strictly in SERIES (two at once steal each other's PNG — known bug
 //    of the wrapper) and with stdin closed (= `</dev/null`: otherwise `codex exec`
@@ -20,8 +21,10 @@ export const GPTIMG_TIMEOUT_MS = 240_000;
 export const IMAGE_CHECK_MODEL = "sonnet";
 
 export type ImageFiles = { png: string; webp: string; webpBytes: number };
+/** dHash 8×8 (16 hex) + 4×4 RGB colour signature (48 numbers) of the finished png, for the anti-duplicate. */
+export type ImageSig = { dhash: string; csig: number[] };
 export type ImageAttempt =
-  | { kind: "ok"; files: ImageFiles; ms: number }
+  | { kind: "ok"; files: ImageFiles; ms: number; sig: ImageSig; textSeen: string }
   /** this attempt failed (generation, post-production or the visual check): counts towards the cap */
   | { kind: "bad"; reason: string; ms: number }
   /** the subscription said stop (checker): no attempt counted, images wait for a later run */
@@ -64,6 +67,13 @@ function run(bin: string, args: string[], opts: { cwd: string; timeoutMs: number
 
 const tail = (s: string) => s.replace(/\s+/g, " ").trim().slice(-160);
 
+/**
+ * Codex said «stop for now», not «this picture is bad»: out of credits (measured 29/10:
+ * «Your workspace is out of credits»), usage/rate limit, model at capacity. Not an
+ * attempt: the card waits for a later run.
+ */
+export const GPTIMG_LIMIT_RE = /out of credits|usage limit|rate.?limit|hit your (?:[\w-]+ )?limit|at capacity|quota|\b429\b/i;
+
 /** Centre crop to 16:9, resize to 1200×675 (sips), webp at the highest quality under 150 KB (cwebp). */
 export async function postProcess(raw: string, base: string, outDir: string, cwebp: string): Promise<ImageFiles | { error: string }> {
   const dims = await run("/usr/bin/sips", ["-g", "pixelWidth", "-g", "pixelHeight", raw], { cwd: outDir, timeoutMs: 30_000 });
@@ -87,40 +97,80 @@ export async function postProcess(raw: string, base: string, outDir: string, cwe
   return { error: `webp over ${MAX_WEBP_BYTES} bytes at q50` };
 }
 
-/** The visual check on the finished png: `claude -p` with the Read tool only, in the image's folder. */
-export async function checkImage(png: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">): Promise<{ ok: true } | { ok: false; reason: string; limit?: boolean }> {
+/** A 24-bit top-down BMP from sips → rows of [r, g, b]. */
+function readBmp(buf: Buffer): number[][][] {
+  const off = buf.readUInt32LE(10);
+  const w = buf.readInt32LE(18);
+  const hRaw = buf.readInt32LE(22);
+  const h = Math.abs(hRaw);
+  const bpp = buf.readUInt16LE(28) / 8;
+  const stride = Math.ceil((w * bpp) / 4) * 4;
+  const rows: number[][][] = [];
+  for (let y = 0; y < h; y++) {
+    const row: number[][] = [];
+    const base = off + (hRaw < 0 ? y : h - 1 - y) * stride;
+    for (let x = 0; x < w; x++) {
+      const p = base + x * bpp;
+      row.push([buf[p + 2], buf[p + 1], buf[p]]);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+/** The anti-duplicate signature with macOS `sips` only (resample differs a little from art direction's PIL; thresholds rechecked on the v3 cards). */
+export async function imageSignature(png: string, tmpDir: string): Promise<ImageSig | null> {
+  const a = join(tmpDir, ".sig-9x8.bmp");
+  const b = join(tmpDir, ".sig-4x4.bmp");
+  const r1 = await run("/usr/bin/sips", ["-s", "format", "bmp", "-z", "8", "9", png, "--out", a], { cwd: tmpDir, timeoutMs: 30_000 });
+  const r2 = await run("/usr/bin/sips", ["-s", "format", "bmp", "-z", "4", "4", png, "--out", b], { cwd: tmpDir, timeoutMs: 30_000 });
+  if (r1.code !== 0 || r2.code !== 0) return null;
+  const g = readBmp(readFileSync(a)).map((row) => row.map(([r, gg, bb]) => 0.299 * r + 0.587 * gg + 0.114 * bb));
+  let bits = BigInt(0);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) bits = (bits << BigInt(1)) | BigInt(g[y][x] > g[y][x + 1] ? 1 : 0);
+  return { dhash: bits.toString(16).padStart(16, "0"), csig: readBmp(readFileSync(b)).flat(2) };
+}
+
+/** The visual check on the finished png: `claude -p` with the Read tool only, in the image's folder; the text read is compared with `expected`. */
+export async function checkImage(png: string, expected: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">): Promise<{ ok: true; textSeen: string } | { ok: false; reason: string; limit?: boolean }> {
   const args = claudeArgs(opts.checkModel ?? IMAGE_CHECK_MODEL, IMAGE_CHECK_SCHEMA, IMAGE_CHECK_PROMPT);
   args[args.indexOf("--tools") + 1] = "Read";
-  const r = await runClaude(args, `Image file: ${basename(png)}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
+  const r = await runClaude(args, `Image file: ${basename(png)}\nExpected text: ${expected ? `«${expected}»` : "none (the card must show no text at all)"}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
   if ("fail" in r) return { ok: false, reason: `check: ${r.fail}` };
   const e = readEnvelope(r.out, r.err, r.code, r.ms);
   if (!e.ok) return { ok: false, reason: `check: ${e.outcome.reason}`.slice(0, 200), limit: e.outcome.kind === "limit" };
   try {
-    const v = readImageVerdict(e.output);
-    return v.ok ? { ok: true } : { ok: false, reason: `check: ${v.problems.join("; ")}`.slice(0, 200) };
+    const v = readImageVerdict(e.output, expected);
+    return v.ok ? { ok: true, textSeen: v.textSeen } : { ok: false, reason: `check: ${v.problems.join("; ")}`.slice(0, 200) };
   } catch (err) {
     return { ok: false, reason: String(err instanceof Error ? err.message : err).slice(0, 160) };
   }
 }
 
 /** One attempt: generate, post-produce, check. Never throws. */
-export async function makeImage(job: { base: string; prompt: string; attempts: number }, o: ImageGenOpts): Promise<ImageAttempt> {
+export async function makeImage(job: { base: string; prompt: string; attempts: number; expected: string }, o: ImageGenOpts): Promise<ImageAttempt> {
   const t0 = Date.now();
   const rawDir = join(o.dir, "_raw");
   const rejDir = join(o.dir, "_rejected");
   mkdirSync(rawDir, { recursive: true });
   const raw = join(rawDir, `${job.base}-a${job.attempts + 1}.png`);
-  const g = await run(o.gptimg, [job.prompt, raw], { cwd: rawDir, timeoutMs: GPTIMG_TIMEOUT_MS, env: o.env });
+  // -r: a flat graphic card, not a photograph (without it the wrapper prepends «photorealistic»)
+  const g = await run(o.gptimg, ["-r", job.prompt, raw], { cwd: rawDir, timeoutMs: GPTIMG_TIMEOUT_MS, env: o.env });
   if (g.timedOut) return { kind: "bad", reason: `gptimg timeout after ${g.ms} ms`, ms: Date.now() - t0 };
+  if (g.code !== 0 && GPTIMG_LIMIT_RE.test(`${g.err} ${g.out}`)) return { kind: "limit", reason: `gptimg: ${tail(g.err || g.out)}` };
   if (g.code !== 0 || !existsSync(raw)) return { kind: "bad", reason: `gptimg exit ${g.code}: ${tail(g.err)}`, ms: Date.now() - t0 };
   const files = await postProcess(raw, job.base, o.dir, o.cwebp);
   if ("error" in files) return { kind: "bad", reason: files.error, ms: Date.now() - t0 };
-  const c = await checkImage(files.png, o);
-  if (c.ok) return { kind: "ok", files, ms: Date.now() - t0 };
+  const c = await checkImage(files.png, job.expected, o);
+  if (c.ok) {
+    const sig = await imageSignature(files.png, rawDir);
+    if (sig) return { kind: "ok", files, ms: Date.now() - t0, sig, textSeen: c.textSeen };
+  }
   if (!c.ok && c.limit) return { kind: "limit", reason: c.reason };
+  const reason = c.ok ? "signature: sips failed" : c.reason;
   mkdirSync(rejDir, { recursive: true });
   for (const f of [files.png, files.webp]) if (existsSync(f)) renameSync(f, join(rejDir, basename(f).replace(/(\.\w+)$/, `-a${job.attempts + 1}$1`)));
-  return { kind: "bad", reason: c.reason, ms: Date.now() - t0 };
+  return { kind: "bad", reason, ms: Date.now() - t0 };
 }
 
 /**
@@ -141,5 +191,22 @@ export function storagePublisher(url: string, key: string, bucket: string, f: ty
     });
     if (!r.ok) throw new Error(`storage ${name} → http ${r.status} ${(await r.text()).slice(0, 120)}`);
     return `${base}/storage/v1/object/public/${bucket}/${name}`;
+  };
+}
+
+/** Retention: delete published cards by public URL (one call, at most 100 names); a URL outside the bucket is ignored. */
+export function storageRemover(url: string, key: string, bucket: string, f: typeof fetch = fetch): (urls: string[]) => Promise<void> {
+  const base = url.replace(/\/+$/, "");
+  const prefix = `${base}/storage/v1/object/public/${bucket}/`;
+  return async (urls) => {
+    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}\.webp$/.test(n)).slice(0, 100);
+    if (!names.length) return;
+    const r = await f(`${base}/storage/v1/object/${bucket}`, {
+      method: "DELETE",
+      headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({ prefixes: names }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!r.ok) throw new Error(`storage delete → http ${r.status} ${(await r.text()).slice(0, 120)}`);
   };
 }
