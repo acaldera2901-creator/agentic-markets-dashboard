@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { getSessionPlan } from "@/lib/auth";
 import { dbQuery } from "@/lib/db";
 import { getStripe, isStripeConfigured, planToPriceId, type StripePlan } from "@/lib/stripe";
-import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
+import {
+  normalizeCheckoutPlan,
+  blocksRetiredPlanPurchase,
+  RETIRED_PLAN_BODY,
+  RETIRED_PLAN_STATUS,
+} from "@/lib/commercial-plan";
 import { siteOrigin } from "@/lib/activation";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +33,11 @@ export async function POST(req: Request) {
   const plan = normalizeCheckoutPlan(body.requested_plan) as StripePlan | null;
   if (plan !== "base" && plan !== "premium") {
     return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
+  }
+  // #RETIRE-BASE-1031: Base non si vende più ai nuovi clienti (rinnovo di chi è
+  // già su Base escluso dal blocco; i rinnovi Stripe passano comunque dal webhook).
+  if (blocksRetiredPlanPurchase(plan, ctx.plan)) {
+    return NextResponse.json(RETIRED_PLAN_BODY, { status: RETIRED_PLAN_STATUS });
   }
 
   // Riusa il customer Stripe se già presente.

@@ -43,7 +43,6 @@ const es: Record<string, string> = {
   plans_base_f7: "Sin promesas de ganancias garantizadas",
   plans_premium_desc: "Para el cliente que quiere delegar en agentes: análisis, decisión, stake y colocación en vivo.",
   plans_premium_core: "Lo hago por ti", plans_premium_sub: "Capa de ejecución con auditoría completa",
-  plans_premium_f1: "Todo lo del plan Base",
   plans_premium_f2: "Agentes desbloqueados para colocar apuestas automáticamente",
   plans_premium_f3: "Dimensionamiento del stake según bankroll y perfil de riesgo",
   plans_premium_f4: "Stop loss, límites diarios y límites por deporte",

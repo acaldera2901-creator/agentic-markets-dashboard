@@ -43,7 +43,6 @@ const sv: Record<string, string> = {
   plans_base_f7: "Inga löften om garanterad vinst",
   plans_premium_desc: "För klienten som vill delegera till agenter: analys, beslut, insats och liveplacering.",
   plans_premium_core: "Jag gör det åt dig", plans_premium_sub: "Exekveringslager med fullständig revision",
-  plans_premium_f1: "Allt i Base-abonnemanget",
   plans_premium_f2: "Agenter upplåsta för att lägga spel automatiskt",
   plans_premium_f3: "Insatsstorlek baserad på bankrulle och riskprofil",
   plans_premium_f4: "Stop loss, dagliga gränser och sportgränser",

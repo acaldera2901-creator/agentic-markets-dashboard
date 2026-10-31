@@ -52,7 +52,7 @@ beforeEach(() => {
 it("401 senza sessione", async () => {
   getSessionPlan.mockResolvedValue(null);
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(401);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly" }))).status).toBe(401);
 });
 
 it("400 su requested_plan non valido", async () => {
@@ -77,14 +77,14 @@ it("ritorna l'URL con variant, email e identifier dalla sessione", async () => {
 it("503 se lo store non è configurato → il client resta su PayGate", async () => {
   delete process.env.SHOPIFY_SHOP_DOMAIN;
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(503);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly" }))).status).toBe(503);
 });
 
 it("annuale: usa il prodotto annuale, non quello mensile", async () => {
-  process.env.SHOPIFY_VARIANT_BASE_ANNUAL = "99001";
+  process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL = "99001";
   process.env.SHOPIFY_SELLING_PLAN_ANNUAL = "99002";
   const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "annual" }));
+  const res = await POST(req({ requested_plan: "premium", period: "annual" }));
   expect(res.status).toBe(200);
   const { url } = (await res.json()) as { url: string };
   const inner = new URLSearchParams(new URL(url).searchParams.get("return_to")!.split("?")[1]);
@@ -93,14 +93,14 @@ it("annuale: usa il prodotto annuale, non quello mensile", async () => {
 });
 
 it("503 sull'annuale se i prodotti annuali non sono configurati → fallback PayGate", async () => {
-  delete process.env.SHOPIFY_VARIANT_BASE_ANNUAL;
+  delete process.env.SHOPIFY_VARIANT_PREMIUM_ANNUAL;
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "annual" }))).status).toBe(503);
+  expect((await POST(req({ requested_plan: "premium", period: "annual" }))).status).toBe(503);
 });
 
 it("400 su periodo non valido", async () => {
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "weekly" }))).status).toBe(400);
+  expect((await POST(req({ requested_plan: "premium", period: "weekly" }))).status).toBe(400);
 });
 
 it("409 per l'abbonato PayGate ancora attivo (grandfather)", async () => {
@@ -125,7 +125,7 @@ it("consente l'upgrade a chi ha un piano PayGate già scaduto", async () => {
     plan_expires_at: new Date(Date.now() - 86400_000).toISOString(),
   });
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(200);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly" }))).status).toBe(200);
 });
 
 it("409 tier-guard: premium attivo non può comprare base", async () => {
@@ -142,7 +142,7 @@ it("409 tier-guard: premium attivo non può comprare base", async () => {
 it("500 fail-closed se la lettura di plan_source fallisce (mai un pagamento orfano)", async () => {
   dbQueryStrict.mockRejectedValue(new Error("db down"));
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(500);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly" }))).status).toBe(500);
 });
 
 it("503 sui piani quando la promo di lancio sconta l'ordine (prezzo Shopify fisso)", async () => {
@@ -150,7 +150,7 @@ it("503 sui piani quando la promo di lancio sconta l'ordine (prezzo Shopify fiss
   process.env.LAUNCH_PROMO_DEADLINE = new Date(Date.now() + 86400_000).toISOString();
   promoEligibility.mockResolvedValue({ firstPaidOrder: true });
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(503);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly" }))).status).toBe(503);
 });
 
 it("weekly: acquisto one-off, senza selling_plan", async () => {
@@ -221,7 +221,7 @@ it("weekly: 503 con promo di lancio attiva (prezzo Shopify fisso a 12.99)", asyn
 it("403 su richiesta cross-site", async () => {
   const { POST } = await import("./route");
   const res = await POST(
-    req({ requested_plan: "base", period: "monthly" }, { "sec-fetch-site": "cross-site" })
+    req({ requested_plan: "premium", period: "monthly" }, { "sec-fetch-site": "cross-site" })
   );
   expect(res.status).toBe(403);
 });
@@ -231,7 +231,7 @@ it("403 su richiesta cross-site", async () => {
 it("503 se il webhook secret manca: nessuno viene mandato a pagare", async () => {
   delete process.env.SHOPIFY_WEBHOOK_SECRET;
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(503);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly" }))).status).toBe(503);
 });
 
 // Blocker go-live: ogni checkout con selling plan crea un NUOVO subscription
@@ -262,7 +262,7 @@ it("l'abbonamento Shopify SCADUTO non blocca il riacquisto", async () => {
   });
   dbQueryStrict.mockResolvedValue([{ plan_source: "shopify" }]);
   const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "monthly" }));
+  const res = await POST(req({ requested_plan: "premium", period: "monthly" }));
   expect(res.status).toBe(200);
 });
 
@@ -270,20 +270,52 @@ it("l'abbonamento Shopify SCADUTO non blocca il riacquisto", async () => {
 // inoltrasse, il checkout resterebbe in spagnolo per tutti.
 it("inoltra la lingua dell'app al checkout Shopify", async () => {
   const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "monthly", lang: "it" }));
+  const res = await POST(req({ requested_plan: "premium", period: "monthly", lang: "it" }));
   const { url } = (await res.json()) as { url: string };
   expect(new URL(url).pathname).toBe("/it/cart/clear");
 });
 
 it("lingua assente o non pubblicata → inglese, non spagnolo", async () => {
   const { POST } = await import("./route");
-  const noLang = (await (await POST(req({ requested_plan: "base", period: "monthly" }))).json()) as { url: string };
+  const noLang = (await (await POST(req({ requested_plan: "premium", period: "monthly" }))).json()) as { url: string };
   expect(new URL(noLang.url).pathname).toBe("/en/cart/clear");
-  const fr = (await (await POST(req({ requested_plan: "base", period: "monthly", lang: "fr" }))).json()) as { url: string };
+  const fr = (await (await POST(req({ requested_plan: "premium", period: "monthly", lang: "fr" }))).json()) as { url: string };
   expect(new URL(fr.url).pathname).toBe("/en/cart/clear");
 });
 it('weekly: rejects incomplete, legacy or started cases', async () => {
   weekState.mockResolvedValue({ exists: true, legs: 3, remaining: 3, purchasable: false });
   const { POST } = await import('./route');
   expect((await POST(req({ requested_plan: 'weekly' }))).status).toBe(409);
+});
+
+// #RETIRE-BASE-1031 — Base non si vende più a nessun nuovo cliente.
+describe("Base ritirato", () => {
+  it("free che chiede base: 409 con code plan_retired (il client NON cade su PayGate)", async () => {
+    const { POST } = await import("./route");
+    for (const period of ["monthly", "annual"] as const) {
+      const res = await POST(req({ requested_plan: "base", period }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ code: "plan_retired" });
+    }
+    // Rifiutato prima di toccare il DB o costruire un URL di checkout.
+    expect(dbQueryStrict).not.toHaveBeenCalled();
+  });
+
+  it("ex-Base scaduto (piano effettivo free) non ricompra base", async () => {
+    dbQueryStrict.mockResolvedValue([{ plan_source: "shopify" }]);
+    const { POST } = await import("./route");
+    expect((await POST(req({ requested_plan: "base", period: "monthly" }))).status).toBe(409);
+  });
+
+  it("chi ha plan='base' può comprare Pro: il ritiro blocca solo la chiave 'base'", async () => {
+    getSessionPlan.mockResolvedValue({
+      identifier: "u@t.com",
+      plan: "base",
+      name: null,
+      plan_expires_at: new Date(Date.now() - 86400000).toISOString(),
+    });
+    dbQueryStrict.mockResolvedValue([{ plan_source: "shopify" }]);
+    const { POST } = await import("./route");
+    expect((await POST(req({ requested_plan: "premium", period: "monthly" }))).status).toBe(200);
+  });
 });
