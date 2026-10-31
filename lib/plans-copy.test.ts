@@ -13,21 +13,12 @@ import { describe, it, expect } from "vitest";
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(join(REPO_ROOT, "app/app/page.tsx"), "utf8");
 
+// #RETIRE-BASE-1031: la card Base è uscita dalla pagina piani (Base non si vende
+// più), quindi la guardia sulla sua descrizione diventa: la descrizione non c'è.
 describe("descrizione del piano Base", () => {
-  const start = src.indexOf('en: "Up to 7 predictions per sport a day');
-  const block = start >= 0 ? src.slice(src.lastIndexOf("pick5(lang, {", start), src.indexOf("})", start)) : "";
-
-  it("esiste (la guardia non è vuota)", () => {
-    expect(block).toMatch(/it: "Fino a 7 prediction per sport al giorno/);
-    expect(block).toMatch(/ru: "/);
-  });
-
-  it("non promette edge in nessuna lingua", () => {
-    expect(block).not.toMatch(/edge/i);
-  });
-
-  it("promette ancora le spiegazioni, che Base vede davvero", () => {
-    expect(block).toMatch(/full explanations/);
+  it("la card non c'è più: Base non si vende", () => {
+    expect(src).not.toMatch(/plan="base"/);
+    expect(src).not.toMatch(/Up to 7 football \+ 7 tennis/);
   });
 });
 
