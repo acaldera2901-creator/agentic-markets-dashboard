@@ -130,7 +130,6 @@ const serviceJsonLd = {
   name: "BetRedge Sports Prediction Subscription",
   provider: { "@id": "https://www.betredge.com/#organization" },
   offers: [
-    { "@type": "Offer", name: "BetRedge Base", price: "14.99", priceCurrency: "USD" },
     { "@type": "Offer", name: "BetRedge Pro", price: "29.99", priceCurrency: "USD" },
   ],
 };

@@ -438,8 +438,8 @@ type V3Copy = {
   ctaFirst: string; heroNote: string;
   stripKick: string; stripItems: string[];
   prCta: string;
-  pcFreeTag: string; pcBaseTag: string; pcProTag: string;
-  pcCtaFree: string; pcCtaBase: string; pcCtaPro: string; pcNote: string;
+  pcFreeTag: string; pcProTag: string;
+  pcCtaFree: string; pcCtaPro: string; pcNote: string;
   fnNote: string;
   // #CONVERSION-FAQ-0916: contorno della sezione FAQ; le domande vivono in
   // lib/home-faq.ts (condivise col FAQPage JSON-LD di app/page.tsx).
@@ -465,8 +465,8 @@ type V3Copy = {
   suEyebrow: string; suHead: string; suSub: string;
   suItems: { pk: string; pn: string; p: string; ps: string; psB: string }[];
   pcEyebrow: string; pcHead: string;
-  pcFree: string; pcBase: string; pcPro: string; pcBest: string; pcMo: string;
-  pcFreeList: string[]; pcBaseList: string[]; pcProList: string[];
+  pcFree: string; pcPro: string; pcBest: string; pcMo: string;
+  pcFreeList: string[]; pcProList: string[];
   fnHead1: string; fnHeadG: string; fnBody: string;
   wgKick: string; wgHead: string; wgBody: string; wgCta: string;
   // #SEO-ORPHANS-0908 — contorno del blocco guide. I titoli delle guide NON
@@ -508,9 +508,9 @@ const V3_EN: V3Copy = {
     { pk: "Live Probability Board", pn: "The board, as the match moves", p: "Follow live scores and match status where available. Stored pre-match predictions stay frozen; no bets are executed.", ps: "live · ", psB: "updating" },
   ],
   pcEyebrow: "Access", pcHead: "Start free. Read deeper when you need it.",
-  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "FULL RESEARCH BOARD", pcMo: " / mo",
-  pcFreeTag: "For learning how the board works.", pcBaseTag: "For the full pre-match picture.", pcProTag: "For full access to the probability board.",
-  pcCtaFree: "Read a match free", pcCtaBase: "Start Base", pcCtaPro: "Unlock Pro",
+  pcFree: "Free", pcPro: "Pro", pcBest: "FULL RESEARCH BOARD", pcMo: " / mo",
+  pcFreeTag: "For learning how the board works.", pcProTag: "For full access to the probability board.",
+  pcCtaFree: "Read a match free", pcCtaPro: "Unlock Pro",
   // #CONVERSION-FAQ-0916: «cancel anytime» ripete la riga del checkout
   // (PlansTab: rinnovo automatico, disdetta dall'account; crypto = 30 giorni
   // senza rinnovo) — non è una promessa nuova.
@@ -523,8 +523,9 @@ const V3_EN: V3Copy = {
   pcFreeList: ["Up to 3 model readings per sport, every day", "Public pre-kick-off record", "Probability, market price and a preview of the edge", "No card required"],
   // #CLV-CLAIM-0831: «closing line value» tolto anche dalla lista Base — è lo
   // stesso claim del chip rimosso il 31/08, misurato senza dato dietro.
-  pcBaseList: ["Up to 7 model readings per sport, every day", "Full edge % and stake context", "Weekly Model Case", "Full public record"],
-  pcProList: ["Everything in Base, with no daily cap", "Deep analysis on every match card", "Live Probability Board", "Build a Probability View"],
+  // #COPY-NO-BASE-1031: Base non si vende più — la colonna è uscita e Pro non si
+  // descrive più come «tutto ciò che c'è in Base».
+  pcProList: ["Every reading on the board, with no daily cap", "Deep analysis on every match card", "Live Probability Board", "Build a Probability View"],
   fnHead1: "Read your first match ", fnHeadG: "free.", fnBody: "See a probability estimate, its edge, and the reasoning — then make your own call. No card required to start.",
   fnNote: "No tips. No black box. No guaranteed returns. You make the call.",
   // #WIDGET-LANDING-0824 — richiamo ai proprietari di siti: il widget è un canale
@@ -572,14 +573,13 @@ const V3_IT: V3Copy = {
     { pk: "Board di probabilità live", pn: "Il board, mentre la partita si muove", p: "Segui punteggi e stato live dove disponibili. I pronostici pre-partita restano congelati; nessuna scommessa viene eseguita.", ps: "live · ", psB: "in aggiornamento" },
   ],
   pcEyebrow: "Accesso", pcHead: "Inizia gratis. Leggi più a fondo quando ti serve.",
-  pcFree: "Free", pcBase: "Base", pcPro: "Pro", pcBest: "BOARD DI RICERCA COMPLETO", pcMo: " / mese",
-  pcFreeTag: "Per imparare come funziona il board.", pcBaseTag: "Per il quadro pre-partita completo.", pcProTag: "Per l’accesso completo al board di probabilità.",
-  pcCtaFree: "Leggi una partita gratis", pcCtaBase: "Inizia con Base", pcCtaPro: "Sblocca Pro",
+  pcFree: "Free", pcPro: "Pro", pcBest: "BOARD DI RICERCA COMPLETO", pcMo: " / mese",
+  pcFreeTag: "Per imparare come funziona il board.", pcProTag: "Per l’accesso completo al board di probabilità.",
+  pcCtaFree: "Leggi una partita gratis", pcCtaPro: "Sblocca Pro",
   pcNote: "Mensile o annuale · Disdici quando vuoi dal tuo account · Nessun conto bookmaker richiesto · Nessuna scommessa piazzata per te · Nessun rendimento garantito · 18+",
   faqEyebrow: "FAQ", faqHead: "Prima della tua prima lettura.", faqSub: "Le cose che conviene sapere prima di iscriversi: come funziona il pagamento, cosa contiene una lettura, cosa fa il «live», e da cosa BetRedge sta fuori.",
   pcFreeList: ["Fino a 3 letture del modello per sport, ogni giorno", "Registro pubblico prima del fischio", "Probabilità, quota di mercato e un’anteprima dell’edge", "Senza carta"],
-  pcBaseList: ["Fino a 7 letture del modello per sport, ogni giorno", "Edge % completo e contesto di stake", "Weekly Model Case", "Registro pubblico completo"],
-  pcProList: ["Tutto ciò che c’è in Base, senza tetto giornaliero", "Deep analysis su ogni scheda", "Board di probabilità live", "Costruisci una vista di probabilità"],
+  pcProList: ["Tutte le letture del board, senza tetto giornaliero", "Deep analysis su ogni scheda", "Board di probabilità live", "Costruisci una vista di probabilità"],
   fnHead1: "Leggi la tua prima partita ", fnHeadG: "gratis.", fnBody: "Vedi una stima di probabilità, il suo edge e il ragionamento — poi decidi tu. Nessuna carta per iniziare.",
   fnNote: "Niente dritte. Niente scatola nera. Nessun rendimento garantito. Decidi tu.",
   wgKick: "Per gli editori", wgHead: "Dai al tuo pubblico un livello di probabilità trasparente.",
@@ -1099,7 +1099,7 @@ export default function LandingPage() {
         <div className="v-sec-head"><div className="v-kick q">{v.pcEyebrow}</div><h2>{v.pcHead}</h2></div>
         {/* #CONVERSION-COPY-0916 (audit §6): ogni piano dice per chi è (.tag) e
             il tasto dice cosa succede (leggi/inizia/sblocca), non il nome del
-            piano ripetuto. La nota sotto i tre risponde alle domande che
+            piano ripetuto. La nota sotto i piani risponde alle domande che
             altrimenti finiscono in FAQ: cadenza, niente bookmaker, niente
             scommesse per te, niente rendimento garantito, 18+. */}
         <div className="v-tiers">
@@ -1108,12 +1108,6 @@ export default function LandingPage() {
             <p className="tag">{v.pcFreeTag}</p>
             <ul>{v.pcFreeList.map((li) => <li key={li}>{li}</li>)}</ul>
             <button type="button" className="v-btn v-btn--utility" style={{ alignSelf: "flex-start" }} onClick={() => setAuthModal("create")}>{v.pcCtaFree}</button>
-          </div>
-          <div className="v-tier">
-            <div className="name">{v.pcBase}</div><div className="price">${priceText(PUBLIC_PAID_PLANS.base.amountUsdt, lang)}<small>{v.pcMo}</small></div>
-            <p className="tag">{v.pcBaseTag}</p>
-            <ul>{v.pcBaseList.map((li) => <li key={li}>{li}</li>)}</ul>
-            <Link href="/plans" className="v-btn v-btn--secondary" style={{ alignSelf: "flex-start" }}>{v.pcCtaBase}</Link>
           </div>
           <div className="v-tier pro">
             <div className="name">{v.pcPro} <span className="best">{v.pcBest}</span></div><div className="price">${priceText(PUBLIC_PAID_PLANS.premium.amountUsdt, lang)}<small>{v.pcMo}</small></div>

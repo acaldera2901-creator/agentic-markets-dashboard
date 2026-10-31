@@ -41,7 +41,7 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
           ],
           [
             "Do I need a paid plan to see them?",
-            "Creator Picks are included in the Base and Pro plans.",
+            "Creator Picks are included in the Pro plan.",
           ],
         ]}
       />

@@ -13,9 +13,10 @@ import { CLASSIC } from "@/lib/classic/flag";
 //       lib/classic/guard MODEL_WEIGHT) o «Market only»/«Model only»; il tennis
 //       oggi è quasi sempre «Market only» (Elo più vecchio di 6 h);
 //   4 · nel live NON c'è un modello che rilegge la partita: /api/live serve
-//       punteggio e minuto (e lo serve ai piani a pagamento, Base E Pro:
-//       requireAccess → planHasAccess), la stima resta quella di prima del
-//       fischio, prezzi e bottone partner spariscono al calcio d'inizio;
+//       punteggio e minuto (e lo serve ai piani a pagamento: requireAccess →
+//       planHasAccess; nel copy si nomina solo Pro, l'unico in vendita —
+//       i Base legacy restano serviti, #COPY-NO-BASE-1031), la stima resta
+//       quella di prima del fischio, prezzi e bottone partner spariscono al calcio d'inizio;
 //   6 · la scheda non porta più «un numero solo»: stima, mercato e prezzi partner.
 // Le altre tre restano identiche. EN e IT come sopra; le altre lingue ricadono
 // su EN, la stessa regola dichiarata in testa al file. A flag spento
@@ -23,13 +24,13 @@ import { CLASSIC } from "@/lib/classic/flag";
 const CLASSIC_ANSWERS = {
   en: {
     1: "A reading identifies the source of its probability and shows a market comparison when the available data supports one. Some cards show a model-and-market estimate; others show a market-only reading. The public record tracks eligible pre-match predictions separately from unsealed display estimates. Pro analysis includes the statistical context available for that match. Not every displayed field is an input to the probability, and coverage varies. Eligible club-football estimates use a 30% model and 70% market blend; eligible tennis estimates use 10% Elo and 90% market and are labelled unsealed. These formulas do not describe every card or competition.",
-    3: "The live board follows scores and match status where feeds are available. Stored pre-match predictions remain frozen after the scheduled start; the model does not reprice them from the live score. Nothing is placed or executed for you. Live scores require a paid plan, Base or Pro. Pre-match partner prices are hidden once play starts.",
-    5: "Open the board and check the source label beside each number. Depending on the available data, a card can show an estimate, a market-only probability, or no price. Open a match for the available details, and use the public record to examine eligible past predictions. A free account opens up to three readings per sport per day; Base opens up to seven, and Pro has no daily reading cap. Partner prices appear where available.",
+    3: "The live board follows scores and match status where feeds are available. Stored pre-match predictions remain frozen after the scheduled start; the model does not reprice them from the live score. Nothing is placed or executed for you. Live scores require Pro. Pre-match partner prices are hidden once play starts.",
+    5: "Open the board and check the source label beside each number. Depending on the available data, a card can show an estimate, a market-only probability, or no price. Open a match for the available details, and use the public record to examine eligible past predictions. A free account opens up to three readings per sport per day; Pro has no daily reading cap. Partner prices appear where available.",
   },
   it: {
     1: "Una lettura indica la fonte della probabilità e mostra il confronto col mercato quando i dati disponibili lo consentono. Alcune schede mostrano una stima che combina modello e mercato; altre mostrano solo il mercato. Il registro pubblico traccia i pronostici pre-partita idonei separatamente dalle stime visualizzate non sigillate. L’analisi Pro include il contesto statistico disponibile per quella partita. Non tutti i campi mostrati entrano nel calcolo della probabilità e la copertura varia. Le stime idonee del calcio per club combinano 30% modello e 70% mercato; quelle idonee del tennis combinano 10% Elo e 90% mercato e sono indicate come non sigillate. Queste formule non descrivono ogni scheda o competizione.",
-    3: "Il board live segue punteggi e stato delle partite dove sono disponibili le fonti. I pronostici pre-partita memorizzati restano congelati dopo l’orario di inizio; il modello non li ricalcola in base al punteggio live. Non viene piazzato o eseguito nulla per te. I punteggi live richiedono un piano a pagamento, Base o Pro. Le quote pre-partita dei partner vengono nascoste all’inizio del match.",
-    5: "Apri il board e controlla l’etichetta della fonte accanto a ogni numero. Secondo i dati disponibili, una scheda può mostrare una stima, la sola probabilità del mercato o nessuna quota. Apri la partita per i dettagli disponibili e consulta il registro pubblico per esaminare i pronostici passati idonei. Un account gratuito apre fino a tre letture per sport al giorno; Base fino a sette, mentre Pro non ha un limite giornaliero di letture. Le quote dei partner compaiono dove disponibili.",
+    3: "Il board live segue punteggi e stato delle partite dove sono disponibili le fonti. I pronostici pre-partita memorizzati restano congelati dopo l’orario di inizio; il modello non li ricalcola in base al punteggio live. Non viene piazzato o eseguito nulla per te. I punteggi live richiedono Pro. Le quote pre-partita dei partner vengono nascoste all’inizio del match.",
+    5: "Apri il board e controlla l’etichetta della fonte accanto a ogni numero. Secondo i dati disponibili, una scheda può mostrare una stima, la sola probabilità del mercato o nessuna quota. Apri la partita per i dettagli disponibili e consulta il registro pubblico per esaminare i pronostici passati idonei. Un account gratuito apre fino a tre letture per sport al giorno; Pro non ha un limite giornaliero di letture. Le quote dei partner compaiono dove disponibili.",
   },
 } as const;
 
