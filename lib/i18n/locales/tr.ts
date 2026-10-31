@@ -43,7 +43,6 @@ const tr: Record<string, string> = {
   plans_base_f7: "Garantili kâr vaadi yok",
   plans_premium_desc: "İşi agent'lara devretmek isteyen müşteri için: analiz, karar, kasa ve canlı yerleştirme.",
   plans_premium_core: "Senin için yapıyorum", plans_premium_sub: "Tam denetimli yürütme katmanı",
-  plans_premium_f1: "Base planındaki her şey",
   plans_premium_f2: "Bahisleri otomatik yerleştirmek için açılmış agent'lar",
   plans_premium_f3: "Bankroll ve risk profiline göre kasa boyutlandırma",
   plans_premium_f4: "Stop loss, günlük limitler ve spor limitleri",

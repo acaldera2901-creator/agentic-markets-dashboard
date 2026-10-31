@@ -43,7 +43,6 @@ const de: Record<string, string> = {
   plans_base_f7: "Keine Garantie auf Gewinnversprechen",
   plans_premium_desc: "Für den Kunden, der an Agenten delegieren will: Analyse, Entscheidung, Einsatz und Live-Platzierung.",
   plans_premium_core: "Ich erledige es für dich", plans_premium_sub: "Ausführungsebene mit vollständigem Audit",
-  plans_premium_f1: "Alles aus dem Base-Tarif",
   plans_premium_f2: "Agenten freigeschaltet, um Wetten automatisch zu platzieren",
   plans_premium_f3: "Einsatzhöhe basierend auf Bankroll und Risikoprofil",
   plans_premium_f4: "Stop Loss, Tageslimits und Sportlimits",
