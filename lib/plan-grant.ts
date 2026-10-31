@@ -2,6 +2,7 @@ import { dbQuery, dbQueryStrict, dbExecute } from "./db";
 import { planActivatedEmail, receiptEmail } from "./email";
 import { sendTransactional } from "./notify";
 import { checkReferralTiers } from "./referral-rewards";
+import { affiliateRpc } from "./affiliate/rpc";
 
 export type GrantablePlan = "base" | "premium";
 
@@ -447,4 +448,34 @@ export async function revokeShopifyPlan(identifier: string): Promise<boolean> {
   );
   console.log(`[shopify] accesso revocato per rimborso identifier=${identifier}`);
   return true;
+}
+
+// #CREATOR-OFFERS-1031 — mese Pro di benvenuto per un creator (30 giorni, una
+// volta per identifier per sempre). Tutta la decisione è nella funzione SQL
+// affiliate_grant_creator_pro (lock sul profilo + creator_grants UNIQUE): rifiuta
+// profili inesistenti, admin_full, pending_payment e qualunque abbonamento pagato
+// attivo; un regalo referral attivo viene esteso, mai accorciato. Non passa da
+// activateAdminPlan (che esige pending_payment): il creator arriva da un login
+// normale. Non crea attribuzioni né commissioni e non conta per i gradini referral.
+export type CreatorGrantResult =
+  | { ok: true; already: boolean; identifier: string; expires_at?: string; previous_plan?: string }
+  | { ok: false; error: string };
+
+export async function grantCreatorPro(identifier: string, actor: string, note?: string | null): Promise<CreatorGrantResult> {
+  const res = await affiliateRpc("affiliate_grant_creator_pro", {
+    p_identifier: identifier,
+    p_by: actor,
+    p_note: note ?? null,
+  });
+  if (!res.ok) return { ok: false, error: String(res.error ?? "rejected") };
+  const out = res as unknown as Extract<CreatorGrantResult, { ok: true }>;
+  if (!out.already) {
+    // Il piano è già concesso: notifica best-effort, un errore qui non annulla il grant.
+    try {
+      await notifyPlanActivated({ identifier: out.identifier, name: null, plan: "premium" }, "admin");
+    } catch (e) {
+      console.error(`[plan-grant] creator grant notify failed for ${out.identifier}:`, String(e));
+    }
+  }
+  return out;
 }
