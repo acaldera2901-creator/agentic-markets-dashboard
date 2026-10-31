@@ -12,11 +12,7 @@ import { SportGlyphSprite } from "@/app/components/sport-glyphs";
 import { SportIcon } from "@/app/components/sport-icon";
 import { MenuIcon } from "@/app/components/menu-icon";
 import { PredictionDetailModal } from "@/components/PredictionDetailModal";
-import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
-
-// Stesso interruttore del checkout piani, così i due punti vendita accendono e
-// spengono il rail crypto diretto insieme. NEXT_PUBLIC_* è inlinata al build.
-const CRYPTO_DIRECT = process.env.NEXT_PUBLIC_SHOPIFY_CRYPTO_ENABLED === "true";
+import { CheckoutDialog, PaymentRails, WithdrawalConsent } from "@/components/checkout/PaymentRails";
 
 type SportKind = "football" | "tennis" | "worldcup";
 function sportKind(sport: string): SportKind {
@@ -271,9 +267,9 @@ export default function WeeklyPickPage() {
   // #SEO-PACK-0810: default SSR = "en" — prima era "it" e i crawler vedevano
   // l'h1 italiano sotto lang="en" (finding Tommy). localStorage switcha al mount.
   const [lang, setLang] = useState<Lang>("en");
-  const [buying, setBuying] = useState<"card" | "crypto" | null>(null);
-  const [cryptoOpen, setCryptoOpen] = useState(false);
-  const [checkoutErr, setCheckoutErr] = useState(false);
+  // #ONE-CHECKOUT-1031: the purchase happens in the same modal/rails as the plans.
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [withdrawalConsent, setWithdrawalConsent] = useState(false);
   const [openLeg, setOpenLeg] = useState<{ sel: Sel; rect: DOMRect } | null>(null);
   const t = COPY[lang];
 
@@ -301,57 +297,6 @@ export default function WeeklyPickPage() {
 
   useEffect(() => fetchData(), [fetchData]);
   const retry = () => { setError(false); setHistError(false); setData(null); setHist(null); fetchData(); };
-
-  // #WEEKLY-RAILS-1 — due rail, due destinazioni, stessa forma di startCheckout
-  // nel modal piani (app/app/page.tsx): carta → checkout Shopify (ordine e
-  // ricevuta dentro Shopify), crypto → pagina PayGate diretta.
-  // Il rail Shopify della Weekly Pick esisteva già lato server
-  // (/api/shopify/checkout accetta requested_plan:"weekly", variant one-off senza
-  // selling plan) ma NESSUN client lo chiamava: questa pagina mandava tutto su
-  // PayGate. Il crypto salta il blocco Shopify di proposito — un metodo di
-  // pagamento manuale su Shopify non incassa, quindi si paga dove si clicca.
-  const payInFlight = useRef(false);
-  const startCheckout = useCallback(async (rail: "card" | "crypto") => {
-    // Guard sincrono: due click ravvicinati non devono creare due ordini (il
-    // `disabled` del bottone si applica solo dopo il re-render).
-    if (payInFlight.current) return;
-    payInFlight.current = true;
-    setCheckoutErr(false);
-    setBuying(rail);
-    const fail = () => { setCheckoutErr(true); setBuying(null); payInFlight.current = false; };
-    try {
-      if (rail === "card") {
-        try {
-          const sres = await fetch("/api/shopify/checkout", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            credentials: "same-origin",
-            // `lang` decide la lingua del checkout Shopify: senza, esce nella
-            // lingua di default dello store (spagnolo) per tutti.
-            body: JSON.stringify({ requested_plan: "weekly", lang }),
-          });
-          if (sres.status === 401) { window.location.href = "/plans"; return; }
-          if (sres.ok) {
-            const { url } = (await sres.json().catch(() => ({}))) as { url?: string };
-            if (url) { window.location.href = url; return; }
-          }
-          // Ogni altra risposta (404 flag off · 409 inclusa nel Pro o già
-          // comprata · 503 promo di lancio attiva o store non configurato) cade
-          // sul rail PayGate, che applica le STESSE guardie e in più porta lo
-          // sconto dentro l'ordine. Il motivo sta nel body e nei log della route.
-        } catch (e) {
-          console.error("shopify weekly checkout unavailable, fallback paygate", e);
-        }
-      }
-      const r = await fetch("/api/weekly-pick/checkout", { method: "POST", credentials: "same-origin" });
-      if (r.status === 401) { window.location.href = "/plans"; return; }
-      const j = (await r.json().catch(() => null)) as { url?: string } | null;
-      if (r.ok && j?.url) { window.location.href = j.url; return; }
-      fail();
-    } catch {
-      fail();
-    }
-  }, [lang]);
 
   const price = typeof data?.price_usd === "number" && Number.isFinite(data.price_usd) && data.price_usd > 0 ? `$${data.price_usd.toFixed(2)}` : null;
   const fullPrice = data?.full_price_usd != null ? `$${data.full_price_usd.toFixed(2)}` : null;
@@ -530,36 +475,29 @@ export default function WeeklyPickPage() {
                         <span className="wp-price-now">{price}</span>
                       </span>
                     </div>
-                    {/* #WEEKLY-RAILS-1: il prezzo sta già accanto (.wp-price-now),
-                        quindi i bottoni dicono solo COME si paga. */}
+                    {/* #ONE-CHECKOUT-1031: one CTA opens the SAME checkout modal as the
+                        plans (card -> Shopify only, crypto -> direct panel only). */}
                     <div className="wp-ctas">
-                      <button onClick={() => startCheckout("card")} disabled={buying !== null} className="wp-cta">
-                        {buying === "card" ? t.unlocking : t.payCard}
+                      <button onClick={() => setCheckoutOpen(true)} className="wp-cta">
+                        {t.unlockTitle}
                       </button>
-                      {/* #WEEKLY-CRYPTO-DIRECT-1: col rail diretto attivo il bottone
-                          APRE il selettore moneta (stesso componente del checkout
-                          piani) invece di reindirizzare. Col rail spento resta il
-                          redirect alla pagina hosted: nessun vicolo cieco. */}
-                      {!cryptoOpen && (
-                        <button
-                          onClick={() => (CRYPTO_DIRECT ? setCryptoOpen(true) : startCheckout("crypto"))}
-                          disabled={buying !== null}
-                          className="wp-cta wp-cta-2"
-                        >
-                          {buying === "crypto" ? t.unlocking : t.payCrypto}
-                        </button>
-                      )}
                     </div>
                   </div>
                   </>)}
-                  {cryptoOpen && canPurchase && (
-                    <CryptoDirectPanel
-                      lang={lang}
-                      target={{ kind: "weekly" }}
-                      onPaid={() => window.location.reload()}
-                    />
+                  {checkoutOpen && canPurchase && price && (
+                    <CheckoutDialog title="Weekly Model Case" subtitle={price} onClose={() => setCheckoutOpen(false)}>
+                      <WithdrawalConsent lang={lang} checked={withdrawalConsent} onChange={setWithdrawalConsent} />
+                      <PaymentRails
+                        lang={lang}
+                        shopifyBody={{ requested_plan: "weekly", lang }}
+                        cryptoTarget={{ kind: "weekly" }}
+                        cardPrice={price}
+                        cryptoPrice={price}
+                        disabled={!withdrawalConsent}
+                        onCryptoPaid={() => window.location.reload()}
+                      />
+                    </CheckoutDialog>
                   )}
-                  {checkoutErr && <p className="wp-err">{t.checkoutError}</p>}
                 </>
               )}
               <div className="wp-foot-row">
