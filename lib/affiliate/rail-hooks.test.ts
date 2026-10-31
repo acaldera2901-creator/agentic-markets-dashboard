@@ -53,6 +53,7 @@ function affiliateResponder(sql: string, params: unknown[]): unknown[] {
   if (/FROM affiliates a WHERE a\.id = \$1/.test(sql)) return [{ status: "active", created_at: "2026-01-01T00:00:00Z", absent: false }];
   if (/FROM affiliates/.test(sql)) return [{ id: 7, identifier: "aff@x.com" }];
   if (/FROM affiliate_payer_fingerprints/.test(sql)) return [];
+  if (/FROM affiliate_offers/.test(sql)) return []; // #CREATOR-OFFERS-1031: nessuna offerta → tassi env
   if (/INSERT INTO affiliate_attributions/.test(sql)) {
     attributionWritten = true;
     return [];

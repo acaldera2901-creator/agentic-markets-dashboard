@@ -99,8 +99,11 @@ vi.mock("@/lib/db", async () => {
       rpc: async (fn: string, args: Record<string, unknown>) => {
         try {
           // Come PostgREST: gli array JSON diventano array Postgres.
+          // Gli oggetti diventano jsonb (#CREATOR-OFFERS-1031: p_offer, p_counts).
           const lit = (v: unknown): string =>
-            Array.isArray(v) ? `ARRAY[${v.map(lit).join(",")}]` : interpolate("$1", [v]);
+            Array.isArray(v) ? `ARRAY[${v.map(lit).join(",")}]`
+              : v !== null && typeof v === "object" ? `${interpolate("$1", [JSON.stringify(v)])}::jsonb`
+              : interpolate("$1", [v]);
           const named = Object.entries(args).map(([k, v]) => `${k} => ${lit(v)}`).join(", ");
           const call = `SELECT ${fn}(${named}) AS r`;
           const rows = await h.sql!.unsafe(call);
@@ -176,7 +179,12 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
           EXECUTE query;
           RETURN '[]'::jsonb;
         END;
-      END; $$;`);
+      END; $$;
+      -- #CREATOR-OFFERS-1031: re-run sullo stesso DB locale — le righe di azioni
+      -- più nuove di 20261022160000 ne violerebbero il CHECK riapplicato.
+      DO $t$ BEGIN
+        IF to_regclass('public.affiliate_admin_actions') IS NOT NULL THEN TRUNCATE affiliate_admin_actions; END IF;
+      END $t$;`);
     for (const f of MIGRATIONS) await sql.unsafe(readFileSync(path.join(ROOT, "supabase/migrations", f), "utf8"));
   });
   afterAll(async () => {
@@ -1316,5 +1324,113 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     const [g] = await h.sql!`SELECT has_function_privilege('anon','public.affiliate_purge_clicks()','EXECUTE') AS anon,
                                     has_function_privilege('service_role','public.affiliate_purge_clicks()','EXECUTE') AS svc`;
     expect(g).toEqual({ anon: false, svc: true });
+  });
+
+  // #CREATOR-OFFERS-1031 — offerte per creator su SQL vero.
+  const offerReq = (url: string, method: string, body?: unknown) =>
+    new Request(`https://x${url}`, {
+      method,
+      headers: { authorization: "Bearer bo", "x-admin-actor": "ops@maven" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }) as never;
+  const OFFER = {
+    first_rate_monthly: 1, first_rate_annual: 0.5, fixed_usd: 200, fixed_period: "monthly",
+    fixed_min_deliverables: { video: 2, story: 5 },
+    bonus_rule: { type: "tiers", metric: "month3", tiers: [{ min_payers: 1, usd: 300 }, { min_payers: 2, usd: 500 }] },
+  };
+
+  it("OFFERS append-only: niente UPDATE/DELETE, niente sovrapposizioni, chiusura solo nel futuro", async () => {
+    await h.sql!.unsafe(`
+      INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+        VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now());
+      INSERT INTO affiliate_offers(affiliate_id, valid_from, first_rate_monthly, created_by) VALUES (1, now() - interval '1 day', 1, 'ops');`);
+    await expect(h.sql!`UPDATE affiliate_offers SET first_rate_monthly = 0.5`).rejects.toThrow(/append-only/);
+    await expect(h.sql!`DELETE FROM affiliate_offers`).rejects.toThrow(/append-only/);
+    await expect(h.sql!`UPDATE affiliate_offers SET valid_to = now() - interval '1 hour'`).rejects.toThrow(/past/);
+    await expect(h.sql!`INSERT INTO affiliate_offers(affiliate_id, valid_from, created_by) VALUES (1, now() - interval '2 days', 'ops')`).rejects.toThrow(/overlapping/);
+    await expect(h.sql!`INSERT INTO affiliate_offers(affiliate_id, valid_from, first_rate_monthly, created_by) VALUES (1, now(), 1.5, 'ops')`).rejects.toThrow();
+    await h.sql!`UPDATE affiliate_offers SET valid_to = now() + interval '1 hour'`;
+    await expect(h.sql!`UPDATE affiliate_offers SET valid_to = now() + interval '2 hours'`).rejects.toThrow(/append-only/);
+    const [g] = await h.sql!`SELECT has_table_privilege('anon','public.affiliate_offers','SELECT') AS anon`;
+    expect(g).toEqual({ anon: false });
+  });
+
+  it("OFFERS POST/GET admin: nuova offerta chiude la precedente, registro azioni, canale manual fuori dalla coda USDT", async () => {
+    await h.sql!.unsafe(`INSERT INTO affiliates(identifier, code, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_version, onerous_ack_at)
+      VALUES ('alice@x.io','ALICE','t',now(),now(),'t',now()), ('bob@x.io','BOBBY','t',now(),now(),'t',now());`);
+    const route = await import("@/app/api/admin/affiliate/offers/route");
+    expect((await route.POST(offerReq("/x", "POST", { affiliate_id: 1, reason: "creator deal", offer: { first_rate_monthly: 2 } }))).status).toBe(400);
+    expect((await route.POST(offerReq("/x", "POST", { affiliate_id: 1, offer: OFFER }))).status).toBe(400);
+    const r1 = await route.POST(offerReq("/x", "POST", { affiliate_id: 1, reason: "creator deal", offer: OFFER, payout_channel: "manual" }));
+    expect(r1.status).toBe(200);
+    expect(await r1.json()).toMatchObject({ ok: true, offer_id: 1, closed_offer_id: null, payout_channel: "manual" });
+    const r2 = await route.POST(offerReq("/x", "POST", { affiliate_id: 1, reason: "rinegoziata", offer: { ...OFFER, first_rate_monthly: 0.8 } }));
+    expect(await r2.json()).toMatchObject({ ok: true, offer_id: 2, closed_offer_id: 1, payout_channel: "manual" });
+    expect((await route.POST(offerReq("/x", "POST", { affiliate_id: 99, reason: "x y z", offer: OFFER }))).status).toBe(404);
+
+    expect(await h.sql!`SELECT id::int AS id, (valid_to IS NULL) AS open, first_rate_monthly::float8 AS m, first_rate_annual::float8 AS a, fixed_min_deliverables AS d FROM affiliate_offers ORDER BY id`).toEqual([
+      { id: 1, open: false, m: 1, a: 0.5, d: { video: 2, story: 5 } },
+      { id: 2, open: true, m: 0.8, a: 0.5, d: { video: 2, story: 5 } },
+    ]);
+    expect(await h.sql!`SELECT actor, action, target, detail->>'payout_channel_to' AS ch FROM affiliate_admin_actions ORDER BY id`).toEqual([
+      { actor: "bo:ops@maven", action: "offer_set", target: "offer:1", ch: "manual" },
+      { actor: "bo:ops@maven", action: "offer_set", target: "offer:2", ch: "manual" },
+    ]);
+    const rows = await h.sql!`SELECT affiliate_id, reasons FROM affiliate_payout_rows(date_trunc('month', now())::date, 50, false, '{polygon}', '{USDT}') ORDER BY affiliate_id`;
+    expect(rows[0].reasons).toContain("manual_channel");
+    expect(rows[1].reasons).not.toContain("manual_channel");
+
+    const g = await route.GET(offerReq("/x?affiliate_id=1", "GET"));
+    expect(g.status).toBe(200);
+    expect(await g.json()).toMatchObject({ payout_channel: "manual", current: { id: 2, firstRateMonthly: 0.8 }, offers: [{ id: 1 }, { id: 2 }], due: { offer_id: 2 } });
+    expect((await route.GET(offerReq("/x?affiliate_id=1&period=2026-13", "GET"))).status).toBe(400);
+  });
+
+  it("OFFERS ledger su SQL vero: 100% mensile / 50% annuale; offerta cambiata non riscrive la storia; dovutoManuale", async () => {
+    vi.stubEnv("AFFILIATE_MODE", "shadow");
+    await railStubs(`
+      ALTER TABLE paygate_orders ADD COLUMN IF NOT EXISTS period text;
+      INSERT INTO profiles(identifier, referred_by, created_at) VALUES
+        ('m@x.io','ALICE',now() - interval '20 days'), ('y@x.io','ALICE',now() - interval '20 days'), ('n@x.io','ALICE',now() - interval '20 days');
+      INSERT INTO paygate_orders(id, identifier, amount_usd, coin, granted_at, period) VALUES
+        ('pg-m','m@x.io',29.99,NULL,now() - interval '10 days','monthly'),
+        ('pg-y','y@x.io',299.99,NULL,now() - interval '10 days','annual'),
+        ('pg-n','n@x.io',29.99,NULL,now() - interval '1 day','monthly');
+      -- offerta 1 fino a 3 giorni fa (100%/50%), poi offerta 2 (30%)
+      INSERT INTO affiliate_offers(affiliate_id, valid_from, valid_to, first_rate_monthly, first_rate_annual, created_by)
+        VALUES (1, now() - interval '30 days', now() - interval '3 days', 1, 0.5, 'ops'),
+               (1, now() - interval '3 days', NULL, 0.3, 0.3, 'ops');`);
+    const { recordAffiliateCommissionSafe } = await import("@/lib/affiliate/ledger");
+    const at = (d: number) => new Date(Date.now() - d * 86_400_000);
+    expect(await recordAffiliateCommissionSafe({ identifier: "m@x.io", rail: "paygate", paymentRef: "pg-m", grossUsd: 29.99, paidAt: at(10) })).toMatchObject({ written: true });
+    expect(await recordAffiliateCommissionSafe({ identifier: "y@x.io", rail: "paygate", paymentRef: "pg-y", grossUsd: 299.99, paidAt: at(10) })).toMatchObject({ written: true });
+    expect(await recordAffiliateCommissionSafe({ identifier: "n@x.io", rail: "paygate", paymentRef: "pg-n", grossUsd: 29.99, paidAt: at(1) })).toMatchObject({ written: true });
+    const ledger = () => h.sql!`SELECT rail_payment_ref AS ref, rate::float8 AS rate, amount_usd::float8 AS amt FROM affiliate_commissions ORDER BY rail_payment_ref`;
+    const before = await ledger();
+    expect(before).toEqual([
+      { ref: "pg-m", rate: 1, amt: 29.99 },
+      { ref: "pg-n", rate: 0.3, amt: 9 },
+      { ref: "pg-y", rate: 0.5, amt: 150 },
+    ]);
+    // Una nuova offerta via admin non tocca le righe già scritte.
+    const route = await import("@/app/api/admin/affiliate/offers/route");
+    expect((await route.POST(offerReq("/x", "POST", { affiliate_id: 1, reason: "nuova offerta", offer: OFFER, payout_channel: "manual" }))).status).toBe(200);
+    expect(await ledger()).toEqual(before);
+
+    // Contenuti confermati + dovuto del mese corrente.
+    const deliv = await import("@/app/api/admin/affiliate/offers/deliverables/route");
+    const month = new Date().toISOString().slice(0, 7);
+    expect((await deliv.POST(offerReq("/x", "POST", { affiliate_id: 1, slot: "2026-13", counts: { video: 2 }, reason: "consegnati" }))).status).toBe(400);
+    expect((await deliv.POST(offerReq("/x", "POST", { affiliate_id: 1, slot: month, counts: { video: 2, story: 5 }, reason: "consegnati" }))).status).toBe(200);
+    await h.sql!`UPDATE affiliate_commissions SET status = 'payable' WHERE rail_payment_ref = 'pg-m'`;
+    const { dovutoManuale } = await import("@/lib/affiliate/manual-due");
+    const due = (await dovutoManuale(1, month))!;
+    expect(due.payout_channel).toBe("manual");
+    expect(due.fixed).toMatchObject({ total_usd: 200, slots: [{ slot: month, met: true }] });
+    expect(due.commissions).toMatchObject({ included: true, payable_balance_usd: 29.99 });
+    // Primo mese dell'offerta più vecchia: bonus mostrato (mese 1 o 2), non ancora valutato.
+    expect(due.bonus).toMatchObject({ evaluated: false, usd: 0 });
+    expect(due.bonus!.payers.reduce((s, p) => s + p.payers, 0)).toBe(3);
+    expect(await dovutoManuale(99, month)).toBeNull();
   });
 });

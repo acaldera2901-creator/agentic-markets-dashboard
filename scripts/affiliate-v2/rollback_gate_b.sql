@@ -23,7 +23,8 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY['affiliates','affiliate_referral_clicks','affiliate_attributions','affiliate_wallets',
                            'affiliate_payouts','affiliate_commissions','affiliate_payer_fingerprints',
-                           'affiliate_refund_events','affiliate_terms_acceptances','affiliate_absences'] LOOP
+                           'affiliate_refund_events','affiliate_terms_acceptances','affiliate_absences',
+                           'affiliate_offers'] LOOP
     IF to_regclass('public.' || t) IS NOT NULL THEN
       EXECUTE format('SELECT count(*) FROM public.%I', t) INTO n;
       IF n > 0 THEN
@@ -36,6 +37,8 @@ END $$;
 DROP TRIGGER IF EXISTS trg_affiliates_status_cancel_payouts ON public.affiliates;
 
 DROP FUNCTION IF EXISTS public.affiliate_purge_clicks();
+DROP FUNCTION IF EXISTS public.affiliate_admin_set_offer(text, bigint, jsonb, text, text);
+DROP FUNCTION IF EXISTS public.affiliate_admin_confirm_deliverables(text, bigint, text, jsonb, text);
 DROP FUNCTION IF EXISTS public.affiliate_admin_reverse_commission(text, text, text, text, numeric, integer);
 DROP FUNCTION IF EXISTS public.affiliate_mature_commissions();
 DROP FUNCTION IF EXISTS public.affiliate_on_status_change();
@@ -50,6 +53,7 @@ DROP FUNCTION IF EXISTS public.affiliate_cancel_created_payouts(bigint, text, te
 
 -- Ordine per le FK: il ledger referenzia payouts, payouts referenzia wallets,
 -- tutti referenziano affiliates.
+DROP TABLE IF EXISTS public.affiliate_offers;
 DROP TABLE IF EXISTS public.affiliate_refund_events;
 DROP TABLE IF EXISTS public.affiliate_terms_acceptances;
 DROP TABLE IF EXISTS public.affiliate_absences;
@@ -60,3 +64,4 @@ DROP TABLE IF EXISTS public.affiliate_attributions;
 DROP TABLE IF EXISTS public.affiliate_referral_clicks;
 DROP TABLE IF EXISTS public.affiliate_payer_fingerprints;
 DROP TABLE IF EXISTS public.affiliates;
+DROP FUNCTION IF EXISTS public.affiliate_offers_append_only();
