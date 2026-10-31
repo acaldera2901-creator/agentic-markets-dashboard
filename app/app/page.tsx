@@ -10,7 +10,7 @@ import { useEffect, useState, useCallback, useRef, useMemo, createContext, useCo
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PredictionDetailModal, useDetailModal } from "@/components/PredictionDetailModal";
-import { CryptoDirectPanel } from "@/components/CryptoDirectPanel";
+import { PaymentRails, WithdrawalConsent } from "@/components/checkout/PaymentRails";
 import { GlyphLock, GlyphCheck, GlyphInjury, GlyphModel } from "@/components/ui/glyphs"; // #UI-MACHINA-0802 · #NO-EMOJI-0822
 import { pickLanguage } from "@/lib/pick-language"; // #GEO-LANG-0821
 import type { MdsData, MdsGroup, MdsChip } from "@/components/MatchDetailSheet";
@@ -3599,12 +3599,6 @@ function CheckoutModal({
   const [txHash, setTxHash] = useState("");
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
-  // #PAYGATE-DOUBLE-SUBMIT: `disabled={redirecting}` non basta — tra il click e
-  // il re-render che disabilita il bottone un secondo click passa (visto 2026-07-15:
-  // 3 ordini pending in 2.5s dallo stesso utente). Guard SINCRONO via ref, valutato
-  // prima di qualunque await, così i click ravvicinati non creano ordini doppi.
-  const payInFlight = useRef(false);
   const [error, setError] = useState("");
   // #SHOPIFY-CHECKOUT-1: default MENSILE sempre. Su Shopify esiste solo il selling
   // plan mensile, quindi con default "annual" ogni pagamento carta veniva rifiutato
@@ -3619,8 +3613,6 @@ function CheckoutModal({
   // #GOLIVE-QW-A: EU right-of-withdrawal consent — payment CTAs stay disabled until
   // the user acknowledges immediate performance waives the 14-day withdrawal right.
   const [withdrawalConsent, setWithdrawalConsent] = useState(false);
-  // #CRYPTO-DIRECT-1: il pannello crypto si apre in linea, non naviga altrove.
-  const [cryptoOpen, setCryptoOpen] = useState(false);
   // #PRICING-CREATORS-0706: annuale = 11 mensilita arrotondate (1 mese gratis).
   // Mirror display di PAYGATE_PRICES (lib/paygate.ts) — tenere in sync.
   const ANNUAL_PRICE: Record<string, number> = { base: 164.99, premium: 329.99 };
@@ -3803,82 +3795,6 @@ function CheckoutModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // #SHOPIFY-CRYPTO-3 — due rail, due destinazioni.
-  // Carta → checkout Shopify (abbonamento ricorrente). Crypto → pagina PayGate
-  // DIRETTA: il checkout Shopify con un metodo manuale non incassa (il bottone
-  // finale dice "Complete order" e il pagamento resta da fare dopo), quindi
-  // mandarci l'utente lo faceva credere di aver pagato. L'ordine Shopify per il
-  // crypto lo creiamo NOI a pagamento confermato (mirror nel callback).
-  const startCheckout = async (rail: "card" | "crypto") => {
-    // Guard sincrono: blocca i click ravvicinati PRIMA di creare un secondo ordine
-    // (il disabled del bottone si applica solo dopo il re-render).
-    if (payInFlight.current) return;
-    payInFlight.current = true;
-    setError("");
-    // #PAYGATE-REDIRECT-UX: il redirect alla pagina hosted PayGate ha una latenza
-    // percepibile → stato "reindirizzamento" così il click non sembra un freeze.
-    // On success la pagina viene sostituita (redirect), quindi lo stato resta true.
-    setRedirecting(true);
-    try {
-      // #SHOPIFY-CHECKOUT-1: se lo store Shopify è configurato il rail carta è
-      // Shopify (abbonamento ricorrente + ricevuta). Qualunque altra risposta
-      // (503 non configurato / annuale, 409 grandfather o tier-guard) cade sul
-      // flusso PayGate esistente, che resta invariato. NB: nessun
-      // markPayPending() qui — su Shopify il piano lo concede il webhook.
-      // Il crypto salta interamente questo blocco: si paga dove si clicca.
-      if (rail === "card") try {
-        const sres = await fetch("/api/shopify/checkout", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          // `lang` decide la lingua del checkout Shopify: senza, esce sempre
-          // nella lingua di default dello store (spagnolo).
-          body: JSON.stringify({ requested_plan: plan, period, lang }),
-        });
-        if (sres.ok) {
-          const { url: shopUrl } = (await sres.json()) as { url?: string };
-          if (shopUrl) { window.location.href = shopUrl; return; }
-        } else if (sres.status === 409) {
-          // Abbonamento Shopify già attivo: cadere su PayGate sarebbe un SECONDO
-          // addebito su un altro rail. Qui si ferma e si dice cosa fare.
-          const { code } = (await sres.json().catch(() => ({}))) as { code?: string };
-          if (code === "shopify_subscription_active") {
-            setError(
-              (t as Record<string, string>).checkout_sub_active ||
-                "Hai già un abbonamento attivo. Per cambiare piano disdici quello attuale dal tuo account, poi riprova."
-            );
-            setRedirecting(false);
-            payInFlight.current = false;
-            return;
-          }
-        }
-      } catch (e) {
-        console.error("shopify checkout unavailable, fallback paygate", e);
-      }
-      const res = await fetch("/api/paygate/checkout", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ requested_plan: plan, period }),
-      });
-      if (!res.ok) {
-        console.error("paygate checkout failed", res.status);
-        setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
-        setRedirecting(false);
-        payInFlight.current = false;
-        return;
-      }
-      const { url } = (await res.json()) as { url?: string };
-      if (url) { markPayPending(); window.location.href = url; }
-      else { setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova."); setRedirecting(false); payInFlight.current = false; }
-    } catch (e) {
-      console.error("paygate checkout error", e);
-      setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
-      setRedirecting(false);
-      payInFlight.current = false;
-    }
-  };
-
-  const payWithCard = () => startCheckout("card");
-
   return (
     <div className="auth-modal-backdrop" onClick={onClose}>
       <div className="auth-modal checkout-modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
@@ -3903,48 +3819,15 @@ function CheckoutModal({
         </div>
 
         {/* #GOLIVE-QW-A: EU distance-selling — explicit request for immediate
-            performance + acknowledgement that the 14-day withdrawal right is lost
-            once the service is activated. Gates every payment CTA below. */}
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", margin: "12px 0 4px", fontSize: 12, lineHeight: 1.5, color: "var(--am-muted)" }}>
-          <input
-            id="withdrawal-consent"
-            type="checkbox"
-            checked={withdrawalConsent}
-            onChange={(e) => {
-              setWithdrawalConsent(e.target.checked);
-              if (e.target.checked) trackEvent("withdrawal_consent", { meta: { plan, period } });
-            }}
-            style={{ marginTop: 2, flexShrink: 0 }}
-          />
-          <span>
-            {(() => {
-              // Consenso unico: lettura Termini/Privacy + richiesta di esecuzione
-              // immediata (#GOLIVE-QW-A, wording scelto da Andrea 2026-07-15). Link
-              // fuori dai <label htmlFor> così cliccarli apre la pagina senza
-              // spuntare la checkbox.
-              const frags = pick5(lang, {
-                it: ["Ho letto i ", " e la ", " e chiedo l'esecuzione immediata del servizio."],
-                en: ["I have read the ", " and the ", " and I request immediate performance of the service."],
-                es: ["He leído los ", " y la ", " y solicito la ejecución inmediata del servicio."],
-                fr: ["J'ai lu les ", " et la ", " et je demande l'exécution immédiate du service."],
-                ru: ["Я прочитал(а) ", " и ", " и прошу немедленно предоставить услугу."],
-              }) as [string, string, string];
-              const termsLabel = pick5(lang, { it: "Termini", en: "Terms", es: "Términos", fr: "Conditions", ru: "Условия" });
-              const privacyLabel = pick5(lang, { it: "Privacy", en: "Privacy Policy", es: "Privacidad", fr: "Confidentialité", ru: "Политику конфиденциальности" });
-              const linkStyle = { color: "var(--am-coral)", textDecoration: "underline" };
-              const segStyle = { cursor: "pointer", display: "inline" };
-              return (
-                <>
-                  <label htmlFor="withdrawal-consent" style={segStyle}>{frags[0]}</label>
-                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>{termsLabel}</a>
-                  <label htmlFor="withdrawal-consent" style={segStyle}>{frags[1]}</label>
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>{privacyLabel}</a>
-                  <label htmlFor="withdrawal-consent" style={segStyle}>{frags[2]}</label>
-                </>
-              );
-            })()}
-          </span>
-        </div>
+            performance + withdrawal-right acknowledgement. Gates every payment CTA below. */}
+        <WithdrawalConsent
+          lang={lang}
+          checked={withdrawalConsent}
+          onChange={(v) => {
+            setWithdrawalConsent(v);
+            if (v) trackEvent("withdrawal_consent", { meta: { plan, period } });
+          }}
+        />
 
         {process.env.NEXT_PUBLIC_PAYGATE_ENABLED !== "true" && (<>
         <div className="checkout-wallet-block">
@@ -4031,38 +3914,24 @@ function CheckoutModal({
                 ? pick5(lang, { it: "Abbonamento: si rinnova automaticamente ogni mese. Puoi disdire quando vuoi dal tuo account.", en: "Subscription: renews automatically every month. You can cancel anytime from your account.", es: "Suscripción: se renueva automáticamente cada mes. Puedes cancelar cuando quieras desde tu cuenta.", fr: "Abonnement : renouvellement automatique chaque mois. Vous pouvez annuler à tout moment depuis votre compte.", ru: "Подписка: продлевается автоматически каждый месяц. Отменить можно в любой момент в аккаунте." })
                 : pick5(lang, { it: "Abbonamento annuale: paghi 11 mensilità, 1 mese è gratis. Si rinnova automaticamente ogni 12 mesi, disdici quando vuoi dal tuo account.", en: "Annual subscription: you pay 11 monthly instalments, 1 month is free. Renews automatically every 12 months; cancel anytime from your account.", es: "Suscripción anual: pagas 11 mensualidades, 1 mes es gratis. Se renueva automáticamente cada 12 meses; cancela cuando quieras desde tu cuenta.", fr: "Abonnement annuel : vous payez 11 mensualités, 1 mois est offert. Renouvellement automatique tous les 12 mois ; annulez à tout moment depuis votre compte.", ru: "Годовая подписка: вы платите за 11 месяцев, 1 месяц бесплатно. Продлевается автоматически каждые 12 месяцев; отменить можно в аккаунте." })}
             </p>
-            <button className="checkout-payment" aria-busy={redirecting} type="button" onClick={payWithCard} disabled={!withdrawalConsent || redirecting}
-              style={{ width: "100%", padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-coral)", color: "var(--am-coral)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", borderStyle: (!withdrawalConsent || redirecting) ? "dashed" : "solid" }}>
-              {redirecting
-                ? pick5(lang, { it: "Reindirizzamento al pagamento sicuro…", en: "Redirecting to secure payment…", es: "Redirigiendo al pago seguro…", fr: "Redirection vers le paiement sécurisé…", ru: "Перенаправление на безопасную оплату…" })
-                : <>{pick5(lang, { it: "Paga con carta", en: "Pay with card", es: "Pagar con tarjeta", fr: "Payer par carte", ru: "Оплатить картой" })} · {displayPrice.toFixed(2)} USD</>}
-            </button>
-
-            {/* #SHOPIFY-CRYPTO-2 — rail crypto. Il crypto NON può essere
-                ricorrente su Shopify (solo i gateway che ri-addebitano un metodo
-                salvato pagano un abbonamento), quindi qui si compra una SKU
-                one-off da 30 giorni e la copy lo dice prima del click. */}
-            {process.env.NEXT_PUBLIC_SHOPIFY_CRYPTO_ENABLED === "true" && (
-              <>
-                {!cryptoOpen ? (
-                  <button className="checkout-payment" type="button" onClick={() => setCryptoOpen(true)} disabled={!withdrawalConsent || redirecting}
-                    style={{ width: "100%", marginTop: 8, padding: "8px 0", borderRadius: 6, background: "none", border: "1px solid var(--am-line)", color: "var(--am-text)", cursor: (!withdrawalConsent || redirecting) ? "not-allowed" : "pointer", borderStyle: (!withdrawalConsent || redirecting) ? "dashed" : "solid" }}>
-                    {pick5(lang, { it: "Paga in crypto", en: "Pay with crypto", es: "Pagar con crypto", fr: "Payer en crypto", ru: "Оплатить криптовалютой" })} · {price.toFixed(2)} USD
-                  </button>
-                ) : (
-                  <CryptoDirectPanel lang={lang} target={{ kind: "plan", plan, period }} onPaid={() => window.location.assign("/predictions?crypto=paid")} />
-                )}
-                <p style={{ fontSize: 11, color: "var(--am-muted)", margin: "6px 0 0" }}>
-                  {pick5(lang, {
-                    it: "Crypto: pagamento singolo da 30 giorni, non si rinnova. Alla scadenza ricompri quando vuoi.",
-                    en: "Crypto: one-time payment for 30 days, no auto-renewal. Buy again whenever you want.",
-                    es: "Crypto: pago único de 30 días, sin renovación automática. Vuelve a comprar cuando quieras.",
-                    fr: "Crypto : paiement unique de 30 jours, sans renouvellement automatique. Rachetez quand vous voulez.",
-                    ru: "Крипто: разовый платёж на 30 дней, без автопродления. Купить снова можно в любой момент.",
-                  })}
-                </p>
-              </>
-            )}
+            {/* #ONE-CHECKOUT-1031: card -> Shopify only (error on failure, no other
+                rail); crypto -> direct panel only. Same component as the Weekly. */}
+            <PaymentRails
+              lang={lang}
+              shopifyBody={{ requested_plan: plan, period, lang }}
+              cryptoTarget={{ kind: "plan", plan, period }}
+              cardPrice={`${displayPrice.toFixed(2)} USD`}
+              cryptoPrice={`${price.toFixed(2)} USD`}
+              disabled={!withdrawalConsent}
+              onCryptoPaid={() => window.location.assign("/predictions?crypto=paid")}
+              cryptoNote={pick5(lang, {
+                it: "Crypto: pagamento singolo da 30 giorni, non si rinnova. Alla scadenza ricompri quando vuoi.",
+                en: "Crypto: one-time payment for 30 days, no auto-renewal. Buy again whenever you want.",
+                es: "Crypto: pago único de 30 días, sin renovación automática. Vuelve a comprar cuando quieras.",
+                fr: "Crypto : paiement unique de 30 jours, sans renouvellement automatique. Rachetez quand vous voulez.",
+                ru: "Крипто: разовый платёж на 30 дней, без автопродления. Купить снова можно в любой момент.",
+              })}
+            />
           </div>
         )}
 
@@ -4269,37 +4138,6 @@ function PlansTab({
 
       <LaunchPromoBanner />
 
-      {/* #PAYGATE-TEST-2USD: sezione NASCOSTA per una prova di pagamento reale da $5.
-          Visibile SOLO con NEXT_PUBLIC_PAYGATE_TEST=1; il charge è gated a sua volta
-          lato server da PAYGATE_TEST_ENABLED. Rimuovere entrambe le env dopo il test.
-          Crea un ordine PayGate reale da $5 (mappa a Base 30gg) → verifica il flusso
-          checkout→callback→grant end-to-end. Nessun prezzo pubblico toccato. */}
-      {process.env.NEXT_PUBLIC_PAYGATE_TEST === "1" && (
-        <section className="plans-hero" style={{ marginBottom: 14 }}>
-          <div>
-            <p className="eyebrow">Test pagamento</p>
-            <h3>Prova checkout · $5</h3>
-            <span>Ordine reale da $5 su PayGate per verificare il flusso end-to-end (attiva Base 30gg). Solo per test.</span>
-          </div>
-          <button
-            className="btn-primary"
-            onClick={async () => {
-              try {
-                const res = await fetch("/api/paygate/checkout", {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ requested_plan: "test", period: "monthly" }),
-                });
-                if (!res.ok) { console.error("[paygate-test] checkout failed", res.status); return; }
-                const { url } = (await res.json()) as { url?: string };
-                if (url) { markPayPending(); window.location.href = url; }
-              } catch (e) { console.error("[paygate-test] error", e); }
-            }}
-          >
-            Paga $5 (test)
-          </button>
-        </section>
-      )}
 
       {/* #RETIRE-BASE-1031: la card Base è uscita (non si vende più) — restano
           Free e Pro; `is-two` porta la griglia da 3 a 2 colonne. */}
