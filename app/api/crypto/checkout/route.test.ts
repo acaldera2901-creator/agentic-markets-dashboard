@@ -70,16 +70,16 @@ beforeEach(() => {
 
 it("crea l'ordine con moneta, importo atteso e indirizzo di deposito", async () => {
   const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  const res = await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }));
   expect(res.status).toBe(200);
   const body = await res.json();
-  expect(body).toMatchObject({ coin: "polygon-usdc", address: "0xdeposit", amount_coin: 15.01, amount_usd: 14.99 });
+  expect(body).toMatchObject({ coin: "polygon-usdc", address: "0xdeposit", amount_coin: 15.01, amount_usd: 29.99 });
 
   const ins = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO paygate_orders"));
   // expected_value_coin e crypto_address_in sono ciò con cui si verificherà il
   // pagamento: se non finiscono in DB, l'ordine non è verificabile.
   expect(ins?.[1]).toEqual([
-    expect.any(String), "u@t.com", "base", "monthly", 14.99, expect.any(String), "ipn",
+    expect.any(String), "u@t.com", "premium", "monthly", 29.99, expect.any(String), "ipn",
     "polygon-usdc", 15.01, "0xdeposit",
   ]);
 });
@@ -90,7 +90,7 @@ it("409 se l'importo è sotto il minimo della moneta, senza creare nulla", async
   coinMinimum.mockResolvedValue(13.3); // il minimo di USDT TRC20
   convertUsdToCoin.mockResolvedValue(12.99); // Weekly Pick
   const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdt" }));
+  const res = await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdt" }));
   expect(res.status).toBe(409);
   expect(await res.json()).toMatchObject({ error: "amount below coin minimum", minimum: 13.3 });
   expect(createCryptoDeposit).not.toHaveBeenCalled();
@@ -99,14 +99,14 @@ it("409 se l'importo è sotto il minimo della moneta, senza creare nulla", async
 
 it("400 su moneta non abilitata (o inventata)", async () => {
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "trc20-usdt" }))).status).toBe(400);
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "../etc/passwd" }))).status).toBe(400);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "trc20-usdt" }))).status).toBe(400);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "../etc/passwd" }))).status).toBe(400);
 });
 
 it("401 senza sessione: l'ordine è legato all'account", async () => {
   getSessionPlan.mockResolvedValue(null);
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(401);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }))).status).toBe(401);
 });
 
 // Stessa tier-guard del rail carte: rinnovare Pro al prezzo di Base è arbitraggio.
@@ -119,14 +119,14 @@ it("409 se un premium attivo tenta di comprare base", async () => {
 it("503 senza wallet di payout: PayGate inoltrerebbe a nessuno", async () => {
   delete process.env.PAYGATE_PAYOUT_WALLET;
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(503);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }))).status).toBe(503);
 });
 
 // Se non sappiamo quanto far inviare, non si apre un ordine "a occhio".
 it("502 se la quote PayGate non risponde", async () => {
   convertUsdToCoin.mockRejectedValue(new Error("timeout"));
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(502);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }))).status).toBe(502);
   expect(dbExecute).not.toHaveBeenCalled();
 });
 
@@ -241,7 +241,7 @@ it("weekly: 500 fail-closed se la lettura DB fallisce", async () => {
 it("registra l'indirizzo PRIMA di creare l'ordine, con la chiave in minuscolo", async () => {
   createCryptoDeposit.mockResolvedValue({ addressIn: "0xAbCdEf", ipnToken: "ipn" });
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(200);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }))).status).toBe(200);
 
   const calls = dbExecute.mock.calls.map((c) => String(c[0]));
   const regIdx = calls.findIndex((q) => q.includes("INSERT INTO crypto_deposit_addresses"));
@@ -274,7 +274,7 @@ const orderInserts = () =>
 it("caso felice con la semantica reale di exec_sql: INSERT [] + SELECT proprio ordine → 200", async () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});
   const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  const res = await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }));
   expect(res.status).toBe(200);
   const body = await res.json();
   expect(registry.get("0xdeposit")?.order_id).toBe(body.order);
@@ -290,7 +290,7 @@ it("409 e NESSUN ordine creato se l'indirizzo è di un altro ordine; il log dice
   const err = vi.spyOn(console, "error").mockImplementation(() => {});
   registry.set("0xdeposit", { order_id: "old-order", order_kind: "plan", coin: "polygon-usdc", created_at: "2026-07-29" });
   const { POST } = await import("./route");
-  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  const res = await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }));
   expect(res.status).toBe(409);
   expect(await res.json()).toMatchObject({ error: "deposit address unavailable" });
   expect(orderInserts()).toHaveLength(0);
@@ -312,7 +312,7 @@ it("409 se il proprietario non è leggibile (riga assente dopo l'INSERT)", async
   const err = vi.spyOn(console, "error").mockImplementation(() => {});
   dbQueryStrict.mockResolvedValue([]);
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(409);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }))).status).toBe(409);
   expect(orderInserts()).toHaveLength(0);
   expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toContain("proprietario non leggibile");
   err.mockRestore();
@@ -323,7 +323,7 @@ it("409 se il proprietario non è leggibile (riga assente dopo l'INSERT)", async
 it("500 fail-closed se l'INSERT nel registro fallisce, senza creare l'ordine", async () => {
   dbExecute.mockRejectedValue(new Error("db down"));
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
   // L'unica scrittura tentata è l'INSERT del registro, rifiutata: nessun ordine.
   expect(dbExecute).toHaveBeenCalledTimes(1);
   expect(orderInserts()).toHaveLength(0);
@@ -332,7 +332,7 @@ it("500 fail-closed se l'INSERT nel registro fallisce, senza creare l'ordine", a
 it("500 fail-closed se la rilettura del proprietario fallisce, senza creare l'ordine", async () => {
   dbQueryStrict.mockRejectedValue(new Error("db down"));
   const { POST } = await import("./route");
-  expect((await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
+  expect((await POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" }))).status).toBe(500);
   expect(orderInserts()).toHaveLength(0);
 });
 
@@ -340,7 +340,7 @@ it("due checkout concorrenti sullo stesso indirizzo: ne passa uno solo", async (
   const err = vi.spyOn(console, "error").mockImplementation(() => {});
   const { POST } = await import("./route");
   const [a, b] = await Promise.all([
-    POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" })),
+    POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" })),
     POST(req({ requested_plan: "premium", period: "monthly", coin: "polygon-usdc" })),
   ]);
   expect([a.status, b.status].sort()).toEqual([200, 409]);
@@ -348,4 +348,25 @@ it("due checkout concorrenti sullo stesso indirizzo: ne passa uno solo", async (
   const winner = (await (a.status === 200 ? a : b).json()).order;
   expect(registry.get("0xdeposit")?.order_id).toBe(winner);
   err.mockRestore();
+});
+
+// ───────── #RETIRE-BASE-1031: Base non si vende più, ma resta gestito ─────────
+
+it("base da un utente free: 409 plan_retired, nessun indirizzo né ordine", async () => {
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  expect(res.status).toBe(409);
+  expect(await res.json()).toMatchObject({ error: "plan_retired" });
+  expect(createCryptoDeposit).not.toHaveBeenCalled();
+  expect(dbExecute).not.toHaveBeenCalled();
+});
+
+it("base: il rinnovo di chi è GIÀ su Base attivo passa, al prezzo Base", async () => {
+  getSessionPlan.mockResolvedValue({ identifier: "u@t.com", plan: "base", name: null, plan_expires_at: "2099-01-01T00:00:00Z" });
+  const { POST } = await import("./route");
+  const res = await POST(req({ requested_plan: "base", period: "monthly", coin: "polygon-usdc" }));
+  expect(res.status).toBe(200);
+  const ins = dbExecute.mock.calls.find((c) => String(c[0]).includes("INSERT INTO paygate_orders"));
+  expect(ins?.[1]?.[2]).toBe("base");
+  expect(ins?.[1]?.[4]).toBe(14.99);
 });

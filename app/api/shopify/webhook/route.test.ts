@@ -123,6 +123,20 @@ it("concede il piano su orders/paid valido", async () => {
   expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "premium", "monthly", false);
 });
 
+// #RETIRE-BASE-1031 — Base non si vende più, ma il rinnovo automatico di un
+// abbonato Shopify Base esistente arriva QUI (orders/paid del ciclo successivo)
+// e deve continuare a concedere Base, mensile e annuale.
+it("rinnovo di un abbonato Base esistente: orders/paid sul variant Base concede ancora Base", async () => {
+  activateShopifyPlan.mockResolvedValue({ identifier: "u@t.com", name: null, plan: "base" });
+  const { POST } = await import("./route");
+  for (const [id, variant, period] of [[904, 111, "monthly"], [905, 444, "annual"]] as const) {
+    const body = JSON.stringify({ id, email: "u@t.com", line_items: [{ variant_id: variant }] });
+    const res = await POST(req(body, sign(body)));
+    expect(res.status).toBe(200);
+    expect(activateShopifyPlan).toHaveBeenCalledWith("u@t.com", "base", period, false);
+  }
+});
+
 it("idempotenza atomica: INSERT in conflitto (0 righe) → duplicate, no grant", async () => {
   dbQueryStrict.mockResolvedValue([]); // gettone non ritrovato = un'altra delivery ha la riga
   const body = JSON.stringify({ id: 900, email: "u@t.com", line_items: [{ variant_id: 222 }] });

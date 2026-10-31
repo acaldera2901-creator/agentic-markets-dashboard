@@ -5,6 +5,7 @@ import { dbExecute } from "@/lib/db";
 import { createOrder, type PlanKey, type Period } from "@/lib/paypal";
 import { discountedAmountFor, blocksLowerTierPurchase } from "@/lib/paygate";
 import { promoEligibility } from "@/lib/creator-promo";
+import { blocksRetiredPlanPurchase, RETIRED_PLAN_BODY, RETIRED_PLAN_STATUS } from "@/lib/commercial-plan";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -34,6 +35,12 @@ export async function POST(req: Request) {
   const period = body.period;
   if (plan !== "base" && plan !== "premium") return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
   if (period !== "monthly" && period !== "annual") return NextResponse.json({ error: "invalid period" }, { status: 400 });
+
+  // #RETIRE-BASE-1031: Base non si vende più ai nuovi clienti (resta il rinnovo
+  // di chi è già su Base attivo: un ordine PayPal è one-off, il rinnovo è un ordine).
+  if (blocksRetiredPlanPurchase(plan, ctx.plan)) {
+    return NextResponse.json(RETIRED_PLAN_BODY, { status: RETIRED_PLAN_STATUS });
+  }
 
   // #GOLIVE-HIGH-E tier-guard: chi ha premium ATTIVO non può comprare 'base'
   // (tier-arbitrage). ctx.plan è già expiry-adjusted (premium scaduto → 'free').
