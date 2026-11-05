@@ -1,8 +1,9 @@
 'use client';
+import Image from 'next/image';
 import {useCallback,useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {Heart,MessageCircle,Bookmark,Trash2} from 'lucide-react';
 import {HomeAuthModal} from '@/components/auth/HomeAuthModal';
-type Comment={id:string;body:string;name:string;created_at:string;mine:boolean};
+type Comment={avatarUrl?:string|null;username?:string|null;id:string;body:string;name:string;created_at:string;mine:boolean};
 type Community={likes:number;commentCount:number;liked:boolean;authenticated:boolean;comments:Comment[]};
 const subscribeBookmarks=(notify:()=>void)=>{window.addEventListener('storage',notify);window.addEventListener('news-bookmarks',notify);return()=>{window.removeEventListener('storage',notify);window.removeEventListener('news-bookmarks',notify)}};
 export function NewsActions({guid,lang}:{guid:string;title:string;lang:string}){
@@ -30,9 +31,9 @@ export function NewsActions({guid,lang}:{guid:string;title:string;lang:string}){
    <h4>{it?'La conversazione':'The conversation'}</h4>
    {data?.comments.length===0&&<p className="ns-empty">{it?'Nessun commento. Inizia la conversazione.':'No comments yet. Start the conversation.'}</p>}
    {data&&data.commentCount>50&&<p className="ns-empty">{it?'Ultimi 50 commenti':'Latest 50 comments'}</p>}
-   <ul>{data?.comments.map(c=><li key={c.id}><span className="ns-comment-avatar" aria-hidden="true">{c.name.slice(0,1).toUpperCase()}</span><div><strong>{c.name}</strong><p>{c.body}</p><time dateTime={c.created_at}>{new Date(c.created_at).toLocaleString(lang,{dateStyle:'short',timeStyle:'short'})}</time></div>{c.mine&&<button type="button" disabled={busy} aria-label={it?'Elimina commento':'Delete comment'} onClick={()=>void mutate('delete',{id:c.id})}><Trash2 size={15}/></button>}</li>)}</ul>
+   <ul>{data?.comments.map(c=><li key={c.id}><span className="ns-comment-avatar" aria-hidden="true">{c.avatarUrl?<Image unoptimized src={c.avatarUrl} width={28} height={28} alt=""/>:c.name.slice(0,1).toUpperCase()}</span><div><strong>{c.name}</strong>{c.username&&<span className="ns-comment-handle"> @{c.username}</span>}<p>{c.body}</p><time dateTime={c.created_at}>{new Date(c.created_at).toLocaleString(lang,{dateStyle:'short',timeStyle:'short'})}</time></div>{c.mine&&<button type="button" disabled={busy} aria-label={it?'Elimina commento':'Delete comment'} onClick={()=>void mutate('delete',{id:c.id})}><Trash2 size={15}/></button>}</li>)}</ul>
    {data?.authenticated?<form onSubmit={e=>{e.preventDefault();requestId.current??=crypto.randomUUID();void mutate('comment',{body,id:requestId.current})}}><label className="ns-sr" htmlFor={'comment-'+guid}>{it?'Aggiungi un commento':'Add a comment'}</label><textarea id={'comment-'+guid} value={body} onChange={e=>{setBody(e.target.value);requestId.current=null}} maxLength={1000} rows={2} placeholder={it?'Cosa ne pensi?':'What do you think?'} required/><button disabled={busy||!body.trim()} type="submit">{busy?(it?'Invio…':'Posting…'):(it?'Pubblica':'Post')}</button></form>:<button type="button" className="ns-login" onClick={()=>setLogin(true)}>{it?'Accedi per partecipare':'Sign in to join the conversation'}</button>}
   </section>}
-  {login&&<div className="hv3"><HomeAuthModal intent="login" lang={lang} onClose={()=>setLogin(false)} onAuthenticated={()=>{setLogin(false);void load().catch(()=>setError(unavailable))}}/></div>}
+  {login&&<div className="hv3"><HomeAuthModal newsHero intent="login" lang={lang} onClose={()=>setLogin(false)} onAuthenticated={()=>{setLogin(false);void load().catch(()=>setError(unavailable))}}/></div>}
  </div>
 }

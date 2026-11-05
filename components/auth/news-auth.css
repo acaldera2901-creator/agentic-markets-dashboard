@@ -1,0 +1,6 @@
+.hv3 .ns-auth-modal { --v-panel:#0b1930; --v-line2:#243c5d; --v-line:#1d3452; --v-coral:#c8ff00; --v-text:#edf4ff; --v-muted:#b0c2d8; --v-muted2:#92a8c2; border-radius:18px; width:min(480px,100%); }
+.hv3 .ns-auth-modal .av-status { position:sticky; top:0; z-index:3; background:#0b1930; }
+.ns-auth-hero { width:100%; overflow:hidden; flex-shrink:0; }
+.ns-auth-hero img { width:100%; height:auto; display:block; }
+
+.ns-auth-root .av-backdrop { z-index:9999; }

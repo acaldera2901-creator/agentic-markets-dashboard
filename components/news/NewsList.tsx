@@ -11,6 +11,7 @@ import Image from "next/image";
 import { fillNews, newsCopy } from "@/lib/news/copy";
 import { NewsArt } from "./NewsArt";
 import { NewsActions } from "./NewsActions";
+import { NewsProfileEntry } from "./NewsProfileEntry";
 
 import { matchesForNote, rowsFor, stateMessage, updatedLine, type WireFeed } from "@/lib/news/view";
 import { boardHref, useBoardMatches, useNow, useSiteLang } from "./use-news";
@@ -34,6 +35,8 @@ export function NewsList({ feed }: { feed: WireFeed }) {
           </p>
         )}
       </div>
+
+      <NewsProfileEntry lang={lang} />
 
       {message ? (
         <p className="nw-state">{message}</p>
