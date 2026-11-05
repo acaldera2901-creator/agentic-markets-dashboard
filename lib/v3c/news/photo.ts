@@ -64,15 +64,47 @@ async function getJson(f: typeof fetch, url: string): Promise<any> {
   return r.json();
 }
 
-/** A photo of the person the note is about, or null (generic scene). Never throws. */
+
+// ─── national-team photos on club news (G5, orchestratore finding B) ──────────
+const COUNTRIES = "brazil|brasil|argentina|france|germany|spain|italy|england|portugal|netherlands|norway|morocco|guinea|belgium|croatia|uruguay|colombia|usa|united states|mexico|japan|senegal|nigeria|ghana|egypt|algeria|cameroon|denmark|sweden|poland|switzerland|austria|turkey|scotland|wales|ireland|korea|canada|ecuador|chile|peru|paraguay|serbia|ukraine|czech|hungary|greece|romania|iran|australia|tunisia|ivory coast";
+const NATIONAL_RE = new RegExp(`national (football |soccer )?team|world cup|nations league|qualif|copa am[eé]rica|uefa euro|\\beuro 20\\d\\d|friendly|olympic|\\b(${COUNTRIES})\\b[ _.-]+(v|vs|x)\\b`, "i");
+/** True when the file's name, categories or description say it is a national-team picture (kit of a country, not of the club). */
+export function isNationalPhoto(fileName: string, categories = "", description = ""): boolean {
+  return NATIONAL_RE.test(`${fileName.replace(/_/g, " ")} ${categories} ${description}`);
+}
+/** A club note: the title or the teams name a club (a national-team note — «Brazil» — names none). Only then national photos are refused. */
+export const isClubNote = (note: NoteText, teams: readonly string[]): boolean => clubsInText(`${note.title}. ${teams.join(". ")}`, 2).length > 0;
+
+/** A photo of the person the note is about, or null (generic scene). Never throws. Club notes never get a national-team photo (the kit would contradict the note). */
 export async function photoRef(note: NoteText, teams: readonly string[], o: PhotoOpts): Promise<PhotoRef | null> {
   const f = o.fetch ?? fetch;
+  const club = isClubNote(note, teams);
+  const clubNames = clubsInText(`${note.title}. ${teams.join(". ")}`, 3).map((c) => c.names[0]);
+  /** Licence/size checks + download for one Commons file; "national" = refused only for being a national-team picture. */
+  const build = async (fileName: string, personName: string, cand: string, key: string): Promise<PhotoRef | "national" | null> => {
+    const info = `https://commons.wikimedia.org/w/api.php?action=query&format=json&titles=${encodeURIComponent(`File:${fileName}`)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=1400&iiextmetadatafilter=LicenseShortName|Artist|LicenseUrl|NonFree|Restrictions|Categories|ImageDescription`;
+    const ii = (Object.values((await getJson(f, info))?.query?.pages ?? {}) as any[])[0]?.imageinfo?.[0];
+    if (!ii) return null;
+    const md = ii.extmetadata ?? {};
+    const license = String(md.LicenseShortName?.value ?? "").trim();
+    if (!LICENSE_OK.test(license) || md.NonFree?.value === "true" || ii.width < MIN_WIDTH) { o.log?.(`photo ${cand}: skipped (${license || "no licence"}, ${ii.width}px)`); return null; }
+    if (club && isNationalPhoto(fileName, stripHtml(String(md.Categories?.value ?? "")), stripHtml(String(md.ImageDescription?.value ?? "")))) { o.log?.(`photo ${cand}: skipped (national-team picture on a club note: ${fileName})`); return "national"; }
+    const img = await f(ii.thumburl || ii.url, { headers: { "User-Agent": UA } });
+    if (!img.ok) return null;
+    mkdirSync(o.dir, { recursive: true });
+    const file = join(o.dir, `${slug(personName)}.jpg`);
+    writeFileSync(file, Buffer.from(await img.arrayBuffer()));
+    const ref: PhotoRef = { person: personName.replace(/ \(.*\)$/, ""), file, author: stripHtml(String(md.Artist?.value ?? "")) || "unknown", license, licenseUrl: md.LicenseUrl?.value ?? null, url: ii.descriptionurl ?? `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(fileName)}`, width: ii.width, height: ii.height };
+    writeFileSync(key, JSON.stringify(ref, null, 1));
+    writeFileSync(join(o.dir, `${slug(personName)}.json`), JSON.stringify(ref, null, 1));
+    return ref;
+  };
   try {
     for (const cand of personCandidates(note, teams)) {
       const key = join(o.dir, `${slug(cand)}.json`);
       if (existsSync(key)) { // cached (a hit; a miss is re-asked next time: it is one cheap GET)
         const c = JSON.parse(readFileSync(key, "utf8")) as PhotoRef;
-        if (existsSync(c.file)) return c;
+        if (existsSync(c.file) && !(club && isNationalPhoto(decodeURIComponent(c.url.split("File:")[1] ?? "")))) return c;
       }
       const q = `https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${encodeURIComponent(`${cand} footballer`)}&gsrlimit=5&prop=pageimages|description&piprop=name&redirects=1`;
       const pages = Object.values((await getJson(f, q))?.query?.pages ?? {}) as { title: string; description?: string; pageimage?: string; index?: number }[];
@@ -82,21 +114,20 @@ export async function photoRef(note: NoteText, teams: readonly string[], o: Phot
         return !!p.pageimage && !/\((surname|disambiguation|given name)\)/i.test(p.title) && ROLE.test(p.description ?? "") && want.every((w) => t.includes(w)) && (want.length > 1 || t[t.length - 1] === want[0] || t[0] === want[0]);
       });
       if (!page) continue;
-      const info = `https://commons.wikimedia.org/w/api.php?action=query&format=json&titles=${encodeURIComponent(`File:${page.pageimage}`)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=1400&iiextmetadatafilter=LicenseShortName|Artist|LicenseUrl|NonFree|Restrictions`;
-      const ii = (Object.values((await getJson(f, info))?.query?.pages ?? {}) as any[])[0]?.imageinfo?.[0];
-      if (!ii) continue;
-      const md = ii.extmetadata ?? {};
-      const license = String(md.LicenseShortName?.value ?? "").trim();
-      if (!LICENSE_OK.test(license) || md.NonFree?.value === "true" || ii.width < MIN_WIDTH) { o.log?.(`photo ${cand}: skipped (${license || "no licence"}, ${ii.width}px)`); continue; }
-      const img = await f(ii.thumburl || ii.url, { headers: { "User-Agent": UA } });
-      if (!img.ok) continue;
-      mkdirSync(o.dir, { recursive: true });
-      const file = join(o.dir, `${slug(page.title)}.jpg`);
-      writeFileSync(file, Buffer.from(await img.arrayBuffer()));
-      const ref: PhotoRef = { person: page.title.replace(/ \(.*\)$/, ""), file, author: stripHtml(String(md.Artist?.value ?? "")) || "unknown", license, licenseUrl: md.LicenseUrl?.value ?? null, url: ii.descriptionurl ?? `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(page.pageimage!)}`, width: ii.width, height: ii.height };
-      writeFileSync(key, JSON.stringify(ref, null, 1));
-      writeFileSync(join(o.dir, `${slug(page.title)}.json`), JSON.stringify(ref, null, 1));
-      return ref;
+      const lead = await build(page.pageimage!, page.title, cand, key);
+      if (lead && lead !== "national") return lead;
+      if (lead !== "national") continue;
+      // the lead image is a national-team picture: look on Commons for one of the person in the note's club (title must carry the surname and not be national)
+      for (const cn of clubNames) {
+        const s = `https://commons.wikimedia.org/w/api.php?action=query&format=json&list=search&srnamespace=6&srlimit=6&srsearch=${encodeURIComponent(`${page.title.replace(/ \(.*\)$/, "")} ${cn}`)}`;
+        const hits = ((await getJson(f, s))?.query?.search ?? []) as { title: string }[];
+        for (const h of hits) {
+          const name = h.title.replace(/^File:/, "");
+          if (!want.every((w) => toks(name).includes(w)) || !/\.jpe?g$/i.test(name)) continue;
+          const r = await build(name, page.title, cand, key);
+          if (r && r !== "national") return r;
+        }
+      }
     }
   } catch (e) {
     o.log?.(`photo: ${String(e).slice(0, 120)}`);
