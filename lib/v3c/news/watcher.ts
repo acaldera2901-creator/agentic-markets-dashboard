@@ -25,6 +25,7 @@ import type { RewriteOutcome } from "./claude-cli";
 import { imageBase, MAX_IMAGE_ATTEMPTS, protagonist, protagonistTint, sceneKind } from "./image";
 import { cardText, cardTint, pickCard, tooSimilar, WINDOW, type CardSpec, type LedgerRow, hasQuote } from "./card";
 import { cardJob, cardJobWithPhoto } from "./card-job";
+import { imageStyle } from "./card-emma";
 import type { ImageAttempt, ImageFiles } from "./image-gen";
 import type { NoteText } from "./rewrite";
 
@@ -360,7 +361,13 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
     else if (d.db.attachImage) await d.db.attachImage(j.hash, url);
     else throw new Error("db has no attachImage");
   };
+  // emma style is fail-closed (Andrea 05/11): a card is only made from a verified real photo with its credit, and an anonymous neutral card is never published
+  const emmaMode = imageStyle(process.env.NEWS_IMAGE_STYLE) === "emma";
   const neutral = async (j: ImageJob, why: string): Promise<boolean> => {
+    if (emmaMode) {
+      j.lastError ??= `emma: no neutral fallback (${why}); waiting for a real photo`;
+      return false; // a held row keeps waiting, a written row keeps its image: only THIS card stays pending
+    }
     const url = img.neutral?.(j.hash);
     if (!url) return !j.row; // no neutral set: a written row keeps its stock picture, a held row keeps waiting
     try {
@@ -382,7 +389,14 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
       else {
         if (!j.card) j.card = pickCard(j.hash, sceneKind(j.note), cardText(j.note), cardTint(protagonistTint(j.note, j.teams), j.hash), protagonist(j.note, j.teams), s.cards ?? [], hasQuote(j.note));
         const card = j.card;
-        const a = await img.make({ base: j.base, ...(await cardJobWithPhoto(card, j.note, j.teams, process.env, { log: d.log })), attempts: j.attempts, mood: card.mood });
+        const cj = await cardJobWithPhoto(card, j.note, j.teams, process.env, { log: d.log });
+        if (emmaMode && !cj.credit) {
+          j.lastError = "emma: no verified real photo with credit — card not made";
+          d.log(`image skipped ${j.base}: ${j.lastError}`);
+          keep.push(j);
+          continue;
+        }
+        const a = await img.make({ base: j.base, ...cj, attempts: j.attempts, mood: card.mood });
         const dup = a.kind === "ok" ? tooSimilar(a.sig, s.cards ?? []) : null;
         if (a.kind === "ok" && !dup) {
           j.files = a.files;
