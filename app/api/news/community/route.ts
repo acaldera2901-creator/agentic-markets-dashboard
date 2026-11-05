@@ -37,8 +37,10 @@ export async function POST(req:Request){
    const rows=await dbExecute(`INSERT INTO news_comments(id,news_guid,user_id,display_name,body,minute_bucket) VALUES ($1::uuid,$2,$3,$4,$5,floor(extract(epoch FROM now())/60)::bigint) ON CONFLICT DO NOTHING RETURNING id`,[input.id,guid,user.identifier,display,input.body.trim()]);
    if(!rows.length){const previous=await dbQueryStrict('SELECT id FROM news_comments WHERE id=$1::uuid AND user_id=$2 AND news_guid=$3',[input.id,user.identifier,guid]);if(!previous.length)return json({error:'slow_down'},429)}
   }else{
-   const rows=await dbExecute('DELETE FROM news_comments WHERE id=$1::uuid AND news_guid=$2 AND (user_id=$3 OR $4) RETURNING id',[input.id,guid,user.identifier,user.plan==='admin_full']);
+   // Production exec_sql discards DML RETURNING rows; check ownership via a read.
+   const rows=await dbQueryStrict('SELECT id FROM news_comments WHERE id=$1::uuid AND news_guid=$2 AND (user_id=$3 OR $4)',[input.id,guid,user.identifier,user.plan==='admin_full']);
    if(!rows.length)return json({error:'not_found'},404);
+   await dbExecute('DELETE FROM news_comments WHERE id=$1::uuid AND news_guid=$2 AND (user_id=$3 OR $4)',[input.id,guid,user.identifier,user.plan==='admin_full']);
   }
   return json({ok:true});
  }catch{return json({error:'unavailable'},503)}
