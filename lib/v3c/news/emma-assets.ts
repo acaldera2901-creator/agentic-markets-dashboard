@@ -19,3 +19,11 @@ export function crestRefs(title: string, body: string, teams: readonly string[],
   for (const b of noteBadges(title, body, teams, 2)) add(b.name, b.crest);
   return out;
 }
+
+/**
+ * Crests for an emma card: ONLY clubs the note's TITLE names. `teams` can hold the opponent named in the body (live 05/11: the Guirassy note
+ * lists «Real Betis», his club is Dortmund): a crest that the headline does not name could put the wrong club next to the person.
+ */
+export function titleCrestRefs(title: string, publicDir: string): CrestRef[] {
+  return crestRefs(title, "", [], publicDir);
+}
