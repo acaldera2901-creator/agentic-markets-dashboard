@@ -97,7 +97,7 @@ export interface WatcherDb {
 
 /** The pictures (#NEWSWATCH-2): absent = off (the default). `publish` absent = files stay on the Mac. */
 export type ImageDeps = {
-  make: (job: { base: string; prompt: string; attempts: number; expected: string; mood?: string; refs?: readonly string[]; hfPrompt?: string; credit?: { person: string; author: string; license: string; licenseUrl: string | null; url: string } }) => Promise<ImageAttempt>;
+  make: (job: { base: string; prompt: string; attempts: number; expected: string; mood?: string; clubNote?: boolean; refs?: readonly string[]; hfPrompt?: string; credit?: { person: string; author: string; license: string; licenseUrl: string | null; url: string } }) => Promise<ImageAttempt>;
   publish?: (job: ImageJob, files: ImageFiles) => Promise<string>;
   /** delete published files by their public URL (retention: 30 days, with the row) */
   remove?: (urls: string[]) => Promise<void>;

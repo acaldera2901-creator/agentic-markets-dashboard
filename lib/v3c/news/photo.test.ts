@@ -78,7 +78,7 @@ describe("cardJobWithPhoto", () => {
   const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
   it("emma + photo: photo is reference image 1 (before crests), person named from the article, credit attached", async () => {
     const d = mkdtempSync(join(tmpdir(), "pj-"));
-    const j = await cardJobWithPhoto(c, note, teams, env({ NEWS_IMAGE_STYLE: "emma", NEWS_WATCHER_PHOTO_DIR: d, NEWS_WATCHER_PUBLIC_DIR: join(__dirname, "../../../public") }), { fetch: mockFetch().f });
+    const j = await cardJobWithPhoto(c, note, teams, env({ NEWS_IMAGE_STYLE: "emma", NEWS_WATCHER_PHOTO_DIR: d, NEWS_WATCHER_PUBLIC_DIR: join(__dirname, "../../../public") }), { fetch: mockFetch().f, kitCheck: async () => false });
     expect(j.refs![0]).toBe(j.credit!.file); expect(j.prompt).toMatch(/Reference image 1 is a real photo of Erling Haaland/);
     expect(j.credit).toMatchObject({ license: "CC BY-SA 4.0", author: "Jane Doe" }); expect(j.hfPrompt).not.toMatch(/Reference image/);
   });
