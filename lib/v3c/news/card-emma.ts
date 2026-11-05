@@ -67,7 +67,7 @@ export function emmaCardPrompt(c: CardSpec, a: EmmaAssets = {}): string {
     ...(t.headline.length ? [`- huge white italic condensed uppercase headline ${lines}`, `- a thin lime underline slash under the headline`] : []),
     ...(t.subtitle ? [`- white italic subtitle: ${t.subtitle}`] : []),
     ...(bottom ? [`- bottom-left: ${bottom}`] : []),
-    `Keep the TOP-LEFT corner (about 40% width, 9% height) completely empty dark navy: the BetRedge logo is added later, never draw a logo. Keep the top-right corner clean; the head sits below that area. No other text, letters, numbers, watermarks, no betting symbols, no money, no age limits and no disclaimer anywhere. All text fully inside the frame with safe margins. Do not crop the head: leave clear dark space (at least 5% of the height) above the top of the hair. The bottom-left crest and badge must sit fully inside the frame with a clear margin of at least 6% of the height below them, never touching or crossing the bottom edge. Output a single finished image.`,
+    `Keep the TOP-LEFT corner (about 40% width, 9% height) completely empty dark navy: the BetRedge logo is added later, never draw a logo. Keep the top-right corner clean; the head sits below that area. No other text, letters, numbers, watermarks, no betting symbols, no money, no age limits and no disclaimer anywhere. All text fully inside the frame with safe margins. Do not crop the head: leave clear dark space (at least 5% of the height) above the top of the hair.${bottom ? " The bottom-left element(s) must sit fully inside the frame with a clear margin of at least 6% of the height below them, never touching or crossing the bottom edge." : ""} Output a single finished image.`,
   ].join("\n");
 }
 
