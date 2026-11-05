@@ -1,11 +1,11 @@
 'use client';
 import {useCallback,useEffect,useRef,useState,useSyncExternalStore} from 'react';
-import {Heart,MessageCircle,Send,Bookmark,Trash2} from 'lucide-react';
+import {Heart,MessageCircle,Bookmark,Trash2} from 'lucide-react';
 import {HomeAuthModal} from '@/components/auth/HomeAuthModal';
 type Comment={id:string;body:string;name:string;created_at:string;mine:boolean};
 type Community={likes:number;commentCount:number;liked:boolean;authenticated:boolean;comments:Comment[]};
 const subscribeBookmarks=(notify:()=>void)=>{window.addEventListener('storage',notify);window.addEventListener('news-bookmarks',notify);return()=>{window.removeEventListener('storage',notify);window.removeEventListener('news-bookmarks',notify)}};
-export function NewsActions({guid,title,lang}:{guid:string;title:string;lang:string}){
+export function NewsActions({guid,lang}:{guid:string;title:string;lang:string}){
  const it=lang==='it';const host=useRef<HTMLDivElement>(null);
  const [data,setData]=useState<Community|null>(null),[open,setOpen]=useState(false),[busy,setBusy]=useState(false),[body,setBody]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[login,setLogin]=useState(false);
  const saved=useSyncExternalStore(subscribeBookmarks,useCallback(()=>{try{return localStorage.getItem('news-saved:'+guid)==='1'}catch{return false}},[guid]),()=>false);
@@ -17,13 +17,11 @@ export function NewsActions({guid,title,lang}:{guid:string;title:string;lang:str
   if(busy)return;setBusy(true);setError('');
   try{const r=await fetch('/api/news/community',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({guid,action,...extra})});if(r.status===401){setLogin(true);return}if(r.status===429){setError(it?'Aspetta un minuto prima di un altro commento.':'Please wait a minute before posting another comment.');return}if(!r.ok)throw Error();if(action==='comment'){setBody('');requestId.current=null}await load()}catch{setError(unavailable)}finally{setBusy(false)}
  }
- async function share(){const url=location.origin+'/blog#post-'+guid;try{if(navigator.share)await navigator.share({title,url});else{await navigator.clipboard.writeText(url);setNotice(it?'Link copiato':'Link copied')}}catch(e){if((e as Error).name!=='AbortError')setNotice(url)}}
  function bookmark(){try{localStorage.setItem('news-saved:'+guid,saved?'0':'1');window.dispatchEvent(new Event('news-bookmarks')); setNotice(it?'Preferenza salvata su questo dispositivo.':'Saved on this device.')}catch{setNotice(it?'Salvataggio non disponibile.':'Saving unavailable.')}}
  return <div ref={host} className="ns-community">
   <div className="ns-actions">
    <button type="button" aria-label={data?.liked?(it?'Non mi piace più':'Unlike'):(it?'Mi piace':'Like')} aria-pressed={!!data?.liked} disabled={busy||!data} className={data?.liked?'is-liked':''} onClick={()=>void mutate('like',{liked:!data?.liked})}><Heart size={23} fill={data?.liked?'currentColor':'none'}/><span>{data?.likes??'—'}</span></button>
    <button type="button" aria-label={it?'Commenti':'Comments'} aria-expanded={open} aria-controls={'comments-'+guid} onClick={()=>{setOpen(!open);void load().catch(()=>setError(unavailable))}}><MessageCircle size={23}/><span>{data?.commentCount??'—'}</span></button>
-   <button type="button" aria-label={it?'Condividi':'Share'} onClick={()=>void share()}><Send size={22}/></button>
    <button type="button" className="ns-save" aria-label={it?'Salva su questo dispositivo':'Save on this device'} aria-pressed={saved} onClick={bookmark}><Bookmark size={22} fill={saved?'currentColor':'none'}/></button>
   </div>
   {notice&&<p className="ns-feedback" role="status">{notice}</p>}
