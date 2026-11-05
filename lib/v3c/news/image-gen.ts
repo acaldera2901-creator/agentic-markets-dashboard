@@ -14,7 +14,9 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { claudeArgs, readEnvelope, runClaude } from "./claude-cli";
-import { IMAGE_CHECK_PROMPT, IMAGE_CHECK_SCHEMA, IMAGE_SIZE, MAX_WEBP_BYTES, readImageVerdict } from "./image";
+import { imageStyle, EMMA_SIZE } from "./card-emma";
+import { assetPaths } from "./assets";
+import { IMAGE_CHECK_PROMPT, IMAGE_CHECK_PROMPT_EMMA, IMAGE_CHECK_SCHEMA, IMAGE_SIZE, MAX_WEBP_BYTES, readImageVerdict } from "./image";
 
 /** gptimg measured 42–77 s (6 calls, 29/10); beyond this the attempt is lost. */
 export const GPTIMG_TIMEOUT_MS = 240_000;
@@ -30,7 +32,7 @@ export type ImageAttempt =
   /** the subscription said stop (checker): no attempt counted, images wait for a later run */
   | { kind: "limit"; reason: string };
 
-export type ImageGenOpts = { dir: string; gptimg: string; cwebp: string; claudeBin: string; checkModel?: string; env?: NodeJS.ProcessEnv; hf?: HfOpts };
+export type ImageGenOpts = { dir: string; gptimg: string; gptimgRef?: string; logo?: { python: string; script: string; png: string }; cwebp: string; claudeBin: string; checkModel?: string; env?: NodeJS.ProcessEnv; hf?: HfOpts };
 
 // ─── Higgsfield fallback (#NEWSWATCH-HF, APPROVED by Andrea 30/10) ───────────
 // ONLY when gptimg says «out of credits / limit». gpt_image_2 1k LOW = 0.5 credits
@@ -113,18 +115,22 @@ const tail = (s: string) => s.replace(/\s+/g, " ").trim().slice(-160);
 export const GPTIMG_LIMIT_RE = /out of credits|usage limit|rate.?limit|hit your (?:[\w-]+ )?limit|at capacity|quota|\b429\b/i;
 
 /** Centre crop to 16:9, resize to 1200×675 (sips), webp at the highest quality under 150 KB (cwebp). */
-export async function postProcess(raw: string, base: string, outDir: string, cwebp: string): Promise<ImageFiles | { error: string }> {
+export async function postProcess(raw: string, base: string, outDir: string, cwebp: string, target: { width: number; height: number } = IMAGE_SIZE, logo?: { python: string; script: string; png: string }): Promise<ImageFiles | { error: string }> {
   const dims = await run("/usr/bin/sips", ["-g", "pixelWidth", "-g", "pixelHeight", raw], { cwd: outDir, timeoutMs: 30_000 });
   const w = Number(dims.out.match(/pixelWidth: (\d+)/)?.[1]);
   const h = Number(dims.out.match(/pixelHeight: (\d+)/)?.[1]);
   if (!w || !h) return { error: `sips: no size (${tail(dims.err || dims.out)})` };
-  const ratio = IMAGE_SIZE.width / IMAGE_SIZE.height;
+  const ratio = target.width / target.height;
   const [ch, cw] = w / h > ratio ? [h, Math.round(h * ratio)] : [Math.round(w / ratio), w];
   const png = join(outDir, `${base}.png`);
   const crop = await run("/usr/bin/sips", ["-c", String(ch), String(cw), raw, "--out", png], { cwd: outDir, timeoutMs: 30_000 });
   if (crop.code !== 0) return { error: `sips crop: ${tail(crop.err)}` };
-  const size = await run("/usr/bin/sips", ["-z", String(IMAGE_SIZE.height), String(IMAGE_SIZE.width), png], { cwd: outDir, timeoutMs: 30_000 });
+  const size = await run("/usr/bin/sips", ["-z", String(target.height), String(target.width), png], { cwd: outDir, timeoutMs: 30_000 });
   if (size.code !== 0) return { error: `sips resize: ${tail(size.err)}` };
+  if (logo) { // the OFFICIAL logo, composed locally: the model never draws it
+    const l = await run(logo.python, [logo.script, png, png, logo.png], { cwd: outDir, timeoutMs: 30_000 });
+    if (l.code !== 0) return { error: `logo: ${tail(l.err)}` };
+  }
   const webp = join(outDir, `${base}.webp`);
   for (const q of [88, 84, 80, 76, 72, 68, 64, 60, 55, 50]) {
     const c = await run(cwebp, ["-quiet", "-q", String(q), "-m", "6", "-sharp_yuv", png, "-o", webp], { cwd: outDir, timeoutMs: 60_000 });
@@ -170,10 +176,10 @@ export async function imageSignature(png: string, tmpDir: string): Promise<Image
 }
 
 /** The visual check on the finished png: `claude -p` with the Read tool only, in the image's folder; the text read is compared with `expected`. */
-export async function checkImage(png: string, expected: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">): Promise<{ ok: true; textSeen: string } | { ok: false; reason: string; limit?: boolean }> {
-  const args = claudeArgs(opts.checkModel ?? IMAGE_CHECK_MODEL, IMAGE_CHECK_SCHEMA, IMAGE_CHECK_PROMPT);
+export async function checkImage(png: string, expected: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">, mood?: string, emma = false, clubNote = false, realPhoto = false): Promise<{ ok: true; textSeen: string } | { ok: false; reason: string; limit?: boolean }> {
+  const args = claudeArgs(opts.checkModel ?? IMAGE_CHECK_MODEL, IMAGE_CHECK_SCHEMA, emma ? IMAGE_CHECK_PROMPT_EMMA : IMAGE_CHECK_PROMPT);
   args[args.indexOf("--tools") + 1] = "Read";
-  const r = await runClaude(args, `Image file: ${basename(png)}\nExpected text: ${expected ? `«${expected}»` : "none (the card must show no text at all)"}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
+  const r = await runClaude(args, `Image file: ${basename(png)}\nExpected text: ${expected ? `«${expected}»` : "none (the card must show no text at all)"}${mood ? `\nMood of the note: ${mood}` : ""}${clubNote ? "\nNote type: club" : ""}${realPhoto ? "\nPhoto: REAL photo of the person. For the mood rule refuse ONLY a smile, raised arms or celebration when the note is a defeat, an exit or an injury; a serious, neutral or calm expression is always fine (it is the real expression)." : ""}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
   if ("fail" in r) return { ok: false, reason: `check: ${r.fail}` };
   const e = readEnvelope(r.out, r.err, r.code, r.ms);
   if (!e.ok) return { ok: false, reason: `check: ${e.outcome.reason}`.slice(0, 200), limit: e.outcome.kind === "limit" };
@@ -185,15 +191,47 @@ export async function checkImage(png: string, expected: string, opts: Pick<Image
   }
 }
 
+/** The repo's logo + compose script (the watcher runs from the repo, or NEWS_WATCHER_REPO): null if either is missing. */
+export function defaultLogo(env: NodeJS.ProcessEnv): { python: string; script: string; png: string } | null {
+  const { composeScript: script, logoPng: png } = assetPaths(env);
+  return existsSync(script) && existsSync(png) ? { python: env.NEWS_WATCHER_PYTHON || "python3", script, png } : null;
+}
+
+/** webp crests → png (sips) in the raw folder; png/jpg pass through. A file that fails to convert is dropped, never guessed. */
+export async function refsAsPng(refs: readonly string[], dir: string, base: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const [i, f] of refs.entries()) {
+    if (!/\.webp$/i.test(f)) { out.push(f); continue; }
+    const png = join(dir, `${base}-ref${i}.png`);
+    const r = await run("/usr/bin/sips", ["-s", "format", "png", f, "--out", png], { cwd: dir, timeoutMs: 30_000 });
+    if (r.code === 0 && existsSync(png)) out.push(png);
+  }
+  return out;
+}
+
+/** The generator command: gptimg -r (legacy), or gptimg-ref with one `-i` per reference image (emma, only when refs exist). */
+export function genCommand(o: Pick<ImageGenOpts, "gptimg" | "gptimgRef">, job: { prompt: string; refs?: readonly string[] }, raw: string, emma: boolean): [string, string[]] {
+  if (emma && job.refs?.length) return [o.gptimgRef ?? join(dirname(o.gptimg), "gptimg-ref.sh"), [...job.refs.flatMap((f) => ["-i", f]), job.prompt, raw]];
+  return [o.gptimg, ["-r", job.prompt, raw]];
+}
+
 /** One attempt: generate, post-produce, check. Never throws. */
-export async function makeImage(job: { base: string; prompt: string; attempts: number; expected: string }, o: ImageGenOpts): Promise<ImageAttempt> {
+export async function makeImage(job: { base: string; prompt: string; attempts: number; expected: string; mood?: string; clubNote?: boolean; refs?: readonly string[]; hfPrompt?: string; credit?: { person: string; author: string; license: string; licenseUrl: string | null; url: string } }, o: ImageGenOpts): Promise<ImageAttempt> {
   const t0 = Date.now();
   const rawDir = join(o.dir, "_raw");
   const rejDir = join(o.dir, "_rejected");
   mkdirSync(rawDir, { recursive: true });
   const raw = join(rawDir, `${job.base}-a${job.attempts + 1}.png`);
   // -r: a flat graphic card, not a photograph (without it the wrapper prepends «photorealistic»)
-  const g = await run(o.gptimg, ["-r", job.prompt, raw], { cwd: rawDir, timeoutMs: GPTIMG_TIMEOUT_MS, env: o.env });
+  const emma = imageStyle((o.env ?? process.env).NEWS_IMAGE_STYLE) === "emma";
+  let logo = o.logo;
+  if (emma) { // the official logo is composed locally: without it an emma card is never made
+    logo ??= defaultLogo(o.env ?? process.env) ?? undefined;
+    if (!logo) return { kind: "bad", reason: `emma: logo files not found (${assetPaths(o.env ?? process.env).composeScript}, ${assetPaths(o.env ?? process.env).logoPng})`, ms: Date.now() - t0 };
+  }
+  const refs = emma && job.refs?.length ? await refsAsPng(job.refs, rawDir, job.base) : undefined; // codex reads png/jpg
+  const [genBin, genArgs] = genCommand(o, { prompt: job.prompt, refs }, raw, emma);
+  const g = await run(genBin, genArgs, { cwd: rawDir, timeoutMs: GPTIMG_TIMEOUT_MS, env: o.env });
   if (g.timedOut) return { kind: "bad", reason: `gptimg timeout after ${g.ms} ms`, ms: Date.now() - t0 };
   let viaHf = false;
   if (g.code !== 0 && GPTIMG_LIMIT_RE.test(`${g.err} ${g.out}`)) {
@@ -201,7 +239,7 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
     const b = reserveHf(o.dir, o.hf);
     if (!b) return { kind: "limit", reason: "higgsfield cap reached" }; // retried on a later run, not given up
     o.hf.log(`higgsfield: gptimg out of credits → gpt_image_2 1k low for ${job.base} · ~${HF_CREDITS_PER_IMAGE} credits · day ${b.dayCount}/${o.hf.dailyMax || "∞"} · total ${b.total}/${o.hf.totalMax || "∞"}`);
-    const h = await run(o.hf.bin, ["generate", "create", "gpt_image_2", "--prompt", job.prompt, "--aspect_ratio", "16:9", "--resolution", "1k", "--quality", "low", "--wait", "--json"], { cwd: rawDir, timeoutMs: HF_TIMEOUT_MS, env: o.env });
+    const h = await run(o.hf.bin, ["generate", "create", "gpt_image_2", "--prompt", emma ? (job.hfPrompt ?? job.prompt) : job.prompt, "--aspect_ratio", emma ? "4:5" : "16:9", "--resolution", "1k", "--quality", "low", "--wait", "--json"], { cwd: rawDir, timeoutMs: HF_TIMEOUT_MS, env: o.env });
     const url = h.code === 0 ? (h.out.match(/https:\/\/[^"\s]+?(?<!_min)\.png/) ?? [])[0] : undefined;
     if (!url && HF_UNAVAILABLE_RE.test(`${h.err} ${h.out}`)) return { kind: "limit", reason: `higgsfield unavailable: ${tail(h.err || h.out)}` };
     if (!url) return { kind: "bad", reason: `higgsfield exit ${h.code}${h.timedOut ? " (timeout)" : ""}: ${tail(h.err || h.out)}`, ms: Date.now() - t0, final: true };
@@ -214,12 +252,17 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
     }
     viaHf = true;
   } else if (g.code !== 0 || !existsSync(raw)) return { kind: "bad", reason: `gptimg exit ${g.code}: ${tail(g.err)}`, ms: Date.now() - t0 };
-  const files = await postProcess(raw, job.base, o.dir, o.cwebp);
+  const files = await postProcess(raw, job.base, o.dir, o.cwebp, emma ? EMMA_SIZE : IMAGE_SIZE, emma ? logo : undefined);
   if ("error" in files) return { kind: "bad", reason: files.error, ms: Date.now() - t0, final: viaHf };
-  const c = await checkImage(files.png, job.expected, o);
+  // a card built on a REAL photo keeps the expression of that photo: a serious coach on a record win is fine, but a celebration/smile on a defeat, exit or injury is still refused (calde, risk 1)
+  const c = await checkImage(files.png, job.expected, o, job.mood, emma, !!job.clubNote, !!job.credit);
   if (c.ok) {
     const sig = await imageSignature(files.png, rawDir);
-    if (sig) return { kind: "ok", files, ms: Date.now() - t0, sig, textSeen: c.textSeen, final: viaHf };
+    if (sig) {
+      // the photo's credit (author, licence, source URL) is kept next to the card, for the credit on the page
+      if (emma && job.credit && !viaHf) writeFileSync(join(o.dir, `${job.base}.credit.json`), JSON.stringify({ ...job.credit, file: undefined }, null, 1));
+      return { kind: "ok", files, ms: Date.now() - t0, sig, textSeen: c.textSeen, final: viaHf };
+    }
   }
   if (!c.ok && c.limit && !viaHf) return { kind: "limit", reason: c.reason };
   const reason = c.ok ? "signature: sips failed" : c.reason;
@@ -237,7 +280,19 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
 export function storagePublisher(url: string, key: string, bucket: string, f: typeof fetch = fetch): (job: { base: string }, files: ImageFiles) => Promise<string> {
   const base = url.replace(/\/+$/, "");
   return async (job, files) => {
-    const name = `${job.base}.webp`;
+    // emma cards (4:5) carry the suffix «-e» in the public name: the page tells them from the legacy 16:9 ones by it, no migration (components/news/emma.ts)
+    const stem = imageStyle(process.env.NEWS_IMAGE_STYLE) === "emma" ? `${job.base}-e` : job.base;
+    const name = `${stem}.webp`;
+    const creditFile = join(dirname(files.webp), `${job.base}.credit.json`);
+    if (stem !== job.base && existsSync(creditFile)) {
+      const cr = await f(`${base}/storage/v1/object/${bucket}/${stem}.credit.json`, {
+        method: "POST",
+        headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json", "x-upsert": "true", "cache-control": "max-age=31536000" },
+        body: readFileSync(creditFile),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!cr.ok) throw new Error(`storage ${stem}.credit.json → http ${cr.status}`);
+    }
     const r = await f(`${base}/storage/v1/object/${bucket}/${name}`, {
       method: "POST",
       headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "image/webp", "x-upsert": "true", "cache-control": "max-age=31536000" },
@@ -250,11 +305,16 @@ export function storagePublisher(url: string, key: string, bucket: string, f: ty
 }
 
 /** Retention: delete published cards by public URL (one call, at most 100 names); a URL outside the bucket is ignored. */
+/** The approved neutral cards (no text) in the bucket: a note whose own card is refused or late goes out with one, never the stock picture. */
+export const NEUTRAL_CARDS = ["news-00000000000a", "news-00000000000b", "news-00000000000c"]; // d (black boot on navy) refused at review 30/10
+export const neutralCard = (url: string, bucket: string) => (hash: string): string =>
+  `${url.replace(/\/+$/, "")}/storage/v1/object/public/${bucket}/${NEUTRAL_CARDS[parseInt(hash.slice(0, 8), 16) % NEUTRAL_CARDS.length]}.webp`;
+
 export function storageRemover(url: string, key: string, bucket: string, f: typeof fetch = fetch): (urls: string[]) => Promise<void> {
   const base = url.replace(/\/+$/, "");
   const prefix = `${base}/storage/v1/object/public/${bucket}/`;
   return async (urls) => {
-    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}\.webp$/.test(n)).slice(0, 100);
+    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}(?:-e)?\.webp$/.test(n) && !NEUTRAL_CARDS.includes(n.slice(0, -5))).flatMap((n) => (n.endsWith("-e.webp") ? [n, n.replace(/\.webp$/, ".credit.json")] : [n])).slice(0, 100); // the neutral set is shared, never retired
     if (!names.length) return;
     const r = await f(`${base}/storage/v1/object/${bucket}`, {
       method: "DELETE",

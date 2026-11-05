@@ -6,7 +6,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { cardPrompt, cardText, cardTint, expectedText, pickCard, tooSimilar } from "../../lib/v3c/news/card";
+import { cardText, cardTint, pickCard, tooSimilar } from "../../lib/v3c/news/card";
+import { cardJob } from "../../lib/v3c/news/card-job";
 import { protagonist, protagonistTint, sceneKind } from "../../lib/v3c/news/image";
 import { makeImage, storagePublisher, storageRemover, type ImageFiles, type ImageSig } from "../../lib/v3c/news/image-gen";
 
@@ -31,8 +32,9 @@ async function make(guids: string[]) {
     const note = n.note.en;
     const card = pickCard(n.guid, sceneKind(note), cardText(note), cardTint(protagonistTint(note, n.teams), n.guid), protagonist(note, n.teams), ledger as never);
     const base = `news-bf-${n.guid.slice(0, 12)}`;
-    const expected = expectedText(card.text);
-    const a = await makeImage({ base, prompt: cardPrompt(card), attempts: 0, expected }, {
+    const job = cardJob(card, note, n.teams);
+    const expected = job.expected;
+    const a = await makeImage({ base, ...job, attempts: 0 }, {
       dir: join(HOME, "images"), gptimg: join(homedir(), ".local", "bin", "gptimg"), cwebp: "/opt/homebrew/bin/cwebp", claudeBin: join(homedir(), ".local", "bin", "claude"),
       hf: { bin: "higgsfield", dailyMax: 20, totalMax: Number(process.env.HF_TOTAL_MAX ?? 60), log },
     });

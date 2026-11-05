@@ -4,7 +4,7 @@
 // The convention is the one the watcher follows when it saves a picture
 // (NEWSWATCH-2): noteImageName(id) + ".webp" / ".png" under public/images/news.
 import { createHash } from "node:crypto";
-import { fotmobIdOf, noteImageByName, type NoteImage } from "./per-note";
+import { EMMA_PAGE_SIZE, fotmobIdOf, isEmmaSrc, noteImageByName, type NoteImage } from "./per-note";
 import type { NewsCard } from "./table";
 
 const SIZE = { width: 1200, height: 675 } as const;
@@ -21,7 +21,7 @@ export function uploadedImage(imageUrl: string | null, origin: string | null = s
   try {
     const u = new URL(imageUrl);
     if (u.origin !== origin || !/\.(webp|png|jpe?g|avif)$/i.test(u.pathname)) return null;
-    return { own: true, src: u.toString(), ...SIZE };
+    return { own: true, src: u.toString(), ...(isEmmaSrc(u.pathname) ? EMMA_PAGE_SIZE : SIZE) };
   } catch {
     return null;
   }

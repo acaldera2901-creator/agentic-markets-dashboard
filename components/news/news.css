@@ -36,6 +36,12 @@
 .nw-item[data-img] { grid-template-columns: 72px 168px minmax(0, 1fr); }
 .nw-thumb { display: block; width: 168px; aspect-ratio: 16 / 9; border-radius: var(--am-r-card-sm); overflow: hidden; background: var(--am-inset); box-shadow: inset 0 0 0 1px var(--nw-ring); }
 .nw-thumb, .brc-news__thumb, .mds-news__img { isolation: isolate; }
+/* emma cards (file «-e», lib/news/per-note.ts isEmmaSrc) are vertical 4:5 with crests and logo in the picture: only their containers change, the legacy 16:9 ones stay as they are */
+.nw-thumb:has(.nwa[data-emma]), .brc-news__thumb:has(.nwa[data-emma]), .mds-news__img:has(.nwa[data-emma]) { aspect-ratio: 4 / 5; }
+.nw-media { display: grid; gap: 4px; align-self: start; width: 168px; }
+.nw-credit { margin: 0; font-size: 11px; line-height: 1.35; color: var(--am-muted-2); }
+.nw-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 640px) { .nw-media { order: -1; width: 100%; } .nw-media .nw-thumb { margin-bottom: 0; } }
 
 /* ── the composed picture (NewsArt): photo · club tint · real crests ─────────
    The photo fills the box; the tint is the club colour(s) over it (left =

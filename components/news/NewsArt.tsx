@@ -12,6 +12,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { ClubBadge } from "@/lib/news/clubs";
 import { newsImage, type NewsImage, type NewsKind } from "@/lib/news/kind";
+import { isEmmaSrc } from "@/lib/news/per-note";
 
 type Picture = NewsImage & { own?: true; png?: string };
 
@@ -51,9 +52,11 @@ export function NewsArt({ image: given, badges, variant, className, sizes, kind 
   if (!image) return null;
   const tint = tintGradient(badges);
   const px = (image.own ? CREST_PX_OWN : CREST_PX)[variant];
-  const shown = badges.filter((b) => b.crest).slice(0, 2);
+  // an emma card (4:5, «-e» in the file name) already has the crests and the logo drawn into the picture: none on top of it
+  const emma = !!image.own && isEmmaSrc(image.src);
+  const shown = emma ? [] : badges.filter((b) => b.crest).slice(0, 2);
   return (
-    <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined} data-own={image.own ? "" : undefined}>
+    <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined} data-own={image.own ? "" : undefined} data-emma={emma ? "" : undefined}>
       {image.own ? (
         <picture>
           {image.png && <source type="image/webp" srcSet={image.src} />}
@@ -63,7 +66,7 @@ export function NewsArt({ image: given, badges, variant, className, sizes, kind 
       ) : (
         <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading="lazy" sizes={sizes} />
       )}
-      {tint && <span className="nwa-tint" aria-hidden="true" style={{ backgroundImage: tint }} />}
+      {tint && !emma && <span className="nwa-tint" aria-hidden="true" style={{ backgroundImage: tint }} />}
       {shown.map((b, i) => (
         <span key={b.name} className="nwa-badge" data-side={i === 0 ? "l" : "r"} style={{ width: px + 8, height: px + 8 }}>
           <Image src={b.crest!} alt={b.name} width={px} height={px} loading="lazy" />

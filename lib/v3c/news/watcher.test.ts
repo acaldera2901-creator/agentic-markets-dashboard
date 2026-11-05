@@ -406,6 +406,29 @@ describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IM
     expect(rep2.images).toMatchObject({ made: 1 });
   });
 
+  it("hold: the row enters news_items only WITH its card; refused or late → a neutral approved card, never the stock", async () => {
+    const db = fakeDb();
+    const inserted: unknown[] = [];
+    db.insert = vi.fn(async (r: NewsItemRow[]) => void inserted.push(...r));
+    const publish = vi.fn(async (j: { base: string }) => `https://cdn.example/${j.base}.webp`);
+    const neutral = () => "https://cdn.example/news-00000000000a.webp";
+    const bad = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "bad", reason: "check: fists", ms: 1, final: true }));
+    const s = freshState();
+    await runCycle(s, deps({ db, images: { make: bad, publish, holdRows: true, neutral } }), { maxRewrites: 1 });
+    expect(inserted).toHaveLength(1);
+    expect((inserted[0] as { image_url?: string }).image_url).toBe("https://cdn.example/news-00000000000a.webp");
+    const s2 = freshState();
+    const ins2: unknown[] = [];
+    const db2 = fakeDb();
+    db2.insert = vi.fn(async (r: NewsItemRow[]) => void ins2.push(...r));
+    const limit = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "limit", reason: "out of credits" }));
+    await runCycle(s2, deps({ db: db2, images: { make: limit, publish, holdRows: true, neutral } }), { maxRewrites: 1 });
+    expect(ins2).toHaveLength(0); // not visible yet
+    await runCycle(s2, deps({ db: db2, images: { make: limit, publish, holdRows: true, neutral } }, READ_AT + 16 * MIN), { maxRewrites: 0 });
+    expect(ins2).toHaveLength(1);
+    expect((ins2[0] as { image_url?: string }).image_url).toMatch(/00000000000a/);
+  });
+
   it("retention: the cards of the rows that expire are deleted BEFORE the rows (a file never outlives its row)", async () => {
     const db = fakeDb();
     const order: string[] = [];
