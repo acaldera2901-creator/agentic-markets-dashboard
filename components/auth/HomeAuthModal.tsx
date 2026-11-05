@@ -149,10 +149,12 @@ export function HomeAuthModal({
   intent,
   lang,
   onClose,
+  onAuthenticated,
 }: {
   intent: HomeAuthIntent;
   lang: string;
   onClose: () => void;
+  onAuthenticated?: () => void;
 }) {
   const t = COPY[pickLang(lang)];
   const [mode, setMode] = useState<HomeAuthIntent>(intent);
@@ -260,7 +262,8 @@ export function HomeAuthModal({
       } else if (resp.ok) {
         // Login riuscito: il cookie di sessione è settato → entra nel desk.
         // eslint-disable-next-line react-hooks/immutability -- hard nav voluta: dopo il login serve un caricamento pieno perche' il server veda il cookie di sessione appena messo
-        window.location.href = "/predictions";
+        if (onAuthenticated) onAuthenticated();
+        else window.location.href = "/predictions";
       } else if (resp.status === 403 && data.error === "activation_required") {
         setError(t.activationReq); setShowResend(true);
       } else if (resp.status === 401) setError(t.errWrong);
