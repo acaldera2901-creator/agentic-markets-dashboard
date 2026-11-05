@@ -8,6 +8,8 @@
 // pick: the news says when, never why.
 import { fillNews, newsCopy } from "@/lib/news/copy";
 import { NewsArt } from "./NewsArt";
+import { NewsCredit } from "./NewsCredit";
+import { isEmmaSrc } from "@/lib/news/per-note";
 import { matchesForNote, rowsFor, stateMessage, updatedLine, type WireFeed } from "@/lib/news/view";
 import { boardHref, useBoardMatches, useNow, useSiteLang } from "./use-news";
 import "./news.css";
@@ -43,11 +45,18 @@ export function NewsList({ feed }: { feed: WireFeed }) {
                   <time className="nw-time" dateTime={r.iso}>{r.time}</time>
                   {r.ago && <span className="nw-ago">{r.ago}</span>}
                 </div>
-                {r.image && (
+                {r.image && ("own" in r.image && isEmmaSrc(r.image.src) ? (
+                  <div className="nw-media">
+                    <span className="nw-thumb">
+                      <NewsArt image={r.image} kind={r.kind} badges={r.badges} variant="thumb" sizes="(max-width: 640px) calc(100vw - 64px), 168px" />
+                    </span>
+                    <NewsCredit src={r.image.src} label={lang === "it" ? "Foto" : "Photo"} />
+                  </div>
+                ) : (
                   <span className="nw-thumb">
                     <NewsArt image={r.image} kind={r.kind} badges={r.badges} variant="thumb" sizes="(max-width: 640px) calc(100vw - 64px), 168px" />
                   </span>
-                )}
+                ))}
                 <div className="nw-note">
                   {r.english && <span className="nw-lab nw-en">{c.inEnglish}</span>}
                   <h3 className="nw-title" lang={r.textLang}>{r.title}</h3>

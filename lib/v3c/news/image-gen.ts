@@ -279,7 +279,19 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
 export function storagePublisher(url: string, key: string, bucket: string, f: typeof fetch = fetch): (job: { base: string }, files: ImageFiles) => Promise<string> {
   const base = url.replace(/\/+$/, "");
   return async (job, files) => {
-    const name = `${job.base}.webp`;
+    // emma cards (4:5) carry the suffix «-e» in the public name: the page tells them from the legacy 16:9 ones by it, no migration (components/news/emma.ts)
+    const stem = imageStyle(process.env.NEWS_IMAGE_STYLE) === "emma" ? `${job.base}-e` : job.base;
+    const name = `${stem}.webp`;
+    const creditFile = join(dirname(files.webp), `${job.base}.credit.json`);
+    if (stem !== job.base && existsSync(creditFile)) {
+      const cr = await f(`${base}/storage/v1/object/${bucket}/${stem}.credit.json`, {
+        method: "POST",
+        headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json", "x-upsert": "true", "cache-control": "max-age=31536000" },
+        body: readFileSync(creditFile),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!cr.ok) throw new Error(`storage ${stem}.credit.json → http ${cr.status}`);
+    }
     const r = await f(`${base}/storage/v1/object/${bucket}/${name}`, {
       method: "POST",
       headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "image/webp", "x-upsert": "true", "cache-control": "max-age=31536000" },
@@ -301,7 +313,7 @@ export function storageRemover(url: string, key: string, bucket: string, f: type
   const base = url.replace(/\/+$/, "");
   const prefix = `${base}/storage/v1/object/public/${bucket}/`;
   return async (urls) => {
-    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}\.webp$/.test(n) && !NEUTRAL_CARDS.includes(n.slice(0, -5))).slice(0, 100); // the neutral set is shared, never retired
+    const names = urls.filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length)).filter((n) => /^news-[0-9a-f]{12}(?:-e)?\.webp$/.test(n) && !NEUTRAL_CARDS.includes(n.slice(0, -5))).flatMap((n) => (n.endsWith("-e.webp") ? [n, n.replace(/\.webp$/, ".credit.json")] : [n])).slice(0, 100); // the neutral set is shared, never retired
     if (!names.length) return;
     const r = await f(`${base}/storage/v1/object/${bucket}`, {
       method: "DELETE",

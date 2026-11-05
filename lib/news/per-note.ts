@@ -38,3 +38,25 @@ export function fotmobIdOf(url: string): string | null {
     return null;
   }
 }
+
+/**
+ * Emma cards (vertical 4:5, photo + crests + logo drawn INTO the picture) are recognised by the suffix
+ * «-e» on the public file name — news-<12 hex>-e.webp — so no migration and no column: the watcher
+ * names them so on upload (storagePublisher). Its photo credit sits beside it as news-<12 hex>-e.credit.json.
+ */
+const EMMA_FILE = /\/news-[0-9a-f]{12}-e\.webp$/;
+export const EMMA_PAGE_SIZE = { width: 1080, height: 1350 } as const;
+export const isEmmaSrc = (src: string): boolean => EMMA_FILE.test(src.split("?")[0]);
+export const emmaCreditUrl = (src: string): string | null => (isEmmaSrc(src) ? src.split("?")[0].replace(/\.webp$/, ".credit.json") : null);
+
+/** The credit of a card's photo, as the watcher saved it; only plain https links survive, anything else is dropped. */
+export type PhotoCredit = { person: string; author: string; license: string; licenseUrl: string | null; url: string | null };
+export function parseCredit(raw: unknown): PhotoCredit | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const s = (v: unknown, max = 200): string => (typeof v === "string" ? v.trim().slice(0, max) : "");
+  const link = (v: unknown): string | null => { const t = s(v, 500); return /^https:\/\/[^\s"<>]+$/.test(t) ? t : null; };
+  const author = s(o.author), license = s(o.license);
+  if (!author || !license) return null;
+  return { person: s(o.person), author, license, licenseUrl: link(o.licenseUrl), url: link(o.url) };
+}
