@@ -6,12 +6,12 @@ const {run,session}=vi.hoisted(()=>({run:vi.fn(),session:vi.fn()}));
 vi.mock('@/lib/db',()=>({dbQueryStrict:run,dbExecute:run}));
 vi.mock('@/lib/auth',()=>({getSessionPlan:session}));
 import {GET,POST} from '@/app/api/news/community/route';
-it('persists comments, denies other-account deletion, rate limits and permits owner deletion',async()=>{
+it.each([false,true])('persists comments, denies other-account deletion, rate limits and permits owner deletion (RPC discards DML rows: %s)',async(discardDmlRows)=>{
  const db=new PGlite();const guid='a'.repeat(64),id='00000000-0000-0000-0000-000000000001';
  const req=(input:unknown)=>new Request('https://www.betredge.com/api/news/community',{method:'POST',headers:{origin:'https://www.betredge.com','content-type':'application/json'},body:JSON.stringify({guid,...input as object})});
  try{
- await db.exec('CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE TABLE news_items(guid_hash text PRIMARY KEY);');await db.exec(readFileSync('supabase/migrations/20261105220000_news_community.sql','utf8'));await db.query('INSERT INTO news_items VALUES ($1)',[guid]);
- run.mockImplementation(async(sql,params)=>(await db.query(sql,params)).rows);session.mockResolvedValue({identifier:'private@example.com',name:null,plan:'free'});
+ await db.exec('CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE TABLE news_items(guid_hash text PRIMARY KEY); CREATE TABLE profiles(identifier text PRIMARY KEY);');await db.exec(readFileSync('supabase/migrations/20261105220000_news_community.sql','utf8'));await db.exec(readFileSync('supabase/migrations/20261105230000_community_profiles.sql','utf8'));await db.query('INSERT INTO news_items VALUES ($1)',[guid]);
+ run.mockImplementation(async(sql,params)=>{const result=await db.query(sql,params);return discardDmlRows&&!/^\s*SELECT\b/i.test(sql)?[]:result.rows});session.mockResolvedValue({identifier:'private@example.com',name:null,plan:'free'});
  expect((await POST(req({action:'comment',body:'A thoughtful comment',id}))).status).toBe(200);
  expect((await POST(req({action:'comment',body:'A thoughtful comment',id}))).status).toBe(200);
  expect((await POST(req({action:'comment',body:'Too soon',id:'00000000-0000-0000-0000-000000000002'}))).status).toBe(429);
