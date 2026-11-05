@@ -1,7 +1,7 @@
 // Block 2 of the «emma» style: crest lookup from repo files, `-i` reference args, 4:5 crop + local logo + webp weight.
 import { describe, expect, it } from "vitest";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { crestRefs } from "./emma-assets";
@@ -55,6 +55,21 @@ describe("genCommand — reference images as `-i`", () => {
     expect(iPrompt).toBeGreaterThan(-1);
     expect(argv.slice(iPrompt + 1)).toEqual(["--image", "/p/photo.png", "--image", "/p/crest.png"]);
     expect(readFileSync(out, "utf8")).toBe("PNG");
+  });
+  it("two concurrent gptimg-ref.sh runs never overlap (shared flock) and the lock is released on exit", async () => {
+    const d = mkdtempSync(join(tmpdir(), "glock-"));
+    const fake = join(d, "codex");
+    const dir = join(d, "home", ".codex", "generated_images", "s1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "x.png"), "PNG");
+    writeFileSync(fake, `#!/bin/bash\necho "start $(python3 -c 'import time;print(time.time())')" >> "${d}/ev.txt"\nsleep 1\necho "end $(python3 -c 'import time;print(time.time())')" >> "${d}/ev.txt"\necho "saved ${dir}/x.png"\n`);
+    chmodSync(fake, 0o755);
+    const env = { ...process.env, CODEX_BIN: fake, HOME: join(d, "home"), GPTIMG_REF_LOCK: join(d, "g.lock") };
+    const run = (n: number) => new Promise<number | null>((ok) => execFile(join(REPO, "scripts/news/gptimg-ref.sh"), ["-i", "/p/photo.png", "P", join(d, `o${n}.png`)], { env }, (e) => ok(e ? 1 : 0)));
+    expect(await Promise.all([run(1), run(2)])).toEqual([0, 0]);
+    const ev = readFileSync(join(d, "ev.txt"), "utf8").trim().split("\n").map((l) => l.split(" "));
+    expect(ev.map((e) => e[0])).toEqual(["start", "end", "start", "end"]); // never start, start
+    expect(Number(ev[2][1])).toBeGreaterThanOrEqual(Number(ev[1][1]) - 0.05);
   });
 });
 

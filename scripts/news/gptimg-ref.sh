@@ -2,6 +2,16 @@
 # gptimg-ref — like ~/.local/bin/gptimg -r, plus reference images: `gptimg-ref -i photo.png -i crest.png "<prompt>" out.png`
 # Passes each file to `codex exec --image`. Prompt first, then the flags (--image takes several values and would swallow the prompt).
 set -euo pipefail
+# One generation at a time, across the watcher, the backfill and any other caller (the «newest png» fallback below would mix up outputs).
+# Re-exec under an exclusive flock on a shared file; the lock is held by this process and released on its exit (also on a crash).
+if [ -z "${GPTIMG_REF_LOCKED:-}" ]; then
+  LOCKFILE="${GPTIMG_REF_LOCK:-${NEWS_WATCHER_HOME:-$HOME/Library/Application Support/news-watcher}/gptimg.lock}"
+  mkdir -p "$(dirname "$LOCKFILE")"
+  export GPTIMG_REF_LOCKED=1
+  exec python3 -c 'import fcntl,os,sys
+f=open(sys.argv[1],"a"); fcntl.flock(f,fcntl.LOCK_EX); os.set_inheritable(f.fileno(),True)
+os.execvp(sys.argv[2],sys.argv[2:])' "$LOCKFILE" "$0" "$@"
+fi
 IMGS=()
 while getopts "i:" opt; do case "$opt" in i) IMGS+=(--image "$OPTARG") ;; *) exit 2 ;; esac; done
 shift $((OPTIND - 1))
