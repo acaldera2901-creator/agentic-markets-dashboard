@@ -9,7 +9,7 @@ export async function GET(req:Request){
  try{
   const user=await getSessionPlan(req);
   const [stats]=await dbQueryStrict(`SELECT (SELECT count(*)::int FROM news_likes WHERE news_guid=$1) AS likes, (SELECT count(*)::int FROM news_comments WHERE news_guid=$1) AS comments, EXISTS(SELECT 1 FROM news_likes WHERE news_guid=$1 AND user_id=$2) AS liked`,[guid,user?.identifier??null]);
-  const comments=await dbQueryStrict(`SELECT id,body,display_name AS name,created_at, (user_id=$2 OR $3) AS mine FROM news_comments WHERE news_guid=$1 ORDER BY created_at DESC,id DESC LIMIT 50`,[guid,user?.identifier??null,user?.plan==='admin_full']);
+  const comments=await dbQueryStrict(`SELECT c.id,c.body,COALESCE(p.display_name,c.display_name) AS name,p.username,p.avatar_url AS "avatarUrl",c.created_at, (c.user_id=$2 OR $3) AS mine FROM news_comments c LEFT JOIN community_profiles p ON p.user_id=c.user_id WHERE c.news_guid=$1 ORDER BY c.created_at DESC,c.id DESC LIMIT 50`,[guid,user?.identifier??null,user?.plan==='admin_full']);
   return json({likes:Number(stats?.likes??0),commentCount:Number(stats?.comments??0),liked:!!stats?.liked,authenticated:!!user,comments});
  }catch{return json({error:'unavailable'},503)}
 }
