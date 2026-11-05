@@ -26,6 +26,7 @@ it("preserves entered profile on failed save and submits only editable fields", 
 it("opens existing authentication after a server 401 and reloads after login", async () => {
  const f = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 }).mockResolvedValueOnce(ok(data)); vi.stubGlobal("fetch", f); render(<NewsProfile />);
  fireEvent.click(await screen.findByRole("button", { name: "Sign in" }));
+ expect(screen.getByRole("button", { name: "Complete login" }).closest(".hv3")).not.toBeNull();
  fireEvent.click(screen.getByRole("button", { name: "Complete login" }));
  expect(await screen.findByText("real@example.com")).toBeTruthy();
 });
@@ -38,4 +39,17 @@ it("uploads a multipart avatar and removes the persisted image", async () => {
  fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
  await waitFor(() => expect(screen.queryByAltText("Your avatar")).toBeNull());
  expect(f.mock.calls[2][1].method).toBe("DELETE");
+});
+
+it.each([
+ ["invalid_username", "3–20"],
+ ["invalid_display_name", "1–40"],
+ ["invalid_bio", "160"],
+ ["invalid_avatar", "PNG"],
+])("explains server validation %s while preserving the draft", async (code, hint) => {
+ const f = vi.fn().mockResolvedValueOnce(ok(data)).mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: code }) }); vi.stubGlobal("fetch", f); render(<NewsProfile />);
+ fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "New name" } });
+ fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+ expect(await screen.findByRole("alert")).toHaveTextContent(hint);
+ expect(screen.getByLabelText("Name")).toHaveValue("New name");
 });
