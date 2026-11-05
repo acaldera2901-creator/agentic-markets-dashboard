@@ -60,7 +60,7 @@ export function cardJob(c: CardSpec, note: NoteText, teams: readonly string[], e
 
 /** The headline from the rewritten note's title, only when the card has no caption of its own (a quote/caption keeps priority). */
 function headlineAsset(c: CardSpec, note: NoteText): { headline?: string[] } {
-  if (c.text.words || c.text.big) return {}; // a caption or a score/figure is already the headline (#M2: never twice)
+  void c; // Emma's rule (05/11): the headline is ALWAYS the note's title, shortened; a caption or a figure is at most a badge (emmaText)
   const h = headlineLines(note.title);
   return h.length ? { headline: h } : {};
 }

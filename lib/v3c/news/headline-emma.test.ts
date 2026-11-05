@@ -12,11 +12,13 @@ const env = { NEWS_IMAGE_STYLE: "emma", NEWS_WATCHER_PUBLIC_DIR: PUBLIC } as unk
 const spec = (note: { title: string; body: string }, teams: string[]) => pickCard("deadbeef", sceneKind(note), cardText(note), null, teams[0] ?? null, []);
 
 describe("headlineLines", () => {
-  it("1–3 balanced lines; one word or more than 9 words → none", () => {
+  it("Emma's rule: the title as is up to ~60 chars (1–3 evenly split lines), longer → ≤7 words without filler or dangling end; one word → none", () => {
     expect(headlineLines("Raphinha commits to Barcelona until 2030")).toEqual(["Raphinha commits to", "Barcelona until 2030"]);
-    expect(headlineLines("Como equal Champions League record for biggest win against Lens")).toEqual([]); // 11 words: too long, no headline
+    expect(headlineLines("Como equal Champions League record for biggest win against Lens")).toEqual(["Como equal Champions", "League record", "biggest win"]); // 63 chars → shortened
+    expect(headlineLines("Kovac wanted to avoid risk over Guirassy injury")).toEqual(["Kovac wanted to", "avoid risk over", "Guirassy injury"]);
+    expect(headlineLines("Haaland late winner as RB Leipzig pegged Man City back")).toEqual(["Haaland late winner as", "RB Leipzig pegged", "Man City back"]);
     expect(headlineLines("Rooney")).toEqual([]);
-    expect(headlineLines("one two three four five six seven eight nine ten")).toEqual([]);
+    expect(headlineLines("one two three four five six seven eight nine ten eleven twelve").length).toBeLessThanOrEqual(3); // > 11 words → cut to 7
     expect(headlineLines("Short title.")).toEqual(["Short title"]);
   });
 });
@@ -40,5 +42,17 @@ describe("cardJob emma", () => {
     expect(b).toHaveLength(1);
     expect(b[0].file).toMatch(/fc-barcelona\.webp$/);
     expect(titleCrestRefs("Haaland late winner as RB Leipzig pegged Man City back", PUBLIC).length).toBe(2);
+  });
+});
+
+import { emmaText } from "./card-emma";
+describe("caption / figure next to the title headline (Emma: never the headline, at most a badge)", () => {
+  const cap = (words: string, big = "") => ({ text: { type: "word", words, big }, figure: "", format: "x", block: "x", dominant: "x", tint: null, club: null, object: "" }) as never;
+  it("caption already in the title → no badge; caption not in the title → badge, never the headline", () => {
+    expect(emmaText(cap("INJURY"), { headline: ["Kovac wanted to", "avoid risk over", "Guirassy injury"] }).badge).toBeNull();
+    const t = emmaText(cap("RECORD"), { headline: ["Como beat Lens", "nine goals"] });
+    expect(t.headline).toEqual(["Como beat Lens", "nine goals"]);
+    expect(t.badge).toBe("RECORD");
+    expect(t.expected).toBe("NEWS Como beat Lens nine goals RECORD");
   });
 });

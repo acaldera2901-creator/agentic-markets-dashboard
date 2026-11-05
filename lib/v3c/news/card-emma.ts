@@ -41,7 +41,11 @@ export function emmaText(c: CardSpec, a: EmmaAssets = {}): { label: string; head
   const big = clean(c.text.big ?? "");
   const headline = given.length ? given : caption ? [caption] : big ? [big] : [];
   const fromBig = !given.length && !caption && !!big;
-  const badge = !fromBig && big && c.text.type !== "none" ? big : null;
+  const inHeadline = (s: string) => !!s && given.join(" ").toUpperCase().includes(s.toUpperCase());
+  // a given headline (the note's title): the figure, or else the caption («INJURY», «WINNER»), is at most a badge — and never one the headline already says
+  const badge = given.length
+    ? (big && c.text.type !== "none" && !inHeadline(big) ? big : caption && !inHeadline(caption) ? caption : null)
+    : !fromBig && big && c.text.type !== "none" ? big : null;
   const subtitle = a.subtitle ? clean(a.subtitle) || null : null;
   return { label, headline, subtitle, badge, expected: [label, ...headline, subtitle, badge].filter(Boolean).join(" ") };
 }
@@ -75,10 +79,25 @@ export function emmaCardPrompt(c: CardSpec, a: EmmaAssets = {}): string {
  * The card's headline from the REWRITTEN note's title (G5, orchestratore finding 1): 1–3 short lines, balanced by words, so a note whose
  * card has no caption and no figure does not come out with the label «NEWS» alone. Longer than 9 words → none (a cut title would change the sense).
  */
+const MAX_HEADLINE_WORDS = 7;
+const FILLER = new Set(["the", "a", "an", "of", "in", "on", "at", "for", "to", "as", "over", "against", "that", "with", "by", "from", "after", "has", "have", "had", "is", "are", "was", "were", "wanted", "will"]);
+const DANGLING = new Set([...FILLER, "and", "but", "or", "until", "while", "back"]);
+/** Title → at most 7 words (Emma's rule: the note's title, shortened, never a single generic word): drop filler words after the first, then cut, never ending on a dangling word. */
+function shorten(words: string[]): string[] {
+  let w = words;
+  for (let i = w.length - 1; i > 0 && w.length > MAX_HEADLINE_WORDS; i--) if (FILLER.has(w[i].toLowerCase())) w = [...w.slice(0, i), ...w.slice(i + 1)];
+  w = w.slice(0, MAX_HEADLINE_WORDS);
+  while (w.length > 2 && DANGLING.has(w[w.length - 1].toLowerCase())) w = w.slice(0, -1);
+  return w;
+}
 export function headlineLines(title: string): string[] {
-  const words = clean(title).replace(/[.!?]+$/, "").split(" ").filter(Boolean);
-  if (words.length < 2 || words.length > 9) return [];
+  let words = clean(title).replace(/[.!?]+$/, "").split(" ").filter(Boolean);
+  // Emma's rule: the title as it is up to ~60 characters; longer (or > 11 words) → shortened to 7 words
+  if (words.length > 11 || clean(title).length > 60) words = shorten(words);
+  if (words.length < 2) return [];
   const n = words.length <= 3 ? 1 : words.length <= 6 ? 2 : 3;
-  const per = Math.ceil(words.length / n);
-  return Array.from({ length: n }, (_, i) => words.slice(i * per, (i + 1) * per).join(" ")).filter(Boolean);
+  // even split (7 words → 3+2+2, never a lone word on the last line)
+  const base = Math.floor(words.length / n), extra = words.length % n;
+  let at = 0;
+  return Array.from({ length: n }, (_, i) => { const len = base + (i < extra ? 1 : 0); const line = words.slice(at, at + len).join(" "); at += len; return line; }).filter(Boolean);
 }

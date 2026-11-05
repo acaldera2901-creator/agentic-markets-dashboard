@@ -73,7 +73,7 @@ describe("cardJob — the only thing the watcher passes", () => {
   it("emma: 4:5 prompt, expected from the emma card, crest files as refs, Higgsfield prompt without references", () => {
     const note = { title: "Barcelona win 2-1", body: "FC Barcelona beat Real Madrid 2-1." };
     const j = cardJob(mk(note), note, ["FC Barcelona"], { NEWS_IMAGE_STYLE: "emma", NEWS_WATCHER_PUBLIC_DIR: publicDir } as unknown as NodeJS.ProcessEnv);
-    expect(j.prompt).toMatch(/4:5 vertical/); expect(j.expected).toBe("NEWS 2-1");
+    expect(j.prompt).toMatch(/4:5 vertical/); expect(j.expected).toBe("NEWS Barcelona win 2-1"); // Emma 05/11: headline = the note title, the score is not repeated as a badge
     expect(j.refs?.length).toBeGreaterThan(0); expect(j.refs![0]).toMatch(/crests\/football\/.+\.webp$/);
     expect(j.prompt).toMatch(/official crest/); expect(j.hfPrompt).not.toMatch(/Reference image/);
   });
