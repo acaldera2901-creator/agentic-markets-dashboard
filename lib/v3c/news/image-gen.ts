@@ -176,10 +176,10 @@ export async function imageSignature(png: string, tmpDir: string): Promise<Image
 }
 
 /** The visual check on the finished png: `claude -p` with the Read tool only, in the image's folder; the text read is compared with `expected`. */
-export async function checkImage(png: string, expected: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">, mood?: string, emma = false, clubNote = false): Promise<{ ok: true; textSeen: string } | { ok: false; reason: string; limit?: boolean }> {
+export async function checkImage(png: string, expected: string, opts: Pick<ImageGenOpts, "claudeBin" | "checkModel" | "env">, mood?: string, emma = false, clubNote = false, realPhoto = false): Promise<{ ok: true; textSeen: string } | { ok: false; reason: string; limit?: boolean }> {
   const args = claudeArgs(opts.checkModel ?? IMAGE_CHECK_MODEL, IMAGE_CHECK_SCHEMA, emma ? IMAGE_CHECK_PROMPT_EMMA : IMAGE_CHECK_PROMPT);
   args[args.indexOf("--tools") + 1] = "Read";
-  const r = await runClaude(args, `Image file: ${basename(png)}\nExpected text: ${expected ? `«${expected}»` : "none (the card must show no text at all)"}${mood ? `\nMood of the note: ${mood}` : ""}${clubNote ? "\nNote type: club" : ""}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
+  const r = await runClaude(args, `Image file: ${basename(png)}\nExpected text: ${expected ? `«${expected}»` : "none (the card must show no text at all)"}${mood ? `\nMood of the note: ${mood}` : ""}${clubNote ? "\nNote type: club" : ""}${realPhoto ? "\nPhoto: REAL photo of the person. For the mood rule refuse ONLY a smile, raised arms or celebration when the note is a defeat, an exit or an injury; a serious, neutral or calm expression is always fine (it is the real expression)." : ""}`, { bin: opts.claudeBin, cwd: dirname(png), env: opts.env });
   if ("fail" in r) return { ok: false, reason: `check: ${r.fail}` };
   const e = readEnvelope(r.out, r.err, r.code, r.ms);
   if (!e.ok) return { ok: false, reason: `check: ${e.outcome.reason}`.slice(0, 200), limit: e.outcome.kind === "limit" };
@@ -254,8 +254,8 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
   } else if (g.code !== 0 || !existsSync(raw)) return { kind: "bad", reason: `gptimg exit ${g.code}: ${tail(g.err)}`, ms: Date.now() - t0 };
   const files = await postProcess(raw, job.base, o.dir, o.cwebp, emma ? EMMA_SIZE : IMAGE_SIZE, emma ? logo : undefined);
   if ("error" in files) return { kind: "bad", reason: files.error, ms: Date.now() - t0, final: viaHf };
-  // a card built on a REAL photo keeps the expression of that photo (a coach serious on a record win is not a mood error): no mood check for it
-  const c = await checkImage(files.png, job.expected, o, job.credit ? undefined : job.mood, emma, !!job.clubNote);
+  // a card built on a REAL photo keeps the expression of that photo: a serious coach on a record win is fine, but a celebration/smile on a defeat, exit or injury is still refused (calde, risk 1)
+  const c = await checkImage(files.png, job.expected, o, job.mood, emma, !!job.clubNote, !!job.credit);
   if (c.ok) {
     const sig = await imageSignature(files.png, rawDir);
     if (sig) {

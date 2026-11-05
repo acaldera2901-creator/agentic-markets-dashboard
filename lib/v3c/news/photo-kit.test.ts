@@ -88,3 +88,18 @@ describe("emma checker", () => {
     expect(readFileSync(join(d, "msg.txt"), "utf8")).not.toContain("Note type: club");
   });
 });
+
+describe("mood on real photos (calde risk 1)", () => {
+  it("the mood stays in the message with the real-photo rule: refuse only smile/celebration on defeat, exit, injury", async () => {
+    const d = dir(); const png = join(d, "c.png"); writeFileSync(png, "x");
+    const bin = join(d, "claude");
+    writeFileSync(bin, `#!/bin/sh\ncat > "${d}/msg.txt"\necho '{"result":"","structured_output":{"ok":true,"problems":[],"text_seen":"NEWS"}}'\n`); chmodSync(bin, 0o755);
+    await checkImage(png, "NEWS", { claudeBin: bin }, "calm and focused", true, true, true);
+    const m = readFileSync(join(d, "msg.txt"), "utf8");
+    expect(m).toContain("Mood of the note: calm and focused");
+    expect(m).toMatch(/REAL photo[\s\S]*ONLY a smile, raised arms or celebration[\s\S]*defeat, an exit or an injury/);
+    expect(m).toMatch(/serious, neutral or calm expression is always fine/);
+    await checkImage(png, "NEWS", { claudeBin: bin }, "calm and focused", true, true, false); // generated scene: no real-photo line
+    expect(readFileSync(join(d, "msg.txt"), "utf8")).not.toContain("REAL photo");
+  });
+});
