@@ -13,6 +13,7 @@
 import { createHash } from "node:crypto";
 import { words, type NoteText } from "./rewrite";
 import type { SceneKind } from "./image";
+import { emmaCardPrompt, imageStyle } from "./card-emma";
 
 export type TextType = "score" | "count" | "word" | "none";
 /** `big`: the giant numeral/score; `words`: the condensed caption. Both from the note. */
@@ -189,7 +190,11 @@ export const CARD_STYLE_NO_TEXT = CARD_STYLE.replace("condensed white uppercase 
   "NO text, letters, numbers, watermarks or pseudo-text anywhere",
 );
 
-export function cardPrompt(c: CardSpec): string {
+/** `style`: NEWS_IMAGE_STYLE=legacy|emma (default legacy). Only the picture changes — never the cadence, the text or the publishing. */
+export function cardPrompt(c: CardSpec, style: string | undefined = process.env.NEWS_IMAGE_STYLE): string {
+  if (imageStyle(style) === "emma") {
+    return emmaCardPrompt(c);
+  }
   const p = cardPromptBase(c);
   return c.mood && !p.includes("MOOD of the figure") ? `${p} MOOD of the figure: ${c.mood}. Every word, head and hand entirely inside the frame with a clear margin (a figure may bleed off the bottom edge only).` : p;
 }

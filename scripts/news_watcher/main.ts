@@ -24,6 +24,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { assetPaths, resolveImageStyle, type StyleCheck } from "../../lib/v3c/news/assets";
 import { rewriteWithClaude } from "../../lib/v3c/news/claude-cli";
 import { makeImage, neutralCard, storagePublisher, storageRemover } from "../../lib/v3c/news/image-gen";
 import { freshState, runCycle, type ImageDeps, type StatePatch, type WatcherDb, type WatcherState } from "../../lib/v3c/news/watcher";
@@ -41,6 +42,10 @@ const LOCK = join(HOME, "watcher.lock");
 const HEARTBEAT = join(HOME, "last-run.json");
 const CLAUDE_BIN = process.env.NEWS_WATCHER_CLAUDE || join(homedir(), ".local", "bin", "claude");
 const IMAGE_DIR = join(HOME, "images");
+// «emma» style local files (gptimg-ref, logo, compose script, crests): a folder next to state.json, never ~/Desktop (TCC).
+// Built by drafts/tommy/news-style/install-assets.sh; each file can still be overridden (lib/v3c/news/assets.ts).
+process.env.NEWS_WATCHER_ASSETS ||= join(HOME, "assets");
+let styleCheck: StyleCheck = { requested: "legacy", effective: "legacy", missing: [] }; // set after .env is read, written to last-run.json
 
 const log = (line: string) => console.log(`${new Date().toISOString()} ${line}`);
 
@@ -155,6 +160,12 @@ async function main(): Promise<number> {
     db = restDb(url, key);
   }
   const intervalS = Math.max(60, Number(process.env.NEWS_WATCHER_INTERVAL_S) || 600);
+  // NEWS_IMAGE_STYLE=emma needs its local files: if any is missing, this run (and the next ones) use legacy and last-run.json says why
+  styleCheck = resolveImageStyle(process.env);
+  if (styleCheck.requested.toLowerCase() === "emma" && styleCheck.effective === "legacy") {
+    process.env.NEWS_IMAGE_STYLE = "legacy";
+    log(`image style: emma requested but missing ${styleCheck.missing.join(" | ")} → legacy`);
+  }
   let images: ImageDeps | undefined;
   if (process.env.NEWS_WATCHER_IMAGES === "1") {
     images = {
@@ -162,6 +173,8 @@ async function main(): Promise<number> {
         makeImage(job, {
           dir: IMAGE_DIR,
           gptimg: process.env.NEWS_WATCHER_GPTIMG || join(homedir(), ".local", "bin", "gptimg"),
+          // «emma» style: gptimg with reference images (env NEWS_WATCHER_GPTIMG_REF, default <HOME>/assets/gptimg-ref.sh)
+          gptimgRef: assetPaths().gptimgRef,
           cwebp: process.env.NEWS_WATCHER_CWEBP || "/opt/homebrew/bin/cwebp",
           claudeBin: CLAUDE_BIN,
           // #NEWSWATCH-HF: Higgsfield only when gptimg is out of credits, capped per day and in total
@@ -217,7 +230,7 @@ async function main(): Promise<number> {
       /* first run */
     }
     if (rep.fetched.page != null || rep.fetched.rss != null) lastOkAt = new Date().toISOString();
-    const summary = { at: new Date().toISOString(), lastOkAt, intervalS, dryRun: DRY, ...rep, outcomes: undefined };
+    const summary = { at: new Date().toISOString(), lastOkAt, intervalS, dryRun: DRY, imageStyle: styleCheck, ...rep, outcomes: undefined };
     log(`run: exit ${rep.exit} · fetched page ${rep.fetched.page ?? "-"} rss ${rep.fetched.rss ?? "-"} · queued ${rep.queued} · rewritten ${rep.rewritten} · rejected ${rep.rejected.length} · written ${rep.written} · queue ${state.queue.length}${rep.limited ? " · LIMITED" : ""}${rep.images ? ` · images made ${rep.images.made} refused ${rep.images.failed} fallback ${rep.images.fallback} published ${rep.images.published} pending ${rep.images.pending}` : ""}${rep.errors.length ? ` · errors: ${rep.errors.join(" | ")}` : ""}`);
     if (!DRY) {
       saveState(state);
