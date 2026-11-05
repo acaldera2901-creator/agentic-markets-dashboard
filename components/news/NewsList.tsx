@@ -6,6 +6,8 @@
 // link only when the board names the team — never invented. The picture is
 // ours, by kind of story (lib/news/kind.ts), never FotMob's; no price, no
 // pick: the news says when, never why.
+import Link from "next/link";
+import Image from "next/image";
 import { fillNews, newsCopy } from "@/lib/news/copy";
 import { NewsArt } from "./NewsArt";
 import { NewsActions } from "./NewsActions";
@@ -42,7 +44,7 @@ export function NewsList({ feed }: { feed: WireFeed }) {
             return (
               <li key={r.key} id={"post-"+cards[i].guid} className="nw-item ns-post" data-img={r.image ? "" : undefined} data-kind={r.kind}>
                 <header className="ns-post-head">
-                  <a href="/" className="ns-avatar" aria-label="BetRedge"><img src="/logos/betredge-logo-white-48.png" alt="" width="34" height="22" /></a>
+                  <Link href="/" className="ns-avatar" aria-label="BetRedge"><Image src="/logos/betredge-logo-white-48.png" alt="" width={34} height={22} /></Link>
                   <div className="ns-identity"><strong>betr.edge <span aria-label="BetRedge official" className="ns-verified">✓</span></strong><span>Sports. Insights. Community.</span></div>
                   <div className="nw-when"><time className="nw-time" dateTime={r.iso}>{r.time}</time>{r.ago && <span className="nw-ago">{r.ago}</span>}</div>
                 </header>
@@ -69,7 +71,7 @@ export function NewsList({ feed }: { feed: WireFeed }) {
         </ol>
       )}
 
-      {cards.length > 0 && <p className="ns-credits-link"><a href="/blog/credits">{lang === "it" ? "Crediti immagini" : "Image credits"}</a></p>}
+      {cards.length > 0 && <p className="ns-credits-link"><Link href="/blog/credits">{lang === "it" ? "Crediti immagini" : "Image credits"}</Link></p>}
       {cards.length > 0 && <p className="nw-takedown">{fillNews(c.takedown, {})}</p>}
     </section>
   );
