@@ -446,4 +446,30 @@ describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IM
     expect(make).toHaveBeenCalledTimes(1);
     expect(s.images?.map((j) => j.attempts)).toEqual([0, 0]);
   });
+
+  it("emma is fail-closed: no verified real photo → no img.make, no neutral card, the row stays pending with an explicit lastError", async () => {
+    vi.stubEnv("NEWS_IMAGE_STYLE", "emma");
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); })); // photoRef finds nothing
+    try {
+      const db = fakeDb();
+      const inserted: unknown[] = [];
+      db.insert = vi.fn(async (r: NewsItemRow[]) => void inserted.push(...r));
+      const make = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "bad", reason: "x", ms: 1 }));
+      const publish = vi.fn(async (j: { base: string }) => `https://cdn.example/${j.base}.webp`);
+      const neutral = vi.fn(() => "https://cdn.example/news-00000000000a.webp");
+      const s = freshState();
+      await runCycle(s, deps({ db, images: { make, publish, holdRows: true, neutral } }), { maxRewrites: 1 });
+      // past HOLD_MS: legacy would publish the neutral card here
+      const rep = await runCycle(s, deps({ db, images: { make, publish, holdRows: true, neutral } }, READ_AT + 16 * MIN), { maxRewrites: 0 });
+      expect(make).not.toHaveBeenCalled();
+      expect(neutral).not.toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
+      expect(inserted).toHaveLength(0);
+      expect(rep.images?.pending).toBe(1);
+      expect(s.images?.[0].lastError).toMatch(/no verified real photo/);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    }
+  });
 });
