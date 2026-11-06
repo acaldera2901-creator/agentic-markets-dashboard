@@ -61,6 +61,32 @@ export function articleJsonLd(a: {
   };
 }
 
+// ItemList di SportsEvent per le prossime partite (#SEO-AEO-1106). Solo fatti pubblici (squadre/giocatori, competizione, orario):
+// niente probabilita', quote o pick (gated), niente numeri di performance. Il testo equivalente e' visibile nella pagina (UpcomingMatches).
+export function matchesJsonLd(
+  matches: ReadonlyArray<{ sport: "football" | "tennis"; competition: string; home: string; away: string; startsAt: string }>,
+  path = "/predictions",
+): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Upcoming football and tennis matches on BetRedge",
+    itemListElement: matches.map((m, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "SportsEvent",
+        name: `${m.home} vs ${m.away}`,
+        description: m.competition,
+        startDate: m.startsAt,
+        sport: m.sport === "tennis" ? "Tennis" : "Soccer",
+        url: `${ORIGIN}${path}`,
+        competitor: [m.home, m.away].map((n) => ({ "@type": m.sport === "tennis" ? "Person" : "SportsTeam", name: n })),
+      },
+    })),
+  };
+}
+
 // FAQPage: usare SOLO con domande la cui risposta è visibile nella pagina
 // renderizzata (una FAQ schema senza risposta visibile è rischio manual action).
 export function faqJsonLd(qa: Array<[question: string, answer: string]>, inLanguage?: string): object {

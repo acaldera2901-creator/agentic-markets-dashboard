@@ -1,0 +1,42 @@
+// components/seo/UpcomingMatches.tsx — #SEO-AEO-1106
+// Server-rendered list of the next fixtures on /predictions: the board itself is client-rendered, so without this a crawler or an AI
+// assistant sees no match. Same facts as the board shows an anonymous visitor (teams/players, competition, kickoff): nothing gated.
+import { JsonLd, matchesJsonLd } from "./json-ld";
+import type { UpcomingMatch } from "@/lib/seo/upcoming-matches";
+
+const CSS = `
+.seo-upcoming{position:relative;z-index:0;max-width:68ch;margin:0 auto;padding:40px 24px 56px;font-size:15px;line-height:1.7;color:var(--am-muted)}
+.seo-upcoming h2{color:var(--am-text);font-size:22px;font-weight:700;letter-spacing:-.015em;margin:0 0 12px}
+.seo-upcoming p{margin:0 0 14px}
+.seo-upcoming ul{list-style:none;margin:0;padding:0}
+.seo-upcoming li{padding:8px 0;border-top:1px solid var(--am-line)}
+.seo-upcoming li strong{color:var(--am-text);font-weight:600}
+`;
+
+const fmt = (iso: string) =>
+  new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hourCycle: "h23" }).format(new Date(iso)) + " UTC";
+
+export function UpcomingMatches({ matches }: { matches: readonly UpcomingMatch[] }) {
+  if (!matches.length) return null;
+  return (
+    <section className="seo-upcoming" aria-labelledby="upcoming-matches-h">
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <JsonLd data={matchesJsonLd(matches)} />
+      <h2 id="upcoming-matches-h">Upcoming football and tennis matches</h2>
+      <p>
+        BetRedge publishes a calibrated probability and the reasoning behind it for every football and tennis match it covers, next to the
+        market&apos;s own probability. These are the next fixtures on the board; open a match above to read the model&apos;s view.
+      </p>
+      <ul>
+        {matches.map((m) => (
+          <li key={m.id + m.startsAt}>
+            <strong>
+              {m.home} vs {m.away}
+            </strong>{" "}
+            · {m.competition} · {fmt(m.startsAt)}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
