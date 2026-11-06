@@ -15,7 +15,8 @@ import ClassicChrome from "@/components/classic/ClassicChrome";
 // (NEWS_FOTMOB_ENABLED unset) it renders nothing and this page stays ISR.
 import { NewsSection } from "@/components/news/NewsSection";
 
-export const revalidate = 600;
+// 60 s (was 600, but dead while NewsSection forced the page dynamic): bounds the news freshness now that /blog is served from the cache.
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Betting Guides and Insights | BetRedge",
