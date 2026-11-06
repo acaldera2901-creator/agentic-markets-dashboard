@@ -166,7 +166,7 @@ const BASE_TRANSLATIONS = {
     // leggi), non «un piano pagante» sopra tre card. Il disclaimer sul mercato
     // scende in coda alla pagina (plans_footnote): resta, non fa più da titolo.
     plans_title: "Scegli quanto a fondo leggere il board",
-    plans_subtitle: "Free apre ogni giorno le 3 migliori del modello per sport. Base arriva alle top 7. Pro apre tutto, con l'analisi completa.",
+    plans_subtitle: "Free apre ogni giorno le 3 migliori del modello per sport. Pro apre tutto, con l'analisi completa.",
     plans_cta: "Guarda il board di oggi",
     plans_footnote: "Probabilità del modello, non promesse di battere il mercato. 18+ · Non è consulenza · Non gestiamo scommesse né denaro.",
     plans_base_desc: "Fino a 7 prediction per sport al giorno, con spiegazioni complete.",
@@ -429,7 +429,7 @@ const BASE_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Client plans",
     plans_title: "Choose how deep you read the board",
-    plans_subtitle: "Free opens the model's top 3 per sport every day. Base goes to the top 7. Pro opens everything, with full analysis.",
+    plans_subtitle: "Free opens the model's top 3 per sport every day. Pro opens everything, with full analysis.",
     plans_cta: "See today's board",
     plans_footnote: "Model probabilities, not a promise to beat the market. 18+ · Not advice · We don't place bets or handle money.",
     plans_base_desc: "Up to 7 predictions per sport a day, with full explanations.",
@@ -692,7 +692,7 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Planes cliente",
     plans_title: "Elige hasta dónde leer el board",
-    plans_subtitle: "Free abre cada día las 3 mejores del modelo por deporte. Base llega a las top 7. Pro abre todo, con el análisis completo.",
+    plans_subtitle: "Free abre cada día las 3 mejores del modelo por deporte. Pro abre todo, con el análisis completo.",
     plans_cta: "Ver el board de hoy",
     plans_footnote: "Probabilidades del modelo, no promesas de batir al mercado. 18+ · No es asesoramiento · No gestionamos apuestas ni dinero.",
     plans_base_desc: "Hasta 7 predicciones por deporte al día, con explicaciones completas.",
@@ -951,7 +951,7 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Plans client",
     plans_title: "Choisissez jusqu'où lire le board",
-    plans_subtitle: "Free ouvre chaque jour les 3 meilleures du modèle par sport. Base va jusqu'au top 7. Pro ouvre tout, avec l'analyse complète.",
+    plans_subtitle: "Free ouvre chaque jour les 3 meilleures du modèle par sport. Pro ouvre tout, avec l'analyse complète.",
     plans_cta: "Voir le board du jour",
     plans_footnote: "Des probabilités du modèle, pas une promesse de battre le marché. 18+ · Pas un conseil · Nous ne gérons ni paris ni argent.",
     plans_base_desc: "Jusqu'à 7 prédictions par sport par jour, avec explications complètes.",
@@ -1210,7 +1210,7 @@ const EXTRA_TRANSLATIONS = {
     // Plans
     plans_eyebrow: "Планы клиента",
     plans_title: "Выберите, насколько глубоко читать борд",
-    plans_subtitle: "Free каждый день открывает 3 лучших прогноза модели по каждому виду спорта. Base — до топ-7. Pro открывает всё, с полным анализом.",
+    plans_subtitle: "Free каждый день открывает 3 лучших прогноза модели по каждому виду спорта. Pro открывает всё, с полным анализом.",
     plans_cta: "Смотреть борд на сегодня",
     plans_footnote: "Вероятности модели, а не обещание обыграть рынок. 18+ · Не является советом · Мы не принимаем ставки и не работаем с деньгами.",
     plans_base_desc: "До 7 прогнозов на вид спорта в день, с полными пояснениями.",
@@ -3214,29 +3214,31 @@ function DeskPreview() {
 
 function AccessLevels({ onCreate, onPlans }: { onCreate: () => void; onPlans: () => void }) {
   const lang = useLang();
+  // #RETIRE-BASE-1031: la card si chiama «BetRedge Pro» ma mostrava il prezzo di
+  // Base ($14.99). Con Base ritirato, il prezzo è quello di Pro.
   const priceCopy = {
-    base: planPriceCopy("base", lang),
+    pro: planPriceCopy("premium", lang),
   };
   const levels = pick5(lang, {
     it: [
       { name: "Free", price: "$0", desc: "Profilo, lingua, preview e storico pubblico. Nessun segnale operativo.", cta: "Crea profilo", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.pro, desc: "Tennis live, football research, Model Edges, spiegazioni e track record.", cta: "Vai al piano", action: onPlans },
     ],
     en: [
       { name: "Free", price: "$0", desc: "Profile, language, preview and public history. No operational signals.", cta: "Create profile", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, explanations and track record.", cta: "View plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.pro, desc: "Tennis live, football research, Model Edges, explanations and track record.", cta: "View plan", action: onPlans },
     ],
     es: [
       { name: "Free", price: "$0", desc: "Perfil, idioma, vista previa e historial público. Sin señales operativas.", cta: "Crear perfil", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tenis live, football research, Model Edges, explicaciones y track record.", cta: "Ver plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.pro, desc: "Tenis live, football research, Model Edges, explicaciones y track record.", cta: "Ver plan", action: onPlans },
     ],
     fr: [
       { name: "Free", price: "$0", desc: "Profil, langue, aperçu et historique public. Aucun signal opérationnel.", cta: "Créer un profil", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, explications et track record.", cta: "Voir le plan", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.pro, desc: "Tennis live, football research, Model Edges, explications et track record.", cta: "Voir le plan", action: onPlans },
     ],
     ru: [
       { name: "Free", price: "$0", desc: "Профиль, язык, предпросмотр и публичная история. Без рабочих сигналов.", cta: "Создать профиль", action: onCreate },
-      { name: "BetRedge Pro", price: priceCopy.base, desc: "Tennis live, football research, Model Edges, пояснения и track record.", cta: "Смотреть план", action: onPlans },
+      { name: "BetRedge Pro", price: priceCopy.pro, desc: "Tennis live, football research, Model Edges, пояснения и track record.", cta: "Смотреть план", action: onPlans },
     ],
   });
   return (
@@ -3523,8 +3525,8 @@ function CryptoPaymentBox({
   const lang = useLang();
   // Solo il piano ESATTO è "attuale": un utente base deve poter fare upgrade a pro.
   const isCurrentPlan = profile?.plan === plan;
-  // Base → Pro è un upgrade; Pro → Base sarebbe un downgrade (lo etichettiamo).
-  const isDowngrade = plan === "base" && profile?.plan === "premium";
+  // #RETIRE-BASE-1031: Base non si vende più, quindi il caso «Pro → Base»
+  // (downgrade) e il CTA «Inizia con Base» non esistono più qui.
   return (
     <div className="crypto-pay-box">
       <div>
@@ -3544,16 +3546,12 @@ function CryptoPaymentBox({
       {/* #PLANS-HOOK-C-0928: da anonimo il bottone diceva «Crea profilo prima» su
           tutti i piani — un prerequisito, non un'offerta. Ora vende il piano; la
           sequenza (account → pagamento) sta nella nota sotto il prezzo. */}
-      <button disabled={isCurrentPlan || isDowngrade} onClick={() => onSubmit(plan)}>
+      <button disabled={isCurrentPlan} onClick={() => onSubmit(plan)}>
         {isCurrentPlan
           ? pick5(lang, { it: "Piano attuale", en: "Current plan", es: "Plan actual", fr: "Plan actuel", ru: "Текущий план" })
-          : isDowngrade
-            ? pick5(lang, { it: "Già su Pro", en: "Already on Pro", es: "Ya en Pro", fr: "Déjà sur Pro", ru: "Уже на Pro" })
-            : profile
-              ? `${t.crypto_activate} ${planLabel(plan, lang)}`
-              : plan === "base"
-                ? pick5(lang, { it: "Inizia con Base", en: "Start with Base", es: "Empieza con Base", fr: "Commencer avec Base", ru: "Начать с Base" })
-                : pick5(lang, { it: "Inizia con Pro", en: "Start with Pro", es: "Empieza con Pro", fr: "Commencer avec Pro", ru: "Начать с Pro" })}
+          : profile
+            ? `${t.crypto_activate} ${planLabel(plan, lang)}`
+            : pick5(lang, { it: "Inizia con Pro", en: "Start with Pro", es: "Empieza con Pro", fr: "Commencer avec Pro", ru: "Начать с Pro" })}
       </button>
     </div>
   );
@@ -4303,7 +4301,9 @@ function PlansTab({
         </section>
       )}
 
-      <section className="plans-grid plans-grid-3">
+      {/* #RETIRE-BASE-1031: la card Base è uscita (non si vende più) — restano
+          Free e Pro; `is-two` porta la griglia da 3 a 2 colonne. */}
+      <section className="plans-grid plans-grid-3 is-two">
         {/* ── FREE ── */}
         <article className="plan-card">
           <div className="plan-card-head">
@@ -4337,65 +4337,13 @@ function PlansTab({
             {/* #PLANS-HOOK-C-0928: «edge» tolto anche dalla riga chiusa del Free —
                 nessuna scheda mostra un numero di edge (#EDGE-COPY-0928); si nomina
                 ciò che i piani pagati aprono davvero: il resto del board e l'analisi. */}
-            <PlanFeature locked>{pick5(lang, { it: "Il resto del board e l'analisi completa (→ Base / Pro)", en: "The rest of the board and full analysis (→ Base / Pro)", es: "El resto del board y el análisis completo (→ Base / Pro)", fr: "Le reste du board et l'analyse complète (→ Base / Pro)", ru: "Остальной борд и полный анализ (→ Base / Pro)" })}</PlanFeature>
+            <PlanFeature locked>{pick5(lang, { it: "Il resto del board e l'analisi completa (→ Pro)", en: "The rest of the board and full analysis (→ Pro)", es: "El resto del board y el análisis completo (→ Pro)", fr: "Le reste du board et l'analyse complète (→ Pro)", ru: "Остальной борд и полный анализ (→ Pro)" })}</PlanFeature>
           </ul>
           {/* #FUNNEL-INTENT-0908: idem qui — da anonimo il CTA del Free era spento,
               quindi dopo la registrazione l'utente non otteneva nemmeno il piano free. */}
           <button className="plan-action" disabled={profile?.plan === "free"} onClick={onActivateFree}>
             {!profile ? pick5(lang, { it: "Inizia gratis", en: "Start free", es: "Empieza gratis", fr: "Commencer gratuitement", ru: "Начать бесплатно" }) : profile.plan === "free" ? pick5(lang, { it: "Free attivo", en: "Free active", es: "Free activo", fr: "Free actif", ru: "Free активен" }) : pick5(lang, { it: "Attiva Free", en: "Activate Free", es: "Activar Free", fr: "Activer Free", ru: "Активировать Free" })}
           </button>
-        </article>
-
-        {/* ── BASE ── */}
-        <article className="plan-card">
-          <div className="plan-card-head">
-            <div>
-              {/* #CLAIMS-FIX-0928: «Most popular» tolto — nessun pagante reale su cui
-                  basarlo (e Pro batte Base anche sui piani assegnati). Eyebrow neutro
-                  come quello del Free, nessun superlativo al suo posto. */}
-              <p className="eyebrow">Base</p>
-              <h4>{planLabel("base", lang)}</h4>
-            </div>
-            <span>{planPriceCopy("base", lang)}</span>
-          </div>
-          <p className="plan-description">
-            {/* #EDGE-COPY-0928 — via «edge»: dal round 14 del restyling nessuna
-                scheda mostra un numero di edge, per nessun piano (vedi
-                components/MatchDetailSheet.tsx, nota su MdsHead). La promessa
-                resta su ciò che Base vede davvero: le spiegazioni. */}
-            {pick5(lang, {
-              it: "Fino a 7 prediction per sport al giorno, con spiegazioni complete.",
-              en: "Up to 7 predictions per sport a day, with full explanations.",
-              es: "Hasta 7 predicciones por deporte al día, con explicaciones completas.",
-              fr: "Jusqu'à 7 prédictions par sport par jour, avec explications complètes.",
-              ru: "До 7 прогнозов на вид спорта в день, с полными пояснениями.",
-            })}
-          </p>
-          <div className="price-line">
-            <strong>{planPriceCopy("base", lang)}</strong>
-            {/* #PLANS-HOOK-C-0928: prezzo anche in unità d'uso, ACCANTO al mensile,
-                mai al suo posto (14.99/30 ≈ 0,50; 7 calcio + 7 tennis = fino a 14).
-                «Fino a» perché nei giorni con poche partite le top 7 non sono 7. */}
-            <small className="price-unit">{pick5(lang, { it: "≈ $0,50 al giorno · fino a 14 letture", en: "≈ $0.50 a day · up to 14 readings", es: "≈ $0,50 al día · hasta 14 lecturas", fr: "≈ 0,50 $ par jour · jusqu'à 14 lectures", ru: "≈ $0,50 в день · до 14 прогнозов" })}</small>
-            {/* Non piu' "solo crypto": il rail principale e' la carta (abbonamento
-                Shopify). Il crypto resta disponibile come alternativa. */}
-            <span>{pick5(lang, { it: "Carta o crypto · rinnovo automatico", en: "Card or crypto · auto-renewing", es: "Tarjeta o crypto · renovación automática", fr: "Carte ou crypto · renouvellement automatique", ru: "Карта или крипто · автопродление" })}</span>
-          </div>
-          <div className="plan-core-line">
-            <strong>{pick5(lang, { it: "Fino a 7 per sport / giorno", en: "Up to 7 per sport / day", es: "Hasta 7 por deporte / día", fr: "Jusqu'à 7 par sport / jour", ru: "До 7 на вид спорта / день" })}</strong>
-            <em>{pick5(lang, { it: "Fino a 4 in più per sport rispetto al Free, le migliori del modello.", en: "Up to 4 more per sport than Free, the model's best.", es: "Hasta 4 más por deporte que en Free, las mejores del modelo.", fr: "Jusqu'à 4 de plus par sport qu'en Free, les meilleures du modèle.", ru: "До 4 прогнозов больше на вид спорта, чем во Free, — лучшее от модели." })}</em>
-          </div>
-          <ul className="plan-feature-list">
-            <PlanFeature>{pick5(lang, { it: "Fino a 7 calcio + 7 tennis, tra le partite del giorno", en: "Up to 7 football + 7 tennis, from the day's matches", es: "Hasta 7 de fútbol + 7 de tenis, entre los partidos del día", fr: "Jusqu'à 7 football + 7 tennis, parmi les matchs du jour", ru: "До 7 по футболу + 7 по теннису из матчей дня" })}</PlanFeature>
-            <PlanFeature>{pick5(lang, { it: "Pick, probabilità e spiegazione", en: "Pick, probabilities and explanation", es: "Selección, probabilidades y explicación", fr: "Choix, probabilités et explication", ru: "Выбор, вероятности и пояснение" })}</PlanFeature>
-            {/* #CLV-CLAIM-0831: «closing line value» tolto — stesso claim del chip
-                rimosso dalla landing il 31/08, misurato senza dato dietro. */}
-            {/* #CLAIMS-FIX-0928: riga «Edge % e contesto di stake» tolta — «stake» è
-                linguaggio da scommessa, fuori dalla pricing page. */}
-            <PlanFeature>{pick5(lang, { it: "Registro pubblico completo", en: "Full public record", es: "Registro público completo", fr: "Registre public complet", ru: "Полный публичный реестр" })}</PlanFeature>
-            <PlanFeature locked>{pick5(lang, { it: "Tutto il board e l'analisi completa (→ Pro)", en: "The whole board and full analysis (→ Pro)", es: "Todo el board y el análisis completo (→ Pro)", fr: "Tout le board et l'analyse complète (→ Pro)", ru: "Весь борд и полный анализ (→ Pro)" })}</PlanFeature>
-          </ul>
-          <CryptoPaymentBox profile={profile} plan="base" onSubmit={onPaymentSubmit} />
         </article>
 
         {/* ── PRO (premium) ── */}
@@ -9909,9 +9857,12 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
       // server: e' pur sempre un parametro d'URL, e chiunque puo' scriverlo.
       if (activated === "1") {
         const goto = normalizeSignupIntent(params.get("goto"));
+        // #RETIRE-BASE-1031: «plans:base» resta nell'allowlist perché link di
+        // attivazione già inviati lo portano ancora; Base non si vende più,
+        // quindi quell'intento apre il checkout di Pro.
         if (goto === "plans:base" || goto === "plans:premium") {
           setTab("plans");
-          openCheckout(goto === "plans:premium" ? "premium" : "base");
+          openCheckout("premium");
         }
       }
       /* eslint-enable react-hooks/set-state-in-effect */
@@ -10993,8 +10944,8 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                      leggere il board»); «edge e Deep Analysis» tolti — gergo, e nessuna
                      scheda mostra un numero di edge (#EDGE-COPY-0928). */
                   uiLanguage === "it"
-                    ? <>Free, Base o Pro: cambia solo quanto del board di oggi leggi.</>
-                    : <>Free, Base or Pro: the only difference is how much of today&rsquo;s board you read.</>
+                    ? <>Free o Pro: cambia solo quanto del board di oggi leggi.</>
+                    : <>Free or Pro: the only difference is how much of today&rsquo;s board you read.</>
                 /* #QW3: sottotitolo specifico per pagina — non più la stessa riga
                    "opinioni da bar" ovunque. Ogni destinazione spiega sé stessa. */
                 /* #SETTLE-0909 — «senza filtri» / «unfiltered» era una promessa

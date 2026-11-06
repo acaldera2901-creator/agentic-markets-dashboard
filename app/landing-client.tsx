@@ -68,7 +68,7 @@ const COPY = {
     spAllSports: "Tutti gli sport", spFootball: "Calcio", spTennis: "Tennis", spWorldCup: "Mondiali", spTools: "Strumenti",
     cardTrackTag: "La prova", cardTrack: "Track record", cardTrackDesc: "Hit-rate su pick concluse, registrate prima dell'evento.", cardTrackBtn: "Storico",
     cardModel: "Modello vs Mercato", cardModelDesc: "Perché il modello sceglie una pick: stime di probabilità confrontate con la quota.", cardModelBtn: "Scopri",
-    cardPlans: "Piani", cardPlansDesc: "Free per provare · Base 14.99 · Pro 29.99 USDT/mese.", cardPlansBtn: "Vedi i piani",
+    cardPlans: "Piani", cardPlansBtn: "Vedi i piani",
     risk: "Nota rischio: BetRedge mostra analisi probabilistiche. Non garantisce profitti e non sostituisce la gestione del rischio personale. I risultati passati non garantiscono risultati futuri. 18+.",
     privacy: "Privacy",
     // ── Edge Scanner (value-prop) ──
@@ -121,7 +121,7 @@ const COPY = {
     spAllSports: "All Sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "World Cup", spTools: "Free tools",
     cardTrackTag: "The proof", cardTrack: "Track record", cardTrackDesc: "Hit rate on settled picks, logged before kickoff.", cardTrackBtn: "History",
     cardModel: "Model vs Market", cardModelDesc: "Why the model picks a bet: probability estimates against the odds.", cardModelBtn: "Discover",
-    cardPlans: "Plans", cardPlansDesc: "Free to try · Base 14.99 · Pro 29.99 USDT/month.", cardPlansBtn: "See plans",
+    cardPlans: "Plans", cardPlansBtn: "See plans",
     risk: "Risk note: BetRedge shows probabilistic analysis. It does not guarantee profits and does not replace personal risk management. Past results do not guarantee future results. 18+.",
     privacy: "Privacy",
     // ── What is BetRedge (value-prop) ──
@@ -171,7 +171,7 @@ const COPY = {
     spAllSports: "Todos los deportes", spFootball: "Fútbol", spTennis: "Tenis", spWorldCup: "Mundial", spTools: "Herramientas",
     cardTrackTag: "La prueba", cardTrack: "Track record", cardTrackDesc: "Acierto en apuestas cerradas, registradas antes del partido.", cardTrackBtn: "Historial",
     cardModel: "Modelo vs Mercado", cardModelDesc: "Por qué el modelo elige una pick: estimaciones de probabilidad frente a la cuota.", cardModelBtn: "Descubre",
-    cardPlans: "Planes", cardPlansDesc: "Free para probar · Base 14.99 · Pro 29.99 USDT/mes.", cardPlansBtn: "Ver planes",
+    cardPlans: "Planes", cardPlansBtn: "Ver planes",
     risk: "Nota de riesgo: BetRedge muestra análisis probabilísticos. No garantiza beneficios y no sustituye la gestión personal del riesgo. Los resultados pasados no garantizan resultados futuros. 18+.",
     privacy: "Privacidad",
     // ── What is BetRedge (value-prop) ──
@@ -221,7 +221,7 @@ const COPY = {
     spAllSports: "Tous les sports", spFootball: "Football", spTennis: "Tennis", spWorldCup: "Coupe du Monde", spTools: "Outils",
     cardTrackTag: "La preuve", cardTrack: "Track record", cardTrackDesc: "Taux de réussite sur paris clôturés, enregistrés avant le match.", cardTrackBtn: "Historique",
     cardModel: "Modèle vs Marché", cardModelDesc: "Pourquoi le modèle choisit un pari : estimations de probabilité face à la cote.", cardModelBtn: "Découvrir",
-    cardPlans: "Offres", cardPlansDesc: "Free pour essayer · Base 14.99 · Pro 29.99 USDT/mois.", cardPlansBtn: "Voir les offres",
+    cardPlans: "Offres", cardPlansBtn: "Voir les offres",
     risk: "Note de risque : BetRedge montre des analyses probabilistes. Elle ne garantit pas de profits et ne remplace pas la gestion personnelle du risque. Les résultats passés ne garantissent pas les résultats futurs. 18+.",
     privacy: "Confidentialité",
     // ── What is BetRedge (value-prop) ──
@@ -271,7 +271,7 @@ const COPY = {
     spAllSports: "Все виды спорта", spFootball: "Футбол", spTennis: "Теннис", spWorldCup: "ЧМ", spTools: "Инструменты",
     cardTrackTag: "Доказательство", cardTrack: "Track record", cardTrackDesc: "Точность попаданий по закрытым прогнозам. Прогнозы фиксируются до начала.", cardTrackBtn: "История",
     cardModel: "Модель vs Рынок", cardModelDesc: "Почему модель выбирает ставку: оценки вероятностей против коэффициента.", cardModelBtn: "Узнать",
-    cardPlans: "Тарифы", cardPlansDesc: "Free для пробы · Base 14.99 · Pro 29.99 USDT/мес.", cardPlansBtn: "Тарифы",
+    cardPlans: "Тарифы", cardPlansBtn: "Тарифы",
     risk: "Примечание о риске: BetRedge показывает вероятностный анализ. Он не гарантирует прибыль и не заменяет личное управление рисками. Прошлые результаты не гарантируют будущих результатов. 18+.",
     privacy: "Конфиденциальность",
     // ── What is BetRedge (value-prop) ──

@@ -7,7 +7,12 @@ import { signupCountryAllowed, resolveRequestCountry } from "@/lib/signup-geo";
 import { signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/session";
 import { getSessionPlan, type Plan } from "@/lib/auth";
 import { normalizeIdentifier } from "@/lib/admin-profile-policy";
-import { normalizeCheckoutPlan } from "@/lib/commercial-plan";
+import {
+  normalizeCheckoutPlan,
+  blocksRetiredPlanPurchase,
+  RETIRED_PLAN_BODY,
+  RETIRED_PLAN_STATUS,
+} from "@/lib/commercial-plan";
 import { paymentReceivedEmail, activationEmail, passwordResetEmail, resolveMailLang, type MailLang } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
@@ -174,6 +179,11 @@ export async function POST(req: Request) {
     const requested = normalizeCheckoutPlan(body.requested_plan);
     if (!requested) {
       return NextResponse.json({ error: "invalid requested_plan" }, { status: 400 });
+    }
+    // #RETIRE-BASE-1031: Base non si vende più (qui il WHERE free/pending esclude
+    // comunque chi è già su Base, quindi nessun rinnovo passa da questo ramo).
+    if (blocksRetiredPlanPurchase(requested, ctx.plan)) {
+      return NextResponse.json(RETIRED_PLAN_BODY, { status: RETIRED_PLAN_STATUS });
     }
     const txHash = typeof body.tx_hash === "string" ? body.tx_hash.trim() : null;
     // #GOLIVE-AUDIT: valida il formato del tx_hash (TRC20 = 64 hex, EVM = 0x+64) e

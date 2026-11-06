@@ -4571,6 +4571,10 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
+/* #RETIRE-BASE-1031: Free + Pro, Base ritirato. */
+.plans-grid-3.is-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
 /* NOTE: duplicate .plan-card declaration (canonical block ~1066). This later
    rule wins border/background by cascade, so it carries the sleek-coral
@@ -4728,6 +4732,7 @@ button:disabled {
     display: none;
   }
   .plans-grid-3,
+  .plans-grid-3.is-two,
   .partner-grid {
     grid-template-columns: 1fr;
   }

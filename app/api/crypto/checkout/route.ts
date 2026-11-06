@@ -5,6 +5,7 @@ import { dbExecute, dbQueryStrict } from "@/lib/db";
 import { siteOrigin } from "@/lib/activation";
 import { newOrderToken, discountedAmountFor, blocksLowerTierPurchase, type PlanKey, type Period } from "@/lib/paygate";
 import { promoEligibility } from "@/lib/creator-promo";
+import { blocksRetiredPlanPurchase, RETIRED_PLAN_BODY, RETIRED_PLAN_STATUS } from "@/lib/commercial-plan";
 import { enabledCoins, findCoin, isCryptoDirectConfigured } from "@/lib/crypto-coins";
 import { convertUsdToCoin, coinMinimum, createCryptoDeposit } from "@/lib/crypto-api";
 import {
@@ -111,6 +112,11 @@ export async function POST(req: Request) {
     }
     if (period !== "monthly" && period !== "annual") {
       return NextResponse.json({ error: "invalid period" }, { status: 400 });
+    }
+    // #RETIRE-BASE-1031: Base non si vende più ai nuovi clienti. Restano il
+    // rinnovo di chi è già su Base attivo e il path test operatore (env-gated).
+    if (!isTest && blocksRetiredPlanPurchase(plan, ctx.plan)) {
+      return NextResponse.json(RETIRED_PLAN_BODY, { status: RETIRED_PLAN_STATUS });
     }
     // Stessa tier-guard del rail carte: premium attivo non ricompra 'base'.
     // Il path di test la bypassa: serve a provare la catena, non a vendere un piano.

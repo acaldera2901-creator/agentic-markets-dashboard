@@ -43,12 +43,13 @@ describe("hero della pagina piani", () => {
     for (const l of titles) expect(l).not.toMatch(/paid plan|piano pagante|plan de pago|plan payant|платный план/i);
   });
 
-  it("il sottotitolo nomina i tre livelli e i loro numeri veri (3, 7, tutto)", () => {
+  // #RETIRE-BASE-1031: due livelli, non più tre — Base non si vende.
+  it("il sottotitolo nomina i due livelli e i loro numeri veri (3, tutto), senza Base", () => {
     for (const l of subtitles) {
       expect(l).toMatch(/\b3\b/);
-      expect(l).toMatch(/\b7\b/);
+      expect(l).not.toMatch(/\b7\b/);
       expect(l).toMatch(/Free/);
-      expect(l).toMatch(/Base/);
+      expect(l).not.toMatch(/Base/);
       expect(l).toMatch(/Pro/);
     }
   });
@@ -78,16 +79,12 @@ describe("hero della pagina piani", () => {
 });
 
 describe("prezzo in unità d'uso", () => {
-  it("sta accanto al mensile, non al suo posto, su Base e Pro", () => {
+  it("sta accanto al mensile, non al suo posto, su Pro", () => {
     const priceLines = plansTab.split('className="price-line"').slice(1);
-    // Free, Base, Pro
-    expect(priceLines.length).toBe(3);
-    const base = priceLines[1];
-    const pro = priceLines[2];
-    expect(base).toMatch(/planPriceCopy\("base"/);
-    expect(base).toMatch(/price-unit/);
-    expect(base).toMatch(/0[.,]50/);
-    expect(base).toMatch(/14/);
+    // Free, Pro (#RETIRE-BASE-1031: la card Base è uscita)
+    expect(priceLines.length).toBe(2);
+    expect(plansTab).not.toMatch(/planPriceCopy\("base"|plan="base"/);
+    const pro = priceLines[1];
     expect(pro).toMatch(/planPriceCopy\("premium"/);
     expect(pro).toMatch(/price-unit/);
     expect(pro).toMatch(/\$1 /);
@@ -104,7 +101,7 @@ describe("CTA da anonimo", () => {
     // né la chiave nei blocchi di traduzione, né un uso `t.crypto_create_first`
     // (il commento che spiega la rimozione può citarla)
     expect(src).not.toMatch(/crypto_create_first:|t\.crypto_create_first/);
-    expect(cryptoBox).toMatch(/Start with Base/);
+    expect(cryptoBox).not.toMatch(/Start with Base/);
     expect(cryptoBox).toMatch(/Start with Pro/);
     expect(plansTab).toMatch(/Start free/);
   });

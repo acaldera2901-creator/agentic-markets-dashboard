@@ -1,4 +1,9 @@
-export type PublicPlanKey = "base" | "premium";
+// #RETIRE-BASE-1031 (Andrea, 31/10): Base non si vende più. Pubblicamente esiste
+// un solo piano pagato, Pro. `CheckoutPlanKey` resta "base" | "premium" perché è
+// il formato che il backend sa ancora LEGGERE (rinnovo di chi è già su Base,
+// ordini/webhook/grant esistenti): "non acquistabile" ≠ "non gestibile". Chi
+// decide se un acquisto 'base' passa è `blocksRetiredPlanPurchase`, sotto.
+export type PublicPlanKey = "premium";
 export type CheckoutPlanKey = "base" | "premium";
 export type SupportedLang = "it" | "en" | "es" | "fr" | "ru";
 
@@ -25,13 +30,15 @@ export const PUBLIC_PAID_PLANS = {
   },
 } as const;
 
-// Compat: alcuni call-site usano ancora il "piano pagato di default" (= base, l'entry).
-export const PUBLIC_PAID_PLAN = PUBLIC_PAID_PLANS.base;
+// Il "piano pagato di default": Pro (#RETIRE-BASE-1031 — era Base, l'entry).
+// L'entry `base` sopra resta come record del listino storico (abbonati
+// esistenti), ma non è più fra le chiavi pubbliche.
+export const PUBLIC_PAID_PLAN = PUBLIC_PAID_PLANS.premium;
 
-export const PUBLIC_PLAN_KEYS: PublicPlanKey[] = ["base", "premium"];
+export const PUBLIC_PLAN_KEYS: PublicPlanKey[] = ["premium"];
 
 function planDef(plan: PublicPlanKey) {
-  return PUBLIC_PAID_PLANS[plan] ?? PUBLIC_PAID_PLANS.base;
+  return PUBLIC_PAID_PLANS[plan] ?? PUBLIC_PAID_PLANS.premium;
 }
 
 export function planPriceCopy(plan: PublicPlanKey, lang: SupportedLang): string {
@@ -53,3 +60,26 @@ export function normalizeCheckoutPlan(value: unknown): CheckoutPlanKey | null {
   if (value === "premium") return "premium";
   return null;
 }
+
+// ── #RETIRE-BASE-1031: piani ritirati ────────────────────────────────────────
+// Un piano ritirato non si può più COMPRARE da nuovi clienti, ma resta GESTITO:
+// webhook, capture, callback, cron di scadenza, grant e admin continuano a
+// leggerlo e rinnovarlo. L'unico acquisto ancora ammesso è il rinnovo di chi
+// ha già quel piano attivo (currentPlan = piano effettivo, expiry-adjusted).
+export const RETIRED_PLAN_KEYS: readonly string[] = ["base"];
+
+export function isRetiredPlan(plan: unknown): boolean {
+  return typeof plan === "string" && RETIRED_PLAN_KEYS.includes(plan);
+}
+
+export function blocksRetiredPlanPurchase(requested: unknown, currentPlan: string | null | undefined): boolean {
+  return isRetiredPlan(requested) && currentPlan !== requested;
+}
+
+// Status + corpo del rifiuto, identici su ogni rail.
+export const RETIRED_PLAN_STATUS = 409;
+export const RETIRED_PLAN_BODY = {
+  error: "plan_retired",
+  message:
+    "BetRedge Base is no longer available for new purchases. Choose BetRedge Pro ($29.99/month or $329.99/year). Existing Base subscriptions are not affected.",
+} as const;

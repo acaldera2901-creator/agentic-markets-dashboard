@@ -110,22 +110,24 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Has probado el Free. ¿Listo para más edge?", fr: "Vous avez essayé le Free. Prêt pour plus d'edge ?",
       ru: "Вы попробовали Free. Готовы к большему?" },
     body: {
-      it: "Con BetRedge Base ricevi le top 7 di calcio e 7 di tennis ogni giorno, con edge %, stake suggerito e closing line value su ogni pick. Con Pro non c'è nessun tetto.",
-      en: "BetRedge Base gives you the top 7 football and 7 tennis predictions every day, with edge %, suggested stake and closing line value on every pick. Pro removes the cap entirely.",
-      es: "Con BetRedge Base recibes las 7 mejores predicciones de fútbol y 7 de tenis cada día, con edge %, stake sugerido y closing line value en cada pick. Pro elimina el límite por completo.",
-      fr: "Avec BetRedge Base, vous recevez les 7 meilleurs pronostics football et 7 tennis chaque jour, avec edge %, mise suggérée et closing line value sur chaque pick. Pro supprime totalement le plafond.",
-      ru: "BetRedge Base даёт топ-7 прогнозов по футболу и 7 по теннису каждый день, с edge %, рекомендованной ставкой и closing line value по каждому пику. Pro снимает лимит полностью." } },
+      // #RETIRE-BASE-1031: Base non si vende più — l'upgrade proposto è Pro, col
+      // suo prezzo vero (lib/paygate.ts PAYGATE_PRICES.premium; il test lo lega).
+      it: "Con BetRedge Pro non c'è nessun tetto: tutte le predizioni di calcio e tennis, ogni giorno, con la Deep Analysis su forma e campo. $29.99 al mese o $329.99 all'anno.",
+      en: "BetRedge Pro removes the cap: every football and tennis prediction, every day, with Deep Analysis on form and venue. $29.99 a month or $329.99 a year.",
+      es: "BetRedge Pro elimina el límite: todas las predicciones de fútbol y tenis, cada día, con el Deep Analysis de forma y campo. $29.99 al mes o $329.99 al año.",
+      fr: "BetRedge Pro supprime le plafond : tous les pronostics football et tennis, chaque jour, avec la Deep Analysis (forme, terrain). $29.99 par mois ou $329.99 par an.",
+      ru: "BetRedge Pro снимает лимит: все прогнозы по футболу и теннису каждый день, с Deep Analysis по форме и полю. $29.99 в месяц или $329.99 в год." } },
   { key: "acq_day5_picture", flow: "acquisition", day: 5,
     subject: {
       it: "Vuoi vedere il quadro completo?", en: "Ready to see the full picture?",
       es: "¿Quieres ver el cuadro completo?", fr: "Envie de voir le tableau complet ?",
       ru: "Хотите увидеть полную картину?" },
     body: {
-      it: "Nel Free vedi 3 pick per sport al giorno. Base sale a 7 per sport, con edge, stake e closing line value; Pro toglie il tetto e aggiunge la Deep Analysis su forma e campo, più il Match Builder e la Weekly Pick. La Weekly Pick — la multipla della casa, una a settimana — puoi anche sbloccarla da sola, una tantum, senza abbonarti.",
-      en: "Free shows 3 picks per sport a day. Base takes it to 7 per sport, with edge, stake and closing line value; Pro removes the cap and adds Deep Analysis on form and venue, plus Match Builder and the Weekly Pick. You can also unlock the Weekly Pick on its own — the house accumulator, one a week — as a one-off, without subscribing.",
-      es: "En Free ves 3 picks por deporte al día. Base sube a 7 por deporte, con edge, stake y closing line value; Pro elimina el límite y añade el Deep Analysis de forma y campo, más el Match Builder y la Weekly Pick. La Weekly Pick — la combinada de la casa, una por semana — también puedes desbloquearla por separado, una sola vez, sin suscribirte.",
-      fr: "En Free, vous voyez 3 pronostics par sport et par jour. Base passe à 7 par sport, avec edge, mise et closing line value ; Pro supprime le plafond et ajoute la Deep Analysis (forme, terrain), le Match Builder et la Weekly Pick. La Weekly Pick — le combiné de la maison, un par semaine — peut aussi se débloquer seule, en une fois, sans abonnement.",
-      ru: "В Free вы видите 3 пика по каждому виду спорта в день. Base поднимает до 7 по виду спорта, с edge, ставкой и closing line value; Pro снимает лимит и добавляет Deep Analysis по форме и полю, а также Match Builder и Weekly Pick. Weekly Pick — экспресс от команды, один в неделю — можно открыть и отдельно, разовой покупкой, без подписки." } },
+      it: "Nel Free vedi 3 pick per sport al giorno. Pro toglie il tetto e aggiunge la Deep Analysis su forma e campo, più il Match Builder e la Weekly Pick, a $29.99 al mese o $329.99 all'anno. La Weekly Pick — la multipla della casa, una a settimana — puoi anche sbloccarla da sola, una tantum, senza abbonarti.",
+      en: "Free shows 3 picks per sport a day. Pro removes the cap and adds Deep Analysis on form and venue, plus Match Builder and the Weekly Pick, for $29.99 a month or $329.99 a year. You can also unlock the Weekly Pick on its own — the house accumulator, one a week — as a one-off, without subscribing.",
+      es: "En Free ves 3 picks por deporte al día. Pro elimina el límite y añade el Deep Analysis de forma y campo, más el Match Builder y la Weekly Pick, por $29.99 al mes o $329.99 al año. La Weekly Pick — la combinada de la casa, una por semana — también puedes desbloquearla por separado, una sola vez, sin suscribirte.",
+      fr: "En Free, vous voyez 3 pronostics par sport et par jour. Pro supprime le plafond et ajoute la Deep Analysis (forme, terrain), le Match Builder et la Weekly Pick, pour $29.99 par mois ou $329.99 par an. La Weekly Pick — le combiné de la maison, un par semaine — peut aussi se débloquer seule, en une fois, sans abonnement.",
+      ru: "В Free вы видите 3 пика по каждому виду спорта в день. Pro снимает лимит и добавляет Deep Analysis по форме и полю, а также Match Builder и Weekly Pick — за $29.99 в месяц или $329.99 в год. Weekly Pick — экспресс от команды, один в неделю — можно открыть и отдельно, разовой покупкой, без подписки." } },
   // #CRM-FAKE-OFFERS-0805 — questo touchpoint prometteva "−20% per 72h" a un
   // countdown per-utente. Nel codice il −20% NON È MAI ESISTITO (l'unico sconto è
   // LAUNCH_PROMO_DISCOUNT = 50%, solo primo acquisto), quindi era una promessa che
@@ -149,11 +151,11 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "Último recordatorio: tu upgrade te espera", fr: "Dernier rappel : votre upgrade vous attend",
       ru: "Последнее напоминание: апгрейд ждёт вас" },
     body: {
-      it: "È l'ultima nota sull'upgrade per ora. Il Free ti ha dato un assaggio del modello: Base e Pro ti danno il quadro intero, ogni settimana.",
-      en: "This is the last note about upgrading for now. Free gave you a glimpse of the model — Base and Pro give you the full picture, every week.",
-      es: "Es la última nota sobre el upgrade por ahora. El Free te dio una muestra del modelo: Base y Pro te dan el cuadro completo, cada semana.",
-      fr: "C'est le dernier message sur l'upgrade pour l'instant. Le Free vous a donné un aperçu du modèle : Base et Pro vous donnent le tableau complet, chaque semaine.",
-      ru: "Это пока последнее письмо об апгрейде. Free дал вам представление о модели — Base и Pro дают полную картину каждую неделю." } },
+      it: "È l'ultima nota sull'upgrade per ora. Il Free ti ha dato un assaggio del modello: Pro ti dà il quadro intero, ogni settimana.",
+      en: "This is the last note about upgrading for now. Free gave you a glimpse of the model — Pro gives you the full picture, every week.",
+      es: "Es la última nota sobre el upgrade por ahora. El Free te dio una muestra del modelo: Pro te da el cuadro completo, cada semana.",
+      fr: "C'est le dernier message sur l'upgrade pour l'instant. Le Free vous a donné un aperçu du modèle : Pro vous donne le tableau complet, chaque semaine.",
+      ru: "Это пока последнее письмо об апгрейде. Free дал вам представление о модели — Pro даёт полную картину каждую неделю." } },
   // #CRM-FAKE-OFFERS-0805: prometteva "−30% per 48h", sconto mai esistito.
   { key: "acq_day21_last_chance", flow: "acquisition", day: 21, requiresLaunchPromo: true,
     subject: {
@@ -187,11 +189,11 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       es: "No más recordatorios, la puerta sigue abierta", fr: "Plus de rappels — la porte reste ouverte",
       ru: "Больше никаких напоминаний — дверь открыта" },
     body: {
-      it: "Non ti scriviamo più sull'upgrade. Il piano gratuito resta tuo: quando vorrai l'accesso completo a predizioni, edge, stake e analisi, Base e Pro sono lì.",
-      en: "We won't write about upgrading again. Your free plan isn't going anywhere — whenever you want full access to predictions, edge, stake and analysis, Base and Pro will be here.",
-      es: "No volveremos a escribirte sobre el upgrade. Tu plan gratuito sigue siendo tuyo: cuando quieras acceso completo a predicciones, edge, stake y análisis, Base y Pro estarán ahí.",
-      fr: "Nous ne reviendrons plus sur l'upgrade. Votre plan gratuit reste le vôtre : quand vous voudrez l'accès complet aux pronostics, à l'edge, aux mises et aux analyses, Base et Pro seront là.",
-      ru: "Мы больше не будем писать об апгрейде. Бесплатный план остаётся вашим: когда захотите полный доступ к прогнозам, edge, ставкам и анализу — Base и Pro на месте." } },
+      it: "Non ti scriviamo più sull'upgrade. Il piano gratuito resta tuo: quando vorrai l'accesso completo a predizioni, edge, stake e analisi, Pro è lì.",
+      en: "We won't write about upgrading again. Your free plan isn't going anywhere — whenever you want full access to predictions, edge, stake and analysis, Pro will be here.",
+      es: "No volveremos a escribirte sobre el upgrade. Tu plan gratuito sigue siendo tuyo: cuando quieras acceso completo a predicciones, edge, stake y análisis, Pro estará ahí.",
+      fr: "Nous ne reviendrons plus sur l'upgrade. Votre plan gratuit reste le vôtre : quand vous voudrez l'accès complet aux pronostics, à l'edge, aux mises et aux analyses, Pro sera là.",
+      ru: "Мы больше не будем писать об апгрейде. Бесплатный план остаётся вашим: когда захотите полный доступ к прогнозам, edge, ставкам и анализу — Pro на месте." } },
   { key: "ret_7d_before", flow: "retention", day: 7,
     subject: {
       it: "Il tuo accesso scade tra 7 giorni", en: "Your access expires in 7 days", es: "Tu acceso caduca en 7 días",

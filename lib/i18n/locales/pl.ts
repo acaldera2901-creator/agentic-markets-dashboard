@@ -43,7 +43,6 @@ const pl: Record<string, string> = {
   plans_base_f7: "Bez obietnic gwarantowanego zysku",
   plans_premium_desc: "Dla klienta, który chce oddać sprawę agentom: analiza, decyzja, stawka i obstawianie na żywo.",
   plans_premium_core: "Robię to za Ciebie", plans_premium_sub: "Warstwa egzekucji z pełnym audytem",
-  plans_premium_f1: "Wszystko z planu Base",
   plans_premium_f2: "Agenci odblokowani do automatycznego obstawiania zakładów",
   plans_premium_f3: "Dobór stawki na podstawie bankrollu i profilu ryzyka",
   plans_premium_f4: "Stop loss, limity dzienne i limity sportowe",
