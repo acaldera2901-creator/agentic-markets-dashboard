@@ -70,8 +70,9 @@
 // nessun conto bookmaker necessario, nessun rendimento promesso, il 71% come
 // frequenza attesa su molte situazioni simili e mai una certezza sulla singola
 // partita, il registro pubblico che parla solo del passato; account gratuito
-// REGISTRATO = fino a 3 letture per sport al giorno, Base fino a 7, solo Pro
-// apre tutto il board (#BUG-001-0928: quota giornaliera, non un numero fisso).
+// REGISTRATO = fino a 3 letture per sport al giorno, solo Pro apre tutto il
+// board (#BUG-001-0928: quota giornaliera, non un numero fisso). Pro è l'unico
+// abbonamento in vendita: Base non si presenta più (#COPY-NO-BASE-1031).
 //
 // NOTA PER CHI RISCRIVE DOPO DI ME: la risposta è resa in un unico nodo di
 // testo (`<dd>{a}</dd>`, sia in components/lobby/HomeFaq.tsx sia in
@@ -84,7 +85,7 @@ export const HOME_FAQ = {
   en: [
     [
       "How does billing work, and can I cancel?",
-      "Base and Pro are ordinary card subscriptions. You pick monthly or annual, and it renews by itself until you stop it. You stop it from your account, any day you want, and from that moment we charge you nothing further. Crypto is the odd one out: one payment, 30 days of access, no renewal of any kind. On day 31 nothing happens unless you decide to pay again.",
+      "Pro is an ordinary card subscription. You pick monthly or annual, and it renews by itself until you stop it. You stop it from your account, any day you want, and from that moment we charge you nothing further. Crypto is the odd one out: one payment, 30 days of access, no renewal of any kind. On day 31 nothing happens unless you decide to pay again.",
     ],
     [
       "What’s in a reading, and what is the deep analysis?",
@@ -96,7 +97,7 @@ export const HOME_FAQ = {
     ],
     [
       "What happens on the live board?",
-      "The live board follows scores and match status where feeds are available. Stored pre-match predictions remain frozen after the scheduled start; the model does not reprice them from the live score. Nothing is placed or executed for you. Live scores require a paid plan, Base or Pro.",
+      "The live board follows scores and match status where feeds are available. Stored pre-match predictions remain frozen after the scheduled start; the model does not reprice them from the live score. Nothing is placed or executed for you. Live scores require Pro.",
     ],
     [
       "Do you place bets, or promise I’ll make money?",
@@ -104,13 +105,13 @@ export const HOME_FAQ = {
     ],
     [
       "How do I use it day to day?",
-      "Open the board and check the source label beside each number. Depending on the available data, a card can show an estimate, a market-only probability, or no price. Open a match for the available details, and use the public record to examine eligible past predictions. A free account opens up to three readings per sport per day; Base opens up to seven, and Pro has no daily reading cap.",
+      "Open the board and check the source label beside each number. Depending on the available data, a card can show an estimate, a market-only probability, or no price. Open a match for the available details, and use the public record to examine eligible past predictions. A free account opens up to three readings per sport per day; Pro has no daily reading cap.",
     ],
   ],
   it: [
     [
       "Come funziona il pagamento, e posso disdire?",
-      "Base e Pro sono normali abbonamenti con carta. Scegli tu se mensile o annuale, e si rinnova da solo finché non lo fermi. Lo fermi dal tuo account, in qualsiasi giorno, e da quel momento non ti addebitiamo più niente. Le crypto vanno per conto loro: pagamento singolo, 30 giorni di accesso, nessun rinnovo. Il giorno 31 non succede niente, a meno che tu non decida di ripagare.",
+      "Pro è un normale abbonamento con carta. Scegli tu se mensile o annuale, e si rinnova da solo finché non lo fermi. Lo fermi dal tuo account, in qualsiasi giorno, e da quel momento non ti addebitiamo più niente. Le crypto vanno per conto loro: pagamento singolo, 30 giorni di accesso, nessun rinnovo. Il giorno 31 non succede niente, a meno che tu non decida di ripagare.",
     ],
     [
       "Cosa c’è dentro una lettura, e cos’è la deep analysis?",
@@ -122,7 +123,7 @@ export const HOME_FAQ = {
     ],
     [
       "Cosa succede sul board live?",
-      "Il board live segue punteggi e stato delle partite dove sono disponibili le fonti. I pronostici pre-partita memorizzati restano congelati dopo l’orario di inizio; il modello non li ricalcola in base al punteggio live. Non viene piazzato o eseguito nulla per te. I punteggi live richiedono un piano a pagamento, Base o Pro.",
+      "Il board live segue punteggi e stato delle partite dove sono disponibili le fonti. I pronostici pre-partita memorizzati restano congelati dopo l’orario di inizio; il modello non li ricalcola in base al punteggio live. Non viene piazzato o eseguito nulla per te. I punteggi live richiedono Pro.",
     ],
     [
       "Piazzate scommesse? Mi promettete un guadagno?",
@@ -130,7 +131,7 @@ export const HOME_FAQ = {
     ],
     [
       "Come lo uso, in pratica?",
-      "Apri il board e controlla l’etichetta della fonte accanto a ogni numero. Secondo i dati disponibili, una scheda può mostrare una stima, la sola probabilità del mercato o nessuna quota. Apri la partita per i dettagli disponibili e consulta il registro pubblico per esaminare i pronostici passati idonei. Un account gratuito apre fino a tre letture per sport al giorno; Base fino a sette, mentre Pro non ha un limite giornaliero di letture.",
+      "Apri il board e controlla l’etichetta della fonte accanto a ogni numero. Secondo i dati disponibili, una scheda può mostrare una stima, la sola probabilità del mercato o nessuna quota. Apri la partita per i dettagli disponibili e consulta il registro pubblico per esaminare i pronostici passati idonei. Un account gratuito apre fino a tre letture per sport al giorno; Pro non ha un limite giornaliero di letture.",
     ],
   ],
 } as const satisfies Record<string, readonly FaqItem[]>;

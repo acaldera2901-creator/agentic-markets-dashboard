@@ -26,6 +26,19 @@ describe("home FAQ (classic)", () => {
     }
   });
 
+  // #COPY-NO-BASE-1031 — in vendita ci sono solo Free e Pro: nessuna risposta
+  // (main o classic) nomina più il piano Base.
+  it("names Pro as the only paid plan, never Base", () => {
+    for (const set of [HOME_FAQ, HOME_FAQ_CLASSIC]) {
+      for (const [q, a] of [...set.en, ...set.it]) {
+        expect(`${q} ${a}`).not.toMatch(/\bBase\b/);
+      }
+    }
+    for (const [, a] of [HOME_FAQ_CLASSIC.en[3], HOME_FAQ_CLASSIC.it[3]]) {
+      expect(a).toMatch(/(require|richiedono) Pro\b/);
+    }
+  });
+
   it("follows the build flag: main FAQ when off, classic when on", () => {
     expect(HOME_FAQ_ACTIVE).toBe(CLASSIC ? HOME_FAQ_CLASSIC : HOME_FAQ);
     // #CLASSIC-PARITY-1008 — e la FAQ che la Home rende segue la stessa scelta.
