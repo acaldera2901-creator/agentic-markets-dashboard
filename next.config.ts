@@ -76,6 +76,11 @@ const nextConfig: NextConfig = {
   // scroll. Supported in this Next version (config-schema: experimental
   // .scrollRestoration). Presentational only.
   experimental: { scrollRestoration: true },
+  // #PERF-NEWS-IMG-1106 — the watcher's note pictures (1080x1350 webp, ~130 KB) are shown at 168-390 px:
+  // served through the optimiser (right width, modern format). Only this bucket, nothing else remote.
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "izscgffubtakzvwxchqt.supabase.co", pathname: "/storage/v1/object/public/news-images/**" }],
+  },
   // #CLASSIC-LOBBY-1008 — il flag del filone «classic» è SEMPRE definito a
   // build time ("" se non impostato). Una variabile NEXT_PUBLIC_ non definita
   // non viene inlinata: resta un `process.env.X` a runtime e il bundler non

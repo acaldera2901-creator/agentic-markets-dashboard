@@ -53,6 +53,19 @@ describe("NewsArt", () => {
   });
 });
 
+describe("NewsArt — optimiser (#PERF-NEWS-IMG-1106)", () => {
+  const REAL = "https://izscgffubtakzvwxchqt.supabase.co/storage/v1/object/public/news-images/news-0123456789ab-e.webp";
+  it("our storage bucket goes through next/image with the given sizes; any other host keeps the plain <picture>", () => {
+    const { container, rerender } = render(<NewsArt image={{ own: true, src: REAL, width: 1080, height: 1350 }} badges={[]} variant="thumb" sizes="168px" />);
+    const img = container.querySelector("img.nwa-img")!;
+    expect(img.getAttribute("src")).toContain("/_next/image");
+    expect(img.getAttribute("sizes")).toBe("168px");
+    expect(container.querySelector("picture")).toBeNull();
+    rerender(<NewsArt image={{ own: true, src: EMMA, width: 1080, height: 1350 }} badges={[]} variant="thumb" sizes="168px" />);
+    expect(container.querySelector("picture")).not.toBeNull();
+  });
+});
+
 describe("NewsCredit", () => {
   it("shows author + licence as links when credit.json exists", async () => {
     const f = vi.fn(async () => ({ ok: true, json: async () => ({ person: "Erling Haaland", author: "Bryan Berlin", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", url: "https://commons.wikimedia.org/wiki/File:X.jpg" }) }));
