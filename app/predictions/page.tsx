@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { UpcomingMatches } from "@/components/seo/UpcomingMatches";
 import { fetchUpcomingMatches } from "@/lib/seo/upcoming-matches";
+import { SeoProse } from "@/components/seo/SeoProse";
+import { PREDICTIONS_FAQ, PREDICTIONS_INTRO } from "@/lib/seo/predictions-faq";
 import Dashboard from "../app/page";
 
 export const metadata: Metadata = {
@@ -23,6 +25,7 @@ export default async function PredictionsPage() {
       <JsonLd data={breadcrumbJsonLd([["Predictions", "/predictions"]])} />
       <Dashboard initialTab="bets" />
       <UpcomingMatches matches={matches} />
+      <SeoProse heading="How to read a BetRedge prediction" intro={PREDICTIONS_INTRO} faq={PREDICTIONS_FAQ} />
     </>
   );
 }
