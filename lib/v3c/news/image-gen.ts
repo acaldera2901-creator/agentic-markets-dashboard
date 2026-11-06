@@ -235,6 +235,8 @@ export async function makeImage(job: { base: string; prompt: string; attempts: n
   if (g.timedOut) return { kind: "bad", reason: `gptimg timeout after ${g.ms} ms`, ms: Date.now() - t0 };
   let viaHf = false;
   if (g.code !== 0 && GPTIMG_LIMIT_RE.test(`${g.err} ${g.out}`)) {
+    // Higgsfield takes NO reference images: an emma card built on a real photo (refs) would come out with an invented person → it waits for Codex instead (Andrea 05/11: real people only)
+    if (emma && job.refs?.length) return { kind: "limit", reason: `higgsfield skipped: no reference-image support, the real-photo card waits for codex (${tail(g.err || g.out)})` };
     if (!o.hf) return { kind: "limit", reason: `gptimg: ${tail(g.err || g.out)}` };
     const b = reserveHf(o.dir, o.hf);
     if (!b) return { kind: "limit", reason: "higgsfield cap reached" }; // retried on a later run, not given up

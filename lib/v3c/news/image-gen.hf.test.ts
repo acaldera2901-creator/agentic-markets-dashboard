@@ -58,6 +58,16 @@ describe.skipIf(process.platform !== "darwin")("image-gen · Higgsfield fallback
     expect(a.kind).toBe("limit");
     expect(s.calls()).toBe(0);
   });
+  it("emma card on a REAL photo (refs): gptimg out of credits → limit (waits), Higgsfield is NEVER called — it cannot take the photo and would invent a person", async () => {
+    const s = setup({});
+    const prev = process.env.NEWS_IMAGE_STYLE; process.env.NEWS_IMAGE_STYLE = "emma";
+    try {
+      const a = await makeImage({ ...job(), refs: [join(s.d, "src.png")] }, { ...s.opts, gptimgRef: bin(s.d, "gptimg-ref.sh", OUT_OF_CREDITS), logo: { python: "python3", script: "/x/compose-logo.py", png: "/x/logo.png" } });
+      expect(a.kind).toBe("limit");
+      expect(a.kind === "limit" && a.reason).toMatch(/waits for codex/);
+      expect(s.calls()).toBe(0);
+    } finally { if (prev === undefined) delete process.env.NEWS_IMAGE_STYLE; else process.env.NEWS_IMAGE_STYLE = prev; }
+  });
   it("gptimg failing for another reason never calls Higgsfield", async () => {
     const s = setup({ gptimg: `echo "nessun PNG trovato" >&2; exit 1` });
     const a = await makeImage(job(), s.opts);
