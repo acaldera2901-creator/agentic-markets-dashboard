@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { freshState, MAX_ATTEMPTS, MAX_REWRITES, MIN_TEASER_WORDS, runCycle, sha, type Deps, type ImageDeps, type WatcherDb } from "./watcher";
+import { freshState, MAX_ATTEMPTS, MAX_REWRITES, MIN_TEASER_WORDS, runCycle, sameCheckFailure, sha, type Deps, type ImageDeps, type WatcherDb } from "./watcher";
 import type { ImageAttempt } from "./image-gen";
 import { words } from "./rewrite";
 import { claudeArgs, LIMIT_RE, readCliOutput, type RewriteOutcome } from "./claude-cli";
@@ -332,7 +332,9 @@ describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IM
   });
 
   it("a refused picture is made again at most twice, then the note keeps the picture of its kind", async () => {
-    const make = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "bad", reason: "check: swoosh on a boot", ms: 60_000 }));
+    // a different problem each time (the same one twice in a row gives up earlier: next test)
+    const why = ["check: swoosh on a boot", "check: a face is smiling", "check: stray slash"];
+    const make = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "bad", reason: why[make.mock.calls.length - 1] ?? "check: extra", ms: 60_000 }));
     const s = freshState();
     const rep = await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 1 });
     // one attempt per job per run: the first run tried once
@@ -344,6 +346,42 @@ describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IM
     expect(make).toHaveBeenCalledTimes(3); // 1 + 2 regenerations, never a fourth
     expect(reps[1].images).toMatchObject({ fallback: 1, pending: 0 });
     expect(s.images).toEqual([]);
+  });
+
+  it("the same text check failing twice in a row gives the card up (06/11: «Cole Palmer omitted» dropped 6 times)", async () => {
+    const seen = ["NEWS ENGLAND SQUAD; BELLINGHAM", "NEWS ENGLAND SQUAD BELLINGHAM"];
+    const make = vi.fn(async (j: ImageJob): Promise<ImageAttempt> => ({ kind: "bad", reason: `check: text «${seen[make.mock.calls.length - 1] ?? "x"}» ≠ «${j.expected}»; The headline is missing words`, ms: 60_000 }));
+    const s = freshState();
+    await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 1 });
+    const reps = [];
+    for (let i = 0; i < 3; i++) reps.push(await runCycle(s, deps({ db: fakeDb(), images: { make } }, READ_AT + (i + 1) * 3 * MIN), { maxRewrites: 0 }));
+    expect(make).toHaveBeenCalledTimes(2); // not 3: the second identical failure ends it
+    expect(reps[0].images).toMatchObject({ fallback: 1 });
+  });
+
+  it("emma (no neutral fallback): a card given up is never generated again on later runs", async () => {
+    const prev = process.env.NEWS_IMAGE_STYLE;
+    process.env.NEWS_IMAGE_STYLE = "emma";
+    try {
+      const make = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "bad", reason: "check: x", ms: 1 }));
+      const s = freshState();
+      s.images = [{ hash: "h1", base: "news-000000000001", note: { title: "Palmer left out", body: "b" }, teams: [], attempts: 3, at: READ_AT, lastError: "check: x" }];
+      const rep = await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 0 });
+      expect(make).not.toHaveBeenCalled();
+      expect(rep.images).toMatchObject({ failed: 0, pending: 1 }); // waits (fail-closed) and expires at MAX_AGE_MS, as before
+    } finally {
+      if (prev === undefined) delete process.env.NEWS_IMAGE_STYLE;
+      else process.env.NEWS_IMAGE_STYLE = prev;
+    }
+  });
+
+  it("sameCheckFailure: text mismatch keyed on the expected text; other reasons verbatim; non-check reasons never", () => {
+    expect(sameCheckFailure("check: text «A» ≠ «NEWS Cole Palmer»; foo", "check: text «B C» ≠ «NEWS Cole Palmer»; bar")).toBe(true);
+    expect(sameCheckFailure("check: text «A» ≠ «NEWS X»", "check: text «A» ≠ «NEWS Y»")).toBe(false);
+    expect(sameCheckFailure("check: stray slash", "check: stray slash")).toBe(true);
+    expect(sameCheckFailure("check: stray slash", "check: smiling face")).toBe(false);
+    expect(sameCheckFailure("gptimg exit 1: boom", "gptimg exit 1: boom")).toBe(false);
+    expect(sameCheckFailure(undefined, "check: x")).toBe(false);
   });
 
   it("an attempt starts only if it fits the run window (3-min interval: one at most, the rest waits)", async () => {

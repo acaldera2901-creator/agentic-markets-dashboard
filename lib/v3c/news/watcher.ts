@@ -11,7 +11,8 @@
 //  - 403 / challenge → the watcher stops itself: `blocked` is written to the
 //    local state and to news_state.source_status, and no request leaves again
 //    until a person clears it (`--unblock`).
-//  - Dedup by sha256 of the guid and of the link; only NEW items reach `claude`.
+//  - Dedup by sha256 of the guid and of the link, then by story (story.ts: the same
+//    match from two sources, within 36 h); only NEW stories reach `claude`.
 //  - Usage/rate limit of the subscription → stop rewriting for this run, write
 //    last_error, keep the item queued (on file) for the next run. No burst retry.
 //  - Rows are written only after the checks pass; the original headline and
@@ -26,6 +27,7 @@ import { imageBase, MAX_IMAGE_ATTEMPTS, protagonist, protagonistTint, sceneKind 
 import { cardText, cardTint, pickCard, tooSimilar, WINDOW, type CardSpec, type LedgerRow, hasQuote } from "./card";
 import { cardJob, cardJobWithPhoto } from "./card-job";
 import { imageStyle } from "./card-emma";
+import { repeats, STORY_WINDOW_MS, type StoryKey } from "./story";
 import type { ImageAttempt, ImageFiles } from "./image-gen";
 import type { NoteText } from "./rewrite";
 
@@ -50,6 +52,20 @@ type Kind = "page" | "rss";
 export type Queued = { item: FeedItem; hash: string; attempts: number; row?: NewsItemRow };
 /** A card to make for a note already written (#NEWSWATCH-2-IMG). Built from OUR note (EN), never the original. */
 export type ImageJob = { hash: string; base: string; note: NoteText; teams: string[]; attempts: number; at: number; card?: CardSpec; files?: ImageFiles; lastError?: string; row?: NewsItemRow };
+/**
+ * The image check failed for the same reason twice in a row (06/11: the model dropped «Cole Palmer omitted»
+ * from the headline on 6 attempts). The text mismatch is keyed on the EXPECTED text only (the misreading
+ * varies, the headline it cannot render does not); any other check reason must repeat verbatim.
+ */
+export function sameCheckFailure(prev: string | undefined, cur: string | undefined): boolean {
+  const key = (r: string | undefined): string | null => {
+    if (!r?.startsWith("check:")) return null;
+    const m = r.match(/^check: text «[\s\S]*?» ≠ «([^»]*)/);
+    return m ? `text≠${m[1]}` : r;
+  };
+  const a = key(prev);
+  return a !== null && a === key(cur);
+}
 /** Worst case of one picture attempt (gptimg + post + check): an attempt starts only if it fits the run window. */
 export const IMAGE_ATTEMPT_MS = 150_000;
 
@@ -68,6 +84,8 @@ export type WatcherState = {
   images?: ImageJob[];
   /** the last WINDOW cards made: the rotation and the anti-duplicate read it */
   cards?: LedgerRow[];
+  /** original title + source time of the stories written recently: the story dedup reads it (absent in older files) */
+  stories?: StoryKey[];
 };
 
 export const freshState = (): WatcherState => ({
@@ -257,6 +275,14 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
       rep.rejected.push({ hash: h, reason: "no teaser" });
       continue;
     }
+    // the same story already written or waiting, from another source: never paid for twice
+    const dup = repeats({ at: it.t, title: it.title }, [...(s.stories ?? []), ...s.queue.map((q) => ({ at: q.item.t, title: q.item.title }))]);
+    if (dup) {
+      s.seen[h] = s.seen[uh] = now;
+      rep.rejected.push({ hash: h, reason: dup });
+      d.log(`skipped «${it.title.slice(0, 80)}»: ${dup}`);
+      continue;
+    }
     s.queue.push({ item: it, hash: h, attempts: 0 });
     queuedHashes.add(h);
     rep.queued++;
@@ -307,7 +333,11 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
           const base = imageBase(r.source_url);
           if (base) (s.images ??= []).push({ hash: r.guid_hash, base, note: r.rewritten_en, teams: r.teams, attempts: 0, at: now, ...(hold(r) ? { row: r } : {}) });
         }
-      for (const q of s.queue) if (q.row) done(q);
+      for (const q of s.queue)
+        if (q.row) {
+          done(q);
+          (s.stories ??= []).push({ at: q.item.t, title: q.item.title });
+        }
       s.queue = s.queue.filter((q) => !q.row);
     } catch (e) {
       rep.errors.push(`insert failed: ${String(e).slice(0, 160)}`);
@@ -317,6 +347,8 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
 
   // 7. housekeeping and the state row
   for (const [k, t] of Object.entries(s.seen)) if (now - t > SEEN_KEEP_MS) delete s.seen[k];
+  // a candidate is at most MAX_AGE_MS old and matches within STORY_WINDOW_MS: older stories can never match
+  if (s.stories) s.stories = s.stories.filter((x) => now - x.at <= MAX_AGE_MS + STORY_WINDOW_MS);
   try {
     const before = new Date(now - RETENTION_DAYS * 86_400_000).toISOString();
     // the cards of the rows about to expire go first: a file never outlives its row
@@ -384,6 +416,13 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
     if (j.row && !j.files && start - j.at >= HOLD_MS) {
       if (await neutral(j, "no card in time")) continue;
     }
+    if (!j.files && j.attempts >= MAX_IMAGE_ATTEMPTS) {
+      // given up on an earlier run: never generated again (before 06/11 an emma job with no neutral fallback was
+      // re-made every run, attempt 4, 5, 6… — one paid card each). Same outcome as the final failure: neutral or wait/expire.
+      if (await neutral(j, "card refused")) continue;
+      keep.push(j);
+      continue;
+    }
     if (!j.files && !stop) {
       if (d.now() - start + IMAGE_ATTEMPT_MS > windowMs) stop = true;
       else {
@@ -397,7 +436,7 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
           continue;
         }
         const a = await img.make({ base: j.base, ...cj, attempts: j.attempts, mood: card.mood });
-        const dup = a.kind === "ok" ? tooSimilar(a.sig, s.cards ?? []) : null;
+        const dup = a.kind === "ok" ? tooSimilar(a.sig, s.cards ?? [], emmaMode ? "emma" : "legacy") : null;
         if (a.kind === "ok" && !dup) {
           j.files = a.files;
           st.made++;
@@ -409,11 +448,13 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
           stop = true;
         } else {
           j.attempts++;
+          const before = j.lastError;
           j.lastError = a.kind === "ok" ? `duplicate: ${dup}` : a.reason;
           if (a.kind === "ok") j.card = undefined; // a look-alike: pick again against the ledger
           st.failed++;
           d.log(`image refused ${j.base} · ${card.format} · attempt ${j.attempts} · ${a.ms} ms · ${j.lastError}`);
           if (a.final) j.attempts = MAX_IMAGE_ATTEMPTS; // Higgsfield: one call per note, never a retry
+          if (sameCheckFailure(before, j.lastError)) j.attempts = MAX_IMAGE_ATTEMPTS; // the same check failed twice in a row: the same prompt will fail again
           if (j.attempts >= MAX_IMAGE_ATTEMPTS) {
             st.fallback++;
             d.log(`image fallback ${j.base}: ${MAX_IMAGE_ATTEMPTS} attempts refused`);

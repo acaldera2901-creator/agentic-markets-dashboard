@@ -13,7 +13,7 @@
 import { createHash } from "node:crypto";
 import { words, type NoteText } from "./rewrite";
 import type { SceneKind } from "./image";
-import { emmaCardPrompt, imageStyle } from "./card-emma";
+import { emmaCardPrompt, imageStyle, type NewsImageStyle } from "./card-emma";
 
 export type TextType = "score" | "count" | "word" | "none";
 /** `big`: the giant numeral/score; `words`: the condensed caption. Both from the note. */
@@ -234,7 +234,15 @@ function cardPromptBase(c: CardSpec): string {
 
 /** Calibrated by art direction on PIL (29/10): «same picture» = BOTH under these. */
 export const DHASH8_MAX = 24;
+/**
+ * The «emma» style is a fixed template (stadium, lime streaks, NEWS tag, logo): two
+ * different emma cards measured 20–23/64 on 06/11, so 24 refused almost every card as a
+ * look-alike and burned a paid generation each time (news stalled). 16 = same picture,
+ * not same layout (hot-patched in the daemon bundle by calde 06/11, now in source).
+ */
+export const DHASH8_MAX_EMMA = 16;
 export const COLOR_MAX = 26;
+export const dhashMax = (style: NewsImageStyle = "legacy"): number => (style === "emma" ? DHASH8_MAX_EMMA : DHASH8_MAX);
 
 export const hamming = (a: string, b: string): number => {
   let x = BigInt(`0x${a}`) ^ BigInt(`0x${b}`);
@@ -248,12 +256,13 @@ export const hamming = (a: string, b: string): number => {
 export const colourDist = (a: readonly number[], b: readonly number[]): number => a.reduce((s, v, i) => s + Math.abs(v - (b[i] ?? 0)), 0) / a.length;
 
 /** Too close to a recent card: dHash AND colour both under the thresholds (the same-format+tint rule is in the rotation). */
-export function tooSimilar(sig: { dhash: string; csig: number[] }, ledger: readonly LedgerRow[]): string | null {
+export function tooSimilar(sig: { dhash: string; csig: number[] }, ledger: readonly LedgerRow[], style: NewsImageStyle = "legacy"): string | null {
+  const max = dhashMax(style);
   for (const r of ledger.slice(-WINDOW)) {
     if (r.dhash && r.csig) {
       const d = hamming(sig.dhash, r.dhash);
       const c = colourDist(sig.csig, r.csig);
-      if (d < DHASH8_MAX && c < COLOR_MAX) return `looks like a recent card (dHash ${d}/64, colour ${c.toFixed(1)})`;
+      if (d < max && c < COLOR_MAX) return `looks like a recent card (dHash ${d}/64, colour ${c.toFixed(1)})`;
     }
   }
   return null;

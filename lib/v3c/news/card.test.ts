@@ -2,7 +2,7 @@
 // against the six notes art direction did by hand on 29/10
 // (preview-news-prod/2026-10-29-stile-v3-inspo/README.md §4).
 import { describe, expect, it } from "vitest";
-import { cardPrompt, cardText, colourDist, expectedText, fits, hamming, hasQuote, pickCard, tooSimilar, violations, WINDOW, type LedgerRow } from "./card";
+import { cardPrompt, cardText, colourDist, DHASH8_MAX, DHASH8_MAX_EMMA, dhashMax, expectedText, fits, hamming, hasQuote, pickCard, tooSimilar, violations, WINDOW, type LedgerRow } from "./card";
 import { sceneKind } from "./image";
 import { words } from "./rewrite";
 
@@ -109,6 +109,20 @@ describe("card · the anti-duplicate (dHash 8×8 + colour 4×4)", () => {
     expect(tooSimilar({ dhash: "fffffffffffffff0", csig: Array(48).fill(110) }, ledger)).toMatch(/looks like a recent card \(dHash 4\/64, colour 10\.0\)/);
     expect(tooSimilar({ dhash: "0000000000000000", csig: Array(48).fill(110) }, ledger)).toBeNull();
     expect(tooSimilar({ dhash: "fffffffffffffff0", csig: Array(48).fill(200) }, ledger)).toBeNull();
+  });
+
+  it("style-aware: emma (fixed template) refuses only under 16/64, legacy keeps 24 (06/11: emma cards measured 20–23)", () => {
+    expect(dhashMax("legacy")).toBe(DHASH8_MAX);
+    expect(dhashMax()).toBe(24);
+    expect(dhashMax("emma")).toBe(DHASH8_MAX_EMMA);
+    expect(DHASH8_MAX_EMMA).toBe(16);
+    const ledger: LedgerRow[] = [{ at: 0, format: "split", block: "right", dominant: "figure", tint: "red", club: null, dhash: "ffffffffffffffff", csig: Array(48).fill(100) }];
+    const d21 = { dhash: "00000fffffffffff", csig: Array(48).fill(110) }; // 20 bits off
+    expect(hamming(d21.dhash, "ffffffffffffffff")).toBe(20);
+    expect(tooSimilar(d21, ledger)).toMatch(/dHash 20\/64/); // legacy: a look-alike
+    expect(tooSimilar(d21, ledger, "emma")).toBeNull(); // emma: same layout, different card
+    const d12 = { dhash: "000fffffffffffff", csig: Array(48).fill(110) }; // 12 bits off
+    expect(tooSimilar(d12, ledger, "emma")).toMatch(/dHash 12\/64/);
   });
 });
 
