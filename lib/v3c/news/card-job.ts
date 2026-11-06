@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { assetPaths } from "./assets";
 import { isClubNote, photoRef, type PhotoRef } from "./photo";
 import { kitIsNational } from "./photo-kit";
+import { manifestPhoto } from "./photo-manifest";
 import { cardPrompt, expectedText, type CardSpec } from "./card";
 import { emmaCardPrompt, emmaText, headlineLines, imageStyle } from "./card-emma";
 import { titleCrestRefs } from "./emma-assets";
@@ -28,14 +29,16 @@ function defaultKitCheck(env: NodeJS.ProcessEnv): (file: string) => Promise<bool
  * cardJob + the photo of the person (emma only). Photo first among the references, then the crests; the credit (author, licence, URL)
  * travels with the job and is saved next to the card. No photo found / any error → exactly cardJob (generic scene, no name).
  */
-export async function cardJobWithPhoto(c: CardSpec, note: NoteText, teams: readonly string[], env: NodeJS.ProcessEnv = process.env, deps: { fetch?: typeof fetch; log?: (m: string) => void; kitCheck?: (file: string) => Promise<boolean | null> } = {}): Promise<CardJob> {
+export async function cardJobWithPhoto(c: CardSpec, note: NoteText, teams: readonly string[], env: NodeJS.ProcessEnv = process.env, deps: { fetch?: typeof fetch; log?: (m: string) => void; kitCheck?: (file: string) => Promise<boolean | null>; hash?: string } = {}): Promise<CardJob> {
   const base = cardJob(c, note, teams, env);
   if (imageStyle(env.NEWS_IMAGE_STYLE) !== "emma") return base;
   const dir = env.NEWS_WATCHER_PHOTO_DIR || join(env.NEWS_WATCHER_HOME || join(homedir(), "Library", "Application Support", "news-watcher"), "photos");
-  const photo = await photoRef(note, teams, { dir, fetch: deps.fetch, log: deps.log });
+  // 1) a photo chosen by the social desk for THIS note (manifest, exact guid hash; credit from the manifest, already vetted by hand: no kit check); 2) the Wikimedia lookup
+  const fromManifest = manifestPhoto(deps.hash, env, deps.log);
+  const photo = fromManifest ?? (await photoRef(note, teams, { dir, fetch: deps.fetch, log: deps.log }));
   if (!photo) return base;
   // club note + a national-team shirt in the picture (names and categories do not always say it): drop the photo, anonymous scene. Unreadable check = drop too.
-  if (base.clubNote) {
+  if (base.clubNote && !fromManifest) {
     const national = await (deps.kitCheck ?? defaultKitCheck(env))(photo.file);
     if (national !== false) { deps.log?.(`photo ${photo.person}: dropped (${national === null ? "kit check unavailable" : "national-team shirt"} on a club note)`); return base; }
   }

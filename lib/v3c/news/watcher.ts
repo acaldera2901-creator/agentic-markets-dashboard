@@ -389,7 +389,7 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
       else {
         if (!j.card) j.card = pickCard(j.hash, sceneKind(j.note), cardText(j.note), cardTint(protagonistTint(j.note, j.teams), j.hash), protagonist(j.note, j.teams), s.cards ?? [], hasQuote(j.note));
         const card = j.card;
-        const cj = await cardJobWithPhoto(card, j.note, j.teams, process.env, { log: d.log });
+        const cj = await cardJobWithPhoto(card, j.note, j.teams, process.env, { log: d.log, hash: j.hash });
         if (emmaMode && !cj.credit) {
           j.lastError = "emma: no verified real photo with credit — card not made";
           d.log(`image skipped ${j.base}: ${j.lastError}`);
