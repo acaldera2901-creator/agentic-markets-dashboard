@@ -274,11 +274,11 @@ export const CRM_TOUCHPOINTS: CrmTouchpoint[] = [
       it: "Cosa resta chiuso sul piano Free", en: "What stays locked on Free", es: "Qué sigue cerrado en el plan Free",
       fr: "Ce qui reste fermé sur le plan Free", ru: "Что остаётся закрытым на тарифе Free" },
     body: {
-      it: "Sul Free vedi 3 pick per sport al giorno: il resto del board, con edge, stake e closing line value, resta chiuso. Riattiva quando vuoi — i tuoi dati e il tuo storico sono ancora al loro posto.",
-      en: "On Free you see 3 picks per sport a day: the rest of the board, with edge, stake and closing line value, stays locked. Reactivate whenever you want — your data and history are still in place.",
-      es: "En Free ves 3 picks por deporte al día: el resto del board, con edge, stake y closing line value, sigue cerrado. Reactiva cuando quieras — tus datos y tu historial siguen en su sitio.",
-      fr: "En Free vous voyez 3 pronostics par sport et par jour : le reste du board, avec edge, mise et closing line value, reste fermé. Réactivez quand vous voulez — vos données et votre historique sont toujours en place.",
-      ru: "На Free вы видите 3 прогноза по каждому виду спорта в день: остальной борд — с edge, размером ставки и closing line value — остаётся закрыт. Возвращайтесь когда захотите — ваши данные и история на месте." } },
+      it: "Sul Free vedi 3 pick per sport al giorno: il resto del board, con edge e stake, resta chiuso. Riattiva quando vuoi — i tuoi dati e il tuo storico sono ancora al loro posto.",
+      en: "On Free you see 3 picks per sport a day: the rest of the board, with edge and stake, stays locked. Reactivate whenever you want — your data and history are still in place.",
+      es: "En Free ves 3 picks por deporte al día: el resto del board, con edge y stake, sigue cerrado. Reactiva cuando quieras — tus datos y tu historial siguen en su sitio.",
+      fr: "En Free vous voyez 3 pronostics par sport et par jour : le reste du board, avec edge et mise, reste fermé. Réactivez quand vous voulez — vos données et votre historique sont toujours en place.",
+      ru: "На Free вы видите 3 прогноза по каждому виду спорта в день: остальной борд — с edge и размером ставки — остаётся закрыт. Возвращайтесь когда захотите — ваши данные и история на месте." } },
   { key: "wb_day21_final", flow: "winback", day: 21,
     subject: {
       it: "Ultimo promemoria", en: "Last reminder", es: "Último recordatorio",
