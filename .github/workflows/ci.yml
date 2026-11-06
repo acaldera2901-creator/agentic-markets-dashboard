@@ -44,7 +44,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Affiliate lifecycle on disposable Postgres
-        run: npx vitest run lib/affiliate/pg.integration.test.ts
+        run: npx vitest run lib/affiliate/pg.integration.test.ts lib/affiliate/creators.pg.integration.test.ts
         env:
           AFFILIATE_PG_TEST_URL: postgres://postgres:disposable-test-only@127.0.0.1:5432/postgres
 

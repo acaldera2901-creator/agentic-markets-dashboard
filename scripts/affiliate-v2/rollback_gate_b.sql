@@ -48,6 +48,12 @@ DROP FUNCTION IF EXISTS public.affiliate_revoke_wallet(bigint);
 DROP FUNCTION IF EXISTS public.affiliate_set_wallet(bigint, text, text, text, text, text, text, text, text, boolean, text, boolean);
 DROP FUNCTION IF EXISTS public.affiliate_cancel_created_payouts(bigint, text, text);
 
+-- #CREATOR-OFFERS-1031: vista e conteggi click dipendono da affiliates (vuote se
+-- affiliates è vuota). creator_grants non dipende da affiliates: resta.
+DROP VIEW IF EXISTS public.affiliate_creator_monthly;
+DROP TABLE IF EXISTS public.affiliate_click_months;
+DROP FUNCTION IF EXISTS public.affiliate_set_cohort(bigint, text, text);
+
 -- Ordine per le FK: il ledger referenzia payouts, payouts referenzia wallets,
 -- tutti referenziano affiliates.
 DROP TABLE IF EXISTS public.affiliate_refund_events;
