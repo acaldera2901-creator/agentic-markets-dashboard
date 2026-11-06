@@ -70,6 +70,17 @@ export function duplicateOf(rows: readonly ExistingRow[], guid: string, fonteUrl
   return null;
 }
 
+/**
+ * Exact-guid lookup, NO time window (calde's review 06/11): a manifest imported long ago and re-run must stop BEFORE the upload,
+ * which would overwrite the existing news' image (same news-<guid12>-e.webp). A failed read throws: no upload without knowing.
+ */
+export async function guidExists(rest: string, headers: Record<string, string>, guid: string, f: typeof fetch = fetch): Promise<boolean> {
+  const r = await f(`${rest}?guid_hash=eq.${encodeURIComponent(guid)}&select=guid_hash`, { headers });
+  if (!r.ok) throw new Error(`lettura guid_hash → http ${r.status}`);
+  const rows = (await r.json()) as unknown[];
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 /** The news_items row (image_url is added by the CLI once the file is verified in the bucket). */
 export function buildRow(m: EmmaManifest, now: number) {
   const b = m.blog!;

@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync, copyFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { baseFor, buildRow, duplicateOf, guidFor, validate, type EmmaManifest } from "../../lib/v3c/news/emma-import";
+import { baseFor, buildRow, duplicateOf, guidExists, guidFor, validate, type EmmaManifest } from "../../lib/v3c/news/emma-import";
 import { MAX_WEBP_BYTES } from "../../lib/v3c/news/image";
 import { storagePublisher } from "../../lib/v3c/news/image-gen";
 
@@ -66,6 +66,7 @@ process.env.NEWS_IMAGE_STYLE = "emma"; // storagePublisher: file -e + credit.jso
 const h = { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json" };
 const rest = `${url}/rest/v1/news_items`;
 try {
+  if (await guidExists(rest, h, guid)) fail("skip", [`già importata (guid ${guid.slice(0, 12)} presente in news_items): nessun upload`]); // before ANY upload, no time window
   const since = new Date(Date.now() - 72 * 3_600_000).toISOString();
   const recent = (await (await fetch(`${rest}?published_at=gt.${encodeURIComponent(since)}&select=guid_hash,source_url,rewritten_en&limit=500`, { headers: h })).json()) as never[];
   const dup = duplicateOf(recent, guid, m.blog!.fonte_url!, row.rewritten_en.title);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRow, baseFor, duplicateOf, guidFor, validate, type EmmaManifest } from "./emma-import";
+import { buildRow, baseFor, duplicateOf, guidExists, guidFor, validate, type EmmaManifest } from "./emma-import";
 import { cardFromRow } from "./table";
 
 const good = (): EmmaManifest => ({
@@ -52,6 +52,21 @@ describe("idempotence — never twice, never next to the watcher's own story", (
   it("same title (case/punctuation-insensitive) as a watcher row → duplicate", () =>
     expect(duplicateOf([{ guid_hash: "b".repeat(64), source_url: "https://y", rewritten_en: { title: "Bournemouth come from behind, to beat Sparta Prague!" } }], g, "https://z", "Bournemouth come from behind to beat Sparta Prague")).toMatch(/stesso titolo/));
   it("nothing similar → free", () => expect(duplicateOf([{ guid_hash: "c".repeat(64), source_url: "https://y", rewritten_en: { title: "Something else" } }], g, "https://z", "Bournemouth win")).toBeNull());
+});
+
+describe("guidExists — exact guid, no time window, before any upload", () => {
+  const g = guidFor("old-manifest");
+  const reply = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+  it("a row with that guid exists (even if imported weeks ago) → true: the CLI skips, nothing is uploaded", async () => {
+    let asked = "";
+    const f = (async (u: string) => { asked = u; return new Response(JSON.stringify([{ guid_hash: g }])); }) as unknown as typeof fetch;
+    expect(await guidExists("https://p/rest/v1/news_items", {}, g, f)).toBe(true);
+    expect(asked).toContain(`guid_hash=eq.${g}`); expect(asked).not.toMatch(/published_at/);
+  });
+  it("no row → false (free to upload)", async () => expect(await guidExists("https://p/r", {}, g, reply(200, []))).toBe(false));
+  it("read error → throws (fail closed: never upload without knowing)", async () => {
+    await expect(guidExists("https://p/r", {}, g, reply(500, {}))).rejects.toThrow(/http 500/);
+  });
 });
 
 describe("buildRow", () => {
