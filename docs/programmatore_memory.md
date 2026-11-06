@@ -261,3 +261,10 @@ Pattern, decisioni tecniche e gotcha consolidati. Solo roba non ovvia.
 
 ## 2026-10-26 — Integrity audit takeover (prepared, not deployed)
 See docs/audits/2026-10-26-integrity.md. Preserve production worker checkout separately; original Claude form backfill is inconsistent with cross-competition form. Public model/live/seal claims must follow actual provenance, not labels or passing unit tests.
+
+## #CREATOR-OFFERS-1031 — offerte per creator (workstream A)
+
+- **Il ledger non conosce il periodo dell'acquisto**: `RecordCommissionInput` non porta monthly/annual e reconcile.ts non si tocca. Si legge dall'ordine del rail (`paygate_orders.period`, `paypal_orders.period`, Shopify via `shopify_events.variant_id` → `resolveOrderFromVariant`); Stripe non ha tabella ordini → periodo ignoto → si applica il MINORE dei due tassi (una commissione scritta è immutabile).
+- **Ordine di deploy: migration PRIMA del codice.** `offerFor` è fail-loud (senza sapere se c'è un'offerta non si scrive una commissione immutabile): senza tabella ogni commissione finisce `error`.
+- **`affiliate_admin_actions_action_check` è una lista unica DROP+ADD**: ogni migration che la ridefinisce deve includere TUTTI i valori già scritti, o l'ADD fallisce. Il harness pg ora svuota il registro prima di riapplicare le migration (re-run sullo stesso DB locale).
+- **Mock RPC del harness pg**: gli oggetti JS diventano `::jsonb` (prima `interpolate` li rendeva "[object Object]").

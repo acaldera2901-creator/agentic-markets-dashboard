@@ -29,6 +29,7 @@ import { affiliateConfig, affiliateMode, type AffiliateConfig, type AffiliateMod
 import { netAmount, commissionAmount, round2, type AffiliateRail, type NetMeta } from "./net";
 import { selfReferralCheck, type Fingerprint, type FingerprintKind } from "./self-referral";
 import { payingReferredSql, tierFor } from "./tiers";
+import { applyOffer, offerFor, offerNeedsPeriod, purchasePeriod, type PurchasePeriod } from "./offers";
 
 export type RecordCommissionInput = {
   /** Chi ha pagato (il referito). */
@@ -342,6 +343,12 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
   // Lo scaglione si misura PRIMA di scrivere questa riga: il referito che paga
   // ora conta dal pagamento successivo (sul primo acquisto il tasso è piatto).
   const payingReferred = await payingReferredCount(Number(attribution.affiliate_id), config.mode);
+  // #CREATOR-OFFERS-1031 — l'offerta del creator in vigore ALLA DATA DEL
+  // PAGAMENTO (non oggi): un recupero tardivo dà lo stesso tasso. Nessuna
+  // offerta = config env invariata. Il periodo (mensile/annuale) si legge solo
+  // se serve: primo acquisto e offerta che li distingue.
+  const offer = await offerFor(Number(attribution.affiliate_id), input.paidAt);
+  let period: PurchasePeriod | undefined;
 
   for (let attempt = 0; attempt < MAX_INDEX_ATTEMPTS; attempt++) {
     // Recupero: al primo tentativo l'indice della sua posizione per data; se è
@@ -350,9 +357,12 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
     const renewalIndex =
       historic +
       (await ledgerPayments(referred, input.recovery && attempt === 0 ? input.paidAt.toISOString() : undefined));
+    if (offer && renewalIndex === 0 && period === undefined && offerNeedsPeriod(offer)) {
+      period = await purchasePeriod(input.rail, ref);
+    }
     const d = decideCommission({
       mode: config.mode,
-      config,
+      config: applyOffer(config, offer, period ?? null),
       attributionStatus: attribution.status,
       renewalIndex,
       payingReferred,
@@ -389,7 +399,7 @@ async function record(input: RecordCommissionInput, config: AffiliateConfig): Pr
     // pagamento dello stesso referito ha preso quell'indice: si ricalcola.
     if (await paymentRecorded(input.rail, ref)) {
       console.log(
-        `[affiliate] ${d.status} ${d.kind} rail=${input.rail} ref=${ref} referred#${tag} index=${renewalIndex} net=${net} rate=${d.rate} paying=${payingReferred} amount=${d.amountUsd}`
+        `[affiliate] ${d.status} ${d.kind} rail=${input.rail} ref=${ref} referred#${tag} index=${renewalIndex} net=${net} rate=${d.rate} paying=${payingReferred} amount=${d.amountUsd}${offer ? ` offer=${offer.id} period=${period ?? "-"}` : ""}`
       );
       return { written: true, reason: d.status };
     }

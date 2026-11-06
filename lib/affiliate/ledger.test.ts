@@ -16,6 +16,8 @@ const state = {
   commissions: [] as Commission[],
   down: false,
   historicParams: [] as unknown[][],
+  offers: [] as Record<string, unknown>[],
+  periods: new Map<string, string>(),
 };
 
 async function fakeDb(sql: string, params: unknown[] = []): Promise<unknown[]> {
@@ -25,6 +27,12 @@ async function fakeDb(sql: string, params: unknown[] = []): Promise<unknown[]> {
     const a = state.attributions.get(String(params[0]));
     return a ? [a] : [];
   }
+  // #CREATOR-OFFERS-1031: l'offerta in vigore a $2 e il periodo dell'ordine.
+  if (/FROM affiliate_offers/.test(sql)) {
+    const at = new Date(String(params[1])).getTime();
+    return state.offers.filter((o) => new Date(String(o.valid_from)).getTime() <= at && (o.valid_to == null || at < new Date(String(o.valid_to)).getTime()));
+  }
+  if (/^SELECT period FROM/.test(sql)) return [{ period: state.periods.get(String(params[0])) ?? null }];
   if (/FROM paygate_orders/.test(sql)) {
     state.historicParams.push(params);
     return [{ n: state.historic }];
@@ -97,6 +105,8 @@ beforeEach(() => {
   state.commissions = [];
   state.down = false;
   state.historicParams = [];
+  state.offers = [];
+  state.periods = new Map();
   process.env.AFFILIATE_MODE = "shadow";
   delete process.env.AFFILIATE_RENEWAL_MAX_MONTHS;
   delete process.env.AFFILIATE_RENEWAL_TIERS;
@@ -406,5 +416,69 @@ describe("standingBlock", () => {
     expect(standingBlock(a({ status: "terminated" }), paid)).toBe("affiliate_terminated");
     expect(standingBlock(a({ absent: true }), paid)).toBe("affiliate_left");
     expect(standingBlock(a({ created_at: "2026-11-10T12:00:01Z" }), paid)).toBe("before_enrollment");
+  });
+});
+
+describe("offerta del creator nel ledger (#CREATOR-OFFERS-1031)", () => {
+  const offer = (over: Record<string, unknown> = {}) => ({
+    id: 1, affiliate_id: 7, valid_from: "2026-09-01T00:00:00Z", valid_to: null,
+    first_rate_monthly: "1.0000", first_rate_annual: "0.5000", renewal_rate: null, renewal_tiers: null,
+    fixed_usd: "0", fixed_period: null, fixed_min_deliverables: {}, bonus_rule: null,
+    note: null, created_by: "ops", created_at: "2026-09-01T00:00:00Z", ...over,
+  });
+  const rate = (ref: string) => state.commissions.find((c) => c.ref === ref)?.params[7];
+  const amount = (ref: string) => state.commissions.find((c) => c.ref === ref)?.amount;
+
+  it("primo acquisto MENSILE con offerta 100% → rate 1, commissione = netto", async () => {
+    state.offers = [offer()];
+    state.periods.set("pp-1", "monthly");
+    expect(await recordAffiliateCommissionSafe(input())).toEqual({ written: true, reason: "shadow" });
+    expect(rate("pp-1")).toBe(1);
+    expect(amount("pp-1")).toBe(14.99);
+  });
+
+  it("primo acquisto ANNUALE → 50% (first_rate_annual)", async () => {
+    state.offers = [offer()];
+    state.periods.set("pp-1", "annual");
+    await recordAffiliateCommissionSafe(input({ grossUsd: 150 }));
+    expect(rate("pp-1")).toBe(0.5);
+    expect(amount("pp-1")).toBe(75);
+  });
+
+  it("periodo ignoto (Stripe: nessuna tabella ordini) → il minore dei due tassi", async () => {
+    state.offers = [offer()];
+    await recordAffiliateCommissionSafe(input({ rail: "stripe", paymentRef: "in_1" }));
+    expect(rate("in_1")).toBe(0.5);
+  });
+
+  it("nessuna offerta (o offerta fuori dalla data del pagamento) → tassi env invariati, periodo mai letto", async () => {
+    await recordAffiliateCommissionSafe(input());
+    state.offers = [offer({ valid_from: "2026-11-01T00:00:00Z" })];
+    await recordAffiliateCommissionSafe(input({ identifier: "v@t.com", paymentRef: "pp-2" }));
+    expect(rate("pp-1")).toBe(0.2);
+    expect(rate("pp-2")).toBe(0.2);
+    expect(dbQueryStrict.mock.calls.some(([q]) => /^SELECT period FROM/.test(String(q)))).toBe(false);
+  });
+
+  it("rinnovo con renewal_rate NULL nell'offerta → 7% env", async () => {
+    state.offers = [offer()];
+    state.periods.set("pp-1", "monthly");
+    await recordAffiliateCommissionSafe(input());
+    await recordAffiliateCommissionSafe(input({ paymentRef: "pp-2" }));
+    expect(rate("pp-1")).toBe(1);
+    expect(rate("pp-2")).toBe(0.07);
+  });
+
+  it("offerta cambiata nel tempo: conta quella in vigore ALLA DATA DEL PAGAMENTO, non oggi", async () => {
+    state.offers = [
+      offer({ id: 1, valid_to: "2026-10-15T00:00:00Z" }),
+      offer({ id: 2, valid_from: "2026-10-15T00:00:00Z", first_rate_monthly: "0.3000", first_rate_annual: "0.3000" }),
+    ];
+    state.periods.set("pp-old", "monthly");
+    // Un recupero tardivo (reconcile) di un pagamento del 1/10 usa ancora l'offerta 1.
+    await recordAffiliateCommissionSafe(input({ paymentRef: "pp-old", recovery: true }));
+    await recordAffiliateCommissionSafe(input({ identifier: "v@t.com", paymentRef: "pp-new", paidAt: new Date("2026-10-20T12:00:00Z") }));
+    expect(rate("pp-old")).toBe(1);
+    expect(rate("pp-new")).toBe(0.3);
   });
 });
