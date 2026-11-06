@@ -15,7 +15,7 @@ function setup(entries: object[], withFile = true) {
   if (withFile) writeFileSync(jpg, "JPG");
   const mf = join(d, "manifest.json");
   writeFileSync(mf, JSON.stringify(entries.map((e) => ({ file: jpg, ...e }))));
-  return { d, jpg, env: { NEWS_WATCHER_PHOTO_MANIFEST: mf, NEWS_IMAGE_STYLE: "emma", NEWS_WATCHER_PHOTO_DIR: join(d, "photos"), NEWS_WATCHER_PUBLIC_DIR: join(d, "public") } as NodeJS.ProcessEnv };
+  return { d, jpg, env: { NEWS_WATCHER_PHOTO_MANIFEST: mf, NEWS_IMAGE_STYLE: "emma", NEWS_WATCHER_PHOTO_DIR: join(d, "photos"), NEWS_WATCHER_PUBLIC_DIR: join(d, "public") } as unknown as NodeJS.ProcessEnv };
 }
 const ready = { guid: G, person: "Marco Rose", author: "Steffen Prößdorf", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0", url: "https://commons.wikimedia.org/wiki/File:x.jpg", width: 2793, height: 2153, status: "ready" };
 
@@ -39,12 +39,12 @@ describe("manifestPhoto", () => {
     mkdirSync(join(d, "m"));
     writeFileSync(join(d, "m", "marco-rose.jpg"), "JPG");
     writeFileSync(join(d, "m", "manifest.json"), JSON.stringify([{ ...ready, file: "/Users/someone/Desktop/x/marco-rose.jpg" }]));
-    expect(manifestPhoto(G, { NEWS_WATCHER_PHOTO_MANIFEST: join(d, "m", "manifest.json") } as NodeJS.ProcessEnv)?.file).toBe(join(d, "m", "marco-rose.jpg"));
+    expect(manifestPhoto(G, { NEWS_WATCHER_PHOTO_MANIFEST: join(d, "m", "manifest.json") } as unknown as NodeJS.ProcessEnv)?.file).toBe(join(d, "m", "marco-rose.jpg"));
   });
   it("no manifest / broken JSON → null, never throws", () => {
-    expect(manifestPhoto(G, { NEWS_WATCHER_PHOTO_MANIFEST: join(tmpdir(), "nope.json") } as NodeJS.ProcessEnv)).toBeNull();
+    expect(manifestPhoto(G, { NEWS_WATCHER_PHOTO_MANIFEST: join(tmpdir(), "nope.json") } as unknown as NodeJS.ProcessEnv)).toBeNull();
     const d = mkdtempSync(join(tmpdir(), "pman-")); writeFileSync(join(d, "m.json"), "{oops");
-    expect(manifestPhoto(G, { NEWS_WATCHER_PHOTO_MANIFEST: join(d, "m.json") } as NodeJS.ProcessEnv)).toBeNull();
+    expect(manifestPhoto(G, { NEWS_WATCHER_PHOTO_MANIFEST: join(d, "m.json") } as unknown as NodeJS.ProcessEnv)).toBeNull();
   });
 });
 
