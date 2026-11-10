@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({ dbQuery: vi.fn(async () => []) }));
 
-import { fetchOdds } from "./odds-api";
+import { fetchOdds, retryDelayMs } from "./odds-api";
 import { _resetForTest, observeRemaining, ODDS_RESERVE } from "./odds-quota";
 
 const FAKE_KEY = "fakeKEY0123456789secret";
@@ -137,17 +137,77 @@ describe("#ODDS-LOG-1008 fetchOdds per-league log, behaviour unchanged", () => {
     expect(log).toContain("remaining=0");
   });
 
-  it("422 then 200: same two calls as before, logs the final status", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ message: "INVALID_MARKET" }, 422))
-      .mockResolvedValueOnce(jsonResponse([EVENT_OK], 200, { "x-requests-remaining": "100" }));
+  // #ODDS-CORE-MARKETS-1026 — the endpoint never serves btts/double_chance
+  // (live 422 on 2026-10-26): every league, top-5 included, asks only for
+  // h2h,totals, in ONE call.
+  it.each(["SA", "PL", "PD", "BL1", "FL1", "CL", "EL", "SB"])(
+    "%s asks only h2h,totals in a single call",
+    async (league) => {
+      const fetchMock = vi.fn(async () => jsonResponse([EVENT_OK], 200));
+      vi.stubGlobal("fetch", fetchMock);
+      await fetchOdds(league);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const url = new URL(String((fetchMock.mock.calls[0] as unknown[])[0]));
+      expect(url.searchParams.get("markets")).toBe("h2h,totals");
+    },
+  );
+
+  it("422 is no longer retried: one call, http_error, []", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ message: "INVALID_MARKET" }, 422));
     vi.stubGlobal("fetch", fetchMock);
-    expect(await fetchOdds("PD")).toEqual(EXPECTED_OK);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(String(fetchMock.mock.calls[1][0])).toContain("markets=h2h%2Ctotals");
-    expect(logged()).toContain("retried422=1");
-    expect(logged()).toContain("status=200");
+    expect(await fetchOdds("PD")).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(logged()).toContain("outcome=http_error");
+    expect(logged()).toContain("status=422");
+  });
+
+  it("429 then 200: one delayed retry, odds attach, logs retried429=1", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse({ message: "EXCEEDED_FREQ_LIMIT" }, 429))
+        .mockResolvedValueOnce(jsonResponse([EVENT_OK], 200, { "x-requests-remaining": "100" }));
+      vi.stubGlobal("fetch", fetchMock);
+      const pending = fetchOdds("SA");
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetchMock).toHaveBeenCalledTimes(1); // waiting, not hammering
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(await pending).toEqual(EXPECTED_OK);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(logged()).toContain("retried429=1");
+      expect(logged()).toContain("status=200");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("429 twice: gives up after one retry, http_error, []", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn(async () => jsonResponse({ message: "EXCEEDED_FREQ_LIMIT" }, 429, { "retry-after": "1" }));
+      vi.stubGlobal("fetch", fetchMock);
+      const pending = fetchOdds("FL1");
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(await pending).toEqual([]);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(logged()).toContain("outcome=http_error");
+      expect(logged()).toContain("status=429");
+      expect(logged()).toContain("retried429=1");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("retryDelayMs honours Retry-After, caps it, and jitters without it", () => {
+    expect(retryDelayMs("2")).toBe(2000);
+    expect(retryDelayMs("60")).toBe(5000);
+    expect(retryDelayMs("0")).toBe(0);
+    for (const h of [null, "", "soon"]) {
+      const d = retryDelayMs(h);
+      expect(d).toBeGreaterThanOrEqual(1000);
+      expect(d).toBeLessThan(2000);
+    }
   });
 
   it("exception/timeout: returns [] and logs a scrubbed, truncated message", async () => {
@@ -189,4 +249,21 @@ describe("#ODDS-LOG-1008 fetchOdds per-league log, behaviour unchanged", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(logged()).toContain("outcome=skipped_no_key");
   });
+});
+
+// A stalled league must release the refresh rather than await fetch indefinitely.
+it("aborts an unresponsive odds request within a finite per-attempt deadline", async () => {
+  const controller = new AbortController();
+  const deadline = vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+  let received: AbortSignal | undefined;
+  vi.stubGlobal("fetch", vi.fn((_url: string, options: RequestInit) => {
+    received = options.signal as AbortSignal | undefined;
+    if (!received) return Promise.reject(new Error("missing timeout"));
+    return new Promise((_resolve, reject) => received!.addEventListener("abort", () => reject(new Error("deadline reached")), { once: true }));
+  }));
+  const pending = fetchOdds("SA");
+  controller.abort();
+  expect(await pending).toEqual([]);
+  expect(deadline).toHaveBeenCalledWith(10_000);
+  expect(received?.aborted).toBe(true);
 });

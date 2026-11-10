@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+"""`tavolo`: lo stesso comando per Claude e per Codex (docs/tavolo.md).
+
+L'identita', in quest'ordine (`riconosci` in tools/control_center/tavolo.py):
+AM_SHELL (Claude) / CODEX_SHELL (Codex) espliciti -> il processo agente piu'
+vicino fra gli antenati -> se gli antenati non si leggono, i marcatori
+d'ambiente (CLAUDECODE+CLAUDE_PID verificato, CODEX_THREAD_ID/CODEX_SANDBOX)
+-> altrimenti errore che chiede --come claude|codex.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools.control_center.tavolo import main  # noqa: E402
+
+sys.exit(main())

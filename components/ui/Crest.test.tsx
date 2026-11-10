@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { Crest } from "./Crest";
 import { crestUrl } from "@/lib/ui/crest-assets";
 
@@ -80,5 +80,39 @@ describe("Crest", () => {
     expect(el).toBeInTheDocument();
     expect(el.textContent).toBe("");
     expect(el.getAttribute("aria-label")).toBe("squadra");
+  });
+});
+
+describe("Crest", () => {
+  it("replaces a failed photo with accessible initials and recovers on a new team", () => {
+    const { container, rerender } = render(<Crest team="Matteo Berrettini" sport="tennis" />);
+    fireEvent.error(container.querySelector("img")!);
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByRole("img", { name: "Matteo Berrettini" })).toHaveTextContent("MB");
+    rerender(<Crest team="Mariano Navone" sport="tennis" />);
+    expect(container.querySelector("img")).toHaveAttribute("src", "/crests/tennis/mariano-navone.webp");
+  });
+  it("replaces a failed football badge with initials", () => {
+    const { container } = render(<Crest team="Olympique Lyonnais" sport="football" />);
+    fireEvent.error(screen.getByRole("img", { name: "Olympique Lyonnais" }));
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByRole("img", { name: "Olympique Lyonnais" })).toHaveTextContent("OL");
+  });
+});
+
+
+describe("Crest photo framing and fallback chain", () => {
+  it("keeps an already cropped headshot within the avatar", () => {
+    const { container } = render(<Crest team="Mika Brunold" sport="tennis" />);
+    expect(container.querySelector("img")).toHaveStyle({ width: "100%", height: "100%" });
+  });
+
+  it("does not retry the failed crest after the optional totem also fails", () => {
+    const { container } = render(<Crest team="Sevilla" sport="football" totem={{ name: "moon", color: "ivory", hex: "#fff", src: "/moon.png", srcSm: "/moon-sm.png" }} />);
+    fireEvent.error(container.querySelector("img")!);
+    expect(container.querySelector("img")).toHaveAttribute("src", "/moon-sm.png");
+    fireEvent.error(container.querySelector("img")!);
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByRole("img", { name: "Sevilla" })).toHaveTextContent("SEV");
   });
 });

@@ -31,7 +31,23 @@ vi.mock("@/lib/blog", () => ({
   ]),
 }));
 
+// #SEO-AEO-1106: la freschezza dei dati viene dal DB; nei test si mocka (board aggiornata, history non leggibile).
+vi.mock("@/lib/seo/data-freshness", async (orig) => ({
+  ...(await orig<typeof import("@/lib/seo/data-freshness")>()),
+  fetchFreshness: vi.fn(async () => ({ board: "2026-11-06T20:00:00.000Z", history: null })),
+}));
+
 const BASE = "https://www.betredge.com";
+
+describe("sitemap lastmod delle board (#SEO-AEO-1106)", () => {
+  it("/ e /predictions prendono l'ultimo aggiornamento reale dei dati; /history, senza dato, resta alla data del file", async () => {
+    const entries = await sitemap();
+    const lm = (u: string) => entries.find((e) => e.url === u)!.lastModified;
+    expect(lm(BASE)).toBe("2026-11-06T20:00:00.000Z");
+    expect(lm(`${BASE}/predictions`)).toBe("2026-11-06T20:00:00.000Z");
+    expect(String(lm(`${BASE}/history`))).not.toBe("2026-11-06T20:00:00.000Z");
+  });
+});
 
 describe("sitemap", () => {
   let entries: MetadataRoute.Sitemap;

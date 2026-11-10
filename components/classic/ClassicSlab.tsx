@@ -147,6 +147,8 @@ export function PartnerFallback({ surface, c, lang }: { surface: string; c: Clas
   );
 }
 
+const UNVERIFIED_SOURCE: Record<string, string> = { en: "Source unverified", it: "Fonte non verificata", es: "Fuente no verificada", fr: "Source non vérifiée", ru: "Источник не подтверждён" };
+
 export function ClassicSlab({ data, variant = "compact", href, badge, saved, onToggleWatchlist, onOpen, className, lang = "en", included }: PredictionCardProps) {
   const c = classicCopy(lang);
   const prices = useClassicPrices();
@@ -167,15 +169,18 @@ export function ClassicSlab({ data, variant = "compact", href, badge, saved, onT
 
   // senza i numeri grezzi (un chiamante che non passa da lib/ui/desk-card) la
   // scheda dice solo ciò che sa: stima o mercato, nessuno scarto.
+  const unverified = !view && data.sport === "tennis" && data.probabilitySource !== "model" && data.probabilitySource !== "market";
+  const unverifiedLabel = UNVERIFIED_SOURCE[lang] ?? UNVERIFIED_SOURCE.en;
   const kind = view?.kind ?? (data.probabilitySource === "market" ? "market_only" : "estimate");
   const big = view ? view.bigPct : data.modelPct;
   const noPrice = kind === "no_price";
   const fromPartners = view?.marketFrom === "partners";
-  const isOurs = kind === "estimate" || kind === "protected" || kind === "elo_blend" || kind === "model_only";
+  const isOurs = !unverified && (kind === "estimate" || kind === "protected" || kind === "elo_blend" || kind === "model_only");
   // l'etichetta onesta: la riga protetta lo dice QUI, non in una riga a parte
-  const bigLabel = kind === "protected" ? c.protectedTag : readLabel(kind, c);
+  const bigLabel = unverified ? unverifiedLabel : kind === "protected" ? c.protectedTag : readLabel(kind, c);
   const howText =
-    noPrice ? (data.sport === "tennis" ? c.noPriceTennisNote : c.noPriceNote)
+    unverified ? unverifiedLabel
+    : noPrice ? (data.sport === "tennis" ? c.noPriceTennisNote : c.noPriceNote)
     : kind === "market_only" && view?.priceFar ? c.marketOnlyFarNote
     // #CLASSIC-FIX1-1008 — senza quote servite la stima del calcio è il modello da solo (nessun blend)
     : (kind === "estimate" || kind === "protected") && fromPartners ? c.partnerMarketInfo

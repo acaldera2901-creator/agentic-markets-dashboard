@@ -12,14 +12,14 @@ import ClassicChrome from "@/components/classic/ClassicChrome";
 
 export const metadata: Metadata = {
   title: "AI Tennis Predictions: Probabilities, Not Tips | BetRedge",
-  description: "How a multi-agent AI model turns tennis matches into calibrated probabilities: surfaces, serve data, and what the model gets wrong.",
+  description: "How BetRedge distinguishes tennis market probabilities from Elo-based estimates, with data limits and clear source labels.",
   alternates: { canonical: "/ai-tennis-predictions" },
 };
 
 const FAQ: Array<[string, string]> = [
   [
     "What does an AI tennis prediction actually give you?",
-    "A probability for each player winning the match, a confidence band around that number, and the factors that moved it: recent form, surface record, serve and return data, and market movement. It is a calibrated estimate, not a tip.",
+    "A labelled market probability or an Elo-based estimate, depending on the available data. We do not publish a statistical confidence interval or per-factor numerical attribution for each match.",
   ],
   [
     "Are AI tennis predictions guaranteed to win?",
@@ -31,7 +31,7 @@ const FAQ: Array<[string, string]> = [
   ],
   [
     "Where can I see today's tennis predictions?",
-    "The live board shows every covered match with the model's current probabilities. New predictions are produced as tournaments progress through the week.",
+    "The board shows available matches with source labels. Some readings are market-only; eligible matches can show an Elo-based estimate. Coverage depends on the available feeds.",
   ],
 ];
 
@@ -48,11 +48,7 @@ export default function AiTennisPredictionsPage() {
         </h1>
 
         <p className="mb-4">
-          For every covered tennis match, the BetRedge model outputs a probability for each player
-          winning, a confidence band around that number, and the specific factors that moved it.
-          That is the whole product: a calibrated number you can compare against a bookmaker&apos;s
-          implied price to judge whether the odds are fair. It is not a tip, and it is not a
-          guarantee.
+          Tennis cards distinguish market-only readings from Elo-based estimates. When recent main-tour Elo data and usable market prices are available, the displayed estimate combines 10% Elo and 90% market. It is labelled “Elo-based, not sealed”. Other matches may show only a market probability, or no number when the required data is absent. No statistical confidence interval is published.
         </p>
         <p className="mb-4">
           You can see the current board on the{" "}
@@ -74,7 +70,7 @@ export default function AiTennisPredictionsPage() {
           <strong style={{ color: "var(--am-text)" }}>No draws.</strong> Every match has exactly
           two outcomes. A football model spreads its probability across three results, and the
           draw is notoriously the hardest of the three to price. In tennis the question is
-          binary, which makes both the estimate and its calibration cleaner.
+          binary. This alone does not establish that a prediction is accurate or calibrated.
         </p>
         <p className="mb-4">
           <strong style={{ color: "var(--am-text)" }}>No team-selection noise.</strong> A football
@@ -101,17 +97,10 @@ export default function AiTennisPredictionsPage() {
           Surfaces change the answer
         </h2>
         <p className="mb-4">
-          The same two players can be meaningfully different propositions on clay, grass, and hard
-          court. Clay lengthens rallies and rewards defensive movement, grass shortens points and
-          amplifies big serving, and hard courts sit in between. The model keeps surface-specific
-          form and career records as separate inputs rather than blending everything into one
-          rating, because a player&apos;s clay results say little about a grass match in June.
+          Surface-specific Elo data can inform eligible tennis estimates. The displayed blend uses Elo and market probabilities; it does not combine every statistic shown in the detail panel as a separate input. Eligibility depends on the tour, data freshness and available market prices.
         </p>
         <p className="mb-4">
-          This is also where naive models go wrong most often: a headline ranking is a
-          surface-blended average. When the model&apos;s number disagrees sharply with what the
-          rankings suggest, the surface split is the most common reason, and the explanation
-          shown with each prediction will say so.
+          The card identifies whether its number is market-only or Elo-based. Serve, return, surface and head-to-head fields may provide useful context when available, but they are not a quantified explanation of what moved the displayed estimate.
         </p>
 
         <h2 className="text-xl font-bold mt-10 mb-4" style={{ color: "var(--am-text)" }}>
@@ -120,7 +109,7 @@ export default function AiTennisPredictionsPage() {
         <p className="mb-4">
           We publish this section on purpose. A probability product that cannot name its own
           failure modes is asking you to trust it blindly, and blind trust is the opposite of
-          what a calibrated number is for.
+          what an estimate can tell you.
         </p>
         <p className="mb-4">
           <strong style={{ color: "var(--am-text)" }}>Retirements and mid-match injuries.</strong>{" "}
@@ -134,11 +123,7 @@ export default function AiTennisPredictionsPage() {
           the model watches the market partly for that reason.
         </p>
         <p className="mb-4">
-          <strong style={{ color: "var(--am-text)" }}>First-round upsets and returning players.</strong>{" "}
-          A player coming back from a long absence has stale data. Early tournament rounds and
-          post-injury comebacks are where the confidence band is widest, and the honest answer in
-          some of those matches is that there is no clear favourite. When that happens the board
-          says so instead of manufacturing a pick.
+          <strong style={{ color: "var(--am-text)" }}>Limited or old data.</strong> A returning player may have little recent information. The displayed Elo-based estimate requires a recent snapshot and suitable market data; otherwise the card can fall back to a market-only reading. This check does not produce a wider confidence band.
         </p>
 
         <h2 className="text-xl font-bold mt-10 mb-4" style={{ color: "var(--am-text)" }}>

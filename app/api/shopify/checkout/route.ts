@@ -105,6 +105,7 @@ export async function POST(req: Request) {
       const state = await weeklyPickWeekStateStrict(week);
       if (!state.exists) return deny(404, "weekly: nessuna multipla questa settimana", ctx);
       if (weeklyPickClosed(state)) return deny(409, "weekly: settimana chiusa, tutte le gambe decise", ctx);
+      if (state.purchasable !== true) return deny(409, "weekly: caso non disponibile per acquisto", ctx);
     } catch (e) {
       console.error("[shopify/checkout] weeklyPickWeekStateStrict failed:", String(e));
       return deny(500, "lettura DB fallita (fail-closed)", ctx);

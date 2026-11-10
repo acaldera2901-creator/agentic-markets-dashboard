@@ -146,3 +146,24 @@ describe("fromDeskTennis", () => {
     expect(Math.round(d.marketPct!)).toBe(56);
   });
 });
+
+
+it.skipIf(!__CLASSIC_BUILD__)("carries each football snapshot timestamp into the classic view input", () => {
+  const computed_at = "2026-10-23T08:00:00Z";
+  const open = fromDeskFootball({ ...football, computed_at });
+  const locked = fromDeskFootball({ ...football, p_home: null, p_draw: null, p_away: null, model_prob: 0.64, market_odds: 1.92, computed_at });
+  expect(open.classic).toMatchObject({ modelAsOf: computed_at });
+  expect(locked.classic).toMatchObject({ modelAsOf: computed_at });
+});
+
+it('desk cards respect API provenance instead of the model-version name',()=>{
+  expect(fromDeskTennis({...tennis,model:'elo_surface_v4_features_odds',probability_source:'market'},{winLabel:'to win'}).probabilitySource).toBe('market');
+  expect(fromDeskTennis({...tennis,probability_source:'unknown'},{winLabel:'to win'}).probabilitySource).toBe('unknown');
+});
+
+it.skipIf(!__CLASSIC_BUILD__)("passes tennis provenance into both classic open and locked inputs",()=>{
+ for(const probability_source of ["model","market","unknown"] as const){
+ expect(fromDeskTennis({...tennis,probability_source}).classic).toMatchObject({probabilitySource:probability_source});
+ expect(fromDeskTennis({...tennis,probability_source,p1:null,p2:null,model_prob:0.63}).classic).toMatchObject({probabilitySource:probability_source});
+ }
+});

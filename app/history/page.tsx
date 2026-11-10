@@ -6,7 +6,7 @@ import Dashboard from "../app/page";
 
 export const metadata: Metadata = {
   title: "Track Record | BetRedge",
-  description: "Every settled BetRedge prediction, graded and archived. Browse past picks match by match and see how each call was reasoned.",
+  description: "Browse available settled BetRedge predictions, their results and statistical context. Coverage and data sources are shown alongside the record.",
   alternates: { canonical: "/history" },
 };
 

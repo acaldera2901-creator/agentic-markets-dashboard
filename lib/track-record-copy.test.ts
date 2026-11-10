@@ -5,9 +5,9 @@ import { sourceBreakdownLine } from "./track-record-copy";
 const b = { model: { winRate: "75.0%", n: 40 }, partner: { winRate: "57.1%", n: 35 } };
 
 it("modello e partner, ciascuno con la sua percentuale e la sua n", () => {
-  expect(sourceBreakdownLine("it", b)).toBe("Modello: 75.0% su 40 · Quote di mercato del partner: 57.1% su 35");
-  expect(sourceBreakdownLine("en", b)).toBe("Model: 75.0% on 40 · Partner market prices: 57.1% on 35");
-  expect(sourceBreakdownLine("fr", b)).toBe("Modèle : 75.0% sur 40 · Cotes de marché du partenaire : 57.1% sur 35");
+  expect(sourceBreakdownLine("it", b)).toBe("Modello: 75.0% su 40 · Probabilità di mercato: 57.1% su 35");
+  expect(sourceBreakdownLine("en", b)).toBe("Model: 75.0% on 40 · Market probabilities: 57.1% on 35");
+  expect(sourceBreakdownLine("fr", b)).toBe("Modèle : 75.0% sur 40 · Probabilités de marché : 57.1% sur 35");
   for (const l of ["es", "ru"]) {
     const s = sourceBreakdownLine(l, b);
     expect(s).toContain("75.0%");
@@ -18,7 +18,7 @@ it("modello e partner, ciascuno con la sua percentuale e la sua n", () => {
 
 it("sotto soglia: solo il numero di pick; partner senza pick: non compare", () => {
   expect(sourceBreakdownLine("it", { model: b.model, partner: { winRate: null, n: 3 } }))
-    .toBe("Modello: 75.0% su 40 · Quote di mercato del partner: 3 pick");
+    .toBe("Modello: 75.0% su 40 · Probabilità di mercato: 3 pick");
   expect(sourceBreakdownLine("en", { model: b.model, partner: { winRate: null, n: 0 } }))
     .toBe("Model: 75.0% on 40");
 });
@@ -45,15 +45,15 @@ it("flag spento (o data illeggibile): nessuna nota", () => {
 
 it("flag acceso: il testo approvato in italiano, con la data da LEDGER_SEALED_FROM", () => {
   expect(sealedPopulationNote("it", statsOn)).toBe(
-    "Dal 26/10/2026 il track record conta solo le pick registrate prima del calcio d'inizio e le valuta su quella pick. Le pick mostrate senza registrazione, quasi tutte sotto soglia, non entrano più nel conteggio: per questo la percentuale non è confrontabile con il periodo precedente.",
+    "Dal 26/10/2026 il track record del calcio conta solo le pick registrate prima del calcio d'inizio e le valuta su quella pick. Le pick mostrate senza registrazione, quasi tutte sotto soglia, non entrano più nel conteggio: per questo la percentuale non è confrontabile con il periodo precedente.",
   );
 });
 
 it("flag acceso: ogni lingua ha la sua data e il suo testo", () => {
-  expect(sealedPopulationNote("en", statsOn)).toMatch(/^From 26 October 2026, the track record only counts picks recorded before kick-off/);
-  expect(sealedPopulationNote("es", statsOn)).toMatch(/^Desde el 26 de octubre de 2026, el track record solo cuenta/);
-  expect(sealedPopulationNote("fr", statsOn)).toMatch(/^À partir du 26 octobre 2026, le track record ne compte que/);
-  expect(sealedPopulationNote("ru", statsOn)).toMatch(/^С 26 октября 2026 г\. track record учитывает только/);
+  expect(sealedPopulationNote("en", statsOn)).toMatch(/^From 26 October 2026, the football track record only counts picks recorded before kick-off/);
+  expect(sealedPopulationNote("es", statsOn)).toMatch(/^Desde el 26 de octubre de 2026, el track record de fútbol solo cuenta/);
+  expect(sealedPopulationNote("fr", statsOn)).toMatch(/^À partir du 26 octobre 2026, le track record de football ne compte que/);
+  expect(sealedPopulationNote("ru", statsOn)).toMatch(/^С 26 октября 2026 г\. футбольный track record учитывает только/);
   // la data segue la variabile, non e' scritta nel testo
   expect(sealedPopulationNote("it", { sealed_grading: { from: "2026-11-03T00:00:00.000Z" } })).toMatch(/^Dal 03\/11\/2026 /);
   // lingua sconosciuta → inglese; ISO diretto accettato

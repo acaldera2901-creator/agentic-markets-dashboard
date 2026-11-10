@@ -13,7 +13,7 @@ const data = (p: Partial<PredictionCardData> = {}): PredictionCardData => ({
   id: "1", sport: "football", league: "Serie A", home: "Genoa", away: "Fiorentina",
   startsAt: new Date(Date.now() + 3 * 3600_000).toISOString(), kickoffLabel: "Today, 20:45",
   isLive: false, pick: "Genoa to win", modelPct: 48, marketPct: 44, edgePct: 4,
-  classic: { sport: "football", est: [0.48, 0.27, 0.25], odds: [2.1, 3.4, 3.6], leadIdx: 0 },
+  classic: { sport: "football", modelAsOf: new Date().toISOString(), est: [0.48, 0.27, 0.25], odds: [2.1, 3.4, 3.6], leadIdx: 0 },
   ...p,
 });
 
@@ -81,4 +81,10 @@ describe("ClassicSlab (round 2)", () => {
     expect(info.textContent).toMatch(/Market 4\d%/);
     expect(info.textContent).toMatch(/pts (above|below) the market|In line/);
   });
+});
+
+it("labels a historical tennis probability with unknown provenance honestly",()=>{
+ mount(data({sport:"tennis",classic:undefined,probabilitySource:"unknown",modelPct:63}));
+ expect(screen.getAllByText("Source unverified").length).toBeGreaterThan(0);
+ expect(screen.queryByText("Our estimate")).toBeNull();
 });

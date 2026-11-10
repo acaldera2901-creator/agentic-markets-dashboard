@@ -316,3 +316,63 @@ describe("USDC on Polygon",()=>{
  expect(JSON.stringify(sendEmail.mock.calls)).toContain("USDC");
  });
 });
+
+describe("#AFF-WALLET-ALERT: avviso operatori", () => {
+  const ops = () => sendEmail.mock.calls.map((c) => c[0]).filter((m) => m.to === "ops@betredge.test");
+
+  it("senza AFFILIATE_OPS_EMAIL: nessun avviso, solo l'email all'affiliato", async () => {
+    const { PUT } = await load();
+    expect((await PUT(req("PUT", "alice@x.io", good()))).status).toBe(200);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(ops()).toHaveLength(0);
+  });
+  it("env malformata = assente", async () => {
+    vi.stubEnv("AFFILIATE_OPS_EMAIL", "not-an-email");
+    const { PUT } = await load();
+    expect((await PUT(req("PUT", "alice@x.io", good()))).status).toBe(200);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+  });
+  it("inserimento: mascherato, coin/rete, link alla scheda BO, mai l'indirizzo intero", async () => {
+    vi.stubEnv("AFFILIATE_OPS_EMAIL", "ops@betredge.test");
+    const { PUT } = await load();
+    expect((await PUT(req("PUT", "alice@x.io", good({ coin: "USDC" })))).status).toBe(200);
+    const [m] = ops();
+    expect(m.subject).toBe("[Affiliati] C11 ha inserito un wallet");
+    expect(m.text).toContain("0x5aAe…eAed · USDC · polygon");
+    expect(m.text).toContain("https://betredge-backoffice-two.vercel.app/affiliate-program/11");
+    const all = JSON.stringify(m);
+    expect(all).not.toContain(ADDR);
+    expect(all.toLowerCase()).not.toContain(ADDR.toLowerCase());
+  });
+  it("cambio (replaced) e payout annullati", async () => {
+    vi.stubEnv("AFFILIATE_OPS_EMAIL", "ops@betredge.test");
+    affiliateRpc.mockResolvedValueOnce({ ok: true, usable_after: "2026-10-18T12:00:00Z", replaced: true, cancelled_payout_ids: [5] });
+    const { PUT } = await load();
+    expect((await PUT(req("PUT", "alice@x.io", good()))).status).toBe(200);
+    const [m] = ops();
+    expect(m.subject).toBe("[Affiliati] C11 ha cambiato il wallet");
+    expect(m.text).toContain("Payout in preparazione annullati: 1.");
+  });
+  it("rimozione", async () => {
+    vi.stubEnv("AFFILIATE_OPS_EMAIL", "ops@betredge.test");
+    affiliateRpc.mockResolvedValueOnce({ ok: true, cancelled_payout_ids: [] });
+    const { DELETE } = await load();
+    expect((await DELETE(req("DELETE", "bob@x.io"))).status).toBe(200);
+    const [m] = ops();
+    expect(m.subject).toBe("[Affiliati] C22 ha rimosso il wallet");
+    expect(m.text).toContain("/affiliate-program/22");
+  });
+  it("avviso fallito: il salvataggio resta 200 e il log non ha l'indirizzo", async () => {
+    vi.stubEnv("AFFILIATE_OPS_EMAIL", "ops@betredge.test");
+    sendEmail.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("resend down"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const { PUT } = await load();
+    expect((await PUT(req("PUT", "alice@x.io", good()))).status).toBe(200);
+    const logged = JSON.stringify([...err.mock.calls, ...log.mock.calls]);
+    expect(logged).toContain("ops alert email failed");
+    expect(logged).not.toContain(ADDR);
+    err.mockRestore();
+    log.mockRestore();
+  });
+});

@@ -2,7 +2,7 @@
 
 import { useYearData, type YearStats } from "./useYearData";
 import { headlineFigure } from "@/lib/track-record";
-import { sourceBreakdownLine, sealedPopulationNote } from "@/lib/track-record-copy";
+import { sourceBreakdownLine, sealedPopulationNote, historyPopulationLimitNote } from "@/lib/track-record-copy";
 
 // #HISTORY-TRIM-0626: sintesi del track record LIVE (tutte le pick reali, nessun
 // filtro anno). Mostra hit-rate / pick decise / vinte; ROI·CLV ancora in arrivo.
@@ -43,6 +43,7 @@ export function EdgeCard({ lang }: { lang: "it" | "en" }) {
 
   return (
     <section className="tr-hero tr-card">
+      {historyPopulationLimitNote(lang, s) && <p className="tr-note">{historyPopulationLimitNote(lang, s)}</p>}
       {s && h.winRate ? (
         <>
           <h2>Track record</h2>

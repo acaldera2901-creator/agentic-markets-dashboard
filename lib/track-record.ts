@@ -1,6 +1,6 @@
 import { dedupeByFixture } from "@/lib/dedupe-fixtures";
 import { footballSurfaceDecisionFor } from "@/lib/surfacing-gate";
-import { probabilitySourceOf } from "@/lib/partner-market";
+import { tennisHistoryProbabilitySource } from "@/lib/tennis-probability";
 import { wilson95, formatWilson } from "@/lib/wilson";
 
 // #HITRATE-GUARD-1 (copy audit 2026-06-11, Andrea: anchor comms to sustainable
@@ -321,7 +321,7 @@ export function trackRecordPopulation<T extends TrackRecordRow>(fetched: T[]) {
 // rate misura il mercato, non il modello. `stats.n`/`win_rate` restano il
 // totale storico (invariati per widget, embed, social); qui la stessa
 // popolazione si spezza per fonte, e la UI sceglie quale cifra mettere in testa.
-// La partizione e' esatta: model.n + market_partner.n === stats.n.
+// La partizione e' esatta: model.n + market_partner.n + unknown.n === stats.n.
 
 export type SourceBlock = {
   n: number;
@@ -357,12 +357,18 @@ function sourceBlock(
 export function trackRecordBySource(
   pop: { headlineRows: TrackRecordRow[]; rows: TrackRecordRow[]; surfaced: TrackRecordRow[] },
   minSample: number,
-): { model: SourceBlock; market_partner: SourceBlock } {
-  const isMarket = (r: TrackRecordRow) => probabilitySourceOf(r.model_version) === "market";
-  const isModel = (r: TrackRecordRow) => !isMarket(r);
+): { model: SourceBlock; market_partner: SourceBlock; unknown: SourceBlock } {
+  const source = (r: TrackRecordRow) => r.sport?.toLowerCase() === "tennis"
+    ? tennisHistoryProbabilitySource(r.model_version, r.notes) : "model";
+  const isMarket = (r: TrackRecordRow) => source(r) === "market";
+  const isModel = (r: TrackRecordRow) => source(r) === "model";
+  const isUnknown = (r: TrackRecordRow) => source(r) === "unknown";
   return {
     model: sourceBlock(
       pop.headlineRows.filter(isModel), pop.rows.filter(isModel), pop.surfaced.filter(isModel), minSample,
+    ),
+    unknown: sourceBlock(
+      pop.headlineRows.filter(isUnknown), pop.rows.filter(isUnknown), pop.surfaced.filter(isUnknown), minSample,
     ),
     market_partner: sourceBlock(
       pop.headlineRows.filter(isMarket), pop.rows.filter(isMarket), pop.surfaced.filter(isMarket), minSample,
@@ -376,7 +382,7 @@ type HeadlineStats = {
   n?: number;
   win_rate?: string | null;
   interval_95?: { low: number; high: number } | null;
-  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock> } | null;
+  by_source?: { model?: Partial<SourceBlock>; market_partner?: Partial<SourceBlock>; unknown?: Partial<SourceBlock> } | null;
 };
 
 /**
@@ -394,6 +400,7 @@ export function headlineFigure(s: HeadlineStats | null | undefined): {
   breakdown: {
     model: { winRate: string | null; n: number };
     partner: { winRate: string | null; n: number };
+    unknown?: { winRate: string | null; n: number };
   } | null;
 } {
   const bs = s?.by_source;
@@ -407,6 +414,7 @@ export function headlineFigure(s: HeadlineStats | null | undefined): {
       ? {
         model: { winRate: bs.model.win_rate ?? null, n: bs.model.n ?? 0 },
         partner: { winRate: bs.market_partner?.win_rate ?? null, n: bs.market_partner?.n ?? 0 },
+        ...(bs.unknown ? { unknown: { winRate: bs.unknown.win_rate ?? null, n: bs.unknown.n ?? 0 } } : {}),
       }
       : null,
   };

@@ -23,6 +23,12 @@ logger = logging.getLogger("data_hub")
 ODDS_SNAPSHOT_INTERVAL_BASE = 1800
 ODDS_SNAPSHOT_INTERVAL_IMMINENT = 600
 
+# Fixture collection owns identity/schedule/provenance only. Enrichment columns
+# are maintained separately and must not be nulled by an incomplete provider.
+FIXTURE_WRITE_COLUMNS = frozenset({
+    "match_id", "home_team", "away_team", "kickoff", "league", "venue", "providers_used",
+})
+
 
 class DataHub:
     def __init__(
@@ -179,13 +185,13 @@ class DataHub:
         return results
 
     async def _collect_fdorg(self, leagues: list[str], season: int) -> list[dict]:
-        from core.football_data_org_client import get_historical_results, FREE_TIER_CODES
+        from core.football_data_org_client import get_fixtures, FREE_TIER_CODES
         results = []
         for league_code in leagues:
             if league_code not in FREE_TIER_CODES:
                 continue
             try:
-                raw = await get_historical_results(league_code, settings.FOOTBALL_DATA_ORG_API_KEY)
+                raw = await get_fixtures(league_code, settings.FOOTBALL_DATA_ORG_API_KEY)
                 for f in raw:
                     parsed = self._parse_fdorg(f, league_code)
                     if parsed:
@@ -225,7 +231,7 @@ class DataHub:
                 "match_id": f"apifootball:{league_code}:{fixture.get('id', '')}",
                 "home_team": home, "away_team": away, "kickoff": kickoff,
                 "league": league_code,
-                "venue": fixture.get("venue", {}).get("name", ""),
+                **({"venue": fixture["venue"]["name"]} if (fixture.get("venue") or {}).get("name") else {}),
                 "provider": "api_football",
                 "_home_team_id": teams.get("home", {}).get("id"),
                 "_away_team_id": teams.get("away", {}).get("id"),
@@ -235,6 +241,14 @@ class DataHub:
             return None
 
     def _parse_fdorg(self, raw: dict, league_code: str) -> dict | None:
+        # get_fixtures returns the shared API-Football-shaped normalization;
+        # keep raw-payload support for callers supplying provider snapshots.
+        if "fixture" in raw:
+            parsed = self._parse_api_football(raw, league_code)
+            if parsed:
+                parsed["match_id"] = f"fdorg:{league_code}:{raw['fixture'].get('id', '')}"
+                parsed["provider"] = "fdorg"
+            return parsed
         try:
             home = raw.get("homeTeam", {}).get("name", "")
             away = raw.get("awayTeam", {}).get("name", "")
@@ -256,24 +270,28 @@ class DataHub:
     async def _write_fixtures(self, fixtures: list[dict]) -> None:
         if not fixtures or not self._url or not self._key:
             return
-        clean = [{k: v for k, v in f.items() if not k.startswith("_")} for f in fixtures]
+        clean = [{k: v for k, v in f.items() if k in FIXTURE_WRITE_COLUMNS} for f in fixtures]
+        # PostgREST bulk inserts require equal keys. Group optional columns
+        # instead of padding missing venue/enrichment with destructive nulls.
+        groups: dict[tuple[str, ...], list[dict]] = {}
+        for row in clean:
+            groups.setdefault(tuple(sorted(row)), []).append(row)
         try:
             async with httpx.AsyncClient(timeout=10.0) as c:
-                resp = await c.post(
-                    f"{self._url.rstrip('/')}/rest/v1/fixtures_enriched",
-                    json=clean,
-                    headers={
-                        "apikey": self._key,
-                        "Authorization": f"Bearer {self._key}",
-                        "Content-Type": "application/json",
-                        "Prefer": "resolution=merge-duplicates",
-                    },
-                )
-            # LOW (#20): a fire-and-forget POST hid RLS/schema rejects (4xx) — the
-            # write silently failed and no one knew. Surface non-2xx loudly.
-            if resp.status_code >= 300:
-                logger.warning(
-                    "fixtures write rejected: %s %s", resp.status_code, resp.text[:300]
-                )
+                for batch in groups.values():
+                    resp = await c.post(
+                        f"{self._url.rstrip('/')}/rest/v1/fixtures_enriched",
+                        json=batch,
+                        headers={
+                            "apikey": self._key,
+                            "Authorization": f"Bearer {self._key}",
+                            "Content-Type": "application/json",
+                            "Prefer": "resolution=merge-duplicates",
+                        },
+                    )
+                    if resp.status_code >= 300:
+                        logger.warning(
+                            "fixtures write rejected: %s %s", resp.status_code, resp.text[:300]
+                        )
         except Exception as exc:
-            logger.debug("fixtures write error (non-fatal): %s", exc)
+            logger.warning("fixtures write error (non-fatal): %s", exc)

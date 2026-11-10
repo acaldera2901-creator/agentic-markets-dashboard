@@ -6,7 +6,10 @@ import { it, expect, vi, beforeEach } from "vitest";
 import { TRACK_RECORD_BASE_CONDITIONS } from "@/lib/track-record";
 
 const { dbQuery, access } = vi.hoisted(() => ({ dbQuery: vi.fn(), access: vi.fn() }));
-vi.mock("@/lib/db", () => ({ dbQuery }));
+vi.mock("next/cache", async () => ({
+  unstable_cache: (await import("@/tests/helpers/next-data-cache")).mockUnstableCache,
+}));
+vi.mock("@/lib/db", () => ({ dbQuery, dbQueryStrict: dbQuery }));
 vi.mock("@/lib/auth", () => ({ resolveAccessState: access }));
 
 beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); access.mockResolvedValue({state:"anonymous"}); });
@@ -70,4 +73,14 @@ it("reuses raw history across requests without reusing access-projected response
  expect(dbQuery).toHaveBeenCalledTimes(1);
  expect(access).toHaveBeenCalledTimes(2);
  expect(anonymous.headers.get("Cache-Control")).toBe("private, no-store");
+});
+
+it("declares a capped population instead of silently presenting it as complete", async () => {
+  dbQuery.mockResolvedValueOnce([...Array.from({length: 15000}, (_, i) => row({id: `row-${i}`})), row({id: "sentinel", home_team: "Outside cap"})]);
+  const {GET} = await import("./route");
+  const {stats} = await (await GET(new Request("http://x/api/v2/history"))).json();
+  expect(stats.truncated).toBe(true);
+  expect(stats.population_limit).toBe(15000);
+  expect(stats.total).toBe(1);
+  expect(dbQuery.mock.calls[0][0]).toContain("LIMIT 15001");
 });

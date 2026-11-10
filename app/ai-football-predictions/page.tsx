@@ -13,18 +13,18 @@ import ClassicChrome from "@/components/classic/ClassicChrome";
 
 export const metadata: Metadata = {
   title: "AI Football Predictions: How the Model Reaches a Number | BetRedge",
-  description: "Inside a multi-agent AI football model: the factors it weighs, how they combine into one probability, and what it gets wrong.",
+  description: "How BetRedge combines goals-based estimates with available market prices, and the limits of those numbers.",
   alternates: { canonical: "/ai-football-predictions" },
 };
 
 const FAQ: Array<[string, string]> = [
   [
     "How does an AI football prediction model work?",
-    "Several specialist models each assess a fixture independently, covering recent form, expected goals, squad availability, and market movement. Their outputs are combined into one calibrated probability per outcome, and the page shows which factors moved the number.",
+    "Our club-football pipeline starts with a goals-based statistical model and uses expected-goals data where available. It applies a probability adjustment and, when usable odds exist, blends the model with the margin-adjusted market. Coverage and methods can differ for other competitions.",
   ],
   [
     "Are AI football predictions accurate?",
-    "They are calibrated rather than certain: a 60 percent probability should win about six times in ten over a large sample, and lose the other four. No model makes a single match predictable, and anyone claiming guaranteed wins is not describing a model.",
+    "They are estimates, not demonstrated accuracy guarantees: a 60 percent probability should win about six times in ten over a large sample, and lose the other four. No model makes a single match predictable, and anyone claiming guaranteed wins is not describing a model.",
   ],
   [
     "What is the hardest outcome to predict in football?",
@@ -32,7 +32,7 @@ const FAQ: Array<[string, string]> = [
   ],
   [
     "Where can I see today's football predictions?",
-    "The live board lists every covered fixture with the model's current probabilities, updated as new data arrives through the day.",
+    "The board lists available fixtures and labels estimates and market-only readings. Pre-match refreshes depend on data availability; predictions are frozen once play begins.",
   ],
 ];
 
@@ -49,11 +49,7 @@ export default function AiFootballPredictionsPage() {
         </h1>
 
         <p className="mb-4">
-          An AI football prediction, done properly, is one number per outcome: the probability of
-          the home win, the draw, and the away win, adding up to 100 percent. BetRedge produces
-          that number with a set of specialist models that each look at a fixture from a
-          different angle, then combine into a single calibrated estimate. The board shows the
-          number, a confidence score, and the reasoning in plain language.
+          The board distinguishes our estimates from market-only readings. For club football, the standard priced estimate combines 30% of a temperature-adjusted goals model with 70% of the margin-adjusted market. Without usable odds, the pipeline may provide a model-only estimate or omit the fixture, depending on its competition. Other football pipelines can use different methods.
         </p>
         <p className="mb-4">
           The current fixtures are on the{" "}
@@ -85,10 +81,7 @@ export default function AiFootballPredictionsPage() {
           in either direction.
         </p>
         <p className="mb-4">
-          <strong style={{ color: "var(--am-text)" }}>Schedule and context.</strong> Fixture
-          congestion and competition context move the number. A cup tie between sides
-          from different divisions behaves differently from a league match, and friendlies are
-          treated with extra caution because teams rotate and experiment in them.
+          <strong style={{ color: "var(--am-text)" }}>Schedule and context.</strong> Rotation, congestion and competition context can matter to a match. They are not independent numerical inputs to the club-football probability calculation described here. Available context may appear in the analysis without changing that probability.
         </p>
         <p className="mb-4">
           <strong style={{ color: "var(--am-text)" }}>The market itself.</strong> Bookmaker odds
@@ -98,8 +91,7 @@ export default function AiFootballPredictionsPage() {
           of the two is wrong and it is not always the market.
         </p>
         <p className="mb-4">
-          Each fixture&apos;s explanation names the factors that actually moved that match&apos;s
-          number, so you never have to guess which of the above did the work.
+          Match details show the available statistical context. They do not provide a measured attribution of how much every displayed factor changed the probability; some fields are background information.
         </p>
 
         <h2 className="text-xl font-bold mt-10 mb-4" style={{ color: "var(--am-text)" }}>
@@ -122,21 +114,13 @@ export default function AiFootballPredictionsPage() {
           resist measurement, and some leagues produce structurally more of them than others.
         </p>
         <p className="mb-4">
-          <strong style={{ color: "var(--am-text)" }}>Rotation we cannot see coming.</strong>{" "}
-          Lineups publish an hour before kickoff; the model prices earlier than that. A heavily
-          rotated side invalidates part of the estimate, which is one reason cup competitions and
-          friendlies carry wider confidence bands.
+          <strong style={{ color: "var(--am-text)" }}>Rotation and availability.</strong> The estimate may precede confirmed lineups. Late changes can leave it missing important information. We do not publish a statistical confidence interval around each probability.
         </p>
         <p className="mb-4">
-          <strong style={{ color: "var(--am-text)" }}>Newly promoted and rebuilt squads.</strong>{" "}
-          A team with little recent top-flight data, or one that replaced half its squad in a
-          transfer window, starts the season with stale inputs. Early-season numbers are wider
-          and the explanations say so.
+          <strong style={{ color: "var(--am-text)" }}>Newly promoted and rebuilt squads.</strong> Limited historical data can make a team difficult to assess. The club model checks the number of observations per team and can withhold a pick when the sample is too small; this is a reliability rule, not a confidence interval.
         </p>
         <p className="mb-4">
-          <strong style={{ color: "var(--am-text)" }}>Derbies and high-variance fixtures.</strong>{" "}
-          Some matches have historically resisted form-based prediction. The model knows which
-          segments those are and widens its uncertainty there instead of pretending.
+          <strong style={{ color: "var(--am-text)" }}>Unmodelled context.</strong> A derby or a substantially changed squad may behave differently from its historical averages. The current club pipeline does not calculate a special uncertainty band for those situations.
         </p>
 
         <h2 className="text-xl font-bold mt-10 mb-4" style={{ color: "var(--am-text)" }}>

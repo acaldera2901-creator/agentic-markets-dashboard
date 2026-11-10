@@ -52,7 +52,6 @@ PUBLIC_ENDPOINTS = {
     "/": 200,
     "/api/v2/predictions": 200,
     "/api/v2/history": 200,
-    "/api/leaderboard": 200,
 }
 PROTECTED_ENDPOINTS = {
     "/api/data": 401,

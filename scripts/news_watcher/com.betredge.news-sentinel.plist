@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PROPOSED, not installed (#NEWSWATCH-2). Every 5 min reads the watcher's
+  last-run.json: no run that read FotMob for > 15 min → one macOS notification per
+  stall + exit 3 (`lab stato` shows it as ROTTO with the reason, by itself).
+  Runs a copy of scripts/news_watcher/sentinel.mjs outside ~/Desktop (TCC).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.betredge.news-sentinel</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/calde/.nvm/versions/node/v24.14.0/bin/node</string>
+        <string>/Users/calde/Library/Application Support/news-watcher/sentinel.mjs</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/calde/Library/Application Support/news-watcher</string>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/calde/Library/Application Support/news-watcher/sentinel.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/calde/Library/Application Support/news-watcher/sentinel.log</string>
+</dict>
+</plist>

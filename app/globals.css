@@ -1643,6 +1643,16 @@ button:disabled {
   opacity: 0.4;
 }
 
+/* Keep checkout labels readable while consent or a redirect disables actions. */
+.checkout-modal .checkout-payment:disabled {
+  opacity: 1;
+}
+
+.checkout-modal .checkout-payment:focus-visible {
+  outline: 2px solid var(--am-coral);
+  outline-offset: 3px;
+}
+
 .auth-modal p {
   margin: 0;
   color: var(--muted-2);

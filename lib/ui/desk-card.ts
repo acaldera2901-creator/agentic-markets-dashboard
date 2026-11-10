@@ -14,7 +14,7 @@
 // punti percentuali. È l'unica definizione compatibile con una card che mostra
 // i due numeri UNO ACCANTO ALL'ALTRO — vedi la nota in prediction-card.ts.
 
-import { displayTournament, probabilitySourceOf } from "@/lib/partner-market";
+import { displayTournament, PARTNER_MARKET_MODEL, type ProbabilitySource } from "@/lib/partner-market";
 import type { PredictionCardData } from "@/lib/ui/prediction-card";
 import { edgePointsFrom } from "@/lib/ui/prediction-card";
 
@@ -36,6 +36,7 @@ export type DeskFootballRow = {
   home_team: string;
   away_team: string;
   kickoff: string;
+  computed_at?: string | null;
   p_home?: number | null;
   p_draw?: number | null;
   p_away?: number | null;
@@ -76,6 +77,7 @@ export type DeskTennisRow = {
   explanation?: string | null;
   /** model_version della riga (#COERENZA-1001: partner-market-v1 = mercato). */
   model?: string | null;
+  probability_source?: ProbabilitySource;
 };
 
 export type DeskCardOptions = {
@@ -186,8 +188,8 @@ export function fromDeskFootball(row: DeskFootballRow, opts: DeskCardOptions = {
   // flag spento restava nel codice come `...{}`.
   if (__CLASSIC_BUILD__) {
     card.classic = hasTriple
-      ? { sport: "football" as const, est: [row.p_home, row.p_draw, row.p_away] as [number | null | undefined, number | null | undefined, number | null | undefined], odds: [row.odds_home, row.odds_draw, row.odds_away] as [number | null | undefined, number | null | undefined, number | null | undefined], leadIdx: (key === "HOME" ? 0 : key === "DRAW" ? 1 : 2) as 0 | 1 | 2 }
-      : { sport: "football" as const, estLead: num(row.model_prob), oddsLead: num(row.market_odds) };
+      ? { sport: "football" as const, modelAsOf: row.computed_at ?? null, est: [row.p_home, row.p_draw, row.p_away] as [number | null | undefined, number | null | undefined, number | null | undefined], odds: [row.odds_home, row.odds_draw, row.odds_away] as [number | null | undefined, number | null | undefined, number | null | undefined], leadIdx: (key === "HOME" ? 0 : key === "DRAW" ? 1 : 2) as 0 | 1 | 2 }
+      : { sport: "football" as const, modelAsOf: row.computed_at ?? null, estLead: num(row.model_prob), oddsLead: num(row.market_odds) };
   }
   return card;
 }
@@ -224,13 +226,13 @@ export function fromDeskTennis(row: DeskTennisRow, opts: DeskCardOptions = {}): 
     explanation: row.explanation ?? null,
     locked: opts.locked ?? row.locked ?? false,
     quotaBorrowed: row.quota_borrowed === true,
-    probabilitySource: probabilitySourceOf(row.model),
+    probabilitySource: row.probability_source ?? (row.model === PARTNER_MARKET_MODEL ? "market" : "unknown"),
   };
   // #CLASSIC-CARD-1008 — vedi fromDeskFootball.
   if (__CLASSIC_BUILD__) {
     card.classic = hasPair
-      ? { sport: "tennis" as const, modelVersion: row.model ?? null, tournament: row.tournament, p: [row.p1, row.p2] as [number | null | undefined, number | null | undefined], odds: [row.odds_p1, row.odds_p2] as [number | null | undefined, number | null | undefined], leadIdx: (key === "P1" ? 0 : 1) as 0 | 1 }
-      : { sport: "tennis" as const, modelVersion: row.model ?? null, tournament: row.tournament, pLead: num(row.model_prob), oddsLead: num(row.market_odds) };
+      ? { sport: "tennis" as const, probabilitySource: card.probabilitySource, modelVersion: row.model ?? null, tournament: row.tournament, p: [row.p1, row.p2] as [number | null | undefined, number | null | undefined], odds: [row.odds_p1, row.odds_p2] as [number | null | undefined, number | null | undefined], leadIdx: (key === "P1" ? 0 : 1) as 0 | 1 }
+      : { sport: "tennis" as const, probabilitySource: card.probabilitySource, modelVersion: row.model ?? null, tournament: row.tournament, pLead: num(row.model_prob), oddsLead: num(row.market_odds) };
   }
   return card;
 }

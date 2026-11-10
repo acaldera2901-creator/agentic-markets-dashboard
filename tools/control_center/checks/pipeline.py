@@ -1,9 +1,11 @@
 """La pipeline dei dati: freschezza, quota delle fonti, qualita' dei settlement."""
 
+import json
 from collections import namedtuple
+from datetime import date
 
 from ..contract import Check, Verdict, amber, green, red, unknown
-from ..db import DbUnavailable, fetch_all
+from ..db import REPO_ROOT, DbUnavailable, fetch_all
 
 FreshSpec = namedtuple("FreshSpec", "id label table column red_after_s via_pkey")
 
@@ -204,6 +206,60 @@ def _providers() -> list[str]:
     return [r[0] for r in righe if r[0] not in QUOTA_ESCLUSI]
 
 
+# #HISTORY-FRESHNESS-1026 — lo snapshot storico delle 26 leghe fuori dal free
+# tier di football-data.org (data/summer_leagues/history.json) e' la meta'
+# storica del loro modello e la fonte della loro forma. Si rinnova solo con la
+# PR settimanale di refresh-history.yml; il 26/10 era fermo al 21/09 (35 giorni)
+# perche' la PR non veniva mergiata e il giro del 19/10 era fallito.
+# Il file letto e' quello della vetrina (REPO_ROOT, origin/main): lo stesso che
+# va in deploy, come fa coerenza.py con result_sources.json.
+HISTORY_FILE = REPO_ROOT / "data" / "summer_leagues" / "history.json"
+HISTORY_AMBER_DAYS = 8    # un giro settimanale saltato
+HISTORY_RED_DAYS = 15     # due giri saltati: il modello gira su dati vecchi
+HISTORY_LEAGUE_STALE_DAYS = 21  # solo evidenza: una lega puo' essere fuori stagione
+
+
+def judge_history_snapshot(doc: dict, today: date) -> Verdict:
+    source = "file:data/summer_leagues/history.json"
+    try:
+        generated = date.fromisoformat(str(doc.get("generated_at")))
+    except ValueError:
+        return unknown("generated_at assente o illeggibile", source)
+
+    eta = (today - generated).days
+    ferme = {}
+    for code, block in sorted((doc.get("leagues") or {}).items()):
+        last = (block or {}).get("last_match_at")
+        try:
+            if last and (today - date.fromisoformat(last)).days > HISTORY_LEAGUE_STALE_DAYS:
+                ferme[code] = last
+        except ValueError:
+            ferme[code] = last
+    evidence = {
+        "generated_at": str(generated),
+        "refresh_status": doc.get("refresh_status"),
+        "failed_leagues": doc.get("failed_leagues") or [],
+        "leghe_ferme": ferme,
+    }
+    testa = f"storico al {generated} ({eta} giorni)"
+    if eta > HISTORY_RED_DAYS:
+        return red(f"{testa}: refresh settimanale non arrivato su main", source, value=eta, evidence=evidence)
+    if eta > HISTORY_AMBER_DAYS:
+        return amber(f"{testa}: un giro di refresh saltato", source, value=eta, evidence=evidence)
+    if doc.get("refresh_status") not in (None, "ok"):
+        falliti = ", ".join(doc.get("failed_leagues") or []) or "?"
+        return amber(f"{testa}, refresh parziale: {falliti}", source, value=eta, evidence=evidence)
+    return green(testa, source, value=eta, evidence=evidence)
+
+
+def check_history_snapshot() -> Verdict:
+    try:
+        doc = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return unknown(f"snapshot illeggibile: {exc}", "file:data/summer_leagues/history.json")
+    return judge_history_snapshot(doc, date.today())
+
+
 def checks() -> list[Check]:
     fatti = [
         Check(spec.id, "pipeline", spec.label, lambda s=spec: check_freshness(s), timeout_seconds=20)
@@ -211,6 +267,9 @@ def checks() -> list[Check]:
     ]
     fatti.append(
         Check("void_rate", "pipeline", "Void rate 30g", check_void_rate, timeout_seconds=25)
+    )
+    fatti.append(
+        Check("history_snapshot", "pipeline", "Storico 26 leghe", check_history_snapshot, timeout_seconds=10)
     )
     fatti += [
         Check(

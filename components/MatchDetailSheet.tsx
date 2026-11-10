@@ -92,9 +92,31 @@ export type MdsTeamNews = {
   away: { name: string; items: string[] };
 };
 
+/** #NEWS-FOTMOB-PROD-1026 — one rewritten FotMob note naming a team of this
+ *  match, every string already formatted by the caller (the sheet formats no
+ *  dates, as for the kickoff). Timing only: the sheet says when, never why. */
+export type MdsNewsItem = {
+  key: string;
+  /** «14:21», Rome */
+  time: string;
+  /** «12 minutes ago», may be empty */
+  ago: string;
+  iso: string;
+  title: string;
+  body: string;
+  textLang: "en" | "it";
+  english: boolean;
+  /** our 16:9 picture for the kind of story (never the source's), or null */
+  image: { src: string; width: number; height: number; own?: true; png?: string } | null;
+  /** the clubs the note names: real crest (the board's map) and real colours, or null each (lib/news/clubs.ts) */
+  badges: { name: string; crest: string | null; colors: readonly [string, string] | null }[];
+};
+export type MdsNews = { label: string; inEnglish: string; rows: MdsNewsItem[] };
+
 export type MdsSectionLabels = {
   why: string;
   form: string;
+  formNote?: string;
   teamNews: string;
   teamNewsLocked: string;
   teamNewsNone: string;
@@ -115,6 +137,8 @@ export type MdsData = {
   form?: MdsForm | null;
   teamNews?: MdsTeamNews | null;
   teamNewsLocked?: boolean;
+  /** #NEWS-FOTMOB-PROD-1026 — null/absent = no note names this match (nothing rendered). */
+  news?: MdsNews | null;
   onUnlock?: () => void;
   sections?: MdsSectionLabels;
   hero: {
@@ -162,6 +186,9 @@ export type MdsData = {
     selMany: string;
   };
 };
+
+import { NewsArt } from "@/components/news/NewsArt"; // #NEWS-FOTMOB-PROD-1026 — the picture of a note
+import "@/components/news/news.css"; // #NEWS-FOTMOB-PROD-1026 — .mds-news
 
 function Ico({ id }: { id: string }) {
   return (
@@ -485,11 +512,12 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
           {data.form && (
             <section className="br-md__sec">
               <h3 className="br-md__h">{data.sections?.form ?? "Recent form"}</h3>
+              <p className="br-muted" style={{ fontSize: 12, margin: "0 0 10px" }}>{data.sections?.formNote ?? "Last available completed matches; newest on the right. Coverage depends on the available competitions."}</p>
               <div className="br-md__form">
                 {[data.form.home, data.form.away].map((side) => (
                   <div className="br-md__formrow" key={side.name}>
                     <span className="br-md__formname">{side.name}</span>
-                    <span className="br-md__formres">
+                    <span className="br-md__formres" role="img" aria-label={side.results.join(" · ")}>
                       {side.results.map((r, i) => (
                         <i key={i} data-r={r.toUpperCase()} aria-hidden="true">{r.toUpperCase()}</i>
                       ))}
@@ -538,6 +566,34 @@ export function MatchDetailSheet({ data, hideBookLinks }: { data: MdsData; hideB
                    «nessuna assenza»: è un dato che non abbiamo. */
                 <p className="br-md__none">{data.sections?.teamNewsUnavailable ?? "Absences not available for this match."}</p>
               )}
+            </section>
+          )}
+
+          {/* #NEWS-FOTMOB-PROD-1026 — the rewritten FotMob notes that name a team
+              of this match, after the absences (news about the teams sit together)
+              and before the markets: a note is never next to a price. Source
+              and the link to the original on every note; the picture is ours. */}
+          {data.news && data.news.rows.length > 0 && (
+            <section className="br-md__sec" data-testid="mds-news">
+              <h3 className="br-md__h">{data.news.label}</h3>
+              <ol className="mds-news">
+                {data.news.rows.map((n) => (
+                  <li key={n.key} className="mds-news__item">
+                    {n.image && (
+                      <span className="mds-news__img">
+                        <NewsArt image={n.image} badges={n.badges} variant="card" sizes="(max-width: 640px) 100vw, 560px" />
+                      </span>
+                    )}
+                    <span className="mds-news__when">
+                      <time dateTime={n.iso}>{n.time}</time>
+                      {n.ago && <span className="mds-news__ago">· {n.ago}</span>}
+                    </span>
+                    <p className="mds-news__t" lang={n.textLang}>{n.title}</p>
+                    <p className="mds-news__b" lang={n.textLang}>{n.body}</p>
+                    {n.english && <p className="mds-news__meta"><span>{data.news!.inEnglish}</span></p>}
+                  </li>
+                ))}
+              </ol>
             </section>
           )}
 
