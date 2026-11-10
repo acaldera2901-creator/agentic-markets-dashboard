@@ -25,7 +25,7 @@ const CSP_POLICY = [
   // cliente (verificato: non compare in nessuna delle 8 pagine pubbliche). In
   // enforce senza questa voce l'unica cosa che si romperebbe sarebbe la toolbar
   // per noi.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com https://vercel.live",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com https://vercel.live https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://*.tawk.to https://chat.betredge.com",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://*.tawk.to https://chat.betredge.com",
@@ -35,7 +35,7 @@ const CSP_POLICY = [
   // #CSP-ALLOWLIST-0730: ipapi.co is fetched from the browser for language
   // auto-detect (app/app/page.tsx) — it was the known Report-Only violation
   // since 2026-06-08 and was never allowlisted; PayPal SDK XHRs cross-origin.
-  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com https://ipapi.co https://www.paypal.com https://*.paypal.com",
+  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com https://ipapi.co https://www.paypal.com https://*.paypal.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com", // #GA4-TAG-1110
   // Tawk.to renders its chat UI inside an iframe from *.tawk.to; the PayPal SDK
   // renders the button/checkout flow inside paypal.com iframes.
   "frame-src 'self' https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com",

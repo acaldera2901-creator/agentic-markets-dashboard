@@ -6,6 +6,7 @@ import { Anton, Barlow_Condensed, JetBrains_Mono, Manrope } from "next/font/goog
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import VercelAnalytics from "@/components/VercelAnalytics";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
@@ -159,6 +160,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             del banner (la regola vive dentro il componente, come per LiveChat).
             Affianca il beacon di prima parte, non lo sostituisce. */}
         <VercelAnalytics />
+        {/* #GA4-TAG-1110: GA4 (G-8XWQD5N6T7), stessa regola di consenso preventivo. */}
+        <GoogleAnalytics />
         {/* #FUNNEL-MEAS-0813: il consenso si chiede su OGNI rotta (prima solo dentro
             /app): senza banner sulla landing nessuno accettava, e tutto ciò che è
             gated sul consenso — attribuzione compresa — non si attivava mai lì. */}
