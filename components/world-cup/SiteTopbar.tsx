@@ -158,8 +158,9 @@ function SiteTopbarContent({
       <div className="am-topbar-in">
         <div className="am-brandmark">
           <a href="/" className="wc-topbar-home" aria-label="BetrEdge — home">
-            <img className="brand-logo-dark" src="/logos/betredge-header-white@2x.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
-            <img className="brand-logo-light" src="/logos/betredge-logo-black-48.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            {/* #PERF-CLS-1110: width/height = the file's aspect (182x60, 145x48) at the 30 px CSS height, so the header reserves the logo's box before the PNG arrives (the nav next to it no longer shifts). */}
+            <img className="brand-logo-dark" src="/logos/betredge-header-white@2x.png" alt="BetrEdge" width={91} height={30} style={{ height: 30, width: "auto" }} />
+            <img className="brand-logo-light" src="/logos/betredge-logo-black-48.png" alt="BetrEdge" width={91} height={30} style={{ height: 30, width: "auto" }} />
           </a>
           {!globalNavigation && !nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
         </div>
