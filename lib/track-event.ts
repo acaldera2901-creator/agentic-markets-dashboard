@@ -24,6 +24,18 @@ export function getSessionId(): string | null {
   }
 }
 
+// #G2-TRACKING-1110 — il session_id da legare alla registrazione, SOLO col
+// consenso analytics accettato (stessa regola del beacon qui sotto).
+export function consentedSessionId(): string | null {
+  try {
+    if (localStorage.getItem("gdpr_consent") !== "accepted") return null;
+  } catch {
+    return null;
+  }
+  const sid = getSessionId();
+  return sid && sid !== "ssr" ? sid : null;
+}
+
 export function trackEvent(
   event_type: string,
   // `anonymous` (#SESSIONI-1006): l'evento non porta MAI il session_id, anche

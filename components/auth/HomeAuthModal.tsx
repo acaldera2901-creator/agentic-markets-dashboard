@@ -30,8 +30,8 @@ import "./news-auth.css";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { currentRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
-import { getAttribution } from "@/lib/attribution";
-import { trackEvent } from "@/lib/track-event";
+import { signupAttribution } from "@/lib/attribution";
+import { consentedSessionId, trackEvent } from "@/lib/track-event";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 
 export type HomeAuthIntent = "login" | "create";
@@ -263,7 +263,10 @@ export function HomeAuthModal({
           language: lang, timezone: tz,
           ref: mode === "create" ? (effectiveRef ?? undefined) : undefined,
           // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
-          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
+          acquisition: mode === "create" ? (signupAttribution() ?? undefined) : undefined,
+          // #G2-TRACKING-1110: session_id solo col consenso → profiles.signup_session_id.
+          analytics_consent: mode === "create" ? consentedSessionId() !== null : undefined,
+          session_id: mode === "create" ? (consentedSessionId() ?? undefined) : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
           age_confirmed: mode === "create" ? ageOk : undefined,

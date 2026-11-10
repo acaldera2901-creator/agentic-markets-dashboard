@@ -18,6 +18,7 @@ import { grantInviteeBonus } from "@/lib/referral-rewards";
 import { assertConsent, ConsentError } from "./consent";
 import { CURRENT_CONSENT_VERSION } from "@/lib/legal-version";
 import { acquisitionJson } from "@/lib/attribution";
+import { signupGeo, signupSessionId } from "@/lib/signup-tracking";
 import { scheduleIpFingerprint } from "@/lib/affiliate/fingerprints";
 
 export const dynamic = "force-dynamic";
@@ -456,6 +457,28 @@ export async function POST(req: Request) {
       } else {
         console.error("[auth] register failed:", String(e));
         return NextResponse.json({ error: "registration failed" }, { status: 500 });
+      }
+    }
+    // #G2-TRACKING-1110 — geo (header Vercel) e session_id (solo con consenso
+    // analytics, mandato dal client) della registrazione. UPDATE separato e
+    // best-effort: su un DB senza la migration 20261110230000 fallisce e il
+    // signup prosegue identico. Le condizioni IS NULL + created_at recente
+    // limitano l'UPDATE alla riga appena creata (ON CONFLICT DO NOTHING sopra).
+    {
+      const geo = signupGeo(req);
+      const sessionId = (body as { analytics_consent?: unknown }).analytics_consent === true
+        ? signupSessionId((body as { session_id?: unknown }).session_id)
+        : null;
+      if (geo.country || geo.region || geo.city || sessionId) {
+        try {
+          await dbExecute(
+            `UPDATE profiles SET signup_country = $2, signup_region = $3, signup_city = $4, signup_session_id = $5
+             WHERE identifier = $1 AND signup_country IS NULL AND signup_session_id IS NULL AND created_at > NOW() - INTERVAL '10 minutes'`,
+            [identifier, geo.country, geo.region, geo.city, sessionId]
+          );
+        } catch (e) {
+          console.error("[auth] signup geo/session not saved:", String(e));
+        }
       }
     }
     scheduleBusinessEvent({type:'signup_created',identifier});

@@ -30,6 +30,9 @@ export const ATTRIBUTION_KEYS = [
   "referrer",
   "landing_path",
   "first_seen",
+  // #G2-TRACKING-1110: "first_touch" (record in localStorage, con consenso) o
+  // "signup_page" (letto dalla pagina al momento del signup, senza storage).
+  "capture",
 ] as const;
 
 export type Attribution = Partial<Record<(typeof ATTRIBUTION_KEYS)[number], string>>;
@@ -77,6 +80,23 @@ export function getAttribution(): Attribution | null {
   } catch {
     return null;
   }
+}
+
+// #G2-TRACKING-1110 — l'attribuzione da mandare al register. Col consenso c'è
+// il first-touch salvato; senza consenso (o storage vietato) si legge la sola
+// pagina del signup: query string, host del referrer esterno, percorso. Niente
+// scrittura sul terminale, quindi nessun consenso richiesto (stessa base di
+// sourceFromSearch/externalReferrerHost): è last-touch, ed è marcato come tale.
+export function signupAttribution(): Attribution | null {
+  if (typeof window === "undefined") return null;
+  const stored = getAttribution();
+  if (stored) return { ...stored, capture: "first_touch" };
+  const rec: Attribution = { ...sourceFromSearch(window.location.search) };
+  const host = externalReferrerHost();
+  if (host) rec.referrer = host;
+  rec.landing_path = window.location.pathname.slice(0, MAX_VALUE_LEN);
+  rec.capture = "signup_page";
+  return rec;
 }
 
 // Sanificazione condivisa client/server: solo chiavi note, solo stringhe, ogni

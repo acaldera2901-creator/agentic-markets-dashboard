@@ -31,7 +31,7 @@ import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-
 import { storageGet, storageSet } from "@/lib/safe-storage";
 import { useBrowserTimeZone } from "@/lib/ui/use-browser-tz";
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
-import { getAttribution } from "@/lib/attribution";
+import { signupAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
@@ -46,7 +46,7 @@ import { MenuIcon, NavIcon, BottomNavIcon, type NavName, type BottomNavName } fr
 import { IconSearch, IconArrow, IconCheck, IconSignIn, IconRegister } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
-import { getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
+import { consentedSessionId, getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { abbinaQuotaPartner, indicizzaPerGiorno } from "@/lib/fp-odds-join";
@@ -4747,7 +4747,10 @@ function ClientAuthModal({
           // bloccato il codice si perdeva e l'iscrizione arrivava senza attribuzione.
           ref: mode === "create" ? (currentRefCode() ?? undefined) : undefined,
           // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
-          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
+          acquisition: mode === "create" ? (signupAttribution() ?? undefined) : undefined,
+          // #G2-TRACKING-1110: session_id solo col consenso → profiles.signup_session_id.
+          analytics_consent: mode === "create" ? consentedSessionId() !== null : undefined,
+          session_id: mode === "create" ? (consentedSessionId() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
