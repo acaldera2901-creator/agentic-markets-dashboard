@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { hubMetadata, toolMetadata, toolJsonLd, hubJsonLd } from "./seo";
-import { TOOL_LOCALES, TOOL_SLUGS } from "./registry";
+import { INDEXABLE_LOCALES, TOOL_LOCALES, TOOL_SLUGS } from "./registry";
 import { getToolsCopy } from "./copy";
 
 describe("metadata di un tool", () => {
@@ -25,18 +25,26 @@ describe("metadata di un tool", () => {
     );
   });
 
-  it("dichiara tutte e undici le lingue più x-default sull'inglese", () => {
+  it("dichiara solo le lingue indicizzabili (en, it) più x-default sull'inglese", () => {
     const langs = toolMetadata("ev-calculator", "de").alternates?.languages as Record<string, string>;
-    for (const locale of TOOL_LOCALES) {
+    for (const locale of INDEXABLE_LOCALES) {
       expect(langs[locale], `hreflang ${locale}`).toBeTruthy();
     }
-    expect(Object.keys(langs)).toHaveLength(TOOL_LOCALES.length + 1);
+    expect(langs.de).toBeUndefined();
+    expect(Object.keys(langs)).toHaveLength(INDEXABLE_LOCALES.length + 1);
     expect(langs["x-default"]).toBe("https://www.betredge.com/tools/ev-calculator");
     expect(langs.it).toBe("https://www.betredge.com/it/tools/ev-calculator");
     expect(langs.en).toBe("https://www.betredge.com/tools/ev-calculator");
   });
 
-  it("gli hreflang sono reciproci: ogni lingua punta alle stesse 11 URL", () => {
+  it("noindex,follow sulle lingue fuori lista, nessun robots su en e it", () => {
+    expect(toolMetadata("ev-calculator", "de").robots).toEqual({ index: false, follow: true });
+    expect(hubMetadata("ru").robots).toEqual({ index: false, follow: true });
+    expect(toolMetadata("ev-calculator", "it").robots).toBeUndefined();
+    expect(toolMetadata("ev-calculator", "en").robots).toBeUndefined();
+  });
+
+  it("gli hreflang sono reciproci: ogni lingua punta alle stesse URL", () => {
     const fromEn = toolMetadata("odds-converter", "en").alternates?.languages;
     const fromRu = toolMetadata("odds-converter", "ru").alternates?.languages;
     expect(fromRu).toEqual(fromEn);
@@ -65,7 +73,8 @@ describe("metadata dell'hub", () => {
     expect(hubMetadata("sv").alternates?.canonical).toBe("https://www.betredge.com/sv/tools");
     const langs = hubMetadata("sv").alternates?.languages as Record<string, string>;
     expect(langs["x-default"]).toBe("https://www.betredge.com/tools");
-    expect(langs.pl).toBe("https://www.betredge.com/pl/tools");
+    expect(langs.it).toBe("https://www.betredge.com/it/tools");
+    expect(langs.pl).toBeUndefined();
   });
 });
 
