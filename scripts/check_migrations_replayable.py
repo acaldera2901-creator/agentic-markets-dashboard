@@ -83,6 +83,10 @@ REVIEWED_ONE_SHOT = {
         "backfill plan_source pinnato a created_at < 2026-07-24 (#MIGRATION-REPLAY-0801): "
         "l'ELSE 'paygate' era vero solo prima del rail carta Shopify"
     ),
+    "20261105120000_news_images_emma.sql::UPDATE": (
+        "allowed_mime_types del bucket news-images: la WHERE esclude il bucket se application/json "
+        "e' gia' ammesso, quindi la seconda esecuzione non trova righe (e il valore assegnato e' fisso)"
+    ),
 }
 
 RULES_DATA = [
