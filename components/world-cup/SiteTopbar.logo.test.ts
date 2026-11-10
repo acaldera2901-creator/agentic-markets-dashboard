@@ -13,4 +13,10 @@ describe("SiteTopbar header logos", () => {
       expect(tag).toMatch(/height=\{\d+\}/);
     }
   });
+  it("while the session loads, the auth buttons' space is reserved (hidden, aria-hidden twins), not left empty", () => {
+    const src = readFileSync(join(__dirname, "SiteTopbar.tsx"), "utf8");
+    expect(src).toContain('className="am-auth-reserve"');
+    expect(src).toMatch(/am-auth-reserve[\s\S]{0,200}aria-hidden="true"/);
+    expect(src).not.toContain("loading: render nothing");
+  });
 });

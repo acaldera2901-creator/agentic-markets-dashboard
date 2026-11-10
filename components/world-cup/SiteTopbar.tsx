@@ -204,7 +204,15 @@ function SiteTopbarContent({
               <Link href="/app?auth=login" className="am-auth-secondary"><IconSignIn size={15} stroke={2} />{lang === "it" ? "Accedi" : "Sign In"}</Link>
               <Link href="/app?auth=register" className="am-auth-primary"><IconRegister size={15} stroke={2} />{lang === "it" ? "Registrati" : "Register"}</Link>
             </>
-          ) : null /* loading: render nothing, no flicker of wrong state */}
+          ) : (
+            /* loading: no wrong state is shown, but the space of the (most common) anonymous pair is
+               reserved by invisible, non-interactive twins — #PERF-CLS-1110: rendering nothing here made
+               the bar grow when /api/auth answered and pushed the whole page down (one shift, ~0.29). */
+            <span className="am-auth-reserve" aria-hidden="true" style={{ display: "contents", visibility: "hidden" }}>
+              <span className="am-auth-secondary" style={{ visibility: "hidden" }}><IconSignIn size={15} stroke={2} />{lang === "it" ? "Accedi" : "Sign In"}</span>
+              <span className="am-auth-primary" style={{ visibility: "hidden" }}><IconRegister size={15} stroke={2} />{lang === "it" ? "Registrati" : "Register"}</span>
+            </span>
+          )}
 
           {/* #TOOLS-HUB-0805: le pagine /tools hanno la lingua NELL'URL e il loro
               selettore che ci naviga. Questo dropdown scrive solo localStorage:
