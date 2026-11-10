@@ -8,8 +8,9 @@ INSERT INTO public.profiles (identifier, referral_code, language)
 VALUES ('brand-ig@betredge.com', 'BRAND-IG', 'en')
 ON CONFLICT (identifier) DO NOTHING;
 
-INSERT INTO public.affiliates (identifier, code, status, terms_version, terms_accepted_at, age_confirmed_at)
-SELECT p.identifier, 'BRAND-IG', 'active', 'brand-internal', now(), now()
+-- onerous_ack_at/onerous_ack_version: NOT NULL senza default su prod (20261015120000_affiliate_v2_wallet).
+INSERT INTO public.affiliates (identifier, code, status, terms_version, terms_accepted_at, age_confirmed_at, onerous_ack_at, onerous_ack_version)
+SELECT p.identifier, 'BRAND-IG', 'active', 'brand-internal', now(), now(), now(), 'brand-internal'
 FROM public.profiles p
 WHERE p.identifier = 'brand-ig@betredge.com' AND UPPER(p.referral_code) = 'BRAND-IG'
 ON CONFLICT DO NOTHING;
