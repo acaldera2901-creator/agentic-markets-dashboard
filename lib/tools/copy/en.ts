@@ -10,9 +10,9 @@ import type { ToolsCopy } from "./types";
 
 const en: ToolsCopy = {
   hub: {
-    metaTitle: "Odds, Probability & Position-Sizing Calculators — Free | BetRedge",
+    metaTitle: "Free Betting Calculators: Odds, EV, Kelly | BetRedge",
     metaDescription:
-      "Eleven free calculators for odds, probability and position sizing: convert any odds format, remove the bookmaker margin, get expected value, size a stake with Kelly, check an arbitrage. No signup.",
+      "11 free betting calculators, no signup: convert odds, remove the bookmaker margin, find expected value, size a stake with Kelly, check an arbitrage.",
     h1: "Odds, probability and position sizing",
     lede:
       "The eleven calculations every serious bettor runs before placing a bet — converted, de-margined, sized and measured. Free, no account needed.",
@@ -161,7 +161,7 @@ const en: ToolsCopy = {
     },
 
     "ev-calculator": {
-      metaTitle: "Expected Value (EV) Calculator — What a Bet Is Worth on Average | BetRedge",
+      metaTitle: "EV Calculator: Is This Bet Worth It? | BetRedge",
       metaDescription:
         "Free expected value calculator: enter your price, your probability and your stake to get EV in currency and percentage — or derive the fair probability from a sharp book's line.",
       h1: "Expected value (EV) calculator",
@@ -227,7 +227,7 @@ const en: ToolsCopy = {
     },
 
     "kelly-criterion": {
-      metaTitle: "Kelly Criterion Calculator — Optimal Position Size | BetRedge",
+      metaTitle: "Kelly Criterion Calculator: How Much to Stake | BetRedge",
       metaDescription:
         "Free Kelly criterion calculator: enter a price, your probability and your bankroll to get the position size that maximises long-run growth — full, half or quarter Kelly.",
       h1: "Kelly criterion calculator",
@@ -357,7 +357,7 @@ const en: ToolsCopy = {
     },
 
     "arbitrage-calculator": {
-      metaTitle: "Arbitrage Calculator — Implied Probability Sum and Stake Split | BetRedge",
+      metaTitle: "Arbitrage Calculator: Is It a Sure Bet? | BetRedge",
       metaDescription:
         "Free arbitrage calculator: enter the best price on each outcome from different bookmakers to see the implied sum, how to split the total stake, and the profit — or that there is none.",
       h1: "Arbitrage calculator",
