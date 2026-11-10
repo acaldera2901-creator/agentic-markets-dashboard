@@ -57,7 +57,7 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [busyRemove, setBusyRemove] = useState(false);
   // #INVITE-AFFILIATE-UX-1022 (R5): flag operativi da /api/affiliate/me. null = risposta senza
-  // `operations` (ignoto) → nessun banner: non si dichiara uno stato che il server non ha detto.
+  // `operations` (ignoto): i dettagli del saldo seguono solo lo stato dichiarato dal server.
   const [ops, setOps] = useState<Operations | null>(null);
   const setup = ops !== null && (!ops.payouts_enabled || !ops.accounting_ready);
   const mounted = useRef(true);
@@ -190,7 +190,6 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
     body = (
       <>
         <Head c={c} lede />
-        {setup && <SetupBanner c={c} />}
         <Enroll c={c} join={phase.join} termsHref={termsHref} onDone={() => { setPhase({ k: "loading" }); void load(); }} onTerms={(v) => setPhase({ k: "enroll", join: { ...phase.join, terms_version: v } })} />
         <Rules c={c} termsHref={termsHref} privacyHref={privacyHref} />
       </>
@@ -272,10 +271,6 @@ export function AffiliateSection({ lang, onSignIn, onRegister, termsHref = "/aff
               </div>
             </div>
           )}
-          {!left && me.terms_current && me.affiliate.terms_version !== me.terms_current && (
-            <TermsUpdate c={c} termsHref={termsHref} version={me.terms_current} canAccept={!readOnly} onAccepted={() => { setFlash(c.termsUpdate.done); void load(); }} />
-          )}
-          {setup && <SetupBanner c={c} />}
           {flash && <div className="aff-open" role="status"><span>{flash}</span></div>}
           {/* Left the program: the link no longer earns, so it is not offered (the banner says why). */}
           {!left && (
@@ -322,17 +317,6 @@ function Head({ c, lede }: { c: AffCopy; lede?: boolean }) {
       <h2 className="aff-headline">{c.head.title}</h2>
       {lede && <p className="aff-lede">{c.head.lede}</p>}
     </header>
-  );
-}
-
-/** #INVITE-AFFILIATE-UX-1022 (R5) — «pagamenti in attivazione»: payout o contabilità non attivi lato server.
- *  Uno stato dichiarato, non un errore: ambra tratteggiato, mai rosso. */
-function SetupBanner({ c }: { c: AffCopy }) {
-  return (
-    <div className="aff-banner aff-banner--setup" role="status" data-testid="aff-setup">
-      <strong>{c.setup.title}</strong>
-      <p>{c.setup.body}</p>
-    </div>
   );
 }
 
@@ -413,41 +397,5 @@ function Enroll({ c, join, termsHref, onDone, onTerms }: {
           finestre da 60 giorni (M5): prima e dopo il login si legge lo stesso documento. */}
       <Offer c={c} />
     </section>
-  );
-}
-
-/** #AFFILIATE-COMPLETE-1023 — «Termini aggiornati»: non bloccante (si continua senza fare nulla);
- *  chi vuole li accetta subito, riapprovando a parte le clausole onerose come all'iscrizione. */
-function TermsUpdate({ c, termsHref, version, canAccept, onAccepted }: {
-  c: AffCopy; termsHref: string; version: string; canAccept: boolean; onAccepted: () => void;
-}) {
-  const t = c.termsUpdate;
-  const [onerous, setOnerous] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(false);
-  const accept = async () => {
-    if (!onerous || busy) return;
-    setBusy(true);
-    setErr(false);
-    const res = await api("/api/affiliate/terms", { method: "POST", body: JSON.stringify({ terms_version: version, onerous_ack: true }) });
-    setBusy(false);
-    if (res.ok) onAccepted();
-    else setErr(true);
-  };
-  return (
-    <div className="aff-banner" role="status" data-testid="aff-terms-update">
-      <strong>{t.title}</strong>
-      <div className="aff-banner-body">
-        <p>{t.body} <a href={termsHref} className="underline">{t.link}</a></p>
-        {canAccept && (
-          <>
-            <p className="aff-small">{t.acceptHint}</p>
-            <label className="aff-chk"><input type="checkbox" checked={onerous} onChange={(ev) => setOnerous(ev.target.checked)} /><span className="aff-tx">{t.onerous}</span></label>
-            {err && <p className="aff-err" role="alert">{t.error}</p>}
-            <div className="aff-actions"><button type="button" className="aff-cta aff-cta--ghost" disabled={!onerous || busy} onClick={accept}>{busy ? t.busy : t.accept}</button></div>
-          </>
-        )}
-      </div>
-    </div>
   );
 }

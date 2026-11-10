@@ -6,7 +6,8 @@
 // decisioni di prodotto: ordine della vetrina e proiezione arrivano da
 // lib/access-projection, così widget e board non possono divergere su quale
 // riga è il pick né su cosa resta bloccato.
-import { displayTournament, probabilitySourceOf, type ProbabilitySource } from "@/lib/partner-market";
+import { tennisHistoryProbabilitySource } from "@/lib/tennis-probability";
+import { displayTournament, type ProbabilitySource } from "@/lib/partner-market";
 import { dbQuery } from "@/lib/db";
 import { projectPrediction, showcaseRanking, type ShowcaseCandidate } from "@/lib/access-projection";
 import { humanizePick } from "@/features/feed/pick-view-model";
@@ -236,7 +237,7 @@ export function toEmbedRows(rawRows: RawRow[], mode: EmbedMode, limit: number, l
               lang
             ),
         confidence: p.locked ? null : toPercent(conf),
-        probabilitySource: probabilitySourceOf(str(r.model_version) || null),
+        probabilitySource: str(r.sport) === "tennis" ? tennisHistoryProbabilitySource(str(r.model_version), str(r.notes)) : "model",
         locked: p.locked,
         topPick: rank === 0,
       } satisfies EmbedRow,
@@ -274,7 +275,7 @@ export async function fetchEmbedRows(opts: {
   // fa lo stesso lavoro senza costruire la WHERE a runtime.
   const rows = await dbQuery<RawRow>(
     `SELECT id, sport, competition, league, home_team, away_team, starts_at,
-            market, pick, confidence_score, edge_percent, updated_at, model_version
+            market, pick, confidence_score, edge_percent, updated_at, model_version, notes
        FROM unified_predictions
       WHERE starts_at > NOW() - interval '150 minutes'
         AND starts_at < NOW() + ($1 || ' days')::interval

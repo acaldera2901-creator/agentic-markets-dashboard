@@ -88,7 +88,7 @@ export const HOME_FAQ = {
     ],
     [
       "What’s in a reading, and what is the deep analysis?",
-      "Four things, all of them logged before kick-off. What the market thinks, which is the odds turned into a percentage. What our model thinks, which is its calibrated probability. The distance between those two numbers. And the reasoning behind it, written out in normal words. The deep analysis is what sits under that reasoning, and it comes with Pro. Open it on any match and you get the factors the model actually weighed: form, expected goals, Elo, serve and return numbers, head-to-head, surface.",
+      "A reading identifies the source of its probability and shows a market comparison when the available data supports one. Some cards show a model-and-market estimate; others show a market-only reading. The public record tracks eligible pre-match predictions separately from unsealed display estimates. Pro analysis includes the statistical context available for that match. Not every displayed field is an input to the probability, and coverage varies.",
     ],
     [
       "Which sports do you cover?",
@@ -96,7 +96,7 @@ export const HOME_FAQ = {
     ],
     [
       "What happens on the live board?",
-      "The number moves while the match does. The score changes, the clock runs, the momentum turns, and the model reads the game again, so you see the probability shift while it’s shifting. Nothing is ever placed or executed for you at any point: you’re reading a screen. Live is Pro only.",
+      "The live board follows scores and match status where feeds are available. Stored pre-match predictions remain frozen after the scheduled start; the model does not reprice them from the live score. Nothing is placed or executed for you. Live scores require a paid plan, Base or Pro.",
     ],
     [
       "Do you place bets, or promise I’ll make money?",
@@ -104,7 +104,7 @@ export const HOME_FAQ = {
     ],
     [
       "How do I use it day to day?",
-      "Open the board. Every card carries one number, the model’s probability for that match, and nothing else, which is what lets you run your eye down twenty matches without reading twenty paragraphs. When one makes you stop, open it: the full reading is inside, reasoning included. Then go and look at the public record, because seeing how earlier readings settled is what tells you how much weight a number like that deserves. What you do with it after that is your call. We don’t make that one for you. Register a free account and you get up to three readings per sport a day; Base goes up to seven, and Pro opens the whole board.",
+      "Open the board and check the source label beside each number. Depending on the available data, a card can show an estimate, a market-only probability, or no price. Open a match for the available details, and use the public record to examine eligible past predictions. A free account opens up to three readings per sport per day; Base opens up to seven, and Pro has no daily reading cap.",
     ],
   ],
   it: [
@@ -114,7 +114,7 @@ export const HOME_FAQ = {
     ],
     [
       "Cosa c’è dentro una lettura, e cos’è la deep analysis?",
-      "Quattro cose, tutte registrate prima del fischio d’inizio. Cosa pensa il mercato, cioè la quota convertita in percentuale. Cosa pensa il nostro modello, cioè la sua probabilità calibrata. La distanza fra questi due numeri. E il ragionamento che c’è dietro, scritto in parole normali. La deep analysis è quello che sta sotto quel ragionamento, e arriva con Pro. La apri su qualsiasi partita e vedi i fattori che il modello ha davvero pesato: forma, gol attesi, Elo, numeri di servizio e risposta, scontri diretti, superficie.",
+      "Una lettura indica la fonte della probabilità e mostra il confronto col mercato quando i dati disponibili lo consentono. Alcune schede mostrano una stima che combina modello e mercato; altre mostrano solo il mercato. Il registro pubblico traccia i pronostici pre-partita idonei separatamente dalle stime visualizzate non sigillate. L’analisi Pro include il contesto statistico disponibile per quella partita. Non tutti i campi mostrati entrano nel calcolo della probabilità e la copertura varia.",
     ],
     [
       "Quali sport coprite?",
@@ -122,7 +122,7 @@ export const HOME_FAQ = {
     ],
     [
       "Cosa succede sul board live?",
-      "Il numero si muove insieme alla partita. Cambia il punteggio, passano i minuti, gira l’inerzia, e il modello rilegge il match, così vedi la probabilità spostarsi mentre si sta spostando. In nessun momento viene piazzato o eseguito qualcosa per te: stai guardando uno schermo. Il live è solo Pro.",
+      "Il board live segue punteggi e stato delle partite dove sono disponibili le fonti. I pronostici pre-partita memorizzati restano congelati dopo l’orario di inizio; il modello non li ricalcola in base al punteggio live. Non viene piazzato o eseguito nulla per te. I punteggi live richiedono un piano a pagamento, Base o Pro.",
     ],
     [
       "Piazzate scommesse? Mi promettete un guadagno?",
@@ -130,7 +130,7 @@ export const HOME_FAQ = {
     ],
     [
       "Come lo uso, in pratica?",
-      "Apri il board. Ogni card porta un numero solo, la probabilità del modello per quella partita, e nient’altro: è quello che ti permette di scorrere venti partite senza leggerne venti paragrafi. Quando una ti fa fermare, aprila: dentro c’è la lettura completa, ragionamento compreso. Poi vai a vedere il registro pubblico, perché è guardando come si sono chiuse le letture precedenti che capisci quanto peso dare a un numero del genere. Quello che ne fai dopo lo decidi tu. Quella cosa lì non la decidiamo noi al posto tuo. Registrando un account gratuito hai fino a tre letture per sport al giorno; Base arriva fino a sette, Pro apre tutto il board.",
+      "Apri il board e controlla l’etichetta della fonte accanto a ogni numero. Secondo i dati disponibili, una scheda può mostrare una stima, la sola probabilità del mercato o nessuna quota. Apri la partita per i dettagli disponibili e consulta il registro pubblico per esaminare i pronostici passati idonei. Un account gratuito apre fino a tre letture per sport al giorno; Base fino a sette, mentre Pro non ha un limite giornaliero di letture.",
     ],
   ],
 } as const satisfies Record<string, readonly FaqItem[]>;

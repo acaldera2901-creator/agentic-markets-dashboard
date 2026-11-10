@@ -299,3 +299,14 @@ export function payoutDeniedAddresses(env: Env = process.env): Set<string> {
   }
   return out;
 }
+
+// ── Avviso operatori sui wallet (#AFF-WALLET-ALERT) ─────────────────────────
+/** Dove avvisare gli operatori quando un affiliato inserisce, cambia o rimuove
+ *  il wallet. Vuota o malformata → null: nessun avviso (no-op). */
+export function affiliateOpsEmail(env: Env = process.env): string | null {
+  const v = (env.AFFILIATE_OPS_EMAIL ?? "").trim();
+  return /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/.test(v) ? v : null;
+}
+
+/** Backoffice di produzione (progetto Vercel betredge/betredge-backoffice). */
+export const AFFILIATE_BO_URL = "https://betredge-backoffice-two.vercel.app";

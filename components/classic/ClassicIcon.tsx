@@ -12,7 +12,8 @@ export type ClassicIconName =
   | "menu-prediction" | "menu-history" | "menu-tools" | "menu-partner"
   | "market-result" | "market-soft"
   | "classic-tennis" | "classic-live" | "classic-popular" | "classic-home"
-  | "menu-plans"; // #CLASSIC-PLANS-1014 — il pannello Pro della pagina piani
+  | "menu-plans" // #CLASSIC-PLANS-1014 — il pannello Pro della pagina piani
+  | "menu-creator"; // #NEWS-FOTMOB-PROD-1026 — la voce News del menu (il pennarello editoriale, già nel set)
 
 export function ClassicIcon({ name, size = 20, className }: { name: ClassicIconName; size?: number; className?: string }) {
   return (

@@ -253,3 +253,11 @@ Pattern, decisioni tecniche e gotcha consolidati. Solo roba non ovvia.
 - **Un ricalcolo «specchio» in SQL invecchia; il codice vero no.** `history_coerente` confrontava l'API con una SQL che non poteva replicare il dedup: tarata su 4 gemelle (10/09), era rossa da settimane per un difetto suo con 156+ gemelle note. Ora `checks/history_replay.ts` esegue `dedupeByFixture`/`isBeforeFootballFloorCutover`/`footballSurfaceDecisionFor` sulle righe del DB e la tolleranza è zero. Le righe vanno passate serializzate come le serializza `exec_sql` (`jsonb_agg(row_to_json(t))`): il dedup confronta i timestamp **come stringhe**.
 - **Il collector gira sotto launchd con PATH minimo**: `node` (nvm) non c'è e `node_modules/.bin/tsx` ha lo shebang `env node`. Si lancia `node node_modules/tsx/dist/cli.mjs` con node risolto a mano (`coerenza._node`).
 - **Un check per registro, non uno per voce**: ogni rosso notifica (2 run, poi ogni 6h). 15 claim rotti noti come 15 check = 15 notifiche ogni 6 ore. Il registro è un check solo; il comando lo espande in righe.
+
+## #FORMA-RECENTE-1026 — badge «Forma recente» W/D/L
+
+- **`computeTeamForms` teneva un log per campo**: `form_home` = ultime 5 *in casa* della squadra di casa, `form_away` = ultime 5 *in trasferta* dell'ospite, mostrate come «forma recente». Misurato 26/10 su 93 squadre (FL1/PL/SA/PD/BL1): 90/93 = venue-only. Ora log unico, 93/93 = ultime 5 reali.
+- **Un fix all'enrichment NON arriva da solo su ogni riga**: l'upsert (#RECORD-ATOMICO-0930) tiene l'intera riga, `enrichment` compreso, quando il giro non ha quote. Prima di dire «si sistema al prossimo cron» conta le righe future con `computed_at` vecchio (26/10: 36/292).
+
+## 2026-10-26 — Integrity audit takeover (prepared, not deployed)
+See docs/audits/2026-10-26-integrity.md. Preserve production worker checkout separately; original Claude form backfill is inconsistent with cross-competition form. Public model/live/seal claims must follow actual provenance, not labels or passing unit tests.

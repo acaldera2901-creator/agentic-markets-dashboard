@@ -4,7 +4,7 @@ import {schedulePurchaseEvent} from '@/lib/business-events';
 // plan-grant.ts lo è da paygate.ts. GATED: usato solo dal wiring dietro flag.
 
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
-import { resolveWeeklyPickOutcomes, type PredOutcomeRow, type WeeklyPickLeg } from "@/lib/weekly-pick";
+import { resolveWeeklyPickOutcomes, weeklyPickPurchasable, type PredOutcomeRow, type WeeklyPickLeg } from "@/lib/weekly-pick";
 import { weeklyPickReceiptEmail } from "@/lib/email";
 import { sendTransactional } from "@/lib/notify";
 
@@ -107,7 +107,7 @@ export async function notifyWeeklyPickGranted(opts: {
 // Il checkout guardava solo flag, piano e doppio acquisto: mai se ci fosse
 // qualcosa da vendere. Fail-loud come hasWeeklyPickStrict: un errore DB qui
 // deve fermare la vendita, non passare per "settimana aperta".
-export type WeeklyPickWeekState = { exists: boolean; legs: number; remaining: number };
+export type WeeklyPickWeekState = { exists: boolean; legs: number; remaining: number; purchasable: boolean };
 
 export async function weeklyPickWeekStateStrict(weekStart: string): Promise<WeeklyPickWeekState> {
   const rows = await dbQueryStrict<{ selections: unknown }>(
@@ -115,10 +115,10 @@ export async function weeklyPickWeekStateStrict(weekStart: string): Promise<Week
     [weekStart]
   );
   const row = rows[0];
-  if (!row) return { exists: false, legs: 0, remaining: 0 };
+  if (!row) return { exists: false, legs: 0, remaining: 0, purchasable: false };
   const sels: WeeklyPickLeg[] =
     typeof row.selections === "string" ? JSON.parse(row.selections) : ((row.selections as WeeklyPickLeg[]) ?? []);
-  if (!sels.length) return { exists: true, legs: 0, remaining: 0 };
+  if (!sels.length) return { exists: true, legs: 0, remaining: 0, purchasable: false };
   // Stesso IN con un placeholder per id di app/api/weekly-pick/route.ts: `= ANY($1)`
   // con l'interpolate di lib/db dà 0 righe in silenzio.
   const predIds = sels.map((s) => (s.id.startsWith("wp_") ? s.id.slice(3) : s.id));
@@ -129,7 +129,7 @@ export async function weeklyPickWeekStateStrict(weekStart: string): Promise<Week
     predIds
   );
   const { remaining } = resolveWeeklyPickOutcomes(sels, preds);
-  return { exists: true, legs: sels.length, remaining };
+  return { exists: true, legs: sels.length, remaining, purchasable: weeklyPickPurchasable(sels, preds) };
 }
 
 // Chiusa = esiste, ha gambe, e nessuna è ancora da giocare (tutte won/lost/void).
@@ -155,4 +155,35 @@ export function weeklyPickClosed(s: WeeklyPickWeekState): boolean {
 // momento è immutabile: chi compra vede per sempre ciò che ha comprato.
 export function weeklyPickIncomplete(s: WeeklyPickWeekState, maxLegs: number): boolean {
   return s.exists && s.legs < maxLegs;
+}
+
+/** New snapshots resolve against the immutable pick key. Legacy outcomes keep
+ * their old source, explicitly labelled unverified by the API. */
+export async function resolveSealedWeeklyRows(legs: WeeklyPickLeg[], served: PredOutcomeRow[]): Promise<PredOutcomeRow[]> {
+  const sealed = legs.filter(l => l.snapshot);
+  if (!sealed.length) return served;
+  const params: string[] = [];
+  const clauses = sealed.map(l => {
+    const i = params.length;
+    params.push(l.snapshot!.sourceTable, l.snapshot!.sourceId, l.snapshot!.modelVersion);
+    return `(source_table = $${i + 1} AND source_id = $${i + 2} AND model_version = $${i + 3})`;
+  });
+  const rows = await dbQueryStrict<{source_table:string; source_id:string; model_version:string; result:string}>(
+    `SELECT DISTINCT ON (source_table, source_id, model_version)
+            source_table, source_id, model_version, result
+       FROM pick_settlement WHERE ${clauses.join(' OR ')}
+      ORDER BY source_table, source_id, model_version, settlement_revision DESC NULLS LAST, settled_at DESC, id DESC`, params);
+  const key = (a: string, b: string, c: string) => JSON.stringify([a,b,c]);
+  const byKey = new Map(rows.map(r => [key(r.source_table,r.source_id,r.model_version),r.result]));
+  const byId = new Map(served.map(r => [r.id,r]));
+  for (const l of sealed) {
+    const id = l.id.startsWith('wp_') ? l.id.slice(3) : l.id;
+    const current = byId.get(id);
+    const snapshot = l.snapshot!;
+    const result = byKey.get(key(snapshot.sourceTable,snapshot.sourceId,snapshot.modelVersion));
+    byId.set(id, { id, starts_at: l.startsAt ?? current?.starts_at ?? null,
+      status: result ? 'settled' : current?.status ?? null,
+      result: result ?? (current?.status === 'settled' ? 'unresolved' : null) });
+  }
+  return [...byId.values()];
 }

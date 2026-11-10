@@ -3,8 +3,14 @@
 // nessun campo nuovo nella risposta.
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-const { dbQuery, dbQueryStrict } = vi.hoisted(() => ({ dbQuery: vi.fn(), dbQueryStrict: vi.fn() }));
-vi.mock("@/lib/db", () => ({ dbQuery, dbQueryStrict }));
+const { historyRead, ledgerRead } = vi.hoisted(() => ({ historyRead: vi.fn(), ledgerRead: vi.fn() }));
+vi.mock("next/cache", async () => ({
+  unstable_cache: (await import("@/tests/helpers/next-data-cache")).mockUnstableCache,
+}));
+vi.mock("@/lib/db", () => ({
+  dbQueryStrict: (sql: string, params?: unknown[]) => sql.includes("FROM pick_ledger")
+    ? ledgerRead(sql, params) : historyRead(sql, params),
+}));
 vi.mock("@/lib/auth", () => ({ resolveAccessState: async () => ({ state: "anonymous" }) }));
 
 beforeEach(() => { vi.clearAllMocks(); vi.resetModules(); });
@@ -32,12 +38,12 @@ const sigilli = dopo.map((r) => ({
 }));
 
 it("flag spento: una query, senza colonne del registro, e nessun sealed_grading", async () => {
-  dbQuery.mockResolvedValueOnce([...dopo, ...prima]);
+  historyRead.mockResolvedValueOnce([...dopo, ...prima]);
   const { GET } = await import("./route");
   const { stats } = await (await GET(new Request("http://x/api/v2/history"))).json();
-  expect(dbQuery).toHaveBeenCalledTimes(1);
-  expect(dbQueryStrict).not.toHaveBeenCalled();
-  expect(dbQuery.mock.calls[0][0]).not.toMatch(/source_id|pick_ledger/);
+  expect(historyRead).toHaveBeenCalledTimes(1);
+  expect(ledgerRead).not.toHaveBeenCalled();
+  expect(historyRead.mock.calls[0][0]).not.toMatch(/source_id|pick_ledger/);
   expect(stats.won).toBe(0);
   expect(stats.lost).toBe(60);
   expect(stats).not.toHaveProperty("sealed_grading");
@@ -46,12 +52,12 @@ it("flag spento: una query, senza colonne del registro, e nessun sealed_grading"
 it("flag acceso: dal periodo conta la sigillata; prima nulla cambia", async () => {
   vi.stubEnv("LEDGER_SEALED_GRADING", "1");
   vi.stubEnv("LEDGER_SEALED_FROM", FROM);
-  dbQuery.mockResolvedValueOnce([...dopo, ...prima]);
-  dbQueryStrict.mockResolvedValueOnce(sigilli);
+  historyRead.mockResolvedValueOnce([...dopo, ...prima]);
+  ledgerRead.mockResolvedValueOnce(sigilli);
   const { GET } = await import("./route");
   const { stats } = await (await GET(new Request("http://x/api/v2/history"))).json();
-  expect(dbQuery.mock.calls[0][0]).toContain("source_table, source_id");
-  expect(dbQueryStrict.mock.calls[0][0]).toContain("FROM pick_ledger");
+  expect(historyRead.mock.calls[0][0]).toContain("source_table, source_id");
+  expect(ledgerRead.mock.calls[0][0]).toContain("FROM pick_ledger");
   expect(stats.won).toBe(30);
   expect(stats.lost).toBe(30);
   expect(stats.sealed_grading).toMatchObject({
@@ -63,8 +69,8 @@ it("flag acceso, registro illeggibile: il periodo esce dal numero e lo dichiara"
   vi.stubEnv("LEDGER_SEALED_GRADING", "1");
   vi.stubEnv("LEDGER_SEALED_FROM", FROM);
   const err = vi.spyOn(console, "error").mockImplementation(() => undefined);
-  dbQuery.mockResolvedValueOnce([...dopo, ...prima]);
-  dbQueryStrict.mockRejectedValueOnce(new Error("down"));
+  historyRead.mockResolvedValueOnce([...dopo, ...prima]);
+  ledgerRead.mockRejectedValueOnce(new Error("down"));
   const { GET } = await import("./route");
   const { stats } = await (await GET(new Request("http://x/api/v2/history"))).json();
   expect(stats.won + stats.lost).toBe(30);
@@ -75,11 +81,11 @@ it("flag acceso, registro illeggibile: il periodo esce dal numero e lo dichiara"
 it("starts the independent ledger read before the history read completes", async () => {
  vi.stubEnv("LEDGER_SEALED_GRADING", "1");vi.stubEnv("LEDGER_SEALED_FROM", FROM);
  let finish!: (rows:typeof dopo)=>void;
- dbQuery.mockReturnValueOnce(new Promise(resolve=>{finish=resolve;}));
- dbQueryStrict.mockResolvedValueOnce(sigilli);
+ historyRead.mockReturnValueOnce(new Promise(resolve=>{finish=resolve;}));
+ ledgerRead.mockResolvedValueOnce(sigilli);
  const {GET}=await import('./route');const response=GET(new Request('http://x/api/v2/history'));
  await new Promise(resolve=>setTimeout(resolve,0));
- const calls=dbQueryStrict.mock.calls.length;
+ const calls=ledgerRead.mock.calls.length;
  finish(dopo);await response;
  expect(calls).toBe(1);
 });

@@ -19,6 +19,12 @@ describe("app-tab-paths (#URL-PATHS-0810)", () => {
     expect(normalizeTab("builder")).toBe("match-builder");
   });
 
+  it("retires leaderboard deep links to predictions", () => {
+    expect(normalizeTab("leaderboard")).toBe("bets");
+    expect(PATH_TO_TAB["/leaderboard"]).toBeUndefined();
+    expect(Object.values(TAB_PATHS)).not.toContain("/leaderboard");
+  });
+
   it("rifiuta valori sconosciuti o vuoti (il chiamante cade su bets)", () => {
     expect(normalizeTab(null)).toBeNull();
     expect(normalizeTab("")).toBeNull();

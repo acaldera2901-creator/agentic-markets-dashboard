@@ -52,6 +52,7 @@ jobs:
           refresh_exit=${PIPESTATUS[0]}
           set -e
           echo "exit_code=$refresh_exit" >> "$GITHUB_OUTPUT"
+          echo "status=$(python -c 'import json; print(json.load(open("data/summer_leagues/history.json")).get("refresh_status", "failed"))')" >> "$GITHUB_OUTPUT"
           echo "changed=$(git diff --quiet -- data/summer_leagues/history.json && echo no || echo yes)" >> "$GITHUB_OUTPUT"
 
       - name: Conserva evidenze e snapshot anche in caso di refresh parziale
@@ -63,11 +64,21 @@ jobs:
             refresh.log
             data/summer_leagues/history.json
 
+      # #HISTORY-FRESHNESS-1026 — un refresh PARZIALE apre comunque la PR. Lo
+      # script tiene il blocco precedente per ogni lega fallita (fail-closed per
+      # lega), quindi le altre sono aggiornate e corrette. Prima un solo timeout
+      # (VEI, EFLC il 19/10) buttava il giro di tutte le 26: nessuna PR, e lo
+      # storico restava fermo un'altra settimana. Si ferma solo se non e' stata
+      # aggiornata nessuna lega o se lo script e' uscito per un errore suo.
       - name: Segnala le sorgenti non aggiornate
         if: steps.refresh.outputs.exit_code != '0'
         run: |
-          echo "Refresh incompleto: consultare l'artefatto per lega. Nessuna PR automatica pubblicata."
-          exit 1
+          if [ "${{ steps.refresh.outputs.exit_code }}" = "1" ] && [ "${{ steps.refresh.outputs.status }}" = "partial" ]; then
+            echo "::warning::Refresh PARZIALE: le leghe fallite tengono il blocco precedente (vedi log). La PR viene aperta lo stesso."
+          else
+            echo "Refresh fallito (exit ${{ steps.refresh.outputs.exit_code }}, status ${{ steps.refresh.outputs.status }}): nessuna PR."
+            exit 1
+          fi
 
       # Il gate di replay-safety gira anche qui: se il refresh introducesse uno
       # stato che rompe le migration, si ferma prima della PR.
@@ -83,7 +94,7 @@ jobs:
           # Un solo branch riusato: se la PR della settimana scorsa non è stata
           # mergiata, questa la aggiorna invece di aprirne una seconda. Meglio una
           # PR sempre fresca che una coda di PR stantìe che nessuno guarda.
-          title: "chore(leagues): refresh settimanale dello snapshot storico"
+          title: "${{ steps.refresh.outputs.status == 'partial' && 'chore(leagues): refresh settimanale dello snapshot storico (PARZIALE)' || 'chore(leagues): refresh settimanale dello snapshot storico' }}"
           body-path: refresh.log
           commit-message: "chore(leagues): refresh settimanale dello snapshot storico (#HISTORY-REFRESH-JOB-0801)"
           labels: automated

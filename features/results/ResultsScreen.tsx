@@ -1,7 +1,6 @@
 "use client";
 
 import { TrackRecordView } from "./TrackRecordView";
-import { LeaderboardView } from "./LeaderboardView";
 import { BottomNav } from "@/features/feed/BottomNav";
 
 export function ResultsScreen() {
@@ -18,13 +17,6 @@ export function ResultsScreen() {
             Track record
           </h2>
           <TrackRecordView />
-        </section>
-
-        <section>
-          <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--am-muted)", padding: "8px 16px 0" }}>
-            Classifica
-          </h2>
-          <LeaderboardView />
         </section>
       </main>
 

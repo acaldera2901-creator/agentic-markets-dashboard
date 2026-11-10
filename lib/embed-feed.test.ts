@@ -214,3 +214,11 @@ describe("segnaposto e blocklist (#WIDGET-TRUTH-0824)", () => {
     expect(isRefBlocked("CATTIVO", "CATTIVO")).toBe(true);       // …ma la route spegne prima di servire
   });
 });
+
+it('embed preserves recorded market and unknown provenance without exposing notes', () => {
+  const notes=JSON.stringify({probability:{version:'tennis-probability-v1',source:'market',raw_p1:.8,raw_p2:.2,published_p1:.75,published_p2:.25}});
+  const out=toEmbedRows([row({notes})],'open',6,'en');
+  expect(out[0].probabilitySource).toBe('market');
+  expect(out[0]).not.toHaveProperty('notes');
+  expect(toEmbedRows([row()],'open',6,'en')[0].probabilitySource).toBe('unknown');
+});

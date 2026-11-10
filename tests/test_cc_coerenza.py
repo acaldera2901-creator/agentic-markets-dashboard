@@ -69,14 +69,16 @@ def test_il_vecchio_check_sql_non_e_piu_registrato_due_volte():
 
 
 def test_il_replay_importa_la_pipeline_canonica_e_non_ne_ha_una_copia():
-    # #COERENZA-1001: la route calcola tutto con trackRecordPopulation
+    # #COERENZA-1001: lo snapshot della route usa trackRecordPopulation
     # (lib/track-record.ts). Il replay deve chiamare QUELLA, non riscriverla:
     # una copia locale e' esattamente cio' che diverge al prossimo cambio.
     replay = (REPO / "tools/control_center/checks/history_replay.ts").read_text()
     route = (REPO / "app/api/v2/history/route.ts").read_text()
     importa = re.compile(r'import \{[^}]*\btrackRecordPopulation\b[^}]*\} from "[./]*lib/track-record"')
     assert importa.search(replay) and re.search(r"trackRecordPopulation\(", replay)
-    assert re.search(r"\btrackRecordPopulation\(", route), "la route non usa piu' la funzione canonica"
+    snapshot = (REPO / "lib/history-snapshot.ts").read_text()
+    assert re.search(r"\breadHistorySnapshot\(", route), "la route non usa lo snapshot verificato"
+    assert re.search(r"\btrackRecordPopulation\(", snapshot), "lo snapshot non usa la funzione canonica"
     for copia in ("function wasShownAsPick", "function isShownPick", "dedupeByFixture("):
         assert copia not in replay, f"copia locale nel replay: {copia}"
 
@@ -287,8 +289,8 @@ def test_senza_database_url_messaggio_chiaro_e_exit_1(monkeypatch, capsys):
 
 def test_popolazione_finita_limitata_e_troncamento_non_verde():
     # #COERENZA-1001: la popolazione e' quella della route, con il suo tetto.
-    route = (REPO / "app/api/v2/history/route.ts").read_text()
-    assert f"STATS_CAP = {coerenza.FINITE_MAX};" in route
+    snapshot = (REPO / "lib/history-snapshot.ts").read_text()
+    assert f"STATS_CAP = {coerenza.FINITE_MAX};" in snapshot
     assert f"limit {coerenza.FINITE_MAX}" in coerenza._ROUTE_SQL
     # e le stesse condizioni WHERE di TRACK_RECORD_BASE_CONDITIONS
     tr = (REPO / "lib/track-record.ts").read_text()

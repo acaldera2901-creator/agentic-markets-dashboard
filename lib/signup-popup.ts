@@ -270,7 +270,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     bodyFree: (n) => n && n > 0
       ? `Il board ne ha altre ${n} oggi. Pro apre tutto il board, ogni giorno.`
       : `Domani si ricaricano. Pro apre tutto il board, ogni giorno.`,
-    proof: (n) => `${n.toLocaleString("it-IT")} letture chiuse, ognuna registrata prima del fischio`,
+    proof: (n) => `${n.toLocaleString("it-IT")} letture chiuse nello storico`,
     ctaAnon: "Crea il profilo gratuito",
     ctaFree: "Vedi Pro",
     ctaBase: "Vedi Pro",
@@ -295,7 +295,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     bodyFree: (n) => n && n > 0
       ? `The board has ${n} more today. Pro opens the whole board, every day.`
       : `They reload tomorrow. Pro opens the whole board, every day.`,
-    proof: (n) => `${n.toLocaleString("en-US")} settled readings, each logged before kick-off`,
+    proof: (n) => `${n.toLocaleString("en-US")} settled readings in the track record`,
     ctaAnon: "Create a free profile",
     ctaFree: "See Pro",
     ctaBase: "See Pro",
@@ -320,7 +320,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     bodyFree: (n) => n && n > 0
       ? `El board tiene ${n} más hoy. Pro abre todo el board, cada día.`
       : `Mañana se recargan. Pro abre todo el board, cada día.`,
-    proof: (n) => `${n.toLocaleString("es-ES")} lecturas cerradas, cada una registrada antes del inicio`,
+    proof: (n) => `${n.toLocaleString("es-ES")} lecturas cerradas en el historial`,
     ctaAnon: "Crea el perfil gratuito",
     ctaFree: "Ver Pro",
     ctaBase: "Ver Pro",
@@ -345,7 +345,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     bodyFree: (n) => n && n > 0
       ? `Le board en a ${n} de plus aujourd'hui. Pro ouvre tout le board, chaque jour.`
       : `Elles se rechargent demain. Pro ouvre tout le board, chaque jour.`,
-    proof: (n) => `${n.toLocaleString("fr-FR")} lectures réglées, chacune enregistrée avant le coup d'envoi`,
+    proof: (n) => `${n.toLocaleString("fr-FR")} lectures réglées dans l’historique`,
     ctaAnon: "Créer le profil gratuit",
     ctaFree: "Voir Pro",
     ctaBase: "Voir Pro",
@@ -370,7 +370,7 @@ export const SIGNUP_POPUP_COPY: Record<Lang, SignupPopupCopy> = {
     bodyFree: (n) => n && n > 0
       ? `На борде сегодня ещё ${n}. Pro открывает весь борд, каждый день.`
       : `Завтра они обновятся. Pro открывает весь борд, каждый день.`,
-    proof: (n) => `${n.toLocaleString("ru-RU")} закрытых прогнозов, каждый записан до начала матча`,
+    proof: (n) => `${n.toLocaleString("ru-RU")} закрытых прогнозов в истории`,
     ctaAnon: "Создать бесплатный профиль",
     ctaFree: "Смотреть Pro",
     ctaBase: "Смотреть Pro",

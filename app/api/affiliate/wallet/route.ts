@@ -19,7 +19,7 @@ import { getSessionPlan } from "@/lib/auth";
 import { dbQuery } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { affiliateMode, affiliateTermsVersion, payoutConfig, payoutDeniedAddresses } from "@/lib/affiliate/config";
+import { AFFILIATE_BO_URL, affiliateMode, affiliateOpsEmail, affiliateTermsVersion, payoutConfig, payoutDeniedAddresses } from "@/lib/affiliate/config";
 import {
   affiliateIdentifier,
   hashIp,
@@ -29,7 +29,7 @@ import {
   walletView,
   type AffiliateRow,
 } from "@/lib/affiliate/account";
-import { walletChangedEmail } from "@/lib/affiliate/emails";
+import { walletChangedEmail, walletOpsAlertEmail } from "@/lib/affiliate/emails";
 import { affiliateRpc } from "@/lib/affiliate/rpc";
 import { ScreeningUnavailableError, screenPayoutAddress } from "@/lib/affiliate/screening";
 import { cleanCountry, cleanLegalName } from "@/lib/affiliate/payee";
@@ -70,6 +70,22 @@ async function notify(identifier: string, mail: ReturnType<typeof walletChangedE
     await sendEmail({ to: identifier, subject: mail.subject, html: mail.html, text: mail.text, replyTo: mail.replyTo });
   } catch (e) {
     console.error("[affiliate/wallet] notification email failed:", String(e));
+  }
+}
+
+/** #AFF-WALLET-ALERT — avviso agli operatori (AFFILIATE_OPS_EMAIL). Best-effort
+ *  come `notify`: il wallet è già salvato; senza env è un no-op. Solo maschera. */
+async function notifyOps(
+  aff: AffiliateRow,
+  o: Omit<Parameters<typeof walletOpsAlertEmail>[0], "affiliateId" | "code" | "boUrl">,
+): Promise<void> {
+  const to = affiliateOpsEmail();
+  if (!to) return;
+  const mail = walletOpsAlertEmail({ ...o, affiliateId: aff.id, code: aff.code, boUrl: AFFILIATE_BO_URL });
+  try {
+    await sendEmail({ to, subject: mail.subject, html: mail.html, text: mail.text, replyTo: mail.replyTo });
+  } catch (e) {
+    console.error(`[affiliate/wallet] ops alert email failed for affiliate=${aff.id}:`, String(e));
   }
 }
 
@@ -190,7 +206,7 @@ export async function PUT(req: Request) {
 
   let res;
   try {
-    res = await affiliateRpc<{ ok: boolean; error?: string; usable_after?: string; cancelled_payout_ids?: number[] }>(
+    res = await affiliateRpc<{ ok: boolean; error?: string; usable_after?: string; replaced?: boolean; cancelled_payout_ids?: number[] }>(
       "affiliate_set_wallet",
       {
         p_affiliate_id: aff.id,
@@ -230,6 +246,14 @@ export async function PUT(req: Request) {
       payoutCancelled: cancelled > 0,
     }),
   );
+  await notifyOps(aff, {
+    action: res.replaced ? "changed" : "added",
+    addressMasked: masked,
+    coin: verdict.coin,
+    network: verdict.network,
+    usableAfterISO: res.usable_after ?? null,
+    cancelledPayouts: cancelled,
+  });
 
   let wallet;
   try {
@@ -279,5 +303,6 @@ export async function DELETE(req: Request) {
       payoutCancelled: cancelled > 0,
     }),
   );
+  await notifyOps(aff, { action: "removed", addressMasked: null, usableAfterISO: null, cancelledPayouts: cancelled });
   return NextResponse.json({ ok: true, wallet: walletView(null, aff.status), cancelled_payouts: cancelled });
 }

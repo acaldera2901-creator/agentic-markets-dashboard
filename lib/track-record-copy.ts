@@ -6,23 +6,27 @@ type Lang = "it" | "en" | "es" | "fr" | "ru";
 type Part = { winRate: string | null; n: number };
 
 const WORDS: Record<Lang, { model: string; partner: string; on: string; picks: string }> = {
-  it: { model: "Modello", partner: "Quote di mercato del partner", on: "su", picks: "pick" },
-  en: { model: "Model", partner: "Partner market prices", on: "on", picks: "picks" },
-  es: { model: "Modelo", partner: "Cuotas de mercado del socio", on: "en", picks: "picks" },
-  fr: { model: "Modèle", partner: "Cotes de marché du partenaire", on: "sur", picks: "picks" },
-  ru: { model: "Модель", partner: "Рыночные котировки партнёра", on: "на", picks: "пиков" },
+  it: { model: "Modello", partner: "Probabilità di mercato", on: "su", picks: "pick" },
+  en: { model: "Model", partner: "Market probabilities", on: "on", picks: "picks" },
+  es: { model: "Modelo", partner: "Probabilidades de mercado", on: "en", picks: "picks" },
+  fr: { model: "Modèle", partner: "Probabilités de marché", on: "sur", picks: "picks" },
+  ru: { model: "Модель", partner: "Рыночные вероятности", on: "на", picks: "пиков" },
 };
 
-/** «Modello: A% su n1 · Quote di mercato del partner: B% su n2». Un blocco
+/** «Modello: A% su n1 · Probabilità di mercato: B% su n2». Un blocco
  *  sotto il campione minimo dice solo quante pick ha (nessuna percentuale);
  *  il partner senza pick decise non compare. */
-export function sourceBreakdownLine(lang: string, b: { model: Part; partner: Part }): string {
+export function sourceBreakdownLine(lang: string, b: { model: Part; partner: Part; unknown?: Part }): string {
   const w = WORDS[(lang in WORDS ? lang : "en") as Lang];
   const sep = lang === "fr" ? " : " : ": ";
   const part = (label: string, p: Part) =>
     `${label}${sep}${p.winRate ? `${p.winRate} ${w.on} ${p.n}` : `${p.n} ${w.picks}`}`;
   const parts = [part(w.model, b.model)];
   if (b.partner.n > 0) parts.push(part(w.partner, b.partner));
+  if (b.unknown && b.unknown.n > 0) {
+    const labels: Record<string,string>={it:"Fonte non verificata",en:"Source unverified",es:"Fuente no verificada",fr:"Source non vérifiée",ru:"Источник не подтверждён"};
+    parts.push(part(labels[lang] ?? labels.en, b.unknown));
+  }
   return parts.join(" · ");
 }
 
@@ -56,11 +60,11 @@ const DATE_FMT: Record<Lang, [string, Intl.DateTimeFormatOptions]> = {
 };
 
 const SEALED_NOTE: Record<Lang, (date: string) => string> = {
-  it: (d) => `Dal ${d} il track record conta solo le pick registrate prima del calcio d'inizio e le valuta su quella pick. Le pick mostrate senza registrazione, quasi tutte sotto soglia, non entrano più nel conteggio: per questo la percentuale non è confrontabile con il periodo precedente.`,
-  en: (d) => `From ${d}, the track record only counts picks recorded before kick-off and grades them on that pick. Picks shown without being recorded, almost all below the threshold, are no longer counted: for this reason the percentage is not comparable with the previous period.`,
-  es: (d) => `Desde el ${d}, el track record solo cuenta las picks registradas antes del inicio del partido y las evalúa sobre esa pick. Las picks mostradas sin registro, casi todas por debajo del umbral, ya no entran en el recuento: por eso el porcentaje no es comparable con el periodo anterior.`,
-  fr: (d) => `À partir du ${d}, le track record ne compte que les picks enregistrés avant le coup d'envoi et les évalue sur ce pick. Les picks affichés sans enregistrement, presque tous sous le seuil, n'entrent plus dans le décompte : c'est pourquoi le pourcentage n'est pas comparable avec la période précédente.`,
-  ru: (d) => `С ${d} track record учитывает только пики, зарегистрированные до начала матча, и оценивает их по этому пику. Пики, показанные без регистрации, почти все ниже порога, больше не входят в подсчёт: поэтому процент нельзя сравнивать с предыдущим периодом.`,
+  it: (d) => `Dal ${d} il track record del calcio conta solo le pick registrate prima del calcio d'inizio e le valuta su quella pick. Le pick mostrate senza registrazione, quasi tutte sotto soglia, non entrano più nel conteggio: per questo la percentuale non è confrontabile con il periodo precedente.`,
+  en: (d) => `From ${d}, the football track record only counts picks recorded before kick-off and grades them on that pick. Picks shown without being recorded, almost all below the threshold, are no longer counted: for this reason the percentage is not comparable with the previous period.`,
+  es: (d) => `Desde el ${d}, el track record de fútbol solo cuenta las picks registradas antes del inicio del partido y las evalúa sobre esa pick. Las picks mostradas sin registro, casi todas por debajo del umbral, ya no entran en el recuento: por eso el porcentaje no es comparable con el periodo anterior.`,
+  fr: (d) => `À partir du ${d}, le track record de football ne compte que les picks enregistrés avant le coup d'envoi et les évalue sur ce pick. Les picks affichés sans enregistrement, presque tous sous le seuil, n'entrent plus dans le décompte : c'est pourquoi le pourcentage n'est pas comparable avec la période précédente.`,
+  ru: (d) => `С ${d} футбольный track record учитывает только пики, зарегистрированные до начала матча, и оценивает их по этому пику. Пики, показанные без регистрации, почти все ниже порога, больше не входят в подсчёт: поэтому процент нельзя сравнивать с предыдущим периодом.`,
 };
 
 /** La nota nella lingua, o null se il grading sigillato non e' attivo. */
@@ -71,4 +75,15 @@ export function sealedPopulationNote(lang: string, stats: SealedStats | string):
   const [locale, opts] = DATE_FMT[l];
   const date = new Intl.DateTimeFormat(locale, { ...opts, timeZone: "UTC" }).format(new Date(from));
   return SEALED_NOTE[l](date);
+}
+
+/** An API cap is a bounded sample, not an all-time record. */
+export function historyPopulationLimitNote(lang: string, stats: { truncated?: boolean; population_limit?: number } | null | undefined): string | null {
+  if (!stats?.truncated) return null;
+  const n = stats.population_limit ?? 15000;
+  if (lang === "it") return `Statistiche sulle ${n} righe più recenti disponibili, non sull'intero storico.`;
+  if (lang === "es") return `Estadísticas de las ${n} filas más recientes disponibles, no de todo el historial.`;
+  if (lang === "fr") return `Statistiques des ${n} lignes disponibles les plus récentes, pas de l'historique complet.`;
+  if (lang === "ru") return `Статистика по ${n} последним доступным строкам, а не по всей истории.`;
+  return `Statistics use the latest ${n} available rows, not the full history.`;
 }
