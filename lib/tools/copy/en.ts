@@ -357,7 +357,7 @@ const en: ToolsCopy = {
     },
 
     "arbitrage-calculator": {
-      metaTitle: "Arbitrage Calculator: Is It a Sure Bet? | BetRedge",
+      metaTitle: "Arbitrage Calculator: Stake Split & Profit Check | BetRedge",
       metaDescription:
         "Free arbitrage calculator: enter the best price on each outcome from different bookmakers to see the implied sum, how to split the total stake, and the profit — or that there is none.",
       h1: "Arbitrage calculator",
