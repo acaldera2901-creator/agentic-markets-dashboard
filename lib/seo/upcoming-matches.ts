@@ -16,8 +16,9 @@ export function toMatches(rows: readonly Row[], limit = 24): UpcomingMatch[] {
   const out: UpcomingMatch[] = [];
   for (const r of rows) {
     const tennis = r.sport === "tennis";
-    const home = clean(tennis ? r.player_one : r.home_team);
-    const away = clean(tennis ? r.player_two : r.away_team);
+    // Live data keeps tennis players in home_team/away_team (player_one/two may be null): read both, as pick-view-model does.
+    const home = clean(r.home_team ?? r.player_one);
+    const away = clean(r.away_team ?? r.player_two);
     const t = new Date(r.starts_at);
     if (!home || !away || Number.isNaN(t.getTime())) continue;
     const key = `${home}|${away}|${t.toISOString()}`.toLowerCase();
@@ -29,21 +30,34 @@ export function toMatches(rows: readonly Row[], limit = 24): UpcomingMatch[] {
   return out;
 }
 
+/** At most ceil(limit/2) per sport so one sport (e.g. a tennis-heavy week) cannot fill the list; leftover room goes to the other sport. Sorted by kickoff. Pure. */
+export function balance(all: readonly UpcomingMatch[], limit: number): UpcomingMatch[] {
+  const quota = Math.ceil(limit / 2);
+  const per = { football: 0, tennis: 0 };
+  const first = all.filter((m) => per[m.sport]++ < quota);
+  const rest = all.filter((m) => !first.includes(m));
+  return [...first, ...rest].slice(0, limit).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+}
+
 /** Same public window as /api/v2/predictions (not demo, not historical, published, next PREDICTION_WINDOW_DAYS). Fail-soft: [] on any error. */
 export async function fetchUpcomingMatches(limit = 24): Promise<UpcomingMatch[]> {
   try {
     const rows = await dbQuery<Row>(
       `SELECT id, sport, competition, league, home_team, away_team, player_one, player_two, starts_at
-         FROM unified_predictions
-        WHERE starts_at > NOW() - interval '150 minutes'
-          AND starts_at < NOW() + ($1 || ' days')::interval
-          AND expires_at > NOW() - interval '150 minutes'
-          AND published_at IS NOT NULL AND is_historical = FALSE AND is_demo = FALSE
-        ORDER BY starts_at ASC
-        LIMIT $2`,
+         FROM (
+               SELECT id, sport, competition, league, home_team, away_team, player_one, player_two, starts_at,
+                      ROW_NUMBER() OVER (PARTITION BY sport ORDER BY starts_at ASC) AS rn
+                 FROM unified_predictions
+                WHERE starts_at > NOW() - interval '150 minutes'
+                  AND starts_at < NOW() + ($1 || ' days')::interval
+                  AND expires_at > NOW() - interval '150 minutes'
+                  AND published_at IS NOT NULL AND is_historical = FALSE AND is_demo = FALSE
+              ) t
+        WHERE rn <= $2
+        ORDER BY starts_at ASC`,
       [PREDICTION_WINDOW_DAYS, limit * 6]
     );
-    return toMatches(rows, limit);
+    return balance(toMatches(rows, Infinity), limit);
   } catch (e) {
     console.error("[seo/upcoming-matches]", String(e));
     return [];
