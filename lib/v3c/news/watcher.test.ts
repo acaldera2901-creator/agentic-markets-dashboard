@@ -485,6 +485,15 @@ describe("watcher · one card per note (#NEWSWATCH-2-IMG, behind NEWS_WATCHER_IM
     expect(s.images?.map((j) => j.attempts)).toEqual([0, 0]);
   });
 
+  it("hf-ref per-post attempts exhausted: that post is skipped (kept, no attempt counted) and the NEXT post is still tried; no global stop", async () => {
+    const make = vi.fn(async (): Promise<ImageAttempt> => ({ kind: "limit", reason: "higgsfield: tentativi esauriti per il post" }));
+    const s = freshState();
+    await runCycle(s, deps({ db: fakeDb(), images: { make } }), { maxRewrites: 2 });
+    expect(make).toHaveBeenCalledTimes(2);
+    expect(s.images?.map((j) => j.attempts)).toEqual([0, 0]);
+    expect(s.images?.every((j) => /attempts exhausted/.test(j.lastError ?? ""))).toBe(true);
+  });
+
   it("emma is fail-closed: no verified real photo → no img.make, no neutral card, the row stays pending with an explicit lastError", async () => {
     vi.stubEnv("NEWS_IMAGE_STYLE", "emma");
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); })); // photoRef finds nothing
