@@ -31,10 +31,16 @@ vi.mock("@/lib/blog", () => ({
   ]),
 }));
 
+// La data finta della board è l'istante di avvio del test, non una data fissa:
+// sitemap.ts prende il massimo fra la data del file e quella dei dati, quindi una
+// data fissa smette di vincere appena `npm run seo:lastmod` registra un commit
+// più recente su /predictions (successo il 10/11: file 06/11 20:23Z > finta 20:00Z).
+const { BOARD_AT } = vi.hoisted(() => ({ BOARD_AT: new Date().toISOString() }));
+
 // #SEO-AEO-1106: la freschezza dei dati viene dal DB; nei test si mocka (board aggiornata, history non leggibile).
 vi.mock("@/lib/seo/data-freshness", async (orig) => ({
   ...(await orig<typeof import("@/lib/seo/data-freshness")>()),
-  fetchFreshness: vi.fn(async () => ({ board: "2026-11-06T20:00:00.000Z", history: null })),
+  fetchFreshness: vi.fn(async () => ({ board: BOARD_AT, history: null })),
 }));
 
 const BASE = "https://www.betredge.com";
@@ -43,9 +49,9 @@ describe("sitemap lastmod delle board (#SEO-AEO-1106)", () => {
   it("/ e /predictions prendono l'ultimo aggiornamento reale dei dati; /history, senza dato, resta alla data del file", async () => {
     const entries = await sitemap();
     const lm = (u: string) => entries.find((e) => e.url === u)!.lastModified;
-    expect(lm(BASE)).toBe("2026-11-06T20:00:00.000Z");
-    expect(lm(`${BASE}/predictions`)).toBe("2026-11-06T20:00:00.000Z");
-    expect(String(lm(`${BASE}/history`))).not.toBe("2026-11-06T20:00:00.000Z");
+    expect(lm(BASE)).toBe(BOARD_AT);
+    expect(lm(`${BASE}/predictions`)).toBe(BOARD_AT);
+    expect(String(lm(`${BASE}/history`))).not.toBe(BOARD_AT);
   });
 });
 
