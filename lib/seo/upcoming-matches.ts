@@ -17,8 +17,8 @@ export function toMatches(rows: readonly Row[], limit = 24): UpcomingMatch[] {
   for (const r of rows) {
     const tennis = r.sport === "tennis";
     // Live data keeps tennis players in home_team/away_team (player_one/two may be null): read both, as pick-view-model does.
-    const home = clean(r.home_team ?? r.player_one);
-    const away = clean(r.away_team ?? r.player_two);
+    const home = clean(r.home_team) || clean(r.player_one);
+    const away = clean(r.away_team) || clean(r.player_two);
     const t = new Date(r.starts_at);
     if (!home || !away || Number.isNaN(t.getTime())) continue;
     const key = `${home}|${away}|${t.toISOString()}`.toLowerCase();
