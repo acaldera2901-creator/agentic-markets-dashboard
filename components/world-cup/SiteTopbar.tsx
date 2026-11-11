@@ -158,8 +158,9 @@ function SiteTopbarContent({
       <div className="am-topbar-in">
         <div className="am-brandmark">
           <a href="/" className="wc-topbar-home" aria-label="BetrEdge — home">
-            <img className="brand-logo-dark" src="/logos/betredge-header-white@2x.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
-            <img className="brand-logo-light" src="/logos/betredge-logo-black-48.png" alt="BetrEdge" style={{ height: 30, width: "auto" }} />
+            {/* #PERF-CLS-1110: width/height = the file's aspect (182x60, 145x48) at the 30 px CSS height, so the header reserves the logo's box before the PNG arrives (the nav next to it no longer shifts). */}
+            <img className="brand-logo-dark" src="/logos/betredge-header-white@2x.png" alt="BetrEdge" width={91} height={30} style={{ height: 30, width: "auto" }} />
+            <img className="brand-logo-light" src="/logos/betredge-logo-black-48.png" alt="BetrEdge" width={91} height={30} style={{ height: 30, width: "auto" }} />
           </a>
           {!globalNavigation && !nav && <Link href={backHref} className="wc-topbar-back" onClick={onBack}>← {backLabel}</Link>}
         </div>
@@ -203,7 +204,15 @@ function SiteTopbarContent({
               <Link href="/app?auth=login" className="am-auth-secondary"><IconSignIn size={15} stroke={2} />{lang === "it" ? "Accedi" : "Sign In"}</Link>
               <Link href="/app?auth=register" className="am-auth-primary"><IconRegister size={15} stroke={2} />{lang === "it" ? "Registrati" : "Register"}</Link>
             </>
-          ) : null /* loading: render nothing, no flicker of wrong state */}
+          ) : (
+            /* loading: no wrong state is shown, but the space of the (most common) anonymous pair is
+               reserved by invisible, non-interactive twins — #PERF-CLS-1110: rendering nothing here made
+               the bar grow when /api/auth answered and pushed the whole page down (one shift, ~0.29). */
+            <span className="am-auth-reserve" aria-hidden="true" style={{ display: "contents", visibility: "hidden" }}>
+              <span className="am-auth-secondary" style={{ visibility: "hidden" }}><IconSignIn size={15} stroke={2} />{lang === "it" ? "Accedi" : "Sign In"}</span>
+              <span className="am-auth-primary" style={{ visibility: "hidden" }}><IconRegister size={15} stroke={2} />{lang === "it" ? "Registrati" : "Register"}</span>
+            </span>
+          )}
 
           {/* #TOOLS-HUB-0805: le pagine /tools hanno la lingua NELL'URL e il loro
               selettore che ci naviga. Questo dropdown scrive solo localStorage:
