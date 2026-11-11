@@ -8,13 +8,13 @@ const pt: ToolsCopy = {
   hub: {
     metaTitle: "Ferramentas grátis de apostas — odds, EV, Kelly e margem | BetRedge",
     metaDescription:
-      "11 calculadoras gratuitas: converte odds em qualquer formato, remove a margem da casa, calcula o valor esperado, dimensiona a aposta com Kelly, verifica uma arbitragem e mede o ROI. Sem registo.",
+      "12 calculadoras gratuitas: converte odds em qualquer formato, remove a margem da casa, calcula o valor esperado, dimensiona a aposta com Kelly, verifica uma arbitragem e mede o ROI. Sem registo.",
     h1: "Ferramentas gratuitas de apostas",
     lede:
-      "As onze contas que se fazem antes de apostar: odds convertidas, margem removida, aposta dimensionada, ROI medido. Grátis, sem conta.",
+      "As doze contas que se fazem antes de apostar: odds convertidas, margem removida, aposta dimensionada, ROI medido. Grátis, sem conta.",
     cardCta: "Abrir a ferramenta",
     intro: [
-      "Toda aposta é uma comparação entre um preço e uma probabilidade. Estas onze calculadoras fazem essa comparação como deve ser: traduzem as odds entre formatos, removem a margem da casa para expor a linha justa, transformam uma estimativa de probabilidade em valor esperado, juntam as pernas de uma múltipla numa só odd, dizem quando duas casas divergem o suficiente para fechar uma arbitragem, dimensionam a aposta para que uma série negativa não acabe com a banca e medem depois quanto essas apostas renderam de facto.",
+      "Toda aposta é uma comparação entre um preço e uma probabilidade. Estas doze calculadoras fazem essa comparação como deve ser: traduzem as odds entre formatos, removem a margem da casa para expor a linha justa, transformam uma estimativa de probabilidade em valor esperado, juntam as pernas de uma múltipla numa só odd, dizem quando duas casas divergem o suficiente para fechar uma arbitragem, dimensionam a aposta para que uma série negativa não acabe com a banca e medem depois quanto essas apostas renderam de facto.",
       "Funcionam inteiramente no teu navegador: nada é enviado, nada é guardado e não há conta para criar. Usa-as sozinhas, ou usa-as para verificar o que o nosso modelo já publica em cada jogo.",
     ],
   },
@@ -701,6 +701,82 @@ const pt: ToolsCopy = {
         {
           q: "Devo usar esta ou o critério de Kelly?",
           a: "Usa esta quando não tens vantagem medida, o que é quase sempre: uma unidade em percentagem não pede estimativas de probabilidade e o seu pior caso conhece-se de antemão. A calculadora do critério de Kelly é a ferramenta certa quando consegues defender uma probabilidade, e costuma recomendar mais do que 2% planos. Tratar a resposta dela como teto e a regra plana como chão mantém as duas honestas.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Calculadora de dutching — dividir a aposta para cada resultado pagar o mesmo | BetRedge",
+      metaDescription:
+        "Calculadora de dutching gratuita: insere de 2 a 8 resultados de um mercado e vê como dividir a aposta para o retorno ser idêntico qualquer que seja o vencedor, com cobertura e odd de equilíbrio.",
+      h1: "Calculadora de dutching",
+      lede:
+        "Insere a odd de cada resultado que queres cobrir e vê como dividir uma aposta para todos devolverem o mesmo — e quanto custa ou rende.",
+      labels: {
+        inputTitle: "Odd de cada resultado",
+        outcome: "Resultado",
+        addOutcome: "Adicionar resultado",
+        removeOutcome: "Remover",
+        modeTitle: "O que sabes",
+        modeTotal: "Aposta total",
+        modeTarget: "Lucro pretendido",
+        total: "Aposta total",
+        targetProfit: "Lucro pretendido",
+        roundTitle: "Arredondar apostas a",
+        roundNone: "Nenhum",
+        resultTitle: "Como dividir",
+        profit: "Lucro ou perda (pior resultado)",
+        profitPercent: "Lucro ou perda sobre o total apostado",
+        totalStake: "Aposta total necessária",
+        coverage: "Cobertura do mercado (soma das probabilidades implícitas)",
+        stakeOn: "Aposta no resultado",
+        returnOn: "Retorno se vencer o resultado",
+        meanOdds: "Odd média aqui (harmónica)",
+        breakEvenOdds: "Odd média necessária para o equilíbrio",
+        verdictWin:
+          "Lucro fixado: {pct} sobre o total apostado, seja qual for o resultado vencedor.",
+        verdictLoss: "Com estas odds perdes {pct} aconteça o que acontecer.",
+        verdictFlat:
+          "Estas odds ficam em equilíbrio: recuperas exatamente o que apostas, seja qual for o resultado vencedor.",
+        verdictUnreachable:
+          "Com estas odds nenhuma aposta total pode render lucro: as probabilidades implícitas somam 100% ou mais.",
+        hint:
+          "Uma odd decimal por resultado, de 2 a 8. O arredondamento mantém cada aposta num múltiplo de 1, 5 ou 10; os retornos são depois recalculados por resultado e deixam de ser idênticos. O decimal aceita vírgula.",
+      },
+      takeaway:
+        "O dutching não torna uma aposta melhor, torna o resultado igual em cada resultado que cobres — por isso é a cobertura, e não a divisão das apostas, que diz se valeu a pena.",
+      example: {
+        title: "Três resultados, 100 para dividir",
+        rows: [
+          { label: "Odds", value: "2.10 · 3.60 · 3.60" },
+          { label: "Cobertura do mercado", value: "103,17%" },
+          { label: "Aposta em cada um, de 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Retorno em cada resultado", value: "96,92" },
+          { label: "Lucro ou perda", value: "−3,08 (−3,08%)" },
+        ],
+        note:
+          "Inverte a pergunta e as mesmas odds respondem: 2.10 e 2.10 somam 95,24%, por isso um lucro de 20 pede 400 no total, 200 de cada lado, com retorno de 420 nos dois casos. O arredondamento é onde a igualdade se quebra: a 5 a primeira divisão passa a 45, 25 e 25, o total desce para 95 e os retornos ficam 94,50, 90,00 e 90,00 — o pior resultado é agora −5,00.",
+      },
+      explainerTitle: "Retorno igual em cada resultado",
+      explainer: [
+        "**O dutching reparte uma aposta por vários resultados do mesmo mercado para que o retorno seja o mesmo, qualquer que seja o vencedor.** Cada resultado recebe uma parte proporcional à sua probabilidade implícita — um dividido pela odd — e as partes somam o teu total. Ao contrário da arbitragem, não é preciso que as probabilidades implícitas somem menos de 100%. Com odds de 2.10, 3.60 e 3.60 somam 103,17%, e 100 repartidos em 46,15, 26,92 e 26,92 devolvem 96,92 em cada resultado: o desfecho deixa de depender do jogo, mas é uma perda de 3,08%, porque o mercado fica com a sua margem.",
+        "**O número a ler primeiro é a cobertura do mercado.** Abaixo de 100% a divisão fixa um lucro; acima, fixa uma perda, e quanto mais acima, mais pagas pela certeza. O equilíbrio é uma questão de odd média: com três resultados a média harmónica das odds tem de chegar a 3,00, e aqui é 2,91. Duas notas práticas. **Arredondar as apostas à unidade, a 5 ou a 10 quebra a igualdade** — a calculadora recalcula cada retorno e mostra que já não são idênticos. E cobrir vários resultados é pagar a margem em cada um: o dutching é uma forma de escolher como ficas exposto, não de eliminar o custo de o estar.",
+      ],
+      faq: [
+        {
+          q: "Qual é a diferença entre dutching e arbitragem?",
+          a: "A arbitragem precisa de odds que juntas somem menos de 100%, de modo que o lucro fica fixado. O dutching só pede que cubras vários resultados de um mercado com retornos iguais: a soma pode passar os 100%, e então igualar o retorno torna a perda certa e visível. A aritmética é a mesma, a condição não.",
+        },
+        {
+          q: "Porque é que a calculadora não chega ao meu lucro pretendido?",
+          a: "Quando as probabilidades implícitas somam 100% ou mais, nenhuma aposta produz lucro: o retorno por unidade apostada é um dividido por essa soma, ou seja, 1 ou menos. A calculadora di-lo em vez de inventar um total. A saída são melhores odds ou menos resultados cobertos.",
+        },
+        {
+          q: "O que acontece se arredondar as apostas?",
+          a: "Cada aposta passa ao múltiplo mais próximo de 1, 5 ou 10, por isso o total muda e os retornos deixam de ser idênticos. A calculadora recalcula o retorno de cada resultado a partir das apostas arredondadas e mostra o pior como lucro ou perda, que é o número honesto para planear.",
+        },
+        {
+          q: "Porque cobrir vários resultados com perda?",
+          a: "Porque transforma um desfecho incerto num conhecido: pagas um preço conhecido por acertares em qualquer dos resultados que cobres. Se esse preço compensa depende do valor que a certeza tem para ti, e a cobertura diz exatamente quanto custa.",
         },
       ],
     },

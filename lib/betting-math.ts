@@ -303,6 +303,91 @@ export function arbitrage(args: {
   return { impliedSum, profitPercent: 1 / impliedSum - 1, stakes, returns };
 }
 
+// ───────────────────────────────── dutching ─────────────────────────────
+
+/** Il dutching accetta da 2 a 8 esiti: oltre, la lista non è più leggibile e
+ *  uno stake spalmato su nove righe è quasi sempre un errore di input. */
+export const DUTCHING_MAX_OUTCOMES = 8;
+
+/** Arrotondamenti ammessi per lo stake (0 = nessuno). Chiuso di proposito:
+ *  sono i tagli che esistono davvero sui tagliandi, non un numero libero. */
+export const DUTCHING_ROUNDINGS = [0, 1, 5, 10] as const;
+export type DutchingRounding = (typeof DUTCHING_ROUNDINGS)[number];
+
+/**
+ * Dutching: dividere uno stake su più esiti dello STESSO mercato in modo che il
+ * ritorno sia identico qualunque esito vinca. A differenza dell'arbitraggio non
+ * serve che Σ(1/quota) sia < 1: con Σ ≥ 1 il ritorno uguale è comunque
+ * ottenibile, solo che è inferiore allo stake — e dirlo («perdi il 4,8% in ogni
+ * caso») è l'informazione, quindi il profitto negativo si ritorna, non è `null`.
+ *
+ * Due modalità: `total` (ho X da ripartire) e `target` (voglio +Y di profitto:
+ * quanto devo mettere in totale). Con `target` serve Σ < 1, altrimenti nessuno
+ * stake produce un profitto: è `null` («irraggiungibile»), non un numero finto.
+ *
+ * Con `roundTo` gli stake vanno al multiplo più vicino e il ritorno si
+ * RICALCOLA per esito sugli stake arrotondati: non sono più uguali, e
+ * `profits` lo mostra. Lo stake totale diventa la somma degli arrotondati.
+ *
+ * `breakEvenOdds` è la quota media (armonica, l'unica coerente con le
+ * probabilità implicite) per cui Σ = 1: vale esattamente n. `meanOdds` è
+ * quella di questo mercato, n/Σ: sotto `breakEvenOdds` il ripartire perde.
+ */
+export function dutching(args: {
+  decimals: number[];
+  mode: "total" | "target";
+  amount: number;
+  roundTo?: DutchingRounding;
+}): {
+  impliedSum: number;
+  profitPercent: number;
+  meanOdds: number;
+  breakEvenOdds: number;
+  totalStake: number;
+  stakes: number[];
+  returns: number[];
+  profits: number[];
+} | null {
+  const { decimals, mode, amount, roundTo = 0 } = args;
+  // isMarket garantisce ≥2 esiti e quote finite > 1: impliedSum in (0, n) e
+  // nessuna divisione qui sotto può produrre NaN o Infinity.
+  if (!isMarket(decimals) || decimals.length > DUTCHING_MAX_OUTCOMES) return null;
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  if (!(DUTCHING_ROUNDINGS as readonly number[]).includes(roundTo)) return null;
+
+  const impliedSum = overround(decimals);
+  const profitPercent = 1 / impliedSum - 1;
+
+  let total = amount;
+  if (mode === "target") {
+    // profitto = totale × (1/Σ − 1) ⇒ totale = obiettivo / (1/Σ − 1); senza
+    // margine a favore (Σ ≥ 1) il denominatore è ≤ 0 e non esiste risposta.
+    if (profitPercent <= 0) return null;
+    total = amount / profitPercent;
+  } else if (mode !== "total") {
+    return null;
+  }
+
+  const ideal = decimals.map((d) => (total * (1 / d)) / impliedSum);
+  const stakes = roundTo > 0 ? ideal.map((s) => Math.round(s / roundTo) * roundTo) : ideal;
+  const totalStake = stakes.reduce((a, s) => a + s, 0);
+  // Tutti gli stake arrotondati a zero: niente è stato puntato, niente da mostrare.
+  if (totalStake <= 0) return null;
+  const returns = stakes.map((s, i) => s * decimals[i]);
+  const profits = returns.map((r) => r - totalStake);
+
+  return {
+    impliedSum,
+    profitPercent,
+    meanOdds: decimals.length / impliedSum,
+    breakEvenOdds: decimals.length,
+    totalStake,
+    stakes,
+    returns,
+    profits,
+  };
+}
+
 /** Importo scritto da un umano che PUÒ essere negativo: il profitto di un
  *  periodo in perdita è un dato, non un errore di input. `parseAmount` di
  *  parts.tsx rifiuta i negativi ed è giusto così per gli stake — qui serve
