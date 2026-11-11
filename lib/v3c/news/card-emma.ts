@@ -83,8 +83,25 @@ const MAX_HEADLINE_WORDS = 7;
 const FILLER = new Set(["the", "a", "an", "of", "in", "on", "at", "for", "to", "as", "over", "against", "that", "with", "by", "from", "after", "has", "have", "had", "is", "are", "was", "were", "wanted", "will"]);
 const DANGLING = new Set([...FILLER, "and", "but", "or", "until", "while", "back"]);
 /** Title → at most 7 words (Emma's rule: the note's title, shortened, never a single generic word): drop filler words after the first, then cut, never ending on a dangling word. */
+// T17 (11/11): the 7-word cut produced half sentences («…HEART TREATMENT TWO DAYS» for «…two days before the World Cup»). A title that is too long first loses
+// its TRAILING clause (from the last «before/after/amid/while/against/ahead» or a comma/semicolon), plus a dangling «two days» time span, and only then is cut by words.
+const CLAUSE = new Set(["before", "after", "amid", "while", "against", "ahead", "despite", "following"]);
+const SPAN = /(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:minutes?|hours?|days?|weeks?|months?|years?)$/i;
+function dropTrailingClause(words: string[]): string[] {
+  for (let i = words.length - 1; i >= 3; i--) {
+    const prev = words[i - 1];
+    const punct = /[,;]$/.test(prev);
+    if (!punct && !CLAUSE.has(words[i].toLowerCase())) continue;
+    let head = punct ? [...words.slice(0, i - 1), prev.replace(/[,;]$/, "")] : words.slice(0, i);
+    const m = SPAN.exec(head.join(" "));
+    const n = m ? m[0].split(" ").length : 0;
+    if (n && head.length - n >= 3) head = head.slice(0, head.length - n);
+    if (head.length >= 3 && head.length <= MAX_HEADLINE_WORDS + 1) return head;
+  }
+  return words;
+}
 function shorten(words: string[]): string[] {
-  let w = words;
+  let w = dropTrailingClause(words);
   for (let i = w.length - 1; i > 0 && w.length > MAX_HEADLINE_WORDS; i--) if (FILLER.has(w[i].toLowerCase())) w = [...w.slice(0, i), ...w.slice(i + 1)];
   w = w.slice(0, MAX_HEADLINE_WORDS);
   while (w.length > 2 && DANGLING.has(w[w.length - 1].toLowerCase())) w = w.slice(0, -1);
