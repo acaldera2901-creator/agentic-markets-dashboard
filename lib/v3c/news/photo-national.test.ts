@@ -66,6 +66,15 @@ describe("photoRef on club notes", () => {
     const r = await photoRef(raph, ["Barcelona"], { dir: d, fetch: nat.f });
     expect(r?.url).toContain("Raphinha_Barcelona_ok");
   });
+  it("lead refused for licence/resolution (not national) → Commons is still searched, last query = name only (#TOMMY-FOTO-1110)", async () => {
+    const m = mock("Raphinha", "Brazilian footballer (born 1996)", "Raphinha_small.jpg", { "Raphinha_small.jpg": { width: 100 } }, ["Raphinha_FC_Barcelona_2025.jpg"]);
+    const r = await photoRef(raph, ["Barcelona"], { dir: dir(), fetch: m.f });
+    expect(r?.url).toContain("Raphinha_FC_Barcelona_2025");
+    const none = mock("Raphinha", "Brazilian footballer (born 1996)", NAT, {}, []);
+    await photoRef(raph, ["Barcelona"], { dir: dir(), fetch: none.f });
+    const qs = none.calls.filter((u) => u.includes("list=search")).map((u) => decodeURIComponent(/srsearch=([^&]+)/.exec(u)![1]));
+    expect(qs).toEqual(["Raphinha FC Barcelona", "Raphinha"]);
+  });
   it("national note: the national lead image is accepted (not a club note)", async () => {
     const m = mock("Raphinha", "Brazilian footballer", NAT, {}, []);
     const r = await photoRef({ title: "Brazil beat Morocco in a friendly", body: "Raphinha scored." }, ["Brazil"], { dir: dir(), fetch: m.f });

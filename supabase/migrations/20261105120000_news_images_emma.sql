@@ -9,4 +9,6 @@ alter table public.news_items
   check (image_url is null or image_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/news-images/news-[0-9a-f]{12}(-e)?\.webp$');
 
 -- 2. The bucket also accepts the credit file (json, a few hundred bytes; the 300 KB limit stays).
-update storage.buckets set allowed_mime_types = array['image/webp','application/json'] where id = 'news-images';
+-- Pinned to the bucket not yet allowing json: a replay finds no row (#CI-VERDE-1111).
+update storage.buckets set allowed_mime_types = array['image/webp','application/json']
+  where id = 'news-images' and not (coalesce(allowed_mime_types, array[]::text[]) @> array['application/json']);

@@ -443,6 +443,11 @@ async function pictures(s: WatcherState, d: Deps, img: ImageDeps, start: number,
           (s.cards ??= []).push({ at: d.now(), format: card.format, block: card.block, dominant: card.dominant, tint: card.tint, club: card.club, dhash: a.sig.dhash, csig: a.sig.csig, figure: card.figure });
           s.cards = s.cards.slice(-WINDOW);
           d.log(`image ok ${j.base} · ${card.format}/${card.block} · ${card.tint ?? "navy"} · text «${cardJob(card, j.note, j.teams).expected}» · attempt ${j.attempts + 1} · ${a.ms} ms · webp ${Math.round(a.files.webpBytes / 1024)} KB`);
+        } else if (a.kind === "limit" && /tentativi esauriti per il post/.test(a.reason)) {
+          j.lastError = "hf-ref: per-post attempts exhausted";
+          d.log(`image skipped ${j.base}: hf-ref per-post attempts exhausted — next post`);
+          keep.push(j);
+          continue;
         } else if (a.kind === "limit") {
           d.log(`image: usage limit (${a.reason}) — pictures wait for the next run`);
           stop = true;

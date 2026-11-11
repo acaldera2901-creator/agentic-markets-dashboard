@@ -6,7 +6,8 @@
 import type { Metadata } from "next";
 import {
   SITE_ORIGIN,
-  TOOL_LOCALES,
+  INDEXABLE_LOCALES,
+  isIndexableLocale,
   TOOL_SLUGS,
   hubPath,
   toolPath,
@@ -23,7 +24,7 @@ const abs = (path: string) => `${SITE_ORIGIN}${path}`;
  */
 function languageMap(pathFor: (locale: ToolLocale) => string): Record<string, string> {
   const languages: Record<string, string> = {};
-  for (const locale of TOOL_LOCALES) languages[locale] = abs(pathFor(locale));
+  for (const locale of INDEXABLE_LOCALES) languages[locale] = abs(pathFor(locale));
   languages["x-default"] = abs(pathFor("en"));
   return languages;
 }
@@ -34,6 +35,7 @@ export function toolMetadata(slug: ToolSlug, locale: ToolLocale): Metadata {
   return {
     title: copy.metaTitle,
     description: copy.metaDescription,
+    ...(isIndexableLocale(locale) ? {} : { robots: { index: false, follow: true } }),
     alternates: {
       canonical: url,
       languages: languageMap((l) => toolPath(slug, l)),
@@ -55,6 +57,7 @@ export function hubMetadata(locale: ToolLocale): Metadata {
   return {
     title: copy.metaTitle,
     description: copy.metaDescription,
+    ...(isIndexableLocale(locale) ? {} : { robots: { index: false, follow: true } }),
     alternates: {
       canonical: url,
       languages: languageMap((l) => hubPath(l)),

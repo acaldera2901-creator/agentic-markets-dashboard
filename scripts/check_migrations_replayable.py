@@ -83,6 +83,10 @@ REVIEWED_ONE_SHOT = {
         "backfill plan_source pinnato a created_at < 2026-07-24 (#MIGRATION-REPLAY-0801): "
         "l'ELSE 'paygate' era vero solo prima del rail carta Shopify"
     ),
+    "20261105120000_news_images_emma.sql::UPDATE": (
+        "config del bucket news-images pinnata a 'json non ancora ammesso' (#CI-VERDE-1111): "
+        "un replay non trova righe; il valore scritto e' comunque una costante"
+    ),
 }
 
 RULES_DATA = [

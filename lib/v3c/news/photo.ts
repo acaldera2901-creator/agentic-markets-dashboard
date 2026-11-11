@@ -116,10 +116,10 @@ export async function photoRef(note: NoteText, teams: readonly string[], o: Phot
       if (!page) continue;
       const lead = await build(page.pageimage!, page.title, cand, key);
       if (lead && lead !== "national") return lead;
-      if (lead !== "national") continue;
-      // the lead image is a national-team picture: look on Commons for one of the person in the note's club (title must carry the surname and not be national)
-      for (const cn of clubNames) {
-        const s = `https://commons.wikimedia.org/w/api.php?action=query&format=json&list=search&srnamespace=6&srlimit=6&srsearch=${encodeURIComponent(`${page.title.replace(/ \(.*\)$/, "")} ${cn}`)}`;
+      // #TOMMY-FOTO-1110: lead refused (national-team picture, or licence/resolution): look on Commons for one of the person in the
+      // note's club (title must carry the surname and not be national); the last query is the name only
+      for (const cn of [...clubNames, ""]) {
+        const s = `https://commons.wikimedia.org/w/api.php?action=query&format=json&list=search&srnamespace=6&srlimit=10&srsearch=${encodeURIComponent(`${page.title.replace(/ \(.*\)$/, "")} ${cn}`.trim())}`;
         const hits = ((await getJson(f, s))?.query?.search ?? []) as { title: string }[];
         for (const h of hits) {
           const name = h.title.replace(/^File:/, "");

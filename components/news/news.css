@@ -105,6 +105,8 @@
   border-radius: var(--am-r-card); background: var(--am-panel-2);
   font-family: var(--am-font-ui);
 }
+.brc-news-reserve { min-height: 178px; }
+@media (max-width: 640px) { .brc-news-reserve { min-height: 446px; } }
 .brc-news__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--am-s-1) var(--am-s-3); min-width: 0; }
 .brc-news__h { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted); }
 .brc-news__upd { font-size: 11px; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
