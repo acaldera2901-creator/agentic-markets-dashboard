@@ -38,6 +38,18 @@ export const TOOL_LOCALES = [
 
 export type ToolLocale = (typeof TOOL_LOCALES)[number];
 
+/**
+ * Lista unica dei locali indicizzabili (GSC 10/11: 120 dei 153 URL in sitemap erano
+ * tool tradotti "rilevati, non indicizzati"). Solo questi entrano in sitemap e
+ * hreflang; gli altri restano online ma noindex,follow. Per riaprire una lingua:
+ * aggiungerla qui, nient'altro.
+ */
+export const INDEXABLE_LOCALES: readonly ToolLocale[] = ["en", "it"];
+
+export function isIndexableLocale(locale: ToolLocale): boolean {
+  return INDEXABLE_LOCALES.includes(locale);
+}
+
 /** I dieci locali che vivono sotto /[lang]/tools. */
 export const PREFIXED_LOCALES = TOOL_LOCALES.filter((l) => l !== "en");
 

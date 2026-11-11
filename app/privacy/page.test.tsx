@@ -31,3 +31,15 @@ describe("Privacy §11 — HMAC antifrode", () => {
     expect(p).not.toMatch(/s{32}/);
   });
 });
+
+// #G2-TRACKING-1110 — profiles.signup_country/region/city vanno dichiarati in §2.
+describe("Privacy §2 — località di registrazione", () => {
+  it("dichiara paese, regione e città, base legittimo interesse, IP non salvato", async () => {
+    const { default: PrivacyPage } = await import("./page");
+    render(<PrivacyPage />);
+    const p = screen.getByTestId("privacy-signup-location").textContent ?? "";
+    expect(p).toMatch(/country, region and city/);
+    expect(p).toMatch(/IP address itself is not saved/);
+    expect(p).toMatch(/6\(1\)\(f\)/);
+  });
+});

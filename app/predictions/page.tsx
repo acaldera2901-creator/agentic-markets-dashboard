@@ -5,13 +5,14 @@ import type { Metadata } from "next";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { UpcomingMatches } from "@/components/seo/UpcomingMatches";
 import { fetchUpcomingMatches } from "@/lib/seo/upcoming-matches";
+import { RelatedTools } from "@/components/seo/RelatedTools";
 import { SeoProse } from "@/components/seo/SeoProse";
 import { PREDICTIONS_FAQ, PREDICTIONS_INTRO } from "@/lib/seo/predictions-faq";
 import Dashboard from "../app/page";
 
 export const metadata: Metadata = {
-  title: "Predictions | BetRedge",
-  description: "Live football and tennis predictions with calibrated probabilities, confidence bands, and the reasoning behind every number.",
+  title: "Football & Tennis Predictions: Model vs Market | BetRedge",
+  description: "Today's football and tennis predictions: the model's probability next to the market's, with the reasoning behind each gap. Analysis, not a guarantee.",
   alternates: { canonical: "/predictions" },
 };
 
@@ -26,6 +27,7 @@ export default async function PredictionsPage() {
       <Dashboard initialTab="bets" />
       <UpcomingMatches matches={matches} />
       <SeoProse heading="How to read a BetRedge prediction" intro={PREDICTIONS_INTRO} faq={PREDICTIONS_FAQ} />
+      <RelatedTools />
     </>
   );
 }

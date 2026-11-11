@@ -17,6 +17,9 @@ describe("headlineLines", () => {
     expect(headlineLines("Como equal Champions League record for biggest win against Lens")).toEqual(["Como equal Champions", "League record", "biggest win"]); // 63 chars → shortened
     expect(headlineLines("Kovac wanted to avoid risk over Guirassy injury")).toEqual(["Kovac wanted to", "avoid risk over", "Guirassy injury"]);
     expect(headlineLines("Haaland late winner as RB Leipzig pegged Man City back")).toEqual(["Haaland late winner as", "RB Leipzig pegged", "Man City back"]);
+    // T17: a long title loses its trailing clause instead of ending mid-sentence
+    expect(headlineLines("Scott McTominay discloses heart treatment two days before the World Cup")).toEqual(["Scott McTominay discloses", "heart treatment"]);
+    expect(headlineLines("Pagis earns first France call-up; Konate and Tchouameni are back")).toEqual(["Pagis earns first", "France call-up"]);
     expect(headlineLines("Rooney")).toEqual([]);
     expect(headlineLines("one two three four five six seven eight nine ten eleven twelve").length).toBeLessThanOrEqual(3); // > 11 words → cut to 7
     expect(headlineLines("Short title.")).toEqual(["Short title"]);

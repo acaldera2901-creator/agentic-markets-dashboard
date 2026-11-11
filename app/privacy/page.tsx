@@ -24,7 +24,7 @@ export default function PrivacyPage() {
             ← Back to BetRedge
           </Link>
           <h1 className="text-xl font-bold text-[var(--am-text)]">Privacy Policy</h1>
-          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: 20 October 2026</p>
+          <p className="text-[11px] text-[var(--am-muted-2)]">Last updated: 11 November 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -51,7 +51,11 @@ export default function PrivacyPage() {
                 sono PSEUDONIMI (Cons. 26 GDPR). La parola "anonymous" toglieva al
                 trattamento la base giuridica che gli serve davvero (consenso). */}
             <li><strong className="text-[var(--am-text)]">Usage events:</strong> Product usage events (page and tab views, tab clicks, plan views, banner views, partner link clicks, sign-up and checkout steps) recorded in our own first-party database. They contain no name or email address. A randomly generated session identifier makes consenting usage events pseudonymous rather than anonymous; where the account-linking option described below is enabled, a consenting authenticated session can be associated with an internal profile UUID. That identifier is created and sent <strong className="text-[var(--am-text)]">only after you accept cookies</strong> via the banner; if you decline, or have not answered yet, events are still counted but carry no identifier and cannot be linked to one another.</li>
-            <li><strong className="text-[var(--am-text)]">Acquisition source:</strong> When you create an account, we store how you first reached the site (campaign parameters in the link you followed, the referring website, and the first page you landed on). This is first-party data kept in your browser&apos;s localStorage until sign-up and then saved with your profile; it is never shared with advertising networks.</li>
+            <li><strong className="text-[var(--am-text)]">Acquisition source:</strong> When you create an account, we store how you first reached the site (campaign parameters in the link you followed, the referring website, and the first page you landed on). This is first-party data saved with your profile; it is never shared with advertising networks. Only if you have accepted cookies is this information kept in your browser&apos;s localStorage until sign-up; if you have not, nothing is stored on your device and we only read the campaign parameters, referring website and page of the sign-up request itself. If you have accepted cookies, the session identifier described in Section 4 is also saved with your profile, so that the usage events of your sign-up session can be linked to your account.</li>
+            {/* #G2-TRACKING-1110 — signup_country/region/city da header geo di Vercel
+                (lib/signup-tracking.ts), salvati sempre al signup: nessuno storage sul
+                dispositivo, l'IP non viene conservato. */}
+            <li data-testid="privacy-signup-location"><strong className="text-[var(--am-text)]">Sign-up location:</strong> When you create an account, we store the approximate country, region and city from which you registered. This is derived from your IP address by our hosting provider at the moment of sign-up; the IP address itself is not saved with your profile and nothing is stored on your device. We use it to understand in which markets the service is used and which of our channels bring sign-ups from each market, on the basis of our legitimate interest (Art. 6(1)(f) GDPR); you can object as described in Section 7.</li>
             <li><strong className="text-[var(--am-text)]">Deposit requests:</strong> For paying clients, name, email, and payment method are stored securely in Supabase with row-level security.</li>
             <li><strong className="text-[var(--am-text)]">Technical data:</strong> Standard server logs (IP address, browser type, request timestamps) retained for up to 30 days for security purposes.</li>
           </ul>
@@ -68,7 +72,7 @@ export default function PrivacyPage() {
                 (art. 6(1)(a) GDPR). Il legittimo interesse resta dov'è vero:
                 sicurezza dei log e soft opt-in della sez. 10. */}
             <li><strong className="text-[var(--am-text)]">Consent:</strong> Product analytics and any other non-essential storage on your device, including the session identifier described in Section 4 (Art. 6(1)(a) GDPR, together with Art. 5(3) of the ePrivacy Directive — Art. 122 of the Italian Privacy Code). Marketing communications where applicable. You may withdraw consent at any time through the cookie banner; withdrawal does not affect processing already carried out while consent was in place.</li>
-            <li><strong className="text-[var(--am-text)]">Legitimate interest:</strong> Security and abuse prevention (server logs, rate limiting) and the &quot;soft opt-in&quot; emails to existing clients described in Section 10.</li>
+            <li><strong className="text-[var(--am-text)]">Legitimate interest:</strong> Security and abuse prevention (server logs, rate limiting), the approximate sign-up location described in Section 2, and the &quot;soft opt-in&quot; emails to existing clients described in Section 10.</li>
           </ul>
         </section>
 
@@ -116,6 +120,10 @@ export default function PrivacyPage() {
               vive in lib/analytics-events.ts: se cambia li', cambia qui. */}
           <p className="text-xs leading-relaxed">
             Profile data stored in your browser can be deleted at any time by clearing localStorage. Server-side data for paying clients is retained for 2 years after account closure for legal and tax purposes, then deleted.
+          </p>
+          {/* #G2-TRACKING-1110 — colonne su profiles: si cancellano con la riga del profilo. */}
+          <p className="text-xs leading-relaxed">
+            <strong className="text-[var(--am-text)]">Sign-up location:</strong> the approximate country, region and city recorded at sign-up are kept for as long as your account exists and are deleted together with your profile.
           </p>
           <p className="text-xs leading-relaxed">
             <strong className="text-[var(--am-text)]">Affiliate program:</strong> the referral code on your device (<strong className="text-[var(--am-text)]">am_ref</strong>) expires after 60 days; commission and payout records are kept as long as accounting law requires (Switzerland: 10 years).

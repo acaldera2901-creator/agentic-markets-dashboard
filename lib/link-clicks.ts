@@ -9,7 +9,9 @@ import { analyticsWriteAllowed } from "@/lib/events-write-gate";
 import { hashIp } from "@/lib/affiliate/account";
 import { keptSourceParams } from "@/lib/affiliate/clicks";
 
-export const CHANNELS = { ig: { path: "/", utm_source: "instagram", utm_medium: "bio", src: "ig-bio" } } as const;
+// #IG-BRAND-1110: the bio link goes through the brand affiliate code BRAND-IG (/r/ counts it in affiliate_referral_clicks and
+// carries ?ref=BRAND-IG to the landing → signup/Pro attributed in the backoffice). The IG bio can only be edited from mobile.
+export const CHANNELS = { ig: { path: "/r/BRAND-IG", utm_source: "instagram", utm_medium: "bio", utm_campaign: "profile" } } as const;
 export type Channel = keyof typeof CHANNELS;
 
 /** Where the link lands: fixed source params for the channel; the campaign/content the link carries (utm_campaign, utm_content) survive, source/medium never come from the URL. */
@@ -18,7 +20,7 @@ export function channelRedirect(channel: Channel, from: URL, base: string | URL)
   const url = new URL(c.path, base);
   url.searchParams.set("utm_source", c.utm_source);
   url.searchParams.set("utm_medium", c.utm_medium);
-  url.searchParams.set("src", c.src);
+  url.searchParams.set("utm_campaign", c.utm_campaign);
   for (const [k, v] of keptSourceParams(from)) if (k === "utm_campaign" || k === "utm_content") url.searchParams.set(k, v);
   return url;
 }

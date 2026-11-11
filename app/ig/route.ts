@@ -3,7 +3,7 @@ import { channelRedirect, linkClickCountable, scheduleLinkClick } from "@/lib/li
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 // #IG-LINK-1106 — link for the Instagram bio: betredge.com/ig
-// 302 to the home with utm_source=instagram&utm_medium=bio&src=ig-bio. The click is counted server-side (aggregate, HMAC IP+UA,
+// 302 to /r/BRAND-IG?utm_source=instagram&utm_medium=bio&utm_campaign=profile (#IG-BRAND-1110). The click is counted server-side (aggregate, HMAC IP+UA,
 // nothing on the device); the source reaches profiles.acquisition at signup only after consent (lib/attribution).
 export const dynamic = "force-dynamic";
 

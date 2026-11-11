@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import type { MetadataRoute } from "next";
 import sitemap from "./sitemap";
-import { TOOL_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
+import { INDEXABLE_LOCALES, PREFIXED_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
 import { GENERATED_AT } from "@/lib/seo/last-modified.generated";
 
 // #BLOG-SSR-0814: la sitemap legge i post published dal DB — nei test il DB
@@ -57,17 +57,20 @@ describe("sitemap", () => {
     urls = entries.map((e) => e.url);
   });
 
-  it("contiene i dodici tool in tutte e undici le lingue, più gli undici hub", () => {
-    for (const locale of TOOL_LOCALES) {
+  it("contiene i dodici tool + hub nei soli locali indicizzabili (en, it) e nessun altro locale", () => {
+    for (const locale of PREFIXED_LOCALES.filter((l) => !INDEXABLE_LOCALES.includes(l))) {
+      expect(urls.some((u) => u.includes(`/${locale}/tools`)), `locale ${locale}`).toBe(false);
+    }
+    for (const locale of INDEXABLE_LOCALES) {
       expect(urls, `hub ${locale}`).toContain(`${BASE}${hubPath(locale)}`);
       for (const slug of TOOL_SLUGS) {
         expect(urls, `${slug} ${locale}`).toContain(`${BASE}${toolPath(slug, locale)}`);
       }
     }
     const toolUrls = urls.filter((u) => u.includes("/tools"));
-    // 12 tool × 11 lingue + 11 hub. Conteggio a mano: un tool che entra in
+    // (12 tool + 1 hub) × 2 lingue. Conteggio a mano: un tool che entra in
     // TOOL_SLUGS ma non finisce in sitemap resta invisibile ai crawler.
-    expect(toolUrls).toHaveLength(143);
+    expect(toolUrls).toHaveLength(26);
   });
 
   it("non ha URL duplicate", () => {

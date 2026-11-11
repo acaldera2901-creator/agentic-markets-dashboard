@@ -14,10 +14,15 @@ import { matchesForNote, rowsFor, stripCards, timeRome, type BoardMatch } from "
 import { boardHref, useNewsFeed, useNow } from "@/components/news/use-news";
 import "@/components/news/news.css";
 
+const RESERVE = process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
+
 export function ClassicNewsStrip({ lang, football }: { lang: string; football: readonly LobbyItem[] }) {
   const feed = useNewsFeed();
   const now = useNow();
-  if (!feed) return null;
+  // #CLS-NEWS-RESERVE: while the feed is loading, hold the strip's measured height (production only,
+  // where the news are on) so the tabs below don't jump; once the feed answers and there is nothing
+  // to show, the placeholder goes (a single collapse). Limit: if the news are off in prod, one collapse remains.
+  if (!feed) return RESERVE ? <div className="brc-news-reserve" aria-hidden="true" data-testid="classic-news-reserve" /> : null;
   const cards = stripCards(feed, 3);
   if (!cards.length || feed.state !== "ok") return null;
   const c = newsCopy(lang);
