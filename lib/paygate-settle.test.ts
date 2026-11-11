@@ -25,8 +25,16 @@ const baseOrder = {
 describe("settlePendingOrder — self-heal PayGate", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it.each([null, "polygon-pol"])("does not claim an unsupported verified denomination %s", async (coin) => {
+    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "paid", valueCoin: 100, txidOut: "tx", coin });
+    const r = await settlePendingOrder({ ...baseOrder });
+    expect(r.granted).toBe(false);
+    expect(getSupabaseAdminClient).not.toHaveBeenCalled();
+    expect(activatePaygatePlan).not.toHaveBeenCalled();
+  });
+
   it("concede il piano se PayGate=paid e valore ≥ soglia (-50%)", async () => {
-    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "paid", valueCoin: 5.7, txidOut: "0xabc" });
+    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "paid", valueCoin: 5.7, txidOut: "0xabc", coin: "polygon-usdc" });
     vi.mocked(getSupabaseAdminClient).mockReturnValue({ rpc: vi.fn().mockResolvedValue({ data: true, error: null }) } as never);
     vi.mocked(activatePaygatePlan).mockResolvedValue({ plan: "base" } as never);
 
@@ -38,14 +46,14 @@ describe("settlePendingOrder — self-heal PayGate", () => {
   });
 
   it("NON concede se PayGate=unpaid (checkout abbandonato)", async () => {
-    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "unpaid", valueCoin: null, txidOut: null });
+    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "unpaid", valueCoin: null, txidOut: null, coin: null });
     const r = await settlePendingOrder({ ...baseOrder });
     expect(r.granted).toBe(false);
     expect(activatePaygatePlan).not.toHaveBeenCalled();
   });
 
   it("NON concede se il valore netto è sotto la soglia -50%", async () => {
-    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "paid", valueCoin: 1.0, txidOut: null }); // < 5*0.5
+    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "paid", valueCoin: 1.0, txidOut: null, coin: "polygon-usdc" });
     vi.mocked(getSupabaseAdminClient).mockReturnValue({ rpc: vi.fn() } as never);
     const r = await settlePendingOrder({ ...baseOrder });
     expect(r.granted).toBe(false);
@@ -53,7 +61,7 @@ describe("settlePendingOrder — self-heal PayGate", () => {
   });
 
   it("idempotente: se il claim atomico non vince non concede (no doppio-grant)", async () => {
-    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "paid", valueCoin: 5.7, txidOut: "0xabc" });
+    vi.mocked(checkPaymentStatus).mockResolvedValue({ status: "paid", valueCoin: 5.7, txidOut: "0xabc", coin: "polygon-usdc" });
     vi.mocked(getSupabaseAdminClient).mockReturnValue({ rpc: vi.fn().mockResolvedValue({ data: false, error: null }) } as never);
     const r = await settlePendingOrder({ ...baseOrder });
     expect(r.granted).toBe(false);

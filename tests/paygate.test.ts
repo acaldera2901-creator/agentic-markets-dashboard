@@ -34,12 +34,12 @@ assert.match(u, /email=a%40b\.com/);
 
 // — evaluateCallback: gate (a)+(b) —
 const okOrder = { status: "pending", amount_usd: 169 };
-assert.equal(evaluateCallback({ order: null, valueCoin: 169 }).grant, false);                  // ordine assente
-assert.equal(evaluateCallback({ order: { status: "paid", amount_usd: 169 }, valueCoin: 169 }).grant, false); // già pagato
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: null }).grant, false);              // value_coin assente
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: 50 }).grant, false);                // sotto la soglia
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: 169 }).grant, true);                // ok (importo pieno)
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: 166 }).grant, true);                // ok
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: null, valueCoin: 169 }).grant, false);                  // ordine assente
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: { status: "paid", amount_usd: 169 }, valueCoin: 169 }).grant, false); // già pagato
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: null }).grant, false);              // value_coin assente
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: 50 }).grant, false);                // sotto la soglia
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: 169 }).grant, true);                // ok (importo pieno)
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: 166 }).grant, true);                // ok
 // #TESTS-CI-0801 — la tolleranza fee NON è più il 50% di quando questo test fu
 // scritto: DEFAULT_FEE_TOLERANCE è 0.15 (lib/paygate.ts). Fu stretta con
 // l'evidenza del pagamento test da $5, dove PayGate accreditava value_coin
@@ -47,12 +47,12 @@ assert.equal(evaluateCallback({ order: okOrder, valueCoin: 166 }).grant, true); 
 // sottratte: un floor al 50% permetteva un auto-sconto fino a metà listino
 // (e in composizione con la promo lancio −50% si arrivava a ~25%). Il caso
 // legittimo sta largamente sopra. Soglia su un ordine da 169: 143.65.
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: 143.65 }).grant, true);              // esattamente in soglia (169 × 0.85)
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: 143 }).grant, false);                // appena sotto → niente grant
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: 120 }).grant, false);                // −29%: era accettato col vecchio floor 50%, oggi no
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: 143.65 }).grant, true);              // esattamente in soglia (169 × 0.85)
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: 143 }).grant, false);                // appena sotto → niente grant
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: 120 }).grant, false);                // −29%: era accettato col vecchio floor 50%, oggi no
 // La tolleranza è overridabile da env senza deploy (clamp 0–0.5) se le fee reali
 // risultassero più alte: il vecchio comportamento resta raggiungibile a mano.
-assert.equal(evaluateCallback({ order: okOrder, valueCoin: 120, feeTolerance: 0.5 }).grant, true);
+assert.equal(evaluateCallback({ coin: "polygon-usdc", order: okOrder, valueCoin: 120, feeTolerance: 0.5 }).grant, true);
 
 
 // — #PRICING-CREATORS-0706 (rev. Michele): PROMO DI LANCIO -50% primo mese, per TUTTI —
