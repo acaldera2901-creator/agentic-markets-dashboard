@@ -15,14 +15,14 @@ beforeEach(() => { vi.clearAllMocks(); vi.stubEnv("VERCEL_ENV", "production"); v
 afterEach(() => vi.unstubAllEnvs());
 
 describe("channelRedirect", () => {
-  it("home with utm_source=instagram, utm_medium=bio, src=ig-bio", () => {
+  it("/r/BRAND-IG with utm_source=instagram, utm_medium=bio, utm_campaign=profile", () => {
     const u = channelRedirect("ig", new URL("https://www.betredge.com/ig"), "https://www.betredge.com/ig");
-    expect(u.origin + u.pathname).toBe("https://www.betredge.com/");
-    expect(Object.fromEntries(u.searchParams)).toEqual({ utm_source: "instagram", utm_medium: "bio", src: "ig-bio" });
+    expect(u.origin + u.pathname).toBe("https://www.betredge.com/r/BRAND-IG");
+    expect(Object.fromEntries(u.searchParams)).toEqual({ utm_source: "instagram", utm_medium: "bio", utm_campaign: "profile" });
   });
   it("source/medium can NOT be overridden from the URL; campaign/content survive; ref and strangers are dropped", () => {
     const u = channelRedirect("ig", new URL("https://x/ig?utm_source=evil&utm_medium=x&src=y&utm_campaign=nov&utm_content=reel1&ref=EVIL&foo=1"), "https://x/ig");
-    expect(Object.fromEntries(u.searchParams)).toEqual({ utm_source: "instagram", utm_medium: "bio", src: "ig-bio", utm_campaign: "nov", utm_content: "reel1" });
+    expect(Object.fromEntries(u.searchParams)).toEqual({ utm_source: "instagram", utm_medium: "bio", utm_campaign: "nov", utm_content: "reel1" });
   });
 });
 
@@ -41,7 +41,7 @@ describe("GET /ig", () => {
   it("302 to the home with the source, Cache-Control no-store, and ONE click row (HMAC only, no plain IP/UA, no Set-Cookie)", async () => {
     const res = await GET(req("https://www.betredge.com/ig", { "x-forwarded-for": "9.9.9.1" }));
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("https://www.betredge.com/?utm_source=instagram&utm_medium=bio&src=ig-bio");
+    expect(res.headers.get("location")).toBe("https://www.betredge.com/r/BRAND-IG?utm_source=instagram&utm_medium=bio&utm_campaign=profile");
     expect(res.headers.get("cache-control")).toBe("no-store");
     expect(res.headers.get("set-cookie")).toBeNull();
     expect(dbExecute).toHaveBeenCalledTimes(1);
