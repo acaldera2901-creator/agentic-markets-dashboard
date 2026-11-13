@@ -817,3 +817,6 @@ html[data-frames="off"] .brc-banner:has(.brc-banner__more) .brc-banner__more { l
   .brc-banner__art, .brc-group__chev { transition: none; }
   .brc-banner:hover .brc-banner__art { transform: none; }
 }
+
+/* Shared home/predictions heading: rendered before data loads, with no extra hero. */
+.brc-board-title { margin: 0; color: var(--am-text); font-size: clamp(1.125rem, 2.2vw, 1.5rem); line-height: 1.3; font-weight: 700; text-wrap: balance; }
