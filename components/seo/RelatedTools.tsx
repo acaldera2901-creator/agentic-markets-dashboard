@@ -34,6 +34,17 @@ export function RelatedTools() {
           </Link>
         </li>
       </ul>
+      <p style={{ margin: "16px 0 0" }}>
+        New to the board? Read{" "}
+        <Link href="/how-it-works" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+          how BetRedge readings work
+        </Link>
+        {" "}before comparing probabilities, then check the{" "}
+        <Link href="/history" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+          public record of eligible predictions
+        </Link>
+        . Not every displayed reading is included in that record.
+      </p>
     </nav>
   );
 }
