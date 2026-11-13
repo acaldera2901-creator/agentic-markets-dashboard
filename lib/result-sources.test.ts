@@ -35,7 +35,7 @@ describe("resultSourceFor", () => {
     expect(resultSourceFor("football", "VEI")).toBe(RESULT_SOURCE_DEBT);
   });
   it("tennis partner (ITF/Challenger) → ha la fonte del feed", () =>
-    expect(resultSourceFor("tennis", "Partner feed")).toBe("espn-tennis,betconstruct"));
+    expect(resultSourceFor("tennis", "Partner feed")).toBe("espn-tennis,betconstruct,tennis-explorer"));
   it("tennis ESPN, qualunque torneo → fonte", () =>
     expect(resultSourceFor("tennis", "Delta Motors Tolentino Open")).toContain("espn-tennis"));
 });
@@ -118,7 +118,7 @@ describe("data/result_sources.json combacia con le mappe di settle", () => {
     }
   });
   it("tennis '*': i due resolver esistono nel codice", () => {
-    expect(RESULT_SOURCES.sources.tennis["*"]).toEqual(["espn-tennis", "betconstruct"]);
+    expect(RESULT_SOURCES.sources.tennis["*"]).toEqual(["espn-tennis", "betconstruct", "tennis-explorer"]);
     const settle = readFileSync(join(ROOT, "agents/tennis_settlement.py"), "utf8");
     expect(readFileSync(join(ROOT, "core/espn_tennis_client.py"), "utf8")).toContain("def get_completed_results_for_days");
     expect(readFileSync(join(ROOT, "core/partner_tennis_results.py"), "utf8")).toContain("def get_partner_results_for_days");

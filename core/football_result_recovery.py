@@ -10,6 +10,7 @@ import json
 import httpx
 from sqlalchemy import text
 from core.db import AsyncSessionLocal
+from core.espn_http import ESPN_SITE_API, ESPN_HEADERS
 from scripts.recupera_calcio_1001 import _strong_identity, parse_espn_event, espn_slugs
 
 
@@ -93,12 +94,12 @@ async def recover_batch(after=None):
               AND (CAST(:after AS uuid) IS NULL OR id>CAST(:after AS uuid)) ORDER BY id LIMIT 25
         """),{'after':after})).mappings().all()
     slugs=espn_slugs(); count=0
-    async with httpx.AsyncClient(timeout=15) as c:
+    async with httpx.AsyncClient(timeout=15, headers=ESPN_HEADERS) as c:
         for row in rows:
             slug=slugs.get(row['league']); ext=str(row.get('external_event_id') or '')
             if not slug:continue
             try:
-                base=f'https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}'
+                base=f'{ESPN_SITE_API}/soccer/{slug}'
                 if ext.startswith('espn:'):
                     r=await c.get(base+'/summary',params={'event':ext[5:]});r.raise_for_status()
                     comps=(r.json().get('header') or {}).get('competitions') or []
