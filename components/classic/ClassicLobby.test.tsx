@@ -48,6 +48,14 @@ function setup(extra: Partial<React.ComponentProps<typeof ClassicLobby>> = {}, f
 }
 
 describe("ClassicLobby", () => {
+  it.each([true, false])("has one visible localized primary heading while loading=%s", (loading) => {
+    setup({ loading, lang: "en" });
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Football and tennis match analysis");
+    cleanup();
+    setup({ loading, lang: "it" });
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Analisi delle partite di calcio e tennis");
+  });
   it("#NEWS-FOTMOB-PROD-1026: the side menu gains «News» (→ /blog#news, after Live scores) only while the news is on", () => {
     newsFeed = null;
     setup();

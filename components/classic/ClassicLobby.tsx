@@ -342,6 +342,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
       </nav>}
 
       <div className="brc-main">
+      <h1 className="brc-board-title">{copy.boardTitle}</h1>
       <ClassicBanners banners={bannerList} label={copy.bannersLabel} mobileLabels={[copy.football, copy.tabInPlay, copy.sideRecord]} />
 
       {/* ── 1b · «Latest news» (#NEWS-FOTMOB-PROD-1026): tre note al massimo,

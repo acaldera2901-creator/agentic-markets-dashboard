@@ -3,28 +3,37 @@
 // Rules: answer-first, plain facts about how the product works, no performance numbers (hit rate, ROI), no "best odds", no promise of outcomes.
 
 export const PREDICTIONS_INTRO: string[] = [
-  "BetRedge shows, for football and tennis matches, the model's calibrated probability next to the market's probability and the reasoning behind the gap. It is analysis, not a guarantee of any outcome.",
+  "Use BetRedge to explore football and tennis fixtures and understand the numbers beside a match. Start with the source label: a card may show a model-and-market estimate, a model-only estimate or a market-only reading, depending on the available data. It is analysis, not a guarantee of any outcome.",
+  "If you want to understand a price, use the odds converter below. To understand how an estimate is produced, read the football or tennis methodology guide linked above. Check the public record for eligible past predictions before drawing conclusions from a single match.",
 ];
 
 export const PREDICTIONS_FAQ: Array<[string, string]> = [
   [
+    "Who is the BetRedge match board for?",
+    "It is for adults who want to understand football and tennis probabilities, compare available estimates with market readings and examine the limits of the data. Start with the source label and the methodology guide for that sport. A probability is not a guarantee of a result.",
+  ],
+  [
     "What does the probability on a BetRedge prediction mean?",
-    "It is the model's estimate of how often an outcome happens over many similar matches, not a forecast that it will happen this time. A 60 percent reading should be right about six times in ten and wrong about four. BetRedge is analysis, not a guarantee.",
+    "It describes an estimated chance, not a certain result. Check its source label: some readings include a statistical model, while market-only readings come from prices. A 60 percent probability describes an expectation across many comparable cases; it does not demonstrate that this particular model is calibrated.",
+  ],
+  [
+    "What does market-only mean?",
+    "A market-only reading comes from available market prices, not an independent model estimate. It does not show that a model has found an advantage over the market. Coverage varies by match and data source, so check the label before comparing numbers.",
   ],
   [
     "What is the difference between the model's probability and the market's probability?",
-    "The market's probability is implied by bookmaker prices: one divided by the decimal price, with the bookmaker's margin taken out. The model's probability comes from BetRedge's own statistical model. The gap between the two is where a reading differs from the market, and the reasoning shows why.",
+    "Market probability is derived from prices. One divided by decimal odds gives the raw implied probability; adjusting a complete set of outcomes removes the bookmaker's margin. Model estimates use statistical inputs and may be blended with market data. A difference is not proof of an advantage or a profitable bet.",
   ],
   [
     "Which sports and matches does the board cover?",
-    "Football and tennis. The board lists the fixtures coming up in roughly the next ten days and keeps a match visible while it is being played.",
+    "Football and tennis. The public fixture list covers a rolling window of roughly ten days and may include recently started matches. Available analysis depends on the feeds and source labels. Use the board's sport and time filters to narrow the selection.",
   ],
   [
     "When are predictions updated or frozen?",
-    "Pre-match readings are refreshed when new data is available. Once play begins the prediction is frozen, so what was published before the start is what gets graded.",
+    "Pre-match readings can refresh when new data arrives. Stored pre-match predictions remain frozen after the scheduled start; live scores do not turn them into new in-play model estimates. A displayed estimate and an eligible archived prediction are not always the same thing.",
   ],
   [
     "Can I check how past predictions turned out?",
-    "Yes. Every settled prediction is graded after the match and archived on the track record page, so published calls stay checkable.",
+    "The public track record shows eligible archived predictions and their settlement status. Not every displayed market reading or unsealed estimate is included. Check the record's coverage and source labels rather than treating the whole board as a verified performance history.",
   ],
 ];

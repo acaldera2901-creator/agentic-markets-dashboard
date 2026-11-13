@@ -8,6 +8,11 @@ const html = renderToStaticMarkup(createElement(SeoProse, { heading: "How to rea
 const jsonLd = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/)![1].replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&amp;/g, "&"));
 
 describe("/predictions short answers (FAQ)", () => {
+  it("explains market-only readings and does not claim every displayed number is a calibrated model prediction", () => {
+    expect(PREDICTIONS_FAQ.find(([q]) => /market.only/i.test(q))?.[1]).toMatch(/not.*independent model/i);
+    expect(PREDICTIONS_INTRO.join(" ")).toMatch(/source label/i);
+    expect(PREDICTIONS_INTRO.join(" ")).not.toMatch(/calibrated|reasoning behind the gap/i);
+  });
   it("every Q&A is VISIBLE in the server HTML and in the FAQPage JSON-LD (one source, no schema-only answers)", () => {
     expect(jsonLd["@type"]).toBe("FAQPage");
     expect(jsonLd.mainEntity).toHaveLength(PREDICTIONS_FAQ.length);

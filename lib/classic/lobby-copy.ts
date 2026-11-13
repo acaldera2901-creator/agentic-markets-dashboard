@@ -14,6 +14,7 @@ export const CLASSIC_LANGS = ["en", "it", "es", "fr", "de", "pt", "nl", "pl", "t
 export type ClassicLang = (typeof CLASSIC_LANGS)[number];
 
 export type ClassicCopy = {
+  boardTitle: string;
   bannersLabel: string;
   b1Title: string; b1Sub: string; b1Cta: string;
   b2Title: string; b2Sub: string; b2Cta: string;
@@ -46,6 +47,7 @@ export type ClassicCopy = {
 };
 
 const en: ClassicCopy = {
+  boardTitle: "Football and tennis match analysis",
   bannersLabel: "Where to start",
   b1Title: "Today’s football board",
   b1Sub: "Today’s matches, with our estimate.",
@@ -100,6 +102,7 @@ const en: ClassicCopy = {
 };
 
 const it: ClassicCopy = {
+  boardTitle: "Analisi delle partite di calcio e tennis",
   bannersLabel: "Da dove partire",
   b1Title: "Il board del calcio oggi",
   b1Sub: "Le partite di oggi, con la nostra stima.",
@@ -154,6 +157,7 @@ const it: ClassicCopy = {
 };
 
 const es: ClassicCopy = {
+  boardTitle: "Análisis de partidos de fútbol y tenis",
   bannersLabel: "Por dónde empezar",
   b1Title: "El board de fútbol de hoy",
   b1Sub: "Los partidos de hoy, con estimación.",
@@ -208,6 +212,7 @@ const es: ClassicCopy = {
 };
 
 const fr: ClassicCopy = {
+  boardTitle: "Analyse des matchs de football et de tennis",
   bannersLabel: "Par où commencer",
   b1Title: "Le board football du jour",
   b1Sub: "Les matchs du jour, avec estimation.",
@@ -262,6 +267,7 @@ const fr: ClassicCopy = {
 };
 
 const de: ClassicCopy = {
+  boardTitle: "Spielanalysen für Fußball und Tennis",
   bannersLabel: "Wo du anfängst",
   b1Title: "Das Fußball-Board von heute",
   b1Sub: "Die Spiele von heute, mit Schätzung.",
@@ -316,6 +322,7 @@ const de: ClassicCopy = {
 };
 
 const pt: ClassicCopy = {
+  boardTitle: "Análise de jogos de futebol e ténis",
   bannersLabel: "Por onde começar",
   b1Title: "O board de futebol de hoje",
   b1Sub: "Os jogos de hoje, com estimativa.",
@@ -370,6 +377,7 @@ const pt: ClassicCopy = {
 };
 
 const nl: ClassicCopy = {
+  boardTitle: "Wedstrijdanalyses voor voetbal en tennis",
   bannersLabel: "Waar je begint",
   b1Title: "Het voetbalboard van vandaag",
   b1Sub: "De wedstrijden van vandaag, met schatting.",
@@ -424,6 +432,7 @@ const nl: ClassicCopy = {
 };
 
 const pl: ClassicCopy = {
+  boardTitle: "Analizy meczów piłki nożnej i tenisa",
   bannersLabel: "Od czego zacząć",
   b1Title: "Dzisiejszy board piłkarski",
   b1Sub: "Dzisiejsze mecze, z oceną.",
@@ -478,6 +487,7 @@ const pl: ClassicCopy = {
 };
 
 const tr: ClassicCopy = {
+  boardTitle: "Futbol ve tenis maç analizleri",
   bannersLabel: "Nereden başlamalı",
   b1Title: "Bugünün futbol board’u",
   b1Sub: "Bugünün maçları, tahminimizle.",
@@ -532,6 +542,7 @@ const tr: ClassicCopy = {
 };
 
 const sv: ClassicCopy = {
+  boardTitle: "Matchanalyser för fotboll och tennis",
   bannersLabel: "Var du börjar",
   b1Title: "Dagens fotbollsboard",
   b1Sub: "Dagens matcher, med uppskattning.",
@@ -586,6 +597,7 @@ const sv: ClassicCopy = {
 };
 
 const ru: ClassicCopy = {
+  boardTitle: "Анализ футбольных и теннисных матчей",
   bannersLabel: "С чего начать",
   b1Title: "Футбольный борд на сегодня",
   b1Sub: "Наши матчи дня — с нашей оценкой.",
