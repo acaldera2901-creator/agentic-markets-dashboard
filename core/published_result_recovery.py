@@ -5,12 +5,14 @@ Uses the live resolver's date, ambiguity, completion and set validation gates.
 No Elo updates: recovering an old public result must not replay model training.
 """
 from __future__ import annotations
+import asyncio
 import json
 from types import SimpleNamespace
 from sqlalchemy import text
 from core.db import AsyncSessionLocal
 
 BATCH_SIZE = 100
+WRITE_TIMEOUT_SECONDS = 90
 READ_SQL = """
 SELECT id::text, source_id, home_team AS player1, away_team AS player2,
        pick, starts_at AS scheduled_at, competition AS tournament, notes
@@ -46,10 +48,18 @@ async def resolve_published_batch(rows, resolve):
     return plans
 
 async def apply_recovered_result(plan):
+    # A lost network socket must not pin this row and the whole batch forever.
+    # A retry is safe even after an ambiguous commit: the real-result guard wins.
+    async with asyncio.timeout(WRITE_TIMEOUT_SECONDS):
+        return await _apply_recovered_result(plan)
+
+async def _apply_recovered_result(plan):
     # Lock the public row: competing recovery runs cannot overwrite a real
     # settlement. Ledger revisions and public outcome commit atomically.
     async with AsyncSessionLocal() as session:
         async with session.begin():
+            await session.execute(text("SET LOCAL statement_timeout = '45s'"))
+            await session.execute(text("SET LOCAL idle_in_transaction_session_timeout = '60s'"))
             row = (await session.execute(text("""
                 SELECT id, notes FROM unified_predictions
                 WHERE id = CAST(:id AS uuid) AND pick = :expected_pick

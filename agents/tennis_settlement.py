@@ -61,8 +61,20 @@ class TennisSettlementAgent(BaseAgent):
         self._recovery_cursor: str | None = None
 
     async def _main_loop(self):
+        # Recovery must not wait behind a large or stalled live settlement run.
+        # TaskGroup cancels the sibling on failure/restart, avoiding orphan loops.
+        async with asyncio.TaskGroup() as tasks:
+            tasks.create_task(self._live_loop())
+            tasks.create_task(self._published_recovery_loop())
+
+    async def _live_loop(self):
         while self._running:
             await self._settlement_cycle()
+            await asyncio.sleep(POLL_INTERVAL)
+
+    async def _published_recovery_loop(self):
+        while self._running:
+            await self._recover_published()
             await asyncio.sleep(POLL_INTERVAL)
 
     async def _settlement_cycle(self):
@@ -74,7 +86,6 @@ class TennisSettlementAgent(BaseAgent):
         # rimedio a un ponte FALLITO — e un rimedio che parte una volta sola
         # eredita lo stesso difetto che deve curare.
         await self._riconcilia_ponte()
-        await self._recover_published()
 
     async def _recover_published(self):
         from core.published_result_recovery import (
