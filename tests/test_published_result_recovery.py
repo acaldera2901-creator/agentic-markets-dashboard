@@ -61,3 +61,22 @@ async def test_recovery_write_has_a_deadline(monkeypatch):
     monkeypatch.setattr(recovery, 'WRITE_TIMEOUT_SECONDS', 0.01, raising=False)
     with pytest.raises(TimeoutError):
         await recovery.apply_recovered_result({'id':'irrelevant'})
+
+@pytest.mark.asyncio
+async def test_recovery_continues_while_normal_settlement_is_blocked():
+    import asyncio, logging
+    from agents.tennis_settlement import TennisSettlementAgent
+    agent = object.__new__(TennisSettlementAgent)
+    agent.logger = logging.getLogger('test')
+    agent._running = True
+    recovered = asyncio.Event()
+    async def slow_cycle(): await asyncio.Event().wait()
+    async def recover(): recovered.set()
+    agent._settlement_cycle = slow_cycle
+    agent._recover_published = recover
+    task = asyncio.create_task(agent._main_loop())
+    try:
+        await asyncio.wait_for(recovered.wait(), timeout=0.1)
+    finally:
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError): await task
