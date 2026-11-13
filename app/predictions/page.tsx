@@ -1,6 +1,6 @@
 // #URL-PATHS-0810: path inglese della tab "bets" del desk (ex /app?tab=bets).
 // #SEO-PACK-0810: title senza em-dash, description propria, breadcrumb.
-// #SEO-AEO-1106: la board e' client-rendered; sotto vanno le prossime partite in HTML + JSON-LD SportsEvent (fatti pubblici, niente gated).
+// #SEO-AEO-1106: la board e' client-rendered; sotto vanno le prossime partite in HTML + JSON-LD ItemList (fatti pubblici, niente gated).
 import type { Metadata } from "next";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { UpcomingMatches } from "@/components/seo/UpcomingMatches";

@@ -57,11 +57,19 @@ describe("fetchUpcomingMatches — public window only, fail-soft", () => {
 
 describe("JSON-LD + visible list (same facts)", () => {
   const ms = toMatches([row(), row({ id: "3", sport: "tennis", competition: "ATP Paris", home_team: null, away_team: null, player_one: "J. Sinner", player_two: "C. Alcaraz", starts_at: "2026-11-07T13:00:00Z" })]);
-  it("ItemList of SportsEvent with name, startDate, competitors", () => {
-    const j = matchesJsonLd(ms) as { "@type": string; itemListElement: { position: number; item: Record<string, unknown> }[] };
-    expect(j["@type"]).toBe("ItemList");
-    expect(j.itemListElement[0].item).toMatchObject({ "@type": "SportsEvent", name: "Venezia FC vs Udinese Calcio", startDate: "2026-11-06T19:45:00.000Z", sport: "Soccer" });
-    expect(j.itemListElement[1].item).toMatchObject({ sport: "Tennis", competitor: [{ "@type": "Person", name: "J. Sinner" }, { "@type": "Person", name: "C. Alcaraz" }] });
+  it("describes the fixture directory without claiming eligibility for Event rich results", () => {
+    const j = matchesJsonLd(ms) as { numberOfItems: number; itemListElement: Record<string, unknown>[] };
+    expect(j.numberOfItems).toBe(ms.length);
+    expect(j.itemListElement[0]).toMatchObject({ "@type": "ListItem", position: 1, name: "Venezia FC vs Udinese Calcio", description: expect.stringContaining("2026-11-06T19:45:00.000Z") });
+    expect(j.itemListElement[1]).toMatchObject({ name: "J. Sinner vs C. Alcaraz", description: expect.stringContaining("ATP Paris") });
+    expect(JSON.stringify(j)).not.toMatch(/SportsEvent|"location"|"offers"|"competitor"/);
+  });
+  it("keeps feed text from breaking out of the JSON-LD script", () => {
+    const hostile = [{ ...ms[0], home: '</script><script>alert(1)</script>' }];
+    const html = renderToStaticMarkup(createElement(UpcomingMatches, { matches: hostile }));
+    expect(html).not.toContain('</script><script>alert(1)');
+    const payload = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/)?.[1];
+    expect(JSON.parse(payload!).itemListElement[0].name).toContain(hostile[0].home);
   });
   it("the server HTML contains every match (no JS needed) and the JSON-LD; nothing forbidden or gated", () => {
     const html = renderToStaticMarkup(createElement(UpcomingMatches, { matches: ms }));
