@@ -6,6 +6,7 @@ import { shopifyGrantAllowed, hasActiveShopifySubscription } from "@/lib/plan-gr
 import { blocksLowerTierPurchase, discountedAmountFor, type PlanKey } from "@/lib/paygate";
 import { shopifyCanCarryLaunchDiscount } from "@/lib/shopify";
 import { promoEligibility } from "@/lib/creator-promo";
+import { blocksRetiredPlanPurchase, RETIRED_PLAN_BODY, RETIRED_PLAN_STATUS } from "@/lib/commercial-plan";
 import {
   currentWeekStart,
   weeklyPickEnabled,
@@ -23,7 +24,8 @@ export const runtime = "nodejs";
 // piano di un altro account. Env-gated: senza store configurato risponde 503 e il
 // chiamante resta sul flusso PayGate esistente (deploy safe dark).
 //
-// requested_plan: "base" | "premium" (abbonamento, period "monthly" | "annual")
+// requested_plan: "premium" (abbonamento, period "monthly" | "annual"; "base" solo
+// per chi è già su Base — #RETIRE-BASE-1031)
 // oppure "weekly" (Weekly Pick, acquisto singolo della settimana corrente).
 // Ogni uscita non-200 passa da qui. Senza questo, i rami 400/409/503 tornavano
 // SENZA lasciare traccia: il client cadeva su PayGate e nei log non c'era nulla
@@ -128,6 +130,13 @@ export async function POST(req: Request) {
   const period = body.period;
   if (period !== "monthly" && period !== "annual") {
     return deny(400, `invalid period=${String(period)}`);
+  }
+
+  // #RETIRE-BASE-1031: Base non si vende più ai nuovi clienti. `code` dice al
+  // client di NON cadere su PayGate (che rifiuterebbe comunque). Il rinnovo di
+  // un abbonato Shopify Base esistente NON passa da qui: è il webhook orders/paid.
+  if (blocksRetiredPlanPurchase(sku, ctx.plan)) {
+    return deny(RETIRED_PLAN_STATUS, `${RETIRED_PLAN_BODY.error}: ${RETIRED_PLAN_BODY.message}`, ctx, RETIRED_PLAN_BODY.error);
   }
 
   // Stessa tier-guard di PayGate: premium attivo non compra 'base' (tier-arbitrage).

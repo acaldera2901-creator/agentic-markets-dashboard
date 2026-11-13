@@ -213,8 +213,10 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
     emailGateOn = true;
     mount("/plans", "plans");
 
-    await waitFor(() => expect(payButton("base")).toBeTruthy());
-    await user.click(payButton("base"));
+    // #RETIRE-BASE-1031: la scheda Base non c'è più; l'unico piano pagato è Pro.
+    expect(() => payButton("base")).toThrow();
+    await waitFor(() => expect(payButton("is-premium")).toBeTruthy());
+    await user.click(payButton("is-premium"));
     await waitFor(() => expect(wallIsUp()).toBe(true));
     await register(user);
 
@@ -222,7 +224,7 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
       const reg = authPosts.find((b) => b.action === "register");
       expect(reg, "nessuna registrazione inviata").toBeTruthy();
       expect(reg?.signup_intent, "il piano scelto deve partire col signup: e' l'unica cosa che sopravvive al giro via email")
-        .toBe("plans:base");
+        .toBe("plans:premium");
     });
     // E il gate ha fatto il suo: nessuna sessione, quindi nessun checkout ancora.
     expect(checkoutIsOpen()).toBe(false);
@@ -230,12 +232,26 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
 
   it("al rientro dal link di attivazione il checkout si apre sul piano scelto", async () => {
     mockSession();
-    mount("/plans?activated=1&goto=plans:base", "plans");
+    mount("/plans?activated=1&goto=plans:premium", "plans");
 
     await waitFor(() => {
       expect(checkoutIsOpen(), "chi attiva dalla mail con un intento deve trovare il checkout aperto").toBe(true);
     }, { timeout: 4000 });
-    expect(document.body.textContent).toContain("14.99");
+    expect(document.body.textContent).toContain("29.99");
+  });
+
+  // #RETIRE-BASE-1031: link di attivazione già inviati portano ancora
+  // `goto=plans:base`. Base non si vende più: quel link apre il checkout di Pro,
+  // mai uno di Base (che il server rifiuterebbe con 409).
+  it("un vecchio link con intento Base apre il checkout di Pro", async () => {
+    mockSession();
+    mount("/plans?activated=1&goto=plans:base", "plans");
+
+    await waitFor(() => {
+      expect(checkoutIsOpen()).toBe(true);
+    }, { timeout: 4000 });
+    expect(document.body.textContent).toContain("29.99");
+    expect(document.body.textContent).not.toContain("14.99");
   });
 
   // Regressione: chi arriva da una mail fredda per le predizioni non deve

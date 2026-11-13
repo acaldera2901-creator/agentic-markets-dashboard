@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import { UpgradeSheet } from "./UpgradeSheet";
 import { planPriceCopy } from "@/lib/commercial-plan";
 
-const basePrice = planPriceCopy("base", "it"); // "$14.99/mese"
 const premiumPrice = planPriceCopy("premium", "it"); // "$29.99/mese"
 
 const FORBIDDEN_WORDS = [/vincita/i, /vincite/i, /garantit/i, /battiamo il mercato/i];
@@ -16,16 +15,17 @@ describe("UpgradeSheet", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("mostra i due prezzi reali importati da commercial-plan", () => {
+  // #RETIRE-BASE-1031: un solo piano pagato in vendita, Pro. Base non compare.
+  it("mostra il prezzo reale di Pro importato da commercial-plan, e niente Base", () => {
     render(<UpgradeSheet open onClose={() => {}} />);
-    expect(screen.getByText(basePrice)).toBeInTheDocument();
     expect(screen.getByText(premiumPrice)).toBeInTheDocument();
+    expect(screen.queryByText(/BetRedge Base|14\.99/)).toBeNull();
   });
 
-  it("mostra una CTA per piano che punta al checkout esistente /plans", () => {
+  it("mostra la CTA di Pro che punta al checkout esistente /plans", () => {
     render(<UpgradeSheet open onClose={() => {}} />);
     const links = screen.getAllByRole("link", { name: /passa a|scegli|sblocca/i });
-    expect(links.length).toBeGreaterThanOrEqual(2);
+    expect(links).toHaveLength(1);
     for (const link of links) {
       expect(link).toHaveAttribute("href", "/plans");
     }

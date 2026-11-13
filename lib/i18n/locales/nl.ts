@@ -43,7 +43,6 @@ const nl: Record<string, string> = {
   plans_base_f7: "Geen gegarandeerde winstbeloftes",
   plans_premium_desc: "Voor de client die wil delegeren aan agents: analyse, beslissing, inzet en live plaatsing.",
   plans_premium_core: "Ik doe het voor je", plans_premium_sub: "Uitvoeringslaag met volledige audit",
-  plans_premium_f1: "Alles uit het Base-abonnement",
   plans_premium_f2: "Agents ontgrendeld om automatisch weddenschappen te plaatsen",
   plans_premium_f3: "Inzetgrootte op basis van bankroll en risicoprofiel",
   plans_premium_f4: "Stop loss, daglimieten en sportlimieten",

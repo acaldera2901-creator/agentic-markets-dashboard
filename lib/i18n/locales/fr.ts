@@ -43,7 +43,6 @@ const fr: Record<string, string> = {
   plans_base_f7: "Aucune promesse de profit garanti",
   plans_premium_desc: "Pour le client qui veut tout déléguer aux agents : analyse, décision, mise et placement en direct.",
   plans_premium_core: "Je le fais pour vous", plans_premium_sub: "Couche d'exécution avec audit complet",
-  plans_premium_f1: "Tout ce qui est inclus dans le forfait Base",
   plans_premium_f2: "Agents débloqués pour placer les paris automatiquement",
   plans_premium_f3: "Dimensionnement des mises selon le bankroll et le profil de risque",
   plans_premium_f4: "Stop loss, limites quotidiennes et limites par sport",
