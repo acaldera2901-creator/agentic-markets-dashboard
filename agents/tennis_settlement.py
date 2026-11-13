@@ -58,6 +58,7 @@ class TennisSettlementAgent(BaseAgent):
         super().__init__("TennisSettlementAgent")
         self._elo = EloSurfaceModel()
         self._reconcile_cursor: str | None = None
+        self._recovery_cursor: str | None = None
 
     async def _main_loop(self):
         while self._running:
@@ -73,6 +74,27 @@ class TennisSettlementAgent(BaseAgent):
         # rimedio a un ponte FALLITO — e un rimedio che parte una volta sola
         # eredita lo stesso difetto che deve curare.
         await self._riconcilia_ponte()
+        await self._recover_published()
+
+    async def _recover_published(self):
+        from core.published_result_recovery import (
+            BATCH_SIZE, read_published_batch, resolve_published_batch, apply_recovered_result,
+        )
+        try:
+            rows = await read_published_batch(getattr(self, "_recovery_cursor", None))
+            plans = await resolve_published_batch(rows, self._resolve_all) if rows else []
+            recovered = 0
+            for plan in plans:
+                try:
+                    recovered += bool(await apply_recovered_result(plan))
+                except Exception as exc:
+                    # Retry on the next full scan; one bad row cannot starve
+                    # every later page of customer-visible predictions.
+                    self.logger.warning("[SETTLEMENT] recovery write failed for %s: %s", plan["id"], exc)
+            self._recovery_cursor = rows[-1]["id"] if len(rows) == BATCH_SIZE else None
+            self.logger.info("[SETTLEMENT] published recovery: %d checked, %d recovered", len(rows), recovered)
+        except Exception as exc:
+            self.logger.warning("[SETTLEMENT] published recovery failed; retrying same batch: %s", exc)
 
     async def _bulk_expire_stale(self):
         """Mark all predictions older than EXPIRE_AFTER_DAYS as 'expired' in one query."""

@@ -11,6 +11,7 @@ construction ("A bt B") — see get_completed_results().
 """
 from __future__ import annotations
 import logging
+from time import monotonic
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -433,7 +434,8 @@ async def get_completed_results() -> list[dict]:
 
 # I giorni passati non cambiano piu': si leggono una volta per processo. Il
 # giorno corrente NON si mette in cache, perche' si popola man mano.
-_archive_cache: dict[tuple[str, str], list[dict]] = {}
+_archive_cache: dict[tuple[str, str], tuple[float, list[dict]]] = {}
+_ARCHIVE_CACHE_TTL_SECONDS = 300
 
 
 def _genere_da_testo(testo: str, default: str | None) -> str | None:
@@ -544,7 +546,7 @@ async def get_completed_results_for_days(days) -> list[dict]:
     Risultati completati per un insieme di GIORNI (oggetti `date`).
 
     Costo: 2 richieste per giorno (atp + wta). I giorni passati si mettono in
-    cache per la vita del processo — non cambiano piu'. Il giorno corrente no.
+    cache per cinque minuti: anche i giorni passati possono ricevere esiti tardivi.
 
     #SETTLE-1001 a1 — dedup per `event_id`: `?dates=` restituisce l'intero
     torneo della settimana a ogni data, quindi senza dedup ogni partita arriva
@@ -569,8 +571,8 @@ async def get_completed_results_for_days(days) -> list[dict]:
             stamp = giorno.strftime("%Y%m%d")
             for league in _SCOREBOARD_LEAGUES:
                 chiave = (league, stamp)
-                if giorno < oggi and chiave in _archive_cache:
-                    _aggiungi(_archive_cache[chiave])
+                if giorno < oggi and chiave in _archive_cache and monotonic() - _archive_cache[chiave][0] < _ARCHIVE_CACHE_TTL_SECONDS:
+                    _aggiungi(_archive_cache[chiave][1])
                     continue
                 try:
                     resp = await c.get(
@@ -590,7 +592,7 @@ async def get_completed_results_for_days(days) -> list[dict]:
                     logger.warning("ESPN archivio %s %s non letto: %s", league, stamp, exc)
                     continue
                 if giorno < oggi:
-                    _archive_cache[chiave] = righe
+                    _archive_cache[chiave] = (monotonic(), righe)
                 _aggiungi(righe)
     logger.info("ESPN archivio: %d risultati completati su %d giorno/i", len(out), len(set(days)))
     return out

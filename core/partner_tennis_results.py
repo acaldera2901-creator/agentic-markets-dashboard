@@ -19,6 +19,7 @@ Measured live on 01/10 (read-only GETs, public endpoint, no credentials):
 from __future__ import annotations
 
 import logging
+from time import monotonic
 from datetime import date, datetime, timedelta, timezone
 
 import httpx
@@ -32,7 +33,9 @@ FINISHED_STATUS = "3"
 _DAY_LIMIT = 500  # one call per day: the busiest day measured was 540 matches
 _MAX_PAGES = 3    # anti-hammering cap per day
 
-_cache: dict[date, list[dict]] = {}
+_cache: dict[date, tuple[float, list[dict]]] = {}
+_CACHE_TTL_SECONDS = 300
+_ENDPOINTS = (_BASE, "https://sportsbook.ybets.net/api/v2/matches")
 
 
 def _gender(tournament: str) -> str | None:
@@ -105,11 +108,11 @@ def result_from_partner_match(m: dict) -> dict | None:
     }
 
 
-async def _fetch_day(client: httpx.AsyncClient, day: date) -> list[dict]:
+async def _fetch_day_from(client: httpx.AsyncClient, day: date, endpoint: str) -> list[dict]:
     out: list[dict] = []
     nxt = day + timedelta(days=1)
     for page in range(1, _MAX_PAGES + 1):
-        resp = await client.get(_BASE, params={
+        resp = await client.get(endpoint, params={
             "sport_key": "tennis", "match_status": FINISHED_STATUS,
             "start_from": f"{day.isoformat()}T00:00:00Z",
             "start_to": f"{nxt.isoformat()}T00:00:00Z",
@@ -126,15 +129,27 @@ async def _fetch_day(client: httpx.AsyncClient, day: date) -> list[dict]:
     return out
 
 
+async def _fetch_day(client: httpx.AsyncClient, day: date) -> list[dict]:
+    # Retry the whole day on the other existing partner, never mix partial pages.
+    for index, endpoint in enumerate(_ENDPOINTS):
+        try:
+            return await _fetch_day_from(client, day, endpoint)
+        except (httpx.HTTPError, ValueError):
+            if index == len(_ENDPOINTS) - 1:
+                raise
+            logger.warning("partner result endpoint unavailable: %s; trying fallback", endpoint)
+    return []
+
+
 async def get_partner_results_for_days(days) -> list[dict]:
     """Finished partner matches for a set of days (one call per day; past days
-    cached for the process lifetime, as the ESPN archive does)."""
+    cached for five minutes, allowing delayed results to arrive)."""
     oggi = datetime.now(timezone.utc).date()
     out: list[dict] = []
     async with httpx.AsyncClient(timeout=20.0) as client:
         for day in sorted(set(days)):
-            if day < oggi and day in _cache:
-                out += _cache[day]
+            if day < oggi and day in _cache and monotonic() - _cache[day][0] < _CACHE_TTL_SECONDS:
+                out += _cache[day][1]
                 continue
             try:
                 righe = await _fetch_day(client, day)
@@ -142,7 +157,7 @@ async def get_partner_results_for_days(days) -> list[dict]:
                 logger.warning("partner risultati %s non letti: %s", day, exc)
                 continue
             if day < oggi:
-                _cache[day] = righe
+                _cache[day] = (monotonic(), righe)
             out += righe
     logger.info("partner risultati: %d partite concluse su %d giorno/i", len(out), len(set(days)))
     return out

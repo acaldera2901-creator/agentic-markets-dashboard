@@ -1,0 +1,883 @@
+{
+  "recent": {
+    "scanned": 100,
+    "recoverable": 96,
+    "won": 63,
+    "lost": 33,
+    "applied": 0,
+    "plans": [
+      {
+        "id": "de776a95-0d9d-439a-81a7-df32d5e73c4b",
+        "source_id": "tennis:partner:2026-11-11_addy rogin|piper johnson",
+        "winner": "Piper Johnson",
+        "result": "won",
+        "expected_pick": "Piper Johnson",
+        "final_score": "4-6 6-3 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "dd72e7c7-a35b-4af2-89ac-07661019aa4e",
+        "source_id": "tennis:partner:2026-11-11_carolina bohrer martins|rachel gailis",
+        "winner": "Rachel Gailis",
+        "result": "won",
+        "expected_pick": "Rachel Gailis",
+        "final_score": "1-6 6-3 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "c6a78890-0814-4e8b-b91b-b78db5646ecc",
+        "source_id": "tennis:partner:2026-11-11_nathan mansfield|thomas edwards",
+        "winner": "Thomas Edwards",
+        "result": "won",
+        "expected_pick": "Thomas Edwards",
+        "final_score": "6-0 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ba5aff8a-9b5b-4da1-a685-fa5c5e28cd74",
+        "source_id": "tennis:partner:2026-11-11_ingrid carolina millan acosta|kayla cross",
+        "winner": "Kayla Cross",
+        "result": "won",
+        "expected_pick": "Kayla Cross",
+        "final_score": "6-0 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "87204032-38f1-4c05-bbc4-e5b679cf685c",
+        "source_id": "tennis:partner:2026-11-11_luigi valletta|stefan skobelev",
+        "winner": "Luigi Valletta",
+        "result": "lost",
+        "expected_pick": "Stefan Skobelev",
+        "final_score": "7-6 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "6b0d3099-3136-4f85-9c30-a78877cdb836",
+        "source_id": "tennis:partner:2026-11-11_anastasia zolotareva|jessica hinojosa gomez",
+        "winner": "Jessica Hinojosa Gomez",
+        "result": "lost",
+        "expected_pick": "Anastasia Zolotareva",
+        "final_score": "6-2 1-6 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "4b175bc8-6da6-4c24-8cba-57003f88b8cb",
+        "source_id": "tennis:partner:2026-11-11_alexander bernard|matias soto",
+        "winner": "Matias Soto",
+        "result": "won",
+        "expected_pick": "Matias Soto",
+        "final_score": "6-1 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "4125fbd0-cd8f-48b9-89d9-19441d216366",
+        "source_id": "tennis:partner:2026-11-11_jerrid gaines jr|kamil stolarczyk",
+        "winner": "Jerrid Gaines Jr",
+        "result": "won",
+        "expected_pick": "Jerrid Gaines Jr",
+        "final_score": "6-1 7-5",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "3d72acef-4e70-4802-a0f5-bac587dea295",
+        "source_id": "tennis:partner:2026-11-11_noah schlagenhauf|obrad markovski",
+        "winner": "Obrad Markovski",
+        "result": "lost",
+        "expected_pick": "Noah Schlagenhauf",
+        "final_score": "4-6 6-4 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "15bf089c-1278-42cc-8c85-f417547bafa7",
+        "source_id": "tennis:partner:2026-11-11_alexander shevchenko|casper ruud",
+        "winner": "Alexander Shevchenko",
+        "result": "lost",
+        "expected_pick": "Casper Ruud",
+        "final_score": "6-7 6-4 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "1481f755-f2c5-4994-8615-19b82e34834b",
+        "source_id": "tennis:partner:2026-11-11_cade fernando|marshall landry",
+        "winner": "Cade Fernando",
+        "result": "won",
+        "expected_pick": "Cade Fernando",
+        "final_score": "6-4 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "0ecc85f5-f6b0-4054-8374-b1c085f97adb",
+        "source_id": "tennis:partner:2026-11-11_dante carlos teramo|maxwell mckennon",
+        "winner": "Dante Carlos Teramo",
+        "result": "lost",
+        "expected_pick": "Maxwell McKennon",
+        "final_score": "7-5 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "0cf8f90f-f510-41c0-b734-8281c0c0aac6",
+        "source_id": "tennis:partner:2026-11-11_elijah strode|rafael de alba",
+        "winner": "Rafael De Alba",
+        "result": "lost",
+        "expected_pick": "Elijah Strode",
+        "final_score": "6-3 3-6 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "0583f767-e9cc-40cd-90f8-bd4590d290fb",
+        "source_id": "tennis:partner:2026-11-11_gabriel jalouneix|noey do",
+        "winner": "Noey Do",
+        "result": "won",
+        "expected_pick": "Noey Do",
+        "final_score": "6-2 5-7 6-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "0053acf1-edcd-4bab-a664-5bb2bed9990c",
+        "source_id": "tennis:partner:2026-11-11_jake fellows|max wiskandt",
+        "winner": "Max Wiskandt",
+        "result": "won",
+        "expected_pick": "Max Wiskandt",
+        "final_score": "6-1 6-7 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ee325d1c-42ce-483d-adc4-3f81d0176dbf",
+        "source_id": "tennis:partner:2026-11-11_robert watzka|tomas jirousek",
+        "winner": "Tomas Jirousek",
+        "result": "won",
+        "expected_pick": "Tomas Jirousek",
+        "final_score": "6-2 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "eb8eefb6-75b4-4d61-84e9-fcd99b672634",
+        "source_id": "tennis:partner:2026-11-11_camila markus|julia konishi camargo silva",
+        "winner": "Julia Konishi Camargo Silva",
+        "result": "won",
+        "expected_pick": "Julia Konishi Camargo Silva",
+        "final_score": "6-0 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "d3ed60ea-eb92-416f-b007-d1184b9f4acb",
+        "source_id": "tennis:partner:2026-11-11_adriana reami|julia adams",
+        "winner": "Julia Adams",
+        "result": "lost",
+        "expected_pick": "Adriana Reami",
+        "final_score": "6-4 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "d1d99a8d-2ec5-4d49-8e99-c7eb3d40a9f7",
+        "source_id": "tennis:partner:2026-11-11_james scholer|thomas nelson",
+        "winner": "Thomas Nelson",
+        "result": "won",
+        "expected_pick": "Thomas Nelson",
+        "final_score": "6-4 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "c870eef3-59ca-4e62-9faf-d92ddfdb85b5",
+        "source_id": "tennis:partner:2026-11-11_ryo tabata|tristan boyer",
+        "winner": "Tristan Boyer",
+        "result": "won",
+        "expected_pick": "Tristan Boyer",
+        "final_score": "7-5 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "a3702e66-5610-4c32-866a-189e03b313ae",
+        "source_id": "tennis:partner:2026-11-11_oskar brostrom poulsen|tiago silva",
+        "winner": "Oskar Brostrom Poulsen",
+        "result": "won",
+        "expected_pick": "Oskar Brostrom Poulsen",
+        "final_score": "6-7 6-1 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "881b58ca-0b31-4552-b4ce-77e35eeebce4",
+        "source_id": "tennis:partner:2026-11-11_jack secord|tristan mccormick",
+        "winner": "Jack Secord",
+        "result": "won",
+        "expected_pick": "Jack Secord",
+        "final_score": "6-3 7-5",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "83c795d3-8cfc-44fc-9e24-625430b8a90a",
+        "source_id": "tennis:partner:2026-11-11_kaue noatto|tomas dummer macedo",
+        "winner": "Kaue Noatto",
+        "result": "won",
+        "expected_pick": "Kaue Noatto",
+        "final_score": "6-3 6-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "7f6a434e-cd81-4bb7-9a89-bb13ccf6150c",
+        "source_id": "tennis:partner:2026-11-11_felix corwin|mitchell sheldon",
+        "winner": "Felix Corwin",
+        "result": "won",
+        "expected_pick": "Felix Corwin",
+        "final_score": "4-6 6-2 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "74d33c04-a7bc-483a-b496-adaa67fbc2fc",
+        "source_id": "tennis:partner:2026-11-11_erik grevelius adam heinonen|hendrik jebens ryan seggerman",
+        "winner": "Erik Grevelius/Adam Heinonen",
+        "result": "lost",
+        "expected_pick": "Hendrik Jebens/Ryan Seggerman",
+        "final_score": "6-4 6-7 1-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "6c43d935-1907-4f24-8450-1271ae0c29c8",
+        "source_id": "tennis:partner:2026-11-11_alexander rozin|daniel de jonge",
+        "winner": "Alexander Rozin",
+        "result": "lost",
+        "expected_pick": "Daniel De Jonge",
+        "final_score": "4-6 6-4 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "67ffba12-89ba-459b-bf91-435d5c583c12",
+        "source_id": "tennis:partner:2026-11-11_andrew gordon|saahil gupte",
+        "winner": "Andrew Gordon",
+        "result": "won",
+        "expected_pick": "Andrew Gordon",
+        "final_score": "6-2 0-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "247872fb-f073-4afc-a6b7-d5275942c069",
+        "source_id": "tennis:partner:2026-11-11_dasha plekhanova|yael saffar",
+        "winner": "Dasha Plekhanova",
+        "result": "won",
+        "expected_pick": "Dasha Plekhanova",
+        "final_score": "7-5 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "0773bfb0-531c-4b24-8ef8-98fdf6091dc5",
+        "source_id": "tennis:partner:2026-11-11_mikael arseneault|volodymyr gurenko",
+        "winner": "Mikael Arseneault",
+        "result": "won",
+        "expected_pick": "Mikael Arseneault",
+        "final_score": "7-6 6-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "03f5e9e8-c8d2-4b4b-b83a-d9db7adabc93",
+        "source_id": "tennis:partner:2026-11-11_carolina kuhl|kolie allen",
+        "winner": "Carolina Kuhl",
+        "result": "won",
+        "expected_pick": "Carolina Kuhl",
+        "final_score": "6-2 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ec5821b1-38b4-4e3a-a664-7abcef9d0baa",
+        "source_id": "tennis:partner:2026-11-11_hunter heck|rishvanth krishna",
+        "winner": "Rishvanth Krishna",
+        "result": "lost",
+        "expected_pick": "Hunter Heck",
+        "final_score": "7-6 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ac3d2ead-e166-488e-b353-f1c293f6582d",
+        "source_id": "tennis:partner:2026-11-11_jonas forejtek|moise kouame",
+        "winner": "Jonas Forejtek",
+        "result": "lost",
+        "expected_pick": "Moise Kouame",
+        "final_score": "6-4 4-6 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "aaefbf67-fdd2-4cbb-9b78-91c192ae79b5",
+        "source_id": "tennis:partner:2026-11-11_bor artnak|eli stephenson",
+        "winner": "Bor Artnak",
+        "result": "won",
+        "expected_pick": "Bor Artnak",
+        "final_score": "6-1 7-5",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "a7abfa73-eea0-4661-960b-2858902af81c",
+        "source_id": "tennis:partner:2026-11-11_clement chidekh|lui maxted",
+        "winner": "Clement Chidekh",
+        "result": "won",
+        "expected_pick": "Clement Chidekh",
+        "final_score": "7-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "620ff9f5-e775-45e7-89de-9b2bfbb9330f",
+        "source_id": "tennis:partner:2026-11-11_max sheldon|ryan colby",
+        "winner": "Ryan Colby",
+        "result": "won",
+        "expected_pick": "Ryan Colby",
+        "final_score": "6-3 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "5ac6ce64-4110-4028-aea6-cddb32f00b58",
+        "source_id": "tennis:partner:2026-11-11_alejandro moreno|alexander okonkwo",
+        "winner": "Alexander Okonkwo",
+        "result": "won",
+        "expected_pick": "Alexander Okonkwo",
+        "final_score": "6-3 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "4c0adcce-a58b-42c9-81f9-846a9f3724d4",
+        "source_id": "tennis:partner:2026-11-11_gavin young|matthew forbes",
+        "winner": "Matthew Forbes",
+        "result": "lost",
+        "expected_pick": "Gavin Young",
+        "final_score": "3-6 6-3 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "420184fc-4bc2-4cf4-b3c7-ef608a4b1591",
+        "source_id": "tennis:partner:2026-11-11_aidan mchugh|jack anthrop",
+        "winner": "Jack Anthrop",
+        "result": "won",
+        "expected_pick": "Jack Anthrop",
+        "final_score": "7-6 3-6 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "32f91418-c4e6-4971-aba5-a94efa0be3eb",
+        "source_id": "tennis:partner:2026-11-11_arina bulatova|ava catanzarite",
+        "winner": "Ava Catanzarite",
+        "result": "lost",
+        "expected_pick": "Arina Bulatova",
+        "final_score": "6-2 3-6 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "29db2b05-ae14-4e6c-bc0d-febe8bfc080d",
+        "source_id": "tennis:partner:2026-11-11_emanuel ivanisevic|keaton hance",
+        "winner": "Emanuel Ivanisevic",
+        "result": "lost",
+        "expected_pick": "Keaton Hance",
+        "final_score": "7-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "1c02c9ba-014c-483a-bf17-4c012c9251f6",
+        "source_id": "tennis:partner:2026-11-11_daniel kliebhan|louis wessels",
+        "winner": "Louis Wessels",
+        "result": "won",
+        "expected_pick": "Louis Wessels",
+        "final_score": "6-4 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "18a3f403-e044-43ad-8a92-983771994ece",
+        "source_id": "tennis:partner:2026-11-11_fermin tenti|ian vertberger",
+        "winner": "Fermin Tenti",
+        "result": "won",
+        "expected_pick": "Fermin Tenti",
+        "final_score": "6-4 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "fd5178f2-3fa9-45e0-8dd3-07e346b005f5",
+        "source_id": "tennis:partner:2026-11-11_gonzalo zeitune|murkel dellien",
+        "winner": "Murkel Dellien",
+        "result": "won",
+        "expected_pick": "Murkel Dellien",
+        "final_score": "6-2 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "fbc82f7b-28e7-45cd-89ae-67d05604e677",
+        "source_id": "tennis:partner:2026-11-11_filip misolic|nikolas sanchez izquierdo",
+        "winner": "Nikolas Sanchez Izquierdo",
+        "result": "lost",
+        "expected_pick": "Filip Misolic",
+        "final_score": "2-6 7-6 7-5",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ed9e9b34-4cdd-46ef-827d-5bbabd2524f0",
+        "source_id": "tennis:partner:2026-11-11_jarno jans joran vliegen|tom hands matthew summers",
+        "winner": "Jarno Jans/Joran Vliegen",
+        "result": "won",
+        "expected_pick": "Jarno Jans/Joran Vliegen",
+        "final_score": "6-4 3-6 1-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "e9444cb9-654b-476e-b567-39196da3ec04",
+        "source_id": "tennis:partner:2026-11-11_enzo kohlmann de freitas|zsombor velcz",
+        "winner": "Zsombor Velcz",
+        "result": "lost",
+        "expected_pick": "Enzo Kohlmann de Freitas",
+        "final_score": "1-6 7-6 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "e77f006c-f2cf-48e3-b93d-afa26a9427dd",
+        "source_id": "tennis:partner:2026-11-11_daniel rincon oriol roca batalla|joao lucas reis da silva franco roncadelli",
+        "winner": "Daniel Rincon/Oriol Roca Batalla",
+        "result": "won",
+        "expected_pick": "Daniel Rincon/Oriol Roca Batalla",
+        "final_score": "6-2 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ddc63607-7b0b-4a83-bdde-8c473e7d30d6",
+        "source_id": "tennis:partner:2026-11-11_francesco cordova|teodor cariov",
+        "winner": "Francesco Cordova",
+        "result": "lost",
+        "expected_pick": "Teodor Cariov",
+        "final_score": "6-3 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "d0b15527-b103-496d-bab9-44b7fa24a87d",
+        "source_id": "tennis:partner:2026-11-11_charles barry emile hudd|giles hussey harry wendelken",
+        "winner": "Giles Hussey/Harry Wendelken",
+        "result": "won",
+        "expected_pick": "Giles Hussey/Harry Wendelken",
+        "final_score": "6-1 3-6 1-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "cfeebab7-ff7f-4693-8742-dec3a6ce7303",
+        "source_id": "tennis:partner:2026-11-11_rocco valente|tomas giangrasso",
+        "winner": "Rocco Valente",
+        "result": "won",
+        "expected_pick": "Rocco Valente",
+        "final_score": "6-2 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "b1ad34d3-c6f1-45e3-903c-cfc9a15b43c4",
+        "source_id": "tennis:partner:2026-11-11_aran teixido garcia|ema burgic",
+        "winner": "Aran Teixido Garcia",
+        "result": "won",
+        "expected_pick": "Aran Teixido Garcia",
+        "final_score": "6-3 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "7febf9a1-5c2e-4ad0-ac8a-413afe3a7297",
+        "source_id": "tennis:partner:2026-11-11_giovanni branchetti|lucio ratti",
+        "winner": "Lucio Ratti",
+        "result": "won",
+        "expected_pick": "Lucio Ratti",
+        "final_score": "5-7 6-3 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "7a533f90-0c5b-45a5-95e0-73aeebcf3d83",
+        "source_id": "tennis:partner:2026-11-11_craig corey|emilio sanchez bronzetti",
+        "winner": "Emilio Sanchez Bronzetti",
+        "result": "lost",
+        "expected_pick": "Craig Corey",
+        "final_score": "6-3 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "6b11e16e-e433-436c-90cf-a246c51208ac",
+        "source_id": "tennis:partner:2026-11-11_max alcala gurri|santiago de la fuente",
+        "winner": "Max Alcala Gurri",
+        "result": "won",
+        "expected_pick": "Max Alcala Gurri",
+        "final_score": "6-1 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "68f42179-b21f-4ca4-a100-f1d47bf94358",
+        "source_id": "tennis:partner:2026-11-11_capucine jauffret|kylie collins",
+        "winner": "Capucine Jauffret",
+        "result": "lost",
+        "expected_pick": "Kylie Collins",
+        "final_score": "7-6 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "5e8db095-12d4-437f-964d-e134c0e10a9d",
+        "source_id": "tennis:partner:2026-11-11_jaden weekes|thomas gerbaud",
+        "winner": "Thomas Gerbaud",
+        "result": "lost",
+        "expected_pick": "Jaden Weekes",
+        "final_score": "6-4 6-7 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "46cc74c6-d644-4f7e-9ab7-ea330377f701",
+        "source_id": "tennis:partner:2026-11-11_joshua peck|matt kuhar",
+        "winner": "Joshua Peck",
+        "result": "lost",
+        "expected_pick": "Matt Kuhar",
+        "final_score": "2-6 6-4 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "4100573e-b1c1-4575-9781-6a061e9ad97b",
+        "source_id": "tennis:partner:2026-11-11_cannon kingsley|hoyoung roh",
+        "winner": "Cannon Kingsley",
+        "result": "won",
+        "expected_pick": "Cannon Kingsley",
+        "final_score": "6-0 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "246602ae-4e39-4a3d-8769-de945b0f66e9",
+        "source_id": "tennis:partner:2026-11-11_justin riley anson|william nolan",
+        "winner": "Justin Riley Anson",
+        "result": "lost",
+        "expected_pick": "William Nolan",
+        "final_score": "6-4 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "1fc1839c-a604-4c28-8f50-da55bf094e8a",
+        "source_id": "tennis:partner:2026-11-11_anita sahdiieva|sofia rocchetti",
+        "winner": "Anita Sahdiieva",
+        "result": "lost",
+        "expected_pick": "Sofia Rocchetti",
+        "final_score": "6-2 3-6 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "16e06da3-3664-4559-8c64-4f25542be737",
+        "source_id": "tennis:partner:2026-11-11_niels peter van noord|theodore dean",
+        "winner": "Theodore Dean",
+        "result": "won",
+        "expected_pick": "Theodore Dean",
+        "final_score": "4-6 7-6 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "16994694-fd1b-40d2-8f34-dbfde2c6381d",
+        "source_id": "tennis:partner:2026-11-11_michaela laki|sachia vickery",
+        "winner": "Michaela Laki",
+        "result": "lost",
+        "expected_pick": "Sachia Vickery",
+        "final_score": "7-5 4-6 7-5",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "166d72a3-55c7-4120-b0a8-620c30910aec",
+        "source_id": "tennis:partner:2026-11-11_joseph hernandez|tobia grandinetti",
+        "winner": "Tobia Grandinetti",
+        "result": "won",
+        "expected_pick": "Tobia Grandinetti",
+        "final_score": "7-6 4-6 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "05503771-f517-4f69-ae3a-9c97474e4051",
+        "source_id": "tennis:partner:2026-11-11_julia pretti|lais lobo assumpcao euzebio",
+        "winner": "Lais Lobo Assumpcao Euzebio",
+        "result": "won",
+        "expected_pick": "Lais Lobo Assumpcao Euzebio",
+        "final_score": "6-3 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "aebf9474-c65b-43bc-8f6b-445dda63cd75",
+        "source_id": "tennis:partner:2026-11-11_enrique bogo|pedro rodrigues longobardi",
+        "winner": "Enrique Bogo",
+        "result": "won",
+        "expected_pick": "Enrique Bogo",
+        "final_score": "6-4 3-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "5e70b412-4664-4aec-9c28-ae950781d28c",
+        "source_id": "tennis:partner:2026-11-11_clement tabur|zsombor piros",
+        "winner": "Zsombor Piros",
+        "result": "lost",
+        "expected_pick": "Clement Tabur",
+        "final_score": "2-6 7-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "54bbf9b2-345d-48ba-b897-52bd317e5b05",
+        "source_id": "tennis:partner:2026-11-11_bianca bernardes|marjorie souza",
+        "winner": "Marjorie Souza",
+        "result": "won",
+        "expected_pick": "Marjorie Souza",
+        "final_score": "6-0 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "6b201a77-320c-41c8-8b98-2165ea52e410",
+        "source_id": "tennis:partner:2026-11-11_kauany rodrigues|luisa hrda",
+        "winner": "Luisa Hrda",
+        "result": "won",
+        "expected_pick": "Luisa Hrda",
+        "final_score": "6-1 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "1c5a06a1-e438-4003-bba4-5c83a0a5b61e",
+        "source_id": "tennis:partner:2026-11-11_giulia gomes ferreira|luana plaza araujo",
+        "winner": "Giulia Gomes Ferreira",
+        "result": "lost",
+        "expected_pick": "Luana Plaza Araujo",
+        "final_score": "4-6 7-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ccd501fc-e6ac-49c4-9d61-b53d06887cfa",
+        "source_id": "tennis:partner:2026-11-11_gabriele pennaforti|luca potenza",
+        "winner": "Luca Potenza",
+        "result": "won",
+        "expected_pick": "Luca Potenza",
+        "final_score": "6-7 6-4 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "9296703f-5862-4ebb-b6b0-8f13e6d35a4a",
+        "source_id": "tennis:partner:2026-11-11_giuseppe la vela|leonardo primucci",
+        "winner": "Giuseppe La Vela",
+        "result": "won",
+        "expected_pick": "Giuseppe La Vela",
+        "final_score": "6-2 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "6ea86141-1c3b-4e73-a6f4-264ce83585d8",
+        "source_id": "tennis:partner:2026-11-11_alejandro moro canas|aziz dougaz",
+        "winner": "Alejandro Moro Canas",
+        "result": "won",
+        "expected_pick": "Alejandro Moro Canas",
+        "final_score": "6-0 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "38705d0f-116c-4988-bcc7-60c409e614de",
+        "source_id": "tennis:partner:2026-11-11_sebastian prechtel|tobias cank",
+        "winner": "Tobias Cank",
+        "result": "lost",
+        "expected_pick": "Sebastian Prechtel",
+        "final_score": "7-5 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "b67393c8-cb3a-472b-8f05-5e12eadac72c",
+        "source_id": "tennis:partner:2026-11-11_guzmicky dominik|karol filar",
+        "winner": "Karol Filar",
+        "result": "won",
+        "expected_pick": "Karol Filar",
+        "final_score": "6-3 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "ae5cca31-6131-47f0-a170-24772ffe5ea8",
+        "source_id": "tennis:partner:2026-11-11_ana julia sartori|julia julia cerqueira carvalho farias lima",
+        "winner": "Julia Julia Cerqueira Carvalho Farias Lima",
+        "result": "won",
+        "expected_pick": "Julia Julia Cerqueira Carvalho Farias Lima",
+        "final_score": "6-3 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "aae6a0ea-ba27-433f-b98b-ac0c04f74da6",
+        "source_id": "tennis:partner:2026-11-11_eduarda gomes|victoria bosio",
+        "winner": "Victoria Bosio",
+        "result": "won",
+        "expected_pick": "Victoria Bosio",
+        "final_score": "6-1 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "07298521-094f-47ce-a9b4-103ce1b7cab3",
+        "source_id": "tennis:partner:2026-11-11_isadora sigrist|juliana rodriguez",
+        "winner": "Isadora Sigrist",
+        "result": "lost",
+        "expected_pick": "Juliana Rodriguez",
+        "final_score": "6-3 2-6 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "d6369ef3-eb1d-4d24-ad58-59722991aae9",
+        "source_id": "tennis:partner:2026-11-11_joao victor couto loureiro|valerio aboian",
+        "winner": "Valerio Aboian",
+        "result": "won",
+        "expected_pick": "Valerio Aboian",
+        "final_score": "6-3 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "cf0c6a36-73d6-444c-8cbe-e322008497a6",
+        "source_id": "tennis:partner:2026-11-11_glauco pinheiro da cruz junior|luiz felipe silva",
+        "winner": "Glauco Pinheiro Da Cruz Junior",
+        "result": "won",
+        "expected_pick": "Glauco Pinheiro Da Cruz Junior",
+        "final_score": "7-6 6-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "b03894ff-2e4a-420b-bb73-f7e898550a2a",
+        "source_id": "tennis:partner:2026-11-11_daniel dutra da silva|pedro albuquerque dietrich",
+        "winner": "Pedro Albuquerque Dietrich",
+        "result": "lost",
+        "expected_pick": "Daniel Dutra Da Silva",
+        "final_score": "6-4 5-7 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "acbe6254-ea13-4272-9d3e-b5d31f922036",
+        "source_id": "tennis:partner:2026-11-11_evan bynoe|joao vitor goncalves ceolin",
+        "winner": "Evan Bynoe",
+        "result": "won",
+        "expected_pick": "Evan Bynoe",
+        "final_score": "6-4 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "a97ad696-3de1-40ba-a324-bd91c514e7d9",
+        "source_id": "tennis:partner:2026-11-11_juan bautista torres|wilson leite",
+        "winner": "Juan Bautista Torres",
+        "result": "won",
+        "expected_pick": "Juan Bautista Torres",
+        "final_score": "6-3 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "85ef21d9-88ba-4d49-98e1-ecb061e1db5b",
+        "source_id": "tennis:partner:2026-11-11_javier molino|niklas guttau",
+        "winner": "Niklas Guttau",
+        "result": "won",
+        "expected_pick": "Niklas Guttau",
+        "final_score": "6-4 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "8547c8e1-940c-49a7-b2a9-137cebb3abae",
+        "source_id": "tennis:partner:2026-11-11_enrique goenaga guillermo collado losada|maximiliano sanchez carlos d gutierrez",
+        "winner": "Maximiliano Sanchez/Carlos D.Gutierrez",
+        "result": "won",
+        "expected_pick": "Maximiliano Sanchez/Carlos D.Gutierrez",
+        "final_score": "6-7 6-1 7-6",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "2ee0c10e-f9ef-4228-9891-9383c17fee50",
+        "source_id": "tennis:partner:2026-11-11_leticia garcia vidal|sofia omati albieri",
+        "winner": "Leticia Garcia Vidal",
+        "result": "won",
+        "expected_pick": "Leticia Garcia Vidal",
+        "final_score": "6-1 7-5",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "69c0a5de-8a9d-4ba1-85f7-75e5c9b02e7e",
+        "source_id": "tennis:partner:2026-11-11_michele ribecai gabriele volpi|vasilios caripi benjamin pietri",
+        "winner": "Vasilios Caripi/Benjamin Pietri",
+        "result": "lost",
+        "expected_pick": "Michele Ribecai/Gabriele Volpi",
+        "final_score": "1-6 6-4 1-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "1fb3f720-0a88-416d-9857-203c958b3715",
+        "source_id": "tennis:partner:2026-11-11_leandro roman augsburger juan lebron|pol hernandez alvarez manuel castano",
+        "winner": "Leandro Roman Augsburger/Juan Lebron",
+        "result": "won",
+        "expected_pick": "Leandro Roman Augsburger/Juan Lebron",
+        "final_score": "4-6 6-3 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "f0344968-f06b-435e-b57e-184951f54418",
+        "source_id": "tennis:partner:2026-11-11_georgii kravchenko nikita mashtakov|pavlos tsitsipas petros tsitsipas",
+        "winner": "Pavlos Tsitsipas/Petros Tsitsipas",
+        "result": "lost",
+        "expected_pick": "Georgii Kravchenko/Nikita Mashtakov",
+        "final_score": "6-3 6-4",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "94ff5908-0efe-4a48-8c09-95538cd666b6",
+        "source_id": "tennis:partner:2026-11-11_jean julien rojer theodore winegar|william rejchtman vinciguerra olle wallin",
+        "winner": "Jean-Julien Rojer/Theodore Winegar",
+        "result": "won",
+        "expected_pick": "Jean-Julien Rojer/Theodore Winegar",
+        "final_score": "7-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "5ced0e3d-d049-4a5d-802e-af276c14fba1",
+        "source_id": "tennis:partner:2026-11-11_federico iannaccone|matteo gribaldo",
+        "winner": "Matteo Gribaldo",
+        "result": "lost",
+        "expected_pick": "Federico Iannaccone",
+        "final_score": "5-7 7-6 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "37a5b9ec-a7aa-4b2a-9121-6caee941dbff",
+        "source_id": "tennis:partner:2026-11-11_adam pavlasek patrik rikl|sander arends luke johnson",
+        "winner": "Adam Pavlasek/Patrik Rikl",
+        "result": "won",
+        "expected_pick": "Adam Pavlasek/Patrik Rikl",
+        "final_score": "7-6 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "332c9589-038d-4c7b-be37-34b0f96e5c0c",
+        "source_id": "tennis:partner:2026-11-11_jay clarke|pedro vives marcos",
+        "winner": "Pedro Vives Marcos",
+        "result": "lost",
+        "expected_pick": "Jay Clarke",
+        "final_score": "6-3 6-2",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "324b1750-6351-439e-ae6b-7aeba863a030",
+        "source_id": "tennis:partner:2026-11-11_joaquin sabina|nicolas bruna",
+        "winner": "Nicolas Bruna",
+        "result": "won",
+        "expected_pick": "Nicolas Bruna",
+        "final_score": "6-1 6-1",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "2713e60b-f0a9-45a2-8a21-293024c8c509",
+        "source_id": "tennis:partner:2026-11-11_andrea de marchi|daniele rapagnetta",
+        "winner": "Daniele Rapagnetta",
+        "result": "won",
+        "expected_pick": "Daniele Rapagnetta",
+        "final_score": "4-6 7-6 6-0",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "fa3644f8-1494-4523-abcf-6d3ba2681678",
+        "source_id": "tennis:partner:2026-11-11_didi bredberg canizares|min liu",
+        "winner": "Didi Bredberg Canizares",
+        "result": "won",
+        "expected_pick": "Didi Bredberg Canizares",
+        "final_score": "6-3 6-3",
+        "verification_source": "betconstruct"
+      },
+      {
+        "id": "d599bcf6-00a8-4027-a1ad-2cd6a9e87a82",
+        "source_id": "tennis:partner:2026-11-11_carles rojas|mario arce fernandez",
+        "winner": "Mario Arce Fernandez",
+        "result": "won",
+        "expected_pick": "Mario Arce Fernandez",
+        "final_score": "3-6 6-4 7-6",
+        "verification_source": "betconstruct"
+      }
+    ]
+  },
+  "expired": {
+    "scanned": 100,
+    "recoverable": 0,
+    "won": 0,
+    "lost": 0,
+    "applied": 0,
+    "plans": []
+  }
+}

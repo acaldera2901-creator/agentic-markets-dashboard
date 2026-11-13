@@ -90,14 +90,14 @@ export function TrackRecordView({ rows, lang, data, loading = false, error = fal
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div style={{ marginBottom: 6 }}>
         <span className="tr-pill">
-          <span className="tr-dot live" /> {it ? "si aggiorna a ogni match che finisce" : "updates as each match settles"}
+          <span className="tr-dot live" /> {it ? "si aggiorna con i risultati verificati" : "updates with verified results"}
         </span>
       </div>
 
       <div className="tr-sh">
         <span className="tr-glyph"><GlyphLedger size={16} /></span>
         <h2>{it ? "Registro pick" : "Pick log"}</h2>
-        <span className="hint">{it ? "pick concluse · arrivano qui quando la partita finisce" : "settled picks · they land here when the match ends"}</span>
+        <span className="hint">{it ? "ultime 300 pick con esito verificato" : "latest 300 picks with verified results"}</span>
       </div>
       {error && <div className="tr-card tr-empty" role="alert">{it ? "Aggiornamento non riuscito. Riprova tra poco." : "Could not refresh results. Please try again."} {onRetry && <button className="tr-pill btn" onClick={onRetry}>{it ? "Riprova" : "Retry"}</button>}</div>}
       {error && rows.length === 0 ? null : loading && rows.length === 0
