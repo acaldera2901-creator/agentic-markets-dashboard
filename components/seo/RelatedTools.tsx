@@ -15,7 +15,8 @@ export function RelatedTools() {
   return (
     <nav
       aria-label="Free betting calculators"
-      style={{ maxWidth: "68ch", margin: "0 auto", padding: "0 24px 48px", fontSize: 15, color: "var(--am-muted)" }}
+      // Keep this sibling above the dashboard's fixed background wash, like SeoProse.
+      style={{ position: "relative", zIndex: 0, maxWidth: "68ch", margin: "0 auto", padding: "0 24px 48px", fontSize: 15, color: "var(--am-muted)" }}
     >
       <p style={{ margin: "0 0 8px", color: "var(--am-text)", fontWeight: 700 }}>
         Free calculators to check the numbers yourself
