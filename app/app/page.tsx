@@ -31,7 +31,7 @@ import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-
 import { storageGet, storageSet } from "@/lib/safe-storage";
 import { useBrowserTimeZone } from "@/lib/ui/use-browser-tz";
 import { normalizeSignupIntent, type SignupIntent } from "@/lib/signup-intent";
-import { getAttribution } from "@/lib/attribution";
+import { signupAttribution } from "@/lib/attribution";
 // #URL-PATHS-0810: ogni tab ha il suo path (/predictions, …); mappa condivisa col middleware.
 import { TAB_PATHS, PATH_TO_TAB, normalizeTab } from "@/lib/app-tab-paths";
 import { surfaceFloorFor, PICK_SEMPRE_FAVORITO } from "@/lib/surfacing-gate";
@@ -46,7 +46,7 @@ import { MenuIcon, NavIcon, BottomNavIcon, type NavName, type BottomNavName } fr
 import { IconSearch, IconArrow, IconCheck, IconSignIn, IconRegister } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
-import { getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
+import { consentedSessionId, getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
 import { abbinaQuotaPartner, indicizzaPerGiorno } from "@/lib/fp-odds-join";
@@ -110,6 +110,7 @@ import { displayTournament, probabilityLabel, PARTNER_MARKET_MODEL } from "@/lib
 import { useWatchlist } from "@/lib/watchlist";
 import {ClassicPrimaryNav} from "@/components/classic/ClassicPrimaryNav";
 import { CLASSIC } from "@/lib/classic/flag"; // #CLASSIC-COVERAGE-1014
+import { useMatchNews } from "@/components/news/use-news"; // #NEWS-FOTMOB-PROD-1026
 
 // #BUNDLE-SLIM-0702 (Fase 1): componenti pesanti caricati on-demand (chunk lazy),
 // fuori dal bundle iniziale di /app. MatchDetailSheet = solo all'apertura scheda
@@ -4746,7 +4747,10 @@ function ClientAuthModal({
           // bloccato il codice si perdeva e l'iscrizione arrivava senza attribuzione.
           ref: mode === "create" ? (currentRefCode() ?? undefined) : undefined,
           // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
-          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
+          acquisition: mode === "create" ? (signupAttribution() ?? undefined) : undefined,
+          // #G2-TRACKING-1110: session_id solo col consenso → profiles.signup_session_id.
+          analytics_consent: mode === "create" ? consentedSessionId() !== null : undefined,
+          session_id: mode === "create" ? (consentedSessionId() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
@@ -5445,6 +5449,9 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
   const lang = useLang();
   const tz = useTz();
   const geoCountry = useGeoCountry();
+  // #NEWS-FOTMOB-PROD-1026 — the rewritten FotMob notes naming either team, for
+  // the News card of the sheet (null when the news is off or nothing matches).
+  const matchNews = useMatchNews(p.home_team, p.away_team, lang);
   const liveMap = useLive();
   const live = orientLive(liveMap[p.match_id] ?? findLiveByTeams(liveMap, p.home_team, p.away_team), p.home_team, p.away_team);
   const isLive = live?.match_status === "IN_PLAY";
@@ -5766,6 +5773,7 @@ function PredictionCard({ p, fp, onSelect, onBetNow, isPreview, isPremium, isFre
       // disponibile (#INFORTUNI-1001) — mai «nessuna assenza», che non sappiamo.
       teamNews: teamNewsBlock,
       teamNewsLocked: teamNewsBlock == null && !isPremium,
+      news: matchNews, // #NEWS-FOTMOB-PROD-1026
       onUnlock: onGate,
       sections: MDS_SECTION_LABELS(lang),
       // #FLOOR-MODAL-0821 — il modale deve dire la STESSA cosa della scheda.

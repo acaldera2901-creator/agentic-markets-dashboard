@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
-import { TOOL_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
+import { INDEXABLE_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
 import { listPublishedPosts } from "@/lib/blog";
 import { GENERATED_AT, LAST_MODIFIED } from "@/lib/seo/last-modified.generated";
+import { fetchFreshness, pickLastModified } from "@/lib/seo/data-freshness"; // #SEO-AEO-1106: lastmod reale delle board
 
 // #BLOG-SSR-0814: la sitemap ora legge i post published dal DB → ISR oraria,
 // altrimenti resterebbe congelata al build e un publish senza deploy non
@@ -61,11 +62,12 @@ const PUBLIC_ROUTES: Entry[] = [
   { path: "/world-cup", changeFrequency: "monthly" },
 ];
 
-// #TOOLS-HUB-0805: 11 hub + 121 pagine-tool. Contenuto statico (nessun dato di
+// #TOOLS-HUB-0805: hub + pagine-tool nei soli locali indicizzabili (en, it: lista in registry).
+// Prima: 11 hub + 121 pagine-tool. Contenuto statico (nessun dato di
 // mercato dentro), quindi weekly e non daily. Il rango relativo fra inglese
 // canonical e tradotte lo portano gli hreflang e i canonical delle pagine, non
 // la sitemap (#SEO-LASTMOD-0915: `priority` è uscito, Google lo ignora).
-const TOOLS_ROUTES: Entry[] = TOOL_LOCALES.flatMap((locale) => [
+const TOOLS_ROUTES: Entry[] = INDEXABLE_LOCALES.flatMap((locale) => [
   { path: hubPath(locale), changeFrequency: "weekly" as const },
   ...TOOL_SLUGS.map((slug) => ({
     path: toolPath(slug, locale),
@@ -77,6 +79,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Solo published (lib/blog.ts). listPublishedPosts è fail-soft: con DB non
   // raggiungibile la sitemap serve comunque le rotte statiche, mai un 500.
   const posts = await listPublishedPosts();
+  // Le board cambiano a ogni ciclo agenti: la data del commit le sottostima di mesi. Si usa l'ultimo aggiornamento reale dei dati.
+  const fresh = await fetchFreshness();
 
   const postDate = (p: (typeof posts)[number]) => p.published_at ?? p.pub_date ?? null;
 
@@ -97,6 +101,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (r.path === "/blog" && newestPost && newestPost > lastModified) {
       lastModified = newestPost;
     }
+    if (r.path === "/" || r.path === "/predictions") lastModified = pickLastModified(lastModified, fresh.board);
+    if (r.path === "/history") lastModified = pickLastModified(lastModified, fresh.history);
     return {
       url: r.path === "/" ? BASE : `${BASE}${r.path}`,
       lastModified,

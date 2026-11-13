@@ -6,6 +6,7 @@ import { Anton, Barlow_Condensed, JetBrains_Mono, Manrope } from "next/font/goog
 import PageViewTracker from "@/components/PageViewTracker";
 import CookieBanner from "@/components/CookieBanner";
 import VercelAnalytics from "@/components/VercelAnalytics";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import "./globals.css";
 import "./machina.css"; // #UI-MACHINA-0802 — agisce SOLO dentro [data-mc]
 import "./mobile.css"; // #UI-MOBILE-0822 — agisce SOLO sotto i 640px
@@ -28,10 +29,11 @@ const ClassicStyles = process.env.NEXT_PUBLIC_CLASSIC === "1"
 // Barlow Condensed per label/CTA/teste condensate (era Saira Condensed — stessi
 // due pesi, quindi sostituzione uno-a-uno) e Anton per il display (H1, hero,
 // numeri eroe), che prima non esisteva nel sistema.
+// #PERF-1106: Manrope e JetBrains Mono sono font VARIABILI su Google Fonts. Con `weight: [..]` next/font scaricava un
+// file per peso (5 + 4 woff2); senza `weight` scarica un solo file variabile per famiglia, stessi pesi 400–800 disponibili.
 const manrope = Manrope({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
 });
 
 // #CARD-HUD-0830 — la condensata pesante del registro gaming: regge i numeri
@@ -61,7 +63,6 @@ const anton = Anton({
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
 // #SEO-SCAFFOLDING-0721: metadataBase + OG/Twitter site-wide (prima: zero → le
@@ -159,6 +160,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             del banner (la regola vive dentro il componente, come per LiveChat).
             Affianca il beacon di prima parte, non lo sostituisce. */}
         <VercelAnalytics />
+        {/* #GA4-TAG-1110: GA4 (G-8XWQD5N6T7), stessa regola di consenso preventivo. */}
+        <GoogleAnalytics />
         {/* #FUNNEL-MEAS-0813: il consenso si chiede su OGNI rotta (prima solo dentro
             /app): senza banner sulla landing nessuno accettava, e tutto ciò che è
             gated sul consenso — attribuzione compresa — non si attivava mai lì. */}

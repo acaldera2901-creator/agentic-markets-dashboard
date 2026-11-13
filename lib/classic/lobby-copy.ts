@@ -14,6 +14,7 @@ export const CLASSIC_LANGS = ["en", "it", "es", "fr", "de", "pt", "nl", "pl", "t
 export type ClassicLang = (typeof CLASSIC_LANGS)[number];
 
 export type ClassicCopy = {
+  boardTitle: string;
   bannersLabel: string;
   b1Title: string; b1Sub: string; b1Cta: string;
   b2Title: string; b2Sub: string; b2Cta: string;
@@ -35,6 +36,8 @@ export type ClassicCopy = {
   otherLeagues: string; otherTournaments: string;
   // #CLASSIC-ROOBET-1013 — rail sinistro, chip delle leghe, righe per lega.
   sideLabel: string; sideBoard: string; sideMore: string; sideLive: string; sideRecord: string; sidePartners: string; sideInvite: string;
+  /** #NEWS-FOTMOB-PROD-1026 — the News entry of the side menu (shown only when the news is on). */
+  sideNews: string;
   leaguesLabel: string; chipAll: string;
   /** {n} = partite della lega */
   seeAll: string; showLess: string;
@@ -44,6 +47,7 @@ export type ClassicCopy = {
 };
 
 const en: ClassicCopy = {
+  boardTitle: "Football and tennis match analysis",
   bannersLabel: "Where to start",
   b1Title: "Today’s football board",
   b1Sub: "Today’s matches, with our estimate.",
@@ -82,7 +86,7 @@ const en: ClassicCopy = {
   sideMore: "More",
   sideLive: "Live scores",
   sideRecord: "Track record",
-  sidePartners: "Partners", sideInvite: "Invite",
+  sidePartners: "Partners", sideInvite: "Invite", sideNews: "News",
   leaguesLabel: "Leagues",
   chipAll: "All",
   seeAll: "See all {n}",
@@ -98,6 +102,7 @@ const en: ClassicCopy = {
 };
 
 const it: ClassicCopy = {
+  boardTitle: "Analisi delle partite di calcio e tennis",
   bannersLabel: "Da dove partire",
   b1Title: "Il board del calcio oggi",
   b1Sub: "Le partite di oggi, con la nostra stima.",
@@ -136,7 +141,7 @@ const it: ClassicCopy = {
   sideMore: "Altro",
   sideLive: "Punteggi live",
   sideRecord: "Storico",
-  sidePartners: "Partner", sideInvite: "Invita",
+  sidePartners: "Partner", sideInvite: "Invita", sideNews: "Notizie",
   leaguesLabel: "Leghe",
   chipAll: "Tutte",
   seeAll: "Vedi tutte ({n})",
@@ -152,6 +157,7 @@ const it: ClassicCopy = {
 };
 
 const es: ClassicCopy = {
+  boardTitle: "Análisis de partidos de fútbol y tenis",
   bannersLabel: "Por dónde empezar",
   b1Title: "El board de fútbol de hoy",
   b1Sub: "Los partidos de hoy, con estimación.",
@@ -190,7 +196,7 @@ const es: ClassicCopy = {
   sideMore: "Más",
   sideLive: "Marcadores en vivo",
   sideRecord: "Historial",
-  sidePartners: "Partners", sideInvite: "Invitar",
+  sidePartners: "Partners", sideInvite: "Invitar", sideNews: "Noticias",
   leaguesLabel: "Ligas",
   chipAll: "Todas",
   seeAll: "Ver todas ({n})",
@@ -206,6 +212,7 @@ const es: ClassicCopy = {
 };
 
 const fr: ClassicCopy = {
+  boardTitle: "Analyse des matchs de football et de tennis",
   bannersLabel: "Par où commencer",
   b1Title: "Le board football du jour",
   b1Sub: "Les matchs du jour, avec estimation.",
@@ -244,7 +251,7 @@ const fr: ClassicCopy = {
   sideMore: "Plus",
   sideLive: "Scores en direct",
   sideRecord: "Historique",
-  sidePartners: "Partenaires", sideInvite: "Inviter",
+  sidePartners: "Partenaires", sideInvite: "Inviter", sideNews: "Actus",
   leaguesLabel: "Ligues",
   chipAll: "Toutes",
   seeAll: "Voir tout ({n})",
@@ -260,6 +267,7 @@ const fr: ClassicCopy = {
 };
 
 const de: ClassicCopy = {
+  boardTitle: "Spielanalysen für Fußball und Tennis",
   bannersLabel: "Wo du anfängst",
   b1Title: "Das Fußball-Board von heute",
   b1Sub: "Die Spiele von heute, mit Schätzung.",
@@ -298,7 +306,7 @@ const de: ClassicCopy = {
   sideMore: "Mehr",
   sideLive: "Live-Ergebnisse",
   sideRecord: "Bilanz",
-  sidePartners: "Partner", sideInvite: "Einladen",
+  sidePartners: "Partner", sideInvite: "Einladen", sideNews: "News",
   leaguesLabel: "Ligen",
   chipAll: "Alle",
   seeAll: "Alle anzeigen ({n})",
@@ -314,6 +322,7 @@ const de: ClassicCopy = {
 };
 
 const pt: ClassicCopy = {
+  boardTitle: "Análise de jogos de futebol e ténis",
   bannersLabel: "Por onde começar",
   b1Title: "O board de futebol de hoje",
   b1Sub: "Os jogos de hoje, com estimativa.",
@@ -352,7 +361,7 @@ const pt: ClassicCopy = {
   sideMore: "Mais",
   sideLive: "Placares ao vivo",
   sideRecord: "Histórico",
-  sidePartners: "Parceiros", sideInvite: "Convidar",
+  sidePartners: "Parceiros", sideInvite: "Convidar", sideNews: "Notícias",
   leaguesLabel: "Ligas",
   chipAll: "Todas",
   seeAll: "Ver todas ({n})",
@@ -368,6 +377,7 @@ const pt: ClassicCopy = {
 };
 
 const nl: ClassicCopy = {
+  boardTitle: "Wedstrijdanalyses voor voetbal en tennis",
   bannersLabel: "Waar je begint",
   b1Title: "Het voetbalboard van vandaag",
   b1Sub: "De wedstrijden van vandaag, met schatting.",
@@ -406,7 +416,7 @@ const nl: ClassicCopy = {
   sideMore: "Meer",
   sideLive: "Live-standen",
   sideRecord: "Resultaten",
-  sidePartners: "Partners", sideInvite: "Uitnodigen",
+  sidePartners: "Partners", sideInvite: "Uitnodigen", sideNews: "Nieuws",
   leaguesLabel: "Competities",
   chipAll: "Alle",
   seeAll: "Alles tonen ({n})",
@@ -422,6 +432,7 @@ const nl: ClassicCopy = {
 };
 
 const pl: ClassicCopy = {
+  boardTitle: "Analizy meczów piłki nożnej i tenisa",
   bannersLabel: "Od czego zacząć",
   b1Title: "Dzisiejszy board piłkarski",
   b1Sub: "Dzisiejsze mecze, z oceną.",
@@ -460,7 +471,7 @@ const pl: ClassicCopy = {
   sideMore: "Więcej",
   sideLive: "Wyniki na żywo",
   sideRecord: "Historia",
-  sidePartners: "Partnerzy", sideInvite: "Zaproś",
+  sidePartners: "Partnerzy", sideInvite: "Zaproś", sideNews: "Wiadomości",
   leaguesLabel: "Ligi",
   chipAll: "Wszystkie",
   seeAll: "Zobacz wszystkie ({n})",
@@ -476,6 +487,7 @@ const pl: ClassicCopy = {
 };
 
 const tr: ClassicCopy = {
+  boardTitle: "Futbol ve tenis maç analizleri",
   bannersLabel: "Nereden başlamalı",
   b1Title: "Bugünün futbol board’u",
   b1Sub: "Bugünün maçları, tahminimizle.",
@@ -514,7 +526,7 @@ const tr: ClassicCopy = {
   sideMore: "Daha fazla",
   sideLive: "Canlı skorlar",
   sideRecord: "Geçmiş",
-  sidePartners: "Partnerler", sideInvite: "Davet et",
+  sidePartners: "Partnerler", sideInvite: "Davet et", sideNews: "Haberler",
   leaguesLabel: "Ligler",
   chipAll: "Tümü",
   seeAll: "Tümünü gör ({n})",
@@ -530,6 +542,7 @@ const tr: ClassicCopy = {
 };
 
 const sv: ClassicCopy = {
+  boardTitle: "Matchanalyser för fotboll och tennis",
   bannersLabel: "Var du börjar",
   b1Title: "Dagens fotbollsboard",
   b1Sub: "Dagens matcher, med uppskattning.",
@@ -568,7 +581,7 @@ const sv: ClassicCopy = {
   sideMore: "Mer",
   sideLive: "Liveresultat",
   sideRecord: "Facit",
-  sidePartners: "Partners", sideInvite: "Bjud in",
+  sidePartners: "Partners", sideInvite: "Bjud in", sideNews: "Nyheter",
   leaguesLabel: "Ligor",
   chipAll: "Alla",
   seeAll: "Visa alla ({n})",
@@ -584,6 +597,7 @@ const sv: ClassicCopy = {
 };
 
 const ru: ClassicCopy = {
+  boardTitle: "Анализ футбольных и теннисных матчей",
   bannersLabel: "С чего начать",
   b1Title: "Футбольный борд на сегодня",
   b1Sub: "Наши матчи дня — с нашей оценкой.",
@@ -622,7 +636,7 @@ const ru: ClassicCopy = {
   sideMore: "Ещё",
   sideLive: "Live-счёт",
   sideRecord: "История",
-  sidePartners: "Партнёры", sideInvite: "Пригласить",
+  sidePartners: "Партнёры", sideInvite: "Пригласить", sideNews: "Новости",
   leaguesLabel: "Лиги",
   chipAll: "Все",
   seeAll: "Показать все ({n})",

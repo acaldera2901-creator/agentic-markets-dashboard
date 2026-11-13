@@ -246,8 +246,10 @@ export default function LandingCarousel({ lang }: { lang: string }) {
                         fill
                         sizes="(max-width:860px) 100vw, 580px"
                         className="lp-carousel-img"
-                        priority={i < 2}
-                        loading={i < 2 ? undefined : "eager"}
+                        // #PERF-CAROUSEL-1106: only the first slide is the LCP candidate (SSR perView = 1). The
+                        // others were forced eager (+ slide 2 preloaded): 6 creatives, ~1.9 MB, all fetched at
+                        // load against the LCP image. Now lazy: the browser fetches them as they near the viewport.
+                        priority={i === 0}
                       />
                     </Link>
                   </li>

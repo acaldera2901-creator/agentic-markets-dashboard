@@ -1,0 +1,15 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const {query,session}=vi.hoisted(()=>({query:vi.fn(),session:vi.fn()}));
+vi.mock('@/lib/db',()=>({dbQueryStrict:query,dbExecute:query}));
+vi.mock('@/lib/auth',()=>({getSessionPlan:session}));
+import {GET,POST} from './route';
+const guid='a'.repeat(64);
+const req=(body:unknown,origin='https://www.betredge.com')=>new Request('https://www.betredge.com/api/news/community',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify(body)});
+beforeEach(()=>{vi.clearAllMocks();session.mockResolvedValue({identifier:'private@example.com',name:'Alex',plan:'free'});query.mockResolvedValue([])});
+it('rejects cross-origin mutation before session or DB',async()=>{expect((await POST(req({guid,action:'like',liked:true},'https://evil.test'))).status).toBe(403);expect(query).not.toHaveBeenCalled()});
+it('requires signed account for mutations',async()=>{session.mockResolvedValue(null);expect((await POST(req({guid,action:'like',liked:true}))).status).toBe(401);expect(query).not.toHaveBeenCalled()});
+it('rejects empty and overlong comments',async()=>{for(const body of [' ','x'.repeat(1001)])expect((await POST(req({guid,action:'comment',body,id:crypto.randomUUID()}))).status).toBe(400)});
+it('does not leak private identifiers in public read',async()=>{query.mockResolvedValueOnce([{likes:2,comments:1,liked:true}]).mockResolvedValueOnce([{id:'c',body:'Great game',name:'Alex',created_at:'2026-11-05',mine:false}]);const r=await GET(new Request('https://www.betredge.com/api/news/community?guid='+guid));expect(r.status).toBe(200);const t=await r.text();expect(t).toContain('Great game');expect(t).not.toContain('private@example.com');expect(r.headers.get('cache-control')).toBe('no-store')});
+it('like writes express desired state, never blind toggle',async()=>{query.mockResolvedValueOnce([{guid_hash:guid}]).mockResolvedValueOnce([]);expect((await POST(req({guid,action:'like',liked:true}))).status).toBe(200);expect(query.mock.calls[1][0]).toContain('ON CONFLICT');expect(query.mock.calls[1][1]).toEqual([guid,'private@example.com'])});
+it('unknown news cannot receive engagement',async()=>{expect((await POST(req({guid,action:'like',liked:true}))).status).toBe(404)});
+it('DB failure is unavailable, never a fabricated zero count',async()=>{query.mockRejectedValue(new Error('db'));expect((await GET(new Request('https://www.betredge.com/api/news/community?guid='+guid))).status).toBe(503)});

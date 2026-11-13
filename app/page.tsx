@@ -33,7 +33,7 @@ import Dashboard from "./app/page";
 
 export const metadata: Metadata = {
   description:
-    "Football and tennis predictions: the model's calibrated probability next to the market's, the edge between the two, and the reasoning behind every number. Readable before you sign up.",
+    "Explore football and tennis match analysis, source-labelled probability estimates and market readings. Check available fixtures, methodology and the public record.",
   alternates: { canonical: "/" },
 };
 

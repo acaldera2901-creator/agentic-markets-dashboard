@@ -25,10 +25,13 @@
 // passa alla tab login (stesso flusso del desk).
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import "./news-auth.css";
+import { useEffect, useState, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { currentRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
-import { getAttribution } from "@/lib/attribution";
-import { trackEvent } from "@/lib/track-event";
+import { signupAttribution } from "@/lib/attribution";
+import { consentedSessionId, trackEvent } from "@/lib/track-event";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 
 export type HomeAuthIntent = "login" | "create";
@@ -149,12 +152,18 @@ export function HomeAuthModal({
   intent,
   lang,
   onClose,
+  onAuthenticated,
+  newsHero = false,
 }: {
   intent: HomeAuthIntent;
   lang: string;
   onClose: () => void;
+  onAuthenticated?: () => void;
+  newsHero?: boolean;
 }) {
   const t = COPY[pickLang(lang)];
+  const modalRef = useRef<HTMLFormElement>(null);
+  const show = (content: ReactNode) => newsHero && typeof document !== "undefined" ? createPortal(<div className="hv3 ns-auth-root">{content}</div>, document.body) : content;
   const [mode, setMode] = useState<HomeAuthIntent>(intent);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -201,12 +210,23 @@ export function HomeAuthModal({
   // Chiusura facile (Escape) + blocco scroll di sfondo mentre il modal è aperto
   // → l'uscita è facile quanto l'ingresso, niente jank di scroll del body.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const previousFocus = document.activeElement as HTMLElement | null;
+    if (newsHero) modalRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (newsHero && e.key === "Tab") {
+        const targets = Array.from(modalRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),a[href],textarea:not(:disabled)') ?? []);
+        const first = targets[0], last = targets[targets.length - 1];
+        if (!first) { e.preventDefault(); return; }
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === modalRef.current)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (document.activeElement === last || document.activeElement === modalRef.current)) { e.preventDefault(); first.focus(); }
+      }
+    };
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow; };
-  }, [onClose]);
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow; if (newsHero && previousFocus?.isConnected) previousFocus.focus(); };
+  }, [onClose, newsHero, forgot]);
 
   const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Rome"; } catch { return "Europe/Rome"; } })();
   const normalizedEmail = email.trim().toLowerCase();
@@ -243,7 +263,10 @@ export function HomeAuthModal({
           language: lang, timezone: tz,
           ref: mode === "create" ? (effectiveRef ?? undefined) : undefined,
           // #FUNNEL-MEAS-0813: sorgente first-touch (localStorage) → profiles.acquisition.
-          acquisition: mode === "create" ? (getAttribution() ?? undefined) : undefined,
+          acquisition: mode === "create" ? (signupAttribution() ?? undefined) : undefined,
+          // #G2-TRACKING-1110: session_id solo col consenso → profiles.signup_session_id.
+          analytics_consent: mode === "create" ? consentedSessionId() !== null : undefined,
+          session_id: mode === "create" ? (consentedSessionId() ?? undefined) : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
           age_confirmed: mode === "create" ? ageOk : undefined,
@@ -259,8 +282,8 @@ export function HomeAuthModal({
         setMode("login"); // register → login (gate email), come il desk
       } else if (resp.ok) {
         // Login riuscito: il cookie di sessione è settato → entra nel desk.
-        // eslint-disable-next-line react-hooks/immutability -- hard nav voluta: dopo il login serve un caricamento pieno perche' il server veda il cookie di sessione appena messo
-        window.location.href = "/predictions";
+        if (onAuthenticated) onAuthenticated();
+        else window.location.assign("/predictions");
       } else if (resp.status === 403 && data.error === "activation_required") {
         setError(t.activationReq); setShowResend(true);
       } else if (resp.status === 401) setError(t.errWrong);
@@ -309,9 +332,9 @@ export function HomeAuthModal({
   );
 
   if (forgot) {
-    return (
+    return show(
       <div className="av-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-        <form className="av-modal" onSubmit={(e) => { e.preventDefault(); submitForgot(); }}>
+        <form ref={modalRef} role={newsHero ? "dialog" : undefined} aria-modal={newsHero ? true : undefined} aria-label={newsHero ? t.eyebrow : undefined} tabIndex={newsHero ? -1 : undefined} className={`av-modal${newsHero ? " ns-auth-modal" : ""}`} onSubmit={(e) => { e.preventDefault(); submitForgot(); }}>
           {statusBar}
           <div className="av-body">
             <div className="av-head">
@@ -340,10 +363,11 @@ export function HomeAuthModal({
     );
   }
 
-  return (
+  return show(
     <div className="av-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <form className="av-modal" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+      <form ref={modalRef} role={newsHero ? "dialog" : undefined} aria-modal={newsHero ? true : undefined} aria-label={newsHero ? t.eyebrow : undefined} tabIndex={newsHero ? -1 : undefined} className={`av-modal${newsHero ? " ns-auth-modal" : ""}`} onSubmit={(e) => { e.preventDefault(); submit(); }}>
         {statusBar}
+        {newsHero && <div className="ns-auth-hero"><Image src="/images/news-community/banner-login.png" alt="BetRedge" width={1752} height={897} sizes="(max-width: 640px) 100vw, 480px" /></div>}
         <div className="av-body">
           <div className="av-head">
             <h3>{mode === "login" ? t.loginTitle : t.createTitle}</h3>

@@ -1077,8 +1077,12 @@ describe.skipIf(!URL_)("affiliate v2 su Postgres vero", () => {
     expect(await recordIpFingerprintSafe("other@x.io", "9.9.9.9", new Date(t0 - 30 * H))).toBe(true);
     // Ripetere lo stesso giorno non duplica né sposta la prima vista del giorno.
     expect(await recordIpFingerprintSafe("alice@x.io", "9.9.9.9", new Date(t0))).toBe(true);
+    // Una riga per giorno distinto (oggi+ieri di ogni vista): fra 00:00 e 02:00 UTC la
+    // vista di 2 h fa cade nel giorno prima e i giorni sono 5, non 4 (#CI-VERDE-1111).
+    const { ipDayBuckets } = await import("@/lib/affiliate/fingerprints");
+    const days = new Set([t0 - 72 * H, t0 - 2 * H, t0].flatMap((t) => ipDayBuckets(new Date(t))));
     const [c] = await h.sql!`SELECT COUNT(*)::int AS n FROM affiliate_payer_fingerprints WHERE identifier = 'alice@x.io'`;
-    expect(c.n).toBeLessThanOrEqual(4);
+    expect(c.n).toBe(days.size);
     const pay = (identifier: string, ref: string) =>
       recordAffiliateCommissionSafe({ identifier, rail: "paygate", paymentRef: ref, grossUsd: 14.99, paidAt: new Date() });
     expect(await pay("ref@x.io", "pg-1")).toEqual({ written: true, reason: "shadow" });

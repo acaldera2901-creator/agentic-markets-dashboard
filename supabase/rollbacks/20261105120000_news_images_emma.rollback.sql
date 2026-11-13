@@ -1,0 +1,10 @@
+-- Rollback of 20261105120000_news_images_emma.sql — all commented: run by hand, only with APPROVE of Andrea.
+-- Order matters: first no row may point to an emma card, then the old constraint, then the old MIME list.
+--
+-- update public.news_items set image_url = null where image_url like '%-e.webp';
+-- alter table public.news_items drop constraint if exists news_items_image_url_check;
+-- alter table public.news_items
+--   add constraint news_items_image_url_check
+--   check (image_url is null or image_url ~ '^https://[a-z0-9]+\.supabase\.co/storage/v1/object/public/news-images/news-[0-9a-f]{12}\.webp$');
+-- update storage.buckets set allowed_mime_types = array['image/webp'] where id = 'news-images';
+-- (the -e.webp and -e.credit.json objects already in the bucket: empty them from the dashboard or the Storage API)

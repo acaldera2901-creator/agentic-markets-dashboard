@@ -25,7 +25,7 @@ const CSP_POLICY = [
   // cliente (verificato: non compare in nessuna delle 8 pagine pubbliche). In
   // enforce senza questa voce l'unica cosa che si romperebbe sarebbe la toolbar
   // per noi.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com https://vercel.live",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://embed.tawk.to https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com https://vercel.live https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://*.tawk.to https://chat.betredge.com",
   "img-src 'self' data: https:",
   "font-src 'self' data: https://*.tawk.to https://chat.betredge.com",
@@ -35,7 +35,7 @@ const CSP_POLICY = [
   // #CSP-ALLOWLIST-0730: ipapi.co is fetched from the browser for language
   // auto-detect (app/app/page.tsx) — it was the known Report-Only violation
   // since 2026-06-08 and was never allowlisted; PayPal SDK XHRs cross-origin.
-  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com https://ipapi.co https://www.paypal.com https://*.paypal.com",
+  "connect-src 'self' https://*.supabase.co https://*.tawk.to wss://*.tawk.to https://chat.betredge.com wss://chat.betredge.com https://ipapi.co https://www.paypal.com https://*.paypal.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com", // #GA4-TAG-1110
   // Tawk.to renders its chat UI inside an iframe from *.tawk.to; the PayPal SDK
   // renders the button/checkout flow inside paypal.com iframes.
   "frame-src 'self' https://*.tawk.to https://chat.betredge.com https://www.paypal.com https://*.paypal.com",
@@ -76,6 +76,11 @@ const nextConfig: NextConfig = {
   // scroll. Supported in this Next version (config-schema: experimental
   // .scrollRestoration). Presentational only.
   experimental: { scrollRestoration: true },
+  // #PERF-NEWS-IMG-1106 — the watcher's note pictures (1080x1350 webp, ~130 KB) are shown at 168-390 px:
+  // served through the optimiser (right width, modern format). Only this bucket, nothing else remote.
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "izscgffubtakzvwxchqt.supabase.co", pathname: "/storage/v1/object/public/news-images/**" }],
+  },
   // #CLASSIC-LOBBY-1008 — il flag del filone «classic» è SEMPRE definito a
   // build time ("" se non impostato). Una variabile NEXT_PUBLIC_ non definita
   // non viene inlinata: resta un `process.env.X` a runtime e il bundler non

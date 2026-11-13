@@ -10,7 +10,7 @@ export function JsonLd({ data }: { data: object }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
     />
   );
 }
@@ -58,6 +58,28 @@ export function articleJsonLd(a: {
     inLanguage: "en",
     author: org,
     publisher: org,
+  };
+}
+
+// A fixture directory, not individual Event landing pages. Google Event rich results
+// require a dedicated URL and real venue data, neither supplied by this board.
+// Keep every public fixture in the ItemList and in the visible UpcomingMatches list.
+export function matchesJsonLd(
+  matches: ReadonlyArray<{ sport: "football" | "tennis"; competition: string; home: string; away: string; startsAt: string }>,
+  path = "/predictions",
+): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Football and tennis fixtures",
+    url: `${ORIGIN}${path}`,
+    numberOfItems: matches.length,
+    itemListElement: matches.map((m, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: `${m.home} vs ${m.away}`,
+      description: `${m.sport === "tennis" ? "Tennis" : "Football"} · ${m.competition} · ${m.startsAt}`,
+    })),
   };
 }
 

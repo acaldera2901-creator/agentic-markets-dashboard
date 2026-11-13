@@ -312,7 +312,8 @@ function BrandMark({ size = 32 }: { size?: number }) {
   const s = { height: size, width: "auto" as const };
   return (
     <span style={{ display: "inline-flex", alignItems: "center" }}>
-      <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetrEdge" style={s} />
+      {/* #PERF-LOGO-1106: the 1390 px master (567 KB) was shown at 32 px high; the 300x99 copy (40 KB) is sharp up to 3x, and width/height reserve the box (no shift). */}
+      <img className="brand-logo-dark" src="/logos/betredge-logo-white-96.png" alt="BetrEdge" width={Math.round((size * 300) / 99)} height={size} style={s} />
     </span>
   );
 }

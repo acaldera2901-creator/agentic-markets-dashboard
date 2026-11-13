@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import { render, screen, within, fireEvent, cleanup } from "@testing-library/react";
 import { ClassicLobby } from "./ClassicLobby";
 import { ClassicPricesProvider } from "./ClassicContext";
 import { trackEvent } from "@/lib/track-event";
@@ -10,6 +10,9 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/lib/track-event", () => ({ trackEvent: vi.fn() }));
+
+let newsFeed: { state: string; updatedAt?: number; cards?: never[] } | null = null;
+vi.mock("@/components/news/use-news", () => ({ useNewsFeed: () => newsFeed, useNow: () => null }));
 
 const NOW = Date.parse("2026-10-10T10:00:00Z");
 const h = (n: number) => new Date(NOW + n * 3600_000).toISOString();
@@ -45,6 +48,26 @@ function setup(extra: Partial<React.ComponentProps<typeof ClassicLobby>> = {}, f
 }
 
 describe("ClassicLobby", () => {
+  it.each([true, false])("has one visible localized primary heading while loading=%s", (loading) => {
+    setup({ loading, lang: "en" });
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Football and tennis match analysis");
+    cleanup();
+    setup({ loading, lang: "it" });
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Analisi delle partite di calcio e tennis");
+  });
+  it("#NEWS-FOTMOB-PROD-1026: the side menu gains «News» (→ /blog#news, after Live scores) only while the news is on", () => {
+    newsFeed = null;
+    setup();
+    expect(screen.queryByRole("link", { name: "News" })).toBeNull();
+    cleanup();
+    newsFeed = { state: "ok", updatedAt: NOW, cards: [] };
+    setup();
+    const news = screen.getByRole("link", { name: "News" });
+    expect(news).toHaveAttribute("href", "/blog#news");
+    expect(news.closest("ul")).toContainElement(screen.getByRole("link", { name: "Live scores" }));
+    newsFeed = null;
+  });
   it.each([true, false])("mixed discovery for Free=%s preserves sport filters and plan-specific copy", (freePlan) => {
     const f = Array.from({ length: 6 }, (_, i) => item({ league: "Serie A", home: `Football ${i}`, locked: freePlan && i >= 3 }));
     const t = Array.from({ length: 6 }, (_, i) => item({ sport: "tennis", league: "ATP Tokyo", home: `Tennis ${["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"][i]}`, locked: freePlan && i >= 3 }));
