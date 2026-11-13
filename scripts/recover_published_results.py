@@ -13,7 +13,7 @@ async def main(args):
     rows = await read_published_batch(args.after, args.limit)
     agent = object.__new__(TennisSettlementAgent)
     agent.logger = logging.getLogger('result-recovery')
-    plans = await resolve_published_batch(rows, agent._resolve_all)
+    plans = await resolve_published_batch(rows, agent._resolve_published_sources)
     applied = 0
     if args.apply:
         for plan in plans:

@@ -5,7 +5,8 @@
     "espn": "ESPN soccer scoreboard by month / summary by id (cron step A2/A4, Python _fetch_unified_result)",
     "oddsapi": "The Odds API /scores, 3-day window (cron step A2/C)",
     "espn-tennis": "ESPN atp+wta daily archive (agents/tennis_settlement.py _resolve_via_espn)",
-    "betconstruct": "partner feed finished matches, match_status=3 (core/partner_tennis_results.py, #RISULTATI-PARTNER-1001)"
+    "betconstruct": "partner feed finished matches, match_status=3 (core/partner_tennis_results.py, #RISULTATI-PARTNER-1001)",
+    "tennis-explorer": "Dated singles archive plus match-detail full-name/date/score confirmation (core/tennis_explorer_results.py)"
   },
   "sources": {
     "football": {
@@ -46,13 +47,13 @@
       "MLS": ["espn", "oddsapi"]
     },
     "tennis": {
-      "*": ["espn-tennis", "betconstruct"]
+      "*": ["espn-tennis", "betconstruct", "tennis-explorer"]
     }
   },
   "_notes": {
     "VEI": "in debt: only The Odds API /scores (3-day window), no ESPN source (fin.1 payload is empty). A pick not closed within 3 days stays unresolved.",
     "POL": "in debt: only The Odds API /scores (3-day window), no ESPN source (no ESPN league). A pick not closed within 3 days stays unresolved.",
-    "tennis": "every tennis row goes through ESPN then the partner feed (agents/tennis_settlement.py _resolve_all), whatever the tournament: Challenger/ITF/WTA125 and doubles included."
+    "tennis": "every tennis row goes through ESPN then the partner feed (agents/tennis_settlement.py _resolve_all), whatever the tournament: Challenger/ITF/WTA125 and doubles included. Historical published recovery also checks Tennis Explorer for complete singles results."
   },
   "debt": {
     "owner": "Andrea",

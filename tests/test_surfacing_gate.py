@@ -354,7 +354,7 @@ _CON_DEBITO = {"sources": {"football": {"PL": ["football-data"]}},
     ("football", "FRIENDLY", "espn"),
     ("football", "JPN", None),             # lega nuova senza fonte
     ("baseball", "MLB", None),             # sport nuovo senza fonte
-    ("tennis", "Partner feed", "espn-tennis,betconstruct"),
+    ("tennis", "Partner feed", "espn-tennis,betconstruct,tennis-explorer"),
     ("football", "POL", RESULT_SOURCE_DEBT),   # solo Odds API /scores a 3 giorni
     ("football", "VEI", RESULT_SOURCE_DEBT),
     ("football", " unl ", "espn"),             # normalizzato come i classificatori (.upper())

@@ -7,20 +7,24 @@ No Elo updates: recovering an old public result must not replay model training.
 from __future__ import annotations
 import asyncio
 import json
+import logging
 from types import SimpleNamespace
 from sqlalchemy import text
 from core.db import AsyncSessionLocal
+
+logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 WRITE_TIMEOUT_SECONDS = 90
 READ_SQL = """
 SELECT id::text, source_id, home_team AS player1, away_team AS player2,
-       pick, starts_at AS scheduled_at, competition AS tournament, notes
+       pick, starts_at AS scheduled_at, competition AS tournament, notes, result, verification_state
 FROM unified_predictions
 WHERE sport = 'tennis' AND source_table = 'tennis_predictions'
   AND published_at IS NOT NULL AND is_demo = false AND pick IS NOT NULL
   AND starts_at < now() - interval '48 hours'
-  AND (result IS NULL OR result = 'unresolved')
+  AND (result IS NULL OR result = 'unresolved' OR
+       (result IN ('won','lost') AND verification_state IS DISTINCT FROM 'verified'))
   AND (CAST(:after AS uuid) IS NULL OR (starts_at, id) < (
     SELECT starts_at, id FROM unified_predictions WHERE id = CAST(:after AS uuid)
   ))
@@ -41,8 +45,15 @@ async def resolve_published_batch(rows, resolve):
         if pred.pick not in (pred.player1, pred.player2):
             continue
         winner = pred.player1 if position == 'P1' else pred.player2
+        result = 'won' if pred.pick == winner else 'lost'
+        previous = getattr(pred, 'result', None)
+        if previous in ('won', 'lost', 'void') and previous != result:
+            # Contradicting an old grade needs a separately reviewed correction.
+            logger.warning('Result conflict for public pick %s: stored=%s source=%s proposed=%s', pred.id, previous, source, result)
+            continue
         plans.append(dict(id=pred.id, source_id=pred.source_id, winner=winner,
-                          result='won' if pred.pick == winner else 'lost',
+                          result=result, expected_result=previous,
+                          expected_verification=getattr(pred, 'verification_state', None),
                           expected_pick=pred.pick, final_score=score,
                           verification_source=source))
     return plans
@@ -54,6 +65,7 @@ async def apply_recovered_result(plan):
         return await _apply_recovered_result(plan)
 
 async def _apply_recovered_result(plan):
+    plan = {'expected_result': None, 'expected_verification': None, **plan}
     # Lock the public row: competing recovery runs cannot overwrite a real
     # settlement. Ledger revisions and public outcome commit atomically.
     async with AsyncSessionLocal() as session:
@@ -63,7 +75,11 @@ async def _apply_recovered_result(plan):
             row = (await session.execute(text("""
                 SELECT id, notes FROM unified_predictions
                 WHERE id = CAST(:id AS uuid) AND pick = :expected_pick
-                  AND (result IS NULL OR result = 'unresolved') FOR UPDATE
+                  AND (result IS NULL OR result = 'unresolved' OR
+                       (result IN ('won','lost') AND result = :expected_result
+                        AND result = :result
+                        AND verification_state IS NOT DISTINCT FROM :expected_verification
+                        AND verification_state IS DISTINCT FROM 'verified')) FOR UPDATE
             """), plan)).mappings().first()
             if not row:
                 return False

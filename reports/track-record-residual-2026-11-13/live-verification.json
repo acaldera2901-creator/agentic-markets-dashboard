@@ -1,0 +1,85 @@
+{
+  "stats": {
+    "truncated": false,
+    "total": 15190,
+    "won": 10264,
+    "lost": 4915,
+    "void": 11,
+    "pending": 0,
+    "paper": 13290,
+    "verified": 0,
+    "n": 15179,
+    "sample_sufficient": true,
+    "coverage": 0.94,
+    "surfaced_total": 16193,
+    "unverified_excluded": 0,
+    "unresolved_excluded": 977,
+    "dedup_dropped": 1009,
+    "dedup_dropped_decided": 1003,
+    "cutover_at": "2026-09-25T00:00:00Z",
+    "post_cutover_excluded": {
+      "n": 26,
+      "won": 12,
+      "lost": 14,
+      "win_rate": 46.2
+    },
+    "interval_95": {
+      "low": 0.6687,
+      "high": 0.6836
+    },
+    "win_rate": "67.6%",
+    "win_rate_display": "67.6% (66.9\u201368.4%)",
+    "by_source": {
+      "model": {
+        "n": 2427,
+        "won": 1342,
+        "lost": 1085,
+        "sample_sufficient": true,
+        "interval_95": {
+          "low": 0.5331,
+          "high": 0.5726
+        },
+        "win_rate": "55.3%",
+        "win_rate_display": "55.3% (53.3\u201357.3%)",
+        "coverage": 0.984
+      },
+      "unknown": {
+        "n": 1920,
+        "won": 1243,
+        "lost": 677,
+        "sample_sufficient": true,
+        "interval_95": {
+          "low": 0.6257,
+          "high": 0.6685
+        },
+        "win_rate": "64.7%",
+        "win_rate_display": "64.7% (62.6\u201366.8%)",
+        "coverage": 0.922
+      },
+      "market_partner": {
+        "n": 10832,
+        "won": 7679,
+        "lost": 3153,
+        "sample_sufficient": true,
+        "interval_95": {
+          "low": 0.7003,
+          "high": 0.7174
+        },
+        "win_rate": "70.9%",
+        "win_rate_display": "70.9% (70.0\u201371.7%)",
+        "coverage": 0.933
+      }
+    },
+    "edge": {
+      "n": 6850,
+      "won": 5500,
+      "lost": 1350,
+      "share": 0.451,
+      "win_rate": 80.3,
+      "min_confidence": 62,
+      "rest_n": 8329
+    },
+    "insufficient_sample_reason": null
+  },
+  "rows_returned": 300
+}

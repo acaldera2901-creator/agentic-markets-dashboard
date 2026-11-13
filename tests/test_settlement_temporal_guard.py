@@ -173,3 +173,13 @@ class TestIlCancelloDiCompletamentoNelResolver:
             [_res(score=None, status_name="STATUS_WALKOVER")],
         )
         assert resolved == []
+
+def test_identical_event_returned_on_adjacent_days_is_not_ambiguous():
+    r=_res(event_id='same')
+    assert len(_agent()._risolvi_con([_pred()],[r,dict(r)]))==1
+
+def test_same_id_with_conflicting_evidence_stays_ambiguous():
+    assert _agent()._risolvi_con([_pred()],[_res(event_id='same'),_res(event_id='same',score='6-2 6-3')])==[]
+
+def test_distinct_event_ids_stay_ambiguous():
+    assert _agent()._risolvi_con([_pred()],[_res(event_id='one'),_res(event_id='two')])==[]

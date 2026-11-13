@@ -93,7 +93,7 @@ class TennisSettlementAgent(BaseAgent):
         )
         try:
             rows = await read_published_batch(getattr(self, "_recovery_cursor", None))
-            plans = await resolve_published_batch(rows, self._resolve_all) if rows else []
+            plans = await resolve_published_batch(rows, self._resolve_published_sources) if rows else []
             recovered = 0
             for plan in plans:
                 try:
@@ -106,6 +106,21 @@ class TennisSettlementAgent(BaseAgent):
             self.logger.info("[SETTLEMENT] published recovery: %d checked, %d recovered", len(rows), recovered)
         except Exception as exc:
             self.logger.warning("[SETTLEMENT] published recovery failed; retrying same batch: %s", exc)
+
+    async def _resolve_published_sources(self, pending):
+        from core.tennis_explorer_results import get_explorer_results
+        resolved = await self._resolve_all(pending)
+        remaining = self._unresolved(pending, resolved)
+        if remaining:
+            try:
+                # Bound fallback latency without discarding primary-source work.
+                async with asyncio.timeout(120):
+                    results = await get_explorer_results(remaining)
+                resolved += [(p, side, score, "tennisexplorer")
+                             for p, side, score in self._risolvi_con(remaining, results, tolleranza=PARTNER_MATCH_DATE_TOLERANCE)]
+            except Exception as exc:
+                self.logger.warning("[SETTLEMENT] archive fallback unavailable: %s", type(exc).__name__)
+        return resolved
 
     async def _bulk_expire_stale(self):
         """Mark all predictions older than EXPIRE_AFTER_DAYS as 'expired' in one query."""
@@ -525,7 +540,17 @@ class TennisSettlementAgent(BaseAgent):
         # non si settla (ambiguo), come fa gia' il football su ESPN
         # (lib/espn-results.ts, che pretende un candidato unico).
         per_coppia: dict[frozenset, list[dict]] = {}
+        seen = set()
         for r in results:
+            # Adjacent inclusive day windows can return the SAME event twice.
+            # Only identical evidence is collapsed; conflicting snapshots and
+            # distinct event IDs remain ambiguous and cannot settle a pick.
+            signature = tuple(str(r.get(k)) for k in (
+                'event_id', 'event_date', 'winner_key', 'loser_key', 'score_text',
+                'tournament', 'gender', 'status_name', 'source_completed', 'match_tiebreak'))
+            if r.get('event_id') and signature in seen:
+                continue
+            seen.add(signature)
             per_coppia.setdefault(
                 frozenset((r["winner_key"], r["loser_key"])), []
             ).append(r)

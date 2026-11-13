@@ -80,3 +80,29 @@ async def test_recovery_continues_while_normal_settlement_is_blocked():
     finally:
         task.cancel()
         with pytest.raises(asyncio.CancelledError): await task
+
+@pytest.mark.asyncio
+async def test_unverified_result_requires_independent_agreement():
+    row=dict(id='a',source_id='old',player1='A',player2='B',pick='A',scheduled_at=None,notes='{}',result='won',verification_state='unverifiable')
+    async def agrees(ps):return [(ps[0],'P1','6-4 6-4','betconstruct')]
+    async def disagrees(ps):return [(ps[0],'P2','6-4 6-4','betconstruct')]
+    plans=await resolve_published_batch([row],agrees)
+    assert plans[0]['expected_result']=='won'
+    assert plans[0]['expected_verification']=='unverifiable'
+    assert await resolve_published_batch([row],disagrees)==[]
+
+@pytest.mark.asyncio
+async def test_alternate_source_failure_preserves_primary_results(monkeypatch):
+    import logging
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from agents.tennis_settlement import TennisSettlementAgent
+    from core import tennis_explorer_results
+    agent=object.__new__(TennisSettlementAgent);agent.logger=logging.getLogger('test')
+    first=SimpleNamespace(id='a');second=SimpleNamespace(id='b')
+    primary=[(first,'P1','6-4 6-4','betconstruct')]
+    agent._resolve_all=AsyncMock(return_value=primary)
+    fallback=AsyncMock(side_effect=TimeoutError())
+    monkeypatch.setattr(tennis_explorer_results,'get_explorer_results',fallback)
+    assert await agent._resolve_published_sources([first,second])==primary
+    fallback.assert_awaited_once_with([second])
