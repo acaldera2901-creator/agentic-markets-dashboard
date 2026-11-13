@@ -12,6 +12,7 @@ export type LedgerRow = {
   away_team: string | null;
   pick: string | null;
   confidence_score?: number | null;
+  final_score?: string | null;
   result: string | null;
   starts_at: string | null;
   locked?: boolean; // proiezione per-tier: true per free/anonimo, false/undefined per Pro
@@ -65,6 +66,10 @@ export function PickLedger({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en
               <span>
                 {r.home_team ?? "?"}–{r.away_team ?? "?"}
                 {r.pick ? <span className="comp"> · {r.pick}</span> : null}
+                {r.final_score && <span style={{ display: "block", fontSize: 12 }}>
+                  {it ? "Punteggio" : "Score"}: {r.final_score}
+                  {r.sport === "tennis" ? (it ? " · vincitore per primo" : " · winner first") : ""}
+                </span>}
               </span>
               <span className="comp">{r.competition}</span>
               <span className="pr">
@@ -80,7 +85,7 @@ export function PickLedger({ rows, lang }: { rows: LedgerRow[]; lang: "it" | "en
           <button className="tr-expand" onClick={() => setExpanded((v) => !v)}>
             {expanded
               ? (it ? "▴ Comprimi" : "▴ Collapse")
-              : (it ? `▾ Mostra tutte le ${concluded.length} pick` : `▾ Show all ${concluded.length} picks`)}
+              : (it ? `▾ Mostra le ${concluded.length} pick caricate` : `▾ Show ${concluded.length} loaded picks`)}
           </button>
         )}
         {isLocked && (

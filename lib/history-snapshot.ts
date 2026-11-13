@@ -37,7 +37,7 @@ type HistoryFilters = { sport: string | null; competition: string | null; year: 
 // grading/population rules change outside Vercel. Vercel deployments get a
 // revision-specific key because imported rules are not part of the function hash.
 const coalesceSnapshot = createHistoryReadCache(Date.now, 0);
-const cachedSnapshot = unstable_cache(loadHistorySnapshot, ["history-snapshot-v1", process.env.VERCEL_GIT_COMMIT_SHA ?? "local"], { revalidate: 30 });
+const cachedSnapshot = unstable_cache(loadHistorySnapshot, ["history-snapshot-v2", process.env.VERCEL_GIT_COMMIT_SHA ?? "local"], { revalidate: 30 });
 type HistorySnapshot = Awaited<ReturnType<typeof loadHistorySnapshot>>;
 class UnavailableHistorySnapshot extends Error {
   constructor(readonly snapshot: HistorySnapshot) { super("History sealed ledger unavailable"); }
@@ -108,14 +108,8 @@ async function loadHistorySnapshot(
     conditions.push(`EXTRACT(YEAR FROM starts_at) = $${values.length}`);
   }
 
-  // #TRACKREC-REAL-0626: the public win-rate is an ALL-TIME track record, not a
-  // recent window — so stats/segments must be computed over every real settled
-  // signal, while `limit` only bounds the displayed pick-log list. We fetch up to
-  // STATS_CAP rows for the aggregates and slice the list afterwards. Cap is a
-  // defensive backstop (real surfaced signals ~75 today); raise it (or move the
-  // aggregates into SQL COUNTs) if real settled signals ever approach it.
-  // #COERENZA-1001: con le righe senza esito la popolazione e' ~7.000 (01/10).
-  const STATS_CAP = 15000;
+  // Read the complete population in one database snapshot. Only the display
+  // list is bounded (300); a row cap here silently drops older published picks.
   // #LEDGER-SIGILLATA-1007 — flag spento: la query e' quella di main, carattere
   // per carattere. Acceso: servono la chiave del registro (source_table/id).
   const sealedCols = sealedCfg.enabled ? ", source_table, source_id" : "";
@@ -157,12 +151,10 @@ async function loadHistorySnapshot(
      -- (Niente backtick nei commenti: questa query e' un template literal e un
      -- backtick la chiude. E' il secondo file in cui ci inciampo oggi, dopo
      -- lib/tennis-adapter.ts — dove avevo gia' scritto questa stessa nota.)
-     ORDER BY starts_at DESC NULLS LAST, settled_at DESC NULLS LAST, id DESC
-     LIMIT ${STATS_CAP + 1}`,
+     ORDER BY starts_at DESC NULLS LAST, settled_at DESC NULLS LAST, id DESC`,
     values
   ), sealedRead]);
-  const truncated = initialRows.length > STATS_CAP;
-  let fetched = initialRows.slice(0, STATS_CAP);
+  let fetched = initialRows;
 
   // SHOWN-PICKS-ONLY track record (#WINRATE-FLOOR-1 → #TRACKREC-REAL-0626). The
   // board suppresses below-floor rows as "no clear favourite" (no directional
@@ -270,8 +262,7 @@ async function loadHistorySnapshot(
   const snapshot = {
     rows: rows.slice(0, 300),
     stats: {
-      truncated,
-      population_limit: STATS_CAP,
+      truncated: false,
       total,
       won,
       lost,

@@ -287,11 +287,11 @@ def test_senza_database_url_messaggio_chiaro_e_exit_1(monkeypatch, capsys):
     assert "DATABASE_URL assente" in capsys.readouterr().err
 
 
-def test_popolazione_finita_limitata_e_troncamento_non_verde():
+def test_popolazione_completa_anche_oltre_15000():
     # #COERENZA-1001: la popolazione e' quella della route, con il suo tetto.
     snapshot = (REPO / "lib/history-snapshot.ts").read_text()
-    assert f"STATS_CAP = {coerenza.FINITE_MAX};" in snapshot
-    assert f"limit {coerenza.FINITE_MAX}" in coerenza._ROUTE_SQL
+    assert "STATS_CAP" not in snapshot
+    assert "limit 15000" not in coerenza._ROUTE_SQL
     # e le stesse condizioni WHERE di TRACK_RECORD_BASE_CONDITIONS
     tr = (REPO / "lib/track-record.ts").read_text()
     blocco = tr[tr.index("TRACK_RECORD_BASE_CONDITIONS"):]
@@ -301,9 +301,9 @@ def test_popolazione_finita_limitata_e_troncamento_non_verde():
         assert " ".join(cond.lower().split()) in sql, cond
     stats = {"n": 1, "won": 1, "lost": 0, "coverage": 0.56}
     rep = _replay(1, 1, 0, cov_honest=0.563)
-    rep["finished_rows"] = coerenza.FINITE_MAX
+    rep["finished_rows"] = 20000
     with patch.object(coerenza, "misura_history", return_value=(rep, stats)):
-        assert coerenza.check_copertura_onesta().level == "unknown"
+        assert coerenza.check_copertura_onesta().level != "unknown"
 
 
 def test_headline_distingue_i_rotti_attesi_dai_peggiorati():

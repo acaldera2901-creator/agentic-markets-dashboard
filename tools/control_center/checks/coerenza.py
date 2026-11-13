@@ -210,8 +210,8 @@ class ReplayUnavailable(Exception):
     """tsx, node o l'API non disponibili: il confronto diventa '?', mai verde."""
 
 
-# Le stesse condizioni WHERE, lo stesso ORDER e lo stesso LIMIT di
-# app/api/v2/history/route.ts (TRACK_RECORD_BASE_CONDITIONS, STATS_CAP 15000).
+# Le stesse condizioni WHERE, lo stesso ORDER di
+# lib/history-snapshot.ts (TRACK_RECORD_BASE_CONDITIONS, nessun tetto).
 # #COERENZA-1001: la route legge TUTTE le pick pubblicate e finite (anche
 # unresolved/NULL, denominatore della copertura) e published_at, che decide il
 # dedup. La LOGICA invece non si copia: history_replay.ts chiama
@@ -226,12 +226,7 @@ from unified_predictions
 where is_demo = false and published_at is not null
   and (is_historical = true or starts_at < now() - interval '48 hours')
 order by starts_at desc nulls last, settled_at desc nulls last, id desc
-limit 15000
 """
-# Il tetto della route (STATS_CAP). Se le righe lo raggiungono la popolazione
-# e' troncata anche nella route, e copertura_onesta diventa '?'.
-FINITE_MAX = 15000
-
 # Stessa serializzazione dell'RPC exec_sql che usa la route (lib/db.ts): i
 # timestamp arrivano come le stesse stringhe, e il dedup li confronta come tali.
 _AS_JSON = "select coalesce(jsonb_agg(row_to_json(t)), '[]'::jsonb) from ({q}) t"
@@ -353,9 +348,6 @@ def check_copertura_onesta() -> Verdict:
     prova = {**replay["honest"], "dichiarata": dichiarata, "soglia": soglia,
              "riparo": "la copertura conta solo le righe gia' chiuse: il denominatore "
                        "deve includere unresolved e senza esito (route.ts, WHERE)"}
-    if replay.get("finished_rows", 0) >= FINITE_MAX:
-        return unknown(f"popolazione troncata a {FINITE_MAX} righe: alza il tetto", fonte,
-                       evidence=prova)
     if dichiarata is None or onesta is None:
         return unknown("l'API non espone la copertura, o non ci sono pick finite",
                        fonte, evidence=prova)
