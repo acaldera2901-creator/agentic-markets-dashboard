@@ -22,10 +22,11 @@ export function UpcomingMatches({ matches }: { matches: readonly UpcomingMatch[]
     <section className="seo-upcoming" aria-labelledby="upcoming-matches-h">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <JsonLd data={matchesJsonLd(matches)} />
-      <h2 id="upcoming-matches-h">Upcoming football and tennis matches</h2>
+      <h2 id="upcoming-matches-h">Football and tennis fixtures</h2>
       <p>
-        BetRedge publishes a calibrated probability and the reasoning behind it for every football and tennis match it covers, next to the
-        market&apos;s own probability. These are the next fixtures on the board; open a match above to read the model&apos;s view.
+        {matches.length} public fixtures in the current match window, including matches recently started.
+        Teams, players, competitions and start times are available without signing in.
+        Use the interactive board above for the available analysis and market information.
       </p>
       <ul>
         {matches.map((m) => (

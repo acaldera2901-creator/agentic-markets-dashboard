@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export const revalidate = 600;
 
 export default async function PredictionsPage() {
-  const matches = await fetchUpcomingMatches(24);
+  const matches = await fetchUpcomingMatches();
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([["Predictions", "/predictions"]])} />
