@@ -1,0 +1,145 @@
+[
+  {
+    "id": "7a6e8fbe-6a3e-442f-8abf-79e39f10bee0",
+    "expected_pick": "HOME",
+    "expected_result": "unresolved",
+    "expected_verification": "unverified",
+    "result": "lost",
+    "outcome": "draw",
+    "final_score": "1-1",
+    "reason": "STATUS_FULL_TIME",
+    "event_id": "401876741"
+  },
+  {
+    "id": "5cda2595-f05c-4062-be0b-086e0e5bd965",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "won",
+    "outcome": "home",
+    "final_score": "2-1",
+    "reason": "STATUS_FULL_TIME",
+    "event_id": "401871170"
+  },
+  {
+    "id": "7dc56a8d-7f38-4041-9aa9-0053289bf002",
+    "expected_pick": "AWAY",
+    "expected_result": "won",
+    "expected_verification": "unverifiable",
+    "result": "won",
+    "outcome": "away",
+    "final_score": "1-3",
+    "reason": "STATUS_FULL_TIME",
+    "event_id": "401867679"
+  },
+  {
+    "id": "3986ed2e-ea70-4085-9d43-b935d2b27450",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "rinviata-oltre-48h:2026-09-12T11:35:00+00:00",
+    "event_id": "401861418"
+  },
+  {
+    "id": "c834ad4a-3a62-40c5-8d1d-6f73f044bff0",
+    "expected_pick": "AWAY",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "rinviata-oltre-48h:2026-07-14T11:35:00+00:00",
+    "event_id": "401861419"
+  },
+  {
+    "id": "dab5c50d-37b2-43fd-b49d-66d13d17fe35",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "rinviata-oltre-48h:2026-08-18T11:35:00+00:00",
+    "event_id": "401861420"
+  },
+  {
+    "id": "9d1a3060-58a2-48a2-9979-f4d181ab347d",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "rinviata-oltre-48h:2026-09-12T11:00:00+00:00",
+    "event_id": "401861291"
+  },
+  {
+    "id": "bb52e22b-fec5-4714-a5b4-748ff7722012",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "rinviata-oltre-48h:2026-08-19T11:35:00+00:00",
+    "event_id": "401861422"
+  },
+  {
+    "id": "a511cad3-4228-4229-9bdc-0a48b4ca3567",
+    "expected_pick": "AWAY",
+    "expected_result": "won",
+    "expected_verification": "unverified",
+    "result": "won",
+    "outcome": "away",
+    "final_score": "1-2",
+    "reason": "STATUS_FULL_TIME",
+    "event_id": "760490"
+  },
+  {
+    "id": "faeac276-a888-4e79-bd53-90a50260c2fb",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "STATUS_CANCELED",
+    "event_id": "401912455"
+  },
+  {
+    "id": "011f4489-dbba-4ea4-829b-a993f656c819",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "STATUS_CANCELED",
+    "event_id": "401925303"
+  },
+  {
+    "id": "3d701678-a458-494d-99c1-2bc752ced444",
+    "expected_pick": "HOME",
+    "expected_result": "void",
+    "expected_verification": "unverified",
+    "result": "void",
+    "outcome": null,
+    "final_score": null,
+    "reason": "STATUS_CANCELED",
+    "event_id": "401869744"
+  },
+  {
+    "id": "e4f0b628-0048-4bbe-9a2e-51b6211db6cb",
+    "expected_pick": "HOME",
+    "expected_result": "won",
+    "expected_verification": "unverified",
+    "result": "won",
+    "outcome": "home",
+    "final_score": "3-0",
+    "reason": "STATUS_FULL_TIME",
+    "event_id": "401873740"
+  }
+]

@@ -8,7 +8,7 @@ it('recovers unresolved rows and appends the sealed grade without rewriting a co
  const source = readFileSync('core/published_result_recovery.py','utf8');
  const queries = [...source.matchAll(/text\("""([\s\S]*?)"""\)/g)].map(m=>m[1]);
  const id='00000000-0000-0000-0000-000000000001';
- const params: Record<string,unknown>={id,expected_pick:'A',source_id:'match',winner:'B',result:'lost',final_score:'6-4 6-3',notes:'{"final_score":"6-4 6-3"}',verification_source:'betconstruct'};
+ const params: Record<string,unknown>={expected_result:null,expected_verification:null,id,expected_pick:'A',source_id:'match',winner:'B',result:'lost',final_score:'6-4 6-3',notes:'{"final_score":"6-4 6-3"}',verification_source:'betconstruct'};
  async function run(q:string) {
    const values: unknown[]=[];
    return db.query(q.replace(/(?<!:):([a-z_]+)/g,(_,key)=>{values.push(params[key]);return `$${values.length}`;}),values);
@@ -27,6 +27,13 @@ it('recovers unresolved rows and appends the sealed grade without rewriting a co
  expect((await db.query('SELECT result,settlement_revision FROM pick_settlement_current')).rows).toEqual([{result:'won',settlement_revision:2}]);
  expect((await db.query('SELECT result,verification_source FROM unified_predictions')).rows).toEqual([{result:'lost',verification_source:'betconstruct'}]);
  expect((await run(queries[0])).rows).toHaveLength(0);
+ await db.exec(`UPDATE unified_predictions SET verification_state='unverifiable'`);
+ params.expected_result='won'; params.expected_verification='unverifiable';
+ expect((await run(queries[0])).rows).toHaveLength(0); // stale/conflicting plan
+ params.expected_result='lost';
+ expect((await run(queries[0])).rows).toHaveLength(1);
+ await run(queries[2]);
+ expect((await run(queries[0])).rows).toHaveLength(0); // verified rows cannot be rewritten
  await run(queries[1]);
  expect((await db.query('SELECT * FROM pick_settlement')).rows).toHaveLength(2);
  } finally {await db.close();}

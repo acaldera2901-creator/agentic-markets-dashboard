@@ -82,6 +82,23 @@ class ResultSettlementAgent(BaseAgent):
         self._scores_cache: dict = {}
 
     async def _main_loop(self) -> None:
+        async with asyncio.TaskGroup() as group:
+            group.create_task(self._live_loop())
+            group.create_task(self._published_recovery_loop())
+
+    async def _published_recovery_loop(self):
+        from core.football_result_recovery import recover_batch
+        cursor = None
+        while self._running:
+            try:
+                async with asyncio.timeout(180):
+                    cursor, recovered = await recover_batch(cursor)
+                self.logger.info("[SETTLEMENT] football published recovery: %d recovered", recovered)
+            except Exception as exc:
+                self.logger.warning("football published recovery failed: %s", type(exc).__name__)
+            await asyncio.sleep(self.POLL_INTERVAL)
+
+    async def _live_loop(self) -> None:
         while self._running:
             try:
                 await self._settlement_cycle()

@@ -1,0 +1,53 @@
+[
+  {
+    "id": "b019730d-9290-4b06-9201-43838d05412a",
+    "expected_result": "won",
+    "expected_pick": "Emma Navarro",
+    "result": "lost",
+    "winner": "Catherine McNally",
+    "score": "4-6 6-0 6-4",
+    "reason": "Final confirms McNally winner; old Navarro win and partial 5-3 score were incorrect.",
+    "sources": [
+      "https://www.tennisexplorer.com/match-detail/?id=3225459",
+      "https://www.365scores.com/tennis/match/hertogenbosch-279/catherine-mcnally-emma-navarro-48173-49565-279",
+      "https://www.wtatennis.com/players/325725/Catherine_McNally"
+    ]
+  },
+  {
+    "id": "304f0737-3c88-4c7b-be6b-9ec50bf99a50",
+    "expected_result": "void",
+    "expected_pick": "AWAY",
+    "result": "void",
+    "winner": null,
+    "score": null,
+    "reason": "Official club confirms postponement from September 16 to October 21; existing >48h rule retains void.",
+    "sources": [
+      "https://www.athletic-club.eus/noticias/2026/09/16/suspendido-el-levante-ud-athletic-club-de-la-jornada-6-de-laliga/"
+    ]
+  },
+  {
+    "id": "55bd229c-d4a4-4c1d-85c0-9b7bb3451ab9",
+    "expected_result": "void",
+    "result": "void",
+    "winner": null,
+    "score": null,
+    "reason": "Walkover before play, confirmed by Tennis Abstract qualifying draw and Sofascore; confirms existing void, not a played win.",
+    "sources": [
+      "https://www.tennisabstract.com/current/2026Wuning3Challenger.html",
+      "https://www.sofascore.com/tennis/match/blake-bayldon-max-purcell/iTZsTKUb"
+    ],
+    "expected_pick": "Max Purcell"
+  },
+  {
+    "id": "e09a8dd1-937d-4502-9c93-3b8783812b8f",
+    "expected_result": "void",
+    "result": "void",
+    "winner": null,
+    "score": null,
+    "reason": "Cancelled match confirmed by dated LiveScore archive; confirms existing void without inventing a score.",
+    "sources": [
+      "https://www.livescores.com/tennis/2026-10-06/"
+    ],
+    "expected_pick": "Yulia Putintseva"
+  }
+]
