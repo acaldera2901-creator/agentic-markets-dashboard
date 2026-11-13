@@ -5,7 +5,7 @@ import { createElement } from "react";
 const dbQuery = vi.fn();
 vi.mock("@/lib/db", () => ({ dbQuery }));
 
-const { fetchUpcomingMatches, toMatches } = await import("./upcoming-matches");
+const { fetchUpcomingMatches, toMatches, balance } = await import("./upcoming-matches");
 const { matchesJsonLd } = await import("@/components/seo/json-ld");
 const { UpcomingMatches } = await import("@/components/seo/UpcomingMatches");
 
@@ -21,6 +21,21 @@ describe("toMatches", () => {
     ]);
     expect(m.map((x) => `${x.home} vs ${x.away}`)).toEqual(["Venezia FC vs Udinese Calcio", "J. Sinner vs C. Alcaraz"]);
     expect(m[1].sport).toBe("tennis");
+  });
+  it("tennis players only in home_team/away_team (live data shape) are kept", () => {
+    const m = toMatches([row({ sport: "tennis", home_team: "J. Sinner", away_team: "C. Alcaraz", player_one: null, player_two: null })]);
+    expect(m.map((x) => `${x.home} vs ${x.away}`)).toEqual(["J. Sinner vs C. Alcaraz"]);
+  });
+  it("empty-string home_team/away_team falls back to player_one/two", () => {
+    const m = toMatches([row({ sport: "tennis", home_team: "", away_team: " ", player_one: "J. Sinner", player_two: "C. Alcaraz" })]);
+    expect(m.map((x) => `${x.home} vs ${x.away}`)).toEqual(["J. Sinner vs C. Alcaraz"]);
+  });
+  it("balance: a tennis-only head of the list cannot crowd out football", () => {
+    const tennis = Array.from({ length: 30 }, (_, i) => row({ id: `t${i}`, sport: "tennis", home_team: `P${i}`, away_team: `Q${i}`, starts_at: `2026-11-12T10:${String(i).padStart(2, "0")}:00Z` }));
+    const foot = Array.from({ length: 5 }, (_, i) => row({ id: `f${i}`, home_team: `H${i}`, away_team: `A${i}`, starts_at: `2026-11-14T1${i}:00:00Z` }));
+    const out = balance(toMatches([...tennis, ...foot], Infinity), 24);
+    expect(out).toHaveLength(24);
+    expect(out.filter((x) => x.sport === "football")).toHaveLength(5);
   });
   it("respects the limit", () => expect(toMatches(Array.from({ length: 10 }, (_, i) => row({ id: String(i), home_team: `H${i}` })), 3)).toHaveLength(3));
 });
