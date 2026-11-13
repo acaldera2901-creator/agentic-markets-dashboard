@@ -1,6 +1,7 @@
 // components/seo/UpcomingMatches.tsx — #SEO-AEO-1106
 // Server-rendered list of the next fixtures on /predictions: the board itself is client-rendered, so without this a crawler or an AI
 // assistant sees no match. Same facts as the board shows an anonymous visitor (teams/players, competition, kickoff): nothing gated.
+import Link from "next/link";
 import { JsonLd, matchesJsonLd } from "./json-ld";
 import type { UpcomingMatch } from "@/lib/seo/upcoming-matches";
 
@@ -27,6 +28,10 @@ export function UpcomingMatches({ matches }: { matches: readonly UpcomingMatch[]
         {matches.length} public fixtures in the current match window, including matches recently started.
         Teams, players, competitions and start times are available without signing in.
         Use the interactive board above for the available analysis and market information.
+      </p>
+      <p>
+        Explore how the analysis works: <Link href="/ai-football-predictions">AI football predictions</Link>
+        {" · "}<Link href="/ai-tennis-predictions">AI tennis predictions</Link>.
       </p>
       <ul>
         {matches.map((m) => (

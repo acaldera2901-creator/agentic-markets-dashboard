@@ -10,7 +10,7 @@ export function JsonLd({ data }: { data: object }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
     />
   );
 }
@@ -61,8 +61,9 @@ export function articleJsonLd(a: {
   };
 }
 
-// ItemList di SportsEvent per le prossime partite (#SEO-AEO-1106). Solo fatti pubblici (squadre/giocatori, competizione, orario):
-// niente probabilita', quote o pick (gated), niente numeri di performance. Il testo equivalente e' visibile nella pagina (UpcomingMatches).
+// A fixture directory, not individual Event landing pages. Google Event rich results
+// require a dedicated URL and real venue data, neither supplied by this board.
+// Keep every public fixture in the ItemList and in the visible UpcomingMatches list.
 export function matchesJsonLd(
   matches: ReadonlyArray<{ sport: "football" | "tennis"; competition: string; home: string; away: string; startsAt: string }>,
   path = "/predictions",
@@ -70,19 +71,14 @@ export function matchesJsonLd(
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Upcoming football and tennis matches on BetRedge",
+    name: "Football and tennis fixtures",
+    url: `${ORIGIN}${path}`,
+    numberOfItems: matches.length,
     itemListElement: matches.map((m, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      item: {
-        "@type": "SportsEvent",
-        name: `${m.home} vs ${m.away}`,
-        description: m.competition,
-        startDate: m.startsAt,
-        sport: m.sport === "tennis" ? "Tennis" : "Soccer",
-        url: `${ORIGIN}${path}`,
-        competitor: [m.home, m.away].map((n) => ({ "@type": m.sport === "tennis" ? "Person" : "SportsTeam", name: n })),
-      },
+      name: `${m.home} vs ${m.away}`,
+      description: `${m.sport === "tennis" ? "Tennis" : "Football"} · ${m.competition} · ${m.startsAt}`,
     })),
   };
 }
