@@ -7,7 +7,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // Public GET resources used by the anonymous board. Exact path or query
+        // only: do not accidentally open authenticated child routes.
+        allow: ["/", ...["predictions", "tennis", "tennis-live", "news", "fortuneplay-odds", "geo-books", "version", "v2/history"].flatMap(path => [`/api/${path}$`, `/api/${path}?`])],
         disallow: ["/api/", "/admin", "/reset-password", "/go/"],
       },
     ],

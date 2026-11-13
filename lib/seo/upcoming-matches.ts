@@ -11,7 +11,7 @@ type Row = { id: string; sport: string; competition: string | null; league: stri
 const clean = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
 
 /** Rows (several markets per match) → one entry per match; rows without two names or with an invalid date are dropped. Pure. */
-export function toMatches(rows: readonly Row[], limit = 24): UpcomingMatch[] {
+export function toMatches(rows: readonly Row[], limit = Infinity): UpcomingMatch[] {
   const seen = new Set<string>();
   const out: UpcomingMatch[] = [];
   for (const r of rows) {
@@ -40,24 +40,20 @@ export function balance(all: readonly UpcomingMatch[], limit: number): UpcomingM
 }
 
 /** Same public window as /api/v2/predictions (not demo, not historical, published, next PREDICTION_WINDOW_DAYS). Fail-soft: [] on any error. */
-export async function fetchUpcomingMatches(limit = 24): Promise<UpcomingMatch[]> {
+export async function fetchUpcomingMatches(limit = Infinity): Promise<UpcomingMatch[]> {
   try {
     const rows = await dbQuery<Row>(
       `SELECT id, sport, competition, league, home_team, away_team, player_one, player_two, starts_at
-         FROM (
-               SELECT id, sport, competition, league, home_team, away_team, player_one, player_two, starts_at,
-                      ROW_NUMBER() OVER (PARTITION BY sport ORDER BY starts_at ASC) AS rn
-                 FROM unified_predictions
-                WHERE starts_at > NOW() - interval '150 minutes'
-                  AND starts_at < NOW() + ($1 || ' days')::interval
-                  AND expires_at > NOW() - interval '150 minutes'
-                  AND published_at IS NOT NULL AND is_historical = FALSE AND is_demo = FALSE
-              ) t
-        WHERE rn <= $2
-        ORDER BY starts_at ASC`,
-      [PREDICTION_WINDOW_DAYS, limit * 6]
+         FROM unified_predictions
+        WHERE starts_at > NOW() - interval '150 minutes'
+          AND starts_at < NOW() + ($1 || ' days')::interval
+          AND expires_at > NOW() - interval '150 minutes'
+          AND published_at IS NOT NULL AND is_historical = FALSE AND is_demo = FALSE
+          AND sport IN ('football', 'tennis')
+        ORDER BY starts_at ASC, id ASC`,
+      [PREDICTION_WINDOW_DAYS]
     );
-    return balance(toMatches(rows, Infinity), limit);
+    return toMatches(rows, limit);
   } catch (e) {
     console.error("[seo/upcoming-matches]", String(e));
     return [];

@@ -71,3 +71,16 @@ describe("JSON-LD + visible list (same facts)", () => {
   });
   it("no matches → renders nothing (no empty heading, no empty JSON-LD)", () => expect(renderToStaticMarkup(createElement(UpcomingMatches, { matches: [] }))).toBe(""));
 });
+
+
+describe("complete public fixture inventory", () => {
+  it("does not silently truncate valid matches at 24 or impose sport quotas", async () => {
+    const rows = Array.from({ length: 340 }, (_, i) => row({ id: String(i), home_team: `Home ${i}`, away_team: `Away ${i}`, sport: i < 250 ? "football" : "tennis" }));
+    dbQuery.mockResolvedValueOnce(rows);
+    const matches = await fetchUpcomingMatches();
+    expect(matches).toHaveLength(340);
+    expect(matches.filter(m => m.sport === "football")).toHaveLength(250);
+    expect(matches.filter(m => m.sport === "tennis")).toHaveLength(90);
+    expect(toMatches(rows)).toHaveLength(340);
+  });
+});
