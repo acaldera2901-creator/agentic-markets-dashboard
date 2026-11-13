@@ -50,3 +50,14 @@ async def test_read_failure_retries_same_page(monkeypatch):
     monkeypatch.setattr(recovery, 'read_published_batch', AsyncMock(side_effect=RuntimeError('db unavailable')))
     await agent._recover_published()
     assert agent._recovery_cursor == 'previous'
+
+@pytest.mark.asyncio
+async def test_recovery_write_has_a_deadline(monkeypatch):
+    import asyncio
+    from core import published_result_recovery as recovery
+    async def stalled(plan):
+        await asyncio.sleep(10)
+    monkeypatch.setattr(recovery, '_apply_recovered_result', stalled, raising=False)
+    monkeypatch.setattr(recovery, 'WRITE_TIMEOUT_SECONDS', 0.01, raising=False)
+    with pytest.raises(TimeoutError):
+        await recovery.apply_recovered_result({'id':'irrelevant'})
