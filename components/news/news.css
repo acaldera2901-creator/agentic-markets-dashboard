@@ -98,15 +98,15 @@
   .nw { scroll-margin-top: 136px; }
 }
 
-/* ── B · «Latest news» on the board (between the banners and the tabs) ───── */
+/* ── B · «Latest news» on the board (right above «Matches by league») ────── */
 .brc-news {
   display: grid; gap: var(--am-s-3);
   padding: var(--am-s-3) var(--am-s-4);
   border-radius: var(--am-r-card); background: var(--am-panel-2);
   font-family: var(--am-font-ui);
 }
+/* one height at every width since the phone swipes one row (#NEWS-STRIP-1115; it was 446 when the notes stacked) */
 .brc-news-reserve { min-height: 178px; }
-@media (max-width: 640px) { .brc-news-reserve { min-height: 446px; } }
 .brc-news__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--am-s-1) var(--am-s-3); min-width: 0; }
 .brc-news__h { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am-muted); }
 .brc-news__upd { font-size: 11px; color: var(--am-muted-2); font-variant-numeric: tabular-nums; }
@@ -129,7 +129,19 @@
 @media (max-width: 900px) { .brc-news__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .brc-news__item:nth-child(3) { display: none; } }
 @media (max-width: 640px) {
   .brc-news { padding: var(--am-s-3); }
-  .brc-news__list { grid-template-columns: 1fr; gap: var(--am-s-3); }
+  /* #NEWS-STRIP-1115 — on the phone the notes are one row to swipe: a card and
+     a slice of the next one, snapping. The row bleeds to the panel's edges so
+     the next card is cut by the panel, not by an invisible box; the page
+     itself never scrolls sideways (min-width: 0 up the chain). */
+  .brc-news__list {
+    display: flex; gap: var(--am-s-3);
+    margin-inline: calc(-1 * var(--am-s-3)); padding-inline: var(--am-s-3);
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-inline: var(--am-s-3);
+    scrollbar-width: none;
+  }
+  .brc-news__list::-webkit-scrollbar { display: none; }
+  .brc-news__item { flex: 0 0 84%; scroll-snap-align: start; }
   .brc-news__item:nth-child(3) { display: grid; }
   .brc-news__upd { display: none; }
 }

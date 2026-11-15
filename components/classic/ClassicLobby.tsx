@@ -345,10 +345,6 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
       <h1 className="brc-board-title">{copy.boardTitle}</h1>
       <ClassicBanners banners={bannerList} label={copy.bannersLabel} mobileLabels={[copy.football, copy.tabInPlay, copy.sideRecord]} />
 
-      {/* ── 1b · «Latest news» (#NEWS-FOTMOB-PROD-1026): tre note al massimo,
-          niente quando non c'è nulla da dire — il board non aspetta le news ── */}
-      <ClassicNewsStrip lang={lang} football={football} />
-
       {/* ── 2 · tab + ricerca ─────────────────────────────────────────── */}
       <div className="brc-bar">
         <div className="brc-tabs" role="tablist" aria-label={copy.tabsLabel}>
@@ -440,6 +436,11 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
           <Rail id="brc-differs" title={copy.differsTitle} hint={discovery.comparison} items={differs}
             section={() => "top"} renderCard={renderCard} copy={copy} testId="classic-differs" />
         )}
+
+        {/* ── 5b · «Latest news» (#NEWS-FOTMOB-PROD-1026, spostata sopra le leghe
+            #NEWS-STRIP-1115): tre note al massimo, niente quando non c'è nulla
+            da dire — il board non aspetta le news ── */}
+        <ClassicNewsStrip lang={lang} football={football} />
 
         {/* ── 6 · per lega: intestazione ripiegabile, righe, «See all» ── */}
         <section className="brc-sec brc-sec--leagues" aria-labelledby="brc-leagues-h">
