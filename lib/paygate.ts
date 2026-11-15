@@ -128,14 +128,27 @@ export function newOrderToken(): { token: string; tokenHash: string } {
 export function evaluateCallback(opts: {
   order: { status: string; amount_usd: number } | null;
   valueCoin: number | null;
+  coin: string | null;
   feeTolerance?: number;
 }): { grant: boolean; reason: string } {
   const tol = opts.feeTolerance ?? resolveFeeTolerance();
   if (!opts.order) return { grant: false, reason: "order not found" };
   if (opts.order.status !== "pending") return { grant: false, reason: "order not pending" };
+  if (!Number.isFinite(opts.order.amount_usd) || opts.order.amount_usd <= 0) return { grant: false, reason: "invalid order amount" };
+  if (!Number.isFinite(tol) || tol < 0 || tol > 0.5) return { grant: false, reason: "invalid fee tolerance" };
   if (opts.valueCoin == null || !Number.isFinite(opts.valueCoin)) return { grant: false, reason: "missing value_coin" };
+  // payment-status value_coin is denominated in the reported payout coin,
+  // not necessarily USD. Unknown/non-stable payouts require reconciliation;
+  // never infer a conversion rate from a callback or the size of the number.
+  const coin = normalizePayoutCoin(opts.coin);
+  if (!coin || !USD_PAYOUT_COINS.has(coin)) return { grant: false, reason: "unsupported or missing payout denomination" };
   if (opts.valueCoin < opts.order.amount_usd * (1 - tol)) return { grant: false, reason: "amount below threshold" };
   return { grant: true, reason: "ok" };
+}
+
+const USD_PAYOUT_COINS = new Set(["polygon-usdc", "polygon-usdt"]);
+function normalizePayoutCoin(coin: unknown): string | null {
+  return typeof coin === "string" && coin.trim() ? coin.trim().toLowerCase().replace(/_/g, "-") : null;
 }
 
 export async function createReceivingWallet(
@@ -184,7 +197,7 @@ export function buildPayUrl(opts: { addressIn: string; amount: number; email: st
 // chiamata per callback). Ritorna null se la chiamata fallisce (→ il caller NON concede).
 export async function checkPaymentStatus(
   ipnToken: string
-): Promise<{ status: string; valueCoin: number | null; txidOut: string | null } | null> {
+): Promise<{ status: string; valueCoin: number | null; txidOut: string | null; coin: string | null } | null> {
   if (!ipnToken) return null;
   let resp: Response;
   try {
@@ -205,17 +218,18 @@ export async function checkPaymentStatus(
     return null;
   }
   const raw = await resp.text().catch(() => "");
-  let d: { status?: string; value_coin?: string | number; txid_out?: string } | null = null;
+  let d: { status?: string; value_coin?: string | number; txid_out?: string; coin?: string } | null = null;
   try { d = JSON.parse(raw); } catch { /* body non-JSON (es. challenge HTML) */ }
   if (!d) {
     console.error(`[paygate/status] risposta non-JSON (len=${raw.length}): ${raw.slice(0, 120)}`);
     return null;
   }
   const v = d.value_coin;
+  const numericValue = typeof v === "number" || (typeof v === "string" && v.trim() !== "") ? Number(v) : NaN;
   return {
     status: typeof d.status === "string" ? d.status : "",
-    valueCoin: v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : null,
+    valueCoin: Number.isFinite(numericValue) ? numericValue : null,
     txidOut: typeof d.txid_out === "string" ? d.txid_out : null,
+    coin: normalizePayoutCoin(d.coin),
   };
 }
-

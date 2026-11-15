@@ -6,7 +6,16 @@ import { checkPaymentStatus, evaluateCallback, resolveFeeTolerance, blocksLowerT
 // esattamente come l'address_in in buildPayUrl. encodeURIComponent lo doppio-encodava
 // (%3D→%253D) → PayGate rispondeva "unpaid" → nessun grant. Questo test blinda il fix.
 describe("checkPaymentStatus — ipn_token già-encoded non va doppio-encodato", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+  it("retains the denomination from server verification", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ status: "paid", value_coin: "25", coin: "polygon_usdc" }) }));
+    expect(await checkPaymentStatus("test")).toMatchObject({ valueCoin: 25, coin: "polygon-usdc" });
+  });
+  it.each([true, [], {}, " "])("rejects malformed provider amounts %s", async (value_coin) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => JSON.stringify({ status: "paid", value_coin, coin: "polygon_usdc" }) }));
+    expect((await checkPaymentStatus("test"))?.valueCoin).toBeNull();
+  });
 
   it("concatena l'ipn_token as-is (nessun %3D→%253D)", async () => {
     const token = "abc-DEF_ghi123%3D"; // come da wallet.php (trailing '=' già encodato)
@@ -32,20 +41,36 @@ describe("evaluateCallback — fee tolerance 15%", () => {
   const order = { status: "pending", amount_usd: 5 };
 
   it("4.30 su 5 PASSA (fee ~14%, sopra la soglia 4.25)", () => {
-    const d = evaluateCallback({ order, valueCoin: 4.3 });
+    const d = evaluateCallback({ order, valueCoin: 4.3, coin: "polygon-usdc" });
     expect(d.grant).toBe(true);
     expect(d.reason).toBe("ok");
   });
 
   it("2.60 su 5 NON passa (col vecchio floor 50% sarebbe passato)", () => {
-    const d = evaluateCallback({ order, valueCoin: 2.6 });
+    const d = evaluateCallback({ order, valueCoin: 2.6, coin: "polygon-usdc" });
     expect(d.grant).toBe(false);
     expect(d.reason).toBe("amount below threshold");
   });
 
   it("override esplicito feeTolerance ha precedenza sul default", () => {
     // 2.60 su 5 con tol 0.5 → soglia 2.5 → passa (comportamento vecchio, on-demand)
-    expect(evaluateCallback({ order, valueCoin: 2.6, feeTolerance: 0.5 }).grant).toBe(true);
+    expect(evaluateCallback({ order, valueCoin: 2.6, coin: "polygon-usdc", feeTolerance: 0.5 }).grant).toBe(true);
+  });
+
+  it.each([null, "", "polygon-pol", "eth", "fake-usdc"])("does not compare USD to unknown or unsupported coin %s", (coin) => {
+    expect(evaluateCallback({ order, valueCoin: 1000, coin }).grant).toBe(false);
+  });
+
+  it.each(["polygon-usdc", "polygon_usdc", "polygon-usdt"])("accepts an explicitly supported USD payout denomination %s", (coin) => {
+    expect(evaluateCallback({ order, valueCoin: 5, coin }).grant).toBe(true);
+  });
+
+  it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY])("rejects invalid order amount %s", (amount_usd) => {
+    expect(evaluateCallback({ order: { ...order, amount_usd }, valueCoin: 5, coin: "polygon-usdc" }).grant).toBe(false);
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, -1, 1])("rejects invalid explicit tolerance %s", (feeTolerance) => {
+    expect(evaluateCallback({ order, valueCoin: 5, coin: "polygon-usdc", feeTolerance }).grant).toBe(false);
   });
 });
 
