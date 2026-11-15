@@ -1,6 +1,6 @@
 "use client";
 // components/classic/ClassicNewsStrip.tsx (#NEWS-FOTMOB-PROD-1026) — «Latest
-// news» on the board, between the banners and the tabs: three rewritten
+// news» on the board, right above «Matches by league»: three rewritten
 // FotMob notes at most, newest first, each with its Rome time and source, and
 // one link to the whole list (/blog). Nothing to show (off, paused, empty,
 // error, not yet loaded) → renders nothing: the board never waits for the news.
@@ -20,7 +20,7 @@ export function ClassicNewsStrip({ lang, football }: { lang: string; football: r
   const feed = useNewsFeed();
   const now = useNow();
   // #CLS-NEWS-RESERVE: while the feed is loading, hold the strip's measured height (production only,
-  // where the news are on) so the tabs below don't jump; once the feed answers and there is nothing
+  // where the news are on) so the leagues below don't jump; once the feed answers and there is nothing
   // to show, the placeholder goes (a single collapse). Limit: if the news are off in prod, one collapse remains.
   if (!feed) return RESERVE ? <div className="brc-news-reserve" aria-hidden="true" data-testid="classic-news-reserve" /> : null;
   const cards = stripCards(feed, 3);
