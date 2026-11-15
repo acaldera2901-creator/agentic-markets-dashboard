@@ -36,8 +36,8 @@ describe("affiliate network registry", () => {
     expect(networkOfPartner("ultrapari")).toBe("ultrapari");
   });
 
-  it("has 13 networks", () => {
-    expect(Object.keys(NETWORKS)).toHaveLength(13);
+  it("has 14 networks", () => {
+    expect(Object.keys(NETWORKS)).toHaveLength(14);
   });
 
   it("URL segments cannot match prototype keys", () => {

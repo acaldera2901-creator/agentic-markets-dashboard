@@ -179,4 +179,19 @@ describe("PartnersShowcase — tracking del click affiliato", () => {
     const card = document.querySelector("a.partner-card") as HTMLElement;
     expect(() => fireEvent.click(card)).not.toThrow();
   });
+  // #PARTNER-OFFERS-1115 — la welcome offer sta nella scheda, per paese.
+  it("mostra la welcome offer nella scheda: BetWinner col massimale del paese, Tonybet mai in CA", () => {
+    const card = (c: HTMLElement, name: string) =>
+      Array.from(c.querySelectorAll("a.partner-card")).find((a) => a.textContent?.includes(name));
+    const { container: ng } = render(<PartnersShowcase lang="en" country="NG" />);
+    expect(card(ng, "BetWinner")?.querySelector(".partner-offer-text")?.textContent).toBe("200% up to NGN 50,000");
+    expect(card(ng, "FortunePlay")?.querySelector(".partner-offer-label")?.textContent).toBe("Welcome offer");
+    expect(card(ng, "Pubs")?.querySelector(".partner-offer-text")?.textContent).toContain("2000 USDT");
+    const { container: ca } = render(<PartnersShowcase lang="en" country="CA" />);
+    expect(card(ca, "Tonybet")?.querySelector(".partner-offer")).toBeNull();
+    expect(card(ca, "Tonybet")).toBeTruthy();
+    const { container: it } = render(<PartnersShowcase lang="it" country="IT" />);
+    expect(card(it, "Tonybet")?.querySelector(".partner-offer-text")?.textContent).toBe("100% up to $350");
+    expect(it.querySelector(".partners-disclosure")?.textContent).toContain("termini");
+  });
 });

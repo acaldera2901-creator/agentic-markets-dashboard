@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BET_MENU_ORDER, PARTNERS, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu, targetUrlFor } from "@/lib/partners";
+import { BET_MENU_ORDER, PARTNERS, PARTNER_OFFERS, offerFor, PARTNERS_COPY, PARTNER_TAGLINES, partnerLogoByName, partnersFor, pickPartnersLang, sortBooksForMenu, targetUrlFor } from "@/lib/partners";
 import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, GEO_LANDING_PARTNERS, IBET_GEO_URLS } from "@/lib/affiliate";
 
 const LANGS = ["it", "en", "es", "fr", "ru"] as const;
@@ -7,7 +7,7 @@ const LANGS = ["it", "en", "es", "fr", "ru"] as const;
 describe("partners catalog", () => {
   it("has exactly the approved partners, no Stake/Roobet", () => {
     const ids = PARTNERS.map((p) => p.id).sort();
-    expect(ids).toEqual(["beazt", "betscore", "betwinner", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "ibet", "n1bet", "rollxo", "slotsbonus", "stonevegas", "tonybet", "ultrapari", "velobet", "wildz", "ybets"]);
+    expect(ids).toEqual(["beazt", "betscore", "betwinner", "casea", "felicebet", "fortuneplay", "ggbet", "hollywin", "ibet", "n1bet", "pubs", "rollxo", "slotsbonus", "stonevegas", "tonybet", "ultrapari", "velobet", "wildz", "ybets"]);
   });
 
   // #PARTNERS-NO-FEATURED (2026-07-29, Andrea): sono tutti partner, nessuno
@@ -225,5 +225,39 @@ describe("partners catalog", () => {
   it("pickPartnersLang falls back to en for unknown languages", () => {
     expect(pickPartnersLang("de")).toBe("en");
     expect(pickPartnersLang("it")).toBe("it");
+  });
+  // #PARTNER-OFFERS-1115 — le welcome offer dal Deal Tracker.
+  describe("offerFor(id, country)", () => {
+    it("ogni partner con una riga nel tracker ha un'offerta, ibet e slotsbonus no", () => {
+      for (const p of PARTNERS) {
+        const has = Boolean(offerFor(p.id, "DE") ?? offerFor(p.id, "IN"));
+        expect(has, p.id).toBe(!["ibet", "slotsbonus"].includes(p.id));
+      }
+      expect(Object.keys(PARTNER_OFFERS).every((id) => PARTNERS.some((p) => p.id === id))).toBe(true);
+    });
+
+    it("BetWinner: massimale del mercato, e nessuna offerta fuori dalle sue 9 geo", () => {
+      expect(offerFor("betwinner", "NG")).toBe("200% up to NGN 50,000");
+      expect(offerFor("betwinner", " in ")).toBe("100% up to INR 8,000");
+      for (const cc of Object.keys(BETWINNER_GEO_URLS)) expect(offerFor("betwinner", cc), cc).toBeTruthy();
+      for (const cc of ["IT", "CA", "", null, undefined]) expect(offerFor("betwinner", cc)).toBeUndefined();
+    });
+
+    it("Tonybet: nessun bonus in Canada (Alberta/Ontario) né a geo ignota", () => {
+      for (const cc of ["CA", "ca", "", null, undefined]) expect(offerFor("tonybet", cc), String(cc)).toBeUndefined();
+      expect(offerFor("tonybet", "IT")).toBe("100% up to $350");
+    });
+
+    it("Pubs: scheda e offerta in ogni paese (decisione Andrea 15/11)", () => {
+      for (const cc of ["IT", "CA", "US", "", null]) {
+        expect(partnersFor(cc).some((p) => p.id === "pubs"), String(cc)).toBe(true);
+        expect(offerFor("pubs", cc)).toBe("100% up to 2000 USDT + 100 Free Spins");
+      }
+      expect(targetUrlFor("pubs", "IT")).toBe("https://record.affiliatedrinks.com/_k-IlDShwbNuZM7hnoUx_dWNd7ZgqdRLk/1/");
+    });
+
+    it("id sconosciuto o 'constructor' non esplode", () => {
+      expect(offerFor("constructor", "IT")).toBeUndefined();
+    });
   });
 });

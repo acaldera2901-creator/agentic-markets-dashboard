@@ -3,7 +3,7 @@
 // sono importati dalle costanti già esistenti (niente duplicazione); slotsbonus
 // è l'unica URL centralizzata qui (spostata dal footer). Tutti i partner sono
 // gambling → il consumo è SEMPRE geo-gated fail-closed (vedi /api/geo-books).
-import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, IBET_GEO_URLS, LANDING_PARTNERS, landingUrlOf } from "@/lib/affiliate";
+import { BETWINNER_GEO_URLS, CASEA_FALLBACK_URL, CASEA_GEO_URLS, FORTUNEPLAY_BET_URL, IBET_GEO_URLS, LANDING_PARTNERS, PUBS_URL, landingUrlOf } from "@/lib/affiliate";
 import { BOOKS } from "@/lib/betconstruct-books";
 import { hrefFor } from "@/lib/affiliate-networks";
 
@@ -131,6 +131,12 @@ export const PARTNERS: Partner[] = [
   // browser di Andrea), wordmark verde #43ffa8; aggiunti solo width/height intrinseci.
   // 3.9:1 è un wordmark → nessun logoShape.
   { id: "ultrapari", name: "Ultrapari", category: "sportsbook", logo: "/logos/ultrapari.svg", url: ULTRAPARI_URL },
+  // #PARTNER-PUBS-1115 — crypto casino + sportsbook (il loro og:title: "Crypto Casino,
+  // Slots & Online Sportsbook") → categoria casino, come VeloBet/Beazt. Link unico in
+  // ogni geo (decisione Andrea 15/11). Logo = pubs-logo.png servito dal loro sito
+  // (195×73, wordmark nero con contorno bianco, sfondo trasparente): sta bene sulla
+  // placca scura, nessun ridisegno.
+  { id: "pubs", name: "Pubs", category: "casino", logo: "/logos/pubs.png", url: PUBS_URL },
   { id: "slotsbonus", name: "slotsbonus", category: "casino", logo: "/logos/slotsbonus.svg", url: SLOTSBONUS_URL },
   // #PARTNERS-VELOBET-CASEA (2026-07-31). Categoria "casino" per entrambi (scelta
   // Andrea): VeloBet è casinò + sportsbook (il suo JSON-LD si chiama "Velobet
@@ -255,6 +261,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
   back: string; title: string; subtitle: string;
   featured: string; sportsbook: string; casino: string;
   visit: string; disclosure: string;
+  offerLabel: string; offerTerms: string;
   unavailableTitle: string; unavailableBody: string; unavailableBack: string;
 }> = {
   it: {
@@ -263,6 +270,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
     subtitle: "Gli operatori dove puoi agire sulle analisi di BetRedge. BetRedge non accetta scommesse: questi sono partner terzi indipendenti.",
     featured: "In evidenza", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visita", disclosure: "18+ · I link ai partner sono affiliati commerciali · Gioca responsabilmente",
+    offerLabel: "Offerta di benvenuto", offerTerms: "Le offerte sono degli operatori, possono variare per paese e sono soggette ai loro termini.",
     unavailableTitle: "Non disponibile nella tua area",
     unavailableBody: "Questa sezione non è disponibile dalla tua posizione.",
     unavailableBack: "← Torna alla home",
@@ -273,6 +281,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
     subtitle: "Where you can act on BetRedge's analysis. BetRedge takes no bets — these are independent third-party partners.",
     featured: "Featured", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visit", disclosure: "18+ · Partner links are commercial affiliates · Gamble responsibly",
+    offerLabel: "Welcome offer", offerTerms: "Offers belong to each operator, may vary by country and are subject to their terms.",
     unavailableTitle: "Not available in your region",
     unavailableBody: "This section is not available from your location.",
     unavailableBack: "← Back to home",
@@ -283,6 +292,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
     subtitle: "Los operadores donde puedes actuar sobre el análisis de BetRedge. BetRedge no acepta apuestas: son partners externos independientes.",
     featured: "Destacado", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visitar", disclosure: "18+ · Los enlaces de partners son afiliados comerciales · Juega con responsabilidad",
+    offerLabel: "Oferta de bienvenida", offerTerms: "Las ofertas son de cada operador, pueden variar según el país y están sujetas a sus condiciones.",
     unavailableTitle: "No disponible en tu región",
     unavailableBody: "Esta sección no está disponible desde tu ubicación.",
     unavailableBack: "← Volver al inicio",
@@ -293,6 +303,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
     subtitle: "Les opérateurs où agir sur les analyses de BetRedge. BetRedge n'accepte pas de paris : ce sont des partenaires tiers indépendants.",
     featured: "En vedette", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visiter", disclosure: "18+ · Les liens partenaires sont des affiliés commerciaux · Jouez de manière responsable",
+    offerLabel: "Offre de bienvenue", offerTerms: "Les offres appartiennent à chaque opérateur, peuvent varier selon le pays et sont soumises à leurs conditions.",
     unavailableTitle: "Non disponible dans votre région",
     unavailableBody: "Cette section n'est pas disponible depuis votre position.",
     unavailableBack: "← Retour à l'accueil",
@@ -303,11 +314,65 @@ export const PARTNERS_COPY: Record<PartnersLang, {
     subtitle: "Операторы, где можно применить аналитику BetRedge. BetRedge не принимает ставки — это независимые сторонние партнёры.",
     featured: "В центре внимания", sportsbook: "Букмекеры", casino: "Казино",
     visit: "Перейти", disclosure: "18+ · Партнёрские ссылки — коммерческие аффилиаты · Играйте ответственно",
+    offerLabel: "Приветственный бонус", offerTerms: "Предложения принадлежат операторам, могут отличаться по странам и подчиняются их условиям.",
     unavailableTitle: "Недоступно в вашем регионе",
     unavailableBody: "Этот раздел недоступен из вашего местоположения.",
     unavailableBack: "← На главную",
   },
 };
+
+// #PARTNER-OFFERS-1115 — welcome offer mostrata nella scheda del partner. Fonte: il
+// Deal Tracker (foglio "Betredge", colonna Welcome Offer, letto il 15/11), riportata
+// com'è: cifre e valute sono dell'operatore, non le traduciamo né le arrotondiamo.
+// Chi non ha una riga qui (ibet, slotsbonus) non mostra nulla. Regole:
+//  - `geo`: offerta per paese (BetWinner, che nel tracker ha un massimale per mercato);
+//    senza `text` di default l'offerta c'è SOLO in quei paesi.
+//  - `hideIn`: paesi in cui non si mostra. "" = geo ignota (fail-closed: Tonybet ha
+//    licenza in Alberta e Ontario e lì non può mostrare bonus, ma noi vediamo solo
+//    il paese, "CA", e prima che /api/geo-books risponda non vediamo niente).
+// Pubs: nel tracker l'offerta è indicata per CA; Andrea (15/11) vuole scheda e offerta
+// in ogni paese. Non toccata qui: è una decisione commerciale, non un refuso.
+export type PartnerOffer = { text?: string; geo?: Record<string, string>; hideIn?: readonly string[] };
+export const PARTNER_OFFERS: Record<string, PartnerOffer> = {
+  fortuneplay: { text: "€300 Free Bets · $450 Free Bets" },
+  ybets: { text: "20% cashback" },
+  betscore: { text: "Sports: 100% up to €100 · Crypto sports: 100% up to 200 USDT" },
+  felicebet: { text: "150% up to 250" },
+  ggbet: { text: "Up to 1000 EUR + 250 EUR freebets" },
+  velobet: { text: "150% up to 1000 + 10 Free Bet" },
+  casea: { text: "100% up to 200" },
+  beazt: { text: "100% extra up to €100" },
+  wildz: { text: "Up to €200 1st deposit match" },
+  rollxo: { text: "350% up to €15,000 + 350 FS (4 deposits)" },
+  hollywin: { text: "350% up to €15,000 + 350 FS (4 deposits)" },
+  n1bet: { text: "300% up to 500,000 NOK + 200 FS" },
+  stonevegas: { text: "100% up to €500 + 200 FS + 1 Bonus Crab" },
+  ultrapari: { text: "200% up to 200 EUR" },
+  tonybet: { text: "100% up to $350", hideIn: ["CA", ""] },
+  pubs: { text: "100% up to 2000 USDT + 100 Free Spins" },
+  // Sports bonus del primo deposito: 100% ovunque, 200% in Nigeria; massimali per
+  // mercato dal tracker (senza il +30% col promo code: non abbiamo un codice).
+  betwinner: {
+    geo: {
+      IN: "100% up to INR 8,000",
+      BR: "100% up to BRL 700",
+      NG: "200% up to NGN 50,000",
+      KE: "100% up to KES 15,000",
+      AR: "100% up to ARS 200,000",
+      MX: "100% up to MXN 2,000",
+      CO: "100% up to COP 400,000",
+      ID: "100% up to IDR 1,700,000",
+      MY: "100% up to MYR 500",
+    },
+  },
+};
+
+export function offerFor(id: string, country: string | null | undefined): string | undefined {
+  const cc = (country ?? "").trim().toUpperCase();
+  const o = Object.hasOwn(PARTNER_OFFERS, id) ? PARTNER_OFFERS[id] : undefined;
+  if (!o || o.hideIn?.includes(cc)) return undefined;
+  return (cc ? o.geo?.[cc] : undefined) ?? o.text;
+}
 
 export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
   fortuneplay: {
@@ -377,6 +442,15 @@ export const PARTNER_TAGLINES: Record<string, Record<PartnersLang, string>> = {
     es: "Sportsbook partner, registro directo desde la vitrina.",
     fr: "Sportsbook partenaire, inscription directe depuis la vitrine.",
     ru: "Партнёрский букмекер — регистрация прямо из витрины.",
+  },
+  // #PARTNER-PUBS-1115: copy FTC-safe — solo ciò che dichiarano loro stessi (casinò
+  // crypto + sportsbook); l'offerta sta nel suo campo, non nel tagline.
+  pubs: {
+    it: "Casino crypto e sportsbook: slot, tavoli live e scommesse sportive.",
+    en: "Crypto casino and sportsbook: slots, live tables and sports betting.",
+    es: "Casino crypto y sportsbook: slots, mesas en vivo y apuestas deportivas.",
+    fr: "Casino crypto et sportsbook : machines, tables live et paris sportifs.",
+    ru: "Крипто-казино и букмекер: слоты, live-столы и ставки на спорт.",
   },
   tonybet: {
     it: "Sportsbook e casino in un unico conto.",

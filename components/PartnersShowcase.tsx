@@ -10,10 +10,10 @@
 // quindi i click dalla scheda partita erano l'UNICO click misurato e
 // /partners contava zero per costruzione.
 import Link from "next/link";
-import { partnersFor, PARTNERS_COPY, PARTNER_TAGLINES, type PartnersLang, type ResolvedPartner } from "@/lib/partners";
+import { offerFor, partnersFor, PARTNERS_COPY, PARTNER_TAGLINES, type PartnersLang, type ResolvedPartner } from "@/lib/partners";
 import { trackEvent } from "@/lib/track-event";
 
-function PartnerCard({ p, lang, featured }: { p: ResolvedPartner; lang: PartnersLang; featured?: boolean }) {
+function PartnerCard({ p, lang, featured, offer }: { p: ResolvedPartner; lang: PartnersLang; featured?: boolean; offer?: string }) {
   const t = PARTNERS_COPY[lang];
   return (
     <a
@@ -46,6 +46,12 @@ function PartnerCard({ p, lang, featured }: { p: ResolvedPartner; lang: Partners
       <span className="partner-body">
         <span className="partner-name">{p.name}</span>
         <span className="partner-tagline">{PARTNER_TAGLINES[p.id][lang]}</span>
+        {offer && (
+          <span className="partner-offer">
+            <span className="partner-offer-label">{t.offerLabel}</span>
+            <span className="partner-offer-text">{offer}</span>
+          </span>
+        )}
         <span className="partner-cta">{t.visit} →</span>
       </span>
     </a>
@@ -55,6 +61,7 @@ function PartnerCard({ p, lang, featured }: { p: ResolvedPartner; lang: Partners
 export function PartnersShowcase({ lang, country }: { lang: PartnersLang; country?: string }) {
   const t = PARTNERS_COPY[lang];
   const partners = partnersFor(country);
+  const offers = new Map(partners.flatMap((p) => { const o = offerFor(p.id, country); return o ? [[p.id, o] as const] : []; }));
   const featured = partners.filter((p) => p.featured);
   const sportsbooks = partners.filter((p) => p.category === "sportsbook" && !p.featured);
   const casinos = partners.filter((p) => p.category === "casino");
@@ -70,7 +77,7 @@ export function PartnersShowcase({ lang, country }: { lang: PartnersLang; countr
         <section className="partners-section">
           <h2 className="partners-label">{t.featured}</h2>
           <div className="partners-grid partners-grid-featured">
-            {featured.map((p) => <PartnerCard key={p.id} p={p} lang={lang} featured />)}
+            {featured.map((p) => <PartnerCard key={p.id} p={p} lang={lang} featured offer={offers.get(p.id)} />)}
           </div>
         </section>
       )}
@@ -79,7 +86,7 @@ export function PartnersShowcase({ lang, country }: { lang: PartnersLang; countr
         <section className="partners-section">
           <h2 className="partners-label">{t.sportsbook}</h2>
           <div className="partners-grid">
-            {sportsbooks.map((p) => <PartnerCard key={p.id} p={p} lang={lang} />)}
+            {sportsbooks.map((p) => <PartnerCard key={p.id} p={p} lang={lang} offer={offers.get(p.id)} />)}
           </div>
         </section>
       )}
@@ -88,12 +95,12 @@ export function PartnersShowcase({ lang, country }: { lang: PartnersLang; countr
         <section className="partners-section">
           <h2 className="partners-label">{t.casino}</h2>
           <div className="partners-grid">
-            {casinos.map((p) => <PartnerCard key={p.id} p={p} lang={lang} />)}
+            {casinos.map((p) => <PartnerCard key={p.id} p={p} lang={lang} offer={offers.get(p.id)} />)}
           </div>
         </section>
       )}
 
-      <p className="partners-disclosure">{t.disclosure}</p>
+      <p className="partners-disclosure">{offers.size > 0 && <>{t.offerTerms}<br /></>}{t.disclosure}</p>
     </div>
   );
 }
