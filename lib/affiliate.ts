@@ -71,8 +71,8 @@ export const LANDING_PARTNERS = [
   // 307 → tonybet.com/en col `btag=670976_<click-id della rete>` (il suffisso cambia
   // a ogni click, l'id 670976 no). Atterra sulla home sportsbook, nessun deep-link.
   // ATTENZIONE compliance: il partner vieta di mostrare bonus in Alberta e Ontario
-  // (dove ha licenza). Noi non mostriamo bonus di nessun partner → oggi è rispettato
-  // per costruzione; se un giorno si mostrano i bonus, Tonybet va escluso lì.
+  // (dove ha licenza). Dal 15/11 la vetrina mostra le welcome offer, quindi Tonybet è
+  // escluso da `PARTNER_OFFERS.tonybet.hideIn` (CA + geo ignota, fail-closed).
   { name: "Tonybet", url: "https://dro.netavix.com/redirect.aspx?pid=179732&lpid=974&bid=1990" },
   // #PARTNER-ULTRAPARI-1020 — rete refpa (site=6109487). Link unico, nessuna geo nel
   // Deal Tracker → tutti i paesi. Verificato con curl (20/10): 303 →
@@ -82,6 +82,11 @@ export const LANDING_PARTNERS = [
   // come Stonevegas fuori perimetro. Lasciato ovunque in attesa della decisione di
   // Andrea sul perimetro (non limitato di nostra iniziativa).
   { name: "Ultrapari", url: "https://refpa42156.com/L?tag=d_6109487m_118408c_&site=6109487&ad=118408" },
+  // #PARTNER-PUBS-1115 — pubs.com (rete Affilka `affiliatedrinks`, come ibet). Link
+  // unico dal Deal Tracker (15/11). Verificato con curl: 301 → pubs.com/en-us?dialog=
+  // register&aff=<click-id della rete> (apre la registrazione). Il tracker indica
+  // come geo del deal solo CA; Andrea (15/11) ha deciso di mostrarlo comunque in ogni
+  // paese, offerta compresa. Non è nel menu "Piazza la scommessa": solo vetrina.
 ] as const;
 
 export type LandingPartner = { name: string; url: string };
@@ -234,3 +239,6 @@ export const slugOf = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g,
 export function landingPartnersFor(country: string | null | undefined): LandingPartner[] {
   return landingTargetsFor(country).map(({ name, url }) => ({ name, url: hrefFor(slugOf(name), url) }));
 }
+
+// #PARTNER-PUBS-1115 — vedi la nota sopra: link unico, ogni geo.
+export const PUBS_URL = "https://record.affiliatedrinks.com/_k-IlDShwbNuZM7hnoUx_dWNd7ZgqdRLk/1/";

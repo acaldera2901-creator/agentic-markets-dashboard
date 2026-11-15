@@ -10211,6 +10211,9 @@ button:disabled {
 .partners-page .partner-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; }
 .partners-page .partner-name { font-size: 15px; font-weight: 700; color: var(--am-text); letter-spacing: -.01em; }
 .partners-page .partner-tagline { font-size: 13px; line-height: 1.5; color: var(--am-muted); }
+.partners-page .partner-offer { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--am-coral) 10%, transparent); }
+.partners-page .partner-offer-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--am-muted-2); }
+.partners-page .partner-offer-text { font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--am-text, inherit); }
 .partners-page .partner-cta { margin-top: 2px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--am-coral); }
 /* In evidenza: lockup orizzontale con medaglione — riempie la larghezza,
    dà un focal point invece del vuoto centrato. */
