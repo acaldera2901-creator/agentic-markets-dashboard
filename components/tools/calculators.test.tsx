@@ -253,6 +253,72 @@ describe("arbitrage calculator", () => {
   });
 });
 
+describe("dutching calculator", () => {
+  it("i default (2.10/3.60/3.60 su 100) perdono il 3.08% e ripartono 46.15/26.92/26.92", () => {
+    mount("dutching-calculator");
+    expect(screen.getByTestId("out-dutch-sum").textContent).toBe("103.17%");
+    expect(screen.getByTestId("out-dutch-percent").textContent).toBe("-3.08%");
+    expect(screen.getByTestId("out-dutch-stake-1").textContent).toBe("46.15");
+    expect(screen.getByTestId("out-dutch-stake-2").textContent).toBe("26.92");
+    expect(screen.getByTestId("out-dutch-return-3").textContent).toBe("96.92");
+    expect(screen.getByTestId("out-dutch-profit").textContent).toBe("-3.08");
+    expect(screen.getByTestId("out-dutch-breakeven").textContent).toBe("3.00");
+    expect(screen.getByTestId("out-dutch-mean").textContent).toBe("2.91");
+  });
+
+  it("in modalità profitto target 20 a 2.10/2.10 chiede 400 in totale", async () => {
+    const user = userEvent.setup();
+    mount("dutching-calculator");
+    await user.click(screen.getAllByRole("button", { name: "Remove" })[2]);
+    const third = screen.getByLabelText("Outcome 2");
+    await user.clear(third);
+    await user.type(third, "2.10");
+    await user.clear(screen.getByLabelText("Outcome 1"));
+    await user.type(screen.getByLabelText("Outcome 1"), "2.10");
+    await user.click(screen.getByRole("button", { name: "Target profit" }));
+    const amount = screen.getByLabelText("Target profit");
+    await user.clear(amount);
+    await user.type(amount, "20");
+    expect(screen.getByTestId("out-dutch-total").textContent).toBe("400.00");
+    expect(screen.getByTestId("out-dutch-stake-1").textContent).toBe("200.00");
+    expect(screen.getByTestId("out-dutch-return-2").textContent).toBe("420.00");
+  });
+
+  it("profitto target senza margine a favore dice che non si può, senza numeri finti", async () => {
+    const user = userEvent.setup();
+    mount("dutching-calculator");
+    await user.click(screen.getByRole("button", { name: "Target profit" }));
+    expect(screen.getByTestId("out-dutch-total").textContent).toBe("—");
+    expect(screen.getByTestId("out-dutch-stake-1").textContent).toBe("—");
+    expect(screen.getByTestId("out-dutch-sum").textContent).toBe("103.17%");
+  });
+
+  it("l'arrotondamento a 5 ricalcola i ritorni: non sono più uguali", async () => {
+    const user = userEvent.setup();
+    mount("dutching-calculator");
+    await user.click(screen.getByRole("button", { name: "5" }));
+    expect(screen.getByTestId("out-dutch-stake-1").textContent).toBe("45.00");
+    expect(screen.getByTestId("out-dutch-total").textContent).toBe("95.00");
+    expect(screen.getByTestId("out-dutch-return-1").textContent).toBe("94.50");
+    expect(screen.getByTestId("out-dutch-return-2").textContent).toBe("90.00");
+    expect(screen.getByTestId("out-dutch-profit").textContent).toBe("-5.00");
+  });
+
+  it("aggiunge esiti fino a otto e spazzatura in input non produce NaN", async () => {
+    const user = userEvent.setup();
+    mount("dutching-calculator");
+    for (let i = 0; i < 5; i++) await user.click(screen.getByRole("button", { name: "Add outcome" }));
+    expect(screen.getByLabelText("Outcome 8")).toBeTruthy();
+    // All'ottavo il pulsante sparisce: il nono esito non si può nemmeno chiedere.
+    expect(screen.queryByRole("button", { name: "Add outcome" })).toBeNull();
+    const leg = screen.getByLabelText("Outcome 1");
+    await user.clear(leg);
+    await user.type(leg, "banana");
+    expect(screen.getByTestId("out-dutch-profit").textContent).toBe("—");
+    expect(screen.getByTestId("out-dutch-stake-1").textContent).toBe("—");
+  });
+});
+
 describe("parlay calculator", () => {
   it("quattro gambe a 1.80 danno 10.50, 9.53% e un margine composto del 21.55%", () => {
     // I default SONO l'esempio lavorato della pagina: chi arriva vede subito i

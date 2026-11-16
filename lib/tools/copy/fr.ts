@@ -8,13 +8,13 @@ const fr: ToolsCopy = {
   hub: {
     metaTitle: "Outils de paris gratuits — cotes, EV, Kelly et marge | BetRedge",
     metaDescription:
-      "11 calculateurs gratuits : convertir les cotes dans tout format, retirer la marge du bookmaker, calculer la valeur espérée, dimensionner la mise avec Kelly, vérifier un arbitrage. Sans inscription.",
+      "12 calculateurs gratuits : convertir les cotes dans tout format, retirer la marge du bookmaker, calculer la valeur espérée, dimensionner la mise avec Kelly, vérifier un arbitrage. Sans inscription.",
     h1: "Outils de paris gratuits",
     lede:
-      "Les onze calculs à faire avant de miser : cotes converties, marge retirée, mise dimensionnée, ROI mesuré. Gratuit, sans compte.",
+      "Les douze calculs à faire avant de miser : cotes converties, marge retirée, mise dimensionnée, ROI mesuré. Gratuit, sans compte.",
     cardCta: "Ouvrir l'outil",
     intro: [
-      "Tout pari est une comparaison entre un prix et une probabilité. Ces onze calculateurs font cette comparaison correctement : ils traduisent les cotes d'un format à l'autre, retirent la marge du bookmaker pour révéler la ligne juste, transforment une estimation de probabilité en valeur espérée, additionnent les jambes d'un combiné en une seule cote, disent quand deux bookmakers divergent assez pour verrouiller un arbitrage, dimensionnent la mise pour qu'une mauvaise série ne vide pas la bankroll et mesurent ensuite ce que ces paris ont vraiment rapporté.",
+      "Tout pari est une comparaison entre un prix et une probabilité. Ces douze calculateurs font cette comparaison correctement : ils traduisent les cotes d'un format à l'autre, retirent la marge du bookmaker pour révéler la ligne juste, transforment une estimation de probabilité en valeur espérée, additionnent les jambes d'un combiné en une seule cote, disent quand deux bookmakers divergent assez pour verrouiller un arbitrage, dimensionnent la mise pour qu'une mauvaise série ne vide pas la bankroll et mesurent ensuite ce que ces paris ont vraiment rapporté.",
       "Ils fonctionnent entièrement dans votre navigateur : rien n'est envoyé, rien n'est enregistré, aucun compte à créer. Utilisez-les seuls, ou utilisez-les pour vérifier ce que notre modèle publie déjà sur chaque match.",
     ],
   },
@@ -701,6 +701,82 @@ const fr: ToolsCopy = {
         {
           q: "Celui-ci ou le critère de Kelly ?",
           a: "Celui-ci quand vous n'avez pas d'avantage mesuré, c'est-à-dire la plupart du temps : une unité en pourcentage ne demande aucune estimation de probabilité et son pire cas est connu d'avance. Le calculateur du critère de Kelly est le bon outil dès que vous pouvez défendre une probabilité, et il recommandera souvent plus qu'un 2 % plat. Traiter sa réponse comme un plafond et la règle plate comme un plancher garde les deux honnêtes.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Calculateur de dutching — répartir la mise pour que chaque issue paie pareil | BetRedge",
+      metaDescription:
+        "Calculateur de dutching gratuit : saisissez 2 à 8 issues d'un marché et voyez comment répartir la mise pour un retour identique quelle que soit l'issue, avec couverture et cote d'équilibre.",
+      h1: "Calculateur de dutching",
+      lede:
+        "Saisissez la cote de chaque issue à couvrir et voyez comment répartir une mise pour que toutes rapportent pareil — et ce que cela coûte ou rapporte.",
+      labels: {
+        inputTitle: "Cote de chaque issue",
+        outcome: "Issue",
+        addOutcome: "Ajouter une issue",
+        removeOutcome: "Retirer",
+        modeTitle: "Ce que vous savez",
+        modeTotal: "Mise totale",
+        modeTarget: "Gain visé",
+        total: "Mise totale",
+        targetProfit: "Gain visé",
+        roundTitle: "Arrondir les mises à",
+        roundNone: "Aucun",
+        resultTitle: "Comment la répartir",
+        profit: "Gain ou perte (pire issue)",
+        profitPercent: "Gain ou perte sur la mise totale",
+        totalStake: "Mise totale nécessaire",
+        coverage: "Couverture du marché (somme des probabilités implicites)",
+        stakeOn: "Mise sur l'issue",
+        returnOn: "Retour si l'issue gagne",
+        meanOdds: "Cote moyenne ici (harmonique)",
+        breakEvenOdds: "Cote moyenne nécessaire à l'équilibre",
+        verdictWin:
+          "Gain verrouillé : {pct} sur la mise totale, quelle que soit l'issue gagnante.",
+        verdictLoss: "Avec ces cotes, vous perdez {pct} quoi qu'il arrive.",
+        verdictFlat:
+          "Ces cotes sont à l'équilibre : vous récupérez exactement votre mise, quelle que soit l'issue gagnante.",
+        verdictUnreachable:
+          "Avec ces cotes, aucune mise totale ne peut rapporter : les probabilités implicites totalisent 100 % ou plus.",
+        hint:
+          "Une cote décimale par issue, de 2 à 8. L'arrondi garde chaque mise à un multiple de 1, 5 ou 10 ; les retours sont ensuite recalculés par issue et ne sont plus identiques. Le décimal accepte la virgule.",
+      },
+      takeaway:
+        "Le dutching n'améliore pas un pari, il rend le résultat identique sur chaque issue couverte — c'est pourquoi c'est la couverture, et non la répartition des mises, qui dit si cela valait la peine.",
+      example: {
+        title: "Trois issues, 100 à répartir",
+        rows: [
+          { label: "Cotes", value: "2.10 · 3.60 · 3.60" },
+          { label: "Couverture du marché", value: "103,17 %" },
+          { label: "Mise sur chacune, sur 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Retour sur chaque issue", value: "96,92" },
+          { label: "Gain ou perte", value: "−3,08 (−3,08 %)" },
+        ],
+        note:
+          "Inversez la question et les mêmes cotes répondent : 2.10 et 2.10 totalisent 95,24 %, donc un gain de 20 demande 400 au total, 200 de chaque côté, pour un retour de 420 dans les deux cas. L'arrondi est ce qui brise l'égalité : à 5, la première répartition devient 45, 25 et 25, le total tombe à 95 et les retours valent 94,50, 90,00 et 90,00 — la pire issue est désormais −5,00.",
+      },
+      explainerTitle: "Retour égal sur chaque issue",
+      explainer: [
+        "**Le dutching répartit une mise sur plusieurs issues d'un même marché pour que le retour soit le même quelle que soit celle qui gagne.** Chaque issue reçoit une part proportionnelle à sa probabilité implicite — un divisé par la cote — et les parts totalisent votre mise. Contrairement à l'arbitrage, il n'exige pas que les probabilités implicites totalisent moins de 100 %. Avec des cotes de 2.10, 3.60 et 3.60, elles totalisent 103,17 %, et 100 répartis en 46,15, 26,92 et 26,92 rendent 96,92 sur chaque issue : le résultat ne dépend plus du match, mais c'est une perte de 3,08 %, car le marché garde sa marge.",
+        "**Le chiffre à lire en premier est la couverture du marché.** Sous 100 %, la répartition verrouille un gain ; au-dessus, elle verrouille une perte, et plus on est au-dessus, plus la certitude coûte cher. L'équilibre est une question de cote moyenne : avec trois issues, la moyenne harmonique des cotes doit atteindre 3,00, et ici elle vaut 2,91. Deux points pratiques. **Arrondir les mises à l'unité, à 5 ou à 10 brise l'égalité** — le calculateur recalcule chaque retour et montre qu'ils ne sont plus identiques. Et couvrir plusieurs issues, c'est payer la marge sur chacune : le dutching permet de choisir comment on s'expose, pas de supprimer le coût de l'exposition.",
+      ],
+      faq: [
+        {
+          q: "Quelle différence entre dutching et arbitrage ?",
+          a: "L'arbitrage exige des cotes qui totalisent moins de 100 %, ce qui verrouille un gain. Le dutching demande seulement de couvrir plusieurs issues d'un marché avec des retours égaux : la somme peut dépasser 100 %, et égaliser le retour rend alors la perte certaine et visible. L'arithmétique est la même, la condition non.",
+        },
+        {
+          q: "Pourquoi le calculateur n'atteint-il pas mon gain visé ?",
+          a: "Quand les probabilités implicites totalisent 100 % ou plus, aucune mise ne produit de gain : le retour par unité misée vaut un divisé par cette somme, soit 1 ou moins. Le calculateur le dit au lieu d'inventer un total. La sortie : de meilleures cotes ou moins d'issues couvertes.",
+        },
+        {
+          q: "Que se passe-t-il si j'arrondis les mises ?",
+          a: "Chaque mise passe au multiple le plus proche de 1, 5 ou 10 : le total change et les retours ne sont plus identiques. Le calculateur recalcule le retour de chaque issue à partir des mises arrondies et affiche le pire comme gain ou perte, le chiffre honnête sur lequel s'appuyer.",
+        },
+        {
+          q: "Pourquoi couvrir plusieurs issues à perte ?",
+          a: "Parce que cela transforme un résultat incertain en résultat connu : on paie un prix connu pour avoir raison sur n'importe quelle issue couverte. Ce que vaut ce prix dépend de ce que la certitude vaut pour vous, et la couverture dit exactement ce qu'elle coûte.",
         },
       ],
     },

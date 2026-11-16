@@ -11,6 +11,7 @@ import { EvCalculator } from "./EvCalculator";
 import { KellyCalculator } from "./KellyCalculator";
 import { ProbabilityCalculator } from "./ProbabilityCalculator";
 import { ArbitrageCalculator } from "./ArbitrageCalculator";
+import { DutchingCalculator } from "./DutchingCalculator";
 import { ParlayCalculator } from "./ParlayCalculator";
 import { RoiCalculator } from "./RoiCalculator";
 import { YieldCalculator } from "./YieldCalculator";
@@ -49,5 +50,7 @@ export function ToolCalculator({
       return <StakeCalculator copy={copy} dash={dash} />;
     case "bankroll-calculator":
       return <BankrollCalculator copy={copy} dash={dash} />;
+    case "dutching-calculator":
+      return <DutchingCalculator copy={copy} dash={dash} />;
   }
 }

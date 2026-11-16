@@ -18,8 +18,8 @@ describe("registry", () => {
   // Il conteggio è scritto a mano di proposito: derivarlo da TOOL_SLUGS renderebbe
   // l'asserzione vuota. Va alzato a mano ogni volta che entra un tool — è il
   // promemoria che quel tool serve anche in undici dizionari e nella sitemap.
-  it("ha undici tool e undici lingue", () => {
-    expect(TOOL_SLUGS).toHaveLength(11);
+  it("ha dodici tool e undici lingue", () => {
+    expect(TOOL_SLUGS).toHaveLength(12);
     expect(TOOL_LOCALES).toHaveLength(11);
     expect(TOOL_LOCALES[0]).toBe("en");
   });

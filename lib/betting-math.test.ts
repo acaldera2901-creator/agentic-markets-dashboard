@@ -17,6 +17,7 @@ import {
   parlayProbability,
   parlayOdds,
   arbitrage,
+  dutching,
   roi,
   yieldPercent,
   parseSignedAmount,
@@ -343,6 +344,103 @@ describe("arbitrage", () => {
     expect(arbitrage({ decimals: [], total: 1000 })).toBeNull();
     expect(arbitrage({ decimals: [2.1, 0], total: 1000 })).toBeNull();
     expect(arbitrage({ decimals: [2.1, 2.1], total: 0 })).toBeNull();
+  });
+});
+
+describe("dutching", () => {
+  it("due esiti 2.10/2.10 su 100 con somma sotto il 100%: +5.00%, 50/50", () => {
+    const r = dutching({ decimals: [2.1, 2.1], mode: "total", amount: 100 });
+    expect(r).not.toBeNull();
+    expect(r!.impliedSum).toBeCloseTo(0.952381, 6);
+    expect(r!.profitPercent).toBeCloseTo(0.05, 6);
+    expect(r!.stakes[0]).toBeCloseTo(50, 6);
+    expect(r!.stakes[1]).toBeCloseTo(50, 6);
+    expect(r!.returns[0]).toBeCloseTo(105, 6);
+    expect(r!.profits[0]).toBeCloseTo(5, 6);
+    expect(r!.totalStake).toBeCloseTo(100, 6);
+  });
+
+  it("tre esiti con somma sopra il 100%: perdita uguale su ogni esito", () => {
+    // 1/2.1 + 2/3.6 = 0.476190 + 0.555556 = 1.031746; 1/Σ = 0.969231
+    // stake: 100·0.476190/1.031746 = 46.1538, 26.9231, 26.9231; ritorno 96.9231.
+    const r = dutching({ decimals: [2.1, 3.6, 3.6], mode: "total", amount: 100 });
+    expect(r!.impliedSum).toBeCloseTo(1.031746, 6);
+    expect(r!.profitPercent).toBeCloseTo(-0.030769, 6);
+    expect(r!.stakes[0]).toBeCloseTo(46.153846, 5);
+    expect(r!.stakes[1]).toBeCloseTo(26.923077, 5);
+    for (const ret of r!.returns) expect(ret).toBeCloseTo(96.923077, 5);
+    for (const pr of r!.profits) expect(pr).toBeCloseTo(-3.076923, 5);
+  });
+
+  it("la quota di pareggio è n, la media armonica del mercato è n/Σ", () => {
+    const r = dutching({ decimals: [2.1, 3.6, 3.6], mode: "total", amount: 100 });
+    expect(r!.breakEvenOdds).toBe(3);
+    expect(r!.meanOdds).toBeCloseTo(3 / 1.031746, 5); // 2.9077
+    // Quote tutte pari alla media armonica = n ⇒ Σ = 1 ⇒ profitto 0.
+    const flat = dutching({ decimals: [3, 3, 3], mode: "total", amount: 90 });
+    expect(flat!.impliedSum).toBeCloseTo(1, 12);
+    expect(flat!.profitPercent).toBeCloseTo(0, 12);
+  });
+
+  it("otto esiti: il massimo consentito", () => {
+    const r = dutching({ decimals: Array(8).fill(9), mode: "total", amount: 100 });
+    // Σ = 8/9 ⇒ +12.5%; stake 12.5 su ciascuno; ritorno 112.5.
+    expect(r!.stakes).toHaveLength(8);
+    expect(r!.profitPercent).toBeCloseTo(0.125, 9);
+    expect(r!.stakes[7]).toBeCloseTo(12.5, 9);
+    expect(r!.returns[3]).toBeCloseTo(112.5, 9);
+  });
+
+  it("profitto target: 20 di profitto a 2.10/2.10 chiede 400 in totale", () => {
+    // profitto = totale × 5% ⇒ totale = 20 / 0.05 = 400; 200 per lato, ritorno 420.
+    const r = dutching({ decimals: [2.1, 2.1], mode: "target", amount: 20 });
+    expect(r!.totalStake).toBeCloseTo(400, 6);
+    expect(r!.stakes[0]).toBeCloseTo(200, 6);
+    expect(r!.returns[1]).toBeCloseTo(420, 6);
+    expect(r!.profits[0]).toBeCloseTo(20, 6);
+  });
+
+  it("profitto target senza margine a favore è irraggiungibile: null", () => {
+    expect(dutching({ decimals: [1.9, 1.9], mode: "target", amount: 20 })).toBeNull();
+    // Somma esattamente 100%: il profitto è 0 per qualunque stake.
+    expect(dutching({ decimals: [2, 2], mode: "target", amount: 20 })).toBeNull();
+  });
+
+  it("arrotondamento a 5: gli stake vanno ai multipli e i ritorni non sono più uguali", () => {
+    // ideali 46.15 / 26.92 / 26.92 → 45 / 25 / 25, totale 95.
+    const r = dutching({ decimals: [2.1, 3.6, 3.6], mode: "total", amount: 100, roundTo: 5 });
+    expect(r!.stakes).toEqual([45, 25, 25]);
+    expect(r!.totalStake).toBe(95);
+    expect(r!.returns[0]).toBeCloseTo(94.5, 9);
+    expect(r!.returns[1]).toBeCloseTo(90, 9);
+    expect(r!.profits[0]).toBeCloseTo(-0.5, 9);
+    expect(r!.profits[1]).toBeCloseTo(-5, 9);
+  });
+
+  it("arrotondamento a 1: 46 / 27 / 27 e ritorni 96.6 / 97.2 / 97.2", () => {
+    const r = dutching({ decimals: [2.1, 3.6, 3.6], mode: "total", amount: 100, roundTo: 1 });
+    expect(r!.stakes).toEqual([46, 27, 27]);
+    expect(r!.returns[0]).toBeCloseTo(96.6, 9);
+    expect(r!.returns[1]).toBeCloseTo(97.2, 9);
+  });
+
+  it("se l'arrotondamento azzera ogni stake non c'è niente da mostrare: null", () => {
+    expect(dutching({ decimals: [2.1, 2.1], mode: "total", amount: 4, roundTo: 10 })).toBeNull();
+  });
+
+  it("input non validi tornano null, non NaN", () => {
+    const ok = [2.1, 3.6];
+    expect(dutching({ decimals: [1, 2], mode: "total", amount: 100 })).toBeNull();
+    expect(dutching({ decimals: [0.5, 2], mode: "total", amount: 100 })).toBeNull();
+    expect(dutching({ decimals: [NaN, 2], mode: "total", amount: 100 })).toBeNull();
+    expect(dutching({ decimals: [2.1], mode: "total", amount: 100 })).toBeNull();
+    expect(dutching({ decimals: Array(9).fill(9), mode: "total", amount: 100 })).toBeNull();
+    expect(dutching({ decimals: ok, mode: "total", amount: 0 })).toBeNull();
+    expect(dutching({ decimals: ok, mode: "total", amount: -5 })).toBeNull();
+    expect(dutching({ decimals: ok, mode: "total", amount: NaN })).toBeNull();
+    expect(dutching({ decimals: ok, mode: "target", amount: 0 })).toBeNull();
+    // @ts-expect-error: un arrotondamento fuori dall'elenco chiuso è invalido
+    expect(dutching({ decimals: ok, mode: "total", amount: 100, roundTo: 3 })).toBeNull();
   });
 });
 

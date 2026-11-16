@@ -9,13 +9,13 @@ const it: ToolsCopy = {
   hub: {
     metaTitle: "Strumenti gratis per scommesse — quote, EV, Kelly e margine | BetRedge",
     metaDescription:
-      "11 calcolatori gratuiti: converti le quote in ogni formato, togli il margine del bookmaker, calcola il valore atteso, dimensiona la puntata con Kelly, verifica un arbitraggio. Senza registrazione.",
+      "12 calcolatori gratuiti: converti le quote in ogni formato, togli il margine del bookmaker, calcola il valore atteso, dimensiona la puntata con Kelly, verifica un arbitraggio. Senza registrazione.",
     h1: "Strumenti gratuiti per scommesse",
     lede:
-      "Gli undici conti che vanno fatti prima di puntare: quote convertite, margine rimosso, puntata dimensionata, ROI misurato. Gratis, senza account.",
+      "I dodici conti che vanno fatti prima di puntare: quote convertite, margine rimosso, puntata dimensionata, ROI misurato. Gratis, senza account.",
     cardCta: "Apri lo strumento",
     intro: [
-      "Ogni scommessa è il confronto fra un prezzo e una probabilità. Questi undici calcolatori fanno quel confronto per bene: traducono le quote fra i formati, togliono il margine del bookmaker per far vedere la linea equa, trasformano una stima di probabilità in valore atteso, sommano le gambe di una multipla in un'unica quota, dicono quando due bookmaker divergono abbastanza per chiudere un arbitraggio, dimensionano la puntata perché una serie negativa non chiuda il bankroll e misurano poi quanto hanno reso davvero quelle scommesse.",
+      "Ogni scommessa è il confronto fra un prezzo e una probabilità. Questi dodici calcolatori fanno quel confronto per bene: traducono le quote fra i formati, togliono il margine del bookmaker per far vedere la linea equa, trasformano una stima di probabilità in valore atteso, sommano le gambe di una multipla in un'unica quota, dicono quando due bookmaker divergono abbastanza per chiudere un arbitraggio, dimensionano la puntata perché una serie negativa non chiuda il bankroll e misurano poi quanto hanno reso davvero quelle scommesse.",
       "Girano interamente nel tuo browser: niente viene inviato, niente viene salvato, non c'è nessun account da creare. Usali da soli, oppure usali per verificare quello che il nostro modello già pubblica su ogni partita.",
     ],
   },
@@ -702,6 +702,81 @@ const it: ToolsCopy = {
         {
           q: "Meglio questo o il criterio di Kelly?",
           a: "Usa questo quando non hai un vantaggio misurato, cioè quasi sempre: un'unità in percentuale non chiede stime di probabilità e il suo caso peggiore si conosce in anticipo. Il calcolatore del criterio di Kelly è lo strumento giusto quando una probabilità la puoi difendere, e di solito consiglierà più di un 2% piatto. Trattare la sua risposta come un tetto e la regola piatta come il pavimento tiene onesti entrambi.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Calcolatore di dutching — dividere la puntata perché ogni esito paghi uguale | BetRedge",
+      metaDescription:
+        "Calcolatore di dutching gratuito: inserisci da 2 a 8 esiti di un mercato e vedi come dividere la puntata perché il ritorno sia identico qualunque esito vinca, con copertura e quota di pareggio.",
+      h1: "Calcolatore di dutching",
+      lede:
+        "Inserisci la quota di ogni esito che vuoi coprire e scopri come dividere una puntata perché ogni esito restituisca lo stesso — e quanto costa o rende.",
+      labels: {
+        inputTitle: "Quota di ogni esito",
+        outcome: "Esito",
+        addOutcome: "Aggiungi esito",
+        removeOutcome: "Togli",
+        modeTitle: "Cosa sai",
+        modeTotal: "Puntata totale",
+        modeTarget: "Profitto target",
+        total: "Puntata totale",
+        targetProfit: "Profitto target",
+        roundTitle: "Arrotonda le puntate a",
+        roundNone: "Nessuno",
+        resultTitle: "Come dividerla",
+        profit: "Profitto o perdita (esito peggiore)",
+        profitPercent: "Profitto o perdita sul totale puntato",
+        totalStake: "Puntata totale necessaria",
+        coverage: "Copertura del mercato (somma delle probabilità implicite)",
+        stakeOn: "Puntata sull'esito",
+        returnOn: "Ritorno se vince l'esito",
+        meanOdds: "Quota media qui (armonica)",
+        breakEvenOdds: "Quota media necessaria per il pareggio",
+        verdictWin: "Profitto bloccato: {pct} sul totale puntato, qualunque esito vinca.",
+        verdictLoss: "Con queste quote perdi il {pct} qualunque cosa succeda.",
+        verdictFlat:
+          "Queste quote sono in pareggio: riprendi esattamente quanto punti, qualunque esito vinca.",
+        verdictUnreachable:
+          "Con queste quote nessuna puntata totale può rendere un profitto: le probabilità implicite sommano al 100% o più.",
+        hint:
+          "Una quota decimale per esito, da 2 a 8. L'arrotondamento tiene ogni puntata a multipli di 1, 5 o 10; i ritorni vengono poi ricalcolati per esito e non sono più identici. Il decimale accetta la virgola.",
+      },
+      takeaway:
+        "Il dutching non rende migliore una scommessa: rende uguale il risultato su ogni esito che copri — per questo a dirti se valeva la pena è la copertura, non la divisione delle puntate.",
+      example: {
+        title: "Tre esiti, 100 da dividere",
+        rows: [
+          { label: "Quote", value: "2.10 · 3.60 · 3.60" },
+          { label: "Copertura del mercato", value: "103,17%" },
+          { label: "Puntata su ciascuno, su 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Ritorno in ogni esito", value: "96,92" },
+          { label: "Profitto o perdita", value: "−3,08 (−3,08%)" },
+        ],
+        note:
+          "Rovescia la domanda e le stesse quote rispondono: 2.10 e 2.10 sommano al 95,24%, quindi per un profitto di 20 servono 400 in totale, 200 per lato, con un ritorno di 420 in entrambi i casi. L'uguaglianza si rompe con l'arrotondamento: a 5 la prima divisione diventa 45, 25 e 25, il totale scende a 95 e i ritorni sono 94,50, 90,00 e 90,00 — l'esito peggiore ora è −5,00.",
+      },
+      explainerTitle: "Ritorno uguale su ogni esito",
+      explainer: [
+        "**Il dutching divide una puntata su più esiti dello stesso mercato perché il ritorno sia lo stesso qualunque esito vinca.** Ogni esito riceve una quota proporzionale alla sua probabilità implicita — uno diviso la quota — e le parti sommano al tuo totale. A differenza dell'arbitraggio, non serve che le probabilità implicite sommino a meno del 100%. Con quote di 2.10, 3.60 e 3.60 sommano al 103,17%, e 100 divisi in 46,15, 26,92 e 26,92 restituiscono 96,92 su ogni esito: il risultato smette di dipendere dalla partita, ma è una perdita del 3,08%, perché il mercato si tiene il suo margine.",
+        "**Il numero da leggere per primo è la copertura del mercato.** Sotto il 100% la divisione blocca un profitto; sopra, blocca una perdita, e più sta sopra più paghi la certezza. Il pareggio è questione di quota media: con tre esiti la media armonica delle quote deve arrivare a 3,00, e qui è 2,91. Due note pratiche. **Arrotondare le puntate all'unità, a 5 o a 10 rompe l'uguaglianza** — il calcolatore ricalcola ogni ritorno e mostra che non sono più identici. E coprire più esiti significa pagare il margine su ciascuno: il dutching è un modo di scegliere come sei esposto, non di eliminare il costo di esserlo.",
+      ],
+      faq: [
+        {
+          q: "Che differenza c'è fra dutching e arbitraggio?",
+          a: "L'arbitraggio richiede quote che insieme sommano a meno del 100%, così un profitto è bloccato. Il dutching chiede solo di coprire più esiti di un mercato con ritorni uguali: la somma può superare il 100%, e allora uguagliare il ritorno rende la perdita certa e visibile. L'aritmetica è la stessa, la condizione no.",
+        },
+        {
+          q: "Perché il calcolatore non raggiunge il mio profitto target?",
+          a: "Quando le probabilità implicite sommano al 100% o più, nessuna puntata produce un profitto: il ritorno per unità puntata è uno diviso quella somma, cioè 1 o meno. Il calcolatore lo dice invece di inventare un totale. La via d'uscita sono quote migliori o meno esiti coperti.",
+        },
+        {
+          q: "Che succede se arrotondo le puntate?",
+          a: "Ogni puntata va al multiplo più vicino di 1, 5 o 10, quindi il totale cambia e i ritorni non sono più identici. Il calcolatore ricalcola il ritorno di ogni esito dalle puntate arrotondate e riporta il peggiore come profitto o perdita, che è il numero onesto su cui pianificare.",
+        },
+        {
+          q: "Perché coprire più esiti in perdita?",
+          a: "Perché trasforma un risultato incerto in uno noto: paghi un prezzo noto per avere ragione su uno qualunque degli esiti che copri. Se quel prezzo valga la pena dipende da quanto vale per te la certezza, e la copertura ti dice esattamente quanto costa.",
         },
       ],
     },

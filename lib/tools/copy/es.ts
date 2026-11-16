@@ -8,13 +8,13 @@ const es: ToolsCopy = {
   hub: {
     metaTitle: "Herramientas gratis de apuestas — cuotas, EV, Kelly y margen | BetRedge",
     metaDescription:
-      "11 calculadoras gratuitas: convierte cuotas en cualquier formato, quita el margen de la casa, calcula el valor esperado, dimensiona la apuesta con Kelly, comprueba un arbitraje. Sin registro.",
+      "12 calculadoras gratuitas: convierte cuotas en cualquier formato, quita el margen de la casa, calcula el valor esperado, dimensiona la apuesta con Kelly, comprueba un arbitraje. Sin registro.",
     h1: "Herramientas gratuitas de apuestas",
     lede:
-      "Los once cálculos que se hacen antes de apostar: cuotas convertidas, margen retirado, apuesta dimensionada, ROI medido. Gratis y sin cuenta.",
+      "Los doce cálculos que se hacen antes de apostar: cuotas convertidas, margen retirado, apuesta dimensionada, ROI medido. Gratis y sin cuenta.",
     cardCta: "Abrir la herramienta",
     intro: [
-      "Toda apuesta es una comparación entre un precio y una probabilidad. Estas once calculadoras hacen esa comparación bien: traducen las cuotas entre formatos, quitan el margen de la casa para mostrar la línea justa, convierten una estimación de probabilidad en valor esperado, suman las patas de una combinada en una sola cuota, indican cuándo dos casas discrepan lo suficiente para cerrar un arbitraje, dimensionan la apuesta para que una mala racha no acabe con el bankroll y miden después lo que esas apuestas rindieron de verdad.",
+      "Toda apuesta es una comparación entre un precio y una probabilidad. Estas doce calculadoras hacen esa comparación bien: traducen las cuotas entre formatos, quitan el margen de la casa para mostrar la línea justa, convierten una estimación de probabilidad en valor esperado, suman las patas de una combinada en una sola cuota, indican cuándo dos casas discrepan lo suficiente para cerrar un arbitraje, dimensionan la apuesta para que una mala racha no acabe con el bankroll y miden después lo que esas apuestas rindieron de verdad.",
       "Funcionan por completo en tu navegador: nada se envía, nada se guarda y no hay ninguna cuenta que crear. Úsalas por su cuenta, o úsalas para comprobar lo que nuestro modelo ya publica en cada partido.",
     ],
   },
@@ -701,6 +701,82 @@ const es: ToolsCopy = {
         {
           q: "¿Uso esta o el criterio de Kelly?",
           a: "Usa esta cuando no tengas una ventaja medida, que es casi siempre: una unidad en porcentaje no pide estimaciones de probabilidad y su peor caso se conoce por adelantado. La calculadora del criterio de Kelly es la herramienta correcta cuando puedes defender una probabilidad, y suele recomendar más que un 2% plano. Tratar su respuesta como techo y la regla plana como suelo mantiene honestas a las dos.",
+        },
+      ],
+    },
+    "dutching-calculator": {
+      metaTitle: "Calculadora de dutching — repartir la apuesta para que cada resultado pague igual | BetRedge",
+      metaDescription:
+        "Calculadora de dutching gratuita: introduce de 2 a 8 resultados de un mercado y mira cómo repartir la apuesta para que el retorno sea idéntico gane cuál gane, con cobertura y cuota de equilibrio.",
+      h1: "Calculadora de dutching",
+      lede:
+        "Introduce la cuota de cada resultado que quieres cubrir y mira cómo repartir una apuesta para que todos devuelvan lo mismo — y cuánto cuesta o rinde.",
+      labels: {
+        inputTitle: "Cuota de cada resultado",
+        outcome: "Resultado",
+        addOutcome: "Añadir resultado",
+        removeOutcome: "Quitar",
+        modeTitle: "Qué sabes",
+        modeTotal: "Apuesta total",
+        modeTarget: "Beneficio objetivo",
+        total: "Apuesta total",
+        targetProfit: "Beneficio objetivo",
+        roundTitle: "Redondear apuestas a",
+        roundNone: "Ninguno",
+        resultTitle: "Cómo repartirla",
+        profit: "Beneficio o pérdida (peor resultado)",
+        profitPercent: "Beneficio o pérdida sobre el total apostado",
+        totalStake: "Apuesta total necesaria",
+        coverage: "Cobertura del mercado (suma de probabilidades implícitas)",
+        stakeOn: "Apuesta al resultado",
+        returnOn: "Retorno si gana el resultado",
+        meanOdds: "Cuota media aquí (armónica)",
+        breakEvenOdds: "Cuota media necesaria para el equilibrio",
+        verdictWin:
+          "Beneficio asegurado: {pct} sobre el total apostado, gane el resultado que gane.",
+        verdictLoss: "Con estas cuotas pierdes el {pct} pase lo que pase.",
+        verdictFlat:
+          "Estas cuotas quedan en equilibrio: recuperas exactamente lo apostado, gane el resultado que gane.",
+        verdictUnreachable:
+          "Con estas cuotas ninguna apuesta total puede dar beneficio: las probabilidades implícitas suman el 100% o más.",
+        hint:
+          "Una cuota decimal por resultado, de 2 a 8. El redondeo deja cada apuesta en múltiplos de 1, 5 o 10; los retornos se recalculan por resultado y dejan de ser idénticos. El decimal acepta coma.",
+      },
+      takeaway:
+        "El dutching no hace mejor una apuesta, hace que el resultado sea igual en cada resultado que cubres — por eso lo que dice si valió la pena es la cobertura, no el reparto de las apuestas.",
+      example: {
+        title: "Tres resultados, 100 por repartir",
+        rows: [
+          { label: "Cuotas", value: "2.10 · 3.60 · 3.60" },
+          { label: "Cobertura del mercado", value: "103,17%" },
+          { label: "Apuesta a cada uno, de 100", value: "46,15 · 26,92 · 26,92" },
+          { label: "Retorno en cada resultado", value: "96,92" },
+          { label: "Beneficio o pérdida", value: "−3,08 (−3,08%)" },
+        ],
+        note:
+          "Da la vuelta a la pregunta y las mismas cuotas responden: 2.10 y 2.10 suman el 95,24%, así que un beneficio de 20 pide 400 en total, 200 por lado, con un retorno de 420 en ambos casos. El redondeo es donde se rompe la igualdad: a 5 el primer reparto pasa a 45, 25 y 25, el total baja a 95 y los retornos son 94,50, 90,00 y 90,00 — el peor resultado ahora es −5,00.",
+      },
+      explainerTitle: "Retorno igual en cada resultado",
+      explainer: [
+        "**El dutching reparte una apuesta entre varios resultados del mismo mercado para que el retorno sea el mismo gane cuál gane.** Cada resultado recibe una parte proporcional a su probabilidad implícita — uno dividido por la cuota — y las partes suman tu total. A diferencia del arbitraje, no hace falta que las probabilidades implícitas sumen menos del 100%. Con cuotas de 2.10, 3.60 y 3.60 suman el 103,17%, y 100 repartidos en 46,15, 26,92 y 26,92 devuelven 96,92 en cada resultado: el desenlace deja de depender del partido, pero es una pérdida del 3,08%, porque el mercado se queda su margen.",
+        "**El número que hay que leer primero es la cobertura del mercado.** Por debajo del 100% el reparto asegura un beneficio; por encima, asegura una pérdida, y cuanto más arriba, más pagas por la certeza. El equilibrio es cuestión de cuota media: con tres resultados la media armónica de las cuotas debe llegar a 3,00, y aquí es 2,91. Dos notas prácticas. **Redondear las apuestas a la unidad, a 5 o a 10 rompe la igualdad** — la calculadora recalcula cada retorno y muestra que ya no son idénticos. Y cubrir varios resultados significa pagar el margen en cada uno: el dutching es una forma de elegir cómo te expones, no de eliminar el coste de estar expuesto.",
+      ],
+      faq: [
+        {
+          q: "¿Qué diferencia hay entre dutching y arbitraje?",
+          a: "El arbitraje necesita cuotas que juntas sumen menos del 100%, de modo que el beneficio queda asegurado. El dutching solo pide cubrir varios resultados de un mercado con retornos iguales: la suma puede superar el 100%, y entonces igualar el retorno hace la pérdida cierta y visible. La aritmética es la misma, la condición no.",
+        },
+        {
+          q: "¿Por qué la calculadora no alcanza mi beneficio objetivo?",
+          a: "Cuando las probabilidades implícitas suman el 100% o más, ninguna apuesta produce beneficio: el retorno por unidad apostada es uno dividido por esa suma, es decir 1 o menos. La calculadora lo dice en lugar de inventar un total. La salida son mejores cuotas o menos resultados cubiertos.",
+        },
+        {
+          q: "¿Qué pasa si redondeo las apuestas?",
+          a: "Cada apuesta pasa al múltiplo más cercano de 1, 5 o 10, así que el total cambia y los retornos dejan de ser idénticos. La calculadora recalcula el retorno de cada resultado con las apuestas redondeadas y muestra el peor como beneficio o pérdida, que es el número honesto para planificar.",
+        },
+        {
+          q: "¿Por qué cubrir varios resultados con pérdida?",
+          a: "Porque convierte un desenlace incierto en uno conocido: pagas un precio conocido por acertar en cualquiera de los resultados que cubres. Si ese precio compensa depende de cuánto valore uno la certeza, y la cobertura dice exactamente cuánto cuesta.",
         },
       ],
     },
