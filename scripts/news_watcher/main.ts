@@ -27,6 +27,7 @@ import { join } from "node:path";
 import { assetPaths, resolveImageStyle, type StyleCheck } from "../../lib/v3c/news/assets";
 import { rewriteWithClaude } from "../../lib/v3c/news/claude-cli";
 import { makeImage, neutralCard, storagePublisher, storageRemover } from "../../lib/v3c/news/image-gen";
+import { DEFAULT_PICK } from "../../lib/v3c/news/daily-pick";
 import { freshState, runCycle, type ImageDeps, type StatePatch, type WatcherDb, type WatcherState } from "../../lib/v3c/news/watcher";
 import type { NewsItemRow } from "../../lib/v3c/news/table";
 
@@ -35,6 +36,11 @@ const DRY = args.includes("--dry-run");
 const UNBLOCK = args.includes("--unblock");
 const limitArg = args.indexOf("--limit");
 const LIMIT = limitArg >= 0 ? Math.max(0, Number(args[limitArg + 1]) || 0) : undefined;
+// #NEWSWATCH-TOP3-1120: the daily selection is on; `--no-pick` = the old «newest N per run» (with --limit)
+const PICK = args.includes("--no-pick") ? undefined : DEFAULT_PICK;
+// `--now <ISO>`: dry-run only, to rehearse a slot at any hour (the clock of a real run is never moved)
+const nowArg = args.indexOf("--now");
+const NOW_AT = DRY && nowArg >= 0 ? Date.parse(args[nowArg + 1] ?? "") : NaN;
 
 const HOME = process.env.NEWS_WATCHER_HOME || join(homedir(), "Library", "Application Support", "news-watcher");
 const STATE_FILE = join(HOME, "state.json");
@@ -204,8 +210,8 @@ async function main(): Promise<number> {
   try {
     const rep = await runCycle(
       state,
-      { now: Date.now, fetch, rewrite: (it) => rewriteWithClaude(it, { bin: CLAUDE_BIN, cwd: HOME }), db, log, images },
-      { maxRewrites: LIMIT, windowMs: intervalS * 1000 },
+      { now: Number.isFinite(NOW_AT) ? () => NOW_AT : Date.now, fetch, rewrite: (it) => rewriteWithClaude(it, { bin: CLAUDE_BIN, cwd: HOME }), db, log, images },
+      { maxRewrites: LIMIT, windowMs: intervalS * 1000, pick: PICK },
     );
     for (const { item, outcome } of rep.outcomes) {
       const u = "usage" in outcome && outcome.usage ? outcome.usage : null;
@@ -231,7 +237,7 @@ async function main(): Promise<number> {
     }
     if (rep.fetched.page != null || rep.fetched.rss != null) lastOkAt = new Date().toISOString();
     const summary = { at: new Date().toISOString(), lastOkAt, intervalS, dryRun: DRY, imageStyle: styleCheck, ...rep, outcomes: undefined };
-    log(`run: exit ${rep.exit} · fetched page ${rep.fetched.page ?? "-"} rss ${rep.fetched.rss ?? "-"} · queued ${rep.queued} · rewritten ${rep.rewritten} · rejected ${rep.rejected.length} · written ${rep.written} · queue ${state.queue.length}${rep.limited ? " · LIMITED" : ""}${rep.images ? ` · images made ${rep.images.made} refused ${rep.images.failed} fallback ${rep.images.fallback} published ${rep.images.published} pending ${rep.images.pending}` : ""}${rep.errors.length ? ` · errors: ${rep.errors.join(" | ")}` : ""}`);
+    log(`run: exit ${rep.exit} · fetched page ${rep.fetched.page ?? "-"} rss ${rep.fetched.rss ?? "-"} · queued ${rep.queued} · rewritten ${rep.rewritten} · rejected ${rep.rejected.length} · written ${rep.written} · queue ${state.queue.length}${state.daily ? ` · picks ${state.daily.day} ${state.daily.picks.map((p) => `${p.sport}:${p.status}`).join(",") || "none"}` : ""}${rep.limited ? " · LIMITED" : ""}${rep.images ? ` · images made ${rep.images.made} refused ${rep.images.failed} fallback ${rep.images.fallback} published ${rep.images.published} pending ${rep.images.pending}` : ""}${rep.errors.length ? ` · errors: ${rep.errors.join(" | ")}` : ""}`);
     if (!DRY) {
       saveState(state);
       writeFileSync(HEARTBEAT, JSON.stringify(summary, null, 2)); // the artifact daemon-health looks at

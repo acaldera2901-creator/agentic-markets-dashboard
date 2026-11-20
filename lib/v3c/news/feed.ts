@@ -6,6 +6,7 @@
 // in ~/Desktop/01-BETREDGE/redesign/PIANO-COSTRUZIONE.md «News da FotMob».
 
 /** The one public feed we read. Never /api, never HTML pages. */
+import type { Sport } from "./daily-pick";
 export const FOTMOB_FEED_URL = "https://www.fotmob.com/topnews/feed?format=rss";
 /** Identifiable user-agent with a contact, sent on every request. */
 export const NEWS_USER_AGENT = "BetRedgeNews/1.0 (+https://www.betredge.com/about; info@betredge.com)";
@@ -25,6 +26,8 @@ export type FeedItem = {
   t: number;
   /** who published it, from <author> «(FotMob)», else the channel title */
   source: string;
+  /** absent = football (every FotMob item); the daily selection counts per sport (#NEWSWATCH-TOP3-1120) */
+  sport?: Sport;
 };
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };

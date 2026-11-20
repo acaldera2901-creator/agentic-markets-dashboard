@@ -30,6 +30,7 @@ import { imageStyle } from "./card-emma";
 import { repeats, STORY_WINDOW_MS, type StoryKey } from "./story";
 import type { ImageAttempt, ImageFiles } from "./image-gen";
 import type { NoteText } from "./rewrite";
+import { topPick, dailyFor, mayPick, NO_PHOTO_RUNS, PICK_MAX_AGE_MS, COVERAGE_WINDOW_MS, scoreFootball, type DailyState, type PickConfig, type Scored, type Sport } from "./daily-pick";
 
 export const RSS_EVERY_MS = 3_600_000;
 export const ROBOTS_EVERY_MS = 6 * 3_600_000;
@@ -51,7 +52,7 @@ export const RETENTION_DAYS = 30;
 type Kind = "page" | "rss";
 export type Queued = { item: FeedItem; hash: string; attempts: number; row?: NewsItemRow };
 /** A card to make for a note already written (#NEWSWATCH-2-IMG). Built from OUR note (EN), never the original. */
-export type ImageJob = { hash: string; base: string; note: NoteText; teams: string[]; attempts: number; at: number; card?: CardSpec; files?: ImageFiles; lastError?: string; row?: NewsItemRow };
+export type ImageJob = { hash: string; base: string; note: NoteText; teams: string[]; attempts: number; at: number; card?: CardSpec; files?: ImageFiles; lastError?: string; row?: NewsItemRow; pick?: true; noPhoto?: number };
 /**
  * The image check failed for the same reason twice in a row (06/11: the model dropped «Cole Palmer omitted»
  * from the headline on 6 attempts). The text mismatch is keyed on the EXPECTED text only (the misreading
@@ -86,6 +87,8 @@ export type WatcherState = {
   cards?: LedgerRow[];
   /** original title + source time of the stories written recently: the story dedup reads it (absent in older files) */
   stories?: StoryKey[];
+  /** the notes picked today, Rome day (#NEWSWATCH-TOP3-1120; absent = never picked) */
+  daily?: DailyState;
 };
 
 export const freshState = (): WatcherState => ({
@@ -138,7 +141,8 @@ export type Deps = {
 };
 
 /** `windowMs`: how long a run may last (the launchd interval); picture attempts start only inside it. */
-export type RunOptions = { pageUrl?: string; feedUrl?: string; maxRewrites?: number; windowMs?: number };
+/** `pick`: the daily selection (#NEWSWATCH-TOP3-1120); absent = the old «newest N per run». */
+export type RunOptions = { pageUrl?: string; feedUrl?: string; maxRewrites?: number; windowMs?: number; pick?: PickConfig };
 
 export type RunReport = {
   /** 0 ok · 1 something broke (DB) · 2 the source blocked us (needs a person) */
@@ -294,11 +298,8 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
   const done = (q: Queued) => {
     s.seen[q.hash] = s.seen[sha(q.item.url)] = now;
   };
-  let budget = o.maxRewrites ?? MAX_REWRITES;
-  for (const q of s.queue) {
-    if (q.row) continue;
-    if (budget <= 0) break;
-    budget--;
+  /** one rewrite and its outcome; «limit» = stop rewriting this run */
+  const rewriteOne = async (q: Queued): Promise<RewriteOutcome["kind"]> => {
     const out = await d.rewrite(q.item);
     rep.outcomes.push({ item: q.item, outcome: out });
     if (out.kind === "ok") {
@@ -310,11 +311,38 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
     } else if (out.kind === "limit") {
       rep.limited = out.reason;
       d.log(`claude usage limit: ${out.reason} — the queue waits for the next run`);
-      break;
     } else {
       q.attempts++;
       rep.errors.push(`rewrite: ${out.reason}`);
       if (q.attempts >= MAX_ATTEMPTS) done(q);
+    }
+    return out.kind;
+  };
+  if (o.pick) {
+    // #NEWSWATCH-TOP3-1120: at most one pick per sport per run, only when its slot is open; scored before any model call
+    const daily = (s.daily = dailyFor(s.daily, now));
+    const recent = [...s.queue.map((q) => ({ at: q.item.t, txt: `${q.item.title}. ${q.item.text}`, hash: q.hash })), ...(s.stories ?? []).map((x) => ({ at: x.at, txt: x.title, hash: "" }))].filter((x) => now - x.at <= COVERAGE_WINDOW_MS);
+    for (const sport of Object.keys(o.pick.perDay) as Sport[]) {
+      const may = mayPick(daily, sport, o.pick, now);
+      if (!may.ok) continue;
+      const cands = s.queue
+        .filter((q) => !q.row && (q.item.sport ?? "football") === sport && now - q.item.t <= PICK_MAX_AGE_MS)
+        .map((q) => ({ item: { ...q.item, q }, s: scoreOf(sport, q, recent) }));
+      const top = topPick(cands);
+      if (!top) continue;
+      const q = top.item.q;
+      d.log(`pick ${sport} ${may.why} · score ${top.s.score} [${top.s.why}] · «${q.item.title.slice(0, 80)}» (${cands.length} candidates)`);
+      const kind = await rewriteOne(q);
+      if (kind === "limit") break;
+      daily.picks.push({ hash: q.hash, sport, at: now, score: top.s.score, status: kind === "ok" ? "image" : "dead", title: q.item.title.slice(0, 120) });
+    }
+  } else {
+    let budget = o.maxRewrites ?? MAX_REWRITES;
+    for (const q of s.queue) {
+      if (q.row) continue;
+      if (budget <= 0) break;
+      budget--;
+      if ((await rewriteOne(q)) === "limit") break;
     }
   }
   s.queue = s.queue.filter((q) => !s.seen[q.hash] || q.row);
@@ -331,8 +359,10 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
       if (d.images)
         for (const r of rows) {
           const base = imageBase(r.source_url);
-          if (base) (s.images ??= []).push({ hash: r.guid_hash, base, note: r.rewritten_en, teams: r.teams, attempts: 0, at: now, ...(hold(r) ? { row: r } : {}) });
+          if (base) (s.images ??= []).push({ hash: r.guid_hash, base, note: r.rewritten_en, teams: r.teams, attempts: 0, at: now, ...(hold(r) ? { row: r } : {}), ...(o.pick ? { pick: true as const } : {}) });
         }
+      // a picked note with no card to wait for is out now
+      if (s.daily) for (const p of s.daily.picks) if (p.status === "image" && rows.some((r) => r.guid_hash === p.hash) && !s.images?.some((j) => j.hash === p.hash)) p.status = "published";
       for (const q of s.queue)
         if (q.row) {
           done(q);
@@ -371,8 +401,38 @@ export async function runCycle(s: WatcherState, d: Deps, o: RunOptions = {}): Pr
   }
 
   // 8. pictures, after everything else: a slow or failed picture never holds a note back
+  if (d.images && o.pick && s.daily) settlePicks(s, s.daily, d, now);
   if (d.images) await pictures(s, d, d.images, now, o.windowMs ?? 600_000, rep);
+  if (d.images && s.daily) for (const p of s.daily.picks) if (p.status === "image" && !s.images?.some((j) => j.hash === p.hash)) p.status = "published";
   return rep;
+}
+
+function scoreOf(sport: Sport, q: Queued, recent: readonly { txt: string; hash: string }[]): Scored {
+  const others = recent.filter((x) => x.hash !== q.hash).map((x) => x.txt);
+  if (sport === "football") return scoreFootball(q.item, others);
+  return { score: 0, why: `no scorer for ${sport}` };
+}
+
+/**
+ * Before the pictures (#NEWSWATCH-TOP3-1120), outside pictures() so the
+ * runtime patches of 13/11 still apply: a picked note that cannot get a card
+ * (no real photo for NO_PHOTO_RUNS runs, attempts exhausted) is dropped and
+ * hands its place to the next pick; a job from before the selection is dropped
+ * unless its card is already made (publishing it costs nothing).
+ */
+function settlePicks(s: WatcherState, daily: DailyState, d: Deps, now: number): void {
+  const dead = (j: ImageJob, why: string) => {
+    for (const p of daily.picks) if (p.hash === j.hash && p.status === "image") p.status = "dead";
+    d.log(`pick dropped ${j.base}: ${why}`);
+    return false;
+  };
+  s.images = (s.images ?? []).filter((j) => {
+    if (j.files) return true;
+    if (!j.pick) return dead(j, `from before the daily selection (${Math.round((now - j.at) / 3_600_000)} h old, no card made)`);
+    if (j.lastError?.startsWith("emma: no verified real photo") && (j.noPhoto = (j.noPhoto ?? 0) + 1) >= NO_PHOTO_RUNS) return dead(j, `no real photo after ${j.noPhoto} runs`);
+    if (j.attempts >= MAX_IMAGE_ATTEMPTS || j.lastError === "hf-ref: per-post attempts exhausted") return dead(j, `card attempts exhausted (${j.lastError ?? j.attempts})`);
+    return true;
+  });
 }
 
 /**
