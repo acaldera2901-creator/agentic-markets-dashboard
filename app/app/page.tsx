@@ -46,6 +46,7 @@ import { MenuIcon, NavIcon, BottomNavIcon, type NavName, type BottomNavName } fr
 import { IconSearch, IconArrow, IconCheck, IconSignIn, IconRegister } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
+import { getGa4SignupSession } from "@/lib/ga4-session";
 import { consentedSessionId, getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
@@ -4750,6 +4751,7 @@ function ClientAuthModal({
           acquisition: mode === "create" ? (signupAttribution() ?? undefined) : undefined,
           // #G2-TRACKING-1110: session_id solo col consenso → profiles.signup_session_id.
           analytics_consent: mode === "create" ? consentedSessionId() !== null : undefined,
+          ga4_signup_session: mode === "create" ? await getGa4SignupSession() : undefined,
           session_id: mode === "create" ? (consentedSessionId() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag

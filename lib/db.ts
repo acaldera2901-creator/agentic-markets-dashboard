@@ -56,7 +56,7 @@ export async function dbExecute<T = Record<string, unknown>>(
   const db = getSupabaseAdminClient();
   if (!db) throw new Error("[db] Supabase admin client not configured");
   const { data, error } = await db.rpc("exec_sql", { query: interpolate(sql, params) });
-  if (error) throw new Error(`[db] write error: ${error.message ?? String(error)}`);
+  if (error) throw new Error(`[db] write error: ${error.message ?? String(error)}`, { cause: error });
   return (data as T[]) ?? [];
 }
 
