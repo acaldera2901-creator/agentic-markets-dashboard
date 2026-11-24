@@ -31,6 +31,7 @@ import { useEffect, useState, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { currentRefCode, writeRefCode, normalizeRefCode } from "@/lib/referral-code";
 import { signupAttribution } from "@/lib/attribution";
+import { getGa4SignupSession } from "@/lib/ga4-session";
 import { consentedSessionId, trackEvent } from "@/lib/track-event";
 import { launchPromoLive } from "@/lib/launch-promo-client"; // #PROMO-DEADLINE-0904
 
@@ -266,6 +267,7 @@ export function HomeAuthModal({
           acquisition: mode === "create" ? (signupAttribution() ?? undefined) : undefined,
           // #G2-TRACKING-1110: session_id solo col consenso → profiles.signup_session_id.
           analytics_consent: mode === "create" ? consentedSessionId() !== null : undefined,
+          ga4_signup_session: mode === "create" ? await getGa4SignupSession() : undefined,
           session_id: mode === "create" ? (consentedSessionId() ?? undefined) : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag
           // sul register — senza, ogni signup falliva con 400 consent_required.
