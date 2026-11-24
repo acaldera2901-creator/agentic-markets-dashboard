@@ -8,6 +8,8 @@ import type { UpcomingMatch } from "@/lib/seo/upcoming-matches";
 const CSS = `
 .seo-upcoming{position:relative;z-index:0;max-width:68ch;margin:0 auto;padding:40px 24px 56px;font-size:15px;line-height:1.7;color:var(--am-muted)}
 .seo-upcoming h2{color:var(--am-text);font-size:22px;font-weight:700;letter-spacing:-.015em;margin:0 0 12px}
+.seo-upcoming h3{color:var(--am-text);font-size:18px;margin:24px 0 8px}
+.seo-upcoming a{text-decoration:underline;text-underline-offset:.15em}
 .seo-upcoming p{margin:0 0 14px}
 .seo-upcoming ul{list-style:none;margin:0;padding:0}
 .seo-upcoming li{padding:8px 0;border-top:1px solid var(--am-line)}
@@ -17,32 +19,46 @@ const CSS = `
 const fmt = (iso: string) =>
   new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hourCycle: "h23" }).format(new Date(iso)) + " UTC";
 
+const sports = [
+  { sport: "football", label: "Football", guide: "/ai-football-predictions" },
+  { sport: "tennis", label: "Tennis", guide: "/ai-tennis-predictions" },
+] as const;
+
 export function UpcomingMatches({ matches }: { matches: readonly UpcomingMatch[] }) {
   if (!matches.length) return null;
+  const groups = sports.map((sport) => ({
+    ...sport,
+    fixtures: matches.filter((match) => match.sport === sport.sport),
+  })).filter(({ fixtures }) => fixtures.length > 0);
   return (
     <section className="seo-upcoming" aria-labelledby="upcoming-matches-h">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <JsonLd data={matchesJsonLd(matches)} />
+      <JsonLd data={matchesJsonLd(groups.flatMap(({ fixtures }) => fixtures))} />
       <h2 id="upcoming-matches-h">Football and tennis fixtures</h2>
       <p>
         {matches.length} public fixtures in the current match window, including matches recently started.
         Teams, players, competitions and start times are available without signing in.
         Use the interactive board above for the available analysis and market information.
       </p>
-      <p>
-        Explore how the analysis works: <Link href="/ai-football-predictions">AI football predictions</Link>
-        {" · "}<Link href="/ai-tennis-predictions">AI tennis predictions</Link>.
-      </p>
-      <ul>
-        {matches.map((m) => (
-          <li key={m.id + m.startsAt}>
-            <strong>
-              {m.home} vs {m.away}
-            </strong>{" "}
-            · {m.competition} · {fmt(m.startsAt)}
-          </li>
+      <nav aria-label="Jump to fixtures by sport">
+        {groups.map(({ sport, label }, index) => (
+          <span key={sport}>{index > 0 ? " · " : ""}<a href={`#${sport}-fixtures`}>{label} fixtures</a></span>
         ))}
-      </ul>
+      </nav>
+      {groups.map(({ sport, label, guide, fixtures }) => (
+        <section key={sport} id={`${sport}-fixtures`} aria-labelledby={`${sport}-fixtures-heading`}>
+          <h3 id={`${sport}-fixtures-heading`}>{label} fixtures</h3>
+          <p><Link href={guide}>How {sport} predictions work</Link></p>
+          <ul>
+            {fixtures.map((m) => (
+              <li key={m.id + m.startsAt}>
+                <strong>{m.home} vs {m.away}</strong>{" "}
+                · {m.competition} · <time dateTime={m.startsAt}>{fmt(m.startsAt)}</time>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </section>
   );
 }
