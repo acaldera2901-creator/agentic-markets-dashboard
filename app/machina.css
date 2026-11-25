@@ -584,7 +584,7 @@
    impostate da JavaScript.
    ══════════════════════════════════════════════════════════════ */
 [data-mc-ground] .bgfix{background-position:center;background-size:cover;background-repeat:no-repeat}
-[data-mc-ground].mc-scene-stadium .bgfix{background-image:url(/banners/gen/scene-stadium.jpg)}
+[data-mc-ground].mc-scene-stadium .bgfix{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg))}
 [data-mc-ground].mc-scene-court .bgfix{background-image:url(/banners/gen/scene-court.jpg)}
 [data-mc-ground].mc-scene-clay .bgfix{background-image:url(/banners/gen/scene-clay.jpg)}
 
@@ -601,16 +601,16 @@
 /* I tagli pescano dove la scena e' ILLUMINATA e il soggetto si riconosce: nelle
    due scene il campo sta nella meta' BASSA, il cielo in alto e' quasi nero. Coi
    tagli alti si vedevano solo i fari, cioe' due macchie di luce senza soggetto. */
-[data-mc] .im-stadium{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 66%}  /* il campo illuminato */
-[data-mc] .im-pitch{background-image:url(/banners/gen/scene-stadium.jpg);background-position:20% 46%}      /* fari + tribuna */
-[data-mc] .im-action{background-image:url(/banners/gen/scene-stadium.jpg);background-position:84% 74%}     /* angolo campo + gradinate */
+[data-mc] .im-stadium{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg));background-position:center 66%}  /* il campo illuminato */
+[data-mc] .im-pitch{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg));background-position:20% 46%}      /* fari + tribuna */
+[data-mc] .im-action{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg));background-position:84% 74%}     /* angolo campo + gradinate */
 /* TENNIS: qui la parte illuminata sono i FARI IN ALTO, non il campo - l'asfalto
    e' nero. Col taglio basso (78%) la scheda risultava PIU' BUIA della versione
    live, l'opposto della richiesta. Misurato guardando le due scene: nello stadio
    il verde e' illuminato in basso, nel campo da tennis la luce sta in alto. */
 [data-mc] .im-court{background-image:url(/banners/gen/scene-court.jpg);background-position:center 44%}   /* i fari e l'alone: nel campo da tennis la luce sta in ALTO */
 [data-mc] .im-clay{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 48%}
-[data-mc] .im-crowd{background-image:url(/banners/gen/scene-stadium.jpg);background-position:center 34%}
+[data-mc] .im-crowd{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg));background-position:center 34%}
 
 /* ══════════════════════════════════════════════════════════════
    AZZERAMENTO — ciò che globals.css mette e la preview non toglieva
@@ -788,7 +788,7 @@
   content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
   background-position:center;background-size:cover;
   opacity:.55;filter:saturate(1.1) contrast(1.03)}
-:root:not([data-theme="light"]) [data-mc-ground] .v-hero::before{background-image:url(/banners/gen/scene-stadium.jpg)}
+:root:not([data-theme="light"]) [data-mc-ground] .v-hero::before{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg))}
 :root:not([data-theme="light"]) [data-mc-ground] .v-final::before{background-image:url(/banners/gen/scene-court.jpg)}
 :root:not([data-theme="light"]) [data-mc-ground] .v-hero::after,:root:not([data-theme="light"]) [data-mc-ground] .v-final::after{
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
