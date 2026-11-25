@@ -15,6 +15,7 @@ export type ClassicLang = (typeof CLASSIC_LANGS)[number];
 
 export type ClassicCopy = {
   boardTitle: string;
+  boardIntro: string;
   bannersLabel: string;
   b1Title: string; b1Sub: string; b1Cta: string;
   b2Title: string; b2Sub: string; b2Cta: string;
@@ -48,6 +49,7 @@ export type ClassicCopy = {
 
 const en: ClassicCopy = {
   boardTitle: "Football and tennis match analysis",
+  boardIntro: "Understand the reasoning behind a prediction, its probability and its limits. Choose a match below; a free account includes up to 3 readings per sport each day.",
   bannersLabel: "Where to start",
   b1Title: "Today’s football board",
   b1Sub: "Today’s matches, with our estimate.",
@@ -103,6 +105,7 @@ const en: ClassicCopy = {
 
 const it: ClassicCopy = {
   boardTitle: "Analisi delle partite di calcio e tennis",
+  boardIntro: "Capisci il ragionamento dietro un pronostico, la probabilità e i suoi limiti. Scegli una partita qui sotto: un account gratuito include fino a 3 letture per sport al giorno.",
   bannersLabel: "Da dove partire",
   b1Title: "Il board del calcio oggi",
   b1Sub: "Le partite di oggi, con la nostra stima.",
@@ -158,6 +161,7 @@ const it: ClassicCopy = {
 
 const es: ClassicCopy = {
   boardTitle: "Análisis de partidos de fútbol y tenis",
+  boardIntro: "Entiende el razonamiento de un pronóstico, su probabilidad y sus límites. Elige un partido: una cuenta gratuita incluye hasta 3 análisis por deporte al día.",
   bannersLabel: "Por dónde empezar",
   b1Title: "El board de fútbol de hoy",
   b1Sub: "Los partidos de hoy, con estimación.",
@@ -213,6 +217,7 @@ const es: ClassicCopy = {
 
 const fr: ClassicCopy = {
   boardTitle: "Analyse des matchs de football et de tennis",
+  boardIntro: "Comprenez le raisonnement derrière un pronostic, sa probabilité et ses limites. Choisissez un match : un compte gratuit inclut jusqu’à 3 analyses par sport et par jour.",
   bannersLabel: "Par où commencer",
   b1Title: "Le board football du jour",
   b1Sub: "Les matchs du jour, avec estimation.",
@@ -268,6 +273,7 @@ const fr: ClassicCopy = {
 
 const de: ClassicCopy = {
   boardTitle: "Spielanalysen für Fußball und Tennis",
+  boardIntro: "Verstehe die Begründung einer Prognose, ihre Wahrscheinlichkeit und Grenzen. Wähle ein Spiel: Ein kostenloses Konto enthält bis zu 3 Analysen pro Sport und Tag.",
   bannersLabel: "Wo du anfängst",
   b1Title: "Das Fußball-Board von heute",
   b1Sub: "Die Spiele von heute, mit Schätzung.",
@@ -323,6 +329,7 @@ const de: ClassicCopy = {
 
 const pt: ClassicCopy = {
   boardTitle: "Análise de jogos de futebol e ténis",
+  boardIntro: "Compreende o raciocínio de um prognóstico, a probabilidade e os seus limites. Escolhe um jogo: uma conta gratuita inclui até 3 análises por desporto por dia.",
   bannersLabel: "Por onde começar",
   b1Title: "O board de futebol de hoje",
   b1Sub: "Os jogos de hoje, com estimativa.",
@@ -378,6 +385,7 @@ const pt: ClassicCopy = {
 
 const nl: ClassicCopy = {
   boardTitle: "Wedstrijdanalyses voor voetbal en tennis",
+  boardIntro: "Begrijp de onderbouwing van een voorspelling, de kans en de beperkingen. Kies een wedstrijd: een gratis account biedt tot 3 analyses per sport per dag.",
   bannersLabel: "Waar je begint",
   b1Title: "Het voetbalboard van vandaag",
   b1Sub: "De wedstrijden van vandaag, met schatting.",
@@ -433,6 +441,7 @@ const nl: ClassicCopy = {
 
 const pl: ClassicCopy = {
   boardTitle: "Analizy meczów piłki nożnej i tenisa",
+  boardIntro: "Poznaj uzasadnienie prognozy, jej prawdopodobieństwo i ograniczenia. Wybierz mecz: bezpłatne konto obejmuje do 3 analiz na dyscyplinę dziennie.",
   bannersLabel: "Od czego zacząć",
   b1Title: "Dzisiejszy board piłkarski",
   b1Sub: "Dzisiejsze mecze, z oceną.",
@@ -488,6 +497,7 @@ const pl: ClassicCopy = {
 
 const tr: ClassicCopy = {
   boardTitle: "Futbol ve tenis maç analizleri",
+  boardIntro: "Bir tahminin gerekçesini, olasılığını ve sınırlarını anlayın. Bir maç seçin: ücretsiz hesap her spor için günde en fazla 3 analiz içerir.",
   bannersLabel: "Nereden başlamalı",
   b1Title: "Bugünün futbol board’u",
   b1Sub: "Bugünün maçları, tahminimizle.",
@@ -543,6 +553,7 @@ const tr: ClassicCopy = {
 
 const sv: ClassicCopy = {
   boardTitle: "Matchanalyser för fotboll och tennis",
+  boardIntro: "Förstå resonemanget bakom en prognos, sannolikheten och begränsningarna. Välj en match: ett gratis konto ger upp till 3 analyser per sport och dag.",
   bannersLabel: "Var du börjar",
   b1Title: "Dagens fotbollsboard",
   b1Sub: "Dagens matcher, med uppskattning.",
@@ -598,6 +609,7 @@ const sv: ClassicCopy = {
 
 const ru: ClassicCopy = {
   boardTitle: "Анализ футбольных и теннисных матчей",
+  boardIntro: "Разберитесь в обосновании прогноза, вероятности и ограничениях. Выберите матч: бесплатный аккаунт включает до 3 разборов на вид спорта в день.",
   bannersLabel: "С чего начать",
   b1Title: "Футбольный борд на сегодня",
   b1Sub: "Наши матчи дня — с нашей оценкой.",

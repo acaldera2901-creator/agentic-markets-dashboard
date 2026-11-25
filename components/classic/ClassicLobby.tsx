@@ -343,6 +343,7 @@ export function ClassicLobby({ lang, tz, football, tennis, loading = false, rend
 
       <div className="brc-main">
       <h1 className="brc-board-title">{copy.boardTitle}</h1>
+      <p className="brc-board-intro">{copy.boardIntro}</p>
       <ClassicBanners banners={bannerList} label={copy.bannersLabel} mobileLabels={[copy.football, copy.tabInPlay, copy.sideRecord]} />
 
       {/* ── 2 · tab + ricerca ─────────────────────────────────────────── */}
