@@ -385,7 +385,7 @@ export default function WeeklyPickPage() {
 
       <section className="wp-current" aria-busy={!error && data === null}>
         {available && (
-          <div className="wp-hero-stats">
+          <div className="wp-hero wp-hero-stats">
             {legacy && <p className="wp-note">{t.legacy}</p>}
             <div className="lp-kpis">
               {unlocked && data?.combined_prob != null && (
