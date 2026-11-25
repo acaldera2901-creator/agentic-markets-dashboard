@@ -290,6 +290,7 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid, preview = fal
       );
     }
     // Fuori dalla griglia (landing): creativo intero centrato, invariato.
+    const deferredCreative = campaign.slot === "landing" && creative.startsWith("/banners/creatives/ole-multisport-");
     const creativeMaxW = campaign.format === "halfpage" ? 300 : campaign.format === "rectangle" ? 340 : 560;
     return (
       <aside ref={bannerRef}
@@ -298,7 +299,14 @@ export function HouseBanner({ campaign, lang, data, onCta, inGrid, preview = fal
         style={{ position: "relative", display: "block", height: "auto", minHeight: 0, padding: 0, background: "transparent", overflow: "hidden", borderRadius: 14, width: "100%", maxWidth: creativeMaxW, marginInline: "auto", gridColumn: "1 / -1" }}
       >
         <Link href={campaign.cta.href} className="hb-creative-link" onClick={onCtaClick} aria-label={ctaLabel} style={{ display: "block" }}>
-          <img src={creative} alt={c.headline} style={{ display: "block", width: "100%", height: "auto", borderRadius: 14 }} />
+          <img
+            src={creative}
+            alt={c.headline}
+            width={deferredCreative ? 1672 : undefined}
+            height={deferredCreative ? 941 : undefined}
+            loading={deferredCreative ? "lazy" : undefined}
+            style={{ display: "block", width: "100%", height: "auto", borderRadius: 14 }}
+          />
         </Link>
         {dismissBtn}
       </aside>

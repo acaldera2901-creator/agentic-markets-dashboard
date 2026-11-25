@@ -622,9 +622,9 @@ const OLE_TENNIS = [
 ];
 const OLE_FOOTBALL = ["/banners/creatives/ole-football-signal.jpg"];
 const OLE_MULTISPORT = [
-  "/banners/creatives/ole-multisport-onemodel.jpg",
-  "/banners/creatives/ole-multisport-edge.jpg",
-  "/banners/creatives/ole-multisport-readable.jpg",
+  "/banners/creatives/ole-multisport-onemodel.webp",
+  "/banners/creatives/ole-multisport-edge.webp",
+  "/banners/creatives/ole-multisport-readable.webp",
 ];
 const OLE_SQUARE_TENNIS = "/banners/creatives/ole-square-1.jpg";   // WTA — soggetto tennis
 const OLE_SQUARE_FOOTBALL = "/banners/creatives/ole-square-2.jpg"; // World Cup — soggetto calcio
