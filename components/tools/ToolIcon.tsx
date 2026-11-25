@@ -3,15 +3,6 @@
 // 3D vetro verde + oro su trasparente, generate con gptimg). Niente line-art e
 // niente emoji — regola standing.
 //
-// Due varianti come per MenuIcon: master 320px e -sm 128px. La -sm copre gli usi
-// fino a 64px (card hub, chip "altri strumenti") restando nitida su retina.
-//
-// <img> e non next/image, identico a MenuIcon/SportIcon: sono PNG già dimensionati
-// e serviti dal nostro dominio, l'optimizer non ha nulla da guadagnare.
-// ESLint avvisa (@next/next/no-img-element) su ogni <img> sotto components/ —
-// SiteFooter, HouseBanner e SiteTopbar hanno lo stesso avviso da sempre. Warning
-// accettato e coerente col resto del sito, non una svista.
-
 import type { ToolSlug } from "@/lib/tools/registry";
 
 export function ToolIcon({
@@ -23,16 +14,24 @@ export function ToolIcon({
   size?: number;
   className?: string;
 }) {
-  const src = size <= 64 ? `/icons/tool-${slug}-sm.png` : `/icons/tool-${slug}.png`;
+  const src = `/icons/tool-${slug}`;
+  const small = size <= 64;
   return (
-    <img
-      src={src}
-      alt=""
-      aria-hidden="true"
-      width={size}
-      height={size}
-      className={className}
-      style={{ width: size, height: size, objectFit: "contain", display: "block", flex: "0 0 auto" }}
-    />
+    <picture style={{ display: "block", flex: "0 0 auto" }}>
+      <source
+        type="image/webp"
+        srcSet={small ? `${src}-sm.webp 128w, ${src}.webp 320w` : `${src}.webp`}
+        sizes={small ? `${size}px` : undefined}
+      />
+      <img
+        src={`${src}${small ? "-sm" : ""}.png`}
+        alt=""
+        aria-hidden="true"
+        width={size}
+        height={size}
+        className={className}
+        style={{ width: size, height: size, objectFit: "contain", display: "block" }}
+      />
+    </picture>
   );
 }
