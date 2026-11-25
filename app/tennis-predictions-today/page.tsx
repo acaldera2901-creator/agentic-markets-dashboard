@@ -4,8 +4,8 @@ import { DailySportFixtures } from "@/components/seo/DailySportFixtures";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Tennis Predictions Today: Fixtures & Win Probabilities | BetRedge",
-  description: "Browse today’s tennis fixtures and tournament start times. Find available player win probabilities and see how market readings and Elo estimates differ.",
+  title: "Tennis Matches Today & Win Probabilities | BetRedge",
+  description: "See today’s tennis matches, UTC start times and available win probabilities, labelled as market-derived or estimated. Tournament names are shown when available.",
   alternates: { canonical: "/tennis-predictions-today" },
 };
 
