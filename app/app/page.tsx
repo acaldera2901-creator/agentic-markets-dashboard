@@ -8754,16 +8754,16 @@ function HomeLobby({
           })
         : view === "tennis"
         ? pick5(lang, {
-            it: "Tennis Live V4 research ed edge su tutto.", en: "Tennis Live V4 research and edge on everything.",
-            es: "Tennis Live V4 research y edge en todo.", fr: "Tennis Live V4 research et edge sur tout.",
-            ru: "Tennis Live V4 research и edge по всему.",
+            it: "Analisi tennis e confronto con le quote disponibili.", en: "Tennis analysis and comparison with available odds.",
+            es: "Análisis de tenis y comparación con las cuotas disponibles.", fr: "Analyses tennis et comparaison aux cotes disponibles.",
+            ru: "Анализ тенниса и сравнение с доступными коэффициентами.",
           })
         : pick5(lang, {
-            it: "Deep Analysis, edge su tutto e prediction illimitate.",
-            en: "Deep Analysis, edge on everything and unlimited predictions.",
-            es: "Deep Analysis, edge en todo y predicciones ilimitadas.",
-            fr: "Deep Analysis, edge sur tout et prédictions illimitées.",
-            ru: "Deep Analysis, edge по всему и прогнозы без лимита.",
+            it: "Analisi dettagliate disponibili, board completo e Weekly Model Case.",
+            en: "Available detailed analysis, the full board and Weekly Model Case.",
+            es: "Análisis detallados disponibles, todo el tablero y Weekly Model Case.",
+            fr: "Analyses détaillées disponibles, tous les matchs et Weekly Model Case.",
+            ru: "Доступный подробный анализ, все матчи и Weekly Model Case.",
           })}
       cta={{
         label: view === "home"
