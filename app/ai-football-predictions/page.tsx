@@ -53,8 +53,8 @@ export default function AiFootballPredictionsPage() {
         </p>
         <p className="mb-4">
           The current fixtures are on the{" "}
-          <Link href="/predictions?sport=football" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
-            live football predictions board
+          <Link href="/football-predictions-today" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            today’s football fixtures
           </Link>
           . This page explains what happens before a number appears there, in enough detail that
           you can judge the method instead of taking our word for it.

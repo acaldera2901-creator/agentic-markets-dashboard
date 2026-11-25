@@ -36,6 +36,8 @@ const PUBLIC_ROUTES: Entry[] = [
   // i path veri del desk. Plans/history sono pagine di prodotto indicizzabili;
   // leaderboard/match-builder restano fuori (contenuto dietro login).
   { path: "/predictions", changeFrequency: "daily" },
+  { path: "/football-predictions-today", changeFrequency: "daily" },
+  { path: "/tennis-predictions-today", changeFrequency: "daily" },
   // #RESTYLING-0921 round 2: la vecchia landing vive qui, ora che "/" porta
   // direttamente nel prodotto. Contenuto informativo → weekly, non daily.
   { path: "/how-it-works", changeFrequency: "weekly" },
