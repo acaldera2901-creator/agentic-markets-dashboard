@@ -11079,26 +11079,25 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                 un'etichetta sbagliata è peggio di un numero mancante.
                 Su "bets" (il board) restano quelli del board, che è il loro posto. */}
             {tab === "history" && (
-            <div className="am-statbar">
+            <div className="am-statbar am-history-statbar">
               <div className="am-kpi chamfer-sm">
                 <span className="v">{historyV2Stats?.total ?? "—"}</span>
                 <span className="l">{tNav.kpi_settled_lbl}</span>
               </div>
               {/* La copertura: quante delle pick mostrate abbiamo potuto verificare.
                   Sta accanto alla percentuale perché è il suo denominatore. */}
-              {typeof historyV2Stats?.coverage === "number" && (
-                <div className="am-kpi chamfer-sm">
-                  <span className="v sig">{(historyV2Stats.coverage * 100).toFixed(1)}%</span>
-                  <span className="l">{tNav.kpi_coverage}</span>
-                </div>
-              )}
+              <div className="am-kpi chamfer-sm">
+                <span className="v sig">{typeof historyV2Stats?.coverage === "number" ? `${(historyV2Stats.coverage * 100).toFixed(1)}%` : "—"}</span>
+                <span className="l">{tNav.kpi_coverage}</span>
+              </div>
               {/* #HITRATE-GUARD-1: the rate is a claim — hidden below the sample
                   threshold. #SETTLE-0909: e l'etichetta si GENERA dal dato
                   (`n` picks), non è più la stringa fissa "Hit · 100g" — che
                   diceva «ultime 100 partite» mentre la percentuale era all-time
                   su 1.606. Un'etichetta che È il dato non può invecchiare. */}
-              {historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate && (
-                <div className="am-kpi chamfer-sm" title={
+              <div className="am-kpi am-history-rate chamfer-sm">
+                {historyV2Stats && isRateMeaningful(v2Head.n) && v2Head.winRate ? (
+                  <div className="am-history-rate-content" title={
                   v2Head.interval95
                     ? `95%: ${(v2Head.interval95.low * 100).toFixed(1)}–${(v2Head.interval95.high * 100).toFixed(1)}%`
                     : undefined
@@ -11113,8 +11112,14 @@ export default function Dashboard({ initialTab }: { initialTab?: Tab } = {}) {
                   )}
                   {historyPopulationLimitNote(uiLanguage, historyV2Stats) && <span className="note">{historyPopulationLimitNote(uiLanguage, historyV2Stats)}</span>}
                   {v2SealedNote && <span className="note">{v2SealedNote}</span>}
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <div className="am-history-rate-content">
+                    <span className="v">—</span>
+                    <span className="l">{tNav.kpi_hit}</span>
+                  </div>
+                )}
+              </div>
             </div>
             )}
             {/* #BOARD-HEAD-0910 — i due KPI del board sono stati rimossi.

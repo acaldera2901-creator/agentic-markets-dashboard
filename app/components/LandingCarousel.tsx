@@ -81,11 +81,11 @@ const SLIDE_DEFS: SlideDef[] = [
   // 4 · Ole multi-sport — SEE THE EDGE BEFORE IT MOVES (basket/football; probabilità calibrate)
   //     BRAND VECCHIO: da ritirare, ma nel lotto del 22/09 non c'e' un creativo
   //     multisport che lo sostituisca — decide Andrea (nota AD del 22/09).
-  { kind: "creative", img: "/banners/creatives/ole-multisport-edge.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — See the edge before it moves. Multi-sport athletes, calibrated probabilities and clear reasoning" },
+  { kind: "creative", img: "/banners/creatives/ole-multisport-edge.webp", href: ACCOUNT_HREF, imgAlt: "BetRedge — See the edge before it moves. Multi-sport athletes, calibrated probabilities and clear reasoning" },
   // 5 · Ole multi-sport — ONE MODEL, EVERY SPORT (hockey/baseball/tennis/calcio)
-  { kind: "creative", img: "/banners/creatives/ole-multisport-onemodel.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — One model, every sport. Athletes across disciplines, one probability model" },
+  { kind: "creative", img: "/banners/creatives/ole-multisport-onemodel.webp", href: ACCOUNT_HREF, imgAlt: "BetRedge — One model, every sport. Athletes across disciplines, one probability model" },
   // 6 · Ole multi-sport — WE MAKE THE BOOK READABLE, EVERY SPORT (probability engine, not a bookmaker)
-  { kind: "creative", img: "/banners/creatives/ole-multisport-readable.jpg", href: ACCOUNT_HREF, imgAlt: "BetRedge — We make the book readable, every sport. Probability engine, not a bookmaker" },
+  { kind: "creative", img: "/banners/creatives/ole-multisport-readable.webp", href: ACCOUNT_HREF, imgAlt: "BetRedge — We make the book readable, every sport. Probability engine, not a bookmaker" },
 ];
 
 type Slide =
@@ -249,7 +249,8 @@ export default function LandingCarousel({ lang }: { lang: string }) {
                         // #PERF-CAROUSEL-1106: only the first slide is the LCP candidate (SSR perView = 1). The
                         // others were forced eager (+ slide 2 preloaded): 6 creatives, ~1.9 MB, all fetched at
                         // load against the LCP image. Now lazy: the browser fetches them as they near the viewport.
-                        priority={i === 0}
+                        loading={i === 0 ? "eager" : "lazy"}
+                        fetchPriority={i === 0 ? "high" : visible ? undefined : "low"}
                       />
                     </Link>
                   </li>
@@ -275,7 +276,8 @@ export default function LandingCarousel({ lang }: { lang: string }) {
                       fill
                       sizes="(max-width:860px) 100vw, 580px"
                       className="lp-carousel-img"
-                      priority={i === 0}
+                      loading={i === 0 ? "eager" : "lazy"}
+                        fetchPriority={i === 0 ? "high" : visible ? undefined : "low"}
                     />
                     <span className="lp-carousel-ov" aria-hidden="true" />
                   </div>

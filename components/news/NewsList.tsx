@@ -51,7 +51,7 @@ export function NewsList({ feed }: { feed: WireFeed }) {
                   <div className="ns-identity"><strong>betr.edge <span aria-label="BetRedge official" className="ns-verified">✓</span></strong><span>Sports. Insights. Community.</span></div>
                   <div className="nw-when"><time className="nw-time" dateTime={r.iso}>{r.time}</time>{r.ago && <span className="nw-ago">{r.ago}</span>}</div>
                 </header>
-                {r.image && <div className="nw-media"><span className="nw-thumb"><NewsArt image={r.image} kind={r.kind} badges={r.badges} variant="card" sizes="(max-width: 640px) calc(100vw - 32px), 560px" /></span></div>}
+                {r.image && <div className="nw-media"><span className="nw-thumb"><NewsArt image={r.image} kind={r.kind} badges={r.badges} eager={i === 0} variant="card" sizes="(max-width: 640px) calc(100vw - 32px), 560px" /></span></div>}
                 <div className="nw-note">
                   {r.english && <span className="nw-lab nw-en">{c.inEnglish}</span>}
                   <h3 className="nw-title" lang={r.textLang}>{r.title}</h3>

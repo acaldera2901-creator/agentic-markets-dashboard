@@ -585,7 +585,7 @@
    ══════════════════════════════════════════════════════════════ */
 [data-mc-ground] .bgfix{background-position:center;background-size:cover;background-repeat:no-repeat}
 [data-mc-ground].mc-scene-stadium .bgfix{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg))}
-[data-mc-ground].mc-scene-court .bgfix{background-image:url(/banners/gen/scene-court.jpg)}
+[data-mc-ground].mc-scene-court .bgfix{background-image:url(/banners/gen/scene-court.jpg);background-image:image-set(url(/banners/gen/scene-court.webp) type("image/webp"), url(/banners/gen/scene-court.jpg) type("image/jpeg"))}
 [data-mc-ground].mc-scene-clay .bgfix{background-image:url(/banners/gen/scene-clay.jpg)}
 
 [data-mc] .card-bg{background-size:cover;background-repeat:no-repeat}
@@ -608,7 +608,7 @@
    e' nero. Col taglio basso (78%) la scheda risultava PIU' BUIA della versione
    live, l'opposto della richiesta. Misurato guardando le due scene: nello stadio
    il verde e' illuminato in basso, nel campo da tennis la luce sta in alto. */
-[data-mc] .im-court{background-image:url(/banners/gen/scene-court.jpg);background-position:center 44%}   /* i fari e l'alone: nel campo da tennis la luce sta in ALTO */
+[data-mc] .im-court{background-image:url(/banners/gen/scene-court.jpg);background-image:image-set(url(/banners/gen/scene-court.webp) type("image/webp"), url(/banners/gen/scene-court.jpg) type("image/jpeg"));background-position:center 44%}   /* i fari e l'alone: nel campo da tennis la luce sta in ALTO */
 [data-mc] .im-clay{background-image:url(/banners/gen/scene-clay.jpg);background-position:center 48%}
 [data-mc] .im-crowd{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg));background-position:center 34%}
 
@@ -789,7 +789,7 @@
   background-position:center;background-size:cover;
   opacity:.55;filter:saturate(1.1) contrast(1.03)}
 :root:not([data-theme="light"]) [data-mc-ground] .v-hero::before{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg))}
-:root:not([data-theme="light"]) [data-mc-ground] .v-final::before{background-image:url(/banners/gen/scene-court.jpg)}
+:root:not([data-theme="light"]) [data-mc-ground] .v-final::before{background-image:url(/banners/gen/scene-court.jpg);background-image:image-set(url(/banners/gen/scene-court.webp) type("image/webp"), url(/banners/gen/scene-court.jpg) type("image/jpeg"))}
 :root:not([data-theme="light"]) [data-mc-ground] .v-hero::after,:root:not([data-theme="light"]) [data-mc-ground] .v-final::after{
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:linear-gradient(90deg,rgba(12,14,17,.96) 42%,rgba(12,14,17,.74))}
