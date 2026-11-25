@@ -81,6 +81,7 @@ export default function LangDropdown({
     }
   };
 
+  const activeCode = value.toUpperCase();
   const triggerClass = variant === "landing" ? "lp-lang lang-dd-trigger" : "am-iconbtn lang-dd-trigger";
 
   return (
@@ -91,10 +92,10 @@ export default function LangDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label="Language"
+        aria-label={`${activeCode} — Language`}
         onClick={() => setOpen((v) => !v)}
       >
-        {value.toUpperCase()}
+        {activeCode}
         <span className="lang-dd-caret" aria-hidden="true">▾</span>
       </button>
 

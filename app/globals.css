@@ -8527,7 +8527,7 @@ button:disabled {
   font-weight: 800; color: var(--am-muted);
 }
 .site-footer-social { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.site-footer-social-lab { text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
+.site-footer-social-lab { text-transform: uppercase; letter-spacing: .08em; }
 /* #UI-LOGO-THEME-0623: logo theme-aware, no-flash (data-theme settato pre-paint).
    .brand-logo-dark = logo testo BIANCO (mostrato in dark); .brand-logo-light =
    logo testo NERO (mostrato in light). Entrambi montati, si alternano via CSS. */
