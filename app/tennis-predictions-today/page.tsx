@@ -5,7 +5,7 @@ export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Tennis Matches Today & Win Probabilities | BetRedge",
-  description: "Browse today’s tennis matches by tournament with UTC start times and available win probabilities, labelled as market-derived or estimated.",
+  description: "See today’s tennis matches, UTC start times and available win probabilities, labelled as market-derived or estimated. Tournament names are shown when available.",
   alternates: { canonical: "/tennis-predictions-today" },
 };
 

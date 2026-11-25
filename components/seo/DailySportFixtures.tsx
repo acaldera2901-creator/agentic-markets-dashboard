@@ -12,11 +12,13 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", { timeStyle: "short", timeZo
 const percentFormat = new Intl.NumberFormat("en-GB", { style: "percent", maximumFractionDigits: 1 });
 
 function groupByCompetition(matches: readonly UpcomingMatch[]) {
-  const groups = new Map<string, UpcomingMatch[]>();
+  const groups = new Map<string | null, UpcomingMatch[]>();
   for (const match of matches) {
-    const group = groups.get(match.competition);
+    const isUnspecified = ["Partner feed", "Tennis", "Football"].includes(match.competition);
+    const competition = isUnspecified ? null : match.competition;
+    const group = groups.get(competition);
     if (group) group.push(match);
-    else groups.set(match.competition, [match]);
+    else groups.set(competition, [match]);
   }
   return groups;
 }
@@ -28,8 +30,12 @@ function FixtureList({ groups, readings }: {
   return (
     <div className="mt-5 space-y-5">
       {Array.from(groups, ([competition, matches]) => (
-        <section key={competition}>
-          <h3 className="font-semibold" style={{ color: "var(--am-text)" }}>{competition}</h3>
+        <div key={competition ?? "unlisted"}>
+          {(competition || groups.size > 1) && (
+            <h3 className="font-semibold" style={{ color: "var(--am-text)" }}>
+              {competition ?? "Competition not listed"}
+            </h3>
+          )}
           <ul className="divide-y divide-current/15">
             {matches.map((match) => {
               const key = fixtureReadingKey(match);
@@ -52,7 +58,7 @@ function FixtureList({ groups, readings }: {
               );
             })}
           </ul>
-        </section>
+        </div>
       ))}
     </div>
   );
@@ -78,13 +84,13 @@ export async function DailySportFixtures({ sport }: { sport: UpcomingMatch["spor
           <p><time dateTime={day}>{dayFormat.format(new Date(day))}</time> · All times UTC</p>
           <h1 className="text-3xl font-bold sm:text-4xl" style={{ color: "var(--am-text)" }}>{label} predictions today</h1>
           <p>{football
-            ? "Browse today’s football fixtures by competition, with kick-off times in UTC and a pre-match model percentage where available. Open the football board for the available 1X2 breakdown: home win, draw and away win."
-            : "Browse today’s tennis schedule by tournament, with match start times in UTC and available pre-match win probabilities. Each percentage is labelled as a market-derived reading or an estimate."}</p>
+            ? "Browse today’s football fixtures, grouped by competition where available, with kick-off times in UTC and a pre-match model percentage where available. Open the football board for the available 1X2 breakdown: home win, draw and away win."
+            : "Browse today’s tennis schedule with match start times in UTC and available pre-match win probabilities. Each percentage is labelled as a market-derived reading or an estimate. Tournament names appear where available."}</p>
           <Link className="inline-block font-semibold underline underline-offset-4" href={board}>Open the {sport} probability board</Link>
         </header>
 
         <section className="mt-9" aria-labelledby="today-fixtures">
-          <h2 id="today-fixtures" className="text-xl font-bold" style={{ color: "var(--am-text)" }}>{football ? "Today’s football fixtures by competition" : "Today’s tennis matches by tournament"}</h2>
+          <h2 id="today-fixtures" className="text-xl font-bold" style={{ color: "var(--am-text)" }}>{football ? "Today’s football fixtures by competition" : "Today’s tennis match schedule"}</h2>
           {today.length > 0 && <p className="mt-3">Each public percentage refers to one outcome. Open the board to see the outcome and the analysis available to your account.</p>}
           {today.length ? <FixtureList groups={groups} readings={readings} /> : <p className="mt-3">No fixtures for today are currently listed in BetRedge’s public match window.</p>}
         </section>
