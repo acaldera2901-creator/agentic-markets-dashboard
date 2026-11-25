@@ -14,19 +14,22 @@ import { NewsActions } from "./NewsActions";
 import { NewsProfileEntry } from "./NewsProfileEntry";
 
 import { matchesForNote, rowsFor, stateMessage, updatedLine, type WireFeed } from "@/lib/news/view";
-import { boardHref, useBoardMatches, useNow, useSiteLang } from "./use-news";
+import { boardHref, useBoardMatches, useNewsFeed, useNow, useSiteLang } from "./use-news";
 import "./news.css";
 
-export function NewsList({ feed }: { feed: WireFeed }) {
+export function NewsList({ initialFeed }: { initialFeed: WireFeed | null }) {
+  const recoveredFeed = useNewsFeed(initialFeed == null);
+  const feed = initialFeed ?? recoveredFeed;
   const lang = useSiteLang();
   const now = useNow();
   const c = newsCopy(lang);
-  const cards = feed.state === "ok" ? feed.cards : [];
+  const cards = feed?.state === "ok" ? feed.cards : [];
   const board = useBoardMatches(cards.some((k) => k.teams.length > 0));
-  const message = stateMessage(feed, c);
-  const updated = updatedLine(feed, lang, c);
+  if (feed?.state === "off") return null;
+  const message = feed ? stateMessage(feed, c) : c.loading;
+  const updated = feed ? updatedLine(feed, lang, c) : "";
   return (
-    <section id="news" className="nw" aria-labelledby="nw-title" data-state={feed.state}>
+    <section id="news" className="nw" aria-labelledby="nw-title" data-state={feed?.state ?? "loading"} data-recovery={initialFeed == null ? "" : undefined}>
       <div className="nw-head">
         <h2 id="nw-title" className="nw-h">{c.latest}</h2>
         {updated && (
@@ -39,7 +42,10 @@ export function NewsList({ feed }: { feed: WireFeed }) {
       <NewsProfileEntry lang={lang} />
 
       {message ? (
-        <p className="nw-state">{message}</p>
+        <div className="nw-state">
+          <p role="status">{message}</p>
+          {initialFeed == null && <a href="#blog-guides">{c.guides}</a>}
+        </div>
       ) : (
         <ol className="nw-list ns-feed">
           {rowsFor(cards, lang, now).map((r, i) => {
