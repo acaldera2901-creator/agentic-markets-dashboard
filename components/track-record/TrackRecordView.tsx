@@ -102,7 +102,10 @@ export function TrackRecordView({ rows, lang, data, loading = false, error = fal
       </div>
       {error && <div className="tr-card tr-empty" role="alert">{it ? "Aggiornamento non riuscito. Riprova tra poco." : "Could not refresh results. Please try again."} {onRetry && <button className="tr-pill btn" onClick={onRetry}>{it ? "Riprova" : "Retry"}</button>}</div>}
       {error && rows.length === 0 ? null : waitingForLedger
-        ? <div className="tr-card tr-empty" role="status" aria-live="polite">{it ? "Caricamento dei risultati verificati…" : "Loading verified results…"}</div>
+        ? <div className="tr-card tr-empty" role="status">
+            <p>{it ? "Caricamento dei risultati verificati…" : "Loading verified results…"}</p>
+            {!data?.stats && <p>{it ? "Caricamento delle statistiche…" : "Loading statistics…"}</p>}
+          </div>
         : <PickLedger rows={rows} lang={lang} />}
 
       {!waitingForLedger && (
