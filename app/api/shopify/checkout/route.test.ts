@@ -65,7 +65,7 @@ it("ritorna l'URL con variant, email e identifier dalla sessione", async () => {
   const res = await POST(req({ requested_plan: "premium", period: "monthly" }));
   expect(res.status).toBe(200);
   const { url } = (await res.json()) as { url: string };
-  expect(url).toContain("https://gvfgra-sp.myshopify.com/en/cart/clear?");
+  expect(url).toContain("https://gvfgra-sp.myshopify.com/cart/clear?");
   const inner = new URLSearchParams(
     new URL(url).searchParams.get("return_to")!.split("?")[1]
   );
@@ -278,9 +278,9 @@ it("inoltra la lingua dell'app al checkout Shopify", async () => {
 it("lingua assente o non pubblicata → inglese, non spagnolo", async () => {
   const { POST } = await import("./route");
   const noLang = (await (await POST(req({ requested_plan: "base", period: "monthly" }))).json()) as { url: string };
-  expect(new URL(noLang.url).pathname).toBe("/en/cart/clear");
+  expect(new URL(noLang.url).pathname).toBe("/cart/clear");
   const fr = (await (await POST(req({ requested_plan: "base", period: "monthly", lang: "fr" }))).json()) as { url: string };
-  expect(new URL(fr.url).pathname).toBe("/en/cart/clear");
+  expect(new URL(fr.url).pathname).toBe("/cart/clear");
 });
 it('weekly: rejects incomplete, legacy or started cases', async () => {
   weekState.mockResolvedValue({ exists: true, legs: 3, remaining: 3, purchasable: false });

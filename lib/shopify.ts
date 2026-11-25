@@ -79,17 +79,15 @@ export function isWeeklyPickVariant(variantId: string | number | null | undefine
 export type ShopifySku = "base" | "premium" | "weekly";
 
 
-// Prefisso di lingua del checkout. Lo store pubblica Español (default), English
-// e Italiano: senza prefisso Shopify serve il DEFAULT, quindi un utente inglese
-// o italiano si trovava un checkout in spagnolo (misurato: /checkouts/cn/…/es-es).
-// Le lingue che NON pubblichiamo (fr, ru) cadono su inglese, non sullo spagnolo:
-// un francese legge l'inglese, non il castigliano.
-// È di fatto un allowlist: qualunque valore non previsto diventa "/en", quindi il
-// valore che arriva dal client non finisce mai interpolato nell'URL.
+// Store locale routes verified live on 2026-11-25: English is the default
+// (root), Italiano uses /it and Español uses /es. The former /en cart route
+// returns 404 before checkout. Keep these aligned with Shopify Languages when
+// changing the store default. Unsupported client languages fall back to English;
+// never interpolate arbitrary client input into the checkout path.
 export function shopifyLocalePrefix(lang: string | null | undefined): string {
   if (lang === "it") return "/it";
-  if (lang === "es") return "";
-  return "/en";
+  if (lang === "es") return "/es";
+  return "";
 }
 
 // Mensile e annuale sono PRODOTTI distinti su Shopify (prezzi 14.99/29.99 vs

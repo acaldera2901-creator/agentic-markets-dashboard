@@ -83,13 +83,13 @@ describe("buildShopifyCheckoutUrl", () => {
 
   it("passa per /cart/clear → /cart/add con identifier e email prefill", () => {
     const url = buildShopifyCheckoutUrl("premium", "User@Test.com")!;
-    expect(url).toContain("https://betredge.myshopify.com/en/cart/clear?");
+    expect(url).toContain("https://betredge.myshopify.com/cart/clear?");
     const p = addParams(url);
     expect(p.get("id")).toBe("222");
     expect(p.get("quantity")).toBe("1");
     // identifier normalizzato lowercase come extractOrder; email prefill col case originale
     expect(p.get("attributes[identifier]")).toBe("user@test.com");
-    expect(p.get("return_to")).toBe("/en/checkout?checkout%5Bemail%5D=User%40Test.com");
+    expect(p.get("return_to")).toBe("/checkout?checkout%5Bemail%5D=User%40Test.com");
   });
 
   it("applica il selling_plan sui piani (altrimenti sarebbe un addebito una-tantum)", () => {
@@ -104,7 +104,7 @@ describe("buildShopifyCheckoutUrl", () => {
 
   it("svuota il carrello prima di aggiungere (doppio click = due abbonamenti)", () => {
     const url = buildShopifyCheckoutUrl("base", "a@b.com")!;
-    expect(new URL(url).pathname).toBe("/en/cart/clear");
+    expect(new URL(url).pathname).toBe("/cart/clear");
   });
 
   it("annuale: usa il prodotto annuale e il selling plan annuale", () => {
@@ -176,8 +176,7 @@ describe("extractRefund", () => {
   });
 });
 
-// Il difetto misurato: senza prefisso Shopify serve la lingua DEFAULT dello
-// store (spagnolo), quindi un utente inglese o italiano pagava in castigliano.
+// Live 2026-11-25: English is now the store default; /en/cart/clear returns 404.
 describe("lingua del checkout", () => {
   beforeEach(() => {
     process.env.SHOPIFY_SHOP_DOMAIN = "betredge.myshopify.com";
@@ -187,11 +186,11 @@ describe("lingua del checkout", () => {
 
   it("mappa solo le lingue PUBBLICATE; il resto va in inglese, non in spagnolo", () => {
     expect(shopifyLocalePrefix("it")).toBe("/it");
-    expect(shopifyLocalePrefix("en")).toBe("/en");
-    expect(shopifyLocalePrefix("es")).toBe(""); // default dello store
-    expect(shopifyLocalePrefix("fr")).toBe("/en");
-    expect(shopifyLocalePrefix("ru")).toBe("/en");
-    expect(shopifyLocalePrefix(null)).toBe("/en");
+    expect(shopifyLocalePrefix("en")).toBe("");
+    expect(shopifyLocalePrefix("es")).toBe("/es");
+    expect(shopifyLocalePrefix("fr")).toBe("");
+    expect(shopifyLocalePrefix("ru")).toBe("");
+    expect(shopifyLocalePrefix(null)).toBe("");
   });
 
   // Un hop senza prefisso riporta la sessione al default: vanno prefissati tutti.
@@ -204,9 +203,12 @@ describe("lingua del checkout", () => {
     expect(inner.startsWith("/it/checkout?")).toBe(true);
   });
 
-  it("spagnolo: nessun prefisso (è il default dello store)", () => {
+  it("spagnolo: prefisso /es su ogni hop, inglese alla radice", () => {
     const url = buildShopifyCheckoutUrl("base", "a@b.com", "monthly", "es")!;
-    expect(new URL(url).pathname).toBe("/cart/clear");
+    expect(new URL(url).pathname).toBe("/es/cart/clear");
+    const add = new URL(new URL(url).searchParams.get("return_to")!, "https://betredge.myshopify.com");
+    expect(add.pathname).toBe("/es/cart/add");
+    expect(add.searchParams.get("return_to")).toBe("/es/checkout?checkout%5Bemail%5D=a%40b.com");
   });
 });
 
