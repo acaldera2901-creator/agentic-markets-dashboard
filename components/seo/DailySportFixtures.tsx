@@ -4,6 +4,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { dailyFixtures } from "@/lib/seo/daily-fixtures";
 import { fetchPublicMatchReadings, fixtureReadingKey } from "@/lib/seo/public-match-probabilities";
 import { fetchUpcomingMatches, type UpcomingMatch } from "@/lib/seo/upcoming-matches";
+import { CLASSIC } from "@/lib/classic/flag";
+import { DailySkipLink } from "./DailySkipLink";
 import { JsonLd, breadcrumbJsonLd, matchesJsonLd } from "./json-ld";
 
 const dayFormat = new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeZone: "UTC" });
@@ -76,12 +78,7 @@ export async function DailySportFixtures({ sport }: { sport: UpcomingMatch["spor
 
   return (
     <>
-      <a
-        href="#daily-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-black"
-      >
-        Skip to main content
-      </a>
+      {!CLASSIC && <DailySkipLink />}
       <ClassicChrome />
       <JsonLd data={breadcrumbJsonLd([[`${label} Predictions Today`, path]])} />
       {visible.length > 0 && <JsonLd data={matchesJsonLd(visible)} />}
