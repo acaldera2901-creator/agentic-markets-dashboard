@@ -4,8 +4,8 @@ import { DailySportFixtures } from "@/components/seo/DailySportFixtures";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Football Predictions Today: Fixtures & Match Probabilities | BetRedge",
-  description: "See today’s football fixtures and UTC kick-off times. Find available home-win, draw and away-win readings and learn to compare them with market probabilities.",
+  title: "Football Fixtures Today & Match Probabilities | BetRedge",
+  description: "Browse today’s football fixtures by competition with UTC kick-off times and available model probabilities. See how to read home win, draw and away win (1X2).",
   alternates: { canonical: "/football-predictions-today" },
 };
 

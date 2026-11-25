@@ -11,33 +11,50 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", { timeStyle: "short", timeZo
 
 const percentFormat = new Intl.NumberFormat("en-GB", { style: "percent", maximumFractionDigits: 1 });
 
-function FixtureList({ matches, readings }: {
-  matches: readonly UpcomingMatch[];
+function groupByCompetition(matches: readonly UpcomingMatch[]) {
+  const groups = new Map<string, UpcomingMatch[]>();
+  for (const match of matches) {
+    const group = groups.get(match.competition);
+    if (group) group.push(match);
+    else groups.set(match.competition, [match]);
+  }
+  return groups;
+}
+
+function FixtureList({ groups, readings }: {
+  groups: ReturnType<typeof groupByCompetition>;
   readings: Awaited<ReturnType<typeof fetchPublicMatchReadings>>;
 }) {
   return (
-    <ul className="divide-y divide-current/15">
-      {matches.map((match) => {
-        const key = fixtureReadingKey(match);
-        const reading = key ? readings.get(key) : null;
-        return (
-          <li key={match.id} className="grid gap-1 py-3 sm:grid-cols-[5rem_1fr_auto]">
-            <time dateTime={match.startsAt}>{timeFormat.format(new Date(match.startsAt))}</time>
-            <span><strong style={{ color: "var(--am-text)" }}>{match.home} vs {match.away}</strong><br />{match.competition}</span>
-            {reading && (
-              <span className="tabular-nums">
-                {reading.source === "market" ? "Market-derived" : "Estimated"} · {percentFormat.format(reading.probability)}
-                {reading.computedAt && (
-                  <time className="block text-xs" dateTime={reading.computedAt}>
-                    Calculated {timeFormat.format(new Date(reading.computedAt))} UTC
-                  </time>
-                )}
-              </span>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <div className="mt-5 space-y-5">
+      {Array.from(groups, ([competition, matches]) => (
+        <section key={competition}>
+          <h3 className="font-semibold" style={{ color: "var(--am-text)" }}>{competition}</h3>
+          <ul className="divide-y divide-current/15">
+            {matches.map((match) => {
+              const key = fixtureReadingKey(match);
+              const reading = key ? readings.get(key) : null;
+              return (
+                <li key={match.id} className="grid gap-1 py-3 sm:grid-cols-[5rem_1fr_auto]">
+                  <time dateTime={match.startsAt}>{timeFormat.format(new Date(match.startsAt))}</time>
+                  <span><strong style={{ color: "var(--am-text)" }}>{match.home} vs {match.away}</strong></span>
+                  {reading && (
+                    <span className="tabular-nums">
+                      {reading.source === "market" ? "Market-derived" : "Estimated"} · {percentFormat.format(reading.probability)}
+                      {reading.computedAt && (
+                        <time className="block text-xs" dateTime={reading.computedAt}>
+                          Calculated {timeFormat.format(new Date(reading.computedAt))} UTC
+                        </time>
+                      )}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -48,7 +65,8 @@ export async function DailySportFixtures({ sport }: { sport: UpcomingMatch["spor
   const board = `/predictions?sport=${sport}`;
   const [matches, readings] = await Promise.all([fetchUpcomingMatches(), fetchPublicMatchReadings(sport)]);
   const { day, today, nextDay, next } = dailyFixtures(matches, sport);
-  const visible = today.length ? today : next;
+  const groups = groupByCompetition(today.length ? today : next);
+  const visible = Array.from(groups.values()).flat();
 
   return (
     <>
@@ -60,20 +78,20 @@ export async function DailySportFixtures({ sport }: { sport: UpcomingMatch["spor
           <p><time dateTime={day}>{dayFormat.format(new Date(day))}</time> · All times UTC</p>
           <h1 className="text-3xl font-bold sm:text-4xl" style={{ color: "var(--am-text)" }}>{label} predictions today</h1>
           <p>{football
-            ? "Find today’s upcoming football matches and kick-off times. Open a match on the board to check available home-win, draw and away-win probabilities."
-            : "Find today’s upcoming tennis matches, tournaments and start times. Open a match on the board to check available player win probabilities and their source."}</p>
+            ? "Browse today’s football fixtures by competition, with kick-off times in UTC and a pre-match model percentage where available. Open the football board for the available 1X2 breakdown: home win, draw and away win."
+            : "Browse today’s tennis schedule by tournament, with match start times in UTC and available pre-match win probabilities. Each percentage is labelled as a market-derived reading or an estimate."}</p>
           <Link className="inline-block font-semibold underline underline-offset-4" href={board}>Open the {sport} probability board</Link>
         </header>
 
         <section className="mt-9" aria-labelledby="today-fixtures">
-          <h2 id="today-fixtures" className="text-xl font-bold" style={{ color: "var(--am-text)" }}>Today’s {sport} fixtures on BetRedge</h2>
-          <p className="mt-3">Where shown, the public percentage refers to one outcome only. The board shows the outcome and full reading according to account access.</p>
-          {today.length ? <FixtureList matches={today} readings={readings} /> : <p className="mt-3">No fixtures for today are currently listed in BetRedge’s public match window.</p>}
+          <h2 id="today-fixtures" className="text-xl font-bold" style={{ color: "var(--am-text)" }}>{football ? "Today’s football fixtures by competition" : "Today’s tennis matches by tournament"}</h2>
+          {today.length > 0 && <p className="mt-3">Each public percentage refers to one outcome. Open the board to see the outcome and the analysis available to your account.</p>}
+          {today.length ? <FixtureList groups={groups} readings={readings} /> : <p className="mt-3">No fixtures for today are currently listed in BetRedge’s public match window.</p>}
         </section>
         {!today.length && nextDay && (
           <section className="mt-7" aria-labelledby="next-fixtures">
-            <h2 id="next-fixtures" className="text-xl font-bold" style={{ color: "var(--am-text)" }}>Next listed fixtures · {dayFormat.format(new Date(nextDay))}</h2>
-            <FixtureList matches={next} readings={readings} />
+            <h2 id="next-fixtures" className="text-xl font-bold" style={{ color: "var(--am-text)" }}>Next listed {sport} matches · {dayFormat.format(new Date(nextDay))}</h2>
+            <FixtureList groups={groups} readings={readings} />
           </section>
         )}
 
