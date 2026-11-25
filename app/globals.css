@@ -6469,15 +6469,6 @@ button:disabled {
 }
 .am-deskhead .am-sub b { color: var(--am-text); font-weight: 600; }
 .am-statbar { display: flex; gap: 10px; flex: 0 0 auto; }
-/* Keep the history header stable while the verified sample and its notes load. */
-.am-history-statbar { display: grid; grid-template-columns: max-content max-content minmax(0, 180px); }
-.am-history-rate { min-block-size: 138px; }
-.am-history-rate-content { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
-@media (max-width: 600px) {
-  .am-history-statbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .am-history-rate { grid-column: 1 / -1; min-block-size: 120px; }
-  .am-history-rate .note { max-width: none; }
-}
 .am-kpi {
   display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
   padding: 11px 15px; border: 1px solid var(--am-line); border-radius: 7px;
@@ -6498,6 +6489,16 @@ button:disabled {
 .am-kpi .note {
   font-size: 11px; font-weight: 500; line-height: 1.35; text-transform: none; letter-spacing: 0;
   color: var(--am-muted-2); white-space: normal; overflow-wrap: anywhere; max-width: 24ch;
+}
+
+/* Keep the history header stable while the verified sample and its notes load. */
+.am-history-statbar { display: grid; grid-template-columns: max-content max-content minmax(0, 180px); }
+.am-history-rate { min-block-size: 138px; }
+.am-history-rate-content { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+@media (max-width: 600px) {
+  .am-history-statbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .am-history-rate { grid-column: 1 / -1; min-block-size: 120px; }
+  .am-history-statbar .am-history-rate .note { max-width: none; }
 }
 
 /* ── LEVEL-UP chamfer (firma pannelli) — 2026-07-12 ──────────────────────────
@@ -9269,9 +9270,8 @@ button:disabled {
    Le griglie archivio sotto (.wp-analysis / .wp-hist-sec) restano a 1240. */
 .wp-hero { max-width: 720px; margin: 0 auto; width: 100%;
   padding: clamp(40px, 6vw, 88px) clamp(16px, 4vw, 56px) clamp(20px, 3vw, 36px); }
-.wp-current { min-block-size: 60svh; }
+.wp-current { min-block-size: 70svh; }
 .wp-hero-stats { max-width: 720px; margin: 0 auto; width: 100%; padding: 0 clamp(16px, 4vw, 56px) clamp(20px, 3vw, 36px); }
-.wp-hero-stats .lp-kpis { margin-top: 0; }
 .wp-hero .lp-what-head { max-width: 19ch; }
 
 .wp-wrap { max-width: 720px; margin: 0 auto; width: 100%;
@@ -9536,12 +9536,12 @@ button:disabled {
 }
 
 /* KPI row (solo Weekly Pick) → UNA cornice chamfer chiusa esterna (non per-KPI:
-   "cornici esterne, non ogni elementino"). Scoped a .wp-hero così la landing (.lp-kpis
+   "cornici esterne, non ogni elementino"). Scoped a .wp-hero-stats così la landing (.lp-kpis
    editoriale, filo superiore) resta invariata. Il border-top diventa cornice piena. */
 .wp-hero-stats .lp-kpis {
   position: relative; border: 0; border-top: 0; border-radius: 0;
   padding: clamp(16px, 2vw, 22px) clamp(18px, 2.6vw, 28px);
-  margin-top: clamp(28px, 3.5vw, 40px);
+  margin-top: 0;
   clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
   box-shadow: inset 0 0 0 1.5px var(--am-frame-edge);
 }
