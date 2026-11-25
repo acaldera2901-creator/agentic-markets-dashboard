@@ -7,6 +7,7 @@ import {hasPublicNavigation,isDeskPath,lobbyDestination} from '@/lib/classic/sit
 import {ClassicIcon,type ClassicIconName} from './ClassicIcon';
 import {SiteNavigationContext,type LobbyNavigationState} from './SiteNavigationContext';
 import SiteTopbar from '@/components/world-cup/SiteTopbar';
+import {DailySkipLink} from '@/components/seo/DailySkipLink';
 import './classic-lobby.css';
 import './site-navigation.css';
 import './mobile-navigation.css';
@@ -30,6 +31,7 @@ export default function SiteNavigationFrame({children}:{children:ReactNode}){
  ];
  const sidebar=<nav className="brc-side br-site-sidebar" aria-label={t.sideLabel}>{groups.map(g=><Fragment key={g.title}><p className="brc-side__h">{g.title}</p><ul className="brc-side__list">{g.items.map(([href,label,icon])=><li key={label}><a href={href} className="brc-side__item" aria-current={href.split('#')[0]===path||Boolean(lobby&&(g.title===t.sideBoard?new URLSearchParams(href.split('?')[1]).get('board')===lobby.board:g.title===t.sportsLabel?new URLSearchParams(href.split('?')[1]).get('filter')===lobby.filter:false))?'true':undefined}><ClassicIcon name={icon}/><span>{label}</span>{lobby && (label===t.popular||label===t.football||label===t.tennis||label===t.tabInPlay) && <span className="br-site-count">{lobby.loading?'–':label===t.popular?lobby.popular:label===t.football?lobby.football:label===t.tennis?lobby.tennis:lobby.live}</span>}</a></li>)}</ul></Fragment>)}</nav>;
  return <SiteNavigationContext.Provider value={{report:setLobby,sidebar}}><div className="br-site-frame">
+ {['/football-predictions-today','/tennis-predictions-today'].includes(path)&&<DailySkipLink/>}
  {!isDeskPath(path)&&<SiteTopbar globalNavigation lang={headerLang} hideLang={Boolean(toolsLocale)}/>}
  {isDeskPath(path)?children:<div className="brc-lobby br-site-page">{sidebar}<div className="br-site-content">{children}</div></div>}
  <MobileNavigation groups={groups} lang={navLang}/>

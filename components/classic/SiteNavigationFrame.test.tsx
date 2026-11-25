@@ -13,6 +13,13 @@ vi.mock('next/link',()=>({default:({href,children}:{href:string;children:React.R
 let newsFeed:{state:string}|null=null;
 vi.mock('@/components/news/use-news',()=>({useNewsFeed:()=>newsFeed,useNow:()=>null}));
 describe('public site navigation',()=>{
+ it.each(['/football-predictions-today','/tennis-predictions-today'])('places the daily skip link before the global header on %s',(route)=>{
+  pathname=route;
+  render(<SiteNavigationFrame><h1 id="daily-content">Predictions today</h1></SiteNavigationFrame>);
+  const skipLink=screen.getByRole('link',{name:'Skip to main content'});
+  expect(skipLink).toHaveAttribute('href','#daily-content');
+  expect(skipLink.compareDocumentPosition(screen.getByTestId('shared-header')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ });
  it('retains all twelve sidebar links outside the desk',()=>{
   pathname='/tools';render(<SiteNavigationFrame><p>Tools content</p></SiteNavigationFrame>);
   const nav=screen.getByRole('navigation',{name:'Sections'});
