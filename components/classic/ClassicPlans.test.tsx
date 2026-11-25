@@ -17,7 +17,7 @@ function mount(profile: ClassicPlansProfile, lang = "en") {
 describe("ClassicPlans", () => {
   it("anonymous: one message, Pro price with period, annual price, Pro CTA → premium, Free CTA → free", () => {
     const h = mount(null);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toMatch(/Free reads three per sport a day\. Pro reads the whole board\./);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toMatch(/Understand a match first\. Go deeper with Pro\./);
     expect(screen.getByText("$29.99")).toBeTruthy();
     expect(screen.getByText("/ month")).toBeTruthy();
     expect(screen.getByText(/Or \$329\.99 a year: 11 months paid, one free/)).toBeTruthy();
