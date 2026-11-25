@@ -46,6 +46,9 @@ import { MenuIcon, NavIcon, BottomNavIcon, type NavName, type BottomNavName } fr
 import { IconSearch, IconArrow, IconCheck, IconSignIn, IconRegister } from "@/components/ui/icons";
 import { FORTUNEPLAY_BET_URL, landingPartnersFor } from "@/lib/affiliate";
 // #PARTNER-CLICK-TRACK-1: analytics spostate in lib (le usa anche MatchDetailSheet).
+import { checkoutRequest } from "@/lib/checkout-tracking";
+import { syncAnalyticsConsent } from "@/lib/track-event";
+import { getGa4SignupSession } from "@/lib/ga4-session";
 import { consentedSessionId, getSessionId, trackEvent, viewerPlan } from "@/lib/track-event";
 // #FORTUNEPLAY-LIVE-ODDS-1: quote live + deep-link partita sulle card.
 import { teamPairKey } from "@/lib/team-pair-key";
@@ -3829,13 +3832,13 @@ function CheckoutModal({
       // markPayPending() qui — su Shopify il piano lo concede il webhook.
       // Il crypto salta interamente questo blocco: si paga dove si clicca.
       if (rail === "card") try {
-        const sres = await fetch("/api/shopify/checkout", {
+        const sres = await checkoutRequest("/api/shopify/checkout", {
           method: "POST",
           headers: { "content-type": "application/json" },
           // `lang` decide la lingua del checkout Shopify: senza, esce sempre
           // nella lingua di default dello store (spagnolo).
           body: JSON.stringify({ requested_plan: plan, period, lang }),
-        });
+        }, {plan,period,rail:"shopify"});
         if (sres.ok) {
           const { url: shopUrl } = (await sres.json()) as { url?: string };
           if (shopUrl) { window.location.href = shopUrl; return; }
@@ -3856,11 +3859,11 @@ function CheckoutModal({
       } catch (e) {
         console.error("shopify checkout unavailable, fallback paygate", e);
       }
-      const res = await fetch("/api/paygate/checkout", {
+      const res = await checkoutRequest("/api/paygate/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ requested_plan: plan, period }),
-      });
+      }, {plan,period,rail:"paygate"});
       if (!res.ok) {
         console.error("paygate checkout failed", res.status);
         setError((t as Record<string, string>).checkout_error || "Pagamento non disponibile, riprova.");
@@ -4735,6 +4738,7 @@ function ClientAuthModal({
     if (!canSubmit || busy) return;
     setBusy(true); setError(""); setInfo(""); setShowResend(false);
     try {
+      await syncAnalyticsConsent();
       const resp = await fetch("/api/auth", {
         method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin",
         body: JSON.stringify({
@@ -4750,6 +4754,7 @@ function ClientAuthModal({
           acquisition: mode === "create" ? (signupAttribution() ?? undefined) : undefined,
           // #G2-TRACKING-1110: session_id solo col consenso → profiles.signup_session_id.
           analytics_consent: mode === "create" ? consentedSessionId() !== null : undefined,
+          ga4_signup_session: mode === "create" ? await getGa4SignupSession() : undefined,
           session_id: mode === "create" ? (consentedSessionId() ?? undefined) : undefined,
           marketing_opt_in: mode === "create" ? marketingOk : undefined,
           // #C1-CONSENT-FIX: server-side assertConsent (SP3) richiede questi flag

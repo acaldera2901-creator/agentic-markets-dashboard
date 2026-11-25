@@ -20,6 +20,7 @@ const MAX_PAYLOAD_BYTES = 2048;
 // cattura passa da `sourceFromSearch`: una fonte sola per le chiavi di
 // provenienza, niente parsing reimplementato.
 export const ATTRIBUTION_KEYS = [
+  "agent",
   "src",
   "ref",
   "crm",
@@ -33,6 +34,7 @@ export const ATTRIBUTION_KEYS = [
   // #G2-TRACKING-1110: "first_touch" (record in localStorage, con consenso) o
   // "signup_page" (letto dalla pagina al momento del signup, senza storage).
   "capture",
+  "traffic_type",
 ] as const;
 
 export type Attribution = Partial<Record<(typeof ATTRIBUTION_KEYS)[number], string>>;
@@ -43,7 +45,7 @@ export type Attribution = Partial<Record<(typeof ATTRIBUTION_KEYS)[number], stri
 // Senza consenso — o dopo un Decline esplicito — è un no-op. Se il consenso
 // arriva dopo, il chiamante ri-invoca: l'utente è ancora sulla stessa pagina,
 // quindi query string e referrer sono ancora leggibili.
-export function initAttribution(): void {
+export function initAttribution(entry?: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
   // #STORAGE-CRASH-0813: si passa da lib/safe-storage, non da window.localStorage
   // nudo. Dove lo storage è vietato (Safari privato, browser interni delle app,
@@ -54,12 +56,12 @@ export function initAttribution(): void {
   if (storageGet(KEY)) return; // first-touch: mai sovrascrivere
   // Stessa funzione che legge la provenienza per gli eventi (#ATTRIB-EVERYWHERE-0915):
   // stesse chiavi, stessa ripulitura. Due parser divergono e il secondo sbaglia.
-  const rec: Attribution = { ...sourceFromSearch(window.location.search) };
-  // Il referrer interno non è una sorgente di acquisizione: se l'utente arriva
-  // dalla home a /tools, la sorgente resta quella con cui è entrato in home.
-  const ref = typeof document !== "undefined" ? document.referrer : "";
-  if (ref && !ref.startsWith(window.location.origin)) rec.referrer = ref.slice(0, MAX_VALUE_LEN);
-  rec.landing_path = window.location.pathname.slice(0, MAX_VALUE_LEN);
+  const rec: Attribution = entry
+    ? { ...sourceFromSearch(new URLSearchParams(Object.entries(entry).filter(([,v]) => typeof v === "string") as [string,string][]).toString()) }
+    : { ...sourceFromSearch(window.location.search) };
+  const ref = entry ? entry.ref_host : externalReferrerHost();
+  if (typeof ref === "string" && ref) rec.referrer = ref.slice(0, MAX_VALUE_LEN);
+  rec.landing_path = (typeof entry?.path === "string" ? entry.path : window.location.pathname).slice(0, MAX_VALUE_LEN);
   rec.first_seen = new Date().toISOString();
   // Storage vietato: storageSet torna false e l'attribuzione semplicemente non
   // viene catturata. Una sorgente persa è un inconveniente, una pagina che non
@@ -69,7 +71,7 @@ export function initAttribution(): void {
 
 // Client-only. Null se assente o illeggibile — l'assenza non deve mai rompere il signup.
 export function getAttribution(): Attribution | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined" || storageGet("gdpr_consent") !== "accepted") return null;
   // #STORAGE-CRASH-0813: la lettura passa da safe-storage (torna null se lo
   // storage è vietato). Il try/catch che resta NON è ridondante: copre solo
   // JSON.parse, che lancia davvero su un record corrotto o manomesso.
@@ -89,12 +91,14 @@ export function getAttribution(): Attribution | null {
 // sourceFromSearch/externalReferrerHost): è last-touch, ed è marcato come tale.
 export function signupAttribution(): Attribution | null {
   if (typeof window === "undefined") return null;
+  const internal = storageGet("betredge_internal") === "1" ? {traffic_type:"internal"} : {};
   const stored = getAttribution();
-  if (stored) return { ...stored, capture: "first_touch" };
+  if (stored) return { ...stored, ...internal, capture: "first_touch" };
   const rec: Attribution = { ...sourceFromSearch(window.location.search) };
   const host = externalReferrerHost();
   if (host) rec.referrer = host;
   rec.landing_path = window.location.pathname.slice(0, MAX_VALUE_LEN);
+  Object.assign(rec,internal);
   rec.capture = "signup_page";
   return rec;
 }
@@ -134,6 +138,7 @@ export function acquisitionJson(input: unknown): string | null {
 // finiva in un `page_view` con il solo `meta.path`, indistinguibile da uno
 // arrivato per digitazione diretta. 15 iscrizioni su 21 senza sorgente.
 const SEARCH_SOURCE_KEYS = [
+  "agent",
   "src",
   "ref",
   "utm_source",

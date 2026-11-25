@@ -9,10 +9,10 @@
 import Script from "next/script";
 import { useEffect, useState } from "react";
 
-export const GA_MEASUREMENT_ID = "G-8XWQD5N6T7";
+import { GA_MEASUREMENT_ID } from "@/lib/ga4-config";
 
 function hasConsent(): boolean {
-  try { return localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
+  try { return localStorage.getItem("betredge_internal") !== "1" && localStorage.getItem("gdpr_consent") === "accepted"; } catch { return false; }
 }
 
 export default function GoogleAnalytics() {

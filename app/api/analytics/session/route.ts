@@ -30,7 +30,7 @@ export async function POST(req:Request){
   if(sid){const rows=await dbQueryStrict<{active:boolean}>('SELECT EXISTS(SELECT 1 FROM br_analytics_sessions WHERE session_id=$1 AND revoked_at IS NULL) AS active',[sid]);if(!rows[0]?.active)sid=null;}
   if(!sid)sid=await startAnalyticsSession(res);
   if(ctx){const linked=await dbQueryStrict<{linked:boolean}>('SELECT public.br_link_analytics_session($1,$2,$3) AS linked',[sid,ctx.identifier,'login']);if(!linked[0]?.linked){await revokeAnalyticsSession(sid);sid=await startAnalyticsSession(res);await dbQueryStrict('SELECT public.br_link_analytics_session($1,$2,$3) AS linked',[sid,ctx.identifier,'login']);}}
-  const meta=analyticsMeta(body.entry,req.headers.get('user-agent'));
+  const meta=analyticsMeta({...body.entry,host:new URL(req.url).hostname},req.headers.get('user-agent'));
   const encoded=JSON.stringify(meta);const entry=encoded.length<=2048?encoded:JSON.stringify({ua:meta.ua,device:meta.device});
   await dbExecute('SELECT public.br_record_session_start($1,$2::jsonb,$3,$4)',[sid,entry,req.headers.get('x-vercel-ip-country'),null]);
   // The SID is intentionally not returned: clients cannot use it to claim somebody else's session.

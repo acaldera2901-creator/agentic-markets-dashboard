@@ -1,4 +1,4 @@
-const META_KEYS=new Set(['path','src','utm_source','utm_medium','utm_campaign','utm_content','utm_term','ref_host','crm','host','ref','campaign_id','slot','surface','section','sport','tab','view','card','count','reason','cta','audience','internal','choice','digest','book','book_key','language','plan','partner','partner_id','viewability']);
+const META_KEYS=new Set(['path','agent','src','utm_source','utm_medium','utm_campaign','utm_content','utm_term','ref_host','crm','host','ref','campaign_id','slot','surface','section','sport','tab','view','card','count','reason','cta','audience','internal','choice','digest','book','book_key','language','plan','partner','partner_id','viewability','rail','period','status']);
 export function shouldSkipAnalyticsPath(path:string):boolean {
  let decoded=path.split(/[?#]/)[0];
  try{for(let i=0;i<4&&decoded.includes('%');i++)decoded=decodeURIComponent(decoded);}catch{return true;}

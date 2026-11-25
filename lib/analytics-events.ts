@@ -46,7 +46,7 @@ export const BROWSER_ANALYTICS_EVENTS = [
   // in mezzo è indistinguibile da un funnel senza domanda: misurato l'08/09,
   // 11 registrazioni reali e ZERO aperture del checkout, e nulla nel DB
   // diceva quanti ci avessero almeno provato.
-  "plan_cta_click", "checkout_opened",
+  "plan_cta_click", "checkout_opened", "checkout_attempt", "checkout_ready", "checkout_failed",
   // #WIDGET-EMBED-0824 — widget incorporato su siti terzi. `meta.host` dice
   // QUALE sito converte (dichiarato dal client, come ogni altro evento qui:
   // buono per misurare, mai per decidere accessi).

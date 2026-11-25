@@ -23,7 +23,8 @@ export default function PageViewTracker(){
   measured.current.add(meta);
   if(enhanced&&consent==='accepted'){
    void syncAnalyticsConsent(entry??meta).then(state=>{
-    if(state!=='ready'||storageGet('gdpr_consent')!=='accepted')return;
+    if(state==='revoked'||storageGet('gdpr_consent')!=='accepted')return;
+    if(state!=='ready'){trackEvent('page_view',{meta,anonymous:true});return;}
     trackEvent('page_view',{meta});
     if(entry)trackEvent('entry_attributed',{meta:entry});
     anchorSession(entry??meta);
@@ -45,8 +46,8 @@ export default function PageViewTracker(){
  },[pathname,measure]);
  useEffect(()=>{
   const onConsent=()=>{
-   initAttribution();
    const entry=pendingEntry.current;pendingEntry.current=null;
+   initAttribution(entry??undefined);
    const consent=storageGet('gdpr_consent');
    if(enhanced){
     if(consent==='accepted'){

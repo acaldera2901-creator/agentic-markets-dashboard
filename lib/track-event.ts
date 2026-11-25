@@ -1,3 +1,4 @@
+import { sourceFromSearch, externalReferrerHost } from "./attribution";
 import { shouldSkipAnalyticsPath } from "./analytics-quality";
 
 // Beacon analytics fire-and-forget verso /api/track.
@@ -63,7 +64,7 @@ export function trackEvent(
   })();
   const internal = (() => { try { return localStorage.getItem("betredge_internal") === "1"; } catch { return false; } })();
   if (internal) fields.meta = { ...fields.meta, internal: true };
-  fetch("/api/track", {
+  const send = (linked = consented) => fetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // #ATTRIB-EVERYWHERE-0915: `keepalive` perché metà di questi eventi sono
@@ -77,8 +78,14 @@ export function trackEvent(
     // `?? undefined`: con lo storage vietato getSessionId ritorna null, e la
     // chiave va OMESSA dal payload invece di arrivare a null — la forma del
     // beacon resta identica a prima del fix.
-    body: JSON.stringify({ event_type, analytics_consent: consented, session_id: consented ? (getSessionId() ?? undefined) : undefined, language, ...fields }),
+    body: JSON.stringify({ event_type, analytics_consent: linked, session_id: linked ? (getSessionId() ?? undefined) : undefined, language, ...fields }),
   }).catch(() => { /* ignore */ });
+  if (consented && process.env.NEXT_PUBLIC_ANALYTICS_LINKING_ENABLED === "1") {
+    // One bootstrap for concurrent events; never send a stale, pre-withdrawal event.
+    void syncAnalyticsConsent(undefined, false, true).then(state => {
+      try { if (state !== 'revoked' && localStorage.getItem('gdpr_consent') === 'accepted') void send(state === 'ready'); } catch {}
+    });
+  } else void send();
 }
 
 // #PLAN-VIEW-PLAN-0928 — il piano di chi GUARDA, per `plan_view`. Prima
@@ -108,15 +115,20 @@ export function anchorSession(meta:Record<string,unknown>):void {
 
 type ConsentSync='ready'|'disabled'|'revoked'|'failed';
 let bootstrap:Promise<ConsentSync>|null=null;
+let readySession:{id:string;until:number}|null=null;
 /** Resolves only after the browser has installed the server's signed cookie. */
-export async function syncAnalyticsConsent(entry?:Record<string,unknown>,forceRevoke=false):Promise<ConsentSync> {
+export async function syncAnalyticsConsent(entry?:Record<string,unknown>,forceRevoke=false,reuse=false):Promise<ConsentSync> {
  if(typeof window==='undefined'||shouldSkipAnalyticsPath(window.location.pathname))return 'disabled';
  let consent:string|null;try{consent=forceRevoke?'declined':localStorage.getItem('gdpr_consent');}catch{return 'disabled';}
  if(consent!=='accepted'&&consent!=='declined')return 'disabled';
+ if(consent==='declined')readySession=null;
  if(consent==='declined')try{sessionStorage.removeItem('am_sid');sessionStorage.removeItem('br_session_anchor');localStorage.removeItem('am_attrib');}catch{/* storage denied */}
  if(process.env.NEXT_PUBLIC_ANALYTICS_LINKING_ENABLED!=='1')return 'disabled';
  let internal=false;try{internal=localStorage.getItem('betredge_internal')==='1';}catch{}
- const request=(choice:'accepted'|'revoked')=>fetch('/api/analytics/session',{method:'POST',headers:{'content-type':'application/json'},keepalive:true,body:JSON.stringify({consent:choice,entry:{...entry,...(internal?{internal:true}:{})}})});
+ const id=consent==='accepted'?getSessionId():null;
+ if(reuse&&consent==='accepted'&&id&&readySession?.id===id&&readySession.until>Date.now()&&!internal)return 'ready';
+ const context=entry??{path:window.location.pathname,...sourceFromSearch(window.location.search),ref_host:externalReferrerHost()};
+ const request=(choice:'accepted'|'revoked')=>fetch('/api/analytics/session',{method:'POST',headers:{'content-type':'application/json'},keepalive:true,signal:AbortSignal.timeout(2000),body:JSON.stringify({consent:choice,entry:{...context,...(internal?{internal:true}:{})}})});
  if(consent==='declined'){
   // A late accept response must not install its cookie after the withdrawal response.
   if(bootstrap)await bootstrap;
@@ -126,9 +138,12 @@ export async function syncAnalyticsConsent(entry?:Record<string,unknown>,forceRe
  bootstrap=(async()=>{
   try{
    const response=await request('accepted');if(!response.ok)return 'failed';
+   const result=await response.json();
+   if(result.disabled||result.ignored)return 'disabled';
    if(localStorage.getItem('gdpr_consent')!=='accepted'){
     await request('revoked');return 'revoked';
    }
+   if(id&&!internal)readySession={id,until:Date.now()+15*60_000};
    return 'ready';
   }catch{return 'failed';}
  })();

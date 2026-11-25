@@ -6,6 +6,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const dbQuery = vi.fn();
 const dbQueryStrict = vi.fn();
 const dbExecute = vi.fn();
+const scheduleGa4Signup = vi.fn();
+
+vi.mock("@/lib/ga4-signup", () => ({ scheduleGa4Signup }));
 
 vi.mock("@/lib/db", () => ({ dbQuery, dbQueryStrict, dbExecute }));
 vi.mock("@/lib/referral-rewards", () => ({ grantInviteeBonus: vi.fn().mockResolvedValue(true) }));
@@ -40,7 +43,7 @@ beforeEach(() => {
   delete process.env.RESEND_API_KEY;
   delete process.env.SIGNUP_COUNTRY_ALLOWLIST;
   dbQuery.mockResolvedValue([]);
-  dbExecute.mockResolvedValue([]);
+  dbExecute.mockReset().mockResolvedValue([]);
   dbQueryStrict
     .mockResolvedValueOnce([])
     .mockResolvedValue([{ identifier: ID, plan: "free", name: null }]);
@@ -57,6 +60,30 @@ describe("register → signup geo + session", () => {
     );
     expect(res.status).toBe(200);
     expect(geoCall()?.[1]).toEqual([ID, "NG", "LA", "São Paulo", "abc123xyz"]);
+  });
+
+  it("schedules one event for the insert winner, and none for the concurrent duplicate", async () => {
+    const { POST } = await import("./route");
+    const session = { client_id: "123.456", session_id: "1795500000" };
+    const payload = { analytics_consent: true, ga4_signup_session: session };
+    let inserted = false;
+    dbQueryStrict.mockReset().mockImplementation(async (sql: string) =>
+      sql.includes("password_hash") ? [] : [{ identifier: ID, plan: "free", name: null }]
+    );
+    dbExecute.mockImplementation(async (sql: string) => {
+      if (!sql.includes("INSERT INTO profiles")) return [];
+      if (inserted) throw new Error("duplicate", {
+        cause: { code: "23505", details: `Key (identifier)=(${ID}) already exists.` },
+      });
+      inserted = true;
+      return [];
+    });
+    const responses = await Promise.all([POST(registerReq(payload)), POST(registerReq(payload))]);
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 202]);
+    const duplicate = responses.find((response) => response.status === 202);
+    expect(await duplicate?.json()).toEqual({ pending_activation: true, identifier: ID });
+    expect(duplicate?.headers.get("set-cookie")).toBeNull();
+    expect(scheduleGa4Signup).toHaveBeenCalledExactlyOnceWith(true, session);
   });
 
   it("senza consenso non salva il session_id", async () => {
@@ -85,4 +112,16 @@ describe("register → signup geo + session", () => {
     const res = await POST(registerReq({}, { "x-vercel-ip-country": "GB" }));
     expect(res.status).toBe(200);
   });
+});
+
+it('uses the signed server SID instead of the user-supplied legacy SID when linking is enabled', async()=>{
+ const {signAnalyticsSession}=await import('@/lib/analytics-session');
+ const {POST}=await import('./route');
+ vi.stubEnv('ANALYTICS_SESSION_SECRET','synthetic-only-012345678901234567890123');
+ vi.stubEnv('ANALYTICS_LINKING_ENABLED','1');vi.stubEnv('ANALYTICS_RETENTION_APPROVED','1');vi.stubEnv('TRACK_ALLOW_WRITE','1');
+ const sid='11111111-2222-4333-8444-555555555555';
+ try{
+  await POST(registerReq({analytics_consent:true,session_id:'untrusted123'},{cookie:`br_analytics_session=${signAnalyticsSession(sid)}`}));
+  expect(geoCall()?.[1]?.[4]).toBe(sid);
+ }finally{vi.unstubAllEnvs();}
 });

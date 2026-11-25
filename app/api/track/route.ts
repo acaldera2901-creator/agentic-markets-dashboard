@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         null;
 
     if (typeof body.meta?.path === "string" && shouldSkipAnalyticsPath(body.meta.path)) return NextResponse.json({ ok: true, ignored: true });
-    if (eventType !== "consent_choice") body.meta = analyticsMeta(body.meta, req.headers.get("user-agent"));
+    if (eventType !== "consent_choice") body.meta = analyticsMeta({...body.meta,...(!isWidgetEvent ? {host:new URL(req.url).hostname} : {})}, req.headers.get("user-agent"));
 
     // Cap meta size so a single beacon can't dump arbitrarily large payloads.
     let metaJson = "{}";

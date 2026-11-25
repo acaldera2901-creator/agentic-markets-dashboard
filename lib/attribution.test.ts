@@ -75,7 +75,7 @@ describe("initAttribution", () => {
   it("registra il referrer esterno", () => {
     Object.defineProperty(document, "referrer", { value: "https://www.google.com/", configurable: true });
     initAttribution();
-    expect(getAttribution()?.referrer).toBe("https://www.google.com/");
+    expect(getAttribution()?.referrer).toBe("www.google.com");
   });
 
   // #MIS-C — le tre chiavi che c'erano negli eventi e non nell'attribuzione.
@@ -182,4 +182,9 @@ describe("storage vietato (Safari privato / browser interni / cookie bloccati)",
     expect(() => getAttribution()).not.toThrow();
     expect(getAttribution()).toBeNull();
   });
+});
+
+it('keeps agent identity separate from campaign and individual content',()=>{
+ setUrl('/plans?agent=contatto_lead&utm_source=instagram&utm_campaign=november&utm_content=post_12');
+ initAttribution();expect(getAttribution()).toMatchObject({agent:'contatto_lead',utm_source:'instagram',utm_campaign:'november',utm_content:'post_12'});
 });

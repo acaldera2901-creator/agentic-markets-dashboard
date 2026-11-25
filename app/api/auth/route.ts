@@ -1,6 +1,7 @@
 import {analyticsWriteAllowed} from '@/lib/events-write-gate';
+import { scheduleGa4Signup } from "@/lib/ga4-signup";
 import {scheduleBusinessEvent} from '@/lib/business-events';
-import {attachAnalyticsIdentity,readAnalyticsSession,revokeAnalyticsSession,setAnalyticsCookie} from '@/lib/analytics-session';
+import {analyticsLinkingEnabled,attachAnalyticsIdentity,readAnalyticsSession,revokeAnalyticsSession,setAnalyticsCookie} from '@/lib/analytics-session';
 import { NextResponse } from "next/server";
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
 import { signupCountryAllowed, resolveRequestCountry } from "@/lib/signup-geo";
@@ -417,48 +418,43 @@ export async function POST(req: Request) {
     // by anyone who simply knows the email. activated_at is left untouched
     // (NULL for new/legacy rows; a real activated account never reaches here).
     // Solo account NUOVI arrivano qui (le righe esistenti sono già gestite sopra
-    // con il link di attivazione, senza toccare la password). ON CONFLICT DO NOTHING
-    // è puro race-guard: in caso di doppia submit concorrente NON si sovrascrive mai
-    // una riga esistente (niente takeover via race).
+    // con il link di attivazione, senza toccare la password). Un conflitto
+    // su identifier durante una submit concorrente lascia intatta la riga.
     // SQL scritto per esteso nei due rami (niente interpolazione nel template:
     // lib/sql-guard.test.ts la vieta, ed è la regola giusta).
     const insertParams = [identifier, name, language, timezone, hashPassword(password), referredBy, marketingOptIn, CURRENT_CONSENT_VERSION];
     const insertWithAcquisition = () =>
       dbExecute(
         `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at, consent_version, acquisition)
-         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8, $9::jsonb)
-       ON CONFLICT (identifier) DO NOTHING`,
+         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8, $9::jsonb)`,
         [...insertParams, acquisition]
       );
     const insertWithoutAcquisition = () =>
       dbExecute(
         `INSERT INTO profiles (identifier, name, language, timezone, plan, password_hash, referred_by, marketing_opt_in, marketing_opt_in_at, age_confirmed_at, tos_accepted_at, consent_version)
-         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8)
-       ON CONFLICT (identifier) DO NOTHING`,
+         VALUES ($1, $2, $3, $4, 'free', $5, $6, $7, CASE WHEN $7 THEN NOW() ELSE NULL END, NOW(), NOW(), $8)`,
         insertParams
       );
+    const identifierConflict = (error: unknown): boolean => {
+      const cause = error instanceof Error ? error.cause as { code?: string; details?: string } | undefined : undefined;
+      return cause?.code === "23505" && cause.details?.startsWith("Key (identifier)=") === true;
+    };
     try {
-      await (acquisition !== null ? insertWithAcquisition() : insertWithoutAcquisition());
-    } catch (e) {
-      // #FUNNEL-MEAS-0813 rete di sicurezza sulla colonna `acquisition`. La
-      // migration 20260813120000 è APPLICATA e verificata in prod (2026-08-14),
-      // quindi questo ramo non dovrebbe più scattare: resta come rete, non come
-      // guard temporaneo di ordine di deploy. Un solo ritentativo senza
-      // l'attribuzione — perdere la sorgente è recuperabile, perdere l'utente no.
-      // Vale ancora per gli ambienti non migrati (preview/locale su DB vecchio).
-      if (acquisition !== null) {
-        console.error("[auth] register with acquisition failed, retrying without:", String(e));
-        try {
-          await insertWithoutAcquisition();
-        } catch (e2) {
-          console.error("[auth] register failed:", String(e2));
-          return NextResponse.json({ error: "registration failed" }, { status: 500 });
-        }
-      } else {
-        console.error("[auth] register failed:", String(e));
-        return NextResponse.json({ error: "registration failed" }, { status: 500 });
+      try {
+        await (acquisition !== null ? insertWithAcquisition() : insertWithoutAcquisition());
+      } catch (error) {
+        if (acquisition === null || identifierConflict(error)) throw error;
+        // Compatibilità con database che non hanno ancora la colonna acquisition.
+        await insertWithoutAcquisition();
       }
+    } catch (error) {
+      if (identifierConflict(error)) {
+        return NextResponse.json({ pending_activation: true, identifier }, { status: 202 });
+      }
+      console.error("[auth] register failed:", String(error));
+      return NextResponse.json({ error: "registration failed" }, { status: 500 });
     }
+    if (JSON.parse(acquisition ?? "{}").traffic_type !== "internal") scheduleGa4Signup(body.analytics_consent, body.ga4_signup_session);
     // #G2-TRACKING-1110 — geo (header Vercel) e session_id (solo con consenso
     // analytics, mandato dal client) della registrazione. UPDATE separato e
     // best-effort: su un DB senza la migration 20261110230000 fallisce e il
@@ -467,7 +463,7 @@ export async function POST(req: Request) {
     {
       const geo = signupGeo(req);
       const sessionId = (body as { analytics_consent?: unknown }).analytics_consent === true
-        ? signupSessionId((body as { session_id?: unknown }).session_id)
+        ? (analyticsLinkingEnabled() ? readAnalyticsSession(req) : signupSessionId((body as { session_id?: unknown }).session_id))
         : null;
       if (geo.country || geo.region || geo.city || sessionId) {
         try {
