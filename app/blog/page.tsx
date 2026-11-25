@@ -58,37 +58,40 @@ export default async function BlogIndexPage() {
 
         <NewsSection />
 
-        {posts.length === 0 && (
-          <p className="mb-4">No articles published yet. Check back soon.</p>
-        )}
+        <div id="blog-guides">
+          {posts.length === 0 && (
+            <p className="mb-4">No articles published yet. Check back soon.</p>
+          )}
 
-        {posts.map((post) => (
-          <article key={post.slug} className="mb-10">
-            {post.featured_image_url && (
-              <Link href={`/blog/${post.slug}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={post.featured_image_url}
-                  alt={post.title}
-                  loading="lazy"
-                  className="mb-3 rounded"
-                  style={{ maxWidth: "100%", height: "auto" }}
-                />
-              </Link>
-            )}
-            <h2 className="text-xl font-bold mb-1" style={{ color: "var(--am-text)" }}>
-              <Link href={`/blog/${post.slug}`} className="underline">
-                {post.title}
-              </Link>
-            </h2>
-            {(post.pub_date || post.published_at) && (
-              <p className="text-xs mb-2 uppercase tracking-widest">
-                {formatPostDate(post.pub_date ?? post.published_at)}
-              </p>
-            )}
-            {post.description && <p>{post.description}</p>}
-          </article>
-        ))}
+          {posts.map((post) => (
+            <article key={post.slug} className="mb-10">
+              {post.featured_image_url && (
+                <Link href={`/blog/${post.slug}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.featured_image_url}
+                    alt={post.title}
+                    loading="lazy"
+                    className="mb-3 rounded"
+                    style={{ maxWidth: "100%", height: "auto" }}
+                  />
+                </Link>
+              )}
+              <h2 className="text-xl font-bold mb-1" style={{ color: "var(--am-text)" }}>
+                <Link href={`/blog/${post.slug}`} className="underline">
+                  {post.title}
+                </Link>
+              </h2>
+              {(post.pub_date || post.published_at) && (
+                <p className="text-xs mb-2 uppercase tracking-widest">
+                  {formatPostDate(post.pub_date ?? post.published_at)}
+                </p>
+              )}
+              {post.description && <p>{post.description}</p>}
+            </article>
+          ))}
+
+        </div>
 
         <p className="mt-10 mb-2 text-sm">
           18+. Gamble responsibly. Probabilities are estimates, not guarantees, and no outcome is

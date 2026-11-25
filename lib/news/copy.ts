@@ -29,6 +29,8 @@ export type NewsCopy = {
   error: string;
   empty: string;
   pending: string;
+  loading: string;
+  guides: string;
   paused: string;
   takedown: string;
 };
@@ -46,6 +48,8 @@ const en: NewsCopy = {
   error: "The news feed is unavailable right now. The guides below are unaffected.",
   empty: "No news in the feed right now.",
   pending: "News is on its way. We only show a story once we have rewritten it. Our guides are below.",
+  loading: "Loading the latest news…",
+  guides: "Skip to guides",
   paused: "The news source is paused. The guides below are unaffected.",
   takedown: "Own this story? Write to info@betredge.com and we take it down within 24 hours.",
 };
@@ -63,6 +67,8 @@ const it: NewsCopy = {
   error: "Il feed delle notizie ora non è disponibile. Le guide qui sotto non cambiano.",
   empty: "Nessuna notizia nel feed in questo momento.",
   pending: "Notizie in arrivo. Mostriamo una notizia solo dopo averla riscritta. Le nostre guide sono qui sotto.",
+  loading: "Caricamento delle ultime notizie…",
+  guides: "Vai alle guide",
   paused: "La fonte delle notizie è in pausa. Le guide qui sotto non cambiano.",
   takedown: "La notizia è tua? Scrivi a info@betredge.com e la togliamo entro 24 ore.", // REVIEW-NATIVE
 };
@@ -80,6 +86,8 @@ const de: NewsCopy = {
   error: "Der News-Feed ist gerade nicht verfügbar. Die Guides unten sind davon nicht betroffen.",
   empty: "Gerade keine Meldungen im Feed.",
   pending: "News folgen in Kürze. Wir zeigen eine Meldung erst, wenn wir sie umgeschrieben haben. Unsere Guides stehen unten.",
+  loading: "Aktuelle Nachrichten werden geladen…",
+  guides: "Zu den Ratgebern",
   paused: "Die News-Quelle ist pausiert. Die Guides unten sind davon nicht betroffen.",
   takedown: "Deine Meldung? Schreib an info@betredge.com, wir entfernen sie innerhalb von 24 Stunden.", // REVIEW-NATIVE
 };
@@ -97,6 +105,8 @@ const es: NewsCopy = {
   error: "El feed de noticias no está disponible ahora. Las guías de abajo no cambian.",
   empty: "Ahora no hay noticias en el feed.",
   pending: "Noticias en camino. Solo mostramos una noticia después de reescribirla. Nuestras guías están abajo.",
+  loading: "Cargando las últimas noticias…",
+  guides: "Ir a las guías",
   paused: "La fuente de noticias está en pausa. Las guías de abajo no cambian.",
   takedown: "¿Es tu noticia? Escribe a info@betredge.com y la retiramos en 24 horas.", // REVIEW-NATIVE
 };
@@ -114,6 +124,8 @@ const fr: NewsCopy = {
   error: "Le flux d’actus est indisponible pour le moment. Les guides ci-dessous ne changent pas.",
   empty: "Aucune actu dans le flux pour le moment.",
   pending: "Actus en route. Nous ne montrons une actu qu’après l’avoir réécrite. Nos guides sont ci-dessous.",
+  loading: "Chargement des dernières actualités…",
+  guides: "Aller aux guides",
   paused: "La source d’actus est en pause. Les guides ci-dessous ne changent pas.",
   takedown: "C’est votre article ? Écrivez à info@betredge.com, nous le retirons sous 24 heures.", // REVIEW-NATIVE
 };
@@ -131,6 +143,8 @@ const nl: NewsCopy = {
   error: "De nieuwsfeed is nu niet beschikbaar. De gidsen hieronder veranderen niet.",
   empty: "Nu geen nieuws in de feed.",
   pending: "Nieuws komt eraan. We tonen een bericht pas nadat we het herschreven hebben. Onze gidsen staan hieronder.",
+  loading: "Het laatste nieuws wordt geladen…",
+  guides: "Naar de gidsen",
   paused: "De nieuwsbron is gepauzeerd. De gidsen hieronder veranderen niet.",
   takedown: "Is dit jouw bericht? Mail info@betredge.com en we halen het binnen 24 uur weg.", // REVIEW-NATIVE
 };
@@ -148,6 +162,8 @@ const pl: NewsCopy = {
   error: "Kanał wiadomości jest teraz niedostępny. Poradniki poniżej się nie zmieniają.",
   empty: "Teraz brak wiadomości w kanale.",
   pending: "Wiadomości w drodze. Pokazujemy wiadomość dopiero po jej przepisaniu. Nasze poradniki są poniżej.",
+  loading: "Wczytywanie najnowszych wiadomości…",
+  guides: "Przejdź do poradników",
   paused: "Źródło wiadomości jest wstrzymane. Poradniki poniżej się nie zmieniają.",
   takedown: "To twój tekst? Napisz na info@betredge.com, usuniemy go w ciągu 24 godzin.", // REVIEW-NATIVE
 };
@@ -165,6 +181,8 @@ const pt: NewsCopy = {
   error: "O feed de notícias não está disponível agora. Os guias abaixo não mudam.",
   empty: "Agora não há notícias no feed.",
   pending: "Notícias a caminho. Só mostramos uma notícia depois de a reescrever. Os nossos guias estão abaixo.",
+  loading: "A carregar as últimas notícias…",
+  guides: "Ir para os guias",
   paused: "A fonte de notícias está em pausa. Os guias abaixo não mudam.",
   takedown: "A notícia é tua? Escreve para info@betredge.com e retiramo-la em 24 horas.", // REVIEW-NATIVE
 };
@@ -182,6 +200,8 @@ const ru: NewsCopy = {
   error: "Лента новостей сейчас недоступна. Руководства ниже не меняются.",
   empty: "Сейчас в ленте нет новостей.",
   pending: "Новости скоро появятся. Мы показываем новость только после того, как перепишем её. Наши руководства ниже.",
+  loading: "Загружаем последние новости…",
+  guides: "Перейти к руководствам",
   paused: "Источник новостей приостановлен. Руководства ниже не меняются.",
   takedown: "Это ваш материал? Напишите на info@betredge.com, и мы уберём его в течение 24 часов.", // REVIEW-NATIVE
 };
@@ -199,6 +219,8 @@ const sv: NewsCopy = {
   error: "Nyhetsflödet är inte tillgängligt just nu. Guiderna nedan påverkas inte.",
   empty: "Inga nyheter i flödet just nu.",
   pending: "Nyheter är på väg. Vi visar en nyhet först när vi har skrivit om den. Våra guider finns nedan.",
+  loading: "Läser in de senaste nyheterna…",
+  guides: "Gå till guiderna",
   paused: "Nyhetskällan är pausad. Guiderna nedan påverkas inte.",
   takedown: "Är det din artikel? Skriv till info@betredge.com så tar vi bort den inom 24 timmar.", // REVIEW-NATIVE
 };
@@ -216,6 +238,8 @@ const tr: NewsCopy = {
   error: "Haber akışı şu anda kullanılamıyor. Aşağıdaki rehberler etkilenmez.",
   empty: "Şu anda akışta haber yok.",
   pending: "Haberler yolda. Bir haberi yalnızca yeniden yazdıktan sonra gösteriyoruz. Rehberlerimiz aşağıda.",
+  loading: "Son haberler yükleniyor…",
+  guides: "Rehberlere git",
   paused: "Haber kaynağı duraklatıldı. Aşağıdaki rehberler etkilenmez.",
   takedown: "Haber senin mi? info@betredge.com adresine yaz, 24 saat içinde kaldıralım.", // REVIEW-NATIVE
 };
