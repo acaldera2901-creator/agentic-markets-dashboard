@@ -26,6 +26,14 @@ export const metadata: Metadata = {
 export default function HowItWorksPage() {
   return (
     <>
+      <link
+        rel="preload"
+        as="image"
+        type="image/webp"
+        href="/banners/gen/scene-stadium-960.webp"
+        media="(max-width: 640px)"
+        fetchPriority="high"
+      />
       <JsonLd data={breadcrumbJsonLd([["How it works", "/how-it-works"]])} />
       <LandingPage />
     </>

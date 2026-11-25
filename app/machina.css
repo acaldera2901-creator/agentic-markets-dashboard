@@ -789,6 +789,13 @@
   background-position:center;background-size:cover;
   opacity:.55;filter:saturate(1.1) contrast(1.03)}
 :root:not([data-theme="light"]) [data-mc-ground] .v-hero::before{background-image:var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg))}
+/* The guide preloads this same mobile source for both uses of the scene. */
+@supports (background-image: image-set(url("/banners/gen/scene-stadium-960.webp") type("image/webp"))) {
+  @media (max-width: 640px) {
+    .hv3.mc-scene-stadium { --am-stadium-scene: image-set(url("/banners/gen/scene-stadium-960.webp") type("image/webp"), url("/banners/gen/scene-stadium.jpg") type("image/jpeg")); }
+  }
+}
+
 :root:not([data-theme="light"]) [data-mc-ground] .v-final::before{background-image:url(/banners/gen/scene-court.jpg);background-image:image-set(url(/banners/gen/scene-court.webp) type("image/webp"), url(/banners/gen/scene-court.jpg) type("image/jpeg"))}
 :root:not([data-theme="light"]) [data-mc-ground] .v-hero::after,:root:not([data-theme="light"]) [data-mc-ground] .v-final::after{
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
