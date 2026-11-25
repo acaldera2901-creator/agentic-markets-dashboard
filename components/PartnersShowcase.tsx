@@ -9,7 +9,6 @@
 // affiliato. La vetrina mandava gli utenti ai partner senza lasciare traccia,
 // quindi i click dalla scheda partita erano l'UNICO click misurato e
 // /partners contava zero per costruzione.
-import Link from "next/link";
 import { offerFor, partnersFor, PARTNERS_COPY, PARTNER_TAGLINES, type PartnersLang, type ResolvedPartner } from "@/lib/partners";
 import { trackEvent } from "@/lib/track-event";
 
@@ -66,13 +65,7 @@ export function PartnersShowcase({ lang, country }: { lang: PartnersLang; countr
   const sportsbooks = partners.filter((p) => p.category === "sportsbook" && !p.featured);
   const casinos = partners.filter((p) => p.category === "casino");
   return (
-    <div className="partners-page">
-      <header className="partners-hero">
-        <Link href="/" className="partners-back">{t.back}</Link>
-        <h1 className="partners-title">{t.title}</h1>
-        <p className="partners-subtitle">{t.subtitle}</p>
-      </header>
-
+    <>
       {featured.length > 0 && (
         <section className="partners-section">
           <h2 className="partners-label">{t.featured}</h2>
@@ -101,6 +94,6 @@ export function PartnersShowcase({ lang, country }: { lang: PartnersLang; countr
       )}
 
       <p className="partners-disclosure">{offers.size > 0 && <>{t.offerTerms}<br /></>}{t.disclosure}</p>
-    </div>
+    </>
   );
 }

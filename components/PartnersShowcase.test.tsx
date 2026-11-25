@@ -103,10 +103,7 @@ describe("PartnersShowcase", () => {
     expect(targetUrlFor("betwinner", "BR")).toBe("https://gbaodm2hp.com/3aME?p=%2Fregistration%2F");
   });
 
-  it("shows the localized title in Italian", () => {
-    render(<PartnersShowcase lang="it" />);
-    expect(screen.getByText("I nostri partner")).toBeTruthy();
-  });
+
 });
 
 // #MIS-B — la vetrina mandava gli utenti ai partner senza lasciare traccia:

@@ -45,20 +45,26 @@ export default function PartnersPage() {
       {/* #UI-MACHINA-0802 fase 3 — la scena del fondo cinematico, come sul desk. */}
       <span className="bgfix" aria-hidden="true" />
       <ClassicChrome syncHtmlLang />
-      {geo === "allowed" ? (
-        <PartnersShowcase lang={lang} country={country} />
-      ) : geo === "blocked" ? (
-        <div className="partners-page" style={{ textAlign: "center" }}>
-          <h1 className="partners-title">{t.unavailableTitle}</h1>
-          <p className="partners-subtitle">{t.unavailableBody}</p>
-          <p style={{ marginTop: 20 }}>
-            <Link href="/" className="partners-back">{t.unavailableBack}</Link>
-          </p>
+      <div className="partners-page">
+        <header className="partners-hero">
+          <Link href="/" className="partners-back">{t.back}</Link>
+          <h1 className="partners-title">{t.title}</h1>
+          <p className="partners-subtitle">{t.subtitle}</p>
+        </header>
+        <div aria-busy={geo === "loading"}>
+          {geo === "allowed" ? (
+            <PartnersShowcase lang={lang} country={country} />
+          ) : geo === "blocked" ? (
+            <section aria-labelledby="partners-unavailable" style={{ textAlign: "center" }}>
+              <h2 id="partners-unavailable" className="partners-title">{t.unavailableTitle}</h2>
+              <p className="partners-subtitle">{t.unavailableBody}</p>
+              <p style={{ marginTop: 20 }}>
+                <Link href="/" className="partners-back">{t.unavailableBack}</Link>
+              </p>
+            </section>
+          ) : null}
         </div>
-      ) : (
-        // loading: nessun contenuto partner (fail-closed anche durante il fetch)
-        <div className="partners-page" aria-busy="true" />
-      )}
+      </div>
       <SiteFooter lang={lang} />
     </div>
   );

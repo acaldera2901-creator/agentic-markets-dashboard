@@ -267,7 +267,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
   it: {
     back: "← BetRedge",
     title: "I nostri partner",
-    subtitle: "Gli operatori dove puoi agire sulle analisi di BetRedge. BetRedge non accetta scommesse: questi sono partner terzi indipendenti.",
+    subtitle: "Informazioni sui partner indipendenti di BetRedge. BetRedge pubblica analisi e non accetta scommesse.",
     featured: "In evidenza", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visita", disclosure: "18+ · I link ai partner sono affiliati commerciali · Gioca responsabilmente",
     offerLabel: "Offerta di benvenuto", offerTerms: "Le offerte sono degli operatori, possono variare per paese e sono soggette ai loro termini.",
@@ -278,7 +278,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
   en: {
     back: "← BetRedge",
     title: "Our partners",
-    subtitle: "Where you can act on BetRedge's analysis. BetRedge takes no bets — these are independent third-party partners.",
+    subtitle: "About BetRedge’s independent partners. BetRedge publishes analysis and does not take bets.",
     featured: "Featured", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visit", disclosure: "18+ · Partner links are commercial affiliates · Gamble responsibly",
     offerLabel: "Welcome offer", offerTerms: "Offers belong to each operator, may vary by country and are subject to their terms.",
@@ -289,7 +289,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
   es: {
     back: "← BetRedge",
     title: "Nuestros partners",
-    subtitle: "Los operadores donde puedes actuar sobre el análisis de BetRedge. BetRedge no acepta apuestas: son partners externos independientes.",
+    subtitle: "Información sobre los socios independientes de BetRedge. BetRedge publica análisis y no acepta apuestas.",
     featured: "Destacado", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visitar", disclosure: "18+ · Los enlaces de partners son afiliados comerciales · Juega con responsabilidad",
     offerLabel: "Oferta de bienvenida", offerTerms: "Las ofertas son de cada operador, pueden variar según el país y están sujetas a sus condiciones.",
@@ -300,7 +300,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
   fr: {
     back: "← BetRedge",
     title: "Nos partenaires",
-    subtitle: "Les opérateurs où agir sur les analyses de BetRedge. BetRedge n'accepte pas de paris : ce sont des partenaires tiers indépendants.",
+    subtitle: "Informations sur les partenaires indépendants de BetRedge. BetRedge publie des analyses et n’accepte pas de paris.",
     featured: "En vedette", sportsbook: "Sportsbook", casino: "Casino",
     visit: "Visiter", disclosure: "18+ · Les liens partenaires sont des affiliés commerciaux · Jouez de manière responsable",
     offerLabel: "Offre de bienvenue", offerTerms: "Les offres appartiennent à chaque opérateur, peuvent varier selon le pays et sont soumises à leurs conditions.",
@@ -311,7 +311,7 @@ export const PARTNERS_COPY: Record<PartnersLang, {
   ru: {
     back: "← BetRedge",
     title: "Наши партнёры",
-    subtitle: "Операторы, где можно применить аналитику BetRedge. BetRedge не принимает ставки — это независимые сторонние партнёры.",
+    subtitle: "Информация о независимых партнёрах BetRedge. BetRedge публикует аналитику и не принимает ставки.",
     featured: "В центре внимания", sportsbook: "Букмекеры", casino: "Казино",
     visit: "Перейти", disclosure: "18+ · Партнёрские ссылки — коммерческие аффилиаты · Играйте ответственно",
     offerLabel: "Приветственный бонус", offerTerms: "Предложения принадлежат операторам, могут отличаться по странам и подчиняются их условиям.",
