@@ -27,6 +27,11 @@ function FixtureList({ matches, readings }: {
             {reading && (
               <span className="tabular-nums">
                 {reading.source === "market" ? "Market-derived" : "Estimated"} · {percentFormat.format(reading.probability)}
+                {reading.computedAt && (
+                  <time className="block text-xs" dateTime={reading.computedAt}>
+                    Calculated {timeFormat.format(new Date(reading.computedAt))} UTC
+                  </time>
+                )}
               </span>
             )}
           </li>

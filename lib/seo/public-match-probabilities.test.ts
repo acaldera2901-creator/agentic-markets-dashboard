@@ -27,6 +27,22 @@ describe("public match readings", () => {
     expect(publicMatchReadings("football", { predictions: [{ ...football, locked: false }, { ...football, model_prob: -1 }] }).size).toBe(0);
   });
 
+  it("keeps recent database football readings through the two-hour refresh cycle", () => {
+    const now = Date.parse("2026-11-25T13:50:00Z");
+    const payload = { source: "database", is_stale: true };
+    const read = (computed_at: string) =>
+      publicMatchReadings("football", { ...payload, predictions: [{ ...football, computed_at }] }, now);
+
+    expect(read("2026-11-25T12:01:00Z").get(key))
+      .toEqual({ probability: 0.55, source: "estimate", computedAt: "2026-11-25T12:01:00Z" });
+    expect(read("2026-11-25T11:49:00Z").size).toBe(0);
+    expect(read("2026-11-25T13:51:00Z").size).toBe(0);
+    expect(read("invalid").size).toBe(0);
+    expect(publicMatchReadings("football", {
+      source: "database", is_stale: false, predictions: [{ ...football, computed_at: "2026-11-25T11:00:00Z" }],
+    }, now).size).toBe(0);
+  });
+
   it("keeps market-derived tennis numbers distinct from estimates", () => {
     const tennis = { player1: fixture.home, player2: fixture.away, scheduled: start, locked: true, model_prob: 0.61 };
     expect(publicMatchReadings("tennis", { matches: [{ ...tennis, probability_source: "market" }] }).get(key))

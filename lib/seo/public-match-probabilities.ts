@@ -1,7 +1,10 @@
 import type { UpcomingMatch } from "./upcoming-matches";
 
 type Sport = UpcomingMatch["sport"];
-type Reading = { probability: number; source: "estimate" | "market" };
+type Reading = { probability: number; source: "estimate" | "market"; computedAt?: string };
+
+// The football prediction job runs every two hours (vercel.json).
+const footballReadingMaxAgeMs = 2 * 60 * 60 * 1000;
 
 function matchKey(home: unknown, away: unknown, startsAt: unknown) {
   if (typeof home !== "string" || typeof away !== "string" || typeof startsAt !== "string") return null;
@@ -16,12 +19,13 @@ export function fixtureReadingKey(match: UpcomingMatch) {
 }
 
 /** Only use the public, locked headline. Multiple readings for the same fixture are ambiguous. */
-export function publicMatchReadings(sport: Sport, payload: unknown) {
+export function publicMatchReadings(sport: Sport, payload: unknown, now = Date.now()) {
   const readings = new Map<string, Reading | null>();
   if (!payload || typeof payload !== "object") return readings;
   const data = payload as Record<string, unknown>;
-  if (data.is_stale === true || data.is_placeholder === true) return readings;
   const football = sport === "football";
+  const checkRowAge = football && data.source === "database";
+  if (data.is_placeholder === true || (data.is_stale === true && !checkRowAge)) return readings;
   const rows = football ? data.predictions : data.matches;
   if (!Array.isArray(rows)) return readings;
 
@@ -36,7 +40,16 @@ export function publicMatchReadings(sport: Sport, payload: unknown) {
 
     const source = football || row.probability_source === "model" ? "estimate"
       : row.probability_source === "market" ? "market" : null;
-    if (source) readings.set(key, readings.has(key) ? null : { probability, source });
+    if (!source) continue;
+
+    const reading: Reading = { probability, source };
+    if (checkRowAge) {
+      if (typeof row.computed_at !== "string") continue;
+      const age = now - Date.parse(row.computed_at);
+      if (!Number.isFinite(age) || age < 0 || age > footballReadingMaxAgeMs) continue;
+      reading.computedAt = row.computed_at;
+    }
+    readings.set(key, readings.has(key) ? null : reading);
   }
   return readings;
 }
