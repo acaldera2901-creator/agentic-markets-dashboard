@@ -52,8 +52,8 @@ export default function AiTennisPredictionsPage() {
         </p>
         <p className="mb-4">
           You can see the current board on the{" "}
-          <Link href="/predictions?sport=tennis" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
-            live tennis predictions page
+          <Link href="/tennis-predictions-today" style={{ color: "var(--am-text)", textDecoration: "underline" }}>
+            today’s tennis fixtures
           </Link>
           . The rest of this page explains how those numbers are produced, why tennis suits this
           kind of modelling unusually well, and where the model struggles. We think you should

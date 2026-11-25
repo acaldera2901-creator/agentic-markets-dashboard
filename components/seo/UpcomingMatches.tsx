@@ -48,7 +48,7 @@ export function UpcomingMatches({ matches }: { matches: readonly UpcomingMatch[]
       {groups.map(({ sport, label, guide, fixtures }) => (
         <section key={sport} id={`${sport}-fixtures`} aria-labelledby={`${sport}-fixtures-heading`}>
           <h3 id={`${sport}-fixtures-heading`}>{label} fixtures</h3>
-          <p><Link href={guide}>How {sport} predictions work</Link></p>
+          <p><Link href={`/${sport}-predictions-today`}>Today’s {sport} fixtures</Link> · <Link href={guide}>How {sport} predictions work</Link></p>
           <ul>
             {fixtures.map((m) => (
               <li key={m.id + m.startsAt}>

@@ -5,8 +5,9 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import type { MetadataRoute } from "next";
 import sitemap from "./sitemap";
+import { fetchFreshness } from "@/lib/seo/data-freshness";
 import { INDEXABLE_LOCALES, PREFIXED_LOCALES, TOOL_SLUGS, hubPath, toolPath } from "@/lib/tools/registry";
-import { GENERATED_AT } from "@/lib/seo/last-modified.generated";
+import { GENERATED_AT, LAST_MODIFIED } from "@/lib/seo/last-modified.generated";
 
 // #BLOG-SSR-0814: la sitemap legge i post published dal DB — nei test il DB
 // non c'è, si mocka la sola query (2 post finti, uno senza date).
@@ -34,18 +35,26 @@ vi.mock("@/lib/blog", () => ({
 // #SEO-AEO-1106: la freschezza dei dati viene dal DB; nei test si mocka (board aggiornata, history non leggibile).
 vi.mock("@/lib/seo/data-freshness", async (orig) => ({
   ...(await orig<typeof import("@/lib/seo/data-freshness")>()),
-  fetchFreshness: vi.fn(async () => ({ board: "2026-11-06T20:00:00.000Z", history: null })),
+  fetchFreshness: vi.fn(async () => ({ board: null, history: null })),
 }));
 
 const BASE = "https://www.betredge.com";
 
 describe("sitemap lastmod delle board (#SEO-AEO-1106)", () => {
   it("/ e /predictions prendono l'ultimo aggiornamento reale dei dati; /history, senza dato, resta alla data del file", async () => {
-    const entries = await sitemap();
-    const lm = (u: string) => entries.find((e) => e.url === u)!.lastModified;
-    expect(lm(BASE)).toBe("2026-11-06T20:00:00.000Z");
-    expect(lm(`${BASE}/predictions`)).toBe("2026-11-06T20:00:00.000Z");
-    expect(String(lm(`${BASE}/history`))).not.toBe("2026-11-06T20:00:00.000Z");
+    const dataTime = Math.max(Date.parse(LAST_MODIFIED["/"]), Date.parse(LAST_MODIFIED["/predictions"])) + 1000;
+    const dataDate = new Date(dataTime).toISOString();
+    vi.mocked(fetchFreshness).mockResolvedValueOnce({ board: dataDate, history: null });
+    const clock = vi.spyOn(Date, "now").mockReturnValue(dataTime);
+    try {
+      const entries = await sitemap();
+      const lm = (u: string) => entries.find((e) => e.url === u)!.lastModified;
+      expect(lm(BASE)).toBe(dataDate);
+      expect(lm(`${BASE}/predictions`)).toBe(dataDate);
+      expect(lm(`${BASE}/history`)).toBe(LAST_MODIFIED["/history"]);
+    } finally {
+      clock.mockRestore();
+    }
   });
 });
 
@@ -71,6 +80,16 @@ describe("sitemap", () => {
     // (11 tool + 1 hub) × 2 lingue. Conteggio a mano: un tool che entra in
     // TOOL_SLUGS ma non finisce in sitemap resta invisibile ai crawler.
     expect(toolUrls).toHaveLength(24);
+  });
+
+  it("include i calendari giornalieri con canonical e data di modifica propri", () => {
+    for (const sport of ["football", "tennis"]) {
+      const path = `/${sport}-predictions-today`;
+      expect(entries.find((e) => e.url === BASE + path)).toMatchObject({
+        changeFrequency: "daily",
+        lastModified: LAST_MODIFIED[path],
+      });
+    }
   });
 
   it("non ha URL duplicate", () => {
