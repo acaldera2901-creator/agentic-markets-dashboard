@@ -150,7 +150,7 @@ export const PARTNERS: Partner[] = [
   // nota completa (e perché proprio quello) sta in lib/affiliate accanto a
   // CASEA_FALLBACK_URL. Prima del 17/09 questa riga non aveva `url` e il partner
   // spariva fuori dai suoi tre paesi.
-  { id: "casea", name: "Casea", category: "casino", logo: "/logos/casea.png", url: CASEA_FALLBACK_URL, geoUrls: CASEA_GEO_URLS },
+  { id: "casea", name: "Casea", category: "casino", logo: "/logos/casea.webp", url: CASEA_FALLBACK_URL, geoUrls: CASEA_GEO_URLS },
   // #PARTNER-WILDZ-BEAZT: categoria "casino" per entrambi, come VeloBet — hanno
   // anche uno sportsbook, ma il link affiliato atterra sulla vetrina casinò. La
   // categoria governa solo la sezione della vetrina: nel menu "Piazza la scommessa"

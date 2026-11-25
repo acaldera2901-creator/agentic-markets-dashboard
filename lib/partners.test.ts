@@ -21,7 +21,7 @@ describe("partners catalog", () => {
   // partner (felicebet.png) — l'invariante è che punti dentro /logos, non il formato.
   it("every partner has a logo in /logos, a valid category and a default https link", () => {
     for (const p of PARTNERS) {
-      expect(p.logo).toMatch(/^\/logos\/.+\.(svg|png)$/);
+      expect(p.logo).toMatch(/^\/logos\/.+\.(svg|png|webp)$/);
       expect(["sportsbook", "casino"]).toContain(p.category);
       // #GEO-PARTNERS-ALWAYS-0917 → #PARTNER-BETWINNER-0924. L'invariante non è più
       // «`url` obbligatorio su tutti» ma «nessuna riga senza un link da aprire»:

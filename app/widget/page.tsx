@@ -90,7 +90,7 @@ export default function WidgetPage() {
                 pagina). Nota: il `data-theme` documentato qui sotto è quello
                 dell'EMBED, che ha i suoi file `-48` e non passa da queste classi. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="brand-logo-dark" src="/logos/betredge-logo-white.png" alt="BetRedge" style={{ height: 26, width: "auto" }} />
+            <img className="brand-logo-dark" src="/logos/betredge-logo-white-96.png" alt="BetRedge" width={79} height={26} style={{ height: 26, width: "auto" }} />
           </Link>
           <div style={{ display: "flex", gap: 16 }}>
             <Link href="/predictions">Predictions</Link>

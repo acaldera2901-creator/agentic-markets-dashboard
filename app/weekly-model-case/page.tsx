@@ -381,193 +381,198 @@ export default function WeeklyPickPage() {
         <p className="lp-eyebrow">{t.eyebrow}</p>
         <h1 className="lp-what-head">{t.h1a} <span className="lp-what-head-2">{t.h1b}</span></h1>
         <p className="lp-what-body">{t.sub}</p>
-        {available && legacy && <p className="wp-note">{t.legacy}</p>}
-        {available && (
-          <div className="lp-kpis">
-            {unlocked && data?.combined_prob != null && (
-              <div className="lp-kpi">
-                <b className="lp-kpi-val accent">{Math.round(data.combined_prob * 100)}<span className="lp-kpi-unit">%</span></b>
-                <span className="lp-kpi-lab">{t.kProb}</span>
-              </div>
-            )}
-            <div className="lp-kpi">
-              <b className="lp-kpi-val">{data?.legs ?? data?.selections?.length ?? 0}</b>
-              <span className="lp-kpi-lab">{t.kLegs}</span>
-            </div>
-            {data?.legs_remaining != null && (
-              <div className="lp-kpi">
-                <b className="lp-kpi-val">{data.legs_remaining}</b>
-                <span className="lp-kpi-lab">{t.kLeft}</span>
-              </div>
-            )}
-          </div>
-        )}
       </header>
 
-      {/* ── BRIEF DELLA SETTIMANA ── */}
-      {available && !legacy && data?.brief && (
-        <section className="wp-brief">
-          <p className="lp-eyebrow">{t.briefEyebrow}</p>
-          {/* EST2 dedup: "selezioni" (legs) e "prob. combinata" (combinedProb)
-              vivono già nella KPI-row della hero → qui restano solo le metriche
-              non ripetute (sport + confidenza media). */}
-          <div className="wp-brief-stats">
-            <span className="wp-bstat"><b>{data.brief.competitions}</b>{t.briefComp}</span>
-            {unlocked && data.brief.avgConfidence != null && (
-              <span className="wp-bstat"><b>{data.brief.avgConfidence}%</b>{t.briefConf}</span>
-            )}
-          </div>
-          {data.sports && Object.keys(data.sports).length > 1 && (
-            <div className="wp-brief-mix" aria-label="mix">
-              {Object.entries(data.sports).map(([sport, n]) => (
-                <span key={sport} className="wp-mix-item">
-                  <SportIcon sport={sportKind(sport)} size={16} variant="sm" />
-                  {n}
-                </span>
-              ))}
+      <section className="wp-current" aria-busy={!error && data === null}>
+        {available && (
+          <div className="wp-hero-stats">
+            {legacy && <p className="wp-note">{t.legacy}</p>}
+            <div className="lp-kpis">
+              {unlocked && data?.combined_prob != null && (
+                <div className="lp-kpi">
+                  <b className="lp-kpi-val accent">{Math.round(data.combined_prob * 100)}<span className="lp-kpi-unit">%</span></b>
+                  <span className="lp-kpi-lab">{t.kProb}</span>
+                </div>
+              )}
+              <div className="lp-kpi">
+                <b className="lp-kpi-val">{data?.legs ?? data?.selections?.length ?? 0}</b>
+                <span className="lp-kpi-lab">{t.kLegs}</span>
+              </div>
+              {data?.legs_remaining != null && (
+                <div className="lp-kpi">
+                  <b className="lp-kpi-val">{data.legs_remaining}</b>
+                  <span className="lp-kpi-lab">{t.kLeft}</span>
+                </div>
+              )}
             </div>
-          )}
-          {unlocked && data.brief.strongest && (
-            <p className="wp-brief-strong">
-              {t.briefStrongest}: <b>{data.brief.strongest.label}</b> — {data.brief.strongest.market} · {Math.round(data.brief.strongest.prob * 100)}%
-            </p>
-          )}
-          <p className="wp-brief-factors">{t.briefFactors}</p>
-        </section>
-      )}
+          </div>
+        )}
 
-      {/* ── LA MULTIPLA (betslip) ── */}
-      <section className="wp-wrap">
+        {/* ── BRIEF DELLA SETTIMANA ── */}
+        {available && !legacy && data?.brief && (
+          <section className="wp-brief">
+            <p className="lp-eyebrow">{t.briefEyebrow}</p>
+            {/* EST2 dedup: "selezioni" (legs) e "prob. combinata" (combinedProb)
+                vivono già nella KPI-row della hero → qui restano solo le metriche
+                non ripetute (sport + confidenza media). */}
+            <div className="wp-brief-stats">
+              <span className="wp-bstat"><b>{data.brief.competitions}</b>{t.briefComp}</span>
+              {unlocked && data.brief.avgConfidence != null && (
+                <span className="wp-bstat"><b>{data.brief.avgConfidence}%</b>{t.briefConf}</span>
+              )}
+            </div>
+            {data.sports && Object.keys(data.sports).length > 1 && (
+              <div className="wp-brief-mix" aria-label="mix">
+                {Object.entries(data.sports).map(([sport, n]) => (
+                  <span key={sport} className="wp-mix-item">
+                    <SportIcon sport={sportKind(sport)} size={16} variant="sm" />
+                    {n}
+                  </span>
+                ))}
+              </div>
+            )}
+            {unlocked && data.brief.strongest && (
+              <p className="wp-brief-strong">
+                {t.briefStrongest}: <b>{data.brief.strongest.label}</b> — {data.brief.strongest.market} · {Math.round(data.brief.strongest.prob * 100)}%
+              </p>
+            )}
+            <p className="wp-brief-factors">{t.briefFactors}</p>
+          </section>
+        )}
+
+        {/* ── LA MULTIPLA (betslip) ── */}
         {error && (
-          <div className="wp-msg">
+          <div className="wp-wrap wp-msg">
             <p>{t.loadError}</p>
             <button onClick={retry} className="wp-retry">{t.retry}</button>
           </div>
         )}
-        {!error && data === null && <p className="wp-msg">{t.loading}</p>}
-        {!error && data && !data.enabled && <p className="wp-msg">{t.disabled}</p>}
-        {!error && data?.enabled && !data.available && <p className="wp-msg">{t.soon}</p>}
+        {!error && data === null && <p className="wp-wrap wp-msg">{t.loading}</p>}
+        {!error && data && !data.enabled && <p className="wp-wrap wp-msg">{t.disabled}</p>}
+        {!error && data?.enabled && !data.available && <p className="wp-wrap wp-msg">{t.soon}</p>}
 
         {available && (
-          <article className="wp-slip">
-            <div className="wp-slip-top">
-              <MenuIcon name="weeklypick" size={18} className="wp-slip-ic" />
-              <span className="wp-slip-ttl">{t.slip}</span>
-              {unlocked && data?.outcome && (
-                <span className={`wp-slip-badge ${data.outcome}`}>
-                  <OutcomeBadge outcome={data.outcome} lang={lang} />
-                </span>
-              )}
-              {!unlocked && data?.legs_remaining != null && data.legs_remaining > 0 && (
-                <span className="wp-slip-badge live"><IClock />{data.legs_remaining} {t.kLeft}</span>
-              )}
-              {!unlocked && data?.closed && (
-                <span className="wp-slip-badge"><ILock />{t.closedWeek}</span>
-              )}
-            </div>
-
-            <ul className="wp-legs">
-              {data?.selections?.map((s, i) => {
-                const kick = fmtKick(s.kickoff);
-                const openable = !!(unlocked && !legacy && s.id);
-                const openIt = (el: HTMLElement) => setOpenLeg({ sel: s, rect: el.getBoundingClientRect() });
-                return (
-                  <li
-                    key={i}
-                    className={`wp-leg${openable ? " is-open" : ""}`}
-                    role={openable ? "button" : undefined}
-                    tabIndex={openable ? 0 : undefined}
-                    aria-haspopup={openable ? "dialog" : undefined}
-                    onClick={openable ? (e) => openIt(e.currentTarget) : undefined}
-                    onKeyDown={openable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIt(e.currentTarget); } } : undefined}
-                  >
-                    <span className="wp-leg-sport"><SportIcon sport={sportKind(s.sport)} size={20} variant="sm" /></span>
-                    <span className="wp-leg-main">
-                      <span className="wp-leg-match">{s.label}</span>
-                      {s.market != null ? (
-                        <span className="wp-leg-pick"><b>{s.market}</b>{s.detail?.competition && <span className="wp-leg-comp">· {s.detail.competition}</span>}</span>
-                      ) : (
-                        <span className="wp-leg-pick locked"><ILock /><span className="dots">••••</span></span>
-                      )}
-                    </span>
-                    <span className="wp-leg-meta">
-                      {s.prob != null && <span className="wp-leg-prob">{Math.round(s.prob * 100)}%</span>}
-                      {unlocked && s.status && (
-                        <span className={`wp-leg-st ${s.status}`}>
-                          {statusIcon(s.status)}
-                          {s.status === "unresolved" ? t.oUnresolved : s.status === "void" ? t.oVoid : null}
-                          {s.status === "upcoming" && kick ? kick : null}
-                        </span>
-                      )}
-                      {openable && <span className="wp-leg-chev" aria-hidden="true">›</span>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="wp-slip-foot">
-              {unlocked ? (
-                <p className="wp-note">{legacy ? t.legacy : t.note}</p>
-              ) : (
-                <>
-                  {!canPurchase ? (
-                    <p className="wp-msg">{data?.closed ? t.closedWeek : t.pending}</p>
-                  ) : (<>
-                  <div className="wp-unlock-list">
-                    <span className="wp-unlock-list-ttl">{t.unlockPromo}</span>
-                    <ul>
-                      {t.unlockList.map((x, i) => (
-                        <li key={i}><IChk />{x}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="wp-unlock">
-                    <div className="wp-unlock-txt">
-                      <span className="wp-unlock-ttl">{t.unlockTitle}</span>
-                      <span className="wp-price">
-                        {data?.discounted && fullPrice && <span className="wp-price-full">{fullPrice}</span>}
-                        <span className="wp-price-now">{price}</span>
-                      </span>
-                    </div>
-                    {/* #WEEKLY-RAILS-1: il prezzo sta già accanto (.wp-price-now),
-                        quindi i bottoni dicono solo COME si paga. */}
-                    <div className="wp-ctas">
-                      <button onClick={() => startCheckout("card")} disabled={buying !== null} className="wp-cta">
-                        {buying === "card" ? t.unlocking : t.payCard}
-                      </button>
-                      {/* #WEEKLY-CRYPTO-DIRECT-1: col rail diretto attivo il bottone
-                          APRE il selettore moneta (stesso componente del checkout
-                          piani) invece di reindirizzare. Col rail spento resta il
-                          redirect alla pagina hosted: nessun vicolo cieco. */}
-                      {!cryptoOpen && (
-                        <button
-                          onClick={() => (CRYPTO_DIRECT ? setCryptoOpen(true) : startCheckout("crypto"))}
-                          disabled={buying !== null}
-                          className="wp-cta wp-cta-2"
-                        >
-                          {buying === "crypto" ? t.unlocking : t.payCrypto}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  </>)}
-                  {cryptoOpen && canPurchase && (
-                    <CryptoDirectPanel
-                      lang={lang}
-                      target={{ kind: "weekly" }}
-                      onPaid={() => window.location.reload()}
-                    />
-                  )}
-                  {checkoutErr && <p className="wp-err">{t.checkoutError}</p>}
-                </>
-              )}
-              <div className="wp-foot-row">
-                {!unlocked && <Link href="/plans" className="wp-pro">{t.proCta}</Link>}
-                <span className="wp-resp">{t.responsible}</span>
+          <div className="wp-wrap">
+            <article className="wp-slip">
+              <div className="wp-slip-top">
+                <MenuIcon name="weeklypick" size={18} className="wp-slip-ic" />
+                <span className="wp-slip-ttl">{t.slip}</span>
+                {unlocked && data?.outcome && (
+                  <span className={`wp-slip-badge ${data.outcome}`}>
+                    <OutcomeBadge outcome={data.outcome} lang={lang} />
+                  </span>
+                )}
+                {!unlocked && data?.legs_remaining != null && data.legs_remaining > 0 && (
+                  <span className="wp-slip-badge live"><IClock />{data.legs_remaining} {t.kLeft}</span>
+                )}
+                {!unlocked && data?.closed && (
+                  <span className="wp-slip-badge"><ILock />{t.closedWeek}</span>
+                )}
               </div>
-            </div>
-          </article>
+
+              <ul className="wp-legs">
+                {data?.selections?.map((s, i) => {
+                  const kick = fmtKick(s.kickoff);
+                  const openable = !!(unlocked && !legacy && s.id);
+                  const openIt = (el: HTMLElement) => setOpenLeg({ sel: s, rect: el.getBoundingClientRect() });
+                  return (
+                    <li
+                      key={i}
+                      className={`wp-leg${openable ? " is-open" : ""}`}
+                      role={openable ? "button" : undefined}
+                      tabIndex={openable ? 0 : undefined}
+                      aria-haspopup={openable ? "dialog" : undefined}
+                      onClick={openable ? (e) => openIt(e.currentTarget) : undefined}
+                      onKeyDown={openable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIt(e.currentTarget); } } : undefined}
+                    >
+                      <span className="wp-leg-sport"><SportIcon sport={sportKind(s.sport)} size={20} variant="sm" /></span>
+                      <span className="wp-leg-main">
+                        <span className="wp-leg-match">{s.label}</span>
+                        {s.market != null ? (
+                          <span className="wp-leg-pick"><b>{s.market}</b>{s.detail?.competition && <span className="wp-leg-comp">· {s.detail.competition}</span>}</span>
+                        ) : (
+                          <span className="wp-leg-pick locked"><ILock /><span className="dots">••••</span></span>
+                        )}
+                      </span>
+                      <span className="wp-leg-meta">
+                        {s.prob != null && <span className="wp-leg-prob">{Math.round(s.prob * 100)}%</span>}
+                        {unlocked && s.status && (
+                          <span className={`wp-leg-st ${s.status}`}>
+                            {statusIcon(s.status)}
+                            {s.status === "unresolved" ? t.oUnresolved : s.status === "void" ? t.oVoid : null}
+                            {s.status === "upcoming" && kick ? kick : null}
+                          </span>
+                        )}
+                        {openable && <span className="wp-leg-chev" aria-hidden="true">›</span>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <div className="wp-slip-foot">
+                {unlocked ? (
+                  <p className="wp-note">{legacy ? t.legacy : t.note}</p>
+                ) : (
+                  <>
+                    {!canPurchase ? (
+                      <p className="wp-msg">{data?.closed ? t.closedWeek : t.pending}</p>
+                    ) : (<>
+                    <div className="wp-unlock-list">
+                      <span className="wp-unlock-list-ttl">{t.unlockPromo}</span>
+                      <ul>
+                        {t.unlockList.map((x, i) => (
+                          <li key={i}><IChk />{x}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="wp-unlock">
+                      <div className="wp-unlock-txt">
+                        <span className="wp-unlock-ttl">{t.unlockTitle}</span>
+                        <span className="wp-price">
+                          {data?.discounted && fullPrice && <span className="wp-price-full">{fullPrice}</span>}
+                          <span className="wp-price-now">{price}</span>
+                        </span>
+                      </div>
+                      {/* #WEEKLY-RAILS-1: il prezzo sta già accanto (.wp-price-now),
+                          quindi i bottoni dicono solo COME si paga. */}
+                      <div className="wp-ctas">
+                        <button onClick={() => startCheckout("card")} disabled={buying !== null} className="wp-cta">
+                          {buying === "card" ? t.unlocking : t.payCard}
+                        </button>
+                        {/* #WEEKLY-CRYPTO-DIRECT-1: col rail diretto attivo il bottone
+                            APRE il selettore moneta (stesso componente del checkout
+                            piani) invece di reindirizzare. Col rail spento resta il
+                            redirect alla pagina hosted: nessun vicolo cieco. */}
+                        {!cryptoOpen && (
+                          <button
+                            onClick={() => (CRYPTO_DIRECT ? setCryptoOpen(true) : startCheckout("crypto"))}
+                            disabled={buying !== null}
+                            className="wp-cta wp-cta-2"
+                          >
+                            {buying === "crypto" ? t.unlocking : t.payCrypto}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    </>)}
+                    {cryptoOpen && canPurchase && (
+                      <CryptoDirectPanel
+                        lang={lang}
+                        target={{ kind: "weekly" }}
+                        onPaid={() => window.location.reload()}
+                      />
+                    )}
+                    {checkoutErr && <p className="wp-err">{t.checkoutError}</p>}
+                  </>
+                )}
+                <div className="wp-foot-row">
+                  {!unlocked && <Link href="/plans" className="wp-pro">{t.proCta}</Link>}
+                  <span className="wp-resp">{t.responsible}</span>
+                </div>
+              </div>
+            </article>
+          </div>
         )}
       </section>
 

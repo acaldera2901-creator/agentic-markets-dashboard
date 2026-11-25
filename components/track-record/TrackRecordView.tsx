@@ -20,7 +20,7 @@ const CSS = `
      → la colonna nome-match (1fr) stirava le righe lasciando un vuoto morto tra
      nome ed esito. Cappato a una misura di lettura, ancorato a sinistra come il
      titolo di pagina; lo spazio libero esce dalle righe, non le buca. */
-  max-width:1040px;
+  max-width:1040px;min-block-size:65svh;
 }
 .tr-root .tr-eye{font-family:var(--m);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut2);font-weight:600}
 .tr-root .tr-lab{font-family:var(--m);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut2);margin-top:6px}
@@ -85,6 +85,7 @@ const CSS = `
 
 export function TrackRecordView({ rows, lang, data, loading = false, error = false, onRetry }: { rows: LedgerRow[]; lang: "it" | "en"; data?: YearData | null; loading?: boolean; error?: boolean; onRetry?: () => void }) {
   const it = lang === "it";
+  const waitingForLedger = loading && rows.length === 0;
   return (
     <YearDataContext.Provider value={data}><div className="tr-root">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
@@ -100,17 +101,24 @@ export function TrackRecordView({ rows, lang, data, loading = false, error = fal
         <span className="hint">{it ? "ultime 300 pick con esito verificato" : "latest 300 picks with verified results"}</span>
       </div>
       {error && <div className="tr-card tr-empty" role="alert">{it ? "Aggiornamento non riuscito. Riprova tra poco." : "Could not refresh results. Please try again."} {onRetry && <button className="tr-pill btn" onClick={onRetry}>{it ? "Riprova" : "Retry"}</button>}</div>}
-      {error && rows.length === 0 ? null : loading && rows.length === 0
-        ? <div className="tr-card tr-empty" role="status" aria-live="polite">{it ? "Caricamento dei risultati verificati…" : "Loading verified results…"}</div>
+      {error && rows.length === 0 ? null : waitingForLedger
+        ? <div className="tr-card tr-empty" role="status">
+            <p>{it ? "Caricamento dei risultati verificati…" : "Loading verified results…"}</p>
+            {!data?.stats && <p>{it ? "Caricamento delle statistiche…" : "Loading statistics…"}</p>}
+          </div>
         : <PickLedger rows={rows} lang={lang} />}
 
-      <div className="tr-sh">
-        <span className="tr-glyph"><GlyphTrend size={16} /></span>
-        <h2>{it ? "Lo storico in sintesi" : "Track record at a glance"}</h2>
-      </div>
-      {error && !data?.stats ? null : loading && !data?.stats
-        ? <div className="tr-card tr-empty" role="status">{it ? "Caricamento delle statistiche…" : "Loading statistics…"}</div>
-        : <><EdgeCard lang={lang} /><SegmentTable lang={lang} /></>}
+      {!waitingForLedger && (
+        <>
+          <div className="tr-sh">
+            <span className="tr-glyph"><GlyphTrend size={16} /></span>
+            <h2>{it ? "Lo storico in sintesi" : "Track record at a glance"}</h2>
+          </div>
+          {error && !data?.stats ? null : loading && !data?.stats
+            ? <div className="tr-card tr-empty" role="status">{it ? "Caricamento delle statistiche…" : "Loading statistics…"}</div>
+            : <><EdgeCard lang={lang} /><SegmentTable lang={lang} /></>}
+        </>
+      )}
     </div></YearDataContext.Provider>
   );
 }

@@ -48,7 +48,7 @@ export function tintGradient(badges: readonly ClubBadge[]): string | null {
   return `linear-gradient(100deg, ${L} 0%, transparent 46%, transparent 54%, ${R} 100%)`;
 }
 
-export function NewsArt({ image: given, badges, variant, className, sizes, kind }: { image: Picture | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string; kind?: NewsKind }) {
+export function NewsArt({ image: given, badges, variant, className, sizes, kind, eager = false }: { image: Picture | null; badges: readonly ClubBadge[]; variant: NewsArtVariant; className?: string; sizes: string; kind?: NewsKind; eager?: boolean }) {
   // #NEWSWATCH-2-IMG-UI: a per-note picture that fails to load falls back to the kind's picture — never a broken image.
   const [broken, setBroken] = useState(false);
   const image: Picture | null = broken && given?.own ? (kind ? newsImage(kind) : null) : given;
@@ -62,15 +62,15 @@ export function NewsArt({ image: given, badges, variant, className, sizes, kind 
     <span className={["nwa", className].filter(Boolean).join(" ")} data-variant={variant} data-clubs={shown.length || undefined} data-own={image.own ? "" : undefined} data-emma={emma ? "" : undefined}>
       {image.own && !image.png && isOptimisable(image.src) ? (
         // #PERF-NEWS-IMG-1106: the watcher's upload on our storage goes through the optimiser (sizes-based width, modern format); the box is fixed by the CSS aspect-ratio, so no layout shift.
-        <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading="lazy" sizes={sizes} onError={() => setBroken(true)} />
+        <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} sizes={sizes} onError={() => setBroken(true)} />
       ) : image.own ? (
         <picture>
           {image.png && <source type="image/webp" srcSet={image.src} />}
           {/* eslint-disable-next-line @next/next/no-img-element -- the per-note picture is a plain file (bundled webp + png fallback, or the watcher's upload on our storage): no optimiser, no remotePatterns */}
-          <img className="nwa-img" src={image.png ?? image.src} width={image.width} height={image.height} alt="" loading="lazy" decoding="async" onError={() => setBroken(true)} />
+          <img className="nwa-img" src={image.png ?? image.src} width={image.width} height={image.height} alt="" loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} decoding="async" onError={() => setBroken(true)} />
         </picture>
       ) : (
-        <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading="lazy" sizes={sizes} />
+        <Image className="nwa-img" src={image.src} width={image.width} height={image.height} alt="" loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : undefined} sizes={sizes} />
       )}
       {tint && !emma && <span className="nwa-tint" aria-hidden="true" style={{ backgroundImage: tint }} />}
       {shown.map((b, i) => (
