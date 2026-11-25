@@ -36,7 +36,7 @@ export default function GoogleAnalytics() {
     };
   }, []);
 
-  if (!consented) return null;
+  if (!consented || !GA_MEASUREMENT_ID) return null;
   return (
     <>
       <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />

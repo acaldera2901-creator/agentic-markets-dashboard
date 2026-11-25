@@ -4,7 +4,7 @@ export async function getGa4SignupSession() {
   try {
     if (localStorage.getItem("gdpr_consent") !== "accepted") return undefined;
     const { gtag } = window as Window & { gtag?: (...args: unknown[]) => void };
-    if (!gtag) return undefined;
+    if (!gtag || !GA_MEASUREMENT_ID) return undefined;
 
     const get = (field: string) => new Promise<string>((resolve) => {
       gtag("get", GA_MEASUREMENT_ID, field, (value: unknown) => {
