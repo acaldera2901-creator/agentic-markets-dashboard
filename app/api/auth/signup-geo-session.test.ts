@@ -113,3 +113,15 @@ describe("register → signup geo + session", () => {
     expect(res.status).toBe(200);
   });
 });
+
+it('uses the signed server SID instead of the user-supplied legacy SID when linking is enabled', async()=>{
+ const {signAnalyticsSession}=await import('@/lib/analytics-session');
+ const {POST}=await import('./route');
+ vi.stubEnv('ANALYTICS_SESSION_SECRET','synthetic-only-012345678901234567890123');
+ vi.stubEnv('ANALYTICS_LINKING_ENABLED','1');vi.stubEnv('ANALYTICS_RETENTION_APPROVED','1');vi.stubEnv('TRACK_ALLOW_WRITE','1');
+ const sid='11111111-2222-4333-8444-555555555555';
+ try{
+  await POST(registerReq({analytics_consent:true,session_id:'untrusted123'},{cookie:`br_analytics_session=${signAnalyticsSession(sid)}`}));
+  expect(geoCall()?.[1]?.[4]).toBe(sid);
+ }finally{vi.unstubAllEnvs();}
+});

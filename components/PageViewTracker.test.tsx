@@ -208,7 +208,7 @@ it('enhanced tracking waits for the signed cookie before the first page_view and
  }));
  render(<StrictMode><PageViewTracker/></StrictMode>);
  expect(calls).toHaveLength(0);
- await act(async()=>{ready({ok:true} as Response);});
+ await act(async()=>{ready(Response.json({ok:true}));});
  expect(calls.filter(c=>c.event_type==='page_view')).toHaveLength(1);
  expect(calls.find(c=>c.event_type==='page_view')?.session_id).toBeTruthy();
 });
@@ -230,7 +230,7 @@ it('withdrawal while bootstrap is pending prevents late page linkage and revokes
   if(url==='/api/track')calls.push(body);return Promise.resolve({ok:true} as Response);
  }));
  render(<PageViewTracker/>);
- await act(async()=>{localStorage.setItem('gdpr_consent','declined');window.dispatchEvent(new Event('betredge:gdpr-consent'));ready({ok:true} as Response);});
+ await act(async()=>{localStorage.setItem('gdpr_consent','declined');window.dispatchEvent(new Event('betredge:gdpr-consent'));ready(Response.json({ok:true}));});
  expect(calls.filter(c=>c.event_type==='page_view')).toHaveLength(0);expect(requests).toContain('revoked');
 });
 it('same-page declined to accepted synchronizes and anchors without duplicating the aggregate page view',async()=>{
@@ -250,4 +250,13 @@ it('same-page withdrawal and reacceptance establish a fresh anchor while keeping
  expect(calls.filter(c=>c.event_type==='page_view')).toHaveLength(1);expect(calls.filter(c=>c.event_type==='session_start')).toHaveLength(2);
  const choices=vi.mocked(fetch).mock.calls.filter(c=>String(c[0])==='/api/analytics/session').map(c=>JSON.parse(String(c[1]?.body)).consent);
  expect(choices).toEqual(['accepted','revoked','accepted']);
+});
+
+it('preserves the acquisition agent when consent follows navigation', async () => {
+ setUrl('/tools?utm_source=instagram&utm_content=betredge_social');
+ const {rerender}=render(<PageViewTracker/>);
+ expect(localStorage.getItem('am_attrib')).toBeNull();
+ pathname.value='/plans';setUrl('/plans');rerender(<PageViewTracker/>);
+ await act(async()=>{localStorage.setItem('gdpr_consent','accepted');window.dispatchEvent(new Event('betredge:gdpr-consent'));});
+ expect(JSON.parse(localStorage.getItem('am_attrib')!)).toMatchObject({utm_source:'instagram',utm_content:'betredge_social',landing_path:'/tools'});
 });

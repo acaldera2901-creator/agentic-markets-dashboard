@@ -1,7 +1,7 @@
 import {analyticsWriteAllowed} from '@/lib/events-write-gate';
 import { scheduleGa4Signup } from "@/lib/ga4-signup";
 import {scheduleBusinessEvent} from '@/lib/business-events';
-import {attachAnalyticsIdentity,readAnalyticsSession,revokeAnalyticsSession,setAnalyticsCookie} from '@/lib/analytics-session';
+import {analyticsLinkingEnabled,attachAnalyticsIdentity,readAnalyticsSession,revokeAnalyticsSession,setAnalyticsCookie} from '@/lib/analytics-session';
 import { NextResponse } from "next/server";
 import { dbQuery, dbQueryStrict, dbExecute } from "@/lib/db";
 import { signupCountryAllowed, resolveRequestCountry } from "@/lib/signup-geo";
@@ -454,7 +454,7 @@ export async function POST(req: Request) {
       console.error("[auth] register failed:", String(error));
       return NextResponse.json({ error: "registration failed" }, { status: 500 });
     }
-    scheduleGa4Signup(body.analytics_consent, body.ga4_signup_session);
+    if (JSON.parse(acquisition ?? "{}").traffic_type !== "internal") scheduleGa4Signup(body.analytics_consent, body.ga4_signup_session);
     // #G2-TRACKING-1110 — geo (header Vercel) e session_id (solo con consenso
     // analytics, mandato dal client) della registrazione. UPDATE separato e
     // best-effort: su un DB senza la migration 20261110230000 fallisce e il
@@ -463,7 +463,7 @@ export async function POST(req: Request) {
     {
       const geo = signupGeo(req);
       const sessionId = (body as { analytics_consent?: unknown }).analytics_consent === true
-        ? signupSessionId((body as { session_id?: unknown }).session_id)
+        ? (analyticsLinkingEnabled() ? readAnalyticsSession(req) : signupSessionId((body as { session_id?: unknown }).session_id))
         : null;
       if (geo.country || geo.region || geo.city || sessionId) {
         try {

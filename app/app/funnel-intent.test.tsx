@@ -297,3 +297,25 @@ describe("#FUNNEL-INTENT-0908 — dall'anonimo al checkout", () => {
     expect(wallIsUp(), `${path} e' la vetrina: nessun muro`).toBe(false);
   });
 });
+
+it('activation return → card attempt → provider errors stays retryable and measures both providers',async()=>{
+ vi.stubEnv('NEXT_PUBLIC_PAYGATE_ENABLED','true');
+ localStorage.clear();localStorage.setItem('agentic-lang','en');beacons=[];
+ mockSession();
+ const base=vi.mocked(fetch).getMockImplementation()!;
+ vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+  if(String(input).match(/\/api\/(shopify|paygate)\/checkout/))return Response.json({error:'synthetic failure'},{status:503});
+  return base(input,init);
+ }));
+ try{
+  const user=userEvent.setup();mount('/plans?activated=1&goto=plans:base','plans');
+  await waitFor(()=>expect(document.querySelector('.checkout-modal')).toBeTruthy());
+  await user.click(document.querySelector<HTMLInputElement>('#withdrawal-consent')!);
+  const button=document.querySelector<HTMLButtonElement>('.checkout-modal button.checkout-payment')!;
+  await user.click(button);
+  await waitFor(()=>expect(beacons.filter(e=>e==='checkout_failed')).toHaveLength(2));
+  expect(beacons.filter(e=>e==='checkout_attempt')).toHaveLength(2);
+  expect(beacons).not.toContain('checkout_ready');expect(beacons).not.toContain('purchase');
+  expect(button.disabled).toBe(false);
+ }finally{vi.unstubAllEnvs();vi.unstubAllGlobals();localStorage.clear();}
+});

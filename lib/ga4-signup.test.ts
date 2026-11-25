@@ -7,6 +7,7 @@ afterEach(() => {
 });
 
 it("sends one signup tied to the existing GA client and session", async () => {
+  vi.stubEnv("VERCEL_ENV", "production");
   vi.stubEnv("GA4_MEASUREMENT_PROTOCOL_SECRET", "test-secret");
   const collect = vi.fn().mockResolvedValue({ ok: true });
   vi.stubGlobal("fetch", collect);
@@ -32,4 +33,11 @@ it("skips unconsented or invalid sessions and missing configuration", async () =
   await sendGa4Signup(true, { ...session, client_id: "name@example.test" });
   await sendGa4Signup(true, { ...session, session_id: "invalid" });
   expect(collect).not.toHaveBeenCalled();
+});
+
+it("never sends preview signup traffic to live GA4",async()=>{
+ vi.stubEnv("VERCEL_ENV","preview");vi.stubEnv("GA4_MEASUREMENT_PROTOCOL_SECRET","test-secret");
+ const collect=vi.fn();vi.stubGlobal("fetch",collect);
+ await sendGa4Signup(true,{client_id:"123.456",session_id:"1795500000"});
+ expect(collect).not.toHaveBeenCalled();
 });

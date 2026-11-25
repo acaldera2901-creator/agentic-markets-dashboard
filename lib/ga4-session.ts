@@ -2,7 +2,7 @@ import { GA_MEASUREMENT_ID } from "./ga4-config";
 
 export async function getGa4SignupSession() {
   try {
-    if (localStorage.getItem("gdpr_consent") !== "accepted") return undefined;
+    if (localStorage.getItem("betredge_internal") === "1" || localStorage.getItem("gdpr_consent") !== "accepted") return undefined;
     const { gtag } = window as Window & { gtag?: (...args: unknown[]) => void };
     if (!gtag) return undefined;
 

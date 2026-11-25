@@ -21,6 +21,7 @@ describe("signupAttribution", () => {
   });
 
   it("col first-touch salvato usa quello e lo marca", () => {
+    localStorage.setItem("gdpr_consent", "accepted");
     localStorage.setItem("am_attrib", JSON.stringify({ utm_source: "reddit", landing_path: "/" }));
     expect(signupAttribution()).toEqual({ utm_source: "reddit", landing_path: "/", capture: "first_touch" });
   });
@@ -32,4 +33,12 @@ describe("consentedSessionId", () => {
     localStorage.setItem("gdpr_consent", "accepted");
     expect(consentedSessionId()).toMatch(/^[a-z0-9]{6,64}$/);
   });
+});
+
+it("does not reuse old first-touch after consent withdrawal",()=>{
+ localStorage.setItem("gdpr_consent","declined");localStorage.setItem("am_attrib",JSON.stringify({utm_source:"old"}));
+ expect(signupAttribution()?.capture).toBe("signup_page");expect(signupAttribution()?.utm_source).toBeUndefined();
+});
+it("marks internal registrations separately from customer acquisition",()=>{
+ localStorage.setItem("betredge_internal","1");expect(signupAttribution()?.traffic_type).toBe("internal");
 });

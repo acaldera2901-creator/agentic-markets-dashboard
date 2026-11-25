@@ -3,7 +3,7 @@ import { GA_MEASUREMENT_ID } from "./ga4-config";
 
 export async function sendGa4Signup(consent: unknown, session: unknown) {
   const secret = process.env.GA4_MEASUREMENT_PROTOCOL_SECRET;
-  if (!secret || consent !== true || !session || typeof session !== "object") return;
+  if (process.env.VERCEL_ENV !== "production" || !secret || consent !== true || !session || typeof session !== "object") return;
   const { client_id, session_id } = session as Record<string, unknown>;
   if (typeof client_id !== "string" || !/^\d{1,20}\.\d{1,20}$/.test(client_id)) return;
   if (typeof session_id !== "string" || !/^\d{1,12}$/.test(session_id) || Number(session_id) === 0) return;

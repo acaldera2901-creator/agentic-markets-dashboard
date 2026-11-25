@@ -1,4 +1,5 @@
 "use client";
+import {checkoutRequest} from "@/lib/checkout-tracking";
 // #CRYPTO-DIRECT-1 — pannello del pagamento crypto diretto: l'utente sceglie la
 // moneta che possiede, riceve indirizzo dedicato e importo esatto, invia dal suo
 // wallet. Nessun acquisto con carta: chi ha già USDT/USDC paga con quelli.
@@ -88,7 +89,7 @@ export function CryptoDirectPanel({
   const start = useCallback(async (coinId: string) => {
     setBusy(true); setError("");
     try {
-      const r = await fetch("/api/crypto/checkout", {
+      const r = await checkoutRequest("/api/crypto/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "same-origin",
@@ -97,7 +98,7 @@ export function CryptoDirectPanel({
             ? { requested_plan: "weekly", coin: coinId }
             : { requested_plan: target.plan, period: target.period, coin: coinId }
         ),
-      });
+      }, {plan:target.kind === "weekly" ? "weekly" : target.plan,period:target.kind === "weekly" ? "one_off" : target.period,rail:"crypto_direct"});
       const d = await r.json();
       if (!r.ok) {
         setError(
