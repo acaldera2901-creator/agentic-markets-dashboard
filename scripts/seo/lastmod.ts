@@ -40,8 +40,8 @@ const ROUTE_SOURCES: Record<string, string[]> = {
   // landing — e la landing è ora la sorgente di /how-it-works.
   "/": ["app/page.tsx", "app/app/page.tsx"],
   "/predictions": ["app/predictions"],
-  "/football-predictions-today": ["app/football-predictions-today", "components/seo/DailySportFixtures.tsx", "lib/seo/daily-fixtures.ts", "lib/seo/upcoming-matches.ts"],
-  "/tennis-predictions-today": ["app/tennis-predictions-today", "components/seo/DailySportFixtures.tsx", "lib/seo/daily-fixtures.ts", "lib/seo/upcoming-matches.ts"],
+  "/football-predictions-today": ["app/football-predictions-today", "components/seo/DailySportFixtures.tsx", "lib/seo/daily-fixtures.ts", "lib/seo/upcoming-matches.ts", "lib/seo/public-match-probabilities.ts"],
+  "/tennis-predictions-today": ["app/tennis-predictions-today", "components/seo/DailySportFixtures.tsx", "lib/seo/daily-fixtures.ts", "lib/seo/upcoming-matches.ts", "lib/seo/public-match-probabilities.ts"],
   "/how-it-works": ["app/how-it-works", "app/landing-client.tsx"],
   "/plans": ["app/plans"],
   "/history": ["app/history"],
