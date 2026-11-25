@@ -4,13 +4,13 @@
 // quella pagina (vedi ROUTE_SOURCES nello script).
 
 /** Quando questo file è stato generato: fallback per una rotta non mappata. */
-export const GENERATED_AT = "2026-11-25T11:35:42.097Z";
+export const GENERATED_AT = "2026-11-25T11:42:57.086Z";
 
 export const LAST_MODIFIED: Record<string, string> = {
   "/": "2026-11-25T10:47:54+01:00",
   "/affiliates/terms": "2026-10-23T15:55:12+02:00",
-  "/ai-football-predictions": "2026-11-25T11:30:38+00:00",
-  "/ai-tennis-predictions": "2026-11-25T11:30:38+00:00",
+  "/ai-football-predictions": "2026-11-25T12:40:14+01:00",
+  "/ai-tennis-predictions": "2026-11-25T12:40:14+01:00",
   "/blog": "2026-11-06T21:32:39+01:00",
   "/community": "2026-10-26T11:23:23+01:00",
   "/de/tools": "2026-08-22T14:37:09+02:00",
@@ -37,7 +37,7 @@ export const LAST_MODIFIED: Record<string, string> = {
   "/es/tools/roi-calculator": "2026-08-22T14:37:09+02:00",
   "/es/tools/stake-calculator": "2026-08-22T14:37:09+02:00",
   "/es/tools/yield-calculator": "2026-08-22T14:37:09+02:00",
-  "/football-predictions-today": "2026-11-25T11:30:38+00:00",
+  "/football-predictions-today": "2026-11-25T11:42:56+00:00",
   "/fr/tools": "2026-08-22T14:37:09+02:00",
   "/fr/tools/arbitrage-calculator": "2026-08-22T14:37:09+02:00",
   "/fr/tools/bankroll-calculator": "2026-08-22T14:37:09+02:00",
@@ -129,7 +129,7 @@ export const LAST_MODIFIED: Record<string, string> = {
   "/sv/tools/roi-calculator": "2026-08-22T14:37:09+02:00",
   "/sv/tools/stake-calculator": "2026-08-22T14:37:09+02:00",
   "/sv/tools/yield-calculator": "2026-08-22T14:37:09+02:00",
-  "/tennis-predictions-today": "2026-11-25T11:30:38+00:00",
+  "/tennis-predictions-today": "2026-11-25T11:42:56+00:00",
   "/terms": "2026-10-23T15:55:12+02:00",
   "/tools": "2026-11-10T23:19:15+01:00",
   "/tools/arbitrage-calculator": "2026-11-10T23:19:15+01:00",
