@@ -4,7 +4,7 @@
 // quella pagina (vedi ROUTE_SOURCES nello script).
 
 /** Quando questo file è stato generato: fallback per una rotta non mappata. */
-export const GENERATED_AT = "2026-11-25T11:42:57.086Z";
+export const GENERATED_AT = "2026-11-25T13:21:31.389Z";
 
 export const LAST_MODIFIED: Record<string, string> = {
   "/": "2026-11-25T10:47:54+01:00",
@@ -37,7 +37,7 @@ export const LAST_MODIFIED: Record<string, string> = {
   "/es/tools/roi-calculator": "2026-08-22T14:37:09+02:00",
   "/es/tools/stake-calculator": "2026-08-22T14:37:09+02:00",
   "/es/tools/yield-calculator": "2026-08-22T14:37:09+02:00",
-  "/football-predictions-today": "2026-11-25T11:42:56+00:00",
+  "/football-predictions-today": "2026-11-25T13:21:31+00:00",
   "/fr/tools": "2026-08-22T14:37:09+02:00",
   "/fr/tools/arbitrage-calculator": "2026-08-22T14:37:09+02:00",
   "/fr/tools/bankroll-calculator": "2026-08-22T14:37:09+02:00",
@@ -129,7 +129,7 @@ export const LAST_MODIFIED: Record<string, string> = {
   "/sv/tools/roi-calculator": "2026-08-22T14:37:09+02:00",
   "/sv/tools/stake-calculator": "2026-08-22T14:37:09+02:00",
   "/sv/tools/yield-calculator": "2026-08-22T14:37:09+02:00",
-  "/tennis-predictions-today": "2026-11-25T11:42:56+00:00",
+  "/tennis-predictions-today": "2026-11-25T13:21:31+00:00",
   "/terms": "2026-10-23T15:55:12+02:00",
   "/tools": "2026-11-10T23:19:15+01:00",
   "/tools/arbitrage-calculator": "2026-11-10T23:19:15+01:00",
