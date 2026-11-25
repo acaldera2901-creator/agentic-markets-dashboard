@@ -76,13 +76,26 @@ export async function DailySportFixtures({ sport }: { sport: UpcomingMatch["spor
 
   return (
     <>
+      <a
+        href="#daily-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-3 focus:font-semibold focus:text-black"
+      >
+        Skip to main content
+      </a>
       <ClassicChrome />
       <JsonLd data={breadcrumbJsonLd([[`${label} Predictions Today`, path]])} />
       {visible.length > 0 && <JsonLd data={matchesJsonLd(visible)} />}
       <main className="relative mx-auto max-w-3xl px-5 py-10 sm:px-8" style={{ color: "var(--am-muted)" }}>
         <header className="space-y-4">
+          <h1
+            id="daily-content"
+            tabIndex={-1}
+            className="scroll-mt-24 text-3xl font-bold sm:text-4xl"
+            style={{ color: "var(--am-text)" }}
+          >
+            {label} predictions today
+          </h1>
           <p><time dateTime={day}>{dayFormat.format(new Date(day))}</time> · All times UTC</p>
-          <h1 className="text-3xl font-bold sm:text-4xl" style={{ color: "var(--am-text)" }}>{label} predictions today</h1>
           <p>{football
             ? "Browse today’s football fixtures, grouped by competition where available, with kick-off times in UTC and a pre-match model percentage where available. Open the football board for the available 1X2 breakdown: home win, draw and away win."
             : "Browse today’s tennis schedule with match start times in UTC and available pre-match win probabilities. Each percentage is labelled as a market-derived reading or an estimate. Tournament names appear where available."}</p>
