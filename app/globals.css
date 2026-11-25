@@ -10669,7 +10669,18 @@ button:disabled {
    peso al pannello del verdetto. Il velo la copre quasi tutta — serve
    profondità, non una fotografia da guardare. */
 
-.featured.is-football { --edge-scene: url(/banners/gen/scene-stadium.jpg); }
+@supports (background-image: image-set(url("/banners/gen/scene-stadium-960.webp") type("image/webp") 1x)) {
+  :root {
+    --am-stadium-scene: image-set(
+      url("/banners/gen/scene-stadium-960.webp") type("image/webp") 1x,
+      url("/banners/gen/scene-stadium-1920.webp") type("image/webp") 2x,
+      url("/banners/gen/scene-stadium.jpg") type("image/jpeg") 1x,
+      url("/banners/gen/scene-stadium.jpg") type("image/jpeg") 2x
+    );
+  }
+}
+
+.featured.is-football { --edge-scene: var(--am-stadium-scene, url(/banners/gen/scene-stadium.jpg)); }
 .featured.is-tennis   { --edge-scene: url(/banners/gen/scene-court.jpg); }
 
 /* #EDGE-WP-SPLIT-0910 — nello split a metà schermo la scena non è quella
